@@ -23,7 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-class things(object):
+class things():
     def __init__(self):
         self.clear()
 
@@ -58,8 +58,17 @@ class things(object):
         else:
             return "No failures to report.\n"
 
-class thing(object):
+    @property
+    def brokenrules(self):
+        return rules()
+
+    @property
+    def isvalid(self):
+        return self.brokenrules.isempty
+
+class thing():
     def __init__(self):
         pass
+
 
 
