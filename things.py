@@ -43,7 +43,7 @@ class things():
 
     @property
     def _list(self):
-        if '_ls' not in self.__dict__:
+        if not hasattr(self, '_ls'):
             self._ls = []
         return self._ls
 
