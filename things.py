@@ -28,22 +28,28 @@ class things():
         self.clear()
 
     def clear(self):
-        self.list=[]
+        self._ls=[]
 
     def __iter__(self):
-        for t in self.list:
+        for t in self._list:
             yield t
 
     def append(self, t):
-        self.list.append(t)
+        self._list.append(t)
 
     def __iadd__(self, t):
         self.append(t)
         return self
 
     @property
+    def _list(self):
+        if '_ls' not in self.__dict__:
+            self._ls = []
+        return self._ls
+
+    @property
     def count(self):
-        return len(self.list)
+        return len(self._list)
 
     @property
     def isempty(self):
@@ -52,11 +58,11 @@ class things():
     def __str__(self):
         if not self.isempty:
             r=''
-            for t in self:
-                r += str(t) + "\n"
+            for i, t in enumerate(self):
+                if i > 0: r += "\n"
+                r += str(t)
             return r
-        else:
-            return "No failures to report.\n"
+        return ''
 
     @property
     def brokenrules(self):
