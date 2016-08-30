@@ -64,6 +64,22 @@ class things():
             return r
         return ''
 
+    def __setitem__(self, key, item):
+        self._list[key]=item
+
+    def __getitem__(self, key):
+        if key.__class__ == int:
+            return self._list[key]
+
+        keyisobj = (type(key) != str and
+                    type(key) != unicode)
+        for e in self._list:
+            if keyisobj:
+                if e is key:
+                    return e
+            else:
+                if e.str() == key:
+                    return e
     @property
     def brokenrules(self):
         return rules()
