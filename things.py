@@ -22,6 +22,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+from pdb import set_trace; B=set_trace
 
 class things():
     def __init__(self):
@@ -38,7 +39,18 @@ class things():
         self._list.append(t)
 
     def __iadd__(self, t):
-        self.append(t)
+        if isinstance(t, thing):
+            self.append(t)
+        elif isinstance(t, things):
+            ts = t
+            for t in ts:
+                self += t
+        else: 
+            B()
+
+            raise ValueError('Unsupported object appended')
+
+
         return self
 
     @property
@@ -91,9 +103,19 @@ class things():
     def isvalid(self):
         return self.brokenrules.isempty
 
+
 class thing():
     def __init__(self):
         pass
+
+    def add(self, t):
+        th = things()
+        th += self
+        th += t
+        return th
+
+    def __add__(self, t):
+        return self.add(t)
 
 
 
