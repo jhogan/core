@@ -51,6 +51,9 @@ class things():
     def count(self):
         return len(self._list)
 
+    def __len__(self):
+        return self.count
+
     @property
     def isempty(self):
         return self.count == 0
