@@ -35,8 +35,13 @@ class things():
         for t in self._list:
             yield t
 
-    def append(self, t):
+    def append(self, t, uniq=False):
+        if uniq:
+            for t0 in self:
+                if t is t0: return None
+                    
         self._list.append(t)
+        return t
 
     def __iadd__(self, t):
         if isinstance(t, thing):
@@ -46,12 +51,17 @@ class things():
             for t in ts:
                 self += t
         else: 
-            B()
-
             raise ValueError('Unsupported object appended')
 
 
         return self
+
+    def add(self, ts):
+        self += ts
+        return self
+
+    def __add__(self, t):
+        return self.add(t)
 
     @property
     def _list(self):
