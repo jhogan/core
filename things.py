@@ -37,8 +37,7 @@ class things():
 
     def append(self, t, uniq=False):
         if uniq:
-            for t0 in self:
-                if t is t0: return None
+            if t in self: return None
                     
         self._list.append(t)
         return t
@@ -52,8 +51,10 @@ class things():
                 self += t
         else: 
             raise ValueError('Unsupported object appended')
+        return self
 
-
+    def __iand__(self, t):
+        self.append(t, uniq=True)
         return self
 
     def add(self, ts):
