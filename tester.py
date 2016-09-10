@@ -87,7 +87,7 @@ class failure(thing):
                                         str(self.cause),
                                         self._assert)
         else:
-            r = "{} at {}".format(self._assert, self._line)
+            r = "{} in {} at {}".format(self._assert, self._test, self._line)
             if hasattr(self,'_expect'):
                 r += "\nexpect: " + str(self._expect)
                 r += "\nactual: " + str(self._actual)

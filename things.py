@@ -112,6 +112,10 @@ class things():
                 if e.str() == key:
                     return e
     @property
+    def first(self):
+        return self[0]
+
+    @property
     def brokenrules(self):
         return rules()
 
