@@ -35,6 +35,9 @@ class things():
         for t in self._list:
             yield t
 
+    def shift(self):
+        return self._ls.pop(0)
+
     def append(self, obj, uniq=False):
         if isinstance(obj, thing):
             t = obj
