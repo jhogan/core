@@ -3,6 +3,7 @@ import pdb; B=pdb.set_trace
 import uuid
 import inspect
 from types import FunctionType
+from textwrap import dedent
 
 class testers(things):
     def __init__(self):
@@ -59,6 +60,10 @@ class tester(thing):
         if self.failures.isempty:
             return r
         return r + "\n" + str(self.failures) + "\n"
+
+    @staticmethod
+    def preserve(str):
+        return dedent(str)[1:-1]
 
 class failures(things):
     pass
