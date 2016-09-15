@@ -38,6 +38,12 @@ class things():
     def shift(self):
         return self._ls.pop(0)
 
+    def unshift(self, t):
+        return self._ls.insert(0, t)
+
+    def __lshift__(self, a):
+        self.unshift(a)
+
     def append(self, obj, uniq=False):
         if isinstance(obj, thing):
             t = obj
@@ -115,8 +121,10 @@ class things():
                 if e.str() == key:
                     return e
     @property
-    def first(self):
-        return self[0]
+    def first(self): return self[0]
+
+    @property
+    def second(self): return self[1]
 
     @property
     def brokenrules(self):

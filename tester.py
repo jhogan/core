@@ -16,6 +16,7 @@ class testers(things):
                 try:
                     getattr(inst, meth[0])()
                 except Exception as ex:
+                    raise
                     inst._failures += failure(ex, assert_=meth[0])
         print('')
 
