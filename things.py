@@ -113,13 +113,17 @@ class things():
 
         keyisobj = (type(key) != str and
                     type(key) != unicode)
+
+            
         for e in self._list:
             if keyisobj:
                 if e is key:
                     return e
             else:
-                if e.str() == key:
-                    return e
+                if hasattr(e, 'id'):
+                    if e.id == key:   return e
+                elif hasattr(e, 'name'):
+                    if e.name == key: return e
     @property
     def first(self): return self[0]
 
@@ -147,6 +151,3 @@ class thing():
 
     def __add__(self, t):
         return self.add(t)
-
-
-
