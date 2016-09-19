@@ -31,6 +31,9 @@ class tester(thing):
     def assertEq(self, expect, actual, msg=None):
         if expect != actual: self._failures += failure()
 
+    def assertNe(self, expect, actual, msg=None):
+        if expect == actual: self._failures += failure()
+
     def assertIs(self, expect, actual, msg=None):
         if expect is not actual: self._failures += failure()
 

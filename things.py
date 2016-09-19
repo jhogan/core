@@ -58,7 +58,8 @@ class things():
             raise ValueError('Unsupported object appended')
 
         if uniq:
-            if t in self: return None
+            for t1 in self:
+                if t is t1: return None
                     
         self._list.append(t)
         return t
