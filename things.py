@@ -39,30 +39,40 @@ class things():
         return self._ls.pop(0)
 
     def unshift(self, t):
+        # TODO: Return things object to indicate what was unshifted
         return self._ls.insert(0, t)
 
     def __lshift__(self, a):
         self.unshift(a)
 
-    def append(self, obj, uniq=False):
+    def append(self, obj, uniq=False, r=None):
+        if not r: r = []
         if isinstance(obj, thing):
             t = obj
         elif isinstance(obj, things):
-            ts = obj
-            r = things()
-            for t in ts:
-                t = self.append(t)
-                if t: r += t
+            for t in obj:
+                if uniq:
+                    for t1 in self:
+                        if t is t1: break
+                    else:
+                        self.append(t, r=r)
+                        continue
+                    break
+                else:
+                    self.append(t, r=r)
             return r
         else: 
             raise ValueError('Unsupported object appended')
 
         if uniq:
             for t1 in self:
-                if t is t1: return None
-                    
-        self._list.append(t)
-        return t
+                if t is t1: return r
+
+        r.append(t)
+        for t in r:
+            self._list.append(t)
+
+        return r
 
     def __iadd__(self, t):
         self.append(t)

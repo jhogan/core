@@ -93,12 +93,12 @@ class failure(thing):
     def __str__(self):
         if self.cause:
             r = "{}: {} in {}".format(self.cause.__class__.__name__,
-                                        str(self.cause),
+                                        repr(self.cause),
                                         self._assert)
         else:
             r = "{} in {} at {}".format(self._assert, self._test, self._line)
             if hasattr(self,'_expect'):
-                r += "\nexpect: " + str(self._expect)
-                r += "\nactual: " + str(self._actual)
+                r += "\nexpect: " + repr(self._expect)
+                r += "\nactual: " + repr(self._actual)
         return r
         
