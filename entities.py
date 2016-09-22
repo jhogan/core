@@ -24,7 +24,7 @@ SOFTWARE.
 """
 from pdb import set_trace; B=set_trace
 
-class things():
+class entities():
     def __init__(self):
         self.clear()
 
@@ -39,7 +39,7 @@ class things():
         return self._ls.pop(0)
 
     def unshift(self, t):
-        # TODO: Return things object to indicate what was unshifted
+        # TODO: Return entities object to indicate what was unshifted
         return self._ls.insert(0, t)
 
     def __lshift__(self, a):
@@ -47,9 +47,9 @@ class things():
 
     def append(self, obj, uniq=False, r=None):
         if not r: r = []
-        if isinstance(obj, thing):
+        if isinstance(obj, entity):
             t = obj
-        elif isinstance(obj, things):
+        elif isinstance(obj, entities):
             for t in obj:
                 if uniq:
                     for t1 in self:
@@ -150,12 +150,12 @@ class things():
         return self.brokenrules.isempty
 
 
-class thing():
+class entity():
     def __init__(self):
         pass
 
     def add(self, t):
-        th = things()
+        th = entities()
         th += self
         th += t
         return th

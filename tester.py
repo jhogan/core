@@ -1,11 +1,11 @@
-from things import *
+from entities import *
 import pdb; B=pdb.set_trace
 import uuid
 import inspect
 from types import FunctionType
 from textwrap import dedent
 
-class testers(things):
+class testers(entities):
     def __init__(self):
         for subcls in tester.__subclasses__():
             inst = subcls()
@@ -20,7 +20,7 @@ class testers(things):
                     inst._failures += failure(ex, assert_=meth[0])
         print('')
 
-class tester(thing):
+class tester(entity):
     def __init__(self):
         self._failures = failures()
 
@@ -69,10 +69,10 @@ class tester(thing):
     def preserve(str):
         return dedent(str)[1:-1]
 
-class failures(things):
+class failures(entities):
     pass
 
-class failure(thing):
+class failure(entity):
     def __init__(self, cause=None, assert_=None):
         self._assert = assert_
         self.cause = cause
