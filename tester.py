@@ -28,6 +28,12 @@ class tester(entity):
         try: uuid.UUID(str(id), version=4)
         except ValueError: self._failures += failure()
 
+    def assertTrue(self, actual):
+        if not actual: self._failures += failure()
+
+    def assertPositive(self, actual):
+        if actual < 0: self._failures += failure()
+
     def assertEq(self, expect, actual, msg=None):
         if expect != actual: self._failures += failure()
 
