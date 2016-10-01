@@ -23,6 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 from pdb import set_trace; B=set_trace
+from random import randint
 
 class entities():
     def __init__(self):
@@ -34,6 +35,41 @@ class entities():
     def __iter__(self):
         for t in self._list:
             yield t
+
+    def getrandom(self):
+        if self.isempty: return None
+        ix = randint(0, self.ubound)
+        self[ix]
+
+    def where(self, fn):
+        es = entities()
+        for e in self:
+            if fn(e): es += e
+        return es
+
+    def remove(self, e):
+        if callable(e):
+            rms = self.where(e)
+        else:
+            rms = [e]
+
+        for i, e1 in enumerate(self):
+            for e2 in rms:
+                if e1 is e2:
+                    del self._list[i]
+                    break
+                
+
+    def reversed(self):
+        r = type(self)()
+        for e in reversed(self._ls):
+            r += e
+        return r
+
+    @property
+    def ubound(self):
+        if self.isempty: return None
+        return self.count - 1
 
     def shift(self):
         return self._ls.pop(0)
