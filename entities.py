@@ -25,7 +25,7 @@ SOFTWARE.
 from pdb import set_trace; B=set_trace
 from random import randint
 
-class entities():
+class entities(object):
     def __init__(self):
         self.clear()
 
@@ -172,10 +172,15 @@ class entities():
                 elif hasattr(e, 'name'):
                     if e.name == key: return e
     @property
-    def first(self): return self[0]
-
+    def        first(self):   return  self[0]
     @property
-    def second(self): return self[1]
+    def        second(self):  return  self[1]
+    @property
+    def        third(self):   return  self[2]
+    @property
+    def        fourth(self):  return  self[3]
+    @property
+    def        fifth(self):   return  self[4]
 
     @property
     def brokenrules(self):
