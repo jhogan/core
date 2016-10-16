@@ -142,6 +142,10 @@ class entities(object):
     def isempty(self):
         return self.count == 0
 
+    @property
+    def ispopulated(self):
+        return not self.isempty
+
     def __str__(self):
         if not self.isempty:
             r=''
@@ -184,11 +188,13 @@ class entities(object):
 
     @property
     def brokenrules(self):
-        return rules()
+        return brokenrules()
 
     @property
     def isvalid(self):
         return self.brokenrules.isempty
+
+
 
 
 class entity():
@@ -203,3 +209,12 @@ class entity():
 
     def __add__(self, t):
         return self.add(t)
+
+    @property
+    def brokenrules(self):
+        return brokenrules()
+
+    @property
+    def isvalid(self):
+        return self.brokenrules.isempty
+

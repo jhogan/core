@@ -22,11 +22,16 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+from entities import *
 
-class rules(things):
+class brokenrules(entities):
     pass
 
-class rule(thing):
-    pass
+class brokenrule(entity):
+    def __init__(self, msg):
+        self.message = msg
+
+    def __str__(self):
+        return self.message
     
     

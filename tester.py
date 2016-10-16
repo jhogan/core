@@ -34,6 +34,9 @@ class tester(entity):
     def assertPositive(self, actual):
         if actual < 0: self._failures += failure()
 
+    def assertIsInstance(self, expect, actual, msg=None):
+        if not isinstance(expect, actual): self._failures += failure()
+
     def assertEq(self, expect, actual, msg=None):
         if expect != actual: self._failures += failure()
 
@@ -54,6 +57,10 @@ class tester(entity):
 
     def assertCount(self, expect, actual, msg=None):
         if expect != len(actual): self._failures += failure()
+
+    def assertValid(self, ent):
+        if not ent.isvalid:
+            self._failures += failure(ent=ent)
 
     @property
     def failures(self):
@@ -82,9 +89,10 @@ class failures(entities):
     pass
 
 class failure(entity):
-    def __init__(self, cause=None, assert_=None):
+    def __init__(self, cause=None, assert_=None, ent=None):
         self._assert = assert_
         self.cause = cause
+        self.entity = ent
         if not cause:
             stack = inspect.stack()
             self._assert = stack[1][3]
@@ -109,5 +117,9 @@ class failure(entity):
             if hasattr(self,'_expect'):
                 r += "\nexpect: " + repr(self._expect)
                 r += "\nactual: " + repr(self._actual)
+
+            if self.entity:
+                for br in self.entity.brokenrules:
+                    r += "\n - " + str(br)
         return r
         
