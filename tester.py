@@ -28,7 +28,7 @@ class tester(entity):
         try: uuid.UUID(str(id), version=4)
         except ValueError: self._failures += failure()
 
-    def assertTrue(self, actual):
+    def assertTrue(self, actual, msg=None):
         if not actual: self._failures += failure()
 
     def assertPositive(self, actual):
@@ -102,11 +102,16 @@ class failure(entity):
                 self._expect = inspect.getargvalues(stack[1][0])[3]['expect']
             except KeyError:
                 pass
+
             try:
                 self._actual = inspect.getargvalues(stack[1][0])[3]['actual']
             except KeyError:
                 pass
 
+            try:
+                self._message = inspect.getargvalues(stack[1][0])[3]['msg']
+            except KeyError:
+                pass
     def __str__(self):
         if self.cause:
             r = "{}: {} in {}".format(self.cause.__class__.__name__,
@@ -117,6 +122,9 @@ class failure(entity):
             if hasattr(self,'_expect'):
                 r += "\nexpect: " + repr(self._expect)
                 r += "\nactual: " + repr(self._actual)
+
+            if hasattr(self, '_message') and self._message != None:
+                r += "\nmessage: " + self._message
 
             if self.entity:
                 for br in self.entity.brokenrules:
