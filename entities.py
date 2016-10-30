@@ -39,7 +39,7 @@ class entities(object):
     def getrandom(self):
         if self.isempty: return None
         ix = randint(0, self.ubound)
-        self[ix]
+        return self[ix], ix
 
     def where(self, fn):
         es = entities()
@@ -156,7 +156,7 @@ class entities(object):
         return ''
 
     def __setitem__(self, key, item):
-        self._list[key]=item
+        self._ls[key]=item
 
     def __getitem__(self, key):
         if key.__class__ == int:
