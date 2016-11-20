@@ -36,10 +36,13 @@ class entities(object):
         for t in self._list:
             yield t
 
-    def getrandom(self):
+    def getrandom(self, returnIndex=False):
         if self.isempty: return None
         ix = randint(0, self.ubound)
-        return self[ix], ix
+        if returnIndex:
+            return self[ix], ix
+        else:
+            return self[ix]
 
     def where(self, fn):
         es = entities()
