@@ -188,7 +188,10 @@ class entities(object):
 
     @property
     def brokenrules(self):
-        return brokenrules()
+        r = brokenrules()
+        for ent in self:
+            r += ent.brokenrules
+        return r
 
     @property
     def isvalid(self):
@@ -218,3 +221,14 @@ class entity():
     def isvalid(self):
         return self.brokenrules.isempty
 
+class brokenrules(entities):
+    pass
+
+class brokenrule(entity):
+    def __init__(self, msg):
+        self.message = msg
+
+    def __str__(self):
+        return self.message
+    
+    
