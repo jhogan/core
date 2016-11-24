@@ -31,6 +31,9 @@ class tester(entity):
     def assertTrue(self, actual, msg=None):
         if not actual: self._failures += failure()
 
+    def assertFalse(self, actual, msg=None):
+        if actual: self._failures += failure()
+
     def assertPositive(self, actual):
         if actual < 0: self._failures += failure()
 
