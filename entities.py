@@ -190,6 +190,9 @@ class entities(object):
     def        fifth(self):   return  self[4]
 
     @property
+    def        last(self):   return  self[-1]
+
+    @property
     def brokenrules(self):
         r = brokenrules()
         for ent in self:
