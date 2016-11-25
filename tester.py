@@ -65,6 +65,10 @@ class tester(entity):
         if not ent.isvalid:
             self._failures += failure(ent=ent)
 
+    def assertInValid(self, ent):
+        if ent.isvalid:
+            self._failures += failure(ent=ent)
+
     @property
     def failures(self):
         return self._failures
