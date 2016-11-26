@@ -230,6 +230,15 @@ class entity():
         th += t
         return th
 
+    def isin(self, es):
+        """Test if self is in entities object `es`. This is like the the `in`
+        operator (__contains__()) except it tests for object identity (with `is`) 
+        instead of object equality (`==` or __eq__()).
+        """
+        for e in es:
+            if self is e: return True
+        return False
+
     def __add__(self, t):
         return self.add(t)
 
