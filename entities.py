@@ -251,10 +251,10 @@ class entity():
         return self.brokenrules.isempty
 
 class brokenrules(entities):
-    def append(self, o):
+    def append(self, o, r=None):
         if isinstance(o, str):
             o = brokenrule(o)
-        super().append(o)
+        super().append(o, r)
 
 class brokenrule(entity):
     def __init__(self, msg):
