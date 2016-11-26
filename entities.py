@@ -200,7 +200,11 @@ class entities(object):
     def last(self): return self[-1]
 
     @property
-    def        last(self):   return  self[-1]
+    def top(self):
+        """ A synonym of entities.last appropriate when the entities collection
+        is being treated like a LIFO stack.  
+        """
+        return self.last
 
     @property
     def brokenrules(self):
