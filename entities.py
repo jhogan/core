@@ -182,15 +182,22 @@ class entities(object):
                 elif hasattr(e, 'name'):
                     if e.name == key: return e
     @property
-    def        first(self):   return  self[0]
+    def first(self): return self[0]
+
     @property
-    def        second(self):  return  self[1]
+    def second(self): return self[1]
+
     @property
-    def        third(self):   return  self[2]
+    def third(self): return self[2]
+
     @property
-    def        fourth(self):  return  self[3]
+    def fourth(self): return self[3]
+
     @property
-    def        fifth(self):   return  self[4]
+    def fifth(self): return self[4]
+
+    @property
+    def last(self): return self[-1]
 
     @property
     def        last(self):   return  self[-1]
