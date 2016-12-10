@@ -74,6 +74,15 @@ class entities(object):
         if self.isempty: return None
         return self.count - 1
 
+    def insert(self, ix, e):
+        self.insertBefore(ix, e)
+
+    def insertBefore(self, ix, e):
+        self._ls.insert(ix, e)
+
+    def insertAfter(self, ix, e):
+        self._ls.insert(ix + 1, e)
+
     def shift(self):
         return self._ls.pop(0)
 
