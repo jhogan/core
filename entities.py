@@ -178,12 +178,10 @@ class entities(object):
         self._ls[key]=item
 
     def __getitem__(self, key):
-        if key.__class__ == int:
+        if type(key) == int or type(key) == slice:
             return self._list[key]
 
-        keyisobj = (type(key) != str and
-                    type(key) != unicode)
-
+        keyisobj = type(key) != str
             
         for e in self._list:
             if keyisobj:
@@ -229,9 +227,6 @@ class entities(object):
     @property
     def isvalid(self):
         return self.brokenrules.isempty
-
-
-
 
 class entity():
     def __init__(self):
