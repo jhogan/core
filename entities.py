@@ -158,6 +158,10 @@ class entities(object):
         return self.count == 0
 
     @property
+    def hasone(self):
+        return self.count == 1
+
+    @property
     def ispopulated(self):
         return not self.isempty
 
