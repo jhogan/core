@@ -83,6 +83,14 @@ class entities(object):
     def insertAfter(self, ix, e):
         self._ls.insert(ix + 1, e)
 
+    def move(self, srcix, dstix):
+        # TODO: This is untested
+        if srcix == dstix:
+            raise Exception('Source and destination are the same: {}'.format((srcix, dstix)))
+
+        e = self.pop(srcix)
+        self.insert(dstix, e)
+
     def shift(self):
         return self._ls.pop(0)
 
