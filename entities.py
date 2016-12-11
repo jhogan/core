@@ -98,8 +98,9 @@ class entities(object):
         # TODO: Return entities object to indicate what was unshifted
         return self._ls.insert(0, t)
 
-    def pop(self):
-        return self._ls.pop()
+    def pop(self, ix=None):
+        if ix == None: return self._ls.pop()
+        return self._ls.pop(ix)
 
     def __lshift__(self, a):
         self.unshift(a)
