@@ -207,8 +207,12 @@ class entities(object):
     @property
     def first(self): return self[0]
 
+
     @property
     def second(self): return self[1]
+
+    @second.setter
+    def second(self, v): self[1] = v
 
     @property
     def third(self): return self[2]
