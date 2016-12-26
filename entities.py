@@ -204,9 +204,19 @@ class entities(object):
                     if e.id == key:   return e
                 elif hasattr(e, 'name'):
                     if e.name == key: return e
+
+    def getindex(self, e):
+        """ Return the firsnt index of e in the collection.
+
+        This is similar to list.index except here we use the `is` operator for
+        comarison instead of the `==` operator."""
+
+        for ix, e1 in enumerate(self):
+            if e is e1: return ix
+        raise ValueError("'{}' is not in the collection " + e)
+
     @property
     def first(self): return self[0]
-
 
     @property
     def second(self): return self[1]
