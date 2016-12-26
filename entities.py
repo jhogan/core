@@ -102,6 +102,9 @@ class entities(object):
         if ix == None: return self._ls.pop()
         return self._ls.pop(ix)
 
+    def push(self, e):
+        self += e
+
     def __lshift__(self, a):
         self.unshift(a)
 
