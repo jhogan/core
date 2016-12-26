@@ -117,6 +117,93 @@ class test_entities(tester):
         assert gods[0].name == 'Apollo'
         assert gods[1].name == 'Ares'
 
+    def it_determine_validity(self):
+        
+        class deities(entities):
+            pass
+
+        class deity(entity):
+            def __init__(self, name, gender):
+                self.name = name
+                self.gender = gender
+
+            def __str__(self):
+                return self.name
+
+        pantheon = deities()
+        zeus = deity('Zeus', 'male')
+
+        assert pantheon.isvalid 
+        assert pantheon.brokenrules.count == 0
+
+        assert zeus.isvalid 
+        assert zeus.brokenrules.count == 0
+
+        class deity(entity):
+            def __init__(self, name, gender):
+                self.name = name
+                self.gender = gender
+
+            @property
+            def brokenrules(self):
+                brs = brokenrules()
+                if self.gender not in ('female', 'male'):
+                    brs += '{} is an invalid gender.'.format(self.gender)
+
+                if type(self.name) != str:
+                    brs += 'Deity names must be strings.'
+
+                return brs
+
+            def __str__(self):
+                return self.name
+
+        zeus = deity(42, None)
+
+        assert not zeus.isvalid
+
+        assert str(zeus.brokenrules) == 'None is an invalid gender.\nDeity names must be strings.'
+
+        pantheon = deities()
+        pantheon += zeus
+
+        assert not pantheon.isvalid
+        assert str(pantheon.brokenrules) == 'None is an invalid gender.\nDeity names must be strings.'
+
+        class deity(entity):
+            def __init__(self, name, gender):
+                self.name = name
+                self.gender = gender
+                self.children = deities()
+
+            @property
+            def brokenrules(self):
+                brs = brokenrules()
+                if self.gender not in ('female', 'male'):
+                    brs += '{} is an invalid gender for "{}".'.format(self.gender, self.name)
+
+                if type(self.name) != str:
+                    brs += 'Deity names must be strings.'
+
+                brs += self.children.brokenrules
+
+                return brs
+
+            def __str__(self):
+                return self.name
+
+        zeus = deity('Zeus', 'male')
+        zeus.children += deity('Aeacus', 'm')
+        zeus.children += deity('Angelos', 'female')
+        zeus.children += deity('Aphrodite', 'female')
+        zeus.children += deity('Apollo', 'male')
+        zeus.children += deity('Ares', 'male')
+        zeus.children += deity('Artemis', 'f')
+        zeus.children += deity('Athena', 'female')
+
+        assert not zeus.isvalid
+        assert str(zeus.brokenrules) == 'm is an invalid gender for "Aeacus".\nf is an invalid gender for "Artemis".'
+
 
 
 
