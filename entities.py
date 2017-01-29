@@ -195,17 +195,11 @@ class entities(object):
         if type(key) == int or type(key) == slice:
             return self._list[key]
 
-        keyisobj = type(key) != str
-            
         for e in self._list:
-            if keyisobj:
-                if e is key:
-                    return e
-            else:
-                if hasattr(e, 'id'):
-                    if e.id == key:   return e
-                elif hasattr(e, 'name'):
-                    if e.name == key: return e
+            if hasattr(e, 'id'):
+                if e.id == key:   return e
+            elif hasattr(e, 'name'):
+                if e.name == key: return e
 
     def getindex(self, e):
         """ Return the firsnt index of e in the collection.
