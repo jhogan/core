@@ -297,4 +297,16 @@ class brokenrule(entity):
     def __str__(self):
         return self.message
     
-    
+class event(entities):
+    def __call__(self, src, e):
+        for callable in self:
+            callable(src, e)
+
+    def append(self, fn):
+        if not callable(fn):
+            raise ValueError('Event must be callable')
+        self._list.append(fn)
+
+class eventargs(entity):
+    pass
+
