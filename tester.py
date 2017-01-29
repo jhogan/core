@@ -34,6 +34,9 @@ class tester(entity):
     def assertFalse(self, actual, msg=None):
         if actual: self._failures += failure()
 
+    def assertFail(self, msg=None):
+        self._failures += failure()
+
     def assertPositive(self, actual):
         if actual < 0: self._failures += failure()
 
