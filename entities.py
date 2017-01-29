@@ -24,7 +24,6 @@ SOFTWARE.
 """
 from pdb import set_trace; B=set_trace
 from random import randint
-
 class entities(object):
     def __init__(self):
         self.clear()
@@ -49,6 +48,9 @@ class entities(object):
         for e in self:
             if fn(e): es += e
         return es
+
+    def sort(self, key):
+        self._ls.sort(key=key)
 
     def remove(self, e):
         if callable(e):
