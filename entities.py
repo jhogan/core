@@ -235,14 +235,6 @@ class entities(object):
     @last.setter
     def last(self, v): self[-1] = v
 
-
-    @property
-    def top(self):
-        """ A synonym of entities.last appropriate when the entities collection
-        is being treated like a LIFO stack.  
-        """
-        return self.last
-
     @property
     def brokenrules(self):
         r = brokenrules()
