@@ -73,6 +73,9 @@ class entities(object):
             r += e
         return r
 
+    def reverse(self):
+        self._ls.reverse()
+
     @property
     def ubound(self):
         if self.isempty: return None
