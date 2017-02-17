@@ -25,8 +25,10 @@ SOFTWARE.
 from pdb import set_trace; B=set_trace
 from random import randint
 class entities(object):
-    def __init__(self):
+    def __init__(self, initial=None):
         self.clear()
+        if initial != None:
+            self.append(initial)
 
     def clear(self):
         self._ls=[]
