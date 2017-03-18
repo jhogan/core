@@ -240,6 +240,9 @@ class entities(object):
     def fifth(self): return self[4]
 
     @property
+    def sixth(self): return self[5]
+
+    @property
     def last(self): return self[-1]
 
     @last.setter
