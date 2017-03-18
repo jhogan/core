@@ -45,7 +45,12 @@ class entities(object):
         else:
             return self[ix]
 
-    def where(self, fn):
+    def where(self, qry):
+        if type(qry) == type:
+            cls = self.__class__
+            return cls([x for x in self if type(x) == qry])
+
+        fn = qry
         es = entities()
         for e in self:
             if fn(e): es += e
