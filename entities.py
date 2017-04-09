@@ -221,29 +221,33 @@ class entities(object):
             if e is e1: return ix
         raise ValueError("'{}' is not in the collection " + e)
 
-    @property
-    def first(self): return self[0]
+    def _getbyindex(self, ix):
+        try: return self[ix]
+        except IndexError: return None
 
     @property
-    def second(self): return self[1]
+    def first(self): return self._getbyindex(0)
+
+    @property
+    def second(self): return self._getbyindex(1)
 
     @second.setter
     def second(self, v): self[1] = v
 
     @property
-    def third(self): return self[2]
+    def third(self): return self._getbyindex(2)
 
     @property
-    def fourth(self): return self[3]
+    def fourth(self): return self._getbyindex(3)
 
     @property
-    def fifth(self): return self[4]
+    def fifth(self): return self._getbyindex(4)
 
     @property
-    def sixth(self): return self[5]
+    def sixth(self): return self._getbyindex(5)
 
     @property
-    def last(self): return self[-1]
+    def last(self): return self._getbyindex(-1)
 
     @last.setter
     def last(self, v): self[-1] = v
