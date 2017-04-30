@@ -67,7 +67,7 @@ class row(entity):
             yield f
 
 class fields(entities):
-    def __init__(self, row):
+    def __init__(self, row=None):
         self.row = row
 
     def append(self, f):
