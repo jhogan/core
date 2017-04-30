@@ -28,6 +28,27 @@ class table(entity):
     def __init__(self):
         self.rows = rows(self)
 
+    def __iter__(self):
+        for r in self.rows:
+            yield r
+
+    def count(self, fn):
+        return self.where(fn).count
+
+    def where(self, qry):
+        if type(qry) == type:
+            def fn(x): return type(x) == qry
+        elif type(qry) == callable:
+            fn = qry
+                
+
+        fs = fields()
+        for r in self:
+            for f in r:
+                if fn(f.value):
+                    fs += f
+        return fs
+
 class rows(entities):
     def __init__(self, tbl):
         self.table = tbl
