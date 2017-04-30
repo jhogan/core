@@ -62,6 +62,9 @@ class row(entity):
     def __init__(self):
         self.fields = fields(self)
 
+    def __iter__(self):
+        for f in self.fields:
+            yield f
 
 class fields(entities):
     def __init__(self, row):
