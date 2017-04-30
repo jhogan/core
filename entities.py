@@ -123,7 +123,7 @@ class entities(object):
         if not r: r = []
         if isinstance(obj, entity):
             t = obj
-        elif isinstance(obj, entities):
+        elif isinstance(obj, entities) or hasattr(obj, '__iter__'):
             for t in obj:
                 if uniq:
                     for t1 in self:
