@@ -70,7 +70,6 @@ class entities(object):
                 if e1 is e2:
                     del self._list[i]
                     break
-                
 
     def reversed(self):
         r = type(self)()
