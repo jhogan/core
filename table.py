@@ -75,9 +75,14 @@ class fields(entities):
         super().append(f)
         return f 
 
+    @property
+    def values(self):
+        return [x.value for x in self]
+
 class field(entity):
     def __init__(self, v):
         self.value = v
 
     def __str__(self):
         return str(self.value)
+
