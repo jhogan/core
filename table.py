@@ -32,14 +32,31 @@ class table(entity):
         for r in self.rows:
             yield r
 
+    @property
+    def columns(self):
+        cs = columns()
+
+        if not self.rows.count:
+            return cs
+
+        for r in self.rows.first:
+            cs += column()
+
+        return cs
+        
+        
     def count(self, fn):
         return self.where(fn).count
 
-    def where(self, qry):
-        if type(qry) == type:
-            def fn(x): return type(x) == qry
-        elif type(qry) == callable:
-            fn = qry
+    def where(self, v):
+        if type(v) == type:
+            def fn(x): 
+                return type(x) == v
+        elif type(v) == callable:
+            fn = v
+        else:
+            def fn(x):
+                return x is v
                 
 
         fs = fields()
@@ -49,12 +66,77 @@ class table(entity):
                     fs += f
         return fs
 
+    def slice(self, center=None, radius=None):
+        if radius == None:
+            raise NotImplementedError("'radius' must be provided")
+        else:
+            if type(radius) != int:
+                raise ValueError("'radius' must be an integer")
+            elif center == None or type(center) != field:
+                raise ValueError("'center' must be a field")
+
+        tbl = table()
+
+        # Get top-most, left-most field of slice
+        top = center.getabove(radius)
+        leftmost = f = top.getleft(radius)
+
+        r = tbl.newrow()
+        while True: 
+            r.fields += f
+            if center.index - f.index <= radius:
+                f = f.left
+            else:
+                r = tbl.newrow()
+                leftmost = f = leftmost.below
+                if not f or center.row.index - f.row.index > radius:
+                    return tbl
+
+        return tbl
+
+    def __str__(self):
+        def P(s): print(s, end='')
+
+        maxes = self.columns.maxlengths
+
+        for i, r in enumerate(self):
+            for j, f in enumerate(r):
+                if j == 0:
+                    P('+', )
+                P(('-' * maxes[j]) + '+')
+
+            for j, f in enumerate(r):
+                if j == 0:
+                    P('|')
+                P(str(f).rjust(maxes[j]) + '|')
+                
+class columns(entities):
+    
+    def maxlengths(self):
+        return [c.maxlength for c in self]
+
+class column(entity):
+    
+    def __iter__(self):
+        for f in self.fields:
+            yield f
+
+    @property
+    def maxlength(self):
+        for f in self:
+            m = max(m, len(str(f)))
+        return m
+        
 class rows(entities):
     def __init__(self, tbl):
         self.table = tbl
 
+    @property
+    def index(self):
+        return self.table.rows.getindex(self)
+
     def append(self, r):
-        r.table = self.table
+        r.rows = self
         super().append(r)
         return r 
 
@@ -62,16 +144,30 @@ class row(entity):
     def __init__(self):
         self.fields = fields(self)
 
+    @property
+    def index(self):
+        return self.rows.getindex(self)
+
+    @property
+    def table(self):
+        return self.rows.table
+
     def __iter__(self):
         for f in self.fields:
             yield f
+
+    def below(self):
+        return self.rows(self.index - 1)
+
+    def above(self):
+        return self.rows(self.index + 1)
 
 class fields(entities):
     def __init__(self, row=None):
         self.row = row
 
     def append(self, f):
-        f.table = self.row
+        f.fields = self
         super().append(f)
         return f 
 
@@ -82,6 +178,58 @@ class fields(entities):
 class field(entity):
     def __init__(self, v):
         self.value = v
+
+    @property
+    def column(self):
+        return column(self.index)
+
+    @property
+    def index(self):
+        return self.fields.getindex(self)
+
+    @property
+    def row(self):
+        return self.fields.row
+
+    @property
+    def above(self):
+        return self.row.above.fields(self.index)
+
+    @property
+    def below(self):
+        return self.row.below.fields(self.index)
+
+    @property
+    def left(self):
+        return self.row.fields(self.index - 1)
+
+    @property
+    def right(self):
+        return self.row.fields(self.index + 1)
+
+    def getabove(self, number):
+        return self._getneighbor('above', number)
+
+    def getbelow(self, number):
+        return self._getneighbor('below', number)
+
+    def getleft(self, number):
+        return self._getneighbor('left', number)
+
+    def getright(self, number):
+        return self._getneighbor('right', number)
+
+    def _getneighbor(self, direction, number):
+        f = self
+        for i in range(number):
+            neighbor = getattr(f, direction)()
+            if not neighbor:
+                return f
+            f = neighbor
+
+    def getradialdistance(self, f):
+        return f.row - self.row
+    
 
     def __str__(self):
         return str(self.value)
