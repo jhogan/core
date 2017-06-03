@@ -64,15 +64,14 @@ class table(entity):
         else:
             def fn(x):
                 return x is v
-                
 
         fs = fields()
         for r in self:
             for f in r:
                 if fn(f.value):
-                    fs += f
+                    fs.append(f, assignCollection=False)
         return fs
-
+    
     def slice(self, center=None, radius=None):
         if radius == None:
             raise NotImplementedError("'radius' must be provided")
