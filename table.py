@@ -197,6 +197,9 @@ class field(entity):
     def __init__(self, v):
         self.value = v
 
+    def clone(self):
+        return field(self.value)
+
     @property
     def column(self):
         return column(self.index)
