@@ -209,16 +209,30 @@ class field(entity):
         return self.fields.getindex(self)
 
     @property
+    def table(self):
+        return self.fields.row.table
+
+    @property
     def row(self):
         return self.fields.row
 
     @property
     def above(self):
-        return self.row.above.fields(self.index)
+        r = self.row.above
+
+        if not r:
+            return None
+
+        return r.fields(self.index)
 
     @property
     def below(self):
-        return self.row.below.fields(self.index)
+        r = self.row.below
+
+        if not r:
+            return None
+
+        return r.fields(self.index)
 
     @property
     def left(self):
@@ -228,30 +242,55 @@ class field(entity):
     def right(self):
         return self.row.fields(self.index + 1)
 
-    def getabove(self, number):
-        return self._getneighbor('above', number)
+    def getabove(self, number, closest=False):
+        return self._getneighbor('above', number, closest)
 
-    def getbelow(self, number):
-        return self._getneighbor('below', number)
+    def getbelow(self, number, closest=False):
+        return self._getneighbor('below', number, closest)
 
-    def getleft(self, number):
-        return self._getneighbor('left', number)
+    def getleft(self, number, closest=False):
+        return self._getneighbor('left', number, closest)
 
-    def getright(self, number):
-        return self._getneighbor('right', number)
+    def getright(self, number, closest=False):
+        return self._getneighbor('right', number, closest)
 
-    def _getneighbor(self, direction, number):
+    def _getneighbor(self, direction, number, closest):
+        """
+        Get a neigboring field.
+
+        :param str direction: The direction of the neigbor
+        
+        :param int number: The number of cells to skip in the given direction to get to
+        the desired neigbor
+
+        :param bool closest: If True, return the closest field that can be found given
+        the direction and number. If False, return None if a neigbor can't be
+        found with those conditions.
+        """
+
         f = self
         for i in range(number):
-            neighbor = getattr(f, direction)()
+            neighbor = getattr(f, direction)
             if not neighbor:
-                return f
+                if closest:
+                    return f
+                return None
             f = neighbor
 
     def getradialdistance(self, f):
         return f.row - self.row
-    
 
-    def __str__(self):
+    def __str__(self, table=False):
+        if table:
+            return self.table.__str__(self)
         return str(self.value)
 
+    @property
+    def pt(self):
+        """ 
+        Print table and highligh this field.
+
+        This is a proprety with a very short name to make it easier for
+        debugging.
+        """
+        print(self.__str__(table=True))
