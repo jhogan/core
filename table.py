@@ -56,6 +56,9 @@ class table(entity):
         return self.where(fn).count
 
     def where(self, v):
+        """
+        Return a fields collection where the field in the table matches v.
+        """
         if type(v) == type:
             def fn(x): 
                 return type(x) == v
@@ -81,8 +84,6 @@ class table(entity):
             elif center == None or type(center) != field:
                 raise ValueError("'center' must be a field")
 
-        print(center.__str__(True))
-
         # Return a <table> object. If <table> has been subclassed, return the
         # subclassed version of the table.
         tbl = type(self)()
@@ -100,7 +101,6 @@ class table(entity):
             else:
                 f = leftmost = leftmost.below
                 if not f or f.row.index - center.row.index  > radius:
-                    B()
                     return tbl
                 else:
                     r = tbl.newrow()

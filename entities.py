@@ -234,6 +234,7 @@ class entities(object):
         raise ValueError("'{}' is not in the collection " + e)
 
     def _getbyindex(self, ix):
+        # TODO This can be replace with a call to enttities.__call__
         try: return self[ix]
         except IndexError: return None
 
