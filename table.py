@@ -131,15 +131,16 @@ class columns(entities):
 
 class column(entity):
     
+    def __init__(self):
+        self.fields = fields()
+
     def __iter__(self):
         for f in self.fields:
             yield f
 
     @property
     def maxlength(self):
-        for f in self:
-            m = max(m, len(str(f)))
-        return m
+        return max(self, lambda f: len(str(f)))
         
 class rows(entities):
     def __init__(self, tbl):
