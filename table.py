@@ -32,15 +32,22 @@ class table(entity):
         for r in self.rows:
             yield r
 
+    def newrow(self):
+        r = row()
+        self.rows += r
+        return r
+
     @property
     def columns(self):
         cs = columns()
 
-        if not self.rows.count:
-            return cs
-
-        for r in self.rows.first:
-            cs += column()
+        for r in self:
+            for i, f in enumerate(r):
+                c = cs(i)
+                if not c:
+                    c = column()
+                    cs += c
+                c.fields += f
 
         return cs
         
