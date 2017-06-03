@@ -171,18 +171,21 @@ class row(entity):
         for f in self.fields:
             yield f
 
-    def below(self):
+    @property
+    def above(self):
         return self.rows(self.index - 1)
 
-    def above(self):
+    @property
+    def below(self):
         return self.rows(self.index + 1)
 
 class fields(entities):
     def __init__(self, row=None):
         self.row = row
 
-    def append(self, f):
-        f.fields = self
+    def append(self, f, assignCollection=True):
+        if assignCollection:
+            f.fields = self
         super().append(f)
         return f 
 
