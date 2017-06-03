@@ -81,26 +81,34 @@ class table(entity):
             elif center == None or type(center) != field:
                 raise ValueError("'center' must be a field")
 
-        tbl = table()
+        print(center.__str__(True))
+
+        # Return a <table> object. If <table> has been subclassed, return the
+        # subclassed version of the table.
+        tbl = type(self)()
 
         # Get top-most, left-most field of slice
-        top = center.getabove(radius)
-        leftmost = f = top.getleft(radius)
+        top = center.getabove(radius, closest=True)
+        leftmost = top.getleft(radius, closest=True)
 
+        f = leftmost
         r = tbl.newrow()
         while True: 
-            r.fields += f
-            if center.index - f.index <= radius:
-                f = f.left
+            r.fields += f.clone()
+            if f.index - center.index <= radius:
+                f = f.right
             else:
-                r = tbl.newrow()
-                leftmost = f = leftmost.below
-                if not f or center.row.index - f.row.index > radius:
+                f = leftmost = leftmost.below
+                if not f or f.row.index - center.row.index  > radius:
+                    B()
                     return tbl
+                else:
+                    r = tbl.newrow()
 
         return tbl
 
     def __str__(self):
+        # Untested
         def P(s): print(s, end='')
 
         maxes = self.columns.maxlengths
