@@ -33,6 +33,19 @@ class entities(object):
     def clear(self):
         self._ls=[]
 
+    def __call__(self, ix):
+        """
+        Allow collections to be called providing similar functionality to the
+        way they can be indexed. The difference is that None is returned if ix
+        is not a valid index. Only positve indexes are considered valid.
+        """
+        try: 
+            if ix < 0:
+                raise IndexError
+            return self[ix]
+        except IndexError: 
+            return None
+
     def __iter__(self):
         for t in self._list:
             yield t
