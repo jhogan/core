@@ -95,8 +95,8 @@ class table(entity):
         f = leftmost
         r = tbl.newrow()
         while True: 
-            r.fields += f.clone()
-            if f.index - center.index <= radius:
+            if f and f.index - center.index <= radius:
+                r.fields += f.clone()
                 f = f.right
             else:
                 f = leftmost = leftmost.below
@@ -272,10 +272,9 @@ class field(entity):
         for i in range(number):
             neighbor = getattr(f, direction)
             if not neighbor:
-                if closest:
-                    return f
-                return None
+                return f if closest else None
             f = neighbor
+        return neighbor
 
     def getradialdistance(self, f):
         return f.row - self.row
