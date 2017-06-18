@@ -260,12 +260,12 @@ class field(entity):
 
         :param str direction: The direction of the neigbor
         
-        :param int number: The number of cells to skip in the given direction to get to
-        the desired neigbor
+        :param int number: The number of cells to skip in the given
+        direction to get to the desired neigbor
 
-        :param bool closest: If True, return the closest field that can be found given
-        the direction and number. If False, return None if a neigbor can't be
-        found with those conditions.
+        :param bool closest: If True, return the closest field that can be
+        found given the direction and number. If False, return None if a
+        neigbor can't be found with those conditions.
         """
 
         f = self
