@@ -243,18 +243,18 @@ class field(entity):
         return self.row.fields(self.index + 1)
 
     def getabove(self, number, closest=False):
-        return self._getneighbor('above', number, closest)
+        return self.getneighbor('above', number, closest)
 
     def getbelow(self, number, closest=False):
-        return self._getneighbor('below', number, closest)
+        return self.getneighbor('below', number, closest)
 
     def getleft(self, number, closest=False):
-        return self._getneighbor('left', number, closest)
+        return self.getneighbor('left', number, closest)
 
     def getright(self, number, closest=False):
-        return self._getneighbor('right', number, closest)
+        return self.getneighbor('right', number, closest)
 
-    def _getneighbor(self, direction, number, closest):
+    def getneighbor(self, direction, number, closest):
         """
         Get a neigboring field.
 
