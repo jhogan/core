@@ -72,6 +72,13 @@ class entities(object):
     def sort(self, key):
         self._ls.sort(key=key)
 
+    def sorted(self, key):
+        es = type(self)()
+        ls = sorted(self._ls, key=key)
+        for e in ls:
+            es += e
+        return es
+
     def remove(self, e):
         if callable(e):
             rms = self.where(e)
