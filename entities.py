@@ -86,7 +86,9 @@ class entities(object):
         return es
 
     def remove(self, e):
-        if callable(e):
+        if isinstance(e, entities):
+            rms = e
+        elif callable(e):
             rms = self.where(e)
         else:
             rms = [e]
