@@ -79,6 +79,12 @@ class entities(object):
             es += e
         return es
 
+    def tail(self, number):
+        es = type(self)()
+        for e in self[-number:]:
+            es += e
+        return es
+
     def remove(self, e):
         if callable(e):
             rms = self.where(e)
