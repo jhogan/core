@@ -93,9 +93,9 @@ class entities(object):
         else:
             rms = [e]
 
-        for i, e1 in enumerate(self):
-            for e2 in rms:
-                if e1 is e2:
+        for i in range(self.ubound, -1, -1):
+            for rm in rms:
+                if rm is self[i]:
                     del self._list[i]
                     break
 
