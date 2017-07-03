@@ -68,7 +68,7 @@ class entities(object):
             return cls([x for x in self if type(x) == qry])
 
         fn = qry
-        es = entities()
+        es = type(self)()
         for e in self:
             if fn(e): es += e
         return es
