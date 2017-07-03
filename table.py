@@ -74,6 +74,12 @@ class table(entity):
                 if fn(f.value):
                     fs.append(f, assignCollection=False)
         return fs
+
+    def remove(self, values):
+        for r in self:
+            for f in r:
+                if any(v is f.value for v in values):
+                    f.value = None
     
     def slice(self, center=None, radius=None):
         if radius == None:
