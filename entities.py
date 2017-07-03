@@ -150,7 +150,7 @@ class entities(object):
 
     def __lshift__(self, a):
         self.unshift(a)
-
+    
     def append(self, obj, uniq=False, r=None):
         if not r: r = []
         if isinstance(obj, entity):

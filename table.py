@@ -51,7 +51,6 @@ class table(entity):
 
         return cs
         
-        
     def count(self, fn):
         return self.where(fn).count
 
