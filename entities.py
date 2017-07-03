@@ -195,6 +195,13 @@ class entities(object):
     def __add__(self, t):
         return self.add(t)
 
+    def __sub__(self, es):
+        r = type(self)()
+        for e in self:
+            if not e.isin(es):
+                r += e
+        return r
+        
     @property
     def _list(self):
         if not hasattr(self, '_ls'):
