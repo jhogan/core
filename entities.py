@@ -23,7 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 from pdb import set_trace; B=set_trace
-from random import randint
+from random import randint, sample
 class entities(object):
     def __init__(self, initial=None):
         self.clear()
@@ -57,6 +57,10 @@ class entities(object):
             return self[ix], ix
         else:
             return self[ix]
+
+    def getrandomized(self):
+        """ Return a randomized version of self."""
+        return type(self)(sample(self._ls, self.count))
 
     def where(self, qry):
         if type(qry) == type:
