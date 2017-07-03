@@ -71,7 +71,7 @@ class table(entity):
         for r in self:
             for f in r:
                 if fn(f.value):
-                    fs.append(f, assignCollection=False)
+                    fs.append(f, assigncollection=False)
         return fs
 
     def remove(self, values):
@@ -185,14 +185,19 @@ class row(entity):
         return self.rows(self.index + 1)
 
 class fields(entities):
-    def __init__(self, row=None):
-        self.row = row
+    def __init__(self, o=None):
+        if type(o) == row:
+            return
 
-    def append(self, f, assignCollection=True):
-        if assignCollection:
-            f.fields = self
-        super().append(f)
-        return f 
+        super().__init__(o)
+
+    def append(self, o, r=None, assigncollection=True):
+        # o will usually be a field object. However, it could be
+        # anything supported by super().append() such as an iterable.
+        if type(o) == field:
+            if assigncollection:
+                o.fields = self
+        return super().append(o)
 
     @property
     def values(self):
