@@ -25,8 +25,16 @@ SOFTWARE.
 from entities import *
 
 class table(entity):
-    def __init__(self):
+    def __init__(self, x=None, y=None, initval=None):
         self.rows = rows(self)
+
+        # If we have x, we can initialize the table using x, y and initval
+        if x != None:
+            y = x if y == None else y
+            for _ in range(x):
+                r = self.newrow()
+                for _ in range(y):
+                    r.newfield(initval)
 
     def __iter__(self):
         for r in self.rows:
