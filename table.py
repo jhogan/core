@@ -260,6 +260,26 @@ class field(entity):
     def right(self):
         return self.row.fields(self.index + 1)
 
+    @property
+    def aboveleft(self):
+        f = self.above
+        return f.left if f else None
+
+    @property
+    def belowleft(self):
+        f = self.below
+        return f.left if f else None
+
+    @property
+    def aboveright(self):
+        f = self.above
+        return f.right if f else None
+
+    @property
+    def belowright(self):
+        f = self.below
+        return f.right if f else None
+
     def getabove(self, number, closest=False):
         return self.getneighbor('above', number, closest)
 
@@ -271,6 +291,19 @@ class field(entity):
 
     def getright(self, number, closest=False):
         return self.getneighbor('right', number, closest)
+
+    def getaboveleft(self, number, closest=False):
+        return self.getneighbor('aboveleft', number, closest)
+
+    def getbelowleft(self, number, closest=False):
+        return self.getneighbor('belowleft', number, closest)
+
+    def getaboveright(self, number, closest=False):
+        return self.getneighbor('aboveright', number, closest)
+
+    def getbelowright(self, number, closest=False):
+        return self.getneighbor('belowright', number, closest)
+
 
     def getneighbor(self, direction, number, closest):
         """
