@@ -187,9 +187,17 @@ class row(entity):
 class fields(entities):
     def __init__(self, o=None):
         if type(o) == row:
-            return
+            self.row = o
+        else:
+            super().__init__(o)
 
-        super().__init__(o)
+    def getrandomized(self):
+        """ Return a randomized version of self."""
+        fs = type(self)()
+        ls = sample(self._ls, self.count)
+        for f in ls:
+            fs.append(f, assigncollection=False)
+        return fs
 
     def append(self, o, r=None, assigncollection=True):
         # o will usually be a field object. However, it could be
