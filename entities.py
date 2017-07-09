@@ -103,6 +103,10 @@ class entities(object):
                     del self._list[i]
                     break
 
+    def __isub__(self, e):
+        self.remove(e)
+        return self
+
     def reversed(self):
         r = type(self)()
         for e in reversed(self._ls):
