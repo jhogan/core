@@ -267,6 +267,17 @@ class fields(entities):
         if type(o) == field:
             if assigncollection:
                 o.fields = self
+
+            # If this field collection is associated with table, raise the
+            # onfieldappend event on the table object.
+
+            # TODO Ideally we should raise an onfieldappend event on the `row`
+            # object where it would propagate to the `rows` objects then the
+            # `table` object.
+            if self.table:
+                eargs = appendeventargs(o)
+                self.table.onfieldappend(self, eargs)
+
         return super().append(o)
 
     @property
