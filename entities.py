@@ -360,3 +360,44 @@ class event(entities):
 class eventargs(entity):
     pass
 
+class valuechangeeventargs(eventargs):
+    def __init__(self, e, oldval, newval):
+        self.entity = e
+        self.oldval = oldval
+        self.newval = newval
+
+    @property
+    def values(self):
+        return self.oldval, self.newval
+
+class appendeventargs(eventargs):
+    def __init__(self, e):
+        self.entity = e
+
+class index(entity):
+    def __init__(self):
+        self._ix = {}
+
+    def append(self, val, e):
+        ix     = self._ix
+        try:
+            d = ix[id(val)]
+        except KeyError:
+            ix[id(val)] = d = {}
+
+        d[id(e)] = e
+
+    def remove(self, val, e):
+        ix     = self._ix
+        del ix[id(val)][id(e)]
+        if not len(ix[id(val)]):
+            del ix[id(val)]
+
+    def __getitem__(self, val):
+        return self._ix[id(val)]
+
+    def __call__(self, val):
+        try:
+            return self[val].values()
+        except KeyError:
+            return []
