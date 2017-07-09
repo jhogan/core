@@ -94,6 +94,8 @@ class entities(object):
             rms = e
         elif callable(e):
             rms = self.where(e)
+        elif type(e) == int:
+            del self._ls[e]
         else:
             rms = [e]
 
