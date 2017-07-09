@@ -250,6 +250,7 @@ class fields(entities):
         if type(o) == row:
             self.row = o
         else:
+            self.row = None
             super().__init__(o)
 
     def getrandomized(self):
