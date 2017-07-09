@@ -281,6 +281,10 @@ class fields(entities):
         return super().append(o)
 
     @property
+    def table(self):
+        return self.row.table if self.row else None
+
+    @property
     def values(self):
         return [x.value for x in self]
 
@@ -312,7 +316,7 @@ class field(entity):
 
     @property
     def table(self):
-        return self.fields.row.table
+        return self.fields.row.table if self.fields.row else None
 
     @property
     def row(self):
