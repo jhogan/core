@@ -26,6 +26,14 @@ from entities import *
 
 class table(entity):
     def __init__(self, x=None, y=None, initval=None):
+        self.onfieldappend = event()
+        self.onfieldchange = event()
+
+        self.onfieldappend += self.self_onfieldappend
+        self.onfieldchange += self.self_onfieldchange
+
+        self.fieldvalueindex = index()
+        self.fieldtypeindex = index()
         self.rows = rows(self)
 
         # If we have x, we can initialize the table using x, y and initval
@@ -35,6 +43,22 @@ class table(entity):
                 r = self.newrow()
                 for _ in range(y):
                     r.newfield(initval)
+
+    def self_onfieldappend(self, src, eargs):
+        f = eargs.entity
+        self.fieldvalueindex.append(f.value, f)
+        self.fieldtypeindex.append(type(f.value), f)
+
+    def self_onfieldchange(self, src, eargs):
+        f = eargs.entity
+        oldval, newval = eargs.values
+
+        self.fieldvalueindex.remove(oldval, f)
+        self.fieldvalueindex.append(newval, f)
+
+        self.fieldtypeindex.remove(type(oldval), f)
+        self.fieldtypeindex.append(type(newval), f)
+
 
     def __iter__(self):
         for r in self.rows:
