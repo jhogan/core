@@ -86,24 +86,41 @@ class table(entity):
     def count(self, fn):
         return self.where(fn).count
 
-    def where(self, v):
+    def where(self, v, limit=None):
         """
-        Return a fields collection where the field in the table matches v.
+        Return a fields collection where each field in the table matches v.
         """
         if type(v) == type:
-            def fn(x): 
-                return type(x) == v
+            # If v is a type object, search the type index
+            ls = self.fieldtypeindex(v)
         elif type(v) == callable:
-            fn = v
+            
+            # If v is a callable, a scan is necessary
+            for r in self:
+                for f in r:
+                    if fn(f.value):
+                        ls.append(f)
+                        if limit != None and len(ls) >= limit:
+                            break 
+                else:
+                    continue
+                break
         else:
-            def fn(x):
-                return x is v
+            # If v is an arbitrary value, use the value index.
+            ls = self.fieldvalueindex(v)
 
+        # Create and return a fields collection based on ls.
+
+        # TODO This should be done in one line:
+        #    return fields(ls)
+        # However, field.append's interface is incorrect and the
+        # assigncollection parameter default's to True so that the row
+        # property of the fields gets set to None
         fs = fields()
-        for r in self:
-            for f in r:
-                if fn(f.value):
-                    fs.append(f, assigncollection=False)
+        for i, f in enumerate(ls):
+            if limit != None and i == limit:
+                break
+            fs.append(f, assigncollection=False)
         return fs
 
     def remove(self, values):
