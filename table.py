@@ -286,7 +286,18 @@ class fields(entities):
 
 class field(entity):
     def __init__(self, v):
-        self.value = v
+        self._v = v
+
+    @property
+    def value(self):
+        return self._v
+
+    @value.setter
+    def value(self, v):
+        if v != self.value:
+            eargs = valuechangeeventargs(self, self.value, v)
+            self.table.onfieldchange(self, eargs)
+            self._v = v
 
     def clone(self):
         return field(self.value)
