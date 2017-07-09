@@ -83,8 +83,8 @@ class table(entity):
 
         return cs
         
-    def count(self, fn):
-        return self.where(fn).count
+    def count(self, o):
+        return self.where(o).count
 
     def where(self, v, limit=None):
         """
@@ -208,6 +208,7 @@ class rows(entities):
         r.rows = self
         super().append(r)
         return r 
+
 
 class row(entity):
     def __init__(self):
