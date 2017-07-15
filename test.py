@@ -24,6 +24,24 @@ SOFTWARE.
 """
 from tester import *
 
+class knights(entities):
+    pass
+
+class knight(entity):
+    def __init__(self, name):
+        self.name = name
+
+class philosophers(entities):
+    pass
+
+class philosopher(entity):
+    def __init__(self, name):
+        self.name = name
+
+class singer(entity):
+    def __init__(self, name):
+        self.name = name
+
 class test_entities(tester):
     def it_instantiates(self):
 
@@ -123,6 +141,96 @@ class test_entities(tester):
 
         if not (initord and randord):
             self.assertFail('Failed getting random entities')
+
+    def it_calls_where(self):
+        """ Where queries the entities collection."""
+
+
+        n = philosopher('neitzsche')
+        s = philosopher('schopenhaurer')
+        sj = singer('salena jones')
+        bb = singer('burt bacharach')
+
+        ps1 = philosophers([n, s, sj, bb])
+
+        # Results of query should return the one entry in 'ps1' where
+        # the type is 'singer' (not 'philosopher')
+        ps2 = ps1.where(singer)
+        self.assertEq(2, ps2.count)
+        self.assertEq(philosophers, type(ps2))
+        self.assertIs(sj, ps2.first)
+        self.assertIs(bb, ps2.second)
+
+        # Test where() using a callable.  Get all the "philosophers" who have
+        # 's' in their names. 
+        for i in range(2):
+            if i == 0:
+                # On the first go, use a lambda
+                fn = lambda e: 's' in e.name
+            else:
+                # On the second go, use a function. We just want to make sure 
+                # where() doesn't discriminate based on callabel type
+                def fn(e):
+                    return 's' in e.name
+            ps2 = ps1.where(fn)
+            self.assertEq(3, ps2.count)
+            self.assertEq(philosophers, type(ps2))
+            self.assertEq(philosopher, type(ps2.first))
+            self.assertEq(philosopher, type(ps2.second))
+            self.assertEq(philosopher, type(ps2.second))
+            self.assertIs(n, ps2.first)
+            self.assertIs(s, ps2.second)
+            self.assertIs(sj, ps2.third)
+
+    def it_calls_sort(self):
+        """ The entities.sort() method sorts the collection inplace -
+        much like the standard Python list.sort() does."""
+
+        # Create a collection of knights
+        ks = knights()
+        ks += knight('Lancelot')
+        ks += knight('Authur')
+        ks += knight('Galahad')
+        ks += knight('Bedevere')
+        cnt = ks.count
+
+
+        # Sort them by name
+        ks.sort(key=lambda k: k.name)
+
+        # Test the sort
+
+        # Ensure count hasn't changed
+        self.assertEq(cnt, ks.count)
+
+        # Ensure sort is alphabetic
+        self.assertEq('Authur',    ks.first.name)
+        self.assertEq('Bedevere',  ks.second.name)
+        self.assertEq('Galahad',   ks.third.name)
+        self.assertEq('Lancelot',  ks.fourth.name)
+
+        # Numeric sort 
+        import math
+        class constants(entities):
+            pass
+
+        class constant(entity):
+            def __init__(self, v):
+                self.value = v
+
+        Light = 12000000 # miles per minute
+        cs = constants()
+        cs += constant(Light)
+        cs += constant(math.pi)
+        cs += constant(math.e)
+
+        cs.sort(key=lambda c: c.value)
+        self.assertEq(math.e,    cs.first.value)
+        self.assertEq(math.pi,  cs.second.value)
+        self.assertEq(Light,    cs.third.value)
+
+
+        
 
 
 print(testers())
