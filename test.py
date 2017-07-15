@@ -97,6 +97,34 @@ class test_entities(tester):
         if not (got1 and got2):
             self.assertFail('Failed getting random entities')
 
+    def it_gets_randomized(self):
+        """ Ensure es.getrandomized() returns a randomized version of itself.
+        """
+
+        # Subclass entities to ensure that getrandomized returns a instance of
+        # the subclass.
+        class pantheon(entities):
+            pass
+
+        e1, e2 = entity(), entity()
+        gods = pantheon([e1, e2])
+
+        initord = randord = False
+        for _ in range(100):
+            rgods = gods.getrandomized()
+            self.assertEq(gods.count, rgods.count)
+            if gods.first == rgods.first and gods.second == rgods.second:
+                initord = True
+            elif gods.first == rgods.second and gods.second == rgods.first:
+                randord = True
+
+            if initord and randord:
+                break
+
+        if not (initord and randord):
+            self.assertFail('Failed getting random entities')
+
+
 print(testers())
 
 
