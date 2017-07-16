@@ -97,6 +97,7 @@ class entities(object):
             rms = self.where(e)
         elif type(e) == int:
             del self._ls[e]
+            return
         else:
             rms = [e]
 
