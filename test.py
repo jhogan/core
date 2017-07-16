@@ -224,15 +224,6 @@ class test_entities(tester):
         self.assertEq('Galahad',   ks.third.name)
         self.assertEq('Lancelot',  ks.fourth.name)
 
-        # Numeric sort 
-        import math
-        class constants(entities):
-            pass
-
-        class constant(entity):
-            def __init__(self, v):
-                self.value = v
-
         Light = 12000000 # miles per minute
         cs = constants()
         cs += constant(Light)
