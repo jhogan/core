@@ -258,7 +258,7 @@ class entities(object):
                 if e.name == key: return e
 
     def getindex(self, e):
-        """ Return the firsnt index of e in the collection.
+        """ Return the first index of e in the collection.
 
         This is similar to list.index except here we use the `is` operator for
         comarison instead of the `==` operator."""

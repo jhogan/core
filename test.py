@@ -145,7 +145,10 @@ class test_entities(tester):
         initord = randord = False
         for _ in range(100):
             rgods = gods.getrandomized()
+
+            self.assertEq(pantheon, type(rgods))
             self.assertEq(gods.count, rgods.count)
+
             if gods.first == rgods.first and gods.second == rgods.second:
                 initord = True
             elif gods.first == rgods.second and gods.second == rgods.first:
@@ -198,7 +201,7 @@ class test_entities(tester):
             self.assertIs(sj, ps2.third)
 
     def it_calls_sort(self):
-        """ The entities.sort() method sorts the collection inplace -
+        """ The entities.sort() method sorts the collection in-place -
         much like the standard Python list.sort() does."""
 
         # Create a collection of knights
