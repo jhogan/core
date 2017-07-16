@@ -85,8 +85,9 @@ class entities(object):
 
     def tail(self, number):
         es = type(self)()
-        for e in self[-number:]:
-            es += e
+        if number > 0:
+            for e in self[-number:]:
+                es += e
         return es
 
     def remove(self, e):
