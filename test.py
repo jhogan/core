@@ -23,13 +23,22 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 from tester import *
+import math
 
 class knights(entities):
-    pass
+    @staticmethod
+    def createthe4():
+        ks = knights()
+        ks += knight('Lancelot')
+        ks += knight('Authur')
+        ks += knight('Galahad')
+        ks += knight('Bedevere')
+        return ks
 
 class knight(entity):
     def __init__(self, name):
         self.name = name
+
 
 class philosophers(entities):
     pass
@@ -41,6 +50,12 @@ class philosopher(entity):
 class singer(entity):
     def __init__(self, name):
         self.name = name
+class constants(entities):
+    pass
+
+class constant(entity):
+    def __init__(self, v):
+        self.value = v
 
 class test_entities(tester):
     def it_instantiates(self):
