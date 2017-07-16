@@ -238,9 +238,128 @@ class test_entities(tester):
         self.assertEq(math.pi,  cs.second.value)
         self.assertEq(Light,    cs.third.value)
 
+    def it_calls_sorted(self):
+        """ The entities.sorted() method is like entities.sort() except
+        it returns a new sorted entities collection and leaves the existing
+        one untouched. """
 
+        Light = 12000000 # miles per minute
+
+        # Create a collection of knights
+        ks = knights()
+        ks += knight('Lancelot')
+        ks += knight('Authur')
+        ks += knight('Galahad')
+        ks += knight('Bedevere')
+
+        # Create a sorted version
+        ks1 = ks.sorted(key=lambda k: k.name)
+
+        # Test the sort
+
+        # Ensure count hasn't changed
+        self.assertEq(ks.count, ks1.count)
+        self.assertIs(knights, type(ks1))
+
+        # Ensure original was not sorted.
+        self.assertEq('Lancelot',  ks.first.name)
+        self.assertEq('Authur',    ks.second.name)
+        self.assertEq('Galahad',   ks.third.name)
+        self.assertEq('Bedevere',  ks.fourth.name)
+
+        # Ensure sort is alphabetic
+        self.assertEq('Authur',    ks1.first.name)
+        self.assertEq('Bedevere',  ks1.second.name)
+        self.assertEq('Galahad',   ks1.third.name)
+        self.assertEq('Lancelot',  ks1.fourth.name)
+
+        # Numeric sort 
+
+        # Create numeric constant collection
+        cs = constants()
+        cs += constant(Light)
+        cs += constant(math.pi)
+        cs += constant(math.e)
+
+        cs1 = cs.sorted(key=lambda c: c.value)
+
+        # Ensure original was not sorted
+        self.assertEq(Light,    cs.first.value)
+        self.assertEq(math.pi,  cs.second.value)
+        self.assertEq(math.e,   cs.third.value)
+
+        # Ensure cs1 is sorted numerically
+        self.assertEq(math.e,   cs1.first.value)
+        self.assertEq(math.pi,  cs1.second.value)
+        self.assertEq(Light,    cs1.third.value)
+
+    def it_calls_tail(self):
+        """ Tail returns an entities collection containing the last 'number'
+        of entities in the collection."""
+
+        # Create some knights
+        ks = knights()
+        ks += knight('Lancelot')
+        ks += knight('Authur')
+        ks += knight('Galahad')
+        ks += knight('Bedevere')
+
+        # Call tail() with a number for 0 to 4
+        for i in range(ks.count + 1):
+            t = ks.tail(i)
+            self.assertEq(i, t.count)
+            self.assertEq(knights, type(t))
+            # Ensure the elements of the tail are as expected
+            for j in range(1, i + 1):
+                self.assertEq(ks[-j], t[-j])
+
+    def it_calls_remove(self):
+        """ The entities.remove method removesd entity objects from itself.
+        Different types of arguments can be given to indicate what entity
+        objects need to be removed."""
         
+        # Create some knights
+        ks = knights.createthe4()
 
+        ## Remove Galahad by index ##
+        ks.remove(2) 
+        self.assertCount(3, ks)
+        self.assertCount(0, ks.where(lambda k: k.name == 'Galahad'))
+
+        # Recreate the four knights
+        ks = knights.createthe4()
+
+        ## Remove the second one by object identity ##
+        nd = ks.second
+        ks.remove(nd)
+        self.assertCount(3, ks)
+        self.assertFalse(nd.isin(ks)) # Ensure second knight is not in ks
+
+        ## Remove by entities collection ##
+
+        # Get an knights collection containing first 2 knights from ks
+        ks = knights.createthe4()
+        ks1 = knights(ks[:2])
+
+        # Pass knightns collectios in to remove() to remove them frm ks
+        ks.remove(ks1)
+
+        # Ensure the first 2 where removed
+        self.assertCount(2, ks)
+        self.assertFalse(ks1.first.isin(ks)) 
+        self.assertFalse(ks1.second.isin(ks))
+
+        ## Remove using a callable##
+        ks = knights.createthe4()
+
+        # Get a reference to Bedevere
+        k = ks.last
+
+        # Remove Bedevere
+        ks.remove(lambda k: k.name == 'Bedevere')
+
+        self.assertCount(3, ks)
+        self.assertFalse(k.isin(ks)) 
 
 print(testers())
 
