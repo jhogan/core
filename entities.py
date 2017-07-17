@@ -156,6 +156,12 @@ class entities(object):
     def push(self, e):
         self += e
 
+    def has(self, e):
+        return any(e1 is e for e1 in self)
+
+    def hasnt(self, e):
+        return not self.has(e)
+
     def __lshift__(self, a):
         self.unshift(a)
     
