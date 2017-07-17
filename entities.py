@@ -269,7 +269,7 @@ class entities(object):
         """ Return the first index of e in the collection.
 
         This is similar to list.index except here we use the `is` operator for
-        comarison instead of the `==` operator."""
+        comparison instead of the `==` operator."""
 
         for ix, e1 in enumerate(self):
             if e is e1: return ix
@@ -330,10 +330,9 @@ class entity():
 
     def isin(self, es):
         """Test if self is in entities object `es`. This is like the the `in`
-        operator (__contains__()) except it tests for object identity (with `is`) 
-        instead of object equality (`==` or __eq__()).
-        """
-        return any(self is e for e in es)
+        operator (__contains__()) except it tests for object identity (with
+        `is`) instead of object equality (`==` or __eq__()).  """
+        return es.has(self)
 
     def __add__(self, t):
         return self.add(t)

@@ -337,11 +337,11 @@ class test_entities(tester):
 
         ## Remove by entities collection ##
 
-        # Get an knights collection containing first 2 knights from ks
+        # Get a knights collection containing first 2 knights from ks
         ks = knights.createthe4()
         ks1 = knights(ks[:2])
 
-        # Pass knightns collectios in to remove() to remove them frm ks
+        # Pass knights collectios in to remove() to remove them from ks
         ks.remove(ks1)
 
         # Ensure the first 2 where removed
