@@ -166,31 +166,33 @@ class entities(object):
         self.unshift(a)
     
     def append(self, obj, uniq=False, r=None):
-        if not r: r = []
+        # Create the return object if it hasn't been passed in
+        if r == None:
+            # We use a generic entities class here because to use the subclass
+            # (type(self)()) would cause errors in subclasses that demanded
+            # positional arguments be supplied.
+            r = entities()
+
         if isinstance(obj, entity):
             t = obj
+
         elif isinstance(obj, entities) or hasattr(obj, '__iter__'):
             for t in obj:
                 if uniq:
-                    for t1 in self:
-                        if t is t1: break
-                    else:
+                    if self.hasnt(t):
                         self.append(t, r=r)
-                        continue
-                    break
                 else:
                     self.append(t, r=r)
             return r
         else: 
             raise ValueError('Unsupported object appended')
 
-        if uniq:
-            for t1 in self:
-                if t is t1: return r
+        if uniq and self.has(t):
+            return r
 
-        r.append(t)
-        for t in r:
-            self._list.append(t)
+        r._list.append(t)
+
+        self._list.append(t)
 
         return r
 
