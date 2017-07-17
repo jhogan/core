@@ -361,7 +361,331 @@ class test_entities(tester):
         self.assertCount(3, ks)
         self.assertFalse(k.isin(ks)) 
 
-print(testers())
+    def it_calls__isub__(self):
+        """ entities.__isub__() is essentially a wrapper around
+        entities.removes. The test here will be similar to it_calls_remove.
+        """
+
+        ## Remove Galahad by index ##
+        
+        # API NOTE This works simply because __isub__ is a wrapper for
+        # remove(). However, it seems so semantically insensable that a
+        # ValueError probably should be thrown here.
+
+        # Create some knights 
+        ks = knights.createthe4()
+        ks -= 2
+        self.assertCount(3, ks)
+        self.assertCount(0, ks.where(lambda k: k.name == 'Galahad'))
+
+        # Create some knights
+        ks = knights.createthe4()
+
+        ## Remove Galahad by index ##
+        galahad = ks.where(lambda k: k.name == 'Galahad').first
+
+        ks -= galahad
+
+        self.assertCount(3, ks)
+        self.assertCount(0, ks.where(lambda k: k.name == 'Galahad'))
+
+        ## Remove by entities collection ##
+
+        # Get a knights collection containing first 2 knights from ks
+        ks = knights.createthe4()
+        ks1 = knights(ks[:2])
+
+        # Pass knights collectios in to remove() to remove them from ks
+        ks -= ks1
+
+        # Ensure the first 2 where removed
+        self.assertCount(2, ks)
+        self.assertFalse(ks1.first.isin(ks)) 
+        self.assertFalse(ks1.second.isin(ks))
+
+        ## Remove using a callable ##
+        ks = knights.createthe4()
+
+        # Get a reference to Bedevere
+        k = ks.last
+
+        # Remove Bedevere
+
+        # API NOTE This should probably raise a ValueError as well
+        ks -= lambda k: k.name == 'Bedevere'
+
+        self.assertCount(3, ks)
+        self.assertFalse(k.isin(ks)) 
+
+    def it_calls_reversed(self):
+        """ The entities.reversed() method returns an entities collection
+        containing the same entity objects but in reversed order. """
+
+        ks = knights.createthe4()
+        ks1 = ks.reversed()
+
+        self.assertCount(ks1.count,  ks)
+
+        self.assertIs(knights,       type(ks1))
+
+        self.assertIs(ks1.first,     ks.last)
+        self.assertIs(ks1.last,      ks.first)
+        self.assertIs(ks1.second,    ks.third)
+        self.assertIs(ks1.third,     ks.second)
+
+    def it_calls_reverse(self):
+        """ The entities.reverse() method reverses the order of the entity 
+        objects within the entities collection. """
+
+        ks = knights.createthe4()
+        rst, nd, rd, th = ks[:]
+
+        ks.reverse()
+
+        self.assertCount(4, ks)
+
+        self.assertIs(rst,  ks.last)
+        self.assertIs(nd,   ks.third)
+        self.assertIs(rd,   ks.second)
+        self.assertIs(th,   ks.first)
+
+    def it_gets_ubound(self):
+        """ The upper bound is the highest number that can be given to the
+        indexer."""
+        
+        ks = knights.createthe4()
+
+        # Ensure that ubound is the number of elements minus one.
+        self.assertEq(3, ks.ubound)
+
+        # If the collection is empty, a ubound can't exist so set it should be
+        # None.
+        self.assertNone(entities().ubound)
+
+    def it_calls_insert(self):
+        """ Normally we append to the end of collections. The insert() method
+        allows us to insert entity objects into arbitrary areas of the 
+        collection. """
+
+        ks = knights.createthe4()
+        ni = knight('knight who says ni')
+
+        ks.insert(2, ni)
+
+        self.assertEq(5, ks.count)
+        self.assertIs(ks.third, ni)
+
+    def it_calls_insertbefore(self):
+        """ Inserts an entity before an index position. """
+
+        ks = knights.createthe4()
+        ni = knight('knight who says ni')
+
+        ks.insertbefore(2, ni)
+
+        self.assertEq(5, ks.count)
+        self.assertIs(ks.third, ni)
+
+    def it_calls_insertafter(self):
+        """ Inserts an entity after an index position. """
+
+        ks = knights.createthe4()
+        ni = knight('knight who says ni')
+
+        ks.insertafter(2, ni)
+
+        self.assertEq(5, ks.count)
+        self.assertIs(ks.fourth, ni)
+
+    def it_calls_shift(self):
+        """ Calling shift removes the first entity object from the collection
+        and returns it to the caller."""
+
+        ks = knights.createthe4()
+        rst = ks.shift()
+
+        self.assertEq(3, ks.count)
+        self.assertFalse(rst.isin(ks))
+
+    def it_calls_unshift(self):
+        """ Calling unshift() inserts an elment into the collection making it
+        the first element."""
+
+        ks = knights.createthe4()
+        ni = knight('knight who says ni')
+
+        ks.unshift(ni)
+
+        self.assertEq(5, ks.count)
+        self.assertIs(ks.first, ni)
+
+    def it_calls_pop(self):
+        """ Calling pop() removes and returns the last element in the 
+        collection."""
+
+        ks = knights.createthe4()
+        last = ks.pop()
+
+        self.assertEq(3, ks.count)
+        self.assertFalse(ks.has(last))
+
+    def it_calls_push(self):
+        """ Calling push() causes the argument to be added to the end of
+        the collection. """
+        ks = knights.createthe4()
+        ni = knight('knight who says ni')
+
+        ks.push(ni)
+
+        self.assertEq(5, ks.count)
+        self.assertIs(ni, ks.last)
+
+    def it_calls_has(self):
+        """ The has() method determines if the argument is in the collection
+        using object identity (is) as opposed to object equality (==). """
+
+        ks = knights.createthe4()
+        for k in ks:
+            self.assertTrue(ks.has(k))
+
+        ni = knight('knight who says ni')
+        self.assertFalse(ks.has(ni))
+
+    def it_calls__lshift__(self):
+        """ The lshift operator (<<) is a wrapper around unshift. """
+
+        ks = knights.createthe4()
+        ni = knight('knight who says ni')
+        ks << ni
+
+        self.assertEq(5, ks.count)
+        self.assertIs(ks.first, ni)
+
+    def it_calls_append(self):
+        """ The append() method adds entity objects to the end of the 
+        collection. """
+
+        ## Test appending one entity ##
+        ks = knights.createthe4()
+        ni = knight('knight who says ni')
+        ks1 = ks.append(ni)
+
+        self.assertEq(5, ks.count)
+        self.assertEq(1, ks1.count)
+        self.assertIs(ks.last, ni)
+        self.assertIs(ks1.first, ni)
+        self.assertEq(entities, type(ks1))
+
+        ## Test appending one unique entity with the uniq flag set. We
+        ## should get a successful appending like above sinec the entity
+        ## is uniq.
+
+        ks = knights.createthe4()
+        ni = knight('knight who says ni')
+        ks1 = ks.append(ni, uniq=True)
+
+        self.assertEq(5, ks.count)
+        self.assertEq(1, ks1.count)
+        self.assertIs(ks.last, ni)
+        self.assertIs(ks1.first, ni)
+        self.assertEq(entities, type(ks1))
+
+        ## Test appending one non-unique entity with the uniq flag set. We
+        ## should get a successful appending like above sinec the entity
+        ## is uniq.
+
+        ks = knights.createthe4()
+        ks1 = ks.append(ks.first, uniq=True)
+
+        self.assertEq(4, ks.count)
+        self.assertTrue(ks1.isempty)
+        self.assertEq(entities, type(ks1))
+
+        ## Test appending an entities collection to an entities collection.
+        ks = knights.createthe4()
+        nis = knights()
+        nis += knight('knight who says ni 1')
+        nis += knight('knight who says ni 2')
+
+        ks1 = ks.append(nis)
+
+        self.assertEq(6,           ks.count)
+        self.assertEq(2,           ks1.count)
+        self.assertIs(nis.first,   ks.penultimate)
+        self.assertIs(nis.second,  ks.last)
+        self.assertIs(nis.first,   ks1.first)
+        self.assertIs(nis.second,  ks1.second)
+        self.assertEq(entities,    type(ks1))
+
+        # Test appending an entities collection to an entities collection
+        # where one of the entities being appended is not unique, though 
+        # the uniq flag is is not changed from its default value of False.
+
+        ks = knights.createthe4()
+        nis = knights()
+        nis += knight('knight who says ni 1')
+        nis += ks.first # The non-unique entity
+
+        ks1 = ks.append(nis)
+
+        self.assertEq(6,           ks.count)
+        self.assertEq(2,           ks1.count)
+        self.assertIs(nis.first,   ks.penultimate)
+        self.assertIs(nis.second,  ks.last)
+        self.assertIs(nis.first,   ks1.first)
+        self.assertIs(nis.second,  ks1.second)
+        self.assertEq(entities,    type(ks1))
+
+        # Test appending an entities collection to an entities collection
+        # where one of the entities being appended is not unique.
+
+        ks = knights.createthe4()
+        nis = knights()
+        nis += knight('knight who says ni 1')
+        nis += ks.first # The non-unique entity
+
+        ks1 = ks.append(nis, uniq=True)
+
+        self.assertEq(5,           ks.count)
+        self.assertEq(1,           ks1.count)
+        self.assertIs(nis.first,   ks.last)
+        self.assertIs(nis.first,   ks1.first)
+        self.assertEq(entities,    type(ks1))
+        self.assertFalse(ks1.has(nis.second))
+
+        # Test appending an entities collection to an entities collection
+        # where both of the entities being appended are not unique.
+
+        ks = knights.createthe4()
+        nis = knights()
+        nis += ks.first
+        nis += ks.second # The non-unique entity
+
+        ks1 = ks.append(nis, uniq=True)
+
+        self.assertEq(4,           ks.count)
+        self.assertEq(0,           ks1.count)
+        self.assertEq(entities,    type(ks1))
+        self.assertFalse(ks1.has(nis.first))
+        self.assertFalse(ks1.has(nis.second))
+
+        ## Ensure we get a ValueError if we append something that isn't
+        ## an entity, entities or iteralble type
+
+        ks = knights.createthe4()
+        try:
+            ks.append(1)
+            self.assertFail('Append accepted invalid type')
+        except Exception as ex:
+            self.assertEq(ValueError, type(ex))
+
+def oninvoketest(src, eargs):
+    print('#', end='', flush=True)
+
+t = testers()
+t.oninvoketest += oninvoketest
+t.run()
+print(t)
 
 
 
