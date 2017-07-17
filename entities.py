@@ -126,12 +126,12 @@ class entities(object):
         return self.count - 1
 
     def insert(self, ix, e):
-        self.insertBefore(ix, e)
+        self.insertbefore(ix, e)
 
-    def insertBefore(self, ix, e):
+    def insertbefore(self, ix, e):
         self._ls.insert(ix, e)
 
-    def insertAfter(self, ix, e):
+    def insertafter(self, ix, e):
         self._ls.insert(ix + 1, e)
 
     def move(self, srcix, dstix):
