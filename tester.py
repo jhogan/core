@@ -22,6 +22,8 @@ class testers(entities):
                 if type(meth[1]) != FunctionType: continue
                 if meth[0][0] == '_': continue
                 try:
+                    eargs = invoketesteventargs(meth)
+                    self.oninvoketest(self, eargs)
                     getattr(inst, meth[0])()
                 except Exception as ex:
                     raise
