@@ -304,6 +304,9 @@ class entities(object):
     @property
     def last(self): return self._getbyindex(-1)
 
+    @property
+    def penultimate(self): return self._getbyindex(-2)
+
     @last.setter
     def last(self, v): self[-1] = v
 
