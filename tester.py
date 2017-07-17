@@ -5,8 +5,16 @@ import inspect
 from types import FunctionType
 from textwrap import dedent
 
+class invoketesteventargs(eventargs):
+    def __init__(self, meth):
+        self.method = meth
+
 class testers(entities):
-    def __init__(self):
+    def __init__(self, initial=None):
+        self.oninvoketest = event()
+        super().__init__(initial=initial)
+
+    def run(self):
         for subcls in tester.__subclasses__():
             inst = subcls()
             self += inst
