@@ -249,13 +249,10 @@ class entities(object):
         return not self.isempty
 
     def __str__(self):
-        if not self.isempty:
-            r=''
-            for i, t in enumerate(self):
-                if i > 0: r += "\n"
-                r += str(t)
-            return r
-        return ''
+        r=''
+        for i, t in enumerate(self):
+            r += str(t) + '\n'
+        return r
 
     def __setitem__(self, key, item):
         self._ls[key]=item
