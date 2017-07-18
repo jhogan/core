@@ -212,8 +212,14 @@ class entities(object):
 
     def __sub__(self, es):
         r = type(self)()
+
+        # If es is not an iterable, such as an entitities collection, assume 
+        # it is an entity object and convert it into a collection of one.
+        if not hasattr(es, '__iter__'):
+            es = entities([es])
+
         for e in self:
-            if not e.isin(es):
+            if es.hasnt(e):
                 r += e
         return r
         
