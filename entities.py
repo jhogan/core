@@ -204,12 +204,11 @@ class entities(object):
         self.append(t, uniq=True)
         return self
 
-    def add(self, ts):
-        self += ts
-        return self
-
-    def __add__(self, t):
-        return self.add(t)
+    def __add__(self, es):
+        r = type(self)()
+        r += self
+        r += es
+        return r
 
     def __sub__(self, es):
         r = type(self)()
