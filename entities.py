@@ -176,7 +176,7 @@ class entities(object):
         if isinstance(obj, entity):
             t = obj
 
-        elif isinstance(obj, entities) or hasattr(obj, '__iter__'):
+        elif hasattr(obj, '__iter__'):
             for t in obj:
                 if uniq:
                     if self.hasnt(t):
