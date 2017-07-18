@@ -686,6 +686,246 @@ class test_entities(tester):
         except Exception as ex:
             self.assertEq(ValueError, type(ex))
 
+    def it_calls__iadd__(self):
+        """ The += operator (__iadd__) wraps the append method. It can 
+        everything append() can do except reject non-unique enity objects.
+        Also, there is no way to determine what has been added. """
+
+        ## Test appending one entity ##
+        ks = knights.createthe4()
+        ni = knight('knight who says ni')
+        ks += ni
+
+        self.assertEq(5, ks.count)
+        self.assertIs(ks.last, ni)
+
+        ## Test appending an entities collection to an entities collection.
+        ks = knights.createthe4()
+
+        nis = knight('knight 1') + knight('knight 2')
+        ks += nis
+
+        self.assertEq(6,           ks.count)
+        self.assertIs(nis.first,   ks.penultimate)
+        self.assertIs(nis.second,  ks.last)
+
+        ## Ensure we get a ValueError if we append something that isn't
+        ## an entity, entities type.
+        ks = knights.createthe4()
+        try:
+            ks += 1
+            self.assertFail('Append accepted invalid type')
+        except Exception as ex:
+            self.assertEq(ValueError, type(ex))
+
+    def it_calls__iand__(self):
+        """ The &= opreator (__iand__) wraps the append() methed setting
+        the unique flag to True. So &= is like a regular append accept 
+        objecs won't be appended if already exist in the collection."""
+
+        ## Test appending one unique entity ##
+        ks = knights.createthe4()
+        ni = knight('knight who says ni')
+        ks &= ni
+
+        self.assertEq(5, ks.count)
+        self.assertIs(ks.last, ni)
+
+        # Test appending one non-unique entity. Nothing should sucessfully
+        # be appended.
+
+        ks = knights.createthe4()
+        ks &= ks.first
+
+        self.assertEq(4, ks.count)
+
+        # Test appending an entities collection to an entities collection
+        # where one of the entities being appended is not unique.
+
+        ks = knights.createthe4()
+        nis = knights()
+        nis += knight('knight who says ni 1')
+        nis += ks.first # The non-unique entity
+
+        ks &= nis
+
+        self.assertEq(5, ks.count)
+        self.assertIs(nis.first,   ks.last)
+
+        # Test appending an entities collection to an entities collection
+        # where both of the entities being appended are not unique.
+        # Nothing will be sucessfully appended
+        ks = knights.createthe4()
+        nis = knights()
+        nis += ks.first
+        nis += ks.second # The non-unique entity
+
+        ks &= nis
+
+        self.assertEq(4, ks.count)
+
+        ## Ensure we get a ValueError if we append something that isn't
+        ## an entity or entities type
+        ks = knights.createthe4()
+        try:
+            ks &= 1
+            self.assertFail('Append accepted invalid type')
+        except Exception as ex:
+            self.assertEq(ValueError, type(ex))
+
+    def it_calls__add__(self):
+        """ The + operator adds an entity object, or a collection of 
+        entity objects, to the existing entities collection producing
+        a new entities collection of the same type. """
+
+        # Add a single entity to the collection
+        ks = knights.createthe4()
+        ni = knight('knight who says ni 1')
+        ks1 = ks + ni
+
+        self.assertEq(4, ks.count)
+        self.assertEq(5, ks1.count)
+        self.assertEq(knights, type(ks1))
+        self.assertIs(ks1.last, ni)
+
+        # Add an entities collection to ks
+
+        ks = knights.createthe4()
+        nis = knights()
+        nis += knight('knight who says ni 1')
+        nis += knight('knight who says ni 2')
+
+        ks1 = ks + nis
+
+        self.assertEq(4,                ks.count)
+        self.assertEq(6,                ks1.count)
+        self.assertEq(knights,          type(ks1))
+        self.assertIs(ks1.penultimate,  nis.first)
+        self.assertIs(ks1.last,         nis.last)
+
+    def it_calls__sub__(self):
+        """ The - operator removes an entity object, or a collection of 
+        entity objects, from the existing entities collection producing
+        a new entities collection of the same type. """
+
+        # Remove a single entity from the collection
+        ks = knights.createthe4()
+        rst = ks.first
+        ks1 = ks - rst
+
+        self.assertEq(4, ks.count)
+        self.assertEq(3, ks1.count)
+        self.assertEq(knights, type(ks1))
+        self.assertFalse(ks1.has(rst))
+        self.assertTrue(ks.has(rst))
+
+        # Remove an entities collection from ks
+
+        ks = knights.createthe4()
+        es = knights(ks[:2])
+
+        ks1 = ks - es
+
+        self.assertEq(4,           ks.count)
+        self.assertEq(2,           ks1.count)
+        self.assertEq(knights,     type(ks1))
+        self.assertIs(ks1.first,   ks.third)
+        self.assertIs(ks1.second,  ks.fourth)
+
+    def it_gets__list(self):
+        """ The _list property is a 'private' property representing
+        the underlying Python list object used to store the entities."""
+        ks = knights.createthe4()
+
+        for i, k in enumerate(ks):
+            self.assertIs(ks._list[i], k)
+
+    def it_gets_count(self):
+        """ The count property is the number of entities in the collection.
+        The __len__, isempty, hasone, and ispopulated methods are based on the
+        count property so they will tested here.  """
+        ks = knights.createthe4()
+
+        self.assertEq(4, ks.count)
+        self.assertEq(4, len(ks))
+        self.assertFalse(ks.isempty)
+        self.assertFalse(ks.hasone)
+        self.assertTrue(ks.ispopulated)
+
+        # Create a collection of one
+        ks = knights(ks.first) 
+        self.assertEq(1, ks.count)
+        self.assertEq(1, len(ks))
+        self.assertFalse(ks.isempty)
+        self.assertTrue(ks.hasone)
+        self.assertTrue(ks.ispopulated)
+
+        # Clear the collection so it will have no entities
+        ks.clear()
+
+        self.assertEq(0, ks.count)
+        self.assertEq(0, len(ks))
+        self.assertTrue(ks.isempty)
+        self.assertFalse(ks.hasone)
+        self.assertFalse(ks.ispopulated)
+
+    def it_calls__str__(self):
+        """ The __str__ method will return a concatenation of the results
+        of each entities __str__ invocation followed by a line ending."""
+
+        ks = knights.createthe4()
+        s = """Lancelot
+Authur
+Galahad
+Bedevere
+"""
+        self.assertEq(s, str(ks))
+
+        ks.clear()
+
+        self.assertEq('', str(ks))
+
+    def it_calls__setitem__(self):
+        """ The __setitem__ method is used to set an item in the 
+        collection by an index."""
+
+        ks = knights.createthe4()
+        ni = knight('knight who says ni 1')
+
+        # Set the second element to ni
+        ks[1] = ni
+
+        self.assertEq(4, ks.count)
+        self.assertIs(ni, ks.second)
+
+        ks = knights.createthe4()
+
+        nis = knights()
+        nis += knight('knight who says ni 1')
+        nis += knight('knight who says ni 1')
+
+        # Set the third and forth elements to nis[0] and nis[1] 
+        ks[2:4] = nis
+        
+        self.assertEq(4, ks.count)
+        self.assertIs(nis.first, ks.third)
+        self.assertIs(nis.second, ks.fourth)
+
+        # Assighn nis[0] and nis[1] to ks[0] and ks[2]
+        ks = knights.createthe4()
+        ks[::2] = nis
+        self.assertEq(4, ks.count)
+        self.assertIs(nis.first, ks.first)
+        self.assertIs(nis.second, ks.third)
+
+        # Ensure that setting an entity to an index that doesn't exist causes
+        # an error.
+        try:
+            ks[5] = ni
+            self.assertFail("This should raise an IndexError.")
+        except IndexError:
+            pass
+
 def oninvoketest(src, eargs):
     print('#', end='', flush=True)
 
