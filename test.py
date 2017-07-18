@@ -39,6 +39,9 @@ class knight(entity):
     def __init__(self, name):
         self.name = name
 
+    def __str__(self):
+        return self.name
+
 
 class philosophers(entities):
     pass
@@ -550,6 +553,7 @@ class test_entities(tester):
 
         ni = knight('knight who says ni')
         self.assertFalse(ks.has(ni))
+        self.assertTrue(ks.hasnt(ni))
 
     def it_calls__lshift__(self):
         """ The lshift operator (<<) is a wrapper around unshift. """
@@ -562,8 +566,11 @@ class test_entities(tester):
         self.assertIs(ks.first, ni)
 
     def it_calls_append(self):
-        """ The append() method adds entity objects to the end of the 
-        collection. """
+        """ The append() method adds entity objects to the end of the
+        collection. It can also append collections. If the uniq flag is True,
+        only objects not already in the collection will be appended. This
+        method returns a generic entities collection of all the objects that
+        were added."""
 
         ## Test appending one entity ##
         ks = knights.createthe4()
@@ -577,8 +584,8 @@ class test_entities(tester):
         self.assertEq(entities, type(ks1))
 
         ## Test appending one unique entity with the uniq flag set. We
-        ## should get a successful appending like above sinec the entity
-        ## is uniq.
+        ## should get a successful appending like above since the entity
+        ## is unique.
 
         ks = knights.createthe4()
         ni = knight('knight who says ni')
@@ -591,8 +598,8 @@ class test_entities(tester):
         self.assertEq(entities, type(ks1))
 
         ## Test appending one non-unique entity with the uniq flag set. We
-        ## should get a successful appending like above sinec the entity
-        ## is uniq.
+        ## should get a successful appending like above since the entity
+        ## is unique.
 
         ks = knights.createthe4()
         ks1 = ks.append(ks.first, uniq=True)
@@ -670,7 +677,7 @@ class test_entities(tester):
         self.assertFalse(ks1.has(nis.second))
 
         ## Ensure we get a ValueError if we append something that isn't
-        ## an entity, entities or iteralble type
+        ## an entity or entities type
 
         ks = knights.createthe4()
         try:
