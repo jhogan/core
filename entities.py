@@ -312,8 +312,15 @@ class entities(object):
     @property
     def brokenrules(self):
         r = brokenrules()
-        for ent in self:
-            r += ent.brokenrules
+        for e in self:
+            brs = e.brokenrules
+            if not isinstance(brs, brokenrules):
+                msg = 'Broken rule is an invalid type. '
+                msg += 'Ensure you are using the @property decorator '
+                msg += 'and the property is returning a brokenrules '
+                msg += 'collection.'
+                raise ValueError(msg)
+            r += brs
         return r
 
     @property
