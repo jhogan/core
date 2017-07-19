@@ -89,7 +89,7 @@ class test_entities(tester):
         es.clear()
         self.assertTrue(es.isempty)
         
-    def it_calls(self):
+    def it_calls__call__(self):
         """ Test that the indexer (__call__()) returns the the correct entity
         or None if the index is invalid. """
         e1, e2 = entity(), entity()
