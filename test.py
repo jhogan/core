@@ -925,6 +925,195 @@ Bedevere
             self.assertFail("This should raise an IndexError.")
         except IndexError:
             pass
+        except Exception:
+            self.assertFail("This should not raise a generic Exception.")
+
+    def it_calls__getitems(self):
+        """ The __getitem__ method is used to get an item in the 
+        collection by an index."""
+        ks = knights()
+        ni = knight('knight who says ni 1')
+        ks += ni
+
+        # Test getting a single element
+        self.assertIs(ks[0], ni)
+
+        ni1 = knight('knight who says ni 2')
+        ks += ni1
+
+        # Test getting two elements
+        self.assertIs(ks[0], ni)
+        self.assertIs(ks[1], ni1)
+
+        # Test getting by a slice
+        ni, ni1 = ks[:2]
+        self.assertIs(ks[0], ni)
+        self.assertIs(ks[1], ni1)
+
+        # Test getting using a stride
+        ks = knights().createthe4()
+        k, k3 = ks[::2]
+        self.assertIs(k, ks.first)
+        self.assertIs(k3, ks.third)
+    
+    def it_calls_getindex(self):
+        """ The getindex method returns the 0-based index/position of
+        the given element within the collection. """
+
+        ks = knights().createthe4()
+        for i, k in enumerate(ks):
+            self.assertEq(i, ks.getindex(k))
+
+        try:
+            ks.getindex(knight(''))
+            self.assertFail('getindex should have raised a ValueError.')
+        except ValueError:
+            pass
+        except Exception as ex:
+            self.assertFail('getindex should have raised a ValueError.')
+
+    def it_gets_the_ordinals(self):
+        """ The "ordinals" are propreties like "first", "second", and
+        "last"."""
+
+        ks = knights().createthe4()
+        self.assertIs(ks[0], ks.first)
+        self.assertIs(ks[1], ks.second)
+        self.assertIs(ks[2], ks.third)
+        self.assertIs(ks[3], ks.fourth)
+        self.assertIs(ks[3], ks.last)
+        self.assertIs(ks[2], ks.penultimate)
+        self.assertIs(ks[1], ks.antepenultimate)
+
+        # Ordinals should return None if the the value doesn't exist
+        self.assertNone(ks.fifth)
+        self.assertNone(ks.sixth)
+
+        # All ordinals should return None if the collection is empty
+        ks.clear()
+        self.assertNone(ks.first)
+        self.assertNone(ks.second)
+        self.assertNone(ks.third)
+        self.assertNone(ks.fourth)
+        self.assertNone(ks.last)
+        self.assertNone(ks.penultimate)
+        self.assertNone(ks.antepenultimate)
+
+        # Ensure ordinals return sensible results with a collection of 1
+        ni = knight('knight who says ni 1')
+        ks += ni
+        self.assertIs(ni, ks.first)
+        self.assertIs(ni, ks.last)
+        self.assertNone(ks.second)
+        self.assertNone(ks.third)
+        self.assertNone(ks.fourth)
+        self.assertNone(ks.penultimate)
+        self.assertNone(ks.antepenultimate)
+
+        # Ensure ordinals return sensible results with a collection of 2
+        ni1 = knight('knight who says ni 2')
+        ks += ni1
+        self.assertIs(ni, ks.first)
+        self.assertIs(ni1, ks.second)
+        self.assertIs(ni1, ks.last)
+        self.assertIs(ni, ks.penultimate)
+        self.assertNone(ks.third)
+        self.assertNone(ks.fourth)
+        self.assertNone(ks.antepenultimate)
+
+        # Ensure ordinals return sensible results with a collection of 3
+        ni2= knight('knight who says ni 2')
+        ks += ni2
+        self.assertIs(ni, ks.first)
+        self.assertIs(ni1, ks.second)
+        self.assertIs(ni2, ks.third)
+        self.assertIs(ni2, ks.last)
+        self.assertIs(ni1, ks.penultimate)
+        self.assertIs(ni, ks.antepenultimate)
+        self.assertNone(ks.fourth)
+
+        # Test that fifth and sixth return
+        ks = knights.createthe4()
+        ni5= knight('knight who says ni 5')
+        ni6= knight('knight who says ni 6')
+        ks += ni5 + ni6
+        self.assertIs(ni5, ks.fifth)
+        self.assertIs(ni6, ks.sixth)
+
+    def it_gets_brokenrules(self):
+
+        """ A broken rule is an entity that represents a problem with the
+        state of an entitiy. Each entities collection by default returns a
+        broken rules collection which is an aggregates of the broken rules
+        collections of the entities it contains."""
+
+        # Ensure that the default knights collection is valid, i.e., its 
+        # brokenrules collectios is empty
+        ks = knights.createthe4()
+        self.assertTrue(ks.isvalid)
+        self.assertValid(ks)
+        self.assertTrue(ks.brokenrules.isempty)
+
+        # Break one of the knights broken rules
+        ks.first.name = 123
+        self.assertFalse(ks.isvalid)
+        self.assertInValid(ks)
+        self.assertTrue(ks.brokenrules.hasone)
+        self.assertEq(ks.brokenrules.first.message, 'Names must be strings')
+        self.assertEq(str(ks.brokenrules.first), 'Names must be strings')
+
+        # Break all of the knights broken rules and test each entity's 
+        # broken rules collection individually
+        for k in ks:
+            k.name = 123
+            self.assertFalse(k.isvalid)
+            self.assertInValid(k)
+            self.assertTrue(k.brokenrules.hasone)
+            self.assertEq(k.brokenrules.first.message, 'Names must be strings')
+            self.assertEq(str(k.brokenrules.first), 'Names must be strings')
+
+        # Now test the knigts collection's broken rules.
+        self.assertFalse(ks.isvalid)
+        self.assertInValid(ks)
+        self.assertTrue(4, ks.brokenrules.count)
+
+        for br in ks.brokenrules:
+            self.assertEq(br.message, 'Names must be strings')
+            self.assertEq(str(br), 'Names must be strings')
+
+class test_entity(tester):
+    def it_calls__add__(self):
+        """ The + operator concatenates an entity with another entity or
+        enities collection and returns an enities collection containing 
+        the concatenation."""
+
+        # Concatenate 2 knights into an entities collection of knights.
+        ni = knight('knight who says ni 1')
+        ni1 = knight('knight who says ni 2')
+
+        ks = ni + ni1
+
+        self.assertEq(entities, type(ks))
+        self.assertEq(2, ks.count)
+        self.assertIs(ks.first, ni)
+        self.assertIs(ks.second, ni1)
+
+        # Now contatenate an entities collection to an entity
+        
+        the4 = knights.createthe4()
+        ks = ni + the4
+        self.assertEq(entities,   type(ks))
+        self.assertEq(5,          ks.count)
+        self.assertIs(ks.first,   ni)
+        self.assertIs(ks.second,  the4.first)
+        self.assertIs(ks.third,   the4.second)
+        self.assertIs(ks.fourth,  the4.third)
+        self.assertIs(ks.fifth,   the4.fourth)
+
+    def it_gets_brokenrules(self):
+        """ This functionality is tested in
+        test_entities.it_gets_brokenrules."""
+        pass
 
 def oninvoketest(src, eargs):
     print('#', end='', flush=True)
