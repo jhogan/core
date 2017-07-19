@@ -277,31 +277,34 @@ class entities(object):
         raise ValueError("'{}' is not in the collection " + str(e))
 
     @property
-    def first(self): return self._getbyindex(0)
+    def first(self): return self(0)
 
     @property
-    def second(self): return self._getbyindex(1)
+    def second(self): return self(1)
 
     @second.setter
     def second(self, v): self[1] = v
 
     @property
-    def third(self): return self._getbyindex(2)
+    def third(self): return self(2)
 
     @property
-    def fourth(self): return self._getbyindex(3)
+    def fourth(self): return self(3)
 
     @property
-    def fifth(self): return self._getbyindex(4)
+    def fifth(self): return self(4)
 
     @property
-    def sixth(self): return self._getbyindex(5)
+    def sixth(self): return self(5)
 
     @property
-    def last(self): return self._getbyindex(-1)
+    def last(self): return self(-1)
 
     @property
-    def penultimate(self): return self._getbyindex(-2)
+    def penultimate(self): return self(-2)
+
+    @property
+    def antepenultimate(self): return self(-3)
 
     @last.setter
     def last(self, v): self[-1] = v
