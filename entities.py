@@ -184,7 +184,7 @@ class entities(object):
                     self.append(t, r=r)
             return r
         else: 
-            raise ValueError('Unsupported object appended')
+            raise ValueError('Unsupported object appended: ' + str(type(obj)))
 
         if uniq and self.has(t):
             return r
@@ -274,12 +274,7 @@ class entities(object):
 
         for ix, e1 in enumerate(self):
             if e is e1: return ix
-        raise ValueError("'{}' is not in the collection " + e)
-
-    def _getbyindex(self, ix):
-        # TODO This can be replace with a call to enttities.__call__
-        try: return self[ix]
-        except IndexError: return None
+        raise ValueError("'{}' is not in the collection " + str(e))
 
     @property
     def first(self): return self._getbyindex(0)
