@@ -331,17 +331,11 @@ class entity():
     def __init__(self):
         pass
 
-    def add(self, t):
-        th = entities()
-        th += self
-        th += t
-        return th
-
-    def isin(self, es):
-        """Test if self is in entities object `es`. This is like the the `in`
-        operator (__contains__()) except it tests for object identity (with
-        `is`) instead of object equality (`==` or __eq__()).  """
-        return es.has(self)
+    def add(self, e):
+        es = entities()
+        es += self
+        es += e
+        return es
 
     def __add__(self, t):
         return self.add(t)

@@ -336,7 +336,7 @@ class test_entities(tester):
         nd = ks.second
         ks.remove(nd)
         self.assertCount(3, ks)
-        self.assertFalse(nd.isin(ks)) # Ensure second knight is not in ks
+        self.assertFalse(ks.has(nd)) # Ensure second knight is not in ks
 
         ## Remove by entities collection ##
 
@@ -349,8 +349,8 @@ class test_entities(tester):
 
         # Ensure the first 2 where removed
         self.assertCount(2, ks)
-        self.assertFalse(ks1.first.isin(ks)) 
-        self.assertFalse(ks1.second.isin(ks))
+        self.assertFalse(ks.has(ks1.first))
+        self.assertFalse(ks.has(ks1.second))
 
         ## Remove using a callable##
         ks = knights.createthe4()
@@ -362,7 +362,7 @@ class test_entities(tester):
         ks.remove(lambda k: k.name == 'Bedevere')
 
         self.assertCount(3, ks)
-        self.assertFalse(k.isin(ks)) 
+        self.assertFalse(ks.has(k))
 
     def it_calls__isub__(self):
         """ entities.__isub__() is essentially a wrapper around
@@ -403,8 +403,8 @@ class test_entities(tester):
 
         # Ensure the first 2 where removed
         self.assertCount(2, ks)
-        self.assertFalse(ks1.first.isin(ks)) 
-        self.assertFalse(ks1.second.isin(ks))
+        self.assertFalse(ks.has(ks1.first))
+        self.assertFalse(ks.has(ks1.second))
 
         ## Remove using a callable ##
         ks = knights.createthe4()
@@ -418,7 +418,7 @@ class test_entities(tester):
         ks -= lambda k: k.name == 'Bedevere'
 
         self.assertCount(3, ks)
-        self.assertFalse(k.isin(ks)) 
+        self.assertFalse(ks.has(k))
 
     def it_calls_reversed(self):
         """ The entities.reversed() method returns an entities collection
@@ -508,7 +508,7 @@ class test_entities(tester):
         rst = ks.shift()
 
         self.assertEq(3, ks.count)
-        self.assertFalse(rst.isin(ks))
+        self.assertFalse(ks.has(rst))
 
     def it_calls_unshift(self):
         """ Calling unshift() inserts an elment into the collection making it
