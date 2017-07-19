@@ -36,12 +36,11 @@ class entities(object):
     def __call__(self, ix):
         """
         Allow collections to be called providing similar functionality to the
-        way they can be indexed. The difference is that None is returned if ix
-        is not a valid index. Only positve indexes are considered valid.
+        way they can be indexed. 
         """
+
+        # Should negative numbers be allowed. If not, why?
         try: 
-            if ix < 0:
-                raise IndexError
             return self[ix]
         except IndexError: 
             return None
