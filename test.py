@@ -39,9 +39,15 @@ class knight(entity):
     def __init__(self, name):
         self.name = name
 
+    @property
+    def brokenrules(self):
+        brs = brokenrules()
+        if type(self.name) != str:
+            brs += brokenrule("Names must be strings")
+        return brs
+
     def __str__(self):
         return self.name
-
 
 class philosophers(entities):
     pass
