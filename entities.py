@@ -247,6 +247,12 @@ class entities(object):
     def ispopulated(self):
         return not self.isempty
 
+    def __repr__(self):
+        r=''
+        for i, t in enumerate(self):
+            r += repr(t) + '\n'
+        return r
+
     def __str__(self):
         r=''
         for i, t in enumerate(self):
