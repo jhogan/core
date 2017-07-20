@@ -46,6 +46,9 @@ class knight(entity):
             brs += brokenrule("Names must be strings")
         return brs
 
+    def __repr__(self):
+        return super().__repr__() + ' ' + self.name
+
     def __str__(self):
         return self.name
 
@@ -692,6 +695,79 @@ class test_entities(tester):
         except Exception as ex:
             self.assertEq(ValueError, type(ex))
 
+    def it_subclasses_append(self):
+        class sillyknights(knights):
+            def append(self, obj, uniq=None, r=None):
+                # Do something silly
+                # Now have the super class do the appending
+                return super().append(obj, uniq,  r=r)
+
+        # Append one knight
+        sks = sillyknights()
+        fk = knight('french knight')
+        sks += fk
+
+        self.assertTrue(sks.hasone)
+        self.assertIs(sks.first, fk)
+
+        # Append a collection of knightns
+        # Note: The overridden append() must accept the 'r' parameter and 
+        # default it to None for this to work.
+        bk = knight('black knight')
+        ks = bk + fk
+
+        sks += ks
+
+        self.assertEq(3, sks.count)
+        for i, k in enumerate([fk, bk, fk]):
+            self.assertIs(sks[i], k)
+
+        # Append a unique knight insisting in be unique
+        ni = knight('knight who says ni')
+        sks &= ni
+        self.assertEq(4, sks.count)
+        for i, k in enumerate([fk, bk, fk, ni]):
+            self.assertIs(sks[i], k)
+
+        # Append a non-unique knight insisting in be unique
+        sks &= ni
+        self.assertEq(4, sks.count)
+        for i, k in enumerate([fk, bk, fk, ni]):
+            self.assertIs(sks[i], k)
+
+        # Append a non-unique knight insisting in be unique using the append
+        # method rather than the &= operator in order to obtain the results
+        res = sks.append(ni, uniq=True)
+        self.assertTrue(res.isempty)
+        self.assertEq(4, sks.count)
+        for i, k in enumerate([fk, bk, fk, ni]):
+            self.assertIs(sks[i], k)
+
+        # Append a non-unique collection of knights insisting they be unique
+        # using the append method rather than the &= operator in order to
+        # obtain the results
+        ks = ni + knight('knight who says ni2')
+        res = sks.append(ks, uniq=True)
+        self.assertTrue(res.hasone)
+        self.assertEq(5, sks.count)
+        for i, k in enumerate([fk, bk, fk, ni, ks.second]):
+            self.assertIs(sks[i], k)
+
+        # Create a new collection based on the old one by instantiating with
+        # the old collection as an argument. 
+        sks1 = knights(sks)
+        self.assertEq(sks1.count, sks.count)
+        for i, k in enumerate(sks1):
+            self.assertIs(k, sks1[i])
+
+        # Create a new collection based on the old one by instantiating with
+        # a list of entity objects from the old collection.
+        sks1 = knights(list(sks))
+        self.assertEq(sks1.count, sks.count)
+        for i, k in enumerate(sks1):
+            self.assertIs(k, sks1[i])
+            
+
     def it_calls__iadd__(self):
         """ The += operator (__iadd__) wraps the append method. It can 
         everything append() can do except reject non-unique enity objects.
@@ -890,6 +966,19 @@ Bedevere
         ks.clear()
 
         self.assertEq('', str(ks))
+
+    def it_calls__repr__(self):
+        """ The __repr__ method will return a concatenation of the results
+        of each entities __repr__ invocation followed by a line ending."""
+
+        ks = knights.createthe4()
+
+        for i, l in enumerate(repr(ks).splitlines()):
+            self.assertEq(l, repr(ks[i]))
+
+        ks.clear()
+
+        self.assertEq('', repr(ks))
 
     def it_calls__setitem__(self):
         """ The __setitem__ method is used to set an item in the 
