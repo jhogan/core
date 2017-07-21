@@ -27,6 +27,12 @@ from random import randint, sample
 class entities(object):
     def __init__(self, initial=None):
         self.clear()
+
+        # Since event objects are subtypes of entities, don't add events 
+        # unless self is not a type of event.
+        if not isinstance(self, event):
+            self.onadd = event()
+
         if initial != None:
             self.append(initial)
 
@@ -38,7 +44,6 @@ class entities(object):
         Allow collections to be called providing similar functionality to the
         way they can be indexed. 
         """
-
         # Should negative numbers be allowed. If not, why?
         try: 
             return self[ix]
@@ -129,12 +134,21 @@ class entities(object):
 
     def insertbefore(self, ix, e):
         self._ls.insert(ix, e)
+        try:
+            self.onadd(self, entityaddeventargs(e))
+        except AttributeError as ex:
+            msg = str(ex)
+            msg += '\n' + 'Ensure the superclass\'s __init__ is called.'
+            raise AttributeError(msg)
 
     def insertafter(self, ix, e):
-        self._ls.insert(ix + 1, e)
+        self.insertbefore(ix + 1, e)
 
     def move(self, srcix, dstix):
+        raise NotImplementedError('move has not been implemented yet')
         # TODO: This is untested
+        # NOTE When implemented, ensure that onadd does not get needlessly 
+        # called
         if srcix == dstix:
             raise Exception('Source and destination are the same: {}'.format((srcix, dstix)))
 
@@ -144,9 +158,9 @@ class entities(object):
     def shift(self):
         return self._ls.pop(0)
 
-    def unshift(self, t):
+    def unshift(self, e):
         # TODO: Return entities object to indicate what was unshifted
-        return self._ls.insert(0, t)
+        self.insertbefore(0, e)
 
     def pop(self, ix=None):
         if ix == None: return self._ls.pop()
@@ -192,6 +206,13 @@ class entities(object):
         r._list.append(t)
 
         self._list.append(t)
+
+        try:
+            self.onadd(self, entityaddeventargs(t))
+        except AttributeError as ex:
+            msg = str(ex)
+            msg += '\n' + 'Ensure the superclass\'s __init__ is called.'
+            raise AttributeError(msg)
 
         return r
 
@@ -379,6 +400,10 @@ class event(entities):
 
 class eventargs(entity):
     pass
+
+class entityaddeventargs(eventargs):
+    def __init__(self, e):
+        self.entity = e
 
 class valuechangeeventargs(eventargs):
     def __init__(self, e, oldval, newval):
