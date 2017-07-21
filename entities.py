@@ -31,7 +31,8 @@ class entities(object):
         # Since event objects are subtypes of entities, don't add events 
         # unless self is not a type of event.
         if not isinstance(self, event):
-            self.onadd = event()
+            self.onadd    = event()
+            self.onremove = event()
 
         if initial != None:
             self.append(initial)
@@ -94,13 +95,22 @@ class entities(object):
                 es += e
         return es
 
+    def clear(self):
+        # TODO Seems like we could just call: self.remove(self) but the tests
+        # fail
+        for e in self:
+            self.onremove(self, entityremoveeventargs(e))
+        self._ls=[]
+
     def remove(self, e):
         if isinstance(e, entities):
             rms = e
         elif callable(e):
             rms = self.where(e)
         elif type(e) == int:
+            rm = self._ls[e]
             del self._ls[e]
+            self.onremove(self, entityremoveeventargs(rm))
             return
         else:
             rms = [e]
@@ -109,11 +119,28 @@ class entities(object):
             for rm in rms:
                 if rm is self[i]:
                     del self._list[i]
+                    self.onremove(self, entityremoveeventargs(rm))
                     break
 
     def __isub__(self, e):
         self.remove(e)
         return self
+
+    def shift(self):
+        return self.pop(0)
+
+    def pop(self, ix=None):
+        if self.count == 0:
+            return None
+
+        if ix == None: 
+            e = self.last
+            self._ls.pop()
+        else:
+            e = self[ix]
+            self._ls.pop(ix)
+        self.onremove(self, entityremoveeventargs(e))
+        return e
 
     def reversed(self):
         r = type(self)()
@@ -402,6 +429,10 @@ class eventargs(entity):
     pass
 
 class entityaddeventargs(eventargs):
+    def __init__(self, e):
+        self.entity = e
+
+class entityremoveeventargs(eventargs):
     def __init__(self, e):
         self.entity = e
 

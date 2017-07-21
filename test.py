@@ -1284,6 +1284,74 @@ Bedevere
         # invokes the onadd event. Obviously, we can't subscribe to the event
         # until the object is instantiated. There needs to be a workaround
         # that doesn't involve altering the entities classes.
+
+    def it_raises_onremove(self):
+        """ The onremove event is called whenever an entity is removed from
+        the the collection. """
+        snare = knights()
+
+        # The onremove event handler
+        def local_onaremove(src, eargs):
+            nonlocal snare
+            snare += eargs.entity
+
+        # Create the four
+        ks = knights.createthe4()
+
+        # Make local_onaremove the event handler
+        ks.onremove += local_onaremove
+
+        # Remove the first element
+        rst = ks.first
+        ks -= rst
+        self.assertTrue(snare.hasone)
+        self.assertIs(rst, snare.first)
+
+        # Remove two elements as an entities collection
+        ks1 = entities([ks.first, ks.second])
+        ks -= ks1
+        self.assertCount(3, snare)
+        self.assertIs(rst, snare.first)
+        self.assertIs(ks1.second, snare.second)
+        self.assertIs(ks1.first, snare.third)
+
+        # Remove by index
+        last = ks.last
+        ks.remove(0)
+        self.assertCount(4, snare)
+        self.assertIs(rst, snare.first)
+        self.assertIs(ks1.second, snare.second)
+        self.assertIs(ks1.first, snare.third)
+        self.assertIs(last, snare.fourth)
+
+        # Get the knights again and clear the snare for more tests
+        ks = knights.createthe4()
+        ks.onremove += local_onaremove
+        snare.clear()
+
+        # shift
+        rst = ks.shift()
+        self.assertCount(1, snare)
+        self.assertIs(rst, snare.first)
+
+        # pop
+        nd = ks.pop()
+        self.assertCount(2, snare)
+        self.assertIs(rst, snare.first)
+        self.assertIs(nd, snare.second)
+
+        # pop with index
+        rd = ks.pop(1)
+        self.assertCount(3, snare)
+        self.assertIs(rst, snare.first)
+        self.assertIs(nd, snare.second)
+        self.assertIs(rd, snare.third)
+
+
+
+
+
+
            
 class test_entity(tester):
     def it_calls__add__(self):
