@@ -519,6 +519,9 @@ class test_entities(tester):
         self.assertEq(3, ks.count)
         self.assertFalse(ks.has(rst))
 
+        # Ensure empty collection shift None
+        self.assertNone(entities().shift())
+
     def it_calls_unshift(self):
         """ Calling unshift() inserts an elment into the collection making it
         the first element."""
@@ -540,6 +543,9 @@ class test_entities(tester):
 
         self.assertEq(3, ks.count)
         self.assertFalse(ks.has(last))
+
+        # Ensure empty collection pops None
+        self.assertNone(entities().pop())
 
     def it_calls_push(self):
         """ Calling push() causes the argument to be added to the end of
