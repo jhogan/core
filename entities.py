@@ -37,9 +37,6 @@ class entities(object):
         if initial != None:
             self.append(initial)
 
-    def clear(self):
-        self._ls=[]
-
     def __call__(self, ix):
         """
         Allow collections to be called providing similar functionality to the
@@ -171,6 +168,13 @@ class entities(object):
     def insertafter(self, ix, e):
         self.insertbefore(ix + 1, e)
 
+    def unshift(self, e):
+        # TODO: Return entities object to indicate what was unshifted
+        self.insertbefore(0, e)
+
+    def push(self, e):
+        self += e
+
     def move(self, srcix, dstix):
         raise NotImplementedError('move has not been implemented yet')
         # TODO: This is untested
@@ -181,20 +185,6 @@ class entities(object):
 
         e = self.pop(srcix)
         self.insert(dstix, e)
-
-    def shift(self):
-        return self._ls.pop(0)
-
-    def unshift(self, e):
-        # TODO: Return entities object to indicate what was unshifted
-        self.insertbefore(0, e)
-
-    def pop(self, ix=None):
-        if ix == None: return self._ls.pop()
-        return self._ls.pop(ix)
-
-    def push(self, e):
-        self += e
 
     def has(self, e):
         return any(e1 is e for e1 in self)
