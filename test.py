@@ -697,6 +697,13 @@ class test_entities(tester):
 
     def it_subclasses_append(self):
         class sillyknights(knights):
+            # NOTE This is the proper way to override append: the obj, uniq
+            # and r parameters must be given and uniq and r must be defaulted
+            # to None. The results of the call to the super classe's append
+            # methed must be returned to the caller. It's possible to skip
+            # some of these step, however neglating to properly override
+            # append will result in strange and difficult-to-diagnose bugs
+            # when certain, seemingly innocous forms of appending are tried.
             def append(self, obj, uniq=None, r=None):
                 # Do something silly
                 # Now have the super class do the appending
