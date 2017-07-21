@@ -1183,6 +1183,108 @@ Bedevere
             self.assertEq(br.message, 'Names must be strings')
             self.assertEq(str(br), 'Names must be strings')
 
+    def it_raises_onadd(self):
+        """ The onappended event is called whenever an entity is added to the
+        the collection. """
+        ks = knights()
+        the4 = knights.createthe4()
+
+        # snare will be a collection to capture the knights caught in the 
+        # event handler
+        snare = knights()
+
+        # The onadd event handler
+        def local_onadd(src, eargs):
+            nonlocal snare
+            snare += eargs.entity
+
+        # Subscribe to event handler
+        ks.onadd += local_onadd
+
+        # Append a single entity to ks
+        ks += the4.first
+
+        self.assertIs(the4.first, snare.first)
+        self.assertTrue(snare.hasone)
+
+        # Append an entities collection to ks
+        ks += entities([the4.second, the4.third])
+        self.assertIs(the4.first, snare.first)
+        self.assertIs(the4.second, snare.second)
+        self.assertIs(the4.third, snare.third)
+        self.assertEq(3, snare.count)
+
+        # Append a duplicate entity
+        ks += the4.first
+        self.assertIs(the4.first, snare.first)
+        self.assertIs(the4.second, snare.second)
+        self.assertIs(the4.third, snare.third)
+        self.assertEq(4, snare.count)
+
+        # Appned a duplicate entity again but with the &= operator to ensure
+        # it won't be appended
+        ks &= the4.first
+        self.assertIs(the4.first, snare.first)
+        self.assertIs(the4.second, snare.second)
+        self.assertIs(the4.third, snare.third)
+        self.assertEq(4, snare.count)
+
+        # Appned a collection of duplicate entity again but with the &=
+        # operator to ensure they won't be appended
+        ks &= entities([the4.second, the4.third])
+        self.assertIs(the4.first, snare.first)
+        self.assertIs(the4.second, snare.second)
+        self.assertIs(the4.third, snare.third)
+        self.assertEq(4, snare.count)
+
+        # Clear the collections to start insert tests
+        snare.clear()
+        ks.clear()
+
+        # Unshift the first knight into ks
+        ks << the4.first
+        self.assertIs(the4.first, snare.first)
+        self.assertTrue(snare.hasone)
+        self.assertCount(1, snare)
+
+        # insert
+        ks.insert(0, the4.second)
+        self.assertIs(the4.first, snare.first)
+        self.assertIs(the4.second, snare.second)
+        self.assertCount(2, snare)
+
+        # insertbefore
+        ks.insertbefore(0, the4.third)
+        self.assertIs(the4.first, snare.first)
+        self.assertIs(the4.second, snare.second)
+        self.assertIs(the4.third, snare.third)
+        self.assertCount(3, snare)
+
+        # insertafter
+        ks.insertafter(0, the4.fourth)
+        self.assertIs(the4.first, snare.first)
+        self.assertIs(the4.second, snare.second)
+        self.assertIs(the4.third, snare.third)
+        self.assertIs(the4.fourth, snare.fourth)
+        self.assertCount(4, snare)
+
+        # Clear the collections to continue different tests
+        snare.clear()
+        ks.clear()
+
+        # push
+        ks.push(the4.first)
+        self.assertIs(the4.first, snare.first)
+        self.assertTrue(snare.hasone)
+        self.assertCount(1, snare)
+
+        # Instantiate with collection
+        ks = entities([the4.first, the4.second])
+        # TODO We need to test that instatiating with a list of entities
+        # invokes the onadd event. Obviously, we can't subscribe to the event
+        # until the object is instantiated. There needs to be a workaround
+        # that doesn't involve altering the entities classes.
+           
 class test_entity(tester):
     def it_calls__add__(self):
         """ The + operator concatenates an entity with another entity or
