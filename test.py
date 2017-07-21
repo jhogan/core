@@ -1353,11 +1353,18 @@ Bedevere
         self.assertIs(nd, snare.second)
         self.assertIs(rd, snare.third)
 
+        # clear
+        snare.clear()
+        ks = knights.createthe4()
+        rst, nd, rd, rth = ks[:4]
+        ks.onremove += local_onaremove
+        ks.clear()
 
-
-
-
-
+        self.assertCount(4, snare)
+        self.assertIs(rst, snare.first)
+        self.assertIs(nd, snare.second)
+        self.assertIs(rd, snare.third)
+        self.assertIs(rth, snare.fourth)
            
 class test_entity(tester):
     def it_calls__add__(self):
