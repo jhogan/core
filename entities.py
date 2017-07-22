@@ -298,7 +298,10 @@ class entities(object):
         return r
 
     def __setitem__(self, key, item):
+        e = self[key]
         self._ls[key]=item
+        self.onremove(self, entityremoveeventargs(e))
+        self.onadd(self, entityaddeventargs(item))
 
     def __getitem__(self, key):
         if type(key) == int or type(key) == slice:
