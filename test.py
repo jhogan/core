@@ -1560,9 +1560,9 @@ Bedevere
 
 class test_entity(tester):
     def it_calls__add__(self):
-        """ The + operator concatenates an entity with another entity or
-        enities collection and returns an enities collection containing 
-        the concatenation."""
+        """ The + operator concatenates an entity with another
+        entity or enities collection and returns an enities
+        collection containing the concatenation."""
 
         # Concatenate 2 knights into an entities collection of knights.
         ni = knight('knight who says ni 1')
