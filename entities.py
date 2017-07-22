@@ -324,37 +324,75 @@ class entities(object):
         raise ValueError("'{}' is not in the collection " + str(e))
 
     @property
-    def first(self): return self(0)
+    def first(self): 
+        return self(0)
+
+    @first.setter
+    def first(self, v): 
+        self[0] = v
 
     @property
-    def second(self): return self(1)
+    def second(self): 
+        return self(1)
 
     @second.setter
-    def second(self, v): self[1] = v
+    def second(self, v): 
+        self[1] = v
 
     @property
-    def third(self): return self(2)
+    def third(self): 
+        return self(2)
+
+    @third.setter
+    def third(self, v): 
+        self[2] = v
+    @property
+    def fourth(self): 
+        return self(3)
+
+    @fourth.setter
+    def fourth(self, v): 
+        self[3] = v
 
     @property
-    def fourth(self): return self(3)
+    def fifth(self): 
+        return self(4)
+
+    @fifth.setter
+    def fifth(self, v): 
+        self[4] = v
+    @property
+    def sixth(self): 
+        return self(5)
+
+    @sixth.setter
+    def sixth(self, v): 
+        self[5] = v
 
     @property
-    def fifth(self): return self(4)
+    def last(self): 
+        return self(-1)
 
-    @property
-    def sixth(self): return self(5)
-
-    @property
-    def last(self): return self(-1)
-
-    @property
-    def penultimate(self): return self(-2)
-
-    @property
-    def antepenultimate(self): return self(-3)
-
+    # TODO Add tests
     @last.setter
-    def last(self, v): self[-1] = v
+    def last(self, v): 
+        self[-1] = v
+
+    @property
+    def penultimate(self): 
+        return self(-2)
+
+    @penultimate.setter
+    def penultimate(self, v): 
+        self[-2] = v
+
+    @property
+    def antepenultimate(self): 
+        return self(-3)
+
+    @antepenultimate.setter
+    def antepenultimate(self, v): 
+        self[-3] = v
 
     @property
     def brokenrules(self):
