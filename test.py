@@ -1365,7 +1365,199 @@ Bedevere
         self.assertIs(nd, snare.second)
         self.assertIs(rd, snare.third)
         self.assertIs(rth, snare.fourth)
-           
+
+    def it_raises_onremove_and_onadd_when_calling__setitem__(self):
+        
+        """ Setting an entity to a position in a collection will cause the
+        onremove event to be raised, indicating the removal of the original
+        entity, and the onadd event to be raised, indicating the addition of
+        the new entity. """
+
+        addsnare = knights()
+        rmsnare = knights()
+        # The onadd event handler
+        def local_onadd(src, eargs):
+            nonlocal addsnare
+            addsnare += eargs.entity
+
+        # The onremove event handler
+        def local_onaremove(src, eargs):
+            nonlocal rmsnare
+            rmsnare += eargs.entity
+
+        # Get the4 and subscribe to the event handlers
+        the4 = knights.createthe4()
+
+        the4.onadd    += local_onadd
+        the4.onremove += local_onaremove
+        
+        # Make the first entity ni and ensure the event handlers caught the 
+        # added and removed knights
+        ni = knight('knight who says ni')
+        ni1 = knight('knight who says ni1')
+        rst = the4.first
+
+        the4[0] = ni
+        self.assertCount(1, addsnare)
+        self.assertEq(rmsnare.count, addsnare.count)
+        self.assertIs(rst, rmsnare.first)
+        self.assertIs(ni, addsnare.first)
+
+        # first ordinal 
+        the4.first = ni1
+        self.assertCount(2, addsnare)
+        self.assertEq(rmsnare.count, addsnare.count)
+        self.assertIs(rst, rmsnare.first)
+        self.assertIs(ni, rmsnare.second)
+        self.assertIs(ni, addsnare.first)
+        self.assertIs(ni1, addsnare.second)
+
+        # second ordinal
+        nd = the4.second
+        the4.second = ni
+        self.assertCount(3, addsnare)
+        self.assertEq(rmsnare.count, addsnare.count)
+        self.assertIs(rst, rmsnare.first)
+        self.assertIs(ni, rmsnare.second)
+        self.assertIs(nd, rmsnare.third)
+
+        self.assertIs(ni, addsnare.first)
+        self.assertIs(ni1, addsnare.second)
+        self.assertIs(ni, addsnare.third)
+
+        # third ordinal
+        rd = the4.third
+        the4.third = ni
+        self.assertCount(4, addsnare)
+        self.assertEq(rmsnare.count, addsnare.count)
+        self.assertIs(rst, rmsnare.first)
+        self.assertIs(ni, rmsnare.second)
+        self.assertIs(nd, rmsnare.third)
+        self.assertIs(rd, rmsnare.fourth)
+
+        self.assertIs(ni, addsnare.first)
+        self.assertIs(ni1, addsnare.second)
+        self.assertIs(ni, addsnare.third)
+        self.assertIs(ni, addsnare.fourth)
+
+        # fourth ordinal
+        rth = the4.fourth
+        the4.fourth = ni
+        self.assertCount(5, addsnare)
+        self.assertEq(rmsnare.count, addsnare.count)
+        self.assertIs(rst, rmsnare.first)
+        self.assertIs(ni, rmsnare.second)
+        self.assertIs(nd, rmsnare.third)
+        self.assertIs(rd, rmsnare.fourth)
+        self.assertIs(rth, rmsnare.fifth)
+
+        self.assertIs(ni, addsnare.first)
+        self.assertIs(ni1, addsnare.second)
+        self.assertIs(ni, addsnare.third)
+        self.assertIs(ni, addsnare.fourth)
+
+        # Add two more to the4 
+        fifth, sixth = knights.createthe4()[:2]
+        the4 += fifth + sixth
+
+        self.assertCount(7, addsnare)
+        self.assertEq(rmsnare.count + 2, addsnare.count)
+        self.assertIs(rst, rmsnare.first)
+        self.assertIs(ni, rmsnare.second)
+        self.assertIs(nd, rmsnare.third)
+        self.assertIs(rd, rmsnare.fourth)
+        self.assertIs(rth, rmsnare.fifth)
+
+        self.assertIs(ni, addsnare.first)
+        self.assertIs(ni1, addsnare.second)
+        self.assertIs(ni, addsnare.third)
+        self.assertIs(ni, addsnare.fourth)
+        self.assertIs(fifth, addsnare.sixth)
+        self.assertIs(sixth, addsnare[6])
+
+        # fifth ordinal
+        fifth = the4.fifth
+        the4.fifth = ni
+
+        self.assertCount(8, addsnare)
+        self.assertEq(rmsnare.count + 2, addsnare.count)
+        self.assertIs(rst, rmsnare.first)
+        self.assertIs(ni, rmsnare.second)
+        self.assertIs(nd, rmsnare.third)
+        self.assertIs(rd, rmsnare.fourth)
+        self.assertIs(rth, rmsnare.fifth)
+        self.assertIs(fifth, rmsnare.sixth)
+
+        self.assertIs(ni, addsnare.first)
+        self.assertIs(ni1, addsnare.second)
+        self.assertIs(ni, addsnare.third)
+        self.assertIs(ni, addsnare.fourth)
+        self.assertIs(fifth, addsnare.sixth)
+        self.assertIs(sixth, addsnare[6])
+        self.assertIs(ni, addsnare[7])
+
+        # sixth ordinal
+        sixth = the4.sixth
+        the4.sixth = ni
+
+        self.assertCount(9, addsnare)
+        self.assertEq(rmsnare.count + 2, addsnare.count)
+        self.assertIs(rst, rmsnare.first)
+        self.assertIs(ni, rmsnare.second)
+        self.assertIs(nd, rmsnare.third)
+        self.assertIs(rd, rmsnare.fourth)
+        self.assertIs(rth, rmsnare.fifth)
+        self.assertIs(fifth, rmsnare.sixth)
+        self.assertIs(sixth, rmsnare[6])
+
+        self.assertIs(ni, addsnare.first)
+        self.assertIs(ni1, addsnare.second)
+        self.assertIs(ni, addsnare.third)
+        self.assertIs(ni, addsnare.fourth)
+        self.assertIs(fifth, addsnare.sixth)
+        self.assertIs(sixth, addsnare[6])
+        self.assertIs(ni, addsnare[7])
+        self.assertIs(ni, addsnare[8])
+
+        # last
+        the4.clear()
+        rmsnare.clear()
+        the4 += knights.createthe4()
+        addsnare.clear()
+
+        last = the4.last
+        the4.last = the4.first
+        self.assertCount(1, addsnare)
+        self.assertEq(rmsnare.count, addsnare.count)
+        self.assertIs(last, rmsnare.first)
+        self.assertIs(the4.last, addsnare.first)
+
+        # penultimate
+        the4.clear()
+        rmsnare.clear()
+        the4 += knights.createthe4()
+        addsnare.clear()
+
+        penultimate = the4.penultimate
+        the4.penultimate = the4.first
+        self.assertCount(1, addsnare)
+        self.assertEq(rmsnare.count, addsnare.count)
+        self.assertIs(penultimate, rmsnare.first)
+        self.assertIs(the4.penultimate, addsnare.first)
+
+        # antepenultimate
+        the4.clear()
+        rmsnare.clear()
+        the4 += knights.createthe4()
+        addsnare.clear()
+
+        antepenultimate = the4.antepenultimate
+        the4.antepenultimate = the4.first
+        self.assertCount(1, addsnare)
+        self.assertEq(rmsnare.count, addsnare.count)
+        self.assertIs(antepenultimate, rmsnare.first)
+        self.assertIs(the4.antepenultimate, addsnare.first)
+
 class test_entity(tester):
     def it_calls__add__(self):
         """ The + operator concatenates an entity with another entity or
