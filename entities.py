@@ -478,6 +478,9 @@ class event(entities):
     def append(self, fn):
         if not callable(fn):
             raise ValueError('Event must be callable')
+        if isinstance(fn, event):
+            raise ValueError('Attempted to append event to event collection.')
+            
         self._list.append(fn)
 
 class eventargs(entity):
