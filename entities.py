@@ -79,18 +79,12 @@ class entities(object):
         self._ls.sort(key=key)
 
     def sorted(self, key):
-        es = type(self)()
-        ls = sorted(self._ls, key=key)
-        for e in ls:
-            es += e
-        return es
+        return type(self)(sorted(self._ls, key=key))
 
     def tail(self, number):
-        es = type(self)()
         if number > 0:
-            for e in self[-number:]:
-                es += e
-        return es
+            return type(self)(self[-number:])
+        return type(self)()
 
     def clear(self):
         # TODO Seems like we could just call: self.remove(self) but the tests
