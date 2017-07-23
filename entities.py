@@ -37,23 +37,23 @@ class entities(object):
             self.onremove       =   event()
 
             # Local subscriptions to events
-            self.onadd          +=  self.self_onadd
-            self.onremove       +=  self.self_onremove
+            self.onadd          +=  self._self_onadd
+            self.onremove       +=  self._self_onremove
 
             # Instatiate indexes
-            self.identityindex  =   index()
+            self._identityindex  =  index()
 
         # Append initial collection
         if initial != None:
             self.append(initial)
 
-    def self_onadd(self, src, eargs):
+    def _self_onadd(self, src, eargs):
         e = eargs.entity
-        self.identityindex.append(e, e)
+        self._identityindex.append(e, e)
 
-    def self_onremove(self, src, eargs):
+    def _self_onremove(self, src, eargs):
         e = eargs.entity
-        self.identityindex.remove(e, e)
+        self._identityindex.remove(e, e)
 
     def __call__(self, ix):
         """
@@ -199,7 +199,7 @@ class entities(object):
         self.insert(dstix, e)
 
     def has(self, e):
-        return bool(len(self.identityindex(e)))
+        return bool(len(self._identityindex(e)))
 
     def hasnt(self, e):
         return not self.has(e)
