@@ -28,14 +28,32 @@ class entities(object):
     def __init__(self, initial=None):
         self.clear()
 
-        # Since event objects are subtypes of entities, don't add events 
-        # unless self is not a type of event.
+        # Since event objects are subtypes of entities, don't add events and
+        # indexes unless self is not a type of event.
         if not isinstance(self, event):
-            self.onadd    = event()
-            self.onremove = event()
 
+            # Instantiate events
+            self.onadd          =   event()
+            self.onremove       =   event()
+
+            # Local subscriptions to events
+            self.onadd          +=  self.self_onadd
+            self.onremove       +=  self.self_onremove
+
+            # Instatiate indexes
+            self.identityindex  =   index()
+
+        # Append initial collection
         if initial != None:
             self.append(initial)
+
+    def self_onadd(self, src, eargs):
+        e = eargs.entity
+        self.identityindex.append(e, e)
+
+    def self_onremove(self, src, eargs):
+        e = eargs.entity
+        self.identityindex.remove(e, e)
 
     def __call__(self, ix):
         """
@@ -294,8 +312,19 @@ class entities(object):
     def __setitem__(self, key, item):
         e = self[key]
         self._ls[key]=item
-        self.onremove(self, entityremoveeventargs(e))
-        self.onadd(self, entityaddeventargs(item))
+
+        # If key is a slice. then what was removed and what was added could
+        # have been an iterable. Therefore, we need to convert them to
+        # iterable then raise the onadd and onremove events for each entity
+        # that had been removed and added.
+        items  =  item  if  hasattr(item,  '__iter__')  else  [item]
+        es     =  e     if  hasattr(e,     '__iter__')  else  [e]
+            
+        for item in items:
+            self.onadd(self, entityaddeventargs(item))
+
+        for e in es:
+            self.onremove(self, entityremoveeventargs(e))
 
     def __getitem__(self, key):
         if type(key) == int or type(key) == slice:
