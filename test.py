@@ -780,7 +780,6 @@ class test_entities(tester):
         for i, k in enumerate(sks1):
             self.assertIs(k, sks1[i])
             
-
     def it_calls__iadd__(self):
         """ The += operator (__iadd__) wraps the append method. It can 
         everything append() can do except reject non-unique enity objects.
