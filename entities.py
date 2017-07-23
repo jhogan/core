@@ -483,23 +483,32 @@ class index(entity):
     def append(self, val, e):
         ix     = self._ix
         try:
-            d = ix[id(val)]
+            vals = ix[id(val)]
         except KeyError:
-            ix[id(val)] = d = {}
+            ix[id(val)] = vals = []
 
-        d[id(e)] = e
+        vals.append(e)
 
     def remove(self, val, e):
         ix     = self._ix
-        del ix[id(val)][id(e)]
-        if not len(ix[id(val)]):
+        vals = ix[id(val)]
+
+        for i, e1 in enumerate(vals):
+            if e is e1:
+                del vals[i]
+                break
+                
+        if not len(vals):
             del ix[id(val)]
+
+    def __call__(self, val):
+        try:
+            return self[val]
+        except KeyError:
+            return []
 
     def __getitem__(self, val):
         return self._ix[id(val)]
 
-    def __call__(self, val):
-        try:
-            return self[val].values()
-        except KeyError:
-            return []
+
+
