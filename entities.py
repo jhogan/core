@@ -199,7 +199,7 @@ class entities(object):
         self.insert(dstix, e)
 
     def has(self, e):
-        return any(e1 is e for e1 in self)
+        return bool(len(self.identityindex(e)))
 
     def hasnt(self, e):
         return not self.has(e)
