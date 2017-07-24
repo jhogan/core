@@ -1581,27 +1581,29 @@ Bedevere
         # Test default id indexing for the four
         self.assertEq(4, len(ix))
         for i, k in enumerate(ks):
-            self.assertIs(k, ix[ks[i]][0])
-            self.assertEq(1, len(ix[ks[i]]))
+            self.assertIs(knights, type(ix[ks[i]]))
+            self.assertIs(k, ix[ks[i]].first)
+            self.assertEq(1, ix[ks[i]].count)
 
         # Append a knight and retest
         ni = knight('knight who says ni')
         ks += ni
         self.assertEq(5, len(ix))
         for i, k in enumerate(ks):
-            self.assertIs(k, ix[ks[i]][0])
-            self.assertEq(1, len(ix[ks[i]]))
+            self.assertIs(knights, type(ix[ks[i]]))
+            self.assertIs(k, ix[ks[i]].first)
+            self.assertEq(1, ix[ks[i]].count)
 
         # Append a non-unique entity
         ks += ni
         self.assertEq(5, len(ix))
         for i, k in enumerate(ks):
-            self.assertIs(k, ix[ks[i]][0])
+            self.assertIs(k, ix[ks[i]].first)
             if k == ni:
                 # Ensure that ni's index entry returns 2 entities
-                self.assertEq(2, len(ix[ks[i]]))
+                self.assertEq(2, ix[ks[i]].count)
             else:
-                self.assertEq(1, len(ix[ks[i]]))
+                self.assertEq(1, ix[ks[i]].count)
 
         # Remove a non-unique entity
 
@@ -1613,8 +1615,8 @@ Bedevere
         ks -= ni
         self.assertEq(4, len(ix))
         for i, k in enumerate(ks):
-            self.assertIs(k, ix[ks[i]][0])
-            self.assertEq(1, len(ix[ks[i]]))
+            self.assertIs(k, ix[ks[i]].first)
+            self.assertEq(1, ix[ks[i]].count)
 
     def it_creates_and_uses_index(self):
         class sillyknights(knights):
