@@ -41,20 +41,25 @@ class entities(object):
             self.onadd          +=  self._self_onadd
             self.onremove       +=  self._self_onremove
 
+            # Instantiate index collection
+            self.indexes = indexes(type(self))
+
             # Instatiate indexes
-            self._identityindex  =  index()
+            ix = index(name='identity', keyfn=lambda e: e)
+            ix.indexes = self.indexes
+            self.indexes._list.append(ix)
 
         # Append initial collection
         if initial != None:
             self.append(initial)
 
     def _self_onadd(self, src, eargs):
-        e = eargs.entity
-        self._identityindex.append(e, e)
-
+        for ix in self.indexes:
+            ix += eargs.entity
+            
     def _self_onremove(self, src, eargs):
-        e = eargs.entity
-        self._identityindex.remove(e, e)
+        for ix in self.indexes:
+            ix -= eargs.entity
 
     def __call__(self, ix):
         """
@@ -509,9 +514,38 @@ class appendeventargs(eventargs):
     def __init__(self, e):
         self.entity = e
 
+class indexes(entities):
+    def __init__(self, cls):
+        self.class_ = cls
+        
+    def __getitem__(self, name):
+        if type(name) == int:
+            return super().__getitem__(name)
+
+        for ix in self:
+            if ix.name == name:
+                return ix
+        return None
+
+    def append(self, ix, uniq=None, r=None):
+        ix.indexes = self
+        return super().append(ix, uniq, r)
+        
 class index(entity):
-    def __init__(self):
+    def __init__(self, name=None, keyfn=None):
         self._ix = {}
+        self.name = name
+        self.keyfunction = keyfn
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, name):
+        if type(name) == int:
+            raise ValueError('"name" cannot be an int')
+        self._name = name
 
     def append(self, val, e):
         ix     = self._ix
@@ -521,6 +555,10 @@ class index(entity):
             ix[id(val)] = vals = []
 
         vals.append(e)
+
+    def __iadd__(self, e):
+        self.append(self.keyfunction(e), e)
+        return self
 
     def remove(self, val, e):
         ix     = self._ix
@@ -534,14 +572,29 @@ class index(entity):
         if not len(vals):
             del ix[id(val)]
 
+    def __isub__(self, e):
+        self.remove(self.keyfunction(e), e)
+        return self
+
     def __call__(self, val):
         try:
             return self[val]
         except KeyError:
-            return []
+            return self.indexes.class_()
 
     def __getitem__(self, val):
-        return self._ix[id(val)]
+        cls = self.indexes.class_
+        ls = self._ix[id(val)]
+        es = cls()
+
+        # Don't use the constructor's initial parameter. It relies on a 
+        # correct implementation of __init__ in the subclass. 
+        for e in ls:
+            es += e
+        return es
+
+    def __len__(self):
+        return len(self._ix)
 
 
 
