@@ -373,6 +373,23 @@ class test_entities(tester):
         self.assertCount(3, ks)
         self.assertFalse(ks.has(k))
 
+        ## Remove a duplicate
+        ni = knight('knight who says ni')
+
+        # Add ni twice
+        ks += ni
+        ks += ni
+
+        # Now the count is 5
+        self.assertCount(5, ks)
+
+        # If we remove ni once, we end up removing both instance of ni. This
+        # is counter-intuitive, and may not be Right, but it seems the most 
+        # logical at the moment.
+        ks -= ni
+        self.assertCount(3, ks)
+        self.assertFalse(ks.has(ni))
+
     def it_calls__isub__(self):
         """ entities.__isub__() is essentially a wrapper around
         entities.removes. The test here will be similar to it_calls_remove.
