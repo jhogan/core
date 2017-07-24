@@ -1574,6 +1574,65 @@ Bedevere
         self.assertIs(antepenultimate, rmsnare.first)
         self.assertIs(the4.antepenultimate, addsnare.first)
 
+    def it_uses_identityindex(self):
+        ks = knights.createthe4()
+        ix = ks.indexes['identity']
+
+        # Test default id indexing for the four
+        self.assertEq(4, len(ix))
+        for i, k in enumerate(ks):
+            self.assertIs(k, ix[ks[i]][0])
+            self.assertEq(1, len(ix[ks[i]]))
+
+        # Append a knight and retest
+        ni = knight('knight who says ni')
+        ks += ni
+        self.assertEq(5, len(ix))
+        for i, k in enumerate(ks):
+            self.assertIs(k, ix[ks[i]][0])
+            self.assertEq(1, len(ix[ks[i]]))
+
+        # Append a non-unique entity
+        ks += ni
+        self.assertEq(5, len(ix))
+        for i, k in enumerate(ks):
+            self.assertIs(k, ix[ks[i]][0])
+            if k == ni:
+                # Ensure that ni's index entry returns 2 entities
+                self.assertEq(2, len(ix[ks[i]]))
+            else:
+                self.assertEq(1, len(ix[ks[i]]))
+
+        # Remove a non-unique entity
+
+        # NOTE It may seem like we are removing one entity here. But since ni
+        # was added twice, removing ni will remove both entries in the
+        # collection, and consequently, the index entry for ni will be remove
+        # as well. Note that this behavior may be considerd Wrong and,
+        # consequently changed.
+        ks -= ni
+        self.assertEq(4, len(ix))
+        for i, k in enumerate(ks):
+            self.assertIs(k, ix[ks[i]][0])
+            self.assertEq(1, len(ix[ks[i]]))
+
+    def it_creates_and_uses_index(self):
+        class sillyknights(knights):
+            def __init__(self, initial=None):
+                super().__init__(initial);
+                self.indexes += index(name='name', keyfn=lambda k: k.name)
+
+        the4 = knights.createthe4()
+        sk = sillyknights()
+
+        sk += the4.first
+
+        ks = sk.indexes['name'][the4.first.name]
+
+        self.assertTrue(ks.hasone)
+        self.assertIs(ks.first, sk.first)
+        self.assertEq(sillyknights, type(ks))
+
 class test_entity(tester):
     def it_calls__add__(self):
         """ The + operator concatenates an entity with another
