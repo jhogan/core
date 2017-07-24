@@ -28,9 +28,10 @@ class entities(object):
     def __init__(self, initial=None):
         self.clear()
 
-        # Since event objects are subtypes of entities, don't add events and
-        # indexes unless self is not a type of event.
-        if not isinstance(self, event):
+        # The event and indexes classes are subtypes of entites. Don't add
+        # events and indexes to these types in order to avoid infinite
+        # recursion.
+        if not isinstance(self, event) and not isinstance(self, indexes):
 
             # Instantiate events
             self.onadd          =   event()
