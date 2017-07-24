@@ -243,7 +243,8 @@ class entities(object):
         self._list.append(t)
 
         try:
-            self.onadd(self, entityaddeventargs(t))
+            if not isinstance(self, event) and not isinstance(self, indexes):
+                self.onadd(self, entityaddeventargs(t))
         except AttributeError as ex:
             msg = str(ex)
             msg += '\n' + 'Ensure the superclass\'s __init__ is called.'
