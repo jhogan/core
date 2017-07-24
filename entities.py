@@ -205,7 +205,7 @@ class entities(object):
         self.insert(dstix, e)
 
     def has(self, e):
-        return bool(len(self._identityindex(e)))
+        return self.indexes['identity'](e).ispopulated
 
     def hasnt(self, e):
         return not self.has(e)
