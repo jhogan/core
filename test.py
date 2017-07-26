@@ -23,6 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 from tester import *
+from table import *
 import math
 
 class knights(entities):
@@ -1669,11 +1670,76 @@ class test_entity(tester):
         test_entities.it_gets_brokenrules."""
         pass
 
-def oninvoketest(src, eargs):
-    print('#', end='', flush=True)
+class test_table(tester):
+    def it_calls__init__(self):
+        # Ensure we can instantiate without arguments
+        try:
+            tbl = table()
+        except:
+            self.assertFail('Table should instatiate without arguments')
+
+        # Instatiate a table with 10 rows and 20 columns. All the fields'
+        # values should be None
+        tbl = table(x=10, y=20)
+
+        self.assertEq(10, tbl.rows.count)
+        self.assertEq(20, tbl.columns.count)
+        self.assertEq(20, tbl.rows.first.fields.count)
+        for r in tbl:
+            for f in r:
+                self.assertNone(f.value)
+        
+
+        # Instatiate a table with 10 rows and 20 columns. All the fields'
+        # values should be the knight set by the initval argument.
+        k = knights.createthe4().first
+        tbl = table(x=10, y=20, initval=k)
+
+        self.assertEq(10, tbl.rows.count)
+        self.assertEq(20, tbl.columns.count)
+        self.assertEq(20, tbl.rows.first.fields.count)
+        for r in tbl:
+            for f in r:
+                self.assertIs(k, f.value)
+
+    def it_calls_newrow(self):
+        # Ensure newrow creates a row in the table and returns it
+        tbl = table()
+        r = tbl.newrow()
+        self.assertEq(1, tbl.rows.count)
+        self.assertIs(tbl.rows.first, r)
+
+    def it_gets_columns(self):
+        tbl = table(x=10, y=20)
+        cs = tbl.columns
+        self.assertEq(columns, type(cs))
+
+    def it_calls_count(self):
+        k = knights.createthe4().first
+        tbl = table(x=10, y=20, initval=k)
+
+        # TODO Wait for indexs to be reimplemented
+        # self.assertEq(20 * 10, tbl.count(k))
+
+    def it_call_where(self):
+        the4 = knights.createthe4()
+        tbl = table(x=10, y=20)
+        r = tbl.newrow()
+        r.newfield(the4.first)
+        r.newfield(the4.second)
+
+
+        # TODO Write when indexes have been reimplemented
+        # ks = tbl.where(knight)
+        # self.assertEq(2, ks.count)
+
+        B()
+        ks = tbl.where(lambda v: type(v) == knight)
+        self.assertEq(2, ks.count)
+
 
 t = testers()
-t.oninvoketest += oninvoketest
+t.oninvoketest += lambda src, eargs: print('#', end='', flush=True)
 t.run()
 print(t)
 

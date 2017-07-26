@@ -59,7 +59,6 @@ class table(entity):
         self.fieldtypeindex.remove(type(oldval), f)
         self.fieldtypeindex.append(type(newval), f)
 
-
     def __iter__(self):
         for r in self.rows:
             yield r
