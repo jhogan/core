@@ -200,6 +200,7 @@ class column(entity):
         
 class rows(entities):
     def __init__(self, tbl):
+        super().__init__()
         self.table = tbl
 
     @property
@@ -214,6 +215,7 @@ class rows(entities):
 
 class row(entity):
     def __init__(self):
+        super().__init__()
         self.fields = fields(self)
 
     @property
@@ -248,12 +250,13 @@ class row(entity):
         f.fields = fs
 
 class fields(entities):
-    def __init__(self, o=None):
+    def __init__(self, o=None, initial=None):
         if type(o) == row:
             self.row = o
+            super().__init__(initial=initial)
         else:
             self.row = None
-            super().__init__(o)
+            super().__init__(initial=initial)
 
     def getrandomized(self):
         """ Return a randomized version of self."""
