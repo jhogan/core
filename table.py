@@ -93,12 +93,14 @@ class table(entity):
         if type(v) == type:
             # If v is a type object, search the type index
             ls = self.fieldtypeindex(v)
-        elif type(v) == callable:
+        elif callable(v) and not isinstance(v, entity) \
+                         and not isinstance(v, entities):
             
             # If v is a callable, a scan is necessary
+            ls = []
             for r in self:
                 for f in r:
-                    if fn(f.value):
+                    if v(f.value):
                         ls.append(f)
                         if limit != None and len(ls) >= limit:
                             break 
