@@ -1728,15 +1728,48 @@ class test_table(tester):
         r.newfield(the4.first)
         r.newfield(the4.second)
 
+        # TODO Write when indexes have been reimplemented
+        # fs = tbl.where(knight)
+        # self.assertEq(2, fs.count)
+
+        fs = tbl.where(lambda v: type(v) == knight)
+        self.assertEq(2, fs.count)
+        self.assertEq(fields, type(fs))
+        self.assertIs(the4.first, fs.first.value)
+        self.assertIs(the4.second, fs.second.value)
 
         # TODO Write when indexes have been reimplemented
-        # ks = tbl.where(knight)
-        # self.assertEq(2, ks.count)
+        # fs = tbl.where(the4.first)
+        # self.assertEq(1, fs.count)
+        # self.assertEq(2, fs.count)
 
-        B()
-        ks = tbl.where(lambda v: type(v) == knight)
-        self.assertEq(2, ks.count)
+    def it_calls_remove(self):
+        the4 = knights.createthe4()
+        tbl = table(x=10, y=20)
+        r = tbl.newrow()
+        r.newfield(the4.first)
+        r.newfield(the4.second)
+        
+        tbl.remove(entities(the4.first))
+        fs = tbl.where(lambda v: type(v) == knight)
+        self.assertEq(1, fs.count)
+        self.assertEq(fields, type(fs))
+        self.assertIs(the4.second, fs.first.value)
 
+    def it_calls_slice(self):
+        tbl = table(x=10, y=20)
+        
+        f = tbl.rows.first.fields.first
+
+        try:
+            tbl.slice(center=f, radius="123")
+            self.assertFail('The radius should be an int')
+        except TypeError:
+            self.assertTrue(True)
+        except Exception as ex:
+            self.assertFail('Incorrect exception raised: ' + str(type(ex)))
+        
+        
 
 t = testers()
 t.oninvoketest += lambda src, eargs: print('#', end='', flush=True)
