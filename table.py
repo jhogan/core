@@ -125,6 +125,7 @@ class table(entity):
         return fs
 
     def remove(self, values):
+        # TODO Use fieldvalueindex
         for r in self:
             for f in r:
                 if any(v is f.value for v in values):
