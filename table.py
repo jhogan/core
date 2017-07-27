@@ -136,9 +136,9 @@ class table(entity):
             raise NotImplementedError("'radius' must be provided")
         else:
             if type(radius) != int:
-                raise ValueError("'radius' must be an integer")
-            elif center == None or type(center) != field:
-                raise ValueError("'center' must be a field")
+                raise TypeError("'radius' must be an integer")
+            if center == None or type(center) != field:
+                raise TypeError("'center' must be a field")
 
         # Return a <table> object. If <table> has been subclassed, return the
         # subclassed version of the table.
