@@ -164,26 +164,33 @@ class table(entity):
         return tbl
 
     def __str__(self):
-        # Untested
-        def P(s): print(s, end='')
+        R = ''
 
-        maxes = self.columns.maxlengths
+        if self.rows.isempty:
+            return R
+
+        widths = self.columns.widths
+
+        b = '-' * (sum(widths) + len(widths) + (len(widths) * 2) - 1)
+
+        R += '+' + b + '+'
 
         for i, r in enumerate(self):
+            R += '\n'
             for j, f in enumerate(r):
-                if j == 0:
-                    P('+', )
-                P(('-' * maxes[j]) + '+')
+                R += '| ' if j == 0 else ''
+                R += str(f).rjust(widths[j]) + ' | '
+            if i < self.rows.ubound:
+                R += '\n|' + b + '|'
 
-            for j, f in enumerate(r):
-                if j == 0:
-                    P('|')
-                P(str(f).rjust(maxes[j]) + '|')
+        R += '\n+' + b + '+'
+        return R
                 
 class columns(entities):
     
-    def maxlengths(self):
-        return [c.maxlength for c in self]
+    @property
+    def widths(self):
+        return [c.width for c in self]
 
 class column(entity):
     
@@ -195,8 +202,8 @@ class column(entity):
             yield f
 
     @property
-    def maxlength(self):
-        return max(self, lambda f: len(str(f)))
+    def width(self):
+        return max([len(str(f.value)) for f in self])
         
 class rows(entities):
     def __init__(self, tbl):
