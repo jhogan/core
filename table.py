@@ -26,8 +26,6 @@ from entities import *
 
 class table(entity):
     def __init__(self, x=None, y=None, initval=None):
-        self.fieldvalueindex = index()
-        self.fieldtypeindex = index()
         self.rows = rows(self)
 
         # If we have x, we can initialize the table using x, y and initval
@@ -70,7 +68,7 @@ class table(entity):
         """
         if type(v) == type:
             # If v is a type object, search the type index
-            ls = self.fieldtypeindex(v)
+            pass
         elif callable(v) and not isinstance(v, entity) \
                          and not isinstance(v, entities):
             
@@ -87,7 +85,7 @@ class table(entity):
                 break
         else:
             # If v is an arbitrary value, use the value index.
-            ls = self.fieldvalueindex(v)
+            pass
 
         # Create and return a fields collection based on ls.
 
