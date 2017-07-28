@@ -213,14 +213,6 @@ class row(entity):
         return f
 
 class fields(entities):
-    def getrandomized(self):
-        """ Return a randomized version of self."""
-        fs = type(self)()
-        ls = sample(self._ls, self.count)
-        for f in ls:
-            fs.append(f, assigncollection=False)
-        return fs
-
     @property
     def table(self):
         return self.row.table if self.row else None
