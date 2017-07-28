@@ -43,6 +43,7 @@ class table(entity):
     def newrow(self):
         r = row()
         self.rows += r
+        r.rows = self.rows
         return r
 
     @property
@@ -224,14 +225,9 @@ class row(entity):
 
     def newfield(self, v):
         f, fs = field(v), self.fields
-
-        # NOTE Set assigncollection to False here. As we progress, we need to
-        # write the append() signatures so they conform to a standard. There
-        # shouldn't be specialized parameters like assigncollection. We 
-        # will handle assigning this new field's fields collection proprety
-        # to row.fields in this routine.
-        fs.append(f, r=None, assigncollection=False)
+        fs += f
         f.fields = fs
+        return f
 
 class fields(entities):
     def __init__(self, o=None, initial=None):
