@@ -1759,8 +1759,8 @@ class test_table(tester):
     def it_calls_slice(self):
         tbl = table(x=10, y=20)
         
+        # Ensure that a TypeError will occure if radius isn't an int
         f = tbl.rows.first.fields.first
-
         try:
             tbl.slice(center=f, radius="123")
             self.assertFail('The radius should be an int')

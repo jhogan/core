@@ -26,12 +26,6 @@ from entities import *
 
 class table(entity):
     def __init__(self, x=None, y=None, initval=None):
-        self.onfieldappend = event()
-        self.onfieldchange = event()
-
-        self.onfieldappend += self.self_onfieldappend
-        self.onfieldchange += self.self_onfieldchange
-
         self.fieldvalueindex = index()
         self.fieldtypeindex = index()
         self.rows = rows(self)
@@ -43,21 +37,6 @@ class table(entity):
                 r = self.newrow()
                 for _ in range(y):
                     r.newfield(initval)
-
-    def self_onfieldappend(self, src, eargs):
-        f = eargs.entity
-        self.fieldvalueindex.append(f.value, f)
-        self.fieldtypeindex.append(type(f.value), f)
-
-    def self_onfieldchange(self, src, eargs):
-        f = eargs.entity
-        oldval, newval = eargs.values
-
-        self.fieldvalueindex.remove(oldval, f)
-        self.fieldvalueindex.append(newval, f)
-
-        self.fieldtypeindex.remove(type(oldval), f)
-        self.fieldtypeindex.append(type(newval), f)
 
     def __iter__(self):
         for r in self.rows:
@@ -280,16 +259,6 @@ class fields(entities):
             if assigncollection:
                 o.fields = self
 
-            # If this field collection is associated with table, raise the
-            # onfieldappend event on the table object.
-
-            # TODO Ideally we should raise an onfieldappend event on the `row`
-            # object where it would propagate to the `rows` objects then the
-            # `table` object.
-            if self.table:
-                eargs = appendeventargs(o)
-                self.table.onfieldappend(self, eargs)
-
         return super().append(o)
 
     @property
@@ -311,8 +280,6 @@ class field(entity):
     @value.setter
     def value(self, v):
         if v != self.value:
-            eargs = valuechangeeventargs(self, self.value, v)
-            self.table.onfieldchange(self, eargs)
             self._v = v
 
     def clone(self):
