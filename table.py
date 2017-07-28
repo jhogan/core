@@ -160,8 +160,8 @@ class columns(entities):
         return [c.width for c in self]
 
 class column(entity):
-    
-    def __init__(self):
+    def __init__(self, initial=None):
+        super().__init__(initial=initial)
         self.fields = fields()
 
     def __iter__(self):
@@ -173,8 +173,8 @@ class column(entity):
         return max([len(str(f.value)) for f in self])
         
 class rows(entities):
-    def __init__(self, tbl):
-        super().__init__()
+    def __init__(self, tbl, initial=None):
+        super().__init__(initial=initial)
         self.table = tbl
 
     @property
@@ -182,8 +182,8 @@ class rows(entities):
         return self.table.rows.getindex(self)
 
 class row(entity):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, initial=None):
+        super().__init__(initial=initial)
         self.fields = fields(self)
 
     @property
@@ -213,14 +213,6 @@ class row(entity):
         return f
 
 class fields(entities):
-    def __init__(self, o=None, initial=None):
-        if type(o) == row:
-            self.row = o
-            super().__init__(initial=initial)
-        else:
-            self.row = None
-            super().__init__(initial=initial)
-
     def getrandomized(self):
         """ Return a randomized version of self."""
         fs = type(self)()
@@ -238,7 +230,8 @@ class fields(entities):
         return [x.value for x in self]
 
 class field(entity):
-    def __init__(self, v):
+    def __init__(self, v, initial=None):
+        super().__init__(initial=initial)
         self._v = v
 
     @property
