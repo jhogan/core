@@ -69,7 +69,8 @@ class table(entity):
         """
         if type(v) == type:
             # If v is a type object, search the type index
-            pass
+            raise NotImplementedError()
+
         elif callable(v) and not isinstance(v, entity) \
                          and not isinstance(v, entities):
             
@@ -86,21 +87,9 @@ class table(entity):
                 break
         else:
             # If v is an arbitrary value, use the value index.
-            pass
+            raise NotImplementedError()
 
-        # Create and return a fields collection based on ls.
-
-        # TODO This should be done in one line:
-        #    return fields(ls)
-        # However, field.append's interface is incorrect and the
-        # assigncollection parameter default's to True so that the row
-        # property of the fields gets set to None
-        fs = fields()
-        for i, f in enumerate(ls):
-            if limit != None and i == limit:
-                break
-            fs.append(f, assigncollection=False)
-        return fs
+        return fields(ls)
 
     def remove(self, values):
         # TODO Use fieldvalueindex
@@ -192,12 +181,6 @@ class rows(entities):
     def index(self):
         return self.table.rows.getindex(self)
 
-    def append(self, r):
-        r.rows = self
-        super().append(r)
-        return r 
-
-
 class row(entity):
     def __init__(self):
         super().__init__()
@@ -245,15 +228,6 @@ class fields(entities):
         for f in ls:
             fs.append(f, assigncollection=False)
         return fs
-
-    def append(self, o, r=None, assigncollection=True):
-        # o will usually be a field object. However, it could be
-        # anything supported by super().append() such as an iterable.
-        if type(o) == field:
-            if assigncollection:
-                o.fields = self
-
-        return super().append(o)
 
     @property
     def table(self):
