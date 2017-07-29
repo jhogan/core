@@ -731,7 +731,7 @@ class test_entities(tester):
             def append(self, obj, uniq=None, r=None):
                 # Do something silly
                 # Now have the super class do the appending
-                return super().append(obj, uniq,  r=r)
+                return super().append(obj, uniq=uniq,  r=r)
 
         # Append one knight
         sks = sillyknights()

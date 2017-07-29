@@ -358,9 +358,8 @@ class field(entity):
     @property
     def pt(self):
         """ 
-        Print table and highligh this field.
+        Print table and highlight this field.
 
-        This is a proprety with a very short name to make it easier for
-        debugging.
+        This property is merely intended for debugging purposes.
         """
         print(self.__str__(table=True))
