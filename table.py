@@ -160,8 +160,8 @@ class columns(entities):
         return [c.width for c in self]
 
 class column(entity):
-    def __init__(self, initial=None):
-        super().__init__(initial=initial)
+    def __init__(self):
+        super().__init__()
         self.fields = fields()
 
     def __iter__(self):
@@ -182,8 +182,8 @@ class rows(entities):
         return self.table.rows.getindex(self)
 
 class row(entity):
-    def __init__(self, initial=None):
-        super().__init__(initial=initial)
+    def __init__(self):
+        super().__init__()
         self.fields = fields(self)
 
     @property
@@ -223,7 +223,7 @@ class fields(entities):
 
 class field(entity):
     def __init__(self, v, initial=None):
-        super().__init__(initial=initial)
+        super().__init__()
         self._v = v
 
     @property
