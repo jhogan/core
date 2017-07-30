@@ -65,8 +65,19 @@ class table(entity):
                 c.fields += f
 
         return cs
+
+    @property
+    def fields(self):
+        # This can be cached and the cache can be invalidated by onadd,
+        # onremove  and onchange events.
+        fs = fields()
+        for r in self:
+            for f in r:
+                fs += f
+        return fs
         
     def count(self, o):
+        
         return self.where(o).count
 
     def where(self, v, limit=None):
