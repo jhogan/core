@@ -310,7 +310,7 @@ class entities(object):
     def __str__(self):
         return self._tostr(str)
 
-    def _tostr(self, fn, includeHeader=True):
+    def _tostr(self, fn=str, includeHeader=True):
         if includeHeader:
             r = '{} object at {} count: {}\n' \
                 .format(type(self), hex(id(self)), self.count)
