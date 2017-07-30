@@ -136,7 +136,7 @@ class table(entity):
         r = tbl.newrow()
         while True: 
             if f and f.index - center.index <= radius:
-                r.fields += f.clone()
+                r.newfield(f.value)
                 f = f.right
             else:
                 f = leftmost = leftmost.below
