@@ -324,7 +324,6 @@ class field(entity):
     def getbelowright(self, number, closest=False):
         return self.getneighbor('belowright', number, closest)
 
-
     def getneighbor(self, direction, number, closest):
         """
         Get a neigboring field.

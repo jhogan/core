@@ -354,6 +354,9 @@ class entities(object):
         This is similar to list.index except here we use the `is` operator for
         comparison instead of the `==` operator."""
 
+        # TODO:OPT We may be able to cache this and invalidate the cache using
+        # the standard events
+
         for ix, e1 in enumerate(self):
             if e is e1: return ix
         raise ValueError("'{}' is not in the collection " + str(e))
