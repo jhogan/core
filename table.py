@@ -40,6 +40,12 @@ class table(entity):
         for r in self.rows:
             yield r
 
+    def __getitem__(self, ix):
+        return self.rows[ix]
+
+    def __call__(self, y, x):
+        return self[y][x]
+
     def newrow(self):
         r = row()
         self.rows += r
