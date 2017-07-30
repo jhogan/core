@@ -106,7 +106,7 @@ class table(entity):
             # If v is an arbitrary value, use the value index.
             raise NotImplementedError()
 
-        return fields(ls)
+        return fields(initial=ls)
 
     def remove(self, values):
         # TODO Use fieldvalueindex
