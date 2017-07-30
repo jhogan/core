@@ -1692,9 +1692,9 @@ class test_table(tester):
         # values should be None
         tbl = table(x=10, y=20)
 
-        self.assertEq(10, tbl.rows.count)
-        self.assertEq(20, tbl.columns.count)
-        self.assertEq(20, tbl.rows.first.fields.count)
+        self.assertEq(20, tbl.rows.count)
+        self.assertEq(10, tbl.columns.count)
+        self.assertEq(10, tbl.rows.first.fields.count)
         for r in tbl:
             for f in r:
                 self.assertNone(f.value)
@@ -1705,9 +1705,9 @@ class test_table(tester):
         k = knights.createthe4().first
         tbl = table(x=10, y=20, initval=k)
 
-        self.assertEq(10, tbl.rows.count)
-        self.assertEq(20, tbl.columns.count)
-        self.assertEq(20, tbl.rows.first.fields.count)
+        self.assertEq(20, tbl.rows.count)
+        self.assertEq(10, tbl.columns.count)
+        self.assertEq(10, tbl.rows.first.fields.count)
         for r in tbl:
             for f in r:
                 self.assertIs(k, f.value)
