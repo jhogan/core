@@ -215,6 +215,12 @@ class row(entity):
         super().__init__()
         self.fields = fields(self)
 
+    def __getitem__(self, ix):
+        return self.fields[ix]
+
+    def __setitem__(self, ix, item):
+        self.fields[ix] = item
+
     @property
     def index(self):
         return self.rows.getindex(self)
