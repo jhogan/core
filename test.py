@@ -1770,7 +1770,7 @@ class test_table(tester):
         tbl = table(x=10, y=20)
         
         # Ensure that a TypeError will occure if radius isn't an int
-        f = tbl.rows.first.fields.first
+        f = tbl[0][0]
         try:
             tbl.slice(center=f, radius="123")
             self.assertFail('The radius should be an int')
@@ -1779,7 +1779,77 @@ class test_table(tester):
         except Exception as ex:
             self.assertFail('Incorrect exception raised: ' + str(type(ex)))
         
-        
+        # Ensure that a TypeError will occure if center isn't a field
+        try:
+            tbl.slice(center=entity(), radius=123)
+            self.assertFail('Center should be a field')
+        except TypeError:
+            self.assertTrue(True)
+        except Exception as ex:
+            self.assertFail('Incorrect exception raised: ' + str(type(ex)))
+
+        # Assign the value property of each field in the table a unique,
+        # index-based value.
+        for i, r in enumerate(tbl.rows):
+            for j, f in enumerate(r.fields):
+                f.value = str([i, j])
+
+        # Get a slice where the middle field is the top-most, left-most field
+        # of the table
+        f = tbl[0][0]
+        s = tbl.slice(f, 1)
+        self.assertIs(table, type(s))
+        self.assertIs(tbl(0, 0).value,   s(0, 0).value)
+        self.assertIs(tbl(0, 1).value, s(0, 1).value)
+        self.assertIs(tbl(1, 0).value,  s(1, 0).value)
+        self.assertIs(tbl(1, 1).value, s(1, 1).value)
+        self.assertEq(4, s.fields.count)
+
+        # Get a slice where the middle field is the bottom-most, left-most
+        # field of the table
+        s = tbl.slice(tbl.rows.last.fields.first, 1)
+        self.assertIs(table, type(s))
+        self.assertIs(tbl.rows.penultimate.fields.first.value, s(0, 0).value)
+        self.assertIs(tbl.rows.penultimate.fields.second.value, s(0, 1).value)
+        self.assertIs(tbl.rows.last.fields.first.value, s(1, 0).value)
+        self.assertIs(tbl.rows.last.fields.second.value, s(1, 1).value)
+        self.assertEq(4, s.fields.count)
+
+        # Get a slice where the middle field is the bottom-most, right-most
+        # field of the table
+        s = tbl.slice(tbl.rows.last.fields.last, 1)
+        self.assertIs(table, type(s))
+        self.assertIs(tbl.rows.penultimate.fields.penultimate.value, s(0, 0).value)
+        self.assertIs(tbl.rows.penultimate.fields.last.value, s(0, 1).value)
+        self.assertIs(tbl.rows.last.fields.penultimate.value, s(1, 0).value)
+        self.assertIs(tbl.rows.last.fields.last.value, s(1, 1).value)
+        self.assertEq(4, s.fields.count)
+
+        # Get a slice where the middle field is the top-most, right-most
+        # field of the table
+        s = tbl.slice(tbl.rows.first.fields.last, 1)
+        self.assertIs(table, type(s))
+        self.assertIs(tbl.rows.first.fields.penultimate.value, s(0, 0).value)
+        self.assertIs(tbl.rows.first.fields.last.value, s(0, 1).value)
+        self.assertIs(tbl.rows.second.fields.penultimate.value, s(1, 0).value)
+        self.assertIs(tbl.rows.second.fields.last.value, s(1, 1).value)
+        self.assertEq(4, s.fields.count)
+
+        # Get a slice where the middle field somewhere in the center of the
+        # table so we get a slice with nine field objects.
+        s = tbl.slice(tbl.rows.fifth.fields.fifth, 1)
+        self.assertIs(table, type(s))
+        self.assertIs(tbl(3,3).value, s(0, 0).value)
+        self.assertIs(tbl(3,4).value, s(0, 1).value)
+        self.assertIs(tbl(3,5).value, s(0, 2).value)
+
+        self.assertIs(tbl(4,3).value, s(1, 0).value)
+        self.assertIs(tbl(4,4).value, s(1, 1).value)
+        self.assertIs(tbl(4,5).value, s(1, 2).value)
+
+        self.assertIs(tbl(5,3).value, s(2, 0).value)
+        self.assertIs(tbl(5,4).value, s(2, 1).value)
+        self.assertIs(tbl(5,5).value, s(2, 2).value)
 
 t = testers()
 t.oninvoketest += lambda src, eargs: print('#', end='', flush=True)
