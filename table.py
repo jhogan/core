@@ -320,11 +320,17 @@ class field(entity):
 
     @property
     def left(self):
-        return self.row.fields(self.index - 1)
+        ix = self.index
+        if ix == 0:
+            return None
+        return self.row.fields(ix - 1)
 
     @property
     def right(self):
-        return self.row.fields(self.index + 1)
+        ix = self.index
+        if ix == self.row.fields.ubound:
+            return None
+        return self.row.fields(ix + 1)
 
     @property
     def aboveleft(self):
