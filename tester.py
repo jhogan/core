@@ -105,7 +105,7 @@ class tester(entity):
 
         if self.failures.isempty:
             return r
-        return r + "\n" + str(self.failures) + "\n"
+        return r + "\n" + self.failures._tostr(includeHeader=False) + "\n"
 
     @staticmethod
     def preserve(str):
