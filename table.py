@@ -147,7 +147,10 @@ class table(entity):
 
         return tbl
 
-    def __str__(self):
+    def __str__(self, f=None):
+        Reverse='\033[07m'
+        Endc = '\033[0m'
+
         R = ''
 
         if self.rows.isempty:
@@ -161,9 +164,18 @@ class table(entity):
 
         for i, r in enumerate(self):
             R += '\n'
-            for j, f in enumerate(r):
+            for j, f1 in enumerate(r):
                 R += '| ' if j == 0 else ''
-                R += str(f).rjust(widths[j]) + ' | '
+
+                if f != None and f1 is f:
+                    R += Reverse
+                    
+                R += str(f1).ljust(widths[j])
+
+                if f != None and f1 is f:
+                    R += Endc
+
+                R += ' | '
             if i < self.rows.ubound:
                 R += '\n|' + b + '|'
 
