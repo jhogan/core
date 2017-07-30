@@ -235,11 +235,17 @@ class row(entity):
 
     @property
     def above(self):
-        return self.rows(self.index - 1)
+        ix = self.index
+        if ix == 0:
+            return None
+        return self.rows(ix - 1)
 
     @property
     def below(self):
-        return self.rows(self.index + 1)
+        ix = self.index
+        if ix == self.rows.ubound:
+            return None
+        return self.rows(ix + 1)
 
     def newfield(self, v):
         f, fs = field(v), self.fields
