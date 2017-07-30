@@ -30,6 +30,9 @@ class testers(entities):
                     inst._failures += failure(ex, assert_=meth[0])
         print('')
 
+    def __str__(self):
+        return self._tostr(str, includeHeader=False)
+
 class tester(entity):
     def __init__(self):
         self._failures = failures()

@@ -986,7 +986,9 @@ class test_entities(tester):
         of each entities __str__ invocation followed by a line ending."""
 
         ks = knights.createthe4()
-        s = """Lancelot
+        hdr = '{} object at {} count: {}\n' \
+            .format(str(type(ks)), str(hex(id(ks))), ks.count)
+        s = hdr + """Lancelot
 Authur
 Galahad
 Bedevere
@@ -995,7 +997,10 @@ Bedevere
 
         ks.clear()
 
-        self.assertEq('', str(ks))
+        hdr = '{} object at {} count: {}\n' \
+            .format(str(type(ks)), str(hex(id(ks))), ks.count)
+
+        self.assertEq(hdr, str(ks))
 
     def it_calls__repr__(self):
         """ The __repr__ method will return a concatenation of the results
@@ -1004,11 +1009,16 @@ Bedevere
         ks = knights.createthe4()
 
         for i, l in enumerate(repr(ks).splitlines()):
-            self.assertEq(l, repr(ks[i]))
+            if i == 0:
+                continue
+            self.assertEq(l, repr(ks[i-1]))
 
         ks.clear()
 
-        self.assertEq('', repr(ks))
+        r = '{} object at {} count: {}\n' \
+            .format(str(type(ks)), str(hex(id(ks))), ks.count)
+
+        self.assertEq(r, repr(ks))
 
     def it_calls__setitem__(self):
         """ The __setitem__ method is used to set an item in the 

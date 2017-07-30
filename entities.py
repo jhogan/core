@@ -305,15 +305,20 @@ class entities(object):
         return not self.isempty
 
     def __repr__(self):
-        r=''
-        for i, t in enumerate(self):
-            r += repr(t) + '\n'
-        return r
+        return self._tostr(repr)
 
     def __str__(self):
-        r=''
+        return self._tostr(str)
+
+    def _tostr(self, fn, includeHeader=True):
+        if includeHeader:
+            r = '{} object at {} count: {}\n' \
+                .format(type(self), hex(id(self)), self.count)
+        else:
+            r = ''
+
         for i, t in enumerate(self):
-            r += str(t) + '\n'
+            r += fn(t) + '\n'
         return r
 
     def __setitem__(self, key, item):
