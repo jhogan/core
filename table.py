@@ -254,6 +254,11 @@ class row(entity):
         return f
 
 class fields(entities):
+    def __init__(self, row=None, initial=None):
+        if row:
+            self.row = row
+        super().__init__(initial=initial)
+
     @property
     def table(self):
         return self.row.table if self.row else None
