@@ -28,12 +28,12 @@ class table(entity):
     def __init__(self, x=None, y=None, initval=None):
         self.rows = rows(self)
 
-        # If we have x, we can initialize the table using x, y and initval
-        if x != None:
-            y = x if y == None else y
-            for _ in range(x):
+        # If we have y, we can initialize the table using y, x and initval
+        if y != None:
+            x = y if x == None else x
+            for _ in range(y):
                 r = self.newrow()
-                for _ in range(y):
+                for _ in range(x):
                     r.newfield(initval)
 
     def __iter__(self):
