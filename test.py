@@ -1720,6 +1720,23 @@ class test_table(tester):
             for f in r:
                 self.assertIs(k, f.value)
 
+    def it_calls__iter__(self):
+        tbl = createtable(5, 5)
+        for r in tbl:
+            self.assertEq(row, type(r))
+            self.assertEq(5, r.fields.count)
+
+    def it_calls__getitem__(self):
+        tbl = createtable(5, 5)
+        for i in range(5):
+            self.assertEq(row, type(tbl[i]))
+
+    def it_calls__call__(self):
+        tbl = createtable(5, 5)
+        for i in range(5):
+            for j in range(5):
+                self.assertEq([i, j], tbl(i, j).value)
+
     def it_calls_newrow(self):
         # Ensure newrow creates a row in the table and returns it
         tbl = table()
@@ -1728,9 +1745,22 @@ class test_table(tester):
         self.assertIs(tbl.rows.first, r)
 
     def it_gets_columns(self):
-        tbl = table(x=10, y=20)
+        tbl = createtable(5, 5)
         cs = tbl.columns
         self.assertEq(columns, type(cs))
+
+        for i, c in enumerate(cs):
+            for j, f in enumerate(c.fields):
+                self.assertEq([j, i], f.value)
+
+    def it_gets_fields(self):
+        tbl = createtable(5, 5)
+        fs = tbl.fields
+        self.assertEq(fields, type(fs))
+
+        for i, f in enumerate(fs):
+            x, y = i % 5, int(i / 5)
+            self.assertEq([y, x], f.value)
 
     def it_calls_count(self):
         k = knights.createthe4().first
@@ -1858,6 +1888,55 @@ class test_table(tester):
         self.assertIs(tbl(5,3).value, s(2, 0).value)
         self.assertIs(tbl(5,4).value, s(2, 1).value)
         self.assertIs(tbl(5,5).value, s(2, 2).value)
+
+    def it_calls__str__(self):
+        the4 = knights.createthe4()
+        tbl = table()
+        r = tbl.newrow()
+        r.newfield(the4.first)
+        r.newfield(the4.second)
+        r = tbl.newrow()
+        r.newfield(the4.third)
+        r.newfield(the4.fourth)
+
+        s =  '+---------------------+\n'
+        s += '| Lancelot | Authur   |\n'
+        s += '|---------------------|\n'
+        s += '| Galahad  | Bedevere |\n'
+        s += '+---------------------+\n'
+
+        self.assertEq(s, str(tbl))
+
+class test_columns(tester):
+    def it_gets_widths(self):
+        tbl = table()
+        for i in range(5):
+            r = tbl.newrow()
+            for j in range(5):
+                r.newfield([i, j])
+
+        cs = tbl.columns
+        self.assertEq(5, cs.count)
+        self.assertEq([6] * 5, cs.widths)
+
+class test_column(tester):
+    def it_calls__init(self):
+        tbl = createtable(5, 5)
+
+        cs = tbl.columns
+        self.assertEq(5, cs.count)
+        self.assertEq(columns, type(cs))
+        for i, c in enumerate(cs):
+            self.assertEq(column, type(c))
+            fs = c.fields
+            self.assertEq(5, fs.count)
+            for j, f in enumerate(fs):
+                self.assertEq(field, type(f))
+                y, x = j, i
+                self.assertEq([y, x], f.value)
+
+        
+        
 
 t = testers()
 t.oninvoketest += lambda src, eargs: print('#', end='', flush=True)
