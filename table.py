@@ -175,15 +175,17 @@ class table(entity):
                 if f != None and f1 is f:
                     R += Endc
 
-                R += ' | '
+                R += ' |'
+                if j < r.fields.ubound:
+                    R += ' '
+
             if i < self.rows.ubound:
                 R += '\n|' + b + '|'
 
-        R += '\n+' + b + '+'
+        R += '\n+' + b + '+\n'
         return R
                 
 class columns(entities):
-    
     @property
     def widths(self):
         return [c.width for c in self]
