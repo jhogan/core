@@ -70,6 +70,14 @@ class constant(entity):
     def __init__(self, v):
         self.value = v
 
+def createtable(x, y):
+    tbl = table()
+    for i in range(y):
+        r = tbl.newrow()
+        for j in range(x):
+            r.newfield([i, j])
+    return tbl
+
 class test_entities(tester):
     def it_instantiates(self):
 
