@@ -1935,8 +1935,163 @@ class test_column(tester):
                 y, x = j, i
                 self.assertEq([y, x], f.value)
 
-        
-        
+    def it_calls_width(self):
+        """ The width property of a column is the maximun number of characters
+        contained in the value propery of all the fields in the column. """
+
+        # Populate the field's with strings of 'x' where the last column
+        # contains 4 'x''s, which will be the largest. 
+        tbl = createtable(5, 5)
+        for i, r in enumerate(tbl):
+            for f in r:
+                f.value = 'x' * i
+
+        # Test that the maximum column length is 4
+        for c in tbl.columns:
+            self.assertEq(4, c.width)
+
+class test_row(tester):
+    def it_calls__getitems__(self):
+        """ The __getitem__ method returns the field at the given index
+        number.  """
+        tbl = createtable(5, 5)
+        for r in tbl:
+            for i, f in enumerate(r.fields):
+                self.assertIs(f, r[i])
+
+    def it_calls__setitems__(self):
+        """ The __setitem__ method sets field at the given index
+        number.  """
+        tbl = createtable(5, 5)
+        for i, r in enumerate(tbl):
+            for j, f in enumerate(r.fields):
+                r[j] = f1 = field([i, j])
+                self.assertIs(f1, r[j])
+
+    def it_gets_index(self):
+        """ A row's index property contains the 0-based ordinal, i.e., the
+        first row in a table has an index of 0, the second has an index of 1,
+        and so on. """
+
+        # Create a table with 5 rows and ensure their index property is equal
+        # to the position of the row in the table.
+        tbl = createtable(5, 5)
+        for i, r in enumerate(tbl):
+            self.assertEq(i, r.index)
+
+    def it_gets_table(self):
+        """ Every row will have a reference to the table it's in. """
+        tbl = createtable(5, 5)
+        for r in tbl:
+            self.assertIs(tbl, r.table)
+
+    def it_gets_above(self):
+        """ The above property of a row is the row object above the given row.
+        """
+
+        tbl = createtable(5, 5)
+        prev = None
+        for r in tbl:
+            self.assertIs(prev, r.above)
+            prev = r
+
+    def it_gets_below(self):
+        """ The below property of a row is the row object below the given row.
+        """
+
+        tbl = createtable(5, 5)
+        rs = tbl.rows
+        for i, r in enumerate(rs):
+            self.assertIs(rs(i + 1), r.below)
+
+    def it_calls_newfield(self):
+        """ The newfield method creates a new field object and appends it to
+        the row's fields collection. """
+        tbl = table()
+        r = tbl.newrow()
+        f = r.newfield(123)
+
+        self.assertEq(field, type(f))
+        self.assertEq(1, r.fields.count)
+        self.assertIs(f, r.fields.first)
+        self.assertIs(f, tbl.rows.first.fields.first)
+        self.assertEq(123, f.value)
+
+class test_fields(tester):
+    def it_get_row(self):
+        " A fields collection will have a reference to the row it's in. """
+        tbl = table()
+        r = tbl.newrow()
+        f = r.newfield(123)
+        self.assertIs(r, f.row)
+
+    def it_get_table(self):
+        " A fields collection will have a reference to the table it's in. """
+        tbl = table()
+        r = tbl.newrow()
+        f = r.newfield(123)
+        self.assertIs(tbl, f.table)
+
+    def it_get_values(self):
+        """ A fields collection value proprety will be a list of all the values
+        in each of its field objects. """
+        tbl = createtable(5, 5)
+        for i, r in enumerate(tbl):
+            for j, f in enumerate(r):
+                f.value = [i, j]
+
+        for i, r in enumerate(tbl):
+            self.assertEq([[i, x] for x in range(5)], r.fields.values)
+
+class test_field(tester):
+    def it_gets_values(self):
+        """ The constructor of field will set the value property. """
+        f = field(123)
+        self.assertEq(123, f.value)
+
+    def it_sets_values(self):
+        """ The value property is a read/write property so ensure it can be
+        read and written to. """
+        f = field(123)
+        f.value = 'abc'
+        self.assertEq('abc', f.value)
+
+    def it_calls_clone(self):
+        """ Calling clone on a field object will create a new field with the
+        same value."""
+        f = field(123)
+        clone = f.clone()
+
+        self.assertEq(f.value, clone.value)
+
+    def it_gets_index(self):
+        """ The index property of a field objects gives the ordinal position
+        the field occupies in the row. """
+        tbl = table(5, 5)
+        for r in tbl:
+            for i, f in enumerate(r):
+                self.assertEq(i, f.index)
+
+    def it_gets_table(self):
+        """ Each field object will contain a reference to its table object. 
+        """
+        tbl = table(5, 5)
+        for r in tbl:
+            for f in r:
+                self.assertIs(tbl, f.table)
+    
+    def it_gets_row(self):
+        """ Each field object will contain a reference to its ro object. 
+        """
+        tbl = table(5, 5)
+        for r in tbl:
+            for f in r:
+                self.assertIs(r, f.row)
+
+
+
+
+
 
 t = testers()
 t.oninvoketest += lambda src, eargs: print('#', end='', flush=True)
