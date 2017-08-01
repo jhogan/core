@@ -208,10 +208,6 @@ class rows(entities):
         super().__init__(initial=initial)
         self.table = tbl
 
-    @property
-    def index(self):
-        return self.table.rows.getindex(self)
-
 class row(entity):
     def __init__(self):
         super().__init__()
