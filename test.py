@@ -2049,7 +2049,7 @@ class test_field(tester):
         f = field(123)
         self.assertEq(123, f.value)
 
-    def it_sets_values(self):
+    def it_sets_value(self):
         """ The value property is a read/write property so ensure it can be
         read and written to. """
         f = field(123)
