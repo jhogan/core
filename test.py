@@ -2081,17 +2081,87 @@ class test_field(tester):
                 self.assertIs(tbl, f.table)
     
     def it_gets_row(self):
-        """ Each field object will contain a reference to its ro object. 
+        """ Each field object will contain a reference to its row object. 
         """
         tbl = table(5, 5)
         for r in tbl:
             for f in r:
                 self.assertIs(r, f.row)
 
+    def it_gets_above(self):
+        tbl = table(5, 5)
+        rs = tbl.rows
+        for i, r in enumerate(rs):
+            fs = r.fields
+            for j, f in enumerate(fs):
+                if i == 0:
+                    self.assertNone(f.above)
+                else:
+                    self.assertIs(rs[i - 1].fields(j), f.above)
 
+    def it_gets_below(self):
+        tbl = table(5, 5)
+        rs = tbl.rows
+        for i, r in enumerate(rs):
+            fs = r.fields
+            for j, f in enumerate(fs):
+                if i == rs.ubound:
+                    self.assertNone(f.below)
+                else:
+                    self.assertIs(rs[i + 1].fields(j), f.below)
 
+    def it_gets_left(self):
+        tbl = table(5, 5)
+        for r in tbl:
+            fs = r.fields
+            for i, f in enumerate(fs):
+                if i == 0:
+                    self.assertNone(f.left)
+                else:
+                    self.assertIs(fs[i - 1], f.left)
 
+    def it_gets_right(self):
+        tbl = table(5, 5)
+        for r in tbl:
+            fs = r.fields
+            for i, f in enumerate(fs):
+                if i == fs.ubound:
+                    self.assertNone(f.right)
+                else:
+                    self.assertIs(fs[i + 1], f.right)
 
+    def it_gets_aboveleft(self):
+        tbl = table(5, 5)
+        rs = tbl.rows
+        for i, r in enumerate(rs):
+            fs = r.fields
+            for j, f in enumerate(fs):
+                if i == 0 or j == 0:
+                    self.assertNone(f.aboveleft)
+                else:
+                    self.assertIs(r.above.fields[j - 1], f.aboveleft)
+
+    def it_gets_belowleft(self):
+        tbl = table(5, 5)
+        rs = tbl.rows
+        for i, r in enumerate(rs):
+            fs = r.fields
+            for j, f in enumerate(fs):
+                if i == rs.ubound or j == 0:
+                    self.assertNone(f.belowleft)
+                else:
+                    self.assertIs(r.below.fields[j - 1], f.belowleft)
+
+    def it_gets_aboveright(self):
+        tbl = table(5, 5)
+        rs = tbl.rows
+        for i, r in enumerate(rs):
+            fs = r.fields
+            for j, f in enumerate(fs):
+                if i == 0 or j == fs.ubound:
+                    self.assertNone(f.aboveright)
+                else:
+                    self.assertIs(r.above.fields[j + 1], f.aboveright)
 
 t = testers()
 t.oninvoketest += lambda src, eargs: print('#', end='', flush=True)
