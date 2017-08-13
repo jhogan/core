@@ -388,6 +388,9 @@ class field(entity):
         neigbor can't be found with those conditions.
         """
 
+        if number == 0:
+            return self
+
         f = self
         for i in range(number):
             neighbor = getattr(f, direction)
