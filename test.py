@@ -2163,6 +2163,93 @@ class test_field(tester):
                 else:
                     self.assertIs(r.above.fields[j + 1], f.aboveright)
 
+    def it_gets_belowright(self):
+        tbl = table(5, 5)
+        rs = tbl.rows
+        for i, r in enumerate(rs):
+            fs = r.fields
+            for j, f in enumerate(fs):
+                if i == rs.ubound or j == fs.ubound:
+                    self.assertNone(f.belowright)
+                else:
+                    self.assertIs(r.below.fields[j + 1], f.belowright)
+
+    def it_calls__str__(self):
+        Reverse='\033[07m'
+        Endc = '\033[0m'
+
+        tbl = table(1, 1, 123)
+        self.assertEq('123', str(tbl[0][0]))
+
+        tbl.rows.first.newfield('abc')
+        s  = '+-----------+\n'
+        s += '| 123 | ' + Reverse + 'abc' + Endc + ' |\n'
+        s += '+-----------+\n'
+        self.assertEq(s, tbl[0][1].__str__(table=True))
+
+    def _it_calls_get_direction(self, fn, bt, cab, c):
+        tbl = table(5, 5)
+        rs = tbl.rows
+
+        for i, r in enumerate(rs):
+            fs = r.fields
+            for j, f in enumerate(fs):
+                for closest in [True, False]:
+                    for number in range(rs.count * 2):
+                        if bt(rs, i, j, number):
+                            if closest:
+                                expect = cab(rs, i, j, number)
+                            else:
+                                expect = None
+                        else:
+                            expect = c(rs, i, j, number)
+
+                        actual = getattr(f, fn)(number=number, closest=closest)
+                        if expect is not actual:
+                            B()
+                        self.assertIs(expect, actual)
+
+    def it_calls_getabove(self):
+        bt  = lambda rs, i, j, number: i - number < 0
+        cab = lambda rs, i, j, number: rs[0][j]
+        c   = lambda rs, i, j, number: rs[i - number][j]
+
+        self._it_calls_get_direction('getabove', bt, cab, c)
+
+    def it_calls_getbelow(self):
+        bt  = lambda rs, i, j, number: i + number > rs.ubound
+        cab = lambda rs, i, j, number: rs[rs.ubound][j]
+        c   = lambda rs, i, j, number: rs[i + number][j]
+
+        self._it_calls_get_direction('getbelow', bt, cab, c)
+
+    def it_calls_getleft(self):
+        bt  = lambda rs, i, j, number: j - number < 0
+        cab = lambda rs, i, j, number: rs[i][0]
+        c   = lambda rs, i, j, number: rs[i][j - number]
+
+        self._it_calls_get_direction('getleft', bt, cab, c)
+
+    def it_calls_getright(self):
+        bt  = lambda rs, i, j, number: j + number > rs[i].fields.ubound
+        cab = lambda rs, i, j, number: rs[i][rs[i].fields.ubound]
+        c   = lambda rs, i, j, number: rs[i][j + number]
+
+        self._it_calls_get_direction('getright', bt, cab, c)
+
+    def it_calls_getaboveleft(self):
+        bt = lambda rs, i, j, number: i - number < 0 or j - number < 0
+        
+        def cab(rs, i, j, number):
+            y = 0 if i - number < 0 else i - number
+            x = 0 if j - number < 0 else j - number 
+            return rs[y][x]
+
+        c  = lambda rs, i, j, number: rs[i - number][j - number]
+
+        self._it_calls_get_direction('getaboveleft', bt, cab, c)
+
+        
 t = testers()
 t.oninvoketest += lambda src, eargs: print('#', end='', flush=True)
 t.run()
