@@ -2188,6 +2188,25 @@ class test_field(tester):
         self.assertEq(s, tbl[0][1].__str__(table=True))
 
     def _it_calls_get_direction(self, fn, bt, cab, c):
+        """ This is the generic method for all the self.it_calls_get*()
+        methods.  It tests the field.get<direction> methods like
+        field.getabove().
+
+
+        :param str fn: The name of the method we are testing, e.g., 'getabove'
+
+        :param bt calable: Boundry test. If this returns True, the reach has
+        exceeded the boundry of the table.
+
+        :param cab callable: Closests at Boundry. Returns the field object
+        without exceeding the reach of the boundry, in which case it would
+        have to return None.
+
+        :param c callable: Returns the field without a concern for exceeding
+        the boundry. 
+
+        """
+
         tbl = table(5, 5)
         rs = tbl.rows
 
@@ -2206,7 +2225,7 @@ class test_field(tester):
 
                         actual = getattr(f, fn)(number=number, closest=closest)
                         if expect is not actual:
-                            B()
+                            expect = cab(rs, i, j, number)
                         self.assertIs(expect, actual)
 
     def it_calls_getabove(self):
@@ -2241,15 +2260,72 @@ class test_field(tester):
         bt = lambda rs, i, j, number: i - number < 0 or j - number < 0
         
         def cab(rs, i, j, number):
-            y = 0 if i - number < 0 else i - number
-            x = 0 if j - number < 0 else j - number 
-            return rs[y][x]
+            f = rs[i][j]
+
+            for _ in range(number):
+                neighbor = f.aboveleft
+                if not neighbor:
+                    return f
+                f = neighbor
 
         c  = lambda rs, i, j, number: rs[i - number][j - number]
 
         self._it_calls_get_direction('getaboveleft', bt, cab, c)
 
+    def it_calls_getbelowleft(self):
+        bt = lambda rs, i, j, number: i + number > rs.ubound \
+                                      or j - number < 0
         
+        def cab(rs, i, j, number):
+            f = rs[i][j]
+
+            for _ in range(number):
+                neighbor = f.belowleft
+                if not neighbor:
+                    return f
+                f = neighbor
+            return f
+
+        c  = lambda rs, i, j, number: rs[i + number][j - number]
+
+        self._it_calls_get_direction('getbelowleft', bt, cab, c)
+
+    def it_calls_getaboveright(self):
+        bt = lambda rs, i, j, number: i - number < 0 \
+                                      or j + number > rs.table.columns.ubound
+        
+        def cab(rs, i, j, number):
+            f = rs[i][j]
+
+            for _ in range(number):
+                neighbor = f.aboveright
+                if not neighbor:
+                    return f
+                f = neighbor
+            return f
+
+        c  = lambda rs, i, j, number: rs[i - number][j + number]
+
+        self._it_calls_get_direction('getaboveright', bt, cab, c)
+
+    def it_calls_getbelowright(self):
+        bt = lambda rs, i, j, number: i + number > rs.ubound \
+                                      or j + number > rs.table.columns.ubound
+        
+        def cab(rs, i, j, number):
+            f = rs[i][j]
+
+            for _ in range(number):
+                neighbor = f.belowright
+                if not neighbor:
+                    return f
+                f = neighbor
+            return f
+
+        c  = lambda rs, i, j, number: rs[i + number][j + number]
+
+        self._it_calls_get_direction('getbelowright', bt, cab, c)
+
 t = testers()
 t.oninvoketest += lambda src, eargs: print('#', end='', flush=True)
 t.run()
