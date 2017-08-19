@@ -399,9 +399,6 @@ class field(entity):
             f = neighbor
         return neighbor
 
-    def getradialdistance(self, f):
-        return f.row - self.row
-
     def __str__(self, table=False):
         if table:
             return self.table.__str__(self)
