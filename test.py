@@ -1754,13 +1754,58 @@ class test_table(tester):
                 self.assertEq([j, i], f.value)
 
     def it_gets_fields(self):
+        """ The table.fields proprety contains all the fields in the table.
+
+        The normal hierarchy of a table structure is:
+
+            table: 
+                rows:
+                    row:
+                        fields:
+                            field
+
+        That's to say: A table object has a rows collection which gives you
+        access to ewerything underneath. However, client code will often want
+        access to the fields themselves at the table level. This fields
+        collections is built and maintained by onadd and onremove events
+        happening in the subordinate objects of the table object.  So, for
+        testing, these means we need to ensure that, no matter how a field is
+        added or removed from a table, these addition or removal needs to be
+        reflected in the table.fields proprety. Note, however, that the
+        table.fields property itself is meant to be read-only (for the most
+        part) so additions or removals to table.fields itself should not make
+        any changes to the table object (because 'fields' is a vector and
+        table is a matrix so it's impossible to add or remove from 'fields' in
+        a way that addresses the hiearchy of the matrix.) """
+
         tbl = createtable(5, 5)
         fs = tbl.fields
-        self.assertEq(fields, type(fs))
 
+        # Ensure the correct type then count
+        self.assertEq(fields, type(fs))
+        self.assertEq(5 * 5, fs.count)
+
+        # Ensure the fields collection is built in type-writer order
         for i, f in enumerate(fs):
             x, y = i % 5, int(i / 5)
             self.assertEq([y, x], f.value)
+
+
+        # Create a new row to test adding to it
+        r = tbl.newrow()
+
+        # Ensure count hasn't changes
+        self.assertEq(5 * 5, fs.count)
+
+        the4 = knights.createthe4()
+        rst = r.newfield(the4.first)
+
+        # Ensure count has been incremented
+        self.assertEq((5 * 5) + 1, fs.count)
+        
+        # Ensure last object added is the last in the fields collection.
+        self.assertIs(rst, fs.last)
+
 
     def it_calls_count(self):
         k = knights.createthe4().first
