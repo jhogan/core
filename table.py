@@ -27,6 +27,10 @@ from entities import *
 class table(entity):
     def __init__(self, x=None, y=None, initval=None):
         self.rows = rows(self)
+        self._fields = fields()
+
+        self.rows.onfieldadd += self._fields_onadd
+        self.rows.onfieldremove += self._fields_onremove
 
         # If we have y, we can initialize the table using y, x and initval
         if y != None:
@@ -35,6 +39,12 @@ class table(entity):
                 r = self.newrow()
                 for _ in range(x):
                     r.newfield(initval)
+
+    def _fields_onadd(self, src, eargs):
+        self._fields += eargs.entity
+
+    def _fields_onremove(self, src, eargs):
+        self._fields -= eargs.entity
 
     def __iter__(self):
         for r in self.rows:
@@ -208,10 +218,23 @@ class rows(entities):
         super().__init__(initial=initial)
         self.table = tbl
 
+        # Events
+        self.onfieldadd = event()
+        self.onfieldremove = event()
+
 class row(entity):
     def __init__(self):
         super().__init__()
         self.fields = fields(self)
+
+        self.fields.onadd += self._fields_onadd
+        self.fields.onremove += self._fields_onremove
+
+    def _fields_onadd(self, src, eargs):
+        self.rows.onfieldadd(src, eargs)
+
+    def _fields_onremove(self, src, eargs):
+        self.rows.onfieldremove(src, eargs)
 
     def __getitem__(self, ix):
         return self.fields[ix]
