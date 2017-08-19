@@ -2325,6 +2325,27 @@ class test_field(tester):
         c  = lambda rs, i, j, number: rs[i + number][j + number]
 
         self._it_calls_get_direction('getbelowright', bt, cab, c)
+    
+    def it_gets__str__(self):
+        tbl = table(5, 5, initval='123')
+        for f in tbl.fields:
+            self.assertEq('123', str(f))
+
+        s = """+-----------------------------+
+| \x1b[07m123\x1b[0m | 123 | 123 | 123 | 123 |
+|-----------------------------|
+| 123 | 123 | 123 | 123 | 123 |
+|-----------------------------|
+| 123 | 123 | 123 | 123 | 123 |
+|-----------------------------|
+| 123 | 123 | 123 | 123 | 123 |
+|-----------------------------|
+| 123 | 123 | 123 | 123 | 123 |
++-----------------------------+
+"""
+        f = tbl[0][0]
+        self.assertEq(s, f.__str__(table=True))
+        
 
 t = testers()
 t.oninvoketest += lambda src, eargs: print('#', end='', flush=True)
