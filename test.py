@@ -2348,7 +2348,8 @@ class test_field(tester):
         
 
 t = testers()
-t.oninvoketest += lambda src, eargs: print('#', end='', flush=True)
+t.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)
+t.oninvoketest += lambda src, eargs: print(eargs.method[0], flush=True)
 t.run()
 print(t)
 
