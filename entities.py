@@ -111,11 +111,7 @@ class entities(object):
         return type(self)()
 
     def clear(self):
-        # TODO Seems like we could just call: self.remove(self) but the tests
-        # fail
-        for e in self:
-            self.onremove(self, entityremoveeventargs(e))
-        self._ls=[]
+        self.remove(self)
 
     def remove(self, e):
         if isinstance(e, entities):
