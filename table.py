@@ -279,6 +279,19 @@ class fields(entities):
     def __init__(self, row=None, initial=None):
         if row:
             self.row = row
+
+        # Ensure that each element in initial is a field object. If not,
+        # append a new field object using the element as the field's value.
+        if initial != None:
+            fs = fields()
+            for v in initial:
+                if isinstance(v, field):
+                    fs += v
+                else:
+                    fs += field(v)
+
+            initial = fs
+            
         super().__init__(initial=initial)
 
     @property
