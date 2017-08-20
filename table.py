@@ -215,6 +215,14 @@ class rows(entities):
         self.onfieldadd = event()
         self.onfieldremove = event()
 
+    def _self_onremove(self, src, eargs):
+        """ Whenever a row is removed from a rows collection, ensure that all
+        field objects are removed first. This ensure the fields objects'
+        onremove events are raised which is important for indexing, cache
+        invalidation and so forth. """
+
+        eargs.entity.fields.clear()
+
 class row(entity):
     def __init__(self):
         super().__init__()
