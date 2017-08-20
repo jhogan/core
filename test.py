@@ -1862,6 +1862,29 @@ class test_table(tester):
         self.assertEq(5 * 5, fs.count)
 
 
+        # Test fields proprety after setting them in the table object.
+
+        # TODO  When setting fields, the old field(s) is removed from the
+        # table.fields collection, but the new field(s) ends up at the end of
+        # the table.fields collection instead of in place of the removed
+        # field(s). This is because the fields.__setitem__ simply calls the
+        # onadd the onremove event, which causes an append to the collection.
+        # Ideally, the new field wouldn't be appended, but would rather be set
+        # in the correct location of the table.fields proprety. However,
+        # currently there is no use case for this. However, since this should
+        # change, use of table.fields shouldn't make assuptions about where
+        # newly set fields will appear until this behavior is corrected.
+
+        tbl[0][0] = rst = field(the4.first)
+        tbl[0].fields.second = nd = field(the4.second)
+        tbl[0].fields[2:4] = rd, rth = fields(initial=the4[2:4])
+
+        self.assertEq(tbl.fields.first.value, [0, 4])
+        self.assertIs(tbl.fields.preantepenultimate, rst)
+        self.assertIs(tbl.fields.antepenultimate, nd)
+        self.assertIs(tbl.fields.penultimate, rd)
+        self.assertIs(tbl.fields.ultimate, rth)
+
     def it_calls_count(self):
         k = knights.createthe4().first
         tbl = table(x=10, y=20, initval=k)
