@@ -126,7 +126,7 @@ class entities(object):
         else:
             rms = [e]
 
-        for i in range(self.ubound, -1, -1):
+        for i in range(self.count - 1, -1, -1):
             for rm in rms:
                 if rm is self[i]:
                     del self._list[i]
