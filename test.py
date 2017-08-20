@@ -1395,11 +1395,13 @@ Bedevere
         ks.onremove += local_onaremove
         ks.clear()
 
+        # Removed knights will be snared in reverse order since the clear
+        # algorithm removes the knights in reverse order
         self.assertCount(4, snare)
-        self.assertIs(rst, snare.first)
-        self.assertIs(nd, snare.second)
-        self.assertIs(rd, snare.third)
-        self.assertIs(rth, snare.fourth)
+        self.assertIs(rst, snare.fourth)
+        self.assertIs(nd, snare.third)
+        self.assertIs(rd, snare.second)
+        self.assertIs(rth, snare.first)
 
     def it_raises_onremove_and_onadd_when_calling__setitem__(self):
         
