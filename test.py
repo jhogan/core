@@ -1808,6 +1808,23 @@ class test_table(tester):
         # Ensure last object added is the last in the fields collection.
         self.assertIs(rst, fs.last)
 
+        # Remove the field and ensure the fields collection contains a 
+        # decremented count.
+        r.fields.pop()
+        self.assertEq(5 * 5, fs.count)
+
+        # Add 4 and ensure the count is correct
+        for k in the4:
+            r.newfield(k)
+
+        self.assertEq((5 * 5) + 4, fs.count)
+
+        # Remove the row and ensure the field count reflects that all the
+        # fields in that row have been removed
+
+        tbl.rows -= r
+        self.assertEq(5 * 5, fs.count)
+
 
     def it_calls_count(self):
         k = knights.createthe4().first
