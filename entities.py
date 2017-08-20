@@ -414,6 +414,14 @@ class entities(object):
         self[-1] = v
 
     @property
+    def ultimate(self): 
+        return self.last
+
+    @ultimate.setter
+    def ultimate(self, v): 
+        self.last = v
+
+    @property
     def penultimate(self): 
         return self(-2)
 
@@ -428,6 +436,14 @@ class entities(object):
     @antepenultimate.setter
     def antepenultimate(self, v): 
         self[-3] = v
+
+    @property
+    def preantepenultimate(self): 
+        return self(-4)
+
+    @preantepenultimate.setter
+    def preantepenultimate(self, v): 
+        self[-4] = v
 
     @property
     def brokenrules(self):

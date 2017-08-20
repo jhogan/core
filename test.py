@@ -1125,8 +1125,10 @@ Bedevere
         self.assertIs(ks[2], ks.third)
         self.assertIs(ks[3], ks.fourth)
         self.assertIs(ks[3], ks.last)
+        self.assertIs(ks[3], ks.ultimate)
         self.assertIs(ks[2], ks.penultimate)
         self.assertIs(ks[1], ks.antepenultimate)
+        self.assertIs(ks[0], ks.preantepenultimate)
 
         # Ordinals should return None if the the value doesn't exist
         self.assertNone(ks.fifth)
@@ -1139,19 +1141,23 @@ Bedevere
         self.assertNone(ks.third)
         self.assertNone(ks.fourth)
         self.assertNone(ks.last)
+        self.assertNone(ks.ultimate)
         self.assertNone(ks.penultimate)
         self.assertNone(ks.antepenultimate)
+        self.assertNone(ks.preantepenultimate)
 
         # Ensure ordinals return sensible results with a collection of 1
         ni = knight('knight who says ni 1')
         ks += ni
         self.assertIs(ni, ks.first)
         self.assertIs(ni, ks.last)
+        self.assertIs(ni, ks.ultimate)
         self.assertNone(ks.second)
         self.assertNone(ks.third)
         self.assertNone(ks.fourth)
         self.assertNone(ks.penultimate)
         self.assertNone(ks.antepenultimate)
+        self.assertNone(ks.preantepenultimate)
 
         # Ensure ordinals return sensible results with a collection of 2
         ni1 = knight('knight who says ni 2')
@@ -1159,10 +1165,12 @@ Bedevere
         self.assertIs(ni, ks.first)
         self.assertIs(ni1, ks.second)
         self.assertIs(ni1, ks.last)
+        self.assertIs(ni1, ks.ultimate)
         self.assertIs(ni, ks.penultimate)
         self.assertNone(ks.third)
         self.assertNone(ks.fourth)
         self.assertNone(ks.antepenultimate)
+        self.assertNone(ks.preantepenultimate)
 
         # Ensure ordinals return sensible results with a collection of 3
         ni2= knight('knight who says ni 2')
@@ -1171,6 +1179,7 @@ Bedevere
         self.assertIs(ni1, ks.second)
         self.assertIs(ni2, ks.third)
         self.assertIs(ni2, ks.last)
+        self.assertIs(ni2, ks.ultimate)
         self.assertIs(ni1, ks.penultimate)
         self.assertIs(ni, ks.antepenultimate)
         self.assertNone(ks.fourth)
@@ -1569,6 +1578,20 @@ Bedevere
         self.assertIs(last, rmsnare.first)
         self.assertIs(the4.last, addsnare.first)
 
+        # last
+        the4.clear()
+        rmsnare.clear()
+        the4 += knights.createthe4()
+        addsnare.clear()
+
+        # ultimate
+        ultimate = the4.ultimate
+        the4.ultimate = the4.first
+        self.assertCount(1, addsnare)
+        self.assertEq(rmsnare.count, addsnare.count)
+        self.assertIs(ultimate, rmsnare.first)
+        self.assertIs(the4.ultimate, addsnare.first)
+
         # penultimate
         the4.clear()
         rmsnare.clear()
@@ -1594,6 +1617,19 @@ Bedevere
         self.assertEq(rmsnare.count, addsnare.count)
         self.assertIs(antepenultimate, rmsnare.first)
         self.assertIs(the4.antepenultimate, addsnare.first)
+
+        # preantepenultimate
+        the4.clear()
+        rmsnare.clear()
+        the4 += knights.createthe4()
+        addsnare.clear()
+
+        preantepenultimate = the4.preantepenultimate
+        the4.preantepenultimate = the4.first
+        self.assertCount(1, addsnare)
+        self.assertEq(rmsnare.count, addsnare.count)
+        self.assertIs(preantepenultimate, rmsnare.first)
+        self.assertIs(the4.preantepenultimate, addsnare.first)
 
     def it_uses_identityindex(self):
         ks = knights.createthe4()
