@@ -1893,26 +1893,48 @@ class test_table(tester):
         # self.assertEq(20 * 10, tbl.count(k))
 
     def it_call_where(self):
+        class sillyknight(knight):
+            pass
+        
         the4 = knights.createthe4()
         tbl = table(x=10, y=20)
         r = tbl.newrow()
         r.newfield(the4.first)
         r.newfield(the4.second)
 
-        # TODO Write when indexes have been reimplemented
-        # fs = tbl.where(knight)
-        # self.assertEq(2, fs.count)
+        ni1 = sillyknight('knight who says ni 1')
+        ni2 = sillyknight('knight who says ni 2')
+        fr = sillyknight('french knight')
+        r = tbl.newrow()
+        r.newfields(ni1, ni2, fr)
 
+        # Test getting fields by the type of value in the fields
+        fs = tbl.where(sillyknight)
+        self.assertEq(3, fs.count)
+        for f in fs:
+            self.assertEq(tbl, f.table)
+            
+        fs = tbl.where(knight)
+        self.assertEq(2, fs.count)
+        for f in fs:
+            self.assertEq(tbl, f.table)
+
+        # Query with a callable
         fs = tbl.where(lambda v: type(v) == knight)
         self.assertEq(2, fs.count)
         self.assertEq(fields, type(fs))
-        self.assertIs(the4.first, fs.first.value)
-        self.assertIs(the4.second, fs.second.value)
+        for i, f in enumerate(fs):
+            self.assertIs(the4[i], fs[i].value)
+            self.assertEq(tbl, f.table)
 
-        # TODO Write when indexes have been reimplemented
-        # fs = tbl.where(the4.first)
-        # self.assertEq(1, fs.count)
-        # self.assertEq(2, fs.count)
+        # Query table's field by the value of the fields
+        r.newfield(ni1) # Add a second ni1
+
+        fs = tbl.where(ni1)
+        self.assertEq(2, fs.count)
+        for i, f in enumerate(fs):
+            self.assertIs(ni1, f.value)
+            self.assertEq(tbl, f.table)
 
     def it_calls_remove(self):
         the4 = knights.createthe4()

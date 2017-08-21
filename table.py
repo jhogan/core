@@ -88,8 +88,7 @@ class table(entity):
         Return a fields collection where each field in the table matches v.
         """
         if type(v) == type:
-            # If v is a type object, search the type index
-            raise NotImplementedError()
+            return self.fields.indexes['type'](v)
 
         elif callable(v) and not isinstance(v, entity) \
                          and not isinstance(v, entities):
@@ -107,7 +106,7 @@ class table(entity):
                 break
         else:
             # If v is an arbitrary value, use the value index.
-            raise NotImplementedError()
+            return self.fields.indexes['value'](v)
 
         return fields(initial=ls)
 
@@ -275,8 +274,19 @@ class row(entity):
         f.fields = fs
         return f
 
+    def newfields(self, *vs):
+        for v in vs:
+            self.newfield(v)
+
 class fields(entities):
     def __init__(self, row=None, initial=None):
+
+        # Create index on the type of value
+        self.indexes += index(name='type', keyfn=lambda f: type(f.value))
+
+        # Create index on the value
+        self.indexes += index(name='value', keyfn=lambda f: f.value)
+
         if row:
             self.row = row
 
