@@ -41,9 +41,6 @@ class entities(object):
             self.onadd          +=  self._self_onadd
             self.onremove       +=  self._self_onremove
 
-            # Instantiate index collection
-            self.indexes = indexes(type(self))
-
             # Instatiate indexes
             ix = index(name='identity', keyfn=lambda e: e)
             ix.indexes = self.indexes
@@ -60,6 +57,19 @@ class entities(object):
     def _self_onremove(self, src, eargs):
         for ix in self.indexes:
             ix -= eargs.entity
+
+    @property
+    def indexes(self):
+        if not hasattr(self, '_indexes'):
+            self._indexes = indexes(type(self))
+        return self._indexes
+
+    @indexes.setter
+    def indexes(self, v):
+        """ This setter is intended to permit the += operator to be used to 
+        add indexes to the entities.indexes collection. Normally, you wouldn't
+        want to set the indexes collection this way. """
+        self._indexes = v
 
     def __call__(self, ix):
         """
