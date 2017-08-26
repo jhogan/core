@@ -88,7 +88,7 @@ class table(entity):
         Return a fields collection where each field in the table matches v.
         """
         if type(v) == type:
-            return self.fields.indexes['type'](v)
+            return self.fields.indexes['type'](v, limit=limit)
 
         elif callable(v) and not isinstance(v, entity) \
                          and not isinstance(v, entities):

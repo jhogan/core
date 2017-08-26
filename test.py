@@ -1913,11 +1913,25 @@ class test_table(tester):
         self.assertEq(3, fs.count)
         for f in fs:
             self.assertEq(tbl, f.table)
-            
+
+        # Same as above but with a limit
+        for limit in range(2, -1 -1):
+            fs = tbl.where(sillyknight, limit=limit)
+            self.assertEq(limit, fs.count)
+            for f in fs:
+                self.assertEq(tbl, f.table)
+
         fs = tbl.where(knight)
         self.assertEq(2, fs.count)
         for f in fs:
             self.assertEq(tbl, f.table)
+
+        # Same as above but with a limit
+        for limit in range(2, -1 -1):
+            fs = tbl.where(knight, 1, limit=limit)
+            self.assertEq(limit, fs.count)
+            for f in fs:
+                self.assertEq(tbl, f.table)
 
         # Query with a callable
         fs = tbl.where(lambda v: type(v) == knight)
@@ -1927,6 +1941,15 @@ class test_table(tester):
             self.assertIs(the4[i], fs[i].value)
             self.assertEq(tbl, f.table)
 
+        # Query with a callable and a limit
+        for limit in range(2, -1, -1):
+            fs = tbl.where(lambda v: type(v) == knight, limit)
+            self.assertEq(limit, fs.count)
+            self.assertEq(fields, type(fs))
+            for i, f in enumerate(fs):
+                self.assertIs(the4[i], fs[i].value)
+                self.assertEq(tbl, f.table)
+
         # Query table's field by the value of the fields
         r.newfield(ni1) # Add a second ni1
 
@@ -1935,6 +1958,13 @@ class test_table(tester):
         for i, f in enumerate(fs):
             self.assertIs(ni1, f.value)
             self.assertEq(tbl, f.table)
+
+        for limit in range(2, -1 -1):
+            fs = tbl.where(ni1, limit=limit)
+            self.assertEq(limit, fs.count)
+            for i, f in enumerate(fs):
+                self.assertIs(ni1, f.value)
+                self.assertEq(tbl, f.table)
 
     def it_calls_remove(self):
         the4 = knights.createthe4()

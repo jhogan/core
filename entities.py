@@ -607,20 +607,27 @@ class index(entity):
         self.remove(self.keyfunction(e), e)
         return self
 
-    def __call__(self, val):
+    def __call__(self, val, limit=None):
         try:
-            return self[val]
+            return self[val, limit]
         except KeyError:
             return self.indexes.class_()
 
-    def __getitem__(self, val):
+    def __getitem__(self, args):
+        if type(args) == tuple:
+            val, limit = args
+        else:
+            val, limit = args, None
+
         cls = self.indexes.class_
         ls = self._ix[id(val)]
         es = cls()
 
+        limit = len(ls) if limit == None else limit
+
         # Don't use the constructor's initial parameter. It relies on a 
         # correct implementation of __init__ in the subclass. 
-        for e in ls:
+        for e in ls[:limit]:
             es += e
         return es
 
