@@ -106,7 +106,7 @@ class table(entity):
                 break
         else:
             # If v is an arbitrary value, use the value index.
-            return self.fields.indexes['value'](v)
+            return self.fields.indexes['value'](v, limit=limit)
 
         return fields(initial=ls)
 
