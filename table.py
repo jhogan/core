@@ -98,9 +98,9 @@ class table(entity):
             for r in self:
                 for f in r:
                     if v(f.value):
-                        ls.append(f)
                         if limit != None and len(ls) >= limit:
                             break 
+                        ls.append(f)
                 else:
                     continue
                 break

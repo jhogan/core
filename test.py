@@ -1915,7 +1915,7 @@ class test_table(tester):
             self.assertEq(tbl, f.table)
 
         # Same as above but with a limit
-        for limit in range(2, -1 -1):
+        for limit in range(2, -1, -1):
             fs = tbl.where(sillyknight, limit=limit)
             self.assertEq(limit, fs.count)
             for f in fs:
@@ -1927,8 +1927,8 @@ class test_table(tester):
             self.assertEq(tbl, f.table)
 
         # Same as above but with a limit
-        for limit in range(2, -1 -1):
-            fs = tbl.where(knight, 1, limit=limit)
+        for limit in range(2, -1, -1):
+            fs = tbl.where(knight, limit=limit)
             self.assertEq(limit, fs.count)
             for f in fs:
                 self.assertEq(tbl, f.table)
@@ -1959,7 +1959,7 @@ class test_table(tester):
             self.assertIs(ni1, f.value)
             self.assertEq(tbl, f.table)
 
-        for limit in range(2, -1 -1):
+        for limit in range(2, -1, -1):
             fs = tbl.where(ni1, limit=limit)
             self.assertEq(limit, fs.count)
             for i, f in enumerate(fs):
