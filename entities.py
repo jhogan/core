@@ -96,7 +96,7 @@ class entities(object):
 
     def getrandomized(self):
         """ Return a randomized version of self."""
-        return type(self)(sample(self._ls, self.count))
+        return type(self)(initial=sample(self._ls, self.count))
 
     def where(self, qry):
         if type(qry) == type:
