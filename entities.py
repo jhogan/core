@@ -477,6 +477,7 @@ class entities(object):
 
 class entity():
     def __init__(self):
+        self.onvaluechange = event()
         pass
 
     def add(self, e):
@@ -533,15 +534,11 @@ class entityremoveeventargs(eventargs):
     def __init__(self, e):
         self.entity = e
 
-class valuechangeeventargs(eventargs):
+class entityvaluechangeeventargs(eventargs):
     def __init__(self, e, oldval, newval):
         self.entity = e
-        self.oldval = oldval
-        self.newval = newval
-
-    @property
-    def values(self):
-        return self.oldval, self.newval
+        self.oldvalue = oldval
+        self.newvalue = newval
 
 class appendeventargs(eventargs):
     def __init__(self, e):
@@ -632,6 +629,10 @@ class index(entity):
         for e in ls[:limit]:
             es += e
         return es
+
+    def move(self, oldkey, e):
+        self.remove(val=oldkey, e=e)
+        self += e
 
     def __len__(self):
         return len(self._ix)

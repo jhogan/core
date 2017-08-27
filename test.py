@@ -1967,6 +1967,30 @@ class test_table(tester):
                 self.assertIs(ni1, f.value)
                 self.assertEq(tbl, f.table)
 
+        # When a fields value is update, the 'value' index that tbl.where
+        # depends upon must be update in order for these by-value seeks to
+        # work. To test this, we simply set the 'value' proprety of the 'field'
+        # object to an arbitray value and ensure that searching for that
+        # arbitray value using where() still works.
+        r.fields.first.value = 'ni ni ni'
+
+        fs = tbl.where('ni ni ni')
+        self.assertEq(1, fs.count)
+        for i, f in enumerate(fs):
+            self.assertIs('ni ni ni', f.value)
+            self.assertEq(tbl, f.table)
+
+        # Now lets set two fields' value property to a new value
+        ekke = 'Ekke Ekke Ekke Ekke Ptang Zoo Boing!'
+        r.fields.first.value = ekke
+        r.fields.second.value = ekke
+
+        fs = tbl.where(ekke)
+        self.assertEq(2, fs.count)
+        for i, f in enumerate(fs):
+            self.assertIs(ekke, f.value)
+            self.assertEq(tbl, f.table)
+
     def it_calls_remove(self):
         the4 = knights.createthe4()
         tbl = table(x=10, y=20)

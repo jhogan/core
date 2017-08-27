@@ -41,10 +41,24 @@ class table(entity):
                     r.newfield(initval)
 
     def _fields_onadd(self, src, eargs):
-        self._fields += eargs.entity
+        f = eargs.entity
+        self._fields += f
+
+        # We are captureing the field being added to the table so use this
+        # opportunity to subscribe to the field's onvaluechange event
+        f.onvaluechange += self._field_onvaluechange
 
     def _fields_onremove(self, src, eargs):
-        self._fields -= eargs.entity
+        f = eargs.entity
+        self._fields -= f
+
+        # Since the field is no longer a part of the table, remove our
+        # subscription to its onvaluechange event
+        f.onvaluechange -= self._field_onvaluechange
+
+    def _field_onvaluechange(self, src, eargs):
+        oldval, f = eargs.oldvalue, eargs.entity
+        self._fields.indexes['value'].move(oldkey=oldval, e=f)
 
     def __iter__(self):
         for r in self.rows:
@@ -323,8 +337,10 @@ class field(entity):
 
     @value.setter
     def value(self, v):
-        if v != self.value:
+        if v is not self.value:
+            eargs = entityvaluechangeeventargs(self, self.value, v)
             self._v = v
+            self.onvaluechange(self, eargs)
 
     def clone(self):
         return field(self.value)
