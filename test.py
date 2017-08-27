@@ -996,10 +996,10 @@ class test_entities(tester):
         ks = knights.createthe4()
         hdr = '{} object at {} count: {}\n' \
             .format(str(type(ks)), str(hex(id(ks))), ks.count)
-        s = hdr + """Lancelot
-Authur
-Galahad
-Bedevere
+        s = hdr + """    Lancelot
+    Authur
+    Galahad
+    Bedevere
 """
         self.assertEq(s, str(ks))
 
@@ -1019,6 +1019,7 @@ Bedevere
         for i, l in enumerate(repr(ks).splitlines()):
             if i == 0:
                 continue
+            l = l.strip()
             self.assertEq(l, repr(ks[i-1]))
 
         ks.clear()

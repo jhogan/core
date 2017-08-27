@@ -320,11 +320,13 @@ class entities(object):
         if includeHeader:
             r = '{} object at {} count: {}\n' \
                 .format(type(self), hex(id(self)), self.count)
+            indent = ' ' * 4 
         else:
             r = ''
+            indent = ''
 
         for i, t in enumerate(self):
-            r += fn(t) + '\n'
+            r += indent + fn(t) + '\n'
         return r
 
     def __setitem__(self, key, item):
