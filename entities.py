@@ -24,6 +24,7 @@ SOFTWARE.
 """
 from pdb import set_trace; B=set_trace
 from random import randint, sample
+import sys
 class entities(object):
     def __init__(self, initial=None):
         self.clear()
@@ -579,12 +580,25 @@ class index(entity):
 
     def append(self, val, e):
         ix     = self._ix
+
+        key = index._getkey(val)
+
         try:
-            vals = ix[id(val)]
+            vals = ix[key]
         except KeyError:
-            ix[id(val)] = vals = []
+            ix[key] = vals = []
 
         vals.append(e)
+
+    @staticmethod
+    def _getkey(val):
+        # TODO This could potentially cause a collision since the following 
+        # could be True: hash(val) == hash(str(id(val)))
+        if val.__hash__:
+            return val
+        else:
+            return str(id(val))
+            
 
     def __iadd__(self, e):
         self.append(self.keyfunction(e), e)
@@ -592,7 +606,10 @@ class index(entity):
 
     def remove(self, val, e):
         ix     = self._ix
-        vals = ix[id(val)]
+
+        key = index._getkey(val)
+
+        vals = ix[key]
 
         for i, e1 in enumerate(vals):
             if e is e1:
@@ -600,7 +617,7 @@ class index(entity):
                 break
                 
         if not len(vals):
-            del ix[id(val)]
+            del ix[key]
 
     def __isub__(self, e):
         self.remove(self.keyfunction(e), e)
