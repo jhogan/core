@@ -629,6 +629,12 @@ class index(entity):
         except KeyError:
             return self.indexes.class_()
 
+    def getlist(self, val, limit=None):
+        key = index._getkey(val)
+
+        ls = self._ix[key]
+        return ls[:limit]
+
     def __getitem__(self, args):
         if type(args) == tuple:
             val, limit = args
@@ -636,14 +642,11 @@ class index(entity):
             val, limit = args, None
 
         cls = self.indexes.class_
-        ls = self._ix[id(val)]
         es = cls()
-
-        limit = len(ls) if limit == None else limit
 
         # Don't use the constructor's initial parameter. It relies on a 
         # correct implementation of __init__ in the subclass. 
-        for e in ls[:limit]:
+        for e in self.getlist(val, limit):
             es += e
         return es
 
