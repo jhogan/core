@@ -595,11 +595,12 @@ class index(entity):
         # TODO: Since lists aren't hashable, we convert the list to a string.
         # This isn't ideal since using (0, 1) as the index value on retrieval
         # is the same as using [0, 1].
-        if type(val) == list:
+        if val.__hash__:
+            return val
+        elif type(val) == list:
             return tuple(val)
         else:
-            return val
-            
+            id(val)
 
     def __iadd__(self, e):
         self.append(self.keyfunction(e), e)
