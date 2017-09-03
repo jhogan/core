@@ -592,12 +592,13 @@ class index(entity):
 
     @staticmethod
     def _getkey(val):
-        # TODO This could potentially cause a collision since the following 
-        # could be True: hash(val) == hash(str(id(val)))
-        if val.__hash__:
-            return val
+        # TODO: Since lists aren't hashable, we convert the list to a string.
+        # This isn't ideal since using (0, 1) as the index value on retrieval
+        # is the same as using [0, 1].
+        if type(val) == list:
+            return tuple(val)
         else:
-            return str(id(val))
+            return val
             
 
     def __iadd__(self, e):

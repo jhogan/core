@@ -56,7 +56,6 @@ class sillyknights(knights):
     @staticmethod
     def createthe4():
         ks = sillyknights()
-        B()
         ks += sillyknight('knight who says ni 1')
         ks += sillyknight('knight who says ni 2')
         ks += sillyknight('french knight')
@@ -1696,15 +1695,31 @@ class test_entities(tester):
     def it_creates_and_uses_index(self):
 
         the4 = knights.createthe4()
-        sk = sillyknights()
+        sks = sillyknights()
 
-        sk += the4.first
+        sks += the4.first
 
-        ks = sk.indexes['name'][the4.first.name]
+        ks = sks.indexes['name']['Lancelot']
 
         self.assertTrue(ks.hasone)
-        self.assertIs(ks.first, sk.first)
+        self.assertIs(ks.first, sks.first)
         self.assertEq(sillyknights, type(ks))
+
+        for i in range(5):
+            for j in range(5):
+                sks += sillyknight([i, j])
+                sks += sillyknight((i, j))
+
+        for i in range(5):
+            for j in range(5):
+                ks = sks.indexes['name']([i, j])
+                self.assertEq(2, ks.count)
+                for k in ks:
+                    if type(k.name) == tuple:
+                        self.assertEq(k.name, (i, j))
+                    elif type(k.name) == list:
+                        self.assertEq(k.name, [i, j])
+
 
 class test_entity(tester):
     def it_calls__add__(self):
