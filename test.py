@@ -76,7 +76,7 @@ class knight(entity):
         return super().__repr__() + ' ' + self.name
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
 class sillyknight(knight):
     pass
@@ -1088,7 +1088,7 @@ class test_entities(tester):
         except Exception:
             self.assertFail("This should not raise a generic Exception.")
 
-    def it_calls__getitems(self):
+    def it_calls__getitems__(self):
         """ The __getitem__ method is used to get an item in the 
         collection by an index."""
         ks = knights()
