@@ -2573,7 +2573,24 @@ class test_field(tester):
 """
         f = tbl[0][0]
         self.assertEq(s, f.__str__(table=True))
-        
+
+class test_index(tester):
+    # TODO Complete this class
+    def it_calls_getindex(self):
+        sks = sillyknights.createthe4()
+        french_knight = 'french knight'
+
+        ls = sks.indexes['name'].getlist(french_knight)
+
+        self.assertIs(list, type(ls))
+        self.assertEq(1, len(ls))
+
+        sks += sillyknight(french_knight)
+
+        ls = sks.indexes['name'].getlist(french_knight)
+        self.assertIs(list, type(ls))
+        self.assertEq(2, len(ls))
+
 
 t = testers()
 t.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)
