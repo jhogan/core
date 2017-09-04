@@ -368,7 +368,7 @@ class entities(object):
 
         for ix, e1 in enumerate(self):
             if e is e1: return ix
-        raise ValueError("'{}' is not in the collection " + str(e))
+        raise ValueError("'{}' is not in the collection " + repr(e))
 
     @property
     def first(self): 
