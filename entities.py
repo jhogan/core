@@ -600,7 +600,7 @@ class index(entity):
         elif type(val) == list:
             return tuple(val)
         else:
-            id(val)
+            return id(val)
 
     def __iadd__(self, e):
         self.append(self.keyfunction(e), e)
