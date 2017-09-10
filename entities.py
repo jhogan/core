@@ -673,8 +673,8 @@ class index(entity):
             es += e
         return es
 
-    def move(self, oldkey, e):
-        self.remove(val=oldkey, e=e)
+    def move(self, old, new):
+        self.remove(e)
         self += e
 
     def __len__(self):
