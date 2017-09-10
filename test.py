@@ -27,6 +27,11 @@ from table import *
 import math
 
 class knights(entities):
+    def __init__(self, initial=None):
+        self.indexes += index(name='name', keyfn=lambda k: k.name)
+        self.indexes += index(name='traittype', keyfn=lambda f: type(f.trait))
+        super().__init__(initial);
+
     @staticmethod
     def createthe4():
         ks = knights()
@@ -39,7 +44,6 @@ class knights(entities):
 class sillyknights(knights):
     def __init__(self, initial=None):
         super().__init__(initial);
-        self.indexes += index(name='name', keyfn=lambda k: k.name)
 
         # NOTE This is the proper way to override append: the obj, uniq
         # and r parameters must be given and uniq and r must be defaulted
