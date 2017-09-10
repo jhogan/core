@@ -578,9 +578,10 @@ class index(entity):
             raise ValueError('"name" cannot be an int')
         self._name = name
 
-    def append(self, val, e):
+    def append(self, e):
         ix     = self._ix
 
+        val = self.keyfunction(e)
         key = index._getkey(val)
 
         try:
@@ -603,10 +604,10 @@ class index(entity):
             return id(val)
 
     def __iadd__(self, e):
-        self.append(self.keyfunction(e), e)
+        self.append(e)
         return self
 
-    def remove(self, val, e):
+    def remove(self, e):
         ix     = self._ix
 
         key = index._getkey(val)
@@ -622,7 +623,7 @@ class index(entity):
             del ix[key]
 
     def __isub__(self, e):
-        self.remove(self.keyfunction(e), e)
+        self.remove(e=e)
         return self
 
     def __call__(self, val, limit=None):
