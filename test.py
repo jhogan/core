@@ -63,6 +63,7 @@ class sillyknights(knights):
         ks += sillyknight('knight who says ni 1')
         ks += sillyknight('knight who says ni 2')
         ks += sillyknight('french knight')
+        ks += sillyknight('black knight')
         return ks
 
 class knight(entity):
