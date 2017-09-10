@@ -2605,11 +2605,18 @@ class test_index(tester):
         self.assertIs(list, type(ls))
         self.assertEq(2, len(ls))
 
+    def it_calls_append(self):
+        # TODO
+        pass
+
     def it_calls_remove(self):
         ks = knights.createthe4()
 
         ix = ks.indexes['traittype'];
 
+        # Remove the first knight from the index. Since the trait propery was
+        # None, the value of the index will be NoneType. So check that the
+        # index with the value of type(None) has 3 entities.
         ix.remove(ks.first)
         self.assertEq(3, ix(type(None)).count)
 

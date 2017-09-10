@@ -57,8 +57,9 @@ class table(entity):
         f.onvaluechange -= self._field_onvaluechange
 
     def _field_onvaluechange(self, src, eargs):
-        oldval, f = eargs.oldvalue, eargs.entity
-        self._fields.indexes['value'].move(oldkey=oldval, e=f)
+        old, f = eargs.oldvalue, eargs.entity
+        # TODO Correct when move is fixed
+        # self._fields.indexes['value'].move(old=oldval, e=f)
 
     def __iter__(self):
         for r in self.rows:

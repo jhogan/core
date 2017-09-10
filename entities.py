@@ -613,6 +613,9 @@ class index(entity):
         # TODO: Since lists aren't hashable, we convert the list to a string.
         # This isn't ideal since using (0, 1) as the index value on retrieval
         # is the same as using [0, 1].
+
+
+        # Try to return a hashable version of the value
         if val.__hash__:
             return val
         elif type(val) == list:
