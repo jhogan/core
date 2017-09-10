@@ -54,10 +54,21 @@ class entities(object):
     def _self_onadd(self, src, eargs):
         for ix in self.indexes:
             ix += eargs.entity
+
+        if hasattr(eargs.entity, 'onvaluechange'):
+            eargs.entity.onvaluechange += self._entity_onvaluechange 
             
     def _self_onremove(self, src, eargs):
         for ix in self.indexes:
             ix -= eargs.entity
+
+        if hasattr(eargs.entity, 'onvaluechange'):
+            eargs.entity.onvaluechange -= self._entity_onvaluechange 
+
+    def _entity_onvaluechange(self, src, eargs):
+        prop, old, new = eargs.property, eargs.old, eargs.new
+        pass
+        
 
     @property
     def indexes(self):
@@ -536,8 +547,8 @@ class entityremoveeventargs(eventargs):
         self.entity = e
 
 class entityvaluechangeeventargs(eventargs):
-    def __init__(self, e, oldval, newval):
-        self.entity = e
+    def __init__(self, prop, oldval, newval):
+        self.property = prop
         self.oldvalue = oldval
         self.newvalue = newval
 
