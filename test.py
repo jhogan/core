@@ -2597,6 +2597,14 @@ class test_index(tester):
         self.assertIs(list, type(ls))
         self.assertEq(2, len(ls))
 
+    def it_calls_remove(self):
+        ks = knights.createthe4()
+
+        ix = ks.indexes['traittype'];
+
+        ix.remove(ks.first)
+        self.assertEq(3, ix(type(None)).count)
+
 
 t = testers()
 t.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)
