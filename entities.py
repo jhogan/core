@@ -490,7 +490,13 @@ class entities(object):
 class entity():
     def __init__(self):
         self.onvaluechange = event()
-        pass
+
+    def setvalue(self, prop, new):
+        old = getattr(self, prop)
+        if old is not new:
+            eargs = entityvaluechangeeventargs(prop, old, new)
+            self.onvaluechange(self, eargs)
+            setattr(self, prop, new)
 
     def add(self, e):
         es = entities()

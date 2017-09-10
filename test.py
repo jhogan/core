@@ -69,7 +69,15 @@ class sillyknights(knights):
 class knight(entity):
     def __init__(self, name):
         self.name = name
-        self.trait = None
+        self._trait = None
+
+    @property
+    def trait(self):
+        return self._trait
+
+    @trait.setter
+    def trait(self, v):
+        self.setvalue('_trait', v)
 
     @property
     def brokenrules(self):
