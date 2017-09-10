@@ -610,6 +610,7 @@ class index(entity):
     def remove(self, e):
         ix     = self._ix
 
+        val = self.keyfunction(e)
         key = index._getkey(val)
 
         vals = ix[key]
