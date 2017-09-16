@@ -48,6 +48,8 @@ class table(entity):
         # opportunity to subscribe to the field's on*valuechange events
         f.onbeforevaluechange += self._field_onbeforevaluechange
 
+        f.onaftervaluechange += self._field_onaftervaluechange
+
     def _fields_onremove(self, src, eargs):
         f = eargs.entity
         self._fields -= f
@@ -55,10 +57,15 @@ class table(entity):
         # Since the field is no longer a part of the table, remove our
         # subscription to its on*valuechange event
         f.onbeforevaluechange -= self._field_onbeforevaluechange
+        f.onaftervaluechange -= self._field_onaftervaluechange
 
     def _field_onbeforevaluechange(self, src, eargs):
         ix = self._fields.indexes['value']
         ix.remove(eargs.entity)
+
+    def _field_onaftervaluechange(self, src, eargs):
+        ix = self._fields.indexes['value']
+        ix.append(eargs.entity)
 
     def __iter__(self):
         for r in self.rows:
