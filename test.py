@@ -28,8 +28,14 @@ import math
 
 class knights(entities):
     def __init__(self, initial=None):
-        self.indexes += index(name='name', keyfn=lambda k: k.name)
-        self.indexes += index(name='traittype', keyfn=lambda f: type(f.trait))
+        self.indexes += index(name='name', 
+                        keyfn=lambda k: k.name, 
+                        prop='name')
+
+        self.indexes += index(name='traittype', 
+                              keyfn=lambda f: type(f.trait),
+                              prop='trait')
+
         super().__init__(initial);
 
     @staticmethod
@@ -70,6 +76,7 @@ class knight(entity):
     def __init__(self, name):
         self.name = name
         self._trait = None
+        super().__init__()
 
     @property
     def trait(self):
@@ -77,7 +84,7 @@ class knight(entity):
 
     @trait.setter
     def trait(self, v):
-        self.setvalue('_trait', v)
+        self._setvalue('_trait', v)
 
     @property
     def brokenrules(self):
