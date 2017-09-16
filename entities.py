@@ -24,6 +24,7 @@ SOFTWARE.
 """
 from pdb import set_trace; B=set_trace
 from random import randint, sample
+import inspect
 import sys
 class entities(object):
     def __init__(self, initial=None):
@@ -489,14 +490,25 @@ class entities(object):
 
 class entity():
     def __init__(self):
-        self.onvaluechange = event()
+        self.onbeforevaluechange = event()
+        self.onaftervaluechange = event()
 
-    def setvalue(self, prop, new):
-        old = getattr(self, prop)
-        if old is not new:
-            eargs = entityvaluechangeeventargs(prop, old, new)
-            self.onvaluechange(self, eargs)
-            setattr(self, prop, new)
+    def _setvalue(self, field, new):
+        # TODO Write test
+        old = getattr(self, field)
+        if old != new:
+            prop = None
+            if hasattr(self, 'onbeforevaluechange'):
+                prop = inspect.stack()[1][3]
+                eargs = entityvaluechangeeventargs(self, prop)
+                self.onbeforevaluechange(self, eargs)
+
+            setattr(self, field, new)
+
+            if hasattr(self, 'onaftervaluechange'):
+                prop = prop if prop else inspect.stack()[1][3]
+                eargs = entityvaluechangeeventargs(self, prop)
+                self.onaftervaluechange(self, eargs)
 
     def add(self, e):
         es = entities()
