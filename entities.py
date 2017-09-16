@@ -674,12 +674,5 @@ class index(entity):
             es += e
         return es
 
-    def move(self, old, new):
-        self.remove(e)
-        self += e
-
     def __len__(self):
         return len(self._ix)
-
-
-
