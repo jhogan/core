@@ -56,20 +56,35 @@ class entities(object):
         for ix in self.indexes:
             ix += eargs.entity
 
-        if hasattr(eargs.entity, 'onvaluechange'):
-            eargs.entity.onvaluechange += self._entity_onvaluechange 
+        if hasattr(eargs.entity, 'onbeforevaluechange'):
+            eargs.entity.onbeforevaluechange += \
+                self._entity_onbeforevaluechange 
+
+        if hasattr(eargs.entity, 'onaftervaluechange'):
+            eargs.entity.onaftervaluechange += \
+                self._entity_onaftervaluechange 
             
     def _self_onremove(self, src, eargs):
         for ix in self.indexes:
             ix -= eargs.entity
 
-        if hasattr(eargs.entity, 'onvaluechange'):
-            eargs.entity.onvaluechange -= self._entity_onvaluechange 
+        if hasattr(eargs.entity, 'onbeforevaluechange'):
+            eargs.entity.onbeforevaluechange -= \
+                self._entity_onbeforevaluechange 
 
-    def _entity_onvaluechange(self, src, eargs):
-        prop, old, new = eargs.property, eargs.old, eargs.new
-        pass
-        
+        if hasattr(eargs.entity, 'onaftervaluechange'):
+            eargs.entity.onaftervaluechange -= \
+                self._entity_onaftervaluechange 
+
+    def _entity_onbeforevaluechange(self, src, eargs):
+        for ix in self.indexes:
+            if ix.property == eargs.property:
+                ix.remove(eargs.entity)
+
+    def _entity_onaftervaluechange(self, src, eargs):
+        for ix in self.indexes:
+            if ix.property == eargs.property:
+                ix += eargs.entity
 
     @property
     def indexes(self):
