@@ -337,10 +337,7 @@ class field(entity):
 
     @value.setter
     def value(self, v):
-        if v is not self.value:
-            eargs = entityvaluechangeeventargs(self, self.value, v)
-            self._v = v
-            self.onvaluechange(self, eargs)
+        self._setvalue('_v', v)
 
     def clone(self):
         return field(self.value)
