@@ -606,10 +606,11 @@ class indexes(entities):
         return super().append(ix, uniq, r)
         
 class index(entity):
-    def __init__(self, name=None, keyfn=None):
+    def __init__(self, name=None, keyfn=None, prop=None):
         self._ix = {}
         self.name = name
         self.keyfunction = keyfn
+        self.property = prop
 
     @property
     def name(self):
