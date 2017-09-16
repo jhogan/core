@@ -45,21 +45,20 @@ class table(entity):
         self._fields += f
 
         # We are captureing the field being added to the table so use this
-        # opportunity to subscribe to the field's onvaluechange event
-        f.onvaluechange += self._field_onvaluechange
+        # opportunity to subscribe to the field's on*valuechange events
+        f.onbeforevaluechange += self._field_onbeforevaluechange
 
     def _fields_onremove(self, src, eargs):
         f = eargs.entity
         self._fields -= f
 
         # Since the field is no longer a part of the table, remove our
-        # subscription to its onvaluechange event
-        f.onvaluechange -= self._field_onvaluechange
+        # subscription to its on*valuechange event
+        f.onbeforevaluechange -= self._field_onbeforevaluechange
 
-    def _field_onvaluechange(self, src, eargs):
-        old, f = eargs.oldvalue, eargs.entity
-        # TODO Correct when move is fixed
-        # self._fields.indexes['value'].move(old=oldval, e=f)
+    def _field_onbeforevaluechange(self, src, eargs):
+        ix = self._fields.indexes['value']
+        ix.remove(eargs.entity)
 
     def __iter__(self):
         for r in self.rows:
