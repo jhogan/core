@@ -580,10 +580,9 @@ class entityremoveeventargs(eventargs):
         self.entity = e
 
 class entityvaluechangeeventargs(eventargs):
-    def __init__(self, prop, oldval, newval):
+    def __init__(self, e, prop):
         self.property = prop
-        self.oldvalue = oldval
-        self.newvalue = newval
+        self.entity = e
 
 class appendeventargs(eventargs):
     def __init__(self, e):
