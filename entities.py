@@ -509,7 +509,6 @@ class entity():
         self.onaftervaluechange = event()
 
     def _setvalue(self, field, new):
-        # TODO Write test
         old = getattr(self, field)
         if old != new:
             prop = None

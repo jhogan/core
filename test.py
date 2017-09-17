@@ -2657,8 +2657,6 @@ class test_index(tester):
         # Now, 3 trait types will be NoneTypes and 1 will be a str ('bravery')
         self.assertEq(3, ix(type(None)).count)
         self.assertEq(1, ix(str).count)
-        
-
 
 
 t = testers()
