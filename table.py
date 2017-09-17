@@ -60,12 +60,12 @@ class table(entity):
         f.onaftervaluechange -= self._field_onaftervaluechange
 
     def _field_onbeforevaluechange(self, src, eargs):
-        ix = self._fields.indexes['value']
-        ix.remove(eargs.entity)
+        for ix in self._fields.indexes:
+            ix.remove(eargs.entity)
 
     def _field_onaftervaluechange(self, src, eargs):
-        ix = self._fields.indexes['value']
-        ix.append(eargs.entity)
+        for ix in self._fields.indexes:
+            ix.append(eargs.entity)
 
     def __iter__(self):
         for r in self.rows:
