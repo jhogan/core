@@ -26,7 +26,7 @@ from entities import *
 
 class table(entity):
     def __init__(self, x=None, y=None, initval=None):
-        self.rows = rows(self)
+        self.rows = rows(tbl=self)
         self._fields = fields()
 
         self.rows.onfieldadd += self._fields_onadd
@@ -227,7 +227,7 @@ class column(entity):
         return max([len(str(f.value)) for f in self])
         
 class rows(entities):
-    def __init__(self, tbl, initial=None):
+    def __init__(self, initial=None, tbl=None):
         super().__init__(initial=initial)
         self.table = tbl
 
@@ -246,7 +246,7 @@ class rows(entities):
 class row(entity):
     def __init__(self):
         super().__init__()
-        self.fields = fields(self)
+        self.fields = fields(row=self)
 
         self.fields.onadd += self._fields_onadd
         self.fields.onremove += self._fields_onremove
@@ -300,7 +300,7 @@ class row(entity):
             self.newfield(v)
 
 class fields(entities):
-    def __init__(self, row=None, initial=None):
+    def __init__(self, initial=None, row=None):
 
         # Create index on the type of value
         self.indexes += index(name='type', keyfn=lambda f: type(f.value))
@@ -334,7 +334,7 @@ class fields(entities):
         return [x.value for x in self]
 
 class field(entity):
-    def __init__(self, v, initial=None):
+    def __init__(self, v):
         super().__init__()
         self._v = v
 
