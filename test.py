@@ -28,8 +28,14 @@ import math
 
 class knights(entities):
     def __init__(self, initial=None):
-        self.indexes += index(name='name', keyfn=lambda k: k.name)
-        self.indexes += index(name='traittype', keyfn=lambda f: type(f.trait))
+        self.indexes += index(name='name', 
+                        keyfn=lambda k: k.name, 
+                        prop='name')
+
+        self.indexes += index(name='traittype', 
+                              keyfn=lambda f: type(f.trait),
+                              prop='trait')
+
         super().__init__(initial);
 
     @staticmethod
@@ -69,7 +75,16 @@ class sillyknights(knights):
 class knight(entity):
     def __init__(self, name):
         self.name = name
-        self.trait = None
+        self._trait = None
+        super().__init__()
+
+    @property
+    def trait(self):
+        return self._trait
+
+    @trait.setter
+    def trait(self, v):
+        self._setvalue('_trait', v)
 
     @property
     def brokenrules(self):
@@ -2597,13 +2612,51 @@ class test_index(tester):
         self.assertIs(list, type(ls))
         self.assertEq(2, len(ls))
 
+    def it_calls_append(self):
+        # TODO
+        pass
+
     def it_calls_remove(self):
         ks = knights.createthe4()
 
         ix = ks.indexes['traittype'];
 
+        # Remove the first knight from the index. Since the trait propery was
+        # None, the value of the index will be NoneType. So check that the
+        # index with the value of type(None) has 3 entities.
         ix.remove(ks.first)
         self.assertEq(3, ix(type(None)).count)
+
+        # Add a knight with a trait whose type is str. 
+        k = knight('sir robins')
+        k.trait = 'not-quite-so bravery'
+        ks += k
+
+        # Ensure that the trait index has an entry for an str trait
+        self.assertEq(1, ix(str).count)
+
+        # Now remove it from the index
+        ix.remove(k)
+
+        # Ensure that it has been removed.
+        self.assertTrue(ix(str).isempty)
+
+    def it_calls_move(self):
+
+        ks = knights.createthe4()
+        ix = ks.indexes['traittype']
+
+        # First, all the trait types will be NoneType
+        self.assertEq(4, ix(type(None)).count)
+
+        # Set the trait. When the trait property is set, the onvaluechange 
+        # event will be raised which will cause the knight to be 
+        # removed from the index at key NoneType to the key 'str'
+        ks['Lancelot'].trait = 'bravery'
+
+        # Now, 3 trait types will be NoneTypes and 1 will be a str ('bravery')
+        self.assertEq(3, ix(type(None)).count)
+        self.assertEq(1, ix(str).count)
 
 
 t = testers()
@@ -2611,6 +2664,3 @@ t.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)
 t.oninvoketest += lambda src, eargs: print(eargs.method[0], flush=True)
 t.run()
 print(t)
-
-
-

@@ -24,6 +24,7 @@ SOFTWARE.
 """
 from pdb import set_trace; B=set_trace
 from random import randint, sample
+import inspect
 import sys
 class entities(object):
     def __init__(self, initial=None):
@@ -54,10 +55,36 @@ class entities(object):
     def _self_onadd(self, src, eargs):
         for ix in self.indexes:
             ix += eargs.entity
+
+        if hasattr(eargs.entity, 'onbeforevaluechange'):
+            eargs.entity.onbeforevaluechange += \
+                self._entity_onbeforevaluechange 
+
+        if hasattr(eargs.entity, 'onaftervaluechange'):
+            eargs.entity.onaftervaluechange += \
+                self._entity_onaftervaluechange 
             
     def _self_onremove(self, src, eargs):
         for ix in self.indexes:
             ix -= eargs.entity
+
+        if hasattr(eargs.entity, 'onbeforevaluechange'):
+            eargs.entity.onbeforevaluechange -= \
+                self._entity_onbeforevaluechange 
+
+        if hasattr(eargs.entity, 'onaftervaluechange'):
+            eargs.entity.onaftervaluechange -= \
+                self._entity_onaftervaluechange 
+
+    def _entity_onbeforevaluechange(self, src, eargs):
+        for ix in self.indexes:
+            if ix.property == eargs.property:
+                ix.remove(eargs.entity)
+
+    def _entity_onaftervaluechange(self, src, eargs):
+        for ix in self.indexes:
+            if ix.property == eargs.property:
+                ix += eargs.entity
 
     @property
     def indexes(self):
@@ -478,8 +505,24 @@ class entities(object):
 
 class entity():
     def __init__(self):
-        self.onvaluechange = event()
-        pass
+        self.onbeforevaluechange = event()
+        self.onaftervaluechange = event()
+
+    def _setvalue(self, field, new):
+        old = getattr(self, field)
+        if old != new:
+            prop = None
+            if hasattr(self, 'onbeforevaluechange'):
+                prop = inspect.stack()[1][3]
+                eargs = entityvaluechangeeventargs(self, prop)
+                self.onbeforevaluechange(self, eargs)
+
+            setattr(self, field, new)
+
+            if hasattr(self, 'onaftervaluechange'):
+                prop = prop if prop else inspect.stack()[1][3]
+                eargs = entityvaluechangeeventargs(self, prop)
+                self.onaftervaluechange(self, eargs)
 
     def add(self, e):
         es = entities()
@@ -536,10 +579,9 @@ class entityremoveeventargs(eventargs):
         self.entity = e
 
 class entityvaluechangeeventargs(eventargs):
-    def __init__(self, e, oldval, newval):
+    def __init__(self, e, prop):
+        self.property = prop
         self.entity = e
-        self.oldvalue = oldval
-        self.newvalue = newval
 
 class appendeventargs(eventargs):
     def __init__(self, e):
@@ -563,10 +605,11 @@ class indexes(entities):
         return super().append(ix, uniq, r)
         
 class index(entity):
-    def __init__(self, name=None, keyfn=None):
+    def __init__(self, name=None, keyfn=None, prop=None):
         self._ix = {}
         self.name = name
         self.keyfunction = keyfn
+        self.property = prop
 
     @property
     def name(self):
@@ -596,6 +639,9 @@ class index(entity):
         # TODO: Since lists aren't hashable, we convert the list to a string.
         # This isn't ideal since using (0, 1) as the index value on retrieval
         # is the same as using [0, 1].
+
+
+        # Try to return a hashable version of the value
         if val.__hash__:
             return val
         elif type(val) == list:
@@ -654,12 +700,5 @@ class index(entity):
             es += e
         return es
 
-    def move(self, oldkey, e):
-        self.remove(val=oldkey, e=e)
-        self += e
-
     def __len__(self):
         return len(self._ix)
-
-
-
