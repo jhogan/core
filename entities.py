@@ -28,7 +28,7 @@ import inspect
 import sys
 class entities(object):
     def __init__(self, initial=None):
-        self.clear()
+        self._ls = []
 
         # The event and indexes classes are subtypes of entites. Don't add
         # events and indexes to these types in order to avoid infinite
@@ -46,7 +46,7 @@ class entities(object):
             # Instatiate indexes
             ix = index(name='identity', keyfn=lambda e: e)
             ix.indexes = self.indexes
-            self.indexes._list.append(ix)
+            self.indexes._ls.append(ix)
 
         # Append initial collection
         if initial != None:
@@ -111,7 +111,7 @@ class entities(object):
             return None
 
     def __iter__(self):
-        for t in self._list:
+        for t in self._ls:
             yield t
 
     def getrandom(self, returnIndex=False):
@@ -167,7 +167,7 @@ class entities(object):
         for i in range(self.count - 1, -1, -1):
             for rm in rms:
                 if rm is self[i]:
-                    del self._list[i]
+                    del self._ls[i]
                     self.onremove(self, entityremoveeventargs(rm))
                     break
 
@@ -272,9 +272,9 @@ class entities(object):
         if uniq and self.has(t):
             return r
 
-        r._list.append(t)
+        r._ls.append(t)
 
-        self._list.append(t)
+        self._ls.append(t)
 
         try:
             if not isinstance(self, event) and not isinstance(self, indexes):
@@ -312,16 +312,10 @@ class entities(object):
             if es.hasnt(e):
                 r += e
         return r
-        
-    @property
-    def _list(self):
-        if not hasattr(self, '_ls'):
-            self._ls = []
-        return self._ls
 
     @property
     def count(self):
-        return len(self._list)
+        return len(self._ls)
 
     def __len__(self):
         return self.count
@@ -376,9 +370,9 @@ class entities(object):
 
     def __getitem__(self, key):
         if type(key) == int or type(key) == slice:
-            return self._list[key]
+            return self._ls[key]
 
-        for e in self._list:
+        for e in self._ls:
             if hasattr(e, 'id'):
                 if e.id == key:   return e
             elif hasattr(e, 'name'):
@@ -565,7 +559,7 @@ class event(entities):
         if isinstance(fn, event):
             raise ValueError('Attempted to append event to event collection.')
             
-        self._list.append(fn)
+        self._ls.append(fn)
 
 class eventargs(entity):
     pass
@@ -589,6 +583,7 @@ class appendeventargs(eventargs):
 
 class indexes(entities):
     def __init__(self, cls):
+        super().__init__()
         self.class_ = cls
         
     def __getitem__(self, name):

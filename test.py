@@ -989,13 +989,13 @@ class test_entities(tester):
         self.assertIs(ks1.first,   ks.third)
         self.assertIs(ks1.second,  ks.fourth)
 
-    def it_gets__list(self):
+    def it_gets__ls(self):
         """ The _list property is a 'private' property representing
         the underlying Python list object used to store the entities."""
         ks = knights.createthe4()
 
         for i, k in enumerate(ks):
-            self.assertIs(ks._list[i], k)
+            self.assertIs(ks._ls[i], k)
 
     def it_gets_count(self):
         """ The count property is the number of entities in the collection.
@@ -2642,7 +2642,6 @@ class test_index(tester):
         self.assertTrue(ix(str).isempty)
 
     def it_calls_move(self):
-
         ks = knights.createthe4()
         ix = ks.indexes['traittype']
 
