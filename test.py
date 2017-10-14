@@ -84,7 +84,7 @@ class knight(entity):
 
     @trait.setter
     def trait(self, v):
-        self._setvalue('_trait', v)
+        self._setvalue('_trait', v, 'trait')
 
     @property
     def brokenrules(self):

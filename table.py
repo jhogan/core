@@ -44,7 +44,7 @@ class table(entity):
         f = eargs.entity
         self._fields += f
 
-        # We are captureing the field being added to the table so use this
+        # We are capturing the field being added to the table so use this
         # opportunity to subscribe to the field's on*valuechange events
         f.onbeforevaluechange += self._field_onbeforevaluechange
 
@@ -311,7 +311,7 @@ class fields(entities):
         if row:
             self.row = row
 
-        # Ensure that each element in initial is a field object. If not,
+        # Ensure that each element in 'initial' is a field object. If not,
         # append a new field object using the element as the field's value.
         if initial != None:
             fs = fields()
@@ -344,7 +344,9 @@ class field(entity):
 
     @value.setter
     def value(self, v):
-        self._setvalue('_v', v)
+        # TODO Using 'dummy' works here but None doesn't. This needs
+        # research.
+        self._setvalue('_v', v, 'dummy')
 
     def clone(self):
         return field(self.value)
