@@ -8,8 +8,7 @@ class lead(dbentity):
         self.subject = ''
         self.message = ''
 
-    def save(self):
-
+    def _insert(self):
         insert = """
         insert into leads
         values(null, %s, %s, %s);
