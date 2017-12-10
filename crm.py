@@ -1,9 +1,9 @@
-from entities import *
 from pdb import set_trace; B=set_trace
-import MySQLdb
+from entities import connections, dbentity
 
-class lead(entity):
+class lead(dbentity):
     def __init__(self):
+        super().__init__()
         self.name = ''
         self.subject = ''
         self.message = ''
@@ -14,17 +14,6 @@ class lead(entity):
         insert into leads
         values(null, %s, %s, %s);
         """
-
-        db = MySQLdb.connect('localhost', 'www', pwd, 'main')
-        cur = db.cursor()
-        B()
-        cur.execute(insert, (self.name, self.subject, self.message))
-        db.commit()
-
-        db.close()
-
-
-        
-        
-        
+        conn = connections.getinstance().default
+        conn.query(insert, (self.name, self.subject, self.message))
 
