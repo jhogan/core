@@ -25,6 +25,7 @@ SOFTWARE.
 from pdb import set_trace; B=set_trace
 from random import randint, sample
 import sys
+
 class entities(object):
     def __init__(self, initial=None):
         self._ls = []
