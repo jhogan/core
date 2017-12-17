@@ -1,5 +1,5 @@
 from pdb import set_trace; B=set_trace
-from db import connections, dbentity, dbentities
+from db import connections, dbentity, dbentities, dbresult
 
 class leads(dbentities):
 
@@ -12,21 +12,26 @@ class leads(dbentities):
         """
 
         conn = connections.getinstance().default
-        cur = conn.query(sql, (False,))
+        res = conn.query(sql, (False,))
 
         ls = leads()
-        for r in cur:
+        for r in res:
             ls += lead(r)
 
         return ls
 
 
 class lead(dbentity):
-    def __init__(self):
+    def __init__(self, v=None):
         super().__init__()
-        self.name = ''
-        self.subject = ''
-        self.message = ''
+
+        if v == None:
+            ls = [''] * 5 + [False]
+        elif type(v) == dbresult:
+            ls = list(v)
+
+        self._id,      self.name,     self.email, \
+        self.subject,  self.message,  self.emailed  =  ls
 
     def _insert(self):
         insert = """
