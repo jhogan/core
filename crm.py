@@ -41,4 +41,17 @@ class lead(dbentity):
         conn = connections.getinstance().default
         conn.query(insert, (self.name, self.email, self.subject, self.message, self.emailed))
 
+    def _create(self):
+        
+        return """
+        create table leads(
+            id int(6) unsigned auto_increment primary key,
+            name varchar(255) not null,
+            email varchar(255) not null,
+            subject varchar(255) not null,
+            message text not null,
+            emailed bit not null
+        )
+        """
+
 
