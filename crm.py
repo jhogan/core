@@ -36,8 +36,9 @@ class lead(dbentity):
     def _insert(self):
         insert = """
         insert into leads
-        values(null, %s, %s, %s);
+        values(null, %s, %s, %s, %s, %s);
         """
         conn = connections.getinstance().default
-        conn.query(insert, (self.name, self.subject, self.message))
+        conn.query(insert, (self.name, self.email, self.subject, self.message, self.emailed))
+
 
