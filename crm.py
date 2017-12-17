@@ -54,4 +54,10 @@ class lead(dbentity):
         )
         """
 
+    def __str__(self):
+        r  =   'Name:     '  +  self.name     +  '\n'
+        r  +=  'Email:    '  +  self.email    +  '\n'
+        r  +=  'Subject:  '  +  self.subject  +  '\n'
+        r  +=  'message:  '  +  self.message  +  '\n'
+        return r
 
