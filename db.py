@@ -100,7 +100,24 @@ class connection(entity):
                 cur = conn.cursor()
                 cur.execute(sql, args)
                 conn.commit()
-                return cur
+                return dbresultset(cur)
             except MySQLdb.OperationalError as ex:
                 print('Reconnect')
                 self._reconnect()
+
+class dbresultset(entities):
+    def __init__(self, cur):
+        self._cur = cur
+
+    def __iter__(self):
+        for r in self._cur:
+            yield dbresult(r)
+
+class dbresult(entity):
+    def __init__(self, row):
+        self._row = row
+
+    def __iter__(self):
+        for f in self._row:
+            yield f
+    
