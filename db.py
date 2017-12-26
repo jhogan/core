@@ -39,7 +39,12 @@ class dbentity(entity):
     def __init__(self, id=None):
         # TODO Complete
         self.isnew = True
+        self._id = None
             
+    @property
+    def id(self):
+        return self._id
+
     def save(self):
         if self.isnew:
             self._insert()
