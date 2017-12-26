@@ -102,6 +102,7 @@ class connection(entity):
                 conn.commit()
                 return dbresultset(cur)
             except MySQLdb.OperationalError as ex:
+                # TODO Add proper logging
                 print('Reconnect')
                 self._reconnect()
 
