@@ -26,6 +26,7 @@ SOFTWARE.
 from entities import *
 import MySQLdb
 from pdb import set_trace; B=set_trace
+from configfile import configfile
 
 class dbentities(entities):
     def save(self):
@@ -47,26 +48,13 @@ class dbentity(entity):
 
 class connections(entities):
 
-    # TODO Add Tests
-    @property
-    def default(self):
-        for conn in self:
-            if conn.isdefault:
-                return conn
-        return null
-
     _instance = None
-
-    @default.setter
-    def default(self, conn):
-        conn.isdefault = True
-
-        for i, conn1 in enumerate(self):
-            if conn1.isdefault:
-                self[i] = conn
-        self += conn
-                
-            
+    def __init__(self):
+        super().__init__()
+        cfg = configfile.getinstance()
+        accts = cfg.accounts.mysqlaccounts
+        for acct in accts:
+            self += connection(acct)
 
     @classmethod
     def getinstance(cls):
@@ -75,31 +63,26 @@ class connections(entities):
         return cls._instance
 
     @property
-    def brokenrules(self):
-        brs = brokenrules()
-        cnt = self.getcount(lambda c: c.isdefault)
-        if cnt > 1:
-            brs += brokenrule('Only one connection can be the default')
-        elif cnt == 0:
-            brs += brokenrule('One connection must be the default')
-
-        return brs
+    def default(self):
+        return self.first
 
 class connection(entity):
-    # TODO Add Tests
-    def __init__(self, host, uid, pwd, db):
-        self._host = host
-        self._uid  = uid
-        self._pwd  = pwd
-        self._db   = db
+    def __init__(self, acct):
+        self._account = acct
         self._conn = None
-        self.isdefault = True
+
+    @property
+    def account(self):
+        return self._account
 
     @property
     def _connection(self):
         if not self._conn:
-            self._conn = MySQLdb.connect(self._host, self._uid, self._pwd, self._db)
-        return self._conn
+            acct = self.account
+            self._conn = MySQLdb.connect(acct.host, acct.username, 
+                                         acct.password, acct.database, 
+                                         port=acct.port)
+        return self._conn                
 
     def _reconnect(self):
         self._conn = None # force a reconnect
