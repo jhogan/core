@@ -317,6 +317,10 @@ class entities(object):
     def count(self):
         return len(self._ls)
 
+    def getcount(self, qry):
+        # TODO Test
+        return self.where(qry).count
+
     def __len__(self):
         return self.count
 
