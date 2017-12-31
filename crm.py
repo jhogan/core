@@ -1,7 +1,6 @@
 from pdb import set_trace; B=set_trace
-from db import connections, dbentity, dbentities, dbresult
-
-class leads(dbentities):
+import db
+class leads(db.dbentities):
 
     @staticmethod
     def getunemailed():
@@ -11,7 +10,7 @@ class leads(dbentities):
         where emailed = %s
         """
 
-        conn = connections.getinstance().default
+        conn = db.connections.getinstance().default
         res = conn.query(sql, (False,))
 
         ls = leads()
@@ -21,13 +20,13 @@ class leads(dbentities):
         return ls
 
 
-class lead(dbentity):
+class lead(db.dbentity):
     def __init__(self, v=None):
         super().__init__()
 
         if v == None:
             ls = [''] * 5 + [False]
-        elif type(v) == dbresult:
+        elif type(v) == db.dbresult:
             ls = list(v)
 
         self._id,      self.name,     self.email, \
@@ -38,7 +37,7 @@ class lead(dbentity):
         insert into leads
         values(null, %s, %s, %s, %s, %s);
         """
-        conn = connections.getinstance().default
+        conn = db.connections.getinstance().default
         conn.query(insert, (self.name, self.email, self.subject, self.message, self.emailed))
 
     def _create(self):
