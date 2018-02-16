@@ -11,7 +11,7 @@ class leads(db.dbentities):
         """
 
         conn = db.connections.getinstance().default
-        res = conn.query(sql, (False,))
+        res = conn.query(sql, (None,))
 
         ls = leads()
         for r in res:
@@ -25,12 +25,13 @@ class lead(db.dbentity):
         super().__init__()
 
         if v == None:
-            ls = [''] * 5 + [False]
+            ls = [''] * 4 + [False]
         elif type(v) == db.dbresult:
             ls = list(v)
 
-        self._id,      self.name,     self.email, \
-        self.subject,  self.message,  self.emailed  =  ls
+        self._id,      self.name, self.email, \
+        self.subject,  self.message = ls
+        self.emailed = None
 
     def _insert(self):
         insert = """
@@ -57,6 +58,6 @@ class lead(db.dbentity):
         r  =   'Name:     '  +  self.name     +  '\n'
         r  +=  'Email:    '  +  self.email    +  '\n'
         r  +=  'Subject:  '  +  self.subject  +  '\n'
-        r  +=  'message:  '  +  self.message  +  '\n'
+        r  +=  'Message:  '  +  self.message  +  '\n'
         return r
 

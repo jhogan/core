@@ -3,5 +3,6 @@ create table leads(
     name varchar(255),
     email varchar(255),
     subject varchar(255),
-    message text
+    message text,
+    emailed_at datetime default null 
 )
