@@ -63,9 +63,12 @@ class configfile(entity):
         self.clear()
 
         with open(self.file, 'r') as stream:
-            cfg = yaml.load(stream)
+            self._cfg = yaml.load(stream)
 
-        for acct in cfg['accounts']:
+        for acct in self['accounts']:
             self.accounts += account.create(acct)
+
+    def __getitem__(self, key):
+        return self._cfg[key]
 
 
