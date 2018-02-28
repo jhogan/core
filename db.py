@@ -102,6 +102,11 @@ class connection(entity):
                 conn.commit()
                 return dbresultset(cur)
             except MySQLdb.OperationalError as ex:
+                # TODO[CAR-52] BUG This exception catches more than just connection
+                # errors.  It can also catch errors like:
+                # _mysql_exceptions.OperationalError: (1136, "Column count
+                # doesn't match value count at row 1")
+                #
                 # TODO Add proper logging
                 print('Reconnect')
                 self._reconnect()
