@@ -71,4 +71,11 @@ class configfile(entity):
     def __getitem__(self, key):
         return self._cfg[key]
 
+    @property
+    def inproduction(self):
+        try:
+            env = self['environment'].lower()
+        except KeyError:
+            raise Exception('No environment value set in config file.')
+        return env in ['prd', 'production', 'live']
 
