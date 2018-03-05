@@ -168,6 +168,55 @@ class tester(entity):
             statuscode0 = int(statuscode[:3])
             return httpresponse(statuscode0, statusmessage, resheads, body)
 
+class httpresponse(entity):
+    def __init__(self, statuscode, statusmessage, headers, body):
+        self.statuscode = statuscode
+        self.statusmessage = statusmessage
+        self.headers = headers
+        self.body = body
+
+    @property
+    def brokenrules(self):
+        brs = brokenrules()
+        if self.statuscode < 200 or self.statuscode > 400:
+            brs += brokenrule('Status code is not valid: ' + str(self.statuscode))
+
+        if self.body['__exception']:
+            brs += brokenrules('Exception was returned');
+
+        return brs
+
+    def hasbrokenrule(self, prop, type=None, msg=None):
+        brs = self.body['__brokenrules']
+
+        for br in brs:
+            if br['property'] != prop:
+                continue
+
+            if type != None:
+                try:
+                    if br['type'] != type:
+                        return False
+                except KeyError:
+                    return False
+
+            if msg != None:
+                try:
+                    if msg != br['message']:
+                        return False
+                except KeyError:
+                   return False
+
+            return True
+        return False
+
+    def __str__(self):
+        r = self.statusmessage + '\n'
+        for hdr in self.headers:
+            r += hdr[0] + ': ' + hdr[1] + '\n'
+        r += pprint.pformat(self.body)
+        return r
+            
 class failures(entities):
     pass
 
