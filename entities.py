@@ -25,6 +25,7 @@ SOFTWARE.
 from pdb import set_trace; B=set_trace
 from random import randint, sample
 import sys
+import re
 
 class entities(object):
     def __init__(self, initial=None):
@@ -541,6 +542,18 @@ class brokenrules(entities):
         if isinstance(o, str):
             o = brokenrule(o)
         super().append(o, r)
+
+    def demand(self, cls, prop, isfull=False, isemail=False):
+        v = getattr(cls, prop)
+
+        if isfull:
+            if type(v) != str or v.strip() == '':
+                self += brokenrule(prop + ' is empty', prop, 'full')
+
+        if isemail:
+            pattern = r'[^@]+@[^@]+\.[^@]+'
+            if v == None or not re.match(pattern, v):
+                self += brokenrule(prop + ' is invalid', prop, 'validemail')
 
 class brokenrule(entity):
     def __init__(self, msg):
