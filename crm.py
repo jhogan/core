@@ -26,8 +26,13 @@ class lead(db.dbentity):
     def __init__(self, v=None):
         super().__init__()
 
+        if type(v) == int:
+            sql = 'select * from leads where id = %s'
+            conn = db.connections.getinstance().default
+            v = conn.query(sql, (v,))
+
         if v == None:
-            ls = [''] * 4 + [False]
+            ls = [''] * 5
         elif type(v) == db.dbresult:
             ls = list(v)
 
