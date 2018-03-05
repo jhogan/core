@@ -46,7 +46,9 @@ class lead(db.dbentity):
         values(null, %s, %s, %s, %s, %s);
         """
         conn = db.connections.getinstance().default
-        conn.query(insert, (self.name, self.email, self.subject, self.message, self.emailed))
+        res = conn.query(insert, (self.name, self.email, self.subject, self.message, self.emailed))
+
+        self._id = res.lastrowid
 
     @property
     def brokenrules(self):
