@@ -46,10 +46,13 @@ class dbentity(entity):
         return self._id
 
     def save(self):
-        if self.isnew:
-            self._insert()
-        elif self.isdirty:
-            self._update()
+        if self.isvalid:
+            if self.isnew:
+                self._insert()
+            elif self.isdirty:
+                self._update()
+        else:
+            raise Exception('Won\'t save invalid object')
 
 class connections(entities):
 
