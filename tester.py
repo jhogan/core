@@ -39,6 +39,10 @@ class tester(entity):
     def __init__(self):
         self._failures = failures()
 
+    def assertFull(self, actual, msg=None):
+        if type(actual) != str or actual.strip() == '':
+            self._failures += failure()
+        
     def assertUuid(self, id, msg=None):
         try: uuid.UUID(str(id), version=4)
         except ValueError: self._failures += failure()
