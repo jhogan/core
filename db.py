@@ -122,6 +122,10 @@ class dbresultset(entities):
         for r in self._cur:
             yield dbresult(r)
 
+    @property
+    def lastrowid(self):
+        return self._cur.lastrowid
+
 class dbresult(entity):
     def __init__(self, row):
         self._row = row
