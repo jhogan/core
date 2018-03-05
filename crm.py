@@ -1,5 +1,7 @@
 from pdb import set_trace; B=set_trace
 import db
+from entities import brokenrules
+
 class leads(db.dbentities):
 
     @staticmethod
@@ -40,6 +42,19 @@ class lead(db.dbentity):
         """
         conn = db.connections.getinstance().default
         conn.query(insert, (self.name, self.email, self.subject, self.message, self.emailed))
+
+    @property
+    def brokenrules(self):
+        brs = brokenrules()
+
+        brs.demand(self,  'name',     isfull=True)
+        brs.demand(self,  'message',  isfull=True)
+        brs.demand(self,  'email',    isemail=True)
+        
+        if self.emailed != None:
+            brs.demand(self, 'emailed', isdate=True)
+
+        return brs
 
     def _create(self):
         
