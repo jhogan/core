@@ -556,8 +556,14 @@ class brokenrules(entities):
                 self += brokenrule(prop + ' is invalid', prop, 'validemail')
 
 class brokenrule(entity):
-    def __init__(self, msg):
+    def __init__(self, msg, prop=None, type=None):
         self.message = msg
+        self.property = prop
+
+        if type != None:
+            if type not in ['full', 'validemail']:
+                raise Exception('Invalid brokenrules type')
+        self.type = type
 
     def __str__(self):
         return self.message
