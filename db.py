@@ -116,11 +116,10 @@ class connection(entity):
 
 class dbresultset(entities):
     def __init__(self, cur):
+        super().__init__()
         self._cur = cur
-
-    def __iter__(self):
         for r in self._cur:
-            yield dbresult(r)
+            self += dbresult(r)
 
     @property
     def lastrowid(self):
