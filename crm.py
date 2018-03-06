@@ -11,7 +11,6 @@ class leads(db.dbentities):
         from leads
         where emailed = %s
         """
-
         conn = db.connections.getinstance().default
         res = conn.query(sql, (None,))
 
@@ -20,7 +19,6 @@ class leads(db.dbentities):
             ls += lead(r)
 
         return ls
-
 
 class lead(db.dbentity):
     def __init__(self, v=None):
