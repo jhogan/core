@@ -30,13 +30,16 @@ class lead(db.dbentity):
             v = conn.query(sql, (v,))
 
         if v == None:
-            ls = [''] * 5
-        elif type(v) == db.dbresult:
-            ls = list(v)
+            ls = [''] * 5 + [None]
+        elif type(v) == db.dbresultset:
+            if v.hasone:
+                ls = list(v.first)
+            else:
+                ls = [None] * 5
 
         self._id,      self.name, self.email, \
-        self.subject,  self.message = ls
-        self.emailed = None
+        self.subject,  self.message, \
+        self.emailed = ls
 
     def _insert(self):
         insert = """
