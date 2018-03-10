@@ -543,17 +543,24 @@ class brokenrules(entities):
             o = brokenrule(o)
         super().append(o, r)
 
-    def demand(self, cls, prop, isfull=False, isemail=False):
+    def demand(self, cls, prop, 
+                     isfull=False, 
+                     isemail=False, 
+                     maxlen=None):
         v = getattr(cls, prop)
 
         if isfull:
-            if type(v) != str or v.strip() == '':
+            if v == None or type(v) != str or v.strip() == '':
                 self += brokenrule(prop + ' is empty', prop, 'full')
 
         if isemail:
             pattern = r'[^@]+@[^@]+\.[^@]+'
             if v == None or not re.match(pattern, v):
-                self += brokenrule(prop + ' is invalid', prop, 'validemail')
+                self += brokenrule(prop + ' is invalid', prop, 'valid')
+
+        if maxlen != None:
+            if v == None or len(v) > maxlen:
+                self += brokenrule(prop + ' is too lengthy', prop, 'fits')
 
 class brokenrule(entity):
     def __init__(self, msg, prop=None, type=None):
@@ -561,7 +568,7 @@ class brokenrule(entity):
         self.property = prop
 
         if type != None:
-            if type not in ['full', 'validemail']:
+            if type not in ['full', 'valid', 'fits']:
                 raise Exception('Invalid brokenrules type')
         self.type = type
 
