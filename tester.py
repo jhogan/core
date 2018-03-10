@@ -7,6 +7,7 @@ import pdb; B=pdb.set_trace
 import pprint
 import sys
 import uuid
+from pprint import pprint
 
 class invoketesteventargs(eventargs):
     def __init__(self, meth):
@@ -196,16 +197,16 @@ class httpresponse(entity):
             if type != None:
                 try:
                     if br['type'] != type:
-                        return False
+                        continue
                 except KeyError:
-                    return False
+                    continue
 
             if msg != None:
                 try:
                     if msg != br['message']:
-                        return False
+                        continue
                 except KeyError:
-                   return False
+                   continue
 
             return True
         return False
