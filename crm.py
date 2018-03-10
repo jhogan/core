@@ -63,12 +63,13 @@ class lead(db.dbentity):
     def brokenrules(self):
         brs = brokenrules()
 
-        brs.demand(self,  'name',     isfull=True)
-        brs.demand(self,  'message',  isfull=True)
-        brs.demand(self,  'email',    isemail=True)
+        brs.demand(self,  'name',     isfull=True, maxlen=50)
+        brs.demand(self,  'email',    isemail=True, maxlen=50)
+        brs.demand(self,  'message',  isfull=True, maxlen=1000)
         
         if self.emailed != None:
             brs.demand(self, 'emailed', isdate=True)
+
 
         return brs
 
