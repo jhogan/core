@@ -51,6 +51,14 @@ class lead(db.dbentity):
 
         self._id = res.lastrowid
 
+    def delete(self):
+        if not self.id:
+            raise Exception("Can't delete lead.")
+        sql = 'delete from leads where id = %s'
+        conn = db.connections.getinstance().default
+        v = conn.query(sql, (self.id,))
+        
+
     @property
     def brokenrules(self):
         brs = brokenrules()
