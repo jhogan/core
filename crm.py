@@ -50,9 +50,49 @@ class lead(db.dbentity):
             ls = list(v)
             self._markold()
 
-        self._id,      self.name, self.email, \
-        self.subject,  self.message, \
-        self.emailed = ls
+        self._id,      self._name, self._email, \
+        self._subject,  self._message, \
+        self._emailed_at = ls
+
+    @property
+    def name(self):
+        return self._name
+    
+    @name.setter
+    def name(self, v):
+        return self._setvalue('_name', v, 'name')
+
+    @property
+    def subject(self):
+        return self._subject
+    
+    @subject.setter
+    def subject(self, v):
+        return self._setvalue('_subject', v, 'subject')
+
+    @property
+    def email(self):
+        return self._email
+    
+    @email.setter
+    def email(self, v):
+        return self._setvalue('_email', v, 'email')
+
+    @property
+    def message(self):
+        return self._message
+    
+    @message.setter
+    def message(self, v):
+        return self._setvalue('_message', v, 'message')
+
+    @property
+    def emailed_at(self):
+        return self._emailed_at
+    
+    @emailed_at.setter
+    def emailed_at(self, v):
+        return self._setvalue('_emailed_at', v, 'emailed_at')
 
     def _insert(self):
         insert = """
