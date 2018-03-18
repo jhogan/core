@@ -42,6 +42,11 @@ class dbentities(entities):
         res = conn.query('select * from ' + self._table)
         return type(self)(res)
 
+    @property
+    def _table(self):
+        'The _table property must be implemented'
+        raise NotImplementedError(msg)
+
 class dbentity(entity):
     # TODO Add Tests
 
