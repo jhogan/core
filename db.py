@@ -33,6 +33,15 @@ class dbentities(entities):
         for e in self:
             e.save()
 
+    def TRUNCATE(self):
+        conn = connections.getinstance().default
+        conn.query('truncate ' + self._table)
+
+    def ALL(self):
+        conn = connections.getinstance().default
+        res = conn.query('select * from ' + self._table)
+        return type(self)(res)
+
 class dbentity(entity):
     # TODO Add Tests
 
