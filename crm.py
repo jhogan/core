@@ -106,6 +106,18 @@ class lead(db.dbentity):
 
         self._id = res.lastrowid
 
+    def _update(self):
+        sql = """
+        update leads set 
+        name = %s,    email = %s,
+        subject = %s, message = %s, emailed_at = %s
+        where id = %s;
+        """
+        conn = db.connections.getinstance().default
+        args = (self.name,    self.email,   self.subject, 
+                self.message, self.emailed_at, self.id)
+        res = conn.query(sql, args)
+
     # TODO: This should be _delete(). Have the super class call it from
     # its delete() method.
     def delete(self):
