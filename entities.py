@@ -552,6 +552,7 @@ class brokenrules(entities):
     def demand(self, cls, prop, 
                      isfull=False, 
                      isemail=False, 
+                     isdate=False,
                      maxlen=None):
         v = getattr(cls, prop)
 
@@ -567,6 +568,11 @@ class brokenrules(entities):
         if maxlen != None:
             if v == None or len(v) > maxlen:
                 self += brokenrule(prop + ' is too lengthy', prop, 'fits')
+
+        if isdate:
+            if type(v) != datetime:
+                self += brokenrule(prop + " isn't a date", prop, 'valid')
+
 
 class brokenrule(entity):
     def __init__(self, msg, prop=None, type=None):
