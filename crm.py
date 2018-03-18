@@ -136,9 +136,8 @@ class lead(db.dbentity):
         brs.demand(self,  'email',    isemail=True, maxlen=50)
         brs.demand(self,  'message',  isfull=True, maxlen=1000)
         
-        if self.emailed != None:
-            brs.demand(self, 'emailed', isdate=True)
-
+        if self.emailed_at != None:
+            brs.demand(self, 'emailed_at', isdate=True)
 
         return brs
 
@@ -151,7 +150,7 @@ class lead(db.dbentity):
             email varchar(255) not null,
             subject varchar(255) not null,
             message text not null,
-            emailed bit not null
+            emailed_at bit not null
         )
         """
 
