@@ -3,6 +3,12 @@ import db
 from entities import brokenrules
 
 class leads(db.dbentities):
+    def __init__(self, rset=None):
+        super().__init__()
+        if rset != None:
+            for r in rset:
+                self += lead(r)
+
 
     @staticmethod
     def getunemailed():
