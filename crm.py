@@ -39,11 +39,16 @@ class lead(db.dbentity):
 
         if v == None:
             ls = [''] * 5 + [None]
+            self._marknew()
         elif type(v) == db.dbresultset:
             if v.hasone:
                 ls = list(v.first)
             else:
                 ls = [None] * 5
+            self._markold()
+        elif type(v) == db.dbresult:
+            ls = list(v)
+            self._markold()
 
         self._id,      self.name, self.email, \
         self.subject,  self.message, \
