@@ -23,12 +23,19 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 # TODO Write Tests
-from entities import *
 from accounts import *
+from entities import *
+import os
 import yaml
 
 class configfile(entity):
     _instance = None
+
+    def __init__(self):
+        try:
+            self.file = os.environ['EPIPHANY_YAML']
+        except KeyError:
+            pass
 
     @classmethod
     def getinstance(cls):
