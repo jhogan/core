@@ -22,10 +22,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+from datetime import datetime
 from pdb import set_trace; B=set_trace
 from random import randint, sample
-import sys
 import re
+import sys
 
 class entities(object):
     def __init__(self, initial=None):
@@ -138,8 +139,9 @@ class entities(object):
             if fn(e): es += e
         return es
 
-    def sort(self, key):
-        self._ls.sort(key=key)
+    # TODO Test reverse parameter
+    def sort(self, key, reverse=False):
+        self._ls.sort(key=key, reverse=reverse)
 
     def sorted(self, key):
         return type(self)(sorted(self._ls, key=key))
