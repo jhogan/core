@@ -47,6 +47,10 @@ class dbentities(entities):
         'The _table property must be implemented'
         raise NotImplementedError(msg)
 
+    def save(self):
+        for e in self:
+            e.save()
+
 class dbentity(entity):
     # TODO Add Tests
 
