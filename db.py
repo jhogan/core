@@ -160,7 +160,7 @@ class connection(entity):
         self._conn = None # force a reconnect
         self._connection
 
-    def query(self, sql, args):
+    def query(self, sql, args=None):
         for _ in range(2):
             try:
                 conn = self._connection
