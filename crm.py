@@ -13,15 +13,14 @@ class leads(db.dbentities):
     def _table(self):
         return 'leads'
 
-    @staticmethod
     def getunemailed():
         sql = """
         select *
         from leads
-        where emailed = %s
+        where emailed_at is null
         """
         conn = db.connections.getinstance().default
-        res = conn.query(sql, (None,))
+        res = conn.query(sql)
 
         ls = leads()
         for r in res:
