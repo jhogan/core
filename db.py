@@ -73,6 +73,16 @@ class dbentity(entity):
     def _markclean(self):
         self._isdirty = False
 
+    def _setvalue(self, field, new, prop):
+        # TODO: It's nice to strip any string because that's vitually
+        # always the desired behaviour.  However, at some point, we
+        # will want to save the string to the database with whitespace
+        # on either side.  Therefore, we should add a parameter (or
+        # something) to make it possible to persiste an unstripped
+        # string.
+        if type(new) == str:
+            new = new.strip()
+        return super()._setvalue(field, new, prop)
 
     def _self_onaftervaluechange(self, src, eargs):
         if not self.isnew:
