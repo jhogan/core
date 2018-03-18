@@ -509,6 +509,7 @@ class entity():
 
     def _setvalue(self, field, new, prop):
         old = getattr(self, field)
+
         if old != new:
             if hasattr(self, 'onbeforevaluechange'):
                 eargs = entityvaluechangeeventargs(self, prop)

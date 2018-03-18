@@ -78,14 +78,13 @@ class email(entity):
         
         accts = configfile.getinstance().accounts
 
-        B()
         accts = getattr(accts.smtpaccounts, self.type)
 
         for acct in accts:
             try:
                 smtp = smtplib.SMTP(acct.host, acct.port)
 
-                smtp.set_debuglevel(1)
+                #smtp.set_debuglevel(1)
 
                 smtp.login(acct.username, acct.password)
                 smtp.send_message(msg)

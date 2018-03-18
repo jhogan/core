@@ -9,6 +9,8 @@ import sys
 import uuid
 from pprint import pprint
 
+# TODO Ensure tester.py won't run in non-dev environment
+
 class invoketesteventargs(eventargs):
     def __init__(self, meth):
         self.method = meth
