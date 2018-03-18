@@ -100,10 +100,14 @@ class lead(db.dbentity):
         values(null, %s, %s, %s, %s, %s);
         """
         conn = db.connections.getinstance().default
-        res = conn.query(insert, (self.name, self.email, self.subject, self.message, self.emailed))
+        args = (self.name,    self.email, self.subject, 
+                self.message, self.emailed_at)
+        res = conn.query(insert, args)
 
         self._id = res.lastrowid
 
+    # TODO: This should be _delete(). Have the super class call it from
+    # its delete() method.
     def delete(self):
         if not self.id:
             raise Exception("Can't delete lead.")
