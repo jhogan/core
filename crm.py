@@ -9,6 +9,9 @@ class leads(db.dbentities):
             for r in rset:
                 self += lead(r)
 
+    @property
+    def _table(self):
+        return 'leads'
 
     @staticmethod
     def getunemailed():
