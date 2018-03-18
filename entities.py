@@ -523,6 +523,9 @@ class entity():
                 eargs = entityvaluechangeeventargs(self, prop)
                 self.onaftervaluechange(self, eargs)
 
+            # TODO: Return value is new. Add a unit tests for it.
+            return new
+
     def add(self, e):
         es = entities()
         es += self
