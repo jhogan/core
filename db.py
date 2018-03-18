@@ -55,10 +55,37 @@ class dbentity(entity):
     # TODO Add Tests
 
     def __init__(self, id=None):
-        # TODO Complete
-        self.isnew = True
-        self._id = None
-            
+        super().__init__()
+        self.onaftervaluechange += self._self_onaftervaluechange
+
+    def _marknew(self):
+        self._isnew = True
+        self._isdirty = False
+
+    def _markdirty(self):
+        self._isnew = False
+        self._isdirty = True
+
+    def _markold(self):
+        self._isnew = False
+        self._isdirty = False
+
+    def _markclean(self):
+        self._isdirty = False
+
+
+    def _self_onaftervaluechange(self, src, eargs):
+        if not self.isnew:
+            self._markdirty()
+
+    @property
+    def isnew(self):
+        return self._isnew
+
+    @property
+    def isdirty(self):
+        return self._isdirty
+
     @property
     def id(self):
         return self._id
@@ -69,6 +96,8 @@ class dbentity(entity):
                 self._insert()
             elif self.isdirty:
                 self._update()
+            self._isdirty = False
+            self._isnew = False
         else:
             raise Exception('Won\'t save invalid object')
 
