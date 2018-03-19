@@ -150,7 +150,7 @@ class lead(db.dbentity):
             email varchar(255) not null,
             subject varchar(255) not null,
             message text not null,
-            emailed_at bit not null
+            emailed_at datetime,
         )
         """
 
