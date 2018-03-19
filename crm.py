@@ -154,6 +154,14 @@ class lead(db.dbentity):
         )
         """
 
+    def _alter(self):
+        r = []
+        
+        r.append('alter table leads '
+                 '    modify column emailed_at datetime(6)')
+
+        return r
+
     def __str__(self):
         r  =   'Name:     '  +  self.name     +  '\n'
         r  +=  'Email:    '  +  self.email    +  '\n'
