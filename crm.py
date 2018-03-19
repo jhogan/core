@@ -163,9 +163,9 @@ class lead(db.dbentity):
         return r
 
     def __str__(self):
-        r  =   'Name:     '  +  self.name     +  '\n'
-        r  +=  'Email:    '  +  self.email    +  '\n'
-        r  +=  'Subject:  '  +  self.subject  +  '\n'
-        r  +=  'Message:  '  +  self.message  +  '\n'
+        r  =   'Name:     '  +  str(self.name)     +  '\n'
+        r  +=  'Email:    '  +  str(self.email)    +  '\n'
+        r  +=  'Subject:  '  +  str(self.subject)  +  '\n'
+        r  +=  'Message:  '  +  str(self.message)  +  '\n'
         return r
 
