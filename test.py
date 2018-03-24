@@ -24,6 +24,7 @@ SOFTWARE.
 """
 from tester import *
 from table import *
+from log import log
 import math
 
 class knights(entities):
@@ -2656,6 +2657,16 @@ class test_index(tester):
         # Now, 3 trait types will be NoneTypes and 1 will be a str ('bravery')
         self.assertEq(3, ix(type(None)).count)
         self.assertEq(1, ix(str).count)
+
+class test_logs(tester):
+    
+    def it_writes_info(self):
+        l = log.getinstance().default
+        l.debug('debug');
+        l.info('info');
+        l.warning('warning');
+        l.error('error');
+        l.critical('critical');
 
 
 t = testers()
