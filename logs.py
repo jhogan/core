@@ -25,58 +25,70 @@ SOFTWARE.
 # TODO Add Tests
 from entities import *
 from pdb import set_trace; B=set_trace
-from configfile import configfile
 import logging
 from logging import handlers
 
-class log(entity):
+class logs(entities):
 
     _instance = None
 
     def __init__(self):
         super().__init__()
-        # TODO Add configuration
-
-        ### CONFIG     ###
-        serv = 'localhost'
-        port = logging.handlers.SYSLOG_UDP_PORT
-        addr = '/dev/log'
-        addr = (serv, port)
-        fac = logging.handlers.SysLogHandler.LOG_LOCAL0
-        tag = 'TINC'
-        fmt = 'TagName: %(message)s'
-        ### END CONFIG ###
-        log = logging.getLogger()
-        hnd = logging.handlers.SysLogHandler(addr, fac)
-        fmt = logging.Formatter()
-        log.setLevel(logging.NOTSET)
-        hnd.setFormatter(fmt)
-        log.addHandler(hnd)
-        self._log = log
 
     @classmethod
     def getinstance(cls):
         if cls._instance == None:
-            cls._instance = log()
+            cls._instance = logs()
         return cls._instance
-
-    def debug(self, msg, *args, **kwargs):
-        self._log.debug(msg)
-
-    def info(self, msg, *args, **kwargs):
-        self._log.info(msg)
-
-    def warning(self, msg, *args, **kwargs):
-        self._log.warning(msg)
-
-    def error(self, msg, *args, **kwargs):
-        self._log.error(msg)
-
-    def critical(self, msg, *args, **kwargs):
-        self._log.critical(msg)
-
 
     @property
     def default(self):
-        # TODO Add config
-        return self
+        return self.first
+
+class log(entity):
+    def __init__(self, addr, fac, tag, fmt, lvl):
+        super().__init__()
+        self._logger = logging.getLogger()
+        hnd = logging.handlers.SysLogHandler(addr, fac)
+        fmt = tag + fmt
+        fmt = logging.Formatter(fmt)
+        self._logger.setLevel(getattr(logging, lvl))
+        hnd.setFormatter(fmt)
+        self._logger.addHandler(hnd)
+
+    # Use properties to expose the direct logger methods. Doings so allows
+    # %(lineno)d LogRecord attribute to display the line number where the
+    # method was actually invoked.
+    @property
+    def debug(self):
+        return self._logger.debug
+
+    @property
+    def info(self):
+        return self._logger.info
+
+    @property
+    def warning(self):
+        return self._logger.warning
+
+    @property
+    def error(self):
+        return self._logger.error
+
+    @property
+    def critical(self):
+        return self._logger.critical
+
+    @property
+    def exception(self):
+        return self._logger.exception
+
+    @staticmethod
+    def create(d):
+        addr = d['address']
+        fac = getattr(logging.handlers.SysLogHandler, d['facility'])
+        tag = d['tag']
+        fmt = d['format']
+        lvl = d['level']
+        return log(addr, fac, tag, fmt, lvl)
+
