@@ -509,6 +509,12 @@ class entity():
         self.onbeforevaluechange = event()
         self.onaftervaluechange = event()
 
+    @property
+    def log(self):
+        # Defer import to avoid circular dependency
+        from configfile import configfile
+        return configfile.getinstance().logs.default
+
     def _setvalue(self, field, new, prop):
         old = getattr(self, field)
 
