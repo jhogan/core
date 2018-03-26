@@ -25,6 +25,8 @@ SOFTWARE.
 # TODO Write Tests
 from accounts import *
 from entities import *
+from logs import *
+from pprint import pprint
 import os
 import yaml
 
@@ -62,8 +64,17 @@ class configfile(entity):
     def accounts(self, v):
         self._accounts = v
 
+    @property
+    def logs(self):
+        return self._logs
+
+    @logs.setter
+    def logs(self, v):
+        self._log = v
+
     def clear(self):
         self._accounts = accounts()
+        self._logs = logs()
 
     def load(self):
         self.clear()
@@ -73,6 +84,10 @@ class configfile(entity):
 
         for acct in self['accounts']:
             self.accounts += account.create(acct)
+
+        for d in self['logs']:
+            l = log.create(d)
+            self.logs += l
 
     def __getitem__(self, key):
         return self._cfg[key]
