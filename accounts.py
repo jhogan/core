@@ -73,6 +73,13 @@ class account(entity):
     def port(self):
         return self._port
 
+    def __str__(self):
+        user = str(self.username)
+        host = str(self.host)
+        port = str(self.port)
+
+        return user + '@' + host + ':' + port
+
 class smtpaccount(account):
     
     def __init__(self, arr):
