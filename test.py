@@ -24,8 +24,8 @@ SOFTWARE.
 """
 from tester import *
 from table import *
-from log import log
 import math
+from configfile import configfile
 
 class knights(entities):
     def __init__(self, initial=None):
@@ -2660,13 +2660,19 @@ class test_index(tester):
 
 class test_logs(tester):
     
-    def it_writes_info(self):
-        l = log.getinstance().default
+    def it_writes_to_log(self):
+        # Since this goes to syslogd, a user will need to verify that
+        # these messages were successfully logged.
+        l = configfile.getinstance().logs.default
         l.debug('debug');
         l.info('info');
         l.warning('warning');
         l.error('error');
         l.critical('critical');
+        try:
+            raise Exception('exception')
+        except:
+            l.exception('There was an excecption')
 
 
 t = testers()
