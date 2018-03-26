@@ -89,8 +89,13 @@ class email(entity):
                 smtp.login(acct.username, acct.password)
                 smtp.send_message(msg)
                 smtp.quit()
-            except:
-                # TODO Add logging
+            except Exception:
+                # Don't include username here because it can be the same
+                # as password (e.g., smtp.postmarkapp.com).
+                msg = 'Failed sending email using: ' + \
+                      str(acct.host) + ':' + str(acct.port)
+
+                self.log.exception(msg)
                 continue
 
             break
