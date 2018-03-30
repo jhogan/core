@@ -181,8 +181,7 @@ class connection(entity):
                 # column 'emailed' in 'where clause'")
                 #
                 # TODO:CAR78 Add proper logging
-                B()
-                print('Reconnect')
+                self.log.debug('Reconnect ' + str(_))
                 self._reconnect()
 
 class dbresultset(entities):
