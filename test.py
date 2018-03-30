@@ -2663,17 +2663,39 @@ class test_logs(tester):
     def it_writes_to_log(self):
         # Since this goes to syslogd, a user will need to verify that
         # these messages were successfully logged.
-        l = configfile.getinstance().logs.default
-        l.debug('debug');
-        l.info('info');
-        l.warning('warning');
-        l.error('error');
-        l.critical('critical');
-        try:
-            raise Exception('exception')
-        except:
-            l.exception('There was an excecption')
+        logs = []
+        def onlog(src, eargs):
+            logs.append(eargs.record.message)
 
+        l = configfile.getinstance().logs.default
+        l.onlog += onlog
+
+        l.debug('xdebug');
+        self.assertTrue('xdebug' in logs)
+        self.assertCount(1, logs)
+
+        l.info('xinfo');
+        self.assertTrue('xinfo' in logs)
+        self.assertCount(2, logs)
+
+        l.warning('xwarning');
+        self.assertTrue('xwarning' in logs)
+        self.assertCount(3, logs)
+
+        l.error('xerror');
+        self.assertTrue('xerror' in logs)
+        self.assertCount(4, logs)
+
+        l.critical('xcritical');
+        self.assertCount(5, logs)
+
+        self.assertTrue('xcritical' in logs)
+        try:
+            raise Exception('derp')
+        except:
+            l.exception('xexception')
+            self.assertTrue('xexception' in logs)
+            self.assertCount(6, logs)
 
 t = testers()
 t.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)

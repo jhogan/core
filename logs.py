@@ -26,7 +26,7 @@ SOFTWARE.
 from entities import *
 from pdb import set_trace; B=set_trace
 import logging
-from logging import handlers
+from logging import handlers, Handler
 
 class logs(entities):
 
@@ -49,12 +49,37 @@ class log(entity):
     def __init__(self, addr, fac, tag, fmt, lvl):
         super().__init__()
         self._logger = logging.getLogger()
-        hnd = logging.handlers.SysLogHandler(addr, fac)
         fmt = tag + fmt
         fmt = logging.Formatter(fmt)
         self._logger.setLevel(getattr(logging, lvl))
+
+        hnd = logging.handlers.SysLogHandler(addr, fac)
         hnd.setFormatter(fmt)
         self._logger.addHandler(hnd)
+
+        hnd = log.callbackhandler(self.callback)
+        self._logger.addHandler(hnd)
+
+        self.onlog = event()
+
+    def _self_onlog(self, src, eargs):
+        pass
+
+    class callbackhandler(Handler):
+        def __init__(self, callback):
+            super().__init__()
+            self.callback = callback
+            
+        def emit(self, rec):
+            self.callback(rec)
+
+    def callback(self, rec):
+        eargs = log.addlogeventargs(rec)
+        self.onlog(self, eargs)
+
+    class addlogeventargs(eventargs):
+        def __init__(self, rec):
+            self.record = rec
 
     # Use properties to expose the direct logger methods. Doings so allows
     # %(lineno)d LogRecord attribute to display the line number where the
