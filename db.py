@@ -169,20 +169,25 @@ class connection(entity):
                 conn.commit()
                 return dbresultset(cur)
             except MySQLdb.OperationalError as ex:
-                # TODO[CAR-52] BUG This exception catches more than just connection
-                # errors.  It can also catch errors like:
-                #
-                # _mysql_exceptions.OperationalError: (1136, "Column count
-                # doesn't match value count at row 1")
-                #
-                # and
-                #
-                #_mysql_exceptions.OperationalError: (1054, "Unknown
-                # column 'emailed' in 'where clause'")
-                #
-                # TODO:CAR78 Add proper logging
-                self.log.debug('Reconnect ' + str(_))
-                self._reconnect()
+                # Reconnect if the connection object has timed out and no
+                # longer holds a connection to the database.
+                # https://stackoverflow.com/questions/3335342/how-to-check-if-a-mysql-connection-is-closed-in-python
+
+                try:
+                    errno = ex.args[0]
+                except:
+                    errno = ''
+
+                isopen = conn.open
+
+                if errno == 2006 or not isopen:
+                    msg = 'Reconnect[{0}]: errno: {1}; isopen: {2}'
+                    msg = msg.format(_, errno, isopen)
+
+                    self.log.debug('Reconnect ' + str(_))
+                    self._reconnect()
+                else:
+                    raise
 
 class dbresultset(entities):
     def __init__(self, cur):
