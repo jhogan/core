@@ -8,6 +8,7 @@ import pprint
 import sys
 import uuid
 from pprint import pprint
+from configfile import configfile
 
 # TODO Ensure tester.py won't run in non-dev environment
 
@@ -21,6 +22,10 @@ class testers(entities):
         super().__init__(initial=initial)
 
     def run(self):
+        cfg = configfile.getinstance()
+        if cfg.isloaded and cfg.inproduction:
+            raise Exception("Won't run in production environment.")
+
         for subcls in tester.__subclasses__():
             inst = subcls()
             self += inst
