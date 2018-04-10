@@ -34,6 +34,7 @@ class configfile(entity):
     _instance = None
 
     def __init__(self):
+        self.isloaded = False
         try:
             self.file = os.environ['EPIPHANY_YAML']
         except KeyError:
@@ -75,19 +76,25 @@ class configfile(entity):
     def clear(self):
         self._accounts = accounts()
         self._logs = logs()
+        self.isloaded = False
 
     def load(self):
         self.clear()
 
-        with open(self.file, 'r') as stream:
-            self._cfg = yaml.load(stream)
+        try:
+            with open(self.file, 'r') as stream:
+                self._cfg = yaml.load(stream)
 
-        for acct in self['accounts']:
-            self.accounts += account.create(acct)
+            for acct in self['accounts']:
+                self.accounts += account.create(acct)
 
-        for d in self['logs']:
-            l = log.create(d)
-            self.logs += l
+            for d in self['logs']:
+                l = log.create(d)
+                self.logs += l
+        except:
+            raise
+        else:
+            self.isloaded = True
 
     def __getitem__(self, key):
         return self._cfg[key]
