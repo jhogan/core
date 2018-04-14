@@ -47,6 +47,10 @@ class dbentities(entities):
         msg = '_table must be overridden'
         raise NotImplementedError(msg)
 
+    @property
+    def _create(self):
+        raise NotImplementedError('_create must be overridden')
+
     def save(self):
         for e in self:
             e.save()
