@@ -516,6 +516,14 @@ class entity():
         return configfile.getinstance().logs.default
 
     def _setvalue(self, field, new, prop):
+        # TODO: It's nice to strip any string because that's vitually
+        # always the desired behaviour.  However, at some point, we will
+        # want to preserve the whitespace on either side.  Therefore, we
+        # should add a parameter (or something) to make it possible to
+        # persiste an unstripped string.
+        if type(new) == str:
+            new = new.strip()
+
         old = getattr(self, field)
 
         if old != new:
