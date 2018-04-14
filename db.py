@@ -44,7 +44,7 @@ class dbentities(entities):
 
     @property
     def _table(self):
-        'The _table property must be implemented'
+        msg = '_table must be overridden'
         raise NotImplementedError(msg)
 
     def save(self):
