@@ -51,6 +51,13 @@ class dbentities(entities):
     def _create(self):
         raise NotImplementedError('_create must be overridden')
 
+    @property
+    def connection(self):
+        return connections.getinstance().default
+
+    def query(self, sql):
+        return self.connection.query(sql)
+
     def save(self):
         for e in self:
             e.save()
