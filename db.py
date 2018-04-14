@@ -107,6 +107,13 @@ class dbentity(entity):
     def id(self):
         return self._id
 
+    @property
+    def connection(self):
+        return connections.getinstance().default
+
+    def query(self, sql, args):
+        return self.connection.query(sql, args)
+
     def save(self):
         if self.isvalid:
             if self.isnew:
