@@ -58,6 +58,12 @@ class dbentities(entities):
     def query(self, sql):
         return self.connection.query(sql)
 
+    def CREATE(self):
+        self.query(self._create)
+
+    def DROP(self):
+        self.query('drop table ' + self._table)
+
     def save(self):
         for e in self:
             e.save()
