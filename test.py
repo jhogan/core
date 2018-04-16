@@ -30,6 +30,45 @@ import MySQLdb
 from MySQLdb.constants.ER import BAD_TABLE_ERROR
 
 
+class test_blogpost(tester):
+    
+    Smallposttitle = 'Walden'
+    Smallpostbody = """When I wrote the following pages, or rather the bulk of them,
+I lived alone, in the woods, a mile from any neighbor, in a house which I
+had built myself, on the shore of Walden Pond, in Concord, Massachusetts,
+and earned my living by the labor of my hands only. I lived there two years
+and two months. At present I am a sojourner in civilized life again."""
+
+    def __init__(self):
+        super().__init__()
+        revs = articlerevisions()
+        try:
+            revs.DROP()
+        except MySQLdb.OperationalError as ex:
+            try:
+                errno = ex.args[0]
+            except:
+                raise
+
+            if errno != BAD_TABLE_ERROR: # 1051
+                raise
+
+        revs.CREATE()
+
+    def it_saves_one_revision(self):
+        return 
+        post = blogpost()
+        post.body = test_blogpost.Smallpostbody
+        post.save()
+
+    def it_saves_two_revision(self):
+        post = blogpost()
+        post.body = test_blogpost.Smallpostbody
+        post.save()
+
+        post.body += 'some added data'
+        post.save()
+
 class test_articlesrevision(tester):
     def __init__(self):
         super().__init__()
@@ -63,7 +102,6 @@ class test_articlesrevision(tester):
 
     def it_creates_revisions(self):
         rev = articlerevision()
-        B()
         before = datetime.now()
         rev.save()
 

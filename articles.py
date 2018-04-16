@@ -4,6 +4,8 @@ from entities import brokenrules, entity
 import uuid
 from binascii import a2b_hex
 from datetime import datetime
+from pprint import pprint
+import diff
 
 class articlerevisions(db.dbentities):
     @property
@@ -21,7 +23,10 @@ class articlerevisions(db.dbentities):
         return """
         create table articlerevisions(
             id binary(16) primary key,
-            created_at datetime
+            parent_id binary(16),
+            created_at datetime,
+            body longtext,
+            diff longtext
         )
         """
 
@@ -30,15 +35,17 @@ class articlerevision(db.dbentity):
     scientific paper, blog, encyclopedia article, marketing article, usenet
     article, spoken article, listicle, portrait, etc."""
 
-    def __init__(self, id=None):
+    def __init__(self, parent=None, id=None):
         super().__init__();
 
         if id == None:
             self._id = None
+            self._parent = parent
             self._authors = None
             self._created_at = None
             self._title = None
             self._body = None
+            self._diff = None
             self._excerpt = None
             self._status = None
             self._iscommentable = None
@@ -54,20 +61,23 @@ class articlerevision(db.dbentity):
             else:
                 raise Exception('Record not found: ' + str(id))
 
-            B()
             self._created_at = ls.pop()
             self._id         = uuid.UUID(bytes=ls.pop())
 
     def _insert(self):
         insert = """
         insert into articlerevisions
-        values(%s, %s)
+        values(%s, %s, %s, %s, %s)
         """
-        # id = uuid.uuid4().hex
-        # id = a2b_hex(id)
         id = uuid.uuid4()
+        diff = None if self.diff == None else str(self.diff)
+        parent_id = self.parent.id.bytes if self.parent else None
         self._created_at = datetime.now()
-        args = (id.bytes, self._created_at)
+        args = (id.bytes, 
+                parent_id,
+                self._created_at,
+                self.body,
+                diff)
         res = self.query(insert, args)
         self._id = id
 
@@ -82,6 +92,10 @@ class articlerevision(db.dbentity):
     @property
     def authors(self):
         return self._authors
+
+    @property
+    def parent(self):
+        return self._parent
 
     @property
     def created_at(self):
@@ -106,6 +120,14 @@ class articlerevision(db.dbentity):
     @body.setter
     def body(self, v):
         return self._setvalue('_body', v, 'body')
+
+    @property
+    def diff(self):
+        return self._diff
+
+    @diff.setter
+    def diff(self, v):
+        return self._setvalue('_diff', v, 'diff')
 
     @property
     def excerpt(self):
@@ -141,3 +163,39 @@ class articlerevision(db.dbentity):
     def slug(self, v):
         return self._setvalue('_slug', v, 'slug')
 
+class blogrevisions(articlerevisions):
+    pass
+
+class blogrevision(articlerevision):
+    pass
+
+class blogpost(entity):
+    def __init__(self, id=None):
+        super().__init__()
+
+        if id == None:
+            self._revisions = blogrevisions()
+            self._body = None
+
+    @property
+    def body(self):
+        return self._body
+
+    @body.setter
+    def body(self, v):
+        return self._setvalue('_body', v, 'body')
+
+    def save(self):
+        revs = self._revisions
+
+        rev = revs.create()
+
+        if rev.parent:
+            rev.diff = diff.diff(rev.parent.body, self.body)
+            rev.body = None
+            B()
+        else:
+            rev.body = self.body
+
+        rev.save()
+        
