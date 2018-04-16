@@ -1,6 +1,6 @@
 from pdb import set_trace; B=set_trace
 import db
-from entities import brokenrules
+from entities import brokenrules, entity
 import uuid
 from binascii import a2b_hex
 from datetime import datetime
@@ -9,6 +9,12 @@ class articlerevisions(db.dbentities):
     @property
     def _table(self):
         return 'articlerevisions'
+
+    def create(self):
+        parent = None if self.isempty else self.last
+        rev = articlerevision(parent=parent)
+        self += rev
+        return rev
 
     @property
     def _create(self):
