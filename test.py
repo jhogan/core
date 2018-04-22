@@ -33,11 +33,18 @@ from MySQLdb.constants.ER import BAD_TABLE_ERROR
 class test_blogpost(tester):
     
     Smallposttitle = 'Walden'
+
     Smallpostbody = """When I wrote the following pages, or rather the bulk of them,
 I lived alone, in the woods, a mile from any neighbor, in a house which I
 had built myself, on the shore of Walden Pond, in Concord, Massachusetts,
 and earned my living by the labor of my hands only. I lived there two years
 and two months. At present I am a sojourner in civilized life again."""
+
+    Smallpostexcerpt = """Walden is a book by noted transcendentalist Henry
+David Thoreau. The text is a reflection upon simple living in natural
+surroundings. The work is part personal declaration of independence, social
+experiment, voyage of spiritual discovery, satire, and-to some degree-a
+manual for self-reliance."""
 
     def __init__(self):
         super().__init__()
@@ -55,19 +62,71 @@ and two months. At present I am a sojourner in civilized life again."""
 
         revs.CREATE()
 
-    def it_saves_one_revision(self):
-        return 
+    def it_saves_x_revisions(self):
         post = blogpost()
         post.body = test_blogpost.Smallpostbody
+        post.title = test_blogpost.Smallposttitle 
+        post.excerpt = test_blogpost.Smallpostexcerpt 
         post.save()
 
-    def it_saves_two_revision(self):
+        created_at = post.created_at
+        
+        self.assertNotNone(post.id)
+        self.assertEq(test_blogpost.Smallpostbody, post.body)
+        self.assertEq(test_blogpost.Smallposttitle, post.title)
+        self.assertEq(test_blogpost.Smallpostexcerpt, post.excerpt)
+
+        x = 20
+
+        for i in range(x):
+            id = post.id
+
+            # Mutate the body to ensure revision patching works
+            if i < 5:
+                newbody = post.body + 'X'
+            elif i >= 5 and i <= 10:
+                newbody = ''
+                for j, c in enumerate(post.body):
+                    if j == i:
+                        c = 'x'
+                    newbody += c
+            elif i > 10:
+                newbody = 'X' + post.body
+                
+            post.body = newbody
+
+            post.title = newtitle = test_blogpost.Smallposttitle + ' Rev ' + str(i)
+            post.excerpt = newexcerpt = test_blogpost.Smallpostexcerpt + ' Rev ' + str(i)
+            
+            post.save()
+
+            self.assertNotNone(post.id)
+            self.assertEq(id, post.id)
+            self.assertEq(newbody, post.body)
+            self.assertEq(created_at, post.created_at)
+            self.assertEq(newtitle, post.title)
+            self.assertEq(newexcerpt, post.excerpt)
+        B()
+
+
+        # Binary data doesn't seem to be supported
+        # https://github.com/google/diff-match-patch/issues/9
+        return
+
+        # Binary data
         post = blogpost()
-        post.body = test_blogpost.Smallpostbody
+        post.body = uuid.uuid4().bytes
         post.save()
 
-        post.body += 'some added data'
-        post.save()
+        for i in range(x):
+            id = post.id
+
+            newbody = post.body + uuid.uuid4().bytes
+            post.body = newbody
+            
+            post.save()
+            self.assertEq(id, post.id)
+            self.assertEq(newbody, post.body)
 
 class test_articlesrevision(tester):
     def __init__(self):
@@ -97,8 +156,6 @@ class test_articlesrevision(tester):
         self.assertNone(rev.status)
         self.assertNone(rev.iscommentable)
         self.assertNone(rev.slug)
-        self.assertNone(rev.previous)
-        self.assertNone(rev.subsequent)
 
     def it_creates_revisions(self):
         rev = articlerevision()

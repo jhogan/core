@@ -127,7 +127,6 @@ class lead(db.dbentity):
         conn = db.connections.getinstance().default
         v = conn.query(sql, (self.id,))
         
-
     @property
     def brokenrules(self):
         brs = brokenrules()
@@ -168,4 +167,12 @@ class lead(db.dbentity):
         r  +=  'Subject:  '  +  str(self.subject)  +  '\n'
         r  +=  'Message:  '  +  str(self.message)  +  '\n'
         return r
+
+    def __repr__(self):
+        r = super().__repr__()
+        r += ' id: ' + str(self.id)
+        r += ' name: ' + self.name
+        r += ' email: ' + self.email
+        return r
+
 
