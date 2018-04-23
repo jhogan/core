@@ -28,7 +28,9 @@ from pdb import set_trace; B=set_trace
 
 # TODO Write test
 class diff(entity):
-    def __init__(self, data1, data2):
+    def __init__(self, data1, data2=None):
+        # If data2 is None, data1 is assumed to be a text-based version of the
+        # patch
         self._data1 = data1
         self._data2 = data2
         self._ps = None
@@ -44,9 +46,12 @@ class diff(entity):
     def _patches(self):
         if self._ps == None:
             dmp = self._diff_match_patch
-            diffs = dmp.diff_main(self._data1, self._data2)
-            dmp.diff_cleanupSemantic(diffs)
-            self._ps = dmp.patch_make(diffs)
+            if self._data2:
+                diffs = dmp.diff_main(self._data1, self._data2)
+                dmp.diff_cleanupSemantic(diffs)
+                self._ps = dmp.patch_make(diffs)
+            else:
+                self._ps = dmp.patch_fromText(self._data1)
         return self._ps
 
     def apply(self, data):
