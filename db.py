@@ -55,8 +55,8 @@ class dbentities(entities):
     def connection(self):
         return connections.getinstance().default
 
-    def query(self, sql):
-        return self.connection.query(sql)
+    def query(self, sql, args=None):
+        return self.connection.query(sql, args)
 
     def CREATE(self):
         self.query(self._create)
