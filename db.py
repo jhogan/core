@@ -125,13 +125,6 @@ class dbentity(entity):
         else:
             raise Exception('Won\'t save invalid object')
 
-    def __repr__(self):
-        r = super().__repr__()
-        r += ' id: ' + str(self.id)
-        r += ' name: ' + self.name
-        r += ' email: ' + self.email
-        return r
-
 class connections(entities):
 
     _instance = None
