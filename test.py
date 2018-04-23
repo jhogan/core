@@ -32,7 +32,7 @@ from MySQLdb.constants.ER import BAD_TABLE_ERROR
 
 class test_blogpost(tester):
     
-    Smallposttitle = 'Walden'
+    Smallposttitle = 'Walden; or, Life in the Woods'
 
     Smallpostbody = """When I wrote the following pages, or rather the bulk of them,
 I lived alone, in the woods, a mile from any neighbor, in a house which I
@@ -67,6 +67,10 @@ manual for self-reliance."""
         post.body = test_blogpost.Smallpostbody
         post.title = test_blogpost.Smallposttitle 
         post.excerpt = test_blogpost.Smallpostexcerpt 
+        post.status = blogpost.Pending
+        post.iscommentable = True
+
+	
         post.save()
 
         created_at = post.created_at
@@ -75,6 +79,59 @@ manual for self-reliance."""
         self.assertEq(test_blogpost.Smallpostbody, post.body)
         self.assertEq(test_blogpost.Smallposttitle, post.title)
         self.assertEq(test_blogpost.Smallpostexcerpt, post.excerpt)
+        self.assertEq(article.Pending, post.status)
+        self.assertEq(True, post.iscommentable)
+        self.assertEq('walden-or-life-in-the-woods', post.slug)
+
+        x = 20
+
+        for i in range(x):
+            id = post.id
+
+            # Mutate the body to ensure revision patching works
+            if i < 5:
+                newbody = post.body + 'X'
+            elif i >= 5 and i <= 10:
+                newbody = ''
+                for j, c in enumerate(post.body):
+                    if j == i:
+                        c = 'x'
+                    newbody += c
+            elif i > 10:
+                post.slug = 'walden-or-life-in-the-woods-hard-set'
+                newbody = 'X' + post.body
+                
+            post.body = newbody
+
+            post.title = newtitle = test_blogpost.Smallposttitle + ' Rev ' + str(i)
+            post.excerpt = newexcerpt = test_blogpost.Smallpostexcerpt + ' Rev ' + str(i)
+            post.status = article.Publish
+            post.iscommentable = i % 2 == 0
+            
+            post.save()
+
+            self.assertNotNone(post.id)
+            self.assertEq(id, post.id)
+            self.assertEq(newbody, post.body)
+            self.assertEq(created_at, post.created_at)
+            self.assertEq(newtitle, post.title)
+            self.assertEq(newexcerpt, post.excerpt)
+            self.assertEq(article.Publish, post.status)
+            self.assertEq(i % 2 == 0, post.iscommentable)
+            if i > 10:
+                self.assertEq('walden-or-life-in-the-woods-hard-set', post.slug)
+            else:
+                self.assertEq('walden-or-life-in-the-woods-rev-' + str(i), post.slug)
+
+    def _createblogpost(self):
+        post = blogpost()
+        post.body = test_blogpost.Smallpostbody
+        post.title = test_blogpost.Smallposttitle 
+        post.excerpt = test_blogpost.Smallpostexcerpt 
+        post.status = blogpost.Pending
+        post.iscommentable = True
+
+        post.save()
 
         x = 20
 
@@ -97,36 +154,27 @@ manual for self-reliance."""
 
             post.title = newtitle = test_blogpost.Smallposttitle + ' Rev ' + str(i)
             post.excerpt = newexcerpt = test_blogpost.Smallpostexcerpt + ' Rev ' + str(i)
+            post.status = article.Publish
+            post.iscommentable = i % 2 == 0
             
             post.save()
+        return post
 
-            self.assertNotNone(post.id)
-            self.assertEq(id, post.id)
-            self.assertEq(newbody, post.body)
-            self.assertEq(created_at, post.created_at)
-            self.assertEq(newtitle, post.title)
-            self.assertEq(newexcerpt, post.excerpt)
-        B()
+    def it_retrives_blogpost(self):
+        bp1 = self._createblogpost()
+        bp2 = blogpost(bp1.id)
 
+        self.assertTrue(type(bp2.id) == uuid.UUID)
+        self.assertEq(bp1.id,                bp2.id)
 
-        # Binary data doesn't seem to be supported
-        # https://github.com/google/diff-match-patch/issues/9
-        return
+        self.assertEq(type(bp2.created_at),  datetime)
+        self.assertEq(bp1.created_at,        bp2.created_at)
 
-        # Binary data
-        post = blogpost()
-        post.body = uuid.uuid4().bytes
-        post.save()
-
-        for i in range(x):
-            id = post.id
-
-            newbody = post.body + uuid.uuid4().bytes
-            post.body = newbody
-            
-            post.save()
-            self.assertEq(id, post.id)
-            self.assertEq(newbody, post.body)
+        self.assertEq(bp1.body,              bp2.body)
+        self.assertEq(bp1.title,             bp2.title)
+        self.assertEq(bp1.excerpt,           bp2.excerpt)
+        self.assertEq(bp1.status,            bp2.status)
+        self.assertEq(bp1.iscommentable,     bp2.iscommentable)
 
 class test_articlesrevision(tester):
     def __init__(self):
