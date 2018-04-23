@@ -54,8 +54,9 @@ class diff(entity):
                 self._ps = dmp.patch_fromText(self._data1)
         return self._ps
 
-    def apply(self, data):
-        return patch_apply(self._patches, data)[0]
+    def applyto(self, data):
+        dmp = self._diff_match_patch
+        return dmp.patch_apply(self._patches, data)[0]
 
     def __str__(self):
         dmp = self._diff_match_patch
