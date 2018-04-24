@@ -17,27 +17,50 @@ class articlerevisions(db.dbentities):
             from articlerevisions
             where root_id = %s
             """
+            revs = articlerevisions()
             ress = self.query(sql, (id.bytes,))
             for res in ress:
-                self += articlerevision(res=res)
+                revs += articlerevision(res=res)
 
-            for rev1 in self:
-                for rev2 in self:
+            for rev1 in revs:
+                for rev2 in revs:
                     if rev2._parent_id == rev1.id:
                         rev2._parent = rev1
                         break
 
-            for rev1 in self:
+            for rev1 in revs:
                 if rev1.isroot:
-                    for rev2 in self:
+                    for rev2 in revs:
                         rev2._root = rev1
                 # Get rid of parent_id. It's only temporarily used to
                 # discover the parent object. Keeping it around may
                 # lead to confusion later on.
                 del rev1._parent_id 
-                    
-                    
-    
+
+            revs.sort()
+            self += revs
+        self._root = None
+
+    def sort(self, key=None, reverse=False):
+        if key != None:
+            # TODO Write test
+            super().sort(key=key, reverse=reverse)
+        else:
+            ls = [self.root]
+            rent = self.root
+            while len(ls) < len(self):
+                for rev in self:
+                    if rev.parent is rent:
+                        ls.append(rev)
+                        rent = rev
+                        break
+
+            self.clear()
+
+            if reverse:
+                ls.reverse()
+            self += ls
+
     @property
     def _table(self):
         return 'articlerevisions'
@@ -68,9 +91,20 @@ class articlerevisions(db.dbentities):
 
     @property
     def root(self):
-        for rev in self:
-            if not rev.parent:
-                return rev
+        if not self._root:
+            for rev in self:
+                if not rev.parent:
+                    self._root = rev
+                    break
+        return self._root
+
+    def getlatest(self, prop):
+        for rev in self.reversed():
+            val = getattr(rev, prop)
+            if val != None:
+                return val
+        return None
+
 
 class articlerevision(db.dbentity):
     """ An abstract class for subtypes such as academic paper, essays,
@@ -289,17 +323,16 @@ class article(entity):
     def __init__(self, id=None):
         super().__init__()
 
+        self._body = None
+        self._title = None
         if id == None:
             self._revisions = blogrevisions()
-            self._body = None
-            self._title = None
             self._excerpt = None
             self._status = None
             self._iscommentable = None
             self._slug = None
         else:
             self._revisions = blogrevisions(id)
-            self._body = None
 
         self._id = id
 
@@ -328,6 +361,8 @@ class article(entity):
 
     @property
     def title(self):
+        if not self._title:
+            self._title = self._revisions.getlatest('title')
         return self._title
 
     @title.setter
@@ -336,6 +371,8 @@ class article(entity):
 
     @property
     def excerpt(self):
+        if not self._excerpt:
+            self._excerpt = self._revisions.getlatest('excerpt')
         return self._excerpt
 
     @excerpt.setter
@@ -344,6 +381,8 @@ class article(entity):
 
     @property
     def status(self):
+        if not self._status:
+            self._status = self._revisions.getlatest('status')
         return self._status
 
     @status.setter
@@ -352,6 +391,8 @@ class article(entity):
 
     @property
     def iscommentable(self):
+        if not self._iscommentable:
+            self._iscommentable = self._revisions.getlatest('iscommentable')
         return self._iscommentable
 
     @iscommentable.setter
@@ -361,7 +402,10 @@ class article(entity):
     @property
     def slug(self):
         if not self._slug:
-            return re.sub(r'\W+', '-', self.title).strip('-').lower()
+            self._slug = self._revisions.getlatest('iscommentable')
+            if not self._slug
+                slug = re.sub(r'\W+', '-', self.title).strip('-')
+                self._slug = slug.lower()
             # TODO: Ensure slug is unique in database
         return self._slug
 
