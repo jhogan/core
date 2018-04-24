@@ -195,10 +195,8 @@ class entities(object):
         return e
 
     def reversed(self):
-        r = type(self)()
         for e in reversed(self._ls):
-            r += e
-        return r
+            yield e
 
     def reverse(self):
         self._ls.reverse()

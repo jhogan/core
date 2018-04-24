@@ -506,20 +506,14 @@ class test_entities(tester):
         self.assertFalse(ks.has(k))
 
     def it_calls_reversed(self):
-        """ The entities.reversed() method returns an entities collection
-        containing the same entity objects but in reversed order. """
+        """ The entities.reversed() method allows you to iterate
+        in reverse order over the entities collection. It is modeled
+        on https://docs.python.org/3/library/functions.html#reversed """
 
         ks = knights.createthe4()
-        ks1 = ks.reversed()
-
-        self.assertCount(ks1.count,  ks)
-
-        self.assertIs(knights,       type(ks1))
-
-        self.assertIs(ks1.first,     ks.last)
-        self.assertIs(ks1.last,      ks.first)
-        self.assertIs(ks1.second,    ks.third)
-        self.assertIs(ks1.third,     ks.second)
+        for i, k in enumerate(ks.reversed()):
+            j = ks.ubound - i
+            self.assertIs(ks[j], k)
 
     def it_calls_reverse(self):
         """ The entities.reverse() method reverses the order of the entity 
