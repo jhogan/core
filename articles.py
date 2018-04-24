@@ -146,7 +146,7 @@ class articlerevision(db.dbentity):
             row = list(res._row)
             self._diff = diff.diff(row.pop())
             self._body = row.pop()
-            self._create_at = row.pop()
+            self._created_at = row.pop()
             self._slug = row.pop()
             self._iscommentable = row.pop()
             self._status = row.pop()
@@ -167,9 +167,10 @@ class articlerevision(db.dbentity):
         """
         id = uuid.uuid4()
         diff = None if self.diff == None else str(self.diff)
+        diff = None if diff == '' else diff
         parent_id = self.parent.id.bytes if self.parent else None
         root_id = id.bytes if self.isroot else self.root.id.bytes
-        self._created_at = datetime.now()
+        self._created_at = datetime.now().replace(microsecond=0)
         args = (id.bytes, 
                 parent_id,
                 root_id,
@@ -254,8 +255,11 @@ class articlerevision(db.dbentity):
         # TODO OPT This could be cached for performance 
         diffs = []
         rev = self
-        while rev.diff:
-            diffs.append(rev.diff)
+        while True:
+            if rev.diff:
+                diffs.append(rev.diff)
+            if not rev.parent:
+                break;
             rev = rev.parent
 
         diffs.reverse()
@@ -323,18 +327,14 @@ class article(entity):
     def __init__(self, id=None):
         super().__init__()
 
+        self._id = id
         self._body = None
         self._title = None
-        if id == None:
-            self._revisions = blogrevisions()
-            self._excerpt = None
-            self._status = None
-            self._iscommentable = None
-            self._slug = None
-        else:
-            self._revisions = blogrevisions(id)
-
-        self._id = id
+        self._excerpt = None
+        self._status = None
+        self._iscommentable = None
+        self._slug = None
+        self._revisions = blogrevisions(id)
 
     @property
     def id(self):
@@ -346,7 +346,7 @@ class article(entity):
             for rev in self._revisions:
                 if rev.body:
                     self._body = rev.body
-                else:
+                elif rev.diff:
                     self._body = rev.diff.applyto(self._body)
 
         return self._body
@@ -361,7 +361,7 @@ class article(entity):
 
     @property
     def title(self):
-        if not self._title:
+        if self._title == None:
             self._title = self._revisions.getlatest('title')
         return self._title
 
@@ -371,7 +371,7 @@ class article(entity):
 
     @property
     def excerpt(self):
-        if not self._excerpt:
+        if self._excerpt == None:
             self._excerpt = self._revisions.getlatest('excerpt')
         return self._excerpt
 
@@ -381,7 +381,7 @@ class article(entity):
 
     @property
     def status(self):
-        if not self._status:
+        if self._status == None:
             self._status = self._revisions.getlatest('status')
         return self._status
 
@@ -391,7 +391,7 @@ class article(entity):
 
     @property
     def iscommentable(self):
-        if not self._iscommentable:
+        if self._iscommentable == None:
             self._iscommentable = self._revisions.getlatest('iscommentable')
         return self._iscommentable
 
@@ -402,8 +402,8 @@ class article(entity):
     @property
     def slug(self):
         if not self._slug:
-            self._slug = self._revisions.getlatest('iscommentable')
-            if not self._slug
+            self._slug = self._revisions.getlatest('slug')
+            if self._slug == None:
                 slug = re.sub(r'\W+', '-', self.title).strip('-')
                 self._slug = slug.lower()
             # TODO: Ensure slug is unique in database

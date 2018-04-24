@@ -62,6 +62,25 @@ manual for self-reliance."""
 
         revs.CREATE()
 
+    def it_saves_x_revisions_with_null_properties(self):
+        post = blogpost()
+        post.body = test_blogpost.Smallpostbody
+        post.title = test_blogpost.Smallposttitle 
+        post.excerpt = test_blogpost.Smallpostexcerpt 
+        post.status = blogpost.Pending
+        post.iscommentable = True
+
+        post.save()
+
+        for i in range(2):
+            post.title = ''
+            B()
+            post.save()
+
+            post = blogpost(post.id)
+            self.assertEq('', post.title)
+
+
     def it_saves_x_revisions(self):
         post = blogpost()
         post.body = test_blogpost.Smallpostbody
@@ -70,7 +89,6 @@ manual for self-reliance."""
         post.status = blogpost.Pending
         post.iscommentable = True
 
-	
         post.save()
 
         created_at = post.created_at
@@ -121,7 +139,7 @@ manual for self-reliance."""
             if i > 10:
                 self.assertEq('walden-or-life-in-the-woods-hard-set', post.slug)
             else:
-                self.assertEq('walden-or-life-in-the-woods-rev-' + str(i), post.slug)
+                self.assertEq('walden-or-life-in-the-woods', post.slug)
 
     def _createblogpost(self):
         post = blogpost()
