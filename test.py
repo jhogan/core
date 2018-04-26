@@ -28,6 +28,7 @@ from articles import *
 from pdb import set_trace; B=set_trace
 import MySQLdb
 from MySQLdb.constants.ER import BAD_TABLE_ERROR
+import re
 
 
 class test_blogpost(tester):
@@ -72,14 +73,181 @@ manual for self-reliance."""
 
         post.save()
 
-        for i in range(2):
-            post.title = ''
-            B()
+        x = 4
+        for i in range(x):
+            if i < x / 2:
+                post.title = None
+                post.excerpt = None
+                post.slug = None
+            else:
+                post.body = test_blogpost.Smallpostbody  + ' Rev: ' + str(i)
+                post.title = test_blogpost.Smallposttitle  + ' Rev: ' + str(i)
+                post.excerpt = test_blogpost.Smallpostexcerpt  + ' Rev: ' + str(i)
+                
             post.save()
 
             post = blogpost(post.id)
-            self.assertEq('', post.title)
 
+            if i < x / 2:
+                self.assertEq(test_blogpost.Smallpostbody, post.body)
+                self.assertEq(test_blogpost.Smallposttitle, post.title)
+                self.assertEq(test_blogpost.Smallpostexcerpt, post.excerpt)
+            else:
+                self.assertEq(test_blogpost.Smallpostbody + ' Rev: ' + str(i), post.body)
+                self.assertEq(test_blogpost.Smallposttitle + ' Rev: ' + str(i), post.title)
+                self.assertEq(test_blogpost.Smallpostexcerpt + ' Rev: ' + str(i), post.excerpt)
+            self.assertEq(blogpost.Pending, post.status)
+            self.assertTrue(post.iscommentable)
+            self.assertEq('walden-or-life-in-the-woods', post.slug)
+
+    def it_calls_iscommentable(self): 
+        post = blogpost()
+        post.save()
+        self.assertNone(post.iscommentable)
+        post = blogpost(post.id)
+        self.assertNone(post.iscommentable)
+
+        post = blogpost()
+        self.assertNone(post.iscommentable)
+        post.save()
+        self.assertNone(post.iscommentable)
+        post = blogpost(post.id)
+        self.assertNone(post.iscommentable)
+
+        post = blogpost()
+        post.iscommentable = True
+        self.assertTrue(post.iscommentable)
+        post.save()
+        self.assertTrue(post.iscommentable)
+        post = blogpost(post.id)
+        self.assertTrue(post.iscommentable)
+
+        post = blogpost()
+        post.iscommentable = False
+        self.assertFalse(post.iscommentable)
+        post.save()
+        self.assertFalse(post.iscommentable)
+        post = blogpost(post.id)
+        self.assertFalse(post.iscommentable)
+
+    def it_calls_status(self): 
+        post = blogpost()
+        post.save()
+        self.assertNone(post.status)
+        post = blogpost(post.id)
+        self.assertNone(post.status)
+
+        post = blogpost()
+        self.assertNone(post.status)
+        post.save()
+        self.assertNone(post.status)
+        post = blogpost(post.id)
+        self.assertNone(post.status)
+
+        post = blogpost()
+        post.status = article.Pending
+        self.assertEq(article.Pending, post.status)
+        post.save()
+        self.assertEq(article.Pending, post.status)
+        post = blogpost(post.id)
+        self.assertEq(article.Pending, post.status)
+
+    def it_calls_excerpt(self):
+        post = blogpost()
+        post.save()
+        self.assertNone(post.excerpt)
+        post = blogpost(post.id)
+        self.assertNone(post.excerpt)
+
+        post = blogpost()
+        self.assertNone(post.excerpt)
+        post.save()
+        self.assertNone(post.excerpt)
+        post = blogpost(post.id)
+        self.assertNone(post.excerpt)
+
+        post = blogpost()
+        post.excerpt = test_blogpost.Smallpostexcerpt
+        self.assertEq(test_blogpost.Smallpostexcerpt, post.excerpt)
+        post.save()
+        self.assertEq(test_blogpost.Smallpostexcerpt, post.excerpt)
+        post = blogpost(post.id)
+        self.assertEq(test_blogpost.Smallpostexcerpt, post.excerpt)
+
+    def it_calls_slug_and_title(self):
+        slug = re.sub(r'\W+', '-', test_blogpost.Smallposttitle).strip('-').lower()
+
+        post = blogpost()
+        post.title = test_blogpost.Smallposttitle 
+        self.assertEq(slug, post.slug)
+        self.assertEq(test_blogpost.Smallposttitle, post.title)
+        post.save()
+        self.assertEq(slug, post.slug)
+        self.assertEq(test_blogpost.Smallposttitle, post.title)
+        post = blogpost(post.id)
+        self.assertEq(slug, post.slug)
+        self.assertEq(test_blogpost.Smallposttitle, post.title)
+        post = blogpost(post.id)
+        self.assertEq(slug, post.slug)
+        self.assertEq(test_blogpost.Smallposttitle, post.title)
+
+        post = blogpost()
+        self.assertEmptyString(post.slug)
+        self.assertEq(None, post.title) 
+        post.title = test_blogpost.Smallposttitle 
+        self.assertEq(slug, post.slug)
+        self.assertEq(test_blogpost.Smallposttitle, post.title)
+        post.save()
+        self.assertEq(test_blogpost.Smallposttitle, post.title)
+        self.assertEq(slug, post.slug)
+        post = blogpost(post.id)
+        self.assertEq(test_blogpost.Smallposttitle, post.title)
+        self.assertEq(slug, post.slug)
+
+        post = blogpost()
+        self.assertEq(None, post.title)
+        post.save()
+        self.assertEq(None, post.title)
+        self.assertEmptyString(post.slug)
+        post = blogpost(post.id)
+        self.assertEmptyString(post.slug)
+        self.assertEq(None, post.title)
+
+        post = blogpost()
+        post.slug = 'Herp Derp'
+        self.assertEq('Herp Derp', post.slug)
+        self.assertEq(None, post.title)
+        post.title = test_blogpost.Smallposttitle
+        self.assertEq('Herp Derp', post.slug)
+        post.save()
+        self.assertEq(test_blogpost.Smallposttitle, post.title)
+        self.assertEq('Herp Derp', post.slug)
+        post = blogpost(post.id)
+        self.assertEq(test_blogpost.Smallposttitle, post.title)
+        self.assertEq('Herp Derp', post.slug)
+
+    def it_saves_x_revisions_with_empty_properties(self):
+        post = blogpost()
+        post.body = test_blogpost.Smallpostbody
+        post.title = test_blogpost.Smallposttitle 
+        post.excerpt = test_blogpost.Smallpostexcerpt 
+        post.status = blogpost.Pending
+        post.iscommentable = True
+
+        post.save()
+
+        for i in range(2):
+            post.title = ''
+            post.excerpt = ''
+            post.slug = ''
+            post.save()
+
+            post = blogpost(post.id)
+            self.assertEmptyString(post.title)
+            self.assertEmptyString(post.excerpt)
+            self.assertEq(blogpost.Pending, post.status)
+            self.assertTrue(post.iscommentable)
+            self.assertEmptyString(post.slug)
 
     def it_saves_x_revisions(self):
         post = blogpost()

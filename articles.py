@@ -401,11 +401,14 @@ class article(entity):
 
     @property
     def slug(self):
-        if not self._slug:
+        if self._slug == None:
             self._slug = self._revisions.getlatest('slug')
             if self._slug == None:
-                slug = re.sub(r'\W+', '-', self.title).strip('-')
-                self._slug = slug.lower()
+                if self.title == None:
+                    return ''
+                else:
+                    slug = re.sub(r'\W+', '-', self.title).strip('-')
+                    self._slug = slug.lower()
             # TODO: Ensure slug is unique in database
         return self._slug
 
