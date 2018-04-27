@@ -1,6 +1,6 @@
 from pdb import set_trace; B=set_trace
 import db
-from entities import brokenrules, entity
+from entities import brokenrules, brokenrule, entity
 import uuid
 from binascii import a2b_hex
 from datetime import datetime
@@ -199,6 +199,28 @@ class articlerevision(db.dbentity):
         return rent
 
     @property
+    def brokenrules(self):
+        brs = brokenrules()
+        if self.isroot:
+            if self.body == None:
+                msg = 'The body property must not be null on the root revision'
+                brs += brokenrule(msg, 'body', 'full')
+
+            if self.diff != None:
+                msg = 'The root revision must contain a null diff'
+                brs += brokenrule(msg, 'diff', 'empty')
+
+            if self.title == None:
+                msg = 'The title property must not be null on the root revision'
+                brs += brokenrule(msg, 'title', 'full')
+
+            if self.status not in article.Statuses:
+                msg = 'The status property has an invalid value'
+                brs += brokenrule(msg, 'status', 'valid')
+
+        return brs
+                
+    @property
     def authors(self):
         return self._authors
 
@@ -210,10 +232,6 @@ class articlerevision(db.dbentity):
     def created_at(self):
         return self._created_at
 
-    @created_at.setter
-    def created_at(self, v):
-        return self._setvalue('_created_at', v, 'created_at')
-
     @property
     def title(self):
         return self._title
@@ -224,7 +242,10 @@ class articlerevision(db.dbentity):
 
     @property
     def status(self):
-        return self._status
+        if self._status == None:
+            return article.Draft
+        else:
+            return self._status
 
     @status.setter
     def status(self, v):
@@ -420,6 +441,7 @@ class article(entity):
     def save(self):
         # TODO Don't save titles, excerpts, etc. if they are repeats of
         # previous revisions.
+        n2e = lambda s: '' if s == None else s
         revs = self._revisions
 
         rev = revs.create()
@@ -429,9 +451,9 @@ class article(entity):
             rev.body = None
             self.body = None
         else:
-            rev.body = self.body
+            rev.body = n2e(self.body)
 
-        rev.title = self.title
+        rev.title = n2e(self.title)
         rev.excerpt = self.excerpt
         rev.status = self.status
         rev.iscommentable = self.iscommentable
