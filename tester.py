@@ -89,6 +89,9 @@ class tester(entity):
     def assertNotNone(self, o, msg=None):
         if o == None: self._failures += failure()
 
+    def assertEmptyString(self, o, msg=None):
+        if o != '': self._failures += failure()
+
     def assertCount(self, expect, actual, msg=None):
         if expect != len(actual): self._failures += failure()
 
