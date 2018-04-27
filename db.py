@@ -123,7 +123,12 @@ class dbentity(entity):
             self._isdirty = False
             self._isnew = False
         else:
-            raise Exception('Won\'t save invalid object')
+            raise BrokenRulesError('Won\'t save invalid object', self)
+
+class BrokenRulesError(Exception):
+    def __init__(self, msg, obj):
+        self._message = msg
+        self._object = obj
 
 class connections(entities):
 
