@@ -594,6 +594,13 @@ class brokenrules(entities):
             if type(v) != datetime:
                 self += brokenrule(prop + " isn't a date", prop, 'valid')
 
+    def contains(self, prop=None, type=None):
+        for br in self:
+            if (prop == None or br.property == prop) and \
+               (type == None or br.type     == type):
+                return True
+        return False
+                
 
 class brokenrule(entity):
     def __init__(self, msg, prop=None, type=None):
