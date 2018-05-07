@@ -555,6 +555,11 @@ class entity():
     def isvalid(self):
         return self.brokenrules.isempty
 
+class brokenruleserror(Exception):
+    def __init__(self, msg, obj):
+        self.message = msg
+        self.object = obj
+
 class brokenrules(entities):
     def append(self, o, r=None):
         if isinstance(o, str):
