@@ -100,9 +100,7 @@ class dbentity(entity):
     def _markold(self):
         self._isnew = False
         self._isdirty = False
-
-    def _markclean(self):
-        self._isdirty = False
+        
 
     def _self_onaftervaluechange(self, src, eargs):
         if not self.isnew:
