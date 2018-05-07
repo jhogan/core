@@ -608,7 +608,7 @@ class brokenrule(entity):
         self.property = prop
 
         if type != None:
-            if type not in ['full', 'valid', 'fits']:
+            if type not in ['full', 'valid', 'fits', 'empty', 'unique']:
                 raise Exception('Invalid brokenrules type')
         self.type = type
 
