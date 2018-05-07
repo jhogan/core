@@ -242,4 +242,6 @@ class dbresult(entity):
     def __iter__(self):
         for f in self._row:
             yield f
-    
+
+    def __getitem__(self, i):
+        return self._row[0]
