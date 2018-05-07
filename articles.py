@@ -85,7 +85,9 @@ class articlerevisions(db.dbentities):
             slug varchar(200),
             created_at datetime,
             body longtext,
-            diff longtext
+            diff longtext,
+            slug_cache varchar(200),
+            constraint unique_slug_cache unique (slug_cache)
         )
         """
 
@@ -123,11 +125,12 @@ class articlerevision(db.dbentity):
             self._created_at = None
             self._title = None
             self._excerpt = None
-            self._status = None
-            self._iscommentable = None
+            self._status = article.Draft
+            self._iscommentable = False
             self._body = None
             self._diff = None
             self._slug = None
+            self._slug_cache = None
             self._previous = None
             self._subsequent = None
             self._marknew()
@@ -141,10 +144,16 @@ class articlerevision(db.dbentity):
 
             self._created_at = ls.pop()
             self._id         = uuid.UUID(bytes=ls.pop())
+            self._markold()
 
         if res != None:
             row = list(res._row)
-            self._diff = diff.diff(row.pop())
+            self._slug_cache = row.pop()
+            self._diff = row.pop()
+
+            if self._diff != None:
+                self._diff = diff.diff(self._diff)
+
             self._body = row.pop()
             self._created_at = row.pop()
             self._slug = row.pop()
@@ -159,18 +168,30 @@ class articlerevision(db.dbentity):
             else:
                 self._parent_id = None
             self._id = uuid.UUID(bytes=row.pop())
+            self._markold()
 
-    def _insert(self):
-        insert = """
-        insert into articlerevisions
-        values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    def _update(self, cur=None):
+        sql = """
+        update articlerevisions
+        set slug_cache = %s
+        where id = %s
         """
+
+        args = (
+            self.slug_cache,
+            self.id.bytes
+        )
+
+        self.query(sql, args, cur)
+        
+    def _insert(self, cur=None):
         id = uuid.uuid4()
         diff = None if self.diff == None else str(self.diff)
         diff = None if diff == '' else diff
         parent_id = self.parent.id.bytes if self.parent else None
         root_id = id.bytes if self.isroot else self.root.id.bytes
         self._created_at = datetime.now().replace(microsecond=0)
+        self._id = id
         args = (id.bytes, 
                 parent_id,
                 root_id,
@@ -181,9 +202,19 @@ class articlerevision(db.dbentity):
                 self.slug,
                 self._created_at,
                 self.body,
-                diff)
-        res = self.query(insert, args)
-        self._id = id
+                diff,
+                self.slug_cache)
+
+        insert = """
+        insert into articlerevisions
+        values({})
+        """.format(('%s, ' * len(args)).rstrip(', '))
+
+        self.query(insert, args, cur)
+
+        # Since this insert supports transactions, don't mutate self
+        # beyond this point since, if there is a failure a some point,
+        # we would need to rollback these mutations which would be difficult.
 
     @property
     def isroot(self):
@@ -218,6 +249,41 @@ class articlerevision(db.dbentity):
                 msg = 'The status property has an invalid value'
                 brs += brokenrule(msg, 'status', 'valid')
 
+            if self.slug_cache != None:
+                sql = "select count(*) from articlerevisions where slug_cache = %s"
+                ress = self.query(sql, (self.slug_cache,))
+                if ress.first[0] > 0:
+                    msg = 'slug_cache must be unique'
+                    brs += brokenrule(msg, 'slug_cache', 'unique')
+
+        else: # non-root
+            if type(self.parent) != articlerevision:
+                msg = 'The parent property must be of type article'
+                brs += brokenrule(msg, 'parent', 'valid')
+
+            if self.body == None:
+                if self.diff != None and type(self.diff) != diff.diff:
+                    msg = 'Non-root diffs but be null or of type diff'
+                    brs += brokenrule(msg, 'diff', 'valid')
+            else:
+                if self.diff != None:
+                    msg = ('The diff of non-root revisions must be null '
+                           'if the body is not null')
+                          
+                    brs += brokenrule(msg, 'diff', 'valid')
+
+            if self.diff != None and self.body != None:
+                msg = 'Diff must be null if body is not null'
+                brs += brokenrule(msg, 'diff', 'valid')
+
+        if self.title != None:
+            if type(self.title) == str:
+                brs.demand(self, 'title',  maxlen=500)
+            else:
+                msg = 'Title must be a string or a None'
+                brs += brokenrule(msg, 'title', 'valid')
+                
+            
         return brs
                 
     @property
@@ -242,10 +308,7 @@ class articlerevision(db.dbentity):
 
     @property
     def status(self):
-        if self._status == None:
-            return article.Draft
-        else:
-            return self._status
+        return self._status
 
     @status.setter
     def status(self, v):
@@ -266,6 +329,19 @@ class articlerevision(db.dbentity):
     @slug.setter
     def slug(self, v):
         return self._setvalue('_slug', v, 'slug')
+
+    @property
+    def slug_cache(self):
+        if self._slug_cache == '':
+            # If duplipcate empty string were allowed in the database, the unique
+            # contraint on `slug_cache` would be violated
+            return None
+        else:
+            return self._slug_cache
+
+    @slug_cache.setter
+    def slug_cache(self, v):
+        return self._setvalue('_slug_cache', v, 'slug_cache')
 
     @property
     def body(self):
@@ -446,22 +522,29 @@ class article(entity):
 
         rev = revs.create()
 
-        if rev.parent:
+        if rev.isroot:
+            rev.body = n2e(self.body)
+        else:
             rev.diff = diff.diff(rev.parent.derivedbody, self.body)
             rev.body = None
             self.body = None
-        else:
-            rev.body = n2e(self.body)
 
+        # TODO If the rev is not root, these properties should be None unless
+        # they are different from previous revisions. Ensure this is tested.
         rev.title = n2e(self.title)
         rev.excerpt = self.excerpt
         rev.status = self.status
         rev.iscommentable = self.iscommentable
         rev.slug = self.slug
+        rev.root.slug_cache = rev.slug
 
-        rev.save()
-
-        self._id = rev.root.id
+        try:
+            revs.save()
+        except:
+            revs.pop()
+            raise
+        else:
+            self._id = rev.root.id
 
 class blogpost(article):
     pass
