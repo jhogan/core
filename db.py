@@ -51,8 +51,8 @@ class dbentities(entities):
     def connection(self):
         return connections.getinstance().default
 
-    def query(self, sql, args=None):
-        return self.connection.query(sql, args)
+    def query(self, sql, args=None, cur=None):
+        return self.connection.query(sql, args, cur=None)
 
     def CREATE(self):
         self.query(self._create)
@@ -61,8 +61,25 @@ class dbentities(entities):
         self.query('drop table ' + self._table)
 
     def save(self):
-        for e in self:
-            e.save()
+        # TODO Add reconnect logic
+        # TODO Restore entity state on rollback
+        conn = connections.getinstance().default
+        cur = conn.createcursor()
+        states = []
+        try:
+            for e in self:
+                states.append((e._isnew, e._isdirty))
+                e.save(cur)
+        except Exception:
+            for tup in zip(self, states):
+                e, st = tup
+                e._isnew, e._isdirty = st
+            conn.rollback()
+            raise
+        else:
+            conn.commit()
+        finally:
+            cur.close()
 
 class dbentity(entity):
     # TODO Add Tests
@@ -107,13 +124,17 @@ class dbentity(entity):
     def connection(self):
         return connections.getinstance().default
 
-    def query(self, sql, args):
-        return self.connection.query(sql, args)
+    def query(self, sql, args, cur=None):
+        return self.connection.query(sql, args, cur)
+
+    def save(self, cur=None):
+        if not (self._isnew or self._isdirty):
+           return
 
     def save(self):
         if self.isvalid:
             if self.isnew:
-                self._insert()
+                self._insert(cur)
             elif self.isdirty:
                 self._update()
             self._isdirty = False
@@ -164,11 +185,23 @@ class connection(entity):
                                          port=acct.port)
         return self._conn                
 
+    def commit(self):
+        return self._conn.commit()
+
+    def rollback(self):
+        return self._conn.rollback()
+
+    def createcursor(self):
+        return self._conn.cursor()
     def _reconnect(self):
         self._conn = None # force a reconnect
         self._connection
 
-    def query(self, sql, args=None):
+    def query(self, sql, args=None, cur=None):
+        if cur != None:
+            cur.execute(sql, args)
+            return
+
         for _ in range(2):
             try:
                 conn = self._connection
