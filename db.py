@@ -29,10 +29,6 @@ from pdb import set_trace; B=set_trace
 from configfile import configfile
 
 class dbentities(entities):
-    def save(self):
-        for e in self:
-            e.save()
-
     def TRUNCATE(self):
         conn = connections.getinstance().default
         conn.query('truncate ' + self._table)
