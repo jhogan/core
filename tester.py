@@ -77,8 +77,14 @@ class tester(entity):
     def assertGt(self, expect, actual, msg=None):
         if not (expect > actual): self._failures += failure()
 
+    def assertGe(self, expect, actual, msg=None):
+        if not (expect >= actual): self._failures += failure()
+
     def assertLt(self, expect, actual, msg=None):
         if not (expect < actual): self._failures += failure()
+
+    def assertLe(self, expect, actual, msg=None):
+        if not (expect <= actual): self._failures += failure()
 
     def assertIs(self, expect, actual, msg=None):
         if expect is not actual: self._failures += failure()
