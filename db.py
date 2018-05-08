@@ -139,7 +139,6 @@ class dbentity(entity):
         if not (self._isnew or self._isdirty):
            return
 
-    def save(self):
         if self.isvalid:
             if self.isnew:
                 self._insert(cur)
