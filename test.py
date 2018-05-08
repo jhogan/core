@@ -104,6 +104,145 @@ manual for self-reliance."""
             self.assertTrue(post.iscommentable)
             self.assertEq(slug, post.slug)
 
+    def it_calls_body(self): 
+        post = blogpost()
+        self.assertNone(post.body)
+        post.save()
+        self.assertEmptyString(post.body)
+
+        post.body = test_blogpost.Smallpostbody
+        self.assertEq(test_blogpost.Smallpostbody, post.body)
+
+        post.save()
+        self.assertEq(test_blogpost.Smallpostbody, post.body)
+
+        post = blogpost(post.id)
+        self.assertEq(test_blogpost.Smallpostbody, post.body)
+
+    def it_calls_created_at(self):
+        post = blogpost()
+        self.assertNone(post.created_at)
+        before = datetime.now().replace(microsecond=0)
+
+        post.save()
+
+        after = datetime.now().replace(microsecond=0)
+
+        self.assertLe(before, post.created_at)
+        self.assertGe(after, post.created_at)
+
+        created_at = post.created_at
+
+        post = blogpost(post.id)
+        self.assertEq(created_at, post.created_at)
+
+    def it_calls_title(self):
+        post = blogpost()
+        self.assertNone(post.title)
+
+        post.save()
+
+        self.assertEmptyString(post.title)
+
+        post.title = test_blogpost.Smallposttitle
+        self.assertEq(test_blogpost.Smallposttitle, post.title)
+
+        post.save()
+        self.assertEq(test_blogpost.Smallposttitle, post.title)
+
+        post = blogpost(post.id)
+        self.assertEq(test_blogpost.Smallposttitle, post.title)
+
+    def it_calls_slug(self):
+        post = blogpost()
+        self.assertNone(post.slug)
+
+        post.save()
+
+        self.assertEmptyString(post.slug)
+
+        slug = str(uuid4())
+        post.slug = slug
+        self.assertEq(slug, post.slug)
+
+        post.save()
+        self.assertEq(slug, post.slug)
+
+        post = blogpost(post.id)
+        self.assertEq(slug, post.slug)
+
+    def it_calls_title_and_slug(self):
+        post = blogpost()
+        title = 'Herp derp'
+        slug = re.sub(r'\W+', '-', title).strip('-').lower()
+        post.title = title
+
+        self.assertEq(slug, post.slug)
+
+        post.save()
+        self.assertEq(slug, post.slug)
+
+        post = blogpost(post.id)
+        self.assertEq(slug, post.slug)
+
+        # A duplicate title will lead to a duplicate slug (slug_cache)
+        # Therefore, a broken rule will indicate this and a save 
+        # won't be permited because of the unique constraint on the
+        # slug_cache field
+        post = blogpost()
+        post.title = title
+        self.assertTrue(post.brokenrules.contains('slug_cache', 'unique'))
+
+        try:
+            post.save()
+        except brokenruleserror as ex:
+            brs = ex.args[1].brokenrules
+            self.assertTrue(brs.contains('slug_cache', 'unique'))
+        except Exception:
+            self.assertFalse('brokenruleserror was not raised')
+        else:
+            self.assertFalse('No exception was not raised')
+
+    def it_calls_excerpt(self):
+        post = blogpost()
+        self.assertNone(post.excerpt)
+        post.save()
+        self.assertEmptyString(post.excerpt)
+
+        post = blogpost(post.id)
+        self.assertEmptyString(post.excerpt)
+
+        post = blogpost()
+        self.assertNone(post.excerpt)
+        post.save()
+        self.assertEmptyString(post.excerpt)
+        post = blogpost(post.id)
+        self.assertEmptyString(post.excerpt)
+
+        post = blogpost()
+        post.excerpt = test_blogpost.Smallpostexcerpt
+        self.assertEq(test_blogpost.Smallpostexcerpt, post.excerpt)
+        post.save()
+        self.assertEq(test_blogpost.Smallpostexcerpt, post.excerpt)
+        post = blogpost(post.id)
+        self.assertEq(test_blogpost.Smallpostexcerpt, post.excerpt)
+
+    def it_calls_status(self): 
+        post = blogpost()
+        self.assertNone(post.status)
+        post.save()
+        self.assertEq(article.Draft, post.status)
+        post = blogpost(post.id)
+        self.assertEq(article.Draft, post.status)
+
+        post = blogpost()
+        post.status = article.Pending
+        self.assertEq(article.Pending, post.status)
+        post.save()
+        self.assertEq(article.Pending, post.status)
+        post = blogpost(post.id)
+        self.assertEq(article.Pending, post.status)
+
     def it_calls_iscommentable(self): 
         post = blogpost()
         self.assertNone(post.iscommentable)
@@ -128,6 +267,25 @@ manual for self-reliance."""
         post = blogpost(post.id)
         self.assertFalse(post.iscommentable)
 
+    def it_searches_by_id(self):
+        post = blogpost()
+        post.save()
+        id = post.id
+
+        post = blogpost(id)
+        self.assertEq(id,   post.id)
+
+    def it_searches_by_slug(self):
+        post = blogpost()
+        slug = str(uuid4())
+        post.slug = slug
+        post.save()
+        id = post.id
+
+        post = blogpost(slug)
+        self.assertEq(slug, post.slug)
+        self.assertEq(id,   post.id)
+
     def it_calls_wont_save_if_there_are_brokenrules(self): 
         # TODO
         return
@@ -142,50 +300,6 @@ manual for self-reliance."""
             self.assertFail(msg)
         else:
             self.assertFail('No exception thrown on save of invalid object.')
-
-    def it_calls_status(self): 
-        post = blogpost()
-        post.save()
-        self.assertEq(article.Draft, post.status)
-        post = blogpost(post.id)
-        self.assertEq(article.Draft, post.status)
-
-        post = blogpost()
-        self.assertNone(post.status)
-        post.save()
-        self.assertEq(article.Draft, post.status)
-        post = blogpost(post.id)
-        self.assertEq(article.Draft, post.status)
-
-        post = blogpost()
-        post.status = article.Pending
-        self.assertEq(article.Pending, post.status)
-        post.save()
-        self.assertEq(article.Pending, post.status)
-        post = blogpost(post.id)
-        self.assertEq(article.Pending, post.status)
-
-    def it_calls_excerpt(self):
-        post = blogpost()
-        post.save()
-        self.assertNone(post.excerpt)
-        post = blogpost(post.id)
-        self.assertNone(post.excerpt)
-
-        post = blogpost()
-        self.assertNone(post.excerpt)
-        post.save()
-        self.assertNone(post.excerpt)
-        post = blogpost(post.id)
-        self.assertNone(post.excerpt)
-
-        post = blogpost()
-        post.excerpt = test_blogpost.Smallpostexcerpt
-        self.assertEq(test_blogpost.Smallpostexcerpt, post.excerpt)
-        post.save()
-        self.assertEq(test_blogpost.Smallpostexcerpt, post.excerpt)
-        post = blogpost(post.id)
-        self.assertEq(test_blogpost.Smallpostexcerpt, post.excerpt)
 
     def it_calls_slug_and_title(self):
         title = test_blogpost.Smallposttitle + str(uuid4())
@@ -208,7 +322,7 @@ manual for self-reliance."""
         title = test_blogpost.Smallposttitle + str(uuid4())
         slug = re.sub(r'\W+', '-', title).strip('-').lower()
         post = blogpost()
-        self.assertEmptyString(post.slug)
+        self.assertNone(post.slug)
         self.assertEq(None, post.title) 
         post.title = title
         self.assertEq(slug, post.slug)
@@ -382,6 +496,54 @@ manual for self-reliance."""
         self.assertEq(bp1.status,            bp2.status)
         self.assertEq(bp1.iscommentable,     bp2.iscommentable)
 
+class test_articlesrevisions(tester):
+    def __init__(self):
+        super().__init__()
+        revs = articlerevisions()
+        try:
+            revs.DROP()
+        except MySQLdb.OperationalError as ex:
+            try:
+                errno = ex.args[0]
+            except:
+                raise
+
+            if errno != BAD_TABLE_ERROR: # 1051
+                raise
+
+        revs.CREATE()
+
+    def it_fails_saving_duplicate_slug_cache(self):
+        revs = articlerevisions()
+
+        slug_cache = uuid4()
+        for i in range(3):
+            rev = articlerevision()
+            rev.body = test_blogpost.Smallpostbody
+            rev.title = test_blogpost.Smallposttitle
+            rev.slug_cache = slug_cache
+            revs += rev
+
+        try:
+            # Test persistent state before and after fail. The epiphany-py
+            # library should have a test for this but, at the moment, it does
+            # not, so we test here since it's important.
+            for rev in revs:
+                self.assertTrue(rev._isnew)
+                self.assertFalse(rev._isdirty)
+            revs.save()
+        except MySQLdb.IntegrityError as ex:
+            # We should get an MySQL DUP_ENTRY exception
+            self.assertTrue(ex.args[0] == DUP_ENTRY)
+        except Exception:
+            self.assertFail('Wrong exception')
+        else:
+            self.assertFail("Didn't raise IntegrityError")
+        finally:
+            for rev in revs:
+                self.assertTrue(rev._isnew)
+                self.assertFalse(rev._isdirty)
+        
 class test_articlesrevision(tester):
     def __init__(self):
         super().__init__()
@@ -424,31 +586,17 @@ class test_articlesrevision(tester):
         else:
             self.assertFail('No exception thrown on save of invalid object.')
 
-    def it_breaks_body_rules(self):
-        # Body must be full for root revisions
+    def it_fails_to_load_given_nonexistent_id(self):
+        # TODO
+        return
+
+    def it_loads_as_valid(self):
         rev = articlerevision()
-        self.assertCount(2, rev.brokenrules)
-        self.assertTrue(rev.brokenrules.contains('body', 'full'))
-        self.assertTrue(rev.brokenrules.contains('title', 'full'))
-
-        # Create a parent then test the child
-        rent = articlerevision()
-        rent.body = test_blogpost.Smallpostbody
-        rent.title = test_blogpost.Smallposttitle
-        rent.diff = diff.diff('herp', 'derp')
-
-        # A body and a diff shouldn't exist in the same record
-        rev._parent = rent
-        rev.diff = diff.diff('herp', 'derp')
         rev.body = test_blogpost.Smallpostbody
-        self.assertCount(2, rev.brokenrules)
-        self.assertTrue(rev.brokenrules.contains('diff', 'valid'))
+        rev.title = test_blogpost.Smallposttitle
+        rev.save()
 
-        # A non-root revision should can have a body but no diff. This
-        # may be useful for caching or other isssues such as a failure to
-        # create a diff.
-        rev.body = test_blogpost.Smallpostbody
-        rev.diff = None
+        rev = articlerevision(rev.id)
         self.assertValid(rev)
 
     def it_breaks_diff_rules(self):
@@ -511,20 +659,23 @@ class test_articlesrevision(tester):
         self.assertTrue(rev.brokenrules.contains('title', 'fits'))
 
     def it_breaks_status_rules(self):
-        return
         rev = articlerevision()
         rev.body = test_blogpost.Smallpostbody
         rev.title = test_blogpost.Smallposttitle
-        for st in articlerevision.Statuses:
+        for st in article.Statuses:
             rev.status = st
             self.assertCount(0, rev.brokenrules)
-            self.assertTrue(rev.brokenrules.contains('title', 'full'))
+
+        for st in ('wrong-type', 9999, object()):
+            rev.status = st
+            self.assertCount(1, rev.brokenrules)
+            self.assertTrue(rev.brokenrules.contains('status', 'valid'))
 
     def it_breaks_slug_cache_uniqueness_rule(self):
         rev = articlerevision()
         rev.body = test_blogpost.Smallpostbody
         rev.title = test_blogpost.Smallposttitle
-        slug_cache = str(uuid4())
+        slug_cache = uuid4()
         rev.slug_cache = slug_cache
         rev.save()
 
@@ -533,14 +684,61 @@ class test_articlesrevision(tester):
         rev.title = test_blogpost.Smallposttitle
         rev.slug_cache = slug_cache
         self.assertTrue(rev.brokenrules.contains('slug_cache', 'unique'))
+
+    def it_fails_saving_duplicate_slug_cache(self):
+        rev = articlerevision()
+        rev.body = test_blogpost.Smallpostbody
+        rev.title = test_blogpost.Smallposttitle
+        slug_cache = uuid4()
+        rev.slug_cache = slug_cache
+
+        rev.save()
+
+        rev = articlerevision()
+        rev.body = test_blogpost.Smallpostbody
+        rev.title = test_blogpost.Smallposttitle
+        rev.slug_cache = slug_cache
         
         try:
-            B()
             cur = rev.connection._conn.cursor()
+            # Bypass the validation check in save() to insert a record with a
+            # duplicate slug_cache.
             rev._insert(cur)
-        except _mysql_exceptions.IntegrityError as ex:
-            assertTrue(ex.args[0] == DUP_ENTRY)
-        
+        except MySQLdb.IntegrityError as ex:
+            # We should get an MySQL DUP_ENTRY exception
+            self.assertTrue(ex.args[0] == DUP_ENTRY)
+        except Exception:
+            self.assertFail('Wrong exception')
+        else:
+            self.assertFail("Didn't raise IntegrityError")
+
+    def it_breaks_body_rules(self):
+        # Body must be full for root revisions
+        rev = articlerevision()
+        self.assertCount(2, rev.brokenrules)
+        self.assertTrue(rev.brokenrules.contains('body', 'full'))
+        self.assertTrue(rev.brokenrules.contains('title', 'full'))
+
+        # Create a parent then test the child
+        rent = articlerevision()
+        rent.body = test_blogpost.Smallpostbody
+        rent.title = test_blogpost.Smallposttitle
+        rent.diff = diff.diff('herp', 'derp')
+
+        # A body and a diff shouldn't exist in the same record
+        rev._parent = rent
+        rev.diff = diff.diff('herp', 'derp')
+        rev.body = test_blogpost.Smallpostbody
+        self.assertCount(2, rev.brokenrules)
+        self.assertTrue(rev.brokenrules.contains('diff', 'valid'))
+
+        # A non-root revision should can have a body but no diff. This
+        # may be useful for caching or other isssues such as a failure to
+        # create a diff.
+        rev.body = test_blogpost.Smallpostbody
+        rev.diff = None
+        self.assertValid(rev)
+
         
     def it_creates_revisions(self):
         # TODO

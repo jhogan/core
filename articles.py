@@ -12,13 +12,24 @@ class articlerevisions(db.dbentities):
     def __init__(self, id=None):
         super().__init__()
         if id:
-            sql = """
-            select *
-            from articlerevisions
-            where root_id = %s
-            """
+            if type(id) == uuid.UUID:
+                sql = """
+                select *
+                from articlerevisions
+                where root_id = %s
+                """
+                args = (id.bytes,)
+            elif type(id) == str: # slug
+                sql = """
+                select ar1.*
+                from articlerevisions ar1
+                    inner join articlerevisions ar2
+                        on ar1.root_id = ar2.id
+                where ar2.slug_cache = %s
+                """
+                args = (id,)
             revs = articlerevisions()
-            ress = self.query(sql, (id.bytes,))
+            ress = self.query(sql, args)
             for res in ress:
                 revs += articlerevision(res=res)
 
@@ -113,7 +124,7 @@ class articlerevision(db.dbentity):
     scientific paper, blog, encyclopedia article, marketing article, usenet
     article, spoken article, listicle, portrait, etc."""
 
-    def __init__(self, parent=None, id=None, res=None):
+    def __init__(self,id=None, parent=None, res=None):
         super().__init__();
         
         # TODO Only parent, id or res should be not None
@@ -136,15 +147,10 @@ class articlerevision(db.dbentity):
             self._marknew()
         elif type(id) == uuid.UUID:
             sql = 'select * from articlerevisions where id = %s';
-            v = self.query(sql, (id.bytes,))
-            if v.hasone:
-                ls = list(v.first)
-            else:
+            ress = self.query(sql, (id.bytes,))
+            if not ress.hasone:
                 raise Exception('Record not found: ' + str(id))
-
-            self._created_at = ls.pop()
-            self._id         = uuid.UUID(bytes=ls.pop())
-            self._markold()
+            res = ress.first
 
         if res != None:
             row = list(res._row)
@@ -276,6 +282,11 @@ class articlerevision(db.dbentity):
                 msg = 'Diff must be null if body is not null'
                 brs += brokenrule(msg, 'diff', 'valid')
 
+            if self.status != None:
+                if self.status not in article.Statuses:
+                    msg = 'The status property has an invalid value'
+                    brs += brokenrule(msg, 'status', 'valid')
+
         if self.title != None:
             if type(self.title) == str:
                 brs.demand(self, 'title',  maxlen=500)
@@ -292,7 +303,13 @@ class articlerevision(db.dbentity):
 
     @property
     def parent(self):
+        if not hasattr(self, '_parent')  or not self._parent:
+            if hasattr(self, '_parent_id') and self._parent_id:
+                self._parent = type(self)(self._parent_id)
+            else:
+                self._parent = None
         return self._parent
+
 
     @property
     def created_at(self):
@@ -424,7 +441,6 @@ class article(entity):
     def __init__(self, id=None):
         super().__init__()
 
-        self._id = id
         self._body = None
         self._title = None
         self._excerpt = None
@@ -432,6 +448,10 @@ class article(entity):
         self._iscommentable = None
         self._slug = None
         self._revisions = blogrevisions(id)
+        if self._revisions.ispopulated:
+            self._id = self._revisions.first.id
+        else:
+            self._id = None
 
     @property
     def id(self):
@@ -441,7 +461,7 @@ class article(entity):
     def body(self):
         if not self._body:
             for rev in self._revisions:
-                if rev.body:
+                if rev.body != None:
                     self._body = rev.body
                 elif rev.diff:
                     self._body = rev.diff.applyto(self._body)
@@ -454,7 +474,10 @@ class article(entity):
 
     @property
     def created_at(self):
-        return self._revisions.root.created_at
+        root = self._revisions.root
+        if root:
+            return self._revisions.root.created_at
+        return None
 
     @property
     def title(self):
@@ -502,7 +525,7 @@ class article(entity):
             self._slug = self._revisions.getlatest('slug')
             if self._slug == None:
                 if self.title == None:
-                    return ''
+                    return None
                 else:
                     slug = re.sub(r'\W+', '-', self.title).strip('-')
                     self._slug = slug.lower()
@@ -514,9 +537,7 @@ class article(entity):
         self._slug = None
         return self._setvalue('_slug', v, 'slug')
 
-    def save(self):
-        # TODO Don't save titles, excerpts, etc. if they are repeats of
-        # previous revisions.
+    def _appendrevision(self):
         n2e = lambda s: '' if s == None else s
         revs = self._revisions
 
@@ -532,16 +553,28 @@ class article(entity):
         # TODO If the rev is not root, these properties should be None unless
         # they are different from previous revisions. Ensure this is tested.
         rev.title = n2e(self.title)
-        rev.excerpt = self.excerpt
+        rev.excerpt = n2e(self.excerpt)
         rev.status = self.status
         rev.iscommentable = self.iscommentable
         rev.slug = self.slug
         rev.root.slug_cache = rev.slug
+        return rev
+
+    @property
+    def brokenrules(self):
+        rev = self._appendrevision()
 
         try:
-            revs.save()
+            return self._revisions.brokenrules
+        finally: 
+            self._revisions.pop()
+
+    def save(self):
+        rev = self._appendrevision()
+        try:
+            self._revisions.save()
         except:
-            revs.pop()
+            self._revisions.pop()
             raise
         else:
             self._id = rev.root.id
