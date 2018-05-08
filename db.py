@@ -192,14 +192,18 @@ class connection(entity):
                                          port=acct.port)
         return self._conn                
 
+    def close(self):
+        return self._connection.close()
+
     def commit(self):
-        return self._conn.commit()
+        return self._connection.commit()
 
     def rollback(self):
-        return self._conn.rollback()
+        return self._connection.rollback()
 
     def createcursor(self):
-        return self._conn.cursor()
+        return self._connection.cursor()
+
     def _reconnect(self):
         self._conn = None # force a reconnect
         self._connection
