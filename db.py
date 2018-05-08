@@ -61,9 +61,18 @@ class dbentities(entities):
         self.query('drop table ' + self._table)
 
     def save(self):
-        # TODO Add reconnect logic
-        # TODO Restore entity state on rollback
-        conn = connections.getinstance().default
+        # TODO Add reconnect logic or a connection pool
+
+        # Clone the default connection. Since transactions are commited
+        # by calling commit() on the connection object, we want a new 
+        # connection to ensure this transaction is atomic. I'm not sure
+        # why MySQLDb uses the connection object for commits. It seems 
+        # like there should be a transaction object that commit() could 
+        # be called on. Either way, it seems like for now at least, we
+        # will have to connect to the database each time there is a need
+        # for atomic commits.
+        # https://stackoverflow.com/questions/50206523/can-you-perform-multiple-atomic-commits-using-the-same-connection-with-mysqldb
+        conn = connections.getinstance().default.clone()
         cur = conn.createcursor()
         states = []
         try:
@@ -71,8 +80,8 @@ class dbentities(entities):
                 states.append((e._isnew, e._isdirty))
                 e.save(cur)
         except Exception:
-            for tup in zip(self, states):
-                e, st = tup
+            for i, st in enumerate(states):
+                e = self[i]
                 e._isnew, e._isdirty = st
             conn.rollback()
             raise
@@ -80,6 +89,7 @@ class dbentities(entities):
             conn.commit()
         finally:
             cur.close()
+            conn.close()
 
 class dbentity(entity):
     # TODO Add Tests
@@ -165,6 +175,9 @@ class connection(entity):
     def __init__(self, acct):
         self._account = acct
         self._conn = None
+
+    def clone(self):
+        return type(self)(self._account)
 
     @property
     def account(self):
