@@ -1,12 +1,37 @@
+# vim: set et ts=4 sw=4 fdm=marker
+"""
+MIT License
+
+Copyright (c) 2016 Jesse Hogan
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
 from pdb import set_trace; B=set_trace
 import db
-from entities import brokenrules, brokenrule, entity
+from entities import brokenrules, brokenrule, entity, entities
 import uuid
 from binascii import a2b_hex
 from datetime import datetime
 from pprint import pprint
 import diff
 import re
+from app import controller
 
 class articlerevisions(db.dbentities):
     def __init__(self, id=None):
@@ -256,8 +281,17 @@ class articlerevision(db.dbentity):
                 brs += brokenrule(msg, 'status', 'valid')
 
             if self.slug_cache != None:
-                sql = "select count(*) from articlerevisions where slug_cache = %s"
-                ress = self.query(sql, (self.slug_cache,))
+                sql = """
+                select count(*) 
+                from articlerevisions 
+                where slug_cache = %s
+                """
+                args = [self.slug_cache]
+                if self.id:
+                    sql += ' and id != %s'
+                    args.append(self.id.bytes)
+
+                ress = self.query(sql, args)
                 if ress.first[0] > 0:
                     msg = 'slug_cache must be unique'
                     brs += brokenrule(msg, 'slug_cache', 'unique')
@@ -421,10 +455,7 @@ class articlerevision(db.dbentity):
     def slug(self, v):
         return self._setvalue('_slug', v, 'slug')
 
-class blogrevisions(articlerevisions):
-    pass
-
-class blogrevision(articlerevision):
+class articles(entities):
     pass
 
 class article(entity):
@@ -447,7 +478,7 @@ class article(entity):
         self._status = None
         self._iscommentable = None
         self._slug = None
-        self._revisions = blogrevisions(id)
+        self._revisions = articlerevisions(id)
         if self._revisions.ispopulated:
             self._id = self._revisions.first.id
         else:
@@ -579,5 +610,140 @@ class article(entity):
         else:
             self._id = rev.root.id
 
+class blogposts(articles):
+    @property
+    def _create(self):
+        return """
+        create table blogposts(
+            id binary(16) primary key,
+            article_id binary(16),
+            blog_id binary(16)
+        )
+        """
+    def _insert(self, cur=None):
+        self._id = uuid.uuid4()
+        args = (self._id.bytes, 
+                self.article.id.bytes,
+                self.blog.id.bytes,
+                )
+
+        insert = """
+        insert into blogposts
+        values({})
+        """.format(('%s, ' * len(args)).rstrip(', '))
+
+        self.query(insert, args, cur)
+
+    @property
+    def slug(self):
+        return self._slug
+
+    @slug.setter
+    def slug(self, v):
+        return self._setvalue('_slug', v, 'slug')
+
+
+
 class blogpost(article):
     pass
+
+class blogs(db.dbentities):
+    def __init__(self):
+        super().__init__()
+
+    @property
+    def _table(self):
+        return 'blogs'
+
+    @property
+    def _create(self):
+        return """
+        create table blogs(
+            id binary(16) primary key,
+            slug varchar(255),
+            description varchar(255),
+            constraint slug unique (slug)
+        )
+        """
+
+class blog(db.dbentity):
+    def __init__(self, id=None):
+        super().__init__()
+        self._id = id
+        if id:
+            sql = """
+            select *
+            from blogs
+            where id = %s
+            """
+            ress = self.query(sql, (id.bytes,))
+            if not ress.hasone:
+                raise Exception('Record not found: ' + str(id))
+
+            res = ress.first
+            row = list(res._row)
+            self._description = row.pop()
+            self._slug = row.pop()
+            self._id = uuid.UUID(bytes=row.pop())
+            self._markold()
+        else:
+            self._slug = None
+            self._description = None
+            self._marknew()
+            
+    def _insert(self, cur=None):
+        id = uuid.uuid4()
+        self._id = id
+        args = (id.bytes, 
+                self.slug,
+                self.description,
+                )
+
+        insert = """
+        insert into blogs
+        values({})
+        """.format(('%s, ' * len(args)).rstrip(', '))
+
+        self.query(insert, args, cur)
+
+    def _update(self, cur=None):
+        sql = """
+        update blogs
+        set slug = %s,
+        description = %s
+        where id = %s
+        """
+
+        args = (
+            self.slug,
+            self.description,
+            self.id.bytes
+        )
+
+        self.query(sql, args, cur)
+
+    @property
+    def slug(self):
+        return self._slug
+
+    @slug.setter
+    def slug(self, v):
+        return self._setvalue('_slug', v, 'slug')
+
+    @property
+    def description(self):
+        return self._description
+
+    @description.setter
+    def description(self, v):
+        return self._setvalue('_description', v, 'description')
+
+    @property
+    def brokenrules(self):
+        brs = brokenrules()
+        brs.demand(self, 'description',  isfull=True)
+        brs.demand(self, 'slug',  isfull=True)
+        return brs
+            
+
+

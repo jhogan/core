@@ -94,7 +94,7 @@ class lead(db.dbentity):
     def emailed_at(self, v):
         return self._setvalue('_emailed_at', v, 'emailed_at')
 
-    def _insert(self):
+    def _insert(self, cur=None):
         insert = """
         insert into leads
         values(null, %s, %s, %s, %s, %s);
@@ -102,7 +102,7 @@ class lead(db.dbentity):
         conn = db.connections.getinstance().default
         args = (self.name,    self.email, self.subject, 
                 self.message, self.emailed_at)
-        res = conn.query(insert, args)
+        res = conn.query(insert, args, cur)
 
         self._id = res.lastrowid
 

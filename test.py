@@ -32,6 +32,102 @@ from uuid import uuid4
 import MySQLdb
 import re
 
+class test_blog(tester):
+    def __init__(self):
+        super().__init__()
+        blogs().RECREATE()
+
+    def it_creates(self):
+        bl = blog()
+        bl.slug = 'carapacian-tech'
+        bl.description = "The technical blog for Carapacian, LLC"
+        self.assertTrue(bl._isnew)
+        self.assertFalse(bl._isdirty)
+        self.assertNone(bl.id)
+        bl.save()
+        self.assertTrue(type(bl.id) == uuid.UUID)
+        self.assertFalse(bl._isnew)
+        self.assertFalse(bl._isdirty)
+
+        bl1 = blog(bl.id)
+
+        self.assertFalse(bl1._isnew)
+        self.assertFalse(bl1._isdirty)
+        self.assertEq(bl.id, bl1.id)
+        self.assertEq(bl.slug, bl1.slug)
+        self.assertEq(bl.description, bl1.description)
+
+    def it_sets_properties(self):
+        slug = 'carapacian-tech'
+        description = "The technical blog for Carapacian, LLC"
+        bl = blog()
+        bl.slug = slug
+        bl.description = description
+        self.assertEq(slug, bl.slug)
+        self.assertEq(description, bl.description)
+
+    def it_breaks_ruls(self):
+        slug = 'carapacian-tech'
+        description = "The technical blog for Carapacian, LLC"
+        bl = blog()
+        self.assertCount(2, bl.brokenrules)
+        self.assertTrue(bl.brokenrules.contains('slug', 'full'))
+        self.assertTrue(bl.brokenrules.contains('description', 'full'))
+        bl.slug = slug
+        self.assertCount(1, bl.brokenrules)
+        self.assertTrue(bl.brokenrules.contains('description', 'full'))
+        bl.description = description
+        self.assertCount(0, bl.brokenrules)
+
+    def it_updates(self):
+        slug = str(uuid4())
+        description = "The technical blog for Carapacian, LLC"
+        bl = blog()
+        bl.slug = slug
+        bl.description = description
+        bl.save()
+
+        bl = blog(bl.id)
+        bl.description = 'new'
+        bl.save()
+
+        bl = blog(bl.id)
+        self.assertEq('new', bl.description)
+        self.assertEq(slug, bl.slug)
+
+        slug = str(uuid4())
+        bl.slug = slug
+        bl.save()
+
+        bl = blog(bl.id)
+        self.assertEq('new', bl.description)
+        self.assertEq(slug, bl.slug)
+
+    def it_loads_as_valid(self):
+        bl = blog()
+        bl.slug = str(uuid4())
+        bl.description = "The technical blog for Carapacian, LLC"
+        bl.save()
+        self.assertValid(blog(bl.id))
+
+    def it_violates_unique_constraint_on_slug(self):
+        bl = blog()
+        bl.slug = 'non-unique'
+        bl.description = "The technical blog for Carapacian, LLC"
+        bl.save()
+
+        bl = blog()
+        bl.slug = 'non-unique'
+        bl.description = "The technical blog for Carapacian, LLC"
+        try:
+            bl.save()
+        except MySQLdb.IntegrityError as ex:
+            self.assertTrue(ex.args[0] == DUP_ENTRY)
+        except Exception:
+            self.assertFail('Wrong exception')
+        else:
+            self.assertFail("Didn't raise IntegrityError")
+
 class test_blogpost(tester):
     
     Smallposttitle = 'Walden; or, Life in the Woods'
@@ -63,6 +159,19 @@ manual for self-reliance."""
                 raise
 
         revs.CREATE()
+
+    def it_loads_as_valid(self):
+        post = blogpost()
+        post.body = test_blogpost.Smallpostbody
+        title = test_blogpost.Smallposttitle + ' - ' + str(uuid4())
+        post.title  = title
+        slug = re.sub(r'\W+', '-', post.title).strip('-').lower()
+        post.excerpt = test_blogpost.Smallpostexcerpt 
+        post.status = blogpost.Pending
+        post.iscommentable = True
+        post.save()
+        post = blogpost(post.id)
+        self.assertValid(post)
 
     def it_saves_x_revisions_with_null_properties(self):
         post = blogpost()
