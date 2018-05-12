@@ -66,7 +66,7 @@ class test_blog(tester):
         self.assertEq(slug, bl.slug)
         self.assertEq(description, bl.description)
 
-    def it_breaks_ruls(self):
+    def it_breaks_rules(self):
         slug = 'carapacian-tech'
         description = "The technical blog for Carapacian, LLC"
         bl = blog()
@@ -128,7 +128,35 @@ class test_blog(tester):
         else:
             self.assertFail("Didn't raise IntegrityError")
 
-class test_blogpost(tester):
+class test_blogpostrevision(tester):
+    def __init__(self):
+        super().__init__()
+        articlerevisions().RECREATE()
+        blogpostrevisions().RECREATE()
+        blogs().RECREATE()
+
+    def it_creates(self):
+        
+        # Create a blog
+        bl = blog()
+        bl.slug = 'carapacian-tech-blog'
+        bl.description = 'Carapacian Tech Blog'
+        bl.save()
+
+        title = test_article.Smallposttitle + ' - ' + str(uuid4())
+        body = test_article.Smallpostbody
+
+        rev = blogpostrevision()
+        B()
+        rev.title = title
+        rev.body = body
+        rev.blog = bl
+        rev.save()
+
+        B()
+        rev1 = blogpostrevision(rev.id)
+
+class test_article(tester):
     
     Smallposttitle = 'Walden; or, Life in the Woods'
 
@@ -146,164 +174,152 @@ manual for self-reliance."""
 
     def __init__(self):
         super().__init__()
-        revs = articlerevisions()
-        try:
-            revs.DROP()
-        except MySQLdb.OperationalError as ex:
-            try:
-                errno = ex.args[0]
-            except:
-                raise
-
-            if errno != BAD_TABLE_ERROR: # 1051
-                raise
-
-        revs.CREATE()
+        articlerevisions().RECREATE()
 
     def it_loads_as_valid(self):
-        post = blogpost()
-        post.body = test_blogpost.Smallpostbody
-        title = test_blogpost.Smallposttitle + ' - ' + str(uuid4())
-        post.title  = title
-        slug = re.sub(r'\W+', '-', post.title).strip('-').lower()
-        post.excerpt = test_blogpost.Smallpostexcerpt 
-        post.status = blogpost.Pending
-        post.iscommentable = True
-        post.save()
-        post = blogpost(post.id)
-        self.assertValid(post)
+        art = article()
+        art.body = test_article.Smallpostbody
+        title = test_article.Smallposttitle + ' - ' + str(uuid4())
+        art.title  = title
+        slug = re.sub(r'\W+', '-', art.title).strip('-').lower()
+        art.excerpt = test_article.Smallpostexcerpt 
+        art.status = article.Pending
+        art.iscommentable = True
+        art.save()
+        art = article(art.id)
+        self.assertValid(art)
 
     def it_saves_x_revisions_with_null_properties(self):
-        post = blogpost()
-        post.body = test_blogpost.Smallpostbody
-        title = test_blogpost.Smallposttitle + ' - ' + str(uuid4())
-        post.title  = title
-        slug = re.sub(r'\W+', '-', post.title).strip('-').lower()
-        post.excerpt = test_blogpost.Smallpostexcerpt 
-        post.status = blogpost.Pending
-        post.iscommentable = True
+        art = article()
+        art.body = test_article.Smallpostbody
+        title = test_article.Smallposttitle + ' - ' + str(uuid4())
+        art.title  = title
+        slug = re.sub(r'\W+', '-', art.title).strip('-').lower()
+        art.excerpt = test_article.Smallpostexcerpt 
+        art.status = article.Pending
+        art.iscommentable = True
 
-        post.save()
+        art.save()
 
         x = 4
         for i in range(x):
             if i < x / 2:
-                post.title = None
-                post.excerpt = None
-                post.slug = None
+                art.title = None
+                art.excerpt = None
+                art.slug = None
             else:
-                post.body = test_blogpost.Smallpostbody  + ' Rev: ' + str(i)
+                art.body = test_article.Smallpostbody  + ' Rev: ' + str(i)
                 revisedtitle = title + ' Rev: ' + str(i)
-                post.title = revisedtitle
-                post.excerpt = test_blogpost.Smallpostexcerpt  + ' Rev: ' + str(i)
+                art.title = revisedtitle
+                art.excerpt = test_article.Smallpostexcerpt  + ' Rev: ' + str(i)
                 
-            post.save()
+            art.save()
 
-            post = blogpost(post.id)
+            art = article(art.id)
 
             if i < x / 2:
-                self.assertEq(test_blogpost.Smallpostbody, post.body)
-                self.assertEq(title, post.title)
-                self.assertEq(test_blogpost.Smallpostexcerpt, post.excerpt)
+                self.assertEq(test_article.Smallpostbody, art.body)
+                self.assertEq(title, art.title)
+                self.assertEq(test_article.Smallpostexcerpt, art.excerpt)
             else:
-                self.assertEq(test_blogpost.Smallpostbody + ' Rev: ' + str(i), post.body)
-                self.assertEq(revisedtitle, post.title)
-                self.assertEq(test_blogpost.Smallpostexcerpt + ' Rev: ' + str(i), post.excerpt)
-            self.assertEq(blogpost.Pending, post.status)
-            self.assertTrue(post.iscommentable)
-            self.assertEq(slug, post.slug)
+                self.assertEq(test_article.Smallpostbody + ' Rev: ' + str(i), art.body)
+                self.assertEq(revisedtitle, art.title)
+                self.assertEq(test_article.Smallpostexcerpt + ' Rev: ' + str(i), art.excerpt)
+            self.assertEq(article.Pending, art.status)
+            self.assertTrue(art.iscommentable)
+            self.assertEq(slug, art.slug)
 
     def it_calls_body(self): 
-        post = blogpost()
-        self.assertNone(post.body)
-        post.save()
-        self.assertEmptyString(post.body)
+        art = article()
+        self.assertNone(art.body)
+        art.save()
+        self.assertEmptyString(art.body)
 
-        post.body = test_blogpost.Smallpostbody
-        self.assertEq(test_blogpost.Smallpostbody, post.body)
+        art.body = test_article.Smallpostbody
+        self.assertEq(test_article.Smallpostbody, art.body)
 
-        post.save()
-        self.assertEq(test_blogpost.Smallpostbody, post.body)
+        art.save()
+        self.assertEq(test_article.Smallpostbody, art.body)
 
-        post = blogpost(post.id)
-        self.assertEq(test_blogpost.Smallpostbody, post.body)
+        art = article(art.id)
+        self.assertEq(test_article.Smallpostbody, art.body)
 
     def it_calls_created_at(self):
-        post = blogpost()
-        self.assertNone(post.created_at)
+        art = article()
+        self.assertNone(art.created_at)
         before = datetime.now().replace(microsecond=0)
 
-        post.save()
+        art.save()
 
         after = datetime.now().replace(microsecond=0)
 
-        self.assertLe(before, post.created_at)
-        self.assertGe(after, post.created_at)
+        self.assertLe(before, art.created_at)
+        self.assertGe(after, art.created_at)
 
-        created_at = post.created_at
+        created_at = art.created_at
 
-        post = blogpost(post.id)
-        self.assertEq(created_at, post.created_at)
+        art = article(art.id)
+        self.assertEq(created_at, art.created_at)
 
     def it_calls_title(self):
-        post = blogpost()
-        self.assertNone(post.title)
+        art = article()
+        self.assertNone(art.title)
 
-        post.save()
+        art.save()
 
-        self.assertEmptyString(post.title)
+        self.assertEmptyString(art.title)
 
-        post.title = test_blogpost.Smallposttitle
-        self.assertEq(test_blogpost.Smallposttitle, post.title)
+        art.title = test_article.Smallposttitle
+        self.assertEq(test_article.Smallposttitle, art.title)
 
-        post.save()
-        self.assertEq(test_blogpost.Smallposttitle, post.title)
+        art.save()
+        self.assertEq(test_article.Smallposttitle, art.title)
 
-        post = blogpost(post.id)
-        self.assertEq(test_blogpost.Smallposttitle, post.title)
+        art = article(art.id)
+        self.assertEq(test_article.Smallposttitle, art.title)
 
     def it_calls_slug(self):
-        post = blogpost()
-        self.assertNone(post.slug)
+        art = article()
+        self.assertNone(art.slug)
 
-        post.save()
+        art.save()
 
-        self.assertEmptyString(post.slug)
+        self.assertEmptyString(art.slug)
 
         slug = str(uuid4())
-        post.slug = slug
-        self.assertEq(slug, post.slug)
+        art.slug = slug
+        self.assertEq(slug, art.slug)
 
-        post.save()
-        self.assertEq(slug, post.slug)
+        art.save()
+        self.assertEq(slug, art.slug)
 
-        post = blogpost(post.id)
-        self.assertEq(slug, post.slug)
+        art = article(art.id)
+        self.assertEq(slug, art.slug)
 
     def it_calls_title_and_slug(self):
-        post = blogpost()
+        art = article()
         title = 'Herp derp'
         slug = re.sub(r'\W+', '-', title).strip('-').lower()
-        post.title = title
+        art.title = title
 
-        self.assertEq(slug, post.slug)
+        self.assertEq(slug, art.slug)
 
-        post.save()
-        self.assertEq(slug, post.slug)
+        art.save()
+        self.assertEq(slug, art.slug)
 
-        post = blogpost(post.id)
-        self.assertEq(slug, post.slug)
+        art = article(art.id)
+        self.assertEq(slug, art.slug)
 
         # A duplicate title will lead to a duplicate slug (slug_cache)
         # Therefore, a broken rule will indicate this and a save 
         # won't be permited because of the unique constraint on the
         # slug_cache field
-        post = blogpost()
-        post.title = title
-        self.assertTrue(post.brokenrules.contains('slug_cache', 'unique'))
+        art = article()
+        art.title = title
+        self.assertTrue(art.brokenrules.contains('slug_cache', 'unique'))
 
         try:
-            post.save()
+            art.save()
         except brokenruleserror as ex:
             brs = ex.args[1].brokenrules
             self.assertTrue(brs.contains('slug_cache', 'unique'))
@@ -313,96 +329,96 @@ manual for self-reliance."""
             self.assertFalse('No exception was not raised')
 
     def it_calls_excerpt(self):
-        post = blogpost()
-        self.assertNone(post.excerpt)
-        post.save()
-        self.assertEmptyString(post.excerpt)
+        art = article()
+        self.assertNone(art.excerpt)
+        art.save()
+        self.assertEmptyString(art.excerpt)
 
-        post = blogpost(post.id)
-        self.assertEmptyString(post.excerpt)
+        art = article(art.id)
+        self.assertEmptyString(art.excerpt)
 
-        post = blogpost()
-        self.assertNone(post.excerpt)
-        post.save()
-        self.assertEmptyString(post.excerpt)
-        post = blogpost(post.id)
-        self.assertEmptyString(post.excerpt)
+        art = article()
+        self.assertNone(art.excerpt)
+        art.save()
+        self.assertEmptyString(art.excerpt)
+        art = article(art.id)
+        self.assertEmptyString(art.excerpt)
 
-        post = blogpost()
-        post.excerpt = test_blogpost.Smallpostexcerpt
-        self.assertEq(test_blogpost.Smallpostexcerpt, post.excerpt)
-        post.save()
-        self.assertEq(test_blogpost.Smallpostexcerpt, post.excerpt)
-        post = blogpost(post.id)
-        self.assertEq(test_blogpost.Smallpostexcerpt, post.excerpt)
+        art = article()
+        art.excerpt = test_article.Smallpostexcerpt
+        self.assertEq(test_article.Smallpostexcerpt, art.excerpt)
+        art.save()
+        self.assertEq(test_article.Smallpostexcerpt, art.excerpt)
+        art = article(art.id)
+        self.assertEq(test_article.Smallpostexcerpt, art.excerpt)
 
     def it_calls_status(self): 
-        post = blogpost()
-        self.assertNone(post.status)
-        post.save()
-        self.assertEq(article.Draft, post.status)
-        post = blogpost(post.id)
-        self.assertEq(article.Draft, post.status)
+        art = article()
+        self.assertNone(art.status)
+        art.save()
+        self.assertEq(article.Draft, art.status)
+        art = article(art.id)
+        self.assertEq(article.Draft, art.status)
 
-        post = blogpost()
-        post.status = article.Pending
-        self.assertEq(article.Pending, post.status)
-        post.save()
-        self.assertEq(article.Pending, post.status)
-        post = blogpost(post.id)
-        self.assertEq(article.Pending, post.status)
+        art = article()
+        art.status = article.Pending
+        self.assertEq(article.Pending, art.status)
+        art.save()
+        self.assertEq(article.Pending, art.status)
+        art = article(art.id)
+        self.assertEq(article.Pending, art.status)
 
     def it_calls_iscommentable(self): 
-        post = blogpost()
-        self.assertNone(post.iscommentable)
-        post.save()
-        self.assertFalse(post.iscommentable)
-        post = blogpost(post.id)
-        self.assertFalse(post.iscommentable)
+        art = article()
+        self.assertNone(art.iscommentable)
+        art.save()
+        self.assertFalse(art.iscommentable)
+        art = article(art.id)
+        self.assertFalse(art.iscommentable)
 
-        post = blogpost()
-        post.iscommentable = True
-        self.assertTrue(post.iscommentable)
-        post.save()
-        self.assertTrue(post.iscommentable)
-        post = blogpost(post.id)
-        self.assertTrue(post.iscommentable)
+        art = article()
+        art.iscommentable = True
+        self.assertTrue(art.iscommentable)
+        art.save()
+        self.assertTrue(art.iscommentable)
+        art = article(art.id)
+        self.assertTrue(art.iscommentable)
 
-        post = blogpost()
-        post.iscommentable = False
-        self.assertFalse(post.iscommentable)
-        post.save()
-        self.assertFalse(post.iscommentable)
-        post = blogpost(post.id)
-        self.assertFalse(post.iscommentable)
+        art = article()
+        art.iscommentable = False
+        self.assertFalse(art.iscommentable)
+        art.save()
+        self.assertFalse(art.iscommentable)
+        art = article(art.id)
+        self.assertFalse(art.iscommentable)
 
     def it_searches_by_id(self):
-        post = blogpost()
-        post.save()
-        id = post.id
+        art = article()
+        art.save()
+        id = art.id
 
-        post = blogpost(id)
-        self.assertEq(id,   post.id)
+        art = article(id)
+        self.assertEq(id,   art.id)
 
     def it_searches_by_slug(self):
-        post = blogpost()
+        art = article()
         slug = str(uuid4())
-        post.slug = slug
-        post.save()
-        id = post.id
+        art.slug = slug
+        art.save()
+        id = art.id
 
-        post = blogpost(slug)
-        self.assertEq(slug, post.slug)
-        self.assertEq(id,   post.id)
+        art = article(slug)
+        self.assertEq(slug, art.slug)
+        self.assertEq(id,   art.id)
 
     def it_calls_wont_save_if_there_are_brokenrules(self): 
         # TODO
         return
-        post = blogpost()
+        art = article()
         try:
-            post.save()
+            art.save()
         except brokenruleserror as ex:
-            self.assertIs(post, ex.object)
+            self.assertIs(art, ex.object)
         except:
             msg = ('BrokenRulesError expected however a different exception '
                   ' was thrown: ' + str(type(ex)))
@@ -411,187 +427,187 @@ manual for self-reliance."""
             self.assertFail('No exception thrown on save of invalid object.')
 
     def it_calls_slug_and_title(self):
-        title = test_blogpost.Smallposttitle + str(uuid4())
+        title = test_article.Smallposttitle + str(uuid4())
         slug = re.sub(r'\W+', '-', title).strip('-').lower()
 
-        post = blogpost()
-        post.title = title
-        self.assertEq(slug, post.slug)
-        self.assertEq(title, post.title)
-        post.save()
-        self.assertEq(slug, post.slug)
-        self.assertEq(title, post.title)
-        post = blogpost(post.id)
-        self.assertEq(slug, post.slug)
-        self.assertEq(title, post.title)
-        post = blogpost(post.id)
-        self.assertEq(slug, post.slug)
-        self.assertEq(title, post.title)
+        art = article()
+        art.title = title
+        self.assertEq(slug, art.slug)
+        self.assertEq(title, art.title)
+        art.save()
+        self.assertEq(slug, art.slug)
+        self.assertEq(title, art.title)
+        art = article(art.id)
+        self.assertEq(slug, art.slug)
+        self.assertEq(title, art.title)
+        art = article(art.id)
+        self.assertEq(slug, art.slug)
+        self.assertEq(title, art.title)
 
-        title = test_blogpost.Smallposttitle + str(uuid4())
+        title = test_article.Smallposttitle + str(uuid4())
         slug = re.sub(r'\W+', '-', title).strip('-').lower()
-        post = blogpost()
-        self.assertNone(post.slug)
-        self.assertEq(None, post.title) 
-        post.title = title
-        self.assertEq(slug, post.slug)
-        self.assertEq(title, post.title)
+        art = article()
+        self.assertNone(art.slug)
+        self.assertEq(None, art.title) 
+        art.title = title
+        self.assertEq(slug, art.slug)
+        self.assertEq(title, art.title)
 
-        post.save()
-        self.assertEq(title, post.title)
-        self.assertEq(slug, post.slug)
-        post = blogpost(post.id)
-        self.assertEq(title, post.title)
-        self.assertEq(slug, post.slug)
+        art.save()
+        self.assertEq(title, art.title)
+        self.assertEq(slug, art.slug)
+        art = article(art.id)
+        self.assertEq(title, art.title)
+        self.assertEq(slug, art.slug)
 
-        post = blogpost()
-        self.assertEq(None, post.title)
-        post.save()
-        self.assertEq('', post.title)
-        self.assertEmptyString(post.slug)
-        post = blogpost(post.id)
-        self.assertEmptyString(post.slug)
-        self.assertEq('', post.title)
+        art = article()
+        self.assertEq(None, art.title)
+        art.save()
+        self.assertEq('', art.title)
+        self.assertEmptyString(art.slug)
+        art = article(art.id)
+        self.assertEmptyString(art.slug)
+        self.assertEq('', art.title)
 
-        post = blogpost()
-        post.slug = 'Herp Derp'
-        self.assertEq('Herp Derp', post.slug)
-        self.assertEq(None, post.title)
-        post.title = title
-        self.assertEq('Herp Derp', post.slug)
-        post.save()
-        self.assertEq(title, post.title)
-        self.assertEq('Herp Derp', post.slug)
-        post = blogpost(post.id)
-        self.assertEq(title, post.title)
-        self.assertEq('Herp Derp', post.slug)
+        art = article()
+        art.slug = 'Herp Derp'
+        self.assertEq('Herp Derp', art.slug)
+        self.assertEq(None, art.title)
+        art.title = title
+        self.assertEq('Herp Derp', art.slug)
+        art.save()
+        self.assertEq(title, art.title)
+        self.assertEq('Herp Derp', art.slug)
+        art = article(art.id)
+        self.assertEq(title, art.title)
+        self.assertEq('Herp Derp', art.slug)
 
     def it_saves_x_revisions_with_empty_properties(self):
-        post = blogpost()
-        post.body = test_blogpost.Smallpostbody
-        title = test_blogpost.Smallposttitle + ' - ' + str(uuid4())
-        post.title = title
-        post.excerpt = test_blogpost.Smallpostexcerpt 
-        post.status = blogpost.Pending
-        post.iscommentable = True
+        art = article()
+        art.body = test_article.Smallpostbody
+        title = test_article.Smallposttitle + ' - ' + str(uuid4())
+        art.title = title
+        art.excerpt = test_article.Smallpostexcerpt 
+        art.status = article.Pending
+        art.iscommentable = True
 
-        post.save()
+        art.save()
 
         for i in range(2):
-            post.title = ''
-            post.excerpt = ''
-            post.slug = ''
-            post.save()
+            art.title = ''
+            art.excerpt = ''
+            art.slug = ''
+            art.save()
 
-            post = blogpost(post.id)
-            self.assertEmptyString(post.title)
-            self.assertEmptyString(post.excerpt)
-            self.assertEq(blogpost.Pending, post.status)
-            self.assertTrue(post.iscommentable)
-            self.assertEmptyString(post.slug)
+            art = article(art.id)
+            self.assertEmptyString(art.title)
+            self.assertEmptyString(art.excerpt)
+            self.assertEq(article.Pending, art.status)
+            self.assertTrue(art.iscommentable)
+            self.assertEmptyString(art.slug)
 
     def it_saves_x_revisions(self):
-        post = blogpost()
-        post.body = test_blogpost.Smallpostbody
-        title = test_blogpost.Smallposttitle + ' - ' + str(uuid4())
-        post.title = title
-        post.excerpt = test_blogpost.Smallpostexcerpt 
-        post.status = blogpost.Pending
-        post.iscommentable = True
+        art = article()
+        art.body = test_article.Smallpostbody
+        title = test_article.Smallposttitle + ' - ' + str(uuid4())
+        art.title = title
+        art.excerpt = test_article.Smallpostexcerpt 
+        art.status = article.Pending
+        art.iscommentable = True
 
-        post.save()
+        art.save()
 
-        created_at = post.created_at
+        created_at = art.created_at
         
-        self.assertNotNone(post.id)
-        self.assertEq(test_blogpost.Smallpostbody, post.body)
-        self.assertEq(title, post.title)
-        self.assertEq(test_blogpost.Smallpostexcerpt, post.excerpt)
-        self.assertEq(article.Pending, post.status)
-        self.assertEq(True, post.iscommentable)
-        slug = re.sub(r'\W+', '-', post.title).strip('-').lower()
-        self.assertEq(slug, post.slug)
+        self.assertNotNone(art.id)
+        self.assertEq(test_article.Smallpostbody, art.body)
+        self.assertEq(title, art.title)
+        self.assertEq(test_article.Smallpostexcerpt, art.excerpt)
+        self.assertEq(article.Pending, art.status)
+        self.assertEq(True, art.iscommentable)
+        slug = re.sub(r'\W+', '-', art.title).strip('-').lower()
+        self.assertEq(slug, art.slug)
 
         x = 20
 
         for i in range(x):
-            id = post.id
+            id = art.id
 
             # Mutate the body to ensure revision patching works
             if i < 5:
-                newbody = post.body + 'X'
+                newbody = art.body + 'X'
             elif i >= 5 and i <= 10:
                 newbody = ''
-                for j, c in enumerate(post.body):
+                for j, c in enumerate(art.body):
                     if j == i:
                         c = 'x'
                     newbody += c
             elif i > 10:
-                post.slug = 'walden-or-life-in-the-woods-hard-set'
-                newbody = 'X' + post.body
+                art.slug = 'walden-or-life-in-the-woods-hard-set'
+                newbody = 'X' + art.body
                 
-            post.body = newbody
+            art.body = newbody
 
-            post.title = newtitle = test_blogpost.Smallposttitle + ' Rev ' + str(i)
-            post.excerpt = newexcerpt = test_blogpost.Smallpostexcerpt + ' Rev ' + str(i)
-            post.status = article.Publish
-            post.iscommentable = i % 2 == 0
+            art.title = newtitle = test_article.Smallposttitle + ' Rev ' + str(i)
+            art.excerpt = newexcerpt = test_article.Smallpostexcerpt + ' Rev ' + str(i)
+            art.status = article.Publish
+            art.iscommentable = i % 2 == 0
             
-            post.save()
+            art.save()
 
-            self.assertNotNone(post.id)
-            self.assertEq(id, post.id)
-            self.assertEq(newbody, post.body)
-            self.assertEq(created_at, post.created_at)
-            self.assertEq(newtitle, post.title)
-            self.assertEq(newexcerpt, post.excerpt)
-            self.assertEq(article.Publish, post.status)
-            self.assertEq(i % 2 == 0, post.iscommentable)
+            self.assertNotNone(art.id)
+            self.assertEq(id, art.id)
+            self.assertEq(newbody, art.body)
+            self.assertEq(created_at, art.created_at)
+            self.assertEq(newtitle, art.title)
+            self.assertEq(newexcerpt, art.excerpt)
+            self.assertEq(article.Publish, art.status)
+            self.assertEq(i % 2 == 0, art.iscommentable)
             if i > 10:
-                self.assertEq('walden-or-life-in-the-woods-hard-set', post.slug)
+                self.assertEq('walden-or-life-in-the-woods-hard-set', art.slug)
             else:
-                self.assertEq(slug, post.slug)
+                self.assertEq(slug, art.slug)
 
     def _createblogpost(self):
-        post = blogpost()
-        post.body = test_blogpost.Smallpostbody
-        post.title = test_blogpost.Smallposttitle 
-        post.excerpt = test_blogpost.Smallpostexcerpt 
-        post.status = blogpost.Pending
-        post.iscommentable = True
+        art = article()
+        art.body = test_article.Smallpostbody
+        art.title = test_article.Smallposttitle 
+        art.excerpt = test_article.Smallpostexcerpt 
+        art.status = article.Pending
+        art.iscommentable = True
 
-        post.save()
+        art.save()
 
         x = 20
 
         for i in range(x):
-            id = post.id
+            id = art.id
 
             # Mutate the body to ensure revision patching works
             if i < 5:
-                newbody = post.body + 'X'
+                newbody = art.body + 'X'
             elif i >= 5 and i <= 10:
                 newbody = ''
-                for j, c in enumerate(post.body):
+                for j, c in enumerate(art.body):
                     if j == i:
                         c = 'x'
                     newbody += c
             elif i > 10:
-                newbody = 'X' + post.body
+                newbody = 'X' + art.body
                 
-            post.body = newbody
+            art.body = newbody
 
-            post.title = newtitle = test_blogpost.Smallposttitle + ' Rev ' + str(i)
-            post.excerpt = newexcerpt = test_blogpost.Smallpostexcerpt + ' Rev ' + str(i)
-            post.status = article.Publish
-            post.iscommentable = i % 2 == 0
+            art.title = newtitle = test_article.Smallposttitle + ' Rev ' + str(i)
+            art.excerpt = newexcerpt = test_article.Smallpostexcerpt + ' Rev ' + str(i)
+            art.status = article.Publish
+            art.iscommentable = i % 2 == 0
             
-            post.save()
-        return post
+            art.save()
+        return art
 
     def it_retrives_blogpost(self):
         bp1 = self._createblogpost()
-        bp2 = blogpost(bp1.id)
+        bp2 = article(bp1.id)
 
         self.assertTrue(type(bp2.id) == uuid.UUID)
         self.assertEq(bp1.id,                bp2.id)
@@ -608,19 +624,7 @@ manual for self-reliance."""
 class test_articlesrevisions(tester):
     def __init__(self):
         super().__init__()
-        revs = articlerevisions()
-        try:
-            revs.DROP()
-        except MySQLdb.OperationalError as ex:
-            try:
-                errno = ex.args[0]
-            except:
-                raise
-
-            if errno != BAD_TABLE_ERROR: # 1051
-                raise
-
-        revs.CREATE()
+        articlerevisions().RECREATE()
 
     def it_fails_saving_duplicate_slug_cache(self):
         revs = articlerevisions()
@@ -628,8 +632,8 @@ class test_articlesrevisions(tester):
         slug_cache = uuid4()
         for i in range(3):
             rev = articlerevision()
-            rev.body = test_blogpost.Smallpostbody
-            rev.title = test_blogpost.Smallposttitle
+            rev.body = test_article.Smallpostbody
+            rev.title = test_article.Smallposttitle
             rev.slug_cache = slug_cache
             revs += rev
 
@@ -656,19 +660,7 @@ class test_articlesrevisions(tester):
 class test_articlesrevision(tester):
     def __init__(self):
         super().__init__()
-        revs = articlerevisions()
-        try:
-            revs.DROP()
-        except MySQLdb.OperationalError as ex:
-            try:
-                errno = ex.args[0]
-            except:
-                raise
-
-            if errno != BAD_TABLE_ERROR: # 1051
-                raise
-
-        revs.CREATE()
+        articlerevisions().RECREATE()
 
     def it_instantiates(self):
         rev = articlerevision()
@@ -701,8 +693,8 @@ class test_articlesrevision(tester):
 
     def it_loads_as_valid(self):
         rev = articlerevision()
-        rev.body = test_blogpost.Smallpostbody
-        rev.title = test_blogpost.Smallposttitle
+        rev.body = test_article.Smallpostbody
+        rev.title = test_article.Smallposttitle
         rev.save()
 
         rev = articlerevision(rev.id)
@@ -711,8 +703,8 @@ class test_articlesrevision(tester):
     def it_breaks_diff_rules(self):
         # Diff must be empty for root revisions
         rev = articlerevision()
-        rev.body = test_blogpost.Smallpostbody
-        rev.title = test_blogpost.Smallposttitle
+        rev.body = test_article.Smallpostbody
+        rev.title = test_article.Smallposttitle
         rev.diff = diff.diff('herp', 'derp')
         self.assertCount(1, rev.brokenrules)
         self.assertTrue(rev.brokenrules.contains('diff', 'empty'))
@@ -723,8 +715,8 @@ class test_articlesrevision(tester):
 
         # Break the rule that says a diff must be of type diff.diff
         rent = articlerevision()
-        rent.body = test_blogpost.Smallpostbody
-        rent.title = test_blogpost.Smallposttitle
+        rent.body = test_article.Smallpostbody
+        rent.title = test_article.Smallposttitle
         rent.diff = diff.diff('herp', 'derp')
 
         rev._parent = rent
@@ -736,7 +728,7 @@ class test_articlesrevision(tester):
     def it_breaks_title_rules(self):
         # Root revisions must have non null titles
         rev = articlerevision()
-        rev.body = test_blogpost.Smallpostbody
+        rev.body = test_article.Smallpostbody
         self.assertCount(1, rev.brokenrules)
         self.assertTrue(rev.brokenrules.contains('title', 'full'))
 
@@ -746,7 +738,7 @@ class test_articlesrevision(tester):
 
         # Root revisions can have empty strings as titles
         rev = articlerevision()
-        rev.body = test_blogpost.Smallpostbody
+        rev.body = test_article.Smallpostbody
         rev.title = ''
         self.assertCount(0, rev.brokenrules)
 
@@ -760,7 +752,7 @@ class test_articlesrevision(tester):
 
         # Title must be less than 500 characters
         rev = articlerevision()
-        rev.body = test_blogpost.Smallpostbody
+        rev.body = test_article.Smallpostbody
         rev.title = 'X' * 500
         self.assertCount(0, rev.brokenrules)
         rev.title = 'X' * 501
@@ -769,8 +761,8 @@ class test_articlesrevision(tester):
 
     def it_breaks_status_rules(self):
         rev = articlerevision()
-        rev.body = test_blogpost.Smallpostbody
-        rev.title = test_blogpost.Smallposttitle
+        rev.body = test_article.Smallpostbody
+        rev.title = test_article.Smallposttitle
         for st in article.Statuses:
             rev.status = st
             self.assertCount(0, rev.brokenrules)
@@ -782,30 +774,30 @@ class test_articlesrevision(tester):
 
     def it_breaks_slug_cache_uniqueness_rule(self):
         rev = articlerevision()
-        rev.body = test_blogpost.Smallpostbody
-        rev.title = test_blogpost.Smallposttitle
+        rev.body = test_article.Smallpostbody
+        rev.title = test_article.Smallposttitle
         slug_cache = uuid4()
         rev.slug_cache = slug_cache
         rev.save()
 
         rev = articlerevision()
-        rev.body = test_blogpost.Smallpostbody
-        rev.title = test_blogpost.Smallposttitle
+        rev.body = test_article.Smallpostbody
+        rev.title = test_article.Smallposttitle
         rev.slug_cache = slug_cache
         self.assertTrue(rev.brokenrules.contains('slug_cache', 'unique'))
 
     def it_fails_saving_duplicate_slug_cache(self):
         rev = articlerevision()
-        rev.body = test_blogpost.Smallpostbody
-        rev.title = test_blogpost.Smallposttitle
+        rev.body = test_article.Smallpostbody
+        rev.title = test_article.Smallposttitle
         slug_cache = uuid4()
         rev.slug_cache = slug_cache
 
         rev.save()
 
         rev = articlerevision()
-        rev.body = test_blogpost.Smallpostbody
-        rev.title = test_blogpost.Smallposttitle
+        rev.body = test_article.Smallpostbody
+        rev.title = test_article.Smallposttitle
         rev.slug_cache = slug_cache
         
         try:
@@ -830,24 +822,23 @@ class test_articlesrevision(tester):
 
         # Create a parent then test the child
         rent = articlerevision()
-        rent.body = test_blogpost.Smallpostbody
-        rent.title = test_blogpost.Smallposttitle
+        rent.body = test_article.Smallpostbody
+        rent.title = test_article.Smallposttitle
         rent.diff = diff.diff('herp', 'derp')
 
         # A body and a diff shouldn't exist in the same record
         rev._parent = rent
         rev.diff = diff.diff('herp', 'derp')
-        rev.body = test_blogpost.Smallpostbody
+        rev.body = test_article.Smallpostbody
         self.assertCount(2, rev.brokenrules)
         self.assertTrue(rev.brokenrules.contains('diff', 'valid'))
 
         # A non-root revision should can have a body but no diff. This
         # may be useful for caching or other isssues such as a failure to
         # create a diff.
-        rev.body = test_blogpost.Smallpostbody
+        rev.body = test_article.Smallpostbody
         rev.diff = None
         self.assertValid(rev)
-
         
     def it_creates_revisions(self):
         # TODO

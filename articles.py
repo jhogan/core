@@ -610,42 +610,93 @@ class article(entity):
         else:
             self._id = rev.root.id
 
-class blogposts(articles):
+class blogpostrevisions(articlerevisions):
+    def __init__(self, id=None):
+        super().__init__(id)
+
+    @property
+    def _table(self):
+        return 'blogpostrevisions'
+
     @property
     def _create(self):
         return """
-        create table blogposts(
+        create table blogpostrevisions(
             id binary(16) primary key,
-            article_id binary(16),
+            articlerevisions_id binary(16),
             blog_id binary(16)
         )
         """
+
+class blogpostrevision(articlerevision):
+    def __init__(self, id=None):
+        self._blog = None
+        articlerevisions_id = None
+        if type(id) == uuid.UUID:
+            sql = 'select * from blogpostrevisions where id = %s';
+            ress = self.query(sql, (id.bytes,))
+            if not ress.hasone:
+                raise Exception('Record not found: ' + str(id))
+            res = ress.first
+            row = list(res._row)
+            self._blog_id = row.pop()
+            articlerevisions_id = row.pop()
+            self._id = row.pop()
+
+        super().__init__(articlerevisions_id)
+
     def _insert(self, cur=None):
-        self._id = uuid.uuid4()
-        args = (self._id.bytes, 
-                self.article.id.bytes,
-                self.blog.id.bytes,
-                )
+        if cur == None:
+            conn = db.connections.getinstance().default.clone()
+            cur = conn.createcursor()
+        else:
+            conn = None
 
-        insert = """
-        insert into blogposts
-        values({})
-        """.format(('%s, ' * len(args)).rstrip(', '))
+        try:
+            super()._insert(cur)
+            
+            artrevid = self.id
+            self._id = uuid.uuid4()
+            args = (self.id.bytes, 
+                    artrevid.bytes,
+                    self.blog.id.bytes,
+                    )
 
-        self.query(insert, args, cur)
+            insert = """
+            insert into blogpostrevisions
+            values({})
+            """.format(('%s, ' * len(args)).rstrip(', '))
+
+            B()
+            self.query(insert, args, cur)
+        except Exception as ex:
+            if conn == None:
+                raise
+            else:
+                conn.rollback()
+        else:
+            if conn != None:
+                conn.commit()
+        finally:
+            if conn != None:
+                cur.close()
+                conn.close()
 
     @property
-    def slug(self):
-        return self._slug
+    def blog(self):
+        return self._blog
 
-    @slug.setter
-    def slug(self, v):
-        return self._setvalue('_slug', v, 'slug')
+    @blog.setter
+    def blog(self, v):
+        return self._setvalue('_blog', v, 'blog')
 
+    @property
+    def brokenrules(self):
+        brs = super().brokenrules
+        if not self.blog:
+            brs.demand(self, 'blog',  isfull=True)
+        return brs
 
-
-class blogpost(article):
-    pass
 
 class blogs(db.dbentities):
     def __init__(self):
