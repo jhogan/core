@@ -167,8 +167,6 @@ class articlerevision(db.dbentity):
             self._diff = None
             self._slug = None
             self._slug_cache = None
-            self._previous = None
-            self._subsequent = None
             self._marknew()
         elif type(id) == uuid.UUID:
             sql = 'select * from articlerevisions where id = %s';
@@ -176,6 +174,8 @@ class articlerevision(db.dbentity):
             if not ress.hasone:
                 raise Exception('Record not found: ' + str(id))
             res = ress.first
+        else:
+            raise ValueError('id is of the wrong type')
 
         if res != None:
             row = list(res._row)
@@ -297,7 +297,8 @@ class articlerevision(db.dbentity):
                     brs += brokenrule(msg, 'slug_cache', 'unique')
 
         else: # non-root
-            if type(self.parent) != articlerevision:
+            if type(self) == articlerevision and \
+               type(self.parent) != articlerevision:
                 msg = 'The parent property must be of type article'
                 brs += brokenrule(msg, 'parent', 'valid')
 
@@ -631,6 +632,7 @@ class blogpostrevisions(articlerevisions):
 class blogpostrevision(articlerevision):
     def __init__(self, id=None):
         self._blog = None
+        self._blog_id = None
         articlerevisions_id = None
         if type(id) == uuid.UUID:
             sql = 'select * from blogpostrevisions where id = %s';
@@ -639,8 +641,8 @@ class blogpostrevision(articlerevision):
                 raise Exception('Record not found: ' + str(id))
             res = ress.first
             row = list(res._row)
-            self._blog_id = row.pop()
-            articlerevisions_id = row.pop()
+            self._blog_id = uuid.UUID(bytes=row.pop())
+            articlerevisions_id = uuid.UUID(bytes=row.pop())
             self._id = row.pop()
 
         super().__init__(articlerevisions_id)
@@ -667,7 +669,6 @@ class blogpostrevision(articlerevision):
             values({})
             """.format(('%s, ' * len(args)).rstrip(', '))
 
-            B()
             self.query(insert, args, cur)
         except Exception as ex:
             if conn == None:
@@ -684,6 +685,9 @@ class blogpostrevision(articlerevision):
 
     @property
     def blog(self):
+        if not self._blog:
+            if self._blog_id:
+                self._blog = blog(self._blog_id)
         return self._blog
 
     @blog.setter
@@ -693,8 +697,14 @@ class blogpostrevision(articlerevision):
     @property
     def brokenrules(self):
         brs = super().brokenrules
+
         if not self.blog:
             brs.demand(self, 'blog',  isfull=True)
+
+        if not self.isroot:
+            if type(self.parent) != blogpostrevision:
+                msg = 'The parent property must be of type blogpostrevision'
+                brs += brokenrule(msg, 'parent', 'valid')
         return brs
 
 
