@@ -147,7 +147,7 @@ class test_blogpostrevision(tester):
         bl = self.blog
 
         # Create blogpostrevision
-        body = test_article.Smallpostbody
+        body = test_blogpost.Smallpostbody
         title = test_article.Smallposttitle + ' - ' + str(uuid4())
         slug = re.sub(r'\W+', '-', title).strip('-').lower()
 
@@ -210,8 +210,8 @@ class test_blogpostrevision(tester):
 
     def it_loads_as_valid(self):
         rev = blogpostrevision()
-        rev.body = test_article.Smallpostbody
-        rev.title = test_article.Smallposttitle
+        rev.body = test_blogpost.Smallpostbody
+        rev.title = test_article.Smallposttitle + str(uuid4())
         rev.blog = self.blog
         rev.save()
 
@@ -221,7 +221,7 @@ class test_blogpostrevision(tester):
     def it_breaks_diff_rules(self):
         # Diff must be empty for root revisions
         rev = blogpostrevision()
-        rev.body = test_article.Smallpostbody
+        rev.body = test_blogpost.Smallpostbody
         rev.title = test_article.Smallposttitle
         rev.diff = diff.diff('herp', 'derp')
         rev.blog = self.blog
@@ -234,7 +234,7 @@ class test_blogpostrevision(tester):
 
         # Break the rule that says a diff must be of type diff.diff
         rent = blogpostrevision()
-        rent.body = test_article.Smallpostbody
+        rent.body = test_blogpost.Smallpostbody
         rent.title = test_article.Smallposttitle
         rev.blog = self.blog
         rent.diff = diff.diff('herp', 'derp')
@@ -248,7 +248,7 @@ class test_blogpostrevision(tester):
     def it_breaks_title_rules(self):
         # Root revisions must have non null titles
         rev = blogpostrevision()
-        rev.body = test_article.Smallpostbody
+        rev.body = test_blogpost.Smallpostbody
         rev.blog = self.blog
         self.assertCount(1, rev.brokenrules)
         self.assertTrue(rev.brokenrules.contains('title', 'full'))
@@ -259,7 +259,7 @@ class test_blogpostrevision(tester):
 
         # Root revisions can have empty strings as titles
         rev = blogpostrevision()
-        rev.body = test_article.Smallpostbody
+        rev.body = test_blogpost.Smallpostbody
         rev.blog = self.blog
         rev.title = ''
         self.assertCount(0, rev.brokenrules)
@@ -275,7 +275,7 @@ class test_blogpostrevision(tester):
         # Title must be less than 500 characters
         rev = blogpostrevision()
         rev.blog = self.blog
-        rev.body = test_article.Smallpostbody
+        rev.body = test_blogpost.Smallpostbody
         rev.title = 'X' * 500
         self.assertCount(0, rev.brokenrules)
         rev.title = 'X' * 501
@@ -285,7 +285,7 @@ class test_blogpostrevision(tester):
     def it_breaks_status_rules(self):
         rev = blogpostrevision()
         rev.blog = self.blog
-        rev.body = test_article.Smallpostbody
+        rev.body = test_blogpost.Smallpostbody
         rev.title = test_article.Smallposttitle
         for st in article.Statuses:
             rev.status = st
@@ -299,14 +299,14 @@ class test_blogpostrevision(tester):
     def it_breaks_slug_cache_uniqueness_rule(self):
         rev = blogpostrevision()
         rev.blog = self.blog
-        rev.body = test_article.Smallpostbody
+        rev.body = test_blogpost.Smallpostbody
         rev.title = test_article.Smallposttitle
         slug_cache = uuid4()
         rev.slug_cache = slug_cache
         rev.save()
 
         rev = blogpostrevision()
-        rev.body = test_article.Smallpostbody
+        rev.body = test_blogpost.Smallpostbody
         rev.title = test_article.Smallposttitle
         rev.slug_cache = slug_cache
         self.assertTrue(rev.brokenrules.contains('slug_cache', 'unique'))
@@ -314,7 +314,7 @@ class test_blogpostrevision(tester):
     def it_fails_saving_duplicate_slug_cache(self):
         rev = blogpostrevision()
         rev.blog = self.blog
-        rev.body = test_article.Smallpostbody
+        rev.body = test_blogpost.Smallpostbody
         rev.title = test_article.Smallposttitle
         slug_cache = uuid4()
         rev.slug_cache = slug_cache
@@ -322,8 +322,7 @@ class test_blogpostrevision(tester):
         rev.save()
 
         rev = blogpostrevision()
-        rev.blog = self.blog
-        rev.body = test_article.Smallpostbody
+        rev.body = test_blogpost.Smallpostbody
         rev.title = test_article.Smallposttitle
         rev.slug_cache = slug_cache
         
@@ -335,38 +334,24 @@ class test_blogpostrevision(tester):
         except MySQLdb.IntegrityError as ex:
             # We should get an MySQL DUP_ENTRY exception
             self.assertTrue(ex.args[0] == DUP_ENTRY)
+            rev.connection._conn.rollback()
         except Exception:
             self.assertFail('Wrong exception')
         else:
             self.assertFail("Didn't raise IntegrityError")
 
-    def it_fails_saving_duplicate_slug_cache(self):
-        rev = blogpostrevision()
-        rev.blog = self.blog
-        rev.body = test_article.Smallpostbody
-        rev.title = test_article.Smallposttitle
-        slug_cache = uuid4()
-        rev.slug_cache = slug_cache
-
-        rev.save()
+    def it_breaks_body_rules_of_child(self):
+        rent = blogpostrevision()
+        rent.body = test_blogpost.Smallpostbody
+        rent.title = test_article.Smallposttitle + str(uuid4())
+        rent.blog = self.blog
+        self.assertValid(rent)
 
         rev = blogpostrevision()
-        rev.body = test_article.Smallpostbody
-        rev.title = test_article.Smallposttitle
-        rev.slug_cache = slug_cache
-        
-        try:
-            cur = rev.connection._conn.cursor()
-            # Bypass the validation check in save() to insert a record with a
-            # duplicate slug_cache.
-            rev._insert(cur)
-        except MySQLdb.IntegrityError as ex:
-            # We should get an MySQL DUP_ENTRY exception
-            self.assertTrue(ex.args[0] == DUP_ENTRY)
-        except Exception:
-            self.assertFail('Wrong exception')
-        else:
-            self.assertFail("Didn't raise IntegrityError")
+        rev._parent = rent
+        rev.body = None
+        rev.diff = diff.diff(rent.body, rent.body + '\n<b>This is strong</strong>')
+        self.assertTrue(rev.brokenrules.contains('derivedbody', 'valid'))
 
     def it_breaks_body_rules(self):
         # Body must be full for root revisions
@@ -376,36 +361,611 @@ class test_blogpostrevision(tester):
         self.assertTrue(rev.brokenrules.contains('body', 'full'))
         self.assertTrue(rev.brokenrules.contains('title', 'full'))
 
+        # Invalid HTML in body
+        rev.body = '<em>This is special</i>'
+        self.assertCount(2, rev.brokenrules)
+        self.assertTrue(rev.brokenrules.contains('body', 'valid'))
+
         # Create a parent then test the child
         rent = blogpostrevision()
-        rent.body = test_article.Smallpostbody
+        rent.body = test_blogpost.Smallpostbody
         rent.title = test_article.Smallposttitle
         rent.diff = diff.diff('herp', 'derp')
 
         # A body and a diff shouldn't exist in the same record
         rev._parent = rent
         rev.diff = diff.diff('herp', 'derp')
-        rev.body = test_article.Smallpostbody
+        rev.body = test_blogpost.Smallpostbody
         self.assertCount(2, rev.brokenrules)
         self.assertTrue(rev.brokenrules.contains('diff', 'valid'))
 
         # A non-root revision should can have a body but no diff. This
         # may be useful for caching or other isssues such as a failure to
         # create a diff.
-        rev.body = test_article.Smallpostbody
+        rev.body = test_blogpost.Smallpostbody
         rev.diff = None
         self.assertValid(rev)
+    
+    def it_breaks_blog_rules(self):
+        # Body must be full for root revisions
+        rev = blogpostrevision()
+        rev.body = test_blogpost.Smallpostbody
+        rev.title = test_article.Smallposttitle + str(uuid4())
+        rev.blog
+        self.assertCount(1, rev.brokenrules)
+        self.assertTrue(rev.brokenrules.contains('blog', 'full'))
+
         
     def it_retrieves(self):
         rev = blogpostrevision()
         rev.blog = self.blog
         rev.body = test_article.Smallpostbody
-        rev.title = test_article.Smallposttitle
+        rev.title = test_article.Smallposttitle + str(uuid4())
         rev.save()
-
         rev = blogpostrevision(rev.id)
         self.assertEq(rev.id, rev.id)
 
+class test_blogpost(tester):
+    Smallpostbody = """
+    <p>
+        But men labor under a mistake. The better part of the man is soon plowed
+        into the soil for compost. By a seeming fate, commonly called necessity,
+        they are employed, as it says in an old book, laying up treasures which
+        moth and rust will corrupt and thieves break through and steal. It is a
+        fool's life, as they will find when they get to the end of it, if not
+        before. It is said that Deucalion and Pyrrha created men by throwing
+        stones over their heads behind them:-
+        &nbsp;
+    </p>
+    <pre xml:space="preserve">           
+        Inde genus durum sumus, experiensque laborum,
+        Et documenta damus qua simus origine nati.
+    </pre>
+    <p class="nind">
+        Or, as Raleigh rhymes it in his sonorous way,-
+    </p>
+    <pre xml:space="preserve">  
+        "From thence our kind hard-hearted is, enduring pain and care,
+        Approving that our bodies of a stony nature are."
+    </pre>
+    <p class="nind">
+        So much for a blind obedience to a blundering oracle, throwing the stones
+        over their heads behind them, and not seeing where they fell.
+    </p>
+    """
+    def __init__(self):
+        super().__init__()
+        articlerevisions().RECREATE()
+        blogpostrevisions().RECREATE()
+        blogs().RECREATE()
+
+        # Create a blog
+        bl = blog()
+        bl.slug = 'carapacian-tech-blog'
+        bl.description = 'Carapacian Tech Blog'
+        bl.save()
+
+        self.blog = bl
+
+    def it_loads_as_valid(self):
+        bp = blogpost()
+        bp.blog = self.blog
+        bp.body = test_article.Smallpostbody
+        title = test_article.Smallposttitle + ' - ' + str(uuid4())
+        bp.title  = title
+        slug = re.sub(r'\W+', '-', bp.title).strip('-').lower()
+        bp.excerpt = test_article.Smallpostexcerpt 
+        bp.status = article.Pending
+        bp.iscommentable = True
+        bp.blog = self.blog
+        bp.save()
+
+    def it_saves_x_revisions_with_null_properties(self):
+        bp = blogpost()
+        bp.blog = self.blog
+        bp.body = test_article.Smallpostbody
+        title = test_article.Smallposttitle + ' - ' + str(uuid4())
+        bp.title  = title
+        slug = re.sub(r'\W+', '-', bp.title).strip('-').lower()
+        bp.excerpt = test_article.Smallpostexcerpt 
+        bp.status = blogpost.Pending
+        bp.iscommentable = True
+        bp.blog = self.blog
+
+        bp.save()
+
+        x = 4
+        for i in range(x):
+            if i < x / 2:
+                bp.title = None
+                bp.excerpt = None
+                bp.slug = None
+            else:
+                bp.body = test_article.Smallpostbody  + ' Rev: ' + str(i)
+                revisedtitle = title + ' Rev: ' + str(i)
+                bp.title = revisedtitle
+                bp.excerpt = test_article.Smallpostexcerpt  + ' Rev: ' + str(i)
+                
+            bp.save()
+
+            bp = blogpost(bp.id)
+
+            if i < x / 2:
+                self.assertEq(test_article.Smallpostbody, bp.body)
+                self.assertEq(title, bp.title)
+                self.assertEq(test_article.Smallpostexcerpt, bp.excerpt)
+            else:
+                self.assertEq(test_article.Smallpostbody + ' Rev: ' + str(i), bp.body)
+                self.assertEq(revisedtitle, bp.title)
+                self.assertEq(test_article.Smallpostexcerpt + ' Rev: ' + str(i), bp.excerpt)
+            self.assertEq(blogpost.Pending, bp.status)
+            self.assertTrue(bp.iscommentable)
+            self.assertEq(slug, bp.slug)
+
+    def it_calls_blog(self):
+        bp = blogpost()
+        self.assertTrue(bp.brokenrules.contains('blog', 'full'))
+
+        self.assertNone(bp.blog)
+        bp.blog = self.blog
+        self.assertIs(self.blog, bp.blog)
+
+        bp.save()
+
+        bp = blogpost(bp.id)
+        bp.blog
+        self.assertEq(self.blog.id, bp.blog.id)
+
+    def it_calls_revisions(self):
+        blogpostrevisions().TRUNCATE()
+        articlerevisions().TRUNCATE()
+
+        bp = blogpost()
+        bp.blog = self.blog
+
+        self.assertCount(0, bp.revisions)
+
+        # First save
+        bp.save()
+        self.assertCount(1, bp.revisions)
+        self.assertEq(bp.blog.id, bp.revisions.first.blog.id)
+
+        # ... then load
+        
+        bp1 = blogpost(bp.id)
+        self.assertCount(1, bp1.revisions)
+        self.assertEq(bp1.blog.id, bp1.revisions.first.blog.id)
+
+        # Second save
+        bp.save()
+        self.assertCount(2, bp.revisions)
+        self.assertEq(bp.blog.id, bp.revisions.first.blog.id)
+
+        # ... then load
+        
+        # TODO: The second save should insert a revision record with a blog
+        # value of None
+        return
+        self.assertEq(None, bp.revisions.second.blog)
+        bp1 = blogpost(bp.id)
+        self.assertCount(2, bp1.revisions)
+        self.assertEq(bp1.blog.id, bp1.revisions.first.blog.id)
+        self.assertEq(None, bp1.revisions.second.blog)
+
+
+
+
+
+    def it_calls_body(self): 
+        bp = blogpost()
+        bp.blog = self.blog
+        self.assertNone(bp.body)
+        bp.save()
+        self.assertEmptyString(bp.body)
+
+        bp.body = test_article.Smallpostbody
+        self.assertEq(test_article.Smallpostbody, bp.body)
+
+        bp.save()
+        self.assertEq(test_article.Smallpostbody, bp.body)
+
+        bp = blogpost(bp.id)
+        self.assertEq(test_article.Smallpostbody, bp.body)
+
+    def it_calls_created_at(self):
+        bp = blogpost()
+        bp.blog = self.blog
+        self.assertNone(bp.created_at)
+        before = datetime.now().replace(microsecond=0)
+
+        bp.blog = self.blog
+        bp.save()
+
+        after = datetime.now().replace(microsecond=0)
+
+        self.assertLe(before, bp.created_at)
+        self.assertGe(after, bp.created_at)
+
+        created_at = bp.created_at
+
+        bp = blogpost(bp.id)
+        self.assertEq(created_at, bp.created_at)
+
+    def it_calls_title(self):
+        bp = blogpost()
+        bp.blog = self.blog
+        self.assertNone(bp.title)
+
+        bp.save()
+
+        self.assertEmptyString(bp.title)
+
+        bp.title = test_article.Smallposttitle
+        self.assertEq(test_article.Smallposttitle, bp.title)
+
+        bp.save()
+        self.assertEq(test_article.Smallposttitle, bp.title)
+
+        bp = blogpost(bp.id)
+        self.assertEq(test_article.Smallposttitle, bp.title)
+
+    def it_calls_slug(self):
+        bp = blogpost()
+        bp.blog = self.blog
+        self.assertNone(bp.slug)
+
+        bp.save()
+
+        self.assertEmptyString(bp.slug)
+
+        slug = str(uuid4())
+        bp.slug = slug
+        self.assertEq(slug, bp.slug)
+
+        bp.save()
+        self.assertEq(slug, bp.slug)
+
+        bp = blogpost(bp.id)
+        self.assertEq(slug, bp.slug)
+
+    def it_calls_title_and_slug(self):
+        bp = blogpost()
+        bp.blog = self.blog
+        title = 'Herp derp'
+        slug = re.sub(r'\W+', '-', title).strip('-').lower()
+        bp.title = title
+
+        self.assertEq(slug, bp.slug)
+
+        bp.save()
+        self.assertEq(slug, bp.slug)
+
+        bp = blogpost(bp.id)
+        self.assertEq(slug, bp.slug)
+
+        # A duplicate title will lead to a duplicate slug (slug_cache)
+        # Therefore, a broken rule will indicate this and a save 
+        # won't be permited because of the unique constraint on the
+        # slug_cache field
+        bp = blogpost()
+        bp.blog = self.blog
+        bp.title = title
+        self.assertTrue(bp.brokenrules.contains('slug_cache', 'unique'))
+
+        try:
+            bp.save()
+        except brokenruleserror as ex:
+            brs = ex.args[1].brokenrules
+            self.assertTrue(brs.contains('slug_cache', 'unique'))
+        except Exception:
+            self.assertFalse('brokenruleserror was not raised')
+        else:
+            self.assertFalse('No exception was not raised')
+
+    def it_calls_excerpt(self):
+        bp = blogpost()
+        bp.blog = self.blog
+        self.assertNone(bp.excerpt)
+        bp.save()
+        self.assertEmptyString(bp.excerpt)
+
+        bp = blogpost(bp.id)
+        self.assertEmptyString(bp.excerpt)
+
+        bp = blogpost()
+        bp.blog = self.blog
+        self.assertNone(bp.excerpt)
+        bp.save()
+        self.assertEmptyString(bp.excerpt)
+        bp = blogpost(bp.id)
+        self.assertEmptyString(bp.excerpt)
+
+        bp = blogpost()
+        bp.blog = self.blog
+        bp.excerpt = test_article.Smallpostexcerpt
+        self.assertEq(test_article.Smallpostexcerpt, bp.excerpt)
+        bp.save()
+        self.assertEq(test_article.Smallpostexcerpt, bp.excerpt)
+        bp = blogpost(bp.id)
+        self.assertEq(test_article.Smallpostexcerpt, bp.excerpt)
+
+    def it_calls_status(self): 
+        bp = blogpost()
+        bp.blog = self.blog
+        self.assertNone(bp.status)
+        bp.save()
+        self.assertEq(blogpost.Draft, bp.status)
+        bp = blogpost(bp.id)
+        self.assertEq(blogpost.Draft, bp.status)
+
+        bp = blogpost()
+        bp.blog = self.blog
+        bp.status = blogpost.Pending
+        self.assertEq(blogpost.Pending, bp.status)
+        bp.save()
+        self.assertEq(blogpost.Pending, bp.status)
+        bp = blogpost(bp.id)
+        self.assertEq(blogpost.Pending, bp.status)
+
+    def it_calls_iscommentable(self): 
+        bp = blogpost()
+        bp.blog = self.blog
+        self.assertNone(bp.iscommentable)
+        bp.save()
+        self.assertFalse(bp.iscommentable)
+        bp = blogpost(bp.id)
+        self.assertFalse(bp.iscommentable)
+
+        bp = blogpost()
+        bp.blog = self.blog
+        bp.iscommentable = True
+        self.assertTrue(bp.iscommentable)
+        bp.save()
+        self.assertTrue(bp.iscommentable)
+        bp = blogpost(bp.id)
+        self.assertTrue(bp.iscommentable)
+
+        bp = blogpost()
+        bp.blog = self.blog
+        bp.iscommentable = False
+        self.assertFalse(bp.iscommentable)
+        bp.save()
+        self.assertFalse(bp.iscommentable)
+        bp = blogpost(bp.id)
+        self.assertFalse(bp.iscommentable)
+
+    def it_searches_by_id(self):
+        bp = blogpost()
+        bp.blog = self.blog
+        bp.save()
+        id = bp.id
+
+        bp = blogpost(id)
+        self.assertEq(id,   bp.id)
+
+    def it_searches_by_slug(self):
+        bp = blogpost()
+        bp.blog = self.blog
+        slug = str(uuid4())
+        bp.slug = slug
+        bp.save()
+        id = bp.id
+
+        bp = blogpost(slug)
+        self.assertEq(slug, bp.slug)
+        self.assertEq(id,   bp.id)
+
+    def it_calls_slug_and_title(self):
+        title = test_article.Smallposttitle + str(uuid4())
+        slug = re.sub(r'\W+', '-', title).strip('-').lower()
+
+        bp = blogpost()
+        bp.blog = self.blog
+        bp.title = title
+        self.assertEq(slug, bp.slug)
+        self.assertEq(title, bp.title)
+        bp.save()
+        self.assertEq(slug, bp.slug)
+        self.assertEq(title, bp.title)
+        bp = blogpost(bp.id)
+        self.assertEq(slug, bp.slug)
+        self.assertEq(title, bp.title)
+        bp = blogpost(bp.id)
+        self.assertEq(slug, bp.slug)
+        self.assertEq(title, bp.title)
+
+        title = test_article.Smallposttitle + str(uuid4())
+        slug = re.sub(r'\W+', '-', title).strip('-').lower()
+        bp = blogpost()
+        bp.blog = self.blog
+        self.assertNone(bp.slug)
+        self.assertEq(None, bp.title) 
+        bp.title = title
+        self.assertEq(slug, bp.slug)
+        self.assertEq(title, bp.title)
+
+        bp.save()
+        self.assertEq(title, bp.title)
+        self.assertEq(slug, bp.slug)
+        bp = blogpost(bp.id)
+        self.assertEq(title, bp.title)
+        self.assertEq(slug, bp.slug)
+
+        bp = blogpost()
+        bp.blog = self.blog
+        self.assertEq(None, bp.title)
+        bp.save()
+        self.assertEq('', bp.title)
+        self.assertEmptyString(bp.slug)
+        bp = blogpost(bp.id)
+        self.assertEmptyString(bp.slug)
+        self.assertEq('', bp.title)
+
+        bp = blogpost()
+        bp.blog = self.blog
+        bp.slug = 'Herp Derp'
+        self.assertEq('Herp Derp', bp.slug)
+        self.assertEq(None, bp.title)
+        bp.title = title
+        self.assertEq('Herp Derp', bp.slug)
+        bp.save()
+        self.assertEq(title, bp.title)
+        self.assertEq('Herp Derp', bp.slug)
+        bp = blogpost(bp.id)
+        self.assertEq(title, bp.title)
+        self.assertEq('Herp Derp', bp.slug)
+
+    def it_saves_x_revisions_with_empty_properties(self):
+        bp = blogpost()
+        bp.blog = self.blog
+        bp.body = test_article.Smallpostbody
+        title = test_article.Smallposttitle + ' - ' + str(uuid4())
+        bp.title = title
+        bp.excerpt = test_article.Smallpostexcerpt 
+        bp.status = blogpost.Pending
+        bp.iscommentable = True
+
+        bp.save()
+
+        for i in range(2):
+            bp.title = ''
+            bp.excerpt = ''
+            bp.slug = ''
+            bp.save()
+
+            bp = blogpost(bp.id)
+            bp.blog = self.blog
+            self.assertEmptyString(bp.title)
+            self.assertEmptyString(bp.excerpt)
+            self.assertEq(blogpost.Pending, bp.status)
+            self.assertTrue(bp.iscommentable)
+            self.assertEmptyString(bp.slug)
+            
+    def it_has_valid_revisions(self):
+        # TODO Ensure that each of the revisions is the revision property are
+        # the correct type, etc. Ensure this is true when a blogpost is reloaded.
+        # Copy this to test_article as well.
+        pass
+
+    def it_saves_x_revisions(self):
+        bp = blogpost()
+        bp.blog = self.blog
+        bp.body = test_article.Smallpostbody
+        title = test_article.Smallposttitle + ' - ' + str(uuid4())
+        bp.title = title
+        bp.excerpt = test_article.Smallpostexcerpt 
+        bp.status = blogpost.Pending
+        bp.iscommentable = True
+
+        bp.save()
+
+        created_at = bp.created_at
+        
+        self.assertNotNone(bp.id)
+        self.assertEq(test_article.Smallpostbody, bp.body)
+        self.assertEq(title, bp.title)
+        self.assertEq(test_article.Smallpostexcerpt, bp.excerpt)
+        self.assertEq(blogpost.Pending, bp.status)
+        self.assertEq(True, bp.iscommentable)
+        slug = re.sub(r'\W+', '-', bp.title).strip('-').lower()
+        self.assertEq(slug, bp.slug)
+
+        x = 20
+
+        for i in range(x):
+            id = bp.id
+
+            # Mutate the body to ensure revision patching works
+            if i < 5:
+                newbody = bp.body + 'X'
+            elif i >= 5 and i <= 10:
+                newbody = ''
+                for j, c in enumerate(bp.body):
+                    if j == i:
+                        c = 'x'
+                    newbody += c
+            elif i > 10:
+                bp.slug = 'walden-or-life-in-the-woods-hard-set'
+                newbody = 'X' + bp.body
+                
+            bp.body = newbody
+
+            bp.title = newtitle = test_article.Smallposttitle + ' Rev ' + str(i)
+            bp.excerpt = newexcerpt = test_article.Smallpostexcerpt + ' Rev ' + str(i)
+            bp.status = blogpost.Publish
+            bp.iscommentable = i % 2 == 0
+            
+            bp.save()
+
+            self.assertNotNone(bp.id)
+            self.assertEq(id, bp.id)
+            self.assertEq(newbody, bp.body)
+            self.assertEq(created_at, bp.created_at)
+            self.assertEq(newtitle, bp.title)
+            self.assertEq(newexcerpt, bp.excerpt)
+            self.assertEq(blogpost.Publish, bp.status)
+            self.assertEq(i % 2 == 0, bp.iscommentable)
+            if i > 10:
+                self.assertEq('walden-or-life-in-the-woods-hard-set', bp.slug)
+            else:
+                self.assertEq(slug, bp.slug)
+
+    def _createblogpost(self):
+        bp = blogpost()
+        bp.blog = self.blog
+        bp.body = test_article.Smallpostbody
+        bp.title = test_article.Smallposttitle 
+        bp.excerpt = test_article.Smallpostexcerpt 
+        bp.status = blogpost.Pending
+        bp.iscommentable = True
+
+        bp.save()
+
+        x = 20
+
+        for i in range(x):
+            id = bp.id
+
+            # Mutate the body to ensure revision patching works
+            if i < 5:
+                newbody = bp.body + 'X'
+            elif i >= 5 and i <= 10:
+                newbody = ''
+                for j, c in enumerate(bp.body):
+                    if j == i:
+                        c = 'x'
+                    newbody += c
+            elif i > 10:
+                newbody = 'X' + bp.body
+                
+            bp.body = newbody
+
+            bp.title = newtitle = test_article.Smallposttitle + ' Rev ' + str(i)
+            bp.excerpt = newexcerpt = test_article.Smallpostexcerpt + ' Rev ' + str(i)
+            bp.status = blogpost.Publish
+            bp.iscommentable = i % 2 == 0
+            
+            bp.save()
+        return bp
+
+    def it_retrives_blogpost(self):
+        bp1 = self._createblogpost()
+        bp2 = blogpost(bp1.id)
+
+        self.assertTrue(type(bp2.id) == uuid.UUID)
+        self.assertEq(bp1.id,                bp2.id)
+
+        self.assertEq(type(bp2.created_at),  datetime)
+        self.assertEq(bp1.created_at,        bp2.created_at)
+
+        self.assertEq(bp1.body,              bp2.body)
+        self.assertEq(bp1.title,             bp2.title)
+        self.assertEq(bp1.excerpt,           bp2.excerpt)
+        self.assertEq(bp1.status,            bp2.status)
+        self.assertEq(bp1.iscommentable,     bp2.iscommentable)
+
+
+    
 class test_article(tester):
     
     Smallposttitle = 'Walden; or, Life in the Woods'
@@ -948,7 +1508,7 @@ class test_articlesrevision(tester):
     def it_loads_as_valid(self):
         rev = articlerevision()
         rev.body = test_article.Smallpostbody
-        rev.title = test_article.Smallposttitle
+        rev.title = test_article.Smallposttitle + str(uuid4())
         rev.save()
 
         rev = articlerevision(rev.id)
@@ -1093,11 +1653,11 @@ class test_articlesrevision(tester):
         rev.body = test_article.Smallpostbody
         rev.diff = None
         self.assertValid(rev)
-        
+
     def it_retrieves(self):
         rev = articlerevision()
         rev.body = test_article.Smallpostbody
-        rev.title = test_article.Smallposttitle
+        rev.title = test_article.Smallposttitle + str(uuid4())
         rev.save()
 
         rev = articlerevision(rev.id)

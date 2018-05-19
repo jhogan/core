@@ -32,10 +32,12 @@ from pprint import pprint
 import diff
 import re
 from app import controller
+import parsers
 
 class articlerevisions(db.dbentities):
-    def __init__(self, id=None):
+    def __init__(self, id=None, entity=None):
         super().__init__()
+        entity = articlerevision if entity == None else entity
         if id:
             if type(id) == uuid.UUID:
                 sql = """
@@ -55,15 +57,20 @@ class articlerevisions(db.dbentities):
                 args = (id,)
             revs = articlerevisions()
             ress = self.query(sql, args)
-            for res in ress:
-                revs += articlerevision(res=res)
 
+            # Create collection
+            for res in ress:
+                #revs += articlerevision(res=res)
+                revs += entity(res=res)
+
+            # Find and assign parent
             for rev1 in revs:
                 for rev2 in revs:
                     if rev2._parent_id == rev1.id:
                         rev2._parent = rev1
                         break
 
+            # Find and assign the root revision
             for rev1 in revs:
                 if rev1.isroot:
                     for rev2 in revs:
@@ -149,7 +156,7 @@ class articlerevision(db.dbentity):
     scientific paper, blog, encyclopedia article, marketing article, usenet
     article, spoken article, listicle, portrait, etc."""
 
-    def __init__(self,id=None, parent=None, res=None):
+    def __init__(self, id=None, parent=None, res=None):
         super().__init__();
         
         # TODO Only parent, id or res should be not None
@@ -479,11 +486,17 @@ class article(entity):
         self._status = None
         self._iscommentable = None
         self._slug = None
-        self._revisions = articlerevisions(id)
-        if self._revisions.ispopulated:
-            self._id = self._revisions.first.id
-        else:
-            self._id = None
+        self._revisions = None
+        self._id = id
+
+        if self.revisions.ispopulated:
+            self._id = self.revisions.first.id
+
+    @property
+    def revisions(self):
+        if not self._revisions:
+            self._revisions = articlerevisions(self._id)
+        return self._revisions
 
     @property
     def id(self):
@@ -492,7 +505,7 @@ class article(entity):
     @property
     def body(self):
         if not self._body:
-            for rev in self._revisions:
+            for rev in self.revisions:
                 if rev.body != None:
                     self._body = rev.body
                 elif rev.diff:
@@ -506,15 +519,15 @@ class article(entity):
 
     @property
     def created_at(self):
-        root = self._revisions.root
+        root = self.revisions.root
         if root:
-            return self._revisions.root.created_at
+            return self.revisions.root.created_at
         return None
 
     @property
     def title(self):
         if self._title == None:
-            self._title = self._revisions.getlatest('title')
+            self._title = self.revisions.getlatest('title')
         return self._title
 
     @title.setter
@@ -524,7 +537,7 @@ class article(entity):
     @property
     def excerpt(self):
         if self._excerpt == None:
-            self._excerpt = self._revisions.getlatest('excerpt')
+            self._excerpt = self.revisions.getlatest('excerpt')
         return self._excerpt
 
     @excerpt.setter
@@ -534,7 +547,7 @@ class article(entity):
     @property
     def status(self):
         if self._status == None:
-            self._status = self._revisions.getlatest('status')
+            self._status = self.revisions.getlatest('status')
         return self._status
 
     @status.setter
@@ -544,7 +557,7 @@ class article(entity):
     @property
     def iscommentable(self):
         if self._iscommentable == None:
-            self._iscommentable = self._revisions.getlatest('iscommentable')
+            self._iscommentable = self.revisions.getlatest('iscommentable')
         return self._iscommentable
 
     @iscommentable.setter
@@ -554,7 +567,7 @@ class article(entity):
     @property
     def slug(self):
         if self._slug == None:
-            self._slug = self._revisions.getlatest('slug')
+            self._slug = self.revisions.getlatest('slug')
             if self._slug == None:
                 if self.title == None:
                     return None
@@ -569,9 +582,18 @@ class article(entity):
         self._slug = None
         return self._setvalue('_slug', v, 'slug')
 
+    @property
+    def brokenrules(self):
+        rev = self._appendrevision()
+
+        try:
+            return self.revisions.brokenrules
+        finally: 
+            self.revisions.pop()
+
     def _appendrevision(self):
         n2e = lambda s: '' if s == None else s
-        revs = self._revisions
+        revs = self.revisions
 
         rev = revs.create()
 
@@ -592,48 +614,83 @@ class article(entity):
         rev.root.slug_cache = rev.slug
         return rev
 
-    @property
-    def brokenrules(self):
-        rev = self._appendrevision()
-
-        try:
-            return self._revisions.brokenrules
-        finally: 
-            self._revisions.pop()
-
     def save(self):
         rev = self._appendrevision()
         try:
-            self._revisions.save()
+            self.revisions.save()
         except:
-            self._revisions.pop()
+            self.revisions.pop()
             raise
         else:
             self._id = rev.root.id
 
-class blogpostrevisions(articlerevisions):
+class blogposts(articles):
     def __init__(self, id=None):
         super().__init__(id)
+
+class blogpost(article):
+
+    def __init__(self, id=None):
+        super().__init__(id)
+        self._blog = None
+
+    @property
+    def revisions(self):
+        if not self._revisions:
+            self._revisions = blogpostrevisions(self._id)
+        return self._revisions
+
+    @property
+    def blog(self):
+        if self._blog == None:
+            self._blog = self.revisions.getlatest('blog')
+        return self._blog
+
+
+    @blog.setter
+    def blog(self, v):
+        return self._setvalue('_blog', v, 'blog')
+
+    def _appendrevision(self):
+        rev = super()._appendrevision()
+        rev.blog = self.blog
+        return rev
+
+class blogpostrevisions(articlerevisions):
+    def __init__(self, id=None, entity=None):
+        entity = blogpostrevision if entity == None else entity
+        super().__init__(id, entity=entity)
 
     @property
     def _table(self):
         return 'blogpostrevisions'
+
+    def create(self):
+        parent = None if self.isempty else self.last
+        rev = blogpostrevision(parent=parent)
+        self += rev
+        return rev
 
     @property
     def _create(self):
         return """
         create table blogpostrevisions(
             id binary(16) primary key,
-            articlerevisions_id binary(16),
             blog_id binary(16)
         )
         """
 
 class blogpostrevision(articlerevision):
-    def __init__(self, id=None):
+    def __init__(self, id=None, parent=None, res=None):
         self._blog = None
         self._blog_id = None
-        articlerevisions_id = None
+        self._id = id
+        self._load()
+
+        super().__init__(id, parent=parent, res=res)
+
+    def _load(self):
+        id = self._id
         if type(id) == uuid.UUID:
             sql = 'select * from blogpostrevisions where id = %s';
             ress = self.query(sql, (id.bytes,))
@@ -642,10 +699,6 @@ class blogpostrevision(articlerevision):
             res = ress.first
             row = list(res._row)
             self._blog_id = uuid.UUID(bytes=row.pop())
-            articlerevisions_id = uuid.UUID(bytes=row.pop())
-            self._id = row.pop()
-
-        super().__init__(articlerevisions_id)
 
     def _insert(self, cur=None):
         if cur == None:
@@ -655,13 +708,11 @@ class blogpostrevision(articlerevision):
             conn = None
 
         try:
-            super()._insert(cur)
-            
-            artrevid = self.id
             self._id = uuid.uuid4()
+            blogid = self.blog.id.bytes if self.blog else None
+            super()._insert(cur)
             args = (self.id.bytes, 
-                    artrevid.bytes,
-                    self.blog.id.bytes,
+                    blogid
                     )
 
             insert = """
@@ -671,10 +722,9 @@ class blogpostrevision(articlerevision):
 
             self.query(insert, args, cur)
         except Exception as ex:
-            if conn == None:
-                raise
-            else:
+            if conn != None:
                 conn.rollback()
+            raise
         else:
             if conn != None:
                 conn.commit()
@@ -686,6 +736,9 @@ class blogpostrevision(articlerevision):
     @property
     def blog(self):
         if not self._blog:
+            if not self._blog_id:
+                if self.id and not self._isnew: 
+                    self._load()
             if self._blog_id:
                 self._blog = blog(self._blog_id)
         return self._blog
@@ -698,13 +751,27 @@ class blogpostrevision(articlerevision):
     def brokenrules(self):
         brs = super().brokenrules
 
-        if not self.blog:
-            brs.demand(self, 'blog',  isfull=True)
+        if self.isroot:
+            if self.body != None:
+                p = parsers.htmlparser(self.body)
+                try:
+                    p.demandbalance()
+                except Exception as ex:
+                    brs += brokenrule(str(ex), 'body', 'valid')
 
-        if not self.isroot:
+            if not self.blog:
+                brs.demand(self, 'blog',  isfull=True)
+        else:
             if type(self.parent) != blogpostrevision:
                 msg = 'The parent property must be of type blogpostrevision'
                 brs += brokenrule(msg, 'parent', 'valid')
+
+            if type(self.diff) == diff.diff:
+                p = parsers.htmlparser(self.derivedbody)
+                try:
+                    p.demandbalance()
+                except Exception as ex:
+                    brs += brokenrule(str(ex), 'derivedbody', 'valid')
         return brs
 
 
