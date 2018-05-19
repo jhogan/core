@@ -296,50 +296,6 @@ class test_blogpostrevision(tester):
             self.assertCount(1, rev.brokenrules)
             self.assertTrue(rev.brokenrules.contains('status', 'valid'))
 
-    def it_breaks_slug_cache_uniqueness_rule(self):
-        rev = blogpostrevision()
-        rev.blog = self.blog
-        rev.body = test_blogpost.Smallpostbody
-        rev.title = test_article.Smallposttitle
-        slug_cache = uuid4()
-        rev.slug_cache = slug_cache
-        rev.save()
-
-        rev = blogpostrevision()
-        rev.body = test_blogpost.Smallpostbody
-        rev.title = test_article.Smallposttitle
-        rev.slug_cache = slug_cache
-        self.assertTrue(rev.brokenrules.contains('slug_cache', 'unique'))
-
-    def it_fails_saving_duplicate_slug_cache(self):
-        rev = blogpostrevision()
-        rev.blog = self.blog
-        rev.body = test_blogpost.Smallpostbody
-        rev.title = test_article.Smallposttitle
-        slug_cache = uuid4()
-        rev.slug_cache = slug_cache
-
-        rev.save()
-
-        rev = blogpostrevision()
-        rev.body = test_blogpost.Smallpostbody
-        rev.title = test_article.Smallposttitle
-        rev.slug_cache = slug_cache
-        
-        try:
-            cur = rev.connection._conn.cursor()
-            # Bypass the validation check in save() to insert a record with a
-            # duplicate slug_cache.
-            rev._insert(cur)
-        except MySQLdb.IntegrityError as ex:
-            # We should get an MySQL DUP_ENTRY exception
-            self.assertTrue(ex.args[0] == DUP_ENTRY)
-            rev.connection._conn.rollback()
-        except Exception:
-            self.assertFail('Wrong exception')
-        else:
-            self.assertFail("Didn't raise IntegrityError")
-
     def it_breaks_body_rules_of_child(self):
         rent = blogpostrevision()
         rent.body = test_blogpost.Smallpostbody
@@ -516,10 +472,28 @@ class test_blogpost(tester):
         bp.blog
         self.assertEq(self.blog.id, bp.blog.id)
 
-    def it_calls_revisions(self):
-        blogpostrevisions().TRUNCATE()
-        articlerevisions().TRUNCATE()
+    def it_breaks_slug_cache_uniqueness_rule(self):
+        bp = blogpost()
+        bp.blog = self.blog
+        bp.slug = 'my-slug'
+        bp.save()
 
+        bp = blogpost()
+        bp.blog = self.blog
+        bp.slug = 'my-slug'
+        self.assertTrue(bp.brokenrules.contains('slug_cache', 'unique'))
+
+        # Create a new blog
+        bl = blog()
+        bl.slug = 'some-other-tech-blog'
+        bl.description = 'Some other blog'
+        bl.save()
+
+        bp.blog = bl
+        self.assertZero(bp.brokenrules);
+
+    def it_calls_revisions(self):
+        # TODO Copy this to test_article
         bp = blogpost()
         bp.blog = self.blog
 
@@ -528,6 +502,10 @@ class test_blogpost(tester):
         # First save
         bp.save()
         self.assertCount(1, bp.revisions)
+        self.assertType(blogpostrevisions, bp.revisions)
+        for rev in bp.revisions:
+            self.assertType(blogpostrevision, rev)
+
         self.assertEq(bp.blog.id, bp.revisions.first.blog.id)
 
         # ... then load
@@ -535,11 +513,17 @@ class test_blogpost(tester):
         bp1 = blogpost(bp.id)
         self.assertCount(1, bp1.revisions)
         self.assertEq(bp1.blog.id, bp1.revisions.first.blog.id)
+        self.assertType(blogpostrevisions, bp1.revisions)
+        for rev in bp1.revisions:
+            self.assertType(blogpostrevision, rev)
 
         # Second save
         bp.save()
         self.assertCount(2, bp.revisions)
         self.assertEq(bp.blog.id, bp.revisions.first.blog.id)
+        self.assertType(blogpostrevisions, bp1.revisions)
+        for rev in bp1.revisions:
+            self.assertType(blogpostrevision, rev)
 
         # ... then load
         
@@ -551,10 +535,6 @@ class test_blogpost(tester):
         self.assertCount(2, bp1.revisions)
         self.assertEq(bp1.blog.id, bp1.revisions.first.blog.id)
         self.assertEq(None, bp1.revisions.second.blog)
-
-
-
-
 
     def it_calls_body(self): 
         bp = blogpost()
@@ -642,25 +622,6 @@ class test_blogpost(tester):
 
         bp = blogpost(bp.id)
         self.assertEq(slug, bp.slug)
-
-        # A duplicate title will lead to a duplicate slug (slug_cache)
-        # Therefore, a broken rule will indicate this and a save 
-        # won't be permited because of the unique constraint on the
-        # slug_cache field
-        bp = blogpost()
-        bp.blog = self.blog
-        bp.title = title
-        self.assertTrue(bp.brokenrules.contains('slug_cache', 'unique'))
-
-        try:
-            bp.save()
-        except brokenruleserror as ex:
-            brs = ex.args[1].brokenrules
-            self.assertTrue(brs.contains('slug_cache', 'unique'))
-        except Exception:
-            self.assertFalse('brokenruleserror was not raised')
-        else:
-            self.assertFalse('No exception was not raised')
 
     def it_calls_excerpt(self):
         bp = blogpost()
@@ -1120,24 +1081,6 @@ manual for self-reliance."""
         art = article(art.id)
         self.assertEq(slug, art.slug)
 
-        # A duplicate title will lead to a duplicate slug (slug_cache)
-        # Therefore, a broken rule will indicate this and a save 
-        # won't be permited because of the unique constraint on the
-        # slug_cache field
-        art = article()
-        art.title = title
-        self.assertTrue(art.brokenrules.contains('slug_cache', 'unique'))
-
-        try:
-            art.save()
-        except brokenruleserror as ex:
-            brs = ex.args[1].brokenrules
-            self.assertTrue(brs.contains('slug_cache', 'unique'))
-        except Exception:
-            self.assertFalse('brokenruleserror was not raised')
-        else:
-            self.assertFalse('No exception was not raised')
-
     def it_calls_excerpt(self):
         art = article()
         self.assertNone(art.excerpt)
@@ -1436,37 +1379,6 @@ class test_articlesrevisions(tester):
         super().__init__()
         articlerevisions().RECREATE()
 
-    def it_fails_saving_duplicate_slug_cache(self):
-        revs = articlerevisions()
-
-        slug_cache = uuid4()
-        for i in range(3):
-            rev = articlerevision()
-            rev.body = test_article.Smallpostbody
-            rev.title = test_article.Smallposttitle
-            rev.slug_cache = slug_cache
-            revs += rev
-
-        try:
-            # Test persistent state before and after fail. The epiphany-py
-            # library should have a test for this but, at the moment, it does
-            # not, so we test here since it's important.
-            for rev in revs:
-                self.assertTrue(rev._isnew)
-                self.assertFalse(rev._isdirty)
-            revs.save()
-        except MySQLdb.IntegrityError as ex:
-            # We should get an MySQL DUP_ENTRY exception
-            self.assertTrue(ex.args[0] == DUP_ENTRY)
-        except Exception:
-            self.assertFail('Wrong exception')
-        else:
-            self.assertFail("Didn't raise IntegrityError")
-        finally:
-            for rev in revs:
-                self.assertTrue(rev._isnew)
-                self.assertFalse(rev._isdirty)
-        
 class test_articlesrevision(tester):
     def __init__(self):
         super().__init__()
@@ -1585,47 +1497,6 @@ class test_articlesrevision(tester):
             rev.status = st
             self.assertCount(1, rev.brokenrules)
             self.assertTrue(rev.brokenrules.contains('status', 'valid'))
-
-    def it_breaks_slug_cache_uniqueness_rule(self):
-        rev = articlerevision()
-        rev.body = test_article.Smallpostbody
-        rev.title = test_article.Smallposttitle
-        slug_cache = uuid4()
-        rev.slug_cache = slug_cache
-        rev.save()
-
-        rev = articlerevision()
-        rev.body = test_article.Smallpostbody
-        rev.title = test_article.Smallposttitle
-        rev.slug_cache = slug_cache
-        self.assertTrue(rev.brokenrules.contains('slug_cache', 'unique'))
-
-    def it_fails_saving_duplicate_slug_cache(self):
-        rev = articlerevision()
-        rev.body = test_article.Smallpostbody
-        rev.title = test_article.Smallposttitle
-        slug_cache = uuid4()
-        rev.slug_cache = slug_cache
-
-        rev.save()
-
-        rev = articlerevision()
-        rev.body = test_article.Smallpostbody
-        rev.title = test_article.Smallposttitle
-        rev.slug_cache = slug_cache
-        
-        try:
-            cur = rev.connection._conn.cursor()
-            # Bypass the validation check in save() to insert a record with a
-            # duplicate slug_cache.
-            rev._insert(cur)
-        except MySQLdb.IntegrityError as ex:
-            # We should get an MySQL DUP_ENTRY exception
-            self.assertTrue(ex.args[0] == DUP_ENTRY)
-        except Exception:
-            self.assertFail('Wrong exception')
-        else:
-            self.assertFail("Didn't raise IntegrityError")
 
     def it_breaks_body_rules(self):
         # Body must be full for root revisions

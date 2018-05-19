@@ -129,8 +129,7 @@ class articlerevisions(db.dbentities):
             created_at datetime,
             body longtext,
             diff longtext,
-            slug_cache varchar(200),
-            constraint unique_slug_cache unique (slug_cache)
+            slug_cache varchar(200)
         )
         """
 
@@ -287,22 +286,6 @@ class articlerevision(db.dbentity):
                 msg = 'The status property has an invalid value'
                 brs += brokenrule(msg, 'status', 'valid')
 
-            if self.slug_cache != None:
-                sql = """
-                select count(*) 
-                from articlerevisions 
-                where slug_cache = %s
-                """
-                args = [self.slug_cache]
-                if self.id:
-                    sql += ' and id != %s'
-                    args.append(self.id.bytes)
-
-                ress = self.query(sql, args)
-                if ress.first[0] > 0:
-                    msg = 'slug_cache must be unique'
-                    brs += brokenrule(msg, 'slug_cache', 'unique')
-
         else: # non-root
             if type(self) == articlerevision and \
                type(self.parent) != articlerevision:
@@ -391,12 +374,7 @@ class articlerevision(db.dbentity):
 
     @property
     def slug_cache(self):
-        if self._slug_cache == '':
-            # If duplipcate empty string were allowed in the database, the unique
-            # contraint on `slug_cache` would be violated
-            return None
-        else:
-            return self._slug_cache
+        return self._slug_cache
 
     @slug_cache.setter
     def slug_cache(self, v):
@@ -759,8 +737,28 @@ class blogpostrevision(articlerevision):
                 except Exception as ex:
                     brs += brokenrule(str(ex), 'body', 'valid')
 
-            if not self.blog:
+            if self.blog:
+                # TODO Why should slug or slug_cache ever be allowed to be an
+                # empty string?
+                if self.slug_cache != None and self.slug_cache != '':
+                    sql = """
+                    select count(*)
+                    from articlerevisions a
+                       inner join blogpostrevisions b
+                           on a.id = b.id
+                    where 
+                        a.slug_cache = %s and
+                        b.blog_id = %s
+                    """
+                    args = self.slug_cache, self.blog.id.bytes
+
+                    ress = self.query(sql, args)
+                    if ress.first[0] > 0:
+                        msg = 'slug_cache must be unique'
+                        brs += brokenrule(msg, 'slug_cache', 'unique')
+            else:
                 brs.demand(self, 'blog',  isfull=True)
+
         else:
             if type(self.parent) != blogpostrevision:
                 msg = 'The parent property must be of type blogpostrevision'
@@ -772,6 +770,8 @@ class blogpostrevision(articlerevision):
                     p.demandbalance()
                 except Exception as ex:
                     brs += brokenrule(str(ex), 'derivedbody', 'valid')
+
+
         return brs
 
 
