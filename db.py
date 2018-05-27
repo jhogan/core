@@ -27,6 +27,7 @@ from entities import *
 import MySQLdb
 from pdb import set_trace; B=set_trace
 from configfile import configfile
+from MySQLdb.constants.ER import BAD_TABLE_ERROR
 
 class dbentities(entities):
     def TRUNCATE(self):
@@ -59,6 +60,20 @@ class dbentities(entities):
 
     def DROP(self):
         self.query('drop table ' + self._table)
+
+    def RECREATE(self):
+        try:
+            self.DROP()
+        except MySQLdb.OperationalError as ex:
+            try:
+                errno = ex.args[0]
+            except:
+                raise
+
+            if errno != BAD_TABLE_ERROR: # 1051
+                raise
+
+        self.CREATE()
 
     def save(self):
         # TODO Add reconnect logic or a connection pool
