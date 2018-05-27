@@ -108,11 +108,17 @@ class tester(entity):
         if expect != len(actual): self._failures += failure()
 
     def assertValid(self, ent):
-        if not ent.isvalid:
+        v = ent.isvalid
+        if type(v) != bool:
+            raise Exception('invalid property must be a boolean')
+        if not v:
             self._failures += failure(ent=ent)
 
     def assertInValid(self, ent):
-        if ent.isvalid:
+        v = ent.isvalid
+        if type(v) != bool:
+            raise Exception('invalid property must be a boolean')
+        if v:
             self._failures += failure(ent=ent)
 
     @property
