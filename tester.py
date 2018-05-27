@@ -68,6 +68,9 @@ class tester(entity):
     def assertIsInstance(self, expect, actual, msg=None):
         if not isinstance(expect, actual): self._failures += failure()
 
+    def assertType(self, expect, actual, msg=None):
+        if type(actual) != expect: self._failures += failure()
+
     def assertEq(self, expect, actual, msg=None):
         if expect != actual: self._failures += failure()
 
@@ -97,6 +100,9 @@ class tester(entity):
 
     def assertEmptyString(self, o, msg=None):
         if o != '': self._failures += failure()
+
+    def assertZero(self, actual):
+        if len(actual) != 0: self._failures += failure()
 
     def assertCount(self, expect, actual, msg=None):
         if expect != len(actual): self._failures += failure()
