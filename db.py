@@ -265,6 +265,11 @@ class dbresultset(entities):
     def lastrowid(self):
         return self._cur.lastrowid
 
+    def demandhasone(self):
+        if not self.hasone:
+            raise Exception('A single record was not found')
+        return self.first
+
 class dbresult(entity):
     def __init__(self, row):
         self._row = row
