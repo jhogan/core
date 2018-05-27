@@ -588,7 +588,12 @@ class brokenrules(entities):
 
         if maxlen != None:
             if v == None or len(v) > maxlen:
-                self += brokenrule(prop + ' is too lengthy', prop, 'fits')
+                # property can only break the 'fits' rule if it hasn't broken
+                # the 'full' rule. E.g., a property can be a string of
+                # whitespaces which may break the 'full' rule. In that case,
+                # a broken 'fits' rule would't make sense.
+                if not self.contains(prop, 'full'):
+                    self += brokenrule(prop + ' is too lengthy', prop, 'fits')
 
         if isdate:
             if type(v) != datetime:
