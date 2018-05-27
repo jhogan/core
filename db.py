@@ -224,7 +224,7 @@ class connection(entity):
     def query(self, sql, args=None, cur=None):
         if cur != None:
             cur.execute(sql, args)
-            return
+            return dbresultset(cur)
 
         for _ in range(2):
             try:
