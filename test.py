@@ -25,6 +25,8 @@ SOFTWARE.
 from tester import *
 from table import *
 import math
+from auth import jwt
+import jwt as pyjwt
 from configfile import configfile
 
 class knights(entities):
@@ -2690,6 +2692,48 @@ class test_logs(tester):
             l.exception('xexception')
             self.assertTrue('xexception' in logs)
             self.assertCount(6, logs)
+
+class test_jwt(tester):
+    def __init__(self):
+        super().__init__()
+    
+    def it_calls_exp(self):
+        t = jwt()
+
+        # Exp defaults to 24 hours in the future
+        hours = math.ceil((t.exp - datetime.now()).seconds / 3600)
+        self.assertEq(24, hours)
+
+        # Specify 48 hours to expire
+        t = jwt(48)
+        hours = math.ceil((t.exp - datetime.now()).seconds / 3600)
+        self.assertEq(24, hours)
+
+    def it_calls_token(self):
+        t = jwt()
+        token = t.token
+        secret = configfile.getinstance()['jwt-secret']
+
+        d = pyjwt.decode(token, secret)
+
+        exp = datetime.fromtimestamp(d['exp'])
+
+        # Ensure exp is about 24 hours into the future
+        hours = math.ceil((exp - datetime.now()).seconds / 3600)
+        self.assertEq(24, hours)
+
+    def it_fails_decoding_with_wrong_secret(self):
+        t = jwt()
+
+        try:
+            d = pyjwt.decode(t.token, 'wrong-secret')
+        except pyjwt.exceptions.DecodeError:
+            pass # This is the expected path
+        except Exception as ex:
+            self.assertFail('Wrong exception type')
+        else:
+            self.assertFail('Exception not thrown')
+            print(ex)
 
 t = testers()
 t.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)
