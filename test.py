@@ -1837,7 +1837,7 @@ class test_table(tester):
                 self.assertEq([j, i], f.value)
 
     def it_gets_fields(self):
-        """ The table.fields proprety contains all the fields in the table.
+        """ The table.fields property contains all the fields in the table.
 
         The normal hierarchy of a table structure is:
 
@@ -1854,7 +1854,7 @@ class test_table(tester):
         happening in the subordinate objects of the table object.  So, for
         testing, these means we need to ensure that, no matter how a field is
         added or removed from a table, these addition or removal needs to be
-        reflected in the table.fields proprety. Note, however, that the
+        reflected in the table.fields property. Note, however, that the
         table.fields property itself is meant to be read-only (for the most
         part) so additions or removals to table.fields itself should not make
         any changes to the table object (because 'fields' is a vector and
@@ -1907,7 +1907,7 @@ class test_table(tester):
         self.assertEq(5 * 5, fs.count)
 
 
-        # Test fields proprety after setting them in the table object.
+        # Test fields property after setting them in the table object.
 
         # TODO  When setting fields, the old field(s) is removed from the
         # table.fields collection, but the new field(s) ends up at the end of
@@ -1915,7 +1915,7 @@ class test_table(tester):
         # field(s). This is because the fields.__setitem__ simply calls the
         # onadd the onremove event, which causes an append to the collection.
         # Ideally, the new field wouldn't be appended, but would rather be set
-        # in the correct location of the table.fields proprety. However,
+        # in the correct location of the table.fields property. However,
         # currently there is no use case for this. However, since this should
         # change, use of table.fields shouldn't make assuptions about where
         # newly set fields will appear until this behavior is corrected.
@@ -2013,7 +2013,7 @@ class test_table(tester):
 
         # When a fields value is update, the 'value' index that tbl.where
         # depends upon must be update in order for these by-value seeks to
-        # work. To test this, we simply set the 'value' proprety of the 'field'
+        # work. To test this, we simply set the 'value' property of the 'field'
         # object to an arbitray value and ensure that searching for that
         # arbitray value using where() still works.
         r.fields.first.value = 'ni ni ni'
@@ -2181,7 +2181,7 @@ class test_column(tester):
 
     def it_calls_width(self):
         """ The width property of a column is the maximun number of characters
-        contained in the value propery of all the fields in the column. """
+        contained in the value property of all the fields in the column. """
 
         # Populate the field's with strings of 'x' where the last column
         # contains 4 'x''s, which will be the largest. 
@@ -2277,7 +2277,7 @@ class test_fields(tester):
         self.assertIs(tbl, f.table)
 
     def it_get_values(self):
-        """ A fields collection value proprety will be a list of all the values
+        """ A fields collection value property will be a list of all the values
         in each of its field objects. """
         tbl = createtable(5, 5)
         for i, r in enumerate(tbl):
@@ -2616,7 +2616,7 @@ class test_index(tester):
 
         ix = ks.indexes['traittype'];
 
-        # Remove the first knight from the index. Since the trait propery was
+        # Remove the first knight from the index. Since the trait property was
         # None, the value of the index will be NoneType. So check that the
         # index with the value of type(None) has 3 entities.
         ix.remove(ks.first)
