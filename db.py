@@ -125,7 +125,6 @@ class dbentity(entity):
     def _markold(self):
         self._isnew = False
         self._isdirty = False
-        
 
     def _self_onaftervaluechange(self, src, eargs):
         if not self.isnew:
@@ -137,7 +136,7 @@ class dbentity(entity):
 
     @property
     def isdirty(self):
-        return self._isdirty
+        return self._isdirty 
 
     @property
     def id(self):
