@@ -23,6 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 from articles import *
+from parties import *
 from configfile import configfile
 from entities import brokenruleserror
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
@@ -1533,6 +1534,236 @@ class test_articlesrevision(tester):
 
         rev = articlerevision(rev.id)
         self.assertEq(rev.id, rev.id)
+
+class test_persons(tester):
+    def __init__(self):
+        super().__init__()
+        persons().RECREATE()
+
+    def it_calls_save(self):
+        pass
+
+
+class test_person(tester):
+    def __init__(self):
+        super().__init__()
+        persons().RECREATE()
+
+    def it_calls_save(self):
+        p = person()
+        p.firstname = 'Gary'
+        p.middlename = 'Lawrence'
+        p.lastname = 'Francione'
+        p.email = 'glawrence@fakemail.com'
+        p.phone = '480 555 5555'
+        p.save()
+
+    def it_loads(self):
+        p = person()
+        p.firstname = 'Gary'
+        p.middlename = 'Lawrence'
+        p.lastname = 'Francione'
+        p.email = 'glawrence@fakemail.com'
+        p.phone = '555 555 5555'
+        p.save()
+
+        p1 = person(p.id)
+
+        for prop in ('firstname', 'middlename', 'lastname', 'id', 'email', 'phone'):
+            self.assertEq(getattr(p, prop), getattr(p1, prop))
+
+    def it_calls_fullname(self):
+        p = person()
+        p.firstname = 'Gary'
+        p.middlename = 'Lawrence'
+        p.lastname = 'Francione'
+        p.email = 'glawrence@fakemail.com'
+        p.phone = '555 555 5555'
+
+        self.assertEq(p.firstname + ' ' + p.lastname, p.fullname)
+
+    def it_calls_name(self):
+        p = person()
+        p.firstname = 'Gary'
+        p.middlename = 'Lawrence'
+        p.lastname = 'Francione'
+        p.email = 'glawrence@fakemail.com'
+        p.phone = '555 555 5555'
+
+        self.assertEq(p.fullname, p.name)
+
+    def it_breaks_firstname_rule(self):
+        p = person()
+        p.firstname = 'X' * 255
+        p.middlename = 'Lawrence'
+        p.lastname = 'Francione'
+        p.email = 'glawrence@fakemail.com'
+        p.phone = '555 555 5555'
+
+        self.assertZero(p.brokenrules)
+
+        p.firstname = 'X' * 256
+        self.assertCount(1, p.brokenrules)
+        self.assertTrue(p.brokenrules.contains('firstname', 'fits'))
+
+    def it_breaks_middlename_rule(self):
+        p = person()
+        p.firstname = 'Gary'
+        p.middlename = 'X' * 255
+        p.lastname = 'Francione'
+        p.email = 'glawrence@fakemail.com'
+        p.phone = '555 555 5555'
+
+        self.assertZero(p.brokenrules)
+
+        p.middlename = 'X' * 256
+        self.assertCount(1, p.brokenrules)
+        self.assertTrue(p.brokenrules.contains('middlename', 'fits'))
+
+    def it_breaks_lastname_rule(self):
+        p = person()
+        p.firstname = 'Gary'
+        p.middlename = 'Lawrence'
+        p.lastname = ''
+        p.email = 'glawrence@fakemail.com'
+        p.phone = '555 555 5555'
+
+        self.assertCount(1, p.brokenrules)
+        self.assertTrue(p.brokenrules.contains('lastname', 'full'))
+
+        p.lastname = 'X' * 255
+        self.assertZero(p.brokenrules)
+
+        p.lastname = 'X' * 256
+        self.assertCount(1, p.brokenrules)
+        self.assertTrue(p.brokenrules.contains('lastname', 'fits'))
+
+    def it_breaks_email_rule(self):
+        p = person()
+        p.firstname = 'Gary'
+        p.middlename = 'Lawrence'
+        p.lastname = 'Francione'
+        p.email = 'not-an-email-address'
+        p.phone = '555 555 5555'
+
+        self.assertCount(1, p.brokenrules)
+        self.assertTrue(p.brokenrules.contains('email', 'valid'))
+
+        p.email = ('X' * 246) + '@mail.com'
+        self.assertZero(p.brokenrules)
+
+        p.email = ('X' * 247) + '@mail.com'
+        self.assertCount(1, p.brokenrules)
+        self.assertTrue(p.brokenrules.contains('email', 'fits'))
+
+    def it_breaks_phone_rule(self):
+        p = person()
+        p.firstname = 'Gary'
+        p.middlename = 'Lawrence'
+        p.lastname = 'Francione'
+        p.email = 'glawrence@fakemail.com'
+        p.phone = 'X' * 255
+
+        self.assertZero(p.brokenrules)
+
+        p.phone = 'X' * 256
+        self.assertCount(1, p.brokenrules)
+        self.assertTrue(p.brokenrules.contains('phone', 'fits'))
+
+    def it_wont_save_invaild(self):
+        p = person()
+        p.firstname = 'Gary'
+        p.middlename = 'Lawrence'
+        p.email = 'glawrence@fakemail.com'
+        p.phone = '555 555 5555'
+        p.lastname = ''
+
+        try:
+            p.save()
+        except brokenruleserror:
+            pass # This should happen
+        except Exception as ex:
+            self.assertFail('Incorrect exception type: ' + str(type(ex)))
+        else:
+            self.assertFail("Invalid person object didn't throw error on save")
+
+    def it_updates(self):
+        p = person()
+        p.firstname = 'Gary'
+        p.middlename = 'Lawrence'
+        p.lastname = 'Francione'
+        p.email = 'glawrence@fakemail.com'
+        p.phone = '555 555 5555'
+        p.save() # insert
+
+        p = person(p.id)
+        p.firstname = 'Gary - update'
+        p.middlename = 'Lawrence - update'
+        p.lastname = 'Francione - update'
+        p.email = 'glawrence@fakemail.com'
+        p.phone = '555 555 5555'
+        p.save() # update
+
+        p1 = person(p.id)
+        for prop in ('firstname', 'middlename', 'lastname', 'id', 'email', 'phone'):
+            self.assertEq(getattr(p, prop), getattr(p1, prop))
+
+class test_user(tester):
+    def __init__(self):
+        super().__init__()
+        users().RECREATE()
+
+    def it_calls_save(self):
+        u = user()
+        u.name = 'glawrence'
+        u.password = 'secret'
+        u.save()
+
+    def it_loads(self):
+        u = user()
+        u.name = 'glawrence'
+        u.password = 'secret'
+        u.save()
+
+        u1 = user(u.id)
+
+        for prop in ('name', 'hash', 'salt'):
+            self.assertEq(getattr(u, prop), getattr(u1, prop))
+
+        self.assertNone(u1.password)
+
+    def it_breaks_name_rule(self):
+        u = user()
+        u.name = 'glawrence'
+        u.password = 'secret'
+        self.assertZero(u.brokenrules)
+
+        for v in (None, '', ' ' * 100):
+            u.name = v
+            self.assertCount(1, u.brokenrules)
+            self.assertTrue(u.brokenrules.contains('name', 'full'))
+
+        u.name = 'X' * 255
+        self.assertZero(u.brokenrules)
+
+        u.name = 'X' * 256
+        self.assertCount(1, u.brokenrules)
+        self.assertTrue(u.brokenrules.contains('name', 'fits'))
+
+    def it_validates_password(self):
+        pwd = str(uuid4())
+
+        u = user()
+        u.name = 'glawrence'
+        u.password = pwd
+
+        self.assertTrue(u.ispassword(pwd))
+        self.assertFalse(u.ispassword(str(uuid4())))
+
+        u.save()
+
+        self.assertTrue(u.ispassword(pwd))
+        self.assertFalse(u.ispassword(str(uuid4())))
 
 t = testers()
 t.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)
