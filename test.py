@@ -2705,7 +2705,7 @@ class test_jwt(tester):
         self.assertEq(24, hours)
 
         # Specify 48 hours to expire
-        t = jwt(48)
+        t = jwt(ttl=48)
         hours = math.ceil((t.exp - datetime.now()).seconds / 3600)
         self.assertEq(24, hours)
 
@@ -2722,6 +2722,21 @@ class test_jwt(tester):
         hours = math.ceil((exp - datetime.now()).seconds / 3600)
         self.assertEq(24, hours)
 
+    def it_sets_iss(self):
+        iss = str(uuid4())
+        t = jwt()
+        t.iss = iss
+        token = t.token
+
+        self.assertEq(iss, t.iss)
+
+        t1 = jwt(token)
+        self.assertEq(iss, t1.iss)
+
+        token = t1.token
+        t1.iss = str(uuid4())
+        self.assertNe(token, t1.token)
+
     def it_fails_decoding_with_wrong_secret(self):
         t = jwt()
 
@@ -2734,6 +2749,20 @@ class test_jwt(tester):
         else:
             self.assertFail('Exception not thrown')
             print(ex)
+
+    def it_makes_tokes_eq_to__str__(self):
+        t = jwt()
+        self.assertEq(t.token, str(t))
+
+    def it_validates(self):
+        # Valid
+        t = jwt()
+        t1 = jwt(t.token)
+
+        # Invalid
+        t = jwt('an invalid token')
+        self.assertFalse(t.isvalid)
+        
 
 t = testers()
 t.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)
