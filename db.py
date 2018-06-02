@@ -28,6 +28,7 @@ import MySQLdb
 from pdb import set_trace; B=set_trace
 from configfile import configfile
 from MySQLdb.constants.ER import BAD_TABLE_ERROR
+import uuid
 
 class dbentities(entities):
     def TRUNCATE(self):
@@ -105,6 +106,17 @@ class dbentities(entities):
         finally:
             cur.close()
             conn.close()
+
+    def __getitem__(self, key):
+        if type(key) == int or type(key) == slice:
+            return self._ls[key]
+
+        for e in self._ls:
+            if hasattr(e, 'id') and type(key) == uuid.UUID :
+                if e.id == key:   return e
+            elif hasattr(e, 'name'):
+                if e.name == key: return e
+
 
 class dbentity(entity):
     # TODO Add Tests
