@@ -28,6 +28,7 @@ import math
 from auth import jwt
 import jwt as pyjwt
 from configfile import configfile
+from uuid import uuid4
 
 class knights(entities):
     def __init__(self, initial=None):
