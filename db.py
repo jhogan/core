@@ -37,8 +37,8 @@ class dbentities(entities):
 
     def ALL(self):
         conn = connections.getinstance().default
-        res = conn.query('select * from ' + self._table)
-        return type(self)(res)
+        ress = conn.query('select * from ' + self._table)
+        return type(self)(ress)
 
     @property
     def _table(self):
