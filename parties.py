@@ -28,6 +28,7 @@ import uuid
 import db
 import hashlib
 import os
+import db
 
 class persons(db.dbentities):
     @property
@@ -185,6 +186,7 @@ class users(db.dbentities):
         return """
         create table users(
             id binary(16) primary key,
+            service varchar(266),
             name varchar(255),
             password binary(32),
             salt binary(16)
@@ -195,38 +197,63 @@ class users(db.dbentities):
     def _table(self):
         return 'users'
 
-
 class user(db.dbentity):
-    def __init__(self, id=None):
+    def __init__(self, o=None):
         super().__init__()
-        self._id = id
         self._password = None
-        if id == None:
+        self._roles = roles()
+        if o == None:
+            self._service = None
             self._name = None
             self._hash = None
             self._salt = None
+            self._id   = None
             self._marknew()
-        else:
-            sql = """
-            select * from users where id = %s
-            """
-            args = (
-                self.id.bytes,
-            )
+        elif type(o) == uuid.UUID or type(o) == db.dbresult:
+            if type(o) == uuid.UUID:
+                sql = """
+                select * from users where id = %s
+                """
+                args = (
+                    o.bytes,
+                )
 
-            ress = self.query(sql, args)
-            res = ress.demandhasone()
+                ress = self.query(sql, args)
+                res = ress.demandhasone()
+            else:
+                res = o
             row = list(res)
             self._salt = row.pop()
             self._hash = row.pop()
             self._name = row.pop()
+            self._service = row.pop()
+            self._id = uuid.UUID(bytes=row.pop())
             self._markold()
+
+    @staticmethod
+    def load(uid, srv):
+            sql = """
+            select * 
+            from users 
+            where name = %s and service = %s
+            """
+            args = (
+                uid, srv
+            )
+
+            ress = db.connections.getinstance().default.query(sql, args)
+            if ress.isempty:
+                return None
+            else:
+                res = ress.demandhasone()
+                return user(res)
 
     def _insert(self, cur=None):
         self._id = uuid.uuid4()
 
         args = (
             self.id.bytes, 
+            self.service,
             self.name,
             self.hash,
             self.salt,
@@ -243,12 +270,14 @@ class user(db.dbentity):
     def _update(self, cur=None):
         sql = """
         update users
-        set name = %s,
+        set service = %s,
+        name = %s,
         password = %s,
         salt = %s,
         where id = %s
         """
         args = (
+            self.service,
             self.name,
             self.hash,
             self.salt,
@@ -257,6 +286,22 @@ class user(db.dbentity):
 
         self.query(sql, args, cur)
         
+    @property
+    def roles(self):
+        return self._roles
+    
+    @roles.setter
+    def roles(self, v):
+        return self._setvalue('_roles', v, 'roles')
+
+    @property
+    def service(self):
+        return self._service
+
+    @service.setter
+    def service(self, v):
+        return self._setvalue('_service', v, 'service')
+
     @property
     def name(self):
         return self._name
@@ -312,7 +357,86 @@ class user(db.dbentity):
 
     @property
     def brokenrules(self):
+        # TODO Enuser that a username and service are unique
         brs = brokenrules()
         brs.demand(self, 'name', isfull=True, maxlen=255)
+        brs.demand(self, 'service', isfull=True, maxlen=255)
+
+        # Query database for existing user only if name and service are already
+        # valid.
+        if brs.isempty:
+            u = user.load(self.name, self.service)
+            if u:
+                brs += brokenrule('A user with that name and service already exist', 'name', 'unique')
+                
         return brs
+
+class roles(db.dbentities):
+    def __init__(self, ress=None):
+        super().__init__()
+        if ress:
+            for res in ress:
+                self += role(res)
+
+    @property
+    def _create(self):
+        return """
+        create table roles(
+            id binary(16) primary key,
+            name varchar(255)
+        )
+        """
+
+    @property
+    def _table(self):
+        return 'roles'
+
+class role(db.dbentity):
+    def __init__(self, o=None):
+        super().__init__()
+        if type(o) is db.dbresult:
+            ls = list(o._row)
+            self._name = ls.pop()
+            self._id = uuid.UUID(bytes=ls.pop())
+        else:
+            self._name = None
+            self._id = None
+            self._marknew()
+
+    def _insert(self, cur=None):
+        self._id = uuid.uuid4()
+
+        args = (
+            self.id.bytes, 
+            self.name,
+        )
+
+        insert = """
+        insert into roles
+        values({})
+        """.format(('%s, ' * len(args)).rstrip(', '))
+
+
+        self.query(insert, args, cur)
+    
+    def _update(self, cur=None):
+        sql = """
+        update roles
+        set name = %s
+        where id = %s
+        """
+        args = (
+            self.name,
+            self.id.bytes
+        )
+
+        self.query(sql, args, cur)
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, v):
+        return self._setvalue('_name', v, 'name')
 

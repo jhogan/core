@@ -1712,28 +1712,59 @@ class test_user(tester):
     def __init__(self):
         super().__init__()
         users().RECREATE()
+        roles().RECREATE()
+
+        rs = roles()
+        for name in 'carapacian-blog-editor',:
+            rs += role()
+            rs.last.name = name
+
+        rs.save()
 
     def it_calls_save(self):
         u = user()
+        u.service = str(uuid4())
         u.name = 'glawrence'
         u.password = 'secret'
         u.save()
 
+
     def it_loads(self):
         u = user()
+        u.service = str(uuid4())
         u.name = 'glawrence'
         u.password = 'secret'
         u.save()
 
         u1 = user(u.id)
 
-        for prop in ('name', 'hash', 'salt'):
+        for prop in ('service', 'name', 'hash', 'salt'):
             self.assertEq(getattr(u, prop), getattr(u1, prop))
 
         self.assertNone(u1.password)
 
+    def it_breaks_service_rule(self):
+        u = user()
+        u.service = str(uuid4())
+        u.name = 'glawrence'
+        u.password = 'secret'
+        self.assertZero(u.brokenrules)
+
+        for v in (None, '', ' ' * 100):
+            u.service = v
+            self.assertCount(1, u.brokenrules)
+            self.assertTrue(u.brokenrules.contains('service', 'full'))
+
+        u.service = 'X' * 255
+        self.assertZero(u.brokenrules)
+
+        u.service = 'X' * 256
+        self.assertCount(1, u.brokenrules)
+        self.assertTrue(u.brokenrules.contains('service', 'fits'))
+
     def it_breaks_name_rule(self):
         u = user()
+        u.service = str(uuid4())
         u.name = 'glawrence'
         u.password = 'secret'
         self.assertZero(u.brokenrules)
@@ -1750,10 +1781,36 @@ class test_user(tester):
         self.assertCount(1, u.brokenrules)
         self.assertTrue(u.brokenrules.contains('name', 'fits'))
 
+    def it_breaks_name_and_service_uniqueness_rule(self):
+        u = user()
+        u.service = str(uuid4())
+        u.name = str(uuid4())
+        u.password = str(uuid4())
+        u.save()
+
+        u1 = user()
+        u1.service = u.service
+        u1.name = u.name
+        u1.password = str(uuid4())
+        self.assertTrue(u1.brokenrules.contains('name', 'unique'))
+
+        # Fix
+        u1.service = str(uuid4())
+        self.assertZero(u1.brokenrules)
+
+        # Break again
+        u1.service = u.service
+        self.assertTrue(u1.brokenrules.contains('name', 'unique'))
+
+        # Fix another way
+        u1.name = str(uuid4())
+        self.assertZero(u1.brokenrules)
+
     def it_validates_password(self):
         pwd = str(uuid4())
 
         u = user()
+        u.service = str(uuid4())
         u.name = 'glawrence'
         u.password = pwd
 
@@ -1764,6 +1821,57 @@ class test_user(tester):
 
         self.assertTrue(u.ispassword(pwd))
         self.assertFalse(u.ispassword(str(uuid4())))
+
+    def it_call_load(self):
+        u = user()
+        u.service = str(uuid4())
+        u.name = str(uuid4())
+        u.password = str(uuid4())
+        u.save()
+
+        u1 = user.load(u.name, u.service)
+        for prop in ('service', 'name', 'hash', 'salt'):
+            self.assertEq(getattr(u, prop), getattr(u1, prop))
+
+        u = user.load(str(uuid4()), str(uuid4()))
+        self.assertNone(u)
+
+    def it_loads_roles(self):
+        u = user()
+        u.service = str(uuid4())
+        u.name = str(uuid4())
+        u.password = str(uuid4())
+        u.roles += roles().ALL()['carapacian-blog-editor']
+        u.save()
+
+class test_role(tester):
+    def __init__(self):
+        super().__init__()
+        users().RECREATE()
+        roles().RECREATE()
+
+    def it_creates_valid(self):
+        r = role()
+        r.name = uuid4()
+
+        self.assertZero(r.brokenrules)
+
+    def it_creates(self):
+        r = role()
+        r.name = str(uuid4())
+        r.save()
+
+    def it_loads(self):
+        # TODO
+        pass
+
+    def it_enforces_uniqueness_constraint_on_name(self):
+        # TODO
+        pass
+
+
+
+        
 
 t = testers()
 t.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)
