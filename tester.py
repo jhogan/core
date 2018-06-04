@@ -104,6 +104,15 @@ class tester(entity):
     def assertZero(self, actual):
         if len(actual) != 0: self._failures += failure()
 
+    def assertOne(self, actual):
+        if len(actual) != 1: self._failures += failure()
+
+    def assertTwo(self, actual):
+        if len(actual) != 2: self._failures += failure()
+
+    def assertThree(self, actual):
+        if len(actual) != 3: self._failures += failure()
+
     def assertCount(self, expect, actual, msg=None):
         if expect != len(actual): self._failures += failure()
 
