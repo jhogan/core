@@ -152,6 +152,10 @@ class dbentity(entity):
         return self._id
 
     @property
+    def _table(self):
+        return self._collection()._table
+
+    @property
     def connection(self):
         return connections.getinstance().default
 
