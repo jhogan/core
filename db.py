@@ -129,7 +129,6 @@ class dbentity(entity):
         self._isdirty = False
 
     def _markdirty(self):
-        self._isnew = False
         self._isdirty = True
 
     def _markold(self):
