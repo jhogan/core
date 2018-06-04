@@ -583,11 +583,16 @@ class brokenrules(entities):
                      isfull=False, 
                      isemail=False, 
                      isdate=False,
-                     maxlen=None):
+                     maxlen=None,
+                     istype=None):
         v = getattr(cls, prop)
 
+        if istype is not None:
+            if type(v) is not istype:
+                self += brokenrule(prop + ' is wrong type', prop, 'valid')
+
         if isfull:
-            if v == None or type(v) != str or v.strip() == '':
+            if (type(v) == str and v.strip() == '') or v is None:
                 self += brokenrule(prop + ' is empty', prop, 'full')
 
         if isemail:
