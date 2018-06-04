@@ -1713,9 +1713,14 @@ class test_user(tester):
         super().__init__()
         users().RECREATE()
         roles().RECREATE()
+        roles_mm_objects().RECREATE()
 
         rs = roles()
-        for name in 'carapacian-blog-editor',:
+        for name in (
+                        'carapacian-blog-editor', 
+                        'carapacian-techblog-editor', 
+                        'vegout-blog-editor',
+                    ):
             rs += role()
             rs.last.name = name
 
@@ -1727,7 +1732,6 @@ class test_user(tester):
         u.name = 'glawrence'
         u.password = 'secret'
         u.save()
-
 
     def it_loads(self):
         u = user()
@@ -1837,12 +1841,67 @@ class test_user(tester):
         self.assertNone(u)
 
     def it_loads_roles(self):
+        rs = roles().ALL()
+
+        # Create user 
         u = user()
         u.service = str(uuid4())
         u.name = str(uuid4())
         u.password = str(uuid4())
-        u.roles += roles().ALL()['carapacian-blog-editor']
+
+        # Add roles
+        for r in 'carapacian-blog-editor', 'carapacian-techblog-editor':
+            u.roles += rs[r]
+
+        # Save user
         u.save()
+
+        # Reload user and assert roles were saved and reloaded
+        u = user(u.id)
+        u.roles.sort(key=lambda x: x.name)
+
+        self.assertTwo(u.roles)
+        for i, r in enumerate(u.roles):
+            self.assertEq(rs[i].name, r.name)
+
+        # Add an additional roles, save, load and test
+        u.roles += rs['vegout-blog-editor']
+
+        B()
+        u.save()
+
+        u = user(u.id)
+        self.assertThree(u.roles)
+        for i, r in enumerate(u.roles):
+            self.assertEq(rs[i].name, r.name)
+
+    def it_calls_name(self):
+        # TODO
+        pass
+
+    def it_calls_service(self):
+        # TODO
+        pass
+
+    def it_calls_password(self):
+        # TODO
+        pass
+        
+
+    def it_adds_role(self):
+        u = user()
+        u.service = str(uuid4())
+        u.name = str(uuid4())
+        u.password = str(uuid4())
+        r = roles().ALL()['carapacian-blog-editor']
+        u.roles += r
+
+        self.assertIs(r, u.roles.first)
+
+
+    def it_remove_role(self):
+        # TODO
+        pass
 
 class test_role(tester):
     def __init__(self):
@@ -1859,19 +1918,200 @@ class test_role(tester):
     def it_creates(self):
         r = role()
         r.name = str(uuid4())
+        r.capabilities += str(uuid4())
+        r.capabilities += str(uuid4())
         r.save()
 
     def it_loads(self):
-        # TODO
-        pass
+        r = role()
+        r.name = str(uuid4())
+        r.save()
+
+        r1 = role(r.id)
+        for p in 'id', 'name':
+            self.assertEq(getattr(r, p), getattr(r1, p), 'Property: ' + p)
+
+        self.assertZero(r.capabilities)
+
+        r = role()
+        r.name = str(uuid4())
+        r.capabilities += str(uuid4())
+        r.capabilities += str(uuid4())
+        r.save()
+
+        r1 = role(r.id)
+
+        self.assertCount(2, r1.capabilities)
+
+        for cap in r.capabilities:
+            found = False
+            for cap1 in r1.capabilities:
+                if cap.name == cap1.name:
+                    found = True
+            self.assertTrue(found)
 
     def it_enforces_uniqueness_constraint_on_name(self):
         # TODO
         pass
 
+    def it_calls_name(self):
+        r = role()
+        name = str(uuid4())
+        r.name = name
+
+        self.assertEq(name, r.name)
+        r.save()
+        self.assertEq(name, r.name)
+
+        name = str(uuid4())
+        r.name = name
+        self.assertEq(name, r.name)
+        r.save()
+
+        r = role(r.id)
+        self.assertEq(name, r.name)
+
+    def it_calls_capabilities(self):
+        r = role()
+        self.assertZero(r.capabilities)
+        self.assertType(capabilities, r.capabilities)
+        r.save()
+
+        r = role(r.id)
+        self.assertZero(r.capabilities)
+        self.assertType(capabilities, r.capabilities)
+
+        r.capabilities += str(uuid4())
+        r.capabilities += str(uuid4())
+        self.assertCount(2, r.capabilities)
+        r.save()
+        self.assertCount(2, r.capabilities)
+
+        r1 = role(r.id)
+        self.assertCount(2, r1.capabilities)
+        self.assertType(capabilities, r1.capabilities)
+        for cap in r.capabilities:
+            found = False
+            for cap1 in r1.capabilities:
+                if cap.name == cap1.name:
+                    found = True
+            self.assertTrue(found)
+
+        r = r1
+
+        r.capabilities += str(uuid4())
+        self.assertCount(3, r.capabilities)
+        r.save()
+        self.assertCount(3, r.capabilities)
+
+        r1 = role(r.id)
+        self.assertCount(3, r1.capabilities)
+        for cap in r.capabilities:
+            found = False
+            for cap1 in r1.capabilities:
+                if cap.name == cap1.name:
+                    found = True
+            self.assertTrue(found)
+
+        r = r1
+        r.capabilities -= r.capabilities.first
+        r.save()
+
+        r1 = role(r.id)
+
+        self.assertCount(2, r1.capabilities)
+        for cap in r.capabilities:
+            found = False
+            for cap1 in r1.capabilities:
+                if cap.name == cap1.name:
+                    found = True
+            self.assertTrue(found)
 
 
+class test_capabilities(tester):
+    
+    def it_adds(self):
+        # Add zero
+        caps = capabilities()
+
+        self.assertZero(caps)
         
+        # Add one
+        caps += 'edit_posts'
+
+        self.assertOne(caps)
+        self.assertEq(caps.first.name, 'edit_posts')
+
+        # Add the same one
+        caps += 'edit_posts'
+
+        self.assertOne(caps)
+        self.assertEq(caps.first.name, 'edit_posts')
+
+        # Add a second one
+        caps += 'add_posts'
+
+        self.assertTwo(caps)
+        self.assertEq(caps.first.name, 'edit_posts')
+        self.assertEq(caps.second.name, 'add_posts')
+
+    def it_removes(self):
+        caps = capabilities()
+
+        # Remove non existing capability
+        caps -= 'edit_posts'
+
+        self.assertZero(caps)
+        
+        # Add one
+        caps += 'edit_posts'
+
+        # Remove existing capability
+        caps -= 'edit_posts'
+
+        self.assertZero(caps)
+
+        caps += 'edit_posts'
+        caps += 'add_posts'
+
+        # Remove one of two
+        caps -= 'edit_posts'
+
+        self.assertOne(caps)
+        self.assertEq(caps.first.name, 'add_posts')
+
+    def it_call__str__(self):
+        caps = capabilities()
+        self.assertEmptyString(str(caps))
+
+        caps += 'edit_posts'
+        self.assertEq('edit_posts', str(caps))
+
+        caps += 'add_posts'
+        self.assertEq('edit_posts add_posts', str(caps))
+
+class test_capability(tester):
+    
+    def it_breaks_name_rule(self):
+        cap = capability('')
+        self.assertOne(cap.brokenrules)
+        self.assertBroken(cap, 'name', 'full')
+
+        cap = capability(None)
+        self.assertCount(2, cap.brokenrules)
+        self.assertBroken(cap, 'name', 'full')
+
+        cap = capability(1)
+        self.assertOne(cap.brokenrules)
+        self.assertBroken(cap, 'name', 'valid')
+
+        cap = capability('can edit')
+        self.assertOne(cap.brokenrules)
+        self.assertBroken(cap, 'name', 'valid')
+
+        cap = capability(' can-edit ')
+        self.assertZero(cap.brokenrules)
+    
 
 t = testers()
 t.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)

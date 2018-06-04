@@ -22,13 +22,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-from pdb import set_trace; B=set_trace
 from entities import brokenrules, brokenrule, entity, entities
-import uuid
+from pdb import set_trace; B=set_trace
+import db
 import db
 import hashlib
 import os
-import db
+import re
+import uuid
 
 class persons(db.dbentities):
     @property
@@ -201,7 +202,6 @@ class user(db.dbentity):
     def __init__(self, o=None):
         super().__init__()
         self._password = None
-        self._roles = roles()
         if o == None:
             self._service = None
             self._name = None
@@ -229,6 +229,21 @@ class user(db.dbentity):
             self._service = row.pop()
             self._id = uuid.UUID(bytes=row.pop())
             self._markold()
+
+        self._roles_mm_objects = roles_mm_objects(self)
+
+        self._roles = roles()
+        self._roles.onadd    += self._roles_onchg
+        self._roles.onremove += self._roles_onchg
+        for mm in self._roles_mm_objects:
+            self._roles += role(mm.roleid)
+
+    def _roles_onchg(self, src, eargs):
+        self._markdirty()
+
+    @property
+    def _collection(self):
+        return users
 
     @staticmethod
     def load(uid, srv):
@@ -267,6 +282,9 @@ class user(db.dbentity):
 
         self.query(insert, args, cur)
 
+        self._roles_mm_objects.attach(self.roles)
+        self._roles_mm_objects.save()
+
     def _update(self, cur=None):
         sql = """
         update users
@@ -285,6 +303,8 @@ class user(db.dbentity):
         )
 
         self.query(sql, args, cur)
+
+        self.roles.save(cur)
         
     @property
     def roles(self):
@@ -371,6 +391,132 @@ class user(db.dbentity):
                 
         return brs
 
+class roles_mm_objects(db.dbentities):
+    def __init__(self, obj=None):
+        super().__init__()
+        self._object = obj
+
+        if obj:
+            if not self.object._isnew:
+                sql = """
+                select *
+                from roles_mm_objects
+                where objectid = %s and
+                objectname = %s
+                """
+                args = (
+                    self.object.id.bytes,
+                    self.object._table,
+                )
+
+                ress = self.query(sql, args)
+
+                for res in ress:
+                    self += role_mm_object(res)
+
+    def attach(self, rs):
+        for mm in self:
+            for r in rs:
+                if mm.role.id == r.id:
+                    break;
+            else:
+                mm.markdeleted()
+
+        for r in rs:
+            for mm in self:
+                if mm.roleid == r.id:
+                    break
+            else:
+                mm = role_mm_object()
+                mm.roleid = r.id
+                mm.objectid = self.object.id
+                mm.objectname = self.object._table
+                self += mm
+
+    @property
+    def _create(self):
+        return """
+        create table roles_mm_objects(
+            id binary(16) primary key,
+            roleid binary(16),
+            objectid binary(16),
+            objectname varchar(255)
+        )
+        """
+
+    @property
+    def _table(self):
+        return 'roles_mm_objects'
+
+    @property
+    def object(self):
+        return self._object
+
+class role_mm_object(db.dbentity):
+    def __init__(self, res=None):
+        super().__init__()
+        if res:
+            row = list(res)
+            self._id         = uuid.UUID(bytes=row.pop(0))
+            self._roleid     = uuid.UUID(bytes=row.pop(0))
+            self._objectid   = uuid.UUID(bytes=row.pop(0))
+            self._objectname = row.pop(0)
+            self._markold()
+        else:
+            self._id         = None
+            self._roleid     = None
+            self._objectid   = None
+            self._objectname = None
+            self._marknew()
+
+
+    def _insert(self, cur=None):
+        self._id = uuid.uuid4()
+
+        args = (
+            self.id.bytes, 
+            self.roleid.bytes,
+            self.objectid.bytes,
+            self.objectname,
+        )
+
+        insert = """
+        insert into roles_mm_objects
+        values({})
+        """.format(('%s, ' * len(args)).rstrip(', '))
+
+
+        self.query(insert, args, cur)
+
+
+    @property
+    def _collection(self):
+        return roles_mm_objects
+
+    @property
+    def roleid(self):
+        return self._roleid
+
+    @roleid.setter
+    def roleid(self, v):
+        return self._setvalue('_roleid', v, 'roleid')
+    
+    @property
+    def objectid(self):
+        return self._objectid
+
+    @objectid.setter
+    def objectid(self, v):
+        return self._setvalue('_objectid', v, 'objectid')
+    
+    @property
+    def objectname(self):
+        return self._objectname
+
+    @objectname.setter
+    def objectname(self, v):
+        return self._setvalue('_objectname', v, 'objectname')
+    
 class roles(db.dbentities):
     def __init__(self, ress=None):
         super().__init__()
@@ -383,7 +529,8 @@ class roles(db.dbentities):
         return """
         create table roles(
             id binary(16) primary key,
-            name varchar(255)
+            name varchar(255),
+            capabilities text
         )
         """
 
@@ -394,14 +541,41 @@ class roles(db.dbentities):
 class role(db.dbentity):
     def __init__(self, o=None):
         super().__init__()
-        if type(o) is db.dbresult:
-            ls = list(o._row)
-            self._name = ls.pop()
-            self._id = uuid.UUID(bytes=ls.pop())
+        res = None
+        if type(o) is uuid.UUID:
+            self._id = o
+            sql = """
+            select *
+            from roles
+            where id = %s
+            """
+            args = (
+                self.id.bytes,
+            )
+
+            ress = self.query(sql, args)
+            res = ress.demandhasone()
+        elif type(o) is db.dbresult:
+            res = o
         else:
             self._name = None
             self._id = None
             self._marknew()
+
+        if res:
+            ls = list(res._row)
+            self._capabilities = capabilities(ls.pop())
+            self._name = ls.pop()
+            self._id = uuid.UUID(bytes=ls.pop())
+            self._markold()
+        else:
+            self._capabilities = capabilities()
+
+        self._capabilities.onadd += self._capabilities_onchg
+        self._capabilities.onremove += self._capabilities_onchg
+    
+    def _capabilities_onchg(self, src, eargs):
+        self._markdirty()
 
     def _insert(self, cur=None):
         self._id = uuid.uuid4()
@@ -409,6 +583,7 @@ class role(db.dbentity):
         args = (
             self.id.bytes, 
             self.name,
+            str(self.capabilities),
         )
 
         insert = """
@@ -422,12 +597,14 @@ class role(db.dbentity):
     def _update(self, cur=None):
         sql = """
         update roles
-        set name = %s
+        set name = %s,
+        capabilities = %s
         where id = %s
         """
         args = (
             self.name,
-            self.id.bytes
+            str(self.capabilities),
+            self.id.bytes,
         )
 
         self.query(sql, args, cur)
@@ -439,4 +616,89 @@ class role(db.dbentity):
     @name.setter
     def name(self, v):
         return self._setvalue('_name', v, 'name')
+
+    @property
+    def capabilities(self):
+        return self._capabilities
+
+    @capabilities.setter
+    def capabilities(self, v):
+        return self._setvalue('_capabilities', v, 'capabilities')
+
+class capabilities(entities):
+    def __init__(self, caps=None):
+        super().__init__()
+        if caps:
+            for cap in caps.split():
+                self += capability(cap)
+
+    def append(self, obj, uniq=False, r=None):
+        if type(obj) is str:
+            return self.append(capability(obj))
+        elif type(obj) is capability:
+            # Only allow capabilities with unique names
+            for cap in self:
+                if cap.name == obj.name:
+                    break
+            else:
+                return super().append(obj)
+        else:
+            raise ValueError('Only str and capability can be appended')
+
+    def remove(self, obj):
+        if type(obj) is str:
+            cap = self(obj)
+            if cap:
+                return self.remove(cap)
+            return None
+        elif type(obj) is capability:
+            super().remove(obj)
+        else:
+            raise ValueError('Only str and capability can be removed')
+
+    # Don't allow other ways to add to collection
+    def insert(self):
+        raise NotImplementedError()
+    def insertbefore(self):
+        raise NotImplementedError()
+    def insertafter(self):
+        raise NotImplementedError()
+    def unshift(self):
+        raise NotImplementedError()
+    def shift(self):
+        raise NotImplementedError()
+    def push(self):
+        raise NotImplementedError()
+    def pop(self):
+        raise NotImplementedError()
+
+    def __str__(self):
+        return ' '.join(self.pluck('name'))
+
+class capability(entity):
+    def __init__(self, v):
+        self._name = v
+
+    @property
+    def name(self):
+        if type(self._name) == str:
+            return self._name.strip()
+        return self._name
+
+    @name.setter
+    def name(self, v):
+        return self._setvalue('_name', v, 'name')
+
+    @property
+    def brokenrules(self):
+        brs = brokenrules()
+        brs.demand(self, 'name', isfull=True, istype=str)
+
+        n = self.name
+        if type(n) is str and bool(re.match('^.*\s+.*$', n)):
+            brs += brokenrule('Name must contain no whitespace', 'name', 'valid')
+
+        return brs
+
+
 
