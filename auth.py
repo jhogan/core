@@ -39,9 +39,9 @@ class jwt(entity):
         self.onaftervaluechange += self._self_onaftervaluechange
 
     def _self_onaftervaluechange(self, src, eargs):
-        # If a proprey is changes, set _token to None so self.token recreates
+        # If a property is changes, set _token to None so self.token recreates
         # the token. Otherwise, we would get the same token despite a change a
-        # property
+        # property.
         self._token = None
         
     @property

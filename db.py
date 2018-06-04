@@ -120,11 +120,9 @@ class dbentities(entities):
 
 class dbentity(entity):
     # TODO Add Tests
-
     def __init__(self, id=None):
         super().__init__()
         self.onaftervaluechange += self._self_onaftervaluechange
-
 
     def _marknew(self):
         self._isnew = True
@@ -174,7 +172,6 @@ class dbentity(entity):
             self._isnew = False
         else:
             raise brokenruleserror('Won\'t save invalid object', self)
-
 
 class connections(entities):
 
