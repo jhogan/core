@@ -116,6 +116,15 @@ class entities(object):
         for t in self._ls:
             yield t
 
+    def pluck(self, prop):
+        # TODO: Write test
+
+        ls = []
+        for e in self:
+            ls.append(getattr(e, prop))
+
+        return ls
+
     def getrandom(self, returnIndex=False):
         if self.isempty: return None
         ix = randint(0, self.ubound)
