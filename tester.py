@@ -130,6 +130,9 @@ class tester(entity):
         if v:
             self._failures += failure(ent=ent)
 
+    def assertBroken(self, ent, prop, rule):
+        if not ent.brokenrules.contains(prop, rule):
+            self._failures += failure()
     @property
     def failures(self):
         return self._failures
