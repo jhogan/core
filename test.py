@@ -1840,8 +1840,75 @@ class test_user(tester):
         u = user.load(str(uuid4()), str(uuid4()))
         self.assertNone(u)
 
-    def it_loads_roles(self):
+    def it_calls_name(self):
+        u = user()
+        name = str(uuid4())
+        u.name = name
+        u.service = str(uuid4())
+        u.password = str(uuid4())
+        self.assertEq(name, u.name)
+        u.save()
+
+        u = user(u.id)
+        self.assertEq(name, u.name)
+
+        # Change name
+        name = str(uuid4())
+        u.name = name
+
+        u.save()
+
+        u = user(u.id)
+        self.assertEq(name, u.name)
+
+    def it_calls_service(self):
+        u = user()
+        name = str(uuid4())
+        u.name = name
+        service = str(uuid4())
+        u.service = service
+        u.password = str(uuid4())
+        self.assertEq(name, u.name)
+        u.save()
+
+        u = user(u.id)
+        self.assertEq(service, u.service)
+
+        # Change service
+        service = str(uuid4())
+        u.service = service
+
+        u.save()
+
+        u = user(u.id)
+        self.assertEq(service, u.service)
+
+    def it_calls_password(self):
+        u = user()
+        name = str(uuid4())
+        u.name = name
+        service = str(uuid4())
+        u.service = service
+        pwd = 'password'
+        u.password = pwd
+        self.assertEq(name, u.name)
+        u.save()
+
+        u = user(u.id)
+        self.assertTrue(u.ispassword(pwd))
+
+        # Change password
+        pwd = 'password0'
+        u.password = pwd
+
+        u.save()
+
+        u = user(u.id)
+        self.assertTrue(u.ispassword(pwd))
+
+    def it_persists_roles(self):
         rs = roles().ALL()
+        rs.sort(key=lambda x: x.name)
 
         # Create user 
         u = user()
@@ -1867,41 +1934,14 @@ class test_user(tester):
         # Add an additional roles, save, load and test
         u.roles += rs['vegout-blog-editor']
 
-        B()
         u.save()
 
         u = user(u.id)
+        u.roles.sort(key=lambda x: x.name)
         self.assertThree(u.roles)
         for i, r in enumerate(u.roles):
             self.assertEq(rs[i].name, r.name)
 
-    def it_calls_name(self):
-        # TODO
-        pass
-
-    def it_calls_service(self):
-        # TODO
-        pass
-
-    def it_calls_password(self):
-        # TODO
-        pass
-        
-
-    def it_adds_role(self):
-        u = user()
-        u.service = str(uuid4())
-        u.name = str(uuid4())
-        u.password = str(uuid4())
-        r = roles().ALL()['carapacian-blog-editor']
-        u.roles += r
-
-        self.assertIs(r, u.roles.first)
-
-
-    def it_remove_role(self):
-        # TODO
-        pass
 
 class test_role(tester):
     def __init__(self):

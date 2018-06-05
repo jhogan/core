@@ -291,7 +291,7 @@ class user(db.dbentity):
         set service = %s,
         name = %s,
         password = %s,
-        salt = %s,
+        salt = %s
         where id = %s
         """
         args = (
@@ -304,7 +304,8 @@ class user(db.dbentity):
 
         self.query(sql, args, cur)
 
-        self.roles.save(cur)
+        self._roles_mm_objects.attach(self.roles)
+        self._roles_mm_objects.save()
         
     @property
     def roles(self):
@@ -336,6 +337,7 @@ class user(db.dbentity):
 
     @password.setter
     def password(self, v):
+        self._hash, self._salt = None, None
         return self._setvalue('_password', v, 'password')
 
     def _getpasswordhash(self, pwd=None):
@@ -386,7 +388,7 @@ class user(db.dbentity):
         # valid.
         if brs.isempty:
             u = user.load(self.name, self.service)
-            if u:
+            if u and u.id != self.id:
                 brs += brokenrule('A user with that name and service already exist', 'name', 'unique')
                 
         return brs
@@ -417,7 +419,7 @@ class roles_mm_objects(db.dbentities):
     def attach(self, rs):
         for mm in self:
             for r in rs:
-                if mm.role.id == r.id:
+                if mm.roleid == r.id:
                     break;
             else:
                 mm.markdeleted()
