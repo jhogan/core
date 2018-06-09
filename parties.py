@@ -22,7 +22,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-from entities import brokenrules, brokenrule, entity, entities
+from entities import brokenrules, brokenrule, entity, entities, demand
 from pdb import set_trace; B=set_trace
 import db
 import db
@@ -190,7 +190,8 @@ class users(db.dbentities):
             service varchar(266),
             name varchar(255),
             password binary(32),
-            salt binary(16)
+            salt binary(16),
+            personid binary(16)
         )
         """
 
@@ -202,12 +203,13 @@ class user(db.dbentity):
     def __init__(self, o=None):
         super().__init__()
         self._password = None
+        self._person   =  None
         if o == None:
-            self._service = None
-            self._name = None
-            self._hash = None
-            self._salt = None
-            self._id   = None
+            self._service  =  None
+            self._name     =  None
+            self._hash     =  None
+            self._salt     =  None
+            self._id       =  None
             self._marknew()
         elif type(o) == uuid.UUID or type(o) == db.dbresult:
             if type(o) == uuid.UUID:
@@ -223,6 +225,13 @@ class user(db.dbentity):
             else:
                 res = o
             row = list(res)
+
+            bytes = row.pop()
+            if bytes:
+                id = uuid.UUID(bytes=bytes)
+                self._person = person(id)
+                self._person.onaftervaluechange += self._person_onaftervaluechange
+
             self._salt = row.pop()
             self._hash = row.pop()
             self._name = row.pop()
@@ -233,13 +242,22 @@ class user(db.dbentity):
         self._roles_mm_objects = roles_mm_objects(self)
 
         self._roles = roles()
-        self._roles.onadd    += self._roles_onchg
-        self._roles.onremove += self._roles_onchg
+        self._roles.onadd                 += self._roles_onchg
+        self._roles.onremove              += self._roles_onchg
+        self._roles.onbeforevaluechange   += self._roles_onbeforevaluechange
+
         for mm in self._roles_mm_objects:
             self._roles += role(mm.roleid)
 
     def _roles_onchg(self, src, eargs):
+        # Called anytime a role is added or removed from
+        # self._roles. 
         self._markdirty()
+
+    def _roles_onbeforevaluechange(self, src, eargs):
+        # Called anytime a property on a role in self.roles is made
+        msg = 'Changing values on role properties is not permitted'
+        raise NotImplementedError(msg)
 
     @property
     def _collection(self):
@@ -266,12 +284,21 @@ class user(db.dbentity):
     def _insert(self, cur=None):
         self._id = uuid.uuid4()
 
+        p = self.person
+
+        if p:
+            p.save()
+            personid = p.id.bytes
+        else:
+            personid = None
+
         args = (
             self.id.bytes, 
             self.service,
             self.name,
             self.hash,
             self.salt,
+            personid,
         )
 
         insert = """
@@ -279,27 +306,35 @@ class user(db.dbentity):
         values({})
         """.format(('%s, ' * len(args)).rstrip(', '))
 
-
         self.query(insert, args, cur)
 
         self._roles_mm_objects.attach(self.roles)
         self._roles_mm_objects.save()
 
     def _update(self, cur=None):
+
+        if self.person:
+            self.person.save()
+
         sql = """
         update users
         set service = %s,
         name = %s,
         password = %s,
-        salt = %s
+        salt = %s,
+        personid = %s
         where id = %s
         """
+
+        personid = self.person.id.bytes if self.person else None
+
         args = (
             self.service,
             self.name,
             self.hash,
             self.salt,
-            self.id.bytes
+            personid,
+            self.id.bytes,
         )
 
         self.query(sql, args, cur)
@@ -314,6 +349,14 @@ class user(db.dbentity):
     @roles.setter
     def roles(self, v):
         return self._setvalue('_roles', v, 'roles')
+    
+    def isassigned(self, r):
+        demand(r, type=role)
+        for r1 in self.roles:
+            if r.name == r1.name:
+                return True
+        return False
+        
 
     @property
     def service(self):
@@ -350,6 +393,23 @@ class user(db.dbentity):
         hash = fn(algo, pwd, salt, iter)
         return hash, salt
 
+    def _person_onaftervaluechange(self, src, eargs):
+        self._markdirty()
+
+    @property
+    def person(self):
+        return self._person
+
+    @person.setter
+    def person(self, v):
+        if self._person != v:
+            v.onaftervaluechange += self._person_onaftervaluechange
+            if self._person:
+                self._person.onaftervaluechange -= \
+                    self._person_onaftervaluechange
+            
+        return self._setvalue('_person', v, 'person')
+
     def _setpasswordhash(self):
         if self._hash and self._salt:
             return
@@ -375,7 +435,6 @@ class user(db.dbentity):
     def hash(self):
         self._setpasswordhash()
         return self._hash
-        
 
     @property
     def brokenrules(self):
@@ -422,7 +481,7 @@ class roles_mm_objects(db.dbentities):
                 if mm.roleid == r.id:
                     break;
             else:
-                mm.markdeleted()
+                mm.markfordeletion()
 
         for r in rs:
             for mm in self:
@@ -490,6 +549,16 @@ class role_mm_object(db.dbentity):
 
         self.query(insert, args, cur)
 
+    def _delete(self, cur=None):
+        sql = """
+        delete from roles_mm_objects
+        where id = %s
+        """
+        args = (
+            self.id.bytes,
+        )
+
+        self.query(sql, args, cur)
 
     @property
     def _collection(self):

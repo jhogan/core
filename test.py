@@ -1906,6 +1906,76 @@ class test_user(tester):
         u = user(u.id)
         self.assertTrue(u.ispassword(pwd))
 
+    def it_calls_person(self):
+        # Create a person
+        p = person()
+        p.firstname   =  'Gary'
+        p.middlename  =  'Lawrence'
+        p.lastname    =  'Francione'
+        p.email       =  'gfrancione@mail.com'
+        p.phone       =  '5' *  10
+
+        # Create a new user
+        u = user()
+        u.name      =  str(uuid4())
+        u.service   =  str(uuid4())
+        u.password  =  str(uuid4())
+
+        # Associate the user with the person
+        u.person = p
+
+        # Save user, reload and test association
+        u.save()
+        u = user(u.id)
+        self.assertEq(p.id,          u.person.id)
+        self.assertEq(p.firstname,   u.person.firstname)
+        self.assertEq(p.middlename,  u.person.middlename)
+        self.assertEq(p.lastname,    u.person.lastname)
+        self.assertEq(p.email,       u.person.email)
+        self.assertEq(p.phone,       u.person.phone)
+
+        # Alter person, save user, reload, test
+        phone = '6' * 10
+        u.person.phone = phone
+        u.save()
+        u = user(u.id)
+        self.assertEq(p.id,          u.person.id)
+        self.assertEq(p.firstname,   u.person.firstname)
+        self.assertEq(p.middlename,  u.person.middlename)
+        self.assertEq(p.lastname,    u.person.lastname)
+        self.assertEq(p.email,       u.person.email)
+        self.assertEq(phone,         u.person.phone)
+
+        # Create a second person
+        p = person()
+        p.firstname   =  'James'
+        p.middlename  =  '<none>'
+        p.lastname    =  'Aspey'
+        p.email       =  'jaspey@mail.com'
+        p.phone       =  '5' *  10
+
+        # Associate the second person with the user
+        u.person = p
+
+        # Save user, reload, test that new person was associated
+        u.save()
+        u = user(u.id)
+
+        self.assertEq(p.id,          u.person.id)
+        self.assertEq(p.firstname,   u.person.firstname)
+        self.assertEq(p.middlename,  u.person.middlename)
+        self.assertEq(p.lastname,    u.person.lastname)
+        self.assertEq(p.email,       u.person.email)
+        self.assertEq(p.phone,         u.person.phone)
+
+    def it_captures_persons_brokenrules(self):
+        # TODO
+        pass
+
+    def it_captures_role_mm_object_brokenrules(self):
+        # TODO
+        pass
+
     def it_persists_roles(self):
         rs = roles().ALL()
         rs.sort(key=lambda x: x.name)
@@ -1942,6 +2012,74 @@ class test_user(tester):
         for i, r in enumerate(u.roles):
             self.assertEq(rs[i].name, r.name)
 
+        # Remove a roles, one-by-one, reload and test
+        for i in range(u.roles.count, 0, -1):
+            # Remove
+            u.roles.pop()
+
+            # Test
+            for j, r in enumerate(u.roles):
+                self.assertEq(rs[j].name, r.name)
+            self.assertCount(i - 1, u.roles)
+
+            # Save and reload
+            u.save()
+            u = user(u.id)
+
+            # Test
+            u.roles.sort('name')
+            self.assertCount(i - 1, u.roles)
+            for j, r in enumerate(u.roles):
+                self.assertEq(rs[j].name, r.name)
+
+    def it_calls_isassigned(self):
+        r = role()
+        r.name = 'good-eats-blog-editor'
+
+        u = user()
+        u.service   =  str(uuid4())
+        u.name      =  str(uuid4())
+        u.password  =  str(uuid4())
+
+        u.roles += r
+
+        self.assertTrue(u.isassigned(r))
+        self.assertFalse(u.isassigned(role('not-assigned')))
+
+        for t in '', None, 1, True:
+            try:
+                u.isassigned(t)
+            except TypeError:
+                pass
+            except Exception:
+                self.assertFail('Wrong exception type')
+            else:
+                self.assertFail('No exception thrown')
+
+    def it_prevents_modifications_of_roles(self):
+        u = user()
+        rs = roles().ALL()
+        u.roles += rs['vegout-blog-editor']
+
+        try:
+            u.roles.first.name = 'shouldnt-be-doing-this'
+        except NotImplementedError:
+            pass
+        except Exception:
+            self.assertFail('Wrong exception type')
+        else:
+            self.assertFail('No exception was thrown')
+
+        # TODO Capabilities shouldn't be modifiable either. Implement the below.
+        if False:
+            try:
+                u.roles.first.capabilities += 'can-derp'
+            except NotImplementedError:
+                pass
+            except Exception as ex:
+                self.assertFail('Wrong exception type')
+            else:
+                self.assertFail('No exception was thrown')
 
 class test_role(tester):
     def __init__(self):
