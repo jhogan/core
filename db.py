@@ -122,6 +122,7 @@ class dbentity(entity):
     # TODO Add Tests
     def __init__(self, id=None):
         super().__init__()
+        self._deleteme = False
         self.onaftervaluechange += self._self_onaftervaluechange
 
     def _marknew(self):
@@ -134,6 +135,9 @@ class dbentity(entity):
     def _markold(self):
         self._isnew = False
         self._isdirty = False
+
+    def markfordeletion(self):
+        self._deleteme = True
 
     def _self_onaftervaluechange(self, src, eargs):
         if not self.isnew:
@@ -163,8 +167,14 @@ class dbentity(entity):
         return self.connection.query(sql, args, cur)
 
     def save(self, cur=None):
-        if not (self._isnew or self._isdirty):
+        if not (self._isnew or self._isdirty or self._deleteme):
            return
+
+        if self._deleteme:
+            if self._isnew:
+               raise Exception("Can't delete row that doesn't exist.")
+            else:
+                self._delete()
 
         if self.isvalid:
             if self.isnew:
