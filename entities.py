@@ -670,6 +670,30 @@ class event(entities):
             
         self._ls.append(fn)
 
+    def remove(self, fn):
+        # This is experimental as of 20180506. Previously, events were removed
+        # by the base method entities.remove(). But it was noticed that the
+        # identity test wasn't matching the bound method being removed:
+        #
+        #    if rm is self[i]:
+        #
+        # Bound method id's (id(obj.method)) seem to change over time. 
+        # However, an equality test does match bound method which is why
+        # the code below reads:
+        #
+        #    if fn == self[i]
+        #
+        # This may also explain why it has been noticed that there have
+        # been a build up of events in event collections which it would
+        # seem shouldn't be there.
+        if not callable(fn):
+            raise ValueError('Event must be callable')
+
+        for i in range(self.count - 1, -1, -1):
+            if fn == self[i]:
+                del self._ls[i]
+                break
+
 class eventargs(entity):
     pass
 
