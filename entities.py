@@ -830,3 +830,8 @@ class index(entity):
 
     def __len__(self):
         return len(self._ix)
+
+def demand(v, type=None):
+    if type is not None:
+        if builtins.type(v) != type:
+            raise TypeError()
