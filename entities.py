@@ -166,7 +166,14 @@ class entities(object):
 
     # TODO Test reverse parameter
     def sort(self, key, reverse=False):
-        self._ls.sort(key=key, reverse=reverse)
+
+        if type(key) == str:
+            # TODO Add test for this condition
+            key1 = lambda x: getattr(x, key)
+        elif callable(str):
+            key1 = key
+
+        self._ls.sort(key=key1, reverse=reverse)
 
     def sorted(self, key):
         return type(self)(sorted(self._ls, key=key))
