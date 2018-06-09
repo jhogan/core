@@ -27,6 +27,8 @@ from pdb import set_trace; B=set_trace
 from random import randint, sample
 import re
 import sys
+import builtins
+from pprint import pprint
 
 class entities(object):
     def __init__(self, initial=None):
@@ -38,12 +40,16 @@ class entities(object):
         if not isinstance(self, event) and not isinstance(self, indexes):
 
             # Instantiate events
-            self.onadd          =   event()
-            self.onremove       =   event()
+            self.onadd                =  event()
+            self.onremove             =  event()
+
+            # TODO Write tests for these two events
+            self.onbeforevaluechange  =  event()
+            self.onaftervaluechange   =  event()
 
             # Local subscriptions to events
-            self.onadd          +=  self._self_onadd
-            self.onremove       +=  self._self_onremove
+            self.onadd                +=  self._self_onadd
+            self.onremove             +=  self._self_onremove
 
             # Instatiate indexes
             ix = index(name='identity', keyfn=lambda e: e)
@@ -79,11 +85,21 @@ class entities(object):
                 self._entity_onaftervaluechange 
 
     def _entity_onbeforevaluechange(self, src, eargs):
+        # Invoked before a change is made to a value on one of the collected
+        # entities
+
+        # Raise an analogous event for the collection itself
+        self.onbeforevaluechange(src, eargs)
         for ix in self.indexes:
             if ix.property == eargs.property:
                 ix.remove(eargs.entity)
 
     def _entity_onaftervaluechange(self, src, eargs):
+        # Invoked after a change is made to a value on one of the collected
+        # entities
+
+        # Raise an analogous event for the collection itself
+        self.onaftervaluechange(src, eargs)
         for ix in self.indexes:
             if ix.property == eargs.property:
                 ix += eargs.entity
