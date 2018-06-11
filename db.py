@@ -41,6 +41,14 @@ class dbentities(entities):
         return type(self)(ress)
 
     @property
+    def isdirty(self):
+        return any([x.isdirty for x in self])
+
+    @property
+    def isnew(self):
+        return any([x.isnew for x in self])
+
+    @property
     def _table(self):
         msg = '_table must be overridden'
         raise NotImplementedError(msg)
@@ -167,7 +175,7 @@ class dbentity(entity):
         return self.connection.query(sql, args, cur)
 
     def save(self, cur=None):
-        if not (self._isnew or self._isdirty or self._deleteme):
+        if not (self.isnew or self.isdirty or self._deleteme):
            return
 
         if self._deleteme:
