@@ -54,9 +54,21 @@ class tester(entity):
         except ValueError: self._failures += failure()
 
     def assertTrue(self, actual, msg=None):
+        if type(actual) != bool:
+            raise ValueError('actual must be bool')
+
+        if not actual: self._failures += failure()
+
+    def assertTruthy(self, actual, msg=None):
         if not actual: self._failures += failure()
 
     def assertFalse(self, actual, msg=None):
+        if type(actual) != bool:
+            raise ValueError('actual must be bool')
+
+        if actual: self._failures += failure()
+
+    def assertFalsey(self, actual, msg=None):
         if actual: self._failures += failure()
 
     def assertFail(self, msg=None):

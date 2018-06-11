@@ -148,6 +148,10 @@ class test_entities(tester):
         self.assertIs(e1, es[0])
         self.assertIs(e2, es[1])
 
+    def it_is_not_falsy(self):
+        es = entities()
+        self.assertTruthy(es)
+
     def it_clears(self):
         """ Test to ensure the clear() method removes entities. """
         es = entities([entity(), entity()])
@@ -1263,7 +1267,7 @@ class test_entities(tester):
         # Now test the knigts collection's broken rules.
         self.assertFalse(ks.isvalid)
         self.assertInValid(ks)
-        self.assertTrue(4, ks.brokenrules.count)
+        self.assertCount(4, ks.brokenrules)
 
         for br in ks.brokenrules:
             self.assertEq(br.message, 'Names must be strings')
