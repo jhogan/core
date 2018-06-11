@@ -131,7 +131,7 @@ class dbentity(entity):
     def __init__(self, id=None):
         super().__init__()
         self._deleteme = False
-        self.onaftervaluechange += self._self_onaftervaluechange
+        self.onaftervaluechange  +=  self._self_onaftervaluechange
 
     def _marknew(self):
         self._isnew = True
