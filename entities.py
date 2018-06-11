@@ -611,15 +611,15 @@ class brokenrules(entities):
                      isemail=False, 
                      isdate=False,
                      maxlen=None,
-                     istype=None):
+                     type=None):
         v = getattr(cls, prop)
 
-        if istype is not None:
-            if type(v) is not istype:
+        if type is not None and v is not None:
+            if builtins.type(v) is not type:
                 self += brokenrule(prop + ' is wrong type', prop, 'valid')
 
         if isfull:
-            if (type(v) == str and v.strip() == '') or v is None:
+            if (builtins.type(v) == str and v.strip() == '') or v is None:
                 self += brokenrule(prop + ' is empty', prop, 'full')
 
         if isemail:
@@ -628,7 +628,7 @@ class brokenrules(entities):
                 self += brokenrule(prop + ' is invalid', prop, 'valid')
 
         if maxlen != None:
-            if v == None or len(v) > maxlen:
+            if v != None and len(v) > maxlen:
                 # property can only break the 'fits' rule if it hasn't broken
                 # the 'full' rule. E.g., a property can be a string of
                 # whitespaces which may break the 'full' rule. In that case,
@@ -637,7 +637,7 @@ class brokenrules(entities):
                     self += brokenrule(prop + ' is too lengthy', prop, 'fits')
 
         if isdate:
-            if type(v) != datetime:
+            if builtins.type(v) != datetime:
                 self += brokenrule(prop + " isn't a date", prop, 'valid')
 
     def contains(self, prop=None, type=None):
