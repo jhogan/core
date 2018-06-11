@@ -163,7 +163,7 @@ class test_blogpostrevision(tester):
         rev.slug_cache = slug
         rev.save()
 
-        # Relead blogpostrevision and test
+        # Reload blogpostrevision and test
         rev1 = blogpostrevision(rev.id)
         self.assertEq(rev.title, rev1.title)
         self.assertEq(rev.slug, rev1.slug)
@@ -173,7 +173,6 @@ class test_blogpostrevision(tester):
         self.assertEq(rev.iscommentable, rev1.iscommentable)
         self.assertEq(rev.slug_cache, rev1.slug_cache)
         self.assertEq(bl.id, rev1.blog.id)
-        self.assertTrue(rev)
 
     def it_instantiates(self):
         rev = blogpostrevision()
@@ -1540,22 +1539,108 @@ class test_persons(tester):
         super().__init__()
         persons().RECREATE()
 
-    def it_calls_save(self):
-        pass
+    def it_calls__str__(self):
+        ps = persons()
 
+        p = person()
+        p.firstname   =  'Ellan'
+        p.lastname    =  'Page'
+        p.email       =  'epage@fakemail.com'
+        p.phone       =  '555 555 5555'
+        ps += p
 
+        p = person()
+        p.firstname   =  'Jessica'
+        p.lastname    =  'Chastain'
+        p.email       =  'jchastain@fakemail.com'
+        p.phone       =  '555 555 5555'
+        ps += p
+
+        p = person()
+        p.firstname   =  'James'
+        p.lastname    =  'Cromwell'
+        p.email       =  'jcromwell@fakemail.com'
+        p.phone       =  '555 555 5555'
+        ps += p
+
+        ps.save()
+        ps = persons().ALL()
+        print(ps)
+
+        expect = """+--------------------------------------------------------------------------------+
+| id | firstname | middlename | lastname | email                  | phone        |
+|-------------------------------------------------------------------------------|
+|    | Ellan     |            | Page     | epage@fakemail.com     | 555 555 5555 |
+|--------------------------------------------------------------------------------|
+|    | Jessica   |            | Chastain | jchastain@fakemail.com | 555 555 5555 |
+|--------------------------------------------------------------------------------|
+|    | James     |            | Cromwell | jcromwell@fakemail.com | 555 555 5555 |
++--------------------------------------------------------------------------------+
+"""
+
+        self.assertEq(expect, str(ps))
+
+    def it_searches(self):
+        ps = persons()
+        p = person()
+        p.firstname   =  'Ellan'
+        p.lastname    =  'Page'
+        p.email       =  'epage@fakemail.com'
+        p.phone       =  '555 555 1111'
+        ps += p
+
+        p = person()
+        p.firstname   =  'Jessica'
+        p.lastname    =  'Chastain'
+        p.email       =  'jchastain@fakemail.com'
+        p.phone       =  '555 555 2222'
+        ps += p
+
+        p = person()
+        p.firstname   =  'James'
+        p.lastname    =  'Cromwell'
+        p.email       =  'jcromwell@fakemail.com'
+        p.phone       =  '555 555 3333'
+        ps += p
+
+        ps.save()
+
+        for s in 'james', 'Cromwell', 'jcromwell', 3333:
+            ps = persons.search(s)
+
+            self.assertOne(ps)
+            self.assertEq('James',     ps.first.firstname)
+            self.assertEq('Cromwell',  ps.first.lastname)
+
+        ps = persons.search(555)
+        self.assertThree(ps)
+    
 class test_person(tester):
     def __init__(self):
         super().__init__()
         persons().RECREATE()
 
+    def it_calls__str__(self):
+        p = person()
+        p.firstname   =  'Tom'
+        p.lastname    =  'Regan'
+        p.email       =  'tregan@fakemail.com'
+        p.phone       =  '555 555 5555'
+
+        expect = """First name: Tom
+Last name: Regan
+Email: tregan@fakemail.com
+Phone: 555 555 5555
+"""
+        self.assertEq(expect, str(p)) 
+
     def it_calls_save(self):
         p = person()
-        p.firstname = 'Gary'
-        p.middlename = 'Lawrence'
-        p.lastname = 'Francione'
-        p.email = 'glawrence@fakemail.com'
-        p.phone = '480 555 5555'
+        p.firstname   =  'Gary'
+        p.middlename  =  'Lawrence'
+        p.lastname    =  'Francione'
+        p.email       =  'glawrence@fakemail.com'
+        p.phone       =  '480 555 5555'
         p.save()
 
     def it_loads(self):
@@ -1571,6 +1656,31 @@ class test_person(tester):
 
         for prop in ('firstname', 'middlename', 'lastname', 'id', 'email', 'phone'):
             self.assertEq(getattr(p, prop), getattr(p1, prop))
+
+    def it_deletes(self):
+        p = person()
+        p.firstname   =  'Peter'
+        p.middlename  =  'Albert David'
+        p.lastname    =  'Singer'
+        p.email       =  'psinger@fakemail.com'
+        p.phone       =  '555 555 5555'
+
+        p.save()
+        p = person(p.id)
+        cnt = p.delete()
+
+        self.assertEq(1, cnt)
+        self.assertTrue(p.isnew)
+
+        cnt = p.delete()
+        self.assertEq(0, cnt)
+
+        try:
+            p = person(p.id)
+        except Exception:
+            pass
+        else:
+            self.assertFail('No exception thrown')
 
     def it_calls_fullname(self):
         p = person()
@@ -1708,6 +1818,84 @@ class test_person(tester):
         for prop in ('firstname', 'middlename', 'lastname', 'id', 'email', 'phone'):
             self.assertEq(getattr(p, prop), getattr(p1, prop))
 
+    def it_adds_users(self):
+        # Create new person
+        p = person()
+        p.firstname  =  'Joseph'
+        p.lastname   =  'Armstrong'
+        p.email      =  'jarmstrong@fakemail.com'
+        p.phone      =  '555 555 5555'
+
+        # Create new user
+        u = user()
+        u.service   =  str(uuid4())
+        u.name      =  str(uuid4())
+        u.password  =  str(uuid4())
+
+        us = users()
+        us += u
+
+        # Add user to person and save
+        p.users += u
+
+        # Test p.users
+        self.assertEq(u.service,    p.users.first.service)
+        self.assertEq(u.name,       p.users.first.name)
+
+        p.save()
+
+        # Reload person; test p.users
+        p = person(p.id)
+
+        self.assertEq(u.service,    p.users.first.service)
+        self.assertEq(u.name,       p.users.first.name)
+        self.assertEq(u.person.id,  p.id)
+
+        # Change property of user, test, save person, reload, test
+        name = str(uuid4())
+        p.users.first.name = name
+
+        self.assertOne(p.users)
+        self.assertTrue(p.isdirty)
+        self.assertEq(u.service,    p.users.first.service)
+        self.assertEq(name,         p.users.first.name)
+        self.assertEq(u.person.id,  p.id)
+
+        return
+        p.save()
+
+        p = person(p.id)
+
+        self.assertOne(p.users)
+        self.assertEq(u.service,    p.users.first.service)
+        self.assertEq(name,         p.users.first.name)
+        self.assertEq(u.person.id,  p.id)
+
+        # Create new user, add user, test, save person, test
+        u = user()
+        u.service   =  str(uuid4())
+        u.name      =  str(uuid4())
+        u.password  =  str(uuid4())
+
+        us += u
+
+        p.users += u
+
+        self.assertTwo(p.users)
+        for u, pu in zip(us, p.users):
+            self.assertEq(u.service,    pu.service)
+            self.assertEq(u.name,       pu.name)
+
+        p.save()
+
+        p = person(p.id)
+
+        self.assertTwo(p.users)
+        for u, pu in zip(us, p.users):
+            self.assertEq(u.service,    pu.service)
+            self.assertEq(u.name,       pu.name)
+            self.assertEq(u.person.id,  p.id)
+
 class test_user(tester):
     def __init__(self):
         super().__init__()
@@ -1732,6 +1920,28 @@ class test_user(tester):
         u.name = 'glawrence'
         u.password = 'secret'
         u.save()
+
+    def it_calls_delete(self):
+        u = user()
+        u.service   =  str(uuid4())
+        u.name      =  str(uuid4())
+        u.password  =  str(uuid4())
+        u.save()
+
+        u = user(u.id)
+
+        cnt = u.delete()
+        self.assertEq(1, cnt)
+
+        cnt = u.delete()
+        self.assertEq(0, cnt)
+
+        try:
+            u = user(u.id)
+        except Exception:
+            pass
+        else:
+            self.assertFail('No exception thrown')
 
     def it_loads(self):
         u = user()
@@ -1966,15 +2176,49 @@ class test_user(tester):
         self.assertEq(p.middlename,  u.person.middlename)
         self.assertEq(p.lastname,    u.person.lastname)
         self.assertEq(p.email,       u.person.email)
-        self.assertEq(p.phone,         u.person.phone)
+        self.assertEq(p.phone,       u.person.phone)
 
     def it_captures_persons_brokenrules(self):
-        # TODO
-        pass
+        p = person()
+        p.firstname   =  'Emily'
+        p.middlename  =  'Moran'
+        p.lastname    =  'Barwick'
+        p.email       =  'ebarwick@mail.com'
+        p.phone       =  '5' * 256 # broken rule
+
+        u = user()
+        u.name      =  str(uuid4())
+        u.service   =  str(uuid4())
+        u.password  =  str(uuid4())
+        u.person = p
+
+        self.assertOne(u.brokenrules)
+        self.assertBroken(u, 'phone', 'fits')
+
 
     def it_captures_role_mm_object_brokenrules(self):
-        # TODO
-        pass
+        u = user()
+        u.name      =  str(uuid4())
+        u.service   =  str(uuid4())
+        u.password  =  str(uuid4())
+
+        rs = roles().ALL()
+
+        u.roles += rs.first
+
+        u.roles.first._id = None # break rule
+
+
+        try:
+            u.save()
+        except brokenruleserror as ex:
+            self.assertOne(ex.object.brokenrules)
+            self.assertBroken(ex.object, 'roleid', 'full')
+        except:
+            self.assertFail('The wrong exception type was raised')
+        else:
+            self.assertFail('No exception was raised')
+
 
     def it_persists_roles(self):
         rs = roles().ALL()
@@ -2095,10 +2339,31 @@ class test_role(tester):
 
     def it_creates(self):
         r = role()
-        r.name = str(uuid4())
-        r.capabilities += str(uuid4())
-        r.capabilities += str(uuid4())
+        r.name          =   str(uuid4())
+        r.capabilities  +=  str(uuid4())
+        r.capabilities  +=  str(uuid4())
         r.save()
+
+    def it_deletes(self):
+        r = role()
+        r.name          =   str(uuid4())
+        r.capabilities  +=  str(uuid4())
+        r.capabilities  +=  str(uuid4())
+        r.save()
+
+        cnt = r.delete()
+
+        self.assertEq(1, cnt)
+
+        cnt = r.delete()
+        self.assertEq(0, cnt)
+
+        try:
+            r = person(r.id)
+        except Exception:
+            pass
+        else:
+            self.assertFail('No exception thrown')
 
     def it_loads(self):
         r = role()
@@ -2205,7 +2470,6 @@ class test_role(tester):
                     found = True
             self.assertTrue(found)
 
-
 class test_capabilities(tester):
     
     def it_adds(self):
@@ -2276,7 +2540,7 @@ class test_capability(tester):
         self.assertBroken(cap, 'name', 'full')
 
         cap = capability(None)
-        self.assertCount(2, cap.brokenrules)
+        self.assertCount(1, cap.brokenrules)
         self.assertBroken(cap, 'name', 'full')
 
         cap = capability(1)

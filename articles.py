@@ -194,7 +194,7 @@ class articlerevision(db.dbentity):
             self._body = row.pop()
             self._created_at = row.pop()
             self._slug = row.pop()
-            self._iscommentable = row.pop()
+            self._iscommentable = bool(row.pop())
             self._status = row.pop()
             self._excerpt = row.pop()
             self._title = row.pop()

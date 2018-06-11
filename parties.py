@@ -24,7 +24,8 @@ SOFTWARE.
 """
 from entities import brokenrules, brokenrule, entity, entities, demand
 from pdb import set_trace; B=set_trace
-import db
+from table import table
+import builtins
 import db
 import hashlib
 import os
@@ -32,6 +33,13 @@ import re
 import uuid
 
 class persons(db.dbentities):
+    def __init__(self, ress=None):
+        super().__init__()
+
+        if ress:
+            for res in ress:
+                self += person(res)
+    
     @property
     def _create(self):
         return """
@@ -49,37 +57,82 @@ class persons(db.dbentities):
     def _table(self):
         return 'persons'
 
+    def __str__(self):
+        tbl = table()
+        props = 'id', 'firstname', 'middlename', 'lastname', 'email', 'phone'
+
+        r = tbl.newrow()
+        for prop in props:
+            r.newfield(prop)
+            
+        for p in self:
+            r = tbl.newrow()
+            for prop in props:
+                v = getattr(p, prop)
+                v = v if v else ''
+                r.newfield(v)
+        return str(tbl)
+
+    @staticmethod
+    def search(str):
+        sql = """
+        select *
+        from persons
+        where 
+            firstname like %s or
+            lastname  like %s or
+            email     like %s or
+            phone     like %s
+        """
+        str = builtins.str(str)
+
+        args = ('%' + str + '%',) * 4
+
+        ress = db.connections.getinstance().default.query(sql, args)
+        return persons(ress)
+
+
 class person(db.dbentity):
-    def __init__(self, id=None):
+    def __init__(self, o=None):
         super().__init__()
-        self._id = id
-        if id == None:
-            self._firstname = None
-            self._middlename = None
-            self._lastname = None
-            self._email = None
-            self._phone = None
+        self._users = None
+        if o == None:
+            self._firstname   =  None
+            self._middlename  =  None
+            self._lastname    =  None
+            self._email       =  None
+            self._phone       =  None
+            self._id          =  None
             self._marknew()
         else:
-            sql = """
-            select *
-            from persons
-            where id = %s
-            """
+            if type(o) == uuid.UUID:
+                sql = 'select * from persons where id = %s'
 
-            args = (
-                self.id.bytes,
-            )
+                args = (
+                    o.bytes,
+                )
 
-            ress = self.query(sql, args)
-            res = ress.demandhasone()
+                ress = self.query(sql, args)
+                res = ress.demandhasone()
+            else:
+                res = o
             row = list(res)
             self._phone = row.pop()
             self._email = row.pop()
             self._lastname = row.pop()
             self._middlename = row.pop()
             self._firstname = row.pop()
+            self._id = uuid.UUID(bytes=row.pop())
             self._markold()
+
+    @property
+    def isdirty(self):
+        return super().isdirty or \
+               self.users.isdirty or self.users.isnew
+
+    @property
+    def _collection(self):
+        return persons
 
     def _update(self, cur=None):
         sql = """
@@ -102,6 +155,12 @@ class person(db.dbentity):
         )
 
         self.query(sql, args, cur)
+
+        # If users have been lazy-loaded or set by client code, save()
+        if self._users:
+            for u in self._users:
+                u.person = self
+            self.users.save()
         
     def _insert(self, cur=None):
         self._id = uuid.uuid4()
@@ -122,6 +181,46 @@ class person(db.dbentity):
 
 
         self.query(insert, args, cur)
+
+        # Update persistence state here so self.users.save() doesn't try 
+        # to save() this object again - which causes an infinite loop.
+        self._isnew = False
+        self._isdirty = False
+        
+        # If users have been lazy-loaded or set by client code, save()
+        if self._users:
+            for u in self._users:
+                u.person = self
+            self.users.save()
+
+    def __str__(self):
+        r = ''
+        r  +=  'First name: '   +  self.firstname  + '\n' if  self.firstname   else  ''
+        r  +=  'Middle name: '  +  self.middlename + '\n' if  self.middlename  else  ''
+        r  +=  'Last name: '    +  self.lastname   + '\n' if  self.lastname    else  ''
+        r  +=  'Email: '        +  self.email      + '\n' if  self.email       else  ''
+        r  +=  'Phone: '        +  self.phone      + '\n' if  self.phone       else  ''
+        return r
+
+    def _users_onchg(self, src, eargs):
+        self._markdirty()
+
+    @property
+    def users(self):
+        if not self._users:
+            if self.id:
+                self._users = users.load(self)
+            else:
+                self._users = users()
+
+            self._users.onadd    += self._users_onchg
+            self._users.onremove += self._users_onchg
+
+        return self._users
+
+    @users.setter
+    def users(self, v):
+        return self._setvalue('_users', v, 'users')
 
     @property
     def firstname(self):
@@ -179,6 +278,7 @@ class person(db.dbentity):
         brs.demand(self, 'lastname',   isfull=True, maxlen=255)
         brs.demand(self, 'email',      isemail=True, maxlen=255)
         brs.demand(self, 'phone',      maxlen=255)
+
         return brs
 
 class users(db.dbentities):
@@ -198,6 +298,23 @@ class users(db.dbentities):
     @property
     def _table(self):
         return 'users'
+
+    @staticmethod
+    def load(p):
+        us = users()
+
+        sql = """
+        select *
+        from users
+        where personid = %s
+        """
+        args = (p.id.bytes,)
+
+        ress = db.connections.getinstance().default.query(sql, args)
+        for res in ress:
+            us += user(res)
+        
+        return us
 
 class user(db.dbentity):
     def __init__(self, o=None):
@@ -287,7 +404,11 @@ class user(db.dbentity):
         p = self.person
 
         if p:
-            p.save()
+            # Only save person if PRIVATE _isdirty or _isnew properties are
+            # true. This is to prevent infinite recursion since person and user
+            # entities reference each other.
+            if p._isdirty or p._isnew:
+                p.save()
             personid = p.id.bytes
         else:
             personid = None
@@ -450,6 +571,12 @@ class user(db.dbentity):
             if u and u.id != self.id:
                 brs += brokenrule('A user with that name and service already exist', 'name', 'unique')
                 
+        if self.person:
+            brs += self.person.brokenrules
+
+        if self._roles_mm_objects:
+            brs += self._roles_mm_objects.brokenrules
+        
         return brs
 
 class roles_mm_objects(db.dbentities):
@@ -505,6 +632,7 @@ class roles_mm_objects(db.dbentities):
         )
         """
 
+
     @property
     def _table(self):
         return 'roles_mm_objects'
@@ -546,8 +674,14 @@ class role_mm_object(db.dbentity):
         values({})
         """.format(('%s, ' * len(args)).rstrip(', '))
 
-
         self.query(insert, args, cur)
+
+    @property
+    def brokenrules(self):
+        brs = brokenrules()
+        brs.demand(self, 'roleid', isfull=True, type=uuid.UUID)
+        return brs
+
 
     def _delete(self, cur=None):
         sql = """
@@ -644,6 +778,10 @@ class role(db.dbentity):
 
         self._capabilities.onadd += self._capabilities_onchg
         self._capabilities.onremove += self._capabilities_onchg
+
+    @property
+    def _collection(self):
+        return roles
     
     def _capabilities_onchg(self, src, eargs):
         self._markdirty()
@@ -763,7 +901,7 @@ class capability(entity):
     @property
     def brokenrules(self):
         brs = brokenrules()
-        brs.demand(self, 'name', isfull=True, istype=str)
+        brs.demand(self, 'name', isfull=True, type=str)
 
         n = self.name
         if type(n) is str and bool(re.match('^.*\s+.*$', n)):
