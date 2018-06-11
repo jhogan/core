@@ -306,6 +306,10 @@ class dbresultset(entities):
     def lastrowid(self):
         return self._cur.lastrowid
 
+    @property
+    def rowcount(self):
+        return self._cur.rowcount
+
     def demandhasone(self):
         if not self.hasone:
             raise Exception('A single record was not found')
