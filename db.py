@@ -194,6 +194,17 @@ class dbentity(entity):
         else:
             raise brokenruleserror('Won\'t save invalid object', self)
 
+    def delete(self):
+        sql = 'delete from ' + self._table + ' where id = %s'
+
+        args = (self.id.bytes,)
+
+        ress = self.query(sql, args)
+
+        self._marknew()
+
+        return ress.rowcount
+
 class connections(entities):
 
     _instance = None
