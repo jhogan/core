@@ -60,6 +60,10 @@ class entities(object):
         if initial != None:
             self.append(initial)
 
+    def __bool__(self):
+        # An entities collection will always pass a truth test
+        return True
+
     def _self_onadd(self, src, eargs):
         for ix in self.indexes:
             ix += eargs.entity
