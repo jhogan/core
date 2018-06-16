@@ -1539,6 +1539,7 @@ class test_persons(tester):
         super().__init__()
         persons().RECREATE()
 
+
     def it_calls__str__(self):
         ps = persons()
 
@@ -1563,21 +1564,16 @@ class test_persons(tester):
         p.phone       =  '555 555 5555'
         ps += p
 
-        ps.save()
-        ps = persons().ALL()
-        print(ps)
-
-        expect = """+--------------------------------------------------------------------------------+
-| id | firstname | middlename | lastname | email                  | phone        |
-|-------------------------------------------------------------------------------|
-|    | Ellan     |            | Page     | epage@fakemail.com     | 555 555 5555 |
-|--------------------------------------------------------------------------------|
-|    | Jessica   |            | Chastain | jchastain@fakemail.com | 555 555 5555 |
-|--------------------------------------------------------------------------------|
-|    | James     |            | Cromwell | jcromwell@fakemail.com | 555 555 5555 |
-+--------------------------------------------------------------------------------+
+        expect = """+-------------------------------------------------------------------------------------+
+| ix | id | firstname | middlename | lastname | email                  | phone        |
+|-------------------------------------------------------------------------------------|
+| 0  |    | Ellan     |            | Page     | epage@fakemail.com     | 555 555 5555 |
+|-------------------------------------------------------------------------------------|
+| 1  |    | Jessica   |            | Chastain | jchastain@fakemail.com | 555 555 5555 |
+|-------------------------------------------------------------------------------------|
+| 2  |    | James     |            | Cromwell | jcromwell@fakemail.com | 555 555 5555 |
++-------------------------------------------------------------------------------------+
 """
-
         self.assertEq(expect, str(ps))
 
     def it_searches(self):
@@ -1614,6 +1610,44 @@ class test_persons(tester):
 
         ps = persons.search(555)
         self.assertThree(ps)
+
+    def it_calls_sorted(self):
+        # dbentities.sorted usually depends on the correct implementation of
+        # __init__ and __iter__. These implementations are fragile and prone to
+        # change so it's important to test them.
+        ps = persons()
+        p = person()
+        p.firstname   =  'Ellan'
+        p.lastname    =  'Page'
+        p.email       =  'epage@fakemail.com'
+        p.phone       =  '555 555 1111'
+        ps += p
+
+        p = person()
+        p.firstname   =  'Jessica'
+        p.lastname    =  'Chastain'
+        p.email       =  'jchastain@fakemail.com'
+        p.phone       =  '555 555 2222'
+        ps += p
+
+        p = person()
+        p.firstname   =  'James'
+        p.lastname    =  'Cromwell'
+        p.email       =  'jcromwell@fakemail.com'
+        p.phone       =  '555 555 3333'
+        ps += p
+
+        # Sort by firstname
+        ps1 = ps.sorted('firstname')
+        self.assertEq('Ellan', ps1.first.firstname)
+        self.assertEq('James', ps1.second.firstname)
+        self.assertEq('Jessica', ps1.third.firstname)
+
+        # Sort by firstname in reverse order
+        ps1 = ps.sorted('firstname', True)
+        self.assertEq('Jessica', ps1.first.firstname)
+        self.assertEq('James', ps1.second.firstname)
+        self.assertEq('Ellan', ps1.third.firstname)
     
 class test_person(tester):
     def __init__(self):
@@ -1881,11 +1915,15 @@ Phone: 555 555 5555
 
         p.users += u
 
+        # Correct for the name change above so we can test by iteration
+        us.first.name = name
+
         self.assertTwo(p.users)
         for u, pu in zip(us, p.users):
             self.assertEq(u.service,    pu.service)
             self.assertEq(u.name,       pu.name)
 
+        B()
         p.save()
 
         p = person(p.id)
@@ -1895,6 +1933,77 @@ Phone: 555 555 5555
             self.assertEq(u.service,    pu.service)
             self.assertEq(u.name,       pu.name)
             self.assertEq(u.person.id,  p.id)
+
+class test_users(tester):
+    def __init__(self):
+        super().__init__()
+        users().RECREATE()
+        roles().RECREATE()
+        roles_mm_objects().RECREATE()
+
+    def it_calls__str__(self):
+        us = users()
+
+        p = person()
+        p.firstname   =  'Gary'
+        p.lastname    =  'Francione'
+        p.email       =  'glawrence@fakemail.com'
+        p.phone       =  '555 555 5555'
+
+        u = user()
+        u.service   =  'carapacian'
+        u.name      =  'glawrence'
+        u.password  =  'secret'
+        u.person    =  p
+
+        us += u
+
+        u = user()
+        u.service   =  'carapacian'
+        u.name      =  'epage'
+        u.password  =  'secret'
+
+        us += u
+
+        expect = """+------------------------------------------------------------------+
+| ix | id | service    | name      | person.name    | person.phone |
+|------------------------------------------------------------------|
+| 0  |    | carapacian | glawrence | Gary Francione | 555 555 5555 |
+|------------------------------------------------------------------|
+| 1  |    | carapacian | epage     |                |              |
++------------------------------------------------------------------+
+"""
+
+        self.assertEq(expect, str(us))
+
+    def it_calls_sorted(self):
+        us = users()
+
+        p = person()
+        p.firstname   =  'Gary'
+        p.lastname    =  'Francione'
+        p.email       =  'glawrence@fakemail.com'
+        p.phone       =  '555 555 5555'
+
+        u = user()
+        u.service   =  'carapacian'
+        u.name      =  'glawrence'
+        u.password  =  'secret'
+        u.person    =  p
+
+        us += u
+
+        u = user()
+        u.service   =  'carapacian'
+        u.name      =  'epage'
+        u.password  =  'secret'
+
+        us += u
+
+        us1 = us.sorted('name')
+        self.assertEq('epage', us1.first.name)
+        self.assertEq('glawrence', us1.second.name)
+
 
 class test_user(tester):
     def __init__(self):
@@ -1916,9 +2025,9 @@ class test_user(tester):
 
     def it_calls_save(self):
         u = user()
-        u.service = str(uuid4())
-        u.name = 'glawrence'
-        u.password = 'secret'
+        u.service   =  str(uuid4())
+        u.name      =  'glawrence'
+        u.password  =  'secret'
         u.save()
 
     def it_calls_delete(self):

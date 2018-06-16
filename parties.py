@@ -34,11 +34,7 @@ import uuid
 
 class persons(db.dbentities):
     def __init__(self, ress=None):
-        super().__init__()
-
-        if ress:
-            for res in ress:
-                self += person(res)
+        super().__init__(ress)
     
     @property
     def _create(self):
@@ -122,8 +118,24 @@ class person(db.dbentity):
             self._lastname = row.pop()
             self._middlename = row.pop()
             self._firstname = row.pop()
-            self._id = uuid.UUID(bytes=row.pop())
+
+            bytes = row.pop()
+            if bytes:
+                self._id = uuid.UUID(bytes=bytes)
+            else:
+                self._id = None
             self._markold()
+
+    def __iter__(self):
+        if self.id:
+            yield self.id.bytes
+        else:
+            yield None
+        yield self.firstname
+        yield self.middlename
+        yield self.lastname
+        yield self.email
+        yield self.phone
 
     @property
     def isdirty(self):
@@ -296,6 +308,14 @@ class users(db.dbentities):
         """
 
     @property
+    def dbentity(self):
+        return user
+
+    def __str__(self):
+        props = 'service', 'name', 'person.name', 'person.phone'
+        return self._tostr(includeHeader=True, props=props)
+
+    @property
     def _table(self):
         return 'users'
 
@@ -328,7 +348,7 @@ class user(db.dbentity):
             self._salt     =  None
             self._id       =  None
             self._marknew()
-        elif type(o) == uuid.UUID or type(o) == db.dbresult:
+        else:
             if type(o) == uuid.UUID:
                 sql = """
                 select * from users where id = %s
@@ -341,20 +361,38 @@ class user(db.dbentity):
                 res = ress.demandhasone()
             else:
                 res = o
+
             row = list(res)
 
-            bytes = row.pop()
-            if bytes:
-                id = uuid.UUID(bytes=bytes)
-                self._person = person(id)
-                self._person.onaftervaluechange += self._person_onaftervaluechange
+            p = row.pop()
+            if type(p) is builtins.bytes:
+                id = uuid.UUID(bytes=p)
+
+                try:
+                    self._person = person(id)
+                except:
+                    # The person required must have been deleted
+                    # TODO: It would be nice if the ress.demandhasone() method
+                    # rose a specialized exception
+                    self._person = None
+                else:
+                    self._person.onaftervaluechange += self._person_onaftervaluechange
 
             self._salt = row.pop()
             self._hash = row.pop()
             self._name = row.pop()
             self._service = row.pop()
-            self._id = uuid.UUID(bytes=row.pop())
-            self._markold()
+            bytes = row.pop()
+            if bytes:
+                self._id = uuid.UUID(bytes=bytes)
+            else:
+                self._id = None
+
+            if type(res) is not type(self):
+                self._markold()
+            else:
+                self._isnew = res._isnew
+                self._isdirty = res._isdirty
 
         self._roles_mm_objects = roles_mm_objects(self)
 
@@ -365,6 +403,17 @@ class user(db.dbentity):
 
         for mm in self._roles_mm_objects:
             self._roles += role(mm.roleid)
+
+    def __iter__(self):
+        if self.id:
+            yield self.id.bytes
+        else:
+            yield None
+        yield self.service
+        yield self.name
+        yield self.hash
+        yield self.salt
+        yield self.person
 
     def _roles_onchg(self, src, eargs):
         # Called anytime a role is added or removed from
@@ -434,8 +483,13 @@ class user(db.dbentity):
 
     def _update(self, cur=None):
 
-        if self.person:
-            self.person.save()
+        # To prevent infinite recursion when saving p where
+        # p.users.ispopulated, only save p here if its *private* _isdirty
+        # attribute is true. Its public isdirty property won't work because
+        # it will return true if self.isdirty.
+        p = self.person
+        if p and (p._isdirty or p._isnew or p._deleteme):
+            p.save()
 
         sql = """
         update users
@@ -459,6 +513,11 @@ class user(db.dbentity):
         )
 
         self.query(sql, args, cur)
+
+        # Update persistence state here so self.users.save() doesn't try 
+        # to save() this object again - which causes an infinite loop.
+        self._isnew = False
+        self._isdirty = False
 
         self._roles_mm_objects.attach(self.roles)
         self._roles_mm_objects.save()
