@@ -23,14 +23,22 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 # TODO Add Tests
-from entities import *
-import MySQLdb
-from pdb import set_trace; B=set_trace
 from configfile import configfile
+from entities import *
 from MySQLdb.constants.ER import BAD_TABLE_ERROR
+from pdb import set_trace; B=set_trace
+from table import table
+import MySQLdb
 import uuid
 
 class dbentities(entities):
+    def __init__(self, ress=None):
+        super().__init__()
+        if ress:
+            for res in ress:
+                self += self.dbentity(res)
+
+    
     def TRUNCATE(self):
         conn = connections.getinstance().default
         conn.query('truncate ' + self._table)
