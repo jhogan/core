@@ -278,7 +278,7 @@ class test_entities(tester):
             self.assertIs(s, ps2.second)
             self.assertIs(sj, ps2.third)
 
-    def it_calls_sort(self):
+    def it_calls_sort_with_str(self):
         """ The entities.sort() method sorts the collection in-place -
         much like the standard Python list.sort() does."""
 
@@ -289,7 +289,6 @@ class test_entities(tester):
         ks += knight('Galahad')
         ks += knight('Bedevere')
         cnt = ks.count
-
 
         # Sort them by name
         ks.sort(key=lambda k: k.name)
@@ -316,7 +315,120 @@ class test_entities(tester):
         self.assertEq(math.pi,  cs.second.value)
         self.assertEq(Light,    cs.third.value)
 
-    def it_calls_sorted(self):
+    def it_calls_sort_by_lambda(self):
+        """ The entities.sort() method sorts the collection in-place -
+        much like the standard Python list.sort() does."""
+
+        # Create a collection of knights
+        ks = knights()
+        ks += knight('Lancelot')
+        ks += knight('Authur')
+        ks += knight('Galahad')
+        ks += knight('Bedevere')
+        cnt = ks.count
+
+
+        # Sort them by name
+        ks.sort(key=lambda k: k.name)
+
+        # Test the sort
+
+        # Ensure count hasn't changed
+        self.assertEq(cnt, ks.count)
+
+        # Ensure sort is alphabetic
+        self.assertEq('Authur',    ks.first.name)
+        self.assertEq('Bedevere',  ks.second.name)
+        self.assertEq('Galahad',   ks.third.name)
+        self.assertEq('Lancelot',  ks.fourth.name)
+
+        # Sort them by name in reverse
+        ks.sort(key=lambda k: k.name, reverse=True)
+
+        # Test the sort
+
+        # Ensure count hasn't changed
+        self.assertEq(cnt, ks.count)
+
+        # Ensure sort is alphabetic
+        self.assertEq('Lancelot',  ks.first.name)
+        self.assertEq('Galahad',   ks.second.name)
+        self.assertEq('Bedevere',  ks.third.name)
+        self.assertEq('Authur',    ks.fourth.name)
+
+
+        Light = 12000000 # miles per minute
+        cs = constants()
+        cs += constant(Light)
+        cs += constant(math.pi)
+        cs += constant(math.e)
+
+        cs.sort(key=lambda c: c.value)
+        self.assertEq(math.e,   cs.first.value)
+        self.assertEq(math.pi,  cs.second.value)
+        self.assertEq(Light,    cs.third.value)
+
+        cs.sort(key=lambda c: c.value, reverse=True)
+        self.assertEq(Light,    cs.first.value)
+        self.assertEq(math.pi,  cs.second.value)
+        self.assertEq(math.e,   cs.third.value)
+
+    def it_calls_sorted_with_str(self):
+        """ The entities.sorted() method is like entities.sort() except
+        it returns a new sorted entities collection and leaves the existing
+        one untouched. """
+
+        Light = 12000000 # miles per minute
+
+        # Create a collection of knights
+        ks = knights()
+        ks += knight('Lancelot')
+        ks += knight('Authur')
+        ks += knight('Galahad')
+        ks += knight('Bedevere')
+
+        # Create a sorted version
+        ks1 = ks.sorted('name')
+
+        # Test the sort
+
+        # Ensure count hasn't changed
+        self.assertEq(ks.count, ks1.count)
+        self.assertIs(knights, type(ks1))
+
+        # Ensure original was not sorted.
+        self.assertEq('Lancelot',  ks.first.name)
+        self.assertEq('Authur',    ks.second.name)
+        self.assertEq('Galahad',   ks.third.name)
+        self.assertEq('Bedevere',  ks.fourth.name)
+
+        # Ensure sort is alphabetic
+        self.assertEq('Authur',    ks1.first.name)
+        self.assertEq('Bedevere',  ks1.second.name)
+        self.assertEq('Galahad',   ks1.third.name)
+        self.assertEq('Lancelot',  ks1.fourth.name)
+
+        # Numeric sort 
+
+        # Create numeric constant collection
+        cs = constants()
+        cs += constant(Light)
+        cs += constant(math.pi)
+        cs += constant(math.e)
+
+        cs1 = cs.sorted('value')
+
+        # Ensure original was not sorted
+        self.assertEq(Light,    cs.first.value)
+        self.assertEq(math.pi,  cs.second.value)
+        self.assertEq(math.e,   cs.third.value)
+
+        # Ensure cs1 is sorted numerically
+        self.assertEq(math.e,   cs1.first.value)
+        self.assertEq(math.pi,  cs1.second.value)
+        self.assertEq(Light,    cs1.third.value)
+
+    def it_calls_sorted_with_lambda(self):
         """ The entities.sorted() method is like entities.sort() except
         it returns a new sorted entities collection and leaves the existing
         one untouched. """
@@ -351,6 +463,15 @@ class test_entities(tester):
         self.assertEq('Galahad',   ks1.third.name)
         self.assertEq('Lancelot',  ks1.fourth.name)
 
+        # Sort in descending
+        ks1 = ks.sorted(key=lambda k: k.name, reverse=True)
+
+        # Ensure sort is reverse alphabetic
+        self.assertEq('Lancelot',  ks1.first.name)
+        self.assertEq('Galahad',   ks1.second.name)
+        self.assertEq('Bedevere',  ks1.third.name)
+        self.assertEq('Authur',    ks1.fourth.name)
+
         # Numeric sort 
 
         # Create numeric constant collection
@@ -370,6 +491,12 @@ class test_entities(tester):
         self.assertEq(math.e,   cs1.first.value)
         self.assertEq(math.pi,  cs1.second.value)
         self.assertEq(Light,    cs1.third.value)
+
+        # Test revers sort
+        cs1 = cs.sorted(lambda c: c.value, True)
+        self.assertEq(Light,    cs1.first.value)
+        self.assertEq(math.pi,  cs1.second.value)
+        self.assertEq(math.e,   cs1.third.value)
 
     def it_calls_tail(self):
         """ Tail returns an entities collection containing the last 'number'

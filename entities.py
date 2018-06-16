@@ -172,15 +172,25 @@ class entities(object):
     def sort(self, key, reverse=False):
 
         if type(key) == str:
-            # TODO Add test for this condition
-            key1 = lambda x: getattr(x, key)
+            def key1(x):
+                v = getattr(x, key)
+                # None's don't sort so do this
+                return '' if v is None else v
         elif callable(str):
             key1 = key
 
         self._ls.sort(key=key1, reverse=reverse)
 
-    def sorted(self, key):
-        return type(self)(sorted(self._ls, key=key))
+    def sorted(self, key, reverse=False):
+        if type(key) == str:
+            def key1(x):
+                v = getattr(x, key)
+                # None's don't sort so do this
+                return '' if v is None else v
+        elif callable(str):
+            key1 = key
+
+        return type(self)(sorted(self._ls, key=key1, reverse=reverse))
 
     def tail(self, number):
         if number > 0:
