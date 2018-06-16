@@ -133,6 +133,39 @@ class dbentities(entities):
             elif hasattr(e, 'name'):
                 if e.name == key: return e
 
+    def _tostr(self, fn=str, includeHeader=True, props=('ix', 'id')):
+        import functools
+
+        def getattr(obj, attr, *args):
+            def rgetattr(obj, attr):
+                if obj:
+                    return builtins.getattr(obj, attr, *args)
+                return None
+            return functools.reduce(rgetattr, [obj] + attr.split('.'))
+
+        tbl = table()
+
+        props = ('ix', 'id') + tuple(props)
+
+        if includeHeader:
+            r = tbl.newrow()
+            for prop in props:
+                r.newfield(prop)
+            
+        for p in self:
+            r = tbl.newrow()
+            for prop in props:
+                if prop == 'ix':
+                    v = self.getindex(p)
+                else:
+                    v = getattr(p, prop)
+                    v = v if v else ''
+                r.newfield(v)
+        return str(tbl)
+
+
+    def __str__(self):
+        return self._tostr()
 
 class dbentity(entity):
     # TODO Add Tests
