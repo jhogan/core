@@ -29,6 +29,7 @@ import re
 import sys
 import builtins
 from pprint import pprint
+from functools import total_ordering
 
 class entities(object):
     def __init__(self, initial=None):
@@ -168,14 +169,21 @@ class entities(object):
             if fn(e): es += e
         return es
 
+
+    @total_ordering
+    class mintype(object):
+        def __le__(self, e): return True
+        def __eq__(self, e): return (self is e)
+
     # TODO Test reverse parameter
     def sort(self, key, reverse=False):
 
         if type(key) == str:
+            min = entities.mintype()
             def key1(x):
                 v = getattr(x, key)
                 # None's don't sort so do this
-                return '' if v is None else v
+                return min if v is None else v
         elif callable(str):
             key1 = key
 
@@ -183,10 +191,11 @@ class entities(object):
 
     def sorted(self, key, reverse=False):
         if type(key) == str:
+            min = entities.mintype()
             def key1(x):
                 v = getattr(x, key)
                 # None's don't sort so do this
-                return '' if v is None else v
+                return min if v is None else v
         elif callable(str):
             key1 = key
 

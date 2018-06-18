@@ -278,6 +278,43 @@ class test_entities(tester):
             self.assertIs(s, ps2.second)
             self.assertIs(sj, ps2.third)
 
+    def it_calls_sort_with_incomparable_types(self):
+        # The entities.mintype class was added to sort things that are
+        # incomparable, such as uuid's and None values
+
+        # Create a collection of knights
+        ks = knights()
+        id = uuid4()
+        ks += knight(id)
+        ks += knight(None)
+
+        ks.sort('name')
+
+        self.assertIs(None, ks.first.name)
+        self.assertIs(id, ks.second.name)
+
+        ks.sort('name', True)
+
+        self.assertIs(id, ks.first.name)
+        self.assertIs(None, ks.second.name)
+
+    def it_calls_sorted_with_incomparable_types(self):
+        # Create a collection of knights
+        ks = knights()
+        id = uuid4()
+        ks += knight(id)
+        ks += knight(None)
+
+        ks = ks.sorted('name')
+
+        self.assertIs(None, ks.first.name)
+        self.assertIs(id, ks.second.name)
+
+        ks = ks.sorted('name', True)
+
+        self.assertIs(id, ks.first.name)
+        self.assertIs(None, ks.second.name)
+
     def it_calls_sort_with_str(self):
         """ The entities.sort() method sorts the collection in-place -
         much like the standard Python list.sort() does."""
