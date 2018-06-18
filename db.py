@@ -56,6 +56,14 @@ class dbentities(entities):
         ress = conn.query('select * from ' + self._table)
         return type(self)(ress)
 
+    def _self_onadd(self, src, eargs):
+        super()._self_onadd(src, eargs)
+        self._isdirty = True
+
+    def _self_onremove(self, src, eargs):
+        super()._self_onremove(src, eargs)
+        self._isdirty = True
+
     @property
     def isdirty(self):
         return self._isdirty or any([x.isdirty for x in self])
