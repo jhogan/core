@@ -48,26 +48,17 @@ class persons(db.dbentities):
             phone varchar(255)
         )
         """
-
     @property
     def _table(self):
         return 'persons'
 
-    def __str__(self):
-        tbl = table()
-        props = 'id', 'firstname', 'middlename', 'lastname', 'email', 'phone'
+    @property
+    def dbentity(self):
+        return person
 
-        r = tbl.newrow()
-        for prop in props:
-            r.newfield(prop)
-            
-        for p in self:
-            r = tbl.newrow()
-            for prop in props:
-                v = getattr(p, prop)
-                v = v if v else ''
-                r.newfield(v)
-        return str(tbl)
+    def __str__(self):
+        props = 'firstname', 'middlename', 'lastname', 'email', 'phone'
+        return self._tostr(includeHeader=True, props=props)
 
     @staticmethod
     def search(str):
@@ -214,9 +205,6 @@ class person(db.dbentity):
         r  +=  'Phone: '        +  self.phone      + '\n' if  self.phone       else  ''
         return r
 
-    def _users_onchg(self, src, eargs):
-        self._markdirty()
-
     @property
     def users(self):
         if not self._users:
@@ -225,8 +213,8 @@ class person(db.dbentity):
             else:
                 self._users = users()
 
-            self._users.onadd    += self._users_onchg
-            self._users.onremove += self._users_onchg
+            # self._users.onadd    += self._users_onchg
+            # self._users.onremove += self._users_onchg
 
         return self._users
 
@@ -307,6 +295,21 @@ class users(db.dbentities):
         )
         """
 
+    @staticmethod
+    def search(str):
+        sql = """
+        select *
+        from users
+        where 
+            name      like %s or
+            service   like %s
+        """
+        str = builtins.str(str)
+
+        args = ('%' + str + '%',) * 2
+
+        ress = db.connections.getinstance().default.query(sql, args)
+        return users(ress)
     @property
     def dbentity(self):
         return user
@@ -637,6 +640,13 @@ class user(db.dbentity):
             brs += self._roles_mm_objects.brokenrules
         
         return brs
+
+    def __str__(self):
+        r = ''
+        r  +=  'Name:     '  +  self.name             +  '\n'  if  self.name     else  ''
+        r  +=  'Service:  '  +  self.service          +  '\n'  if  self.service  else  ''
+        r  +=  'Person:   '  +  self.person.fullname  +  '\n'  if  self.person   else  ''
+        return r
 
 class roles_mm_objects(db.dbentities):
     def __init__(self, obj=None):

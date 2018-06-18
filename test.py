@@ -160,7 +160,7 @@ class test_blogpostrevision(tester):
         rev.excerpt = test_article.Smallpostexcerpt
         rev.status = article.Pending
         rev.iscommentable = False
-        rev.slug_cache = slug
+        rev.slugcache = slug
         rev.save()
 
         # Reload blogpostrevision and test
@@ -171,14 +171,14 @@ class test_blogpostrevision(tester):
         self.assertEq(rev.excerpt, rev1.excerpt)
         self.assertEq(rev.status, rev1.status)
         self.assertEq(rev.iscommentable, rev1.iscommentable)
-        self.assertEq(rev.slug_cache, rev1.slug_cache)
+        self.assertEq(rev.slugcache, rev1.slugcache)
         self.assertEq(bl.id, rev1.blog.id)
 
     def it_instantiates(self):
         rev = blogpostrevision()
         self.assertNone(rev.id)
-        self.assertNone(rev.authors)
-        self.assertNone(rev.created_at)
+        self.assertNone(rev.author)
+        self.assertNone(rev.createdat)
         self.assertNone(rev.title)
         self.assertNone(rev.body)
         self.assertNone(rev.excerpt)
@@ -481,7 +481,7 @@ class test_blogpost(tester):
         bp = blogpost()
         bp.blog = self.blog
         bp.slug = 'my-slug'
-        self.assertTrue(bp.brokenrules.contains('slug_cache', 'unique'))
+        self.assertTrue(bp.brokenrules.contains('slugcache', 'unique'))
 
         # Create a new blog
         bl = blog()
@@ -552,10 +552,10 @@ class test_blogpost(tester):
         bp = blogpost(bp.id)
         self.assertEq(test_article.Smallpostbody, bp.body)
 
-    def it_calls_created_at(self):
+    def it_calls_createdat(self):
         bp = blogpost()
         bp.blog = self.blog
-        self.assertNone(bp.created_at)
+        self.assertNone(bp.createdat)
         before = datetime.now().replace(microsecond=0)
 
         bp.blog = self.blog
@@ -563,13 +563,13 @@ class test_blogpost(tester):
 
         after = datetime.now().replace(microsecond=0)
 
-        self.assertLe(before, bp.created_at)
-        self.assertGe(after, bp.created_at)
+        self.assertLe(before, bp.createdat)
+        self.assertGe(after, bp.createdat)
 
-        created_at = bp.created_at
+        createdat = bp.createdat
 
         bp = blogpost(bp.id)
-        self.assertEq(created_at, bp.created_at)
+        self.assertEq(createdat, bp.createdat)
 
     def it_calls_title(self):
         bp = blogpost()
@@ -820,7 +820,7 @@ class test_blogpost(tester):
 
         bp.save()
 
-        created_at = bp.created_at
+        createdat = bp.createdat
         
         self.assertNotNone(bp.id)
         self.assertEq(test_article.Smallpostbody, bp.body)
@@ -861,7 +861,7 @@ class test_blogpost(tester):
             self.assertNotNone(bp.id)
             self.assertEq(id, bp.id)
             self.assertEq(newbody, bp.body)
-            self.assertEq(created_at, bp.created_at)
+            self.assertEq(createdat, bp.createdat)
             self.assertEq(newtitle, bp.title)
             self.assertEq(newexcerpt, bp.excerpt)
             self.assertEq(blogpost.Publish, bp.status)
@@ -916,8 +916,8 @@ class test_blogpost(tester):
         self.assertTrue(type(bp2.id) == uuid.UUID)
         self.assertEq(bp1.id,                bp2.id)
 
-        self.assertEq(type(bp2.created_at),  datetime)
-        self.assertEq(bp1.created_at,        bp2.created_at)
+        self.assertEq(type(bp2.createdat),  datetime)
+        self.assertEq(bp1.createdat,        bp2.createdat)
 
         self.assertEq(bp1.body,              bp2.body)
         self.assertEq(bp1.title,             bp2.title)
@@ -931,18 +931,8 @@ class test_article(tester):
     
     Smallposttitle = 'Walden; or, Life in the Woods'
 
-    Smallpostbody = """When I wrote the following pages, or rather the bulk of them,
-I lived alone, in the woods, a mile from any neighbor, in a house which I
-had built myself, on the shore of Walden Pond, in Concord, Massachusetts,
-and earned my living by the labor of my hands only. I lived there two years
-and two months. At present I am a sojourner in civilized life again."""
-
-    Smallpostexcerpt = """Walden is a book by noted transcendentalist Henry
-David Thoreau. The text is a reflection upon simple living in natural
-surroundings. The work is part personal declaration of independence, social
-experiment, voyage of spiritual discovery, satire, and-to some degree-a
-manual for self-reliance."""
-
+    Smallpostbody = """When I wrote the following pages, or rather the bulk of them, I lived alone, in the woods, a mile from any neighbor, in a house which I had built myself, on the shore of Walden Pond, in Concord, Massachusetts, and earned my living by the labor of my hands only. I lived there two years and two months. At present I am a sojourner in civilized life again.""" 
+    Smallpostexcerpt = """Walden is a book by noted transcendentalist Henry David Thoreau. The text is a reflection upon simple living in natural surroundings. The work is part personal declaration of independence, social experiment, voyage of spiritual discovery, satire, and-to some degree-a manual for self-reliance.""" 
     def __init__(self):
         super().__init__()
         articlerevisions().RECREATE()
@@ -1015,22 +1005,22 @@ manual for self-reliance."""
         art = article(art.id)
         self.assertEq(test_article.Smallpostbody, art.body)
 
-    def it_calls_created_at(self):
+    def it_calls_createdat(self):
         art = article()
-        self.assertNone(art.created_at)
+        self.assertNone(art.createdat)
         before = datetime.now().replace(microsecond=0)
 
         art.save()
 
         after = datetime.now().replace(microsecond=0)
 
-        self.assertLe(before, art.created_at)
-        self.assertGe(after, art.created_at)
+        self.assertLe(before, art.createdat)
+        self.assertGe(after, art.createdat)
 
-        created_at = art.created_at
+        createdat = art.createdat
 
         art = article(art.id)
-        self.assertEq(created_at, art.created_at)
+        self.assertEq(createdat, art.createdat)
 
     def it_calls_title(self):
         art = article()
@@ -1270,7 +1260,7 @@ manual for self-reliance."""
 
         art.save()
 
-        created_at = art.created_at
+        createdat = art.createdat
         
         self.assertNotNone(art.id)
         self.assertEq(test_article.Smallpostbody, art.body)
@@ -1311,7 +1301,7 @@ manual for self-reliance."""
             self.assertNotNone(art.id)
             self.assertEq(id, art.id)
             self.assertEq(newbody, art.body)
-            self.assertEq(created_at, art.created_at)
+            self.assertEq(createdat, art.createdat)
             self.assertEq(newtitle, art.title)
             self.assertEq(newexcerpt, art.excerpt)
             self.assertEq(article.Publish, art.status)
@@ -1365,8 +1355,8 @@ manual for self-reliance."""
         self.assertTrue(type(bp2.id) == uuid.UUID)
         self.assertEq(bp1.id,                bp2.id)
 
-        self.assertEq(type(bp2.created_at),  datetime)
-        self.assertEq(bp1.created_at,        bp2.created_at)
+        self.assertEq(type(bp2.createdat),  datetime)
+        self.assertEq(bp1.createdat,        bp2.createdat)
 
         self.assertEq(bp1.body,              bp2.body)
         self.assertEq(bp1.title,             bp2.title)
@@ -1383,18 +1373,134 @@ class test_articlesrevision(tester):
     def __init__(self):
         super().__init__()
         articlerevisions().RECREATE()
+        users().RECREATE()
 
     def it_instantiates(self):
         rev = articlerevision()
         self.assertNone(rev.id)
-        self.assertNone(rev.authors)
-        self.assertNone(rev.created_at)
+        self.assertNone(rev.author)
+        self.assertNone(rev.createdat)
         self.assertNone(rev.title)
         self.assertNone(rev.body)
         self.assertNone(rev.excerpt)
         self.assertEq(article.Draft, rev.status)
         self.assertFalse(rev.iscommentable)
         self.assertNone(rev.slug)
+
+    def it_calls_str(self):
+        u = user()
+        u.name      =  'jphoenix'
+        u.service   =  'carapacian'
+        u.password  =  'secret'
+
+        rev = articlerevision()
+
+        title    =  test_article.Smallposttitle    +  str(uuid4())
+        slug = re.sub(r'\W+', '-', title).strip('-').lower()
+
+        rev.title = title
+        rev.slug = slug
+        rev.slugcache = slug
+        rev.excerpt  =  test_article.Smallpostexcerpt
+        rev.body     =  test_article.Smallpostbody
+
+        expect = """Title:          {}
+Excerpt:        {}
+Status:         {}
+Body:           {}
+Slug:           {}
+SlugCache:      {}
+""".format( rev.title, 
+                    rev.excerpt, 
+                    str(rev.status), 
+                    str(len(rev.body)),
+                    rev.slug,
+                    rev.slugcache)
+
+        self.assertEq(expect, str(rev))
+
+        rev.save()
+
+        expect = """Created:        {}
+Title:          {}
+Excerpt:        {}
+Status:         {}
+Body:           {}
+Slug:           {}
+SlugCache:      {}
+""".format(
+        str(rev.createdat),
+        rev.title, 
+        rev.excerpt, 
+        str(rev.status), 
+        str(len(rev.body)),
+        rev.slug,
+        rev.slugcache)
+
+        self.assertEq(expect, str(rev))
+
+        rev.author = u
+
+        expect = """Created:        {}
+Title:          {}
+Excerpt:        {}
+Status:         {}
+Body:           {}
+Slug:           {}
+SlugCache:      {}
+Author:         {}
+""".format(
+        str(rev.createdat),
+        rev.title, 
+        rev.excerpt, 
+        str(rev.status), 
+        str(len(rev.body)),
+        rev.slug,
+        rev.slugcache,
+        str(rev.author.name))
+
+        self.assertEq(expect, str(rev))
+
+
+        child = articlerevision()
+        child._parent = rev
+        child.save()
+        expected = """Parent:         {}
+Created:        {}
+Status:         {}
+""".format(str(child.parent.id),
+           str(child.createdat),
+           str(child.status))
+
+        self.assertEq(expect, str(rev))
+
+    def it_calls_author(self):
+
+        # Create new revision and user, associate the two, save and test
+        u = user()
+        u.name      =  'jphoenix'
+        u.service   =  'carapacian'
+        u.password  =  'secret'
+
+        rev = articlerevision()
+        rev.body = test_article.Smallpostbody
+        rev.title = test_article.Smallposttitle + str(uuid4())
+
+        rev.author = u
+
+        rev.save()
+
+        rev = articlerevision(rev.id)
+        self.assertEq(u.name, rev.author.name)
+
+        # Create new revision, associate an existing author
+        rev = articlerevision()
+        rev.body = test_article.Smallpostbody
+        rev.title = test_article.Smallposttitle + str(uuid4())
+        rev.author = u
+        u.save()
+
+        self.assertEq(u.name, rev.author.name)
 
     def it_fails_on_save_when_invalid(self):
         rev = articlerevision()
@@ -1534,6 +1640,7 @@ class test_articlesrevision(tester):
         rev = articlerevision(rev.id)
         self.assertEq(rev.id, rev.id)
 
+
 class test_persons(tester):
     def __init__(self):
         super().__init__()
@@ -1576,7 +1683,7 @@ class test_persons(tester):
 """
         self.assertEq(expect, str(ps))
 
-    def it_searches(self):
+    def it_calls_search(self):
         ps = persons()
         p = person()
         p.firstname   =  'Ellan'
@@ -1895,7 +2002,6 @@ Phone: 555 555 5555
         self.assertEq(name,         p.users.first.name)
         self.assertEq(u.person.id,  p.id)
 
-        return
         p.save()
 
         p = person(p.id)
@@ -1915,7 +2021,7 @@ Phone: 555 555 5555
 
         p.users += u
 
-        # Correct for the name change above so we can test by iteration
+        ## Correct for the name change above so we can test by iteration
         us.first.name = name
 
         self.assertTwo(p.users)
@@ -1923,12 +2029,46 @@ Phone: 555 555 5555
             self.assertEq(u.service,    pu.service)
             self.assertEq(u.name,       pu.name)
 
-        B()
         p.save()
 
         p = person(p.id)
 
         self.assertTwo(p.users)
+
+        us.sort('id'); p.users.sort('id')
+        for u, pu in zip(us, p.users):
+            self.assertEq(u.service,    pu.service)
+            self.assertEq(u.name,       pu.name)
+            self.assertEq(u.person.id,  p.id)
+
+        # Create new user, add user, remove another user, test, save person, test
+        u = user()
+        u.service   =  str(uuid4())
+        u.name      =  str(uuid4())
+        u.password  =  str(uuid4())
+
+        ## Add user to us collection, sort, and shift. This is to test against p.users.
+        us += u
+        us.sort('id')
+        us.shift()
+
+        ## Add to p.users, sort and shift. We we are adding one and removing another.
+        p.users += u
+        p.users.sort('id')
+        p.users.shift()
+
+        self.assertTwo(p.users)
+        for u, pu in zip(us, p.users):
+            self.assertEq(u.service,    pu.service)
+            self.assertEq(u.name,       pu.name)
+
+        p.save()
+
+        p = person(p.id)
+
+        self.assertTwo(p.users)
+
+        us.sort('id'); p.users.sort('id')
         for u, pu in zip(us, p.users):
             self.assertEq(u.service,    pu.service)
             self.assertEq(u.name,       pu.name)
@@ -1940,6 +2080,38 @@ class test_users(tester):
         users().RECREATE()
         roles().RECREATE()
         roles_mm_objects().RECREATE()
+
+    def it_calls_search(self):
+        us = users()
+        u = user()
+        u.service   =  'carapacian'
+        u.name      =  'glawrence'
+        u.password  =  'secret'
+
+        us += u
+
+        u = user()
+        u.service   =  'carapacian'
+        u.name      =  'epage'
+        u.password  =  'secret'
+
+        us += u
+
+        us.save()
+
+        us = users.search('page')
+        self.assertOne(us)
+        self.assertEq('epage', us.first.name)
+
+        us = users.search('lawrence')
+        self.assertOne(us)
+        self.assertEq('glawrence', us.first.name)
+
+        us = users.search('arapacia')
+        self.assertTwo(us)
+        us.sort('name')
+        self.assertEq('epage',     us.first.name)
+        self.assertEq('glawrence', us.second.name)
 
     def it_calls__str__(self):
         us = users()
@@ -2022,6 +2194,35 @@ class test_user(tester):
             rs.last.name = name
 
         rs.save()
+
+    def it_calls__str__(self):
+        p = person()
+        p.firstname   =  'Gary'
+        p.middlename  =  'Lawrence'
+        p.lastname    =  'Francione'
+        p.email       =  'gfrancione@mail.com'
+        p.phone       =  '5' *  10
+
+        u = user()
+        u.service   =  'carapacian'
+        u.name      =  'glawrence'
+
+        # Test without person
+        expect = """Name:     glawrence
+Service:  carapacian
+"""
+        self.assertEq(expect, str(u))
+
+        # Test with person
+        u.person = p # Add person
+
+        expect = """Name:     glawrence
+Service:  carapacian
+Person:   Gary Francione
+"""
+
+        self.assertEq(expect, str(u))
+
 
     def it_calls_save(self):
         u = user()
@@ -2662,8 +2863,120 @@ class test_capability(tester):
 
         cap = capability(' can-edit ')
         self.assertZero(cap.brokenrules)
-    
 
+class test_tags(tester):
+
+    def it_calls_sorted(self):
+        ts = tags()
+        for s in 'alpha', 'beta', 'gamma':
+            ts += tag()
+            ts.last.name = s
+
+        ts = ts.sorted('name', True)
+        self.assertEq('gamma',  ts.first.name)
+        self.assertEq('beta',   ts.second.name)
+        self.assertEq('alpha',  ts.third.name)
+
+        ts = ts.sorted('name')
+        self.assertEq('alpha',  ts.first.name)
+        self.assertEq('beta',   ts.second.name)
+        self.assertEq('gamma',  ts.third.name)
+
+    def it_calls_sort(self):
+        ts = tags()
+        for s in 'alpha', 'beta', 'gamma':
+            ts += tag()
+            ts.last.name = s
+
+        ts.sort('name', True)
+        self.assertEq('gamma',  ts.first.name)
+        self.assertEq('beta',   ts.second.name)
+        self.assertEq('alpha',  ts.third.name)
+
+        ts.sort('name')
+        self.assertEq('alpha',  ts.first.name)
+        self.assertEq('beta',   ts.second.name)
+        self.assertEq('gamma',  ts.third.name)
+
+    def it_calls__str__(self):
+        ts = tags()
+        for s in 'alpha', 'beta', 'gamma':
+            ts += tag()
+            ts.last.name = s
+
+        expect = """+-----------------+
+| ix | id | name  |
+|-----------------|
+| 0  |    | alpha |
+|-----------------|
+| 1  |    | beta  |
+|-----------------|
+| 2  |    | gamma |
++-----------------+
+"""
+        self.assertEq(expect, str(ts))
+
+class test_tag(tester):
+    def __init__(self):
+        super().__init__()
+        tags().RECREATE()
+    
+    def it_saves(self):
+        t = tag()
+        t.name = 'food'
+        t.save()
+        t = tag(t.id)
+
+        self.assertEq('food', t.name)
+
+    def it_calls_name(self):
+        t = tag()
+        t.name = 'vegetarian'
+
+        self.assertEq('vegetarian', t.name)
+
+        t.save()
+        t = tag(t.id)
+
+        self.assertEq('vegetarian', t.name)
+
+        t.name = 'vegan'
+        t.save()
+
+        t = tag(t.id)
+
+        self.assertEq('vegan', t.name)
+
+    def it_breaks_name_uniqueness_null(self):
+        t = tag()
+        t.name = 'snowflake'
+        t.save()
+
+        # Test unique brokenrule
+        t = tag()
+        t.name = 'snowflake'
+        self.assertOne(t.brokenrules)
+        self.assertBroken(t, 'name', 'unique')
+
+        # Test MySQL UNIQUE contraint
+        try:
+            t._insert()
+        except MySQLdb.IntegrityError as ex:
+            self.assertTrue(ex.args[0] == DUP_ENTRY)
+        except Exception:
+            self.assertFail('Wrong exception')
+        else:
+            self.assertFail("Didn't raise IntegrityError")
+
+        t.name = 'snow flake'
+        self.assertOne(t.brokenrules)
+        self.assertBroken(t, 'name', 'valid')
+
+    def it_breaks_name_rule(self):
+        t = tag()
+        self.assertOne(t.brokenrules)
+        self.assertBroken(t, 'name', 'full')
+    
 t = testers()
 t.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)
 t.oninvoketest += lambda src, eargs: print(eargs.method[0], flush=True)
