@@ -34,11 +34,19 @@ import uuid
 class dbentities(entities):
     def __init__(self, ress=None):
         super().__init__()
+        self._isdirty = False
+
         if ress:
             for res in ress:
                 self += self.dbentity(res)
 
-    
+        # The collection may have been added to above. If that is the case, the
+        # _isdirty flag will be set to True in the _self_onadd event handler.
+        # Set it back to False since we are just __init__'ing the object; it
+        # shouldn't be dirty at this point.
+
+        self._isdirty = False
+
     def TRUNCATE(self):
         conn = connections.getinstance().default
         conn.query('truncate ' + self._table)
@@ -50,11 +58,13 @@ class dbentities(entities):
 
     @property
     def isdirty(self):
-        return any([x.isdirty for x in self])
+        return self._isdirty or any([x.isdirty for x in self])
 
     @property
     def isnew(self):
         return any([x.isnew for x in self])
+
+
 
     @property
     def _table(self):
