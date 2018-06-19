@@ -804,7 +804,9 @@ class roles(db.dbentities):
         create table roles(
             id binary(16) primary key,
             name varchar(255),
-            capabilities text
+            capabilities text,
+            unique(name)
+
         )
         """
 
@@ -847,6 +849,23 @@ class role(db.dbentity):
 
         self._capabilities.onadd += self._capabilities_onchg
         self._capabilities.onremove += self._capabilities_onchg
+
+    @property
+    def brokenrules(self):
+        brs = brokenrules()
+        sql = """
+        select *
+        from roles
+        where name = %s
+        """
+
+        ress = self.query(sql, (self.name,))
+
+        if ress.ispopulated:
+            msg = 'name must be unique'
+            brs += brokenrule(msg, 'name', 'unique')
+
+        return brs
 
     @property
     def _collection(self):

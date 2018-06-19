@@ -1135,6 +1135,42 @@ class test_article(tester):
         art = article(art.id)
         self.assertFalse(art.iscommentable)
 
+    def it_calls_author(self):
+        u = user()
+        u.name      =  'asilverston'
+        u.service   =  'carapacian'
+        u.password  =  'secret'
+
+        u1 = user()
+        u1.name      =  'agrande'
+        u1.service   =  'carapacian'
+        u1.password  =  'secret'
+
+        art = article()
+        self.assertNone(art.author)
+        art.save()
+        self.assertNone(art.author)
+        art = article(art.id)
+        self.assertNone(art.author)
+
+        art.author = u
+        self.assertEq(u.name, art.author.name)
+        art.save()
+        self.assertEq(u.name, art.author.name)
+        art = article(art.id)
+        self.assertEq(u.name, art.author.name)
+
+        art.author = u1
+        self.assertEq(u1.name, art.author.name)
+        art.save()
+        self.assertEq(u1.name, art.author.name)
+        art = article(art.id)
+        self.assertEq(u1.name, art.author.name)
+        
+        self.assertNone(art.revisions.first.author)
+        self.assertEq(u.name,    art.revisions.second.author.name)
+        self.assertEq(u1.name,   art.revisions.third.author.name)
+
     def it_searches_by_id(self):
         art = article()
         art.save()
@@ -2704,8 +2740,23 @@ class test_role(tester):
             self.assertTrue(found)
 
     def it_enforces_uniqueness_constraint_on_name(self):
-        # TODO
-        pass
+        r = role()
+        name = str(uuid4())
+        r.name = name
+        r.save()
+
+        r = role()
+        r.name = name
+        self.assertBroken(r, 'name', 'unique')
+
+        try:
+            r._insert()
+        except MySQLdb.IntegrityError as ex:
+            self.assertTrue(ex.args[0] == DUP_ENTRY)
+        except Exception:
+            self.assertFail('Wrong exception')
+        else:
+            self.assertFail("Didn't raise an exception")
 
     def it_calls_name(self):
         r = role()
@@ -2976,6 +3027,13 @@ class test_tag(tester):
         t = tag()
         self.assertOne(t.brokenrules)
         self.assertBroken(t, 'name', 'full')
+
+    def it_calls__str__(self):
+        t = tag()
+        self.assertEq('', str(t))
+
+        t.name = 'vegan'
+        self.assertEq('#vegan', str(t))
     
 t = testers()
 t.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)

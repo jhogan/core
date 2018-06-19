@@ -132,7 +132,7 @@ class articlerevisions(db.dbentities):
             body longtext,
             diff longtext,
             slugcache varchar(200),
-            author binary(16)
+            authorid binary(16)
         )
         """
 
@@ -504,6 +504,7 @@ class article(entity):
         self._slug = None
         self._revisions = None
         self._id = id
+        self._author = None
 
         if self.revisions.ispopulated:
             self._id = self.revisions.first.id
@@ -590,13 +591,24 @@ class article(entity):
                 else:
                     slug = re.sub(r'\W+', '-', self.title).strip('-')
                     self._slug = slug.lower()
-            # TODO: Ensure slug is unique in database
         return self._slug
 
     @slug.setter
     def slug(self, v):
         self._slug = None
         return self._setvalue('_slug', v, 'slug')
+
+    @property
+    def author(self):
+        if self._author == None:
+            authorid = self.revisions.getlatest('_authorid')
+            if authorid is not None:
+                self._author = user(authorid)
+        return self._author
+
+    @author.setter
+    def author(self, v):
+        return self._setvalue('_author', v, 'author')
 
     @property
     def brokenrules(self):
@@ -628,6 +640,7 @@ class article(entity):
         rev.iscommentable = self.iscommentable
         rev.slug = self.slug
         rev.root.slugcache = rev.slug
+        rev.author = self.author
         return rev
 
     def save(self):
@@ -1030,5 +1043,11 @@ class tag(db.dbentity):
             brs += brokenrule('Name must be unique', 'name', 'unique')
 
         return brs
+
+    def __str__(self):
+        if self.name is None:
+            return ''
+        else:
+            return '#' + self.name
     
 
