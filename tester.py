@@ -110,7 +110,7 @@ class tester(entity):
     def assertNotNone(self, o, msg=None):
         if o == None: self._failures += failure()
 
-    def assertEmptyString(self, o, msg=None):
+    def assertEmpty(self, o, msg=None):
         if o != '': self._failures += failure()
 
     def assertZero(self, actual):
