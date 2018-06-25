@@ -394,6 +394,7 @@ class test_blogpost(tester):
         articlerevisions().RECREATE()
         blogpostrevisions().RECREATE()
         blogs().RECREATE()
+        users().RECREATE()
 
         # Create a blog
         bl = blog()
@@ -472,7 +473,7 @@ class test_blogpost(tester):
         bp.blog
         self.assertEq(self.blog.id, bp.blog.id)
 
-    def it_breaks_slug_cache_uniqueness_rule(self):
+    def it_breaks_slugcache_uniqueness_rule(self):
         bp = blogpost()
         bp.blog = self.blog
         bp.slug = 'my-slug'
@@ -541,7 +542,7 @@ class test_blogpost(tester):
         bp.blog = self.blog
         self.assertNone(bp.body)
         bp.save()
-        self.assertEmptyString(bp.body)
+        self.assertEmpty(bp.body)
 
         bp.body = test_article.Smallpostbody
         self.assertEq(test_article.Smallpostbody, bp.body)
@@ -578,7 +579,7 @@ class test_blogpost(tester):
 
         bp.save()
 
-        self.assertEmptyString(bp.title)
+        self.assertEmpty(bp.title)
 
         bp.title = test_article.Smallposttitle
         self.assertEq(test_article.Smallposttitle, bp.title)
@@ -596,7 +597,7 @@ class test_blogpost(tester):
 
         bp.save()
 
-        self.assertEmptyString(bp.slug)
+        self.assertEmpty(bp.slug)
 
         slug = str(uuid4())
         bp.slug = slug
@@ -628,18 +629,18 @@ class test_blogpost(tester):
         bp.blog = self.blog
         self.assertNone(bp.excerpt)
         bp.save()
-        self.assertEmptyString(bp.excerpt)
+        self.assertEmpty(bp.excerpt)
 
         bp = blogpost(bp.id)
-        self.assertEmptyString(bp.excerpt)
+        self.assertEmpty(bp.excerpt)
 
         bp = blogpost()
         bp.blog = self.blog
         self.assertNone(bp.excerpt)
         bp.save()
-        self.assertEmptyString(bp.excerpt)
+        self.assertEmpty(bp.excerpt)
         bp = blogpost(bp.id)
-        self.assertEmptyString(bp.excerpt)
+        self.assertEmpty(bp.excerpt)
 
         bp = blogpost()
         bp.blog = self.blog
@@ -694,6 +695,47 @@ class test_blogpost(tester):
         self.assertFalse(bp.iscommentable)
         bp = blogpost(bp.id)
         self.assertFalse(bp.iscommentable)
+
+    def it_calls_author(self):
+        u = user()
+        u.name      =  'mcyrus'
+        u.service   =  'carapacian'
+        u.password  =  'secret'
+
+        u1 = user()
+        u1.name      =  'lhemsworth'
+        u1.service   =  'carapacian'
+        u1.password  =  'secret'
+
+        # Create blogpost, test its author is None, save and re-test
+        bp = blogpost()
+        bp.blog = self.blog
+        self.assertNone(bp.author)
+        bp.save()
+        self.assertNone(bp.author)
+        bp = blogpost(bp.id)
+        self.assertNone(bp.author)
+
+        # Associate author, test, reload and test
+        bp.author = u
+        self.assertEq(u.name, bp.author.name)
+        bp.save()
+        self.assertEq(u.name, bp.author.name)
+        bp = blogpost(bp.id)
+        self.assertEq(u.name, bp.author.name)
+
+        # Change author, test, reload and test
+        bp.author = u1
+        self.assertEq(u1.name, bp.author.name)
+        bp.save()
+        self.assertEq(u1.name, bp.author.name)
+        bp = blogpost(bp.id)
+        self.assertEq(u1.name, bp.author.name)
+        
+        # Ensure each revision of the blogpost has the correct author
+        self.assertNone(bp.revisions.first.author)
+        self.assertEq(u.name,    bp.revisions.second.author.name)
+        self.assertEq(u1.name,   bp.revisions.third.author.name)
 
     def it_searches_by_id(self):
         bp = blogpost()
@@ -757,9 +799,9 @@ class test_blogpost(tester):
         self.assertEq(None, bp.title)
         bp.save()
         self.assertEq('', bp.title)
-        self.assertEmptyString(bp.slug)
+        self.assertEmpty(bp.slug)
         bp = blogpost(bp.id)
-        self.assertEmptyString(bp.slug)
+        self.assertEmpty(bp.slug)
         self.assertEq('', bp.title)
 
         bp = blogpost()
@@ -796,11 +838,11 @@ class test_blogpost(tester):
 
             bp = blogpost(bp.id)
             bp.blog = self.blog
-            self.assertEmptyString(bp.title)
-            self.assertEmptyString(bp.excerpt)
+            self.assertEmpty(bp.title)
+            self.assertEmpty(bp.excerpt)
             self.assertEq(blogpost.Pending, bp.status)
             self.assertTrue(bp.iscommentable)
-            self.assertEmptyString(bp.slug)
+            self.assertEmpty(bp.slug)
             
     def it_has_valid_revisions(self):
         # TODO Ensure that each of the revisions is the revision property are
@@ -924,8 +966,117 @@ class test_blogpost(tester):
         self.assertEq(bp1.excerpt,           bp2.excerpt)
         self.assertEq(bp1.status,            bp2.status)
         self.assertEq(bp1.iscommentable,     bp2.iscommentable)
+    
+class test_articles(tester):
+    def __init__(self):
+        super().__init__()
+        try:
+            articlerevisions().RECREATE()
 
+            p = person()
+            p.firstname   =  'George'
+            p.lastname    =  'Orwell'
+            p.email       =  'gorwell@fakemail.com'
+            p.phone       =  '555 555 5555'
 
+            u = user()
+            u.name = 'gorwell'
+            u.service = 'secker-and-warburg'
+            u.password = 'doubleplusungood'
+            u.person = p
+
+            art = article()
+            art.title = 'Animal Farm'
+            art.body = """Mr. Jones, of the Manor Farm, had locked the hen-houses for
+the night, but was too drunk to remember to shut the pop-holes. With the ring
+of light from his lantern dancing from side to side, he lurched across the
+yard, kicked off his boots at the back door, drew himself a last glass of beer
+from the barrel in the scullery, and made his way up to bed, where Mrs. Jones
+was already snoring."""
+            art.author = u
+            art.save()
+
+            u = user()
+            u.name = 'mshelley'
+            u.service = 'lackington-hughes-harding-mavor-jones'
+            u.password = 'fire'
+
+            art = article()
+            art.title = 'Frankenstein'
+            art.body = """I am by birth a Genevese, and my family is one of the
+most distinguished of that republic. My ancestors had been for many years
+counsellors and syndics, and my father had filled several public situations
+with honour and reputation. He was respected by all who knew him for his
+integrity and indefatigable attention to public business.  He passed his
+younger days perpetually occupied by the affairs of his country; a variety of
+circumstances had prevented his marrying early, nor was it until the decline of
+life that he became a husband and the father of a family."""
+            art.author = u
+            art.save()
+
+            art = article()
+            art.title = 'Summaries & Interpretations : Animal Farm'
+            art.body = """The story takes place on a farm somewhere in England.
+The story is told by an all-knowing narrator in the third person.  The action
+of this novel starts when the oldest pig on the farm, Old Major, calls all
+animals to a secret meeting. He tells them about his dream of a revolution
+against the cruel Mr Jones. Three days later Major dies, but the speech gives
+the more intelligent animals a new outlook on life. The pigs, who are
+considered the most intelligent animals, instruct the other ones. During the
+period of preparation two pigs distinguish themselves, Napoleon and Snowball.
+Napoleon is big, and although he isn't a good speaker, he can assert himself.
+Snowball is a better speaker, he has a lot of ideas and he is very vivid.
+Together with another pig called Squealer, who is a very good speaker, they
+work out the theory of "Animalism". The rebellion starts some months later,
+when Mr Jones comes home drunk one night and forgets to feed the animals. They
+break out of the barns and run to the house, where the food is stored. When Mr
+Jones sees this he takes out his shotgun, but it is too late for him; all the
+animals fall over him and drive him off the farm. The animals destroy all
+whips, nose rings, reins, and all other instruments that have been used to
+suppress them. The same day the animals celebrate their victory with an extra
+ration of food. The pigs make up the seven commandments, and they write them
+above the door of the big barn."""
+            art.save()
+
+        except Exception as ex:
+            print(ex)
+    
+    def it_searches_body(self):
+        ids = article.search('Genevese')
+        self.assertOne(ids)
+        self.assertEq('Frankenstein', article(ids[0]).title)
+
+        ids = article.search('Mr Jones')
+        self.assertTwo(ids)
+        arts = articles(ids)
+
+        arts.sort('title')
+
+        self.assertEq('Animal Farm', arts.first.title)
+        self.assertEq('Summaries & Interpretations : Animal Farm', arts.second.title)
+
+    def it_searches_title(self):
+        ids = article.search('animal farm')
+        self.assertTwo(ids)
+        arts = articles(ids)
+
+        arts.sort('title')
+
+        self.assertEq('Animal Farm', arts.first.title)
+        self.assertEq('Summaries & Interpretations : Animal Farm', arts.second.title)
+
+        ids = article.search('Frankenstein')
+        self.assertOne(ids)
+        self.assertEq('Frankenstein', article(ids[0]).title)
+
+    def it_searches_author(self):
+        for str in 'gorwell', 'George', 'gorwell@fakemail.com':
+            ids = article.search(str)
+            print(ids)
+            B()
+            self.assertOne(ids)
+            art = article(ids.pop())
+            self.assertEq('Animal Farm', art.title)
     
 class test_article(tester):
     
@@ -936,6 +1087,8 @@ class test_article(tester):
     def __init__(self):
         super().__init__()
         articlerevisions().RECREATE()
+        users().RECREATE()
+        persons().RECREATE()
 
     def it_loads_as_valid(self):
         art = article()
@@ -994,7 +1147,7 @@ class test_article(tester):
         art = article()
         self.assertNone(art.body)
         art.save()
-        self.assertEmptyString(art.body)
+        self.assertEmpty(art.body)
 
         art.body = test_article.Smallpostbody
         self.assertEq(test_article.Smallpostbody, art.body)
@@ -1004,6 +1157,46 @@ class test_article(tester):
 
         art = article(art.id)
         self.assertEq(test_article.Smallpostbody, art.body)
+
+    def it_calls_bodycache(self):
+        art = article()
+        body = str(uuid4())
+        art.body = body
+        art.save()
+        art = article(art.id)
+
+        self.assertEq(body, art.revisions.root.bodycache)
+
+        body = str(uuid4())
+        art.body = body
+        art.save()
+        art = article(art.id)
+
+        self.assertEq(body, art.revisions.root.bodycache)
+        self.assertNone(art.revisions.second.bodycache)
+
+        body = str(uuid4())
+        art.body = body
+        art.save()
+        art = article(art.id)
+
+        self.assertEq(body, art.revisions.root.bodycache)
+        self.assertNone(art.revisions.second.bodycache)
+        self.assertNone(art.revisions.third.bodycache)
+
+        art.status = 9999 # Invalidate
+        art.body = str(uuid4())
+        try:
+            art.save()
+        except brokenruleserror:
+            pass
+        except:
+            self.assertFail('Wrong exception thrown')
+        else:
+            self.assertFail('Exception was not raised')
+
+        self.assertEq(body, art.revisions.root.bodycache)
+
 
     def it_calls_createdat(self):
         art = article()
@@ -1028,7 +1221,7 @@ class test_article(tester):
 
         art.save()
 
-        self.assertEmptyString(art.title)
+        self.assertEmpty(art.title)
 
         art.title = test_article.Smallposttitle
         self.assertEq(test_article.Smallposttitle, art.title)
@@ -1039,13 +1232,50 @@ class test_article(tester):
         art = article(art.id)
         self.assertEq(test_article.Smallposttitle, art.title)
 
+    def it_calls_titlecache(self):
+        art = article()
+        art.save()
+        art = article(art.id)
+
+        self.assertEmpty(art.revisions.root.titlecache)
+
+        title = str(uuid4())
+        art.title = title
+        art.save()
+        art = article(art.id)
+
+        self.assertEq(title, art.revisions.root.titlecache)
+        self.assertNone(art.revisions.second.titlecache)
+
+        title = str(uuid4())
+        art.title = title
+        art.save()
+        art = article(art.id)
+
+        self.assertEq(title, art.revisions.root.titlecache)
+        self.assertNone(art.revisions.second.titlecache)
+        self.assertNone(art.revisions.third.titlecache)
+
+        art.status = 9999 # Invalidate
+        art.title = str(uuid4())
+        try:
+            art.save()
+        except brokenruleserror:
+            pass
+        except:
+            self.assertFail('Wrong exception thrown')
+        else:
+            self.assertFail('Exception was not raised')
+
+        self.assertEq(title, art.revisions.root.titlecache)
+
     def it_calls_slug(self):
         art = article()
         self.assertNone(art.slug)
 
         art.save()
 
-        self.assertEmptyString(art.slug)
+        self.assertEmpty(art.slug)
 
         slug = str(uuid4())
         art.slug = slug
@@ -1075,17 +1305,17 @@ class test_article(tester):
         art = article()
         self.assertNone(art.excerpt)
         art.save()
-        self.assertEmptyString(art.excerpt)
+        self.assertEmpty(art.excerpt)
 
         art = article(art.id)
-        self.assertEmptyString(art.excerpt)
+        self.assertEmpty(art.excerpt)
 
         art = article()
         self.assertNone(art.excerpt)
         art.save()
-        self.assertEmptyString(art.excerpt)
+        self.assertEmpty(art.excerpt)
         art = article(art.id)
-        self.assertEmptyString(art.excerpt)
+        self.assertEmpty(art.excerpt)
 
         art = article()
         art.excerpt = test_article.Smallpostexcerpt
@@ -1146,6 +1376,7 @@ class test_article(tester):
         u1.service   =  'carapacian'
         u1.password  =  'secret'
 
+        # Create article, test its author is None, save and re-test
         art = article()
         self.assertNone(art.author)
         art.save()
@@ -1153,6 +1384,7 @@ class test_article(tester):
         art = article(art.id)
         self.assertNone(art.author)
 
+        # Associate author, test, reload and test
         art.author = u
         self.assertEq(u.name, art.author.name)
         art.save()
@@ -1160,6 +1392,7 @@ class test_article(tester):
         art = article(art.id)
         self.assertEq(u.name, art.author.name)
 
+        # Change author, test, reload and test
         art.author = u1
         self.assertEq(u1.name, art.author.name)
         art.save()
@@ -1167,9 +1400,71 @@ class test_article(tester):
         art = article(art.id)
         self.assertEq(u1.name, art.author.name)
         
+        # Ensure each revision of the article has the correct author
         self.assertNone(art.revisions.first.author)
         self.assertEq(u.name,    art.revisions.second.author.name)
         self.assertEq(u1.name,   art.revisions.third.author.name)
+
+    def it_calls_authorcache(self):
+        u = user()
+        u.name      =  'wharrelson'
+        u.service   =  'carapacian'
+        u.password  =  'secret'
+
+        u1 = user()
+        u1.name      =  'mbialik'
+        u1.service   =  'carapacian'
+        u1.password  =  'secret'
+
+        art = article()
+        art.save()
+        art = article(art.id)
+
+        self.assertNone(art.revisions.root.authorcache)
+
+        art.author = u
+        art.save()
+        art = article(art.id)
+
+        self.assertEq(u.name, art.revisions.root.authorcache)
+        self.assertNone(art.revisions.second.authorcache)
+
+        art.author = u1
+        art.save()
+        art = article(art.id)
+
+        self.assertEq(u1.name, art.revisions.root.authorcache)
+        self.assertNone(art.revisions.second.authorcache)
+        self.assertNone(art.revisions.third.authorcache)
+
+        art.status = 9999 # Invalid
+        art.author = u
+
+        try:
+            art.save()
+        except brokenruleserror:
+            pass
+        except:
+            self.assertFail('Wrong exception thrown')
+        else:
+            self.assertFail('Exception was not raised')
+
+        self.assertEq(u1.name, art.revisions.root.authorcache)
+
+        p = person()
+        p.firstname   =  'Woody'
+        p.lastname    =  'Harrelson'
+        p.email       =  'wharrelson@fakemail.com'
+        p.phone       =  '555 555 5555'
+        u.person = p
+
+        art.author = u
+        art.status = article.Pending
+        art.save()
+        art = article(art.id)
+
+        expect = '{} {} {}'.format(u.name, p.fullname, p.email)
+        self.assertEq(expect, art.revisions.root.authorcache)
 
     def it_searches_by_id(self):
         art = article()
@@ -1243,9 +1538,9 @@ class test_article(tester):
         self.assertEq(None, art.title)
         art.save()
         self.assertEq('', art.title)
-        self.assertEmptyString(art.slug)
+        self.assertEmpty(art.slug)
         art = article(art.id)
-        self.assertEmptyString(art.slug)
+        self.assertEmpty(art.slug)
         self.assertEq('', art.title)
 
         art = article()
@@ -1279,11 +1574,11 @@ class test_article(tester):
             art.save()
 
             art = article(art.id)
-            self.assertEmptyString(art.title)
-            self.assertEmptyString(art.excerpt)
+            self.assertEmpty(art.title)
+            self.assertEmpty(art.excerpt)
             self.assertEq(article.Pending, art.status)
             self.assertTrue(art.iscommentable)
-            self.assertEmptyString(art.slug)
+            self.assertEmpty(art.slug)
 
     def it_saves_x_revisions(self):
         art = article()
@@ -1400,12 +1695,12 @@ class test_article(tester):
         self.assertEq(bp1.status,            bp2.status)
         self.assertEq(bp1.iscommentable,     bp2.iscommentable)
 
-class test_articlesrevisions(tester):
+class test_articlerevisions(tester):
     def __init__(self):
         super().__init__()
         articlerevisions().RECREATE()
 
-class test_articlesrevision(tester):
+class test_articlerevision(tester):
     def __init__(self):
         super().__init__()
         articlerevisions().RECREATE()
@@ -2219,6 +2514,7 @@ class test_user(tester):
         users().RECREATE()
         roles().RECREATE()
         roles_mm_objects().RECREATE()
+        articlerevisions().RECREATE()
 
         rs = roles()
         for name in (
@@ -2541,7 +2837,6 @@ Person:   Gary Francione
         self.assertOne(u.brokenrules)
         self.assertBroken(u, 'phone', 'fits')
 
-
     def it_captures_role_mm_object_brokenrules(self):
         u = user()
         u.name      =  str(uuid4())
@@ -2554,7 +2849,6 @@ Person:   Gary Francione
 
         u.roles.first._id = None # break rule
 
-
         try:
             u.save()
         except brokenruleserror as ex:
@@ -2564,7 +2858,6 @@ Person:   Gary Francione
             self.assertFail('The wrong exception type was raised')
         else:
             self.assertFail('No exception was raised')
-
 
     def it_persists_roles(self):
         rs = roles().ALL()
@@ -2670,6 +2963,23 @@ Person:   Gary Francione
                 self.assertFail('Wrong exception type')
             else:
                 self.assertFail('No exception was thrown')
+
+    def it_creates_an_article(self):
+        # TODO
+        return
+        u = user()
+        u.name      =  'edegeneres'
+        u.service   =  'carapacian'
+        u.password  =  'secret'
+
+        art = article()
+        
+        u.articles += art
+
+        self.assertEq(art.author.name, u.name)
+        self.assertOne(u.articles)
+
+
 
 class test_role(tester):
     def __init__(self):
@@ -2885,7 +3195,7 @@ class test_capabilities(tester):
 
     def it_call__str__(self):
         caps = capabilities()
-        self.assertEmptyString(str(caps))
+        self.assertEmpty(str(caps))
 
         caps += 'edit_posts'
         self.assertEq('edit_posts', str(caps))

@@ -124,15 +124,19 @@ class articlerevisions(db.dbentities):
             parentid binary(16),
             rootid binary(16),
             title text,
+            titlecache text,
             excerpt text,
             status tinyint,
             iscommentable bool,
             slug varchar(200),
-            createdacreatedat datetime,
+            createdat datetime,
             body longtext,
+            bodycache longtext,
             diff longtext,
             slugcache varchar(200),
-            authorid binary(16)
+            authorid binary(16),
+            authorcache text,
+            fulltext(titlecache, bodycache, authorcache)
         )
         """
 
@@ -152,7 +156,6 @@ class articlerevisions(db.dbentities):
                 return val
         return None
 
-
 class articlerevision(db.dbentity):
     """ An abstract class for subtypes such as academic paper, essays,
     scientific paper, blog, encyclopedia article, marketing article, usenet
@@ -166,18 +169,21 @@ class articlerevision(db.dbentity):
         self._author = None
 
         if id == None:
-            self._id = None
-            self._parent = parent
-            self._createdat = None
-            self._title = None
-            self._excerpt = None
-            self._status = article.Draft
-            self._iscommentable = False
-            self._body = None
-            self._diff = None
-            self._slug = None
-            self._slug_cache = None
-            self._authorid = None
+            self._id             =  None
+            self._parent         =  parent
+            self._createdat      =  None
+            self._title          =  None
+            self._titlecache     =  None
+            self._excerpt        =  None
+            self._status         =  article.Draft
+            self._iscommentable  =  False
+            self._body           =  None
+            self._bodycache      =  None
+            self._diff           =  None
+            self._slug           =  None
+            self._slugcache      =  None
+            self._authorid       =  None
+            self._authorcache    =  None
             self._marknew()
         elif type(id) == uuid.UUID:
             sql = 'select * from articlerevisions where id = %s';
@@ -190,21 +196,25 @@ class articlerevision(db.dbentity):
 
         if res != None:
             row = list(res._row)
+
+            self._authorcache = row.pop()
             self._authorid = row.pop()
             if self._authorid:
                 self._authorid = uuid.UUID(bytes=self._authorid)
-            self._slug_cache = row.pop()
+            self._slugcache = row.pop()
             self._diff = row.pop()
 
             if self._diff != None:
                 self._diff = diff.diff(self._diff)
 
+            self._bodycache = row.pop()
             self._body = row.pop()
             self._createdat = row.pop()
             self._slug = row.pop()
             self._iscommentable = bool(row.pop())
             self._status = row.pop()
             self._excerpt = row.pop()
+            self._titlecache = row.pop()
             self._title = row.pop()
             row.pop() # rootid
             parentid = row.pop()
@@ -233,12 +243,18 @@ class articlerevision(db.dbentity):
     def _update(self, cur=None):
         sql = """
         update articlerevisions
-        set slugcache = %s
-        where id = %s
+        set slugcache = %s,
+        authorcache   = %s,
+        titlecache    = %s,
+        bodycache     = %s
+        where id      = %s
         """
 
         args = (
             self.slugcache,
+            self.authorcache,
+            self.titlecache,
+            self.bodycache,
             self.id.bytes
         )
 
@@ -259,20 +275,23 @@ class articlerevision(db.dbentity):
             authorid = self.author.id.bytes
         else:
             authorid = None # Anonymous
-        
+
         args = (id.bytes, 
                 parentid,
                 rootid,
                 self.title,
+                self.titlecache,
                 self.excerpt,
                 self.status,
                 self.iscommentable,
                 self.slug,
                 self._createdat,
                 self.body,
+                self.bodycache,
                 diff,
                 self.slugcache,
-                authorid)
+                authorid,
+                self.authorcache)
 
         insert = """
         insert into articlerevisions
@@ -366,6 +385,14 @@ class articlerevision(db.dbentity):
         return self._setvalue('_author', v, 'author')
 
     @property
+    def authorcache(self):
+        return self._authorcache
+
+    @authorcache.setter
+    def authorcache(self, v):
+        return self._setvalue('_authorcache', v, 'authorcache')
+
+    @property
     def parent(self):
         if not hasattr(self, '_parent')  or not self._parent:
             if hasattr(self, '_parentid') and self._parentid:
@@ -385,6 +412,22 @@ class articlerevision(db.dbentity):
     @title.setter
     def title(self, v):
         return self._setvalue('_title', v, 'title')
+
+    @property
+    def titlecache(self):
+        return self._titlecache
+
+    @titlecache.setter
+    def titlecache(self, v):
+        return self._setvalue('_titlecache', v, 'titlecache')
+
+    @property
+    def bodycache(self):
+        return self._bodycache
+
+    @bodycache.setter
+    def bodycache(self, v):
+        return self._setvalue('_bodycache', v, 'bodycache')
 
     @property
     def status(self):
@@ -412,11 +455,11 @@ class articlerevision(db.dbentity):
 
     @property
     def slugcache(self):
-        return self._slug_cache
+        return self._slugcache
 
     @slugcache.setter
     def slugcache(self, v):
-        return self._setvalue('_slug_cache', v, 'slugcache')
+        return self._setvalue('_slugcache', v, 'slugcache')
 
     @property
     def body(self):
@@ -480,7 +523,11 @@ class articlerevision(db.dbentity):
         return self._setvalue('_slug', v, 'slug')
 
 class articles(entities):
-    pass
+    def __init__(self, ids=None):
+        super().__init__()
+        if ids:
+            for id in ids:
+                self += article(id)
 
 class article(entity):
     Publish   = 0  # Viewable by everyone.
@@ -508,6 +555,23 @@ class article(entity):
 
         if self.revisions.ispopulated:
             self._id = self.revisions.first.id
+
+    @staticmethod
+    def search(str):
+        # Does a fulltext search on the articles and returns a list of the
+        # matching id's
+        sql = """
+        select distinct rootid
+        from articlerevisions
+        where match(titlecache, bodycache, authorcache)
+        against (%s in natural language mode)
+        """
+
+        conn = db.connections.getinstance().default
+        ress = conn.query(sql, (str,))
+
+        # Return list of id's
+        return [uuid.UUID(bytes=r._row[0]) for r in ress]
 
     @property
     def revisions(self):
@@ -639,8 +703,22 @@ class article(entity):
         rev.status = self.status
         rev.iscommentable = self.iscommentable
         rev.slug = self.slug
-        rev.root.slugcache = rev.slug
         rev.author = self.author
+
+        # Root caching
+        rev.root.slugcache  = rev.slug
+        rev.root.titlecache = rev.title
+
+        if rev.isroot:
+            rev.root.bodycache  = rev.body
+        else:
+            rev.root.bodycache  = rev.derivedbody
+
+        if rev.author:
+            # TODO This save should be moved to _insert and _update
+            rev.author.save()
+            rev.root.authorcache = self._authorcache(rev.author)
+
         return rev
 
     def save(self):
@@ -648,10 +726,34 @@ class article(entity):
         try:
             self.revisions.save()
         except:
+            # TODO Here we need to use self.revisions.last to assign values to
+            # the cache attributes (e.g., slugcache) of the self.revisions.root
+            # revision
             self.revisions.pop()
+            root = self.revisions.root
+            if root:
+                author           =  self.revisions.getlatest('author')
+
+                root.authorcache =  self._authorcache(author)
+                root.slugcache   =  self.revisions.getlatest('slug')
+                root.titlecache  =  self.revisions.getlatest('title')
+                root.bodycache   =  self.revisions.last.derivedbody
+
             raise
         else:
             self._id = rev.root.id
+
+    @staticmethod
+    def _authorcache(u):
+        if not u:
+            return ''
+
+        cache = u.name
+        p = u.person
+        if p:
+            cache += ' ' + p.fullname
+            cache += ' ' + p.email
+        return cache
 
 class blogposts(articles):
     def __init__(self, id=None):
@@ -749,6 +851,7 @@ class blogpostrevision(articlerevision):
             values({})
             """.format(('%s, ' * len(args)).rstrip(', '))
 
+            # TODO: This should probably be: conn.query()
             self.query(insert, args, cur)
         except Exception as ex:
             if conn != None:
@@ -801,7 +904,12 @@ class blogpostrevision(articlerevision):
                         a.slugcache = %s and
                         b.blogid = %s
                     """
-                    args = self.slugcache, self.blog.id.bytes
+
+                    args = [self.slugcache, self.blog.id.bytes]
+                    
+                    if self.id:
+                        sql += ' and a.id != %s'
+                        args.append(self.id.bytes)
 
                     ress = self.query(sql, args)
                     if ress.first[0] > 0:
@@ -822,9 +930,7 @@ class blogpostrevision(articlerevision):
                 except Exception as ex:
                     brs += brokenrule(str(ex), 'derivedbody', 'valid')
 
-
         return brs
-
 
 class blogs(db.dbentities):
     def __init__(self):

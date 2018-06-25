@@ -344,6 +344,7 @@ class user(db.dbentity):
         super().__init__()
         self._password = None
         self._person   =  None
+        self._articles =  None
         if o == None:
             self._service  =  None
             self._name     =  None
@@ -526,6 +527,18 @@ class user(db.dbentity):
         self._roles_mm_objects.save()
         
     @property
+    def articles(self):
+        # TODO Complete after author has been root cached
+        if not self._articles:
+            self._articles = articles()
+            
+        return self._articles
+    
+    @articles.setter
+    def articles(self, v):
+        return self._setvalue('_articles', v, 'articles')
+
+    @property
     def roles(self):
         return self._roles
     
@@ -539,7 +552,6 @@ class user(db.dbentity):
             if r.name == r1.name:
                 return True
         return False
-        
 
     @property
     def service(self):
