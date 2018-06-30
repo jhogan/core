@@ -570,6 +570,16 @@ class user(db.dbentity):
         return self._setvalue('_name', v, 'name')
 
     @property
+    def fullname(self):
+        # TODO Write test
+        if self.person:
+            author = self.person.fullname + ' <' + self.name + '>'
+        else:
+            author = self.name
+
+        return author
+
+    @property
     def password(self):
         return self._password
 

@@ -29,10 +29,13 @@ from entities import brokenrules, brokenrule, entity, entities
 from parties import user
 from pdb import set_trace; B=set_trace
 from pprint import pprint
+from table import table
+import builtins
 import db
 import diff
 import parsers
 import re
+import textwrap
 import uuid
 
 class articlerevisions(db.dbentities):
@@ -139,6 +142,59 @@ class articlerevisions(db.dbentities):
             fulltext(titlecache, bodycache, authorcache)
         )
         """
+    def __str__(self):
+        import functools
+
+        def getattr(obj, attr, *args):
+            def rgetattr(obj, attr):
+                if obj:
+                    return builtins.getattr(obj, attr, *args)
+                return None
+            return functools.reduce(rgetattr, [obj] + attr.split('.'))
+
+        tbl = table()
+
+        r = tbl.newrow()
+        r.newfield('ix')
+        r.newfield('id')
+        r.newfield('createdat')
+        r.newfield('parentid')
+        r.newfield('rootid')
+        r.newfield('title')
+        r.newfield('excerpt')
+        r.newfield('status')
+        r.newfield('iscommentable')
+        r.newfield('slug')
+        r.newfield('body')
+        r.newfield('author')
+
+        for rev in self:
+            id        =  str(rev.id)[:7]         if  rev.id      else  ''
+            parentid  =  str(rev.parent.id)[:7]  if  rev.parent  else  ''
+            rootid    =  str(rev.root.id)[:7]
+
+            title     =  textwrap.shorten(rev.title,   width=40, placeholder='...')
+            excerpt   =  textwrap.shorten(rev.excerpt, width=40, placeholder='...')
+            slug      =  textwrap.shorten(rev.slug, width=40, placeholder='...')
+
+            author = rev.author.fullname if rev.author else ''
+            bodylen = len(rev.body) if rev.body else 'null'
+
+            r = tbl.newrow()
+            r.newfield(self.getindex(rev))
+            r.newfield(id)
+            r.newfield(rev.createdat)
+            r.newfield(parentid)
+            r.newfield(rootid)
+            r.newfield(title)
+            r.newfield(excerpt)
+            r.newfield(article.st2str(rev.status))
+            r.newfield(rev.iscommentable)
+            r.newfield(slug)
+            r.newfield(bodylen)
+            r.newfield(author)
+
+        return str(tbl)
 
     @property
     def root(self):
@@ -228,7 +284,7 @@ class articlerevision(db.dbentity):
     def __str__(self):
         r  =   ''
         r  +=  'Parent:         '  +  str(self.parent.id)      +  '\n'  if  self.parent         else  ''
-        r  +=  'Created:        '  +  str(self.createdat)     +  '\n'  if  self.createdat     else  ''
+        r  +=  'Created:        '  +  str(self.createdat)      +  '\n'  if  self.createdat      else  ''
         r  +=  'Title:          '  +  str(self.title)          +  '\n'  if  self.title          else  ''
         r  +=  'Excerpt:        '  +  str(self.excerpt)        +  '\n'  if  self.excerpt        else  ''
         r  +=  'Status:         '  +  str(self.status)         +  '\n'  if  self.status         else  ''
@@ -236,8 +292,9 @@ class articlerevision(db.dbentity):
         r  +=  'Body:           '  +  str(len(self.body))      +  '\n'  if  self.body           else  ''
         r  +=  'Diff:           '  +  len(str(self.diff))      +  '\n'  if  self.diff           else  ''
         r  +=  'Slug:           '  +  str(self.slug)           +  '\n'  if  self.slug           else  ''
-        r  +=  'SlugCache:      '  +  str(self.slugcache)     +  '\n'  if  self.slug           else  ''
+        r  +=  'SlugCache:      '  +  str(self.slugcache)      +  '\n'  if  self.slug           else  ''
         r  +=  'Author:         '  +  str(self.author.name)    +  '\n'  if  self.author         else  ''
+
         return r
 
     def _update(self, cur=None):
@@ -635,6 +692,23 @@ class article(entity):
     def status(self, v):
         return self._setvalue('_status', v, 'status')
 
+    @staticmethod
+    def st2str(st):
+        # TODO Write test
+        return (
+            'Publish',
+            'Future',
+            'Draft',
+            'Pending',
+            'Private',
+            'Trash',
+            'Autodraft')[st]
+
+    @property
+    def statusstr(self):
+        # TODO Write test
+        return self.st2str(self.status)
+
     @property
     def iscommentable(self):
         if self._iscommentable == None:
@@ -755,12 +829,19 @@ class article(entity):
             cache += ' ' + p.email
         return cache
 
+    @property
+    def root(self):
+        # TODO Write test
+        for rev in self.revisions:
+            if rev.isroot:
+                return rev
+        return None
+
 class blogposts(articles):
     def __init__(self, id=None):
         super().__init__(id)
 
 class blogpost(article):
-
     def __init__(self, id=None):
         super().__init__(id)
         self._blog = None
@@ -777,7 +858,6 @@ class blogpost(article):
             self._blog = self.revisions.getlatest('blog')
         return self._blog
 
-
     @blog.setter
     def blog(self, v):
         return self._setvalue('_blog', v, 'blog')
@@ -786,6 +866,44 @@ class blogpost(article):
         rev = super()._appendrevision()
         rev.blog = self.blog
         return rev
+
+    def __str__(self):
+
+        def shorten(str):
+            return textwrap.shorten(str, width=65, placeholder='...')
+
+        def indent(str):
+            return textwrap.indent(str, ' ' * 4)
+
+        r = """
+Id:           {}
+Author:       {}
+Created:      {}
+Commentable:  {}
+Blog:         {}
+Status:       {}
+Title:        {}
+Excerpt:      {}
+Body:         {}
+"""
+        id = self.id if self.id else ''
+        author = self.author.fullname if self.author else ''
+
+        r = r.format(id, 
+                     author,
+                     str(self.createdat),
+                     str(self.iscommentable),
+                     self.blog.slug, 
+                     self.statusstr,
+                     shorten(self.title),
+                     shorten(self.excerpt),
+                     shorten(self.body),
+                     )
+
+        r += '\nRevisions\n'
+        r += str(self.revisions)
+
+        return r
 
 class blogpostrevisions(articlerevisions):
     def __init__(self, id=None, entity=None):
@@ -1081,6 +1199,10 @@ class tag(db.dbentity):
             else:
                 self._id = None
                 self._marknew()
+
+    @property
+    def _collection(self):
+        return tags
 
     def __iter__(self):
         if self.id:

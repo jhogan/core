@@ -967,6 +967,64 @@ class test_blogpost(tester):
         self.assertEq(bp1.status,            bp2.status)
         self.assertEq(bp1.iscommentable,     bp2.iscommentable)
     
+    def it_calls__str__(self):
+        p = person()
+        p.firstname   =  'Emily'
+        p.lastname    =  'Deschanel'
+        p.email       =  'edeschanel@fakemail.com'
+        p.phone       =  '555 555 5555'
+
+        u = user()
+        u.name = 'edeschanel'
+        u.service = 'carapacian'
+        u.password = 'bones'
+        u.person = p
+
+        bp = blogpost()
+        bp.blog = self.blog
+        bp.body = test_article.Smallpostbody
+        bp.title = test_article.Smallposttitle + str(uuid4())
+        bp.excerpt = test_article.Smallpostexcerpt 
+        bp.status = blogpost.Publish
+        bp.iscommentable = True
+        bp.author = u
+
+        for _ in range(2):
+            bp.save()
+            bp.body += 'small change'
+        
+        expect = """
+Id:           {}
+Author:       Emily Deschanel <edeschanel>
+Created:      {}
+Commentable:  True
+Blog:         carapacian-tech-blog
+Status:       Publish
+Title:        {}
+Excerpt:      Walden is a book by noted transcendentalist Henry David...
+Body:         When I wrote the following pages, or rather the bulk of them,...
+
+Revisions
++-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ix | id      | createdat           | parentid | rootid  | title                      | excerpt                      | status  | iscommentable | slug                      | body | author                       |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 0  | {} | {} |          | {} | Walden; or, Life in the... | Walden is a book by noted... | Publish | True          | walden-or-life-in-the-... | 354  | Emily Deschanel <edeschanel> |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1  | {} | {} | {}  | {} | Walden; or, Life in the... | Walden is a book by noted... | Publish | True          | walden-or-life-in-the-... | null | Emily Deschanel <edeschanel> |
++-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+""".format( bp.id, 
+			bp.createdat, 
+            bp.title, 
+            str(bp.revisions.first.id)[:7],
+            bp.revisions.first.createdat, 
+            str(bp.root.id)[:7],
+            str(bp.revisions.second.id)[:7],
+            bp.revisions.second.createdat, 
+            str(bp.revisions.second.parent.id)[:7],
+            str(bp.root.id)[:7])
+        
+        self.assertEq(expect, str(bp))
+    
 class test_articles(tester):
     def __init__(self):
         super().__init__()
@@ -1072,12 +1130,10 @@ above the door of the big barn."""
     def it_searches_author(self):
         for str in 'gorwell', 'George', 'gorwell@fakemail.com':
             ids = article.search(str)
-            print(ids)
-            B()
             self.assertOne(ids)
             art = article(ids.pop())
             self.assertEq('Animal Farm', art.title)
-    
+
 class test_article(tester):
     
     Smallposttitle = 'Walden; or, Life in the Woods'
@@ -2979,8 +3035,6 @@ Person:   Gary Francione
         self.assertEq(art.author.name, u.name)
         self.assertOne(u.articles)
 
-
-
 class test_role(tester):
     def __init__(self):
         super().__init__()
@@ -3344,6 +3398,19 @@ class test_tag(tester):
 
         t.name = 'vegan'
         self.assertEq('#vegan', str(t))
+
+    def it_calls_delete(self):
+        t = tag()
+        t.name = 'technology'
+        t.save()
+        t.delete()
+
+        try:
+            t = tag(t.id)
+        except:
+            pass
+        else:
+            self.assertFail('No exception')
     
 t = testers()
 t.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)
