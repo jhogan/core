@@ -62,37 +62,23 @@ class articlerevisions(db.dbentities):
             revs = articlerevisions()
             ress = self.query(sql, args)
 
-            # Create collection
+            # Populate collection
             for res in ress:
-                #revs += articlerevision(res=res)
-                revs += entity(res=res)
+                self += entity(res=res)
 
-            # Find and assign parent
-            for rev1 in revs:
-                for rev2 in revs:
-                    if rev2._parentid == rev1.id:
-                        rev2._parent = rev1
-                        break
+            self.sort()
 
-            # Find and assign the root revision
-            for rev1 in revs:
-                if rev1.isroot:
-                    for rev2 in revs:
-                        rev2._root = rev1
-                # Get rid of parentid. It's only temporarily used to
-                # discover the parent object. Keeping it around may
-                # lead to confusion later on.
-                del rev1._parentid 
-
-            revs.sort()
-            self += revs
-        self._root = None
+    def _assignparents(self):
+        # Find and assign parent
+        for rev1 in self:
+            for rev2 in self:
+                if rev2._parentid == rev1.id:
+                    rev2._parent = rev1
+                    break
 
     def sort(self, key=None, reverse=False):
-        if key != None:
-            # TODO Write test
-            super().sort(key=key, reverse=reverse)
-        else:
+        if key is None:
+            self._assignparents()
             ls = [self.root]
             rent = self.root
             while len(ls) < len(self):
@@ -102,11 +88,14 @@ class articlerevisions(db.dbentities):
                         rent = rev
                         break
 
-            self.clear()
-
             if reverse:
                 ls.reverse()
+
+            self.clear()
             self += ls
+        else:
+            # TODO Write test
+            super().sort(key=key, reverse=reverse)
 
     @property
     def _table(self):
@@ -175,7 +164,7 @@ class articlerevisions(db.dbentities):
 
             title     =  textwrap.shorten(rev.title,   width=40, placeholder='...')
             excerpt   =  textwrap.shorten(rev.excerpt, width=40, placeholder='...')
-            slug      =  textwrap.shorten(rev.slug, width=40, placeholder='...')
+            slug      =  textwrap.shorten(rev.slug,    width=40, placeholder='...')
 
             author = rev.author.fullname if rev.author else ''
             bodylen = len(rev.body) if rev.body else 'null'
@@ -198,12 +187,10 @@ class articlerevisions(db.dbentities):
 
     @property
     def root(self):
-        if not self._root:
-            for rev in self:
-                if not rev.parent:
-                    self._root = rev
-                    break
-        return self._root
+        for rev in self:
+            if not rev.parent:
+                return rev
+        return None
 
     def getlatest(self, prop):
         for rev in self.reversed():
@@ -251,7 +238,10 @@ class articlerevision(db.dbentity):
             raise ValueError('id is of the wrong type')
 
         if res != None:
-            row = list(res._row)
+            if type(res) is db.dbresult:
+                row = list(res._row)
+            else:
+                row = res
 
             self._authorcache = row.pop()
             self._authorid = row.pop()
@@ -316,6 +306,9 @@ class articlerevision(db.dbentity):
         )
 
         self.query(sql, args, cur)
+
+        if self.author:
+            self.author.save(cur)
         
     def _insert(self, cur=None):
         id = uuid.uuid4()
@@ -328,7 +321,7 @@ class articlerevision(db.dbentity):
 
         if self.author:
             if self.author._isnew or self.author._isdirty:
-                self.author.save()
+                self.author.save(cur)
             authorid = self.author.id.bytes
         else:
             authorid = None # Anonymous
@@ -586,6 +579,116 @@ class articles(entities):
             for id in ids:
                 self += article(id)
 
+    @property
+    def isdirty(self):
+        return any([x.isdirty for x in self])
+
+    @property
+    def isnew(self):
+        return any([x.isnew for x in self])
+
+    def save(self, cur=None):
+        # TODO Allow for saving without a cursor argument being passed in.
+
+        # If no cursor was given, we will manage the tx here
+        tx = not bool(cur)
+        if not cur:
+            conn = db.connections.getinstance().default.clone()
+            cur = conn.createcursor()
+
+        try:
+            for art in self:
+                art.save(cur)
+        except Exception:
+            if tx:
+                conn.rollback()
+            raise
+        else:
+            if tx:
+                conn.commit()
+        finally:
+            if tx:
+                cur.close()
+                conn.close()
+
+    @staticmethod
+    def search(author):
+        # Return articles that were edited by the user 'author'
+
+        # If author doesn't exist in the database yet, just return an empty
+        # articles collection.
+        if not author.id:
+            return articles()
+          
+
+        # Query all articlerevisions and potential blogpostrevisions edited by
+        # 'author'
+        sql = """
+        select *
+        from articlerevisions art
+            left join blogpostrevisions bp
+                on art.id = bp.id
+        where art.authorid = %s
+        """
+        args = (
+            author.id.bytes,
+        )
+
+        ress = db.connections.getinstance().default.query(sql, args)
+
+        # Create a dict to hold a collection of revision collections. The key
+        # will be the rootid of the articlerevisions record, which is the id
+        # for the article itself.
+        revss = {}
+        for res in ress:
+            r = list(res._row)
+
+            # art holds the fields from articlerevisions. bp holds the fields
+            # from blogpostrevisions if any were found.
+            art, bp = r[:16], r[16:]
+
+            rootid = art[2]
+
+            # If a non-null value was returned for the blogpostrevisions.id
+            # field, then this must be a blogpostrevision subtype of article.
+            isbprev = bool(bp[0])
+
+            # Get the revs collection from the dict. If one doesn't exist,
+            # create it.
+            try:
+                revs = revss[rootid]
+            except KeyError:
+                if isbprev:
+                    revs = revss[rootid] = blogpostrevisions()
+                else:
+                    revs = revss[rootid] = articlerevisions()
+
+            # Give the art array to the correct articlerevision type so that
+            # the __init__ will hydrate the fields with its values.
+            if isbprev:
+                revs += blogpostrevision(res=art)
+            else:
+                revs += articlerevision(res=art)
+
+        # Now that we have the revisions collections hydrated, create articles
+        # and assign the revision collections to those new article. We return
+        # the articles collection we create here.
+        arts = articles()
+        for revs in revss.values():
+            # Choose the correct subtype based on the revisions collection's
+            # subtype.
+            isbp = type(revs) is blogpostrevisions
+            if isbp:
+                art = blogpost()
+            else:
+                art = article()
+
+            revs.sort()
+            art._revisions = revs
+            arts += art
+
+        return arts
+
 class article(entity):
     Publish   = 0  # Viewable by everyone.
     Future    = 1  # Scheduled to be published in a future date.
@@ -613,10 +716,32 @@ class article(entity):
         if self.revisions.ispopulated:
             self._id = self.revisions.first.id
 
+    @property
+    def isdirty(self):
+        # TODO: Write tests
+        revs = self.revisions
+        if self.title != revs.getlatest('title'):
+            return True
+        return False
+
+    @property
+    def isnew(self):
+        # TODO: Write tests
+        return any([x.isnew for x in self])
+
+    @property
+    def revisions(self):
+        if not self._revisions:
+            self._revisions = articlerevisions(self._id)
+        return self._revisions
+
     @staticmethod
     def search(str):
+        # TODO Should this be in the articles collection class instead?
+
         # Does a fulltext search on the articles and returns a list of the
         # matching id's
+
         sql = """
         select distinct rootid
         from articlerevisions
@@ -629,12 +754,6 @@ class article(entity):
 
         # Return list of id's
         return [uuid.UUID(bytes=r._row[0]) for r in ress]
-
-    @property
-    def revisions(self):
-        if not self._revisions:
-            self._revisions = articlerevisions(self._id)
-        return self._revisions
 
     @property
     def id(self):
@@ -789,16 +908,14 @@ class article(entity):
             rev.root.bodycache  = rev.derivedbody
 
         if rev.author:
-            # TODO This save should be moved to _insert and _update
-            rev.author.save()
             rev.root.authorcache = self._authorcache(rev.author)
 
         return rev
 
-    def save(self):
+    def save(self, cur=None):
         rev = self._appendrevision()
         try:
-            self.revisions.save()
+            self.revisions.save(cur)
         except:
             # TODO Here we need to use self.revisions.last to assign values to
             # the cache attributes (e.g., slugcache) of the self.revisions.root

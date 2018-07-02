@@ -2567,10 +2567,20 @@ class test_users(tester):
 class test_user(tester):
     def __init__(self):
         super().__init__()
-        users().RECREATE()
-        roles().RECREATE()
-        roles_mm_objects().RECREATE()
-        articlerevisions().RECREATE()
+        articlerevisions()   .RECREATE()
+        blogpostrevisions()  .RECREATE()
+        blogs()              .RECREATE()
+        persons()            .RECREATE()
+        roles_mm_objects()   .RECREATE()
+        roles()              .RECREATE()
+        users()              .RECREATE()
+
+        # Create a blog
+        bl = blog()
+        bl.slug = 'carapacian-tech-blog'
+        bl.description = 'Carapacian Tech Blog'
+        bl.save()
+        self.blog = bl
 
         rs = roles()
         for name in (
@@ -2582,6 +2592,65 @@ class test_user(tester):
             rs.last.name = name
 
         rs.save()
+
+    def it_calls_articles(self):
+        # Create user
+        u = user()
+        u.name      =  'jjett'
+        u.service   =  'carapacian'
+        u.password  =  'secret'
+
+        # Should have zero articles
+        self.assertZero(u.articles)
+
+        # Create an article and a blogpost
+        art = article()
+        art.body   =  test_article.Smallpostbody
+        art.title  =  'a' + test_article.Smallposttitle  +  str(uuid4())
+
+        bp = blogpost()
+        bp.blog    =  self.blog
+        bp.body    =  test_article.Smallpostbody
+        bp.title   =  'b' + test_article.Smallposttitle  +  str(uuid4())
+
+        # Add the article and blogpost to the user's collection of articles.
+        u.articles += art
+        u.articles += bp
+
+        # Test that the two articles are there before saving
+        self.assertTwo(u.articles)
+        self.assertEq(art.title, u.articles.first.title)
+        self.assertEq(bp.title,  u.articles.second.title)
+
+        # Save, reload and test
+        u.save()
+        u = user(u.id)
+        u.articles.sort('title')
+
+        self.assertTwo(u.articles)
+        self.assertEq(art.title, u.articles.first.title)
+        self.assertEq(bp.title,  u.articles.second.title)
+
+        # Change the articles
+
+        arttitle = str(uuid4())
+        bptitle  = str(uuid4())
+        u.articles.first.title = arttitle
+        u.articles.second.title = arttitle
+
+        # Save user, reload and test articles
+        u.save()
+        u = user(u.id)
+        u.articles.sort('title')
+
+        self.assertTwo(u.articles)
+        self.assertEq(arttitle, u.articles.first.title)
+        self.assertEq(bptitle,  u.articles.second.title)
+
+    def it_gets_articles_brokenrules(self):
+        # TODO
+        pass
+
 
     def it_calls__str__(self):
         p = person()

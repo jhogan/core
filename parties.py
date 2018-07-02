@@ -213,9 +213,6 @@ class person(db.dbentity):
             else:
                 self._users = users()
 
-            # self._users.onadd    += self._users_onchg
-            # self._users.onremove += self._users_onchg
-
         return self._users
 
     @users.setter
@@ -419,6 +416,11 @@ class user(db.dbentity):
         yield self.salt
         yield self.person
 
+    @property
+    def isdirty(self):
+        arts = self.articles
+        return super().isdirty or arts.isdirty or arts.isnew
+
     def _roles_onchg(self, src, eargs):
         # Called anytime a role is added or removed from
         # self._roles. 
@@ -435,21 +437,21 @@ class user(db.dbentity):
 
     @staticmethod
     def load(uid, srv):
-            sql = """
-            select * 
-            from users 
-            where name = %s and service = %s
-            """
-            args = (
-                uid, srv
-            )
+        sql = """
+        select * 
+        from users 
+        where name = %s and service = %s
+        """
+        args = (
+            uid, srv
+        )
 
-            ress = db.connections.getinstance().default.query(sql, args)
-            if ress.isempty:
-                return None
-            else:
-                res = ress.demandhasone()
-                return user(res)
+        ress = db.connections.getinstance().default.query(sql, args)
+        if ress.isempty:
+            return None
+        else:
+            res = ress.demandhasone()
+            return user(res)
 
     def _insert(self, cur=None):
         self._id = uuid.uuid4()
@@ -480,10 +482,17 @@ class user(db.dbentity):
         values({})
         """.format(('%s, ' * len(args)).rstrip(', '))
 
+
         self.query(insert, args, cur)
+        self._isnew = False
 
         self._roles_mm_objects.attach(self.roles)
         self._roles_mm_objects.save()
+
+        for art in self.articles:
+            art.author = self
+
+        self.articles.save(cur)
 
     def _update(self, cur=None):
 
@@ -528,9 +537,9 @@ class user(db.dbentity):
         
     @property
     def articles(self):
-        # TODO Complete after author has been root cached
+        from articles import articles
         if not self._articles:
-            self._articles = articles()
+            self._articles = articles.search(author=self)
             
         return self._articles
     
