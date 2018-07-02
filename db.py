@@ -72,8 +72,6 @@ class dbentities(entities):
     def isnew(self):
         return any([x.isnew for x in self])
 
-
-
     @property
     def _table(self):
         msg = '_table must be overridden'
@@ -110,7 +108,7 @@ class dbentities(entities):
 
         self.CREATE()
 
-    def save(self):
+    def save(self, cur=None):
         # TODO Add reconnect logic or a connection pool
 
         # Clone the default connection. Since transactions are commited
@@ -122,8 +120,15 @@ class dbentities(entities):
         # will have to connect to the database each time there is a need
         # for atomic commits.
         # https://stackoverflow.com/questions/50206523/can-you-perform-multiple-atomic-commits-using-the-same-connection-with-mysqldb
-        conn = connections.getinstance().default.clone()
-        cur = conn.createcursor()
+
+        # If a cursor was not given, we will manage the atomicity of the
+        # transaction here. Otherwise, we will assuming the calling code is
+        # managing the atomicity.
+        tx = not bool(cur)
+
+        if not cur:
+            conn = connections.getinstance().default.clone()
+            cur = conn.createcursor()
         states = []
         try:
             for e in self:
@@ -133,13 +138,16 @@ class dbentities(entities):
             for i, st in enumerate(states):
                 e = self[i]
                 e._isnew, e._isdirty = st
-            conn.rollback()
+            if tx:
+                conn.rollback()
             raise
         else:
-            conn.commit()
+            if tx:
+                conn.commit()
         finally:
-            cur.close()
-            conn.close()
+            if tx:
+                cur.close()
+                conn.close()
 
     def __getitem__(self, key):
         if type(key) == int or type(key) == slice:
