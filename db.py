@@ -159,7 +159,7 @@ class dbentities(entities):
             elif hasattr(e, 'name'):
                 if e.name == key: return e
 
-    def _tostr(self, fn=str, includeHeader=True, props=('ix', 'id')):
+    def _tostr(self, fn=str, includeHeader=True, props=None):
         import functools
 
         def getattr(obj, attr, *args):
@@ -171,7 +171,11 @@ class dbentities(entities):
 
         tbl = table()
 
-        props = ('ix', 'id') + tuple(props)
+        if props:
+            props = ('ix', 'id') + tuple(props)
+        else:
+            props = ('ix', 'id')
+
 
         if includeHeader:
             r = tbl.newrow()
