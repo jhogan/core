@@ -20,13 +20,20 @@ class testers(entities):
         self.oninvoketest = event()
         super().__init__(initial=initial)
 
-    def run(self):
+    def run(self, tu=None):
+
+        testclass, testmethod, *_ = tu.split('.') + [None] if tu else [None] * 2
+
         for subcls in tester.__subclasses__():
+            if testclass and subcls.__name__ != testclass:
+                continue
             inst = subcls()
             self += inst
             for meth in subcls.__dict__.items():
                 if type(meth[1]) != FunctionType: continue
                 if meth[0][0] == '_': continue
+                if testmethod and testmethod != meth[0]:
+                    continue
                 try:
                     eargs = invoketesteventargs(meth)
                     self.oninvoketest(self, eargs)
