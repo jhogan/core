@@ -23,13 +23,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 from articles import *
-from parties import *
 from configfile import configfile
 from entities import brokenruleserror
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
+from parties import *
 from pdb import set_trace; B=set_trace
 from tester import *
 from uuid import uuid4
+import argparse
 import MySQLdb
 import re
 
@@ -395,6 +396,14 @@ class test_blogpost(tester):
         blogpostrevisions().RECREATE()
         blogs().RECREATE()
         users().RECREATE()
+        tags()              .RECREATE()
+        tags_mm_articles()  .RECREATE()
+
+        # Create some tags
+        for name in 'ethics', 'environment', 'health':
+            t = tag()
+            t.name = name
+            t.save()
 
         # Create a blog
         bl = blog()
@@ -989,6 +998,10 @@ class test_blogpost(tester):
         bp.iscommentable = True
         bp.author = u
 
+        ts = tags().ALL()
+        bp.tags += ts['health']
+        bp.tags += ts['environment']
+
         for _ in range(2):
             bp.save()
             bp.body += 'small change'
@@ -1003,6 +1016,7 @@ Status:       Publish
 Title:        {}
 Excerpt:      Walden is a book by noted transcendentalist Henry David...
 Body:         When I wrote the following pages, or rather the bulk of them,...
+Tags:         #health #environment
 
 Revisions
 +-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
@@ -1142,9 +1156,134 @@ class test_article(tester):
     Smallpostexcerpt = """Walden is a book by noted transcendentalist Henry David Thoreau. The text is a reflection upon simple living in natural surroundings. The work is part personal declaration of independence, social experiment, voyage of spiritual discovery, satire, and-to some degree-a manual for self-reliance.""" 
     def __init__(self):
         super().__init__()
-        articlerevisions().RECREATE()
-        users().RECREATE()
-        persons().RECREATE()
+        articlerevisions()  .RECREATE()
+        persons()           .RECREATE()
+        tags_mm_articles()  .RECREATE()
+        tags()              .RECREATE()
+        users()             .RECREATE()
+
+        for name in 'ethics', 'environment', 'health':
+            t = tag()
+            t.name = name
+            t.save()
+
+    def it_calls_tags(self):
+        ts = tags().ALL()
+        art = article()
+        art.body   =  test_article.Smallpostbody
+        art.title  =  test_article.Smallposttitle  +  str(uuid4())
+
+        # Ensure we start out with zero
+        self.assertZero(art.tags)
+
+        # Ad and remove a tag without saving. Test the count
+        art.tags += ts['health']
+        self.assertOne(art.tags)
+
+        art.tags -= ts['health']
+        self.assertZero(art.tags)
+
+        art.tags += ts['health']
+        self.assertOne(art.tags)
+
+        # Save, test, reload, test
+        art.save()
+        self.assertOne(art.tags)
+        self.assertEq('health', art.tags.first.name)
+
+        art = article(art.id)
+        self.assertOne(art.tags)
+        self.assertEq('health', art.tags.first.name)
+
+        # Add second tab, test, save, reload, test
+        art.tags += ts['environment']
+        self.assertTwo(art.tags)
+        self.assertEq('health',       art.tags.first.name)
+        self.assertEq('environment',  art.tags.second.name)
+
+        art.save()
+        art.tags.sort('name')
+
+        self.assertTwo(art.tags)
+        self.assertEq('environment',  art.tags.first.name)
+        self.assertEq('health',       art.tags.second.name)
+
+        art = article(art.id)
+        art.tags.sort('name')
+
+        self.assertTwo(art.tags)
+        self.assertEq('environment',  art.tags.first.name)
+        self.assertEq('health',       art.tags.second.name)
+
+        # Add third tag, remove first test, save, reload, test
+        art.tags += ts['ethics']
+        art.tags.shift()
+        self.assertTwo(art.tags)
+        self.assertEq('health', art.tags.first.name)
+        self.assertEq('ethics', art.tags.second.name)
+
+        art.save()
+        self.assertTwo(art.tags)
+        self.assertEq('health', art.tags.first.name)
+        self.assertEq('ethics', art.tags.second.name)
+
+        art = article(art.id)
+
+        art.tags.sort('name')
+        self.assertTwo(art.tags)
+        self.assertEq('ethics', art.tags.first.name)
+        self.assertEq('health', art.tags.second.name)
+
+        # Remove the rest of the tags until there are zero
+        art.tags.shift()
+        art.save()
+        art = article(art.id)
+        self.assertOne(art.tags)
+        self.assertEq('health', art.tags.first.name)
+
+        art.tags.shift()
+        art.save()
+        art = article(art.id)
+        self.assertZero(art.tags)
+
+    def it_call_isdirty(self):
+        u = user()
+        u.name      =  'byoung'
+        u.password  =  'secret'
+        u.service   =  'carapacian'
+
+        u1 = user()
+        u1.name      =  'caffleck'
+        u1.password  =  'secret'
+        u1.service   =  'carapacian'
+
+        art0 = article()
+        art0.body                       =  test_article.Smallpostbody
+        art0.title                      =  test_article.Smallposttitle + str(uuid4())
+        art0.excerpt                    =  test_article.Smallpostexcerpt
+        art0.status                     =  article.Future
+        art0.iscommentable              =  True
+        art0.author                     =  u
+        self.assertFalse(art0.isdirty)
+
+        art0.save()
+        art = article(art0.id)
+
+        self.assertFalse(art.isdirty)
+
+        props = 'title', 'body', 'excerpt', 'status', 'iscommentable'
+
+        for prop in props:
+            if    prop  ==  'status':         newval  =  article.Draft
+            elif  prop  ==  'iscommentable':  newval  =  False
+            elif  prop  ==  'author':         newval  =  u1
+            else:                             newval  = uuid4().hex
+
+            setattr(art, prop, newval)
+            self.assertTrue(art.isdirty, prop + ' did not dirty article')
+
+            setattr(art, prop, getattr(art0, prop))
+            self.assertFalse(art.isdirty, 'Could not clean article')
 
     def it_loads_as_valid(self):
         art = article()
@@ -2031,8 +2170,7 @@ Status:         {}
 class test_persons(tester):
     def __init__(self):
         super().__init__()
-        persons().RECREATE()
-
+        persons()           .RECREATE()
 
     def it_calls__str__(self):
         ps = persons()
@@ -2435,6 +2573,11 @@ Phone: 555 555 5555
         u.password  =  str(uuid4())
 
         ## Add user to us collection, sort, and shift. This is to test against p.users.
+
+        # TODO BUG Appending a new user, sorting by id, then shift()ing results
+        # in the new user being immediately removed - so basically nothing is
+        # happening here. The same thing happens below with p.users. This bug makes the test work.
+        # It conceals the fact that shift()ing doesn't mark the user entity for deletion.
         us += u
         us.sort('id')
         us.shift()
@@ -2632,20 +2775,66 @@ class test_user(tester):
         self.assertEq(bp.title,  u.articles.second.title)
 
         # Change the articles
-
         arttitle = str(uuid4())
         bptitle  = str(uuid4())
         u.articles.first.title = arttitle
-        u.articles.second.title = arttitle
+        u.articles.second.title = bptitle
 
-        # Save user, reload and test articles
+        # Test, save user, reload and test again
+        self.assertTwo(u.articles)
+        self.assertEq(arttitle, u.articles.first.title)
+        self.assertEq(bptitle,  u.articles.second.title)
+
+        arts = u.articles 
+        u.save()
+        u = user(u.id)
+
+        u.articles.sort('title')
+        arts.sort('title')
+
+        self.assertTwo(u.articles)
+        self.assertEq(arts.first.title,   u.articles.first.title)
+        self.assertEq(arts.second.title,  u.articles.second.title)
+
+        # Add article, test, save, reload, test
+        art1 = article()
+        art1.body   =  test_article.Smallpostbody
+        art1.title  =  'c' + test_article.Smallposttitle  +  uuid4().hex
+        arts += art1
+
+        u.articles += art1
+
+        self.assertThree(u.articles)
+        self.assertEq(arts.first.title,   u.articles.first.title)
+        self.assertEq(arts.second.title,  u.articles.second.title)
+        self.assertEq(arts.third.title,   u.articles.third.title)
+
+        u.save()
+        u = user(u.id)
+
+        u.articles.sort('title')
+        arts.sort('title')
+        self.assertThree(u.articles)
+        self.assertEq(arts.first.title,   u.articles.first.title)
+        self.assertEq(arts.second.title,  u.articles.second.title)
+        self.assertEq(arts.third.title,   u.articles.third.title)
+
+        # Remove article
+        # TODO
+        return
+        u.articles.shift()
+        self.assertTwo(u.articles)
+        self.assertEq(arts.second.title,  u.articles.first.title)
+        self.assertEq(arts.third.title,   u.articles.second.title)
+
         u.save()
         u = user(u.id)
         u.articles.sort('title')
 
         self.assertTwo(u.articles)
-        self.assertEq(arttitle, u.articles.first.title)
-        self.assertEq(bptitle,  u.articles.second.title)
+        self.assertEq(arts.second.title,  u.articles.first.title)
+        self.assertEq(arts.third.title,   u.articles.second.title)
+        
 
     def it_gets_articles_brokenrules(self):
         # TODO
@@ -3480,9 +3669,25 @@ class test_tag(tester):
             pass
         else:
             self.assertFail('No exception')
+
+    def it_calls_articles(self):
+        t = tag()
+        t.name = 'recipe'
+
+        self.assertZero(t.articles)
+        
+        art = article()
+        art.body  =  test_article.Smallpostbody
+        title     =  test_article.Smallposttitle  +  uuid4().hex
+        
     
+parser = argparse.ArgumentParser()
+parser.add_argument('testunit',  help='The test class or method to run',  nargs='?')
+args = parser.parse_args()
+
 t = testers()
+
 t.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)
 t.oninvoketest += lambda src, eargs: print(eargs.method[0], flush=True)
-t.run()
+t.run(args.testunit)
 print(t)

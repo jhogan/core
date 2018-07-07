@@ -307,6 +307,7 @@ class users(db.dbentities):
 
         ress = db.connections.getinstance().default.query(sql, args)
         return users(ress)
+
     @property
     def dbentity(self):
         return user
@@ -418,8 +419,12 @@ class user(db.dbentity):
 
     @property
     def isdirty(self):
-        arts = self.articles
-        return super().isdirty or arts.isdirty or arts.isnew
+        if super().isdirty:
+            return True
+
+        if self._articles:
+            arts = self.articles
+            return arts.isdirty or arts.isnew
 
     def _roles_onchg(self, src, eargs):
         # Called anytime a role is added or removed from
@@ -489,10 +494,11 @@ class user(db.dbentity):
         self._roles_mm_objects.attach(self.roles)
         self._roles_mm_objects.save()
 
-        for art in self.articles:
-            art.author = self
+        if self._articles:
+            for art in self.articles:
+                art.author = self
 
-        self.articles.save(cur)
+            self.articles.save(cur)
 
     def _update(self, cur=None):
 
@@ -506,12 +512,13 @@ class user(db.dbentity):
 
         sql = """
         update users
-        set service = %s,
-        name = %s,
-        password = %s,
-        salt = %s,
-        personid = %s
-        where id = %s
+            set service = %s,
+            name = %s,
+            password = %s,
+            salt = %s,
+            personid = %s
+        where 
+            id = %s
         """
 
         personid = self.person.id.bytes if self.person else None
@@ -534,6 +541,12 @@ class user(db.dbentity):
 
         self._roles_mm_objects.attach(self.roles)
         self._roles_mm_objects.save()
+
+        if self._articles:
+            for art in self.articles:
+                art.author = self
+
+            self.articles.save(cur)
         
     @property
     def articles(self):

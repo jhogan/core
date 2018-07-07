@@ -63,8 +63,11 @@ class articlerevisions(db.dbentities):
             ress = self.query(sql, args)
 
             # Populate collection
-            for res in ress:
-                self += entity(res=res)
+            try:
+                for res in ress:
+                    self += entity(res=res)
+            finally:
+                self._isdirty = False
 
             self.sort()
 
@@ -78,6 +81,10 @@ class articlerevisions(db.dbentities):
 
     def sort(self, key=None, reverse=False):
         if key is None:
+
+            if self.isempty:
+                return
+
             self._assignparents()
             ls = [self.root]
             rent = self.root
@@ -91,8 +98,11 @@ class articlerevisions(db.dbentities):
             if reverse:
                 ls.reverse()
 
-            self.clear()
-            self += ls
+            try:
+                self.clear()
+                self += ls
+            finally:
+                self._isdirty = False
         else:
             # TODO Write test
             super().sort(key=key, reverse=reverse)
@@ -579,17 +589,23 @@ class articles(entities):
             for id in ids:
                 self += article(id)
 
+    def _self_onadd(self, src, eargs):
+        super()._self_onadd(src, eargs)
+        self._isdirty = True
+
+    def _self_onremove(self, src, eargs):
+        super()._self_onremove(src, eargs)
+        self._isdirty = True
+
     @property
     def isdirty(self):
-        return any([x.isdirty for x in self])
+        return self._isdirty or any([x.isdirty for x in self])
 
     @property
     def isnew(self):
         return any([x.isnew for x in self])
 
     def save(self, cur=None):
-        # TODO Allow for saving without a cursor argument being passed in.
-
         # If no cursor was given, we will manage the tx here
         tx = not bool(cur)
         if not cur:
@@ -612,27 +628,37 @@ class articles(entities):
                 conn.close()
 
     @staticmethod
-    def search(author):
+    def search(author=None, ids=None):
         # Return articles that were edited by the user 'author'
 
-        # If author doesn't exist in the database yet, just return an empty
-        # articles collection.
-        if not author.id:
-            return articles()
+        if author is not None:
+            # If author doesn't exist in the database yet, just return an empty
+            # articles collection.
+            if not author.id:
+                return articles()
           
-
-        # Query all articlerevisions and potential blogpostrevisions edited by
-        # 'author'
-        sql = """
-        select *
-        from articlerevisions art
-            left join blogpostrevisions bp
-                on art.id = bp.id
-        where art.authorid = %s
-        """
-        args = (
-            author.id.bytes,
-        )
+            # Query all articlerevisions and potential blogpostrevisions edited
+            # by 'author'
+            sql = """
+            select *
+            from articlerevisions art
+                left join blogpostrevisions bp
+                    on art.id = bp.id
+            where art.authorid = %s
+            """
+            args = (author.id.bytes,)
+        elif ids is not None:
+            # Query all articlerevisions and potential blogpostrevisions that
+            # have 'ids'
+            sql = """
+            select *
+            from articlerevisions art
+                left join blogpostrevisions bp
+                    on art.id = bp.id
+            where art.id in (%s)
+            """
+            args = ([id.bytes for id in ids],)
+        
 
         ress = db.connections.getinstance().default.query(sql, args)
 
@@ -687,6 +713,8 @@ class articles(entities):
             art._revisions = revs
             arts += art
 
+        arts._isdirty = False
+
         return arts
 
 class article(entity):
@@ -703,37 +731,78 @@ class article(entity):
     def __init__(self, id=None):
         super().__init__()
 
-        self._body = None
-        self._title = None
-        self._excerpt = None
-        self._status = None
-        self._iscommentable = None
-        self._slug = None
-        self._revisions = None
-        self._id = id
-        self._author = None
+        # id may be a str slug. Wait for self._id to be assign below (using the
+        # first revision) before assuming it is the real uuid for this entity.
+        self._id             =  id
+
+        self._body           =  None
+        self._title          =  None
+        self._excerpt        =  None
+        self._status         =  None
+        self._iscommentable  =  None
+        self._slug           =  None
+        self._revisions      =  None
+        self._author         =  None
+        self._tags           =  None
 
         if self.revisions.ispopulated:
             self._id = self.revisions.first.id
 
-    @property
-    def isdirty(self):
-        # TODO: Write tests
-        revs = self.revisions
-        if self.title != revs.getlatest('title'):
-            return True
-        return False
+        self._tags_mm_articles = tags_mm_articles(self)
 
-    @property
-    def isnew(self):
-        # TODO: Write tests
-        return any([x.isnew for x in self])
+        for mm in self._tags_mm_articles:
+            self.tags += tag(mm.tagid)
 
     @property
     def revisions(self):
         if not self._revisions:
             self._revisions = articlerevisions(self._id)
         return self._revisions
+
+    @property
+    def isdirty(self):
+        if self.revisions.isempty:
+            return False
+
+        if self.revisions.isdirty:
+            return True
+
+        revs = self.revisions
+        props = 'body', 'title', 'excerpt', 'status', 'iscommentable'
+
+        for prop in props:
+            v = getattr(self, prop)
+            if v != revs.getlatest(prop):
+                return True
+
+        author = revs.getlatest('author')
+        if self.author:
+            if author:
+                if self.author.name    != author.name or \
+                   self.author.service != author.service:
+                    return True
+            else:
+                return True
+        else:
+            if author:
+                return True
+
+        return False
+
+    @property
+    def isnew(self):
+        # TODO: Write tests
+        return any([x.isnew for x in self.revisions])
+
+    @property
+    def tags(self):
+        if not self._tags:
+            self._tags = tags()
+        return self._tags
+
+    @tags.setter
+    def tags(self, v):
+        self._tags = v
 
     @staticmethod
     def search(str):
@@ -934,6 +1003,9 @@ class article(entity):
         else:
             self._id = rev.root.id
 
+        self._tags_mm_articles.attach(self.tags)
+        self._tags_mm_articles.save()
+
     @staticmethod
     def _authorcache(u):
         if not u:
@@ -954,6 +1026,45 @@ class article(entity):
                 return rev
         return None
 
+    def __str__(self):
+        # TODO Write tes
+        def shorten(str):
+            return textwrap.shorten(str, width=65, placeholder='...')
+
+        def indent(str):
+            return textwrap.indent(str, ' ' * 4)
+
+        r = """
+Id:           {}
+Author:       {}
+Created:      {}
+Commentable:  {}
+Status:       {}
+Title:        {}
+Excerpt:      {}
+Body:         {}
+Tags:         {}
+"""
+        id = self.id if self.id else ''
+        author = self.author.fullname if self.author else ''
+
+        tags = ' '.join([str(t) for t in self.tags])
+
+        r = r.format(id, 
+                     author,
+                     str(self.createdat),
+                     str(self.iscommentable),
+                     self.statusstr,
+                     shorten(self.title),
+                     shorten(self.excerpt),
+                     shorten(self.body),
+                     tags,
+                     )
+
+        r += '\nRevisions\n'
+        r += str(self.revisions)
+
+        return r
 class blogposts(articles):
     def __init__(self, id=None):
         super().__init__(id)
@@ -1002,9 +1113,12 @@ Status:       {}
 Title:        {}
 Excerpt:      {}
 Body:         {}
+Tags:         {}
 """
         id = self.id if self.id else ''
         author = self.author.fullname if self.author else ''
+
+        tags = ' '.join([str(t) for t in self.tags])
 
         r = r.format(id, 
                      author,
@@ -1015,6 +1129,7 @@ Body:         {}
                      shorten(self.title),
                      shorten(self.excerpt),
                      shorten(self.body),
+                     tags,
                      )
 
         r += '\nRevisions\n'
@@ -1266,7 +1381,6 @@ class blog(db.dbentity):
         return brs
 
 class tags(db.dbentities):
-
     @property
     def _create(self):
         return """
@@ -1291,6 +1405,10 @@ class tags(db.dbentities):
 class tag(db.dbentity):
     def __init__(self, o=None):
         super().__init__()
+
+        self._tags_mm_articles = None
+        self._articles = None
+
         if o == None:
             self._id    =  None
             self._name  =  None
@@ -1389,6 +1507,19 @@ class tag(db.dbentity):
 
         return brs
 
+    @property
+    def articles(self):
+        if not self._articles:
+            mm = self._get_tags_mm_articles()
+            ids = mm.pluck('articleid')
+            self._articles = articles.search(ids=ids)
+        return self._articles
+
+    def _get_tags_mm_articles(self):
+        if not self._tags_mm_articles:
+           self._tags_mm_articles = tags_mm_articles(self) 
+        return self._tags_mm_articles
+
     def __str__(self):
         if self.name is None:
             return ''
@@ -1396,3 +1527,123 @@ class tag(db.dbentity):
             return '#' + self.name
     
 
+class tags_mm_articles(db.dbentities):
+    def __init__(self, obj=None):
+        super().__init__()
+
+        if obj and obj.id:
+            if isinstance(obj, article):
+                self._article = obj
+                sql = 'select * from tags_mm_articles where articleid = %s'
+            elif isinstance(obj, tag):
+                self._tag = obj
+                sql = 'select * from tags_mm_articles where tagid = %s'
+
+            ress = self.query(sql, args)
+            for res in ress:
+                self += tag_mm_article(res)
+
+    @property
+    def _create(self):
+        return """
+        create table tags_mm_articles(
+            id binary(16) primary key,
+            tagid binary(16),
+            articleid binary(16)
+        )
+        """
+
+    def attach(self, ts):
+        for mm in self:
+            for t in ts:
+                if mm.tagid == t.id:
+                    break;
+            else:
+                mm.markfordeletion()
+
+        for t in ts:
+            for mm in self:
+                if mm.tagid == t.id:
+                    break
+            else:
+                mm = tag_mm_article()
+                mm.tagid = t.id
+                mm.articleid = self.article.id
+                self += mm
+
+    @property
+    def _table(self):
+        return 'tags_mm_articles'
+
+    @property
+    def article(self):
+        return self._article
+
+class tag_mm_article(db.dbentity):
+    def __init__(self, res=None):
+        super().__init__()
+        if res:
+            row = list(res._row)
+            self._id         =  uuid.UUID(bytes=row.pop(0))
+            self._tagid      =  uuid.UUID(bytes=row.pop(0))
+            self._articleid  =  uuid.UUID(bytes=row.pop(0))
+            self._markold()
+        else:
+            self._id         =  None
+            self._tagid      =  None
+            self._articleid  =  None
+            self._marknew()
+
+    def _insert(self, cur=None):
+        self._id = uuid.uuid4()
+
+        args = (
+            self.id.bytes, 
+            self.tagid.bytes,
+            self.articleid.bytes,
+        )
+
+        insert = """
+        insert into tags_mm_articles
+        values({})
+        """.format(('%s, ' * len(args)).rstrip(', '))
+
+        self.query(insert, args, cur)
+
+    @property
+    def brokenrules(self):
+        brs = brokenrules()
+        brs.demand(self, 'tagid', isfull=True, type=uuid.UUID)
+        return brs
+
+    def _delete(self, cur=None):
+        sql = """
+        delete from tags_mm_articles
+        where id = %s
+        """
+        args = (
+            self.id.bytes,
+        )
+
+        self.query(sql, args, cur)
+
+    @property
+    def _collection(self):
+        return tags_mm_articles
+
+    @property
+    def tagid(self):
+        return self._tagid
+
+    @tagid.setter
+    def tagid(self, v):
+        return self._setvalue('_tagid', v, 'tagid')
+    
+    @property
+    def articleid(self):
+        return self._articleid
+
+    @articleid.setter
+    def articleid(self, v):
+        return self._setvalue('_articleid', v, 'articleid')
+    
