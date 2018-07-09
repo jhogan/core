@@ -351,7 +351,6 @@ class test_blogpostrevision(tester):
         rev.blog
         self.assertCount(1, rev.brokenrules)
         self.assertTrue(rev.brokenrules.contains('blog', 'full'))
-
         
     def it_retrieves(self):
         rev = blogpostrevision()
@@ -1042,40 +1041,51 @@ Revisions
 class test_articles(tester):
     def __init__(self):
         super().__init__()
-        try:
-            articlerevisions().RECREATE()
+        articlerevisions()   .RECREATE()
+        blogpostrevisions()  .RECREATE()
+        users()              .RECREATE()
+        persons()            .RECREATE()
+        tags()               .RECREATE()
+        tags_mm_articles()   .RECREATE()
 
-            p = person()
-            p.firstname   =  'George'
-            p.lastname    =  'Orwell'
-            p.email       =  'gorwell@fakemail.com'
-            p.phone       =  '555 555 5555'
+        ts = tags()
+        for n in 'monters', 'animals', 'orwell':
+            ts += tag()
+            ts.last.name = n
+        ts.save()
 
-            u = user()
-            u.name = 'gorwell'
-            u.service = 'secker-and-warburg'
-            u.password = 'doubleplusungood'
-            u.person = p
+        p = person()
+        p.firstname   =  'George'
+        p.lastname    =  'Orwell'
+        p.email       =  'gorwell@fakemail.com'
+        p.phone       =  '555 555 5555'
 
-            art = article()
-            art.title = 'Animal Farm'
-            art.body = """Mr. Jones, of the Manor Farm, had locked the hen-houses for
+        u = user()
+        u.name = 'gorwell'
+        u.service = 'secker-and-warburg'
+        u.password = 'doubleplusungood'
+        u.person = p
+
+        art = article()
+        art.title = 'Animal Farm'
+        art.body = """Mr. Jones, of the Manor Farm, had locked the hen-houses for
 the night, but was too drunk to remember to shut the pop-holes. With the ring
 of light from his lantern dancing from side to side, he lurched across the
 yard, kicked off his boots at the back door, drew himself a last glass of beer
 from the barrel in the scullery, and made his way up to bed, where Mrs. Jones
 was already snoring."""
-            art.author = u
-            art.save()
+        art.author = u
+        art.tags += ts['animals'] + ts['orwell']
+        art.save()
 
-            u = user()
-            u.name = 'mshelley'
-            u.service = 'lackington-hughes-harding-mavor-jones'
-            u.password = 'fire'
+        u = user()
+        u.name = 'mshelley'
+        u.service = 'lackington-hughes-harding-mavor-jones'
+        u.password = 'fire'
 
-            art = article()
-            art.title = 'Frankenstein'
-            art.body = """I am by birth a Genevese, and my family is one of the
+        art = article()
+        art.title = 'Frankenstein'
+        art.body = """I am by birth a Genevese, and my family is one of the
 most distinguished of that republic. My ancestors had been for many years
 counsellors and syndics, and my father had filled several public situations
 with honour and reputation. He was respected by all who knew him for his
@@ -1083,12 +1093,13 @@ integrity and indefatigable attention to public business.  He passed his
 younger days perpetually occupied by the affairs of his country; a variety of
 circumstances had prevented his marrying early, nor was it until the decline of
 life that he became a husband and the father of a family."""
-            art.author = u
-            art.save()
+        art.author = u
+        art.tags += ts['monters']
+        art.save()
 
-            art = article()
-            art.title = 'Summaries & Interpretations : Animal Farm'
-            art.body = """The story takes place on a farm somewhere in England.
+        art = article()
+        art.title = 'Summaries & Interpretations : Animal Farm'
+        art.body = """The story takes place on a farm somewhere in England.
 The story is told by an all-knowing narrator in the third person.  The action
 of this novel starts when the oldest pig on the farm, Old Major, calls all
 animals to a secret meeting. He tells them about his dream of a revolution
@@ -1108,11 +1119,9 @@ whips, nose rings, reins, and all other instruments that have been used to
 suppress them. The same day the animals celebrate their victory with an extra
 ration of food. The pigs make up the seven commandments, and they write them
 above the door of the big barn."""
-            art.save()
+        art.tags += ts['animals'] + ts['orwell']
+        art.save()
 
-        except Exception as ex:
-            print(ex)
-    
     def it_searches_body(self):
         ids = article.search('Genevese')
         self.assertOne(ids)
@@ -1128,18 +1137,17 @@ above the door of the big barn."""
         self.assertEq('Summaries & Interpretations : Animal Farm', arts.second.title)
 
     def it_searches_title(self):
-        ids = article.search('animal farm')
-        self.assertTwo(ids)
-        arts = articles(ids)
+        arts = articles.search('animal farm')
+        self.assertTwo(arts)
 
         arts.sort('title')
 
         self.assertEq('Animal Farm', arts.first.title)
         self.assertEq('Summaries & Interpretations : Animal Farm', arts.second.title)
 
-        ids = article.search('Frankenstein')
-        self.assertOne(ids)
-        self.assertEq('Frankenstein', article(ids[0]).title)
+        arts = articles.search('Frankenstein')
+        self.assertOne(arts)
+        self.assertEq('Frankenstein', arts.first.title)
 
     def it_searches_author(self):
         for str in 'gorwell', 'George', 'gorwell@fakemail.com':
@@ -1147,6 +1155,26 @@ above the door of the big barn."""
             self.assertOne(ids)
             art = article(ids.pop())
             self.assertEq('Animal Farm', art.title)
+
+    def it_calls__str__(self):
+        arts = articles().ALL()
+        arts.sort('title')
+        
+        for art in arts: 
+            art.tags.sort('name')
+
+        expect = """+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ix | id      | createdat  | title                                   | excerpt | status | iscommentable | slug                                  | body | author                  | tags           |
+|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 0  | {} | 2018-07-09 | Animal Farm                             |         | Draft  | False         | animal-farm                           | 390  | George Orwell <gorwell> | animals orwell |
+|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1  | {} | 2018-07-09 | Frankenstein                            |         | Draft  | False         | frankenstein                          | 565  | mshelley                | monters        |
+|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 2  | {} | 2018-07-09 | Summaries & Interpretations : Animal... |         | Draft  | False         | summaries-interpretations-animal-farm | 1460 |                         | animals orwell |
++--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+""".format(*[x.id.hex[:7] for x in arts])
+        self.assertEq(expect, str(arts))
+        
 
 class test_article(tester):
     
@@ -1176,7 +1204,7 @@ class test_article(tester):
         # Ensure we start out with zero
         self.assertZero(art.tags)
 
-        # Ad and remove a tag without saving. Test the count
+        # Add and remove a tag without saving. Test the count
         art.tags += ts['health']
         self.assertOne(art.tags)
 
@@ -3670,23 +3698,90 @@ class test_tag(tester):
         else:
             self.assertFail('No exception')
 
+    def it_aggregates_brokenrules_from_articles(self):
+        # TODO
+        pass
+
     def it_calls_articles(self):
         t = tag()
         t.name = 'recipe'
 
+        # Ensure we start out with zero
         self.assertZero(t.articles)
         
         art = article()
         art.body  =  test_article.Smallpostbody
         title     =  test_article.Smallposttitle  +  uuid4().hex
+        art.title =  title
+
+        # Add and remove an article without saving. Test the count
+        t.articles += art
+        self.assertOne(t.articles)
+
+        t.articles -= art
+        self.assertZero(t.articles)
+
+        t.articles += art
+        self.assertOne(t.articles)
+
+        # Save tag, test, reload and test
+        t.save()
+        self.assertOne(t.articles)
+        self.assertEq(title, t.articles.first.title)
+
+        t = tag(t.id)
+        self.assertOne(t.articles)
+        self.assertEq(title, t.articles.first.title)
+
+        # Update an article, test, save, test, reload and test
+        title = uuid4().hex
+        t.articles.first.title = title
+        self.assertOne(t.articles)
+        self.assertEq(title, t.articles.first.title)
+
+        t.save()
+        self.assertOne(t.articles)
+        self.assertEq(title, t.articles.first.title)
+
+        t = tag(t.id)
+        self.assertOne(t.articles)
+        self.assertEq(title, t.articles.first.title)
+
+        arts = articles()
+        arts += t.articles.first
+
+        arts += article()
+        arts.last.body   =  test_article.Smallpostbody
+        arts.last.title  =  test_article.Smallposttitle  +  uuid4().hex
+
+        t.articles += arts.last
+        t.articles.sort('title')
+        arts.sort('title')
+
+        self.assertTwo(t.articles)
+        self.assertEq(arts.first.title, t.articles.first.title)
+        self.assertEq(arts.second.title, t.articles.second.title)
+
+        t.save()
+        self.assertTwo(t.articles)
+        self.assertEq(arts.first.title, t.articles.first.title)
+        self.assertEq(arts.second.title, t.articles.second.title)
+
+        t = tag(t.id)
+        t.articles.sort('title')
+        self.assertTwo(t.articles)
+        self.assertEq(arts.first.title, t.articles.first.title)
+        self.assertEq(arts.second.title, t.articles.second.title)
+
+
         
-    
-parser = argparse.ArgumentParser()
-parser.add_argument('testunit',  help='The test class or method to run',  nargs='?')
-args = parser.parse_args()
+p = argparse.ArgumentParser()
+p.add_argument('testunit',  help='The test class or method to run',  nargs='?')
+p.add_argument('-b', '--break-on-exception', action='store_true', dest='breakonexception')
+args = p.parse_args()
 
 t = testers()
-
+t.breakonexception = args.breakonexception
 t.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)
 t.oninvoketest += lambda src, eargs: print(eargs.method[0], flush=True)
 t.run(args.testunit)

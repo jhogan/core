@@ -589,6 +589,55 @@ class articles(entities):
             for id in ids:
                 self += article(id)
 
+    def __str__(self):
+        import functools
+
+        def getattr(obj, attr, *args):
+            def rgetattr(obj, attr):
+                if obj:
+                    return builtins.getattr(obj, attr, *args)
+                return None
+            return functools.reduce(rgetattr, [obj] + attr.split('.'))
+
+        tbl = table()
+
+        r = tbl.newrow()
+        r.newfield('ix')
+        r.newfield('id')
+        r.newfield('createdat')
+        r.newfield('title')
+        r.newfield('excerpt')
+        r.newfield('status')
+        r.newfield('iscommentable')
+        r.newfield('slug')
+        r.newfield('body')
+        r.newfield('author')
+        r.newfield('tags')
+
+        for i, art in enumerate(self):
+            id        =  str(art.id)[:7]         if  art.id      else  ''
+
+            title     =  textwrap.shorten(art.title,   width=40, placeholder='...')
+            excerpt   =  textwrap.shorten(str(art.excerpt), width=40, placeholder='...')
+            slug      =  textwrap.shorten(art.slug,    width=40, placeholder='...')
+
+            author = art.author.fullname if art.author else ''
+            bodylen = len(art.body) if art.body else 'null'
+
+            r = tbl.newrow()
+            r.newfield(i)
+            r.newfield(id)
+            r.newfield(art.createdat.date())
+            r.newfield(title)
+            r.newfield(excerpt)
+            r.newfield(art.statusstr)
+            r.newfield(art.iscommentable)
+            r.newfield(slug)
+            r.newfield(bodylen)
+            r.newfield(author)
+            r.newfield(' '.join(art.tags.pluck('name')))
+        return str(tbl)
+
     def _self_onadd(self, src, eargs):
         super()._self_onadd(src, eargs)
         self._isdirty = True
@@ -627,11 +676,29 @@ class articles(entities):
                 cur.close()
                 conn.close()
 
+    def ALL(self):
+        return articles.search()
+        
     @staticmethod
-    def search(author=None, ids=None):
+    def search(str=None, author=None, ids=None):
         # Return articles that were edited by the user 'author'
 
-        if author is not None:
+        if str is not None:
+            # Do a fulltext search on the articles' cache fields
+            sql = """
+            select *
+            from articlerevisions art
+                left join blogpostrevisions bp
+                    on art.id = bp.id
+            where 
+                art.id = art.rootid and
+                match(titlecache, bodycache, authorcache)
+                against (%s in natural language mode)
+            """
+
+            args = str,
+            
+        elif author is not None:
             # If author doesn't exist in the database yet, just return an empty
             # articles collection.
             if not author.id:
@@ -647,7 +714,13 @@ class articles(entities):
             where art.authorid = %s
             """
             args = (author.id.bytes,)
+
         elif ids is not None:
+            # If we got passed an iterable of ids, just return an empty
+            # articles collection.
+            if len(ids) == 0:
+                return articles()
+
             # Query all articlerevisions and potential blogpostrevisions that
             # have 'ids'
             sql = """
@@ -655,11 +728,18 @@ class articles(entities):
             from articlerevisions art
                 left join blogpostrevisions bp
                     on art.id = bp.id
-            where art.id in (%s)
+            where art.rootid in ({})
+            """.format(', '.join(['%s'] * len(ids)))
+            args = [id.bytes for id in ids]
+        else:
+            sql = """
+            select *
+            from articlerevisions art
+                left join blogpostrevisions bp
+                    on art.id = bp.id
             """
-            args = ([id.bytes for id in ids],)
+            args = ()
         
-
         ress = db.connections.getinstance().default.query(sql, args)
 
         # Create a dict to hold a collection of revision collections. The key
@@ -700,7 +780,7 @@ class articles(entities):
         # and assign the revision collections to those new article. We return
         # the articles collection we create here.
         arts = articles()
-        for revs in revss.values():
+        for rootid, revs in revss.items():
             # Choose the correct subtype based on the revisions collection's
             # subtype.
             isbp = type(revs) is blogpostrevisions
@@ -709,11 +789,19 @@ class articles(entities):
             else:
                 art = article()
 
+            art._id = uuid.UUID(bytes=rootid)
+
             revs.sort()
             art._revisions = revs
+
+            art._tags_mm_articles = tags_mm_articles(art)
+            for mm in art._tags_mm_articles:
+                art.tags += tag(mm.tagid)
+
             arts += art
 
         arts._isdirty = False
+
 
         return arts
 
@@ -806,10 +894,8 @@ class article(entity):
 
     @staticmethod
     def search(str):
-        # TODO Should this be in the articles collection class instead?
 
-        # Does a fulltext search on the articles and returns a list of the
-        # matching id's
+        # TODO Should this be in the articles collection class instead?
 
         sql = """
         select distinct rootid
@@ -883,6 +969,8 @@ class article(entity):
     @staticmethod
     def st2str(st):
         # TODO Write test
+        if st is None:
+            return None
         return (
             'Publish',
             'Future',
@@ -1029,9 +1117,11 @@ class article(entity):
     def __str__(self):
         # TODO Write tes
         def shorten(str):
+            str = builtins.str(str)
             return textwrap.shorten(str, width=65, placeholder='...')
 
         def indent(str):
+            str = builtins.str(str)
             return textwrap.indent(str, ' ' * 4)
 
         r = """
@@ -1436,6 +1526,11 @@ class tag(db.dbentity):
                 self._marknew()
 
     @property
+    def isdirty(self):
+        return super().isdirty or \
+               self.articles.isdirty
+
+    @property
     def _collection(self):
         return tags
 
@@ -1459,6 +1554,13 @@ class tag(db.dbentity):
 
         self.query(insert, args, cur)
 
+        # If articles have been loaded, save them.
+        if self._articles:
+            self.articles.save()
+            self._tags_mm_articles.attach(self.articles)
+            self._tags_mm_articles.save()
+
+
     def _update(self, cur=None):
         sql = """
         update tags
@@ -1472,6 +1574,11 @@ class tag(db.dbentity):
         )
 
         self.query(sql, args, cur)
+
+        if self._articles:
+            self.articles.save()
+            self._tags_mm_articles.attach(self.articles)
+            self._tags_mm_articles.save()
 
     @property
     def name(self):
@@ -1492,18 +1599,19 @@ class tag(db.dbentity):
             msg = 'name must be a string of lowercase letters'
             brs += brokenrule(msg, 'name', 'valid')
 
-        sql = """
-        select *
-        from tags
-        where name = %s
-        """
+        if self.isnew:
+            sql = """
+            select *
+            from tags
+            where name = %s
+            """
 
-        args = (self.name,)
+            args = (self.name,)
 
-        ress = db.connections.getinstance().default.query(sql, args)
+            ress = db.connections.getinstance().default.query(sql, args)
 
-        if ress.count > 0:
-            brs += brokenrule('Name must be unique', 'name', 'unique')
+            if ress.count > 0:
+                brs += brokenrule('Name must be unique', 'name', 'unique')
 
         return brs
 
@@ -1515,6 +1623,10 @@ class tag(db.dbentity):
             self._articles = articles.search(ids=ids)
         return self._articles
 
+    @articles.setter
+    def articles(self, v):
+        return self._setvalue('_articles', v, 'articles')
+
     def _get_tags_mm_articles(self):
         if not self._tags_mm_articles:
            self._tags_mm_articles = tags_mm_articles(self) 
@@ -1525,19 +1637,23 @@ class tag(db.dbentity):
             return ''
         else:
             return '#' + self.name
-    
 
 class tags_mm_articles(db.dbentities):
     def __init__(self, obj=None):
         super().__init__()
 
+        if isinstance(obj, article):
+            self._article = obj
+        elif isinstance(obj, tag):
+            self._tag = obj
+
         if obj and obj.id:
             if isinstance(obj, article):
-                self._article = obj
                 sql = 'select * from tags_mm_articles where articleid = %s'
             elif isinstance(obj, tag):
-                self._tag = obj
                 sql = 'select * from tags_mm_articles where tagid = %s'
+
+            args = obj.id.bytes,
 
             ress = self.query(sql, args)
             for res in ress:
@@ -1553,22 +1669,26 @@ class tags_mm_articles(db.dbentities):
         )
         """
 
-    def attach(self, ts):
+    def attach(self, es):
+        isart = isinstance(es, articles)
+        istag = isinstance(es, tags)
+
         for mm in self:
-            for t in ts:
-                if mm.tagid == t.id:
+            for e in es:
+                if mm.tagid == e.id:
                     break;
             else:
                 mm.markfordeletion()
 
-        for t in ts:
+        for e in es:
             for mm in self:
-                if mm.tagid == t.id:
+                if mm.tagid == e.id:
                     break
             else:
                 mm = tag_mm_article()
-                mm.tagid = t.id
-                mm.articleid = self.article.id
+
+                mm.tagid      =  e.id  if  istag  else  self.tag.id
+                mm.articleid  =  e.id  if  isart  else  self.article.id
                 self += mm
 
     @property
@@ -1578,6 +1698,10 @@ class tags_mm_articles(db.dbentities):
     @property
     def article(self):
         return self._article
+
+    @property
+    def tag(self):
+        return self._tag
 
 class tag_mm_article(db.dbentity):
     def __init__(self, res=None):

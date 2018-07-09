@@ -33,3 +33,10 @@ from tester import *
 from uuid import uuid4
 import MySQLdb
 import re
+
+def dbg(code):
+    try:
+        exec(code)
+    except Exception as ex:
+        print(ex)
+        pdb.post_mortem(ex.__traceback__)
