@@ -19,6 +19,8 @@ class testers(entities):
     def __init__(self, initial=None):
         self.oninvoketest = event()
         super().__init__(initial=initial)
+        self.breakonexception = False
+
 
     def run(self, tu=None):
 
@@ -39,9 +41,9 @@ class testers(entities):
                     self.oninvoketest(self, eargs)
                     getattr(inst, meth[0])()
                 except Exception as ex:
-                    # Use this code to get to the source of the exception
-                    # B()
-                    # pdb.post_mortem(ex.__traceback__)
+                    if self.breakonexception:
+                        print(ex)
+                        pdb.post_mortem(ex.__traceback__)
                     inst._failures += failure(ex, assert_=meth[0])
         print('')
 
