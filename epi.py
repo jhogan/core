@@ -33,6 +33,7 @@ from tester import *
 from uuid import uuid4
 import MySQLdb
 import re
+import pathlib
 
 def dbg(code):
     try:
@@ -40,3 +41,12 @@ def dbg(code):
     except Exception as ex:
         print(ex)
         pdb.post_mortem(ex.__traceback__)
+
+def rf(file):
+    p = pathlib.Path(file)
+    return p.read_text()
+
+def wf(file, txt):
+    p = pathlib.Path(file)
+    return p.write_text(txt)
+    

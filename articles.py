@@ -26,7 +26,7 @@ from app import controller
 from binascii import a2b_hex
 from datetime import datetime
 from entities import brokenrules, brokenrule, entity, entities
-from parties import user
+from parties import user, person, persons
 from pdb import set_trace; B=set_trace
 from pprint import pprint
 from table import table
@@ -35,8 +35,10 @@ import db
 import diff
 import parsers
 import re
+import sys
 import textwrap
 import uuid
+import xml.sax
 
 class articlerevisions(db.dbentities):
     def __init__(self, id=None, entity=None):
@@ -300,7 +302,8 @@ class articlerevision(db.dbentity):
     def _update(self, cur=None):
         sql = """
         update articlerevisions
-        set slugcache = %s,
+        set createdat = %s,
+        slugcache     = %s,
         authorcache   = %s,
         titlecache    = %s,
         bodycache     = %s
@@ -308,6 +311,7 @@ class articlerevision(db.dbentity):
         """
 
         args = (
+            self.createdat,
             self.slugcache,
             self.authorcache,
             self.titlecache,
@@ -691,9 +695,14 @@ class articles(entities):
                 left join blogpostrevisions bp
                     on art.id = bp.id
             where 
-                art.id = art.rootid and
-                match(titlecache, bodycache, authorcache)
-                against (%s in natural language mode)
+                art.rootid in (
+                    select art.id
+                    from articlerevisions art
+                    where 
+                        art.id = art.rootid and
+                        match(titlecache, bodycache, authorcache)
+                        against (%s in natural language mode)
+                )
             """
 
             args = str,
@@ -892,24 +901,6 @@ class article(entity):
     def tags(self, v):
         self._tags = v
 
-    @staticmethod
-    def search(str):
-
-        # TODO Should this be in the articles collection class instead?
-
-        sql = """
-        select distinct rootid
-        from articlerevisions
-        where match(titlecache, bodycache, authorcache)
-        against (%s in natural language mode)
-        """
-
-        conn = db.connections.getinstance().default
-        ress = conn.query(sql, (str,))
-
-        # Return list of id's
-        return [uuid.UUID(bytes=r._row[0]) for r in ress]
-
     @property
     def id(self):
         return self._id
@@ -1044,7 +1035,6 @@ class article(entity):
         else:
             rev.diff = diff.diff(rev.parent.derivedbody, self.body)
             rev.body = None
-            self.body = None
 
         # TODO If the rev is not root, these properties should be None unless
         # they are different from previous revisions. Ensure this is tested.
@@ -1155,9 +1145,22 @@ Tags:         {}
         r += str(self.revisions)
 
         return r
+
 class blogposts(articles):
     def __init__(self, id=None):
         super().__init__(id)
+
+    @staticmethod
+    def search(str=None, author=None, ids=None):
+        arts = articles.search(str=str, author=author, ids=ids)
+        bps = blogposts()
+
+        for art in arts:
+            if type(art) is blogpost:
+                bps += art
+
+        return bps
+
 
 class blogpost(article):
     def __init__(self, id=None):
@@ -1210,14 +1213,16 @@ Tags:         {}
 
         tags = ' '.join([str(t) for t in self.tags])
 
+        blog = self.blog.slug if self.blog else ''
+
         r = r.format(id, 
                      author,
                      str(self.createdat),
                      str(self.iscommentable),
-                     self.blog.slug, 
+                     blog,
                      self.statusstr,
                      shorten(self.title),
-                     shorten(self.excerpt),
+                     shorten(str(self.excerpt)),
                      shorten(self.body),
                      tags,
                      )
@@ -1447,6 +1452,78 @@ class blog(db.dbentity):
 
         self.query(sql, args, cur)
 
+    class wxrhandler(xml.sax.ContentHandler):
+        
+        def __init__(self):
+            self.tags = []
+            self.importpersons = persons()
+            self.item = None
+
+        def startElement(self, tag, attrs):
+            self.tags.append(tag)
+            if tag == 'wp:author':
+                self.importperson = person()
+                self.importperson.users += user()
+                self.importpersons += self.importperson
+            elif tag == 'wp:tag':
+                # Instead of `self.importtag = tag()`, we must use the more
+                # verbose version of this because the 'tag' variables alreay
+                # exists in this scope.
+                self.importtag = sys.modules[self.__module__].tag()
+            elif tag == 'item':
+                self.item = {}
+
+        def characters(self, content):
+            tag = self.tags[-1]
+            if tag == 'wp:author_login':
+                self.importperson.users.first.name = content
+            elif tag == 'wp:author_email':
+                self.importperson.email = content
+            elif tag == 'wp:author_first_name':
+                self.importperson.firstname = content
+            elif tag == 'wp:author_last_name':
+                self.importperson.lastname = content
+            elif tag == 'wp:tag_name':
+                self.importtag.name = content.replace(' ', '')
+
+            if self.item is not None:
+                self.item[tag] = content
+
+        def endElement(self, tag):
+            tag = self.tags[-1]
+            if tag == 'wp:tag':
+                self.importtag.save()
+            elif tag == 'item':
+                d = self.item
+                art = None
+                if d['wp:post_type'] == 'post':
+                    art = blogpost()
+                elif d['wp:post_type'] == 'page':
+                    art = article()
+
+                if art:
+                    art.title = d['title']
+
+                    # TODO Use author map
+                    # art.author = d['dc:creator']
+                    art.save()
+
+                    # Parse date and convert to local timezone. Update the
+                    # revision to contain that as its createat date.
+                    fmt = '%a, %d %b %Y %H:%M:%S %z'
+                    art.revisions.first._createdat = \
+                        datetime.strptime(d['pubDate'], fmt).astimezone(tz=None)
+                    art.revisions.save()
+                    print(article(art.id))
+
+                self.item = None
+            self.tags.pop()
+
+    def import_(self, path):
+        prs = xml.sax.make_parser()
+        prs.setContentHandler(blog.wxrhandler())
+        prs.parse(path)
+
     @property
     def slug(self):
         return self._slug
@@ -1595,7 +1672,7 @@ class tag(db.dbentity):
 
         # If name is full and it isn't strickly a string of lowercase
         # characters
-        if brs.count == 0 and re.match('^[a-z]+\Z', self.name) is None:
+        if brs.count == 0 and re.match('^[a-z0-9-]+\Z', self.name) is None:
             msg = 'name must be a string of lowercase letters'
             brs += brokenrule(msg, 'name', 'valid')
 

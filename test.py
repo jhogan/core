@@ -32,12 +32,28 @@ from tester import *
 from uuid import uuid4
 import argparse
 import MySQLdb
+import pathlib
 import re
 
 class test_blog(tester):
     def __init__(self):
         super().__init__()
         blogs().RECREATE()
+        tags().RECREATE()
+        tags_mm_articles().RECREATE()
+        blogpostrevisions().RECREATE()
+
+    def it_calls_import(self):
+        bl = blog()
+        bl.slug = 'imported-blog'
+        bl.description = 'This blog contains blogposts and articles imported from file such as a WXR'
+        bl.save()
+
+        importfile = os.path.dirname('__file__')
+        importfile = os.path.join(importfile, 'testdata/blog-import-file.xml')
+
+        bl.import_(importfile)
+        
 
     def it_creates(self):
         bl = blog()
@@ -411,6 +427,64 @@ class test_blogpost(tester):
         bl.save()
 
         self.blog = bl
+    
+    def it_calls_search(self):
+        # Create an article. We will want to ensure that it doesn't get
+        # returned as part of the search; only blogposts should be returned
+        art = article()
+        art.title = uuid4().hex
+        art.body = uuid4().hex
+        art.save()
+
+        # Init some vars
+        strs = []
+        cnt = 3
+        commonbody = uuid4().hex
+        commontitle = uuid4().hex
+
+        # Create {cnt} blogposts
+        for i in range(cnt):
+            body = uuid4().hex
+            title = uuid4().hex
+            strs.append( (body, title) )
+            bp = blogpost()
+            bp.blog = self.blog
+            bp.body = '<p>{} {}</p>'.format(body, commonbody)
+            bp.title = '{}-{}'.format(title, commontitle)
+            bp.save()
+
+        # Search for strings in the body and post of each of the blogposts from
+        # above. Since these strings are unique, ensure that exactly one
+        # blogpost is in the returned collection.
+        for tup in strs:
+            body, title = tup
+            bps = blogposts.search(title)
+            self.assertOne(bps)
+            self.assertType(blogposts, bps)
+            for bp in bps:
+                self.assertType(blogpost, bp)
+
+            bps = blogposts.search(body)
+            self.assertOne(bps)
+            self.assertType(blogposts, bps)
+            for bp in bps:
+                self.assertType(blogpost, bp)
+
+        # commonbody and commonbody are in all blogposts saved above. Ensure
+        # that searching for them returns all of these blogposts.
+        for str in commonbody, commontitle:
+            bps = blogposts.search(commonbody)
+            self.assertCount(cnt, bps)
+            self.assertType(blogposts, bps)
+            for bp in bps:
+                self.assertType(blogpost, bp)
+        
+        # Search for the articles saved above. The search should only return
+        # blogposts, so ensure that the collection contains zero entities.
+        bps = blogposts.search(art.title)
+        bps += blogposts.search(art.body)
+
+        self.assertZero(bps)
 
     def it_loads_as_valid(self):
         bp = blogpost()
@@ -560,6 +634,23 @@ class test_blogpost(tester):
 
         bp = blogpost(bp.id)
         self.assertEq(test_article.Smallpostbody, bp.body)
+
+    def it_breaks_body_rules(self):
+        # Previously, saving an invalid blogpost would result in the body
+        # property being set to None. This tests ensure that bug does't creap
+        # back in.
+        bp = blogpost()
+        bp.blog = self.blog
+        bp.body = '<p>first</p>'
+        bp.save()
+        bp.body = "<em>I'm special</i>"
+        try:
+            bp.save()
+        except:
+            pass
+
+        self.assertOne(bp.brokenrules)
+        self.assertBroken(bp, 'derivedbody', 'valid')
 
     def it_calls_createdat(self):
         bp = blogpost()
@@ -1049,7 +1140,7 @@ class test_articles(tester):
         tags_mm_articles()   .RECREATE()
 
         ts = tags()
-        for n in 'monters', 'animals', 'orwell':
+        for n in 'monsters', 'animals', 'orwell':
             ts += tag()
             ts.last.name = n
         ts.save()
@@ -1068,6 +1159,7 @@ class test_articles(tester):
 
         art = article()
         art.title = 'Animal Farm'
+        art.excerpt = 'Animal Farm is an allegorical novella by George Orwell, first published in England on 17 August 1945.'
         art.body = """Mr. Jones, of the Manor Farm, had locked the hen-houses for
 the night, but was too drunk to remember to shut the pop-holes. With the ring
 of light from his lantern dancing from side to side, he lurched across the
@@ -1085,20 +1177,24 @@ was already snoring."""
 
         art = article()
         art.title = 'Frankenstein'
+        art.excerpt = 'Frankenstein; or, The Modern Prometheus is a novel written by English author Mary Shelley (1797-1851) that tells the story of Victor Frankenstein, a young scientist who creates a grotesque but sapient creature in an unorthodox scientific experiment.'
         art.body = """I am by birth a Genevese, and my family is one of the
 most distinguished of that republic. My ancestors had been for many years
 counsellors and syndics, and my father had filled several public situations
-with honour and reputation. He was respected by all who knew him for his
+with honour and reputation."""
+        art.author = u
+        art.tags += ts['monsters']
+        art.save()
+        art.body += """ He was respected by all who knew him for his
 integrity and indefatigable attention to public business.  He passed his
 younger days perpetually occupied by the affairs of his country; a variety of
 circumstances had prevented his marrying early, nor was it until the decline of
 life that he became a husband and the father of a family."""
-        art.author = u
-        art.tags += ts['monters']
         art.save()
 
         art = article()
         art.title = 'Summaries & Interpretations : Animal Farm'
+        art.excerpt = 'The story takes place on a farm somewhere in England.The story is told by an all-knowing narrator in the third person.  T'
         art.body = """The story takes place on a farm somewhere in England.
 The story is told by an all-knowing narrator in the third person.  The action
 of this novel starts when the oldest pig on the farm, Old Major, calls all
@@ -1123,18 +1219,19 @@ above the door of the big barn."""
         art.save()
 
     def it_searches_body(self):
-        ids = article.search('Genevese')
-        self.assertOne(ids)
-        self.assertEq('Frankenstein', article(ids[0]).title)
+        arts = articles.search('Genevese')
+        self.assertOne(arts)
+        self.assertEq('Frankenstein', arts.first.title)
+        self.assertTwo(arts.first.revisions)
 
-        ids = article.search('Mr Jones')
-        self.assertTwo(ids)
-        arts = articles(ids)
+        arts = articles.search('Mr Jones')
+        self.assertTwo(arts)
 
         arts.sort('title')
 
         self.assertEq('Animal Farm', arts.first.title)
-        self.assertEq('Summaries & Interpretations : Animal Farm', arts.second.title)
+        self.assertEq('Summaries & Interpretations : Animal Farm', 
+                      arts.second.title)
 
     def it_searches_title(self):
         arts = articles.search('animal farm')
@@ -1151,10 +1248,9 @@ above the door of the big barn."""
 
     def it_searches_author(self):
         for str in 'gorwell', 'George', 'gorwell@fakemail.com':
-            ids = article.search(str)
-            self.assertOne(ids)
-            art = article(ids.pop())
-            self.assertEq('Animal Farm', art.title)
+            arts = articles.search(str)
+            self.assertOne(arts)
+            self.assertEq('Animal Farm', arts.first.title)
 
     def it_calls__str__(self):
         arts = articles().ALL()
@@ -1163,18 +1259,17 @@ above the door of the big barn."""
         for art in arts: 
             art.tags.sort('name')
 
-        expect = """+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| ix | id      | createdat  | title                                   | excerpt | status | iscommentable | slug                                  | body | author                  | tags           |
-|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 0  | {} | 2018-07-09 | Animal Farm                             |         | Draft  | False         | animal-farm                           | 390  | George Orwell <gorwell> | animals orwell |
-|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 1  | {} | 2018-07-09 | Frankenstein                            |         | Draft  | False         | frankenstein                          | 565  | mshelley                | monters        |
-|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 2  | {} | 2018-07-09 | Summaries & Interpretations : Animal... |         | Draft  | False         | summaries-interpretations-animal-farm | 1460 |                         | animals orwell |
-+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-""".format(*[x.id.hex[:7] for x in arts])
+        expect = """+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ix | id      | createdat  | title                                   | excerpt                                  | status | iscommentable | slug                                  | body | author                  | tags           |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 0  | {0} | {3} | Animal Farm                             | Animal Farm is an allegorical novella... | Draft  | False         | animal-farm                           | 390  | George Orwell <gorwell> | animals orwell |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1  | {1} | {4} | Frankenstein                            | Frankenstein; or, The Modern...          | Draft  | False         | frankenstein                          | 565  | mshelley                | monsters       |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 2  | {2} | {5} | Summaries & Interpretations : Animal... | The story takes place on a farm...       | Draft  | False         | summaries-interpretations-animal-farm | 1460 |                         | animals orwell |
++-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+""".format(*[x.id.hex[:7] for x in arts] + [x.createdat.date() for x in arts])
         self.assertEq(expect, str(arts))
-        
 
 class test_article(tester):
     
