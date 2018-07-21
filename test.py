@@ -41,6 +41,7 @@ class test_blog(tester):
         blogs().RECREATE()
         tags().RECREATE()
         tags_mm_articles().RECREATE()
+        articlerevisions().RECREATE()
         blogpostrevisions().RECREATE()
 
     def it_calls_import(self):
@@ -335,9 +336,32 @@ class test_blogpostrevision(tester):
         self.assertTrue(rev.brokenrules.contains('title', 'full'))
 
         # Invalid HTML in body
+        rev.title = test_article.Smallposttitle
         rev.body = '<em>This is special</i>'
-        self.assertCount(2, rev.brokenrules)
+        self.assertOne(rev.brokenrules)
         self.assertTrue(rev.brokenrules.contains('body', 'valid'))
+        self.assertEq(rev.brokenrules.first.message, "Can't close <em> with </i> at 1,19")
+
+        # Ensure valid html with nested tags don't break rules
+        rev.body = '<p>This is a <a href="link">link</a> and this is an <abbr>abbreviation</abbr>.</p>'
+        self.assertZero(rev.brokenrules)
+
+        # Ensure invalidly nested tags are invalid
+        rev.body = """<p>
+This is a 
+<a href="link">
+    link
+    <p>
+</a>
+and this is an 
+<abbr>
+    </p>
+    abbreviation
+</abbr>.
+</p>"""
+        self.assertOne(rev.brokenrules)
+        self.assertTrue(rev.brokenrules.contains('body', 'valid'))
+        self.assertEq(rev.brokenrules.first.message, "Can't close <p> with </a> at 6,0")
 
         # Create a parent then test the child
         rent = blogpostrevision()

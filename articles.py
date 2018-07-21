@@ -30,6 +30,7 @@ from parties import user, person, persons
 from pdb import set_trace; B=set_trace
 from pprint import pprint
 from table import table
+from html.parser import HTMLParser
 import builtins
 import db
 import diff
@@ -1324,17 +1325,34 @@ class blogpostrevision(articlerevision):
     def blog(self, v):
         return self._setvalue('_blog', v, 'blog')
 
+    class balancetester(HTMLParser):
+        def __init__(self, html=None):
+            super().__init__()
+            self.starttags = []
+            self.feed(html)
+
+        def handle_starttag(self, tag, attrs):
+            self.starttags.append(tag)
+
+        def handle_endtag(self, tag):
+            laststarttag = self.starttags.pop()
+            if tag != laststarttag:
+                line, ch = self.getpos()
+                msg = "Can't close <{}> with </{}> at {},{}"
+                msg = msg.format(laststarttag, tag, line, ch)
+                raise Exception(msg)
+
     @property
     def brokenrules(self):
         brs = super().brokenrules
 
         if self.isroot:
             if self.body != None:
-                p = parsers.htmlparser(self.body)
-                try:
-                    p.demandbalance()
+                try: 
+                    blogpostrevision.balancetester(self.body)
                 except Exception as ex:
                     brs += brokenrule(str(ex), 'body', 'valid')
+                 
 
             if self.blog:
                 # TODO Why should slug or slugcache ever be allowed to be an
@@ -1369,9 +1387,8 @@ class blogpostrevision(articlerevision):
                 brs += brokenrule(msg, 'parent', 'valid')
 
             if type(self.diff) == diff.diff:
-                p = parsers.htmlparser(self.derivedbody)
-                try:
-                    p.demandbalance()
+                try: 
+                    blogpostrevision.balancetester(self.derivedbody)
                 except Exception as ex:
                     brs += brokenrule(str(ex), 'derivedbody', 'valid')
 
@@ -1453,11 +1470,11 @@ class blog(db.dbentity):
         self.query(sql, args, cur)
 
     class wxrhandler(xml.sax.ContentHandler):
-        
-        def __init__(self):
+        def __init__(self, b):
             self.tags = []
             self.importpersons = persons()
             self.item = None
+            self.blog = b
 
         def startElement(self, tag, attrs):
             self.tags.append(tag)
@@ -1487,7 +1504,10 @@ class blog(db.dbentity):
                 self.importtag.name = content.replace(' ', '')
 
             if self.item is not None:
-                self.item[tag] = content
+                try:
+                    self.item[tag] += content
+                except KeyError:
+                    self.item[tag] = content
 
         def endElement(self, tag):
             tag = self.tags[-1]
@@ -1498,6 +1518,7 @@ class blog(db.dbentity):
                 art = None
                 if d['wp:post_type'] == 'post':
                     art = blogpost()
+                    art.blog = self.blog
                 elif d['wp:post_type'] == 'page':
                     art = article()
 
@@ -1506,7 +1527,29 @@ class blog(db.dbentity):
 
                     # TODO Use author map
                     # art.author = d['dc:creator']
-                    art.save()
+
+                    content = None
+                    try:
+                        content = d['content:encoded']
+                    except KeyError:
+                        pass
+
+                    if content:
+                        prs = blog.wppostparser()
+                        prs.feed(content)
+                        body = str(prs) + '\n'
+
+                        # Close out any tags that are remaining.
+                        for tag in prs.tags:
+                            body += '</' + tag + '>\n'
+
+                        art.body = body
+                        open('/tmp/t.html', 'w').write(body)
+                        
+                    try:
+                        art.save()
+                    except:
+                        art.brokenrules
 
                     # Parse date and convert to local timezone. Update the
                     # revision to contain that as its createat date.
@@ -1514,14 +1557,68 @@ class blog(db.dbentity):
                     art.revisions.first._createdat = \
                         datetime.strptime(d['pubDate'], fmt).astimezone(tz=None)
                     art.revisions.save()
-                    print(article(art.id))
 
                 self.item = None
             self.tags.pop()
 
+    class wppostparser(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.html = []
+            self.tags = []
+
+        def __str__(self):
+            return ''.join(self.html)
+
+        def handle_starttag(self, tag, attrs):
+
+            html = '<' + tag
+            for i, kvp in enumerate(attrs):
+                html += ' ' + kvp[0] + '="' + kvp[1] + '"'
+            html += '>'
+            self.html.append(html)
+            self.tags.append(tag)
+
+        def handle_endtag(self, tag):
+            tags = self.tags
+
+            html = '</{}>'.format(tag)
+            self.html.append(html)
+
+            tags.pop()
+
+        def handle_data(self, data):
+            
+            inp = 'p' in self.tags
+
+            if '\n\n' not in data:
+                if not self.tags:
+                    data = '\n<p>\n' + data
+                    self.tags.append('p')
+                self.html.append(data)
+                return
+
+            lines = [line
+                     for line in data.split('\n\n') 
+                     if line.strip() != '']
+
+            for i, line in enumerate(lines):
+                if 'p' in self.tags:
+                    if i < len(lines) - 1 or data[-2:] == '\n\n':
+                        line += '\n</p>\n'
+                        self.tags.pop()
+                else:
+                    line = '\n<p>\n' + line
+                    self.tags.append('p')
+
+                lines[i] = line
+
+            self.html.append('\n'.join(lines))
+
+
     def import_(self, path):
         prs = xml.sax.make_parser()
-        prs.setContentHandler(blog.wxrhandler())
+        prs.setContentHandler(blog.wxrhandler(self))
         prs.parse(path)
 
     @property
