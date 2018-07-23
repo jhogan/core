@@ -25,16 +25,16 @@ SOFTWARE.
 from app import controller
 from binascii import a2b_hex
 from datetime import datetime
-from entities import brokenrules, brokenrule, entity, entities
-from parties import user, person, persons
+from entities import brokenrules, brokenrule, entity, entities, event, eventargs
+from parties import user, users, person, persons
 from pdb import set_trace; B=set_trace
 from pprint import pprint
 from table import table
 from html.parser import HTMLParser
+from hashlib import md5
 import builtins
 import db
 import diff
-import parsers
 import re
 import sys
 import textwrap
@@ -326,7 +326,10 @@ class articlerevision(db.dbentity):
             self.author.save(cur)
         
     def _insert(self, cur=None):
-        id = uuid.uuid4()
+        if self._id:
+            id = self.id
+        else:
+            id = uuid.uuid4()
         diff = None if self.diff == None else str(self.diff)
         diff = None if diff == '' else diff
         parentid = self.parent.id.bytes if self.parent else None
@@ -959,6 +962,18 @@ class article(entity):
         return self._setvalue('_status', v, 'status')
 
     @staticmethod
+    def str2st(str):
+        # TODO Write test
+
+        # TODO Centralize the list of status strings
+
+        try:
+            return ('Publish', 'Future', 'Draft', 'Pending',
+                    'Private', 'Trash',  'Autodraft').index(str.capitalize())
+        except:
+            return None
+
+    @staticmethod
     def st2str(st):
         # TODO Write test
         if st is None:
@@ -976,6 +991,13 @@ class article(entity):
     def statusstr(self):
         # TODO Write test
         return self.st2str(self.status)
+
+    @statusstr.setter
+    def statusstr(self, v):
+        # TODO Write test
+        st= self.str2st(v)
+        self.status = st
+        return self.statusstr
 
     @property
     def iscommentable(self):
@@ -1032,6 +1054,7 @@ class article(entity):
         rev = revs.create()
 
         if rev.isroot:
+            rev._id = self._id
             rev.body = n2e(self.body)
         else:
             rev.diff = diff.diff(rev.parent.derivedbody, self.body)
@@ -1192,6 +1215,7 @@ class blogpost(article):
     def __str__(self):
 
         def shorten(str):
+            str = builtins.str(str)
             return textwrap.shorten(str, width=65, placeholder='...')
 
         def indent(str):
@@ -1416,6 +1440,10 @@ class blogs(db.dbentities):
 class blog(db.dbentity):
     def __init__(self, id=None):
         super().__init__()
+        self.onimportstatuschange = event()
+        self.onrequestauthormap = event()
+        self.onitemimport = event()
+        self.onitemimporterror = event()
         self._id = id
         if id:
             sql = """
@@ -1470,49 +1498,121 @@ class blog(db.dbentity):
         self.query(sql, args, cur)
 
     class wxrhandler(xml.sax.ContentHandler):
+
+        class statuschangeeventargs(eventargs):
+            def __init__(self, handler):
+                self.locator = handler._locator
+                self.handler = handler
+                self.lineno = self.locator.getLineNumber()
+
+        class onaddeventargs(eventargs):
+            def __init__(self, item):
+                self.item = item
+
+        class onerroreventargs(eventargs):
+            def __init__(self, item, ex=None):
+                self.item = item
+                self.exception = ex
+
+        class requestauthormapeventargs(eventargs):
+            def __init__(self, importpersons, creators):
+                # importpersons are person objects created from scanning the
+                # WXR file. creators are user objects that the caller will
+                # map to a given importpersons object. The mapping is based on
+                # the the order of the two collection objects, e.g.,
+                # importpersons.first maps to creators.first, and so on.
+                self.importpersons = importpersons
+                self.creators = creators
+
         def __init__(self, b):
             self.tags = []
+            self.lastattrs = None
             self.importpersons = persons()
+            self.creators = users()
             self.item = None
             self.blog = b
+            self.importtags = tags()
+
+            # Events
+            self.onstatuschange = event()
+            self.onrequestauthormap = event()
+            self.onadd = event()
+            self.onerror = event()
 
         def startElement(self, tag, attrs):
+            eargs = blog.wxrhandler.statuschangeeventargs(self)
+            self.onstatuschange(self, eargs)
+
             self.tags.append(tag)
+            self.lastattrs = attrs
             if tag == 'wp:author':
-                self.importperson = person()
-                self.importperson.users += user()
-                self.importpersons += self.importperson
+                p = person()
+                p.users += user()
+                self.importpersons += p
             elif tag == 'wp:tag':
-                # Instead of `self.importtag = tag()`, we must use the more
-                # verbose version of this because the 'tag' variables alreay
+                # Instead of `self.importtag += tag()`, we must use the more
+                # verbose version of this because the 'tag' variable already
                 # exists in this scope.
-                self.importtag = sys.modules[self.__module__].tag()
+                self.importtags += sys.modules[self.__module__].tag()
             elif tag == 'item':
+                
+                # If we are at an <item>, let's make sure we ask the caller to
+                # map the authors found in the WXR to users in the system.
+                creators = self.creators
+                importpersons = self.importpersons
+                while creators.count < importpersons.count:
+                    eargs = blog.wxrhandler.requestauthormapeventargs
+                    eargs = eargs(importpersons, creators)
+                    self.onrequestauthormap(self, eargs)
+
                 self.item = {}
 
         def characters(self, content):
             tag = self.tags[-1]
             if tag == 'wp:author_login':
-                self.importperson.users.first.name = content
+                p = self.importpersons.last
+                p.users.first.name = content
             elif tag == 'wp:author_email':
-                self.importperson.email = content
+                p = self.importpersons.last
+                p.email = content
             elif tag == 'wp:author_first_name':
-                self.importperson.firstname = content
+                p = self.importpersons.last
+                p.firstname = content
             elif tag == 'wp:author_last_name':
-                self.importperson.lastname = content
+                p = self.importpersons.last
+                p.lastname = content
+            elif tag == 'wp:author_display_name':
+                p = self.importpersons.last
+                p.users.first.displayname = content
             elif tag == 'wp:tag_name':
-                self.importtag.name = content.replace(' ', '')
+                self.importtags.last.name = content.replace(' ', '')
 
             if self.item is not None:
                 try:
-                    self.item[tag] += content
+                    # The hashtags for a post look like this: 
+                    #    <category domain="post_tag" nicename="debugging">
+                    #       <![CDATA[my-tag-name]]>
+                    #    </category>
+                    # When the 'tag' is 'category', use a comma to chain them 
+                    # since WordPress disallows commas in tags
+                    iscategory = tag == 'category'
+                    if iscategory:
+                        # If tag is a post_tag. The alternative is for the
+                        # 'domain' attr to be set to 'category'. We are not
+                        # currently collecting categories; just tags.
+                        if ('domain', 'post_tag') in self.lastattrs.items():
+                            content = content.replace(' ', '')
+                            self.item[tag] += ',' + content
+                    else:
+                        self.item[tag] += content
+
                 except KeyError:
                     self.item[tag] = content
 
         def endElement(self, tag):
             tag = self.tags[-1]
             if tag == 'wp:tag':
-                self.importtag.save()
+                self.importtags.last.save()
             elif tag == 'item':
                 d = self.item
                 art = None
@@ -1525,15 +1625,17 @@ class blog(db.dbentity):
                 if art:
                     art.title = d['title']
 
-                    # TODO Use author map
-                    # art.author = d['dc:creator']
+                    creator = d['dc:creator']
+                    for i, p in enumerate(self.importpersons):
+                        if p.users.first.name == creator:
+                            art.author = self.creators[i]
 
                     content = None
                     try:
                         content = d['content:encoded']
                     except KeyError:
                         pass
-
+                    
                     if content:
                         prs = blog.wppostparser()
                         prs.feed(content)
@@ -1544,26 +1646,70 @@ class blog(db.dbentity):
                             body += '</' + tag + '>\n'
 
                         art.body = body
-                        open('/tmp/t.html', 'w').write(body)
-                        
-                    try:
-                        art.save()
-                    except:
-                        art.brokenrules
+                    
+                    art.statusstr = d['wp:status']
+                    art.iscommentable = d['wp:comment_status'] == 'open'
 
-                    # Parse date and convert to local timezone. Update the
-                    # revision to contain that as its createat date.
-                    fmt = '%a, %d %b %Y %H:%M:%S %z'
-                    art.revisions.first._createdat = \
-                        datetime.strptime(d['pubDate'], fmt).astimezone(tz=None)
-                    art.revisions.save()
+                    # Hash the <guid> value (the url of the blog post), and make it the id 
+                    # of the article.
+                    art._id = uuid.UUID(bytes=md5((d['guid'].encode('utf-8'))).digest())
+
+                    try:
+                        hashtags = d['category'].split(',')
+                    except KeyError:
+                        pass
+                    else:
+                        for hashtag in hashtags:
+                            art.tags += self.importtags[hashtag]
+
+                    try:
+                        art.excerpt = d['excerpt:encoded']
+                    except KeyError:
+                        art.excerpt = ''
+
+                    try:
+                        if art.isvalid:
+                            art.save()
+
+                            # Parse date and convert to local timezone. Update
+                            # the revision to contain that as its createat
+                            # date.
+                            fmtdts = ( 
+                                ('%a, %d %b %Y %H:%M:%S %z', d['pubDate']),
+                                ('%Y-%m-%d %H:%M:%S',        d['wp:post_date']), 
+                            )
+                            
+                            for fmt, dt in fmtdts:
+                                try:
+                                    dt = datetime.strptime(dt, fmt)
+                                    break
+                                except ValueError:
+                                    pass
+                            else:
+                                raise Exception("Can't find a create date")
+
+                            if dt.tzinfo:
+                                dt = dt.astimezone(tz=None)
+                            rev = art.revisions.root
+                            rev._createdat = dt
+
+                            # Explicitly dirty since we are updating a private
+                            # member.
+                            rev._isdirty = True
+                            rev.save()
+                            self.onadd(self, blog.wxrhandler.onaddeventargs(art))
+                        else:
+                            self.onerror(self, blog.wxrhandler.onerroreventargs(art))
+                    except Exception as ex:
+                        self.onerror(self, blog.wxrhandler.onerroreventargs(art, ex))
 
                 self.item = None
+
             self.tags.pop()
 
     class wppostparser(HTMLParser):
         def __init__(self):
-            super().__init__()
+            super().__init__(convert_charrefs=False)
             self.html = []
             self.tags = []
 
@@ -1615,10 +1761,21 @@ class blog(db.dbentity):
 
             self.html.append('\n'.join(lines))
 
-
     def import_(self, path):
+        handler = blog.wxrhandler(self)
+
+        if self.onrequestauthormap.count == 0:
+            msg = 'An subscription to the onrequestauthormap event must be made'
+            raise Exception(msg)
+
+        handler.onstatuschange     += lambda src, eargs: self.onimportstatuschange(src, eargs)
+        handler.onrequestauthormap += lambda src, eargs: self.onrequestauthormap  (src, eargs)
+        handler.onadd              += lambda src, eargs: self.onitemimport        (src, eargs)
+        handler.onerror            += lambda src, eargs: self.onitemimporterror   (src, eargs)
+
         prs = xml.sax.make_parser()
-        prs.setContentHandler(blog.wxrhandler(self))
+
+        prs.setContentHandler(handler)
         prs.parse(path)
 
     @property
