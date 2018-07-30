@@ -687,6 +687,7 @@ class user(db.dbentity):
 
     def __str__(self):
         r = ''
+        r  +=  'ID:       '  +  self.id.hex[:7]       +  '\n'  if  self.id       else  ''
         r  +=  'Name:     '  +  self.name             +  '\n'  if  self.name     else  ''
         r  +=  'Service:  '  +  self.service          +  '\n'  if  self.service  else  ''
         r  +=  'Person:   '  +  self.person.fullname  +  '\n'  if  self.person   else  ''

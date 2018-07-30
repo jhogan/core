@@ -26,6 +26,7 @@ from app import controller
 from binascii import a2b_hex
 from datetime import datetime
 from entities import brokenrules, brokenrule, entity, entities, event, eventargs
+from MySQLdb.constants.ER import DUP_ENTRY
 from parties import user, users, person, persons
 from pdb import set_trace; B=set_trace
 from pprint import pprint
@@ -1309,7 +1310,9 @@ class blogpostrevision(articlerevision):
             conn = None
 
         try:
-            self._id = uuid.uuid4()
+            if not self._id:
+                self._id = uuid.uuid4()
+
             blogid = self.blog.id.bytes if self.blog else None
             super()._insert(cur)
             args = (self.id.bytes, 

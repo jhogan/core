@@ -34,6 +34,7 @@ from uuid import uuid4
 import MySQLdb
 import re
 import pathlib
+from getpass import getpass
 
 def dbg(code):
     try:
@@ -50,9 +51,12 @@ def wf(file, txt):
     p = pathlib.Path(file)
     return p.write_text(txt)
 
+# Given a blog object and a file path, use blog.import_() to import a WXR file
+# into the system.
 def importblog(bl, path):
 
     def local_onimportstatuschange(src, eargs):
+        # Show precentage complete
         per = str(round(eargs.lineno / linecount * 100, 0)) + '%'
         firstinvocation = not hasattr(local_onimportstatuschange, 'per')
 
@@ -62,42 +66,125 @@ def importblog(bl, path):
         local_onimportstatuschange.per = per
 
     def local_onrequestauthormap(src, eargs):
+        # Map creators found in WXR to user in the system
         importpersons = eargs.importpersons
         creators      = eargs.creators
         
         for p in importpersons:
-            u = user.load(p.users.first.name, 'carapacian')
-            if not u:
-                u = user()
-                u.name = p.users.first.name
-                u.service = 'carapacian'
-                u.password = uuid4().hex
-                u.save()
-            creators += u
+            uid = p.users.first.name
+            msg = 'Map user "{}" <{}> to local user. [s]elect or [c]reate? \n'
+            msg = msg.format(p.fullname, uid)
+
+            create = None
+            while create is None:
+                r = input(msg)
+                if r == 's':
+                    create = False
+                elif r == 'c':
+                    create = True
+                else:
+                    continue
+                
+                uid = None
+                while not uid:
+                    uid = input('Username: ')
+
+                srv = None
+                while not srv:
+                    srv = input('Service: ')
+
+                if create:
+                    pwd = None
+                    while not pwd:
+                        pwd = getpass()
+                        if pwd:
+                            if pwd != getpass('Re-enter: '):
+                                print("Passwords don't match")
+                                pwd = None
+                                continue
+                    u = user()
+                    u.name = uid
+                    u.service = srv
+                    u.password = pwd
+                else: # select
+                    print()
+                    u = user.load(uid, srv)
+                    if not u:
+                        print("Can't find user {} (service: '{}')".format(uid, srv))
+                        create = None
+                        msg = '[s]elect or [c]reate? \n'
+                        continue
+                    else:
+                        print('User found:')
+                
+                print()
+                print(u)
+                r = None
+                while not r or r not in ['y', 'n']:
+                    r = input('\nIs this correct? ')
+                
+                if r != 'y':
+                    msg = '[s]elect or [c]reate? \n'
+                    create = None
+                    continue
+                
+                creators += u
+
+        tbl = table()
+
+        # Header
+        r = tbl.newrow()
+        r.newfield('wxr.name')
+        r.newfield('local.name')
+
+        # Body
+        for p, u in zip(importpersons, creators):
+            r = tbl.newrow()
+            r.newfield(p.fullname + ' <' + p.users.first.name + '>')
+            r.newfield(u.name)
+        
+        print(tbl)
+        input('If this is correct press <enter>. Otherwise hit ctrl-c to abort.')
+        creators.save()
+
+            
+                        
 
     def local_onitemimport(src, eargs):
-        print(eargs.item.title)
+        # Display articles that were imported
+        print('IMPORTED: "{}"'.format(eargs.item.title))
 
     def local_onitemimporterror(src, eargs):
+        # Show articles that couldn't be imported due to an error 
         art = eargs.item
-        print(art.title)
-        if eargs.exception:
-            print('(EXCEPTION: ' + str(eargs.exception) + ')')
+        ex = eargs.exception
+
+        print('"{}"'.format(art.title))
+
+        if ex:
+            if type(ex) == MySQLdb.IntegrityError and ex.args[0] == DUP_ENTRY:
+                print('(This articles has already been imported)')
+            else:
+                print('(EXCEPTION: ' + str(eargs.exception) + ')')
         elif not art.isvalid:
             print('INVALID: \n'   + str(art.brokenrules))
             
+    # Subscribe to eventns
     bl.onimportstatuschange  +=  local_onimportstatuschange
     bl.onrequestauthormap    +=  local_onrequestauthormap
     bl.onitemimport          +=  local_onitemimport
     bl.onitemimporterror     +=  local_onitemimporterror
 
+    # Get the line count of the file. This is used by
+    # local_onimportstatuschange to calculate the % done.
     linecount = rf(path).count('\n')
     bl.import_(path)
-
 
 try:
     blogs().RECREATE()
     tags().RECREATE()
+    articlerevisions().RECREATE()
+    blogpostrevisions().RECREATE()
     bl = blog()
     bl.slug = 'imported-blog'
     bl.description = 'This blog contains blogposts and articles imported from a WXR file'
