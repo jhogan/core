@@ -849,6 +849,8 @@ class article(entity):
 
         if self.revisions.ispopulated:
             self._id = self.revisions.first.id
+        elif id is not None:
+            raise db.RecordNotFoundError('"article" not found')
 
         self._tags_mm_articles = tags_mm_articles(self)
 
@@ -1186,7 +1188,6 @@ class blogposts(articles):
 
         return bps
 
-
 class blogpost(article):
     def __init__(self, id=None):
         super().__init__(id)
@@ -1447,14 +1448,27 @@ class blog(db.dbentity):
         self.onrequestauthormap = event()
         self.onitemimport = event()
         self.onitemimporterror = event()
-        self._id = id
+        self._id = None
+
         if id:
-            sql = """
-            select *
-            from blogs
-            where id = %s
-            """
-            ress = self.query(sql, (id.bytes,))
+            if type(id) == uuid.UUID:
+                sql = """
+                select *
+                from blogs
+                where id = %s
+                """
+                args = id.bytes,
+            elif type(id) == str: #slug
+                sql = """
+                select *
+                from blogs
+                where slug = %s
+                """
+                args = id,
+            else:
+                raise ValueError()
+
+            ress = self.query(sql, args)
             if not ress.hasone:
                 raise Exception('Record not found: ' + str(id))
 

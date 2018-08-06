@@ -202,6 +202,45 @@ class test_blog(tester):
         bl.save()
         self.assertValid(blog(bl.id))
 
+    def it_loads_by_id(self):
+        bl = blog()
+        bl.slug = uuid4().hex
+        bl.description = "The technical blog for Carapacian, LLC"
+        bl.save()
+
+        bl1 = blog(bl.id)
+
+        self.eq(bl1.slug, bl.slug)
+        self.eq(bl1.description, bl.description)
+
+    def it_loads_by_slug(self):
+        bl = blog()
+        bl.slug = uuid4().hex
+        bl.description = "The technical blog for Carapacian, LLC"
+        bl.save()
+
+        bl1 = blog(bl.slug)
+
+        self.eq(bl1.slug, bl.slug)
+        self.eq(bl1.description, bl.description)
+
+    def it_calls__str__(self):
+        bl = blog()
+        bl.slug = uuid4().hex
+        bl.description = uuid4().hex
+        bl.save()
+
+        bl1 = blog(bl.id)
+
+        expect = """Id:          {}
+Slug:        {}
+Description: {}
+"""
+        expect = expect.format(str(bl.id), bl.slug, bl.description)
+
+        self.eq(expect, str(bl1))
+
+
     def it_violates_unique_constraint_on_slug(self):
         bl = blog()
         bl.slug = 'non-unique'
