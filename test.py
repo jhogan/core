@@ -1003,6 +1003,13 @@ class test_blogpost(tester):
         self.assertEq(slug, bp.slug)
         self.assertEq(id,   bp.id)
 
+        try:
+            blogpost(uuid4().hex)
+        except Exception as ex:
+            self.type(db.RecordNotFoundError, ex)
+        else:
+            self.fail('Exception not thrown')
+
     def it_calls_slug_and_title(self):
         title = test_article.Smallposttitle + str(uuid4())
         slug = re.sub(r'\W+', '-', title).strip('-').lower()
