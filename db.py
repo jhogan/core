@@ -396,3 +396,6 @@ class dbresult(entity):
 
     def __getitem__(self, i):
         return self._row[0]
+
+class RecordNotFoundError(Exception):
+    pass
