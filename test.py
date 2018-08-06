@@ -35,6 +35,7 @@ import MySQLdb
 import pathlib
 import re
 import io
+import db
 
 class test_blog(tester):
     def __init__(self):
@@ -981,7 +982,7 @@ class test_blogpost(tester):
         self.assertEq(u.name,    bp.revisions.second.author.name)
         self.assertEq(u1.name,   bp.revisions.third.author.name)
 
-    def it_searches_by_id(self):
+    def it_loads_by_id(self):
         bp = blogpost()
         bp.blog = self.blog
         bp.save()
@@ -990,7 +991,7 @@ class test_blogpost(tester):
         bp = blogpost(id)
         self.assertEq(id,   bp.id)
 
-    def it_searches_by_slug(self):
+    def it_loads_by_slug(self):
         bp = blogpost()
         bp.blog = self.blog
         slug = str(uuid4())
