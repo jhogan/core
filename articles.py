@@ -1818,6 +1818,16 @@ class blog(db.dbentity):
         brs.demand(self, 'slug',  isfull=True)
         return brs
 
+    def __str__(self):
+        
+        s = """Id:          {}
+Slug:        {}
+Description: {}
+"""
+        s = s.format(str(self.id), self.slug, self.description)
+        return s
+
+
 class tags(db.dbentities):
     @property
     def _create(self):
