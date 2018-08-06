@@ -30,6 +30,7 @@ class testers(entities):
             if testclass and subcls.__name__ != testclass:
                 continue
             inst = subcls()
+            inst.testers = self
             self += inst
             for meth in subcls.__dict__.items():
                 if type(meth[1]) != FunctionType: continue
@@ -53,6 +54,7 @@ class testers(entities):
 class tester(entity):
     def __init__(self):
         self._failures = failures()
+        self.testers = None
 
     def assertFull(self, actual, msg=None):
         if type(actual) != str or actual.strip() == '':
@@ -219,6 +221,7 @@ class tester(entity):
 			'wsgi.version': (1, 0)
 		}
 
+        app.app.breakonexception = self.testers.breakonexception
         iter = app.app(env, sres)
 
         for body in iter:
