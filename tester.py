@@ -59,12 +59,42 @@ class tester(entity):
     def assertFull(self, actual, msg=None):
         if type(actual) != str or actual.strip() == '':
             self._failures += failure()
+
+    def full(self, actual, msg=None):
+        if type(actual) != str or actual.strip() == '':
+            self._failures += failure()
+
+    def assertEmpty(self, o, msg=None):
+        if o != '': self._failures += failure()
+
+    def empty(self, o, msg=None):
+        if o != '': self._failures += failure()
         
     def assertUuid(self, id, msg=None):
-        try: uuid.UUID(str(id), version=4)
-        except ValueError: self._failures += failure()
+        if isinstance(id, uuid.UUID):
+            raise ValueError('Assert type instead')
+
+        try: 
+            uuid.UUID(str(id), version=4)
+        except ValueError: 
+            self._failures += failure()
+
+    def uuid(self, id, msg=None):
+        if isinstance(id, uuid.UUID):
+            raise ValueError('Assert type instead')
+
+        try: 
+            uuid.UUID(str(id), version=4)
+        except ValueError: 
+            self._failures += failure()
 
     def assertTrue(self, actual, msg=None):
+        if type(actual) != bool:
+            raise ValueError('actual must be bool')
+
+        if not actual: self._failures += failure()
+
+    def true(self, actual, msg=None):
         if type(actual) != bool:
             raise ValueError('actual must be bool')
 
@@ -79,10 +109,19 @@ class tester(entity):
 
         if actual: self._failures += failure()
 
+    def false(self, actual, msg=None):
+        if type(actual) != bool:
+            raise ValueError('actual must be bool')
+
+        if actual: self._failures += failure()
+
     def assertFalsey(self, actual, msg=None):
         if actual: self._failures += failure()
 
     def assertFail(self, msg=None):
+        self._failures += failure()
+
+    def fail(self, msg=None):
         self._failures += failure()
 
     def assertPositive(self, actual):
@@ -92,9 +131,15 @@ class tester(entity):
         if not isinstance(expect, actual): self._failures += failure()
 
     def assertType(self, expect, actual, msg=None):
-        if type(actual) != expect: self._failures += failure()
+        if type(actual) is not expect: self._failures += failure()
+
+    def type(self, expect, actual, msg=None):
+        if type(actual) is not expect: self._failures += failure()
 
     def assertEq(self, expect, actual, msg=None):
+        if expect != actual: self._failures += failure()
+
+    def eq(self, expect, actual, msg=None):
         if expect != actual: self._failures += failure()
 
     def assertNe(self, expect, actual, msg=None):
@@ -118,11 +163,11 @@ class tester(entity):
     def assertNone(self, o, msg=None):
         if o != None: self._failures += failure()
 
+    def none(self, o, msg=None):
+        if o != None: self._failures += failure()
+
     def assertNotNone(self, o, msg=None):
         if o == None: self._failures += failure()
-
-    def assertEmpty(self, o, msg=None):
-        if o != '': self._failures += failure()
 
     def assertZero(self, actual):
         if len(actual) != 0: self._failures += failure()
@@ -133,13 +178,32 @@ class tester(entity):
     def assertTwo(self, actual):
         if len(actual) != 2: self._failures += failure()
 
+    def two(self, actual):
+        if len(actual) != 2: self._failures += failure()
+
     def assertThree(self, actual):
         if len(actual) != 3: self._failures += failure()
+
+    def three(self, actual):
+        if len(actual) != 3: self._failures += failure()
+
+    def nine(self, actual):
+        if len(actual) != 9: self._failures += failure()
 
     def assertCount(self, expect, actual, msg=None):
         if expect != len(actual): self._failures += failure()
 
+    def count(self, expect, actual, msg=None):
+        if expect != len(actual): self._failures += failure()
+
     def assertValid(self, ent):
+        v = ent.isvalid
+        if type(v) != bool:
+            raise Exception('invalid property must be a boolean')
+        if not v:
+            self._failures += failure(ent=ent)
+
+    def valid(self, ent):
         v = ent.isvalid
         if type(v) != bool:
             raise Exception('invalid property must be a boolean')
@@ -156,6 +220,11 @@ class tester(entity):
     def assertBroken(self, ent, prop, rule):
         if not ent.brokenrules.contains(prop, rule):
             self._failures += failure()
+
+    def broken(self, ent, prop, rule):
+        if not ent.brokenrules.contains(prop, rule):
+            self._failures += failure()
+
     @property
     def failures(self):
         return self._failures
