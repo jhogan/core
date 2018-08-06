@@ -865,6 +865,15 @@ class test_blogpost(tester):
         bp = blogpost(bp.id)
         self.assertEq(blogpost.Pending, bp.status)
 
+        for i in range(7):
+            bp.status = i
+            self.true(bp.isvalid)
+
+        for i in range(7, 20):
+            bp.status = i
+            self.false(bp.isvalid)
+            self.broken(bp, 'status', 'valid')
+
     def it_calls_iscommentable(self): 
         bp = blogpost()
         bp.blog = self.blog

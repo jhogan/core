@@ -828,7 +828,7 @@ class article(entity):
     Trash     = 5  # Posts in the Trash are assigned the trash status.
     Autodraft = 6  # Autosave revisions
     
-    Statuses = (Publish, Future, Draft, Pending, Trash, Autodraft)
+    Statuses = (Publish, Future, Draft, Pending, Private, Trash, Autodraft)
 
     def __init__(self, id=None):
         super().__init__()
