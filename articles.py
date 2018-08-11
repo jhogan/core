@@ -245,8 +245,7 @@ class articlerevision(db.dbentity):
         elif type(id) == uuid.UUID:
             sql = 'select * from articlerevisions where id = %s';
             ress = self.query(sql, (id.bytes,))
-            if not ress.hasone:
-                raise Exception('Record not found: ' + str(id))
+            ress.demandhasone()
             res = ress.first
         else:
             raise ValueError('id is of the wrong type')
@@ -1469,8 +1468,7 @@ class blog(db.dbentity):
                 raise ValueError()
 
             ress = self.query(sql, args)
-            if not ress.hasone:
-                raise Exception('Record not found: ' + str(id))
+            ress.demandhasone()
 
             res = ress.first
             row = list(res._row)
