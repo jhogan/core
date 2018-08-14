@@ -999,12 +999,30 @@ class test_blogpost(tester):
         bp.save()
         id = bp.id
 
-        bp = blogpost(slug)
+        bp = blogpost(slug, self.blog)
         self.assertEq(slug, bp.slug)
         self.assertEq(id,   bp.id)
 
         try:
             blogpost(uuid4().hex)
+        except Exception as ex:
+            self.type(TypeError, ex)
+        else:
+            self.fail('Exception not thrown')
+
+        try:
+            blogpost(uuid4().hex, self.blog)
+        except Exception as ex:
+            self.type(db.RecordNotFoundError, ex)
+        else:
+            self.fail('Exception not thrown')
+
+        bl = blog()
+        bl.slug = uuid4().hex
+        bl.description = 'This is not the correct blog'
+        bl.save()
+        try:
+            blogpost(slug, bl)
         except Exception as ex:
             self.type(db.RecordNotFoundError, ex)
         else:
@@ -1686,6 +1704,41 @@ class test_article(tester):
         art = article(art.id)
         self.assertEq(createdat, art.createdat)
 
+    def it_calls_publishedat(self):
+        art = article()
+        self.none(art.publishedat)
+        art.save()
+        self.none(art.publishedat)
+        art = article(art.id)
+        self.none(art.publishedat)
+
+        art.status = article.Publish
+        self.none(art.publishedat)
+        for i in range(2):
+            art.save()
+            self.type(datetime, art.publishedat)
+
+        art = article(art.id)
+        self.type(datetime, art.publishedat)
+
+        # Revert back to draft
+        art.status = article.Draft
+        self.type(datetime, art.publishedat)
+        art.save()
+        self.none(art.publishedat)
+        art = article(art.id)
+        self.none(art.publishedat)
+
+        # Advance back to Publish
+        art.status = article.Publish
+        self.none(art.publishedat)
+        for i in range(2):
+            art.save()
+            self.type(datetime, art.publishedat)
+
+        art = article(art.id)
+        self.type(datetime, art.publishedat)
+
     def it_calls_title(self):
         art = article()
         self.assertNone(art.title)
@@ -1811,6 +1864,13 @@ class test_article(tester):
         self.assertEq(article.Pending, art.status)
         art = article(art.id)
         self.assertEq(article.Pending, art.status)
+
+    def it_calls_statusproperties(self): 
+        # This is a work in progress
+        art = article()
+        self.false(art.ispublished)
+        art.status = article.Publish
+        self.true(art.ispublished)
 
     def it_calls_iscommentable(self): 
         art = article()

@@ -25,7 +25,8 @@ SOFTWARE.
 from app import controller
 from binascii import a2b_hex
 from datetime import datetime
-from entities import brokenrules, brokenrule, entity, entities, event, eventargs
+from entities import brokenrules, brokenrule, entity
+from entities import entities, event, eventargs, demand
 from MySQLdb.constants.ER import DUP_ENTRY
 from parties import user, users, person, persons
 from pdb import set_trace; B=set_trace
@@ -43,9 +44,8 @@ import uuid
 import xml.sax
 
 class articlerevisions(db.dbentities):
-    def __init__(self, id=None, entity=None):
+    def __init__(self, id=None):
         super().__init__()
-        entity = articlerevision if entity == None else entity
         if id:
             if type(id) == uuid.UUID:
                 sql = """
@@ -69,7 +69,7 @@ class articlerevisions(db.dbentities):
             # Populate collection
             try:
                 for res in ress:
-                    self += entity(res=res)
+                    self += articlerevision(res=res)
             finally:
                 self._isdirty = False
 
@@ -591,11 +591,16 @@ class articlerevision(db.dbentity):
         return self._setvalue('_slug', v, 'slug')
 
 class articles(entities):
-    def __init__(self, ids=None):
+    def __init__(self, os=None):
         super().__init__()
-        if ids:
-            for id in ids:
-                self += article(id)
+        # os is a collection of objects. If an element in the collection is a
+        # UUID, use that to instatiate an article object. Otherwise, assume it
+        # is an article.  Ultimately, append the article to the collection.
+        if os is not None:
+            for o in os:
+                if type(o) is uuid.UUID:
+                    o = article(o)
+                self += o
 
     def __str__(self):
         import functools
@@ -855,6 +860,10 @@ class article(entity):
 
         for mm in self._tags_mm_articles:
             self.tags += tag(mm.tagid)
+    
+    @property
+    def ispublished(self):
+        return self.status == article.Publish
 
     @property
     def revisions(self):
@@ -932,6 +941,21 @@ class article(entity):
         if root:
             return self.revisions.root.createdat
         return None
+
+    @property
+    def publishedat(self):
+        r = None
+        for i, rev in enumerate(self.revisions.reversed()):
+            if i == 0:
+                if rev.status != article.Publish:
+                    return None
+
+            if rev.status == article.Publish:
+                r = rev.createdat
+            else:
+                if r is not None:
+                    break
+        return r
 
     @property
     def title(self):
@@ -1188,14 +1212,14 @@ class blogposts(articles):
         return bps
 
 class blogpost(article):
-    def __init__(self, id=None):
+    def __init__(self, id=None, bl=None):
+        self._blog = bl
         super().__init__(id)
-        self._blog = None
 
     @property
     def revisions(self):
         if not self._revisions:
-            self._revisions = blogpostrevisions(self._id)
+            self._revisions = blogpostrevisions(self._id, self._blog)
         return self._revisions
 
     @property
@@ -1259,9 +1283,41 @@ Tags:         {}
         return r
 
 class blogpostrevisions(articlerevisions):
-    def __init__(self, id=None, entity=None):
-        entity = blogpostrevision if entity == None else entity
-        super().__init__(id, entity=entity)
+    def __init__(self, id=None, bl=None):
+        super().__init__()
+        if id:
+            if type(id) == uuid.UUID:
+                sql = """
+                select *
+                from articlerevisions
+                where rootid = %s
+                """
+                args = (id.bytes,)
+            elif type(id) == str: # slug
+                demand(bl, blog)
+                sql = """
+                select art1.*
+                from articlerevisions art1
+                    inner join articlerevisions art2
+                        on art1.rootid = art2.id
+                    inner join blogpostrevisions br
+                        on art1.id = br.id
+                where art2.slugcache = %s and
+                      br.blogid = %s
+                """
+                args = id, bl.id.bytes
+            revs = articlerevisions()
+            ress = self.query(sql, args)
+
+            # Populate collection
+            try:
+                for res in ress:
+                    self += blogpostrevision(res=res)
+            finally:
+                self._isdirty = False
+
+            self.sort()
+
 
     @property
     def _table(self):
