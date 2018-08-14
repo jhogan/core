@@ -854,7 +854,9 @@ class index(entity):
     def __len__(self):
         return len(self._ix)
 
-def demand(v, type=None):
+def demand(sub, type=None):
     if type is not None:
-        if builtins.type(v) != type:
-            raise TypeError()
+        if builtins.type(sub) != type:
+            msg = 'Value is of type {} instead of {}'
+            msg = msg.format(str(builtins.type(sub)), str(type))
+            raise TypeError(msg)
