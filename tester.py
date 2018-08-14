@@ -175,6 +175,9 @@ class tester(entity):
     def assertOne(self, actual):
         if len(actual) != 1: self._failures += failure()
 
+    def one(self, actual):
+        if len(actual) != 1: self._failures += failure()
+
     def assertTwo(self, actual):
         if len(actual) != 2: self._failures += failure()
 
@@ -189,6 +192,9 @@ class tester(entity):
 
     def nine(self, actual):
         if len(actual) != 9: self._failures += failure()
+
+    def ten(self, actual):
+        if len(actual) != 10: self._failures += failure()
 
     def assertCount(self, expect, actual, msg=None):
         if expect != len(actual): self._failures += failure()
