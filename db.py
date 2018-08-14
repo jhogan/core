@@ -383,7 +383,7 @@ class dbresultset(entities):
 
     def demandhasone(self):
         if not self.hasone:
-            raise Exception('A single record was not found')
+            raise RecordNotFoundError('A single record was not found')
         return self.first
 
 class dbresult(entity):
