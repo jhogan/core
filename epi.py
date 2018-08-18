@@ -35,6 +35,7 @@ import MySQLdb
 import re
 import pathlib
 from getpass import getpass
+import db
 
 def dbg(code):
     try:
@@ -180,17 +181,27 @@ def importblog(bl, path):
     linecount = rf(path).count('\n')
     bl.import_(path)
 
-try:
-    blogs().RECREATE()
-    tags().RECREATE()
-    articlerevisions().RECREATE()
-    blogpostrevisions().RECREATE()
-    bl = blog()
-    bl.slug = 'imported-blog'
-    bl.description = 'This blog contains blogposts and articles imported from a WXR file'
-    bl.save()
-    importblog(bl, '/usr/local/lib/python3.5/www/qa/epiphenomenon-py/testdata/blog-import-file.xml')
-except Exception as ex:
-    print(ex)
-    pdb.post_mortem(ex.__traceback__)
+cfg = configfile().getinstance()
+dbacct = db.connections.getinstance().default.account
 
+if cfg.inproduction:
+    print("You are in a production environment".upper())
+else:
+    try:
+        print('Environment: {}'.format(cfg['environment']))
+    except KeyError:
+        print('Environment not set'.upper())
+
+
+print("Configfile: {}".format(cfg.file))
+connectedto = """
+Connected to:
+    Host:     {}
+    Username: {}
+    Database: {}
+    Port:     {}
+""".format(dbacct.host,
+           dbacct.username,
+           dbacct.database,
+           dbacct.port)
+print(connectedto)
