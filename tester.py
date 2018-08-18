@@ -8,6 +8,8 @@ import pdb; B=pdb.set_trace
 import pprint
 import sys
 import uuid
+from pprint import pprint
+from configfile import configfile
 
 # TODO Ensure tester.py won't run in non-dev environment
 
@@ -23,8 +25,11 @@ class testers(entities):
 
 
     def run(self, tu=None):
-
         testclass, testmethod, *_ = tu.split('.') + [None] if tu else [None] * 2
+
+        cfg = configfile.getinstance()
+        if cfg.isloaded and cfg.inproduction:
+            raise Exception("Won't run in production environment.")
 
         for subcls in tester.__subclasses__():
             if testclass and subcls.__name__ != testclass:

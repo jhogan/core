@@ -2832,7 +2832,12 @@ class test_logs(tester):
         def onlog(src, eargs):
             logs.append(eargs.record.message)
 
-        l = configfile.getinstance().logs.default
+        cfg = configfile.getinstance()
+        if not cfg.isloaded:
+            # TODO We should raise something like CantTestError
+            return
+
+        l = cfg.logs.default
         l.onlog += onlog
 
         l.debug('xdebug');
