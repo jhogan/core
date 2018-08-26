@@ -201,6 +201,9 @@ class tester(entity):
     def ten(self, actual):
         if len(actual) != 10: self._failures += failure()
 
+    def eleven(self, actual):
+        if len(actual) != 11: self._failures += failure()
+
     def assertCount(self, expect, actual, msg=None):
         if expect != len(actual): self._failures += failure()
 
