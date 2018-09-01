@@ -270,11 +270,11 @@ class person(db.dbentity):
     @property
     def brokenrules(self):
         brs = brokenrules()
-        brs.demand(self, 'firstname',  maxlen=255)
-        brs.demand(self, 'middlename', maxlen=255)
-        brs.demand(self, 'lastname',   isfull=True, maxlen=255)
-        brs.demand(self, 'email',      isemail=True, maxlen=255)
-        brs.demand(self, 'phone',      maxlen=255)
+        brs.demand(self, 'firstname',  max=255)
+        brs.demand(self, 'middlename', max=255)
+        brs.demand(self, 'lastname',   full=True, max=255)
+        brs.demand(self, 'email',      isemail=True, max=255)
+        brs.demand(self, 'phone',      max=255)
 
         return brs
 
@@ -667,8 +667,8 @@ class user(db.dbentity):
     def brokenrules(self):
         # TODO Enuser that a username and service are unique
         brs = brokenrules()
-        brs.demand(self, 'name', isfull=True, maxlen=255)
-        brs.demand(self, 'service', isfull=True, maxlen=255)
+        brs.demand(self, 'name', full=True, max=255)
+        brs.demand(self, 'service', full=True, max=255)
 
         # Query database for existing user only if name and service are already
         # valid.
@@ -793,7 +793,7 @@ class role_mm_object(db.dbentity):
     @property
     def brokenrules(self):
         brs = brokenrules()
-        brs.demand(self, 'roleid', isfull=True, type=uuid.UUID)
+        brs.demand(self, 'roleid', full=True, type=uuid.UUID)
         return brs
 
 
@@ -1034,7 +1034,7 @@ class capability(entity):
     @property
     def brokenrules(self):
         brs = brokenrules()
-        brs.demand(self, 'name', isfull=True, type=str)
+        brs.demand(self, 'name', full=True, type=str)
 
         n = self.name
         if type(n) is str and bool(re.match('^.*\s+.*$', n)):

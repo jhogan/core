@@ -434,7 +434,7 @@ class articlerevision(db.dbentity):
 
         if self.title != None:
             if type(self.title) == str:
-                brs.demand(self, 'title',  maxlen=500)
+                brs.demand(self, 'title',  max=500)
             else:
                 msg = 'Title must be a string or a None'
                 brs += brokenrule(msg, 'title', 'valid')
@@ -1406,7 +1406,7 @@ class blogpostrevision(articlerevision):
                         msg = 'slugcache must be unique'
                         brs += brokenrule(msg, 'slugcache', 'unique')
             else:
-                brs.demand(self, 'blog',  isfull=True)
+                brs.demand(self, 'blog',  full=True)
 
         else:
             if type(self.parent) != blogpostrevision:
@@ -1800,8 +1800,8 @@ class blog(db.dbentity):
     @property
     def brokenrules(self):
         brs = brokenrules()
-        brs.demand(self, 'description',  isfull=True)
-        brs.demand(self, 'slug',  isfull=True)
+        brs.demand(self, 'description',  full=True)
+        brs.demand(self, 'slug',  full=True)
         return brs
 
 class tags(db.dbentities):
@@ -1925,7 +1925,7 @@ class tag(db.dbentity):
     @property
     def brokenrules(self):
         brs = brokenrules()
-        brs.demand(self, 'name', isfull=True)
+        brs.demand(self, 'name', full=True)
 
         # If name is full and it isn't strickly a string of lowercase
         # characters
@@ -2071,7 +2071,7 @@ class tag_mm_article(db.dbentity):
     @property
     def brokenrules(self):
         brs = brokenrules()
-        brs.demand(self, 'tagid', isfull=True, type=uuid.UUID)
+        brs.demand(self, 'tagid', full=True, type=uuid.UUID)
         return brs
 
     def _delete(self, cur=None):
