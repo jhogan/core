@@ -442,6 +442,9 @@ class entities(object):
             elif hasattr(e, 'name'):
                 if e.name == key: return e
 
+        # TODO If hasattr(e, 'id') or hasattr(e, 'name'), shouldn't
+        # we raise a KeyError here.
+
     def getindex(self, e):
         """ Return the first index of e in the collection.
 
