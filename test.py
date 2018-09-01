@@ -36,6 +36,7 @@ import pathlib
 import re
 import io
 import orm
+import db
 
 class test_orm(tester):
     
@@ -349,6 +350,45 @@ class test_blog(tester):
         bl.description = "The technical blog for Carapacian, LLC"
         bl.save()
         self.assertValid(blog(bl.id))
+
+    def it_loads_by_id(self):
+        bl = blog()
+        bl.slug = uuid4().hex
+        bl.description = "The technical blog for Carapacian, LLC"
+        bl.save()
+
+        bl1 = blog(bl.id)
+
+        self.eq(bl1.slug, bl.slug)
+        self.eq(bl1.description, bl.description)
+
+    def it_loads_by_slug(self):
+        bl = blog()
+        bl.slug = uuid4().hex
+        bl.description = "The technical blog for Carapacian, LLC"
+        bl.save()
+
+        bl1 = blog(bl.slug)
+
+        self.eq(bl1.slug, bl.slug)
+        self.eq(bl1.description, bl.description)
+
+    def it_calls__str__(self):
+        bl = blog()
+        bl.slug = uuid4().hex
+        bl.description = uuid4().hex
+        bl.save()
+
+        bl1 = blog(bl.id)
+
+        expect = """Id:          {}
+Slug:        {}
+Description: {}
+"""
+        expect = expect.format(str(bl.id), bl.slug, bl.description)
+
+        self.eq(expect, str(bl1))
+
 
     def it_violates_unique_constraint_on_slug(self):
         bl = blog()
@@ -1013,6 +1053,15 @@ class test_blogpost(tester):
         bp = blogpost(bp.id)
         self.assertEq(blogpost.Pending, bp.status)
 
+        for i in range(7):
+            bp.status = i
+            self.true(bp.isvalid)
+
+        for i in range(7, 20):
+            bp.status = i
+            self.false(bp.isvalid)
+            self.broken(bp, 'status', 'valid')
+
     def it_calls_iscommentable(self): 
         bp = blogpost()
         bp.blog = self.blog
@@ -1081,7 +1130,7 @@ class test_blogpost(tester):
         self.assertEq(u.name,    bp.revisions.second.author.name)
         self.assertEq(u1.name,   bp.revisions.third.author.name)
 
-    def it_searches_by_id(self):
+    def it_loads_by_id(self):
         bp = blogpost()
         bp.blog = self.blog
         bp.save()
@@ -1090,7 +1139,7 @@ class test_blogpost(tester):
         bp = blogpost(id)
         self.assertEq(id,   bp.id)
 
-    def it_searches_by_slug(self):
+    def it_loads_by_slug(self):
         bp = blogpost()
         bp.blog = self.blog
         slug = str(uuid4())
@@ -1098,9 +1147,34 @@ class test_blogpost(tester):
         bp.save()
         id = bp.id
 
-        bp = blogpost(slug)
+        bp = blogpost(slug, self.blog)
         self.assertEq(slug, bp.slug)
         self.assertEq(id,   bp.id)
+
+        try:
+            blogpost(uuid4().hex)
+        except Exception as ex:
+            self.type(TypeError, ex)
+        else:
+            self.fail('Exception not thrown')
+
+        try:
+            blogpost(uuid4().hex, self.blog)
+        except Exception as ex:
+            self.type(db.RecordNotFoundError, ex)
+        else:
+            self.fail('Exception not thrown')
+
+        bl = blog()
+        bl.slug = uuid4().hex
+        bl.description = 'This is not the correct blog'
+        bl.save()
+        try:
+            blogpost(slug, bl)
+        except Exception as ex:
+            self.type(db.RecordNotFoundError, ex)
+        else:
+            self.fail('Exception not thrown')
 
     def it_calls_slug_and_title(self):
         title = test_article.Smallposttitle + str(uuid4())
@@ -1778,6 +1852,41 @@ class test_article(tester):
         art = article(art.id)
         self.assertEq(createdat, art.createdat)
 
+    def it_calls_publishedat(self):
+        art = article()
+        self.none(art.publishedat)
+        art.save()
+        self.none(art.publishedat)
+        art = article(art.id)
+        self.none(art.publishedat)
+
+        art.status = article.Publish
+        self.none(art.publishedat)
+        for i in range(2):
+            art.save()
+            self.type(datetime, art.publishedat)
+
+        art = article(art.id)
+        self.type(datetime, art.publishedat)
+
+        # Revert back to draft
+        art.status = article.Draft
+        self.type(datetime, art.publishedat)
+        art.save()
+        self.none(art.publishedat)
+        art = article(art.id)
+        self.none(art.publishedat)
+
+        # Advance back to Publish
+        art.status = article.Publish
+        self.none(art.publishedat)
+        for i in range(2):
+            art.save()
+            self.type(datetime, art.publishedat)
+
+        art = article(art.id)
+        self.type(datetime, art.publishedat)
+
     def it_calls_title(self):
         art = article()
         self.assertNone(art.title)
@@ -1903,6 +2012,13 @@ class test_article(tester):
         self.assertEq(article.Pending, art.status)
         art = article(art.id)
         self.assertEq(article.Pending, art.status)
+
+    def it_calls_statusproperties(self): 
+        # This is a work in progress
+        art = article()
+        self.false(art.ispublished)
+        art.status = article.Publish
+        self.true(art.ispublished)
 
     def it_calls_iscommentable(self): 
         art = article()
