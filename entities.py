@@ -572,7 +572,7 @@ class entity():
         from configfile import configfile
         return configfile.getinstance().logs.default
 
-    def _setvalue(self, field, new, prop):
+    def _setvalue(self, field, new, prop, setattr=setattr):
         # TODO: It's nice to strip any string because that's vitually
         # always the desired behaviour.  However, at some point, we will
         # want to preserve the whitespace on either side.  Therefore, we
