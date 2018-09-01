@@ -35,6 +35,154 @@ import MySQLdb
 import pathlib
 import re
 import io
+import orm
+
+class test_orm(tester):
+    
+    def it_calls_id(self):
+
+        class person(orm.entity):
+            def getmappings(self):
+                return None
+
+        p = person()
+
+        self.true(hasattr(p, 'id'))
+        self.type(uuid.UUID, p.id)
+        self.zero(p.brokenrules)
+
+    # Test str properties #
+    def it_calls_str_property(self):
+        class person(orm.entity):
+            lastname = orm.mapping(name='firstname', type=str)
+
+            @staticmethod
+            def getmappings():
+                yield orm.mapping(name='firstname', type=str)
+
+        p = person()
+        p.firstname
+
+        self.true(hasattr(p, 'firstname'))
+        self.type(str, p.firstname)
+        self.empty(p.firstname)
+        self.zero(p.brokenrules)
+
+    def it_calls_str_property_with_default(self):
+        # Test where the default is None
+        class person(orm.entity):
+
+            @staticmethod
+            def getmappings():
+                yield orm.mapping(name='firstname', type=str, default=None)
+
+        p = person()
+
+        self.true(hasattr(p, 'firstname'))
+        self.none(p.firstname)
+        self.zero(p.brokenrules)
+
+        # Test where the default is a random string
+        guid = uuid4().hex
+        class person(orm.entity):
+
+            @staticmethod
+            def getmappings():
+                yield orm.mapping(name='firstname', type=str, default=guid)
+
+        p = person()
+
+        self.true(hasattr(p, 'firstname'))
+        self.type(str, p.firstname)
+        self.eq(guid, p.firstname)
+        self.zero(p.brokenrules)
+
+    def it_calls_str_propertys_setter(self):
+        class person(orm.entity):
+
+            @staticmethod
+            def getmappings():
+                yield orm.mapping(name='firstname', type=str, default=None)
+
+        p = person()
+
+        uuid = uuid4().hex
+        p.firstname = uuid
+
+        self.eq(uuid, p.firstname)
+        self.zero(p.brokenrules)
+
+        # Ensure whitespace in strip()ed from str values.
+        p.firstname = ' \n\t' + uuid + ' \n\t'
+        self.eq(uuid, p.firstname)
+        self.zero(p.brokenrules)
+
+    def it_breaks_fits_rule_of_str_property(self):
+
+        # Without specifying a default, the string should be no longer than
+        # 255 in len().
+        class person(orm.entity):
+
+            @staticmethod
+            def getmappings():
+                yield orm.mapping(name='firstname', type=str)
+
+        p = person()
+
+        p.firstname = 'x' * 256
+        self.one(p.brokenrules)
+        self.broken(p, 'firstname', 'fits')
+
+        p.firstname = 'x' * 255
+        self.zero(p.brokenrules)
+
+        # Specify a max
+        max = 123
+        class person(orm.entity):
+
+            @staticmethod
+            def getmappings():
+                yield orm.mapping(name='firstname', type=str, max=max)
+
+        p = person()
+
+        p.firstname = 'x' * (max + 1)
+        self.one(p.brokenrules)
+        self.broken(p, 'firstname', 'fits')
+
+        p.firstname = 'x' * max
+        self.zero(p.brokenrules)
+
+    def it_breaks_full_rule_of_str_property(self):
+
+        # Without specifying a default, the string should be no longer than
+        # 255 in len().
+        class person(orm.entity):
+
+            @staticmethod
+            def getmappings():
+                yield orm.mapping(name='firstname', type=str, full=True)
+
+        p = person()
+        for v in [None, '', ' \t\n']:
+            p.firstname = v
+            self.broken(p, 'firstname', 'full')
+            self.one(p.brokenrules)
+
+    def it_calls_dir(self):
+        # TODO Add more properties to test
+        class person(orm.entity):
+
+            @staticmethod
+            def getmappings():
+                yield orm.mapping(name='firstname', type=str)
+
+        # Make sure mapped properties show are returned when dir() is called 
+        d = dir(person())
+
+        self.true('firstname' in d)
+
+    # Test int properties #
 
 class test_blog(tester):
     def __init__(self):
