@@ -177,6 +177,9 @@ class tester(entity):
     def assertZero(self, actual):
         if len(actual) != 0: self._failures += failure()
 
+    def zero(self, actual):
+        if len(actual) != 0: self._failures += failure()
+
     def assertOne(self, actual):
         if len(actual) != 1: self._failures += failure()
 
