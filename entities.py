@@ -626,10 +626,10 @@ class brokenrules(entities):
         super().append(o, r)
 
     def demand(self, cls, prop, 
-                     isfull=False, 
+                     full=False, 
                      isemail=False, 
                      isdate=False,
-                     maxlen=None,
+                     max=None,
                      type=None):
         v = getattr(cls, prop)
 
@@ -637,7 +637,7 @@ class brokenrules(entities):
             if builtins.type(v) is not type:
                 self += brokenrule(prop + ' is wrong type', prop, 'valid')
 
-        if isfull:
+        if full:
             if (builtins.type(v) == str and v.strip() == '') or v is None:
                 self += brokenrule(prop + ' is empty', prop, 'full')
 
@@ -646,8 +646,8 @@ class brokenrules(entities):
             if v == None or not re.match(pattern, v):
                 self += brokenrule(prop + ' is invalid', prop, 'valid')
 
-        if maxlen != None:
-            if v != None and len(v) > maxlen:
+        if max != None:
+            if v != None and len(v) > max:
                 # property can only break the 'fits' rule if it hasn't broken
                 # the 'full' rule. E.g., a property can be a string of
                 # whitespaces which may break the 'full' rule. In that case,
