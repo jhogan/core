@@ -39,31 +39,25 @@ class epiphany:
 
 class entitymeta(type):
     def __new__(cls, name, bases, body):
+        # If name == 'entity', the `class entity` statement is being executed.
+        if name != 'entity':
+            epi = epiphany()
+            epi.mappings = mappings()
+            body['epiphany'] = epi
+
+            for name, map in body.items():
+                if not isinstance(map, mapping):
+                    continue
+                
+                map._name = name
+                epi.mappings += map
+
+
         return super().__new__(cls, name, bases, body)
 
 class entity(entities.entity, metaclass=entitymeta):
     def __init__(self):
-        self.epiphany = epiphany()
-        # The code:
-        #
-        #     self.epiphany.mappings = mappings()
-        #
-        # raises UnboundLocalError for some reason. The local variable
-        # 'mappings' below seems to be causing the problem.
-        self.epiphany.mappings = sys.modules[__name__].mappings()
-
-        try:
-            mappings = self.getmappings()
-        except Exception as ex:
-            msg = 'orm entities must implement a static getmappings method'
-            raise NotImplementedError(msg)
-
-        if mappings:
-            for mapping in mappings:
-                self.epiphany.mappings += mapping
-
         self._id = uuid4()
-
         super().__init__()
     @property
     def id(self):
@@ -131,13 +125,13 @@ class mappings(entities.entities):
     pass
 
 class mapping(entities.entity):
-    def __init__(self, name, type, default=undef, max=undef, full=False):
-        self._name = name
+    def __init__(self, type, default=undef, max=undef, full=False):
         self._type = type
         self._value = undef
         self._default = default
         self._max = max
         self._full = full
+        self._name = None
 
     @property
     def full(self):

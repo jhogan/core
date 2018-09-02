@@ -36,15 +36,13 @@ import pathlib
 import re
 import io
 import orm
-import db
 
 class test_orm(tester):
     
     def it_calls_id(self):
 
         class person(orm.entity):
-            def getmappings(self):
-                return None
+            pass
 
         p = person()
 
@@ -55,14 +53,9 @@ class test_orm(tester):
     # Test str properties #
     def it_calls_str_property(self):
         class person(orm.entity):
-            lastname = orm.mapping(name='firstname', type=str)
-
-            @staticmethod
-            def getmappings():
-                yield orm.mapping(name='firstname', type=str)
+            firstname = orm.mapping(str)
 
         p = person()
-        p.firstname
 
         self.true(hasattr(p, 'firstname'))
         self.type(str, p.firstname)
@@ -72,10 +65,7 @@ class test_orm(tester):
     def it_calls_str_property_with_default(self):
         # Test where the default is None
         class person(orm.entity):
-
-            @staticmethod
-            def getmappings():
-                yield orm.mapping(name='firstname', type=str, default=None)
+            firstname = orm.mapping(str, default=None)
 
         p = person()
 
@@ -86,10 +76,7 @@ class test_orm(tester):
         # Test where the default is a random string
         guid = uuid4().hex
         class person(orm.entity):
-
-            @staticmethod
-            def getmappings():
-                yield orm.mapping(name='firstname', type=str, default=guid)
+            firstname = orm.mapping(str, default=guid)
 
         p = person()
 
@@ -100,10 +87,7 @@ class test_orm(tester):
 
     def it_calls_str_propertys_setter(self):
         class person(orm.entity):
-
-            @staticmethod
-            def getmappings():
-                yield orm.mapping(name='firstname', type=str, default=None)
+            firstname = orm.mapping(str, default=None)
 
         p = person()
 
@@ -123,10 +107,7 @@ class test_orm(tester):
         # Without specifying a default, the string should be no longer than
         # 255 in len().
         class person(orm.entity):
-
-            @staticmethod
-            def getmappings():
-                yield orm.mapping(name='firstname', type=str)
+            firstname = orm.mapping(str)
 
         p = person()
 
@@ -140,10 +121,7 @@ class test_orm(tester):
         # Specify a max
         max = 123
         class person(orm.entity):
-
-            @staticmethod
-            def getmappings():
-                yield orm.mapping(name='firstname', type=str, max=max)
+            firstname = orm.mapping(str, max=max)
 
         p = person()
 
@@ -159,10 +137,7 @@ class test_orm(tester):
         # Without specifying a default, the string should be no longer than
         # 255 in len().
         class person(orm.entity):
-
-            @staticmethod
-            def getmappings():
-                yield orm.mapping(name='firstname', type=str, full=True)
+                firstname = orm.mapping(str, full=True)
 
         p = person()
         for v in [None, '', ' \t\n']:
@@ -173,15 +148,17 @@ class test_orm(tester):
     def it_calls_dir(self):
         # TODO Add more properties to test
         class person(orm.entity):
-
-            @staticmethod
-            def getmappings():
-                yield orm.mapping(name='firstname', type=str)
+            firstname = orm.mapping(str)
 
         # Make sure mapped properties show are returned when dir() is called 
         d = dir(person())
 
         self.true('firstname' in d)
+
+        # Make sure there is only one firstname in the directory. If there are
+        # more, entitymeta may not be deleting the original property from the
+        # class body.
+        self.eq(1, d.count('firstname'))
 
     # Test int properties #
 
