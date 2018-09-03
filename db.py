@@ -30,6 +30,7 @@ from pdb import set_trace; B=set_trace
 from table import table
 import MySQLdb
 import uuid
+from contextlib import contextmanager
 
 class dbentities(entities):
     def __init__(self, ress=None):
@@ -399,3 +400,38 @@ class dbresult(entity):
 
 class RecordNotFoundError(Exception):
     pass
+
+class pool(entity):
+    _default = None
+
+    def __init__(self):
+        # TODO Currently, connections.__init__() populates itself with
+        # connection objects from the config file so we can't use it for
+        # collecting connections objects that are in and out of the pool.
+        self._in = entities()
+        self._out = entities()
+
+    @staticmethod
+    def getdefault():
+        if not pool._default:
+            pool._default = pool()
+
+            # Seed with one connection
+            pool._default._in += connections.getinstance().default.clone()
+        return pool._default
+
+    @contextmanager
+    def take(self):
+        conn = self._in.pop()
+
+        # Grow as needed
+        if not conn:
+            conn = self._out.last.clone()
+
+        self._out += conn
+        yield conn
+
+        self._in += self._out.pop()
+
+        
+
