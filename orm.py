@@ -101,9 +101,37 @@ class entitymeta(type):
 
         return super().__new__(cls, name, bases, body)
 
-class entity(entities.entity, metaclass=entitymeta):
-    def __init__(self):
-        self._id = uuid4()
+class entity(entitiesmod.entity, metaclass=entitymeta):
+    def __init__(self, id=None):
+        self.orm = self.orm.clone()
+        self.orm.mappings.entity = self
+
+        if id is None:
+            self.orm.isnew = True
+            self.orm.isdirty = False
+            self.id = uuid4()
+        else:
+            sql = 'select * from {} where id = %s'
+            sql = sql.format(self.orm.table)
+
+            args = id.bytes,
+
+            # TODO Make db.pool varient
+            pool = db.pool.getdefault()
+
+            with pool.take() as conn:
+                cur = conn.createcursor()
+                cur.execute(sql, args)
+
+            ress = db.dbresultset(cur)
+            ress.demandhasone()
+            res = ress.first
+            for map in self.orm.mappings:
+                map.value = res[map.name]
+
+            self.orm.isnew = False
+            self.orm.isdirty = False
+
         super().__init__()
     @property
     def id(self):
