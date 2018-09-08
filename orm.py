@@ -247,7 +247,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         brs = entitiesmod.brokenrules()
         for map in self.orm.mappings:
 
-            if map.type == str:
+            if map.type == types.str:
                 if map.max is undef:
                     if map.value is not None:
                         brs.demand(self, map.name, max=255)
@@ -340,14 +340,42 @@ class mappings(entitiesmod.entities):
 class mapping(entitiesmod.entity):
     ordinal = 0
 
-class mapping(entities.entity):
-    def __init__(self, type, default=undef, max=undef, full=False):
+    def __init__(self, type, default=undef, max=undef, full=False, name=None):
         self._type = type
         self._value = undef
         self._default = default
         self._max = max
         self._full = full
-        self._name = None
+        self._name = name
+
+        mapping.ordinal += 1
+        self._ordinal = mapping.ordinal
+
+    def clone(self):
+        map = mapping(
+            self.type,
+            self.default,
+            self.max,
+            self.full,
+            self.name
+        )
+        map._value = self._value
+        return map
+
+    def __str__(self):
+        r = '{}'
+
+        r = r.format(self.name)
+
+        return r
+
+    @property
+    def isstr(self):
+        return self.type == types.str
+
+    @property
+    def ispk(self):
+        return self.type == types.pk
 
     @property
     def full(self):
@@ -359,10 +387,17 @@ class mapping(entities.entity):
 
     @property
     def max(self):
-        return self._max
+        if self.type == types.str:
+            if self._max is undef:
+                return 255
+            else:
+                return self._max
 
     @property
     def type(self):
+        t = self._type
+        if t in (str, types.str):
+            self._type = types.str
         return self._type
 
     @property
