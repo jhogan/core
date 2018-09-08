@@ -27,9 +27,19 @@ from pprint import pprint
 from table import table
 import builtins
 import textwrap
-from uuid import uuid4
-import entities
+from uuid import uuid4, UUID
+import entities as entitiesmod
 import sys
+import db
+from MySQLdb.constants.ER import BAD_TABLE_ERROR
+import MySQLdb
+from enum import Enum, unique
+
+@unique
+class types(Enum):
+    str = 0
+    int = 1
+    pk  = 2
 
 class undef:
     pass
