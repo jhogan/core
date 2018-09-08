@@ -166,6 +166,82 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
             self._setvalue(attr, v, attr, setattr)
 
+    @classmethod
+    def reCREATE(cls):
+        pool = db.pool.getdefault()
+
+        with pool.take() as conn:
+            cur = conn.createcursor()
+            try:
+                try:
+                    cls.DROP(cur)
+                except MySQLdb.OperationalError as ex:
+                    try:
+                        errno = ex.args[0]
+                    except:
+                        raise
+
+                    if errno != BAD_TABLE_ERROR: # 1051
+                        raise
+                cls.CREATE(cur)
+            except:
+                conn.rollback()
+            else:
+                conn.commit()
+
+    @classmethod
+    def DROP(cls, cur=None):
+        sql = 'drop table ' + cls.orm.table + ';'
+
+        if cur:
+            cur.execute(sql)
+        else:
+            pool = db.pool.getdefault()
+            with pool.take() as conn:
+                conn.query(sql)
+    
+    @classmethod
+    def CREATE(cls, cur=None):
+        sql = cls.orm.mappings.createtable
+
+        if cur:
+            cur.execute(sql)
+        else:
+            pool = db.pool.getdefault()
+            with pool.take() as conn:
+                conn.query(sql)
+
+    def delete(self):
+        self.orm.ismarkedfordeletion = True
+        self.save()
+
+    def save(self):
+        # TODO Make transactions atomic
+        # TODO Add reconnect logic
+
+        if not self.isvalid:
+            raise db.brokenruleserror("Can't save invalid object" , self)
+
+        pool = db.pool.getdefault()
+
+        if self.orm.ismarkedfordeletion:
+            sql, args = self.orm.mappings.getdelete()
+        elif self.orm.isnew:
+            sql, args = self.orm.mappings.getinsert()
+        elif self.orm.isdirty:
+            sql, args = self.orm.mappings.getupdate()
+        else:
+            raise ValueError()
+
+        with pool.take() as conn:
+            cur = conn.createcursor()
+            cur.execute(sql, args)
+            conn.commit()
+
+        self.orm.isnew = self.orm.ismarkedfordeletion
+        self.orm.ismarkedfordeletion = False
+        self.orm.isdirty = False
+        
     @property
     def brokenrules(self):
         brs = entitiesmod.brokenrules()
@@ -194,8 +270,75 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         return map.value
 
-class mappings(entities.entities):
-    pass
+class mappings(entitiesmod.entities):
+    def __init__(self, orm):
+        self._orm = orm
+        super().__init__(self)
+
+    @property
+    def orm(self):
+        return self._orm
+
+    @property
+    def createtable(self):
+        r = 'create table ' + self.orm.table + '(\n'
+        for i, map in enumerate(self):
+            if i:
+                r += ',\n'
+            r += '    ' + map.name
+
+            if map.isstr:
+                # TODO: OPT: Shouldn't this be char(16) instead of varchar(16)
+                r += ' varchar(' + str(map.max) + ')'
+            elif map.ispk:
+                r += ' binary(16) primary key'
+        r += '\n);'
+        return r
+
+    def getinsert(self):
+        sql = 'insert into {} values({})' \
+            .format(self.orm.table, ('%s, ' * self.count).rstrip(', '))
+
+        return sql, self._getargs()
+
+    def getupdate(self):
+        tbl = self.orm.table
+        sets = ', '.join([x.name + '=%s' for x in  self if x.name != 'id']).rstrip(', ')
+
+        sql = """
+        update {}
+        set {}
+        where id = %s;
+        """.format(tbl, sets)
+
+        args = self._getargs()
+
+        # Put id argument at end
+        args.append(args.pop(0))
+        return sql, args
+
+    def getdelete(self):
+        sql = 'delete from {} where id = %s;'.format(self.orm.table)
+
+        return sql, [self['id'].value.bytes]
+
+    def _getargs(self):
+        r = []
+        for map in self:
+            value = map.value
+            if isinstance(value, UUID):
+                value = value.bytes
+            r.append(value)
+        return r
+
+    def clone(self, orm_):
+        r = mappings(orm_)
+        for map in self:
+            r += map.clone()
+        return r
+
+class mapping(entitiesmod.entity):
+    ordinal = 0
 
 class mapping(entities.entity):
     def __init__(self, type, default=undef, max=undef, full=False):
