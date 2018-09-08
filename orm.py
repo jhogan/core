@@ -51,17 +51,53 @@ class entitymeta(type):
     def __new__(cls, name, bases, body):
         # If name == 'entity', the `class entity` statement is being executed.
         if name != 'entity':
-            epi = epiphany()
-            epi.mappings = mappings()
-            body['epiphany'] = epi
+            orm_ = orm()
+            orm_.mappings = mappings(orm_)
 
-            for name, map in body.items():
+            try:
+                body['entities']
+            except KeyError:
+                for sub in orm_.getentitiessubclasses():
+
+                    if sub.__name__   == name + 's' and \
+                       sub.__module__ == body['__module__']:
+
+                        body['entities'] = sub
+                        break
+                else:
+                    msg = "Entities class coudn't be found. "
+                    msg += "Either specify one or define one with a predictable name"
+                    raise AttributeError(msg)
+
+            orm_.entities = body['entities']
+            del body['entities']
+
+            try:
+                orm_.table = body['table']
+                del body['table']
+            except KeyError:
+                orm_.table = orm_.entities.__name__
+
+            body['id'] = mapping(name='id', type=types.pk)
+            for name1, map in body.items():
                 if not isinstance(map, mapping):
                     continue
                 
-                map._name = name
-                epi.mappings += map
+                map._name = name1
+                orm_.mappings += map
 
+            for map in orm_.mappings:
+                del body[map.name]
+
+            # Make sure the mappings are sorted in the order they are
+            # instantiated
+            orm_.mappings.sort('_ordinal')
+
+            # The id will be the last elment, so pop it off and unshift so it's
+            # always the first element
+            orm_.mappings << orm_.mappings.pop()
+
+            body['orm'] = orm_
 
         return super().__new__(cls, name, bases, body)
 
