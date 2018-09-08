@@ -133,17 +133,16 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             self.orm.isdirty = False
 
         super().__init__()
-    @property
-    def id(self):
-        return self._id
 
-    @id.setter
-    def id(self, v):
-        self._id = v
-        return self._id
+        # Events
+        self.onaftervaluechange  +=  self._self_onaftervaluechange
+
+    def _self_onaftervaluechange(self, src, eargs):
+        if not self.orm.isnew:
+            self.orm.isdirty = True
 
     def __dir__(self):
-        return super().__dir__() + [x.name for x in self.epiphany.mappings]
+        return super().__dir__() + [x.name for x in self.orm.mappings]
 
     def __setattr__(self, attr, v):
         # Need to handle 'epiphany' first, otherwise the code below that
@@ -151,7 +150,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         if attr == 'epiphany':
             return object.__setattr__(self, attr, v)
 
-        map = self.epiphany.mappings[attr]
+        map = self.orm.mappings[attr]
 
         if map is None:
             return object.__setattr__(self, attr, v)
@@ -169,8 +168,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
     @property
     def brokenrules(self):
-        brs = entities.brokenrules()
-        for map in self.epiphany.mappings:
+        brs = entitiesmod.brokenrules()
+        for map in self.orm.mappings:
 
             if map.type == str:
                 if map.max is undef:
@@ -187,8 +186,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
     def __getattribute__(self, attr):
         map = None
 
-        if attr != 'epiphany':
-            map = self.epiphany.mappings[attr]
+        if attr != 'orm' and self.orm.mappings:
+            map = self.orm.mappings[attr]
 
         if map is None:
             return object.__getattribute__(self, attr)
