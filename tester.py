@@ -150,6 +150,9 @@ class tester(entity):
     def assertNe(self, expect, actual, msg=None):
         if expect == actual: self._failures += failure()
 
+    def ne(self, expect, actual, msg=None):
+        if expect == actual: self._failures += failure()
+
     def assertGt(self, expect, actual, msg=None):
         if not (expect > actual): self._failures += failure()
 
@@ -163,6 +166,9 @@ class tester(entity):
         if not (expect <= actual): self._failures += failure()
 
     def assertIs(self, expect, actual, msg=None):
+        if expect is not actual: self._failures += failure()
+
+    def is_(self, expect, actual, msg=None):
         if expect is not actual: self._failures += failure()
 
     def assertNone(self, o, msg=None):
@@ -241,6 +247,16 @@ class tester(entity):
     def broken(self, ent, prop, rule):
         if not ent.brokenrules.contains(prop, rule):
             self._failures += failure()
+
+    def expect(self, expect, fn):
+        try:
+            fn()
+        except Exception as ex:
+            if type(ex) is not expect:
+                self._failures += failure(actual=ex)
+        else:
+            self._failures += failure()
+            
 
     @property
     def failures(self):
@@ -370,10 +386,11 @@ class failures(entities):
     pass
 
 class failure(entity):
-    def __init__(self, cause=None, assert_=None, ent=None):
+    def __init__(self, cause=None, assert_=None, ent=None, actual=None):
         self._assert = assert_
         self.cause = cause
         self.entity = ent
+        self._actual = actual
         if not cause:
             stack = inspect.stack()
             self._assert = stack[1][3]
