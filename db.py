@@ -372,7 +372,8 @@ class dbresultset(entities):
         super().__init__()
         self._cur = cur
         for r in self._cur:
-            self += dbresult(r)
+            self += dbresult(r, self)
+
 
     @property
     def lastrowid(self):
@@ -388,15 +389,21 @@ class dbresultset(entities):
         return self.first
 
 class dbresult(entity):
-    def __init__(self, row):
+    def __init__(self, row, ress):
         self._row = row
+        self._ress = ress
 
     def __iter__(self):
         for f in self._row:
             yield f
 
     def __getitem__(self, i):
-        return self._row[0]
+        if type(i) is str:
+            # If i is str, it's a column name. Use the description property to
+            # get the index to pass to _row
+            desc = self._ress._cur.description
+            i = [x[0] for x in desc].index(i)
+        return self._row[i]
 
 class RecordNotFoundError(Exception):
     pass
