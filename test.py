@@ -5538,16 +5538,18 @@ duration of a given query.]]></content:encoded>
 </rss>
 """
 
-p = argparse.ArgumentParser()
-p.add_argument('testunit',  help='The test class or method to run',  nargs='?')
-p.add_argument('-b', '--break-on-exception', action='store_true', dest='breakonexception')
-args = p.parse_args()
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument('testunit',  help='The test class or method to run',  nargs='?')
+    p.add_argument('-b', '--break-on-exception', action='store_true', dest='breakonexception')
+    args = p.parse_args()
 
-t = testers()
-t.breakonexception = args.breakonexception
-t.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)
-t.oninvoketest += lambda src, eargs: print(eargs.method[0], flush=True)
-t.run(args.testunit)
-print(t)
+    t = testers()
+    t.breakonexception = args.breakonexception
+    t.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)
+    t.oninvoketest += lambda src, eargs: print(eargs.method[0], flush=True)
+    t.run(args.testunit)
+    print(t)
 
+main()
 
