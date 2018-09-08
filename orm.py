@@ -44,7 +44,7 @@ class types(Enum):
 class undef:
     pass
 
-class epiphany:
+class entities(entitiesmod.entities):
     pass
 
 class entitymeta(type):
@@ -167,16 +167,49 @@ class mapping(entities.entity):
     def value(self):
         if self._value is undef:
             if self.default is undef:
-                if self.type == builtins.str:
+                if self.type == types.str:
                     return ''
             else:
                 return self.default
         else:
+            if self.ispk and type(self._value) is bytes:
+                self._value = UUID(bytes=self._value)
+                
             return self._value
 
     @value.setter
     def value(self, v):
         self._value = v
 
+class orm:
+    def __init__(self):
+        self.mappings = None
+        self.isnew = False
+        self.isdirty = False
+        self.ismarkedfordeletion = False
+        self.entities = None
+        self.table = None
 
+    def clone(self):
+        r = orm()
 
+        for p in 'isnew', 'isdirty', 'ismarkedfordeletion', 'entities', 'table':
+            setattr(r, p, getattr(self, p))
+
+        r.mappings = self.mappings.clone(r)
+
+        return r
+
+    @property
+    def properties(self):
+        return [x.name for x in self.mappings]
+
+    @staticmethod
+    def getentitiessubclasses(cls=entities):
+        r = []
+
+        for subclass in cls.__subclasses__():
+            r.append(subclass)
+            r.extend(orm.getentitiessubclasses(subclass))
+
+        return r
