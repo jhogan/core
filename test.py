@@ -37,6 +37,19 @@ import re
 import io
 import orm
 
+class artists(orm.entities):
+    pass
+    
+class artist(orm.entity):
+    firstname = orm.mapping(str)
+    lastname = orm.mapping(str)
+
+class singers(artists):
+    pass
+
+class singer(artist):
+    pass
+    
 class test_orm(tester):
     
     def it_calls_id(self):
