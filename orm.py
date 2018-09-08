@@ -145,9 +145,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         return super().__dir__() + [x.name for x in self.orm.mappings]
 
     def __setattr__(self, attr, v):
-        # Need to handle 'epiphany' first, otherwise the code below that
-        # calls self.epiphany won't work.
-        if attr == 'epiphany':
+        # Need to handle 'orm' first, otherwise the code below that
+        # calls self.orm won't work.
+        if attr == 'orm':
             return object.__setattr__(self, attr, v)
 
         map = self.orm.mappings[attr]
