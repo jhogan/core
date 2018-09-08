@@ -51,11 +51,60 @@ class singer(artist):
     pass
     
 class test_orm(tester):
-    
-    def it_calls_id(self):
 
-        class person(orm.entity):
+    def __init__(self):
+        super().__init__()
+        artist.reCREATE()
+    
+    def it_calls_entities(self):
+        
+        # Creating a single orm.entity with no collection should produce an
+        # AttributeError
+        def fn():
+            class single(orm.entity):
+                firstname = orm.mapping(str)
+
+        self.expect(AttributeError, fn)
+
+        # Test explicit detection of orm.entities 
+        class bacteria(orm.entities):
             pass
+
+        class bacterium(orm.entity):
+            entities = bacteria
+            name = orm.mapping(str)
+
+        b = bacterium()
+        self.is_(b.orm.entities, bacteria)
+        self.eq(b.orm.table, 'bacteria')
+
+        # Test implicit entities detection based on naive pluralisation
+        art = artist()
+        self.is_(art.orm.entities, artists)
+        self.eq(art.orm.table, 'artists')
+
+        # Test implicit entities detection of entities subclass based on naive
+        # pluralisation
+        s = singer()
+        self.is_(s.orm.entities, singers)
+        self.eq(s.orm.table, 'singers')
+
+
+    def it_calls_RECREATE(self):
+        # TODO
+        pass
+
+    def it_calls_CREATE(self):
+        # TODO
+        pass
+
+    def it_calls_DROP(self):
+        # TODO
+        pass
+
+    def it_calls_id(self):
+        class person(orm.entity):
+            class persons(orm.entities): pass
 
         p = person()
 
@@ -66,6 +115,7 @@ class test_orm(tester):
     # Test str properties #
     def it_calls_str_property(self):
         class person(orm.entity):
+            class persons(orm.entities): pass
             firstname = orm.mapping(str)
 
         p = person()
@@ -78,6 +128,7 @@ class test_orm(tester):
     def it_calls_str_property_with_default(self):
         # Test where the default is None
         class person(orm.entity):
+            class persons(orm.entities): pass
             firstname = orm.mapping(str, default=None)
 
         p = person()
@@ -100,6 +151,7 @@ class test_orm(tester):
 
     def it_calls_str_propertys_setter(self):
         class person(orm.entity):
+            class persons(orm.entities): pass
             firstname = orm.mapping(str, default=None)
 
         p = person()
@@ -157,6 +209,96 @@ class test_orm(tester):
             p.firstname = v
             self.broken(p, 'firstname', 'full')
             self.one(p.brokenrules)
+
+    def it_calls_save(self):
+        art = artist()
+
+        # Test creating and retrieving an entity
+        # TODO Test more property types when they become available.
+        art.firstname = uuid4().hex
+        art.lastname  = uuid4().hex
+
+        self.true(art.orm.isnew)
+        self.false(art.orm.isdirty)
+
+        art.save()
+
+        self.false(art.orm.isnew)
+        self.false(art.orm.isdirty)
+
+        art1 = artist(art.id)
+
+        self.false(art1.orm.isnew)
+        self.false(art1.orm.isdirty)
+
+        for prop in art1.orm.properties:
+            self.eq(getattr(art, prop), getattr(art1, prop))
+
+        # Test changing, saving and retrieving an entity
+        art1.firstname = uuid4().hex
+        art1.lastname  = uuid4().hex
+
+        self.false(art1.orm.isnew)
+        self.true(art1.orm.isdirty)
+
+        # Ensure that changing art1's properties don't change art's. This
+        # problem is likely to not reoccure, but did come up in early
+        # development.
+        for prop in art.orm.properties:
+            if prop == 'id':
+                self.eq(getattr(art1, prop), getattr(art, prop))
+            else:
+                self.ne(getattr(art1, prop), getattr(art, prop))
+
+        art1.save()
+
+        self.false(art1.orm.isnew)
+        self.false(art1.orm.isdirty)
+
+        art2 = artist(art.id)
+
+        for prop in art2.orm.properties:
+            self.eq(getattr(art1, prop), getattr(art2, prop))
+
+    def it_fails_to_save_broken_entity(self):
+        art = artist()
+
+        art.firstname = 'x' * 256
+        self.broken(art, 'firstname', 'fits')
+
+        try:
+            art.save()
+        except Exception as ex:
+            self.type(brokenruleserror, ex)
+        else:
+            self.fail('Exception not thrown')
+
+    def it_hard_deletes(self):
+        art = artist()
+
+        art.firstname = uuid4().hex
+        art.lastname  = uuid4().hex
+        art.save()
+
+        art.delete()
+
+        self.true(art.orm.isnew)
+        self.false(art.orm.isdirty)
+        self.false(art.orm.ismarkedfordeletion)
+
+        self.expect(db.RecordNotFoundError, lambda: artist(art.id))
+
+    def it_assigns_and_retrives_unicode_values_from_str_properties(self):
+        # TODO
+        pass
+
+    def it_raises_exception_on_unknown_id(self):
+        try:
+            art = artist(uuid4())
+        except Exception as ex:
+            self.type(db.RecordNotFoundError, ex)
+        else:
+            self.fail('Exception not thrown')
 
     def it_calls_dir(self):
         # TODO Add more properties to test
