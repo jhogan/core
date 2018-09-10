@@ -46,11 +46,13 @@ class undef:
 
 class entities(entitiesmod.entities):
     pass
+        
 
 class entitymeta(type):
     def __new__(cls, name, bases, body):
         # If name == 'entity', the `class entity` statement is being executed.
         if name != 'entity':
+            ormmod = sys.modules['orm']
             orm_ = orm()
             orm_.mappings = mappings(orm_)
 
@@ -70,6 +72,7 @@ class entitymeta(type):
                     raise AttributeError(msg)
 
             orm_.entities = body['entities']
+            sub.orm = orm_
             del body['entities']
 
             try:
@@ -78,12 +81,16 @@ class entitymeta(type):
             except KeyError:
                 orm_.table = orm_.entities.__name__
 
-            body['id'] = mapping(name='id', type=types.pk)
-            for name1, map in body.items():
-                if not isinstance(map, mapping):
+            body['id'] = fieldmapping(name='id', type=types.pk)
+            for k, v in body.items():
+                if isinstance(v, mapping):
+                    map = v
+                elif hasattr(v, 'mro') and ormmod.entities in v.mro():
+                    map = entitiesmapping(k, v)
+                else:
                     continue
-                
-                map._name = name1
+               
+                map._name = k
                 orm_.mappings += map
 
             for map in orm_.mappings:
@@ -99,7 +106,12 @@ class entitymeta(type):
 
             body['orm'] = orm_
 
-        return super().__new__(cls, name, bases, body)
+        entity = super().__new__(cls, name, bases, body)
+
+        if name != 'entity':
+            orm_.entity = entity
+
+        return entity
 
 class entity(entitiesmod.entity, metaclass=entitymeta):
     def __init__(self, id=None):
@@ -340,16 +352,36 @@ class mappings(entitiesmod.entities):
 class mapping(entitiesmod.entity):
     ordinal = 0
 
+    def __init__(self, name=None):
+        self._name = name
+        mapping.ordinal += 1
+        self._ordinal = mapping.ordinal
+
+    @property
+    def name(self):
+        return self._name
+
+    def __str__(self):
+        r = '{}'
+
+        r = r.format(self.name)
+
+        return r
+    
+class entitiesmapping(mapping):
+    def __init__(self, name, e):
+        self.entities = e
+        super().__init__(name)
+
+class fieldmapping(mapping):
+
     def __init__(self, type, default=undef, max=undef, full=False, name=None):
         self._type = type
         self._value = undef
         self._default = default
         self._max = max
         self._full = full
-        self._name = name
-
-        mapping.ordinal += 1
-        self._ordinal = mapping.ordinal
+        super().__init__(name)
 
     def clone(self):
         map = mapping(
@@ -359,15 +391,10 @@ class mapping(entitiesmod.entity):
             self.full,
             self.name
         )
+
         map._value = self._value
+
         return map
-
-    def __str__(self):
-        r = '{}'
-
-        r = r.format(self.name)
-
-        return r
 
     @property
     def isstr(self):
@@ -401,10 +428,6 @@ class mapping(entitiesmod.entity):
         return self._type
 
     @property
-    def name(self):
-        return self._name
-
-    @property
     def value(self):
         if self._value is undef:
             if self.default is undef:
@@ -429,6 +452,7 @@ class orm:
         self.isdirty = False
         self.ismarkedfordeletion = False
         self.entities = None
+        self.entity = None
         self.table = None
 
     def clone(self):

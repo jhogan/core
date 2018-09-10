@@ -37,12 +37,19 @@ import re
 import io
 import orm
 
+class presentations(orm.entities):
+    pass
+
+class presentation(orm.entity):
+    name = orm.fieldmapping(str)
+
 class artists(orm.entities):
     pass
     
 class artist(orm.entity):
-    firstname = orm.mapping(str)
-    lastname = orm.mapping(str)
+    firstname = orm.fieldmapping(str)
+    lastname = orm.fieldmapping(str)
+    presentations = presentations
 
 class singers(artists):
     pass
@@ -56,6 +63,22 @@ class test_orm(tester):
         super().__init__()
         artist.reCREATE()
     
+    def it_saves_self_and_constituent(self):
+        art = artist()
+        art.firstname = uuid4().hex
+        art.lastname = uuid4().hex
+
+        ps += presentation()
+
+        for i in range(2):
+            p = presentation()
+            p.name = uuid4().hex
+            ps += p
+        
+        art.presentations += ps
+
+        art.save()
+
     def it_calls_entities(self):
         
         # Creating a single orm.entity with no collection should produce an
