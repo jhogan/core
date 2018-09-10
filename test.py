@@ -313,7 +313,14 @@ class test_orm(tester):
 
     def it_assigns_and_retrives_unicode_values_from_str_properties(self):
         # TODO
-        pass
+        return
+        art = artist()
+
+        art.firstname = bytes("\N{GREEK CAPITAL LETTER DELTA}", 'utf-8').decode()
+        art.lastname  = bytes("\N{GREEK CAPITAL LETTER DELTA}", 'utf-8').decode()
+        art.save()
+
+        art1 = artist(art.id)
 
     def it_raises_exception_on_unknown_id(self):
         try:
