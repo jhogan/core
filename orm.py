@@ -40,13 +40,33 @@ class types(Enum):
     str = 0
     int = 1
     pk  = 2
+    fk  = 3
 
 class undef:
     pass
 
 class entities(entitiesmod.entities):
-    pass
-        
+    
+    def load(self, p1, p2):
+
+        # TODO Implement full WHERE and ARGS
+        # Assume an equality test (p1 == p2)
+        where, args = p1 + ' =%s', (p2, )
+
+        sql = 'select * from %s where %s;' % (self.orm.table, where)
+
+        # TODO Make db.pool variant
+        # TODO Make atomic
+        pool = db.pool.getdefault()
+
+        with pool.take() as conn:
+            cur = conn.createcursor()
+            cur.execute(sql, args)
+
+        ress = db.dbresultset(cur)
+
+        for res in ress:
+            self += self.orm.entity(res)
 
 class entitymeta(type):
     def __new__(cls, name, bases, body):
@@ -54,7 +74,7 @@ class entitymeta(type):
         if name != 'entity':
             ormmod = sys.modules['orm']
             orm_ = orm()
-            orm_.mappings = mappings(orm_)
+            orm_.mappings = mappings(orm=orm_)
 
             try:
                 body['entities']
@@ -67,12 +87,13 @@ class entitymeta(type):
                         body['entities'] = sub
                         break
                 else:
-                    msg = "Entities class coudn't be found. "
+                    msg =  "Entities class coudn't be found. "
                     msg += "Either specify one or define one with a predictable name"
                     raise AttributeError(msg)
 
             orm_.entities = body['entities']
-            sub.orm = orm_
+            orm_.entities.orm = orm_
+
             del body['entities']
 
             try:
@@ -81,11 +102,12 @@ class entitymeta(type):
             except KeyError:
                 orm_.table = orm_.entities.__name__
 
-            body['id'] = fieldmapping(name='id', type=types.pk)
+            body['id'] = primarykeyfieldmapping()
             for k, v in body.items():
                 if isinstance(v, mapping):
                     map = v
                 elif hasattr(v, 'mro') and ormmod.entities in v.mro():
+                    orm_.constituents.append(v.orm.entity)
                     map = entitiesmapping(k, v)
                 else:
                     continue
@@ -102,7 +124,7 @@ class entitymeta(type):
 
             # The id will be the last elment, so pop it off and unshift so it's
             # always the first element
-            orm_.mappings << orm_.mappings.pop()
+            orm_.mappings << orm_.mappings.pop('id')
 
             body['orm'] = orm_
 
@@ -111,35 +133,59 @@ class entitymeta(type):
         if name != 'entity':
             orm_.entity = entity
 
+            # For each of this class's constituents, add this class to their
+            # composite's list
+            for const in orm_.constituents:
+                const.orm.composites.append(entity)
+
+                # Insert foreignkeyfieldmapping into the constituent's mappings
+                # collection right after the id
+                const.orm.mappings.insertafter(0, foreignkeyfieldmapping(entity))
+
         return entity
 
 class entity(entitiesmod.entity, metaclass=entitymeta):
-    def __init__(self, id=None):
+    def __init__(self, o=None):
         self.orm = self.orm.clone()
-        self.orm.mappings.entity = self
+        self.orm.instance = self
 
-        if id is None:
+        self.onbeforesave = entitiesmod.event()
+        self.onaftersave = entitiesmod.event()
+
+        if o is None:
             self.orm.isnew = True
             self.orm.isdirty = False
             self.id = uuid4()
         else:
-            sql = 'select * from {} where id = %s'
-            sql = sql.format(self.orm.table)
+            if type(o) is UUID:
+                id = o
+                sql = 'select * from {} where id = %s'
+                sql = sql.format(self.orm.table)
 
-            args = id.bytes,
+                args = id.bytes,
 
-            # TODO Make db.pool varient
-            pool = db.pool.getdefault()
+                # TODO Make db.pool variant
+                # TODO Make atomic
+                pool = db.pool.getdefault()
 
-            with pool.take() as conn:
-                cur = conn.createcursor()
-                cur.execute(sql, args)
+                with pool.take() as conn:
+                    cur = conn.createcursor()
+                    cur.execute(sql, args)
 
-            ress = db.dbresultset(cur)
-            ress.demandhasone()
-            res = ress.first
+                ress = db.dbresultset(cur)
+                ress.demandhasone()
+                res = ress.first
+            elif type(o) is db.dbresult:
+                res = o
+            else:
+                raise ValueError()
+
             for map in self.orm.mappings:
+                if not isinstance(map, fieldmapping):
+                    continue
+
                 map.value = res[map.name]
+
 
             self.orm.isnew = False
             self.orm.isdirty = False
@@ -162,7 +208,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         if attr == 'orm':
             return object.__setattr__(self, attr, v)
 
-        map = self.orm.mappings[attr]
+        map = self.orm.mappings(attr)
 
         if map is None:
             return object.__setattr__(self, attr, v)
@@ -179,7 +225,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             self._setvalue(attr, v, attr, setattr)
 
     @classmethod
-    def reCREATE(cls):
+    def reCREATE(cls, recursive=False):
         pool = db.pool.getdefault()
 
         with pool.take() as conn:
@@ -196,6 +242,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     if errno != BAD_TABLE_ERROR: # 1051
                         raise
                 cls.CREATE(cur)
+
+                if recursive:
+                    for map in cls.orm.mappings:
+                        if not isinstance(map, entitiesmapping):
+                            continue
+                        map.entities.orm.entity.reCREATE(recursive=True)
             except:
                 conn.rollback()
             else:
@@ -227,14 +279,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         self.orm.ismarkedfordeletion = True
         self.save()
 
-    def save(self):
+    def save(self, cur=None):
         # TODO Make transactions atomic
         # TODO Add reconnect logic
 
         if not self.isvalid:
             raise db.brokenruleserror("Can't save invalid object" , self)
-
-        pool = db.pool.getdefault()
 
         if self.orm.ismarkedfordeletion:
             sql, args = self.orm.mappings.getdelete()
@@ -243,22 +293,51 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         elif self.orm.isdirty:
             sql, args = self.orm.mappings.getupdate()
         else:
-            raise ValueError()
+            sql, args = [None] * 2
 
-        with pool.take() as conn:
-            cur = conn.createcursor()
-            cur.execute(sql, args)
-            conn.commit()
+        def execute():
+            if sql:
+                self.onbeforesave(self, self)
+                cur.execute(sql, args)
+                self.onbeforesave(self, self)
+                self.orm.isnew = self.orm.ismarkedfordeletion
+                self.orm.ismarkedfordeletion = False
+                self.orm.isdirty = False
 
-        self.orm.isnew = self.orm.ismarkedfordeletion
-        self.orm.ismarkedfordeletion = False
-        self.orm.isdirty = False
+        if cur:
+            execute()
+        else:
+            pool = db.pool.getdefault()
+            with pool.take() as conn:
+                cur = conn.createcursor()
+                execute()
+
+                # For each of the constituent entities classes mapped to self,
+                # set the foreignkeyfieldmapping to the id of self, i.e., give
+                # the child objects the value of the parent id for their
+                # foreign keys
+                for map in self.orm.mappings:
+                    if type(map) is not entitiesmapping:
+                        continue
+
+                    es = map.value
+
+                    # es is None if the constituent hasn't been loaded,
+                    # so conditionally iterate
+                    if es:
+                        for e in es:
+                            for map in e.orm.mappings:
+                                if type(map) is foreignkeyfieldmapping:
+                                    if map.entity is self.orm.entity:
+                                        map.value = self.id
+                        # TODO Shouldn't this be indent one more time?
+                        e.save(cur)
+                conn.commit()
         
     @property
     def brokenrules(self):
         brs = entitiesmod.brokenrules()
-        for map in self.orm.mappings:
-
+        for map in self.orm.mappings.where(fieldmapping):
             if map.type == types.str:
                 if map.max is undef:
                     if map.value is not None:
@@ -275,17 +354,61 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         map = None
 
         if attr != 'orm' and self.orm.mappings:
-            map = self.orm.mappings[attr]
+            map = self.orm.mappings(attr)
+
+        # Lazy-load constituent entities map
+        if type(map) is entitiesmapping:
+            if map.value is None:
+                map.value = map.entities()
+                if not self.orm.isnew:
+                    for map1 in map.entities.orm.mappings:
+                        if type(map1) is not foreignkeyfieldmapping:
+                            continue
+                        if map1.entity is self.orm.entity:
+                            break
+                    else:
+                        raise ValueError('FK map not found for entity')
+
+                    map.value.load(map1.name, self.id.bytes)
+
+                # TODO The below should be a new mapping; not an attribute
+                # Assign the composite reference to the constituent
+                # I.e., art.presentations.artist = art
+                setattr(map.value, self.orm.entity.__name__, self)
 
         if map is None:
             return object.__getattribute__(self, attr)
 
         return map.value
 
+    def __str__(self):
+        # TODO Write tests
+
+        tbl = table()
+
+        r = tbl.newrow()
+        r.newfield('property')
+        r.newfield('value')
+
+        for map in self.orm.mappings:
+            r = tbl.newrow()
+            if type(map) in (primarykeyfieldmapping, foreignkeyfieldmapping):
+                if type(map.value) is UUID:
+                    v = map.value.hex[:7]
+                else:
+                    v = str(map.value)
+            else:
+                v = str(map.value)
+
+            r.newfield(map.name)
+            r.newfield(v)
+
+        return str(tbl)
+
 class mappings(entitiesmod.entities):
-    def __init__(self, orm):
+    def __init__(self, initial=None, orm=None):
         self._orm = orm
-        super().__init__(self)
+        super().__init__(initial)
 
     @property
     def orm(self):
@@ -294,22 +417,43 @@ class mappings(entitiesmod.entities):
     @property
     def createtable(self):
         r = 'create table ' + self.orm.table + '(\n'
-        for i, map in enumerate(self):
+        i = 0
+
+        for map in self:
+            if not isinstance(map, fieldmapping):
+                continue
+
             if i:
                 r += ',\n'
+            i += 1
+
             r += '    ' + map.name
 
-            if map.isstr:
-                # TODO: OPT: Shouldn't this be char(16) instead of varchar(16)
-                r += ' varchar(' + str(map.max) + ')'
-            elif map.ispk:
+            if type(map) is fieldmapping:
+                if map.isstr:
+                    # TODO: OPT: Shouldn't this be char(16) instead of varchar(16)
+                    r += ' varchar(' + str(map.max) + ')'
+            elif type(map) is primarykeyfieldmapping:
                 r += ' binary(16) primary key'
+            elif type(map) is foreignkeyfieldmapping:
+                r += ' binary(16)'
+
         r += '\n);'
         return r
 
+
     def getinsert(self):
-        sql = 'insert into {} values({})' \
-            .format(self.orm.table, ('%s, ' * self.count).rstrip(', '))
+
+        tbl = self.orm.table
+
+        placeholder = ''
+        for map in self:
+            if isinstance(map, fieldmapping):
+                placeholder += '%s, '
+
+        placeholder = placeholder.rstrip(', ')
+
+        sql = 'insert into {} values({})'.format(tbl, placeholder)
 
         return sql, self._getargs()
 
@@ -337,17 +481,19 @@ class mappings(entitiesmod.entities):
     def _getargs(self):
         r = []
         for map in self:
-            value = map.value
-            if isinstance(value, UUID):
-                value = value.bytes
-            r.append(value)
+            if isinstance(map, fieldmapping):
+                if type(map) in (primarykeyfieldmapping, foreignkeyfieldmapping):
+                    r.append(map.value.bytes)
+                else:
+                    r.append(map.value)
         return r
 
     def clone(self, orm_):
-        r = mappings(orm_)
+        r = mappings(orm=orm_)
         for map in self:
             r += map.clone()
         return r
+
 
 class mapping(entitiesmod.entity):
     ordinal = 0
@@ -369,9 +515,21 @@ class mapping(entitiesmod.entity):
         return r
     
 class entitiesmapping(mapping):
-    def __init__(self, name, e):
-        self.entities = e
+    def __init__(self, name, es):
+        self.entities = es
+        self._value = None
         super().__init__(name)
+
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, v):
+        self._setvalue('_value', v, 'value')
+
+    def clone(self):
+        return entitiesmapping(self.name, self.entities)
 
 class fieldmapping(mapping):
 
@@ -384,7 +542,7 @@ class fieldmapping(mapping):
         super().__init__(name)
 
     def clone(self):
-        map = mapping(
+        map = fieldmapping(
             self.type,
             self.default,
             self.max,
@@ -401,10 +559,6 @@ class fieldmapping(mapping):
         return self.type == types.str
 
     @property
-    def ispk(self):
-        return self.type == types.pk
-
-    @property
     def full(self):
         return self._full
 
@@ -414,7 +568,7 @@ class fieldmapping(mapping):
 
     @property
     def max(self):
-        if self.type == types.str:
+        if self.type is types.str:
             if self._max is undef:
                 return 255
             else:
@@ -435,15 +589,58 @@ class fieldmapping(mapping):
                     return ''
             else:
                 return self.default
-        else:
-            if self.ispk and type(self._value) is bytes:
-                self._value = UUID(bytes=self._value)
-                
-            return self._value
+        return self._value
 
     @value.setter
     def value(self, v):
         self._value = v
+
+class foreignkeyfieldmapping(fieldmapping):
+    def __init__(self, e):
+        self.entity = e
+        self.value = None
+        super().__init__(type=types.fk)
+
+    @property
+    def name(self):
+        return self.entity.__name__ + 'id'
+
+    def clone(self):
+        return foreignkeyfieldmapping(self.entity)
+
+    @property
+    def value(self):
+        if type(self._value) is bytes:
+            self._value = UUID(bytes=self._value)
+            
+        return self._value
+
+    @value.setter
+    def value(self, v):
+        self._value = v
+
+class primarykeyfieldmapping(fieldmapping):
+    def __init__(self):
+        super().__init__(type=types.pk)
+
+    @property
+    def name(self):
+        return 'id'
+
+    def clone(self):
+        return primarykeyfieldmapping()
+
+    @property
+    def value(self):
+        if type(self._value) is bytes:
+            self._value = UUID(bytes=self._value)
+            
+        return self._value
+
+    @value.setter
+    def value(self, v):
+        self._value = v
+
 
 class orm:
     def __init__(self):
@@ -454,12 +651,20 @@ class orm:
         self.entities = None
         self.entity = None
         self.table = None
+        self.composites = []
+        self.constituents = []
 
     def clone(self):
         r = orm()
 
-        for p in 'isnew', 'isdirty', 'ismarkedfordeletion', 'entities', 'table':
-            setattr(r, p, getattr(self, p))
+        props = (
+            'isnew',       'isdirty',      'ismarkedfordeletion',
+            'entity',      'entities',     'table',
+            'composites',  'constituents',
+        )
+
+        for prop in props: 
+            setattr(r, prop, getattr(self, prop))
 
         r.mappings = self.mappings.clone(r)
 
@@ -478,3 +683,22 @@ class orm:
             r.extend(orm.getentitiessubclasses(subclass))
 
         return r
+
+    @property
+    def parents(self):
+        # TODO Delete?
+        B()
+        r = []
+        for sub in self.getentitiessubclasses():
+            for map in sub.orm.entity.orm.mappings:
+                if not isinstance(map, entitiesmapping):
+                    continue
+
+                if map.entities is self.entities:
+                    r.append(sub.orm.entity)
+                    break
+        return r
+
+class saveeventargs(entitiesmod.eventargs):
+    def __init__(self, e):
+        self.entity = e

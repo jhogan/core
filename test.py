@@ -61,23 +61,145 @@ class test_orm(tester):
 
     def __init__(self):
         super().__init__()
-        artist.reCREATE()
+        artist.reCREATE(recursive=True)
     
-    def it_saves_self_and_constituent(self):
+    def it_has_static_composites_reference(self):
+        comps = presentation.orm.composites
+        self.one(comps)
+        self.is_(comps[0], artist)
+
+    def it_has_static_constituents_reference(self):
+        comps = artist.orm.constituents
+        self.one(comps)
+        self.is_(comps[0], presentation)
+
+    def it_has_broken_rules_of_constituents(self):
+        # TODO
+        pass
+
+    def it_saves_entities(self):
+        # TODO
+        return
+        arts = artists()
+        arts += artist()
+        arts += artist()
+        arts.save()
+    
+    def it_doesnt_needlessly_save(self):
+        
+        cnt = 0
+        def art_onaftersave(src, eargs):
+            B()
+            cnt += 1
+
         art = artist()
         art.firstname = uuid4().hex
         art.lastname = uuid4().hex
+        art.onaftersave += art_onaftersave
 
-        ps += presentation()
+        B()
+        art.save()
+            
 
-        for i in range(2):
-            p = presentation()
-            p.name = uuid4().hex
-            ps += p
-        
-        art.presentations += ps
+
+    def it_loads_and_saves_constituents(self):
+        # Ensure that a new composite has a constituent object with zero
+        # elements
+        art = artist()
+        self.zero(art.presentations)
+
+        # Ensure a saved composite object with zero elements in a constiuent
+        # collection loads with zero the constiuent collection containing zero
+        # elements.
+        art.firstname = uuid4().hex
+        art.lastname = uuid4().hex
+
+        self.is_(art.presentations.artist, art)
+        self.zero(art.presentations)
 
         art.save()
+        self.is_(art.presentations.artist, art)
+        self.zero(art.presentations)
+
+        art = artist(art.id)
+        self.zero(art.presentations)
+        self.is_(art.presentations.artist, art)
+
+        # Create some presentations within artist, save artist, reload and test
+        art = artist()
+        art.presentations += presentation()
+        art.presentations += presentation()
+
+        for pres in art.presentations:
+            pres.name = uuid4().hex
+
+        art.save()
+
+        art1 = artist(art.id)
+        self.two(art1.presentations)
+
+        for pres, pres1 in zip(art.presentations, art1.presentations):
+            for prop in pres.orm.properties:
+                self.eq(getattr(pres, prop), getattr(pres1, prop))
+            
+            # TODO
+            # self.is_(art1, pres1.artist)
+
+
+    def it_updates_constituents_properties(self):
+        art = artist()
+        art.presentations += presentation()
+        art.presentations += presentation()
+
+        for pres in art.presentations:
+            pres.name = uuid4().hex
+
+        art.save()
+
+        art1 = artist(art.id)
+        for pres in art1.presentations:
+            pres.name = uuid4().hex
+
+        art1.save()
+
+        art2 = artist(art.id)
+        press = (art.presentations, art1.presentations, art2.presentations)
+        for pres, pres1, pres2 in zip(*press):
+            # Make sure the properties were change
+            self.ne(getattr(pres2, 'name'), getattr(pres,  'name'))
+
+            # Make user art1.presentations props match those of art2
+            self.eq(getattr(pres2, 'name'), getattr(pres1, 'name'))
+
+    def it_loads_and_saves_entity_constituent(self):
+        # TODO
+        return
+        # Make sure the constituent is None for new composites
+        pres = presentation()
+        pres.name = uuid4().hex
+        self.none(pres.artist)
+
+        pres.save()
+
+        # Make sure it loads an entity constituent of None
+        pres = presentation(pres.id)
+        self.none(pres.artist)
+
+        # Save and load entity constituent
+        pres = presentation()
+        pres.name = uuid4().hex
+        pres.artist = artist()
+        pres.artist.firstname = uuid4().hex
+        pres.artist.last = uuid4().hex
+        pres.save()
+
+        pres1 = presentation(pres.id)
+        self.eq(pres.artist.id, pres1.artist.id)
+
+
+    def it_rollsback_save_with_broken_constituents(self):
+        # TODO
+        pass
 
     def it_calls_entities(self):
         
@@ -85,7 +207,7 @@ class test_orm(tester):
         # AttributeError
         def fn():
             class single(orm.entity):
-                firstname = orm.mapping(str)
+                firstname = orm.fieldmapping(str)
 
         self.expect(AttributeError, fn)
 
@@ -95,7 +217,7 @@ class test_orm(tester):
 
         class bacterium(orm.entity):
             entities = bacteria
-            name = orm.mapping(str)
+            name = orm.fieldmapping(str)
 
         b = bacterium()
         self.is_(b.orm.entities, bacteria)
@@ -112,7 +234,6 @@ class test_orm(tester):
         self.is_(s.orm.entities, singers)
         self.eq(s.orm.table, 'singers')
 
-
     def it_calls_RECREATE(self):
         # TODO
         pass
@@ -126,6 +247,7 @@ class test_orm(tester):
         pass
 
     def it_calls_id(self):
+        B()
         class person(orm.entity):
             class persons(orm.entities): pass
 
@@ -139,7 +261,7 @@ class test_orm(tester):
     def it_calls_str_property(self):
         class person(orm.entity):
             class persons(orm.entities): pass
-            firstname = orm.mapping(str)
+            firstname = orm.fieldmapping(str)
 
         p = person()
 
@@ -152,7 +274,7 @@ class test_orm(tester):
         # Test where the default is None
         class person(orm.entity):
             class persons(orm.entities): pass
-            firstname = orm.mapping(str, default=None)
+            firstname = orm.fieldmapping(str, default=None)
 
         p = person()
 
@@ -163,7 +285,7 @@ class test_orm(tester):
         # Test where the default is a random string
         guid = uuid4().hex
         class person(orm.entity):
-            firstname = orm.mapping(str, default=guid)
+            firstname = orm.fieldmapping(str, default=guid)
 
         p = person()
 
@@ -175,7 +297,7 @@ class test_orm(tester):
     def it_calls_str_propertys_setter(self):
         class person(orm.entity):
             class persons(orm.entities): pass
-            firstname = orm.mapping(str, default=None)
+            firstname = orm.fieldmapping(str, default=None)
 
         p = person()
 
@@ -195,7 +317,8 @@ class test_orm(tester):
         # Without specifying a default, the string should be no longer than
         # 255 in len().
         class person(orm.entity):
-            firstname = orm.mapping(str)
+            class persons(orm.entities): pass
+            firstname = orm.fieldmapping(str)
 
         p = person()
 
@@ -209,7 +332,7 @@ class test_orm(tester):
         # Specify a max
         max = 123
         class person(orm.entity):
-            firstname = orm.mapping(str, max=max)
+            firstname = orm.fieldmapping(str, max=max)
 
         p = person()
 
@@ -225,7 +348,8 @@ class test_orm(tester):
         # Without specifying a default, the string should be no longer than
         # 255 in len().
         class person(orm.entity):
-                firstname = orm.mapping(str, full=True)
+            class persons(orm.entities): pass
+            firstname = orm.fieldmapping(str, full=True)
 
         p = person()
         for v in [None, '', ' \t\n']:
@@ -333,7 +457,8 @@ class test_orm(tester):
     def it_calls_dir(self):
         # TODO Add more properties to test
         class person(orm.entity):
-            firstname = orm.mapping(str)
+            class persons(orm.entities): pass
+            firstname = orm.fieldmapping(str)
 
         # Make sure mapped properties show are returned when dir() is called 
         d = dir(person())
