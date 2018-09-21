@@ -245,9 +245,14 @@ class entities(object):
         if ix == None: 
             e = self.last
             self._ls.pop()
-        else:
+        elif type(ix) is int:
             e = self[ix]
             self._ls.pop(ix)
+        elif type(ix) is str:
+            ix = self.getindex(ix)
+            e = self[ix]
+            self._ls.pop(ix)
+
         self.onremove(self, entityremoveeventargs(e))
         return e
 
@@ -438,14 +443,12 @@ class entities(object):
         if type(key) == int or type(key) == slice:
             return self._ls[key]
 
-        for e in self._ls:
-            if hasattr(e, 'id'):
-                if e.id == key:   return e
-            elif hasattr(e, 'name'):
-                if e.name == key: return e
+        try:
+            ix = self.getindex(key)
+        except ValueError as ex:
+            raise IndexError(str(ex))
 
-        # TODO If hasattr(e, 'id') or hasattr(e, 'name'), shouldn't
-        # we raise a KeyError here.
+        return self[ix]
 
     def getindex(self, e):
         """ Return the first index of e in the collection.
@@ -456,9 +459,19 @@ class entities(object):
         # TODO:OPT We may be able to cache this and invalidate the cache using
         # the standard events
 
-        for ix, e1 in enumerate(self):
-            if e is e1: return ix
-        raise ValueError("'{}' is not in the collection " + repr(e))
+        if isinstance(e, entity):
+            for ix, e1 in enumerate(self):
+                if e is e1: return ix
+        elif type(e) is str:
+            # TODO Write test
+            for i, e1 in enumerate(self._ls):
+                if hasattr(e1, 'id'):
+                    if e1.id == e:   return i
+                elif hasattr(e1, 'name'):
+                    if e1.name == e: return i
+
+        # Raise ValueError in imitation of list.index()'s behavior
+        raise ValueError("'{}' is not in the collection".format(e))
 
     @property
     def first(self): 
