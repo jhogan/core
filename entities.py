@@ -651,14 +651,23 @@ class brokenrules(entities):
             if v == None or not re.match(pattern, v):
                 self += brokenrule(prop + ' is invalid', prop, 'valid')
 
-        if max != None:
-            if v != None and len(v) > max:
+        if max is not None:
+            try:
+                broke = len(v) > max
+            except TypeError:
+                # If len(v) raises a TypeError then v's length can't be determined
+                # because it is the wrong type (perhaps it's an int). Silently ignore.
+                # It is the calling code's responsibility to ensure the correct type
+                # is passed in for the cases where the 'type' argument is False.
+                pass
+            else:
                 # property can only break the 'fits' rule if it hasn't broken
                 # the 'full' rule. E.g., a property can be a string of
                 # whitespaces which may break the 'full' rule. In that case,
                 # a broken 'fits' rule would't make sense.
-                if not self.contains(prop, 'full'):
-                    self += brokenrule(prop + ' is too lengthy', prop, 'fits')
+                if broke:
+                    if not self.contains(prop, 'full'):
+                        self += brokenrule(prop + ' is too lengthy', prop, 'fits')
 
         if isdate:
             if builtins.type(v) != datetime:
