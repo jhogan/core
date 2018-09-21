@@ -2807,6 +2807,9 @@ class test_index(tester):
         # Ensure that it has been removed.
         self.assertTrue(ix(str).isempty)
 
+        # TODO
+        # Test the return value from the remove() method
+
     def it_calls_move(self):
         ks = knights.createthe4()
         ix = ks.indexes['traittype']

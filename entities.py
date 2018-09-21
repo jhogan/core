@@ -229,6 +229,8 @@ class entities(object):
                     self.onremove(self, entityremoveeventargs(rm))
                     break
 
+        return type(self)(rms)
+
     def __isub__(self, e):
         self.remove(e)
         return self
