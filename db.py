@@ -427,8 +427,7 @@ class pool(entity):
             pool._default._in += connections.getinstance().default.clone()
         return pool._default
 
-    @contextmanager
-    def take(self):
+    def pull(self):
         conn = self._in.pop()
 
         # Grow as needed
@@ -436,9 +435,16 @@ class pool(entity):
             conn = self._out.last.clone()
 
         self._out += conn
+
+        return conn
+
+    def push(self, conn):
+        self._in += self._out.remove(conn)
+
+    @contextmanager
+    def take(self):
+        conn = self.pull()
+
         yield conn
 
-        self._in += self._out.pop()
-
-        
-
+        self.push(conn)
