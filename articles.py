@@ -29,8 +29,6 @@ from entities import brokenrules, brokenrule, entity
 from entities import entities, event, eventargs, demand
 from MySQLdb.constants.ER import DUP_ENTRY
 from parties import user, users, person, persons
-from pdb import set_trace; B=set_trace
-from pprint import pprint
 from table import table
 from html.parser import HTMLParser
 from hashlib import md5

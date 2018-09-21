@@ -46,6 +46,10 @@ class undef:
     pass
 
 class entities(entitiesmod.entities):
+    # TODO Make atomic
+    def save(self):
+        for e in self:
+            e.save()
     
     def load(self, p1, p2):
 
@@ -280,8 +284,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         self.save()
 
     def save(self, cur=None):
-        # TODO Make transactions atomic
         # TODO Add reconnect logic
+        # TODO Ensure connection is active
 
         if not self.isvalid:
             raise db.brokenruleserror("Can't save invalid object" , self)
@@ -293,61 +297,127 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         elif self.orm.isdirty:
             sql, args = self.orm.mappings.getupdate()
         else:
-            sql, args = [None] * 2
+            sql, args = (None,) * 2
 
-        def execute():
-            if sql:
-                self.onbeforesave(self, self)
-                cur.execute(sql, args)
-                self.onbeforesave(self, self)
-                self.orm.isnew = self.orm.ismarkedfordeletion
-                self.orm.ismarkedfordeletion = False
-                self.orm.isdirty = False
-
-        if cur:
-            execute()
-        else:
-            pool = db.pool.getdefault()
-            with pool.take() as conn:
+        try:
+            # If we cur wasn't passed in, get a conn from the default
+            # pool and create a curson
+            if not cur:
+                pool = db.pool.getdefault()
+                conn = pool.pull()
                 cur = conn.createcursor()
-                execute()
+            else:
+                # cur was passed in. Set conn to None so indicate there is no
+                # need to call conn.save() or conn.rollback() in this frame
+                # (see below). The frame at the top of the stack will rollback
+                # or commit the transaction.
+                conn = None
 
-                # For each of the constituent entities classes mapped to self,
-                # set the foreignkeyfieldmapping to the id of self, i.e., give
-                # the child objects the value of the parent id for their
-                # foreign keys
-                for map in self.orm.mappings:
-                    if type(map) is not entitiesmapping:
-                        continue
+            # Take snapshop of before state
+            n, d, r = (self.orm.isnew,                  
+                        self.orm.isdirty,             
+                        self.orm.ismarkedfordeletion)
 
-                    es = map.value
+            if sql:
+                # Issue the query
 
-                    # es is None if the constituent hasn't been loaded,
-                    # so conditionally iterate
-                    if es:
-                        for e in es:
-                            for map in e.orm.mappings:
-                                if type(map) is foreignkeyfieldmapping:
-                                    if map.entity is self.orm.entity:
-                                        map.value = self.id
-                        # TODO Shouldn't this be indent one more time?
-                        e.save(cur)
+                # Raise event
+                self.onbeforesave(self, self)
+
+                cur.execute(sql, args)
+
+                # Update new state
+                self.orm.isnew = self.orm.ismarkedfordeletion
+                self.orm.isdirty, self.orm.ismarkedfordeletion = (False,) * 2
+
+                # Raise event
+                self.onaftersave(self, self)
+            else:
+                # If there is no sql, then the entity isn't new, dirty or 
+                # marked for deletion. In that case, don't save. However, 
+                # allow any constituents to be saved.
+                pass
+
+            # For each of the constituent entities classes mapped to self,
+            # set the foreignkeyfieldmapping to the id of self, i.e., give
+            # the child objects the value of the parent id for their
+            # foreign keys
+            for map in self.orm.mappings:
+                if type(map) is not entitiesmapping:
+                    continue
+
+                es = map.value
+
+                # es is None if the constituent hasn't been loaded,
+                # so conditionally save()
+                if es:
+                    # Take snapshot of states
+                    sts = []
+                    for e in es:
+                        sts.append((e.orm.isnew,                  
+                                    e.orm.isdirty,             
+                                    e.orm.ismarkedfordeletion))
+
+                    # Iterate over each entity and save them individually
+                    for e in es:
+                        
+                        # Set the entity's FK to self.id value
+                        for map in e.orm.mappings:
+                            if type(map) is foreignkeyfieldmapping:
+                                if map.entity is self.orm.entity:
+                                    map.value = self.id
+                                    break
+
+                        # Call save(). If there is an Exception, restore state then
+                        # re-raise
+                        try:
+                            e.save(cur)
+                        except Exception as ex:
+                            # Restore states
+                            for st, e in zip(sts, es):
+                                e.orm.isnew,   \
+                                e.orm.isdirty, \
+                                e.orm.ismarkedfordeletion = st
+
+                            raise
+
+        except Exception as ex:
+            self.orm.isnew,   \
+            self.orm.isdirty, \
+            self.orm.ismarkedfordeletion = n, d, r
+
+            if conn:
+                conn.rollback()
+            raise
+        else:
+            if conn:
                 conn.commit()
+        finally:
+            if conn:
+                cur.close()
+                pool.push(conn)
         
     @property
     def brokenrules(self):
         brs = entitiesmod.brokenrules()
-        for map in self.orm.mappings.where(fieldmapping):
-            if map.type == types.str:
-                if map.max is undef:
-                    if map.value is not None:
-                        brs.demand(self, map.name, max=255)
-                else:
-                    brs.demand(self, map.name, max=map.max)
+        for map in self.orm.mappings:
+            if type(map) is fieldmapping:
+                if map.type == types.str:
+                    brs.demand(self, map.name, type=str)
+                    if map.max is undef:
+                        if map.value is not None:
+                            brs.demand(self, map.name, max=255)
+                    else:
+                        brs.demand(self, map.name, max=map.max)
 
-                if map.full:
-                    brs.demand(self, map.name, full=True)
-                        
+                    if map.full:
+                        brs.demand(self, map.name, full=True)
+
+            elif type(map) is entitiesmapping:
+                es = map.value
+                if es:
+                    brs += es.brokenrules
+
         return brs
 
     def __getattribute__(self, attr):
@@ -359,21 +429,26 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # Lazy-load constituent entities map
         if type(map) is entitiesmapping:
             if map.value is None:
-                map.value = map.entities()
+                es = map.entities()
                 if not self.orm.isnew:
                     for map1 in map.entities.orm.mappings:
-                        if type(map1) is not foreignkeyfieldmapping:
-                            continue
-                        if map1.entity is self.orm.entity:
-                            break
+                        if type(map1) is foreignkeyfieldmapping:
+                            if map1.entity is self.orm.entity:
+                                break
                     else:
                         raise ValueError('FK map not found for entity')
 
-                    map.value.load(map1.name, self.id.bytes)
+                    es.load(map1.name, self.id.bytes)
 
-                # TODO The below should be a new mapping; not an attribute
+                    # Assign the composite reference to the constituent's
+                    # elements:
+                    #   i.e., art.presentations.first.artist = art
+                    for e in es:
+                        setattr(e, self.orm.entity.__name__, self)
+                map.value = es
+
                 # Assign the composite reference to the constituent
-                # I.e., art.presentations.artist = art
+                #   i.e., art.presentations.artist = art
                 setattr(map.value, self.orm.entity.__name__, self)
 
         if map is None:
@@ -458,18 +533,25 @@ class mappings(entitiesmod.entities):
         return sql, self._getargs()
 
     def getupdate(self):
-        tbl = self.orm.table
-        sets = ', '.join([x.name + '=%s' for x in  self if x.name != 'id']).rstrip(', ')
+        set = ''
+        for map in self:
+            if isinstance(map, fieldmapping):
+                if isinstance(map, primarykeyfieldmapping):
+                    id = map.value.bytes
+                else:
+                    set += '%s = %%s, ' % (map.name,)
+
+        set = set[:-2]
 
         sql = """
         update {}
         set {}
         where id = %s;
-        """.format(tbl, sets)
+        """.format(self.orm.table, set)
 
         args = self._getargs()
 
-        # Put id argument at end
+        # Move the id value from the bottom to the top
         args.append(args.pop(0))
         return sql, args
 
@@ -533,7 +615,7 @@ class entitiesmapping(mapping):
 
 class fieldmapping(mapping):
 
-    def __init__(self, type, default=undef, max=undef, full=False, name=None):
+    def __init__(self, type, default=undef, max=undef, full=undef, name=None):
         self._type = type
         self._value = undef
         self._default = default
@@ -560,6 +642,9 @@ class fieldmapping(mapping):
 
     @property
     def full(self):
+        if self._full is undef:
+            self._full = False
+        
         return self._full
 
     @property
@@ -586,7 +671,7 @@ class fieldmapping(mapping):
         if self._value is undef:
             if self.default is undef:
                 if self.type == types.str:
-                    return ''
+                    return None
             else:
                 return self.default
         return self._value
@@ -682,21 +767,6 @@ class orm:
             r.append(subclass)
             r.extend(orm.getentitiessubclasses(subclass))
 
-        return r
-
-    @property
-    def parents(self):
-        # TODO Delete?
-        B()
-        r = []
-        for sub in self.getentitiessubclasses():
-            for map in sub.orm.entity.orm.mappings:
-                if not isinstance(map, entitiesmapping):
-                    continue
-
-                if map.entities is self.entities:
-                    r.append(sub.orm.entity)
-                    break
         return r
 
 class saveeventargs(entitiesmod.eventargs):

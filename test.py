@@ -74,22 +74,49 @@ class test_orm(tester):
         self.is_(comps[0], presentation)
 
     def it_has_broken_rules_of_constituents(self):
+        art = artist()
+
+        pres = presentation()
+
+        # Break the rule that presentation.name should be a str
+        pres.name = 1
+
+        art.presentations += pres
+
+        self.broken(art, 'name', 'valid')
+
         # TODO
-        pass
+        # Break entity constituent
+        """
+        addr = address()
+        addr.zip = 'abcde' # break
+        art.presentations.first.address = addr
+        self.broken(art, 'zip', 'valid')
+        """
 
     def it_saves_entities(self):
-        # TODO
-        return
         arts = artists()
-        arts += artist()
-        arts += artist()
+
+        for i in range(2):
+            arts += artist()
+            arts.last.firstname = uuid4().hex
+            arts.last.lastname = uuid4().hex
+
         arts.save()
-    
+
+        for art in arts:
+            art1 = artist(art.id)
+
+            for map in art.orm.mappings:
+                if not isinstance(map, orm.fieldmapping):
+                    continue
+
+                self.eq(getattr(art, map.name), getattr(art1, map.name))
+                
     def it_doesnt_needlessly_save(self):
-        
         cnt = 0
         def art_onaftersave(src, eargs):
-            B()
+            nonlocal cnt
             cnt += 1
 
         art = artist()
@@ -97,10 +124,22 @@ class test_orm(tester):
         art.lastname = uuid4().hex
         art.onaftersave += art_onaftersave
 
-        B()
         art.save()
-            
 
+        self.eq(1, cnt)
+
+        # No save should actually happen here because we haven't modified art's
+        # properties.
+        art.save()
+        self.eq(1, cnt)
+            
+        # Dirty art and save. Ensure the object was actually saved
+        art.firstname = uuid4().hex
+        art.save()
+
+        self.eq(2, cnt)
+
+        # TODO Test constituents
 
     def it_loads_and_saves_constituents(self):
         # Ensure that a new composite has a constituent object with zero
@@ -138,13 +177,14 @@ class test_orm(tester):
         art1 = artist(art.id)
         self.two(art1.presentations)
 
+        art.presentations.sort('id')
+        art1.presentations.sort('id')
         for pres, pres1 in zip(art.presentations, art1.presentations):
-            for prop in pres.orm.properties:
-                self.eq(getattr(pres, prop), getattr(pres1, prop))
+            for map in pres.orm.mappings:
+                if isinstance(map, orm.fieldmapping):
+                    self.eq(getattr(pres, map.name), getattr(pres1, map.name))
             
-            # TODO
-            # self.is_(art1, pres1.artist)
-
+            self.is_(art1, pres1.artist)
 
     def it_updates_constituents_properties(self):
         art = artist()
@@ -198,8 +238,36 @@ class test_orm(tester):
 
 
     def it_rollsback_save_with_broken_constituents(self):
-        # TODO
-        pass
+        art = artist()
+
+        art.presentations += presentation()
+        art.presentations.last.name = uuid4().hex
+
+        art.presentations += presentation()
+        art.presentations.last.name = uuid4().hex
+
+        # Cause the last presentation's invocation of save() to raise an
+        # Exception to cause a rollback
+        art.presentations.last.save = lambda cur: 1/0
+
+        # Save expecting the ZeroDivisionError
+        self.expect(ZeroDivisionError, lambda: art.save())
+
+        # Ensure state of art was restored to original
+        self.true(art.orm.isnew)
+        self.false(art.orm.isdirty)
+        self.false(art.orm.ismarkedfordeletion)
+
+        # Ensure artist wasn't saved
+        self.expect(db.RecordNotFoundError, lambda: artist(art.id))
+
+        # For each presentations, ensure state was not modified and no presentation 
+        # object was saved.
+        for pres in art.presentations:
+            self.true(pres.orm.isnew)
+            self.false(pres.orm.isdirty)
+            self.false(pres.orm.ismarkedfordeletion)
+            self.expect(db.RecordNotFoundError, lambda: presentation(pres.id))
 
     def it_calls_entities(self):
         
@@ -247,9 +315,11 @@ class test_orm(tester):
         pass
 
     def it_calls_id(self):
-        B()
+        class persons(orm.entities):
+            pass
+
         class person(orm.entity):
-            class persons(orm.entities): pass
+            persons = persons
 
         p = person()
 
@@ -259,22 +329,27 @@ class test_orm(tester):
 
     # Test str properties #
     def it_calls_str_property(self):
+        class persons(orm.entities):
+            pass
+
         class person(orm.entity):
-            class persons(orm.entities): pass
             firstname = orm.fieldmapping(str)
+            persons = persons
 
         p = person()
 
         self.true(hasattr(p, 'firstname'))
-        self.type(str, p.firstname)
-        self.empty(p.firstname)
+        self.none(p.firstname)
         self.zero(p.brokenrules)
 
     def it_calls_str_property_with_default(self):
         # Test where the default is None
+        class persons(orm.entities):
+            pass
+
         class person(orm.entity):
-            class persons(orm.entities): pass
-            firstname = orm.fieldmapping(str, default=None)
+            firstname = orm.fieldmapping(str)
+            persons = persons
 
         p = person()
 
@@ -295,9 +370,12 @@ class test_orm(tester):
         self.zero(p.brokenrules)
 
     def it_calls_str_propertys_setter(self):
+        class persons(orm.entities):
+            pass
+
         class person(orm.entity):
-            class persons(orm.entities): pass
-            firstname = orm.fieldmapping(str, default=None)
+            firstname = orm.fieldmapping(str)
+            persons = persons
 
         p = person()
 
@@ -316,9 +394,12 @@ class test_orm(tester):
 
         # Without specifying a default, the string should be no longer than
         # 255 in len().
+        class persons(orm.entities):
+            pass
+
         class person(orm.entity):
-            class persons(orm.entities): pass
             firstname = orm.fieldmapping(str)
+            persons = persons
 
         p = person()
 
@@ -347,15 +428,18 @@ class test_orm(tester):
 
         # Without specifying a default, the string should be no longer than
         # 255 in len().
-        class person(orm.entity):
-            class persons(orm.entities): pass
-            firstname = orm.fieldmapping(str, full=True)
+        class persons(orm.entities):
+            pass
 
+        class person(orm.entity):
+            firstname = orm.fieldmapping(str)
+            persons = persons
+
+        # By default, str properties should except None and whitespace
         p = person()
         for v in [None, '', ' \t\n']:
             p.firstname = v
-            self.broken(p, 'firstname', 'full')
-            self.one(p.brokenrules)
+            self.zero(p.brokenrules)
 
     def it_calls_save(self):
         art = artist()
@@ -378,8 +462,9 @@ class test_orm(tester):
         self.false(art1.orm.isnew)
         self.false(art1.orm.isdirty)
 
-        for prop in art1.orm.properties:
-            self.eq(getattr(art, prop), getattr(art1, prop))
+        for map in art1.orm.mappings:
+            if isinstance(map, orm.fieldmapping):
+                self.eq(getattr(art, map.name), getattr(art1, map.name))
 
         # Test changing, saving and retrieving an entity
         art1.firstname = uuid4().hex
@@ -404,8 +489,9 @@ class test_orm(tester):
 
         art2 = artist(art.id)
 
-        for prop in art2.orm.properties:
-            self.eq(getattr(art1, prop), getattr(art2, prop))
+        for map in art2.orm.mappings:
+            if isinstance(map, orm.fieldmapping):
+                self.eq(getattr(art1, map.name), getattr(art2, map.name))
 
     def it_fails_to_save_broken_entity(self):
         art = artist()
@@ -421,6 +507,8 @@ class test_orm(tester):
             self.fail('Exception not thrown')
 
     def it_hard_deletes(self):
+        # TODO Invalidate art. You should be able to delete an object whether
+        # or not it is valid.
         art = artist()
 
         art.firstname = uuid4().hex
@@ -456,9 +544,13 @@ class test_orm(tester):
 
     def it_calls_dir(self):
         # TODO Add more properties to test
+        class persons(orm.entities):
+            pass
+
         class person(orm.entity):
-            class persons(orm.entities): pass
             firstname = orm.fieldmapping(str)
+            persons = persons
+
 
         # Make sure mapped properties show are returned when dir() is called 
         d = dir(person())
