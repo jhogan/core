@@ -37,11 +37,18 @@ import re
 import io
 import orm
 
+class locations(orm.entities):
+    pass
+
+class location(orm.entity):
+    description = orm.fieldmapping(str)
+
 class presentations(orm.entities):
     pass
 
 class presentation(orm.entity):
     name = orm.fieldmapping(str)
+    locations = locations
 
 class artists(orm.entities):
     pass
@@ -64,26 +71,47 @@ class test_orm(tester):
         artist.reCREATE(recursive=True)
     
     def it_has_static_composites_reference(self):
+        comps = location.orm.composites
+        self.one(comps)
+        self.is_(comps[0], presentation)
+
+        comps = comps[0].orm.composites
+        self.one(comps)
+        self.is_(comps[0], artist)
+
         comps = presentation.orm.composites
         self.one(comps)
         self.is_(comps[0], artist)
 
+        self.zero(artist.orm.composites)
+
     def it_has_static_constituents_reference(self):
-        comps = artist.orm.constituents
-        self.one(comps)
-        self.is_(comps[0], presentation)
+        consts = artist.orm.constituents
+        self.one(consts)
+        self.is_(consts[0], presentation)
+
+        consts = consts[0].orm.constituents
+        self.one(consts)
+        self.is_(consts[0], location)
 
     def it_has_broken_rules_of_constituents(self):
-        art = artist()
-
-        pres = presentation()
+        art                =   artist()
+        pres               =   presentation()
+        loc                =   location()
+        pres.locations     +=  loc
+        art.presentations  +=  pres
 
         # Break the rule that presentation.name should be a str
         pres.name = 1
 
-        art.presentations += pres
-
+        self.one(art.brokenrules)
         self.broken(art, 'name', 'valid')
+
+        # Break deeply (>2) nested constituent
+        # Break the rule that location.description should be a str
+        loc.description = 1
+        self.two(art.brokenrules)
+        self.broken(art, 'description', 'valid')
 
         # TODO
         # Break entity constituent
@@ -94,10 +122,47 @@ class test_orm(tester):
         self.broken(art, 'zip', 'valid')
         """
 
+    def it_moves_constituent_to_a_different_composite(self):
+        art = artist()
+        art.presentations += presentation()
+        art.presentations.last.name = uuid4().hex
+        art.save()
+
+        art1 = artist()
+        art.presentations.give(art1.presentations)
+        
+        art1.save()
+
+        self.zero(artist(art.id).presentations)
+        self.one(artist(art1.id).presentations)
+
+        # Move deeply nested entity
+        art1.presentations.first.locations += location()
+        art1.save()
+
+        art.presentations += presentation()
+        art1.presentations.first.locations.give(art.presentations.last.locations)
+        art.save()
+
+        self.zero(artist(art1.id).presentations.first.locations)
+        self.one(artist(art.id).presentations.first.locations)
+
+    def it_todo(self):
+        # TODO
+        return
+        art = artist()
+
+        art.presentations += presentation()
+        art.presentation.last.name = uuid4().hex
+
+        # What happens if we assign an artist at this level. It should always
+        # be a reference to art; not a new artist.
+        art.presentation.last.artist = artist()
+
     def it_saves_entities(self):
         arts = artists()
 
-        for i in range(2):
+        for _ in range(2):
             arts += artist()
             arts.last.firstname = uuid4().hex
             arts.last.lastname = uuid4().hex
@@ -115,31 +180,61 @@ class test_orm(tester):
                 
     def it_doesnt_needlessly_save(self):
         cnt = 0
-        def art_onaftersave(src, eargs):
+        def obj_onaftersave(src, eargs):
             nonlocal cnt
             cnt += 1
 
         art = artist()
         art.firstname = uuid4().hex
         art.lastname = uuid4().hex
-        art.onaftersave += art_onaftersave
+        art.onaftersave += obj_onaftersave
 
-        art.save()
+        for _ in range(2):
+            art.save()
+            self.eq(1, cnt)
 
-        self.eq(1, cnt)
-
-        # No save should actually happen here because we haven't modified art's
-        # properties.
-        art.save()
-        self.eq(1, cnt)
-            
         # Dirty art and save. Ensure the object was actually saved
         art.firstname = uuid4().hex
         art.save()
 
         self.eq(2, cnt)
 
-        # TODO Test constituents
+        # Test constituents
+        cnt = 0
+        art.presentations += presentation()
+        art.onaftersave -= obj_onaftersave
+        art.presentations.last.onaftersave += obj_onaftersave
+        
+        for _ in range(2):
+            art.save()
+            self.eq(1, cnt)
+
+        # Test deeply-nested (>2) constituents
+        art.presentations.last.locations += location()
+        art.presentations.last.onaftersave -= obj_onaftersave
+        art.presentations.last.locations.last.onaftersave += obj_onaftersave
+
+        cnt = 0
+        for _ in range(2):
+            art.save()
+            self.eq(1, cnt)
+
+    def it_contains_reference_to_composite(self):
+        art = artist()
+
+        for _ in range(2):
+            art.presentations += presentation()
+
+            for _ in range(2):
+                art.presentations.last.locations += location()
+
+        art.save()
+        for art in (art, artist(art.id)):
+            for pres in art.presentations:
+                self.is_(art, pres.artist)
+
+                for loc in pres.locations:
+                    self.is_(pres, loc.presentation)
 
     def it_loads_and_saves_constituents(self):
         # Ensure that a new composite has a constituent object with zero
@@ -186,37 +281,73 @@ class test_orm(tester):
             
             self.is_(art1, pres1.artist)
 
+        # Create some locations with the presentations, save artist, reload and test
+        for pres in art.presentations:
+            for _ in range(2):
+                pres.locations += location()
+
+        art.save()
+
+        art1 = artist(art.id)
+        self.two(art1.presentations)
+
+        art.presentations.sort('id')
+        art1.presentations.sort('id')
+        for pres, pres1 in zip(art.presentations, art1.presentations):
+            pres.locations.sort('id')
+            pres1.locations.sort('id')
+
+            for loc, loc1 in zip(pres.locations, pres1.locations):
+                for map in loc.orm.mappings:
+                    if isinstance(map, orm.fieldmapping):
+                        self.eq(getattr(loc, map.name), getattr(loc1, map.name))
+            
+                self.is_(pres1, loc1.presentation)
+
     def it_updates_constituents_properties(self):
         art = artist()
-        art.presentations += presentation()
-        art.presentations += presentation()
 
-        for pres in art.presentations:
-            pres.name = uuid4().hex
+        for _ in range(2):
+            art.presentations += presentation()
+            art.presentations.last.name = uuid4().hex
+
+            for _ in range(2):
+                art.presentations.last.locations += location()
+                art.presentations.last.locations.last.description = uuid4().hex
 
         art.save()
 
         art1 = artist(art.id)
         for pres in art1.presentations:
             pres.name = uuid4().hex
+            
+            for loc in pres.locations:
+                loc.description = uuid4().hex
 
         art1.save()
 
         art2 = artist(art.id)
         press = (art.presentations, art1.presentations, art2.presentations)
         for pres, pres1, pres2 in zip(*press):
-            # Make sure the properties were change
+            # Make sure the properties were changed
             self.ne(getattr(pres2, 'name'), getattr(pres,  'name'))
 
             # Make user art1.presentations props match those of art2
             self.eq(getattr(pres2, 'name'), getattr(pres1, 'name'))
 
-    def it_loads_and_saves_entity_constituent(self):
+            locs = pres.locations, pres1.locations, pres2.locations
+            for loc, loc1, loc2 in zip(*locs):
+                # Make sure the properties were changed
+                self.ne(getattr(loc2, 'description'), getattr(loc,  'description'))
+
+                # Make user art1 locations props match those of art2
+                self.eq(getattr(loc2, 'description'), getattr(loc1, 'description'))
+
+    def it_loads_entity_constituent(self):
+        # Make sure the constituent is None for new composites
         # TODO
         return
-        # Make sure the constituent is None for new composites
         pres = presentation()
-        pres.name = uuid4().hex
         self.none(pres.artist)
 
         pres.save()
@@ -225,17 +356,13 @@ class test_orm(tester):
         pres = presentation(pres.id)
         self.none(pres.artist)
 
-        # Save and load entity constituent
-        pres = presentation()
-        pres.name = uuid4().hex
-        pres.artist = artist()
-        pres.artist.firstname = uuid4().hex
-        pres.artist.last = uuid4().hex
-        pres.save()
+        art = artist()
+        art.presentations += pres
+        art.save()
+        
+        pres = presentation(pres.id)
 
-        pres1 = presentation(pres.id)
-        self.eq(pres.artist.id, pres1.artist.id)
-
+        self.eq(pres.artist.id, art.id)
 
     def it_rollsback_save_with_broken_constituents(self):
         art = artist()
@@ -315,32 +442,19 @@ class test_orm(tester):
         pass
 
     def it_calls_id(self):
-        class persons(orm.entities):
-            pass
+        art = artist()
 
-        class person(orm.entity):
-            persons = persons
-
-        p = person()
-
-        self.true(hasattr(p, 'id'))
-        self.type(uuid.UUID, p.id)
-        self.zero(p.brokenrules)
+        self.true(hasattr(art, 'id'))
+        self.type(uuid.UUID, art.id)
+        self.zero(art.brokenrules)
 
     # Test str properties #
     def it_calls_str_property(self):
-        class persons(orm.entities):
-            pass
+        art = artist()
 
-        class person(orm.entity):
-            firstname = orm.fieldmapping(str)
-            persons = persons
-
-        p = person()
-
-        self.true(hasattr(p, 'firstname'))
-        self.none(p.firstname)
-        self.zero(p.brokenrules)
+        self.true(hasattr(art, 'firstname'))
+        self.none(art.firstname)
+        self.zero(art.brokenrules)
 
     def it_calls_str_property_with_default(self):
         # Test where the default is None
@@ -562,6 +676,7 @@ class test_orm(tester):
         # class body.
         self.eq(1, d.count('firstname'))
 
+    # TODO
     # Test int properties #
 
 class test_blog(tester):

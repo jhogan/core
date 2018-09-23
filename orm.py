@@ -50,6 +50,30 @@ class entities(entitiesmod.entities):
     def save(self):
         for e in self:
             e.save()
+
+    def append(self, obj, uniq=False, r=None):
+        try:
+            clscomp = self.orm.composites[0]
+        except IndexError:
+            # No composites fonud so just pass to super().append()
+            pass
+        else:
+            try:
+                objcomp = getattr(self, clscomp.__name__)
+            except Exception as ex:
+                # The self collection won't always have a reference to its
+                # composite.  For example: when the collection is being
+                # lazy-loaded.  The lazy-loading, however, will ensure the obj
+                # being appended will get this reference.
+                pass
+            else:
+                # Assign the composite reference of this collection to the obj
+                # being appended, i.e.:
+                #    obj.composite = self.composite
+                setattr(obj, clscomp.__name__, objcomp)
+
+        super().append(obj, uniq, r)
+        return r
     
     def load(self, p1, p2):
 
@@ -145,6 +169,7 @@ class entitymeta(type):
                 # Insert foreignkeyfieldmapping into the constituent's mappings
                 # collection right after the id
                 const.orm.mappings.insertafter(0, foreignkeyfieldmapping(entity))
+
 
         return entity
 
@@ -365,7 +390,18 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         for map in e.orm.mappings:
                             if type(map) is foreignkeyfieldmapping:
                                 if map.entity is self.orm.entity:
-                                    map.value = self.id
+                                    # Set map.value to self.id. But rather than
+                                    # a direct assignment, 
+                                    #     map.value = self.id
+                                    # use setattr() to invoke the _setvalue
+                                    # logic. This ensures that the proper
+                                    # events get raised, but even more
+                                    # importantly, it dirties e so e's FK will
+                                    # be changed in the database.  This is
+                                    # mainly for instances where the
+                                    # constituent is being moved to a different
+                                    # composite.
+                                    setattr(e, map.name, self.id)
                                     break
 
                         # Call save(). If there is an Exception, restore state then
