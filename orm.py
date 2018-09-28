@@ -166,10 +166,11 @@ class entitymeta(type):
             for const in orm_.constituents:
                 const.orm.composites.append(entity)
 
+                const.orm.mappings += entitymapping(name, entity)
+
                 # Insert foreignkeyfieldmapping into the constituent's mappings
                 # collection right after the id
                 const.orm.mappings.insertafter(0, foreignkeyfieldmapping(entity))
-
 
         return entity
 
@@ -253,6 +254,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
             self._setvalue(attr, v, attr, setattr)
 
+            if type(map) is entitymapping:
+                for fkmap in self.orm.mappings.foreignkeys:
+                    if fkmap.entity is v.orm.entity:
+                        fkmap.value = v.id
+                        break;
+
     @classmethod
     def reCREATE(cls, recursive=False):
         pool = db.pool.getdefault()
@@ -308,7 +315,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         self.orm.ismarkedfordeletion = True
         self.save()
 
-    def save(self, cur=None):
+    def save(self, cur=None, followentitiesmapping=True):
         # TODO Add reconnect logic
         # TODO Ensure connection is active
 
@@ -368,54 +375,64 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # the child objects the value of the parent id for their
             # foreign keys
             for map in self.orm.mappings:
-                if type(map) is not entitiesmapping:
-                    continue
 
-                es = map.value
+                if type(map) is entitymapping:
+                    # TODO: Calling map.value currenly loads the constituent.
+                    # We probably shouldn't load this here unless the FK has
+                    # changed.
 
-                # es is None if the constituent hasn't been loaded,
-                # so conditionally save()
-                if es:
-                    # Take snapshot of states
-                    sts = []
-                    for e in es:
-                        sts.append((e.orm.isnew,                  
-                                    e.orm.isdirty,             
-                                    e.orm.ismarkedfordeletion))
+                    # Call the entity constituent's save method. Setting
+                    # followentitiesmapping to false here prevents it's
+                    # child/entitiesmapping constituents from being saved. This
+                    # prevents infinite recursion.
+                    map.value.save(cur, followentitiesmapping=False)
 
-                    # Iterate over each entity and save them individually
-                    for e in es:
-                        
-                        # Set the entity's FK to self.id value
-                        for map in e.orm.mappings:
-                            if type(map) is foreignkeyfieldmapping:
-                                if map.entity is self.orm.entity:
-                                    # Set map.value to self.id. But rather than
-                                    # a direct assignment, 
-                                    #     map.value = self.id
-                                    # use setattr() to invoke the _setvalue
-                                    # logic. This ensures that the proper
-                                    # events get raised, but even more
-                                    # importantly, it dirties e so e's FK will
-                                    # be changed in the database.  This is
-                                    # mainly for instances where the
-                                    # constituent is being moved to a different
-                                    # composite.
-                                    setattr(e, map.name, self.id)
-                                    break
+                if followentitiesmapping and type(map) is entitiesmapping:
 
-                        # Call save(). If there is an Exception, restore state then
-                        # re-raise
-                        try:
-                            e.save(cur)
-                        except Exception as ex:
-                            # Restore states
-                            for st, e in zip(sts, es):
-                                e.orm.isnew,   \
-                                e.orm.isdirty, \
-                                e.orm.ismarkedfordeletion = st
+                    es = map.value
 
-                            raise
+                    # es is None if the constituent hasn't been loaded,
+                    # so conditionally save()
+                    if es:
+                        # Take snapshot of states
+                        sts = []
+                        for e in es:
+                            sts.append((e.orm.isnew,                  
+                                        e.orm.isdirty,             
+                                        e.orm.ismarkedfordeletion))
+
+                        # Iterate over each entity and save them individually
+                        for e in es:
+                            
+                            # Set the entity's FK to self.id value
+                            for map in e.orm.mappings:
+                                if type(map) is foreignkeyfieldmapping:
+                                    if map.entity is self.orm.entity:
+                                        # Set map.value to self.id. But rather
+                                        # than a direct assignment, map.value =
+                                        # self.id use setattr() to invoke the
+                                        # _setvalue logic. This ensures that
+                                        # the proper events get raised, but
+                                        # even more importantly, it dirties e
+                                        # so e's FK will be changed in the
+                                        # database.  This is mainly for
+                                        # instances where the constituent is
+                                        # being moved to a different composite.
+                                        setattr(e, map.name, self.id)
+                                        break
+
+                            # Call save(). If there is an Exception, restore state then
+                            # re-raise
+                            try:
+                                e.save(cur)
+                            except Exception as ex:
+                                # Restore states
+                                for st, e in zip(sts, es):
+                                    e.orm.isnew,   \
+                                    e.orm.isdirty, \
+                                    e.orm.ismarkedfordeletion = st
+
+                                raise
 
         except Exception as ex:
             self.orm.isnew,   \
@@ -448,6 +465,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                     if map.full:
                         brs.demand(self, map.name, full=True)
+
+            elif type(map) is foreignkeyfieldmapping:
+                if type(map.value) is not UUID:
+                    msg = '"%s" has an empty value for the foreign key "%s"'
+                    msg %= self.__class__.__name__, map.name
+                    brs += entitiesmod.brokenrule(msg, map.name, 'full')
 
             elif type(map) is entitiesmapping:
                 es = map.value
@@ -520,6 +543,12 @@ class mappings(entitiesmod.entities):
     def __init__(self, initial=None, orm=None):
         self._orm = orm
         super().__init__(initial)
+
+    @property
+    def foreignkeys(self):
+        for map in self:
+            if type(map) is foreignkeyfieldmapping:
+                yield map
 
     @property
     def orm(self):
@@ -616,7 +645,8 @@ class mappings(entitiesmod.entities):
 class mapping(entitiesmod.entity):
     ordinal = 0
 
-    def __init__(self, name=None):
+    def __init__(self, name):
+        self.orm = None
         self._name = name
         mapping.ordinal += 1
         self._ordinal = mapping.ordinal
@@ -648,6 +678,29 @@ class entitiesmapping(mapping):
 
     def clone(self):
         return entitiesmapping(self.name, self.entities)
+
+class entitymapping(mapping):
+    def __init__(self, name, e):
+        self.entity = e
+        self._value = None
+        super().__init__(name)
+
+    @property
+    def value(self):
+        if not self._value:
+            for map in self.orm.mappings:
+                if type(map) is foreignkeyfieldmapping:
+                    if map.entity is self.entity:
+                        if map.value is not undef:
+                            self._value = self.entity(map.value)
+        return self._value
+
+    @value.setter
+    def value(self, v):
+        self._setvalue('_value', v, 'value')
+
+    def clone(self):
+        return entitymapping(self.name, self.entity)
 
 class fieldmapping(mapping):
 
@@ -788,6 +841,9 @@ class orm:
             setattr(r, prop, getattr(self, prop))
 
         r.mappings = self.mappings.clone(r)
+
+        for map in r.mappings:
+            map.orm = r
 
         return r
 

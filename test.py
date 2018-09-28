@@ -113,15 +113,6 @@ class test_orm(tester):
         self.two(art.brokenrules)
         self.broken(art, 'description', 'valid')
 
-        # TODO
-        # Break entity constituent
-        """
-        addr = address()
-        addr.zip = 'abcde' # break
-        art.presentations.first.address = addr
-        self.broken(art, 'zip', 'valid')
-        """
-
     def it_moves_constituent_to_a_different_composite(self):
         art = artist()
         art.presentations += presentation()
@@ -130,6 +121,9 @@ class test_orm(tester):
 
         art1 = artist()
         art.presentations.give(art1.presentations)
+
+        self.zero(art.presentations)
+        self.one(art1.presentations)
         
         art1.save()
 
@@ -153,11 +147,12 @@ class test_orm(tester):
         art = artist()
 
         art.presentations += presentation()
-        art.presentation.last.name = uuid4().hex
+        art.presentations.last.name = uuid4().hex
 
         # What happens if we assign an artist at this level. It should always
         # be a reference to art; not a new artist.
-        art.presentation.last.artist = artist()
+        pres = art.presentations.last
+        pres.artist = artist()
 
     def it_saves_entities(self):
         arts = artists()
@@ -343,26 +338,99 @@ class test_orm(tester):
                 # Make user art1 locations props match those of art2
                 self.eq(getattr(loc2, 'description'), getattr(loc1, 'description'))
 
-    def it_loads_entity_constituent(self):
-        # Make sure the constituent is None for new composites
+    def it_entity_constituents_break_entity(self):
         # TODO
         return
+
+        pres = presentation()
+        pres = art = artist()
+        art.firstname = 1234 # Break
+
+        self.broken(pres, 'firstname', 'valid')
+
+        # TODO Deeply-nested loc.presentatio.artist
+        
+
+    def it_loads_entity_constituent(self):
+        # Make sure the constituent is None for new composites
+        # TODO Complete
         pres = presentation()
         self.none(pres.artist)
 
+        self.broken(pres, 'artistid', 'full')
+
+        # Test setting an entity constituent then test saving and loading
+        art = artist()
+        pres.artist = art
+        self.is_(art, pres.artist)
+
         pres.save()
 
-        # Make sure it loads an entity constituent of None
-        pres = presentation(pres.id)
-        self.none(pres.artist)
+        # Load by artist then lazy-load presentations to test
+        art1 = artist(pres.artist.id)
+        self.one(art1.presentations)
+        self.eq(art1.presentations.first.id, pres.id)
 
-        art = artist()
-        art.presentations += pres
-        art.save()
-        
-        pres = presentation(pres.id)
+        # Load by presentation and lazy-load artist to test
+        pres1 = presentation(pres.id)
+        self.eq(pres1.artist.id, pres.artist.id)
 
-        self.eq(pres.artist.id, art.id)
+        art1 = artist()
+        pres1.artist = art1
+        pres1.save()
+
+        pres2 = presentation(pres1.id)
+        self.eq(art1.id, pres2.artist.id)
+        self.ne(art1.id, art.id)
+
+        # Test deeply-nested (>2)
+        # Set entity constuents, save, load, test
+       
+        loc = location()
+        self.none(loc.presentation)
+
+        loc.presentation = pres = presentation()
+        self.is_(pres, loc.presentation)
+        self.none(loc.presentation.artist)
+
+        loc.presentation.artist = art = artist()
+        self.is_(art, loc.presentation.artist)
+
+        loc.save()
+
+        loc1 = location(loc.id)
+        self.eq(loc.id, loc1.id)
+        self.eq(loc.presentation.id, loc1.presentation.id)
+        self.eq(loc.presentation.artist.id, loc1.presentation.artist.id)
+
+        # Change the artist
+        loc1.presentation.artist = art1 = artist()
+        loc1.save()
+
+        loc2 = location(loc1.id)
+        self.eq(loc1.presentation.artist.id, loc2.presentation.artist.id)
+        self.ne(art.id, loc2.presentation.artist.id)
+
+        # Note: Going up the graph, mutating attributes and persisting lower in
+        # the graph won't work because of the problem of infinite recursion.
+        # The below tests demonstrate this.
+
+        # Assign a new name
+        name = uuid4().hex
+        loc2.presentation.artist.presentations.first.name = name
+
+        # The presentation objects here aren't the same reference so they will
+        # have different states.
+        self.ne(loc2.presentation.name, name)
+
+        loc2.save()
+        loc2 = location(loc2.id)
+
+        # The above save() didn't save the new artist's presentation collection
+        # so the new name will not be present in the reloaded presentation
+        # object.
+        self.ne(loc2.presentation.name, name)
+        self.ne(loc2.presentation.artist.presentations.first.name, name)
 
     def it_rollsback_save_with_broken_constituents(self):
         art = artist()
