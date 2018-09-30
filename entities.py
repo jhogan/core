@@ -290,16 +290,13 @@ class entities(object):
     def push(self, e):
         self += e
 
-    def move(self, srcix, dstix):
-        raise NotImplementedError('move has not been implemented yet')
-        # TODO: This is untested
-        # NOTE When implemented, ensure that onadd does not get needlessly 
-        # called
-        if srcix == dstix:
-            raise Exception('Source and destination are the same: {}'.format((srcix, dstix)))
+    def give(self, es):
+        """ Move the elements self to es. Clear es. A slice parameter can be used
+        to limit what is moved. """
 
-        e = self.pop(srcix)
-        self.insert(dstix, e)
+        # TODO: Write test
+        es += self
+        self.clear()
 
     def has(self, e):
         return self.indexes['identity'](e).ispopulated
