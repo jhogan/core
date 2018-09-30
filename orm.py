@@ -96,6 +96,12 @@ class entities(entitiesmod.entities):
         for res in ress:
             self += self.orm.entity(res)
 
+    def _getbrokenrules(self, es):
+        brs = entitiesmod.brokenrules()
+        for e in self:
+            brs += e._getbrokenrules(es)
+        return brs
+
 class entitymeta(type):
     def __new__(cls, name, bases, body):
         # If name == 'entity', the `class entity` statement is being executed.
@@ -255,9 +261,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             self._setvalue(attr, v, attr, setattr)
 
             if type(map) is entitymapping:
-                for fkmap in self.orm.mappings.foreignkeys:
-                    if fkmap.entity is v.orm.entity:
-                        fkmap.value = v.id
+                for map in self.orm.mappings.foreignkeys:
+                    if map.entity is v.orm.entity:
+                        self._setvalue(map.name, v.id, map.name, setattr)
                         break;
 
     @classmethod
@@ -452,7 +458,19 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         
     @property
     def brokenrules(self):
+        return self._getbrokenrules()
+
+    def _getbrokenrules(self, visited=None):
         brs = entitiesmod.brokenrules()
+
+        # This "visited" logic prevents infinite recursion and duplicated
+        # broken rules.
+        visited = [] if visited is None else visited
+        if self in visited:
+            return brs
+        else:
+            visited += self,
+
         for map in self.orm.mappings:
             if type(map) is fieldmapping:
                 if map.type == types.str:
@@ -473,9 +491,20 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     brs += entitiesmod.brokenrule(msg, map.name, 'full')
 
             elif type(map) is entitiesmapping:
+                # Currently, map.value will not load the entities on invocation
+                # so we get None for es. This is good because we don't want to
+                # needlessly load an object to see if it has broken rules.
+                # However, if this changes, we will want to make sure that we
+                # don't needlessy load this. This could lead to infinite
+                # h (see it_entity_constituents_break_entity)
                 es = map.value
                 if es:
-                    brs += es.brokenrules
+                    brs += es._getbrokenrules(visited)
+
+            elif type(map) is entitymapping:
+                v = map.value
+                if v:
+                    brs += v._getbrokenrules(visited)
 
         return brs
 

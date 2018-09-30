@@ -141,19 +141,6 @@ class test_orm(tester):
         self.zero(artist(art1.id).presentations.first.locations)
         self.one(artist(art.id).presentations.first.locations)
 
-    def it_todo(self):
-        # TODO
-        return
-        art = artist()
-
-        art.presentations += presentation()
-        art.presentations.last.name = uuid4().hex
-
-        # What happens if we assign an artist at this level. It should always
-        # be a reference to art; not a new artist.
-        pres = art.presentations.last
-        pres.artist = artist()
-
     def it_saves_entities(self):
         arts = artists()
 
@@ -339,21 +326,31 @@ class test_orm(tester):
                 self.eq(getattr(loc2, 'description'), getattr(loc1, 'description'))
 
     def it_entity_constituents_break_entity(self):
-        # TODO
-        return
-
         pres = presentation()
-        pres = art = artist()
-        art.firstname = 1234 # Break
+        pres.artist = artist()
 
+        # Break rule that art.firstname should be a str
+        pres.artist.firstname = 1234 # Break
+
+        self.one(pres.brokenrules)
         self.broken(pres, 'firstname', 'valid')
 
-        # TODO Deeply-nested loc.presentatio.artist
-        
+        pres.artist.firstname = '1234' # Unbreak
+        self.zero(pres.brokenrules)
+
+        loc = location()
+        loc.description = 1234 # break
+        loc.presentation = presentation()
+        loc.presentation.name = 1234 # break
+        loc.presentation.artist = artist()
+        loc.presentation.artist.firstname = 1234 # break
+
+        self.three(loc.brokenrules)
+        for prop in 'description', 'name', 'firstname':
+            self.broken(loc, prop, 'valid')
 
     def it_loads_entity_constituent(self):
         # Make sure the constituent is None for new composites
-        # TODO Complete
         pres = presentation()
         self.none(pres.artist)
 
