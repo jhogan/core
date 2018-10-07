@@ -42,6 +42,11 @@ class types(Enum):
     pk  = 2
     fk  = 3
 
+@unique
+class cardinality(Enum):
+    Onetomany  = 0
+    Manytomany = 1
+
 class undef:
     pass
 
@@ -55,7 +60,7 @@ class entities(entitiesmod.entities):
         try:
             clscomp = self.orm.composites[0]
         except IndexError:
-            # No composites fonud so just pass to super().append()
+            # No composites found so just pass to super().append()
             pass
         else:
             try:
@@ -138,11 +143,27 @@ class entitymeta(type):
 
             body['id'] = primarykeyfieldmapping()
             for k, v in body.items():
+
+                if k.startswith('__'):
+                    continue
+                
                 if isinstance(v, mapping):
                     map = v
                 elif hasattr(v, 'mro') and ormmod.entities in v.mro():
-                    orm_.constituents.append(v.orm.entity)
+
+                    # TODO This temporary check was put in place where name
+                    # is 'artifact' and v is the artist class. THe artist class
+                    # statement hasn't been run yet.
+                    # the 'artifact' cl
+                    # if hasattr(v, 'orm'):
+                        # orm_.constituents.append(v.orm.entity)
+                    #else:
+                    #   pass
                     map = entitiesmapping(k, v)
+                elif type(k) is str:
+                    # TODO I don't think this line ever executes. Plus, isn't k
+                    # always going to be a str.
+                    map = entitymapping(k, v)
                 else:
                     continue
                
@@ -169,14 +190,14 @@ class entitymeta(type):
 
             # For each of this class's constituents, add this class to their
             # composite's list
-            for const in orm_.constituents:
-                const.orm.composites.append(entity)
+            # for const in orm_.constituents:
+                #const.orm.composites.append(entity)
 
-                const.orm.mappings += entitymapping(name, entity)
+                #const.orm.mappings += entitymapping(name, entity)
 
                 # Insert foreignkeyfieldmapping into the constituent's mappings
                 # collection right after the id
-                const.orm.mappings.insertafter(0, foreignkeyfieldmapping(entity))
+                #const.orm.mappings.insertafter(0, foreignkeyfieldmapping(entity))
 
         return entity
 
@@ -267,7 +288,17 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         break;
 
     @classmethod
-    def reCREATE(cls, recursive=False):
+    def reCREATE(cls, recursive=False, clss=None):
+        # TODO Reuse cursor during recursion
+
+        # Prevent infinite recursion
+        if clss is None:
+            clss = []
+        else:
+            if cls in clss:
+                return
+        clss += [cls]
+
         pool = db.pool.getdefault()
 
         with pool.take() as conn:
@@ -283,13 +314,15 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                     if errno != BAD_TABLE_ERROR: # 1051
                         raise
+
                 cls.CREATE(cur)
 
                 if recursive:
-                    for map in cls.orm.mappings:
-                        if not isinstance(map, entitiesmapping):
-                            continue
-                        map.entities.orm.entity.reCREATE(recursive=True)
+                    for map in cls.orm.mappings.entitiesmappings:
+                        map.entities.orm.entity.reCREATE(True, clss)
+                        if map.associativemapping:
+                            map.associativemapping.entity.reCREATE(cur)
+                            
             except:
                 conn.rollback()
             else:
@@ -575,10 +608,20 @@ class mappings(entitiesmod.entities):
 
     @property
     def foreignkeys(self):
-        for map in self:
-            if type(map) is foreignkeyfieldmapping:
-                yield map
+        return self._generate(type=foreignkeyfieldmapping)
 
+    @property
+    def entitiesmappings(self):
+        return self._generate(type=entitiesmapping)
+
+    @property
+    def entitymappings(self):
+        return self._generate(type=entitymapping)
+
+    def _generate(self, type):
+        for map in self:
+            if builtins.type(map) is type:
+                yield map
     @property
     def orm(self):
         return self._orm
@@ -609,7 +652,6 @@ class mappings(entitiesmod.entities):
 
         r += '\n);'
         return r
-
 
     def getinsert(self):
 
@@ -675,6 +717,7 @@ class mapping(entitiesmod.entity):
     ordinal = 0
 
     def __init__(self, name):
+        # TODO I don't think self.orm is ever used so we can delete this line
         self.orm = None
         self._name = name
         mapping.ordinal += 1
@@ -690,11 +733,15 @@ class mapping(entitiesmod.entity):
         r = r.format(self.name)
 
         return r
+
+    def clone(self):
+        raise NotImplementedError('Abstract')
     
 class entitiesmapping(mapping):
     def __init__(self, name, es):
         self.entities = es
         self._value = None
+        self._associativemapping = undef
         super().__init__(name)
 
     @property
@@ -707,6 +754,38 @@ class entitiesmapping(mapping):
 
     def clone(self):
         return entitiesmapping(self.name, self.entities)
+
+    @property
+    def cardinality(self):
+        if self.associativemapping:
+            return cardinality.Manytomany
+        else:
+            return cardinality.Onetomany
+
+    @property
+    def associativemapping(self):
+        if self._associativemapping is undef:
+            for map1 in self.entities.orm.entity.orm.mappings.entitiesmappings:
+                for map2 in map1.entities.orm.mappings.entitiesmappings:
+                    if map2 is self:
+                        e1 = map1.entities.orm.entity
+                        e2 = map2.entities.orm.entity
+                        assmap = associativemapping(e1, e2)
+
+                        # Assign the associative mapping to map1 and map2. Note
+                        # that since map2 is self (see conditional), the assignment
+                        # to map2 is the same as an assignment to self - which
+                        # causes this accessor to return a non-None value.
+                        map1._associativemapping = assmap
+                        map2._associativemapping = assmap
+                        break
+                else:
+                    continue
+                break
+            else:
+                self._associativemapping = None
+
+        return self._associativemapping
 
 class entitymapping(mapping):
     def __init__(self, name, e):
@@ -730,6 +809,28 @@ class entitymapping(mapping):
 
     def clone(self):
         return entitymapping(self.name, self.entity)
+
+class associativemapping(mapping):
+    def __init__(self, e1, e2):
+        self._entity = None
+        self.entity1 = e1
+        self.entity2 = e2
+
+    @property
+    def entity(self):
+        if not self._entity:
+            B()
+            e = entity()
+
+            self._entity = e
+        return self._entity
+
+
+
+
+
+
+        
 
 class fieldmapping(mapping):
 
@@ -844,6 +945,39 @@ class primarykeyfieldmapping(fieldmapping):
     def value(self, v):
         self._value = v
 
+class ormclasseswrapper(entitiesmod.entities):
+    pass
+
+class ormclasswrapper(entitiesmod.entity):
+    def __init__(self, entity):
+        self.entity = entity
+        super().__init__()
+
+    def __str__(self):
+        return str(self.entity)
+
+    def __repr__(self):
+        return repr(self.entity)
+
+    @property
+    def orm(self):
+        return self.entity.orm
+
+    @property
+    def name(self):
+        return self.entity.__name__
+
+class composites(ormclasseswrapper):
+    pass
+
+class composite(ormclasswrapper):
+    pass
+
+class constituents(ormclasseswrapper):
+    pass
+
+class constituent(ormclasswrapper):
+    pass
 
 class orm:
     def __init__(self):
@@ -854,8 +988,9 @@ class orm:
         self.entities = None
         self.entity = None
         self.table = None
-        self.composites = []
-        self.constituents = []
+        # self.constituents = []
+        self._composits = None
+        self._constituents = None
 
     def clone(self):
         r = orm()
@@ -880,6 +1015,7 @@ class orm:
     def properties(self):
         return [x.name for x in self.mappings]
 
+    # TODO Rename to getsubclasses(of):
     @staticmethod
     def getentitiessubclasses(cls=entities):
         r = []
@@ -889,6 +1025,27 @@ class orm:
             r.extend(orm.getentitiessubclasses(subclass))
 
         return r
+
+    @property
+    def composites(self):
+        if not self._composits:
+            self._composits = composites()
+            for sub in self.getentitiessubclasses(entity):
+                for map in sub.orm.mappings.entitiesmappings:
+                    if map.entities.orm.entity is self.entity:
+                        self._composits += composite(sub)
+                        break
+
+        return self._composits
+
+    @property
+    def constituents(self):
+        if not self._constituents:
+            self._constituents = constituents()
+            for map in self.mappings.entitiesmappings:
+                e = map.entities.orm.entity
+                self._constituents += constituent(e)
+        return self._constituents
 
 class saveeventargs(entitiesmod.eventargs):
     def __init__(self, e):

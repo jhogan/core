@@ -40,23 +40,31 @@ import orm
 class locations(orm.entities):
     pass
 
-class location(orm.entity):
-    description = orm.fieldmapping(str)
-
 class presentations(orm.entities):
     pass
+
+class artifacts(orm.entities):
+    pass
+
+class artists(orm.entities):
+    pass
+
+class location(orm.entity):
+    description = orm.fieldmapping(str)
 
 class presentation(orm.entity):
     name = orm.fieldmapping(str)
     locations = locations
 
-class artists(orm.entities):
-    pass
-    
+class artifact(orm.entity):
+    title = orm.fieldmapping(str)
+    artists = artists
+
 class artist(orm.entity):
     firstname = orm.fieldmapping(str)
     lastname = orm.fieldmapping(str)
     presentations = presentations
+    artifacts = artifacts
 
 class singers(artists):
     pass
@@ -68,31 +76,45 @@ class test_orm(tester):
 
     def __init__(self):
         super().__init__()
+        # Temporarily commented out because of infinite recursion with MM
+        # relationships
+
         artist.reCREATE(recursive=True)
     
     def it_has_static_composites_reference(self):
         comps = location.orm.composites
         self.one(comps)
-        self.is_(comps[0], presentation)
+        self.is_(comps.first.entity, presentation)
 
-        comps = comps[0].orm.composites
+        comps = comps.first.entity.orm.composites
         self.one(comps)
-        self.is_(comps[0], artist)
+        self.is_(comps.first.entity, artist)
 
         comps = presentation.orm.composites
         self.one(comps)
-        self.is_(comps[0], artist)
+        self.is_(comps.first.entity, artist)
 
-        self.zero(artist.orm.composites)
+        comps = artifact.orm.composites
+        self.one(comps)
+        self.is_(comps.first.entity, artist)
+
+        comps = artist.orm.composites
+        self.one(comps)
+        self.is_(comps.first.entity, artifact)
 
     def it_has_static_constituents_reference(self):
-        consts = artist.orm.constituents
-        self.one(consts)
-        self.is_(consts[0], presentation)
+        consts = [x.entity for x in artist.orm.constituents]
+        self.two(consts)
+        self.true(presentation in consts)
+        self.true(artifact     in consts)
 
-        consts = consts[0].orm.constituents
+        consts = artist.orm.constituents['presentation'].orm.constituents
         self.one(consts)
-        self.is_(consts[0], location)
+        self.is_(consts.first.entity, location)
+
+        consts = artifact.orm.constituents
+        self.one(consts)
+        self.is_(consts.first.entity, artist)
 
     def it_has_broken_rules_of_constituents(self):
         art                =   artist()
