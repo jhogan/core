@@ -42,11 +42,6 @@ class types(Enum):
     pk  = 2
     fk  = 3
 
-@unique
-class cardinality(Enum):
-    Onetomany  = 0
-    Manytomany = 1
-
 class undef:
     pass
 
@@ -83,8 +78,15 @@ class entities(entitiesmod.entities):
     def load(self, p1, p2):
 
         # TODO Implement full WHERE and ARGS
-        # Assume an equality test (p1 == p2)
-        where, args = p1 + ' =%s', (p2, )
+        if hasattr(p2, '__iter__') and type(p2) is not str:
+            # Perform test using the *in* operator (p1 in (p2))
+            if not len(p2):
+                return
+            where = '{} in ({})'.format(p1, ', '.join(('%s',) * len(p2)))
+            args = p2
+        else:
+            # Assume an equality test (p1 == p2)
+            where, args = p1 + ' = %s', (p2, )
 
         sql = 'select * from %s where %s;' % (self.orm.table, where)
 
@@ -110,7 +112,7 @@ class entities(entitiesmod.entities):
 class entitymeta(type):
     def __new__(cls, name, bases, body):
         # If name == 'entity', the `class entity` statement is being executed.
-        if name != 'entity':
+        if name not in ('entity', 'association'):
             ormmod = sys.modules['orm']
             orm_ = orm()
             orm_.mappings = mappings(orm=orm_)
@@ -171,26 +173,28 @@ class entitymeta(type):
                 orm_.mappings += map
 
             for map in orm_.mappings:
-                del body[map.name]
-
-            # Make sure the mappings are sorted in the order they are
-            # instantiated
-            orm_.mappings.sort('_ordinal')
-
-            # The id will be the last elment, so pop it off and unshift so it's
-            # always the first element
-            orm_.mappings << orm_.mappings.pop('id')
+                try:
+                    del body[map.name]
+                except KeyError:
+                    # The orm_.mappings.__iter__ adds new mappings which won't
+                    # be in body, so ignore KeyErrors
+                    pass
 
             body['orm'] = orm_
 
         entity = super().__new__(cls, name, bases, body)
 
-        if name != 'entity':
+        if name not in ('entity', 'association'):
             orm_.entity = entity
 
-            # For each of this class's constituents, add this class to their
-            # composite's list
-            # for const in orm_.constituents:
+            # Since a new entity has been created, invalidate the derived cache
+            # of each mappings collection's object.  They must be recomputed
+            # since they are based on the existing entity object available.
+            for e in orm.getentitys():
+                e.orm.mappings._populated = False
+
+
+            #for const in orm_.constituents:
                 #const.orm.composites.append(entity)
 
                 #const.orm.mappings += entitymapping(name, entity)
@@ -282,14 +286,13 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             self._setvalue(attr, v, attr, setattr)
 
             if type(map) is entitymapping:
-                for map in self.orm.mappings.foreignkeys:
+                for map in self.orm.mappings.foreignkeymappings:
                     if map.entity is v.orm.entity:
                         self._setvalue(map.name, v.id, map.name, setattr)
                         break;
 
     @classmethod
-    def reCREATE(cls, recursive=False, clss=None):
-        # TODO Reuse cursor during recursion
+    def reCREATE(cls, cur=None, recursive=False, clss=None):
 
         # Prevent infinite recursion
         if clss is None:
@@ -299,34 +302,45 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 return
         clss += [cls]
 
-        pool = db.pool.getdefault()
-
-        with pool.take() as conn:
-            cur = conn.createcursor()
-            try:
-                try:
-                    cls.DROP(cur)
-                except MySQLdb.OperationalError as ex:
-                    try:
-                        errno = ex.args[0]
-                    except:
-                        raise
-
-                    if errno != BAD_TABLE_ERROR: # 1051
-                        raise
-
-                cls.CREATE(cur)
-
-                if recursive:
-                    for map in cls.orm.mappings.entitiesmappings:
-                        map.entities.orm.entity.reCREATE(True, clss)
-                        if map.associativemapping:
-                            map.associativemapping.entity.reCREATE(cur)
-                            
-            except:
-                conn.rollback()
+        try: 
+            if cur:
+                conn = None
             else:
+                pool = db.pool.getdefault()
+                conn = pool.pull()
+                cur = conn.createcursor()
+
+            try:
+                cls.DROP(cur)
+            except MySQLdb.OperationalError as ex:
+                try:
+                    errno = ex.args[0]
+                except:
+                    raise
+
+                if errno != BAD_TABLE_ERROR: # 1051
+                    raise
+
+            cls.CREATE(cur)
+
+            if recursive:
+                for map in cls.orm.mappings.entitiesmappings:
+                    map.entities.orm.entity.reCREATE(cur, True, clss)
+
+                for ass in cls.orm.associations:
+                    ass.entity.reCREATE(cur, True, clss)
+                            
+        except:
+            if conn:
+                conn.rollback()
+            raise
+        else:
+            if conn:
                 conn.commit()
+        finally:
+            if conn:
+                cur.close()
+                pool.push(conn)
 
     @classmethod
     def DROP(cls, cur=None):
@@ -473,7 +487,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                                 raise
 
-        except Exception as ex:
+                if type(map) is associationsmapping:
+                    pass
+
+        # TODO Do we need the 'as ex'
+        except Exception as ex: 
             self.orm.isnew,   \
             self.orm.isdirty, \
             self.orm.ismarkedfordeletion = n, d, r
@@ -562,7 +580,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     es.load(map1.name, self.id.bytes)
 
                     # Assign the composite reference to the constituent's
-                    # elements:
+                    # elements
                     #   i.e., art.presentations.first.artist = art
                     for e in es:
                         setattr(e, self.orm.entity.__name__, self)
@@ -572,7 +590,16 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 #   i.e., art.presentations.artist = art
                 setattr(map.value, self.orm.entity.__name__, self)
 
-        if map is None:
+        elif type(map) is associationsmapping:
+            map.composite = self
+        elif map is None:
+            if attr != 'orm':
+                for map in self.orm.mappings.associationsmappings:
+                    for map1 in map.associations.orm.mappings.entitymappings:
+                        if map1.entity.orm.entities.__name__ == attr:
+                            asses = getattr(self, map.name)
+                            return getattr(asses, attr)
+
             return object.__getattribute__(self, attr)
 
         return map.value
@@ -603,11 +630,78 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
 class mappings(entitiesmod.entities):
     def __init__(self, initial=None, orm=None):
-        self._orm = orm
         super().__init__(initial)
+        self._orm = orm
+        self._populated = False
+        self._populating = False
+        self.oncountchange += self._self_oncountchange
+
+    def _self_oncountchange(self, src, eargs):
+        self._populated = False
+
+    def __getitem__(self, key):
+        self._populate()
+        return super().__getitem__(key)
+
+    def __iter__(self):
+        self._populate()
+        return super().__iter__()
+
+    def _populate(self):
+        if not self._populated and not self._populating:
+            self._populating = True
+            maps = []
+
+            for map in self.entitymappings:
+                for map1 in self.foreignkeymappings:
+                    if map.entity is map1.entity:
+                        break
+                else:
+                    maps += [foreignkeyfieldmapping(map.entity)]
+
+            for e in orm.getentitys():
+                if e is self.orm.entity:
+                    continue
+                for map in e.orm.mappings.entitiesmappings:
+                    if map.entities is self.orm.entities:
+                        maps += [entitymapping(e.__name__, e)]
+                        maps += [foreignkeyfieldmapping(e)]
+
+            for ass in orm.getassociations():
+                for map in ass.orm.mappings.entitymappings:
+                    if map.entity is self.orm.entity:
+                        asses = ass.orm.entities
+                        maps += [associationsmapping(asses.__name__, asses)]
+                        break
+
+            for map in maps:
+                if not self(map.name):
+                    self += map
+            
+            for map in self:
+                map.orm = self.orm
+                    
+            self.sort()
+            self._populating = False
+
+        self._populated = True
+
+    def sort(self):
+        # Make sure the mappings are sorted in the order they are
+        # instantiated
+        super().sort('_ordinal')
+
+        # Ensure the id is the first element
+        self << self.pop('id')
+
+        fkmaps = list(self.foreignkeymappings)
+
+        for map in fkmaps:
+            self.remove(map)
+            self.insertafter(0, map)
 
     @property
-    def foreignkeys(self):
+    def foreignkeymappings(self):
         return self._generate(type=foreignkeyfieldmapping)
 
     @property
@@ -617,6 +711,10 @@ class mappings(entitiesmod.entities):
     @property
     def entitymappings(self):
         return self._generate(type=entitymapping)
+
+    @property
+    def associationsmappings(self):
+        return self._generate(type=associationsmapping)
 
     def _generate(self, type):
         for map in self:
@@ -652,6 +750,7 @@ class mappings(entitiesmod.entities):
 
         r += '\n);'
         return r
+
 
     def getinsert(self):
 
@@ -737,11 +836,46 @@ class mapping(entitiesmod.entity):
     def clone(self):
         raise NotImplementedError('Abstract')
     
+class associationsmapping(mapping):
+    def __init__(self, name, ass):
+        self.associations = ass
+        self._value = None
+        super().__init__(name)
+
+    @property
+    def composite(self):
+        return self._composite
+
+    @composite.setter
+    def composite(self, v):
+        self._composite = v
+        
+    @property
+    def value(self):
+        if not self._value:
+            for map in self.associations.orm.mappings.foreignkeymappings:
+                if map.entity is type(self.composite):
+                    break
+            else:
+                raise ValueError('FK not found')
+
+            asses = self.associations()
+            asses.composite = self.composite
+            asses.load(map.name, self.composite.id)
+            self.value = asses
+        return self._value
+
+    @value.setter
+    def value(self, v):
+        self._setvalue('_value', v, 'value')
+
+    def clone(self):
+        return associationsmapping(self.name, self.associations)
+
 class entitiesmapping(mapping):
     def __init__(self, name, es):
         self.entities = es
         self._value = None
-        self._associativemapping = undef
         super().__init__(name)
 
     @property
@@ -754,38 +888,6 @@ class entitiesmapping(mapping):
 
     def clone(self):
         return entitiesmapping(self.name, self.entities)
-
-    @property
-    def cardinality(self):
-        if self.associativemapping:
-            return cardinality.Manytomany
-        else:
-            return cardinality.Onetomany
-
-    @property
-    def associativemapping(self):
-        if self._associativemapping is undef:
-            for map1 in self.entities.orm.entity.orm.mappings.entitiesmappings:
-                for map2 in map1.entities.orm.mappings.entitiesmappings:
-                    if map2 is self:
-                        e1 = map1.entities.orm.entity
-                        e2 = map2.entities.orm.entity
-                        assmap = associativemapping(e1, e2)
-
-                        # Assign the associative mapping to map1 and map2. Note
-                        # that since map2 is self (see conditional), the assignment
-                        # to map2 is the same as an assignment to self - which
-                        # causes this accessor to return a non-None value.
-                        map1._associativemapping = assmap
-                        map2._associativemapping = assmap
-                        break
-                else:
-                    continue
-                break
-            else:
-                self._associativemapping = None
-
-        return self._associativemapping
 
 class entitymapping(mapping):
     def __init__(self, name, e):
@@ -809,28 +911,6 @@ class entitymapping(mapping):
 
     def clone(self):
         return entitymapping(self.name, self.entity)
-
-class associativemapping(mapping):
-    def __init__(self, e1, e2):
-        self._entity = None
-        self.entity1 = e1
-        self.entity2 = e2
-
-    @property
-    def entity(self):
-        if not self._entity:
-            B()
-            e = entity()
-
-            self._entity = e
-        return self._entity
-
-
-
-
-
-
-        
 
 class fieldmapping(mapping):
 
@@ -988,26 +1068,22 @@ class orm:
         self.entities = None
         self.entity = None
         self.table = None
-        # self.constituents = []
         self._composits = None
         self._constituents = None
+        self._associations = None
 
     def clone(self):
         r = orm()
 
         props = (
             'isnew',       'isdirty',      'ismarkedfordeletion',
-            'entity',      'entities',     'table',
-            'composites',  'constituents',
+            'entity',      'entities',     'table'
         )
 
         for prop in props: 
             setattr(r, prop, getattr(self, prop))
 
         r.mappings = self.mappings.clone(r)
-
-        for map in r.mappings:
-            map.orm = r
 
         return r
 
@@ -1021,11 +1097,48 @@ class orm:
         r = []
 
         for subclass in cls.__subclasses__():
-            r.append(subclass)
+            if subclass not in (associations, association):
+                r.append(subclass)
             r.extend(orm.getentitiessubclasses(subclass))
 
         return r
+    
+    @staticmethod
+    def getsubclasses(of):
+        r = []
 
+        for sub in of.__subclasses__():
+            r.append(sub)
+            r.extend(orm.getsubclasses(sub))
+
+        return r
+        
+    @staticmethod
+    def getassociations():
+        return orm.getsubclasses(of=association)
+
+    @staticmethod
+    def getentitys():
+        r = []
+        for e in orm.getsubclasses(of=entity):
+            if association not in e.mro():
+                if e is not association:
+                    r += [e]
+        return r
+
+    @property
+    def associations(self):
+        if not self._associations:
+            self._associations = ormclasseswrapper()
+            for ass in orm.getassociations():
+                # TODO No need for enumerate() here
+                maps = list(ass.orm.mappings.entitymappings)
+                for i, map in enumerate(maps):
+                    if map.entity is self.entity:
+                        self._associations += ormclasswrapper(ass)
+
+        return self._associations
+            
     @property
     def composites(self):
         if not self._composits:
@@ -1036,6 +1149,17 @@ class orm:
                         self._composits += composite(sub)
                         break
 
+            for ass in self.getassociations():
+                maps = list(ass.orm.mappings.entitymappings)
+                for i, map in enumerate(maps):
+                    if map.entity is self.entity:
+                        e = maps[int(not bool(i))].entity
+                        self._composits += composite(e)
+                        break
+                else:
+                    continue
+                break
+
         return self._composits
 
     @property
@@ -1045,8 +1169,72 @@ class orm:
             for map in self.mappings.entitiesmappings:
                 e = map.entities.orm.entity
                 self._constituents += constituent(e)
+
+            for ass in self.getassociations():
+                maps = list(ass.orm.mappings.entitymappings)
+                for i, map in enumerate(maps):
+                    if map.entity is self.entity:
+                        e = maps[int(not bool(i))].entity
+                        self._constituents += constituent(e)
+                        break
+                else:
+                    continue
+                break
         return self._constituents
 
 class saveeventargs(entitiesmod.eventargs):
     def __init__(self, e):
         self.entity = e
+
+class associations(entities):
+    def __init__(self):
+        self._constituents = {}
+        self.composite = None
+        super().__init__()
+
+    def append(self, obj, uniq=False, r=None):
+        for map in obj.orm.mappings.entitymappings:
+            # TODO We probably should be using the associations (self) mappings
+            # collection to test the composites names. The name that matters is
+            # on the LHS of the map when being defined in the association class.
+            if map.name == type(self.composite).__name__:
+                setattr(obj, map.name, self.composite)
+                break;
+        
+        super().append(obj, uniq, r)
+        return r
+
+    def __getattr__(self, attr):
+        if attr == type(self.composite).__name__:
+            return self.composite
+
+        try:
+            return self._constituents[attr]
+        except KeyError:
+            for map in self.orm.mappings.entitymappings:
+                es = map.entity.orm.entities
+                if es.__name__ == attr:
+                    break
+            else:
+                raise AttributeError('Entity not found')
+
+            for map in self.orm.mappings.foreignkeymappings:
+                if map.entity.orm.entities is es:
+                    fk = map.name
+                    break
+            else:
+                raise ValueError('FK not found')
+
+            es = es()
+            es.load('id', self.pluck(fk))
+            self._constituents[attr] =  es
+            return self._constituents[attr]
+    
+class association(entity):
+    @classmethod
+    def reCREATE(cls, cur, recursive=False, clss=None):
+        for map in cls.orm.mappings.entitymappings:
+            map.entity.reCREATE(cur, recursive, clss)
+
+        super().reCREATE(cur, recursive, clss)
+

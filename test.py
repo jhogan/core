@@ -58,20 +58,26 @@ class presentation(orm.entity):
 
 class artifact(orm.entity):
     title = orm.fieldmapping(str)
-    artists = artists
 
 class artist(orm.entity):
     firstname = orm.fieldmapping(str)
     lastname = orm.fieldmapping(str)
     presentations = presentations
-    artifacts = artifacts
+
+class artist_artifacts(orm.associations):
+    pass
+
+class artist_artifact(orm.association):
+    artist = artist
+    artifact = artifact
+    role = orm.fieldmapping(str)
 
 class singers(artists):
     pass
 
 class singer(artist):
     pass
-    
+
 class test_orm(tester):
 
     def __init__(self):
@@ -115,6 +121,49 @@ class test_orm(tester):
         consts = artifact.orm.constituents
         self.one(consts)
         self.is_(consts.first.entity, artist)
+
+    def it_loads_and_saves_associations(self):
+        # Test loading association collection
+        art = artist()
+        aa = art.artist_artifacts
+        self.zero(aa)
+
+        # Ensure property caches
+        self.is_(aa, art.artist_artifacts)
+
+        # Test loading associated collection
+        facts = art.artifacts
+        self.zero(facts)
+
+        # Ensure property caches
+        self.is_(facts, art.artifacts)
+
+        # Ensure the association's associated collections is the same as the
+        # associated collection of the entity.
+        self.is_(art.artifacts, art.artist_artifacts.artifacts)
+
+        self.is_(art, art.artist_artifacts.artist)
+
+        # Save and load an association
+        art                   =   artist()
+        fact                  =   artifact()
+        af                    =   artist_artifact()
+        af.role               =   uuid4().hex
+        af.artifact           =   fact
+        art.artist_artifacts  +=  af
+
+        self.is_(fact,    art.artist_artifacts.first.artifact)
+        self.is_(art,     art.artist_artifacts.first.artist)
+        self.eq(af.role,  art.artist_artifacts.first.role)
+        art.save()
+
+    def it_raises_error_on_invalid_attributes_of_associations(self):
+        art = artist()
+        self.expect(AttributeError, lambda: art.artist_artifacts.artifactsX)
+
+    def it_calls_str_on_entity(self):
+        # TODO Test str on entity, entities, association and associations.
+        pass
 
     def it_has_broken_rules_of_constituents(self):
         art                =   artist()
