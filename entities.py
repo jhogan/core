@@ -43,6 +43,7 @@ class entities(object):
             # Instantiate events
             self.onadd                =  event()
             self.onremove             =  event()
+            self.oncountchange        =  event()
 
             # TODO Write tests for these two events
             self.onbeforevaluechange  =  event()
@@ -76,6 +77,8 @@ class entities(object):
         if hasattr(eargs.entity, 'onaftervaluechange'):
             eargs.entity.onaftervaluechange += \
                 self._entity_onaftervaluechange 
+
+        self.oncountchange(self, eventargs())
             
     def _self_onremove(self, src, eargs):
         for ix in self.indexes:
@@ -88,6 +91,8 @@ class entities(object):
         if hasattr(eargs.entity, 'onaftervaluechange'):
             eargs.entity.onaftervaluechange -= \
                 self._entity_onaftervaluechange 
+
+        self.oncountchange(self, eventargs())
 
     def _entity_onbeforevaluechange(self, src, eargs):
         # Invoked before a change is made to a value on one of the collected
