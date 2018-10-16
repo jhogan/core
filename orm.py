@@ -86,6 +86,9 @@ class entities(entitiesmod.entities):
             args = p2
         else:
             # Assume an equality test (p1 == p2)
+            if isinstance(p2, UUID):
+                p2 = p2.bytes
+
             where, args = p1 + ' = %s', (p2, )
 
         sql = 'select * from %s where %s;' % (self.orm.table, where)
@@ -368,9 +371,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         self.orm.ismarkedfordeletion = True
         self.save()
 
-    def save(self, cur=None, followentitiesmapping=True):
+    def save(self, cur=None, follow=True, followentitiesmapping=True, followassociationmapping=True):
         # TODO Add reconnect logic
         # TODO Ensure connection is active
+        ()
 
         if not self.isvalid:
             raise db.brokenruleserror("Can't save invalid object" , self)
@@ -427,7 +431,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # set the foreignkeyfieldmapping to the id of self, i.e., give
             # the child objects the value of the parent id for their
             # foreign keys
-            for map in self.orm.mappings:
+            for map in self.orm.mappings if follow else tuple():
 
                 if type(map) is entitymapping:
                     # TODO: Calling map.value currenly loads the constituent.
@@ -487,8 +491,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                                 raise
 
-                if type(map) is associationsmapping:
-                    pass
+                if followassociationmapping and type(map) is associationsmapping:
+                    for ass in map.value:
+                        ass.save(cur, follow=False)
+                        for map in ass.orm.mappings.entitymappings:
+                            if map.value is not self:
+                                map.value.save(cur, followassociationmapping=False)
 
         # TODO Do we need the 'as ex'
         except Exception as ex: 
@@ -840,6 +848,7 @@ class associationsmapping(mapping):
     def __init__(self, name, ass):
         self.associations = ass
         self._value = None
+        self._composite = None
         super().__init__(name)
 
     @property

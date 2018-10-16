@@ -155,7 +155,22 @@ class test_orm(tester):
         self.is_(fact,    art.artist_artifacts.first.artifact)
         self.is_(art,     art.artist_artifacts.first.artist)
         self.eq(af.role,  art.artist_artifacts.first.role)
+
         art.save()
+
+        art1 = artist(art.id)
+        self.eq(art.id, art1.id)
+
+        B()
+        art1.artist_artifacts
+
+        self.eq(art. artist_artifacts.first.id, 
+                art1.artist_artifacts.first.id)
+
+        self.eq(art. artist_artifacts.artifacts.first.id, 
+                art1.artist_artifacts.artifacts.first.id)
+        self.eq(art.artist_artifacts.role, art1.artist_artifacts.role)
+
 
     def it_raises_error_on_invalid_attributes_of_associations(self):
         art = artist()
