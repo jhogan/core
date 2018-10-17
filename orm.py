@@ -658,33 +658,31 @@ class mappings(entitiesmod.entities):
     def _populate(self):
         if not self._populated and not self._populating:
             self._populating = True
+
+            self.clear(derived=True)
+
             maps = []
 
             for map in self.entitymappings:
-                for map1 in self.foreignkeymappings:
-                    if map.entity is map1.entity:
-                        break
-                else:
-                    maps += [foreignkeyfieldmapping(map.entity)]
+                maps += [foreignkeyfieldmapping(map.entity, derived=True)]
 
             for e in orm.getentitys():
                 if e is self.orm.entity:
                     continue
                 for map in e.orm.mappings.entitiesmappings:
                     if map.entities is self.orm.entities:
-                        maps += [entitymapping(e.__name__, e)]
-                        maps += [foreignkeyfieldmapping(e)]
+                        maps += [entitymapping(e.__name__, e, derived=True)]
+                        maps += [foreignkeyfieldmapping(e, derived=True)]
 
             for ass in orm.getassociations():
                 for map in ass.orm.mappings.entitymappings:
                     if map.entity is self.orm.entity:
                         asses = ass.orm.entities
-                        maps += [associationsmapping(asses.__name__, asses)]
+                        maps += [associationsmapping(asses.__name__, asses, derived=True)]
                         break
 
             for map in maps:
-                if not self(map.name):
-                    self += map
+                self += map
             
             for map in self:
                 map.orm = self.orm
@@ -693,6 +691,13 @@ class mappings(entitiesmod.entities):
             self._populating = False
 
         self._populated = True
+
+    def clear(self, derived=False):
+        if derived:
+            for map in [x for x in self if x.derived]:
+                self.remove(map)
+        else:
+            super().clear()
 
     def sort(self):
         # Make sure the mappings are sorted in the order they are
@@ -823,12 +828,13 @@ class mappings(entitiesmod.entities):
 class mapping(entitiesmod.entity):
     ordinal = 0
 
-    def __init__(self, name):
+    def __init__(self, name, derived=False):
         # TODO I don't think self.orm is ever used so we can delete this line
         self.orm = None
         self._name = name
         mapping.ordinal += 1
         self._ordinal = mapping.ordinal
+        self.derived = derived
 
     @property
     def name(self):
@@ -845,11 +851,11 @@ class mapping(entitiesmod.entity):
         raise NotImplementedError('Abstract')
     
 class associationsmapping(mapping):
-    def __init__(self, name, ass):
+    def __init__(self, name, ass, derived=False):
         self.associations = ass
         self._value = None
         self._composite = None
-        super().__init__(name)
+        super().__init__(name, derived)
 
     @property
     def composite(self):
@@ -879,7 +885,7 @@ class associationsmapping(mapping):
         self._setvalue('_value', v, 'value')
 
     def clone(self):
-        return associationsmapping(self.name, self.associations)
+        return associationsmapping(self.name, self.associations, self.derived)
 
 class entitiesmapping(mapping):
     def __init__(self, name, es):
@@ -899,10 +905,10 @@ class entitiesmapping(mapping):
         return entitiesmapping(self.name, self.entities)
 
 class entitymapping(mapping):
-    def __init__(self, name, e):
+    def __init__(self, name, e, derived=False):
         self.entity = e
         self._value = None
-        super().__init__(name)
+        super().__init__(name, derived)
 
     @property
     def value(self):
@@ -919,17 +925,17 @@ class entitymapping(mapping):
         self._setvalue('_value', v, 'value')
 
     def clone(self):
-        return entitymapping(self.name, self.entity)
+        return entitymapping(self.name, self.entity, derived=self.derived)
 
 class fieldmapping(mapping):
 
-    def __init__(self, type, default=undef, max=undef, full=undef, name=None):
+    def __init__(self, type, default=undef, max=undef, full=undef, name=None, derived=False):
         self._type = type
         self._value = undef
         self._default = default
         self._max = max
         self._full = full
-        super().__init__(name)
+        super().__init__(name, derived)
 
     def clone(self):
         map = fieldmapping(
@@ -937,7 +943,8 @@ class fieldmapping(mapping):
             self.default,
             self.max,
             self.full,
-            self.name
+            self.name,
+            self.derived
         )
 
         map._value = self._value
@@ -989,17 +996,17 @@ class fieldmapping(mapping):
         self._value = v
 
 class foreignkeyfieldmapping(fieldmapping):
-    def __init__(self, e):
+    def __init__(self, e, derived=False):
         self.entity = e
         self.value = None
-        super().__init__(type=types.fk)
+        super().__init__(type=types.fk, derived=derived)
 
     @property
     def name(self):
         return self.entity.__name__ + 'id'
 
     def clone(self):
-        return foreignkeyfieldmapping(self.entity)
+        return foreignkeyfieldmapping(self.entity, self.derived)
 
     @property
     def value(self):
@@ -1196,20 +1203,21 @@ class saveeventargs(entitiesmod.eventargs):
         self.entity = e
 
 class associations(entities):
-    def __init__(self):
+    def __init__(self, initial=None):
         self._constituents = {}
         self.composite = None
-        super().__init__()
+        super().__init__(initial)
 
     def append(self, obj, uniq=False, r=None):
-        for map in obj.orm.mappings.entitymappings:
-            # TODO We probably should be using the associations (self) mappings
-            # collection to test the composites names. The name that matters is
-            # on the LHS of the map when being defined in the association class.
-            if map.name == type(self.composite).__name__:
-                setattr(obj, map.name, self.composite)
-                break;
-        
+        if isinstance(obj, association):
+            for map in obj.orm.mappings.entitymappings:
+                # TODO We probably should be using the associations (self) mappings
+                # collection to test the composites names. The name that matters is
+                # on the LHS of the map when being defined in the association class.
+                if map.name == type(self.composite).__name__:
+                    setattr(obj, map.name, self.composite)
+                    break;
+            
         super().append(obj, uniq, r)
         return r
 

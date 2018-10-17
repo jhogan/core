@@ -147,30 +147,82 @@ class test_orm(tester):
         # Save and load an association
         art                   =   artist()
         fact                  =   artifact()
-        af                    =   artist_artifact()
-        af.role               =   uuid4().hex
-        af.artifact           =   fact
-        art.artist_artifacts  +=  af
+        aa                    =   artist_artifact()
+        aa.role               =   uuid4().hex
+        aa.artifact           =   fact
+        art.artist_artifacts  +=  aa
 
         self.is_(fact,    art.artist_artifacts.first.artifact)
         self.is_(art,     art.artist_artifacts.first.artist)
-        self.eq(af.role,  art.artist_artifacts.first.role)
+        self.eq(aa.role,  art.artist_artifacts.first.role)
+        self.one(art.artist_artifacts)
+        self.one(art.artifacts)
 
         art.save()
 
         art1 = artist(art.id)
-        self.eq(art.id, art1.id)
 
+        self.one(art1.artist_artifacts)
+
+        aa1 = art1.artist_artifacts.first
+
+        self.eq(art.id,          art1.id)
+        self.eq(aa.id,           aa1.id)
+        self.eq(aa.role,         aa1.role)
+
+        self.eq(aa.artist.id,    aa1.artist.id)
+        self.eq(aa.artistid,     aa1.artistid)
+
+        self.eq(aa.artifact.id,  aa1.artifact.id)
+        self.eq(aa.artifactid,   aa1.artifactid)
+
+        # Add as second artist_artifact, save, reload and test
+        aa2 = artist_artifact()
+        aa2.role = uuid4().hex
+        aa2.artifact = artifact()
+
+        art1.artist_artifacts += aa2
+        art1.save()
+
+        art2 = artist(art1.id)
+        self.eq(art1.id,         art2.id)
+
+        aas1=art1.artist_artifacts.sorted('role')
+        aas2=art2.artist_artifacts.sorted('role')
+
+        for aa1, aa2 in zip(aas1, aas2):
+
+            self.eq(aa1.id,           aa2.id)
+            self.eq(aa1.role,         aa2.role)
+
+            self.eq(aa1.artist.id,    aa2.artist.id)
+            self.eq(aa1.artistid,     aa2.artistid)
+
+            self.eq(aa1.artifact.id,  aa2.artifact.id)
+            self.eq(aa1.artifactid,   aa2.artifactid)
+
+        # Add a third artifact to artist's pseudo collection;
+        # save reload and test
         B()
-        art1.artist_artifacts
+        art2.artifacts += artifact()
+        art2.save()
 
-        self.eq(art. artist_artifacts.first.id, 
-                art1.artist_artifacts.first.id)
+        art3 = artist(art2.id)
 
-        self.eq(art. artist_artifacts.artifacts.first.id, 
-                art1.artist_artifacts.artifacts.first.id)
-        self.eq(art.artist_artifacts.role, art1.artist_artifacts.role)
+        aas2=art2.artist_artifacts.sorted('role')
+        aas3=art3.artist_artifacts.sorted('role')
 
+        for aa2, aa3 in zip(aas2, aas3):
+
+            self.eq(aa2.id,           aa3.id)
+            self.eq(aa2.role,         aa3.role)
+
+            self.eq(aa2.artist.id,    aa3.artist.id)
+            self.eq(aa2.artistid,     aa3.artistid)
+
+            self.eq(aa2.artifact.id,  aa3.artifact.id)
+            self.eq(aa2.artifactid,   aa3.artifactid)
+        
 
     def it_raises_error_on_invalid_attributes_of_associations(self):
         art = artist()
