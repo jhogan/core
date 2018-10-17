@@ -277,6 +277,7 @@ class entities(object):
         self.insertbefore(ix, e)
 
     def insertbefore(self, ix, e):
+        # TODO Support inserting collections
         self._ls.insert(ix, e)
         try:
             self.onadd(self, entityaddeventargs(e))
