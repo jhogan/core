@@ -46,6 +46,10 @@ class undef:
     pass
 
 class entities(entitiesmod.entities):
+    def __init__(self, initial=None):
+        self.orm = self.orm.clone()
+        super().__init__(initial)
+
     # TODO Make atomic
     def save(self):
         for e in self:
