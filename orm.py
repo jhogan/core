@@ -116,6 +116,11 @@ class entities(entitiesmod.entities):
             brs += e._getbrokenrules(es)
         return brs
 
+    def _self_onremove(self, src, eargs):
+        self.orm.trash += eargs.entity
+        self.orm.trash.last.orm.ismarkedfordeletion = True
+        super()._self_onremove(src, eargs)
+
 class entitymeta(type):
     def __new__(cls, name, bases, body):
         # If name == 'entity', the `class entity` statement is being executed.
@@ -375,10 +380,13 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         self.orm.ismarkedfordeletion = True
         self.save()
 
-    def save(self, cur=None, follow=True, followentitiesmapping=True, followassociationmapping=True):
+    def save(self, cur=None, follow                  =True, 
+                             followentitymapping     =True, 
+                             followentitiesmapping   =True, 
+                             followassociationmapping=True):
+
         # TODO Add reconnect logic
         # TODO Ensure connection is active
-        ()
 
         if not self.isvalid:
             raise db.brokenruleserror("Can't save invalid object" , self)
@@ -437,7 +445,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # foreign keys
             for map in self.orm.mappings if follow else tuple():
 
-                if type(map) is entitymapping:
+                if followentitymapping and type(map) is entitymapping:
                     # TODO: Calling map.value currenly loads the constituent.
                     # We probably shouldn't load this here unless the FK has
                     # changed.
@@ -486,21 +494,35 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             # re-raise
                             try:
                                 e.save(cur)
+
+                            # TODO Don't need the 'as ex' here
                             except Exception as ex:
                                 # Restore states
                                 for st, e in zip(sts, es):
                                     e.orm.isnew,   \
                                     e.orm.isdirty, \
                                     e.orm.ismarkedfordeletion = st
-
                                 raise
 
                 if followassociationmapping and type(map) is associationsmapping:
-                    for ass in map.value:
+                    asses = map.value
+                    for ass in asses:
                         ass.save(cur, follow=False)
                         for map in ass.orm.mappings.entitymappings:
                             if map.value is not self:
                                 map.value.save(cur, followassociationmapping=False)
+
+                    for ass in asses.orm.trash:
+                        st = ass.orm.persistencestate
+                        try:
+                            B()
+                            ass.save(cur)
+                        except Exception:
+                            ass.orm.persistencestate = st
+                            raise
+
+                    asses.orm.trash.clear()
+
 
         # TODO Do we need the 'as ex'
         except Exception as ex: 
@@ -1091,6 +1113,7 @@ class orm:
         self._composits = None
         self._constituents = None
         self._associations = None
+        self._trash = None
 
     def clone(self):
         r = orm()
@@ -1106,6 +1129,24 @@ class orm:
         r.mappings = self.mappings.clone(r)
 
         return r
+
+    @property
+    def persistencestate(self):
+        return self.isnew, self.isdirty, self.ismarkedfordeletion
+
+    @persistencestate.setter
+    def persistencestate(self, v):
+        self.isnew, self.isdirty, self.ismarkedfordeletion = v
+
+    @property
+    def trash(self):
+        if not self._trash:
+            self._trash = self.entities()
+        return self._trash
+
+    @trash.setter
+    def trash(self, v):
+        self._trash = v
 
     @property
     def properties(self):
@@ -1208,8 +1249,8 @@ class saveeventargs(entitiesmod.eventargs):
 
 class associations(entities):
     def __init__(self, initial=None):
-        self._constituents = {}
         self.composite = None
+        self._constituents = {}
         super().__init__(initial)
 
     def append(self, obj, uniq=False, r=None):
@@ -1225,7 +1266,41 @@ class associations(entities):
         super().append(obj, uniq, r)
         return r
 
+    def entities_onadd(self, src, eargs):
+        ass = None
+        for map in self.orm.mappings.entitymappings:
+            if map.entity is type(eargs.entity):
+                for ass in self:
+                    if getattr(ass, map.name) is eargs.entity:
+                        # eargs.entity already exists as a constitutent entity
+                        # in this collection of associations. There is no need
+                        # to add it again.
+                        return
+
+                ass = self.orm.entity()
+                setattr(ass, map.name, eargs.entity)
+            if map.entity is type(self.composite):
+                compmap = map
+        
+        setattr(ass, compmap.name, self.composite)
+        self += ass
+
+    def entities_onremove(self, src, eargs):
+        for map in self.orm.mappings.entitymappings:
+            if map.entity is type(eargs.entity):
+                for ass in self:
+                    if getattr(ass, map.name) is eargs.entity:
+                        break
+                else:
+                    continue
+                break
+        else:
+            return
+
+        self.remove(ass)
+
     def __getattr__(self, attr):
+        # TODO Use the mappings collection to get __name__'s value.
         if attr == type(self.composite).__name__:
             return self.composite
 
@@ -1235,21 +1310,19 @@ class associations(entities):
             for map in self.orm.mappings.entitymappings:
                 es = map.entity.orm.entities
                 if es.__name__ == attr:
+                    es = es()
+                    es.onadd    += self.entities_onadd
+                    es.onremove += self.entities_onremove
+                    self._constituents[attr] = es
                     break
             else:
                 raise AttributeError('Entity not found')
 
-            for map in self.orm.mappings.foreignkeymappings:
-                if map.entity.orm.entities is es:
-                    fk = map.name
-                    break
-            else:
-                raise ValueError('FK not found')
+            for ass in self:
+                es += getattr(ass, map.name)
 
-            es = es()
-            es.load('id', self.pluck(fk))
-            self._constituents[attr] =  es
-            return self._constituents[attr]
+        return self._constituents[attr]
+
     
 class association(entity):
     @classmethod

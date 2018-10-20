@@ -163,6 +163,7 @@ class test_orm(tester):
         art1 = artist(art.id)
 
         self.one(art1.artist_artifacts)
+        self.one(art1.artifacts)
 
         aa1 = art1.artist_artifacts.first
 
@@ -201,19 +202,22 @@ class test_orm(tester):
             self.eq(aa1.artifact.id,  aa2.artifact.id)
             self.eq(aa1.artifactid,   aa2.artifactid)
 
-        # Add a third artifact to artist's pseudo collection;
-        # save reload and test
-        B()
+        # Add a third artifact to artist's pseudo-collection.
+        # Save, reload and test.
         art2.artifacts += artifact()
+        self.three(art2.artifacts)
+        self.three(art2.artist_artifacts)
         art2.save()
 
         art3 = artist(art2.id)
 
-        aas2=art2.artist_artifacts.sorted('role')
-        aas3=art3.artist_artifacts.sorted('role')
+        self.three(art3.artifacts)
+        self.three(art3.artist_artifacts)
+
+        aas2 = art2.artist_artifacts.sorted('role')
+        aas3 = art3.artist_artifacts.sorted('role')
 
         for aa2, aa3 in zip(aas2, aas3):
-
             self.eq(aa2.id,           aa3.id)
             self.eq(aa2.role,         aa3.role)
 
@@ -222,7 +226,153 @@ class test_orm(tester):
 
             self.eq(aa2.artifact.id,  aa3.artifact.id)
             self.eq(aa2.artifactid,   aa3.artifactid)
-        
+
+    def it_removes_associations(self):
+        art = artist()
+
+        for i in range(2):
+            aa = artist_artifact()
+            aa.artifact = artifact()
+            art.artist_artifacts += aa
+
+        art.save()
+
+        art = artist(art.id)
+
+        self.two(art.artist_artifacts)
+        self.zero(art.artist_artifacts.orm.trash)
+        self.two(art.artifacts)
+        self.zero(art.artifacts.orm.trash)
+
+        rmfact = art.artifacts.shift()
+
+        self.one(art.artist_artifacts)
+        self.one(art.artist_artifacts.orm.trash)
+        self.one(art.artifacts)
+        self.one(art.artifacts.orm.trash)
+
+        for f1, f2 in zip(art.artifacts, art.artist_artifacts.artifacts):
+            self.isnot(f1, rmfact)
+            self.isnot(f2, rmfact)
+
+        art.save()
+
+        art1 = artist(art.id)
+
+        self.one(art1.artist_artifacts)
+        self.zero(art1.artist_artifacts.orm.trash)
+        self.one(art1.artifacts)
+        self.zero(art1.artifacts.orm.trash)
+            
+        aas = art.artist_artifacts.sorted('role')
+        aas1 = art1.artist_artifacts.sorted('role')
+
+        for aa, aa1 in zip(aas, aas1):
+            self.eq(aa.id,           aa1.id)
+            self.eq(aa.role,         aa1.role)
+
+            self.eq(aa.artist.id,    aa1.artist.id)
+            self.eq(aa.artistid,     aa1.artistid)
+
+            self.eq(aa.artifact.id,  aa1.artifact.id)
+            self.eq(aa.artifactid,   aa1.artifactid)
+
+        for fact in art1.artifacts:
+            self.ne(rmfact.id, fact.id)
+
+        self.expect(db.RecordNotFoundError, lambda: artifact(rmfact.id))
+
+        # TODO Test that deleting association deletes the constituent
+        # TODO Test updating associations
+        # TODO Test cascading deletes of associations
+        # TODO Test deleting associations, not just the association's
+        # psuedo-collection
+
+    def it_rollsback_save_with_broken_trash(self):
+        # TODO Test entities collection
+        if False:
+            art = artist()
+            art.presentations += presentation()
+            art.save()
+
+            art = artist(art.id)
+            art.presentations.pop()
+
+            self.zero(art.presentations)
+            self.one(art.presentations.orm.trash)
+
+            artst    =  art.orm.persistencestate
+            pressst  =  art.presentations.orm.trash.persistencestate
+            presst   =  art.orm.persistencestate.orm.trash.first.persistencestate
+
+            # Break save method
+            pres = art.presentation.orm.trash.first
+            save, pres.save = pres.save, lambda: 0/0
+
+            self.expect(ZeroDivisionError, lambda: art.save())
+
+            self.eq(artst,    art.orm.persistencestate)
+            self.eq(pressst,  art.presentations.orm.trash.persistencestate)
+            self.eq(presst,   art.orm.persistencestate.orm.trash.first.persistencestate)
+
+            # Restore unbroken save method
+            pres.save = save
+            art.save()
+
+            self.zero(artist(art.id).presentations)
+
+            # TODO SHould expect exception
+            presentations(art.presentations.orm.trash.first.id)
+
+        # Test associations
+        art = artist()
+        art.artifacts += artifact()
+        factid = art.artifacts.first.id
+        aaid = art.artist_artifacts.first.id
+
+        art.save()
+
+        art = artist(art.id)
+        art.artifacts.pop()
+
+        artst    =  art.orm.persistencestate
+        aast     =  art.artist_artifacts.orm.trash.orm.persistencestate
+        aasst    =  art.artist_artifacts.orm.trash.first.orm.trash.orm.persistencestate
+        factsst  =  art.artifacts.orm.trash.orm.persistencestate
+
+        self.zero(art.artifacts)
+        self.one(art.artist_artifacts.orm.trash)
+        self.one(art.artifacts.orm.trash)
+
+        # Brake save method
+        fn = lambda cur, followentitymapping: 0/0
+        save = art.artist_artifacts.orm.trash.first.save
+        art.artist_artifacts.orm.trash.first.save = fn
+
+        self.expect(ZeroDivisionError, lambda: art.save())
+
+        self.eq(artst,    art.orm.persistencestate)
+        self.eq(aast,     art.artist_artifacts.orm.trash.orm.persistencestate)
+        self.eq(aasst,    art.artist_artifacts.orm.trash.first.orm.trash.orm.persistencestate)
+        self.eq(factsst,  art.artifacts.orm.trash.orm.persistencestate)
+
+        self.zero(art.artifacts)
+        self.one(art.artist_artifacts.orm.trash)
+        self.one(art.artifacts.orm.trash)
+        self.one(artist(art.id).artifacts)
+        self.one(artist(art.id).artist_artifacts)
+
+        # Restore unbroken save method
+        art.artist_artifacts.orm.trash.first.save = save
+
+        art.save()
+        self.zero(artist(art.id).artifacts)
+        self.zero(artist(art.id).artist_artifacts)
+
+        self.expect(db.RecordNotFoundError, lambda: artist_artifact(aaid))
+
+        # TODO Ensure artifact record isn't in database
+        # self.expect(db.RecordNotFoundError, lambda: artifact(factid))
 
     def it_raises_error_on_invalid_attributes_of_associations(self):
         art = artist()
@@ -423,6 +573,14 @@ class test_orm(tester):
                         self.eq(getattr(loc, map.name), getattr(loc1, map.name))
             
                 self.is_(pres1, loc1.presentation)
+
+        return
+        # TODO Remove items from collection
+        # For example:
+        art1.presentations.pop()
+        art1.save()
+        art2 = article(art1.id)
+        self.eq(art1.presentations.count, art2.presentations.count)
 
     def it_updates_constituents_properties(self):
         art = artist()
@@ -839,6 +997,22 @@ class test_orm(tester):
         self.false(art.orm.ismarkedfordeletion)
 
         self.expect(db.RecordNotFoundError, lambda: artist(art.id))
+
+    def it_deletes_from_collections(self):
+        # TODO
+        return
+        art = artist()
+        art.artifacts += artifact()
+        art.save()
+
+        art = artist(art.id)
+        art.artifacts.pop()
+        art.save()
+
+        art = artist(art.id)
+        self.zero(art.artifacts)
+
+        # Test recursive deletes
 
     def it_assigns_and_retrives_unicode_values_from_str_properties(self):
         # TODO
