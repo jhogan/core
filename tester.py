@@ -171,6 +171,9 @@ class tester(entity):
     def is_(self, expect, actual, msg=None):
         if expect is not actual: self._failures += failure()
 
+    def isnot(self, expect, actual, msg=None):
+        if expect is actual: self._failures += failure()
+
     def assertNone(self, o, msg=None):
         if o != None: self._failures += failure()
 
