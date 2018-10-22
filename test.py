@@ -227,66 +227,142 @@ class test_orm(tester):
             self.eq(aa2.artifact.id,  aa3.artifact.id)
             self.eq(aa2.artifactid,   aa3.artifactid)
 
-    def it_removes_associations(self):
+        # TODO Test deeply nested
+
+    def it_updates_associations_constituent_entity(self):
+
         art = artist()
 
         for i in range(2):
             aa = artist_artifact()
             aa.artifact = artifact()
+            aa.artifact.title = uuid4().hex
             art.artist_artifacts += aa
-
-        art.save()
-
-        art = artist(art.id)
-
-        self.two(art.artist_artifacts)
-        self.zero(art.artist_artifacts.orm.trash)
-        self.two(art.artifacts)
-        self.zero(art.artifacts.orm.trash)
-
-        rmfact = art.artifacts.shift()
-
-        self.one(art.artist_artifacts)
-        self.one(art.artist_artifacts.orm.trash)
-        self.one(art.artifacts)
-        self.one(art.artifacts.orm.trash)
-
-        for f1, f2 in zip(art.artifacts, art.artist_artifacts.artifacts):
-            self.isnot(f1, rmfact)
-            self.isnot(f2, rmfact)
 
         art.save()
 
         art1 = artist(art.id)
 
-        self.one(art1.artist_artifacts)
-        self.zero(art1.artist_artifacts.orm.trash)
-        self.one(art1.artifacts)
-        self.zero(art1.artifacts.orm.trash)
-            
-        aas = art.artist_artifacts.sorted('role')
-        aas1 = art1.artist_artifacts.sorted('role')
-
-        for aa, aa1 in zip(aas, aas1):
-            self.eq(aa.id,           aa1.id)
-            self.eq(aa.role,         aa1.role)
-
-            self.eq(aa.artist.id,    aa1.artist.id)
-            self.eq(aa.artistid,     aa1.artistid)
-
-            self.eq(aa.artifact.id,  aa1.artifact.id)
-            self.eq(aa.artifactid,   aa1.artifactid)
-
         for fact in art1.artifacts:
-            self.ne(rmfact.id, fact.id)
+            fact.title = uuid4().hex
 
-        self.expect(db.RecordNotFoundError, lambda: artifact(rmfact.id))
+        # Save and reload
+        art1.save()
+        art2 = artist(art1.id)
 
-        # TODO Test that deleting association deletes the constituent
-        # TODO Test updating associations
-        # TODO Test cascading deletes of associations
-        # TODO Test deleting associations, not just the association's
-        # psuedo-collection
+        self.two(art1.artifacts)
+        self.two(art2.artifacts)
+
+        facts  = art. artifacts.sorted('title')
+        facts1 = art1.artifacts.sorted('title')
+        facts2 = art2.artifacts.sorted('title')
+
+        for f, f2 in zip(facts, facts2):
+            self.ne(f.title, f2.title)
+
+        for f1, f2 in zip(facts1, facts2):
+            self.eq(f1.title, f2.title)
+
+        # TODO Test deeply nested
+
+    def it_updates_associations_constituent_entity(self):
+        art = artist()
+
+        for i in range(2):
+            aa = artist_artifact()
+            aa.artifact = artifact()
+            aa.role = uuid4().hex
+            art.artist_artifacts += aa
+
+        art.save()
+
+        art1 = artist(art.id)
+
+        for aa in art1.artist_artifacts:
+            aa.role = uuid4().hex
+
+        # Save and reload
+        art1.save()
+        art2 = artist(art1.id)
+        B()
+
+        aas  = art. artist_artifacts.sorted('role')
+        aas1 = art1.artist_artifacts.sorted('role')
+        aas2 = art2.artist_artifacts.sorted('role')
+
+        for aa, aa2 in zip(aas, aas2):
+            self.ne(aa.role, aa2.role)
+
+        for aa1, aa2 in zip(aas1, aas2):
+            self.eq(aa1.role, aa2.role)
+
+        # TODO Test deeply nested
+
+    def it_removes_associations(self):
+        for removeby in 'pseudo-collection', 'association':
+            art = artist()
+
+            for i in range(2):
+                aa = artist_artifact()
+                aa.artifact = artifact()
+                art.artist_artifacts += aa
+
+            art.save()
+
+            art = artist(art.id)
+
+            self.two(art.artist_artifacts)
+            self.zero(art.artist_artifacts.orm.trash)
+            self.two(art.artifacts)
+            self.zero(art.artifacts.orm.trash)
+
+            if removeby == 'pseudo-collection':
+                rmfact = art.artifacts.shift()
+            elif removeby == 'association':
+                rmfact = art.artist_artifacts.shift().artifact
+                B()
+
+            rmaa = art.artist_artifacts.orm.trash.first
+
+
+            self.one(art.artist_artifacts)
+            self.one(art.artist_artifacts.orm.trash)
+            self.one(art.artifacts)
+            self.one(art.artifacts.orm.trash)
+
+            for f1, f2 in zip(art.artifacts, art.artist_artifacts.artifacts):
+                self.isnot(f1, rmfact)
+                self.isnot(f2, rmfact)
+
+            art.save()
+
+            art1 = artist(art.id)
+
+            self.one(art1.artist_artifacts)
+            self.zero(art1.artist_artifacts.orm.trash)
+            self.one(art1.artifacts)
+            self.zero(art1.artifacts.orm.trash)
+                
+            aas = art.artist_artifacts.sorted('role')
+            aas1 = art1.artist_artifacts.sorted('role')
+
+            for aa, aa1 in zip(aas, aas1):
+                self.eq(aa.id,           aa1.id)
+                self.eq(aa.role,         aa1.role)
+
+                self.eq(aa.artist.id,    aa1.artist.id)
+                self.eq(aa.artistid,     aa1.artistid)
+
+                self.eq(aa.artifact.id,  aa1.artifact.id)
+                self.eq(aa.artifactid,   aa1.artifactid)
+
+            for fact in art1.artifacts:
+                self.ne(rmfact.id, fact.id)
+
+            self.expect(db.RecordNotFoundError, lambda: artist_artifact(rmaa.id))
+            self.expect(db.RecordNotFoundError, lambda: artifact(rmfact.id))
+
+        # TODO Test deeply nested
 
     def it_rollsback_save_with_broken_trash(self):
         # TODO Test entities collection
@@ -321,7 +397,7 @@ class test_orm(tester):
 
             self.zero(artist(art.id).presentations)
 
-            # TODO SHould expect exception
+            # TODO Should expect exception
             presentations(art.presentations.orm.trash.first.id)
 
         # Test associations
@@ -345,7 +421,7 @@ class test_orm(tester):
         self.one(art.artifacts.orm.trash)
 
         # Brake save method
-        fn = lambda cur, followentitymapping: 0/0
+        fn = lambda cur: 0/0
         save = art.artist_artifacts.orm.trash.first.save
         art.artist_artifacts.orm.trash.first.save = fn
 
@@ -370,9 +446,7 @@ class test_orm(tester):
         self.zero(artist(art.id).artist_artifacts)
 
         self.expect(db.RecordNotFoundError, lambda: artist_artifact(aaid))
-
-        # TODO Ensure artifact record isn't in database
-        # self.expect(db.RecordNotFoundError, lambda: artifact(factid))
+        self.expect(db.RecordNotFoundError, lambda: artifact(factid))
 
     def it_raises_error_on_invalid_attributes_of_associations(self):
         art = artist()
@@ -1034,6 +1108,7 @@ class test_orm(tester):
             self.fail('Exception not thrown')
 
     def it_calls_dir(self):
+        # TODO Test for pseudo-collection property from associations
         # TODO Add more properties to test
         class persons(orm.entities):
             pass

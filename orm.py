@@ -453,8 +453,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     # Call the entity constituent's save method. Setting
                     # followentitiesmapping to false here prevents it's
                     # child/entitiesmapping constituents from being saved. This
-                    # prevents infinite recursion.
-                    map.value.save(cur, followentitiesmapping=False)
+                    # prevents infinite recursion. 
+                    map.value.save(cur, followentitiesmapping=False,
+                                        followassociationmapping=False)
 
                 if followentitiesmapping and type(map) is entitiesmapping:
 
@@ -515,7 +516,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     for ass in asses.orm.trash:
                         st = ass.orm.persistencestate
                         try:
-                            B()
                             ass.save(cur)
                         except Exception:
                             ass.orm.persistencestate = st
@@ -1265,6 +1265,27 @@ class associations(entities):
             
         super().append(obj, uniq, r)
         return r
+
+    def _self_onremove(self, src, eargs):
+        """ This event handler occures when an association is removed from an
+        assoctions collection. When this happens, we want to remove the
+        association's constituent entity (the non-composite entity) from its
+        pseudocollection class - but only if it hasn't already been marked for
+        deletion (ismarkedfordeletion). If it has been marked for deletion,
+        that means the psuedocollection class is invoking this handler - so
+        removing the constituent would result in infinite recursion.  """
+
+        ass = eargs.entity
+
+        for i, map in enumerate(ass.orm.mappings.entitymappings):
+            if map.entity is not type(self.composite):
+                e = map.value
+                if not e.orm.ismarkedfordeletion:
+                    es = getattr(self, e.orm.entities.__name__)
+                    es.remove(e)
+                    break
+            
+        super()._self_onremove(src, eargs)
 
     def entities_onadd(self, src, eargs):
         ass = None
