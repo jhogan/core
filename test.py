@@ -36,11 +36,30 @@ import pathlib
 import re
 import io
 import orm
+import functools
+
+def getattr(obj, attr, *args):
+    # Redefine getattr() to support deep attribututes 
+    # 
+    # For example:
+    #    Instead of this:
+    #        entity.constituents.first.id
+    #    we can do this:t
+    #        getattr(entity, 'constituents.first.id')
+
+    def rgetattr(obj, attr):
+        if obj:
+            return builtins.getattr(obj, attr, *args)
+        return None
+    return functools.reduce(rgetattr, [obj] + attr.split('.'))
 
 class locations(orm.entities):
     pass
 
 class presentations(orm.entities):
+    pass
+
+class components(orm.entities):
     pass
 
 class artifacts(orm.entities):
@@ -56,8 +75,12 @@ class presentation(orm.entity):
     name = orm.fieldmapping(str)
     locations = locations
 
+class component(orm.entity):
+    name = orm.fieldmapping(str)
+
 class artifact(orm.entity):
     title = orm.fieldmapping(str)
+    components = components
 
 class artist(orm.entity):
     firstname = orm.fieldmapping(str)
@@ -119,11 +142,16 @@ class test_orm(tester):
         self.is_(consts.first.entity, location)
 
         consts = artifact.orm.constituents
-        self.one(consts)
+        self.two(consts)
+
+        consts.sort('name')
         self.is_(consts.first.entity, artist)
+        self.is_(consts.second.entity, component)
 
     def it_loads_and_saves_associations(self):
         # Test loading association collection
+        # Test loading asd saving deeply nested attributes
+        # Test loading asd saving deeply nested associations
         art = artist()
         aa = art.artist_artifacts
         self.zero(aa)
@@ -227,7 +255,31 @@ class test_orm(tester):
             self.eq(aa2.artifact.id,  aa3.artifact.id)
             self.eq(aa2.artifactid,   aa3.artifactid)
 
-        # TODO Test deeply nested
+        # TODO Test deeply nested associations
+        comps3 = components()
+        for _ in range(2):
+            comps3 += component()
+
+        comps3.sort('id')
+        art3.artist_artifacts.first.artifact.components += comps3.first
+        art3.artifacts.first.components += comps3.second
+
+        self.two(art3.artist_artifacts.first.artifact.components)
+        self.two(art3.artifacts.first.components)
+
+        self.is_(comps3[0], art3.artist_artifacts.first.artifact.components[0])
+        self.is_(comps3[1], art3.artist_artifacts.first.artifact.components[1])
+        self.is_(comps3[0], art3.artifacts.first.components[0])
+        self.is_(comps3[1], art3.artifacts.first.components[1])
+
+        art3.save()
+
+        art4 = artist(art3.id)
+        comps4 = art4.artist_artifacts.first.artifact.components.sorted('id')
+
+        self.two(comps4)
+        self.eq(comps4.first.id, comps3.first.id)
+        self.eq(comps4.second.id, comps3.second.id)
 
     def it_updates_associations_constituent_entity(self):
 
@@ -263,9 +315,48 @@ class test_orm(tester):
         for f1, f2 in zip(facts1, facts2):
             self.eq(f1.title, f2.title)
 
-        # TODO Test deeply nested
+        attrs = 'artifacts.first.components', \
+               'artist_artifacts.first.artifact.components'
 
-    def it_updates_associations_constituent_entity(self):
+        for attr in attrs:
+            comps = getattr(art2, attr)
+            comps += component()
+            comps.last.name = uuid4().hex
+
+        art2.save()
+        art3 = artist(art2.id)
+
+        for attr in attrs:
+            comps = getattr(art3, attr)
+            for comp in comps:
+                comp.name = uuid4().hex
+
+        art3.save()
+        art4 = artist(art3.id)
+
+        for attr in attrs:
+            comps2 = getattr(art2, attr)
+            comps3 = getattr(art3, attr)
+            comps4 = getattr(art4, attr)
+
+            self.two(comps2)
+            self.two(comps3)
+            self.two(comps4)
+
+            for comp4 in comps4:
+                for comp2 in comps2:
+                    self.ne(comp2.name, comp4.name)
+
+            for comp4 in comps4:
+                for comp3 in comps3:
+                    if comp4.name == comp3.name:
+                        break
+                else:
+                    self.fail('No match within comps4 and comps3')
+
+        # TODO Test deeply nested associations
+
+    def it_updates_association(self):
         art = artist()
 
         for i in range(2):
@@ -284,7 +375,6 @@ class test_orm(tester):
         # Save and reload
         art1.save()
         art2 = artist(art1.id)
-        B()
 
         aas  = art. artist_artifacts.sorted('role')
         aas1 = art1.artist_artifacts.sorted('role')
@@ -296,7 +386,7 @@ class test_orm(tester):
         for aa1, aa2 in zip(aas1, aas2):
             self.eq(aa1.role, aa2.role)
 
-        # TODO Test deeply nested
+        # TODO Test deeply nested associations
 
     def it_removes_associations(self):
         for removeby in 'pseudo-collection', 'association':
@@ -305,12 +395,16 @@ class test_orm(tester):
             for i in range(2):
                 aa = artist_artifact()
                 aa.artifact = artifact()
+                aa.artifact.components += component()
                 art.artist_artifacts += aa
+                art.artist_artifacts.last.artifact.components += component()
 
             art.save()
 
-            art = artist(art.id)
+            # TODO Remove deeply nested entities (i.e., the components added above)
 
+            art = artist(art.id)
+            
             self.two(art.artist_artifacts)
             self.zero(art.artist_artifacts.orm.trash)
             self.two(art.artifacts)
@@ -320,10 +414,10 @@ class test_orm(tester):
                 rmfact = art.artifacts.shift()
             elif removeby == 'association':
                 rmfact = art.artist_artifacts.shift().artifact
-                B()
+
+            rmcomps = rmfact.components
 
             rmaa = art.artist_artifacts.orm.trash.first
-
 
             self.one(art.artist_artifacts)
             self.one(art.artist_artifacts.orm.trash)
@@ -362,43 +456,45 @@ class test_orm(tester):
             self.expect(db.RecordNotFoundError, lambda: artist_artifact(rmaa.id))
             self.expect(db.RecordNotFoundError, lambda: artifact(rmfact.id))
 
-        # TODO Test deeply nested
+            for comp in rmcomps:
+                self.expect(db.RecordNotFoundError, lambda: component(comp.id))
+                
+
+        # TODO Test deeply nested associations
 
     def it_rollsback_save_with_broken_trash(self):
-        # TODO Test entities collection
-        if False:
-            art = artist()
-            art.presentations += presentation()
-            art.save()
+        # Test entities collection
 
-            art = artist(art.id)
-            art.presentations.pop()
+        art = artist()
+        art.presentations += presentation()
+        art.save()
 
-            self.zero(art.presentations)
-            self.one(art.presentations.orm.trash)
+        art = artist(art.id)
+        art.presentations.pop()
 
-            artst    =  art.orm.persistencestate
-            pressst  =  art.presentations.orm.trash.persistencestate
-            presst   =  art.orm.persistencestate.orm.trash.first.persistencestate
+        self.zero(art.presentations)
+        self.one(art.presentations.orm.trash)
 
-            # Break save method
-            pres = art.presentation.orm.trash.first
-            save, pres.save = pres.save, lambda: 0/0
+        artst     =  art.orm.persistencestate
+        presssts  =  art.presentations.orm.trash.orm.persistencestates
 
-            self.expect(ZeroDivisionError, lambda: art.save())
+        # Break save method
+        pres = art.presentations.orm.trash.first
+        save, pres.save = pres.save, lambda cur: 0/0
 
-            self.eq(artst,    art.orm.persistencestate)
-            self.eq(pressst,  art.presentations.orm.trash.persistencestate)
-            self.eq(presst,   art.orm.persistencestate.orm.trash.first.persistencestate)
+        self.expect(ZeroDivisionError, lambda: art.save())
 
-            # Restore unbroken save method
-            pres.save = save
-            art.save()
+        self.eq(artst,     art.orm.persistencestate)
+        self.eq(presssts,  art.presentations.orm.trash.orm.persistencestates)
 
-            self.zero(artist(art.id).presentations)
+        # Restore unbroken save method
+        pres.save = save
+        art.save()
 
-            # TODO Should expect exception
-            presentations(art.presentations.orm.trash.first.id)
+        self.zero(artist(art.id).presentations)
+
+        trashid = art.presentations.orm.trash.first.id
+        self.expect(db.RecordNotFoundError, lambda: presentation(trashid))
 
         # Test associations
         art = artist()
@@ -411,10 +507,11 @@ class test_orm(tester):
         art = artist(art.id)
         art.artifacts.pop()
 
+        aatrash = art.artist_artifacts.orm.trash
         artst    =  art.orm.persistencestate
-        aast     =  art.artist_artifacts.orm.trash.orm.persistencestate
-        aasst    =  art.artist_artifacts.orm.trash.first.orm.trash.orm.persistencestate
-        factsst  =  art.artifacts.orm.trash.orm.persistencestate
+        aasts    =  aatrash.orm.persistencestates
+        aassts   =  aatrash.first.orm.trash.orm.persistencestates
+        factssts =  art.artifacts.orm.trash.orm.persistencestates
 
         self.zero(art.artifacts)
         self.one(art.artist_artifacts.orm.trash)
@@ -427,10 +524,12 @@ class test_orm(tester):
 
         self.expect(ZeroDivisionError, lambda: art.save())
 
-        self.eq(artst,    art.orm.persistencestate)
-        self.eq(aast,     art.artist_artifacts.orm.trash.orm.persistencestate)
-        self.eq(aasst,    art.artist_artifacts.orm.trash.first.orm.trash.orm.persistencestate)
-        self.eq(factsst,  art.artifacts.orm.trash.orm.persistencestate)
+        aatrash = art.artist_artifacts.orm.trash
+
+        self.eq(artst,     art.orm.persistencestate)
+        self.eq(aasts,     aatrash.orm.persistencestates)
+        self.eq(aassts,    aatrash.first.orm.trash.orm.persistencestates)
+        self.eq(factssts,  art.artifacts.orm.trash.orm.persistencestates)
 
         self.zero(art.artifacts)
         self.one(art.artist_artifacts.orm.trash)
@@ -898,7 +997,6 @@ class test_orm(tester):
 
         class person(orm.entity):
             firstname = orm.fieldmapping(str)
-            persons = persons
 
         p = person()
 
@@ -924,7 +1022,6 @@ class test_orm(tester):
 
         class person(orm.entity):
             firstname = orm.fieldmapping(str)
-            persons = persons
 
         p = person()
 
@@ -948,7 +1045,6 @@ class test_orm(tester):
 
         class person(orm.entity):
             firstname = orm.fieldmapping(str)
-            persons = persons
 
         p = person()
 
@@ -982,7 +1078,6 @@ class test_orm(tester):
 
         class person(orm.entity):
             firstname = orm.fieldmapping(str)
-            persons = persons
 
         # By default, str properties should except None and whitespace
         p = person()
@@ -1073,20 +1168,36 @@ class test_orm(tester):
         self.expect(db.RecordNotFoundError, lambda: artist(art.id))
 
     def it_deletes_from_collections(self):
-        # TODO
-        return
+        # Create artist with a presentation and save
         art = artist()
-        art.artifacts += artifact()
+        pres = presentation()
+        art.presentations += pres
+        art.save()
+
+        # Reload
+        art = artist(art.id)
+
+        # Test presentations and its trash collection
+        self.one(art.presentations)
+        self.zero(art.presentations.orm.trash)
+
+        # Remove the presentation
+        art.presentations.pop()
+
+        # Test presentations and its trash collection
+        self.zero(art.presentations)
+        self.one(art.presentations.orm.trash)
+
         art.save()
 
         art = artist(art.id)
-        art.artifacts.pop()
-        art.save()
+        self.zero(art.presentations)
+        self.zero(art.presentations.orm.trash)
 
-        art = artist(art.id)
-        self.zero(art.artifacts)
+        self.expect(db.RecordNotFoundError, lambda: presentation(pres.id))
 
-        # Test recursive deletes
+        # TODO Test recursive deletes
+        # TODO Test deeply nested 
 
     def it_assigns_and_retrives_unicode_values_from_str_properties(self):
         # TODO
@@ -1115,7 +1226,6 @@ class test_orm(tester):
 
         class person(orm.entity):
             firstname = orm.fieldmapping(str)
-            persons = persons
 
 
         # Make sure mapped properties show are returned when dir() is called 

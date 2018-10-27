@@ -48,6 +48,7 @@ class undef:
 class entities(entitiesmod.entities):
     def __init__(self, initial=None):
         self.orm = self.orm.clone()
+        self.orm.instance = self
         super().__init__(initial)
 
     # TODO Make atomic
@@ -55,7 +56,24 @@ class entities(entitiesmod.entities):
         for e in self:
             e.save()
 
+    def give(self, es):
+        sts = self.orm.persistencestates
+        super().give(es)
+
+        # super().give(es) will mark the entities for deletion
+        # (ismarkedfordeletion) since it removes entities from collections.
+        # However, giving an entity to another collection is a matter of
+        # updating its foreign key/composite. So restore the original
+        # persistencestates of the entities then make sure they are all still
+        # dirty (isdirty). This will keep them from being deleted unless that
+        # had previously been explitly marked for deletion.
+
+        es.orm.persistencestates = sts
+        for e in es:
+            e.orm.isdirty = True
+
     def append(self, obj, uniq=False, r=None):
+        # TODO Support appending collections
         try:
             clscomp = self.orm.composites[0]
         except IndexError:
@@ -80,9 +98,7 @@ class entities(entitiesmod.entities):
         return r
     
     def load(self, p1, p2):
-
-        # TODO Implement full WHERE and ARGS
-        if hasattr(p2, '__iter__') and type(p2) is not str:
+        if hasattr(p2, '__iter__') and type(p2) not in (str, bytes):
             # Perform test using the *in* operator (p1 in (p2))
             if not len(p2):
                 return
@@ -132,7 +148,7 @@ class entitymeta(type):
             try:
                 body['entities']
             except KeyError:
-                for sub in orm_.getentitiessubclasses():
+                for sub in orm_.getsubclasses(of=entities):
 
                     if sub.__name__   == name + 's' and \
                        sub.__module__ == body['__module__']:
@@ -164,19 +180,8 @@ class entitymeta(type):
                 if isinstance(v, mapping):
                     map = v
                 elif hasattr(v, 'mro') and ormmod.entities in v.mro():
-
-                    # TODO This temporary check was put in place where name
-                    # is 'artifact' and v is the artist class. THe artist class
-                    # statement hasn't been run yet.
-                    # the 'artifact' cl
-                    # if hasattr(v, 'orm'):
-                        # orm_.constituents.append(v.orm.entity)
-                    #else:
-                    #   pass
                     map = entitiesmapping(k, v)
                 elif type(k) is str:
-                    # TODO I don't think this line ever executes. Plus, isn't k
-                    # always going to be a str.
                     map = entitymapping(k, v)
                 else:
                     continue
@@ -204,16 +209,6 @@ class entitymeta(type):
             # since they are based on the existing entity object available.
             for e in orm.getentitys():
                 e.orm.mappings._populated = False
-
-
-            #for const in orm_.constituents:
-                #const.orm.composites.append(entity)
-
-                #const.orm.mappings += entitymapping(name, entity)
-
-                # Insert foreignkeyfieldmapping into the constituent's mappings
-                # collection right after the id
-                #const.orm.mappings.insertafter(0, foreignkeyfieldmapping(entity))
 
         return entity
 
@@ -385,8 +380,13 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                              followentitiesmapping   =True, 
                              followassociationmapping=True):
 
-        # TODO Add reconnect logic
-        # TODO Ensure connection is active
+        # TODO Convert MySQL warnings into exceptions - everywhere; not just
+        # here. See:
+        # https://stackoverflow.com/questions/2102251/trapping-a-mysql-warning
+
+        # TODO Add reconnect logic.
+        # TODO Ensure connection is active.
+        # TODO Ensure entities aren't being loaded during save.
 
         if not self.isvalid:
             raise db.brokenruleserror("Can't save invalid object" , self)
@@ -415,9 +415,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 conn = None
 
             # Take snapshop of before state
-            n, d, r = (self.orm.isnew,                  
-                        self.orm.isdirty,             
-                        self.orm.ismarkedfordeletion)
+            st = self.orm.persistencestate
 
             if sql:
                 # Issue the query
@@ -465,11 +463,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     # so conditionally save()
                     if es:
                         # Take snapshot of states
-                        sts = []
-                        for e in es:
-                            sts.append((e.orm.isnew,                  
-                                        e.orm.isdirty,             
-                                        e.orm.ismarkedfordeletion))
+                        sts = es.orm.persistencestates
 
                         # Iterate over each entity and save them individually
                         for e in es:
@@ -495,40 +489,40 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             # re-raise
                             try:
                                 e.save(cur)
-
-                            # TODO Don't need the 'as ex' here
-                            except Exception as ex:
+                            except Exception:
                                 # Restore states
-                                for st, e in zip(sts, es):
-                                    e.orm.isnew,   \
-                                    e.orm.isdirty, \
-                                    e.orm.ismarkedfordeletion = st
+                                es.orm.persistencestates = sts
+                                raise
+                
+                        for e in es.orm.trash:
+                            trashst = e.orm.persistencestate
+                            try:
+                                e.save(cur)
+                            except Exception:
+                                e.orm.persistencestate = trashst
+                                raise
+                            
+                if followassociationmapping and type(map) is associationsmapping:
+                    if map.isloaded:
+                        asses = map.value
+                        for ass in asses:
+                            ass.save(cur, follow=False)
+                            for map in ass.orm.mappings.entitymappings:
+                                if map.value is not self:
+                                    map.value.save(cur, followassociationmapping=False)
+
+                        for ass in asses.orm.trash:
+                            assst = ass.orm.persistencestate
+                            try:
+                                ass.save(cur)
+                            except Exception:
+                                ass.orm.persistencestate = assst
                                 raise
 
-                if followassociationmapping and type(map) is associationsmapping:
-                    asses = map.value
-                    for ass in asses:
-                        ass.save(cur, follow=False)
-                        for map in ass.orm.mappings.entitymappings:
-                            if map.value is not self:
-                                map.value.save(cur, followassociationmapping=False)
+                        asses.orm.trash.clear()
 
-                    for ass in asses.orm.trash:
-                        st = ass.orm.persistencestate
-                        try:
-                            ass.save(cur)
-                        except Exception:
-                            ass.orm.persistencestate = st
-                            raise
-
-                    asses.orm.trash.clear()
-
-
-        # TODO Do we need the 'as ex'
-        except Exception as ex: 
-            self.orm.isnew,   \
-            self.orm.isdirty, \
-            self.orm.ismarkedfordeletion = n, d, r
+        except Exception:
+            self.orm.persistencestate = st
 
             if conn:
                 conn.rollback()
@@ -545,16 +539,16 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
     def brokenrules(self):
         return self._getbrokenrules()
 
-    def _getbrokenrules(self, visited=None):
+    def _getbrokenrules(self, guestbook=None):
         brs = entitiesmod.brokenrules()
 
-        # This "visited" logic prevents infinite recursion and duplicated
+        # This "guestbook" logic prevents infinite recursion and duplicated
         # broken rules.
-        visited = [] if visited is None else visited
-        if self in visited:
+        guestbook = [] if guestbook is None else guestbook
+        if self in guestbook:
             return brs
         else:
-            visited += self,
+            guestbook += self,
 
         for map in self.orm.mappings:
             if type(map) is fieldmapping:
@@ -584,12 +578,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 # h (see it_entity_constituents_break_entity)
                 es = map.value
                 if es:
-                    brs += es._getbrokenrules(visited)
+                    brs += es._getbrokenrules(guestbook)
 
             elif type(map) is entitymapping:
                 v = map.value
                 if v:
-                    brs += v._getbrokenrules(visited)
+                    brs += v._getbrokenrules(guestbook)
 
         return brs
 
@@ -604,10 +598,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             if map.value is None:
                 es = map.entities()
                 if not self.orm.isnew:
-                    for map1 in map.entities.orm.mappings:
-                        if type(map1) is foreignkeyfieldmapping:
-                            if map1.entity is self.orm.entity:
-                                break
+                    for map1 in map.entities.orm.mappings.foreignkeymappings:
+                        if map1.entity is self.orm.entity:
+                            break
                     else:
                         raise ValueError('FK map not found for entity')
 
@@ -640,7 +633,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
     def __str__(self):
         # TODO Write tests
-
         tbl = table()
 
         r = tbl.newrow()
@@ -733,8 +725,8 @@ class mappings(entitiesmod.entities):
         # Ensure the id is the first element
         self << self.pop('id')
 
+        # Insert FK maps right after PK map
         fkmaps = list(self.foreignkeymappings)
-
         for map in fkmaps:
             self.remove(map)
             self.insertafter(0, map)
@@ -790,9 +782,7 @@ class mappings(entitiesmod.entities):
         r += '\n);'
         return r
 
-
     def getinsert(self):
-
         tbl = self.orm.table
 
         placeholder = ''
@@ -872,6 +862,18 @@ class mapping(entitiesmod.entity):
         r = r.format(self.name)
 
         return r
+
+    @property
+    def value(self):
+        raise NotImplementedError('Value should be implemented by the subclass')
+
+    @value.setter
+    def value(self, v):
+        raise NotImplementedError('Value should be implemented by the subclass')
+
+    @property
+    def isloaded(self):
+        return self._value not in (None, undef)
 
     def clone(self):
         raise NotImplementedError('Abstract')
@@ -1081,6 +1083,9 @@ class ormclasswrapper(entitiesmod.entity):
     def __repr__(self):
         return repr(self.entity)
 
+    def __getattr__(self, attr):
+        return getattr(self.entity, attr)
+
     @property
     def orm(self):
         return self.entity.orm
@@ -1131,11 +1136,42 @@ class orm:
         return r
 
     @property
+    def persistencestates(self):
+        es = self.instance
+        if not isinstance(es, entities):
+            msg = 'Use with entities. For entity, use persistencestate'
+            raise ValueError(msg)
+            
+        sts = []
+        for e in es:
+            sts.append(e.orm.persistencestate)
+        return sts
+
+    @persistencestates.setter
+    def persistencestates(self, sts):
+        es = self.instance
+        if not isinstance(es, entities):
+            msg = 'Use with entities. For entity, use persistencestate'
+            raise ValueError(msg)
+
+        for e, st in zip(es, sts):
+            e.orm.persistencestate = st
+
+
+    @property
     def persistencestate(self):
+        es = self.instance
+        if not isinstance(es, entity):
+            msg = 'Use with entity. For entities, use persistencestates'
+            raise ValueError(msg)
         return self.isnew, self.isdirty, self.ismarkedfordeletion
 
     @persistencestate.setter
     def persistencestate(self, v):
+        es = self.instance
+        if not isinstance(es, entity):
+            msg = 'Use with entity. For entities, use persistencestates'
+            raise ValueError(msg)
         self.isnew, self.isdirty, self.ismarkedfordeletion = v
 
     @property
@@ -1152,24 +1188,13 @@ class orm:
     def properties(self):
         return [x.name for x in self.mappings]
 
-    # TODO Rename to getsubclasses(of):
-    @staticmethod
-    def getentitiessubclasses(cls=entities):
-        r = []
-
-        for subclass in cls.__subclasses__():
-            if subclass not in (associations, association):
-                r.append(subclass)
-            r.extend(orm.getentitiessubclasses(subclass))
-
-        return r
-    
     @staticmethod
     def getsubclasses(of):
         r = []
 
         for sub in of.__subclasses__():
-            r.append(sub)
+            if sub not in (associations, association):
+                r.append(sub)
             r.extend(orm.getsubclasses(sub))
 
         return r
@@ -1192,9 +1217,7 @@ class orm:
         if not self._associations:
             self._associations = ormclasseswrapper()
             for ass in orm.getassociations():
-                # TODO No need for enumerate() here
-                maps = list(ass.orm.mappings.entitymappings)
-                for i, map in enumerate(maps):
+                for map in ass.orm.mappings.entitymappings:
                     if map.entity is self.entity:
                         self._associations += ormclasswrapper(ass)
 
@@ -1204,7 +1227,7 @@ class orm:
     def composites(self):
         if not self._composits:
             self._composits = composites()
-            for sub in self.getentitiessubclasses(entity):
+            for sub in self.getsubclasses(of=entity):
                 for map in sub.orm.mappings.entitiesmappings:
                     if map.entities.orm.entity is self.entity:
                         self._composits += composite(sub)
