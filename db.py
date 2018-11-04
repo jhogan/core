@@ -448,3 +448,77 @@ class pool(entity):
         yield conn
 
         self.push(conn)
+
+class operationeventargs(eventargs):
+    def __init__(self, e, crud, sql, args):
+        self.entity  =  e
+        self.crud    =  crud
+        self.sql     =  sql
+        self.args    =  args
+
+class chronicler(entity):
+    _instance = None
+
+    def __init__(self):
+        self.chronicles = chronicles(self)
+        self.max = 20
+
+    @staticmethod
+    def getinstance():
+        if not chronicler._instance:
+            chronicler._instance = chronicler()
+        return chronicler._instance
+
+    def append(self, obj):
+        self.chronicles += obj
+
+    def __iadd__(self, t):
+        self.append(t)
+        return self
+
+class chronicles(entities):
+    def __init__(self, chronicler=None, initial=None):
+        self.chronicler = chronicler
+        super().__init__(initial=initial)
+
+    def append(self, obj, uniq=False, r=None):
+        if self.chronicler and self.count == self.chronicler.max - 1:
+            self.shift()
+        
+        super().append(obj, uniq=False, r=None)
+
+    def where(self, p1, p2=None):
+        if (type(p1), type(p2)) == (str, type(None)):
+            # Passing in one argument will result in a test of p1 against
+            # the value of 'crud'.
+            p1, p2 = 'crud', p1
+
+        return super().where(p1, p2)
+
+    def __str__(self):
+        return self._tostr(includeHeader=False)
+
+class chronicle(entity):
+    def __init__(self, e, crud, sql, args):
+        self.entity  =  e
+        self.crud    =  crud
+        self.sql     =  sql
+        self.args    =  args
+
+    def __str__(self):
+        args = []
+        for arg in self.args:
+            if type(arg) is bytes:
+                try:
+                    arg = uuid.UUID(bytes=arg)
+                except:
+                    pass
+            args.append(arg)
+        sql = self.sql.strip()
+
+        r = '%s\n%s\n'
+        r %= (
+            sql,
+            tuple(args)
+        )
+        return r
