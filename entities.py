@@ -29,7 +29,14 @@ import re
 import sys
 import builtins
 from pprint import pprint
-from functools import total_ordering
+from functools import total_ordering, reduce
+
+def rgetattr(obj, attr, *args):
+    def rgetattr(obj, attr):
+        if obj:
+            return builtins.getattr(obj, attr, *args)
+        return None
+    return reduce(rgetattr, [obj] + attr.split('.'))
 
 class entities(object):
     def __init__(self, initial=None):
