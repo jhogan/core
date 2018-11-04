@@ -51,6 +51,8 @@ class testers(entities):
                         print(ex)
                         pdb.post_mortem(ex.__traceback__)
                     inst._failures += failure(ex, assert_=meth[0])
+                finally:
+                    inst.eventregistrations.unregister()
         print('')
 
     def __str__(self):
@@ -60,6 +62,10 @@ class tester(entity):
     def __init__(self):
         self._failures = failures()
         self.testers = None
+        self.eventregistrations = eventregistrations()
+
+    def register(self, event, handler):
+        self.eventregistrations.register(event, handler)
 
     def assertFull(self, actual, msg=None):
         if type(actual) != str or actual.strip() == '':
@@ -338,6 +344,29 @@ class tester(entity):
             statusmessage = statuscode
             statuscode0 = int(statuscode[:3])
             return httpresponse(statuscode0, statusmessage, resheads, body)
+
+class eventregistrations(entities):
+    def register(self, event, handler):
+        er = eventregistration(event, handler)
+        er.register()
+        self += er
+
+    def unregister(self):
+        for er in self:
+            er.unregister()
+        self.clear()
+
+class eventregistration(entity):
+    def __init__(self, event, handler):
+        self.event = event
+        self.handler = handler
+        super().__init__()
+
+    def register(self):
+        self.event += self.handler
+
+    def unregister(self):
+        self.event -= self.handler
 
 class httpresponse(entity):
     def __init__(self, statuscode, statusmessage, headers, body):
