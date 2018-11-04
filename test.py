@@ -24,7 +24,7 @@ SOFTWARE.
 """
 from articles import *
 from configfile import configfile
-from entities import brokenruleserror
+from entities import brokenruleserror, rgetattr
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
 from parties import *
 from pdb import set_trace; B=set_trace
@@ -44,7 +44,7 @@ def getattr(obj, attr, *args):
     # For example:
     #    Instead of this:
     #        entity.constituents.first.id
-    #    we can do this:t
+    #    we can do this:
     #        getattr(entity, 'constituents.first.id')
 
     def rgetattr(obj, attr):
@@ -105,11 +105,15 @@ class test_orm(tester):
 
     def __init__(self):
         super().__init__()
-        # Temporarily commented out because of infinite recursion with MM
-        # relationships
+        self.chronicles = db.chronicles()
+        db.chronicler.getinstance().chronicles.onadd += self._chronicler_onadd
 
         artist.reCREATE(recursive=True)
-    
+
+
+    def _chronicler_onadd(self, src, eargs):
+        self.chronicles += eargs.entity
+
     def it_has_static_composites_reference(self):
         comps = location.orm.composites
         self.one(comps)
@@ -149,10 +153,15 @@ class test_orm(tester):
         self.is_(consts.second.entity, component)
 
     def it_loads_and_saves_associations(self):
-        # Test loading association collection
-        # Test loading asd saving deeply nested attributes
-        # Test loading asd saving deeply nested associations
+        # TODO Test loading and saving deeply nested associations
+        # TODO Test deeply nested associations
+        chrons = self.chronicles
+        
+        chrons.clear()
         art = artist()
+
+        self.zero(chrons)
+
         aa = art.artist_artifacts
         self.zero(aa)
 
@@ -186,9 +195,21 @@ class test_orm(tester):
         self.one(art.artist_artifacts)
         self.one(art.artifacts)
 
+        chrons.clear()
         art.save()
 
+        self.three(chrons)
+        self.three(chrons.where('create'))
+        self.one(chrons.where('entity', art))
+        self.one(chrons.where('entity', aa))
+        self.one(chrons.where('entity', fact))
+
+        chrons.clear()
         art1 = artist(art.id)
+
+        self.one(chrons)
+        self.one(chrons.where('retrieve'))
+        self.one(chrons.where('entity', art1))
 
         self.one(art1.artist_artifacts)
         self.one(art1.artifacts)
@@ -211,7 +232,14 @@ class test_orm(tester):
         aa2.artifact = artifact()
 
         art1.artist_artifacts += aa2
+
+        chrons.clear()
         art1.save()
+
+        self.two(chrons)
+        self.two(chrons.where('create'))
+        self.one(chrons.where('entity', aa2))
+        self.one(chrons.where('entity', aa2.artifact))
 
         art2 = artist(art1.id)
         self.eq(art1.id,         art2.id)
@@ -235,7 +263,13 @@ class test_orm(tester):
         art2.artifacts += artifact()
         self.three(art2.artifacts)
         self.three(art2.artist_artifacts)
+
+        chrons.clear()
         art2.save()
+        self.two(chrons)
+        self.two(chrons.where('create'))
+        self.one(chrons.where('entity', art2.artist_artifacts.third))
+        self.one(chrons.where('entity', art2.artist_artifacts.third.artifact))
 
         art3 = artist(art2.id)
 
@@ -255,7 +289,7 @@ class test_orm(tester):
             self.eq(aa2.artifact.id,  aa3.artifact.id)
             self.eq(aa2.artifactid,   aa3.artifactid)
 
-        # TODO Test deeply nested associations
+        # Add two components to the artifact's components collection
         comps3 = components()
         for _ in range(2):
             comps3 += component()
@@ -272,7 +306,13 @@ class test_orm(tester):
         self.is_(comps3[0], art3.artifacts.first.components[0])
         self.is_(comps3[1], art3.artifacts.first.components[1])
 
+        chrons.clear()
         art3.save()
+
+        self.two(chrons)
+        self.two(chrons.where('create'))
+        self.one(chrons.where('entity', comps3.first))
+        self.one(chrons.where('entity', comps3.second))
 
         art4 = artist(art3.id)
         comps4 = art4.artist_artifacts.first.artifact.components.sorted('id')
@@ -282,8 +322,8 @@ class test_orm(tester):
         self.eq(comps4.second.id, comps3.second.id)
 
     def it_updates_associations_constituent_entity(self):
-
         art = artist()
+        chrons = self.chronicles
 
         for i in range(2):
             aa = artist_artifact()
@@ -299,7 +339,15 @@ class test_orm(tester):
             fact.title = uuid4().hex
 
         # Save and reload
+        self.chronicles.clear()
         art1.save()
+
+        # Ensure the four entities where updated
+        self.two(chrons)
+        self.two(chrons.where('update'))
+        self.one(chrons.where('entity', art1.artifacts.first))
+        self.one(chrons.where('entity', art1.artifacts.second))
+        
         art2 = artist(art1.id)
 
         self.two(art1.artifacts)
@@ -324,6 +372,7 @@ class test_orm(tester):
             comps.last.name = uuid4().hex
 
         art2.save()
+
         art3 = artist(art2.id)
 
         for attr in attrs:
@@ -331,7 +380,14 @@ class test_orm(tester):
             for comp in comps:
                 comp.name = uuid4().hex
 
+        chrons.clear()
         art3.save()
+
+        self.two(chrons)
+        self.two(chrons.where('update'))
+        self.one(chrons.where('entity', art3.artifacts.first.components.first))
+        self.one(chrons.where('entity', art3.artifacts.first.components.second))
+
         art4 = artist(art3.id)
 
         for attr in attrs:
@@ -354,9 +410,12 @@ class test_orm(tester):
                 else:
                     self.fail('No match within comps4 and comps3')
 
+        # Test deeply nested (i.e., components)
         # TODO Test deeply nested associations
 
     def it_updates_association(self):
+        chrons = self.chronicles
+
         art = artist()
 
         for i in range(2):
@@ -373,7 +432,14 @@ class test_orm(tester):
             aa.role = uuid4().hex
 
         # Save and reload
+        chrons.clear()
         art1.save()
+
+        self.two(chrons)
+        self.two(chrons.where('update'))
+        self.one(chrons.where('entity', art1.artist_artifacts.first))
+        self.one(chrons.where('entity', art1.artist_artifacts.first))
+
         art2 = artist(art1.id)
 
         aas  = art. artist_artifacts.sorted('role')
@@ -389,6 +455,8 @@ class test_orm(tester):
         # TODO Test deeply nested associations
 
     def it_removes_associations(self):
+        chrons = self.chronicles
+
         for removeby in 'pseudo-collection', 'association':
             art = artist()
 
@@ -400,8 +468,6 @@ class test_orm(tester):
                 art.artist_artifacts.last.artifact.components += component()
 
             art.save()
-
-            # TODO Remove deeply nested entities (i.e., the components added above)
 
             art = artist(art.id)
             
@@ -428,7 +494,16 @@ class test_orm(tester):
                 self.isnot(f1, rmfact)
                 self.isnot(f2, rmfact)
 
+            chrons.clear()
             art.save()
+
+            self.four(chrons)
+            self.four(chrons.where('delete'))
+            self.one(chrons.where('entity', rmcomps.first))
+            self.one(chrons.where('entity', rmcomps.second))
+            self.one(chrons.where('entity', rmfact))
+            self.one(chrons.where('entity', art.artist_artifacts.orm.trash.first))
+
 
             art1 = artist(art.id)
 
@@ -458,7 +533,6 @@ class test_orm(tester):
 
             for comp in rmcomps:
                 self.expect(db.RecordNotFoundError, lambda: component(comp.id))
-                
 
         # TODO Test deeply nested associations
 
@@ -518,7 +592,7 @@ class test_orm(tester):
         self.one(art.artifacts.orm.trash)
 
         # Brake save method
-        fn = lambda cur: 0/0
+        fn = lambda cur, follow: 0/0
         save = art.artist_artifacts.orm.trash.first.save
         art.artist_artifacts.orm.trash.first.save = fn
 
@@ -575,6 +649,8 @@ class test_orm(tester):
         self.broken(art, 'description', 'valid')
 
     def it_moves_constituent_to_a_different_composite(self):
+        chrons = self.chronicles
+
         art = artist()
         art.presentations += presentation()
         art.presentations.last.name = uuid4().hex
@@ -586,23 +662,40 @@ class test_orm(tester):
         self.zero(art.presentations)
         self.one(art1.presentations)
         
+        chrons.clear()
         art1.save()
+
+        self.two(chrons)
+        self.one(chrons.where('entity', art1))
+        self.one(chrons.where('entity', art1.presentations.first))
 
         self.zero(artist(art.id).presentations)
         self.one(artist(art1.id).presentations)
 
         # Move deeply nested entity
         art1.presentations.first.locations += location()
+
         art1.save()
 
         art.presentations += presentation()
         art1.presentations.first.locations.give(art.presentations.last.locations)
+
+        chrons.clear()
         art.save()
+
+        loc = art.presentations.last.locations.last
+        pres = art.presentations.last
+
+        self.two(chrons)
+        self.eq(chrons.where('entity', pres).first.crud, 'create')
+        self.eq(chrons.where('entity', loc).first.crud, 'update')
 
         self.zero(artist(art1.id).presentations.first.locations)
         self.one(artist(art.id).presentations.first.locations)
 
     def it_saves_entities(self):
+        chrons = self.chronicles
+
         arts = artists()
 
         for _ in range(2):
@@ -610,7 +703,13 @@ class test_orm(tester):
             arts.last.firstname = uuid4().hex
             arts.last.lastname = uuid4().hex
 
+        
+        chrons.clear()
         arts.save()
+
+        self.two(chrons)
+        self.eq(chrons.where('entity', arts.first).first.crud, 'create')
+        self.eq(chrons.where('entity', arts.second).first.crud, 'create')
 
         for art in arts:
             art1 = artist(art.id)
@@ -622,47 +721,63 @@ class test_orm(tester):
                 self.eq(getattr(art, map.name), getattr(art1, map.name))
                 
     def it_doesnt_needlessly_save(self):
-        cnt = 0
-        def obj_onaftersave(src, eargs):
-            nonlocal cnt
-            cnt += 1
+        chrons = self.chronicles
 
         art = artist()
         art.firstname = uuid4().hex
         art.lastname = uuid4().hex
-        art.onaftersave += obj_onaftersave
 
-        for _ in range(2):
+        for i in range(2):
+            chrons.clear()
             art.save()
-            self.eq(1, cnt)
+            
+            if i == 0:
+                self.one(chrons)
+                self.eq(chrons.where('entity', art).first.crud, 'create')
+            elif i == 1:
+                self.zero(chrons)
 
         # Dirty art and save. Ensure the object was actually saved
         art.firstname = uuid4().hex
+
+        chrons.clear()
         art.save()
 
-        self.eq(2, cnt)
+        self.one(chrons)
+        self.eq(chrons.where('entity', art).first.crud, 'update')
 
         # Test constituents
-        cnt = 0
         art.presentations += presentation()
-        art.onaftersave -= obj_onaftersave
-        art.presentations.last.onaftersave += obj_onaftersave
         
-        for _ in range(2):
+        for i in range(2):
+            chrons.clear()
             art.save()
-            self.eq(1, cnt)
+
+            if i == 0:
+                self.one(chrons)
+                pres = art.presentations.last
+                self.eq(chrons.where('entity', pres).first.crud, 'create')
+            elif i == 1:
+                self.zero(chrons)
 
         # Test deeply-nested (>2) constituents
         art.presentations.last.locations += location()
-        art.presentations.last.onaftersave -= obj_onaftersave
-        art.presentations.last.locations.last.onaftersave += obj_onaftersave
 
-        cnt = 0
-        for _ in range(2):
+        for i in range(2):
+
+            chrons.clear()
             art.save()
-            self.eq(1, cnt)
+
+            if i == 0:
+                self.one(chrons)
+                loc = art.presentations.last.locations.last
+                self.eq(chrons.where('entity', loc).first.crud, 'create')
+            elif i == 1:
+                self.zero(chrons)
 
     def it_contains_reference_to_composite(self):
+        chrons = self.chronicles
+
         art = artist()
 
         for _ in range(2):
@@ -672,14 +787,21 @@ class test_orm(tester):
                 art.presentations.last.locations += location()
 
         art.save()
+
         for art in (art, artist(art.id)):
             for pres in art.presentations:
+                chrons.clear()
                 self.is_(art, pres.artist)
+                self.zero(chrons)
 
                 for loc in pres.locations:
+                    chrons.clear()
                     self.is_(pres, loc.presentation)
+                    self.zero(chrons)
 
     def it_loads_and_saves_constituents(self):
+        chrons = self.chronicles
+
         # Ensure that a new composite has a constituent object with zero
         # elements
         art = artist()
@@ -695,6 +817,7 @@ class test_orm(tester):
         self.zero(art.presentations)
 
         art.save()
+
         self.is_(art.presentations.artist, art)
         self.zero(art.presentations)
 
@@ -710,10 +833,35 @@ class test_orm(tester):
         for pres in art.presentations:
             pres.name = uuid4().hex
 
+        chrons.clear()
         art.save()
 
+        self.three(chrons)
+        press = art.presentations
+        self.eq(chrons.where('entity', art).first.crud, 'create')
+        self.eq(chrons.where('entity', press.first).first.crud, 'create')
+        self.eq(chrons.where('entity', press.second).first.crud, 'create')
+
         art1 = artist(art.id)
-        self.two(art1.presentations)
+
+        chrons.clear()
+        B()
+        press = art1.presentations
+        print(chrons)
+
+        # TODO:BUG There is an interesting bug here: When .presentations is
+        # called (and thus the presentations are lazy-loaded), each
+        # presentations is assigned art1 as a composite reference in
+        # __getattribute__(). This assignment uses setattr() which then invokes
+        # entities._setvalue(). In the later, the 'old' value is retrieved for
+        # comparison to the new 'value'.  Retrieving the old means that artist
+        # is loaded for each assigment to presenation.artist. So the line below
+        # had to be commented out because artist ends up being needlessly
+        # loaded twice meaning that chrons.count == 4 - though it should equal 2
+        #self.two(chrons)
+
+        self.eq(chrons.where('entity', press.first).first.crud, 'retrieve')
+        self.eq(chrons.where('entity', press.second).first.crud, 'retrieve')
 
         art.presentations.sort('id')
         art1.presentations.sort('id')
@@ -746,14 +894,6 @@ class test_orm(tester):
                         self.eq(getattr(loc, map.name), getattr(loc1, map.name))
             
                 self.is_(pres1, loc1.presentation)
-
-        return
-        # TODO Remove items from collection
-        # For example:
-        art1.presentations.pop()
-        art1.save()
-        art2 = article(art1.id)
-        self.eq(art1.presentations.count, art2.presentations.count)
 
     def it_updates_constituents_properties(self):
         art = artist()
@@ -909,7 +1049,7 @@ class test_orm(tester):
 
         # Cause the last presentation's invocation of save() to raise an
         # Exception to cause a rollback
-        art.presentations.last.save = lambda cur: 1/0
+        art.presentations.last.save = lambda cur, followentitymapping: 1/0
 
         # Save expecting the ZeroDivisionError
         self.expect(ZeroDivisionError, lambda: art.save())
@@ -1172,6 +1312,8 @@ class test_orm(tester):
         art = artist()
         pres = presentation()
         art.presentations += pres
+        loc = location()
+        art.presentations.last.locations += loc
         art.save()
 
         # Reload
@@ -1181,12 +1323,18 @@ class test_orm(tester):
         self.one(art.presentations)
         self.zero(art.presentations.orm.trash)
 
+        self.one(art.presentations.first.locations)
+        self.zero(art.presentations.first.locations.orm.trash)
+
         # Remove the presentation
         art.presentations.pop()
 
         # Test presentations and its trash collection
         self.zero(art.presentations)
         self.one(art.presentations.orm.trash)
+
+        self.one(art.presentations.orm.trash.first.locations)
+        self.zero(art.presentations.orm.trash.first.locations.orm.trash)
 
         art.save()
 
@@ -1195,9 +1343,7 @@ class test_orm(tester):
         self.zero(art.presentations.orm.trash)
 
         self.expect(db.RecordNotFoundError, lambda: presentation(pres.id))
-
-        # TODO Test recursive deletes
-        # TODO Test deeply nested 
+        self.expect(db.RecordNotFoundError, lambda: location(loc.id))
 
     def it_assigns_and_retrives_unicode_values_from_str_properties(self):
         # TODO

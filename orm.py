@@ -111,7 +111,7 @@ class entities(entitiesmod.entities):
 
             where, args = p1 + ' = %s', (p2, )
 
-        sql = 'select * from %s where %s;' % (self.orm.table, where)
+        sql = 'SELECT * FROM %s WHERE %s;' % (self.orm.table, where)
 
         # TODO Make db.pool variant
         # TODO Make atomic
@@ -124,7 +124,12 @@ class entities(entitiesmod.entities):
         ress = db.dbresultset(cur)
 
         for res in ress:
-            self += self.orm.entity(res)
+            e = self.orm.entity(res)
+            self += e
+            eargs = db.operationeventargs(e, 'retrieve', sql, args)
+            e.onafterload(self, eargs)
+
+            self.last.orm.persistencestate = (False,) * 3
 
     def _getbrokenrules(self, es):
         brs = entitiesmod.brokenrules()
@@ -217,8 +222,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         self.orm = self.orm.clone()
         self.orm.instance = self
 
-        self.onbeforesave = entitiesmod.event()
-        self.onaftersave = entitiesmod.event()
+        self.onbeforesave  =  entitiesmod.event()
+        self.onaftersave   =  entitiesmod.event()
+        self.onafterload   =  entitiesmod.event()
+
+        self.onaftersave += self._self_onaftersave
+        self.onafterload += self._self_onafterload
 
         if o is None:
             self.orm.isnew = True
@@ -227,7 +236,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         else:
             if type(o) is UUID:
                 id = o
-                sql = 'select * from {} where id = %s'
+                sql = 'SELECT * FROM {} WHERE id = %s'
                 sql = sql.format(self.orm.table)
 
                 args = id.bytes,
@@ -243,6 +252,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 ress = db.dbresultset(cur)
                 ress.demandhasone()
                 res = ress.first
+
+                eargs = db.operationeventargs(self, 'retrieve', sql, args)
+                self.onafterload(self, eargs)
             elif type(o) is db.dbresult:
                 res = o
             else:
@@ -255,6 +267,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 map.value = res[map.name]
 
 
+
             self.orm.isnew = False
             self.orm.isdirty = False
 
@@ -262,6 +275,14 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         # Events
         self.onaftervaluechange  +=  self._self_onaftervaluechange
+    
+    def _self_onafterload(self, src, eargs):
+        chron = db.chronicler.getinstance()
+        chron += db.chronicle(eargs.entity, eargs.crud, eargs.sql, eargs.args)
+
+    def _self_onaftersave(self, src, eargs):
+        chron = db.chronicler.getinstance()
+        chron += db.chronicle(eargs.entity, eargs.crud, eargs.sql, eargs.args)
 
     def _self_onaftervaluechange(self, src, eargs):
         if not self.orm.isnew:
@@ -392,12 +413,16 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             raise db.brokenruleserror("Can't save invalid object" , self)
 
         if self.orm.ismarkedfordeletion:
+            crud = 'delete'
             sql, args = self.orm.mappings.getdelete()
         elif self.orm.isnew:
+            crud = 'create'
             sql, args = self.orm.mappings.getinsert()
         elif self.orm.isdirty:
+            crud = 'update'
             sql, args = self.orm.mappings.getupdate()
         else:
+            crud = None
             sql, args = (None,) * 2
 
         try:
@@ -421,7 +446,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 # Issue the query
 
                 # Raise event
-                self.onbeforesave(self, self)
+                eargs = db.operationeventargs(self, crud, sql, args)
+                self.onbeforesave(self, eargs)
 
                 cur.execute(sql, args)
 
@@ -430,7 +456,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 self.orm.isdirty, self.orm.ismarkedfordeletion = (False,) * 2
 
                 # Raise event
-                self.onaftersave(self, self)
+                self.onaftersave(self, eargs)
             else:
                 # If there is no sql, then the entity isn't new, dirty or 
                 # marked for deletion. In that case, don't save. However, 
@@ -488,7 +514,16 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             # Call save(). If there is an Exception, restore state then
                             # re-raise
                             try:
-                                e.save(cur)
+                                # If self was deleted, delete each child
+                                # constituents. Here, cascade deletes are
+                                # hard-code.
+                                if crud == 'delete':
+                                    e.orm.ismarkedfordeletion = True
+                                # If the previous operation on self was a
+                                # delete, don't ascend back to self
+                                # (followentitymapping == False). Doing so will
+                                # recreate self in the database.
+                                e.save(cur, followentitymapping=(crud!='delete'))
                             except Exception:
                                 # Restore states
                                 es.orm.persistencestates = sts
@@ -504,20 +539,16 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             
                 if followassociationmapping and type(map) is associationsmapping:
                     if map.isloaded:
-                        asses = map.value
-                        for ass in asses:
-                            ass.save(cur, follow=False)
-                            for map in ass.orm.mappings.entitymappings:
-                                if map.value is not self:
-                                    map.value.save(cur, followassociationmapping=False)
-
-                        for ass in asses.orm.trash:
-                            assst = ass.orm.persistencestate
-                            try:
-                                ass.save(cur)
-                            except Exception:
-                                ass.orm.persistencestate = assst
-                                raise
+                        # For each association then each trashed association
+                        for asses in map.value, map.value.orm.trash:
+                            for ass in asses:
+                                ass.save(cur, follow=False)
+                                for map in ass.orm.mappings.entitymappings:
+                                    if map.isloaded:
+                                        if map.value is self:
+                                            continue
+                                        e = map.value
+                                        e.save(cur, followassociationmapping=False)
 
                         asses.orm.trash.clear()
 
@@ -581,9 +612,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     brs += es._getbrokenrules(guestbook)
 
             elif type(map) is entitymapping:
-                v = map.value
-                if v:
-                    brs += v._getbrokenrules(guestbook)
+                if map.isloaded:
+                    v = map.value
+                    if v:
+                        brs += v._getbrokenrules(guestbook)
 
         return brs
 
@@ -792,7 +824,7 @@ class mappings(entitiesmod.entities):
 
         placeholder = placeholder.rstrip(', ')
 
-        sql = 'insert into {} values({})'.format(tbl, placeholder)
+        sql = 'INSERT INTO {} VALUES ({});'.format(tbl, placeholder)
 
         return sql, self._getargs()
 
@@ -807,10 +839,9 @@ class mappings(entitiesmod.entities):
 
         set = set[:-2]
 
-        sql = """
-        update {}
-        set {}
-        where id = %s;
+        sql = """UPDATE {}
+SET {}
+WHERE id = %s;
         """.format(self.orm.table, set)
 
         args = self._getargs()
@@ -845,8 +876,6 @@ class mapping(entitiesmod.entity):
     ordinal = 0
 
     def __init__(self, name, derived=False):
-        # TODO I don't think self.orm is ever used so we can delete this line
-        self.orm = None
         self._name = name
         mapping.ordinal += 1
         self._ordinal = mapping.ordinal
@@ -1156,7 +1185,6 @@ class orm:
 
         for e, st in zip(es, sts):
             e.orm.persistencestate = st
-
 
     @property
     def persistencestate(self):
