@@ -170,15 +170,29 @@ class entities(object):
         """ Return a randomized version of self."""
         return type(self)(initial=sample(self._ls, self.count))
 
-    def where(self, qry):
-        if type(qry) == type:
+    def where(self, p1, p2=None):
+        if type(p1) == type:
             cls = self.__class__
-            return cls([x for x in self if type(x) == qry])
+            return cls([x for x in self if type(x) == p1])
 
-        fn = qry
+        if type(p1) is str:
+            # TODO Write test for this condition
+
+            if p2 is None:
+                raise ValueError()
+
+            # If p1 is a str, it is an attribute and we should test it against
+            # p2
+            attr, operand = p1, p2
+            def fn(e):
+                return rgetattr(e, attr) == operand
+        else:
+            fn = p1
+
         es = type(self)()
         for e in self:
             if fn(e): es += e
+
         return es
 
 
