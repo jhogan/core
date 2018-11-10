@@ -537,3 +537,56 @@ class chronicle(entity):
             tuple(args)
         )
         return r
+
+class saver(entity):
+    def __init__(self, save, max=2):
+        self._save = save
+        self.max = max
+        self.onbeforereconnect  =  event()
+        self.onafterreconnect   =  event()
+    
+    def save(self):
+        pl = pool.getdefault()
+        for i in range(self.max):
+            conn = pl.pull()
+            cur = conn.createcursor()
+
+            try:
+                self._save(cur)
+            except MySQLdb.OperationalError as ex:
+                # Reconnect if the connection object has timed out and no
+                # longer holds a connection to the database.
+                # https://stackoverflow.com/questions/3335342/how-to-check-if-a-mysql-connection-is-closed-in-python
+
+                if i + 1 == self.max:
+                    raise
+
+                try:
+                    errno = ex.args[0]
+                except:
+                    errno = ''
+
+                if errno in (2006, 2013) or not conn.isopen:
+                    msg = 'Reconnect[{0}]: errno: {1}; isopen: {2}'
+                    msg = msg.format(i, errno, conn.isopen)
+                    self.log.debug(msg)
+
+                    eargs = operationeventargs(self, 'reconnect', None, None)
+                    self.onbeforereconnect(self, eargs)
+
+                    conn.reconnect()
+
+                    self.onafterreconnect(self, eargs)
+                else:
+                    conn.rollback()
+                    raise
+            except Exception as ex:
+                conn.rollback()
+                raise
+            else:
+                conn.commit()
+                return
+            finally:
+                cur.close()
+                pl.push(conn)
+
