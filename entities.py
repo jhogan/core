@@ -614,7 +614,7 @@ class entity():
         from configfile import configfile
         return configfile.getinstance().logs.default
 
-    def _setvalue(self, field, new, prop, setattr=setattr):
+    def _setvalue(self, field, new, prop, setattr=setattr, cmp=True):
         # TODO: It's nice to strip any string because that's vitually
         # always the desired behaviour.  However, at some point, we will
         # want to preserve the whitespace on either side.  Therefore, we
@@ -623,9 +623,10 @@ class entity():
         if type(new) == str:
             new = new.strip()
 
-        old = getattr(self, field)
+        if cmp:
+            old = getattr(self, field)
 
-        if old != new:
+        if not cmp or old != new:
             if hasattr(self, 'onbeforevaluechange'):
                 eargs = entityvaluechangeeventargs(self, prop)
                 self.onbeforevaluechange(self, eargs)
