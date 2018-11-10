@@ -332,6 +332,10 @@ class connection(entity):
     def close(self):
         return self._connection.close()
 
+    @property
+    def isopen(self):
+        return bool(self._connection.open)
+
     def commit(self):
         return self._connection.commit()
 
