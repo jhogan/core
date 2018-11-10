@@ -318,6 +318,17 @@ class connection(entity):
                                          port=acct.port)
         return self._conn                
 
+    def kill(self):
+        try:
+            _conn = self._connection
+            id = _conn.thread_id()
+            _conn.kill(id)
+        except MySQLdb.OperationalError as ex:
+            # If exception isn't 1317, 'Query execution was interrupted'),
+            # re-raise
+            if ex.args[0] not in (1317, 2006):
+                raise
+
     def close(self):
         return self._connection.close()
 
