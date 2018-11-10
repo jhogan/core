@@ -400,7 +400,7 @@ class dbresultset(entities):
 
     def demandhasone(self):
         if not self.hasone:
-            raise RecordNotFoundError('A single record was not found')
+            raise recordnotfounderror('A single record was not found')
         return self.first
 
 class dbresult(entity):
@@ -420,7 +420,7 @@ class dbresult(entity):
             i = [x[0] for x in desc].index(i)
         return self._row[i]
 
-class RecordNotFoundError(Exception):
+class recordnotfounderror(Exception):
     pass
 
 class pool(entity):
