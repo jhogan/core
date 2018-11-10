@@ -51,11 +51,22 @@ class entities(entitiesmod.entities):
         self.orm.instance = self
         super().__init__(initial)
 
-    # TODO Make atomic
     def save(self):
-        for e in self:
-            e.save()
+        def save(cur):
+            for e in self:
+                e._save(cur)
 
+            for e in self.orm.trash:
+                e._save(cur)
+
+        sv = db.saver(save)
+
+        sv.save()
+
+    def delete(self):
+        for e in self:
+            e.delete()
+        
     def give(self, es):
         sts = self.orm.persistencestates
         super().give(es)
@@ -73,7 +84,10 @@ class entities(entitiesmod.entities):
             e.orm.isdirty = True
 
     def append(self, obj, uniq=False, r=None):
-        # TODO Support appending collections
+        if isinstance(obj, entities):
+            for e in obj:
+                self.append(e, r=r)
+            return
         try:
             clscomp = self.orm.composites[0]
         except IndexError:
@@ -114,7 +128,6 @@ class entities(entitiesmod.entities):
         sql = 'SELECT * FROM %s WHERE %s;' % (self.orm.table, where)
 
         # TODO Make db.pool variant
-        # TODO Make atomic
         pool = db.pool.getdefault()
 
         with pool.take() as conn:
@@ -222,12 +235,15 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         self.orm = self.orm.clone()
         self.orm.instance = self
 
-        self.onbeforesave  =  entitiesmod.event()
-        self.onaftersave   =  entitiesmod.event()
-        self.onafterload   =  entitiesmod.event()
+        self.onbeforesave       =  entitiesmod.event()
+        self.onaftersave        =  entitiesmod.event()
+        self.onafterload        =  entitiesmod.event()
+        self.onbeforereconnect  =  entitiesmod.event()
+        self.onafterreconnect   =  entitiesmod.event()
 
         self.onaftersave += self._self_onaftersave
         self.onafterload += self._self_onafterload
+        self.onafterreconnect += self._self_onafterreconnect
 
         if o is None:
             self.orm.isnew = True
@@ -242,7 +258,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 args = id.bytes,
 
                 # TODO Make db.pool variant
-                # TODO Make atomic
+                # TODO Add reconnect logic.
                 pool = db.pool.getdefault()
 
                 with pool.take() as conn:
@@ -277,12 +293,17 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         self.onaftervaluechange  +=  self._self_onaftervaluechange
     
     def _self_onafterload(self, src, eargs):
-        chron = db.chronicler.getinstance()
-        chron += db.chronicle(eargs.entity, eargs.crud, eargs.sql, eargs.args)
+        self._add2chronicler(eargs)
 
     def _self_onaftersave(self, src, eargs):
+        self._add2chronicler(eargs)
+
+    def _self_onafterreconnect(self, src, eargs):
+        self._add2chronicler(eargs)
+
+    def _add2chronicler(self, eargs):
         chron = db.chronicler.getinstance()
-        chron += db.chronicle(eargs.entity, eargs.crud, eargs.sql, eargs.args)
+        chron += db.chronicle(eargs.entity, eargs.op, eargs.sql, eargs.args)
 
     def _self_onaftervaluechange(self, src, eargs):
         if not self.orm.isnew:
@@ -396,7 +417,29 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         self.orm.ismarkedfordeletion = True
         self.save()
 
-    def save(self, cur=None, follow                  =True, 
+    def save(self, *es):
+        # Create a callable to call self._save(cur) and the _save(cur)
+        # methods on earch of the objects in *es.
+        def save(cur):
+            self._save(cur)
+            for e in es:
+                e._save(cur)
+
+        # Create a saver object with the above save() callable
+        sv = db.saver(save)
+
+        # Register reconnect events of the saver so they can be re-raised
+        sv.onbeforereconnect += \
+            lambda src, eargs: self.onbeforereconnect(src, eargs)
+        sv.onafterreconnect  += \
+            lambda src, eargs: self.onafterreconnect(src, eargs)
+
+        # Call the saver's save methed which will call the save() callable
+        # above. saver.save() will take care of dead, pooled, db connection,
+        # and atomicity.
+        sv.save()
+        
+    def _save(self, cur=None, follow                  =True, 
                              followentitymapping     =True, 
                              followentitiesmapping   =True, 
                              followassociationmapping=True):
@@ -404,10 +447,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # TODO Convert MySQL warnings into exceptions - everywhere; not just
         # here. See:
         # https://stackoverflow.com/questions/2102251/trapping-a-mysql-warning
-
-        # TODO Add reconnect logic.
-        # TODO Ensure connection is active.
-        # TODO Ensure entities aren't being loaded during save.
 
         if not self.isvalid:
             raise db.brokenruleserror("Can't save invalid object" , self)
@@ -426,18 +465,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             sql, args = (None,) * 2
 
         try:
-            # If we cur wasn't passed in, get a conn from the default
-            # pool and create a curson
-            if not cur:
-                pool = db.pool.getdefault()
-                conn = pool.pull()
-                cur = conn.createcursor()
-            else:
-                # cur was passed in. Set conn to None so indicate there is no
-                # need to call conn.save() or conn.rollback() in this frame
-                # (see below). The frame at the top of the stack will rollback
-                # or commit the transaction.
-                conn = None
 
             # Take snapshop of before state
             st = self.orm.persistencestate
@@ -470,16 +497,13 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             for map in self.orm.mappings if follow else tuple():
 
                 if followentitymapping and type(map) is entitymapping:
-                    # TODO: Calling map.value currenly loads the constituent.
-                    # We probably shouldn't load this here unless the FK has
-                    # changed.
-
                     # Call the entity constituent's save method. Setting
                     # followentitiesmapping to false here prevents it's
                     # child/entitiesmapping constituents from being saved. This
                     # prevents infinite recursion. 
-                    map.value.save(cur, followentitiesmapping=False,
-                                        followassociationmapping=False)
+                    if map.isloaded:
+                        map.value._save(cur, followentitiesmapping=False,
+                                            followassociationmapping=False)
 
                 if followentitiesmapping and type(map) is entitiesmapping:
 
@@ -523,7 +547,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                 # delete, don't ascend back to self
                                 # (followentitymapping == False). Doing so will
                                 # recreate self in the database.
-                                e.save(cur, followentitymapping=(crud!='delete'))
+                                e._save(cur, followentitymapping=(crud!='delete'))
                             except Exception:
                                 # Restore states
                                 es.orm.persistencestates = sts
@@ -532,7 +556,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         for e in es.orm.trash:
                             trashst = e.orm.persistencestate
                             try:
-                                e.save(cur)
+                                e._save(cur)
                             except Exception:
                                 e.orm.persistencestate = trashst
                                 raise
@@ -542,29 +566,19 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         # For each association then each trashed association
                         for asses in map.value, map.value.orm.trash:
                             for ass in asses:
-                                ass.save(cur, follow=False)
+                                ass._save(cur, follow=False)
                                 for map in ass.orm.mappings.entitymappings:
                                     if map.isloaded:
                                         if map.value is self:
                                             continue
                                         e = map.value
-                                        e.save(cur, followassociationmapping=False)
+                                        e._save(cur, followassociationmapping=False)
 
                         asses.orm.trash.clear()
 
         except Exception:
             self.orm.persistencestate = st
-
-            if conn:
-                conn.rollback()
             raise
-        else:
-            if conn:
-                conn.commit()
-        finally:
-            if conn:
-                cur.close()
-                pool.push(conn)
         
     @property
     def brokenrules(self):
@@ -638,11 +652,21 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                     es.load(map1.name, self.id.bytes)
 
+                    def setattr1(e, attr, v):
+                        e.orm.mappings(attr).value = v
+
                     # Assign the composite reference to the constituent's
                     # elements
                     #   i.e., art.presentations.first.artist = art
                     for e in es:
-                        setattr(e, self.orm.entity.__name__, self)
+                        attr = self.orm.entity.__name__
+
+                        # Set cmp to False and use a custom setattr. Simply
+                        # calling setattr(e, attr, self) would cause e.attr to
+                        # be loaded from the database for comparison when __setattr__
+                        # calls _setvalue.  However, the composite doesn't need
+                        # to be loaded from the database.
+                        e._setvalue(attr, self, attr, cmp=False, setattr=setattr1)
                 map.value = es
 
                 # Assign the composite reference to the constituent

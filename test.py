@@ -110,7 +110,6 @@ class test_orm(tester):
 
         artist.reCREATE(recursive=True)
 
-
     def _chronicler_onadd(self, src, eargs):
         self.chronicles += eargs.entity
 
@@ -528,11 +527,11 @@ class test_orm(tester):
             for fact in art1.artifacts:
                 self.ne(rmfact.id, fact.id)
 
-            self.expect(db.RecordNotFoundError, lambda: artist_artifact(rmaa.id))
-            self.expect(db.RecordNotFoundError, lambda: artifact(rmfact.id))
+            self.expect(db.recordnotfounderror, lambda: artist_artifact(rmaa.id))
+            self.expect(db.recordnotfounderror, lambda: artifact(rmfact.id))
 
             for comp in rmcomps:
-                self.expect(db.RecordNotFoundError, lambda: component(comp.id))
+                self.expect(db.recordnotfounderror, lambda: component(comp.id))
 
         # TODO Test deeply nested associations
 
@@ -554,7 +553,7 @@ class test_orm(tester):
 
         # Break save method
         pres = art.presentations.orm.trash.first
-        save, pres.save = pres.save, lambda cur: 0/0
+        save, pres._save = pres._save, lambda cur: 0/0
 
         self.expect(ZeroDivisionError, lambda: art.save())
 
@@ -562,13 +561,13 @@ class test_orm(tester):
         self.eq(presssts,  art.presentations.orm.trash.orm.persistencestates)
 
         # Restore unbroken save method
-        pres.save = save
+        pres._save = save
         art.save()
 
         self.zero(artist(art.id).presentations)
 
         trashid = art.presentations.orm.trash.first.id
-        self.expect(db.RecordNotFoundError, lambda: presentation(trashid))
+        self.expect(db.recordnotfounderror, lambda: presentation(trashid))
 
         # Test associations
         art = artist()
@@ -591,10 +590,10 @@ class test_orm(tester):
         self.one(art.artist_artifacts.orm.trash)
         self.one(art.artifacts.orm.trash)
 
-        # Brake save method
+        # Break save method
         fn = lambda cur, follow: 0/0
-        save = art.artist_artifacts.orm.trash.first.save
-        art.artist_artifacts.orm.trash.first.save = fn
+        save = art.artist_artifacts.orm.trash.first._save
+        art.artist_artifacts.orm.trash.first._save = fn
 
         self.expect(ZeroDivisionError, lambda: art.save())
 
@@ -612,14 +611,14 @@ class test_orm(tester):
         self.one(artist(art.id).artist_artifacts)
 
         # Restore unbroken save method
-        art.artist_artifacts.orm.trash.first.save = save
+        art.artist_artifacts.orm.trash.first._save = save
 
         art.save()
         self.zero(artist(art.id).artifacts)
         self.zero(artist(art.id).artist_artifacts)
 
-        self.expect(db.RecordNotFoundError, lambda: artist_artifact(aaid))
-        self.expect(db.RecordNotFoundError, lambda: artifact(factid))
+        self.expect(db.recordnotfounderror, lambda: artist_artifact(aaid))
+        self.expect(db.recordnotfounderror, lambda: artifact(factid))
 
     def it_raises_error_on_invalid_attributes_of_associations(self):
         art = artist()
@@ -687,13 +686,14 @@ class test_orm(tester):
         pres = art.presentations.last
 
         self.two(chrons)
-        self.eq(chrons.where('entity', pres).first.crud, 'create')
-        self.eq(chrons.where('entity', loc).first.crud, 'update')
+        self.eq(chrons.where('entity', pres).first.op, 'create')
+        self.eq(chrons.where('entity', loc).first.op, 'update')
 
         self.zero(artist(art1.id).presentations.first.locations)
         self.one(artist(art.id).presentations.first.locations)
 
     def it_saves_entities(self):
+        # TODO Test atomicity
         chrons = self.chronicles
 
         arts = artists()
@@ -703,13 +703,12 @@ class test_orm(tester):
             arts.last.firstname = uuid4().hex
             arts.last.lastname = uuid4().hex
 
-        
         chrons.clear()
         arts.save()
 
         self.two(chrons)
-        self.eq(chrons.where('entity', arts.first).first.crud, 'create')
-        self.eq(chrons.where('entity', arts.second).first.crud, 'create')
+        self.eq(chrons.where('entity', arts.first).first.op, 'create')
+        self.eq(chrons.where('entity', arts.second).first.op, 'create')
 
         for art in arts:
             art1 = artist(art.id)
@@ -719,7 +718,62 @@ class test_orm(tester):
                     continue
 
                 self.eq(getattr(art, map.name), getattr(art1, map.name))
-                
+
+    def it_rollsback_save_of_entities(self):
+        # Create two artists
+        arts = artists()
+
+        for _ in range(2):
+            arts += artist()
+            arts.last.firstname = uuid4().hex
+            arts.last.lastname = uuid4().hex
+
+        arts.save()
+
+        # First, back the save method so a rollback occurs, and test the
+        # rollback. Second, fix the save method and ensure success.
+        for i in range(2):
+            if i:
+                # Restore original save method
+                arts.second._save = save
+
+                # Update property 
+                arts.first.firstname = new = uuid4().hex
+                arts.save()
+                self.eq(new, artist(arts.first.id).firstname)
+            else:
+                # Update property
+                old, arts.first.firstname = arts.first.firstname, uuid4().hex
+
+                # Break save method
+                save, arts.second._save = arts.second._save, lambda x: 0/0
+
+                self.expect(ZeroDivisionError, lambda: arts.save())
+                self.eq(old, artist(arts.first.id).firstname)
+
+    def it_deletes_entities(self):
+        # Create to artists
+        arts = artists()
+
+        for _ in range(2):
+            arts += artist()
+            arts.last.firstname = uuid4().hex
+            arts.last.lastname = uuid4().hex
+        
+        arts.save()
+
+        art = arts.shift()
+        self.one(arts)
+        self.one(arts.orm.trash)
+
+        arts.save()
+
+        self.expect(db.recordnotfounderror, lambda: artist(art.id))
+        
+        # Ensure the remaining artist still exists in database
+        self.expect(None, lambda: artist(arts.first.id))
+
+
     def it_doesnt_needlessly_save(self):
         chrons = self.chronicles
 
@@ -733,7 +787,7 @@ class test_orm(tester):
             
             if i == 0:
                 self.one(chrons)
-                self.eq(chrons.where('entity', art).first.crud, 'create')
+                self.eq(chrons.where('entity', art).first.op, 'create')
             elif i == 1:
                 self.zero(chrons)
 
@@ -744,7 +798,7 @@ class test_orm(tester):
         art.save()
 
         self.one(chrons)
-        self.eq(chrons.where('entity', art).first.crud, 'update')
+        self.eq(chrons.where('entity', art).first.op, 'update')
 
         # Test constituents
         art.presentations += presentation()
@@ -756,7 +810,7 @@ class test_orm(tester):
             if i == 0:
                 self.one(chrons)
                 pres = art.presentations.last
-                self.eq(chrons.where('entity', pres).first.crud, 'create')
+                self.eq(chrons.where('entity', pres).first.op, 'create')
             elif i == 1:
                 self.zero(chrons)
 
@@ -771,7 +825,7 @@ class test_orm(tester):
             if i == 0:
                 self.one(chrons)
                 loc = art.presentations.last.locations.last
-                self.eq(chrons.where('entity', loc).first.crud, 'create')
+                self.eq(chrons.where('entity', loc).first.op, 'create')
             elif i == 1:
                 self.zero(chrons)
 
@@ -838,30 +892,19 @@ class test_orm(tester):
 
         self.three(chrons)
         press = art.presentations
-        self.eq(chrons.where('entity', art).first.crud, 'create')
-        self.eq(chrons.where('entity', press.first).first.crud, 'create')
-        self.eq(chrons.where('entity', press.second).first.crud, 'create')
+        self.eq(chrons.where('entity', art).first.op, 'create')
+        self.eq(chrons.where('entity', press.first).first.op, 'create')
+        self.eq(chrons.where('entity', press.second).first.op, 'create')
 
         art1 = artist(art.id)
 
         chrons.clear()
-        B()
         press = art1.presentations
-        print(chrons)
 
-        # TODO:BUG There is an interesting bug here: When .presentations is
-        # called (and thus the presentations are lazy-loaded), each
-        # presentations is assigned art1 as a composite reference in
-        # __getattribute__(). This assignment uses setattr() which then invokes
-        # entities._setvalue(). In the later, the 'old' value is retrieved for
-        # comparison to the new 'value'.  Retrieving the old means that artist
-        # is loaded for each assigment to presenation.artist. So the line below
-        # had to be commented out because artist ends up being needlessly
-        # loaded twice meaning that chrons.count == 4 - though it should equal 2
-        #self.two(chrons)
+        self.two(chrons)
 
-        self.eq(chrons.where('entity', press.first).first.crud, 'retrieve')
-        self.eq(chrons.where('entity', press.second).first.crud, 'retrieve')
+        self.eq(chrons.where('entity', press.first).first.op, 'retrieve')
+        self.eq(chrons.where('entity', press.second).first.op, 'retrieve')
 
         art.presentations.sort('id')
         art1.presentations.sort('id')
@@ -872,12 +915,24 @@ class test_orm(tester):
             
             self.is_(art1, pres1.artist)
 
-        # Create some locations with the presentations, save artist, reload and test
+        # Create some locations with the presentations, save artist, reload and
+        # test
         for pres in art.presentations:
             for _ in range(2):
                 pres.locations += location()
 
+        chrons.clear()
         art.save()
+
+        self.four(chrons)
+
+        locs = art.presentations.first.locations
+        self.eq(chrons.where('entity', locs.first).first.op, 'create')
+        self.eq(chrons.where('entity', locs.second).first.op, 'create')
+
+        locs = art.presentations.second.locations
+        self.eq(chrons.where('entity', locs.first).first.op, 'create')
+        self.eq(chrons.where('entity', locs.second).first.op, 'create')
 
         art1 = artist(art.id)
         self.two(art1.presentations)
@@ -885,8 +940,16 @@ class test_orm(tester):
         art.presentations.sort('id')
         art1.presentations.sort('id')
         for pres, pres1 in zip(art.presentations, art1.presentations):
+
             pres.locations.sort('id')
+
+            chrons.clear()
             pres1.locations.sort('id')
+
+            self.two(chrons)
+            locs = pres1.locations
+            self.eq(chrons.where('entity', locs.first).first.op, 'retrieve')
+            self.eq(chrons.where('entity', locs.second).first.op, 'retrieve')
 
             for loc, loc1 in zip(pres.locations, pres1.locations):
                 for map in loc.orm.mappings:
@@ -895,7 +958,28 @@ class test_orm(tester):
             
                 self.is_(pres1, loc1.presentation)
 
+        # Test appending a collection of constituents to a constituents
+        # collection. Save, reload and test.
+        art = artist()
+        press = presentations()
+
+        for _ in range(2):
+            press += presentation()
+
+        art.presentations += press
+
+        for i in range(2):
+            if i:
+                art.save()
+                art = artist(art.id)
+
+            self.eq(press.count, art.presentations.count)
+
+            for pres in art.presentations:
+                self.is_(art, pres.artist)
+
     def it_updates_constituents_properties(self):
+        chrons = self.chronicles
         art = artist()
 
         for _ in range(2):
@@ -915,7 +999,14 @@ class test_orm(tester):
             for loc in pres.locations:
                 loc.description = uuid4().hex
 
+        chrons.clear()
         art1.save()
+        self.six(chrons)
+        for pres in art1.presentations:
+            self.eq(chrons.where('entity', pres).first.op, 'update')
+            for loc in pres.locations:
+                self.eq(chrons.where('entity', loc).first.op, 'update')
+            
 
         art2 = artist(art.id)
         press = (art.presentations, art1.presentations, art2.presentations)
@@ -958,10 +1049,15 @@ class test_orm(tester):
         for prop in 'description', 'name', 'firstname':
             self.broken(loc, prop, 'valid')
 
-    def it_loads_entity_constituent(self):
+    def it_saves_and_loads_entity_constituent(self):
+        chrons = self.chronicles
+
         # Make sure the constituent is None for new composites
         pres = presentation()
+
+        chrons.clear()
         self.none(pres.artist)
+        self.zero(chrons)
 
         self.broken(pres, 'artistid', 'full')
 
@@ -970,7 +1066,11 @@ class test_orm(tester):
         pres.artist = art
         self.is_(art, pres.artist)
 
+        chrons.clear()
         pres.save()
+        self.two(chrons)
+        self.eq(chrons.where('entity', art).first.op,  'create')
+        self.eq(chrons.where('entity', pres).first.op, 'create')
 
         # Load by artist then lazy-load presentations to test
         art1 = artist(pres.artist.id)
@@ -979,11 +1079,22 @@ class test_orm(tester):
 
         # Load by presentation and lazy-load artist to test
         pres1 = presentation(pres.id)
+
+        chrons.clear()
         self.eq(pres1.artist.id, pres.artist.id)
+        self.one(chrons)
+        self.eq(chrons.where('entity', pres1.artist).first.op,  'retrieve')
 
         art1 = artist()
         pres1.artist = art1
+
+        chrons.clear()
         pres1.save()
+
+        self.two(chrons)
+        self.eq(chrons.where('entity', art1).first.op,  'create')
+        self.eq(chrons.where('entity', pres1).first.op, 'update')
+
 
         pres2 = presentation(pres1.id)
         self.eq(art1.id, pres2.artist.id)
@@ -997,21 +1108,45 @@ class test_orm(tester):
 
         loc.presentation = pres = presentation()
         self.is_(pres, loc.presentation)
+
+        chrons.clear()
         self.none(loc.presentation.artist)
+        self.zero(chrons)
 
         loc.presentation.artist = art = artist()
         self.is_(art, loc.presentation.artist)
 
         loc.save()
 
+        self.three(chrons)
+        self.eq(chrons.where('entity',  loc).first.op,               'create')
+        self.eq(chrons.where('entity',  loc.presentation).first.op,  'create')
+        self.eq(chrons.where('entity',  art).first.op,               'create')
+
+        chrons.clear()
         loc1 = location(loc.id)
+        pres1 = loc1.presentation
+
         self.eq(loc.id, loc1.id)
         self.eq(loc.presentation.id, loc1.presentation.id)
         self.eq(loc.presentation.artist.id, loc1.presentation.artist.id)
 
+        self.three(chrons)
+        self.eq(chrons.where('entity',  loc1).first.op,          'retrieve')
+        self.eq(chrons.where('entity',  pres1).first.op,         'retrieve')
+        self.eq(chrons.where('entity',  pres1.artist).first.op,  'retrieve')
+
         # Change the artist
         loc1.presentation.artist = art1 = artist()
+
+        chrons.clear()
         loc1.save()
+
+        self.two(chrons)
+        pres1 = loc1.presentation
+
+        self.eq(chrons.where('entity',  pres1).first.op,  'update')
+        self.eq(chrons.where('entity',  art1).first.op,   'create')
 
         loc2 = location(loc1.id)
         self.eq(loc1.presentation.artist.id, loc2.presentation.artist.id)
@@ -1029,8 +1164,15 @@ class test_orm(tester):
         # have different states.
         self.ne(loc2.presentation.name, name)
 
+        chrons.clear()
         loc2.save()
+
+        self.zero(chrons)
+
         loc2 = location(loc2.id)
+
+        self.one(chrons)
+        self.eq(chrons.where('entity',  loc2).first.op,   'retrieve')
 
         # The above save() didn't save the new artist's presentation collection
         # so the new name will not be present in the reloaded presentation
@@ -1049,7 +1191,7 @@ class test_orm(tester):
 
         # Cause the last presentation's invocation of save() to raise an
         # Exception to cause a rollback
-        art.presentations.last.save = lambda cur, followentitymapping: 1/0
+        art.presentations.last._save = lambda cur, followentitymapping: 1/0
 
         # Save expecting the ZeroDivisionError
         self.expect(ZeroDivisionError, lambda: art.save())
@@ -1060,7 +1202,7 @@ class test_orm(tester):
         self.false(art.orm.ismarkedfordeletion)
 
         # Ensure artist wasn't saved
-        self.expect(db.RecordNotFoundError, lambda: artist(art.id))
+        self.expect(db.recordnotfounderror, lambda: artist(art.id))
 
         # For each presentations, ensure state was not modified and no presentation 
         # object was saved.
@@ -1068,7 +1210,7 @@ class test_orm(tester):
             self.true(pres.orm.isnew)
             self.false(pres.orm.isdirty)
             self.false(pres.orm.ismarkedfordeletion)
-            self.expect(db.RecordNotFoundError, lambda: presentation(pres.id))
+            self.expect(db.recordnotfounderror, lambda: presentation(pres.id))
 
     def it_calls_entities(self):
         
@@ -1305,7 +1447,7 @@ class test_orm(tester):
         self.false(art.orm.isdirty)
         self.false(art.orm.ismarkedfordeletion)
 
-        self.expect(db.RecordNotFoundError, lambda: artist(art.id))
+        self.expect(db.recordnotfounderror, lambda: artist(art.id))
 
     def it_deletes_from_collections(self):
         # Create artist with a presentation and save
@@ -1342,8 +1484,8 @@ class test_orm(tester):
         self.zero(art.presentations)
         self.zero(art.presentations.orm.trash)
 
-        self.expect(db.RecordNotFoundError, lambda: presentation(pres.id))
-        self.expect(db.RecordNotFoundError, lambda: location(loc.id))
+        self.expect(db.recordnotfounderror, lambda: presentation(pres.id))
+        self.expect(db.recordnotfounderror, lambda: location(loc.id))
 
     def it_assigns_and_retrives_unicode_values_from_str_properties(self):
         # TODO
@@ -1360,7 +1502,7 @@ class test_orm(tester):
         try:
             art = artist(uuid4())
         except Exception as ex:
-            self.type(db.RecordNotFoundError, ex)
+            self.type(db.recordnotfounderror, ex)
         else:
             self.fail('Exception not thrown')
 
@@ -1386,6 +1528,113 @@ class test_orm(tester):
 
     # TODO
     # Test int properties #
+
+    def it_reconnects_clossed_database_connections(self):
+        def art_onafterreconnect(src, eargs):
+            drown()
+
+        def drown():
+            pool = db.pool.getdefault()
+            for conn in pool._in + pool._out:
+                conn.kill()
+
+        # Kill all connections in and out of the pool
+        drown()
+
+        art = artist()
+
+        # Subscribe to the onafterreconnect event so the connections can
+        # be re-drowned. This will ensure that the connections never get
+        # sucessfully reconnected which will cause an OperationalError.
+        art.onafterreconnect += art_onafterreconnect
+
+        self.expect(MySQLdb.OperationalError, lambda: art.save())
+
+        # Make sure the connections have been killed.
+        drown()
+
+        # Unsubscribe so .save() is allowed to reconnect. This will prevent
+        # the OperationalError.
+        art.onafterreconnect -= art_onafterreconnect
+
+        self.expect(None, lambda: art.save())
+
+    def it_saves_multiple_graphs(self):
+        art1 = artist()
+        art2 = artist()
+
+        pres = presentation()
+        loc = location()
+
+        art1.presentations += pres
+        art1.presentations.first.locations += loc
+
+        arts = artists()
+        for _ in range(2):
+            arts += artist()
+
+        art1.save(art2, arts)
+
+        for e in art1 + art2 + arts:
+            self.expect(None, lambda: artist(e.id))
+
+        self.expect(None, lambda: presentation(pres.id))
+        self.expect(None, lambda: location(loc.id))
+
+        art1.presentations.pop()
+
+        art2.save(art1, arts)
+
+        for e in art1 + art2 + arts:
+            self.expect(None, lambda: artist(e.id))
+
+        self.expect(db.recordnotfounderror, lambda: presentation(pres.id))
+        self.expect(db.recordnotfounderror, lambda: location(loc.id))
+
+        # TODO Save on collection, i.e, arts.save(art1, art2)
+
+        for e in art1 + art2 + arts:
+            e.delete()
+            self.expect(db.recordnotfounderror, lambda: artist(pres.id))
+
+    def it_rollsback_save_of_entities(self):
+        # Create to artists
+        pres = presentation()
+        art = artist()
+        art.presentations += pres
+
+        arts = artists()
+
+        for _ in range(2):
+            arts += artist()
+            arts.last.firstname = uuid4().hex
+
+        def saveall():
+            pres.save(arts.first, arts.second)
+
+        saveall()
+
+        # First, back the save method so a rollback occurs, and test the
+        # rollback. Second, fix the save method and ensure success.
+        for i in range(2):
+            if i:
+                # Restore original save method
+                arts.second._save = save
+
+                # Update property 
+                arts.first.firstname = new = uuid4().hex
+                saveall()
+                self.eq(new, artist(arts.first.id).firstname)
+            else:
+                # Update property
+                old, arts.first.firstname = arts.first.firstname, uuid4().hex
+
+                # Break save method
+                save, arts.second._save = arts.second._save, lambda x: 0/0
+
+                self.expect(ZeroDivisionError, saveall)
+
+                self.eq(old, artist(arts.first.id).firstname)
 
 class test_blog(tester):
     def __init__(self):
@@ -2363,7 +2612,7 @@ class test_blogpost(tester):
         try:
             blogpost(uuid4().hex, self.blog)
         except Exception as ex:
-            self.type(db.RecordNotFoundError, ex)
+            self.type(db.recordnotfounderror, ex)
         else:
             self.fail('Exception not thrown')
 
@@ -2374,7 +2623,7 @@ class test_blogpost(tester):
         try:
             blogpost(slug, bl)
         except Exception as ex:
-            self.type(db.RecordNotFoundError, ex)
+            self.type(db.recordnotfounderror, ex)
         else:
             self.fail('Exception not thrown')
 
@@ -4262,8 +4511,9 @@ Phone: 555 555 5555
 
         # TODO BUG Appending a new user, sorting by id, then shift()ing results
         # in the new user being immediately removed - so basically nothing is
-        # happening here. The same thing happens below with p.users. This bug makes the test work.
-        # It conceals the fact that shift()ing doesn't mark the user entity for deletion.
+        # happening here. The same thing happens below with p.users. This bug
+        # makes the test work.  It conceals the fact that shift()ing doesn't
+        # mark the user entity for deletion.
         us += u
         us.sort('id')
         us.shift()
