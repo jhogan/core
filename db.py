@@ -345,7 +345,7 @@ class connection(entity):
     def createcursor(self):
         return self._connection.cursor()
 
-    def _reconnect(self):
+    def reconnect(self):
         self._conn = None # force a reconnect
         self._connection
 
@@ -378,7 +378,7 @@ class connection(entity):
                     msg = msg.format(_, errno, isopen)
 
                     self.log.debug('Reconnect ' + str(_))
-                    self._reconnect()
+                    self.reconnect()
                 else:
                     raise
 
