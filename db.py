@@ -465,9 +465,9 @@ class pool(entity):
         self.push(conn)
 
 class operationeventargs(eventargs):
-    def __init__(self, e, crud, sql, args):
+    def __init__(self, e, op, sql, args):
         self.entity  =  e
-        self.crud    =  crud
+        self.op      =  op
         self.sql     =  sql
         self.args    =  args
 
@@ -505,8 +505,8 @@ class chronicles(entities):
     def where(self, p1, p2=None):
         if (type(p1), type(p2)) == (str, type(None)):
             # Passing in one argument will result in a test of p1 against
-            # the value of 'crud'.
-            p1, p2 = 'crud', p1
+            # the value of 'op'.
+            p1, p2 = 'op', p1
 
         return super().where(p1, p2)
 
@@ -514,9 +514,9 @@ class chronicles(entities):
         return self._tostr(includeHeader=False)
 
 class chronicle(entity):
-    def __init__(self, e, crud, sql, args):
+    def __init__(self, e, op, sql, args):
         self.entity  =  e
-        self.crud    =  crud
+        self.op      =  op
         self.sql     =  sql
         self.args    =  args
 
