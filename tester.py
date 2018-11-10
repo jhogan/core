@@ -216,6 +216,9 @@ class tester(entity):
     def four(self, actual):
         if len(actual) != 4: self._failures += failure()
 
+    def six(self, actual):
+        if len(actual) != 6: self._failures += failure()
+
     def nine(self, actual):
         if len(actual) != 9: self._failures += failure()
 
