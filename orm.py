@@ -49,19 +49,26 @@ class entities(entitiesmod.entities):
     def __init__(self, initial=None):
         self.orm = self.orm.clone()
         self.orm.instance = self
+
+        self.onbeforereconnect  =  entitiesmod.event()
+        self.onafterreconnect   =  entitiesmod.event()
+
         super().__init__(initial)
 
-    def save(self):
-        def save(cur):
-            for e in self:
+    def save(self, *es):
+        exec = db.executioner(self._save)
+        exec.execute(es)
+
+    def _save(self, cur, es=None):
+        for e in self:
+            e._save(cur)
+
+        for e in self.orm.trash:
+            e._save(cur)
+
+        if es:
+            for e in es:
                 e._save(cur)
-
-            for e in self.orm.trash:
-                e._save(cur)
-
-        sv = db.saver(save)
-
-        sv.save()
 
     def delete(self):
         for e in self:
@@ -127,21 +134,26 @@ class entities(entitiesmod.entities):
 
         sql = 'SELECT * FROM %s WHERE %s;' % (self.orm.table, where)
 
-        # TODO Make db.pool variant
-        pool = db.pool.getdefault()
-
-        with pool.take() as conn:
-            cur = conn.createcursor()
+        ress = None
+        def exec(cur):
+            nonlocal ress
             cur.execute(sql, args)
+            ress = db.dbresultset(cur)
 
-        ress = db.dbresultset(cur)
+        exec = db.executioner(exec)
+
+        exec.onbeforereconnect += \
+            lambda src, eargs: self.onbeforereconnect(src, eargs)
+        exec.onafterreconnect  += \
+            lambda src, eargs: self.onafterreconnect(src, eargs)
+
+        exec.execute()
 
         for res in ress:
             e = self.orm.entity(res)
             self += e
             eargs = db.operationeventargs(e, 'retrieve', sql, args)
             e.onafterload(self, eargs)
-
             self.last.orm.persistencestate = (False,) * 3
 
     def _getbrokenrules(self, es):
@@ -251,26 +263,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             self.id = uuid4()
         else:
             if type(o) is UUID:
-                id = o
-                sql = 'SELECT * FROM {} WHERE id = %s'
-                sql = sql.format(self.orm.table)
-
-                args = id.bytes,
-
-                # TODO Make db.pool variant
-                # TODO Add reconnect logic.
-                pool = db.pool.getdefault()
-
-                with pool.take() as conn:
-                    cur = conn.createcursor()
-                    cur.execute(sql, args)
-
-                ress = db.dbresultset(cur)
-                ress.demandhasone()
-                res = ress.first
-
-                eargs = db.operationeventargs(self, 'retrieve', sql, args)
-                self.onafterload(self, eargs)
+                res = self._load(o)
             elif type(o) is db.dbresult:
                 res = o
             else:
@@ -282,8 +275,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                 map.value = res[map.name]
 
-
-
             self.orm.isnew = False
             self.orm.isdirty = False
 
@@ -291,6 +282,35 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         # Events
         self.onaftervaluechange  +=  self._self_onaftervaluechange
+
+    def _load(self, id):
+        sql = 'SELECT * FROM {} WHERE id = %s'
+        sql = sql.format(self.orm.table)
+
+        args = id.bytes,
+
+        ress = None
+        def exec(cur):
+            nonlocal ress
+            cur.execute(sql, args)
+            ress = db.dbresultset(cur)
+
+        exec = db.executioner(exec)
+
+        exec.onbeforereconnect += \
+            lambda src, eargs: self.onbeforereconnect(src, eargs)
+        exec.onafterreconnect  += \
+            lambda src, eargs: self.onafterreconnect(src, eargs)
+
+        exec.execute()
+
+        ress.demandhasone()
+        res = ress.first
+
+        eargs = db.operationeventargs(self, 'retrieve', sql, args)
+        self.onafterload(self, eargs)
+
+        return res
     
     def _self_onafterload(self, src, eargs):
         self._add2chronicler(eargs)
@@ -310,7 +330,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             self.orm.isdirty = True
 
     def __dir__(self):
-        return super().__dir__() + [x.name for x in self.orm.mappings]
+        return super().__dir__() + self.orm.properties
 
     def __setattr__(self, attr, v):
         # Need to handle 'orm' first, otherwise the code below that
@@ -321,7 +341,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         map = self.orm.mappings(attr)
 
         if map is None:
-            return object.__setattr__(self, attr, v)
+            super = self.orm.super
+            if super and super.orm.mappings(attr):
+                builtins.setattr(self.orm.super, attr, v)
+            else:
+                return object.__setattr__(self, attr, v)
         else:
             # Call entity._setvalue to take advantage of its event raising
             # code. Pass in a custom setattr function for it to call. Use
@@ -335,10 +359,16 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             self._setvalue(attr, v, attr, setattr)
 
             if type(map) is entitymapping:
-                for map in self.orm.mappings.foreignkeymappings:
-                    if map.entity is v.orm.entity:
-                        self._setvalue(map.name, v.id, map.name, setattr)
-                        break;
+                e = v.orm.entity
+                while True:
+                    for map in self.orm.mappings.foreignkeymappings:
+                        if map.entity is e:
+                            self._setvalue(map.name, v.id, map.name, setattr)
+                            break;
+                    else:
+                        e = e.orm.super
+                        continue
+                    break
 
     @classmethod
     def reCREATE(cls, cur=None, recursive=False, clss=None):
@@ -355,6 +385,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             if cur:
                 conn = None
             else:
+                # TODO Use executioner
                 pool = db.pool.getdefault()
                 conn = pool.pull()
                 cur = conn.createcursor()
@@ -378,6 +409,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                 for ass in cls.orm.associations:
                     ass.entity.reCREATE(cur, True, clss)
+
+                for sub in cls.orm.subclasses:
+                    sub.reCREATE(cur)
                             
         except:
             if conn:
@@ -393,6 +427,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
     @classmethod
     def DROP(cls, cur=None):
+        # TODO Use executioner
         sql = 'drop table ' + cls.orm.table + ';'
 
         if cur:
@@ -404,6 +439,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
     
     @classmethod
     def CREATE(cls, cur=None):
+        # TODO Use executioner
         sql = cls.orm.mappings.createtable
 
         if cur:
@@ -425,30 +461,26 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             for e in es:
                 e._save(cur)
 
-        # Create a saver object with the above save() callable
-        sv = db.saver(save)
+        # Create an executioner object with the above save() callable
+        exec = db.executioner(save)
 
-        # Register reconnect events of the saver so they can be re-raised
-        sv.onbeforereconnect += \
+        # Register reconnect events of then executioner so they can be re-raised
+        exec.onbeforereconnect += \
             lambda src, eargs: self.onbeforereconnect(src, eargs)
-        sv.onafterreconnect  += \
+        exec.onafterreconnect  += \
             lambda src, eargs: self.onafterreconnect(src, eargs)
 
-        # Call the saver's save methed which will call the save() callable
-        # above. saver.save() will take care of dead, pooled, db connection,
+        # Call then executioner's exec methed which will call the exec() callable
+        # above. executioner.execute will take care of dead, pooled connection,
         # and atomicity.
-        sv.save()
+        exec.execute()
         
     def _save(self, cur=None, follow                  =True, 
                              followentitymapping     =True, 
                              followentitiesmapping   =True, 
                              followassociationmapping=True):
 
-        # TODO Convert MySQL warnings into exceptions - everywhere; not just
-        # here. See:
-        # https://stackoverflow.com/questions/2102251/trapping-a-mysql-warning
-
-        if not self.isvalid:
+        if not self.orm.ismarkedfordeletion and not self.isvalid:
             raise db.brokenruleserror("Can't save invalid object" , self)
 
         if self.orm.ismarkedfordeletion:
@@ -457,7 +489,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         elif self.orm.isnew:
             crud = 'create'
             sql, args = self.orm.mappings.getinsert()
-        elif self.orm.isdirty:
+        elif self.orm._isdirty:
             crud = 'update'
             sql, args = self.orm.mappings.getupdate()
         else:
@@ -465,7 +497,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             sql, args = (None,) * 2
 
         try:
-
             # Take snapshop of before state
             st = self.orm.persistencestate
 
@@ -576,6 +607,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                         asses.orm.trash.clear()
 
+            super = self.orm.super
+            if super:
+                if crud == 'delete':
+                    super.orm.ismarkedfordeletion = True
+                super._save(cur)
+
         except Exception:
             self.orm.persistencestate = st
             raise
@@ -594,6 +631,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             return brs
         else:
             guestbook += self,
+
+        super = self.orm.super
+        if super:
+            brs += super._getbrokenrules(guestbook)
 
         for map in self.orm.mappings:
             if type(map) is fieldmapping:
@@ -638,15 +679,43 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         if attr != 'orm' and self.orm.mappings:
             map = self.orm.mappings(attr)
+            if not map:
+                super = self.orm.super
+                if super:
+                    # TODO Before begining an ascent up the inheritence hierarchy,
+                    # we need to first ensure that the attr is a map in that
+                    # hierarchy; not just in the super. So the below line
+                    # should something like self.getmap(attr, recursive=True)
+                    map = super.orm.mappings(attr)
+                    if map:
+                        v = getattr(super, map.name)
+                        # Assign the composite reference to the constituent
+                        #   i.e., sng.presentations.singer = sng
+                        if type(map) is entitiesmapping:
+                            es = v
+                            for e in (es,) +  tuple(es):
+                                if not hasattr(e, self.orm.entity.__name__):
+                                    setattr(e, self.orm.entity.__name__, self)
+                        return v
 
         # Lazy-load constituent entities map
         if type(map) is entitiesmapping:
             if map.value is None:
                 es = map.entities()
                 if not self.orm.isnew:
+
+                    # Get the FK map of the entities constituent. 
                     for map1 in map.entities.orm.mappings.foreignkeymappings:
-                        if map1.entity is self.orm.entity:
-                            break
+                        e = self.orm.entity
+                        while e:
+                            if map1.entity is e:
+                                break
+
+                            # If not found, go up the inheritance tree and try again
+                            e = e.orm.super.orm.entity
+                        else:
+                            continue
+                        break
                     else:
                         raise ValueError('FK map not found for entity')
 
@@ -769,6 +838,7 @@ class mappings(entitiesmod.entities):
     def clear(self, derived=False):
         if derived:
             for map in [x for x in self if x.derived]:
+                B()
                 self.remove(map)
         else:
             super().clear()
@@ -828,7 +898,6 @@ class mappings(entitiesmod.entities):
 
             if type(map) is fieldmapping:
                 if map.isstr:
-                    # TODO: OPT: Shouldn't this be char(16) instead of varchar(16)
                     r += ' varchar(' + str(map.max) + ')'
             elif type(map) is primarykeyfieldmapping:
                 r += ' binary(16) primary key'
@@ -1113,6 +1182,17 @@ class primarykeyfieldmapping(fieldmapping):
 
     @property
     def value(self):
+        # If a super instance exists, use that because we want a subclass and
+        # its super class to share the same id. Here we use ._super instead of
+        # .super because we don't want the invoke the super accessor because it
+        # calls the id accessor (which calls this accessor). This leads to
+        # infinite recursion. This, of course, assumes that the .super accessor
+        # has previously been called.
+
+        super = self.orm._super
+        if super:
+            return super.id
+
         if type(self._value) is bytes:
             self._value = UUID(bytes=self._value)
             
@@ -1123,7 +1203,15 @@ class primarykeyfieldmapping(fieldmapping):
         self._value = v
 
 class ormclasseswrapper(entitiesmod.entities):
-    pass
+    def append(self, obj, uniq=False, r=None):
+        if isinstance(obj, type):
+            obj = ormclasswrapper(obj)
+        elif isinstance(obj, ormclasswrapper):
+            pass
+        else:
+            raise ValueError()
+        super().append(obj, uniq, r)
+        return r
 
 class ormclasswrapper(entitiesmod.entity):
     def __init__(self, entity):
@@ -1161,23 +1249,27 @@ class constituent(ormclasswrapper):
 
 class orm:
     def __init__(self):
-        self.mappings = None
-        self.isnew = False
-        self.isdirty = False
-        self.ismarkedfordeletion = False
-        self.entities = None
-        self.entity = None
-        self.table = None
-        self._composits = None
-        self._constituents = None
-        self._associations = None
-        self._trash = None
+        self.mappings             =  None
+        self.isnew                =  False
+        self._isdirty             =  False
+        self.ismarkedfordeletion  =  False
+        self.entities             =  None
+        self.entity               =  None
+        self.table                =  None
+        self._composits           =  None
+        self._constituents        =  None
+        self._associations        =  None
+        self._trash               =  None
+        self._subclasses          =  None
+        self._super               =  None
+        self._base                =  undef
+        self.instance             =  None
 
     def clone(self):
         r = orm()
 
         props = (
-            'isnew',       'isdirty',      'ismarkedfordeletion',
+            'isnew',       '_isdirty',      'ismarkedfordeletion',
             'entity',      'entities',     'table'
         )
 
@@ -1187,6 +1279,20 @@ class orm:
         r.mappings = self.mappings.clone(r)
 
         return r
+
+    @property
+    def isdirty(self):
+        if self._isdirty:
+            return True
+
+        if self.super:
+            return self.super.orm.isdirty
+
+        return False
+
+    @isdirty.setter
+    def isdirty(self, v):
+        self._isdirty = v
 
     @property
     def persistencestates(self):
@@ -1238,7 +1344,13 @@ class orm:
 
     @property
     def properties(self):
-        return [x.name for x in self.mappings]
+        props = [x.name for x in self.mappings]
+
+        super = self.super
+        if super:
+            props += [x for x in super.orm.properties if x not in props]
+
+        return props
 
     @staticmethod
     def getsubclasses(of):
@@ -1250,6 +1362,83 @@ class orm:
             r.extend(orm.getsubclasses(sub))
 
         return r
+
+    @staticmethod
+    def issub(obj1,  obj2):
+        if not (isinstance(obj1, type) and isinstance(obj2, type)):
+            msg = 'Only static types are currently supported'
+            raise NotImplementedError(msg)
+
+        cls1, cls2 = obj1, obj2
+
+        super = cls2
+
+        while super:
+            if super is cls1:
+                return True
+            super = super.orm.super
+
+        return False
+        
+
+    @property
+    def super(self):
+        """ For orms that have no instance, return the super class of
+        orm.entity.  If orm.instance is not None, return an instance of that
+        objects super class.  A super class here means the base class of of an
+        entity class where the base itself is not entity, but rather a subclass
+        of entity. So if class A inherits directly from entity, it will have a
+        super of None. However if class B inherits from A. class B will have a
+        super of A."""
+        if self._super:
+            return self._super
+
+        if self._base is not undef:
+            return self._base
+
+        if self.entity:
+            bases = self.entity.__bases__
+            try:
+                base = bases[0]
+            except IndexError:
+                base = None
+
+            if base in (entity, association):
+                self._base = None
+                return self._base
+
+            if self.isstatic:
+                self._base = base
+                return self._base
+
+            elif self.isinstance:
+                if self.isnew:
+                    self._super = base()
+                else:
+                    e = self.instance
+                    if e.id is not undef:
+                        self._super = base(e.id)
+
+                return self._super
+
+        return None
+
+    @property
+    def isstatic(self):
+        return self.instance is None
+
+    @property
+    def isinstance(self):
+        return self.instance is not None
+
+    @property
+    def subclasses(self):
+        if self._subclasses is None:
+            clss = ormclasseswrapper()
+            for sub in orm.getsubclasses(of=self.entity):
+                clss += sub
+            self._subclasses = clss
+        return self._subclasses
         
     @staticmethod
     def getassociations():
@@ -1288,7 +1477,7 @@ class orm:
             for ass in self.getassociations():
                 maps = list(ass.orm.mappings.entitymappings)
                 for i, map in enumerate(maps):
-                    if map.entity is self.entity:
+                    if orm.issub(map.entity, self.entity):
                         e = maps[int(not bool(i))].entity
                         self._composits += composite(e)
                         break
@@ -1331,7 +1520,7 @@ class associations(entities):
     def append(self, obj, uniq=False, r=None):
         if isinstance(obj, association):
             for map in obj.orm.mappings.entitymappings:
-                # TODO We probably should be using the associations (self) mappings
+                # TODO We probably should be using the association's (self) mappings
                 # collection to test the composites names. The name that matters is
                 # on the LHS of the map when being defined in the association class.
                 if map.name == type(self.composite).__name__:
