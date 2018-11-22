@@ -29,8 +29,15 @@ from MySQLdb.constants.ER import BAD_TABLE_ERROR
 from pdb import set_trace; B=set_trace
 from table import table
 import MySQLdb
+import warnings
 import uuid
 from contextlib import contextmanager
+
+# Some errors in MySQL are classified as "warnings" (such as 'select 0/0').
+# This means that no exception is raised; just an error message is printed to
+# stderr. We want these warnings to be proper exceptions so they
+# won't go unnoticed. The below code does just that.
+warnings.filterwarnings('error', category=MySQLdb.Warning)
 
 class dbentities(entities):
     def __init__(self, ress=None):
