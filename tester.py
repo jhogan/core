@@ -270,7 +270,8 @@ class tester(entity):
             if type(ex) is not expect:
                 self._failures += failure(actual=ex)
         else:
-            self._failures += failure()
+            if expect is not None:
+                self._failures += failure(actual=None)
             
 
     @property
