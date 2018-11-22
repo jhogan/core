@@ -545,21 +545,24 @@ class chronicle(entity):
         )
         return r
 
-class saver(entity):
-    def __init__(self, save, max=2):
-        self._save = save
+class executioner(entity):
+    def __init__(self, exec, max=2):
+        self._execute = exec
         self.max = max
         self.onbeforereconnect  =  event()
         self.onafterreconnect   =  event()
     
-    def save(self):
+    def execute(self, es=None):
         pl = pool.getdefault()
         for i in range(self.max):
             conn = pl.pull()
             cur = conn.createcursor()
 
             try:
-                self._save(cur)
+                if es:
+                    self._execute(cur, es)
+                else:
+                    self._execute(cur)
             except MySQLdb.OperationalError as ex:
                 # Reconnect if the connection object has timed out and no
                 # longer holds a connection to the database.

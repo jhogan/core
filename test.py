@@ -964,7 +964,7 @@ class test_entities(tester):
         for i, k in enumerate([fk, bk, fk]):
             self.assertIs(sks[i], k)
 
-        # Append a unique knight insisting in be unique
+        # Append a unique knight insisting it be unique
         ni = knight('knight who says ni')
         sks &= ni
         self.assertEq(4, sks.count)
