@@ -186,7 +186,6 @@ class test_orm(tester):
 
         self.zero(chrons)
 
-        B()
         aa = art.artist_artifacts
         self.zero(aa)
 
@@ -582,16 +581,18 @@ class test_orm(tester):
 
         self.expect(ZeroDivisionError, lambda: art.save())
 
+        B()
         self.eq(artst,     art.orm.persistencestate)
         self.eq(presssts,  art.presentations.orm.trash.orm.persistencestates)
 
         # Restore unbroken save method
         pres._save = save
+        trashid = art.presentations.orm.trash.first.id
+
         art.save()
 
         self.zero(artist(art.id).presentations)
 
-        trashid = art.presentations.orm.trash.first.id
         self.expect(db.recordnotfounderror, lambda: presentation(trashid))
 
         # Test associations
