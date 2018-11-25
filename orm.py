@@ -365,22 +365,33 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # it would pass in in this method's scope - execpt for the v
             # which, may have been processed (i.e, if it is a str, it will
             # have been strip()ed. 
-            def setattr(_, __, v):
+            def setattr0(_, __, v):
                 map.value = v
 
-            self._setvalue(attr, v, attr, setattr)
+            self._setvalue(attr, v, attr, setattr0)
 
             if type(map) is entitymapping:
                 e = v.orm.entity
                 while True:
                     for map in self.orm.mappings.foreignkeymappings:
                         if map.entity is e:
-                            self._setvalue(map.name, v.id, map.name, setattr)
+                            self._setvalue(map.name, v.id, map.name, setattr0)
                             break;
                     else:
                         e = e.orm.super
                         continue
                     break
+
+                # If self is a subentity (i.e., concert), we will want to set
+                # the superentity's (i.e, presentation) composite map to it's
+                # composite class (i.e., artist) value. 
+                selfsuper = self.orm.super
+                attrsuper = self.orm.mappings(attr).value.orm.super
+
+                if selfsuper and attrsuper:
+                    maps = selfsuper.orm.mappings
+                    attr = maps(attrsuper.__class__.__name__).name
+                    setattr(selfsuper, attr, attrsuper)
 
     @classmethod
     def reCREATE(cls, cur=None, recursive=False, clss=None):
@@ -488,9 +499,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         exec.execute()
         
     def _save(self, cur=None, follow                  =True, 
-                             followentitymapping     =True, 
-                             followentitiesmapping   =True, 
-                             followassociationmapping=True):
+                              followentitymapping     =True, 
+                              followentitiesmapping   =True, 
+                              followassociationmapping=True):
 
         if not self.orm.ismarkedfordeletion and not self.isvalid:
             raise db.brokenruleserror("Can't save invalid object" , self)
@@ -546,7 +557,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     # prevents infinite recursion. 
                     if map.isloaded:
                         map.value._save(cur, followentitiesmapping=False,
-                                            followassociationmapping=False)
+                                             followassociationmapping=False)
 
                 if followentitiesmapping and type(map) is entitiesmapping:
 
@@ -850,7 +861,6 @@ class mappings(entitiesmod.entities):
     def clear(self, derived=False):
         if derived:
             for map in [x for x in self if x.derived]:
-                B()
                 self.remove(map)
         else:
             super().clear()
@@ -956,7 +966,7 @@ WHERE id = %s;
         return sql, args
 
     def getdelete(self):
-        sql = 'delete from {} where id = %s;'.format(self.orm.table)
+        sql = 'DELETE FROM {} WHERE id = %s;'.format(self.orm.table)
 
         return sql, [self['id'].value.bytes]
 
