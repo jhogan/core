@@ -166,6 +166,18 @@ class entities(entitiesmod.entities):
         self.orm.trash += eargs.entity
         self.orm.trash.last.orm.ismarkedfordeletion = True
         super()._self_onremove(src, eargs)
+                    
+    def getindex(self, e):
+        if isinstance(e, entity):
+            for ix, e1 in enumerate(self):
+                if e.id == e1.id: return ix
+            e, id = e.orm.entity.__name__, e.id
+            raise ValueError("%s[%s] is not in the collection" % (e, id))
+        elif isinstance(e, UUID):
+            # TODO
+            raise NotImplementedError()
+
+        super().getindex(e)
 
 class entitymeta(type):
     def __new__(cls, name, bases, body):
