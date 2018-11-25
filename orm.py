@@ -614,6 +614,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             except Exception:
                                 e.orm.persistencestate = trashst
                                 raise
+
+                        # TODO If there is a rollback, shouldn't the entities
+                        # be restored to the trash collection. Also, shouldn't
+                        # deleting the associations trash (see below) do the
+                        # same restoration.
+                        es.orm.trash.clear()
                             
                 if followassociationmapping and type(map) is associationsmapping:
                     if map.isloaded:
