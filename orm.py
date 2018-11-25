@@ -780,6 +780,14 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 #   i.e., art.presentations.artist = art
                 setattr(map.value, self.orm.entity.__name__, self)
 
+                # Assign the superentities composite reference to the
+                # constituent i.e., art.concert.artist = art
+                super = self.orm.super
+                if super:
+                    setattr(map.value, super.orm.entity.__name__, super)
+                    
+
+
         elif type(map) is associationsmapping:
             map.composite = self
         elif map is None:
