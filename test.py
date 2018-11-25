@@ -119,6 +119,11 @@ class test_orm(tester):
         db.chronicler.getinstance().chronicles.onadd += self._chronicler_onadd
 
         artist.reCREATE(recursive=True)
+    
+    def _chrons(self, e, op):
+        chrons = self.chronicles.where('entity',  e)
+        if not (chrons.hasone and chrons.first.op == op):
+            self._failures += failure()
 
     def _chronicler_onadd(self, src, eargs):
         self.chronicles += eargs.entity
