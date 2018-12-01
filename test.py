@@ -93,6 +93,7 @@ class artist(orm.entity):
     firstname = orm.fieldmapping(str)
     lastname = orm.fieldmapping(str)
     presentations = presentations
+    locations = locations
 
 class artist_artifacts(orm.associations):
     pass
@@ -106,13 +107,13 @@ class singers(artists):
     pass
 
 class singer(artist):
-    # TODO This breaks things
-    #locations = locations
     voice = orm.fieldmapping(str)
     concerts = concerts
 
 class test_orm(tester):
 
+    # TODO Add search
+    # TODO Test property overriding
     def __init__(self):
         super().__init__()
         self.chronicles = db.chronicles()
@@ -130,12 +131,10 @@ class test_orm(tester):
 
     def it_has_static_composites_reference(self):
         comps = location.orm.composites
-        self.one(comps)
-        self.is_(comps.first.entity, presentation)
-
-        comps = comps.first.entity.orm.composites
-        self.one(comps)
-        self.is_(comps.first.entity, artist)
+        es = [x.entity for x in comps]
+        self.two(comps)
+        self.true(presentation in es)
+        self.true(artist in es)
 
         comps = presentation.orm.composites
         self.one(comps)
@@ -159,7 +158,7 @@ class test_orm(tester):
 
     def it_has_static_constituents_reference(self):
         consts = [x.entity for x in artist.orm.constituents]
-        self.two(consts)
+        self.three(consts)
         self.true(presentation in consts)
         self.true(artifact     in consts)
 
@@ -176,6 +175,103 @@ class test_orm(tester):
 
     def it_has_static_super_references(self):
         self.is_(artist, singer.orm.super)
+
+    def it_loads_and_saves_multicomposite_entity(self):
+        chrons = self.chronicles
+
+        # Create artist with presentation with empty locations and
+        # presentations, reload and test
+        art = artist()
+        pres = presentation()
+
+        self.zero(art.locations)
+        self.zero(pres.locations)
+        self.isnot(art.locations, pres.locations)
+
+        art.presentations += pres
+
+        chrons.clear()
+        art.save()
+        self.two(chrons)
+        self._chrons(art, 'create')
+        self._chrons(pres, 'create')
+
+        art = artist(art.id)
+        
+        self.zero(art.presentations.first.locations)
+        self.zero(art.locations)
+
+        # Add locations, save, test, reload, test
+        art.locations += location()
+        art.presentations.first.locations += location()
+
+        chrons.clear()
+        art.save()
+        self.two(chrons)
+        self._chrons(art.locations.first,                     'create')
+        self._chrons(art.presentations.first.locations.first, 'create')
+
+        art1 = artist(art.id)
+
+        chrons.clear()
+        self.eq(art.locations.first.id, art1.locations.first.id)
+        self.eq(art.presentations.first.locations.first.id, 
+                art1.presentations.first.locations.first.id)
+
+        self.three(chrons)
+        self._chrons(art1.presentations.first,                  'retrieve')
+        self._chrons(art1.presentations.first.locations.first,  'retrieve')
+        self._chrons(art1.locations.first,                      'retrieve')
+
+    def it_loads_and_saves_multicomposite_subentity(self):
+        chrons = self.chronicles
+
+        # Create singer with concert with empty locations and
+        # concerts, reload and test
+        sng = singer()
+        conc = concert()
+
+        self.zero(sng.locations)
+        self.zero(conc.locations)
+        self.isnot(sng.locations, conc.locations)
+
+        sng.concerts += conc
+
+        chrons.clear()
+        sng.save()
+        self.four(chrons)
+        self._chrons(sng, 'create')
+        self._chrons(conc, 'create')
+        self._chrons(sng.orm.super, 'create')
+        self._chrons(conc.orm.super, 'create')
+
+        sng = singer(sng.id)
+        
+        self.zero(sng.concerts.first.locations)
+        self.zero(sng.locations)
+
+        # Add locations, save, test, reload, test
+        sng.locations += location()
+        sng.concerts.first.locations += location()
+
+        chrons.clear()
+        sng.save()
+        self.two(chrons)
+        self._chrons(sng.locations.first,                     'create')
+        self._chrons(sng.concerts.first.locations.first, 'create')
+
+        sng1 = singer(sng.id)
+
+        chrons.clear()
+        self.eq(sng.locations.first.id, sng1.locations.first.id)
+        self.eq(sng.concerts.first.locations.first.id, 
+                sng1.concerts.first.locations.first.id)
+
+        self.four(chrons)
+        self._chrons(sng1.concerts.first,                  'retrieve')
+        self._chrons(sng1.concerts.first.orm.super,        'retrieve')
+        self._chrons(sng1.concerts.first.locations.first,  'retrieve')
+        self._chrons(sng1.locations.first,                 'retrieve')
 
     def it_loads_and_saves_associations(self):
         # TODO Test loading and saving deeply nested associations
@@ -581,7 +677,6 @@ class test_orm(tester):
 
         self.expect(ZeroDivisionError, lambda: art.save())
 
-        B()
         self.eq(artst,     art.orm.persistencestate)
         self.eq(presssts,  art.presentations.orm.trash.orm.persistencestates)
 
@@ -744,6 +839,43 @@ class test_orm(tester):
 
                 self.eq(getattr(art, map.name), getattr(art1, map.name))
 
+    def it_searches_entities(self):
+        arts = artists()
+        uuid = uuid4().hex
+        for i in range(4):
+            art = artist()
+            arts += art
+            art.firstname = uuid4().hex
+
+            if i >= 2:
+                art.lastname = uuid
+            else:
+                art.lastname = uuid4().hex
+
+        arts.save()
+
+        # Test a plain where string with no args tuple
+        arts1 = artists.search("firstname = '%s'" % arts.first.firstname)
+        self.one(arts1)
+        self.eq(arts.first.id, arts1.first.id)
+
+        # Test a where string with an args tuple
+        arts1 = artists.search('firstname = %s', (arts.first.firstname,))
+        self.one(arts1)
+        self.eq(arts.first.id, arts1.first.id)
+
+        # Test a where string with a multi-args tuple
+        args = arts.first.firstname, arts.first.lastname
+        arts1 = artists.search('firstname = %s and lastname = %s', args)
+        self.one(arts1)
+        self.eq(arts.first.id, arts1.first.id)
+
+        arts1 = artists.search('lastname = %s', (uuid,)).sorted('id')
+        self.two(arts1)
+        arts2 = (arts.third + arts.fourth).sorted('id')
+        self.eq(arts2.first.id, arts1.first.id)
+        self.eq(arts2.second.id, arts1.second.id)
+
     def it_rollsback_save_of_entities(self):
         # Create two artists
         arts = artists()
@@ -785,14 +917,16 @@ class test_orm(tester):
             arts.last.firstname = uuid4().hex
             arts.last.lastname = uuid4().hex
         
-        # TODO Test chrons
         arts.save()
 
         art = arts.shift()
         self.one(arts)
         self.one(arts.orm.trash)
 
+        self.chronicles.clear()
         arts.save()
+        self.one(self.chronicles)
+        self._chrons(art, 'delete')
 
         self.expect(db.recordnotfounderror, lambda: artist(art.id))
         
@@ -870,9 +1004,10 @@ class test_orm(tester):
 
         art.save()
 
-        for art in (art, artist(art.id)):
+        for i, art in enumerate((art, artist(art.id))):
             for pres in art.presentations:
                 chrons.clear()
+                    
                 self.is_(art, pres.artist)
                 self.zero(chrons)
 
@@ -937,6 +1072,8 @@ class test_orm(tester):
         art.presentations.sort('id')
         art1.presentations.sort('id')
         for pres, pres1 in zip(art.presentations, art1.presentations):
+            self.eq((False, False, False), pres.orm.persistencestate)
+            self.eq((False, False, False), pres1.orm.persistencestate)
             for map in pres.orm.mappings:
                 if isinstance(map, orm.fieldmapping):
                     self.eq(getattr(pres, map.name), getattr(pres1, map.name))
@@ -982,7 +1119,8 @@ class test_orm(tester):
             for loc, loc1 in zip(pres.locations, pres1.locations):
                 for map in loc.orm.mappings:
                     if isinstance(map, orm.fieldmapping):
-                        self.eq(getattr(loc, map.name), getattr(loc1, map.name))
+                        v, v1 = getattr(loc, map.name), getattr(loc1, map.name)
+                        self.eq(v, v1)
             
                 self.is_(pres1, loc1.presentation)
 
@@ -1063,8 +1201,8 @@ class test_orm(tester):
         self.none(pres.artist)
         self.zero(chrons)
 
-        self.broken(pres, 'artistid', 'full')
-
+        self.zero(pres.brokenrules)
+        
         # Test setting an entity constituent then test saving and loading
         art = artist()
         pres.artist = art
@@ -1274,18 +1412,6 @@ class test_orm(tester):
         self.is_(s.orm.entities, singers)
         self.eq(s.orm.table, 'singers')
 
-    def it_calls_RECREATE(self):
-        # TODO
-        pass
-
-    def it_calls_CREATE(self):
-        # TODO
-        pass
-
-    def it_calls_DROP(self):
-        # TODO
-        pass
-
     def it_calls_id_on_entity(self):
         art = artist()
 
@@ -1407,8 +1533,10 @@ class test_orm(tester):
         self.true(art.orm.isnew)
         self.false(art.orm.isdirty)
 
-        # TODO Test chrons
+        self.chronicles.clear()
         art.save()
+        self.one(self.chronicles)
+        self._chrons(art, 'create')
 
         self.false(art.orm.isnew)
         self.false(art.orm.isdirty)
@@ -1438,7 +1566,9 @@ class test_orm(tester):
             else:
                 self.ne(getattr(art1, prop), getattr(art, prop))
 
+        self.chronicles.clear()
         art1.save()
+        self._chrons(art1, 'update')
 
         self.false(art1.orm.isnew)
         self.false(art1.orm.isdirty)
@@ -1463,26 +1593,33 @@ class test_orm(tester):
             self.fail('Exception not thrown')
 
     def it_hard_deletes_entity(self):
-        # TODO Invalidate art. You should be able to delete an object whether
-        # or not it is valid.
-        art = artist()
+        for i in range(2):
+            art = artist()
 
-        art.firstname = uuid4().hex
-        art.lastname  = uuid4().hex
+            art.firstname = uuid4().hex
+            art.lastname  = uuid4().hex
 
-        # TODO Test chrons
-        art.save()
+            art.save()
 
-        art.delete()
+            self.expect(None, lambda: artist(art.id))
 
-        self.true(art.orm.isnew)
-        self.false(art.orm.isdirty)
-        self.false(art.orm.ismarkedfordeletion)
+            if i:
+                art.lastname  = uuid4().hex
+                self.zero(art.brokenrules)
+            else:
+                art.lastname  = 'X' * 265 # break rule
+                self.one(art.brokenrules)
 
-        self.expect(db.recordnotfounderror, lambda: artist(art.id))
+            self.chronicles.clear()
+            art.delete()
+            self.one(self.chronicles)
+            self._chrons(art, 'delete')
+
+            self.eq((True, False, False), art.orm.persistencestate)
+
+            self.expect(db.recordnotfounderror, lambda: artist(art.id))
 
     def it_deletes_from_entitys_collections(self):
-        # TODO Test chron
         # Create artist with a presentation and save
         art = artist()
         pres = presentation()
@@ -1502,7 +1639,7 @@ class test_orm(tester):
         self.zero(art.presentations.first.locations.orm.trash)
 
         # Remove the presentation
-        art.presentations.pop()
+        pres = art.presentations.pop()
 
         # Test presentations and its trash collection
         self.zero(art.presentations)
@@ -1511,7 +1648,11 @@ class test_orm(tester):
         self.one(art.presentations.orm.trash.first.locations)
         self.zero(art.presentations.orm.trash.first.locations.orm.trash)
 
+        self.chronicles.clear()
         art.save()
+        self.two(self.chronicles)
+        self._chrons(pres, 'delete')
+        self._chrons(pres.locations.first, 'delete')
 
         art = artist(art.id)
         self.zero(art.presentations)
@@ -1547,29 +1688,24 @@ class test_orm(tester):
         # Also ensure there is only one of eoach property in the directory. If
         # there are more, entitymeta may not be deleting the original property
         # from the class body.
-        d = dir(artist())
+        art = artist()
+
+        d = dir(art)
         self.eq(1, d.count('firstname'))
+        self.eq(1, d.count('lastname'))
         self.eq(1, d.count('presentations'))
+        self.eq(1, d.count('locations'))
         self.eq(1, d.count('artist_artifacts'))
-
-        # TODO Make the below work
-        # self.true('artifacts' in d)
-
-    def it_calls_dir_on_entities(self):
-        # TODO
-        ...
+        self.eq(1, d.count('artifacts'))
 
     def it_calls_dir_on_association(self):
-        # TODO
-        # TODO Test for pseudo-collection property from associations
-        ...
+        art = artist()
+        art.artifacts += artifact()
 
-    def it_calls_dir_on_associations(self):
-        # TODO
-        ...
+        d = dir(art.artist_artifacts.first)
 
-    # TODO
-    # Test int properties #
+        for prop in 'artist', 'artifact', 'role':
+            self.eq(1, d.count(prop))
 
     def it_reconnects_closed_database_connections(self):
         def art_onafterreconnect(src, eargs):
@@ -2278,7 +2414,7 @@ class test_orm(tester):
         self.none(pres.artist)
         self.zero(chrons)
 
-        self.broken(pres, 'artistid', 'full')
+        self.zero(pres.brokenrules)
 
         # Test setting an entity constituent then test saving and loading
         sng = singer()
@@ -2413,8 +2549,7 @@ class test_orm(tester):
         self.expect(AttributeError, lambda: conc.artist)
         self.zero(chrons)
 
-        self.broken(conc, 'singerid', 'full')
-        self.broken(conc, 'artistid', 'full')
+        self.zero(conc.brokenrules)
 
         # Test setting an entity constituent then test saving and loading
         sng = singer()
@@ -2473,7 +2608,6 @@ class test_orm(tester):
         self.expect(AttributeError, lambda: loc.concert)
        
         loc = location()
-        B()
         self.none(loc.concert)
 
         loc.concert = conc = concert()
@@ -2634,19 +2768,26 @@ class test_orm(tester):
             sngs.last.firstname = uuid4().hex
             sngs.last.lastname = uuid4().hex
         
-        # TODO Test chrons
+        self.chronicles.clear()
         sngs.save()
+        self.four(self.chronicles)
 
-        art = sngs.shift()
+        sng = sngs.shift()
         self.one(sngs)
         self.one(sngs.orm.trash)
 
+        self.chronicles.clear()
         sngs.save()
+        self.two(self.chronicles)
+        self._chrons(sng, 'delete')
+        self._chrons(sng.orm.super, 'delete')
 
-        self.expect(db.recordnotfounderror, lambda: singer(art.id))
-        
-        # Ensure the remaining singer still exists in database
-        self.expect(None, lambda: singer(sngs.first.id))
+        for sng in sng, sng.orm.super:
+            self.expect(db.recordnotfounderror, lambda: singer(sng.id))
+            
+        # Ensure the remaining singer and artist still exists in database
+        for sng in sngs.first, sngs.first.orm.super:
+            self.expect(None, lambda: singer(sng.id))
 
     def it_doesnt_needlessly_save_subentity(self):
         chrons = self.chronicles
@@ -2796,7 +2937,7 @@ class test_orm(tester):
         # TODO Test more property types when they become available.
         sng.firstname = uuid4().hex
         sng.lastname  = uuid4().hex
-        sng.voice  = uuid4().hex
+        sng.voice     = uuid4().hex
 
         self.eq((True, False, False), sng.orm.persistencestate)
 
@@ -2827,6 +2968,12 @@ class test_orm(tester):
         # development.
 
         for prop in sng.orm.properties:
+
+            if prop == 'artifacts':
+                # The subentity-to-associations relationship has not implemented
+                # been implemented, so skip the call to sng.artifacts
+                continue
+
             if prop == 'id':
                 self.eq(getattr(sng1, prop), getattr(sng, prop))
             else:
@@ -2918,7 +3065,8 @@ class test_orm(tester):
         pres = presentation()
         sng.presentations += pres
         loc = location()
-        sng.presentations.last.locations += loc
+        locs = sng.presentations.last.locations 
+        locs += loc
         sng.save()
 
         # Reload
@@ -2927,7 +3075,7 @@ class test_orm(tester):
         # Test presentations and its trash collection
         self.one(sng.presentations)
         self.zero(sng.presentations.orm.trash)
-
+        
         self.one(sng.presentations.first.locations)
         self.zero(sng.presentations.first.locations.orm.trash)
 
@@ -2943,8 +3091,9 @@ class test_orm(tester):
 
         chrons.clear()
         sng.save()
-        self.eq(chrons.where('entity', rmsng).first.op, 'delete')
-        self.eq(chrons.where('entity', rmsng.locations.first).first.op, 'delete')
+        self.two(chrons)
+        self._chrons(rmsng, 'delete')
+        self._chrons(rmsng.locations.first, 'delete')
         
         sng = singer(sng.id)
         self.zero(sng.presentations)
@@ -2975,7 +3124,7 @@ class test_orm(tester):
         self.zero(sng.concerts.first.locations.orm.trash)
 
         # Remove the concert
-        rmsng = sng.concerts.pop()
+        rmconc = sng.concerts.pop()
 
         # Test concerts and its trash collection
         self.zero(sng.concerts)
@@ -2986,8 +3135,10 @@ class test_orm(tester):
 
         chrons.clear()
         sng.save()
-        self.eq(chrons.where('entity', rmsng).first.op, 'delete')
-        self.eq(chrons.where('entity', rmsng.locations.first).first.op, 'delete')
+        self.three(chrons)
+        self._chrons(rmconc, 'delete')
+        self._chrons(rmconc.orm.super, 'delete')
+        self._chrons(rmconc.locations.first, 'delete')
         
         sng = singer(sng.id)
         self.zero(sng.concerts)
@@ -2998,25 +3149,24 @@ class test_orm(tester):
 
     def it_calls_dir_on_subentity(self):
         # TODO Add more properties to test
-        # Make sure mapped properties are returned when dir() is called 
 
-        # Also ensure there is only one of eoach property in the directory. If
+        # Make sure mapped properties are returned when dir() is called.
+        # Also ensure there is only one of each property in the directory. If
         # there are more, entitymeta may not be deleting the original property
         # from the class body.
         d = dir(singer())
-        self.eq(1, d.count('firstname'))
+
+        # Non-inherited
         self.eq(1, d.count('voice'))
+        self.eq(1, d.count('concerts'))
+
+        # Inherited
+        self.eq(1, d.count('firstname'))
+        self.eq(1, d.count('lastname'))
         self.eq(1, d.count('presentations'))
+        self.eq(1, d.count('locations'))
         self.eq(1, d.count('artist_artifacts'))
-        # TODO Make the below work
-        # self.eq(1, d.count('artifacts'))
-    
-    # TODO Multi-composites. E.g., location objects should belong to
-    # presentations and other objects that have locations
-
-    # TODO Subentities (e.g., singers) should be tested as root objects of a graph (
-    # i.e., sngs = singers(); sngs += singer(); sngs.save(singer())
-
+        self.eq(1, d.count('artifacts'))
 
 class test_blog(tester):
     def __init__(self):
@@ -8241,17 +8391,28 @@ duration of a given query.]]></content:encoded>
 """
 
 def main():
+    # Parse args
     p = argparse.ArgumentParser()
     p.add_argument('testunit',  help='The test class or method to run',  nargs='?')
     p.add_argument('-b', '--break-on-exception', action='store_true', dest='breakonexception')
     args = p.parse_args()
 
+    # Create testers object
     t = testers()
     t.breakonexception = args.breakonexception
+
+    # Register trace events
     t.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)
     t.oninvoketest += lambda src, eargs: print(eargs.method[0], flush=True)
+
+    # Run
     t.run(args.testunit)
+
+    # Show results
     print(t)
+
+    # Return exit code (0=success, 1=fail)
+    sys.exit(int(not t.ok))
 
 main()
 

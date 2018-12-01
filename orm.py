@@ -55,6 +55,14 @@ class entities(entitiesmod.entities):
 
         super().__init__(initial)
 
+    def sort(self, key=None, reverse=False):
+        key = 'id' if key is None else key
+        super().sort(key, reverse)
+
+    def sorted(self, key=None, reverse=False):
+        key = 'id' if key is None else key
+        return super().sorted(key, reverse)
+    
     def save(self, *es):
         exec = db.executioner(self._save)
         exec.execute(es)
@@ -95,20 +103,17 @@ class entities(entitiesmod.entities):
             for e in obj:
                 self.append(e, r=r)
             return
-        try:
-            clscomp = self.orm.composites[0]
-        except IndexError:
-            # No composites found so just pass to super().append()
-            pass
-        else:
+
+        for clscomp in self.orm.composites:
             try:
                 objcomp = getattr(self, clscomp.__name__)
+
             except Exception as ex:
                 # The self collection won't always have a reference to its
                 # composite.  For example: when the collection is being
                 # lazy-loaded.  The lazy-loading, however, will ensure the obj
                 # being appended will get this reference.
-                pass
+                continue
             else:
                 # Assign the composite reference of this collection to the obj
                 # being appended, i.e.:
@@ -117,9 +122,18 @@ class entities(entitiesmod.entities):
 
         super().append(obj, uniq, r)
         return r
-    
+
     def load(self, p1, p2):
-        if hasattr(p2, '__iter__') and type(p2) not in (str, bytes):
+        self += type(self).search(p1, p2)
+        
+    @classmethod
+    def search(cls, p1, p2=None):
+        if type(p1) is str and (type(p2) is str or not hasattr(p2, '__iter__')):
+            # p1 is a where clause, p2 is a collection of args - usually a
+            # tuple or list
+            where = p1
+            args = p2 if p2 is not None else ()
+        elif hasattr(p2, '__iter__') and type(p2) not in (str, bytes):
             # Perform test using the *in* operator (p1 in (p2))
             if not len(p2):
                 return
@@ -132,7 +146,7 @@ class entities(entitiesmod.entities):
 
             where, args = p1 + ' = %s', (p2, )
 
-        sql = 'SELECT * FROM %s WHERE %s;' % (self.orm.table, where)
+        sql = 'SELECT * FROM %s WHERE %s;' % (cls.orm.table, where)
 
         ress = None
         def exec(cur):
@@ -142,19 +156,24 @@ class entities(entitiesmod.entities):
 
         exec = db.executioner(exec)
 
+        """
         exec.onbeforereconnect += \
             lambda src, eargs: self.onbeforereconnect(src, eargs)
         exec.onafterreconnect  += \
             lambda src, eargs: self.onafterreconnect(src, eargs)
+        """
 
         exec.execute()
 
+        es = cls.orm.entity.orm.entities()
         for res in ress:
-            e = self.orm.entity(res)
-            self += e
+            e = cls.orm.entity(res)
+            es += e
             eargs = db.operationeventargs(e, 'retrieve', sql, args)
-            e.onafterload(self, eargs)
-            self.last.orm.persistencestate = (False,) * 3
+            e.onafterload(cls.search, eargs)
+            e.orm.persistencestate = (False,) * 3
+
+        return es
 
     def _getbrokenrules(self, es):
         brs = entitiesmod.brokenrules()
@@ -636,6 +655,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                         asses.orm.trash.clear()
 
+                if type(map) is foreignkeyfieldmapping:
+                    if map.value is undef:
+                        map.value = None
+                        #undefmaps.append(map)
+
             super = self.orm.super
             if super:
                 if crud == 'delete':
@@ -654,7 +678,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         brs = entitiesmod.brokenrules()
 
         # This "guestbook" logic prevents infinite recursion and duplicated
-        # broken rules.
+        # brokenrules.
         guestbook = [] if guestbook is None else guestbook
         if self in guestbook:
             return brs
@@ -677,12 +701,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                     if map.full:
                         brs.demand(self, map.name, full=True)
-
-            elif type(map) is foreignkeyfieldmapping:
-                if type(map.value) is not UUID:
-                    msg = '"%s" has an empty value for the foreign key "%s"'
-                    msg %= self.__class__.__name__, map.name
-                    brs += entitiesmod.brokenrule(msg, map.name, 'full')
 
             elif type(map) is entitiesmapping:
                 # Currently, map.value will not load the entities on invocation
@@ -750,7 +768,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                 break
 
                             # If not found, go up the inheritance tree and try again
-                            e = e.orm.super.orm.entity
+                            super = e.orm.super
+                            e = super.orm.entity if super else None
                         else:
                             continue
                         break
@@ -774,6 +793,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         # calls _setvalue.  However, the composite doesn't need
                         # to be loaded from the database.
                         e._setvalue(attr, self, attr, cmp=False, setattr=setattr1)
+
+                        # Since we just set e's composite, e now thinks its
+                        # dirty.  Correct that here.
+                        e.orm.persistencestate = (False,) * 3
                 map.value = es
 
                 # Assign the composite reference to the constituent
@@ -785,8 +808,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 super = self.orm.super
                 if super:
                     setattr(map.value, super.orm.entity.__name__, super)
-                    
-
 
         elif type(map) is associationsmapping:
             map.composite = self
@@ -898,6 +919,7 @@ class mappings(entitiesmod.entities):
 
         # Insert FK maps right after PK map
         fkmaps = list(self.foreignkeymappings)
+        fkmaps.sort(key=lambda x: x.name)
         for map in fkmaps:
             self.remove(map)
             self.insertafter(0, map)
@@ -997,10 +1019,11 @@ WHERE id = %s;
         r = []
         for map in self:
             if isinstance(map, fieldmapping):
-                if type(map) in (primarykeyfieldmapping, foreignkeyfieldmapping):
+                keymaps = primarykeyfieldmapping, foreignkeyfieldmapping
+                if type(map) in keymaps and isinstance(map.value, UUID):
                     r.append(map.value.bytes)
                 else:
-                    r.append(map.value)
+                    r.append(map.value if map.value is not undef else None)
         return r
 
     def clone(self, orm_):
@@ -1111,7 +1134,7 @@ class entitymapping(mapping):
             for map in self.orm.mappings:
                 if type(map) is foreignkeyfieldmapping:
                     if map.entity is self.entity:
-                        if map.value is not undef:
+                        if map.value not in (undef, None):
                             self._value = self.entity(map.value)
         return self._value
 
@@ -1390,6 +1413,12 @@ class orm:
     @property
     def properties(self):
         props = [x.name for x in self.mappings]
+
+        for map in self.mappings.associationsmappings:
+            for map1 in map.associations.orm.mappings.entitymappings:
+                if self.entity is not map1.entity:
+                    props.append(map1.entity.orm.entities.__name__)
+
 
         super = self.super
         if super:
