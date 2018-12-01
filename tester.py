@@ -55,6 +55,10 @@ class testers(entities):
                     inst.eventregistrations.unregister()
         print('')
 
+    @property
+    def ok(self):
+        return any([x.ok for x in self])
+
     def __str__(self):
         return self._tostr(str, includeHeader=False)
 
@@ -63,6 +67,10 @@ class tester(entity):
         self._failures = failures()
         self.testers = None
         self.eventregistrations = eventregistrations()
+
+    @property
+    def ok(self):
+        return self.failures.isempty
 
     def register(self, event, handler):
         self.eventregistrations.register(event, handler)
