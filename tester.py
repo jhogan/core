@@ -227,6 +227,9 @@ class tester(entity):
     def six(self, actual):
         if len(actual) != 6: self._failures += failure()
 
+    def eight(self, actual):
+        if len(actual) != 8: self._failures += failure()
+        
     def nine(self, actual):
         if len(actual) != 9: self._failures += failure()
 
@@ -280,7 +283,6 @@ class tester(entity):
         else:
             if expect is not None:
                 self._failures += failure(actual=None)
-            
 
     @property
     def failures(self):
