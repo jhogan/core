@@ -34,6 +34,7 @@ import db
 from MySQLdb.constants.ER import BAD_TABLE_ERROR
 import MySQLdb
 from enum import Enum, unique
+import re
 
 @unique
 class types(Enum):
@@ -46,14 +47,32 @@ class undef:
     pass
 
 class entities(entitiesmod.entities):
-    def __init__(self, initial=None):
+    re_alphanum_ = re.compile('^[A-Za-z_]+$')
+
+    def __init__(self, initial=None, _p2=None, *args, **kwargs):
         self.orm = self.orm.clone()
         self.orm.instance = self
 
         self.onbeforereconnect  =  entitiesmod.event()
         self.onafterreconnect   =  entitiesmod.event()
 
-        super().__init__(initial)
+        load = type(initial) is str
+        load = load or (initial is None and (_p2 or args or kwargs))
+        if load:
+            super().__init__()
+            _p1 = '' if initial == None else initial
+            self.load(_p1, _p2, *args, **kwargs)
+            return
+
+        super().__init__(initial=initial)
+
+    def __getitem__(self, key):
+        # TODO This may cause problems for other tests. Keep an eye on this
+        # after the es.load method has been refactored.
+        r = super().__getitem__(key)
+        if hasattr(r, '__iter__'):
+            return type(self)(initial=r)
+        return r
 
     def sort(self, key=None, reverse=False):
         key = 'id' if key is None else key
@@ -123,30 +142,42 @@ class entities(entitiesmod.entities):
         super().append(obj, uniq, r)
         return r
 
-    def load(self, p1, p2):
-        self += type(self).search(p1, p2)
-        
-    @classmethod
-    def search(cls, p1, p2=None):
-        if type(p1) is str and (type(p2) is str or not hasattr(p2, '__iter__')):
-            # p1 is a where clause, p2 is a collection of args - usually a
-            # tuple or list
-            where = p1
-            args = p2 if p2 is not None else ()
-        elif hasattr(p2, '__iter__') and type(p2) not in (str, bytes):
-            # Perform test using the *in* operator (p1 in (p2))
-            if not len(p2):
-                return
-            where = '{} in ({})'.format(p1, ', '.join(('%s',) * len(p2)))
-            args = p2
-        else:
-            # Assume an equality test (p1 == p2)
-            if isinstance(p2, UUID):
-                p2 = p2.bytes
+    def load(self, _p1='', _p2=None, *args, **kwargs):
+        # TODO: Use full-text index when available
+        p1, p2 = _p1, _p2
 
-            where, args = p1 + ' = %s', (p2, )
+        if p2 is None and p1 != '':
+            raise ValueError('Missing arguments collection')
 
-        sql = 'SELECT * FROM %s WHERE %s;' % (cls.orm.table, where)
+        args = list(args)
+        for k, v in kwargs.items():
+            if p1: 
+                p1 += ' and '
+            p1 += '%s = %%s' % k
+            args.append(v)
+
+        p2isscaler = p2isiter = False
+
+        if p2 is not None:
+            if type(p2) is not str and hasattr(p2, '__iter__'):
+                p2isiter = True
+            else:
+                p2isscaler = True
+
+        if p2 is not None:
+            if p2isscaler:
+                if self.re_alphanum_.match(p1):
+                    # If p1 looks like a simple column name (alphanums,
+                    # underscores, no operators) assume the user is doing a
+                    # simple equailty test (p1 == p2)
+                    p1 += ' = %s'
+                args = [p2] + args
+            else: # tuple, list, etc
+                args = list(p2) + args
+
+        args = [x.bytes if type(x) is UUID else x for x in args]
+
+        sql = 'SELECT * FROM %s WHERE %s;' % (self.orm.table, p1)
 
         ress = None
         def exec(cur):
@@ -156,24 +187,19 @@ class entities(entitiesmod.entities):
 
         exec = db.executioner(exec)
 
-        """
         exec.onbeforereconnect += \
             lambda src, eargs: self.onbeforereconnect(src, eargs)
         exec.onafterreconnect  += \
             lambda src, eargs: self.onafterreconnect(src, eargs)
-        """
 
         exec.execute()
 
-        es = cls.orm.entity.orm.entities()
         for res in ress:
-            e = cls.orm.entity(res)
-            es += e
+            e = self.orm.entity(res)
+            self += e
             eargs = db.operationeventargs(e, 'retrieve', sql, args)
-            e.onafterload(cls.search, eargs)
+            e.onafterload(self, eargs)
             e.orm.persistencestate = (False,) * 3
-
-        return es
 
     def _getbrokenrules(self, es):
         brs = entitiesmod.brokenrules()
@@ -313,6 +339,13 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         # Events
         self.onaftervaluechange  +=  self._self_onaftervaluechange
+
+    def __getitem__(self, args):
+        vals = []
+        for arg in args:
+            vals.append(self.orm.mappings(arg).value)
+
+        return tuple(vals)
 
     def _load(self, id):
         sql = 'SELECT * FROM {} WHERE id = %s'
@@ -776,7 +809,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     else:
                         raise ValueError('FK map not found for entity')
 
-                    es.load(map1.name, self.id.bytes)
+                    es.load(map1.name, self.id)
 
                     def setattr1(e, attr, v):
                         e.orm.mappings(attr).value = v
@@ -1144,6 +1177,40 @@ class entitymapping(mapping):
 
     def clone(self):
         return entitymapping(self.name, self.entity, derived=self.derived)
+
+
+class map:
+    class wrap:
+        def __init__(self, *args, **kwargs):
+            self.args = args
+            self.kwargs = kwargs
+
+        def __call__(self, *args, **kwargs):
+            fn(*args, **kwargs)
+
+        @property
+        def mapping(self):
+            kwargs = {}
+            for i, arg in enumerate(self.args):
+                if i == 0:
+                    ix = 'type'
+                elif i == 1:
+                    ix = 'default'
+                else:
+                    # TODO
+                    raise NotImplementedError()
+
+                kwargs[ix] = arg
+
+            return fieldmapping(**kwargs)
+                
+
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
+
+    def __call__(self, fn):
+        return map.wrap(*self.args, **self.kwargs)
 
 class fieldmapping(mapping):
 

@@ -94,6 +94,7 @@ class artist(orm.entity):
     lastname = orm.fieldmapping(str)
     presentations = presentations
     locations = locations
+    phone = orm.fieldmapping(str)
 
 class artist_artifacts(orm.associations):
     pass
@@ -111,8 +112,6 @@ class singer(artist):
     concerts = concerts
 
 class test_orm(tester):
-
-    # TODO Add search
     # TODO Test property overriding
     def __init__(self):
         super().__init__()
@@ -130,6 +129,7 @@ class test_orm(tester):
         self.chronicles += eargs.entity
 
     def it_has_static_composites_reference(self):
+        B()
         comps = location.orm.composites
         es = [x.entity for x in comps]
         self.two(comps)
@@ -854,27 +854,104 @@ class test_orm(tester):
 
         arts.save()
 
-        # Test a plain where string with no args tuple
-        arts1 = artists.search("firstname = '%s'" % arts.first.firstname)
+        # For clarity, this is a recipe for doing `where x in ([...])` queries
+        # The where string has to be created manually.
+        ids = sorted(arts[0:2].pluck('id'))
+        where = 'id in (' + ','.join(['%s'] * len(ids)) + ')'
+        arts1 = artists(where, ids)
+        self.two(arts1)
+        arts1.sort() 
+        self.eq(ids[0], arts1.first.id)
+        self.eq(ids[1], arts1.second.id)
+
+        # Test a plain where string with no args
+        def fn():
+            artists("firstname = '%s'" % arts.first.firstname)
+
+        # This should throw an error because we want the user to specify an
+        # empty tuple if they don't want to pass in args. This serves as a
+        # reminder that they are not taking advantage of the
+        # prepared/parameterized statements and may therefore be exposing
+        # themselves to SQL injection attacks.
+        self.expect(ValueError, fn)
+        arts1 = artists("firstname = '%s'" % arts.first.firstname, ())
         self.one(arts1)
         self.eq(arts.first.id, arts1.first.id)
 
+        # Test a simple 2 arg equality test
+        arts1 = artists("firstname", arts.first.firstname)
+        self.one(arts1)
+        self.eq(arts.first.id, arts1.first.id)
+
+        fname, lname = arts.first['firstname', 'lastname']
+
         # Test a where string with an args tuple
-        arts1 = artists.search('firstname = %s', (arts.first.firstname,))
+        arts1 = artists('firstname = %s', (arts.first.firstname,))
+        self.one(arts1)
+        self.eq(arts.first.id, arts1.first.id)
+
+        # Test a where string with an args tuple and an args param
+        where = 'firstname = %s and lastname = %s'
+        arts1 = artists(where, (fname,), lname)
+        self.one(arts1)
+        self.eq(arts.first.id, arts1.first.id)
+
+        # Test a where string with an args tuple and a *args element
+        arts1 = artists('firstname = %s and lastname = %s', fname, lname)
+        self.one(arts1)
+        self.eq(arts.first.id, arts1.first.id)
+
+        # Test a where string with one *args param
+        arts1 = artists('firstname = %s', arts.first.firstname)
         self.one(arts1)
         self.eq(arts.first.id, arts1.first.id)
 
         # Test a where string with a multi-args tuple
-        args = arts.first.firstname, arts.first.lastname
-        arts1 = artists.search('firstname = %s and lastname = %s', args)
+        args = arts.first['firstname', 'lastname']
+        arts1 = artists('firstname = %s and lastname = %s', args)
         self.one(arts1)
         self.eq(arts.first.id, arts1.first.id)
 
-        arts1 = artists.search('lastname = %s', (uuid,)).sorted('id')
+        # Test a where string with a multi-args tuple and an *arg element
+        args = arts.first['firstname', 'lastname']
+        where = 'firstname = %s and lastname = %s and id = %s'
+        arts1 = artists(where, args, arts.first.id)
+        self.one(arts1)
+        self.eq(arts.first.id, arts1.first.id)
+
+        # Test a search that gets us two results
+        arts1 = artists('lastname = %s', (uuid,)).sorted('id')
         self.two(arts1)
         arts2 = (arts.third + arts.fourth).sorted('id')
         self.eq(arts2.first.id, arts1.first.id)
         self.eq(arts2.second.id, arts1.second.id)
+
+        arts1 = artists(firstname = arts.first.firstname)
+        self.one(arts1)
+        self.eq(arts1.first.id, arts.first.id)
+
+        arts1 = artists(firstname = fname, lastname = lname)
+        self.one(arts1)
+        self.eq(arts1.first.id, arts.first.id)
+
+        id = arts.first.id
+
+        def fn():
+            artists('id = id', firstname = fname, lastname = lname)
+
+        # Force user to supply an empty args list
+        self.expect(ValueError, fn)
+        arts = artists('id = id', (), firstname = fname, lastname = lname)
+        self.one(arts1)
+        self.eq(arts1.first.id, arts.first.id)
+
+        arts = artists('id = %s', (id,), firstname = fname, lastname = lname)
+        self.one(arts1)
+        self.eq(arts1.first.id, arts.first.id)
+
+        arts = artists('id = %s', (id,), firstname = fname, lastname = lname)
+        self.one(arts1)
+        self.eq(arts1.first.id, arts.first.id)
 
     def it_rollsback_save_of_entities(self):
         # Create two artists
@@ -1420,6 +1497,11 @@ class test_orm(tester):
         self.zero(art.brokenrules)
 
     # Test str properties #
+    def it_calls_overridden_property_on_entity(self):
+        art = artist()
+        uuid = uuid4()
+        art.phone = uuid
+
     def it_calls_str_property_on_entity(self):
         art = artist()
 
