@@ -67,8 +67,6 @@ class entities(entitiesmod.entities):
         super().__init__(initial=initial)
 
     def __getitem__(self, key):
-        # TODO This may cause problems for other tests. Keep an eye on this
-        # after the es.load method has been refactored.
         r = super().__getitem__(key)
         if hasattr(r, '__iter__'):
             return type(self)(initial=r)
@@ -266,10 +264,20 @@ class entitymeta(type):
                 
                 if isinstance(v, mapping):
                     map = v
-                elif hasattr(v, 'mro') and ormmod.entities in v.mro():
-                    map = entitiesmapping(k, v)
+                elif hasattr(v, 'mro'):
+                    mro = v.mro()
+                    if ormmod.entities in mro:
+                        map = entitiesmapping(k, v)
+                    elif ormmod.entity in mro:
+                        map = entitymapping(k, v)
+                    else:
+                        raise ValueError()
+                # TODO Do we need to test for str here
                 elif type(k) is str:
-                    map = entitymapping(k, v)
+                    if type(v) is ormmod.attr.wrap:
+                        map = v.mapping
+                    else:
+                        continue
                 else:
                     continue
                
@@ -278,7 +286,13 @@ class entitymeta(type):
 
             for map in orm_.mappings:
                 try:
-                    del body[map.name]
+                    prop = body[map.name]
+                    if type(prop) is ormmod.attr.wrap:
+                        #body[map.name] = prop.property
+                            
+                        body[map.name] = prop
+                    else:
+                        del body[map.name]
                 except KeyError:
                     # The orm_.mappings.__iter__ adds new mappings which won't
                     # be in body, so ignore KeyErrors
@@ -341,11 +355,35 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         self.onaftervaluechange  +=  self._self_onaftervaluechange
 
     def __getitem__(self, args):
+        if type(args) is str:
+            try:
+                return getattr(self, args)
+            except AttributeError as ex:
+                raise IndexError(str(ex))
+
         vals = []
+
         for arg in args:
-            vals.append(self.orm.mappings(arg).value)
+            vals.append(self[arg])
 
         return tuple(vals)
+
+    def __call__(self, args):
+        try:
+            return self[args]
+        except IndexError:
+            return None
+
+    def __setitem__(self, k, v):
+        map = self.orm.mappings(k)
+        if map is None:
+           super = self.orm.super
+           if super:
+               map = super.orm.mappings[k]
+           else:
+               raise IndexError("Map index doesn't exist: %s" % (k,))
+        
+        map.value = v
 
     def _load(self, id):
         sql = 'SELECT * FROM {} WHERE id = %s'
@@ -394,11 +432,18 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             self.orm.isdirty = True
 
     def __dir__(self):
-        return super().__dir__() + self.orm.properties
+        ls = super().__dir__() + self.orm.properties
 
-    def __setattr__(self, attr, v):
+        # Remove duplicates. If an entity has an explicit attribute, the name
+        # of the attribute will come in from the call to super().__dir__()
+        # while the name of its associated map will come in through
+        # self.orm.properties
+        return list(set(ls))
+
+    def __setattr__(self, attr, v, cmp=True):
         # Need to handle 'orm' first, otherwise the code below that
         # calls self.orm won't work.
+        
         if attr == 'orm':
             return object.__setattr__(self, attr, v)
 
@@ -407,7 +452,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         if map is None:
             super = self.orm.super
             if super and super.orm.mappings(attr):
-                builtins.setattr(self.orm.super, attr, v)
+                #builtins.setattr(self.orm.super, attr, v)
+                super.__setattr__(attr, v, cmp)
             else:
                 return object.__setattr__(self, attr, v)
         else:
@@ -420,14 +466,14 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             def setattr0(_, __, v):
                 map.value = v
 
-            self._setvalue(attr, v, attr, setattr0)
+            self._setvalue(attr, v, attr, setattr0, cmp=cmp)
 
             if type(map) is entitymapping:
                 e = v.orm.entity
                 while True:
                     for map in self.orm.mappings.foreignkeymappings:
                         if map.entity is e:
-                            self._setvalue(map.name, v.id, map.name, setattr0)
+                            self._setvalue(map.name, v.id, map.name, setattr0, cmp=cmp)
                             break;
                     else:
                         e = e.orm.super
@@ -754,8 +800,17 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         return brs
 
-    def __getattribute__(self, attr):
+    def __getattr__(self, attr):
         map = None
+
+        # self.orm.instance is set in entity.__init__. If the user overrides
+        # __init__ and doesn't call the base __init__, self.orm.instance is
+        # never set. Do a quick check here to inform the user if they forgot to
+        # call the base __init__
+        if self.orm.isstatic:
+            msg = 'orm is static. '
+            msg += 'Ensure the overridden __init__ called the base __init__'
+            raise ValueError(msg)
 
         if attr != 'orm' and self.orm.mappings:
             map = self.orm.mappings(attr)
@@ -844,6 +899,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         elif type(map) is associationsmapping:
             map.composite = self
+
         elif map is None:
             if attr != 'orm':
                 for map in self.orm.mappings.associationsmappings:
@@ -852,7 +908,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             asses = getattr(self, map.name)
                             return getattr(asses, attr)
 
-            return object.__getattribute__(self, attr)
+            msg = "'%s' object has no attribute '%s'"
+            raise AttributeError(msg % (self.__class__.__name__, attr))
 
         return map.value
 
@@ -954,8 +1011,8 @@ class mappings(entitiesmod.entities):
         fkmaps = list(self.foreignkeymappings)
         fkmaps.sort(key=lambda x: x.name)
         for map in fkmaps:
-            self.remove(map)
-            self.insertafter(0, map)
+           self.remove(map)
+           self.insertafter(0, map)
 
     @property
     def foreignkeymappings(self):
@@ -1178,15 +1235,13 @@ class entitymapping(mapping):
     def clone(self):
         return entitymapping(self.name, self.entity, derived=self.derived)
 
-
-class map:
+class attr:
     class wrap:
         def __init__(self, *args, **kwargs):
+            args = list(args)
+            self.fget = args.pop()
             self.args = args
             self.kwargs = kwargs
-
-        def __call__(self, *args, **kwargs):
-            fn(*args, **kwargs)
 
         @property
         def mapping(self):
@@ -1203,17 +1258,35 @@ class map:
                 kwargs[ix] = arg
 
             return fieldmapping(**kwargs)
-                
+
+        def __get__(self, e, etype=None):
+            name = self.fget.__name__
+            def attr(v=undef):
+                if v is undef:
+                    try:
+                        return e.orm.mappings[name].value
+                    except IndexError:
+                        # If it's not in the subentity's mapping collection,
+                        # make a regular getattr() call on e's super. 
+                        super = e.orm.super
+                        if super:
+                            return getattr(super, name)
+                else:
+                    e.__setattr__(name, v, cmp=False)
+
+            self.fget.__globals__['attr'] = attr
+            return self.fget(e)
 
     def __init__(self, *args, **kwargs):
-        self.args = args
+        self.args = list(args)
         self.kwargs = kwargs
 
-    def __call__(self, fn):
-        return map.wrap(*self.args, **self.kwargs)
+    def __call__(self, meth):
+        self.args.append(meth)
+        w = attr.wrap(*self.args, **self.kwargs)
+        return w
 
 class fieldmapping(mapping):
-
     def __init__(self, type, default=undef, max=undef, full=undef, name=None, derived=False):
         self._type = type
         self._value = undef

@@ -36,6 +36,7 @@ import re
 import pathlib
 from getpass import getpass
 import db
+import orm
 
 def dbg(code):
     try:

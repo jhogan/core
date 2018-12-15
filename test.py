@@ -51,6 +51,7 @@ def getattr(obj, attr, *args):
     def rgetattr(obj, attr):
         if obj:
             return builtins.getattr(obj, attr, *args)
+
         return None
     return functools.reduce(rgetattr, [obj] + attr.split('.'))
 
@@ -92,10 +93,65 @@ class artifact(orm.entity):
 class artist(orm.entity):
     firstname = orm.fieldmapping(str)
     lastname = orm.fieldmapping(str)
+    lifeform = orm.fieldmapping(str)
     presentations = presentations
     locations = locations
-    phone = orm.fieldmapping(str)
 
+    # TODO This should return an int
+    @orm.attr(str)
+    def phone(self):
+        phone = attr()
+        if phone is None:
+            return None
+        # Strip non-numerics ( "(555)-555-555" -> "555555555" )
+
+        if not phone.isnumeric():
+            phone = re.sub('\D*', '', phone)
+            # TODO Using the attr(v) version of attr may need some work. It 
+            # doesn't currently have extensive testing on subentities.
+            # Cache in map so we don't have to do this every time the phone
+            # attribute is read. (Normally, caching in the map would be needed
+            # if the operation actually took a really long time.  The outupt
+            # for the re.sub wouldn't typically need to be cached. This is
+            # simply to test the attr() function's ability to set map values.)
+            attr(phone)
+
+        return attr()
+
+    # Though it seems logical that there would be mutator analog to the
+    # accessor logic (used above for the 'phone' attr), there doesn't seem to
+    # be a need for this. Conversions should be done in the accessor (as in the
+    # 'phone' accessor above).  If functionality needs to run when a mutator is
+    # called, this can be handled in an onaftervaluechange handler (though this
+    # seems rare).  Since at the moment, no use-case can be imagined for
+    # mutator @attr's, we should leave this unimplemented. If a use-case
+    # presents itself, the below, commented-out code approximates how it should
+    # look.  The 'setter' method in the 'Property' class here
+    # https://docs.python.org/3/howto/descriptor.html#properties hints at how
+    # this may be implemented in orm.attr.
+    """
+    @phone.setter(str)
+    def phone(self,)
+        self.orm.mappings('phone').value = v
+    """
+
+    def __init__(self, o=None):
+        self['lifeform'] = 'organic'
+        self._processing = False
+        super().__init__(o)
+
+    def clear(self):
+        self.locations.clear()
+        self.presentations.clear()
+
+    @property
+    def processing(self):
+        return self._processing
+
+    @processing.setter
+    def processing(self, v):
+        self._processing = v
+        
 class artist_artifacts(orm.associations):
     pass
 
@@ -103,6 +159,26 @@ class artist_artifact(orm.association):
     artist = artist
     artifact = artifact
     role = orm.fieldmapping(str)
+    planet = orm.fieldmapping(str)
+
+    def __init__(self, o=None):
+        self['planet'] = 'Earth'
+        self._processing = False
+        super().__init__(o)
+
+    # TODO Convert to timespan
+    # The duration an artist worked on an artifact
+    @orm.attr(str)
+    def timespan(self):
+        return self.orm.mappings['timespan'].value.replace(' ', '-')
+
+    @property
+    def processing(self):
+        return self._processing
+
+    @processing.setter
+    def processing(self, v):
+        self._processing = v
 
 class singers(artists):
     pass
@@ -111,8 +187,33 @@ class singer(artist):
     voice = orm.fieldmapping(str)
     concerts = concerts
 
+    @orm.attr(str)
+    def register(self):
+        v = self.orm.mappings['register'].value.lower()
+
+        if v in ('laryngealization', 'pulse phonation', 'creak'):
+            return 'vocal fry'
+        if v in ('flute', 'whistle tone'):
+            return 'whistle'
+        return v
+
+    def __init__(self, o=None):
+        self._transmitting = False
+        super().__init__(o)
+
+    def clear(self):
+        super().clear()
+        self.concerts.clear()
+
+    @property
+    def transmitting(self):
+        return self._transmitting
+
+    @transmitting.setter
+    def transmitting(self, v):
+        self._transmitting = v
+
 class test_orm(tester):
-    # TODO Test property overriding
     def __init__(self):
         super().__init__()
         self.chronicles = db.chronicles()
@@ -129,7 +230,6 @@ class test_orm(tester):
         self.chronicles += eargs.entity
 
     def it_has_static_composites_reference(self):
-        B()
         comps = location.orm.composites
         es = [x.entity for x in comps]
         self.two(comps)
@@ -656,8 +756,6 @@ class test_orm(tester):
         # TODO Test deeply nested associations
 
     def it_rollsback_save_with_broken_trash(self):
-        # Test entities collection
-
         art = artist()
         art.presentations += presentation()
         art.save()
@@ -1014,6 +1112,7 @@ class test_orm(tester):
         chrons = self.chronicles
 
         art = artist()
+
         art.firstname = uuid4().hex
         art.lastname = uuid4().hex
 
@@ -1496,15 +1595,254 @@ class test_orm(tester):
         self.type(uuid.UUID, art.id)
         self.zero(art.brokenrules)
 
-    # Test str properties #
-    def it_calls_overridden_property_on_entity(self):
+    def it_calls_explicit_attr_on_entity(self):
         art = artist()
-        uuid = uuid4()
-        art.phone = uuid
+        art.firstname = uuid4().hex
+        art.lastname = uuid4().hex
+        self.is_(None, art.phone)
 
-    def it_calls_str_property_on_entity(self):
+        art.phone = str(uuid4())
+        self.true(art.phone.isnumeric())
+        
+        self.eq(art.phone, art.orm.mappings['phone'].value)
+
+        art.save()
+
+        art1 = artist(art.id)
+        self.eq(art.phone, art1.phone)
+
+        art1.phone = str(uuid4())
+        self.true(art1.phone.isnumeric())
+
+        art1.save()
+
+        art2 = artist(art1.id)
+        self.eq(art1.phone, art2.phone)
+
+    def it_calls_custom_methods_on_entity(self):
         art = artist()
 
+        # Ensure artist.__init__ got called. It will default "lifeform" to
+        # 'organic'
+        self.eq('organic', art.lifeform)
+
+        art.presentations += presentation()
+        art.locations += location()
+
+        self.one(art.presentations)
+        self.one(art.locations)
+
+        # Ensure the custom method clear() is called and successfully clears
+        # the presentations and locations collections.
+        art.clear()
+
+        self.zero(art.presentations)
+        self.zero(art.locations)
+
+        # Test a custome @property
+        self.false(art.processing)
+        art.processing = True
+        self.true(art.processing)
+
+        # Test it calls fields
+        uuid = uuid4().hex
+        art.test = uuid
+        self.eq(uuid, art.test)
+
+    def it_calls_custom_methods_on_subentity(self):
+        sng = singer()
+
+        # Ensure artist.__init__ got called. It will default "lifeform" to
+        # 'organic'
+        self.eq('organic', sng.lifeform)
+
+        sng.concerts += concert()
+        sng.locations += location()
+
+        self.one(sng.concerts)
+        self.one(sng.locations)
+
+        # Ensure the custom method clear() is called and successfully clears
+        # the presentations and locations collections.
+        sng.clear()
+
+        self.zero(sng.concerts)
+        self.zero(sng.locations)
+
+        # Test a custome @property
+        self.false(sng.transmitting)
+        sng.transmitting = True
+        self.true(sng.transmitting)
+
+        # Test a custome @property in super class 
+        self.false(sng.processing)
+        sng.processing = True
+        self.true(sng.processing)
+
+        # Test it calls fields
+        uuid = uuid4().hex
+        sng.test = uuid
+        self.eq(uuid, sng.test)
+
+
+    def it_calls__getitem__on_entity(self):
+        art = artist()
+        art.firstname = uuid4().hex
+        art.lastname = uuid4().hex
+        art.phone = str(uuid4())
+
+        self.eq(art['firstname'], art.firstname)
+
+        expected = art.firstname, art.lastname
+        actual = art['firstname', 'lastname']
+
+        self.eq(expected, actual)
+        self.expect(IndexError, lambda: art['idontexist'])
+
+        actual = art['presentations', 'locations']
+        expected = art.presentations, art.locations
+
+        actual = art['phone']
+        expected = art.phone
+
+        self.eq(actual, expected)
+
+    def it_calls__getitem__on_subentity(self):
+        sng = singer()
+        sng.firstname = uuid4().hex
+        sng.lastname = uuid4().hex
+        sng.voice = uuid4().hex
+        sng.register = 'laryngealization'
+
+        self.eq(sng['firstname'], sng.firstname)
+
+        names = sng.firstname, sng.lastname
+        self.eq(names, sng['firstname', 'lastname'])
+        self.expect(IndexError, lambda: sng['idontexist'])
+
+        actual = sng['presentations', 'locations']
+        expected = sng.presentations, sng.locations
+
+        self.eq(actual, expected)
+
+        actual = sng['voice', 'concerts']
+        expected = sng.voice, sng.concerts
+
+        self.eq(actual, expected)
+
+        actual = sng['phone']
+        expected = sng.phone
+
+        self.eq(actual, expected)
+
+        actual = sng.register
+        expected = sng.register
+
+        self.eq(actual, expected)
+
+    def it_calls__getitem__on_association(self):
+        art = artist()
+        art.artist_artifacts += artist_artifact()
+        aa = art.artist_artifacts.first
+
+        self.eq(aa['role'], aa.role)
+
+        expected = aa.role, aa.planet
+        actual = aa['role', 'planet']
+
+        self.eq(expected, actual)
+        self.expect(IndexError, lambda: aa['idontexist'])
+
+        actual = aa['artist', 'artifact']
+        expected = aa.artist, aa.artifact
+
+        self.eq(actual, expected)
+
+        aa.timespan = '1/1/2001 3/3/2001'
+        actual = aa['timespan', 'processing']
+        expected = aa.timespan, aa.processing
+
+        self.eq(actual, expected)
+
+    def it_calls_explicit_attr_on_subentity(self):
+        # Test inherited attr (phone)
+        sng = singer()
+        sng.firstname = uuid4().hex
+        sng.lastname = uuid4().hex
+        self.is_(None, sng.phone)
+
+        uuid = str(uuid4())
+        sng.phone = uuid
+        self.true(sng.phone.isnumeric())
+
+        sng.save()
+
+        art1 = singer(sng.id)
+        self.eq(sng.phone, art1.phone)
+
+        art1.phone = str(uuid4())
+        self.true(art1.phone.isnumeric())
+
+        art1.save()
+
+        art2 = singer(art1.id)
+        self.eq(art1.phone, art2.phone)
+
+        # Test non-inherited attr (register)
+        sng = singer()
+        sng.firstname = uuid4().hex
+        sng.lastname = uuid4().hex
+        self.is_(None, sng.register)
+
+        sng.register = 'Vocal Fry'
+        self.eq('vocal fry', sng.register)
+
+        sng.save()
+
+        art1 = singer(sng.id)
+        self.eq(sng.register, art1.register)
+
+        art1.register = 'flute'
+        self.eq('whistle', art1.register)
+
+        art1.save()
+
+        art2 = singer(art1.id)
+        self.eq(art1.register, art2.register)
+
+    def it_calls_explicit_attr_on_association(self):
+        art = artist()
+
+        art.artist_artifacts += artist_artifact()
+        aa = art.artist_artifacts.first
+
+        # Insure the overridden __init__ was called. It defaults planet to
+        # "Earth".
+        self.eq('Earth', aa.planet)
+
+        # Test the explicit attribute timespan. It removes spaces from the
+        # value and replaces them with dashes.
+        art.artist_artifacts.first.timespan = '1/10/2018 2/10/2018'
+        self.eq('1/10/2018-2/10/2018', aa.timespan)
+
+        art.save()
+        art1 = artist(art.id)
+        self.eq('1/10/2018-2/10/2018', aa.timespan)
+
+        # Test non-mapped property
+        self.false(aa.processing)
+        aa.processing = True
+        self.true(aa.processing)
+
+        # Test field
+        uuid = str(uuid4())
+        self.test = uuid
+        self.eq(uuid, self.test)
+
+
+    def it_calls_str_attr_on_entity(self):
+        # Test read-only str @attr
+        art = artist()
         self.true(hasattr(art, 'firstname'))
         self.none(art.firstname)
         self.zero(art.brokenrules)
@@ -1611,6 +1949,7 @@ class test_orm(tester):
         # TODO Test more property types when they become available.
         art.firstname = uuid4().hex
         art.lastname  = uuid4().hex
+        art.lifeform  = uuid4().hex
 
         self.true(art.orm.isnew)
         self.false(art.orm.isdirty)
@@ -1633,8 +1972,10 @@ class test_orm(tester):
                 self.eq(getattr(art, map.name), getattr(art1, map.name))
 
         # Test changing, saving and retrieving an entity
-        art1.firstname = uuid4().hex
-        art1.lastname  = uuid4().hex
+        art1.firstname  =  uuid4().hex
+        art1.lastname   =  uuid4().hex
+        art1.phone      =  uuid4().hex
+        art1.lifeform   =  uuid4().hex
 
         self.false(art1.orm.isnew)
         self.true(art1.orm.isdirty)
@@ -1770,15 +2111,33 @@ class test_orm(tester):
         # Also ensure there is only one of eoach property in the directory. If
         # there are more, entitymeta may not be deleting the original property
         # from the class body.
-        art = artist()
+        ps =  'firstname',  'lastname',          'presentations', \
+              'locations',   'artist_artifacts',  'artifacts',    \
+              'phone',       'clear',             'processing'
 
-        d = dir(art)
-        self.eq(1, d.count('firstname'))
-        self.eq(1, d.count('lastname'))
-        self.eq(1, d.count('presentations'))
-        self.eq(1, d.count('locations'))
-        self.eq(1, d.count('artist_artifacts'))
-        self.eq(1, d.count('artifacts'))
+        for p in ps:
+            self.eq(1, dir(artist()).count(p))
+
+    def it_calls_dir_on_subentity(self):
+        # TODO Add more properties to test
+
+        # Make sure mapped properties are returned when dir() is called.
+        # Also ensure there is only one of each property in the directory. If
+        # there are more, entitymeta may not be deleting the original property
+        # from the class body.
+
+        # Non-inherited
+        for p in 'voice', 'concerts', 'transmitting', 'clear', 'register':
+            self.eq(1, dir(singer()).count(p))
+
+        # Inherited
+        ps =  'firstname',  'lastname',          'presentations', \
+              'locations',   'artist_artifacts',  'artifacts',    \
+              'phone',       'clear',             'processing'
+
+        for p in ps:
+            self.eq(1, dir(singer()).count(p))
+
 
     def it_calls_dir_on_association(self):
         art = artist()
@@ -1786,7 +2145,7 @@ class test_orm(tester):
 
         d = dir(art.artist_artifacts.first)
 
-        for prop in 'artist', 'artifact', 'role':
+        for prop in 'artist', 'artifact', 'role', 'timespan', 'processing':
             self.eq(1, d.count(prop))
 
     def it_reconnects_closed_database_connections(self):
@@ -3020,6 +3379,7 @@ class test_orm(tester):
         sng.firstname = uuid4().hex
         sng.lastname  = uuid4().hex
         sng.voice     = uuid4().hex
+        sng.lifeform  = uuid4().hex
 
         self.eq((True, False, False), sng.orm.persistencestate)
 
@@ -3042,6 +3402,9 @@ class test_orm(tester):
         sng1.firstname = uuid4().hex
         sng1.lastname  = uuid4().hex
         sng1.voice     = uuid4().hex
+        sng1.lifeform  = uuid4().hex
+        sng1.phone     = uuid4().hex
+        sng1.register  = uuid4().hex
 
         self.eq((False, True, False), sng1.orm.persistencestate)
 
@@ -3228,27 +3591,6 @@ class test_orm(tester):
 
         self.expect(db.recordnotfounderror, lambda: concert(conc.id))
         self.expect(db.recordnotfounderror, lambda: location(loc.id))
-
-    def it_calls_dir_on_subentity(self):
-        # TODO Add more properties to test
-
-        # Make sure mapped properties are returned when dir() is called.
-        # Also ensure there is only one of each property in the directory. If
-        # there are more, entitymeta may not be deleting the original property
-        # from the class body.
-        d = dir(singer())
-
-        # Non-inherited
-        self.eq(1, d.count('voice'))
-        self.eq(1, d.count('concerts'))
-
-        # Inherited
-        self.eq(1, d.count('firstname'))
-        self.eq(1, d.count('lastname'))
-        self.eq(1, d.count('presentations'))
-        self.eq(1, d.count('locations'))
-        self.eq(1, d.count('artist_artifacts'))
-        self.eq(1, d.count('artifacts'))
 
 class test_blog(tester):
     def __init__(self):
