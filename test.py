@@ -29,6 +29,10 @@ from auth import jwt
 import jwt as pyjwt
 from configfile import configfile
 from uuid import uuid4
+import argparse
+import datetime
+import primative
+import dateutil
 
 class knights(entities):
     def __init__(self, initial=None):
@@ -2939,10 +2943,59 @@ class test_jwt(tester):
         # Invalid
         t = jwt('an invalid token')
         self.assertFalse(t.isvalid)
-        
 
-t = testers()
-t.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)
-t.oninvoketest += lambda src, eargs: print(eargs.method[0], flush=True)
-t.run()
-print(t)
+class test_datetime(tester):
+    def it_calls__init__(self):
+        utc = datetime.timezone.utc
+        
+        # Test datetime with standard args
+        args = (2003, 10, 11, 17, 13, 46)
+        expect = datetime.datetime(*args, tzinfo=utc)
+        actual = primative.datetime(*args, tzinfo=utc)
+        self.eq(expect, actual)
+
+        # Test datetime with standard a string arg intended for datautil.parser
+        actual = primative.datetime('Sat Oct 11 17:13:46 UTC 2003')
+        self.eq(expect, actual)
+
+    def it_calls_astimezone(self):
+        utc = datetime.timezone.utc
+
+        args = (2003, 10, 11, 17, 13, 46)
+        dt = primative.datetime(*args, tzinfo=utc)
+        
+        aztz = dateutil.tz.gettz('US/Arizona')
+        actual = datetime.datetime(2003, 10, 11, 10, 13, 46, tzinfo=aztz)
+
+        expect = dt.astimezone(aztz)
+        self.eq(expect, actual)
+
+        expect = dt.astimezone('US/Arizona')
+        self.eq(expect, actual)
+
+def main():
+    # Parse args
+    p = argparse.ArgumentParser()
+    p.add_argument('testunit',  help='The test class or method to run',  nargs='?')
+    p.add_argument('-b', '--break-on-exception', action='store_true', dest='breakonexception')
+    args = p.parse_args()
+
+    # Create testers object
+    t = testers()
+    t.breakonexception = args.breakonexception
+
+    # Register trace events
+    t.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)
+    t.oninvoketest += lambda src, eargs: print(eargs.method[0], flush=True)
+
+    # Run
+    t.run(args.testunit)
+
+    # Show results
+    print(t)
+
+    # Return exit code (0=success, 1=fail)
+    sys.exit(int(not t.ok))
+
+main()
+
