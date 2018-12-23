@@ -38,6 +38,11 @@ import re
 import io
 import orm
 import functools
+from datetime import timezone, datetime
+import dateutil
+import primative
+import decimal; dec=decimal.Decimal
+
 
 def getattr(obj, attr, *args):
     # Redefine getattr() to support deep attribututes 
@@ -82,20 +87,30 @@ class presentation(orm.entity):
 
 class concert(presentation):
     record = orm.fieldmapping(str)
+    ticketprice = orm.fieldmapping(int, min=-128, max=127)
+    attendees = orm.fieldmapping(int, min=-8388608, max=8388607)
 
 class component(orm.entity):
     name = orm.fieldmapping(str)
+    weight = orm.fieldmapping(float, max=8+7, dec=7)
 
 class artifact(orm.entity):
     title = orm.fieldmapping(str)
+    weight = orm.fieldmapping(int, min=-2**63, max=2**63-1)
     components = components
+    abstract = orm.fieldmapping(bool)
+    price = orm.fieldmapping(decimal)
 
 class artist(orm.entity):
     firstname = orm.fieldmapping(str)
     lastname = orm.fieldmapping(str)
     lifeform = orm.fieldmapping(str)
+    weight = orm.fieldmapping(int, default=100, min=0, max=1000, full=True)
+    networth = orm.fieldmapping(int)
     presentations = presentations
     locations = locations
+    style = orm.fieldmapping(str, 'classicism', max=50, full=True)
+    dob = orm.fieldmapping(datetime)
 
     # TODO This should return an int
     @orm.attr(str)
@@ -136,6 +151,8 @@ class artist(orm.entity):
     """
 
     def __init__(self, o=None):
+        # TODO This should be self.lifeform = 'organic'. However, this causes
+        # problems which need to be addressed.
         self['lifeform'] = 'organic'
         self._processing = False
         super().__init__(o)
@@ -275,6 +292,7 @@ class test_orm(tester):
 
     def it_has_static_super_references(self):
         self.is_(artist, singer.orm.super)
+
 
     def it_loads_and_saves_multicomposite_entity(self):
         chrons = self.chronicles
@@ -845,7 +863,7 @@ class test_orm(tester):
 
     def it_calls_str_on_entity(self):
         # TODO Test str on entity, entities, association and associations.
-        pass
+        ...
 
     def it_has_broken_rules_of_constituents(self):
         art                =   artist()
@@ -1839,13 +1857,375 @@ class test_orm(tester):
         self.test = uuid
         self.eq(uuid, self.test)
 
+    def it_calls_decimal_attr_on_entity(self):
+        def saveok(e, attr):
+            getattr(e, 'save')()
+            e1 = type(e)(e.id)
+
+            return getattr(e, attr) == getattr(e1, attr)
+
+        fact = artifact()
+        self.true(hasattr(fact, 'price'))
+        self.type(decimal.Decimal, fact.price)
+        self.zero(fact.brokenrules)
+
+        # Test default
+        self.eq(0, fact.price)
+        self.true(saveok(fact, 'price'))
+
+        # Test max
+        map = fact.orm.mappings['price']
+        num = '9' * map.max
+        num = '%s.%s' % (num[:len(num) - map.dec], num[-map.dec:])
+        fact.price = num
+        self.true(saveok(fact, 'price'))
+
+        fact.price += 1
+        self.broken(fact, 'price', 'valid')
+
+        # Test min
+        fact.price -= 1
+        self.zero(fact.brokenrules)
+
+        fact.price = -fact.price
+        self.true(saveok(fact, 'price'))
+        
+        fact.price -= 1
+        self.broken(fact, 'price', 'valid')
+
+        # Ensure non-Decimals are coerced in accordance with decimal.Decimal's
+        # rules.
+        for v in int(1), str('1.0'):
+            fact.price = v
+            self.eq(1.0, fact.price)
+            self.type(decimal.Decimal, fact.price)
+            self.true(saveok(fact, 'price'))
+
+    def it_calls_float_attr_on_entity(self):
+        def saveok(e, attr):
+            getattr(e, 'save')()
+            e1 = type(e)(e.id)
+
+            return getattr(e, attr) == getattr(e1, attr)
+
+        comp = component()
+        self.true(hasattr(comp, 'weight'))
+        self.type(float, comp.weight)
+        self.zero(comp.brokenrules)
+
+        # Test default
+        self.eq(0.0, comp.weight)
+        self.true(saveok(comp, 'weight'))
+
+        # Test max
+        map = comp.orm.mappings['weight']
+        num = '9' * map.max
+        num = '%s.%s' % (num[:map.dec + 1], num[map.dec+1:])
+        comp.weight = round(float(num), map.max - map.dec)
+        self.true(saveok(comp, 'weight'))
+
+        comp.weight += 1
+        self.broken(comp, 'weight', 'valid')
+
+        # Test min
+        comp.weight -= 1
+        self.zero(comp.brokenrules)
+
+        comp.weight = -comp.weight
+        self.true(saveok(comp, 'weight'))
+        
+        comp.weight -= 1
+        self.broken(comp, 'weight', 'valid')
+
+        # Ensure non-floats are coerced in accordance with Python's rules
+        # (i.e., float(v))
+        for v in int(1), str('1.0'):
+            comp.weight = v
+            self.eq(1.0, comp.weight)
+            self.type(float, comp.weight)
+            self.true(saveok(comp, 'weight'))
+        
+
+    def it_calls_bool_attr_on_entity(self):
+        def saveok(e, attr):
+            getattr(e, 'save')()
+            e1 = type(e)(e.id)
+            return getattr(e, attr) == getattr(e1, attr)
+
+        fact = artifact()
+        self.eq('bit', fact.orm.mappings['abstract'].dbtype)
+        self.type(bool, fact.abstract)
+        self.true(hasattr(fact, 'abstract'))
+        self.zero(fact.brokenrules)
+
+        # Test default
+        self.false(fact.abstract)
+        self.true(saveok(fact, 'abstract'))
+
+        # Test save
+        for b in True, False:
+            fact.abstract = b
+            self.type(bool, fact.abstract)
+            self.eq(b, fact.abstract)
+            self.true(saveok(fact, 'abstract'))
+
+        # Falsys and Truthys not allowed
+        for v in int(), float(), str():
+            fact.abstract = v
+            self.one(fact.brokenrules)
+            self.broken(fact, 'abstract', 'valid')
+
+        # None, of course, is allowed despite being Falsy
+        fact.abstract = None
+        self.zero(fact.brokenrules)
 
     def it_calls_str_attr_on_entity(self):
-        # Test read-only str @attr
+        # TODO Test read-only str @attr
+        # TODO Test on subentities, associations, et. al.
         art = artist()
+        self.zero(art.brokenrules)
         self.true(hasattr(art, 'firstname'))
         self.none(art.firstname)
         self.zero(art.brokenrules)
+
+        # Test explicitly set default
+        self.eq('classicism', art.style)
+
+        art.style = 'X' * 51
+        self.one(art.brokenrules)
+        self.broken(art, 'style', 'fits')
+
+        for style in None, '', ' ', ' \n ', ' \t ':
+            art.style = style
+            self.one(art.brokenrules)
+            self.broken(art, 'style', 'full')
+
+        art.style = 'classicism'
+        self.zero(art.brokenrules)
+
+    def it_calls_int_attr_on_entity(self):
+        # TODO Test read-only str @attr
+        # TODO Test on subentities, associations, et. al.
+        # TODO Test persistence
+
+        def saveok(e, attr):
+            getattr(e, 'save')()
+            e1 = type(e)(e.id)
+            return getattr(e, attr) == getattr(e1, attr)
+
+        art = artist()
+        self.eq('smallint', art.orm.mappings['weight'].dbtype)
+        self.true(hasattr(art, 'weight'))
+        self.zero(art.brokenrules)
+
+        # Test default
+        self.eq(100, art.weight)
+        self.true(saveok(art, 'weight'))
+
+        # Min is 0
+        art.weight = 0
+        self.zero(art.brokenrules)
+        self.true(saveok(art, 'weight'))
+
+        art.weight -= 1
+        self.one(art.brokenrules)
+        self.broken(art, 'weight', 'fits')
+
+        # Max is 1000
+        art.weight = 1000
+        self.zero(art.brokenrules)
+        self.true(saveok(art, 'weight'))
+
+        art.weight += 1
+        self.one(art.brokenrules)
+        self.broken(art, 'weight', 'fits')
+
+        # Must be 'full'; not None
+        art.weight = None
+        self.one(art.brokenrules)
+        self.broken(art, 'weight', 'full')
+
+        art.orm.mappings['weight'].full = False
+
+        self.zero(art.brokenrules)
+        self.true(saveok(art, 'weight'))
+
+        # Violate type constraint
+        art.weight = '1000'
+        self.one(art.brokenrules)
+        self.broken(art, 'weight', 'valid')
+
+        # Test a default int #
+
+        # Test default
+        self.eq(0, art.networth)
+        self.eq('int', art.orm.mappings['networth'].dbtype)
+
+        # The min of a MySQL int
+        art.weight = 0
+        art.networth = -2147483648
+        self.zero(art.brokenrules)
+        self.true(saveok(art, 'weight'))
+
+        art.networth -= 1
+        self.one(art.brokenrules)
+        self.broken(art, 'networth', 'fits')
+
+        # The max of a MySQL int
+        art.networth = 2147483647
+        self.zero(art.brokenrules)
+        self.true(saveok(art, 'weight'))
+
+        art.networth += 1
+        self.one(art.brokenrules)
+        self.broken(art, 'networth', 'fits')
+
+        # Nullable
+        art.networth = None
+        self.zero(art.brokenrules)
+        self.true(saveok(art, 'weight'))
+
+        # Violate type constraint
+        art.networth = '1000'
+        self.one(art.brokenrules)
+        self.broken(art, 'networth', 'valid')
+
+        # Test a default int #
+
+        # Test default
+        fact = artifact()
+        self.eq(0, fact.weight)
+        self.eq('bigint', fact.orm.mappings['weight'].dbtype)
+        self.true(saveok(fact, 'weight'))
+
+        # The min of a MySQL bigint
+        fact.weight = -2**63
+        self.zero(fact.brokenrules)
+        self.true(saveok(fact, 'weight'))
+
+        fact.weight -= 1
+        self.one(fact.brokenrules)
+        self.broken(fact, 'weight', 'fits')
+
+        # The max of a MySQL bigint
+        fact.weight = 2**63-1
+        self.zero(fact.brokenrules)
+        self.true(saveok(fact, 'weight'))
+
+        fact.weight += 1
+        self.one(fact.brokenrules)
+        self.broken(fact, 'weight', 'fits')
+
+        # Nullable
+        fact.weight = None
+        self.zero(fact.brokenrules)
+        self.true(saveok(fact, 'weight'))
+
+        # Violate type constraint
+        fact.weight = '1000'
+        self.one(fact.brokenrules)
+        self.broken(fact, 'weight', 'valid')
+
+        # Test tinyint #
+        conc = concert()
+        self.eq(0, conc.ticketprice)
+        self.eq('tinyint', conc.orm.mappings['ticketprice'].dbtype)
+        self.true(saveok(conc, 'ticketprice'))
+
+        # The min of a MySQL tinyint
+        conc.ticketprice = -128
+        self.zero(conc.brokenrules)
+        self.true(saveok(conc, 'ticketprice'))
+
+        conc.ticketprice -= 1
+        self.one(conc.brokenrules)
+        self.broken(conc, 'ticketprice', 'fits')
+
+        # The max of a MySQL tinyint
+        conc.ticketprice = 127
+        self.zero(conc.brokenrules)
+        self.true(saveok(conc, 'ticketprice'))
+
+        conc.ticketprice += 1
+        self.one(conc.brokenrules)
+        self.broken(conc, 'ticketprice', 'fits')
+
+        # Nullable
+        conc.ticketprice = None
+        self.zero(conc.brokenrules)
+        self.true(saveok(conc, 'ticketprice'))
+
+        # Violate type constraint
+        conc.ticketprice = '1000'
+        self.one(conc.brokenrules)
+        self.broken(conc, 'ticketprice', 'valid')
+
+        # Test mediumint #
+        conc = concert()
+        self.eq(0, conc.attendees)
+        self.eq('mediumint', conc.orm.mappings['attendees'].dbtype)
+        self.true(saveok(conc, 'attendees'))
+
+        # The min of a MySQL mediumint
+        conc.attendees = -8388608
+        self.zero(conc.brokenrules)
+        self.true(saveok(conc, 'attendees'))
+
+        conc.attendees -= 1
+        self.one(conc.brokenrules)
+        self.broken(conc, 'attendees', 'fits')
+
+        # The max of a MySQL mediumint
+        conc.attendees = 8388607
+        self.zero(conc.brokenrules)
+        self.true(saveok(conc, 'attendees'))
+
+        conc.attendees += 1
+        self.one(conc.brokenrules)
+        self.broken(conc, 'attendees', 'fits')
+
+        # Nullable
+        conc.attendees = None
+        self.zero(conc.brokenrules)
+        self.true(saveok(conc, 'attendees'))
+
+        # Violate type constraint
+        conc.attendees = '1000'
+        self.one(conc.brokenrules)
+        self.broken(conc, 'attendees', 'valid')
+
+    def it_calls_datetime_attr_on_entity(self):
+        utc = timezone.utc
+
+        # It converts naive datetime to UTC
+        art = artist()
+        self.none(art.dob)
+        art.dob = '2004-01-10'
+        self.type(primative.datetime, art.dob)
+        self.type(primative.datetime, art.dob)
+        expect = datetime(2004, 1, 10, tzinfo=utc)
+        self.eq(expect, art.dob)
+       
+        # Save, reload, test
+        art.save()
+        self.eq(expect, artist(art.id).dob)
+        self.type(primative.datetime, artist(art.id).dob)
+
+        # It converts aware datetime to UTC
+        aztz = dateutil.tz.gettz('US/Arizona')
+        azdt = datetime(2003, 10, 11, 10, 13, 46, tzinfo=aztz)
+        art.dob = azdt
+        expect = azdt.astimezone(utc)
+
+        self.eq(expect, art.dob)
+
+        # Save, reload, test
+        art.save()
+        self.eq(expect, artist(art.id).dob)
+        self.type(primative.datetime, artist(art.id).dob)
+
+        # It converts backt to AZ time using string tz
+        self.eq(azdt, art.dob.astimezone('US/Arizona'))
 
     def it_calls_str_property_with_default_on_entity(self):
         # Test where the default is None
@@ -1976,6 +2356,10 @@ class test_orm(tester):
         art1.lastname   =  uuid4().hex
         art1.phone      =  uuid4().hex
         art1.lifeform   =  uuid4().hex
+        art1.style      =  uuid4().hex
+        art1.weight     += 1
+        art1.networth   =  1
+        art1.dob        =  primative.datetime.now().replace(tzinfo=timezone.utc)
 
         self.false(art1.orm.isnew)
         self.true(art1.orm.isdirty)
@@ -2000,6 +2384,12 @@ class test_orm(tester):
 
         for map in art2.orm.mappings:
             if isinstance(map, orm.fieldmapping):
+                if map.isdatetime:
+                    name = map.name
+                    dt1 = getattr(art1, name)
+                    dt2 = getattr(art2, name)
+                    setattr(art1, name, dt1.replace(second=0, microsecond=0))
+                    setattr(art2, name, dt2.replace(second=0, microsecond=0))
                 self.eq(getattr(art1, map.name), getattr(art2, map.name))
 
     def it_fails_to_save_broken_entity(self):
@@ -3405,6 +3795,10 @@ class test_orm(tester):
         sng1.lifeform  = uuid4().hex
         sng1.phone     = uuid4().hex
         sng1.register  = uuid4().hex
+        sng1.style     = uuid4().hex
+        sng1.weight    = 1
+        sng1.networth  =- 1
+        sng1.dob       = datetime.now()
 
         self.eq((False, True, False), sng1.orm.persistencestate)
 
@@ -3422,6 +3816,7 @@ class test_orm(tester):
             if prop == 'id':
                 self.eq(getattr(sng1, prop), getattr(sng, prop))
             else:
+                
                 self.ne(getattr(sng1, prop), getattr(sng, prop))
 
         sng1.save()

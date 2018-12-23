@@ -35,13 +35,21 @@ from MySQLdb.constants.ER import BAD_TABLE_ERROR
 import MySQLdb
 from enum import Enum, unique
 import re
+import primative
+import dateutil
+import decimal
+
 
 @unique
 class types(Enum):
-    str = 0
-    int = 1
-    pk  = 2
-    fk  = 3
+    pk        =  0
+    fk        =  1
+    str       =  2
+    int       =  3
+    datetime  =  4
+    bool      =  5
+    float     =  6
+    decimal   =  7
 
 class undef:
     pass
@@ -324,9 +332,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         self.onbeforereconnect  =  entitiesmod.event()
         self.onafterreconnect   =  entitiesmod.event()
 
-        self.onaftersave += self._self_onaftersave
-        self.onafterload += self._self_onafterload
-        self.onafterreconnect += self._self_onafterreconnect
+        self.onaftersave       +=  self._self_onaftersave
+        self.onafterload       +=  self._self_onafterload
+        self.onafterreconnect  +=  self._self_onafterreconnect
 
         if o is None:
             self.orm.isnew = True
@@ -351,7 +359,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         super().__init__()
 
-        # Events
+        # Post super().__init__() events
         self.onaftervaluechange  +=  self._self_onaftervaluechange
 
     def __getitem__(self, args):
@@ -453,6 +461,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             super = self.orm.super
             if super and super.orm.mappings(attr):
                 #builtins.setattr(self.orm.super, attr, v)
+                # TODO The above was commented out and replaced with the below.
+                # The attr(v) function wants to call __setattr__, but does not
+                # want a comparison (cmp) to be done in _setvalue because that
+                # would lead to an infinite loop. More testing needs to be done
+                # in this area - particulary regarding subentities and @attr's
+                # they override.
                 super.__setattr__(attr, v, cmp)
             else:
                 return object.__setattr__(self, attr, v)
@@ -770,7 +784,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         for map in self.orm.mappings:
             if type(map) is fieldmapping:
-                if map.type == types.str:
+                t = map.type
+                if t == types.str:
                     brs.demand(self, map.name, type=str)
                     if map.max is undef:
                         if map.value is not None:
@@ -780,6 +795,22 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                     if map.full:
                         brs.demand(self, map.name, full=True)
+                elif t == types.int:
+                    brs.demand(self, map.name, min=map.min, max=map.max, 
+                                     type=int, full=map.full)
+                elif t == types.bool:
+                    brs.demand(self, map.name, type=bool)
+
+                elif t == types.float:
+                    brs.demand(self, map.name, type=float, max=map.max, dec=map.dec)
+
+                elif t == types.decimal:
+                    brs.demand(self, 
+                        map.name, 
+                        type=decimal.Decimal, 
+                        max=map.max, 
+                        dec=map.dec
+                    )
 
             elif type(map) is entitiesmapping:
                 # Currently, map.value will not load the entities on invocation
@@ -1041,21 +1072,18 @@ class mappings(entitiesmod.entities):
     @property
     def createtable(self):
         r = 'create table ' + self.orm.table + '(\n'
-        i = 0
 
-        for map in self:
+        for i, map in enumerate(self):
             if not isinstance(map, fieldmapping):
                 continue
 
             if i:
                 r += ',\n'
-            i += 1
 
             r += '    ' + map.name
 
             if type(map) is fieldmapping:
-                if map.isstr:
-                    r += ' varchar(' + str(map.max) + ')'
+                r += ' ' + map.dbtype
             elif type(map) is primarykeyfieldmapping:
                 r += ' binary(16) primary key'
             elif type(map) is foreignkeyfieldmapping:
@@ -1113,7 +1141,13 @@ WHERE id = %s;
                 if type(map) in keymaps and isinstance(map.value, UUID):
                     r.append(map.value.bytes)
                 else:
-                    r.append(map.value if map.value is not undef else None)
+                    v = map.value if map.value is not undef else None
+                    if v is not None:
+                        if map.isdatetime:
+                            v = v.replace(tzinfo=None)
+                        elif map.isbool:
+                            v = int(v)
+                    r.append(v)
         return r
 
     def clone(self, orm_):
@@ -1121,7 +1155,6 @@ WHERE id = %s;
         for map in self:
             r += map.clone()
         return r
-
 
 class mapping(entitiesmod.entity):
     ordinal = 0
@@ -1287,19 +1320,25 @@ class attr:
         return w
 
 class fieldmapping(mapping):
-    def __init__(self, type, default=undef, max=undef, full=undef, name=None, derived=False):
+    def __init__(self,       type,       default=undef, 
+                 min=undef,  max=undef,  dec=None, 
+                 full=undef, name=None,  derived=False):
         self._type = type
         self._value = undef
         self._default = default
+        self._min = min
         self._max = max
         self._full = full
+        self._dec = dec
         super().__init__(name, derived)
 
     def clone(self):
         map = fieldmapping(
             self.type,
             self.default,
+            self.min,
             self.max,
+            self.dec,
             self.full,
             self.name,
             self.derived
@@ -1314,39 +1353,178 @@ class fieldmapping(mapping):
         return self.type == types.str
 
     @property
+    def isdatetime(self):
+        return self.type == types.datetime
+
+    @property
+    def isbool(self):
+        return self.type == types.bool
+
+    @property
+    def isint(self):
+        return self.type == types.int
+
+    @property
+    def isfloat(self):
+        return self.type == types.float
+
+    @property
+    def isdecimal(self):
+        return self.type == types.decimal
+
+    @property
     def full(self):
         if self._full is undef:
             self._full = False
         
         return self._full
 
+    @full.setter
+    def full(self, v):
+        self._full = v
+
     @property
     def default(self):
         return self._default
 
     @property
+    def min(self):
+        t = self.type
+        if t is types.str:
+            if self._min is undef:
+                return 0
+            else:
+                return self._min
+        elif t is types.int:
+            if self._min is undef:
+                return -2147483648
+            else:
+                return self._min
+    @property
+    def dec(self):
+        if self._dec is None:
+            if self.type == types.decimal:
+                self._dec = 2
+        return self._dec
+
+    @property
     def max(self):
-        if self.type is types.str:
+        t = self.type
+        if t is types.str:
             if self._max is undef:
                 return 255
             else:
                 return self._max
+        elif t is types.int:
+            if self._max is undef:
+                return 2147483647
+            else:
+                return self._max
+        elif t is types.float:
+            # TODO Add default
+            return self._max
+        elif t is types.decimal:
+            if self._max is undef:
+                # Since the MySQL max default for the precision (whole number)
+                # is 10, we will use that as the default here. We won't use the
+                # MySQL default for the scale (decimal portion), however. See
+                # self.dec.
+                return 10 + self.dec
+            return self._max
 
     @property
     def type(self):
+        # TODO Instead of setting self._type, can we just return 
+        # the results?
         t = self._type
         if t in (str, types.str):
             self._type = types.str
+        elif t in (int, types.int):
+            self._type = types.int
+        elif t in (bool, types.bool):
+            self._type = types.bool
+        elif hasattr(t, '__name__') and t.__name__ == 'datetime':
+            self._type = types.datetime
+        elif t in (float,):
+            self._type = types.float
+        elif hasattr(t, '__name__') and t.__name__.lower() == 'decimal':
+            self._type = types.decimal
         return self._type
+    
+    @property
+    def dbtype(self):
+        # TODO Instead of returning r, can we just return the value
+        if self.isstr:
+            r = 'varchar(' + str(self.max) + ')'
+        elif self.isint:
+            # TODO Add unsigned integers detection
+            if    self.min  >=  -128         and  self.max  <=  127:
+                r = 'tinyint'
+            elif  self.min  >=  -32768       and  self.max  <=  32767:
+                r = 'smallint'
+            elif  self.min  >=  -8388608     and  self.max  <=  8388607:
+                r = 'mediumint'
+            elif  self.min  >=  -2147483648  and  self.max  <=  2147483647:
+                r = 'int'
+            elif  self.min  >=  -2**63       and  self.max  <=  2**63-1:
+                r = 'bigint'
+            else:
+                raise ValueError()
+        elif self.isdatetime:
+            r = 'datetime'
+        elif self.isbool:
+            r = 'bit'
+        elif self.isfloat:
+            r = 'double(%s, %s)' % (self.max, self.dec)
+        elif self.isdecimal:
+            r = 'decimal(%s, %s)' % (self.max, self.dec)
+        else:
+            raise ValueError()
+
+        return r
 
     @property
     def value(self):
         if self._value is undef:
             if self.default is undef:
-                if self.type == types.str:
+                if self.isint:
+                    return int()
+                elif self.isbool:
+                    return bool()
+                elif self.isfloat:
+                    return float()
+                elif self.isdecimal:
+                    return decimal.Decimal()
+                else:
                     return None
             else:
                 return self.default
+        
+        if self._value is not None:
+            if self.isdatetime:
+                if type(self._value) is str:
+                    self._value = primative.datetime(self._value) 
+                elif not isinstance(self._value, primative.datetime):
+                    self._value = primative.datetime(self._value)
+
+                utc = dateutil.tz.gettz('UTC')
+                if self._value.tzinfo and self._value.tzinfo is not utc:
+                    self._value = self._value.astimezone(utc)
+                else:
+                    self._value = self._value.replace(tzinfo=utc)
+            elif self.isbool:
+                if type(self._value) is bytes:
+                    # Convert the bytes string fromm MySQL's bit type to a
+                    # bool.
+                    v = self._value
+                    self._value = bool.from_bytes(v, byteorder='little')
+
+            elif self.isfloat:
+                self._value = float(self._value)
+
+            elif self.isdecimal:
+                self._value = decimal.Decimal(self._value)
+
         return self._value
 
     @value.setter
