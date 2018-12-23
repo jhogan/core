@@ -1401,7 +1401,6 @@ class test_entities(tester):
         self.assertIs(ni6, ks.sixth)
 
     def it_gets_brokenrules(self):
-
         """ A broken rule is an entity that represents a problem with the
         state of an entitiy. Each entities collection by default returns a
         broken rules collection which is an aggregates of the broken rules

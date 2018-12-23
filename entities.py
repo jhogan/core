@@ -30,6 +30,7 @@ import sys
 import builtins
 from pprint import pprint
 from functools import total_ordering, reduce
+import decimal
 
 def rgetattr(obj, attr, *args):
     def rgetattr(obj, attr):
@@ -687,13 +688,33 @@ class brokenrules(entities):
                      full=False, 
                      isemail=False, 
                      isdate=False,
+                     min=None,
                      max=None,
+                     dec=None,
                      type=None):
+
+        # TODO Write unit tests
         v = getattr(cls, prop)
 
         if type is not None and v is not None:
             if builtins.type(v) is not type:
                 self += brokenrule(prop + ' is wrong type', prop, 'valid')
+
+        if type in (float, decimal.Decimal):
+            strv = str(v).lstrip('-')
+            parts = strv.split('.')
+            try:
+                decpart = parts[1]
+            except IndexError:
+                decpart = '0'
+            msg = None
+            if len(decpart) > dec:
+                msg = 'decimal part is too long'
+            if len(strv) - 1 > max:
+                msg = 'number is too long'
+
+            if msg:
+                self += brokenrule(msg, prop, 'valid')
 
         if full:
             if (builtins.type(v) == str and v.strip() == '') or v is None:
@@ -704,27 +725,43 @@ class brokenrules(entities):
             if v == None or not re.match(pattern, v):
                 self += brokenrule(prop + ' is invalid', prop, 'valid')
 
-        if max is not None:
-            try:
-                broke = len(v) > max
-            except TypeError:
-                # If len(v) raises a TypeError then v's length can't be determined
-                # because it is the wrong type (perhaps it's an int). Silently ignore.
-                # It is the calling code's responsibility to ensure the correct type
-                # is passed in for the cases where the 'type' argument is False.
-                pass
-            else:
-                # property can only break the 'fits' rule if it hasn't broken
-                # the 'full' rule. E.g., a property can be a string of
-                # whitespaces which may break the 'full' rule. In that case,
-                # a broken 'fits' rule would't make sense.
-                if broke:
-                    if not self.contains(prop, 'full'):
-                        self += brokenrule(prop + ' is too lengthy', prop, 'fits')
+        for i, limit in enumerate((max, min)):
+            if limit is not None:
+                try:
+                    broke = False
+                    if builtins.type(v) is str:
+                        broke = len(v) > max
+                    elif builtins.type(v) is int:
+                        if i:
+                            broke = v < limit
+                        else:
+                            broke = v > limit
+                except TypeError:
+                    # If len(v) raises a TypeError then v's length can't be determined
+                    # because it is the wrong type (perhaps it's an int). Silently ignore.
+                    # It is the calling code's responsibility to ensure the correct type
+                    # is passed in for the cases where the 'type' argument is False.
+                    pass
+                else:
+                    # property can only break the 'fits' rule if it hasn't broken
+                    # the 'full' rule. E.g., a property can be a string of
+                    # whitespaces which may break the 'full' rule. In that case,
+                    # a broken 'fits' rule would't make sense.
+                    if broke:
+                        if not self.contains(prop, 'full'):
+                            if builtins.type(v) is str:
+                                msg = prop + ' is too lengthy'
+                            elif builtins.type(v) is int:
+                                msg = prop + ' is out of range'
+                            else:
+                                raise NotImplementedError()
+
+                            self += brokenrule(msg, prop, 'fits')
 
         if isdate:
             if builtins.type(v) != datetime:
                 self += brokenrule(prop + " isn't a date", prop, 'valid')
+
 
     def contains(self, prop=None, type=None):
         for br in self:
