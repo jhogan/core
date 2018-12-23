@@ -238,6 +238,8 @@ class entities(object):
     def remove(self, e):
         if isinstance(e, entities):
             rms = e
+        elif isinstance(e, entity):
+            rms = [e]
         elif callable(e) and not isinstance(self, event):
             rms = self.where(e)
         elif type(e) == int:
