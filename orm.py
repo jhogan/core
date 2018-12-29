@@ -50,6 +50,7 @@ class types(Enum):
     bool      =  5
     float     =  6
     decimal   =  7
+    bytes     =  8
 
 class undef:
     pass
@@ -182,6 +183,8 @@ class entities(entitiesmod.entities):
                 args = list(p2) + args
 
         args = [x.bytes if type(x) is UUID else x for x in args]
+
+        p1 = orm.introduce(p1, args)
 
         sql = 'SELECT * FROM %s WHERE %s;' % (self.orm.table, p1)
 
@@ -394,7 +397,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         map.value = v
 
     def _load(self, id):
-        sql = 'SELECT * FROM {} WHERE id = %s'
+        sql = 'SELECT * FROM {} WHERE id = _binary %s'
         sql = sql.format(self.orm.table)
 
         args = id.bytes,
@@ -786,15 +789,15 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             if type(map) is fieldmapping:
                 t = map.type
                 if t == types.str:
-                    brs.demand(self, map.name, type=str)
-                    if map.max is undef:
-                        if map.value is not None:
-                            brs.demand(self, map.name, max=255)
-                    else:
-                        brs.demand(self, map.name, max=map.max)
+                    brs.demand(
+                        self, 
+                        map.name, 
+                        type=str, 
+                        min=map.min, 
+                        max=map.max, 
+                        full=map.full
+                   )
 
-                    if map.full:
-                        brs.demand(self, map.name, full=True)
                 elif t == types.int:
                     brs.demand(self, map.name, min=map.min, max=map.max, 
                                      type=int, full=map.full)
@@ -810,6 +813,14 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         type=decimal.Decimal, 
                         max=map.max, 
                         dec=map.dec
+                    )
+
+                elif t == types.bytes:
+                    brs.demand(self, 
+                        map.name, 
+                        type=bytes,
+                        max=map.max, 
+                        min=map.min
                     )
 
             elif type(map) is entitiesmapping:
@@ -1082,6 +1093,9 @@ class mappings(entitiesmod.entities):
 
             r += '    ' + map.name
 
+            # TODO primarykeyfieldmapping and foreignkeyfieldmapping
+            # should have dbtype attributes that return the type values
+            # needed here.
             if type(map) is fieldmapping:
                 r += ' ' + map.dbtype
             elif type(map) is primarykeyfieldmapping:
@@ -1089,7 +1103,8 @@ class mappings(entitiesmod.entities):
             elif type(map) is foreignkeyfieldmapping:
                 r += ' binary(16)'
 
-        r += '\n);'
+        r += '\n) '
+        r += 'ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;'
         return r
 
     def getinsert(self):
@@ -1104,7 +1119,11 @@ class mappings(entitiesmod.entities):
 
         sql = 'INSERT INTO {} VALUES ({});'.format(tbl, placeholder)
 
-        return sql, self._getargs()
+        args = self._getargs()
+
+        sql = orm.introduce(sql, args)
+
+        return sql, args
 
     def getupdate(self):
         set = ''
@@ -1126,12 +1145,18 @@ WHERE id = %s;
 
         # Move the id value from the bottom to the top
         args.append(args.pop(0))
+
+        sql = orm.introduce(sql, args)
         return sql, args
 
     def getdelete(self):
         sql = 'DELETE FROM {} WHERE id = %s;'.format(self.orm.table)
 
-        return sql, [self['id'].value.bytes]
+        args = self['id'].value.bytes,
+
+        sql = orm.introduce(sql, args)
+
+        return sql, args
 
     def _getargs(self):
         r = []
@@ -1373,11 +1398,24 @@ class fieldmapping(mapping):
         return self.type == types.decimal
 
     @property
+    def isbytes(self):
+        return self.type == types.bytes
+
+    @property
     def full(self):
         if self._full is undef:
             self._full = False
         
         return self._full
+
+    @property
+    def isfixed(self):
+        if self.isint or self.isfloat or self.isdecimal:
+            return True
+
+        if self.isbytes or self.isstr:
+            return self.max == self.min
+        return False
 
     @full.setter
     def full(self, v):
@@ -1392,17 +1430,16 @@ class fieldmapping(mapping):
         t = self.type
         if t is types.str:
             if self._min is undef:
-                return 0
-            else:
-                return self._min
+                return 1
         elif t is types.int:
             if self._min is undef:
                 return -2147483648
-            else:
-                return self._min
+
+        return self._min
     @property
     def dec(self):
         if self._dec is None:
+            # TODO This should be if self.isdecimal
             if self.type == types.decimal:
                 self._dec = 2
         return self._dec
@@ -1410,6 +1447,7 @@ class fieldmapping(mapping):
     @property
     def max(self):
         t = self.type
+        # TODO We should us if self.isstr, self.isint, etc.
         if t is types.str:
             if self._max is undef:
                 return 255
@@ -1431,6 +1469,15 @@ class fieldmapping(mapping):
                 # self.dec.
                 return 10 + self.dec
             return self._max
+        elif t is types.bytes:
+            if self._max is undef:
+                # Since the MySQL max default for the precision (whole number)
+                # is 10, we will use that as the default here. We won't use the
+                # MySQL default for the scale (decimal portion), however. See
+                # self.dec.
+                return 255
+            return self._max
+
 
     @property
     def type(self):
@@ -1449,13 +1496,18 @@ class fieldmapping(mapping):
             self._type = types.float
         elif hasattr(t, '__name__') and t.__name__.lower() == 'decimal':
             self._type = types.decimal
+        elif t in (bytes,):
+            self._type = types.bytes
         return self._type
     
     @property
     def dbtype(self):
         # TODO Instead of returning r, can we just return the value
         if self.isstr:
-            r = 'varchar(' + str(self.max) + ')'
+            if self.isfixed:
+                r = 'char(' + str(self.max) + ')'
+            else:
+                r = 'varchar(' + str(self.max) + ')'
         elif self.isint:
             # TODO Add unsigned integers detection
             if    self.min  >=  -128         and  self.max  <=  127:
@@ -1478,6 +1530,11 @@ class fieldmapping(mapping):
             r = 'double(%s, %s)' % (self.max, self.dec)
         elif self.isdecimal:
             r = 'decimal(%s, %s)' % (self.max, self.dec)
+        elif self.isbytes:
+            if self.isfixed:
+                r = 'binary(%s)' % self.max
+            else:
+                r = 'varbinary(%s)' % self.max
         else:
             raise ValueError()
 
@@ -1495,6 +1552,10 @@ class fieldmapping(mapping):
                     return float()
                 elif self.isdecimal:
                     return decimal.Decimal()
+                elif self.isstr:
+                    return str()
+                elif self.isbytes:
+                    return bytes()
                 else:
                     return None
             else:
@@ -1523,7 +1584,10 @@ class fieldmapping(mapping):
                 self._value = float(self._value)
 
             elif self.isdecimal:
-                self._value = decimal.Decimal(self._value)
+                self._value = decimal.Decimal(str(self._value))
+
+            elif self.isbytes:
+                self._value = bytes(self._value)
 
         return self._value
 
@@ -1666,6 +1730,20 @@ class orm:
 
         return r
 
+    @staticmethod
+    def introduce(sql, args):
+        """Use args to add introducers (_binary, et. al.) before the %s in
+        sql."""
+
+        # Where the arg is binary (bytearray or bytes), replace '%s' with
+        # '_binary %s' so it's clear to MySQL where the UTF8 SQL string 
+        # becomes pure binary not intended for character decoding.
+        return sql % tuple(
+            [
+                '_binary %s' if type(x) in (bytearray, bytes) else '%s' 
+                for x in args
+            ]
+        )
     @property
     def isdirty(self):
         if self._isdirty:
