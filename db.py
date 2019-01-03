@@ -322,7 +322,8 @@ class connection(entity):
             acct = self.account
             self._conn = MySQLdb.connect(acct.host, acct.username, 
                                          acct.password, acct.database, 
-                                         port=acct.port)
+                                         port=acct.port, charset='utf8mb4',
+                                         use_unicode=True)
         return self._conn                
 
     def kill(self):
