@@ -33,6 +33,7 @@ class testers(entities):
         for subcls in tester.__subclasses__():
             if testclass and subcls.__name__ != testclass:
                 continue
+
             inst = subcls()
             inst.testers = self
             self += inst
@@ -167,6 +168,9 @@ class tester(entity):
         if expect == actual: self._failures += failure()
 
     def assertGt(self, expect, actual, msg=None):
+        if not (expect > actual): self._failures += failure()
+
+    def gt(self, expect, actual, msg=None):
         if not (expect > actual): self._failures += failure()
 
     def assertGe(self, expect, actual, msg=None):
