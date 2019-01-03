@@ -38,6 +38,7 @@ import re
 import primative
 import dateutil
 import decimal
+from datetime import datetime
 
 
 @unique
@@ -210,10 +211,10 @@ class entities(entitiesmod.entities):
             e.onafterload(self, eargs)
             e.orm.persistencestate = (False,) * 3
 
-    def _getbrokenrules(self, es):
+    def _getbrokenrules(self, es=None, followentitymapping=True):
         brs = entitiesmod.brokenrules()
         for e in self:
-            brs += e._getbrokenrules(es)
+            brs += e._getbrokenrules(es, followentitymapping=followentitymapping)
         return brs
 
     def _self_onremove(self, src, eargs):
@@ -227,11 +228,30 @@ class entities(entitiesmod.entities):
                 if e.id == e1.id: return ix
             e, id = e.orm.entity.__name__, e.id
             raise ValueError("%s[%s] is not in the collection" % (e, id))
-        elif isinstance(e, UUID):
-            # TODO
-            raise NotImplementedError()
 
         super().getindex(e)
+
+    def __repr__(self):
+        hdr = '%s object at %s count: %s\n' % (type(self), 
+                                               hex(id(self)), 
+                                               self.count)
+
+        tbl = table()
+        r = tbl.newrow()
+        r.newfield('Address')
+        r.newfield('ID')
+        r.newfield('Broken Rules')
+
+        for e in self:
+            r = tbl.newrow()
+            r.newfield(hex(id(e)))
+            r.newfield(str(e))
+            b = ''
+            for br in e.brokenrules:
+                b += '%s:%s ' % (br.property, br.type)
+            r.newfield(b)
+
+        return '%s\n%s' % (hdr, tbl)
 
 class entitymeta(type):
     def __new__(cls, name, bases, body):
@@ -268,6 +288,9 @@ class entitymeta(type):
                 orm_.table = orm_.entities.__name__
 
             body['id'] = primarykeyfieldmapping()
+            body['createdat'] = fieldmapping(datetime)
+            body['updatedat'] = fieldmapping(datetime)
+
             for k, v in body.items():
 
                 if k.startswith('__'):
@@ -283,14 +306,11 @@ class entitymeta(type):
                         map = entitymapping(k, v)
                     else:
                         raise ValueError()
-                # TODO Do we need to test for str here
-                elif type(k) is str:
+                else:
                     if type(v) is ormmod.attr.wrap:
                         map = v.mapping
                     else:
                         continue
-                else:
-                    continue
                
                 map._name = k
                 orm_.mappings += map
@@ -463,13 +483,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         if map is None:
             super = self.orm.super
             if super and super.orm.mappings(attr):
-                #builtins.setattr(self.orm.super, attr, v)
-                # TODO The above was commented out and replaced with the below.
-                # The attr(v) function wants to call __setattr__, but does not
-                # want a comparison (cmp) to be done in _setvalue because that
-                # would lead to an infinite loop. More testing needs to be done
-                # in this area - particulary regarding subentities and @attr's
-                # they override.
                 super.__setattr__(attr, v, cmp)
             else:
                 return object.__setattr__(self, attr, v)
@@ -626,8 +639,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             sql, args = self.orm.mappings.getdelete()
         elif self.orm.isnew:
             crud = 'create'
+            self.createdat = self.updatedat = primative.datetime.utcnow()
             sql, args = self.orm.mappings.getinsert()
         elif self.orm._isdirty:
+            self.updatedat = primative.datetime.utcnow()
             crud = 'update'
             sql, args = self.orm.mappings.getupdate()
         else:
@@ -766,11 +781,15 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             self.orm.persistencestate = st
             raise
         
+    # These are the limits of the MySQL datetime type
+    mindatetime=primative.datetime('1000-01-01 00:00:00.000000+00:00')
+    maxdatetime=primative.datetime('9999-12-31 23:59:59.999999+00:00')
+
     @property
     def brokenrules(self):
         return self._getbrokenrules()
 
-    def _getbrokenrules(self, guestbook=None):
+    def _getbrokenrules(self, guestbook=None, followentitymapping=True):
         brs = entitiesmod.brokenrules()
 
         # This "guestbook" logic prevents infinite recursion and duplicated
@@ -783,7 +802,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         super = self.orm.super
         if super:
-            brs += super._getbrokenrules(guestbook)
+            brs += super._getbrokenrules(
+                guestbook, 
+                followentitymapping=followentitymapping
+            )
 
         for map in self.orm.mappings:
             if type(map) is fieldmapping:
@@ -794,26 +816,30 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         map.name, 
                         type=str, 
                         min=map.min, 
-                        max=map.max, 
-                        full=map.full
+                        max=map.max
                    )
 
                 elif t == types.int:
                     brs.demand(self, map.name, min=map.min, max=map.max, 
-                                     type=int, full=map.full)
+                                     type=int)
                 elif t == types.bool:
                     brs.demand(self, map.name, type=bool)
 
                 elif t == types.float:
-                    brs.demand(self, map.name, type=float, max=map.max, dec=map.dec)
+                    brs.demand(self, map.name, 
+                                     type=float, 
+                                     min=map.min, 
+                                     max=map.max, 
+                                     precision=map.precision,
+                                     scale=map.scale)
 
                 elif t == types.decimal:
-                    brs.demand(self, 
-                        map.name, 
-                        type=decimal.Decimal, 
-                        max=map.max, 
-                        dec=map.dec
-                    )
+                    brs.demand(self, map.name, 
+                                     type=decimal.Decimal, 
+                                     min=map.max, 
+                                     max=map.min, 
+                                     precision=map.precision,
+                                     scale=map.scale)
 
                 elif t == types.bytes:
                     brs.demand(self, 
@@ -821,6 +847,14 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         type=bytes,
                         max=map.max, 
                         min=map.min
+                    )
+
+                elif t == types.datetime:
+                    brs.demand(self, 
+                        map.name, 
+                        instanceof=datetime,
+                        min=type(self).mindatetime,
+                        max=type(self).maxdatetime,
                     )
 
             elif type(map) is entitiesmapping:
@@ -832,13 +866,17 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 # h (see it_entity_constituents_break_entity)
                 es = map.value
                 if es:
-                    brs += es._getbrokenrules(guestbook)
+                    brs += es._getbrokenrules(guestbook, 
+                        followentitymapping=followentitymapping
+                    )
 
-            elif type(map) is entitymapping:
+            elif followentitymapping and type(map) is entitymapping:
                 if map.isloaded:
                     v = map.value
                     if v:
-                        brs += v._getbrokenrules(guestbook)
+                        brs += v._getbrokenrules(guestbook, 
+                            followentitymapping=followentitymapping
+                        )
 
         return brs
 
@@ -859,10 +897,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             if not map:
                 super = self.orm.super
                 if super:
-                    # TODO Before begining an ascent up the inheritence hierarchy,
-                    # we need to first ensure that the attr is a map in that
-                    # hierarchy; not just in the super. So the below line
-                    # should something like self.getmap(attr, recursive=True)
+                    # TODO Before begining an ascent up the inheritence
+                    # hierarchy, we need to first ensure that the attr is a map
+                    # in that hierarchy; not just in the super. So the below
+                    # line should be something like:
+                    #     self.getmap(attr, recursive=True)
                     map = super.orm.mappings(attr)
                     if map:
                         if type(map) is entitymapping:
@@ -955,29 +994,66 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         return map.value
 
-    def __str__(self):
-        # TODO Write tests
+    def __repr__(self):
         tbl = table()
-
-        r = tbl.newrow()
-        r.newfield('property')
-        r.newfield('value')
 
         for map in self.orm.mappings:
             r = tbl.newrow()
+            v = getattr(self, map.name)
             if type(map) in (primarykeyfieldmapping, foreignkeyfieldmapping):
                 if type(map.value) is UUID:
-                    v = map.value.hex[:7]
+                    v = v.hex[:7]
                 else:
-                    v = str(map.value)
+                    v = str(v)
             else:
-                v = str(map.value)
+                try:
+                    if type(map) in (entitiesmapping, associationsmapping):
+                        es = v
+                        if es:
+                            brs = es._getbrokenrules(
+                                es=None, 
+                                followentitymapping=False
+                            )
+                            args = es.count, brs.count
+                            v = 'Count: %s; Broken Rules: %s' % args
+                        else:
+                            v = str(es)
+                    else:
+                        v = str(v)
+                except Exception as ex:
+                    v = '(%s)' % str(ex)
 
             r.newfield(map.name)
             r.newfield(v)
 
-        return str(tbl)
+        tblbr = table()
 
+        if not self.isvalid:
+            r = tblbr.newrow()
+            r.newfield('property')
+            r.newfield('type')
+            r.newfield('message')
+
+
+            for br in self.brokenrules:
+                r = tblbr.newrow()
+                r.newfield(br.property)
+                r.newfield(br.type)
+                r.newfield(br.message)
+            
+        return '%s\n%s\n%s\n%s' % (super().__repr__(), 
+                                   str(tbl), 
+                                   'Broken Rules', 
+                                   str(tblbr))
+
+    def __str__(self):
+        r = '(%s)' % (self.id.hex[:7])
+
+        if hasattr(self, 'name'):
+            r += '"%s"' % self.name
+
+        return r
+            
 class mappings(entitiesmod.entities):
     def __init__(self, initial=None, orm=None):
         super().__init__(initial)
@@ -1006,21 +1082,22 @@ class mappings(entitiesmod.entities):
             maps = []
 
             for map in self.entitymappings:
-                maps += [foreignkeyfieldmapping(map.entity, derived=True)]
+                maps.append(foreignkeyfieldmapping(map.entity, derived=True))
 
             for e in orm.getentitys():
                 if e is self.orm.entity:
                     continue
                 for map in e.orm.mappings.entitiesmappings:
                     if map.entities is self.orm.entities:
-                        maps += [entitymapping(e.__name__, e, derived=True)]
-                        maps += [foreignkeyfieldmapping(e, derived=True)]
+                        maps.append(entitymapping(e.__name__, e, derived=True))
+                        maps.append(foreignkeyfieldmapping(e, derived=True))
 
             for ass in orm.getassociations():
                 for map in ass.orm.mappings.entitymappings:
                     if map.entity is self.orm.entity:
                         asses = ass.orm.entities
-                        maps += [associationsmapping(asses.__name__, asses, derived=True)]
+                        map = associationsmapping(asses.__name__, asses, derived=True)
+                        maps.append(map)
                         break
 
             for map in maps:
@@ -1046,8 +1123,15 @@ class mappings(entitiesmod.entities):
         # instantiated
         super().sort('_ordinal')
 
-        # Ensure the id is the first element
-        self << self.pop('id')
+        # Ensure builtins attr's come right after id
+        for attr in reversed(('id', 'createdat')):
+            try:
+                attr = self.pop(attr)
+            except ValueError:
+                # attr hasn't been added to self yet
+                pass
+            else:
+                self << attr
 
         # Insert FK maps right after PK map
         fkmaps = list(self.foreignkeymappings)
@@ -1093,15 +1177,8 @@ class mappings(entitiesmod.entities):
 
             r += '    ' + map.name
 
-            # TODO primarykeyfieldmapping and foreignkeyfieldmapping
-            # should have dbtype attributes that return the type values
-            # needed here.
-            if type(map) is fieldmapping:
+            if isinstance(map, fieldmapping):
                 r += ' ' + map.dbtype
-            elif type(map) is primarykeyfieldmapping:
-                r += ' binary(16) primary key'
-            elif type(map) is foreignkeyfieldmapping:
-                r += ' binary(16)'
 
         r += '\n) '
         r += 'ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;'
@@ -1303,12 +1380,10 @@ class attr:
 
         @property
         def mapping(self):
-            kwargs = {}
+            kwargs = self.kwargs
             for i, arg in enumerate(self.args):
                 if i == 0:
                     ix = 'type'
-                elif i == 1:
-                    ix = 'default'
                 else:
                     # TODO
                     raise NotImplementedError()
@@ -1331,6 +1406,7 @@ class attr:
                             return getattr(super, name)
                 else:
                     e.__setattr__(name, v, cmp=False)
+                    return v
 
             self.fget.__globals__['attr'] = attr
             return self.fget(e)
@@ -1345,26 +1421,30 @@ class attr:
         return w
 
 class fieldmapping(mapping):
-    def __init__(self,       type,       default=undef, 
-                 min=undef,  max=undef,  dec=None, 
-                 full=undef, name=None,  derived=False):
-        self._type = type
-        self._value = undef
-        self._default = default
-        self._min = min
-        self._max = max
-        self._full = full
-        self._dec = dec
+    def __init__(self, type,       
+                       min=None,  
+                       max=None, 
+                       m=None,
+                       d=None,
+                       name=None,  
+                       derived=False):
+
+        self._type       =  type
+        self._value      =  undef
+        self._min        =  min
+        self._max        =  max
+        self._precision  =  m
+        self._scale      =  d
+
         super().__init__(name, derived)
 
     def clone(self):
         map = fieldmapping(
             self.type,
-            self.default,
             self.min,
             self.max,
-            self.dec,
-            self.full,
+            self.precision,
+            self.scale,
             self.name,
             self.derived
         )
@@ -1402,13 +1482,6 @@ class fieldmapping(mapping):
         return self.type == types.bytes
 
     @property
-    def full(self):
-        if self._full is undef:
-            self._full = False
-        
-        return self._full
-
-    @property
     def isfixed(self):
         if self.isint or self.isfloat or self.isdecimal:
             return True
@@ -1417,162 +1490,194 @@ class fieldmapping(mapping):
             return self.max == self.min
         return False
 
-    @full.setter
-    def full(self, v):
-        self._full = v
-
-    @property
-    def default(self):
-        return self._default
-
     @property
     def min(self):
-        t = self.type
-        if t is types.str:
-            if self._min is undef:
+        if self.isstr:
+            if self._min is None:
                 return 1
-        elif t is types.int:
-            if self._min is undef:
+
+        elif self.isint:
+            if self._min is None:
                 return -2147483648
 
-        return self._min
-    @property
-    def dec(self):
-        if self._dec is None:
-            # TODO This should be if self.isdecimal
-            if self.type == types.decimal:
-                self._dec = 2
-        return self._dec
+        elif self.isfloat:
+            if self._min is None:
+                return -self.max
+            else:
+                return float(self._min)
 
+        elif self.isdecimal:
+            if self._min is None:
+                return -self.max
+            else:
+                return decimal.Decimal(self._min)
+
+        elif self.isdatetime:
+            ... # TODO?
+        elif self.isbytes:
+            ... # TODO?
+
+        return self._min
+
+    @property
+    def precision(self):
+        if not (self.isfloat or self.isdecimal):
+            return None
+
+        if self._precision is None:
+            return 12
+
+        return self._precision
+
+    @property
+    def scale(self):
+        if not (self.isfloat or self.isdecimal):
+            return None
+
+        if self._scale is None:
+            return 2
+
+        return self._scale
+        
     @property
     def max(self):
         t = self.type
-        # TODO We should us if self.isstr, self.isint, etc.
-        if t is types.str:
-            if self._max is undef:
+        if self.isstr:
+            if self._max is None:
                 return 255
             else:
                 return self._max
-        elif t is types.int:
-            if self._max is undef:
+
+        elif self.isint:
+            if self._max is None:
                 return 2147483647
             else:
                 return self._max
-        elif t is types.float:
-            # TODO Add default
-            return self._max
-        elif t is types.decimal:
-            if self._max is undef:
-                # Since the MySQL max default for the precision (whole number)
-                # is 10, we will use that as the default here. We won't use the
-                # MySQL default for the scale (decimal portion), however. See
-                # self.dec.
-                return 10 + self.dec
-            return self._max
+
+        elif self.isfloat or self.isdecimal:
+            m, d = self.precision, self.scale
+            str = '9' * m
+            str = '%s.%s' % (str[:m-d], str[:d])
+            return float(str) if self.isfloat else decimal.Decimal(str)
+
         elif t is types.bytes:
-            if self._max is undef:
-                # Since the MySQL max default for the precision (whole number)
-                # is 10, we will use that as the default here. We won't use the
-                # MySQL default for the scale (decimal portion), however. See
-                # self.dec.
+            if self._max is None:
                 return 255
             return self._max
 
-
     @property
     def type(self):
-        # TODO Instead of setting self._type, can we just return 
-        # the results?
         t = self._type
         if t in (str, types.str):
-            self._type = types.str
+            return types.str
         elif t in (int, types.int):
-            self._type = types.int
+            return types.int
         elif t in (bool, types.bool):
-            self._type = types.bool
+            return types.bool
         elif hasattr(t, '__name__') and t.__name__ == 'datetime':
-            self._type = types.datetime
+            return types.datetime
         elif t in (float,):
-            self._type = types.float
+            return types.float
         elif hasattr(t, '__name__') and t.__name__.lower() == 'decimal':
-            self._type = types.decimal
+            return types.decimal
         elif t in (bytes,):
-            self._type = types.bytes
+            return types.bytes
         return self._type
+
+    @property
+    def signed(self):
+        if self.type not in (types.int, types.float, types.decimal):
+            raise ValueError()
+
+        return self.min < 0
     
     @property
     def dbtype(self):
-        # TODO Instead of returning r, can we just return the value
         if self.isstr:
-            if self.isfixed:
-                r = 'char(' + str(self.max) + ')'
+            if self.max <= 65535:
+                if self.isfixed:
+                    return 'char(' + str(self.max) + ')'
+                else:
+                    return 'varchar(' + str(self.max) + ')'
             else:
-                r = 'varchar(' + str(self.max) + ')'
+                return 'longtext'
+
         elif self.isint:
-            # TODO Add unsigned integers detection
-            if    self.min  >=  -128         and  self.max  <=  127:
-                r = 'tinyint'
-            elif  self.min  >=  -32768       and  self.max  <=  32767:
-                r = 'smallint'
-            elif  self.min  >=  -8388608     and  self.max  <=  8388607:
-                r = 'mediumint'
-            elif  self.min  >=  -2147483648  and  self.max  <=  2147483647:
-                r = 'int'
-            elif  self.min  >=  -2**63       and  self.max  <=  2**63-1:
-                r = 'bigint'
+            if self.min < 0:
+                if    self.min  >=  -128         and  self.max  <=  127:
+                    return 'tinyint'
+                elif  self.min  >=  -32768       and  self.max  <=  32767:
+                    return 'smallint'
+                elif  self.min  >=  -8388608     and  self.max  <=  8388607:
+                    return 'mediumint'
+                elif  self.min  >=  -2147483648  and  self.max  <=  2147483647:
+                    return 'int'
+                elif  self.min  >=  -2**63       and  self.max  <=  2**63-1:
+                    return 'bigint'
+                else:
+                    raise ValueError()
             else:
-                raise ValueError()
+                if self.max  <=  255:
+                    return 'tinyint unsigned'
+                elif self.max  <=  65535:
+                    return 'smallint unsigned'
+                elif self.max  <=  16777215:
+                    return 'mediumint unsigned'
+                elif self.max  <=  4294967295:
+                    return 'int unsigned'
+                elif self.max  <=  (2 ** 64) - 1:
+                    return 'bigint unsigned'
+                else:
+                    raise ValueError()
         elif self.isdatetime:
-            r = 'datetime'
+            return 'datetime(6)'
         elif self.isbool:
-            r = 'bit'
+            return 'bit'
         elif self.isfloat:
-            r = 'double(%s, %s)' % (self.max, self.dec)
+            return 'double(%s, %s)' % (self.precision, self.scale)
         elif self.isdecimal:
-            r = 'decimal(%s, %s)' % (self.max, self.dec)
+            return 'decimal(%s, %s)' % (self.precision, self.scale)
         elif self.isbytes:
             if self.isfixed:
-                r = 'binary(%s)' % self.max
+                return 'binary(%s)' % self.max
             else:
-                r = 'varbinary(%s)' % self.max
+                return 'varbinary(%s)' % self.max
         else:
             raise ValueError()
-
-        return r
 
     @property
     def value(self):
         if self._value is undef:
-            if self.default is undef:
-                if self.isint:
-                    return int()
-                elif self.isbool:
-                    return bool()
-                elif self.isfloat:
-                    return float()
-                elif self.isdecimal:
-                    return decimal.Decimal()
-                elif self.isstr:
-                    return str()
-                elif self.isbytes:
-                    return bytes()
-                else:
-                    return None
+            if self.isint:
+                return int()
+            elif self.isbool:
+                return bool()
+            elif self.isfloat:
+                return float()
+            elif self.isdecimal:
+                return decimal.Decimal()
+            elif self.isstr:
+                return str()
+            elif self.isbytes:
+                return bytes()
             else:
-                return self.default
+                return None
         
         if self._value is not None:
             if self.isdatetime:
-                if type(self._value) is str:
-                    self._value = primative.datetime(self._value) 
-                elif not isinstance(self._value, primative.datetime):
-                    self._value = primative.datetime(self._value)
-
-                utc = dateutil.tz.gettz('UTC')
-                if self._value.tzinfo and self._value.tzinfo is not utc:
-                    self._value = self._value.astimezone(utc)
+                try:
+                    if type(self._value) is str:
+                        self._value = primative.datetime(self._value) 
+                    elif not isinstance(self._value, primative.datetime):
+                        self._value = primative.datetime(self._value)
+                except:
+                    pass
                 else:
-                    self._value = self._value.replace(tzinfo=utc)
+                    utc = dateutil.tz.gettz('UTC')
+                    if self._value.tzinfo and self._value.tzinfo is not utc:
+                        self._value = self._value.astimezone(utc)
+                    else:
+                        self._value = self._value.replace(tzinfo=utc)
             elif self.isbool:
                 if type(self._value) is bytes:
                     # Convert the bytes string fromm MySQL's bit type to a
@@ -1580,14 +1685,30 @@ class fieldmapping(mapping):
                     v = self._value
                     self._value = bool.from_bytes(v, byteorder='little')
 
+            elif self.isint:
+                try:
+                    self._value = int(self._value)
+                except:
+                    pass
             elif self.isfloat:
-                self._value = float(self._value)
+                try:
+                    self._value = round(float(self._value), self.scale)
+                except:
+                    pass
 
             elif self.isdecimal:
-                self._value = decimal.Decimal(str(self._value))
+                try:
+                    d = decimal.Decimal(str(self._value))
+                except:
+                    pass
+                else:
+                    self._value = round(d, self.scale)
 
             elif self.isbytes:
-                self._value = bytes(self._value)
+                try:
+                    self._value = bytes(self._value)
+                except:
+                    pass
 
         return self._value
 
@@ -1607,6 +1728,10 @@ class foreignkeyfieldmapping(fieldmapping):
 
     def clone(self):
         return foreignkeyfieldmapping(self.entity, self.derived)
+
+    @property
+    def dbtype(self):
+        return 'binary(16)'
 
     @property
     def value(self):
@@ -1629,6 +1754,10 @@ class primarykeyfieldmapping(fieldmapping):
 
     def clone(self):
         return primarykeyfieldmapping()
+
+    @property
+    def dbtype(self):
+        return 'binary(16) primary key'
 
     @property
     def value(self):

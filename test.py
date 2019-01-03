@@ -44,6 +44,18 @@ import primative
 import random
 import re
 
+# We will use basic and supplementary multilingual plane UTF-8 characters when
+# testing str attributes to ensure unicode is being supported.
+
+# A two byte character from the Basic Multilingual Plane
+Delta = bytes("\N{GREEK CAPITAL LETTER DELTA}", 'utf-8').decode()
+
+# A three byte character
+V = bytes("\N{ROMAN NUMERAL FIVE}", 'utf-8').decode()
+
+# A four byte character from the Supplementary Multilingual Plane
+Cunei_a = bytes("\N{CUNEIFORM SIGN A}", 'utf-8').decode()
+
 def getattr(obj, attr, *args):
     # Redefine getattr() to support deep attribututes 
     # 
@@ -107,8 +119,25 @@ class concert(presentation):
         return conc
     
     record = orm.fieldmapping(str)
-    ticketprice = orm.fieldmapping(int, min=-128, max=127)
-    attendees = orm.fieldmapping(int, min=-8388608, max=8388607)
+
+    # tinyint
+    ticketprice  =  orm.fieldmapping(int,  min=-128,      max=127)
+
+    # mediumint
+    attendees    =  orm.fieldmapping(int,  min=-8388608,  max=8388607)
+
+    # tinyint unsigned
+    duration     =  orm.fieldmapping(int,  min=0,         max=255)
+
+    # mediumint unsigned
+    capacity     =  orm.fieldmapping(int,  min=0,         max=16777215)
+
+    # int unsigned
+    externalid   =  orm.fieldmapping(int,  min=0,         max=4294967295)
+
+    # bigint unsigned
+    externalid1  =  orm.fieldmapping(int,  min=0,         max=(2**64)-1)
+
 
 class component(orm.entity):
     @staticmethod
@@ -119,8 +148,13 @@ class component(orm.entity):
         return comp
 
     name = orm.fieldmapping(str)
-    weight = orm.fieldmapping(float, max=8+7, dec=7)
+    weight = orm.fieldmapping(float, m=8, d=7)
+    height = orm.fieldmapping(float)
     digest = orm.fieldmapping(bytes, min=16, max=255)
+
+    @orm.attr(float, m=5, d=1)
+    def width(self):
+        return attr(abs(attr()))
 
 class artifact(orm.entity):
     def getvalid():
@@ -138,28 +172,32 @@ class artist(orm.entity):
     firstname = orm.fieldmapping(str)
     lastname = orm.fieldmapping(str)
     lifeform = orm.fieldmapping(str)
-    weight = orm.fieldmapping(int, default=100, min=0, max=1000, full=True)
+    weight = orm.fieldmapping(int, min=0, max=1000)
     networth = orm.fieldmapping(int)
     presentations = presentations
     locations = locations
-    style = orm.fieldmapping(str, 'classicism', max=50, full=True)
+    style = orm.fieldmapping(str, min=1,  max=50)
     dob = orm.fieldmapping(datetime)
     password = orm.fieldmapping(bytes, min=32, max=32)
     ssn = orm.fieldmapping(str, min=11, max=11) # char
 
+    # Bio's will be longtext. Any str where max > 65,535 can no longer be a
+    # varchar, so we make it a longtext.
+    bio = orm.fieldmapping(str, min=1, max=65535 + 1)
+
     @staticmethod
     def getvalid():
         art = artist()
-        art.firstname = uuid4().hex
-        art.lastname  = uuid4().hex
+        art.firstname = 'Gary'
+        art.lastname  = 'Yourofsky'
         art.lifeform  = uuid4().hex
         art.password  = bytes([random.randint(0, 255) for _ in range(32)])
         art.ssn       = '1' * 11
-        art.phone     = '1' * 11
+        art.phone     = '1' * 7
+        art.email     = 'username@domain.tld'
         return art
 
-    # TODO This should return an int
-    @orm.attr(str)
+    @orm.attr(int, min=1000000, max=9999999)
     def phone(self):
         phone = attr()
         if phone is None:
@@ -170,14 +208,19 @@ class artist(orm.entity):
             phone = re.sub('\D*', '', phone)
             # TODO Using the attr(v) version of attr may need some work. It 
             # doesn't currently have extensive testing on subentities.
+
             # Cache in map so we don't have to do this every time the phone
             # attribute is read. (Normally, caching in the map would be needed
-            # if the operation actually took a really long time.  The outupt
+            # if the operation actually took a really long time.  The output
             # for the re.sub wouldn't typically need to be cached. This is
             # simply to test the attr() function's ability to set map values.)
             attr(phone)
 
         return attr()
+
+    @orm.attr(str, min=3, max=254)
+    def email(self):
+        return attr().lower()
 
     # Though it seems logical that there would be mutator analog to the
     # accessor logic (used above for the 'phone' attr), there doesn't seem to
@@ -197,11 +240,13 @@ class artist(orm.entity):
     """
 
     def __init__(self, o=None):
-        # TODO This should be self.lifeform = 'organic'. However, this causes
-        # problems which need to be addressed.
-        self['lifeform'] = 'organic'
-        self._processing = False
         super().__init__(o)
+
+        if self.orm.isnew:
+            self.lifeform = 'organic'
+            self.bio = None
+            self.style = 'classicism'
+            self._processing = False
 
     def clear(self):
         self.locations.clear()
@@ -214,6 +259,13 @@ class artist(orm.entity):
     @processing.setter
     def processing(self, v):
         self._processing = v
+
+    @property
+    def fullname(self):
+        return self.firstname + ' ' + self.lastname
+
+    def __str__(self):
+        return super().__str__() + ' ' + self.fullname
         
 class artist_artifacts(orm.associations):
     pass
@@ -236,12 +288,10 @@ class artist_artifact(orm.association):
         aa.timespan = uuid4().hex
         return aa
 
-    # TODO Convert to timespan
-    # TODO Use attr()
     # The duration an artist worked on an artifact
     @orm.attr(str)
     def timespan(self):
-        return self.orm.mappings['timespan'].value.replace(' ', '-')
+        return attr().replace(' ', '-')
 
     @property
     def processing(self):
@@ -260,14 +310,15 @@ class singer(artist):
 
     @staticmethod
     def getvalid():
+        super = singer().orm.super.getvalid()
+
         sng = singer()
-        sng.firstname = uuid4().hex
-        sng.lastname  = uuid4().hex
+        keymaps = (orm.primarykeyfieldmapping, orm.foreignkeyfieldmapping)
+        for map in super.orm.mappings:
+            if isinstance(map, orm.fieldmapping) and type(map) not in keymaps:
+                setattr(sng, map.name, getattr(super, map.name))
+
         sng.voice     = uuid4().hex
-        sng.lifeform  = uuid4().hex
-        sng.password  = bytes([random.randint(0, 255) for _ in range(32)])
-        sng.ssn       = '1' * 11
-        sng.phone     = '1' * 11
         sng.register  = 'laryngealization'
         return sng
 
@@ -313,6 +364,64 @@ class test_orm(tester):
     def _chronicler_onadd(self, src, eargs):
         self.chronicles += eargs.entity
 
+    def it_calls__str__on_entities(self):
+        arts = artists()
+        arts += artist.getvalid()
+        arts += artist.getvalid()
+
+        r = '%s object at %s count: %s\n' % (type(arts), 
+                                             hex(id(arts)), 
+                                             arts.count)
+        for art in arts:
+            r += '    ' + str(art) + '\n'
+            
+        self.eq(r, str(arts))
+
+    def it_calls_createdat(self):
+        art = artist.getvalid()
+        self.none(art.createdat)
+        
+        # Ensure the createdat gets the current datetime
+
+        # Strip seconds and microsecond for comparison
+        expect = primative.datetime.utcnow().replace(microsecond=0, second=0)
+        art.save()
+        actual = art.createdat.replace(microsecond=0, second=0)
+
+        art = artist(art.id)
+        self.eq(expect, actual)
+
+        # Ensure the createdat isn't change on subsequest saves
+        art.firstname == uuid4().hex
+        art.save()
+        art1 = artist(art.id)
+        self.eq(art.createdat, art1.createdat)
+
+    def it_calls_updatedat(self):
+        art = artist.getvalid()
+        self.none(art.updatedat)
+        
+        # Ensure the updatedat gets the current datetime on creation
+
+        # Strip seconds and microsecond for comparison
+        expect = primative.datetime.utcnow().replace(microsecond=0, second=0)
+        art.save()
+        actual = art.updatedat.replace(microsecond=0, second=0)
+
+        art = artist(art.id)
+        self.eq(expect, actual)
+
+        # Ensure the updatedat is change on subsequest saves
+        art.firstname = uuid4().hex
+        expected = art.updatedat
+        art.save()
+        art1 = artist(art.id)
+        self.gt(art.updatedat, expected)
+
+    def it_calls__str__on_entity(self):
+        art = artist.getvalid()
+        self.eq('(%s) %s' % (art.id.hex[:7], art.fullname), str(art))
+        
     def it_has_static_composites_reference(self):
         comps = location.orm.composites
         es = [x.entity for x in comps]
@@ -930,10 +1039,6 @@ class test_orm(tester):
         art = artist()
         self.expect(AttributeError, lambda: art.artist_artifacts.artifactsX)
 
-    def it_calls_str_on_entity(self):
-        # TODO Test str on entity, entities, association and associations.
-        ...
-
     def it_has_broken_rules_of_constituents(self):
         # TODO Add tests for associations. Currently this is not working: 
         # e.g.,
@@ -1205,8 +1310,9 @@ class test_orm(tester):
         art.firstname = uuid4().hex
         art.lastname = uuid4().hex
         art.ssn = '1' * 11
-        art.phone = '1' * 11
+        art.phone = '1' * 7
         art.password  = bytes([random.randint(0, 255) for _ in range(32)])
+        art.email = 'username@domain.tld'
 
         for i in range(2):
             chrons.clear()
@@ -1687,30 +1793,6 @@ class test_orm(tester):
         self.type(uuid.UUID, art.id)
         self.zero(art.brokenrules)
 
-    def it_calls_explicit_attr_on_entity(self):
-        art = artist.getvalid()
-        # TODO There is a TODO above to change .phone to an int. Uncomment and fix
-        # when the above TODO is complete.
-        #self.is_(None, art.phone)
-
-        art.phone = str(uuid4())
-        self.true(art.phone.isnumeric())
-        
-        self.eq(art.phone, art.orm.mappings['phone'].value)
-
-        art.save()
-
-        art1 = artist(art.id)
-        self.eq(art.phone, art1.phone)
-
-        art1.phone = str(uuid4())
-        self.true(art1.phone.isnumeric())
-
-        art1.save()
-
-        art2 = artist(art1.id)
-        self.eq(art1.phone, art2.phone)
-
     def it_calls_custom_methods_on_entity(self):
         art = artist()
 
@@ -1781,7 +1863,7 @@ class test_orm(tester):
         art = artist()
         art.firstname = uuid4().hex
         art.lastname = uuid4().hex
-        art.phone = str(uuid4())
+        art.phone = '1' * 7
 
         self.eq(art['firstname'], art.firstname)
 
@@ -1856,6 +1938,46 @@ class test_orm(tester):
 
         self.eq(actual, expected)
 
+    def it_doesnt_raise_exception_on_invalid_attr_values(self):
+        # For each type of attribute, ensure that any invalid value can be
+        # given. The invalid value should cause a brokenrule but should never
+        # result in a type coercion exception on assignment or retrieval
+
+        # datetime
+        art = artist.getvalid()
+        art.dob = uuid4().hex       
+        self.expect(None, lambda: art.dob) 
+        self.one(art.brokenrules)
+        self.broken(art, 'dob', 'valid')
+
+        # int
+        art = artist.getvalid()
+        art.weight = uuid4().hex       
+        self.expect(None, lambda: art.weight) 
+        self.one(art.brokenrules)
+        self.broken(art, 'weight', 'valid')
+
+        # float
+        comp = component.getvalid()
+        comp.height = uuid4().bytes       
+        self.expect(None, lambda: comp.height) 
+        self.one(comp.brokenrules)
+        self.broken(comp, 'height', 'valid')
+
+        # decimal
+        fact = artifact.getvalid()
+        fact.price = uuid4().bytes       
+        self.expect(None, lambda: fact.price) 
+        self.one(fact.brokenrules)
+        self.broken(fact, 'price', 'valid')
+
+        # bytes
+        comp = component.getvalid()
+        comp.digest = uuid4().hex       
+        self.expect(None, lambda: comp.digest) 
+        self.one(comp.brokenrules)
+        self.broken(comp, 'digest', 'valid')
+        
     def it_calls_explicit_attr_on_subentity(self):
         # Test inherited attr (phone)
         sng = singer()
@@ -1866,19 +1988,19 @@ class test_orm(tester):
         sng.password  = bytes([random.randint(0, 255) for _ in range(32)])
         sng.ssn       = '1' * 11
         sng.register  = 'laryngealization'
-        self.eq(str(), sng.phone)
+        sng.email     = 'username@domain.tld'
+        self.eq(int(), sng.phone)
 
-        uuid = str(uuid4())
-        sng.phone = uuid
-        self.true(sng.phone.isnumeric())
+        sng.phone = '1' * 7
+        self.type(int, sng.phone)
 
         sng.save()
 
         art1 = singer(sng.id)
         self.eq(sng.phone, art1.phone)
 
-        art1.phone = str(uuid4())
-        self.true(art1.phone.isnumeric())
+        art1.phone = '1' * 7
+        self.type(int, art1.phone)
 
         art1.save()
 
@@ -1893,7 +2015,8 @@ class test_orm(tester):
         sng.lifeform  = uuid4().hex
         sng.password  = bytes([random.randint(0, 255) for _ in range(32)])
         sng.ssn       = '1' * 11
-        sng.phone     = '1' * 11
+        sng.phone     = '1' * 7
+        sng.email     = 'username@domain.tld'
         self.is_(str(), sng.register)
 
         sng.register = 'Vocal Fry'
@@ -1918,7 +2041,7 @@ class test_orm(tester):
         art.artist_artifacts += artist_artifact.getvalid()
         aa = art.artist_artifacts.first
 
-        # Insure the overridden __init__ was called. It defaults planet to
+        # Ensure the overridden __init__ was called. It defaults planet to
         # "Earth".
         self.eq('Earth', aa.planet)
 
@@ -1992,7 +2115,8 @@ class test_orm(tester):
         art.firstname = uuid4().hex
         art.lastname = uuid4().hex
         art.ssn = '1' * 11
-        art.phone = '1' * 11
+        art.phone = '1' * 7
+        art.email = 'username@domain.tld'
         map = art.orm.mappings['password']
 
         # Make sure the password field hasn't been tampered with
@@ -2028,99 +2152,6 @@ class test_orm(tester):
             self.type(bytes, art.password)
             self.true(saveok(art, 'password'))
 
-    def it_calls_decimal_attr_on_entity(self):
-        def saveok(e, attr):
-            getattr(e, 'save')()
-            e1 = type(e)(e.id)
-
-            return getattr(e, attr) == getattr(e1, attr)
-
-        fact = artifact.getvalid()
-        self.true(hasattr(fact, 'price'))
-        self.type(decimal.Decimal, fact.price)
-        self.zero(fact.brokenrules)
-
-        # Test default
-        self.eq(0, fact.price)
-        self.true(saveok(fact, 'price'))
-
-        # Test max
-        map = fact.orm.mappings['price']
-        num = '9' * map.max
-        num = '%s.%s' % (num[:len(num) - map.dec], num[-map.dec:])
-        fact.price = num
-        self.true(saveok(fact, 'price'))
-
-        fact.price += 1
-        self.broken(fact, 'price', 'valid')
-
-        # Test min
-        fact.price -= 1
-        self.zero(fact.brokenrules)
-
-        fact.price = -fact.price
-        self.true(saveok(fact, 'price'))
-        
-        fact.price -= 1
-        self.broken(fact, 'price', 'valid')
-
-        # Ensure non-Decimals are coerced in accordance with decimal.Decimal's
-        # rules.
-        for v in int(1), str('1.0'):
-            fact.price = v
-            self.eq(1.0, fact.price)
-            self.type(decimal.Decimal, fact.price)
-            self.true(saveok(fact, 'price'))
-
-        fact.price = 0.1
-        fact.price *= 3
-        self.eq(0, fact.price - dec('.3'))
-
-    def it_calls_float_attr_on_entity(self):
-        def saveok(e, attr):
-            getattr(e, 'save')()
-            e1 = type(e)(e.id)
-
-            return getattr(e, attr) == getattr(e1, attr)
-
-        comp = component.getvalid()
-        self.true(hasattr(comp, 'weight'))
-        self.type(float, comp.weight)
-        self.zero(comp.brokenrules)
-
-        # Test default
-        self.eq(0.0, comp.weight)
-        self.true(saveok(comp, 'weight'))
-
-        # Test max
-        map = comp.orm.mappings['weight']
-        num = '9' * map.max
-        num = '%s.%s' % (num[:map.dec + 1], num[map.dec+1:])
-        comp.weight = round(float(num), map.max - map.dec)
-        self.true(saveok(comp, 'weight'))
-
-        comp.weight += 1
-        self.broken(comp, 'weight', 'valid')
-
-        # Test min
-        comp.weight -= 1
-        self.zero(comp.brokenrules)
-
-        comp.weight = -comp.weight
-        self.true(saveok(comp, 'weight'))
-        
-        comp.weight -= 1
-        self.broken(comp, 'weight', 'valid')
-
-        # Ensure non-floats are coerced in accordance with Python's rules
-        # (i.e., float(v))
-        for v in int(1), str('1.0'):
-            comp.weight = v
-            self.eq(1.0, comp.weight)
-            self.type(float, comp.weight)
-            self.true(saveok(comp, 'weight'))
-        
-
     def it_calls_bool_attr_on_entity(self):
         def saveok(e, attr):
             getattr(e, 'save')()
@@ -2155,309 +2186,347 @@ class test_orm(tester):
         self.zero(fact.brokenrules)
 
     def it_calls_explicit_str_attr_on_entity(self):
-        # TODO Test read-only str @attr
-        # TODO Test on subentities, associations, et. al.
-        # TODO Fix this. I'm not sure why style was considered an explicit
-        # attr.
-        # TODO Test that whitespace is trimmed
-        return
-        art = artist()
-        self.true(hasattr(art, 'style'))
-        self.eq(str(), art.firstname)
-
-        # Test explicitly set default
-        self.eq('classicism', art.style)
-
-        art.style = 'X' * 51
-        self.one(art.brokenrules)
-        self.broken(art, 'style', 'fits')
-
-        for style in None, '', ' ', ' \n ', ' \t ':
-            art.style = style
-            self.one(art.brokenrules)
-            self.broken(art, 'style', 'full')
-
-        art.style = 'classicism'
-        self.zero(art.brokenrules)
-
-    def it_calls_str_attr_on_entity(self):
-        # TODO Test 'full' constraint
-        # TODO Test MySQL 'text' datatype
-        # TODO Test that whitespace is trimmed
         def saveok(e, attr):
             getattr(e, 'save')()
             e1 = type(e)(e.id)
             return getattr(e, attr) == getattr(e1, attr)
 
-        art = artist()
-        art.lastname  = uuid4().hex
-        art.lifeform  = uuid4().hex
-        art.password  = bytes([random.randint(0, 255) for _ in range(32)])
-        art.ssn       = '1' * 11
-        art.phone     = '1' * 11
-        
-        map = art.orm.mappings['firstname']
-        self.false(map.isfixed)
-        self.eq('varchar(%s)' % (str(map.max),), map.dbtype)
+        for art in (artist(), singer()):
+            map = art.orm.mappings('email')
+            if not map:
+                map = art.orm.super.orm.mappings['email']
+            self.true(hasattr(art, 'email'))
+            self.eq(str(), art.email)
+            self.eq((3, 254), (map.min, map.max))
 
-        # We will use basic and supplementary multilingual plane UTF-8 characters when
-        # testing str attributes to ensure unicode is being supported.
+            art.email = email = 'USERNAME@DOMAIN.TDL'
+            self.eq(email.lower(), art.email)
 
-        # A two byte character from the Basic Multilingual Plane
-        delta = bytes("\N{GREEK CAPITAL LETTER DELTA}", 'utf-8').decode()
+            art.email = '\n\t ' + email + '\n\t '
+            self.eq(email.lower(), art.email)
 
-        # A three byte character
-        V = bytes("\N{ROMAN NUMERAL FIVE}", 'utf-8').decode()
+            art = artist.getvalid()
+            min, max = map.min, map.max
 
-        # A four byte character from the Supplementary Multilingual Plane
-        cunei_a = bytes("\N{CUNEIFORM SIGN A}", 'utf-8').decode()
+            art.email = Delta * map.max
+            self.true(saveok(art, 'email'))
 
-        min, max = map.min, map.max
+            art.email += Delta
+            self.one(art.brokenrules)
+            self.broken(art, 'email', 'fits')
 
-        art.firstname = delta * max
-        self.true(saveok(art, 'firstname'))
+            art.email = Delta * min
+            self.true(saveok(art, 'email'))
 
-        art.firstname += delta
-        self.one(art.brokenrules)
-        self.broken(art, 'firstname', 'fits')
+            art.email = (Delta * (min - 1))
+            self.one(art.brokenrules)
+            self.broken(art, 'email', 'fits')
 
-        art.firstname = delta * min
-        self.true(saveok(art, 'firstname'))
-
-        art.firstname = (delta * (min - 1))
-        self.one(art.brokenrules)
-        self.broken(art, 'firstname', 'fits')
-
-        art.firstname = cunei_a * 255
-        self.true(saveok(art, 'firstname'))
-
-        art.firstname += cunei_a
-        self.one(art.brokenrules)
-        self.broken(art, 'firstname', 'fits')
-
-        art.firstname = cunei_a * 255 # Unbreak
-
-        # Test fixed-length ssn property
-        art = artist()
-        art.firstname = uuid4().hex
-        art.lastname  = uuid4().hex
-        art.lifeform  = uuid4().hex
-        art.password  = bytes([random.randint(0, 255) for _ in range(32)])
-        art.phone     = '1' * 11
-
-        map = art.orm.mappings['ssn']
-        self.true(map.isfixed)
-        self.eq('char(%s)' % (map.max,), map.dbtype)
-        self.empty(art.ssn)
-
-        # We are treating ssn as a fixed-length string that can hold any
-        # unicode character - not just numeric characters. So lets user a roman
-        # numeral V.
-        art.ssn = V * map.max
-        self.true(saveok(art, 'ssn'))
-
-        art.ssn = V * (map.max + 1)
-        self.one(art.brokenrules)
-        self.broken(art, 'ssn', 'fits')
-
-        art.ssn = V * (map.min - 1)
-        self.one(art.brokenrules)
-        self.broken(art, 'ssn', 'fits')
-
-        
-
-         
-
-    def it_calls_int_attr_on_entity(self):
-        # TODO Test read-only str @attr
-        # TODO Test on subentities, associations, et. al.
-        # TODO Test persistence
-
+    def it_calls_str_attr_on_entity(self):
         def saveok(e, attr):
             getattr(e, 'save')()
             e1 = type(e)(e.id)
+            return getattr(e, attr) == getattr(e1, attr)
+
+        for art in (artist(), singer()):
+            art.lastname  = uuid4().hex
+            art.lifeform  = uuid4().hex
+            art.password  = bytes([random.randint(0, 255) for _ in range(32)])
+            art.ssn       = '1' * 11
+            art.phone     = '1' * 7
+            art.email     = 'username@domain.tld'
+            if type(art) is singer:
+                art.voice     = uuid4().hex
+                art.register  = 'laryngealization'
+            
+            map = art.orm.mappings('firstname')
+            if not map:
+                map = art.orm.super.orm.mappings['firstname']
+
+            self.false(map.isfixed)
+            self.eq('varchar(%s)' % (str(map.max),), map.dbtype)
+
+            min, max = map.min, map.max
+
+            art.firstname = firstname = '\n\t ' + (Delta * 10) + '\n\t '
+            self.eq(firstname.strip(), art.firstname)
+
+            art.firstname = Delta * max
+            self.true(saveok(art, 'firstname'))
+
+            art.firstname += Delta
+            self.one(art.brokenrules)
+            self.broken(art, 'firstname', 'fits')
+
+            art.firstname = Delta * min
+            self.true(saveok(art, 'firstname'))
+
+            art.firstname = (Delta * (min - 1))
+            self.one(art.brokenrules)
+            self.broken(art, 'firstname', 'fits')
+
+            art.firstname = Cunei_a * 255
+            self.true(saveok(art, 'firstname'))
+
+            art.firstname += Cunei_a
+            self.one(art.brokenrules)
+            self.broken(art, 'firstname', 'fits')
+
+            art.firstname = Cunei_a * 255 # Unbreak
+
+            art.firstname = None
+            self.true(saveok(art, 'firstname'))
+
+            # Test fixed-length ssn property
+            art = artist()
+            art.firstname = uuid4().hex
+            art.lastname  = uuid4().hex
+            art.lifeform  = uuid4().hex
+            art.password  = bytes([random.randint(0, 255) for _ in range(32)])
+            art.phone     = '1' * 7
+            art.email     = 'username@domain.tld'
+            if type(art) is singer:
+                art.voice     = uuid4().hex
+                art.register  = 'laryngealization'
+
+            map = art.orm.mappings['ssn']
+            self.true(map.isfixed)
+            self.eq('char(%s)' % (map.max,), map.dbtype)
+            self.empty(art.ssn)
+
+            # We are treating ssn as a fixed-length string that can hold any
+            # unicode character - not just numeric characters. So lets user a roman
+            # numeral V.
+            art.ssn = V * map.max
+            self.true(saveok(art, 'ssn'))
+
+            art.ssn = V * (map.max + 1)
+            self.one(art.brokenrules)
+            self.broken(art, 'ssn', 'fits')
+
+            art.ssn = V * (map.min - 1)
+            self.one(art.brokenrules)
+            self.broken(art, 'ssn', 'fits')
+
+            art.ssn = None
+            self.true(saveok(art, 'ssn'))
+
+            # Test longtext
+            art = artist()
+            art.firstname = uuid4().hex
+            art.lastname  = uuid4().hex
+            art.lifeform  = uuid4().hex
+            art.password  = bytes([random.randint(0, 255) for _ in range(32)])
+            art.phone     = '1' * 7
+            art.email     = 'username@domain.tld'
+            art.ssn       = V * 11
+            if type(art) is singer:
+                art.voice     = uuid4().hex
+                art.register  = 'laryngealization'
+
+            map = art.orm.mappings['bio']
+            self.false(map.isfixed)
+            self.eq('longtext', map.dbtype)
+            self.none(art.bio)
+
+            art.bio = V * map.max
+            self.true(saveok(art, 'bio'))
+
+            art.bio = V * (map.max + 1)
+            self.one(art.brokenrules)
+            self.broken(art, 'bio', 'fits')
+
+            art.bio = V * (map.min - 1)
+            self.one(art.brokenrules)
+            self.broken(art, 'bio', 'fits')
+
+            art.bio = None
+            self.true(saveok(art, 'bio'))
+
+    def it_calls_explicit_float_attr_on_entity(self):
+        def saveok(e, attr):
+            getattr(e, 'save')()
+            e1 = builtins.type(e)(e.id)
+            return getattr(e, attr) == getattr(e1, attr)
+
+        comp = component.getvalid()
+
+        map = comp.orm.mappings['width']
+        self.type(float, comp.width)
+        self.eq(-9999.9, map.min)
+        self.eq(9999.9, map.max)
+
+        comp.width = -100
+        self.eq(100, comp.width)
+
+        saveok(comp, 'width')
+    def it_calls_explicit_int_attr_on_entity(self):
+        def saveok(e, attr):
+            getattr(e, 'save')()
+            e1 = builtins.type(e)(e.id)
             return getattr(e, attr) == getattr(e1, attr)
 
         art = artist.getvalid()
-        self.eq('smallint', art.orm.mappings['weight'].dbtype)
-        self.true(hasattr(art, 'weight'))
-        self.zero(art.brokenrules)
 
-        # Test default
-        self.eq(100, art.weight)
-        self.true(saveok(art, 'weight'))
+        map = art.orm.mappings['phone']
+        self.type(int, art.phone)
+        self.eq(1000000, map.min)
+        self.eq(9999999, map.max)
 
-        # Min is 0
-        art.weight = 0
-        self.zero(art.brokenrules)
-        self.true(saveok(art, 'weight'))
+        art.phone = '555-5555'
+        self.eq(5555555, art.phone)
 
-        art.weight -= 1
-        self.one(art.brokenrules)
-        self.broken(art, 'weight', 'fits')
+        saveok(art, 'phone')
 
-        # Max is 1000
-        art.weight = 1000
-        self.zero(art.brokenrules)
-        self.true(saveok(art, 'weight'))
+    def it_calls_num_attr_on_entity(self):
+        def saveok(e, attr):
+            getattr(e, 'save')()
+            e1 = builtins.type(e)(e.id)
+            return getattr(e, attr) == getattr(e1, attr)
 
-        art.weight += 1
-        self.one(art.brokenrules)
-        self.broken(art, 'weight', 'fits')
+        constraints = (
+            {
+                'cls': artifact,
+                'attr': 'price',
+                'type': 'decimal(12, 2)',
+                'signed': True,
+            },
+            {
+                'cls': component,
+                'attr': 'height',
+                'type': 'double(12, 2)',
+                'signed': True,
+            },
+            {
+                'cls': component,
+                'attr': 'weight',
+                'type': 'double(8, 7)',
+                'signed': True,
+            },
+            {
+                'cls': concert,
+                'attr': 'ticketprice',
+                'type': 'tinyint',
+                'signed': True,
+            },
+            {
+                'cls': concert,
+                'type': 'tinyint unsigned',
+                'attr': 'duration',
+                'signed': False,
+            },
+            {
+                'cls': concert,
+                'type': 'mediumint',
+                'attr': 'attendees',
+                'signed': True,
+            },
+            {
+                'cls': concert,
+                'type': 'mediumint unsigned',
+                'attr': 'capacity',
+                'signed': False,
+            },
+            {
+                'cls': artist,
+                'type': 'smallint unsigned',
+                'attr': 'weight',
+                'signed': False,
+            },
+            {
+                'cls': artist,
+                'type': 'int',
+                'attr': 'networth',
+                'signed': True,
+            },
+            {
+                'cls': concert,
+                'type': 'int unsigned',
+                'attr': 'externalid',
+                'signed': False,
+            },
+            {
+                'cls': artifact,
+                'type': 'bigint',
+                'attr': 'weight',
+                'signed': True,
+            },
+            {
+                'cls': concert,
+                'type': 'bigint unsigned',
+                'attr': 'externalid1',
+                'signed': False,
+            },
+        )
+        for const in constraints:
+            type    =  const['type']
+            attr    =  const['attr']
+            cls     =  const['cls']
+            signed  =  const['signed']
 
-        # Must be 'full'; not None
-        art.weight = None
-        self.one(art.brokenrules)
-        self.broken(art, 'weight', 'full')
+            if 'double' in type:
+                pytype =  float
+            elif 'decimal' in type:
+                pytype = dec
+            elif 'int' in type:
+                pytype = int
 
-        art.orm.mappings['weight'].full = False
+            dectype = pytype in (float, dec)
 
-        self.zero(art.brokenrules)
-        self.true(saveok(art, 'weight'))
+            obj = cls.getvalid()
+            map = obj.orm.mappings[attr]
 
-        # Violate type constraint
-        art.weight = '1000'
-        self.one(art.brokenrules)
-        self.broken(art, 'weight', 'valid')
+            min, max = map.min, map.max
 
-        # Test a default int #
+            self.eq(type, map.dbtype, str(const))
+            self.eq(signed, map.signed, str(const))
+            self.true(hasattr(obj, attr))
+            self.zero(obj.brokenrules)
+            self.type(pytype, getattr(obj, attr))
 
-        # Test default
-        self.eq(0, art.networth)
-        self.eq('int', art.orm.mappings['networth'].dbtype)
+            # Test default
+            self.eq(pytype(), getattr(obj, attr))
+            self.true(saveok(obj, attr))
 
-        # The min of a MySQL int
-        art.weight = 0
-        art.networth = -2147483648
-        self.zero(art.brokenrules)
-        self.true(saveok(art, 'weight'))
+            # Test min
+            setattr(obj, attr, min)
+            self.zero(obj.brokenrules)
+            self.true(saveok(obj, attr))
 
-        art.networth -= 1
-        self.one(art.brokenrules)
-        self.broken(art, 'networth', 'fits')
+            setattr(obj, attr, getattr(obj, attr) - 1)
+            self.one(obj.brokenrules)
+            self.broken(obj, attr, 'fits')
 
-        # The max of a MySQL int
-        art.networth = 2147483647
-        self.zero(art.brokenrules)
-        self.true(saveok(art, 'weight'))
+            # Test max
+            setattr(obj, attr, max)
+            self.zero(obj.brokenrules)
+            self.true(saveok(obj, attr))
 
-        art.networth += 1
-        self.one(art.brokenrules)
-        self.broken(art, 'networth', 'fits')
+            setattr(obj, attr, getattr(obj, attr) + 1)
+            self.one(obj.brokenrules)
+            self.broken(obj, attr, 'fits')
 
-        # Nullable
-        art.networth = None
-        self.zero(art.brokenrules)
-        self.true(saveok(art, 'weight'))
+            # Test given an int as a str
+            v = random.randint(int(min), int(max))
+            setattr(obj, attr, str(v))
+            self.eq(pytype(v), getattr(obj, attr))
 
-        # Violate type constraint
-        art.networth = '1000'
-        self.one(art.brokenrules)
-        self.broken(art, 'networth', 'valid')
+            # Test given a float/decimal as a str. This also ensures that floats and
+            # Decimals round to their scales.
+            if pytype is not int:
+                v = round(random.uniform(float(min), float(max)), map.scale)
+                setattr(obj, attr, str(v))
 
-        # Test a default int #
+                self.eq(round(pytype(v), map.scale), 
+                        getattr(obj, attr), str(const))
 
-        # Test default
-        fact = artifact.getvalid()
-        self.eq(0, fact.weight)
-        self.eq('bigint', fact.orm.mappings['weight'].dbtype)
-        self.true(saveok(fact, 'weight'))
+                self.type(pytype, getattr(obj, attr))
+                self.true(saveok(obj, attr))
 
-        # The min of a MySQL bigint
-        fact.weight = -2**63
-        self.zero(fact.brokenrules)
-        self.true(saveok(fact, 'weight'))
-
-        fact.weight -= 1
-        self.one(fact.brokenrules)
-        self.broken(fact, 'weight', 'fits')
-
-        # The max of a MySQL bigint
-        fact.weight = 2**63-1
-        self.zero(fact.brokenrules)
-        self.true(saveok(fact, 'weight'))
-
-        fact.weight += 1
-        self.one(fact.brokenrules)
-        self.broken(fact, 'weight', 'fits')
-
-        # Nullable
-        fact.weight = None
-        self.zero(fact.brokenrules)
-        self.true(saveok(fact, 'weight'))
-
-        # Violate type constraint
-        fact.weight = '1000'
-        self.one(fact.brokenrules)
-        self.broken(fact, 'weight', 'valid')
-
-        # Test tinyint #
-        conc = concert.getvalid()
-        self.eq(0, conc.ticketprice)
-        self.eq('tinyint', conc.orm.mappings['ticketprice'].dbtype)
-        self.true(saveok(conc, 'ticketprice'))
-
-        # The min of a MySQL tinyint
-        conc.ticketprice = -128
-        self.zero(conc.brokenrules)
-        self.true(saveok(conc, 'ticketprice'))
-
-        conc.ticketprice -= 1
-        self.one(conc.brokenrules)
-        self.broken(conc, 'ticketprice', 'fits')
-
-        # The max of a MySQL tinyint
-        conc.ticketprice = 127
-        self.zero(conc.brokenrules)
-        self.true(saveok(conc, 'ticketprice'))
-
-        conc.ticketprice += 1
-        self.one(conc.brokenrules)
-        self.broken(conc, 'ticketprice', 'fits')
-
-        # Nullable
-        conc.ticketprice = None
-        self.zero(conc.brokenrules)
-        self.true(saveok(conc, 'ticketprice'))
-
-        # Violate type constraint
-        conc.ticketprice = '1000'
-        self.one(conc.brokenrules)
-        self.broken(conc, 'ticketprice', 'valid')
-
-        # Test mediumint #
-        conc = concert.getvalid()
-        self.eq(0, conc.attendees)
-        self.eq('mediumint', conc.orm.mappings['attendees'].dbtype)
-        self.true(saveok(conc, 'attendees'))
-
-        # The min of a MySQL mediumint
-        conc.attendees = -8388608
-        self.zero(conc.brokenrules)
-        self.true(saveok(conc, 'attendees'))
-
-        conc.attendees -= 1
-        self.one(conc.brokenrules)
-        self.broken(conc, 'attendees', 'fits')
-
-        # The max of a MySQL mediumint
-        conc.attendees = 8388607
-        self.zero(conc.brokenrules)
-        self.true(saveok(conc, 'attendees'))
-
-        conc.attendees += 1
-        self.one(conc.brokenrules)
-        self.broken(conc, 'attendees', 'fits')
-
-        # Nullable
-        conc.attendees = None
-        self.zero(conc.brokenrules)
-        self.true(saveok(conc, 'attendees'))
-
-        # Violate type constraint
-        conc.attendees = '1000'
-        self.one(conc.brokenrules)
-        self.broken(conc, 'attendees', 'valid')
+            # Nullable
+            setattr(obj, attr, None)
+            self.zero(obj.brokenrules)
+            self.true(saveok(obj, attr))
 
     def it_calls_datetime_attr_on_entity(self):
         utc = timezone.utc
@@ -2492,6 +2561,25 @@ class test_orm(tester):
         # It converts backt to AZ time using string tz
         self.eq(azdt, art.dob.astimezone('US/Arizona'))
 
+        # Test invalid date times
+        art = art.getvalid()
+        
+        # Python can do a 1 CE, but MySQL can't so this should break validation.
+        art.dob = datetime(1, 1, 1)
+        self.one(art.brokenrules)
+        self.broken(art, 'dob', 'fits')
+
+        # Ensure microseconds are persisted
+        ms = random.randint(100000, 999999)
+        art.dob = primative.datetime('9999-12-31 23:59:59.%s' % ms)
+        art.save()
+        self.eq(ms, artist(art.id).dob.microsecond)
+
+        # The max is 9999-12-31 23:59:59.999999
+        art.dob = primative.datetime('9999-12-31 23:59:59.999999')
+        art.save()
+        self.eq(art.dob, artist(art.id).dob)
+        
     def it_calls_str_propertys_setter_on_entity(self):
         class persons(orm.entities):
             pass
@@ -2512,44 +2600,10 @@ class test_orm(tester):
         self.eq(uuid, p.firstname)
         self.zero(p.brokenrules)
 
-    def it_breaks_fits_rule_of_str_property_on_entity(self):
-
-        # Without specifying a default, the string should be no longer than
-        # 255 in len().
-        class persons(orm.entities):
-            pass
-
-        class person(orm.entity):
-            firstname = orm.fieldmapping(str)
-
-        p = person()
-
-        p.firstname = 'x' * 256
-        self.one(p.brokenrules)
-        self.broken(p, 'firstname', 'fits')
-
-        p.firstname = 'x' * 255
-        self.zero(p.brokenrules)
-
-        # Specify a max
-        max = 123
-        class person(orm.entity):
-            firstname = orm.fieldmapping(str, max=max)
-
-        p = person()
-
-        p.firstname = 'x' * (max + 1)
-        self.one(p.brokenrules)
-        self.broken(p, 'firstname', 'fits')
-
-        p.firstname = 'x' * max
-        self.zero(p.brokenrules)
-
     def it_calls_save_on_entity(self):
         art = artist.getvalid()
 
         # Test creating and retrieving an entity
-        # TODO Test more property types when they become available.
         art.firstname = uuid4().hex
         art.lastname  = uuid4().hex
         art.lifeform  = uuid4().hex
@@ -2572,12 +2626,14 @@ class test_orm(tester):
 
         for map in art1.orm.mappings:
             if isinstance(map, orm.fieldmapping):
-                self.eq(getattr(art, map.name), getattr(art1, map.name))
+                expect = getattr(art, map.name)
+                actual = getattr(art1, map.name)
+                self.eq(expect, actual, map.name)
 
         # Test changing, saving and retrieving an entity
         art1.firstname  =  uuid4().hex
         art1.lastname   =  uuid4().hex
-        art1.phone      =  uuid4().hex
+        art1.phone      =  '2' * 7
         art1.lifeform   =  uuid4().hex
         art1.style      =  uuid4().hex
         art1.weight     += 1
@@ -2585,6 +2641,8 @@ class test_orm(tester):
         art1.dob        =  primative.datetime.now().replace(tzinfo=timezone.utc)
         art1.password   = bytes([random.randint(0, 255) for _ in range(32)])
         art1.ssn        = '2' * 11
+        art1.bio        = uuid4().hex
+        art1.email      = 'username1@domain.tld'
 
         self.false(art1.orm.isnew)
         self.true(art1.orm.isdirty)
@@ -2596,6 +2654,8 @@ class test_orm(tester):
             if prop == 'id':
                 self.eq(getattr(art1, prop), getattr(art, prop), prop)
             else:
+                if prop in ('createdat', 'updatedat'):
+                    continue
                 self.ne(getattr(art1, prop), getattr(art, prop), prop)
 
         self.chronicles.clear()
@@ -2710,44 +2770,40 @@ class test_orm(tester):
         # TODO Add more properties to test
 
         # Make sure mapped properties are returned when dir() is called.
-        # Also ensure there is only one of eoach property in the directory. If
-        # there are more, entitymeta may not be deleting the original property
-        # from the class body.
-        ps =  'firstname',  'lastname',          'presentations', \
-              'locations',   'artist_artifacts',  'artifacts',    \
-              'phone',       'clear',             'processing'
-
-        for p in ps:
-            self.eq(1, dir(artist()).count(p))
-
-    def it_calls_dir_on_subentity(self):
-        # TODO Add more properties to test
-
-        # Make sure mapped properties are returned when dir() is called.
         # Also ensure there is only one of each property in the directory. If
         # there are more, entitymeta may not be deleting the original property
         # from the class body.
+        art = artist()
+        dir = builtins.dir(art)
+        for p in art.orm.properties:
+            self.eq(1, dir.count(p))
+
+    def it_calls_dir_on_subentity(self):
+        # Make sure mapped properties are returned when dir() is called.  Also
+        # ensure there is only one of each property in the directory. If there
+        # are more, entitymeta may not be deleting the original property from
+        # the class body.
+
+        art = artist()
+        sng = singer()
+        dir = builtins.dir(sng)
 
         # Non-inherited
-        for p in 'voice', 'concerts', 'transmitting', 'clear', 'register':
-            self.eq(1, dir(singer()).count(p))
+        for p in art.orm.properties:
+            self.eq(1, dir.count(p))
 
-        # Inherited
-        ps =  'firstname',  'lastname',          'presentations', \
-              'locations',   'artist_artifacts',  'artifacts',    \
-              'phone',       'clear',             'processing'
-
-        for p in ps:
-            self.eq(1, dir(singer()).count(p))
-
+        # Non-inherited
+        for p in sng.orm.properties:
+            self.eq(1, dir.count(p))
 
     def it_calls_dir_on_association(self):
         art = artist()
         art.artifacts += artifact()
+        aa = art.artist_artifacts.first
 
-        d = dir(art.artist_artifacts.first)
+        d = dir(aa)
 
-        for prop in 'artist', 'artifact', 'role', 'timespan', 'processing':
+        for prop in aa.orm.properties:
             self.eq(1, d.count(prop))
 
     def it_reconnects_closed_database_connections(self):
@@ -3604,15 +3660,16 @@ class test_orm(tester):
         self.eq(sng1.id, conc2.singer.id)
         self.ne(sng1.id, sng.id)
 
-        # Test deeply-nested (>2)
+        # TODO Test deeply-nested (>2)
         # Set entity constuents, save, load, test
+
         # TODO We need to answer the question should loc.concert exist.
         # concert().locations exists, so it would seem that the answer would be
         # "yes". However, the logic for this would be strange since we would
         # need to query the mappings collection of each subentities of the
         # presentation collection to find a match. Plus, this seems like
         # a very unlikely way for someone to want to use the ORM. I would like 
-        # to wait to see if this comes up in a real life situration before writing 
+        # to wait to see if this comes up in a real life situation before writing 
         # the logic and tests for this. 
         """
         self.expect(AttributeError, lambda: loc.concert)
@@ -3875,8 +3932,6 @@ class test_orm(tester):
         sng = singer.getvalid()
 
         # Test creating and retrieving an entity
-        # TODO Test more property types when they become available.
-
         self.eq((True, False, False), sng.orm.persistencestate)
 
         chrons.clear()
@@ -3899,7 +3954,7 @@ class test_orm(tester):
         sng1.lastname  = uuid4().hex
         sng1.voice     = uuid4().hex
         sng1.lifeform  = uuid4().hex
-        sng1.phone     = uuid4().hex
+        sng1.phone     = '2' * 7
         sng1.register  = uuid4().hex
         sng1.style     = uuid4().hex
         sng1.weight    = 1
@@ -3907,6 +3962,8 @@ class test_orm(tester):
         sng1.dob       = datetime.now()
         sng1.password  = bytes([random.randint(0, 255) for _ in range(32)])
         sng1.ssn       = '2' * 11
+        sng1.bio       = uuid4().hex
+        sng1.email      = 'username1@domain.tld'
 
         self.eq((False, True, False), sng1.orm.persistencestate)
 
@@ -3924,6 +3981,8 @@ class test_orm(tester):
             if prop == 'id':
                 self.eq(getattr(sng1, prop), getattr(sng, prop), prop)
             else:
+                if prop in ('createdat', 'updatedat'):
+                    continue
                 self.ne(getattr(sng1, prop), getattr(sng, prop), prop)
 
         sng1.save()
