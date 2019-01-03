@@ -21,5 +21,11 @@ class datetime(stddatetime.datetime):
             tz = dateutil.tz.gettz(tz)
         return datetime(super().astimezone(tz))
 
-        
+    @staticmethod
+    def utcnow():
+        r = datetime(stddatetime.datetime.utcnow())
 
+        # Make aware
+        r = r.replace(tzinfo=stddatetime.timezone.utc)
+
+        return r

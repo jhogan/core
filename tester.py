@@ -23,7 +23,6 @@ class testers(entities):
         super().__init__(initial=initial)
         self.breakonexception = False
 
-
     def run(self, tu=None):
         testclass, testmethod, *_ = tu.split('.') + [None] if tu else [None] * 2
 
