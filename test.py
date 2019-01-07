@@ -91,14 +91,13 @@ class artists(orm.entities):
     pass
 
 class location(orm.entity):
+    description = str
+
     @staticmethod
     def getvalid():
         loc = location()
         loc.description = uuid4().hex
         return loc
-
-    description = orm.fieldmapping(str)
-
 
 class presentation(orm.entity):
     @staticmethod
@@ -138,7 +137,6 @@ class concert(presentation):
     # bigint unsigned
     externalid1  =  orm.fieldmapping(int,  min=0,         max=(2**64)-1)
 
-
 class component(orm.entity):
     @staticmethod
     def getvalid():
@@ -147,12 +145,12 @@ class component(orm.entity):
         comp.digest = bytes([random.randint(0, 255) for _ in range(32)])
         return comp
 
-    name = orm.fieldmapping(str)
-    weight = orm.fieldmapping(float, m=8, d=7)
-    height = orm.fieldmapping(float)
-    digest = orm.fieldmapping(bytes, min=16, max=255)
+    name    =  str
+    weight  =  float,  8,   7
+    height  =  float
+    digest  =  bytes,  16,  255
 
-    @orm.attr(float, m=5, d=1)
+    @orm.attr(float, 5, 1)
     def width(self):
         return attr(abs(attr()))
 
@@ -162,28 +160,29 @@ class artifact(orm.entity):
         fact.title = uuid4().hex
         return fact
 
-    title = orm.fieldmapping(str)
-    weight = orm.fieldmapping(int, min=-2**63, max=2**63-1)
-    components = components
-    abstract = orm.fieldmapping(bool)
-    price = orm.fieldmapping(decimal)
+    title        =  str,        orm.fulltext('title_desc',0)
+    description  =  str,        orm.fulltext('title_desc',1)
+    weight       =  int,        -2**63,                       2**63-1
+    abstract     =  bool
+    price        =  dec
+    components   =  components
 
 class artist(orm.entity):
-    firstname = orm.fieldmapping(str)
-    lastname = orm.fieldmapping(str)
-    lifeform = orm.fieldmapping(str)
-    weight = orm.fieldmapping(int, min=0, max=1000)
-    networth = orm.fieldmapping(int)
-    presentations = presentations
-    locations = locations
-    style = orm.fieldmapping(str, min=1,  max=50)
-    dob = orm.fieldmapping(datetime)
-    password = orm.fieldmapping(bytes, min=32, max=32)
-    ssn = orm.fieldmapping(str, min=11, max=11) # char
+    firstname      =  str, orm.index('fullname', 1)
+    lastname       =  str, orm.index('fullname', 0)
+    lifeform       =  str
+    weight         =  int, 0, 1000
+    networth       =  int
+    style          =  str, 1, 50
+    dob            =  datetime
+    password       =  bytes, 32, 32
+    ssn            =  str, 11, 11, orm.index #  char
+    locations      =  locations
+    presentations  =  presentations
 
     # Bio's will be longtext. Any str where max > 65,535 can no longer be a
     # varchar, so we make it a longtext.
-    bio = orm.fieldmapping(str, min=1, max=65535 + 1)
+    bio = str, 1, 65535 + 1, orm.fulltext
 
     @staticmethod
     def getvalid():
@@ -197,7 +196,7 @@ class artist(orm.entity):
         art.email     = 'username@domain.tld'
         return art
 
-    @orm.attr(int, min=1000000, max=9999999)
+    @orm.attr(int, 1000000, 9999999)
     def phone(self):
         phone = attr()
         if phone is None:
@@ -218,7 +217,7 @@ class artist(orm.entity):
 
         return attr()
 
-    @orm.attr(str, min=3, max=254)
+    @orm.attr(str, 3, 254)
     def email(self):
         return attr().lower()
 
@@ -271,10 +270,10 @@ class artist_artifacts(orm.associations):
     pass
 
 class artist_artifact(orm.association):
-    artist = artist
-    artifact = artifact
-    role = orm.fieldmapping(str)
-    planet = orm.fieldmapping(str)
+    artist    =  artist
+    artifact  =  artifact
+    role      =  str
+    planet    =  str
 
     def __init__(self, o=None):
         self['planet'] = 'Earth'
@@ -305,7 +304,7 @@ class singers(artists):
     pass
 
 class singer(artist):
-    voice = orm.fieldmapping(str)
+    voice    = str
     concerts = concerts
 
     @staticmethod
@@ -377,6 +376,18 @@ class test_orm(tester):
             
         self.eq(r, str(arts))
 
+    def it_has_index(self):
+        # TODO When DDL reading facilities are made available through the DDL
+        # migration code, use them to ensure that artists.ssn and other indexed
+        # columns are sucessfully being index in MySQL.
+        ...
+
+    def it_has_composite_index(self):
+        # TODO When DDL reading facilities are made available through the DDL
+        # migration code, use them to ensure that artist.firstname and 
+        # artist.lastname share a composite index.
+        ...
+
     def it_calls_createdat(self):
         art = artist.getvalid()
         self.none(art.createdat)
@@ -397,7 +408,7 @@ class test_orm(tester):
         art1 = artist(art.id)
         self.eq(art.createdat, art1.createdat)
 
-    def it_calls_updatedat(self):
+    def it_calls_updatedate(self):
         art = artist.getvalid()
         self.none(art.updatedat)
         
@@ -1148,7 +1159,7 @@ class test_orm(tester):
 
         arts.save()
 
-        # For clarity, this is a recipe for doing `where x in ([...])` queries
+        # For clarity, this is a recipe for doing `where x in ([...])` queries.
         # The where string has to be created manually.
         ids = sorted(arts[0:2].pluck('id'))
         where = 'id in (' + ','.join(['%s'] * len(ids)) + ')'
@@ -1247,6 +1258,63 @@ class test_orm(tester):
         self.one(arts1)
         self.eq(arts1.first.id, arts.first.id)
 
+    def it_searches_entities_using_fulltext_index(self):
+        arts, facts = artists(), artifacts()
+        for i in range(2):
+            art = artist.getvalid()
+            fact = artifact.getvalid()
+            if i:
+                art.bio = fact.title = 'one two three four five six'
+                fact.description = 'seven eight nine ten'
+            else:
+                art.bio = fact.title = la2gr('one two three four five six')
+                fact.description = la2gr('seven eight nine ten')
+
+            arts += art; facts += fact
+
+        arts.save(facts)
+
+        # Search string of 'zero' should produce zero results
+        res = artists('match(bio) against (%s)', 'zero')
+        self.zero(res)
+
+        # Search for the word "three"
+        res = artists('match(bio) against (%s)', 'three')
+        self.one(res)
+        self.eq(arts.second.id, res.first.id)
+
+        # Search for the Greek transliteration of "three". We want to ensure
+        # there is no issue with Unicode characters.
+        res = artists('match(bio) against (%s)', la2gr('three'))
+        self.one(res)
+        self.eq(arts.first.id, res.first.id)
+
+        # Test "composite" full-text search
+
+        # Search string of 'zero' should produce zero results
+        res = artifacts('match(title, description) against(%s)', 'zero')
+        self.zero(res)
+
+        # Search for the word "three". "three" is in 'title'.
+        res = artifacts('match(title, description) against(%s)', 'three')
+        self.one(res)
+        self.eq(facts.second.id, res.first.id)
+
+        # Search for eight. "eight" is in 'description'.
+        res = artifacts('match(title, description) against(%s)', 'eight')
+        self.one(res)
+        self.eq(facts.second.id, res.first.id)
+
+        # Search for the Greek transliteration of "three". It is in 'title';
+        res = artifacts('match(title, description) against(%s)', la2gr('three'))
+        self.one(res)
+        self.eq(facts.first.id, res.first.id)
+
+        # Search for the Greek transliteration of "eight". It is in 'description'.
+        res = artifacts('match(title, description) against(%s)', la2gr('eight'))
+        self.one(res)
+        self.eq(facts.first.id, res.first.id)
+        
     def it_rollsback_save_of_entities(self):
         # Create two artists
         arts = artists()
@@ -2191,6 +2259,7 @@ class test_orm(tester):
             e1 = type(e)(e.id)
             return getattr(e, attr) == getattr(e1, attr)
 
+        Delta = la2gr('d')
         for art in (artist(), singer()):
             map = art.orm.mappings('email')
             if not map:
@@ -8195,6 +8264,23 @@ class test_tag(tester):
         self.assertEq(arts.first.title, t.articles.first.title)
         self.assertEq(arts.second.title, t.articles.second.title)
 
+def la2gr(chars):
+    map = {
+        'a': b'\u03b1', 'b': b'\u03b2', 'c': b'\u03ba', 'd': b'\u03b4', 'e': b'\u03b5',
+        'f': b'\u03c6', 'g': b'\u03b3', 'h': b'\u03b7', 'i': b'\u03b9', 'j': b'\u03c3',
+        'k': b'\u03ba', 'l': b'\u03bb', 'm': b'\u03b1', 'n': b'\u03bc', 'o': b'\u03c0',
+        'p': b'\u03b1', 'q': b'\u03b8', 'r': b'\u03c1', 's': b'\u03c3', 't': b'\u03c4',
+        'u': b'\u03c5', 'v': b'\u03b2', 'w': b'\u03c9', 'x': b'\u03be', 'y': b'\u03c5',
+        'z': b'\u03b6',
+    }
+
+    r = ''
+    for c in chars.lower():
+        try:
+            r += map[c].decode('unicode_escape')
+        except:
+            r += ' '
+    return r
         
 """
 Test end here. Below are here documents used for testing.

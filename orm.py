@@ -40,7 +40,6 @@ import dateutil
 import decimal
 from datetime import datetime
 
-
 @unique
 class types(Enum):
     pk        =  0
@@ -298,6 +297,22 @@ class entitymeta(type):
                 
                 if isinstance(v, mapping):
                     map = v
+                elif v in fieldmapping.types:
+                    map = fieldmapping(v)
+                elif type(v) is tuple:
+                    args, kwargs = [], {}
+                    for e in v:
+                        isix = (
+                            hasattr(e, 'mro') and index in e.mro()
+                            or isinstance(e, index)
+                        )
+                        if isix:
+                            kwargs['ix'] = e
+                        else:
+                            args.append(e)
+
+                    map = fieldmapping(*args, **kwargs)
+
                 elif hasattr(v, 'mro'):
                     mro = v.mro()
                     if ormmod.entities in mro:
@@ -1166,7 +1181,7 @@ class mappings(entitiesmod.entities):
 
     @property
     def createtable(self):
-        r = 'create table ' + self.orm.table + '(\n'
+        r = 'CREATE TABLE ' + self.orm.table + '(\n'
 
         for i, map in enumerate(self):
             if not isinstance(map, fieldmapping):
@@ -1180,9 +1195,26 @@ class mappings(entitiesmod.entities):
             if isinstance(map, fieldmapping):
                 r += ' ' + map.dbtype
 
+        for ix in self.aggregateindexes:
+            r += ',\n    ' + str(ix)
+
         r += '\n) '
         r += 'ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;'
         return r
+
+    @property
+    def aggregateindexes(self):
+        ixs = aggregateindexes()
+        for map in self:
+            if type(map) is fieldmapping and map.index:
+                try:
+                    ix = ixs[map.index.name]
+                except IndexError:
+                    ix = aggregateindex()
+                    ixs += ix
+                ix.indexes += map.index
+
+        return ixs
 
     def getinsert(self):
         tbl = self.orm.table
@@ -1370,6 +1402,69 @@ class entitymapping(mapping):
     def clone(self):
         return entitymapping(self.name, self.entity, derived=self.derived)
 
+class aggregateindexes(entitiesmod.entities):
+    pass
+
+class aggregateindex(entitiesmod.entity):
+    def __init__(self):
+        self.indexes = indexes()
+
+    @property
+    def name(self):
+        return self.indexes.first.name
+
+    @property
+    def isfulltext(self):
+        return type(self.indexes.first) is fulltext
+
+    def __str__(self):
+        self.indexes.sort('ordinal')
+
+        ixtype = 'FULLTEXT' if self.isfulltext else 'INDEX'
+        r = '%s %s (' % (ixtype ,self.name)
+        for i, ix in enumerate(self.indexes):
+            r += (', ' if i else '') + ix.map.name
+
+        r += ')'
+
+        return r
+            
+class indexes(entitiesmod.entities):
+    pass
+
+class index(entitiesmod.entity):
+    def __init__(self, name=None, ordinal=None):
+        self._name = name
+        self.ordinal = ordinal
+        self.map = None
+
+    @property
+    def name(self):
+        name = self._name if self._name else self.map.name
+
+        name = name if name.endswith('_ix') else name + '_ix'
+
+        return name
+
+    def __str__(self):
+        return self.name
+    
+    def __repr__(self):
+        return super().__repr__() + ' ' + self.name
+
+class fulltexts(indexes):
+    pass
+
+class fulltext(index):
+    @property
+    def name(self):
+        name = self._name if self._name else self.map.name
+
+        name = name if name.endswith('_ftix') else name + '_ftix'
+
+        return name
+
+
 class attr:
     class wrap:
         def __init__(self, *args, **kwargs):
@@ -1380,17 +1475,7 @@ class attr:
 
         @property
         def mapping(self):
-            kwargs = self.kwargs
-            for i, arg in enumerate(self.args):
-                if i == 0:
-                    ix = 'type'
-                else:
-                    # TODO
-                    raise NotImplementedError()
-
-                kwargs[ix] = arg
-
-            return fieldmapping(**kwargs)
+            return fieldmapping(*self.args, **self.kwargs)
 
         def __get__(self, e, etype=None):
             name = self.fget.__name__
@@ -1421,14 +1506,23 @@ class attr:
         return w
 
 class fieldmapping(mapping):
-    def __init__(self, type,       
-                       min=None,  
-                       max=None, 
-                       m=None,
-                       d=None,
-                       name=None,  
+    # Permitted types
+    types = bool, str, int, float, decimal.Decimal, bytes, datetime
+    def __init__(self, type,       # Type of field
+                       min=None,   # Max length or size of field
+                       max=None,   # Min length or size of field
+                       m=None,     # Precision (in decimals and floats)
+                       d=None,     # Scale (in decimals and floats)
+                       name=None,  # Name of the field
+                       ix=None,    # Database index
                        derived=False):
 
+        if type in (float, decimal.Decimal):
+            if min is not None:
+                m, min = min, None
+            if max is not None:
+                d, max = max, None
+        
         self._type       =  type
         self._value      =  undef
         self._min        =  min
@@ -1436,9 +1530,24 @@ class fieldmapping(mapping):
         self._precision  =  m
         self._scale      =  d
 
+        # TODO Currently, a field is limited to being part of only one
+        # composite or fulltext index. This code could be improved to allow for
+        # mulitple indexes per fieldmapping.
+
+        if ix is not None and isinstance(ix, builtins.type) and index in ix.mro():
+            self._ix = ix()
+        else:
+            self._ix = ix
+
+        if self.index:
+            self.index.map = self
+
         super().__init__(name, derived)
 
     def clone(self):
+        ix = self.index
+        ix = index(name=ix.name, ordinal=ix.ordinal) if ix else None
+
         map = fieldmapping(
             self.type,
             self.min,
@@ -1446,12 +1555,20 @@ class fieldmapping(mapping):
             self.precision,
             self.scale,
             self.name,
+            ix,
             self.derived
         )
+
+        if ix:
+            ix.map = map
 
         map._value = self._value
 
         return map
+
+    @property
+    def index(self):
+        return self._ix
 
     @property
     def isstr(self):
@@ -1848,7 +1965,7 @@ class orm:
         r = orm()
 
         props = (
-            'isnew',       '_isdirty',      'ismarkedfordeletion',
+            'isnew',       '_isdirty',     'ismarkedfordeletion',
             'entity',      'entities',     'table'
         )
 
