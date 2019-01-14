@@ -157,6 +157,15 @@ class entities(object):
 
         return type(self)(initial=self[:number])
 
+    def tail(self, number=10):
+        # TODO Write test
+        if number <= 0:
+            return type(self)()
+            
+        cnt = self.count
+        start = cnt - number
+        return type(self)(initial=self[start:cnt])
+
     def pluck(self, prop):
         # TODO: Write test
 
@@ -234,11 +243,6 @@ class entities(object):
             key1 = key
 
         return type(self)(sorted(self._ls, key=key1, reverse=reverse))
-
-    def tail(self, number):
-        if number > 0:
-            return type(self)(self[-number:])
-        return type(self)()
 
     def clear(self):
         self.remove(self)
