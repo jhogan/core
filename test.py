@@ -28,7 +28,7 @@ from datetime import timezone, datetime
 from entities import brokenruleserror, rgetattr
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
 from parties import *
-from pdb import set_trace; B=set_trace
+from pdb import Pdb
 from tester import *
 from uuid import uuid4
 import argparse
@@ -43,6 +43,11 @@ import pathlib
 import primative
 import random
 import re
+
+# Set conditional break points
+def B(x=True):
+    if x: 
+        Pdb().set_trace(sys._getframe().f_back)
 
 # We will use basic and supplementary multilingual plane UTF-8 characters when
 # testing str attributes to ensure unicode is being supported.
@@ -264,7 +269,7 @@ class artist(orm.entity):
         return self.firstname + ' ' + self.lastname
 
     def __str__(self):
-        return super().__str__() + ' ' + self.fullname
+        return self.fullname
         
 class artist_artifacts(orm.associations):
     pass
@@ -362,6 +367,7 @@ class test_orm(tester):
 
     def _chronicler_onadd(self, src, eargs):
         self.chronicles += eargs.entity
+        #print(eargs.entity)
 
     def it_calls__str__on_entities(self):
         arts = artists()
@@ -1118,6 +1124,207 @@ class test_orm(tester):
         self.zero(artist(art1.id).presentations.first.locations)
         self.one(artist(art.id).presentations.first.locations)
 
+    def it_calls_count_on_streamed_entities(self):
+        arts1 = artists()
+        firstname = uuid4().hex
+        for i in range(2):
+            art = artist.getvalid()
+            art.firstname = firstname
+            arts1 += art
+            art.save()
+
+        arts = artists(orm.stream, firstname=firstname)
+        self.true(arts.isstreaming)
+        self.eq(2, arts.count)
+
+        # Ensure count works in nonstreaming mode
+        self.false(arts1.isstreaming)
+        self.eq(2, arts1.count)
+
+    def it_calls__iter__on_streamed_entities(self):
+        # Create a variant number of artists to test. This will help
+        # discover one-off errors in the __iter__
+        for i in range(4):
+            # Create some artists in db with the same lastname 
+            lastname = uuid4().hex
+            arts = artists()
+            for _ in range(i):
+                arts += artist.getvalid()
+                arts.last.lastname = lastname
+                arts.last.save()
+
+            # Create a streamed artists collection where lastname is the same as
+            # the artists created above. Set chunksize to a very low value of 2 so
+            # the test isn't too slow. Order by id so the iteration test
+            # below can be preformed correctly.
+            stm = orm.stream(chunksize=2)
+            arts1 = artists(stm, lastname=lastname).sorted('id')
+
+            # Ensure streamed collection count matches non-streamed count
+            self.eq(arts1.count, arts.count)
+
+            # Iterate over the streamed collection and compare it two the
+            # non-streameed artists collections above. Do this twice so we know
+            # __iter__ resets itself correctly.
+            arts.sort('id')
+            for _ in range(2):
+                j = -1
+                for j, art in enumerate(arts1):
+                    self.eq(arts[j].id, art.id)
+                    self.eq(lastname, art.lastname)
+
+                self.eq(i, j + 1)
+
+        # Ensure that interation works after fetching an element from a chunk
+        # that comes after the first chunk.
+        arts1[i - 1]
+        self.eq(arts1.count, len(list(arts1)))
+
+    def it_calls__getitem__on_streamed_entities(self):
+        lastname = uuid4().hex
+        arts = artists()
+        for _ in range(10):
+            arts += artist.getvalid()
+            arts.last.lastname = lastname
+            arts.last.save()
+
+        # Test every chunk size
+        for chunksize in range(1, 12):
+            stm = orm.stream(chunksize=chunksize)
+            arts1 = artists(stm, lastname=lastname).sorted('id')
+
+            arts.sort('id')
+            
+            # Test indexing in asceding order
+            for i in range(10):
+                self.eq(arts[i].id, arts1[i].id)
+
+            # Test indexing in descending order
+            for i in range(9, 0, -1):
+                self.eq(arts[i].id, arts1[i].id)
+
+            # Test negative indexing in descending order
+            for i in range(0, -10, -1):
+                self.eq(arts[i].id, arts1[i].id)
+
+            # Test getting chunks from different ends of the ultimate
+            # result-set in an alternating fashion
+            for i in range(0, -10, -1):
+                self.eq(arts[i].id, arts1[i].id)
+                self.eq(arts[abs(i)].id, arts1[abs(i)].id)
+
+            # Test slices
+            for i in range(10):
+                for j in range(10):
+                    self.eq(arts[i:j].pluck('id'), arts1[i:j].pluck('id'))
+
+            # Negative slices (i.e., arts1[4:3]) should produce empty results
+            for i in range(10):
+                for j in range(i -1, 0, -1):
+                    self.zero(arts1[i:j])
+                for j in range(0, -10 -1):
+                    # TODO Negative stops (arts1[4:-4]) are currently not
+                    # implemented.
+                    self.expect(NotImplementedError, lambda: arts1[i:j])
+
+
+    def it_calls_unavailable_attr_on_streamed_entities(self):
+        arts = artists(orm.stream)
+        nonos = (
+            'getrandom',    'getrandomized',  'where',    'clear',
+            'remove',       'shift',          'pop',      'reversed',
+            'reverse',      'insert',         'push',     'has',
+            'unshift',      'append',         '__sub__',  'getcount',
+            '__setitem__',  'getindex',       'delete'
+        )
+
+
+        for nono in nonos:
+            self.expect(AttributeError, lambda: getattr(arts, nono))
+        
+    # TODO Test head and tail, give 
+
+    def it_calls_head_and_tail_on_streamed_entities(self):
+        lastname = uuid4().hex
+        arts = artists()
+        for i in range(10):
+            art = artist.getvalid()
+            art.lastname = lastname
+            arts += art
+            art.save()
+
+
+        arts1 = artists(orm.stream, lastname=lastname).sorted('id')
+        arts.sort('id')
+
+        self.eq(arts.head(2).pluck('id'), arts1.head(2).pluck('id'))
+
+        arts1.tail(2)
+        self.eq(arts.tail(2).pluck('id'), arts1.tail(2).pluck('id'))
+
+    def it_calls_sorted_on_streamed_entities(self):
+        lastname = uuid4().hex
+        arts = artists()
+        for _ in range(10):
+            arts += artist.getvalid()
+            arts.last.firstname = uuid4().hex
+            arts.last.lastname = lastname
+            arts.last.save()
+
+        for sort in None, 'firstname':
+            arts1 = artists(orm.stream, lastname=lastname).sorted(sort)
+            arts.sort(sort)
+
+            for i, art1 in enumerate(arts1):
+                self.eq(arts[i].id, art1.id)
+                # TODO Calling __getattr__ on the streaming entities collection
+                # during iteration doesn't work. Maybe it should; not sure,
+                # though.
+                #self.eq(arts[i].id, arts1[i].id)
+
+        for reverse in True, False:
+            self.expect(ValueError, lambda: arts1.sorted('id', reverse))
+
+    def it_calls_ordinals_on_streamed_entities(self):
+        ords = ('first',            'second',             'third',
+                'fourth',           'fifth',              'sixth',
+                'last',             'ultimate',           'penultimate',
+                'antepenultimate',  'preantepenultimate')
+
+        lastname = uuid4().hex
+        arts = artists()
+        for _ in range(6):
+            arts += artist.getvalid()
+            arts.last.lastname = lastname
+            arts.last.save()
+
+        arts1 = artists(orm.stream, lastname=lastname).sorted()
+        arts.sort()
+        for ord in ords:
+            self.eq(getattr(arts, ord).id, getattr(arts1, ord).id)
+
+    def it_calls_sort_on_streamed_entities(self):
+        lastname = uuid4().hex
+        arts = artists()
+        for _ in range(10):
+            arts += artist.getvalid()
+            arts.last.firstname = uuid4().hex
+            arts.last.lastname = lastname
+            arts.last.save()
+
+        # Test sorting on None - which means: 'sort on id', since id is the
+        # default.  Then sort on firstname
+        for sort in None, 'firstname':
+            arts.sort(sort)
+            arts1 = artists(orm.stream, lastname=lastname)
+            arts1.sort(sort)
+
+            for i, art1 in enumerate(arts1):
+                self.eq(arts[i].id, art1.id)
+
+        for reverse in True, False:
+            self.expect(ValueError, lambda: arts1.sort('id', reverse))
+            
     def it_saves_entities(self):
         chrons = self.chronicles
 
@@ -1145,6 +1352,9 @@ class test_orm(tester):
                 self.eq(getattr(art, map.name), getattr(art1, map.name))
 
     def it_searches_entities(self):
+        # TODO Ensure chronicler is captureing the SQL statements correctly. There
+        # was a bug in entities._load that raised the onafterload event for
+        # each record that was loaded.
         arts = artists()
         uuid = uuid4().hex
         for i in range(4):
@@ -2292,6 +2502,7 @@ class test_orm(tester):
             self.broken(art, 'email', 'fits')
 
     def it_calls_str_attr_on_entity(self):
+        # TODO Ensure non-str's are coerced in accordance with str()'s rules.
         def saveok(e, attr):
             getattr(e, 'save')()
             e1 = type(e)(e.id)

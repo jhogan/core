@@ -55,6 +55,145 @@ class types(Enum):
 class undef:
     pass
 
+class stream(entitiesmod.entity):
+    def __init__(self, chunksize=100):
+        self.cursor = self.cursor(self)
+
+        # TODO Do we really need this
+        self.entities = None
+        self.chunksize = chunksize
+        self.orderby = ''
+
+    class cursor(entitiesmod.entity):
+        def __init__(self, stm, start=0, stop=0):
+            self.stream = stm
+            self._chunk = None
+            self._start = start
+            self._stop = stop
+            self.chunkloaded = False
+
+        def __repr__(self):
+            r = type(self).__name__ + ': '
+            for prop in 'start', 'stop', 'limit', 'size', 'offset':
+                r += '%s=%s ' % (prop, str(getattr(self, prop)))
+            return r
+        
+        @property
+        def chunk(self):
+            if self._chunk is None:
+                cond = self.entities.conditional
+                args = self.entities.conditionalargs
+                self._chunk = type(self.entities)(cond, args)
+
+            return self._chunk
+
+        @property
+        def entities(self):
+            return self.stream.entities
+
+        def __contains__(self, slc):
+            slc = self.normalizedslice(slc)
+            return self.start <= slc.start and \
+                   self.stop  >= slc.stop
+
+        def advance(self, slc):
+            if isinstance(slc, int):
+                slc = slice(slc, slc + 1)
+
+            # Return an empty collection if start >= stop
+            if slc.start >= slc.stop:
+                if slc.stop < 0:
+                    # TODO es[3:3] or es[3:2] should produce empty results
+                    # like lists do. However, es[3:-1] should produces a non-empty result
+                    # (also like lists). However, this case is currently not implemented
+                    # at the moment.
+                    msg = 'Negative stops not implemented'
+                    raise NotImplementedError(msg)
+                return self.chunk[0:0]
+
+            if slc not in self or not self.chunkloaded:
+                self._start = slc.start
+                self._stop = slc.stop
+
+                orderby = self.stream.orderby
+
+                self.chunk.clear()
+                self.chunk._load(orderby, self.limit, self.offset)
+                self.chunkloaded = True
+
+            return self.chunk[self.getrelativeslice(slc)]
+
+        def __iter__(self):
+            slc= slice(0, self.stream.chunksize)
+            self.advance(slc)
+            yield self.chunk
+
+            while True:
+                size = self.stream.chunksize
+                slc = slice(slc.start + size, slc.stop + size)
+
+                if slc.start >= self.entities.count:
+                    raise StopIteration()
+
+                import gc
+                gc.collect()
+                yield self.advance(slc)
+
+        def getrelativeslice(self, slc):
+            slc = self.normalizedslice(slc)
+            
+            start = slc.start - self.offset
+            stop  = slc.stop  - self.offset
+            return slice(start, stop)
+
+        def normalizedslice(self, slc):
+            # Normalize negatives
+            cnt = self.stream.entities.count   
+
+            if slc.start < 0:
+                slc = slice(slc.start + cnt, slc.stop)
+
+            if slc.stop <= 0:
+                slc = slice(slc.start, slc.stop + cnt)
+
+            return slc
+            
+        @property
+        def start(self):
+            # I.e., offset
+            start = self._start
+
+            # Deal with negatives
+            if start < 0:
+                start += self.stream.entities.count
+
+            return start
+
+        @property
+        def stop(self):
+            if self._stop < 0:
+                self._stop += self.stream.entities.count
+
+            if self.stream.chunksize < self._stop - self.start:
+                self._stop = self._stop
+            else:
+                self._stop = self.start + self.stream.chunksize
+
+            return self._stop
+
+        @property
+        def size(self):
+            # I.e., 'limit'
+            return self.stop - self.start 
+
+        @property
+        def limit(self):
+            return self.size
+
+        @property
+        def offset(self):
+            return self.start
+        
 class entities(entitiesmod.entities):
     re_alphanum_ = re.compile('^[A-Za-z_]+$')
 
@@ -64,31 +203,156 @@ class entities(entitiesmod.entities):
 
         self.onbeforereconnect  =  entitiesmod.event()
         self.onafterreconnect   =  entitiesmod.event()
+        self.onafterload        =  entitiesmod.event()
+
+        self.onafterload       +=  self._self_onafterload
+
+        # If a stream is found in the first or second argument, move it to args
+        args = list(args)
+        if initial is stream or isinstance(initial, stream):
+            args.append(initial)
+            initial = None
+        elif _p2 is stream or isinstance(_p2, stream):
+            args.append(_p2)
+            _p2 = None
+
+        # Look in *args for stream class or a stream object. If found, ensure
+        # the element is an instantiated stream and set it to self._stream.
+        # Delete the stream from *args.
+        for i, e in enumerate(args):
+            if e is stream:
+                self._stream = stream()
+                self._stream.entities = self
+                del args[i]
+                break
+            elif isinstance(e, stream):
+                self._stream = e
+                self._stream.entities = self
+                del args[i]
+                break
+        else:
+            self._stream = None
 
         load = type(initial) is str
-        load = load or (initial is None and (_p2 or args or kwargs))
-        if load:
+        load = load or (initial is None and (_p2 or bool(args) or bool(kwargs)))
+        if self.stream or load:
             super().__init__()
             _p1 = '' if initial == None else initial
-            self.load(_p1, _p2, *args, **kwargs)
+            self._prepareconditional(_p1, _p2, *args, **kwargs)
             return
 
         super().__init__(initial=initial)
 
+    def _self_onafterload(self, src, eargs):
+        chron = db.chronicler.getinstance()
+        chron += db.chronicle(eargs.entity, eargs.op, eargs.sql, eargs.args)
+
+    @property
+    def count(self):
+        # TODO Subscribe to executioner's on*connect events
+        if self.isstreaming:
+            args =  self.orm.table, self.conditional
+            sql = 'SELECT COUNT(*) FROM %s WHERE %s' % args
+            ress = None
+            def exec(cur):
+                nonlocal ress
+                cur.execute(sql, self.conditionalargs)
+                ress = db.dbresultset(cur)
+
+            db.executioner(exec).execute()
+
+            return ress.first[0]
+            
+        else:
+            return super().count
+    @property
+    def stream(self):
+        return self._stream
+
+    @property
+    def isstreaming(self):
+        return self._stream is not None
+
+    def __iter__(self):
+        if self.isstreaming:
+            for es in self.stream.cursor:
+                for e in es:
+                    yield e
+        else:
+            for e in super().__iter__():
+                yield e
+
+    # TODO
+    #def __call__(self, key):
+
     def __getitem__(self, key):
-        r = super().__getitem__(key)
-        if hasattr(r, '__iter__'):
-            return type(self)(initial=r)
-        return r
-
-    def sort(self, key=None, reverse=False):
-        key = 'id' if key is None else key
-        super().sort(key, reverse)
-
-    def sorted(self, key=None, reverse=False):
-        key = 'id' if key is None else key
-        return super().sorted(key, reverse)
+        if self.isstreaming:
+            cur = self.stream.cursor
+            es = cur.advance(key)
+            if isinstance(key, int):
+                if es.hasone:
+                    return es.first
+                raise ValueError('Entities index out of range')
+            return es
+                
+        else:
+            e = super().__getitem__(key)
+            if hasattr(e, '__iter__'):
+                return type(self)(initial=e)
+            else:
+                return e
     
+    def __getattribute__(self, attr):
+        if attr in ('orm', 'isstreaming', '_stream'):
+            return object.__getattribute__(self, attr)
+
+        if not hasattr(self, '_stream'):
+            return object.__getattribute__(self, attr)
+
+        if not self.isstreaming:
+            return object.__getattribute__(self, attr)
+
+        nonos = (
+            'getrandom',    'getrandomized',  'where',    'clear',
+            'remove',       'shift',          'pop',      'reversed',
+            'reverse',      'insert',         'push',     'has',
+            'unshift',      'append',         '__sub__',  'getcount',
+            '__setitem__',  'getindex',       'delete'
+        )
+
+        if attr in nonos:
+            msg = "'%s's' attribute '%s' is not available "
+            msg += 'while streaming'
+            raise AttributeError(msg % (self.__class__.__name__, attr))
+        return object.__getattribute__(self, attr)
+
+    def sort(self, key=None, reverse=None):
+        # TODO Why don't we default the key param to 'id'?
+
+        key = 'id' if key is None else key
+        if self.isstreaming:
+            if reverse is not None:
+                msg = 'Reverse parameter not supported in streaming mode'
+                raise ValueError(msg)
+
+            self.stream.orderby = key
+        else:
+            reverse = False if reverse is None else reverse
+            super().sort(key, reverse)
+
+    def sorted(self, key=None, reverse=None):
+        key = 'id' if key is None else key
+        if self.isstreaming:
+            if reverse is not None:
+                msg = 'Reverse parameter not supported in streaming mode'
+                raise ValueError(msg)
+
+            self.stream.orderby = key
+            return self
+        else:
+            reverse = False if reverse is None else reverse
+            return super().sorted(key, reverse)
+
     def save(self, *es):
         exec = db.executioner(self._save)
         exec.execute(es)
@@ -149,8 +413,7 @@ class entities(entitiesmod.entities):
         super().append(obj, uniq, r)
         return r
 
-    def load(self, _p1='', _p2=None, *args, **kwargs):
-        # TODO: Use full-text index when available
+    def _prepareconditional(self, _p1='', _p2=None, *args, **kwargs):
         p1, p2 = _p1, _p2
 
         if p2 is None and p1 != '':
@@ -184,14 +447,23 @@ class entities(entitiesmod.entities):
 
         args = [x.bytes if type(x) is UUID else x for x in args]
 
-        p1 = orm.introduce(p1, args)
+        self.conditional = orm.introduce(p1, args)
+        self.conditionalargs = args
 
-        sql = 'SELECT * FROM %s WHERE %s;' % (self.orm.table, p1)
+    def _load(self, orderby=None, limit=None, offset=None):
+        sql = 'SELECT * FROM %s WHERE %s' % (self.orm.table, self.conditional)
+        
+        if orderby:
+            sql += ' ORDER BY ' + orderby
+
+        if limit is not None:
+            offset = 0 if offset is None else offset
+            sql += ' LIMIT %s OFFSET %s' % (limit, offset)
 
         ress = None
         def exec(cur):
             nonlocal ress
-            cur.execute(sql, args)
+            cur.execute(sql, self.conditionalargs)
             ress = db.dbresultset(cur)
 
         exec = db.executioner(exec)
@@ -203,11 +475,12 @@ class entities(entitiesmod.entities):
 
         exec.execute()
 
+        eargs = db.operationeventargs(self, 'retrieve', sql, self.conditionalargs)
+        self.onafterload(self, eargs)
+
         for res in ress:
             e = self.orm.entity(res)
             self += e
-            eargs = db.operationeventargs(e, 'retrieve', sql, args)
-            e.onafterload(self, eargs)
             e.orm.persistencestate = (False,) * 3
 
     def _getbrokenrules(self, es=None, followentitymapping=True):
@@ -238,12 +511,14 @@ class entities(entitiesmod.entities):
         tbl = table()
         r = tbl.newrow()
         r.newfield('Address')
-        r.newfield('ID')
+        r.newfield('id')
+        r.newfield('str')
         r.newfield('Broken Rules')
 
         for e in self:
             r = tbl.newrow()
             r.newfield(hex(id(e)))
+            r.newfield(e.id.hex[:8])
             r.newfield(str(e))
             b = ''
             for br in e.brokenrules:
@@ -469,6 +744,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
     def _self_onafterreconnect(self, src, eargs):
         self._add2chronicler(eargs)
 
+    # TODO This should be a static method
     def _add2chronicler(self, eargs):
         chron = db.chronicler.getinstance()
         chron += db.chronicle(eargs.entity, eargs.op, eargs.sql, eargs.args)
@@ -784,7 +1060,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 if type(map) is foreignkeyfieldmapping:
                     if map.value is undef:
                         map.value = None
-                        #undefmaps.append(map)
 
             super = self.orm.super
             if super:
@@ -1010,60 +1285,65 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         return map.value
 
     def __repr__(self):
-        tbl = table()
+        try:
+            tbl = table()
 
-        for map in self.orm.mappings:
-            r = tbl.newrow()
-            v = getattr(self, map.name)
-            if type(map) in (primarykeyfieldmapping, foreignkeyfieldmapping):
-                if type(map.value) is UUID:
-                    v = v.hex[:7]
-                else:
-                    v = str(v)
-            else:
+            for map in self.orm.mappings:
+                r = tbl.newrow()
                 try:
-                    if type(map) in (entitiesmapping, associationsmapping):
-                        es = v
-                        if es:
-                            brs = es._getbrokenrules(
-                                es=None, 
-                                followentitymapping=False
-                            )
-                            args = es.count, brs.count
-                            v = 'Count: %s; Broken Rules: %s' % args
-                        else:
-                            v = str(es)
+                    v = getattr(self, map.name)
+                except Exception as ex:
+                    v = 'Exception: %s' % str(ex)
+                    
+                if type(map) in (primarykeyfieldmapping, foreignkeyfieldmapping):
+                    if type(map.value) is UUID:
+                        v = v.hex[:7]
                     else:
                         v = str(v)
-                except Exception as ex:
-                    v = '(%s)' % str(ex)
+                else:
+                    try:
+                        if type(map) in (entitiesmapping, associationsmapping):
+                            es = v
+                            if es:
+                                brs = es._getbrokenrules(
+                                    es=None, 
+                                    followentitymapping=False
+                                )
+                                args = es.count, brs.count
+                                v = 'Count: %s; Broken Rules: %s' % args
+                            else:
+                                v = str(es)
+                        else:
+                            v = str(v)
+                    except Exception as ex:
+                        v = '(%s)' % str(ex)
 
-            r.newfield(map.name)
-            r.newfield(v)
+                r.newfield(map.name)
+                r.newfield(v)
 
-        tblbr = table()
+            tblbr = table()
 
-        if not self.isvalid:
-            r = tblbr.newrow()
-            r.newfield('property')
-            r.newfield('type')
-            r.newfield('message')
-
-
-            for br in self.brokenrules:
+            if not self.isvalid:
                 r = tblbr.newrow()
-                r.newfield(br.property)
-                r.newfield(br.type)
-                r.newfield(br.message)
-            
-        return '%s\n%s\n%s\n%s' % (super().__repr__(), 
-                                   str(tbl), 
-                                   'Broken Rules', 
-                                   str(tblbr))
+                r.newfield('property')
+                r.newfield('type')
+                r.newfield('message')
+
+
+                for br in self.brokenrules:
+                    r = tblbr.newrow()
+                    r.newfield(br.property)
+                    r.newfield(br.type)
+                    r.newfield(br.message)
+                
+            return '%s\n%s\n%s\n%s' % (super().__repr__(), 
+                                       str(tbl), 
+                                       'Broken Rules', 
+                                       str(tblbr))
+        except Exception as ex:
+            return '%s (Exception: %s) ' % (super().__repr__(), str(ex))
 
     def __str__(self):
-        r = '(%s)' % (self.id.hex[:7])
-
         if hasattr(self, 'name'):
             r += '"%s"' % self.name
 
