@@ -150,6 +150,13 @@ class entities(object):
         for t in self._ls:
             yield t
 
+    def head(self, number=10):
+        # TODO Write test
+        if number <= 0:
+            return type(self)()
+
+        return type(self)(initial=self[:number])
+
     def pluck(self, prop):
         # TODO: Write test
 

@@ -539,6 +539,28 @@ class test_entities(tester):
         self.assertEq(math.pi,  cs1.second.value)
         self.assertEq(math.e,   cs1.third.value)
 
+    def it_calls_head(self):
+        """ Head returns an entities collection containing the first 'number' of
+        entities in the collection."""
+
+        # Create some knights
+        ks = knights()
+        ks += knight('Lancelot')
+        ks += knight('Authur')
+        ks += knight('Galahad')
+        ks += knight('Bedevere')
+
+        # Call head() with a number for 0 to 4
+        for i in range(ks.count + 1):
+            head = ks.head(i)
+            self.assertEq(i, head.count)
+            self.assertEq(knights, type(head))
+
+            # Ensure the elements of the head are as expected
+            for j in range(0, i):
+                B()
+                self.assertEq(ks[j], head[j])
+
     def it_calls_tail(self):
         """ Tail returns an entities collection containing the last 'number'
         of entities in the collection."""
@@ -555,6 +577,7 @@ class test_entities(tester):
             t = ks.tail(i)
             self.assertEq(i, t.count)
             self.assertEq(knights, type(t))
+
             # Ensure the elements of the tail are as expected
             for j in range(1, i + 1):
                 self.assertEq(ks[-j], t[-j])
