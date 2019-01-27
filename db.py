@@ -529,6 +529,9 @@ class chronicle(entity):
         self.args    =  args
 
     def __str__(self):
+        if self.op in ('reconnect',):
+            return 'DB: ' + self.op.upper()
+
         args = []
         for arg in self.args:
             if type(arg) is bytes:
