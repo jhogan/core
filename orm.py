@@ -39,6 +39,7 @@ import primative
 import dateutil
 import decimal
 from datetime import datetime
+import gc
 
 @unique
 class types(Enum):
@@ -81,9 +82,11 @@ class stream(entitiesmod.entity):
         @property
         def chunk(self):
             if self._chunk is None:
-                cond = self.entities.conditional
-                args = self.entities.conditionalargs
+                where = self.entities.orm.where
+                cond = where.conditional
+                args = where.args
                 self._chunk = type(self.entities)(cond, args)
+                self._chunk.orm.ischunk = True
 
             return self._chunk
 
@@ -99,6 +102,12 @@ class stream(entitiesmod.entity):
         def advance(self, slc):
             if isinstance(slc, int):
                 slc = slice(slc, slc + 1)
+
+            if slc.start is None:
+                slc = slice(int(), slc.stop)
+
+            if slc.stop is None:
+                slc = slice(slc.stop, int())
 
             # Return an empty collection if start >= stop
             if slc.start >= slc.stop:
@@ -135,7 +144,6 @@ class stream(entitiesmod.entity):
                 if slc.start >= self.entities.count:
                     raise StopIteration()
 
-                import gc
                 gc.collect()
                 yield self.advance(slc)
 
@@ -193,70 +201,137 @@ class stream(entitiesmod.entity):
         @property
         def offset(self):
             return self.start
+
+class where(entitiesmod.entity):
+    def __init__(self, cond, args):
+        self.conditional = None
+        self.args        = None
+
+        if cond:
+            self.conditional = orm.introduce(cond, args)
+
+        if args:
+            self.args = args
+
+    def __repr__(self):
+        return '%s\n%s' % (self.conditional, self.args)
+
+class allstream(stream):
+    pass
         
-class entities(entitiesmod.entities):
+class classproperty(property):
+    ''' Add this decorator to a method and it becomes a class method
+    that can be used like a property.'''
+
+    def __get__(self, cls, owner):
+        # If cls is not None, it will be the instance. If there is an instance,
+        # we want to pass that in instead of the class (owner). This makes it
+        # possible for classproperties to act like classproperties and regular
+        # properties at the same time. See the conditional at entities.count.
+        owner = cls if cls else owner
+        return classmethod(self.fget).__get__(None, owner)()
+
+class entitiesmeta(type):
+    def __new__(cls, name, bases, body):
+        return super().__new__(cls, name, bases, body)
+
+class entities(entitiesmod.entities, metaclass=entitiesmeta):
+
+    @classproperty
+    def all(cls):
+        return cls(allstream)
+
     re_alphanum_ = re.compile('^[A-Za-z_]+$')
 
     def __init__(self, initial=None, _p2=None, *args, **kwargs):
-        self.orm = self.orm.clone()
-        self.orm.instance = self
+        try:
+            self.orm = self.orm.clone()
+            self.orm.instance = self
+            self.orm.initing = True
+            self.orm.isloaded = False
+            self.orm.isloading = False
+            self.orm.stream = None
+            self.orm.where = None
+            self.orm.ischunk = False
 
-        self.onbeforereconnect  =  entitiesmod.event()
-        self.onafterreconnect   =  entitiesmod.event()
-        self.onafterload        =  entitiesmod.event()
+            self.onbeforereconnect  =  entitiesmod.event()
+            self.onafterreconnect   =  entitiesmod.event()
+            self.onafterload        =  entitiesmod.event()
 
-        self.onafterload       +=  self._self_onafterload
+            self.onafterload       +=  self._self_onafterload
 
-        # If a stream is found in the first or second argument, move it to args
-        args = list(args)
-        if initial is stream or isinstance(initial, stream):
-            args.append(initial)
-            initial = None
-        elif _p2 is stream or isinstance(_p2, stream):
-            args.append(_p2)
-            _p2 = None
+            # If a stream is found in the first or second argument, move it to
+            # args
+            args = list(args)
+            if  isinstance(initial, stream):
+                args.append(initial)
+                initial = None
+            elif type(initial) is type and stream in initial.mro():
+                args.append(initial())
+                initial = None
+            elif _p2 is stream or isinstance(_p2, stream):
+                args.append(_p2)
+                _p2 = None
 
-        # Look in *args for stream class or a stream object. If found, ensure
-        # the element is an instantiated stream and set it to self._stream.
-        # Delete the stream from *args.
-        for i, e in enumerate(args):
-            if e is stream:
-                self._stream = stream()
-                self._stream.entities = self
-                del args[i]
-                break
-            elif isinstance(e, stream):
-                self._stream = e
-                self._stream.entities = self
-                del args[i]
-                break
-        else:
-            self._stream = None
+            # Look in *args for stream class or a stream object. If found, ensure
+            # the element is an instantiated stream and set it to self._stream.
+            # Delete the stream from *args.
+            for i, e in enumerate(args):
+                if e is stream:
+                    self.orm.stream = stream()
+                    self.orm.stream.entities = self
+                    del args[i]
+                    break
+                elif isinstance(e, stream):
+                    self.orm.stream = e
+                    self.orm.stream.entities = self
+                    del args[i]
+                    break
 
-        load = type(initial) is str
-        load = load or (initial is None and (_p2 or bool(args) or bool(kwargs)))
-        if self.stream or load:
-            super().__init__()
-            _p1 = '' if initial == None else initial
-            self._prepareconditional(_p1, _p2, *args, **kwargs)
-            return
+            # The parameters express a conditional if the first is a str, or
+            # the arg and kwargs are not empty. Otherwise, the first parameter,
+            # initial, means an initial set of values that the collections
+            # should be set to.  The other parameters will be empty in that
+            # case.
+            iscond = type(initial) is str
+            iscond = iscond or (initial is None and (_p2 or bool(args) or bool(kwargs)))
 
-        super().__init__(initial=initial)
+            if self.orm.stream or iscond:
+                super().__init__()
+
+                # TODO Shouldn't this be: initial is None
+                _p1 = '' if initial == None else initial
+                self._prepareconditional(_p1, _p2, *args, **kwargs)
+                return
+
+            super().__init__(initial=initial)
+        finally:
+            self.orm.initing = False
+
+    def clone(self, to=None):
+        if not to:
+            raise NotImplementedError()
+
+        to.where         =  self.where
+        to.orm.stream    =  self.orm.stream
+        to.orm.isloaded  =  self.orm.isloaded
 
     def _self_onafterload(self, src, eargs):
         chron = db.chronicler.getinstance()
         chron += db.chronicle(eargs.entity, eargs.op, eargs.sql, eargs.args)
 
     @property
-    def count(self):
+    def _count(self):
         # TODO Subscribe to executioner's on*connect events
-        if self.isstreaming:
-            args =  self.orm.table, self.conditional
-            sql = 'SELECT COUNT(*) FROM %s WHERE %s' % args
+        if self.orm.isstreaming:
+            sql = 'SELECT COUNT(*) FROM ' + self.orm.table
+            if self.orm.where.conditional:
+                sql += ' WHERE ' + self.orm.where.conditional
+
             ress = None
             def exec(cur):
                 nonlocal ress
-                cur.execute(sql, self.conditionalargs)
+                cur.execute(sql, self.orm.where.args)
                 ress = db.dbresultset(cur)
 
             db.executioner(exec).execute()
@@ -265,17 +340,18 @@ class entities(entitiesmod.entities):
             
         else:
             return super().count
-    @property
-    def stream(self):
-        return self._stream
 
-    @property
-    def isstreaming(self):
-        return self._stream is not None
+    @classproperty
+    def count(cls):
+        if type(cls) is entitiesmeta:
+            es = cls.all
+        else:
+            es = cls
+        return es._count
 
     def __iter__(self):
-        if self.isstreaming:
-            for es in self.stream.cursor:
+        if self.orm.isstreaming:
+            for es in self.orm.stream.cursor:
                 for e in es:
                     yield e
         else:
@@ -286,8 +362,8 @@ class entities(entitiesmod.entities):
     #def __call__(self, key):
 
     def __getitem__(self, key):
-        if self.isstreaming:
-            cur = self.stream.cursor
+        if self.orm.isstreaming:
+            cur = self.orm.stream.cursor
             es = cur.advance(key)
             if isinstance(key, int):
                 if es.hasone:
@@ -303,14 +379,21 @@ class entities(entitiesmod.entities):
                 return e
     
     def __getattribute__(self, attr):
-        if attr in ('orm', 'isstreaming', '_stream'):
+        def proceed():
+            if not  self.orm.initing      and  \
+               not  self.orm.isloading    and  \
+               not  self.orm.isstreaming  and  \
+               not  attr == 'clear':
+                self._load()
+
+            return object.__getattribute__(self, attr)
+            
+
+        if attr in ('orm', 'composite', '_constituents', '_load'):
             return object.__getattribute__(self, attr)
 
-        if not hasattr(self, '_stream'):
-            return object.__getattribute__(self, attr)
-
-        if not self.isstreaming:
-            return object.__getattribute__(self, attr)
+        if not self.orm.isstreaming:
+            return proceed()
 
         nonos = (
             'getrandom',    'getrandomized',  'where',    'clear',
@@ -324,34 +407,33 @@ class entities(entitiesmod.entities):
             msg = "'%s's' attribute '%s' is not available "
             msg += 'while streaming'
             raise AttributeError(msg % (self.__class__.__name__, attr))
-        return object.__getattribute__(self, attr)
+
+
+        return proceed()
 
     def sort(self, key=None, reverse=None):
-        # TODO Why don't we default the key param to 'id'?
-
         key = 'id' if key is None else key
-        if self.isstreaming:
-            if reverse is not None:
-                msg = 'Reverse parameter not supported in streaming mode'
-                raise ValueError(msg)
+        if self.orm.isstreaming:
+            key = '%s %s' % (key, 'DESC' if reverse else 'ASC')
 
-            self.stream.orderby = key
+            self.orm.stream.orderby = key
         else:
             reverse = False if reverse is None else reverse
             super().sort(key, reverse)
 
     def sorted(self, key=None, reverse=None):
         key = 'id' if key is None else key
-        if self.isstreaming:
-            if reverse is not None:
-                msg = 'Reverse parameter not supported in streaming mode'
-                raise ValueError(msg)
+        if self.orm.isstreaming:
+            key = '%s %s' % (key, 'DESC' if reverse else 'ASC')
 
-            self.stream.orderby = key
+            self.orm.stream.orderby = key
             return self
         else:
             reverse = False if reverse is None else reverse
-            return super().sorted(key, reverse)
+            self._load()
+            r =  super().sorted(key, reverse)
+            self.clone(r)
+            return r
 
     def save(self, *es):
         exec = db.executioner(self._save)
@@ -447,41 +529,70 @@ class entities(entitiesmod.entities):
 
         args = [x.bytes if type(x) is UUID else x for x in args]
 
-        self.conditional = orm.introduce(p1, args)
-        self.conditionalargs = args
+        self.orm.where = where(p1, args)
+
+    def clear(self):
+        self.orm.isloaded = False
+        super().clear()
 
     def _load(self, orderby=None, limit=None, offset=None):
-        sql = 'SELECT * FROM %s WHERE %s' % (self.orm.table, self.conditional)
-        
-        if orderby:
-            sql += ' ORDER BY ' + orderby
+        if self.orm.isloaded:
+            return
 
-        if limit is not None:
-            offset = 0 if offset is None else offset
-            sql += ' LIMIT %s OFFSET %s' % (limit, offset)
+        # If there is no where conditional, and self is a regular, non-chunk
+        # entities object, then we don't want to load. The fact that we
+        # would arrive here in this state is simply due to the __getattribute__
+        # attempting to load when almost any attribute is accessed.
+        if not self.orm.where and not self.orm.ischunk:
+            return
 
-        ress = None
-        def exec(cur):
-            nonlocal ress
-            cur.execute(sql, self.conditionalargs)
-            ress = db.dbresultset(cur)
+        try:
+            self.orm.isloading = True
 
-        exec = db.executioner(exec)
+            sql = 'SELECT * FROM ' + self.orm.table
 
-        exec.onbeforereconnect += \
-            lambda src, eargs: self.onbeforereconnect(src, eargs)
-        exec.onafterreconnect  += \
-            lambda src, eargs: self.onafterreconnect(src, eargs)
+            where = self.orm.where
+            args = ()
 
-        exec.execute()
+            if where:
+                if where.conditional:
+                    cond = self.orm.where.conditional
+                    sql += ' WHERE ' + cond
+                if where.args:
+                    args = where.args
+            
+            if orderby:
+                sql += ' ORDER BY ' + orderby
 
-        eargs = db.operationeventargs(self, 'retrieve', sql, self.conditionalargs)
-        self.onafterload(self, eargs)
+            if limit is not None:
+                offset = 0 if offset is None else offset
+                sql += ' LIMIT %s OFFSET %s' % (limit, offset)
 
-        for res in ress:
-            e = self.orm.entity(res)
-            self += e
-            e.orm.persistencestate = (False,) * 3
+            ress = None
+            def exec(cur):
+                nonlocal ress
+                cur.execute(sql, args)
+                ress = db.dbresultset(cur)
+
+            exec = db.executioner(exec)
+
+            exec.onbeforereconnect += \
+                lambda src, eargs: self.onbeforereconnect(src, eargs)
+            exec.onafterreconnect  += \
+                lambda src, eargs: self.onafterreconnect(src, eargs)
+
+            exec.execute()
+
+            eargs = db.operationeventargs(self, 'retrieve', sql, args)
+            self.onafterload(self, eargs)
+
+            for res in ress:
+                e = self.orm.entity(res)
+                self += e
+                e.orm.persistencestate = (False,) * 3
+        finally:
+            self.orm.isloaded = True
+            self.orm.isloading = False
 
     def _getbrokenrules(self, es=None, followentitymapping=True):
         brs = entitiesmod.brokenrules()
@@ -1216,7 +1327,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # Lazy-load constituent entities map
         if type(map) is entitiesmapping:
             if map.value is None:
-                es = map.entities()
+                es = None
                 if not self.orm.isnew:
 
                     # Get the FK map of the entities constituent. 
@@ -1235,7 +1346,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     else:
                         raise ValueError('FK map not found for entity')
 
-                    es.load(map1.name, self.id)
+                    es = map.entities(map1.name, self.id)
 
                     def setattr1(e, attr, v):
                         e.orm.mappings(attr).value = v
@@ -1256,6 +1367,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         # Since we just set e's composite, e now thinks its
                         # dirty.  Correct that here.
                         e.orm.persistencestate = (False,) * 3
+
+                if es is None:
+                    es = map.entities()
+
                 map.value = es
 
                 # Assign the composite reference to the constituent
@@ -1345,9 +1460,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
     def __str__(self):
         if hasattr(self, 'name'):
-            r += '"%s"' % self.name
-
-        return r
+            return '"%s"' % self.name
+            
+        return str(self.id)
             
 class mappings(entitiesmod.entities):
     def __init__(self, initial=None, orm=None):
@@ -1629,9 +1744,8 @@ class associationsmapping(mapping):
             else:
                 raise ValueError('FK not found')
 
-            asses = self.associations()
+            asses = self.associations(map.name, self.composite.id)
             asses.composite = self.composite
-            asses.load(map.name, self.composite.id)
             self.value = asses
         return self._value
 
@@ -2240,6 +2354,10 @@ class orm:
         self._super               =  None
         self._base                =  undef
         self.instance             =  None
+        self.stream               =  None
+        self.initing              =  False
+        self.isloaded             =  False
+        self.isloading            =  False
 
     def clone(self):
         r = orm()
@@ -2270,6 +2388,11 @@ class orm:
                 for x in args
             ]
         )
+
+    @property
+    def isstreaming(self):
+        return self.stream is not None
+
     @property
     def isdirty(self):
         if self._isdirty:
@@ -2285,9 +2408,17 @@ class orm:
         self._isdirty = v
 
     @property
+    def forentities(self):
+        return isinstance(self.instance, entities)
+        
+    @property
+    def forentity(self):
+        return isinstance(self.instance, entity)
+
+    @property
     def persistencestates(self):
         es = self.instance
-        if not isinstance(es, entities):
+        if not self.forentities:
             msg = 'Use with entities. For entity, use persistencestate'
             raise ValueError(msg)
             
@@ -2299,7 +2430,7 @@ class orm:
     @persistencestates.setter
     def persistencestates(self, sts):
         es = self.instance
-        if not isinstance(es, entities):
+        if not self.forentities:
             msg = 'Use with entities. For entity, use persistencestate'
             raise ValueError(msg)
 
@@ -2309,7 +2440,7 @@ class orm:
     @property
     def persistencestate(self):
         es = self.instance
-        if not isinstance(es, entity):
+        if not self.forentity:
             msg = 'Use with entity. For entities, use persistencestates'
             raise ValueError(msg)
         return self.isnew, self.isdirty, self.ismarkedfordeletion
@@ -2508,10 +2639,13 @@ class saveeventargs(entitiesmod.eventargs):
         self.entity = e
 
 class associations(entities):
-    def __init__(self, initial=None):
+    def __init__(self, *args, **kwargs):
+        # TODO Why do associations have composite and _constituents have
+        # properties.  Shouldn't these be behind the associations' orm
+        # property, i.e., asses.orm.composite, etc.
         self.composite = None
         self._constituents = {}
-        super().__init__(initial)
+        super().__init__(*args, **kwargs)
 
     def append(self, obj, uniq=False, r=None):
         if isinstance(obj, association):
