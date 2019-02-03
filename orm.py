@@ -59,9 +59,6 @@ class undef:
 class stream(entitiesmod.entity):
     def __init__(self, chunksize=100):
         self.cursor = self.cursor(self)
-
-        # TODO Do we really need this
-        self.entities = None
         self.chunksize = chunksize
         self.orderby = ''
 
@@ -112,10 +109,10 @@ class stream(entitiesmod.entity):
             # Return an empty collection if start >= stop
             if slc.start >= slc.stop:
                 if slc.stop < 0:
-                    # TODO es[3:3] or es[3:2] should produce empty results
-                    # like lists do. However, es[3:-1] should produces a non-empty result
-                    # (also like lists). However, this case is currently not implemented
-                    # at the moment.
+                    # TODO es[3:3] or es[3:2] will produce empty results like
+                    # lists do. However, es[3:-1] should produces a non-empty
+                    # result (also like lists). However, this case is currently
+                    # not implemented at the moment.
                     msg = 'Negative stops not implemented'
                     raise NotImplementedError(msg)
                 return self.chunk[0:0]
@@ -228,14 +225,10 @@ class classproperty(property):
         # we want to pass that in instead of the class (owner). This makes it
         # possible for classproperties to act like classproperties and regular
         # properties at the same time. See the conditional at entities.count.
-        owner = cls if cls else owner
-        return classmethod(self.fget).__get__(None, owner)()
+        obj = cls if cls else owner
+        return classmethod(self.fget).__get__(None, obj)()
 
-class entitiesmeta(type):
-    def __new__(cls, name, bases, body):
-        return super().__new__(cls, name, bases, body)
-
-class entities(entitiesmod.entities, metaclass=entitiesmeta):
+class entities(entitiesmod.entities):
 
     @classproperty
     def all(cls):
@@ -299,8 +292,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             if self.orm.stream or iscond:
                 super().__init__()
 
-                # TODO Shouldn't this be: initial is None
-                _p1 = '' if initial == None else initial
+                _p1 = '' if initial is None else initial
                 self._prepareconditional(_p1, _p2, *args, **kwargs)
                 return
 
@@ -320,34 +312,45 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         chron = db.chronicler.getinstance()
         chron += db.chronicle(eargs.entity, eargs.op, eargs.sql, eargs.args)
 
-    @property
-    def _count(self):
-        # TODO Subscribe to executioner's on*connect events
-        if self.orm.isstreaming:
-            sql = 'SELECT COUNT(*) FROM ' + self.orm.table
-            if self.orm.where.conditional:
-                sql += ' WHERE ' + self.orm.where.conditional
-
-            ress = None
-            def exec(cur):
-                nonlocal ress
-                cur.execute(sql, self.orm.where.args)
-                ress = db.dbresultset(cur)
-
-            db.executioner(exec).execute()
-
-            return ress.first[0]
-            
-        else:
-            return super().count
-
     @classproperty
     def count(cls):
-        if type(cls) is entitiesmeta:
-            es = cls.all
+        # If type(cls) is type then count is being called directly off the
+        # class:
+        #
+        #   artists.count
+        #
+        # In this case, we get the all stream and use its count proprety
+        # because the request is interpreted as "give me the the number of rows
+        # in the artists table.
+        #
+        # If type(cls) is not type, it is being called of an instance.
+        #   artists().count
+        # 
+        # cls is actuallly a reference to the instance (artists())
+        # In this case, we just want the number of entities in the given
+        # collection.
+        if type(cls) is type:
+            return cls.all.count
         else:
-            es = cls
-        return es._count
+            # TODO Subscribe to executioner's on*connect events
+
+            self = cls
+            if self.orm.isstreaming:
+                sql = 'SELECT COUNT(*) FROM ' + self.orm.table
+                if self.orm.where.conditional:
+                    sql += ' WHERE ' + self.orm.where.conditional
+
+                ress = None
+                def exec(cur):
+                    nonlocal ress
+                    cur.execute(sql, self.orm.where.args)
+                    ress = db.dbresultset(cur)
+
+                db.executioner(exec).execute()
+
+                return ress.first[0]
+            else:
+                return super().count
 
     def __iter__(self):
         if self.orm.isstreaming:
@@ -358,9 +361,6 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             for e in super().__iter__():
                 yield e
 
-    # TODO
-    #def __call__(self, key):
-
     def __getitem__(self, key):
         if self.orm.isstreaming:
             cur = self.orm.stream.cursor
@@ -368,7 +368,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             if isinstance(key, int):
                 if es.hasone:
                     return es.first
-                raise ValueError('Entities index out of range')
+                raise IndexError('Entities index out of range')
             return es
                 
         else:
@@ -383,7 +383,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             if not  self.orm.initing      and  \
                not  self.orm.isloading    and  \
                not  self.orm.isstreaming  and  \
-               not  attr == 'clear':
+               not  self.orm.isremoving:
                 self._load()
 
             return object.__getattribute__(self, attr)
@@ -533,7 +533,25 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
     def clear(self):
         self.orm.isloaded = False
-        super().clear()
+        try:
+            # Set isremoving to True so entities.__getattribute__ doesn't
+            # attempt to load whenever the removing logic calls an attibute on
+            # the entities collection.
+            self.orm.isremoving = True
+            super().clear()
+        finally:
+            self.orm.isremoving = False
+
+
+    def remove(self, *args, **kwargs):
+        try:
+            # Set isremoving to True so entities.__getattribute__ doesn't
+            # attempt to load whenever the removing logic calls an attibute on
+            # the entities collection.
+            self.orm.isremoving = True
+            super().remove(*args, **kwargs)
+        finally:
+            self.orm.isremoving = False
 
     def _load(self, orderby=None, limit=None, offset=None):
         if self.orm.isloaded:
@@ -597,6 +615,13 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
     def _getbrokenrules(self, es=None, followentitymapping=True):
         brs = entitiesmod.brokenrules()
         for e in self:
+            #if self.orm.entities not in e.orm.entities.mro():
+            if not isinstance(e, self.orm.entity):
+                prop = type(self).__name__
+                msg = "'%s' collection contains a '%s' object"
+                msg %= (prop, type(e).__name__)
+                brs += entitiesmod.brokenrule(msg, prop, 'valid')
+                
             brs += e._getbrokenrules(es, followentitymapping=followentitymapping)
         return brs
 
@@ -855,8 +880,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
     def _self_onafterreconnect(self, src, eargs):
         self._add2chronicler(eargs)
 
-    # TODO This should be a static method
-    def _add2chronicler(self, eargs):
+    @staticmethod
+    def _add2chronicler(eargs):
         chron = db.chronicler.getinstance()
         chron += db.chronicle(eargs.entity, eargs.op, eargs.sql, eargs.args)
 
@@ -909,7 +934,17 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             break;
                     else:
                         e = e.orm.super
-                        continue
+                        if e:
+                            continue
+                        else:
+                            # If we have gotten here, no FK was found in self
+                            # that match the composite object passed in. This
+                            # is probably because the wrong type of composite
+                            # was given. The user/programmers has made a
+                            # mistake. However, the brokenrules logic will
+                            # detect this issue and alert the user to the
+                            # issue.
+                            pass
                     break
 
                 # If self is a subentity (i.e., concert), we will want to set
@@ -1191,6 +1226,13 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         return self._getbrokenrules()
 
     def _getbrokenrules(self, guestbook=None, followentitymapping=True):
+        # TODO If an association is added that is the incorrect type, 
+        # append a broken rule, i.e.:
+        #
+        #   arts.artifacts += location() 
+        #   arts.artist_artifacts += location()
+        #
+
         brs = entitiesmod.brokenrules()
 
         # This "guestbook" logic prevents infinite recursion and duplicated
@@ -1267,6 +1309,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 # h (see it_entity_constituents_break_entity)
                 es = map.value
                 if es:
+                    if not isinstance(es, map.entities):
+                        msg = "'%s' attribute is wrong type: %s"
+                        msg %= (map.name, type(es))
+                        brs += entitiesmod.brokenrule(msg, map.name, 'valid')
                     brs += es._getbrokenrules(guestbook, 
                         followentitymapping=followentitymapping
                     )
@@ -1275,9 +1321,20 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 if map.isloaded:
                     v = map.value
                     if v:
+                        if not isinstance(v, map.entity):
+                            msg = "'%s' attribute is wrong type: %s"
+                            msg %= (map.name, type(v))
+                            args = msg, map.name, 'valid'
+                            brs += entitiesmod.brokenrule(*args)
                         brs += v._getbrokenrules(guestbook, 
                             followentitymapping=followentitymapping
                         )
+            elif type(map) is associationsmapping:
+                if map.isloaded:
+                    v = map.value
+                    if v:
+                        brs += v._getbrokenrules(guestbook)
+
 
         return brs
 
@@ -1699,11 +1756,7 @@ class mapping(entitiesmod.entity):
         return self._name
 
     def __str__(self):
-        r = '{}'
-
-        r = r.format(self.name)
-
-        return r
+        return self.name
 
     @property
     def value(self):
@@ -1888,6 +1941,10 @@ class attr:
                     return v
 
             self.fget.__globals__['attr'] = attr
+            # FIXME If an AttributeError is raised in the fget invocation, it
+            # is ignored for some reason. Though counterintuitive, some
+            # information may be here to help explain why:
+            # https://stackoverflow.com/questions/50542177/correct-handling-of-attributeerror-in-getattr-when-using-property
             return self.fget(e)
 
     def __init__(self, *args, **kwargs):
@@ -1926,9 +1983,12 @@ class fieldmapping(mapping):
 
         # TODO Currently, a field is limited to being part of only one
         # composite or fulltext index. This code could be improved to allow for
-        # mulitple indexes per fieldmapping.
+        # multiple indexes per fieldmapping.
 
-        if ix is not None and isinstance(ix, builtins.type) and index in ix.mro():
+        if ix is not None                and \
+           isinstance(ix, builtins.type) and \
+           index in ix.mro():
+
             self._ix = ix()
         else:
             self._ix = ix
@@ -2175,7 +2235,13 @@ class fieldmapping(mapping):
                 return None
         
         if self._value is not None:
-            if self.isdatetime:
+            if self.isstr:
+                try:
+                    self._value = str(self._value)
+                except:
+                    pass
+
+            elif self.isdatetime:
                 try:
                     if type(self._value) is str:
                         self._value = primative.datetime(self._value) 
@@ -2358,6 +2424,7 @@ class orm:
         self.initing              =  False
         self.isloaded             =  False
         self.isloading            =  False
+        self.isremoving           =  False
 
     def clone(self):
         r = orm()
@@ -2543,6 +2610,10 @@ class orm:
                     self._super = base()
                 else:
                     e = self.instance
+                    if not isinstance(e, entity):
+                        msg = "'super' is not an attribute of %s"
+                        msg %= str(type(e))
+                        raise AttributeError(msg)
                     if e.id is not undef:
                         self._super = base(e.id)
 
@@ -2737,7 +2808,6 @@ class associations(entities):
                 es += getattr(ass, map.name)
 
         return self._constituents[attr]
-
     
 class association(entity):
     @classmethod
@@ -2746,4 +2816,3 @@ class association(entity):
             map.entity.reCREATE(cur, recursive, clss)
 
         super().reCREATE(cur, recursive, clss)
-

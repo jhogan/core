@@ -209,10 +209,13 @@ class artist(orm.entity):
             return None
         # Strip non-numerics ( "(555)-555-555" -> "555555555" )
 
+        # TODO Raising AttributeError doesn't seem to have an affect. More
+        # research is needed. Note: the phone local variable is sometimes int,
+        # so isnumeric will raise an AttributeError. However, this never bubble
+        # up so it goes unnoticed. You can invoke a test off of
+        # it_calls_explicit_attr_on_subentity
         if not phone.isnumeric():
             phone = re.sub('\D*', '', phone)
-            # TODO Using the attr(v) version of attr may need some work. It 
-            # doesn't currently have extensive testing on subentities.
 
             # Cache in map so we don't have to do this every time the phone
             # attribute is read. (Normally, caching in the map would be needed
@@ -361,7 +364,6 @@ class test_orm(tester):
 
         artist.reCREATE(recursive=True)
     
-    # TODO Why is this prefixed with an underscore
     def _chrons(self, e, op):
         chrons = self.chronicles.where('entity',  e)
         if not (chrons.hasone and chrons.first.op == op):
@@ -380,7 +382,6 @@ class test_orm(tester):
 
         arts = artists()
         arts += artist.getvalid()
-        B()
         arts.count
 
     def it_calls__str__on_entities(self):
@@ -1071,27 +1072,47 @@ class test_orm(tester):
         self.expect(AttributeError, lambda: art.artist_artifacts.artifactsX)
 
     def it_has_broken_rules_of_constituents(self):
-        # TODO Add tests for associations. Currently this is not working: 
-        # e.g.,
-        #   When art.artist_artifacts.brokenrules > 0,
-        #   art.brokenrules.count == 0 
         art                =   artist.getvalid()
         pres               =   presentation.getvalid()
         loc                =   location.getvalid()
         pres.locations     +=  loc
         art.presentations  +=  pres
 
-        # Break the rule that presentation.name should be a str
-        pres.name = 1
+        # Break the max-size rule on presentation.name
+        pres.name = 'x' * (presentation.orm.mappings['name'].max + 1)
 
         self.one(art.brokenrules)
-        self.broken(art, 'name', 'valid')
+        self.broken(art, 'name', 'fits')
 
         # Break deeply (>2) nested constituent
-        # Break the rule that location.description should be a str
-        loc.description = 1
+        # Break the max-size rule on location.description
+
+        loc.description = 'x' * (location.orm.mappings['description'].max + 1)
         self.two(art.brokenrules)
-        self.broken(art, 'description', 'valid')
+        self.broken(art, 'description', 'fits')
+
+        # unbreak
+        loc.description = 'x' * location.orm.mappings['description'].min
+        pres.name =       'x' * presentation.orm.mappings['name'].min
+        self.zero(art.brokenrules)
+
+        # The artist_artifact created when assigning a valid artifact will
+        # itself have two broken rules by default. Make sure they bubble up to
+        # art.
+        art.artifacts += artifact.getvalid()
+        self.two(art.brokenrules)
+        self.broken(art, 'timespan', 'fits')
+        self.broken(art, 'role',     'fits')
+
+        # Fix the artist_artifact
+        art.artist_artifacts.first.role     = uuid4().hex
+        art.artist_artifacts.first.timespan = uuid4().hex
+        self.true(art.isvalid) # Ensure fixed
+
+        # Break an artifact and ensure the brokenrule bubbles up to art
+        art.artifacts.first.weight = uuid4().hex # break
+        self.one(art.brokenrules)
+        self.broken(art, 'weight', 'valid')
 
     def it_moves_constituent_to_a_different_composite(self):
         chrons = self.chronicles
@@ -1136,10 +1157,16 @@ class test_orm(tester):
         chrons.clear()
         art.save()
 
-        # TODO:BUG In addition to the create and update, two selects are being
+        # FIXME In addition to the create and update, two selects are being
         # chronicled here. This seems to have been caused by the the new
         # streaming logic.
         # self.two(chrons)
+
+        # TODO: This is changed to four even though it should be two (see
+        # above). This was added just detect if it changes again. Either way,
+        # it should be two as above, and this particular line should eventually
+        # be removed.
+        self.four(chrons)
 
         loc = art.presentations.last.locations.last
         pres = art.presentations.last
@@ -1206,24 +1233,11 @@ class test_orm(tester):
         arts1[i - 1] # Don't remove
         self.eq(arts1.count, len(list(arts1)))
 
-    def load(self):
-        return
-        lastname = uuid4().hex
-        print('creating')
-        for _ in range(1000000):
-            art = artist.getvalid()
-            art.lastname = lastname
-            art.save()
-
-        arts = artists(orm.stream(chunksize=10000), lastname=lastname).sorted('lastname')
-
-        for i, art in enumerate(arts):
-            print(i, art.lastname, art.id)
-
     def it_calls__getitem__on_streamed_entities(self):
         lastname = uuid4().hex
         arts = artists()
-        for _ in range(10):
+        cnt = 10
+        for _ in range(cnt):
             arts += artist.getvalid()
             arts.last.lastname = lastname
             arts.last.save()
@@ -1238,6 +1252,7 @@ class test_orm(tester):
             # Test indexing in asceding order
             for i in range(10):
                 self.eq(arts[i].id, arts1[i].id)
+                self.eq(arts[i].id, arts1(i).id)
 
             # Test indexing in descending order
             for i in range(9, 0, -1):
@@ -1246,6 +1261,7 @@ class test_orm(tester):
             # Test negative indexing in descending order
             for i in range(0, -10, -1):
                 self.eq(arts[i].id, arts1[i].id)
+                self.eq(arts[i].id, arts1(i).id)
 
             # Test getting chunks from different ends of the ultimate
             # result-set in an alternating fashion
@@ -1267,6 +1283,12 @@ class test_orm(tester):
                     # implemented.
                     self.expect(NotImplementedError, lambda: arts1[i:j])
 
+            # Ensure that __getitem__ raises IndexError if the index is out of
+            # range
+            self.expect(IndexError, lambda: arts1[cnt + 1])
+
+            # Ensure that __call__ returns None if the index is out of range
+            self.none(arts1(cnt + 1))
 
     def it_calls_unavailable_attr_on_streamed_entities(self):
         arts = artists(orm.stream)
@@ -1352,13 +1374,9 @@ class test_orm(tester):
             arts.last.firstname = firstname
             arts.last.save()
 
-        B()
         arts1 = artists.all
         self.true(arts1.orm.isstreaming)
         self.ge(arts1.count, cnt)
-
-        for x in arts1:
-            print(x.firstname, firstname)
 
         arts = [x for x in arts1 if x.firstname == firstname]
         self.count(cnt, arts)
@@ -1390,9 +1408,6 @@ class test_orm(tester):
                 self.eq(getattr(art, map.name), getattr(art1, map.name))
 
     def it_searches_entities(self):
-        # TODO Ensure chronicler is captureing the SQL statements correctly.
-        # There was a bug in entities._load that raised the onafterload event
-        # for each record that was loaded.
         arts = artists()
         uuid = uuid4().hex
         for i in range(4):
@@ -1411,8 +1426,16 @@ class test_orm(tester):
         # The where string has to be created manually.
         ids = sorted(arts[0:2].pluck('id'))
         where = 'id in (' + ','.join(['%s'] * len(ids)) + ')'
+
+        self.chronicles.clear()
+
         arts1 = artists(where, ids)
+        self.zero(self.chronicles) # defered
+
         self.two(arts1)
+        self.one(self.chronicles)
+        self._chrons(arts1, 'retrieve')
+
         arts1.sort() 
         self.eq(ids[0], arts1.first.id)
         self.eq(ids[1], arts1.second.id)
@@ -1427,8 +1450,16 @@ class test_orm(tester):
         # prepared/parameterized statements and may therefore be exposing
         # themselves to SQL injection attacks.
         self.expect(ValueError, fn)
+
+        self.chronicles.clear()
+
         arts1 = artists("firstname = '%s'" % arts.first.firstname, ())
+        self.zero(self.chronicles) # defered
+
         self.one(arts1)
+        self.one(self.chronicles)
+        self._chrons(arts1, 'retrieve')
+
         self.eq(arts.first.id, arts1.first.id)
 
         # Test a simple 2 arg equality test
@@ -1507,6 +1538,55 @@ class test_orm(tester):
         arts = artists('id = %s', (id,), firstname = fname, lastname = lname)
         self.one(arts1)
         self.eq(arts1.first.id, arts.first.id)
+
+    def it_searches_subentities(self):
+        sngs = singers()
+        uuid = uuid4().hex
+        for i in range(4):
+            sng = singer.getvalid()
+            sngs += sng
+            sng.voice = uuid4().hex
+
+            if i >= 2:
+                sng.register = uuid
+            else:
+                sng.register = uuid4().hex
+
+            sng.save()
+
+        # Test a plain where string with no args
+        def fn():
+            singers("firstname = '%s'" % sngs.first.firstname)
+
+        # This should throw an error because we want the user to specify an
+        # empty tuple if they don't want to pass in args. This serves as a
+        # reminder that they are not taking advantage of the
+        # prepared/parameterized statements and may therefore be exposing
+        # themselves to SQL injection attacks.
+        self.expect(ValueError, fn)
+
+        self.chronicles.clear()
+
+        sngs1 = singers("voice = '%s'" % sngs.first.voice, ())
+        self.zero(self.chronicles) # defered
+
+        self.one(sngs1)
+        self.two(self.chronicles)
+        self._chrons(sngs1, 'retrieve')
+        self._chrons(sngs1.first.orm.super, 'retrieve')
+
+        self.eq(sngs.first.id, sngs1.first.id)
+
+        return
+        # TODO: Add support for querying on super attributes.
+        sngs1 = singers("firstname = '%s'" % sngs.first.firstname, ())
+        self.zero(self.chronicles) # defered
+
+        self.one(sngs1)
+        self.one(self.chronicles)
+        self._chrons(sngs1, 'retrieve')
+
+        self.eq(sngs.first.id, sngs1.first.id)
 
     def it_searches_entities_using_fulltext_index(self):
         arts, facts = artists(), artifacts()
@@ -2018,26 +2098,25 @@ class test_orm(tester):
         pres = presentation.getvalid()
         pres.artist = artist.getvalid()
 
-        # Break rule that art.firstname should be a str
-        pres.artist.firstname = int() # Break
+        # Break rule that art.networth should be an int
+        pres.artist.networth = str() # Break
 
         self.one(pres.brokenrules)
-        self.broken(pres, 'firstname', 'valid')
+        self.broken(pres, 'networth', 'valid')
 
-        pres.artist.firstname = uuid4().hex # Unbreak
+        pres.artist.networth = int() # Unbreak
         self.zero(pres.brokenrules)
 
         loc = location.getvalid()
-        loc.description = int() # break
+        loc.description = 'x' * 256 # break
         loc.presentation = presentation.getvalid()
-        loc.presentation.name = int() # break
+        loc.presentation.name = 'x' * 256 # break
         loc.presentation.artist = artist.getvalid()
-        loc.presentation.artist.firstname = int() # break
+        loc.presentation.artist.firstname = 'x' * 256 # break
 
         self.three(loc.brokenrules)
         for prop in 'description', 'name', 'firstname':
-            self.broken(loc, prop, 'valid')
-
+            self.broken(loc, prop, 'fits')
 
     def it_rollsback_save_of_entity_with_broken_constituents(self):
         art = artist.getvalid()
@@ -2295,6 +2374,42 @@ class test_orm(tester):
         self.expect(None, lambda: comp.digest) 
         self.one(comp.brokenrules)
         self.broken(comp, 'digest', 'valid')
+
+        # constituent entity
+        art = artist.getvalid()
+        art.presentations += location.getvalid() # break
+        self.expect(None, lambda: art.presentations) 
+        self.one(art.brokenrules)
+        self.broken(art, 'presentations', 'valid')
+
+        # constituent
+        art = artist.getvalid()
+        art.presentations = locations() # break
+        self.expect(None, lambda: art.presentations) 
+        self.one(art.brokenrules)
+        self.broken(art, 'presentations', 'valid')
+
+        # composite
+        pres = presentation.getvalid()
+        pres.artist = location.getvalid()
+
+        self.one(pres.brokenrules)
+        self.broken(pres, 'artist', 'valid')
+
+        loc = location.getvalid()
+        loc.presentation = pres
+
+        self.broken(loc, 'artist', 'valid')
+
+        return
+
+        # FIXME
+        # associations
+        art = artist.getvalid()
+        #art.artifacts += artifact.getvalid()
+        art.artist_artifacts += locations()
+        self.one(art.brokenrules)
+        self.broken(art, 'artifacts', 'valid')
         
     def it_calls_explicit_attr_on_subentity(self):
         # Test inherited attr (phone)
@@ -2509,6 +2624,14 @@ class test_orm(tester):
             e1 = type(e)(e.id)
             return getattr(e, attr) == getattr(e1, attr)
 
+        # Ensure that a non-str gets converted to a str
+        for o in int(1), float(3.14), dec(1.99), datetime.now(), True:
+            art = artist()
+            art.email = o
+            self.type(str, art.email)
+            self.eq(str(o).lower(), art.email)
+
+
         Delta = la2gr('d')
         for art in (artist(), singer()):
             map = art.orm.mappings('email')
@@ -2542,11 +2665,17 @@ class test_orm(tester):
             self.broken(art, 'email', 'fits')
 
     def it_calls_str_attr_on_entity(self):
-        # TODO Ensure non-str's are coerced in accordance with str()'s rules.
         def saveok(e, attr):
             getattr(e, 'save')()
             e1 = type(e)(e.id)
             return getattr(e, attr) == getattr(e1, attr)
+
+        # Ensure that a non-str gets converted to a str
+        for o in int(1), float(3.14), dec(1.99), datetime.now(), True:
+            art = artist()
+            art.firstname = o
+            self.type(str, art.firstname)
+            self.eq(str(o), art.firstname)
 
         for art in (artist(), singer()):
             art.lastname  = uuid4().hex
@@ -3087,8 +3216,6 @@ class test_orm(tester):
                 self.fail('Exception not thrown')
 
     def it_calls_dir_on_entity(self):
-        # TODO Add more properties to test
-
         # Make sure mapped properties are returned when dir() is called.
         # Also ensure there is only one of each property in the directory. If
         # there are more, entitymeta may not be deleting the original property
@@ -4100,35 +4227,41 @@ class test_orm(tester):
         pres = presentation.getvalid()
         pres.artist = singer.getvalid()
 
-        # Break rule that art.firstname should be a str
-        pres.artist.firstname = int() # Break
+        # Get max lengths for various properties
+        presmax  =  presentation.  orm.  mappings['name'].         max
+        locmax   =  location.      orm.  mappings['description'].  max
+        artmax   =  artist.        orm.  mappings['firstname'].    max
+        x = 'x'
 
+        pres.artist.firstname = x * (artmax + 1)
         self.one(pres.brokenrules)
-        self.broken(pres, 'firstname', 'valid')
+        self.broken(pres, 'firstname', 'fits')
 
         pres.artist.firstname = uuid4().hex # Unbreak
         self.zero(pres.brokenrules)
 
         loc = location.getvalid()
-        loc.description = int() # break
+        loc.description = x * (locmax + 1) # break
+
         loc.presentation = presentation.getvalid()
-        loc.presentation.name = int() # break
+        loc.presentation.name = x * (presmax + 1) # break
+
         loc.presentation.artist = singer.getvalid()
-        loc.presentation.artist.firstname = int() # break
+        loc.presentation.artist.firstname = x * (artmax + 1) # break
 
         self.three(loc.brokenrules)
         for prop in 'description', 'name', 'firstname':
-            self.broken(loc, prop, 'valid')
+            self.broken(loc, prop, 'fits')
 
     def subentity_constituents_break_subentity(self):
         conc = concert.getvalid()
         conc.singer = singer.getvalid()
 
         # Break rule that art.firstname should be a str
-        conc.singer.firstname = int() # Break
+        conc.singer.firstname = 'x' * 256 # Break
 
         self.one(conc.brokenrules)
-        self.broken(conc, 'firstname', 'valid')
+        self.broken(conc, 'firstname', 'fits')
 
         conc.singer.firstname = uuid4().hex # Unbreak
         self.zero(conc.brokenrules)
@@ -7365,7 +7498,7 @@ Phone: 555 555 5555
 
         ## Add user to us collection, sort, and shift. This is to test against p.users.
 
-        # TODO BUG Appending a new user, sorting by id, then shift()ing results
+        # TODO FIXME Appending a new user, sorting by id, then shift()ing results
         # in the new user being immediately removed - so basically nothing is
         # happening here. The same thing happens below with p.users. This bug
         # makes the test work.  It conceals the fact that shift()ing doesn't
