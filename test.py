@@ -47,7 +47,9 @@ import re
 # Set conditional break points
 def B(x=True):
     if x: 
-        Pdb().set_trace(sys._getframe().f_back)
+        #Pdb().set_trace(sys._getframe().f_back)
+        from IPython.core.debugger import Tracer; 
+        Tracer().debugger.set_trace(sys._getframe().f_back)
 
 # We will use basic and supplementary multilingual plane UTF-8 characters when
 # testing str attributes to ensure unicode is being supported.
@@ -214,7 +216,7 @@ class artist(orm.entity):
         # so isnumeric will raise an AttributeError. However, this never bubble
         # up so it goes unnoticed. You can invoke a test off of
         # it_calls_explicit_attr_on_subentity
-        if not phone.isnumeric():
+        if type(phone) is str and not phone.isnumeric():
             phone = re.sub('\D*', '', phone)
 
             # Cache in map so we don't have to do this every time the phone
@@ -355,6 +357,15 @@ class singer(artist):
     @transmitting.setter
     def transmitting(self, v):
         self._transmitting = v
+
+class issues(orm.entities):
+    pass
+
+class issue(orm.entity):
+    @orm.attr(str)
+    def raiseAttributeError(self):
+        raise AttributeError()
+
 
 class test_orm(tester):
     def __init__(self):
@@ -501,7 +512,6 @@ class test_orm(tester):
     def it_has_static_super_references(self):
         self.is_(artist, singer.orm.super)
 
-
     def it_loads_and_saves_multicomposite_entity(self):
         chrons = self.chronicles
 
@@ -598,6 +608,26 @@ class test_orm(tester):
         self._chrons(sng1.concerts.first.orm.super,  'retrieve')
         self._chrons(sng1.concerts.first.locations,  'retrieve')
         self._chrons(sng1.locations,                 'retrieve')
+
+    def it_receives_AttributeError_from_explicit_attributes(self):
+        # An issue was discovered in the former entities.__getattr__. When an
+        # explicit attribute raised an AttributeError, the __getttr__ was
+        # invoked (this is the reason it gets invoke in the first place) and
+        # returned the map.value of the attribute. The effect was that the
+        # explict attribute never had a chance to run, so we got what ever
+        # was in map.value.
+        #
+        # To correct this, the __getattr__ was converted to a __getattribute__,
+        # and some adjustments were made (map.isexplicit was added). Now, an
+        # explicit attribute can raise an AttributeError and it bubble up
+        # correctly (as confirmed by this test). The problem isn't likely to
+        # resurface. However, this test was written just a way to ensure the
+        # issue never comes up again. The `issue` class was created for this
+        # test because adding the `raiseAttributeError` explicit attribute to
+        # other classes cause an AttributeError to be raise when the the
+        # brokenrules logic was invoked, which broke a lot of tests.
+        iss = issue()
+        self.expect(AttributeError, lambda: iss.raiseAttributeError)
 
     def it_loads_and_saves_associations(self):
         # TODO Test loading and saving deeply nested associations
@@ -2809,6 +2839,7 @@ class test_orm(tester):
         self.eq(100, comp.width)
 
         saveok(comp, 'width')
+
     def it_calls_explicit_int_attr_on_entity(self):
         def saveok(e, attr):
             getattr(e, 'save')()

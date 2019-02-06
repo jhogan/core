@@ -41,6 +41,8 @@ import decimal
 from datetime import datetime
 import gc
 
+# TODO Research making these constants the same as their function equivilants,
+# i.e., s/2/str; s/3/int/, etc.
 @unique
 class types(Enum):
     pk        =  0
@@ -745,8 +747,6 @@ class entitymeta(type):
                 try:
                     prop = body[map.name]
                     if type(prop) is ormmod.attr.wrap:
-                        #body[map.name] = prop.property
-                            
                         body[map.name] = prop
                     else:
                         del body[map.name]
@@ -1338,8 +1338,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         return brs
 
-    def __getattr__(self, attr):
-        map = None
+    def __getattribute__(self, attr):
+        if attr in ('orm', '__class__'):
+            return object.__getattribute__(self, attr)
 
         # self.orm.instance is set in entity.__init__. If the user overrides
         # __init__ and doesn't call the base __init__, self.orm.instance is
@@ -1350,6 +1351,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             msg += 'Ensure the overridden __init__ called the base __init__'
             raise ValueError(msg)
 
+        # TODO attr would never be 'orm', see above
+        # TODO Why would self.orm.mappings ever be false... it's a collection
         if attr != 'orm' and self.orm.mappings:
             map = self.orm.mappings(attr)
             if not map:
@@ -1443,6 +1446,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         elif type(map) is associationsmapping:
             map.composite = self
 
+        elif type(map) is fieldmapping:
+            if map.isexplicit:
+                return object.__getattribute__(self, attr)
+
         elif map is None:
             if attr != 'orm':
                 for map in self.orm.mappings.associationsmappings:
@@ -1451,8 +1458,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             asses = getattr(self, map.name)
                             return getattr(asses, attr)
 
-            msg = "'%s' object has no attribute '%s'"
-            raise AttributeError(msg % (self.__class__.__name__, attr))
+            return object.__getattribute__(self, attr)
+            #msg = "'%s' object has no attribute '%s'"
+            #raise AttributeError(msg % (self.__class__.__name__, attr))
+
 
         return map.value
 
@@ -1911,7 +1920,6 @@ class fulltext(index):
 
         return name
 
-
 class attr:
     class wrap:
         def __init__(self, *args, **kwargs):
@@ -1922,7 +1930,9 @@ class attr:
 
         @property
         def mapping(self):
-            return fieldmapping(*self.args, **self.kwargs)
+            map = fieldmapping(*self.args, **self.kwargs)
+            map.isexplicit = True
+            return map
 
         def __get__(self, e, etype=None):
             name = self.fget.__name__
@@ -1966,7 +1976,8 @@ class fieldmapping(mapping):
                        d=None,     # Scale (in decimals and floats)
                        name=None,  # Name of the field
                        ix=None,    # Database index
-                       derived=False):
+                       derived=False,
+                       isexplicit=False):
 
         if type in (float, decimal.Decimal):
             if min is not None:
@@ -1980,6 +1991,7 @@ class fieldmapping(mapping):
         self._max        =  max
         self._precision  =  m
         self._scale      =  d
+        self.isexplicit  =  isexplicit
 
         # TODO Currently, a field is limited to being part of only one
         # composite or fulltext index. This code could be improved to allow for
@@ -2010,7 +2022,8 @@ class fieldmapping(mapping):
             self.scale,
             self.name,
             ix,
-            self.derived
+            self.derived,
+            self.isexplicit
         )
 
         if ix:
