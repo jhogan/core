@@ -98,12 +98,14 @@ class artists(orm.entities):
     pass
 
 class location(orm.entity):
+    address     = str
     description = str
 
     @staticmethod
     def getvalid():
         loc = location()
         loc.description = uuid4().hex
+        loc.address     = uuid4().hex
         return loc
 
 class presentation(orm.entity):
@@ -460,6 +462,13 @@ class test_orm(tester):
         art.save()
         art1 = artist(art.id)
         self.gt(art.updatedat, expected)
+
+    def it_cant_instantiate_entities(self):
+        ''' Since orm.entities() wouldn't have an orm property (since a
+        subclass hasn't invoked the metaclass code that would assign it the orm
+        property), generic entities collections shouldn't be allowed. They
+        should basically be considered abstract. '''
+        self.expect(NotImplementedError, lambda: orm.entities())
 
     def it_calls__str__on_entity(self):
         art = artist.getvalid()
@@ -1386,6 +1395,7 @@ class test_orm(tester):
                 arts.sort(sort, reverse)
                 arts1 = artists(orm.stream, lastname=lastname)
                 arts1.sort(sort, reverse)
+                arts1.orm.sql
 
                 # Test sort()
                 for i, art1 in enumerate(arts1):
@@ -4653,8 +4663,119 @@ class test_orm(tester):
         self.zero(sng.concerts)
         self.zero(sng.concerts.orm.trash)
 
+        # TODO Rename recordnotfounderror to missingrecord
         self.expect(db.recordnotfounderror, lambda: concert(conc.id))
         self.expect(db.recordnotfounderror, lambda: location(loc.id))
+
+    def it_cant_currently_query_on_fully_qualified_columns(self):
+        # FIXME This test illustrates a problem. Currently, lastname doesn't
+        # get prefixed with artists, only firstname. We will probabably need
+        # a boolean expression parse to correct this. '''
+        arts = artists("firstname = 'x' and lastname = 'y'", ())
+        expect = "(artists.firstname = 'x' and lastname = 'y')"
+        actual = arts.orm.sql[0].split('WHERE ')[1].strip()
+        self.eq(expect, actual)
+
+        print(*arts.orm.sql)
+
+    def it_calls_innerjoin(self):
+        # TODO Ensure constituents are loaded with the correct persistencestate
+        arts = artists()
+        for _ in range(2):
+            firstname, lastname = uuid4().hex, uuid4().hex
+            art = artist.getvalid()
+            art.firstname = firstname
+            art.lastname = lastname
+            arts += art
+
+            for _ in range(2):
+                addr = uuid4().hex
+                art.locations += location.getvalid()
+                art.locations.last.description = addr
+                
+            for _ in range(2):
+                name = uuid4().hex
+                art.presentations += presentation.getvalid()
+                art.presentations.last.name = name
+
+                for _ in range(2):
+                    desc = uuid4().hex
+                    pres = art.presentations.last
+                    pres.locations += location.getvalid()
+                    pres.locations.last.description = desc
+
+        arts.save()
+
+        def test(arts1):
+            self.one(arts1)
+            self.eq(arts.last.id, arts1.first.id)
+            self.eq(arts.last.firstname, arts1.first.firstname)
+
+            art1 = arts1.first
+            fff = (False,) * 3
+            self.eq(fff, art1.orm.persistencestate)
+
+            self.two(arts1.first.presentations)
+            press = arts.last.presentations.sorted()
+            press1 = art1.presentations.sorted()
+
+
+            for pres, pres1 in zip(press, press1):
+                self.eq(fff, pres.orm.persistencestate)
+                self.eq(pres.id, pres1.id)
+                self.eq(pres.name, pres1.name)
+
+                locs = pres.locations.sorted()
+                locs1 = pres1.locations.sorted() 
+                self.two(pres1.locations)
+
+                for loc, loc1 in zip(locs, locs1):
+                    self.eq(fff, loc.orm.persistencestate)
+                    self.eq(loc.id, loc1.id)
+                    self.eq(loc.description, loc1.description)
+
+        # Inner join where only artist has a where clause
+        arts1 = artists(firstname = firstname)
+        press = presentations()
+        locs = locations()
+        artlocs = locations()
+        press.innerjoin(locs)
+        arts1.innerjoin(press)
+        arts1.innerjoin(artlocs)
+        orm = arts1.orm
+        print(*orm.sql)
+
+        self.two(arts1.orm.joins)
+        self.one(press.orm.joins)
+        self.zero(locs.orm.joins)
+
+        test(arts1)
+
+        # Inner join query: All three have where clauses
+        arts1 = artists(firstname = firstname)
+        press = presentations(name = name)
+        locs = locations(description = desc)
+
+        press.innerjoin(locs)
+        arts1.innerjoin(press)
+
+        self.one(arts1.orm.joins)
+        self.one(press.orm.joins)
+        self.zero(locs.orm.joins)
+        
+        self.one(arts1)
+        art = arts1.first
+        self.eq(firstname, art.firstname)
+
+        press = art.presentations
+        self.one(press)
+        pres = press.first
+        self.eq(name, pres.name)
+
+        locs = pres.locations
+        self.one(locs)
+        loc = locs.first
+        self.eq(desc, loc.description)
 
 class test_blog(tester):
     def __init__(self):

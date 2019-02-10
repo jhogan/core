@@ -22,7 +22,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-from pdb import set_trace; B=set_trace
 from pprint import pprint
 from table import table
 import builtins
@@ -40,6 +39,15 @@ import dateutil
 import decimal
 from datetime import datetime
 import gc
+
+# Set conditional break points
+def B(x=True):
+    if type(x) is str:
+        print(x)
+    elif x:
+        #Pdb().set_trace(sys._getframe().f_back)
+        from IPython.core.debugger import Tracer; 
+        Tracer().debugger.set_trace(sys._getframe().f_back)
 
 # TODO Research making these constants the same as their function equivilants,
 # i.e., s/2/str; s/3/int/, etc.
@@ -123,15 +131,15 @@ class stream(entitiesmod.entity):
                 self._start = slc.start
                 self._stop = slc.stop
 
-                orderby = self.stream.orderby
-
                 self.chunk.clear()
-                self.chunk._load(orderby, self.limit, self.offset)
+                self.chunk._load(self.stream.orderby, self.limit, self.offset)
                 self.chunkloaded = True
 
             return self.chunk[self.getrelativeslice(slc)]
 
         def __iter__(self):
+            # TODO To make this object a proper iterable, shouldn't we override
+            # the __next__()
             slc= slice(0, self.stream.chunksize)
             self.advance(slc)
             yield self.chunk
@@ -201,8 +209,102 @@ class stream(entitiesmod.entity):
         def offset(self):
             return self.start
 
+class joins(entitiesmod.entities):
+    def __init__(self, initial=None, es=None):
+        if es is None:
+            raise ValueError('Missing entities')
+        self.entities = es
+        super().__init__(initial=initial)
+
+    @property
+    def table(self):
+        return self.entities.orm.table
+
+    def __str__(self):
+        r = ''
+        for join in self:
+            if join.type == join.Inner:
+                r += 'INNER JOIN'
+            elif join.type == join.Leftouter:
+                r += 'LEFT OUTER JOIN'
+            else:
+                raise ValueError('Invalid join type')
+
+            jointable = join.entities.orm.table
+            r += ' ' + jointable
+
+            mypk = self.entities.orm.mappings.primarykeymapping.name
+            for map in join.entities.orm.mappings.foreignkeymappings:
+                if self.entities.orm.entity is map.entity:
+                    joinpk = map.name
+                    break
+            else:
+                msg = 'FK not found: '
+                msg += '%s.%s = %s.%s'
+                msg %= (jointable, '<NOT FOUND>', self.table, mypk)
+                msg += "\nIs '%s' a parent to '%s'" % (self.table, jointable)
+                raise ValueError(msg)
+
+            r += '\n    ON %s.%s = %s.%s'
+            r %= (jointable, joinpk, self.table, mypk)
+
+            js = join.entities.orm.joins
+            r += '\n' + str(join.entities.orm.joins)
+
+        return r
+
+    @property
+    def wheres(self):
+        return wheres(initial=[x.where for x in self if x.where])
+
+class join(entitiesmod.entity):
+    Inner = 0
+    Leftouter = 0
+
+    def __init__(self, es, type):
+        self.entities = es
+        self.type = type # inner, outer, etc
+
+    @property
+    def where(self):
+        return self.entities.orm.where
+
+class wheres(entitiesmod.entities):
+    def __str__(self):
+        r = ''
+        # TODO: Continue ensuring that wheres.__str__ represents where clauses
+        # from nested joins.
+        whs = self
+
+        # TODO How does this work. Will it always ensure whs is in the right
+        # order
+        for wh in self:
+            whs |= wh.entities.orm.joins.wheres
+
+        for i, wh in enumerate(whs):
+            # TODO Why would a where not have a conditional
+            if wh.conditional:
+                if i:
+                    r += ' AND\n      '
+                else:
+                    r = 'WHERE '
+                r += '(%s.%s)' % (wh.entities.orm.table, wh.conditional)
+
+        return r
+
+    @property
+    def args(self):
+        r = []
+
+        for x in self:
+            if x.args:
+                r += x.args
+
+        return r 
+
 class where(entitiesmod.entity):
-    def __init__(self, cond, args):
+    def __init__(self, es, cond, args):
+        self.entities    = es
         self.conditional = None
         self.args        = None
 
@@ -241,6 +343,14 @@ class entities(entitiesmod.entities):
     def __init__(self, initial=None, _p2=None, *args, **kwargs):
         try:
             self.orm = self.orm.clone()
+        except AttributeError:
+            msg = (
+                "Can't instantiate abstract orm.entities. "
+                "Use entities.entities for a generic entities collection "
+                "class."
+            )
+            raise NotImplementedError(msg)
+        try:
             self.orm.instance = self
             self.orm.initing = True
             self.orm.isloaded = False
@@ -248,6 +358,7 @@ class entities(entitiesmod.entities):
             self.orm.stream = None
             self.orm.where = None
             self.orm.ischunk = False
+            self.orm.joins = joins(es=self)
 
             self.onbeforereconnect  =  entitiesmod.event()
             self.onafterreconnect   =  entitiesmod.event()
@@ -314,6 +425,14 @@ class entities(entitiesmod.entities):
         chron = db.chronicler.getinstance()
         chron += db.chronicle(eargs.entity, eargs.op, eargs.sql, eargs.args)
 
+    def innerjoin(self, *args):
+        for es in args:
+            self.join(es, join.Inner)
+
+    def join(self, es, type=None):
+        type = joins.Inner if type is None else type
+        self.orm.joins += join(es=es, type=type)
+    
     @classproperty
     def count(cls):
         # If type(cls) is type then count is being called directly off the
@@ -340,6 +459,7 @@ class entities(entitiesmod.entities):
             if self.orm.isstreaming:
                 sql = 'SELECT COUNT(*) FROM ' + self.orm.table
                 if self.orm.where.conditional:
+                    # TODO Update for joins
                     sql += ' WHERE ' + self.orm.where.conditional
 
                 ress = None
@@ -382,10 +502,12 @@ class entities(entitiesmod.entities):
     
     def __getattribute__(self, attr):
         def proceed():
+            dontloads = 'innerjoin', 'join'
             if not  self.orm.initing      and  \
                not  self.orm.isloading    and  \
                not  self.orm.isstreaming  and  \
-               not  self.orm.isremoving:
+               not  self.orm.isremoving   and  \
+               attr not in dontloads:
                 self._load()
 
             return object.__getattribute__(self, attr)
@@ -501,7 +623,14 @@ class entities(entitiesmod.entities):
         p1, p2 = _p1, _p2
 
         if p2 is None and p1 != '':
-            raise ValueError('Missing arguments collection')
+            msg = '''
+                Missing arguments collection.  Be sure to add arguments in the
+                *args portion of the constructor.  If no args are needed for
+                the query, just pass an empty tuple to indicate you none are
+                needed.  Note that this is an opportunity to evaluate whether
+                or not you are opening up an SQL injection attact vector.
+            '''
+            raise ValueError(textwrap.dedent(msg).lstrip())
 
         args = list(args)
         for k, v in kwargs.items():
@@ -531,7 +660,7 @@ class entities(entitiesmod.entities):
 
         args = [x.bytes if type(x) is UUID else x for x in args]
 
-        self.orm.where = where(p1, args)
+        self.orm.where = where(self, p1, args)
 
     def clear(self):
         self.orm.isloaded = False
@@ -555,6 +684,8 @@ class entities(entitiesmod.entities):
         finally:
             self.orm.isremoving = False
 
+
+    # TODO Move this to orm.load. '_load' could be needed by subclasse of entities
     def _load(self, orderby=None, limit=None, offset=None):
         if self.orm.isloaded:
             return
@@ -569,18 +700,9 @@ class entities(entitiesmod.entities):
         try:
             self.orm.isloading = True
 
-            sql = 'SELECT * FROM ' + self.orm.table
+            sql, args = self.orm.sql
 
-            where = self.orm.where
-            args = ()
 
-            if where:
-                if where.conditional:
-                    cond = self.orm.where.conditional
-                    sql += ' WHERE ' + cond
-                if where.args:
-                    args = where.args
-            
             if orderby:
                 sql += ' ORDER BY ' + orderby
 
@@ -607,8 +729,18 @@ class entities(entitiesmod.entities):
             self.onafterload(self, eargs)
 
             for res in ress:
-                e = self.orm.entity(res)
-                self += e
+                # TODO Tighten up using where()
+                id = UUID(bytes=res.fields.first.value)
+                for e in self:
+                    if e.id == id:
+                        # TODO Test for multi-row
+                        break
+                else:
+                    e = self.orm.entity()
+                    self += e
+
+                e.orm.populate(res)
+
                 e.orm.persistencestate = (False,) * 3
         finally:
             self.orm.isloaded = True
@@ -771,7 +903,7 @@ class entitymeta(type):
         return entity
 
 class entity(entitiesmod.entity, metaclass=entitymeta):
-    def __init__(self, o=None):
+    def __init__(self, o=None, _depth=0):
         self.orm = self.orm.clone()
         self.orm.instance = self
 
@@ -792,19 +924,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         else:
             if type(o) is UUID:
                 res = self._load(o)
-            elif type(o) is db.dbresult:
-                res = o
             else:
-                raise ValueError()
+                res = o
 
-            for map in self.orm.mappings:
-                if not isinstance(map, fieldmapping):
-                    continue
-
-                map.value = res[map.name]
-
-            self.orm.isnew = False
-            self.orm.isdirty = False
+            self.orm.populate(res)
 
         super().__init__()
 
@@ -814,7 +937,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
     def __getitem__(self, args):
         if type(args) is str:
             try:
-                return getattr(self, args)
+                return getattr(lself, args)
             except AttributeError as ex:
                 raise IndexError(str(ex))
 
@@ -1001,8 +1124,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 for sub in cls.orm.subclasses:
                     sub.reCREATE(cur)
                             
-        except:
-            if conn:
+        except Exception as ex:
+            # Rollback unless conn and cur weren't successfully instantiated.
+            if conn and cur:
                 conn.rollback()
             raise
         else:
@@ -1010,8 +1134,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 conn.commit()
         finally:
             if conn:
-                cur.close()
                 pool.push(conn)
+                if cur:
+                    cur.close()
 
     @classmethod
     def DROP(cls, cur=None):
@@ -1621,6 +1746,10 @@ class mappings(entitiesmod.entities):
         return self._generate(type=foreignkeyfieldmapping)
 
     @property
+    def primarykeymapping(self):
+        return list(self._generate(type=primarykeyfieldmapping))[0]
+
+    @property
     def entitiesmappings(self):
         return self._generate(type=entitiesmapping)
 
@@ -1763,6 +1892,10 @@ class mapping(entitiesmod.entity):
     @property
     def name(self):
         return self._name
+
+    @property
+    def fullname(self):
+        return '%s.%s' % (self.orm.table, self.name)
 
     def __str__(self):
         return self.name
@@ -2438,6 +2571,7 @@ class orm:
         self.isloaded             =  False
         self.isloading            =  False
         self.isremoving           =  False
+        self.joins                =  None
 
     def clone(self):
         r = orm()
@@ -2453,6 +2587,146 @@ class orm:
         r.mappings = self.mappings.clone(r)
 
         return r
+
+    def populate(self, res):
+        ''' Given a dbresultset object, iterate over each of the fields objects
+        to populate the object's map values. If nested fields names are
+        encounted ('parent.child.id'), the graph is searched recursively until
+        the leaf object is found and its fields are populated vith the field
+        value. '''
+
+        prevnodes = None
+        for f in res.fields:
+            # The field.name proprety is assumed to be a graph description
+            # (e.g., 'grandparent.parent.child.id'). Call the first part
+            # 'nodes' and the second part col.
+            nodes = f.name.split('.')[1:]
+            col = nodes.pop()
+
+            # If there are no nodes, we must me at the root, so set 'map' and it
+            # will be assigned after conditional.
+            if len(nodes) == 0:
+                map = self.mappings[col]
+            else:
+
+                # If graph has changed
+                if nodes != prevnodes:
+
+                    # Only need to do this once for each graph
+                    if col != 'id':
+                        continue
+
+                    # Go through each node in nodes. The goal is to drill down
+                    # the graph until we find the leaf object. Then instantiate
+                    # the leaf object and assign it to the correct entities
+                    # collection object.
+                    maps = self.mappings
+                    for i, node in enumerate(nodes):
+                        map = maps[node]
+
+                        # Get the entities collection. Create it if it doesn't
+                        # yet exist.
+                        if map.value:
+                            es = map.value
+                        else:
+                            es = map.entities()
+                            map.value = es
+
+                        # If last node
+                        if i + 1 == len(nodes):
+                            # Prevent duplicate entries to an entities
+                            # collection.
+                            # TODO Tighten up by overridding the |= to prevent
+                            # duplicates based on entitiy's id a value
+                            dup = False
+                            for e in es:
+                                if e.id == UUID(bytes=f.value):
+                                    dup = True
+                                    break
+                            else:
+                                e = map.entities.orm.entity()
+                                es += e
+
+                        maps = e.orm.mappings
+                            
+                # Now that we have the correct maps collection, we can get the
+                # map by indexing it off the column name.
+                map = maps[col]
+
+            # Assign the field value (from the db), to the map. 
+            map.value = f.value
+            prevnodes = nodes
+
+        self.isnew = False
+        self.isdirty = False
+    
+    def getselects(self, depth=0):
+        R = table(border=None)
+
+        for map in self.entity.orm.mappings:
+            if not isinstance(map, fieldmapping):
+                continue
+            r = R.newrow()
+            # FIXME: Aliases can only be 256 chars long. This recursive
+            # algorithm chains aliase names togethr such that a deeply nested
+            # join may eventually exceed that limit.  A fix would be for entity
+            # classes to create unique abbreviations for themselves 
+            #
+            # assert artist.orm.abbreviation == 'ar'
+            #
+            # The abbreviations can be used in place of the table names in the
+            # aliase.  This should make virtually any sane, deeply-nested join
+            # possible.
+            r.newfields(map.fullname, 'AS', map.fullname, ',')
+
+        tbl = self.table
+        for join in self.joins:
+            e = join.entities.orm.entity
+            orm = join.entities.orm
+            for row in orm.getselects(depth + 1):
+                fs = [str(f) for f in row]
+                r = R.newrow()
+                r.newfields(fs[0], 'AS', '%s.%s' % (tbl, fs[2]), ',')
+
+        r.fields.pop() # Pop the trailing comma
+
+        if not depth:
+            for r in R:
+                r.fields[2].value = '`%s`' % r.fields[2].value
+                
+        return R
+
+    @property
+    def selects(self):
+        return self.getselects()
+
+    @property
+    def sql(self):
+        whs = wheres()
+
+        if self.where:
+            whs += self.where
+
+        joins = ''
+        if self.joins.count:
+            B()
+            joins += str(self.joins) 
+            whs += self.joins.wheres
+
+        select = textwrap.indent(str(self.selects), ' ' * 4)
+
+        sql = 'SELECT \n%s\nFROM %s\n' % (select, self.table)
+        
+        sql += joins if joins else ''
+        
+        if str(whs):
+            sql += '%s\n' % str(whs)
+
+        if self.isstreaming:
+            if self.stream.orderby:
+                sql += ' ORDER BY ' + self.stream.orderby
+        
+        return sql, whs.args
 
     @staticmethod
     def introduce(sql, args):
