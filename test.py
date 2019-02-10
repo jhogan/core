@@ -993,19 +993,19 @@ class test_entities(tester):
 
         # Append a unique knight insisting it be unique
         ni = knight('knight who says ni')
-        sks &= ni
+        sks |= ni
         self.assertEq(4, sks.count)
         for i, k in enumerate([fk, bk, fk, ni]):
             self.assertIs(sks[i], k)
 
         # Append a non-unique knight insisting in be unique
-        sks &= ni
+        sks |= ni
         self.assertEq(4, sks.count)
         for i, k in enumerate([fk, bk, fk, ni]):
             self.assertIs(sks[i], k)
 
         # Append a non-unique knight insisting in be unique using the append
-        # method rather than the &= operator in order to obtain the results
+        # method rather than the |= operator in order to obtain the results
         res = sks.append(ni, uniq=True)
         self.assertTrue(res.isempty)
         self.assertEq(4, sks.count)
@@ -1013,7 +1013,7 @@ class test_entities(tester):
             self.assertIs(sks[i], k)
 
         # Append a non-unique collection of knights insisting they be unique
-        # using the append method rather than the &= operator in order to
+        # using the append method rather than the |= operator in order to
         # obtain the results
         ks = ni + knight('knight who says ni2')
         res = sks.append(ks, uniq=True)
@@ -1069,14 +1069,14 @@ class test_entities(tester):
             self.assertEq(ValueError, type(ex))
 
     def it_calls__iand__(self):
-        """ The &= opreator (__iand__) wraps the append() methed setting
-        the unique flag to True. So &= is like a regular append accept 
+        """ The |= opreator (__iand__) wraps the append() methed setting
+        the unique flag to True. So |= is like a regular append accept 
         objecs won't be appended if already exist in the collection."""
 
         ## Test appending one unique entity ##
         ks = knights.createthe4()
         ni = knight('knight who says ni')
-        ks &= ni
+        ks |= ni
 
         self.assertEq(5, ks.count)
         self.assertIs(ks.last, ni)
@@ -1085,7 +1085,7 @@ class test_entities(tester):
         # be appended.
 
         ks = knights.createthe4()
-        ks &= ks.first
+        ks |= ks.first
 
         self.assertEq(4, ks.count)
 
@@ -1097,7 +1097,7 @@ class test_entities(tester):
         nis += knight('knight who says ni 1')
         nis += ks.first # The non-unique entity
 
-        ks &= nis
+        ks |= nis
 
         self.assertEq(5, ks.count)
         self.assertIs(nis.first,   ks.last)
@@ -1110,7 +1110,7 @@ class test_entities(tester):
         nis += ks.first
         nis += ks.second # The non-unique entity
 
-        ks &= nis
+        ks |= nis
 
         self.assertEq(4, ks.count)
 
@@ -1118,7 +1118,7 @@ class test_entities(tester):
         ## an entity or entities type
         ks = knights.createthe4()
         try:
-            ks &= 1
+            ks |= 1
             self.assertFail('Append accepted invalid type')
         except Exception as ex:
             self.assertEq(ValueError, type(ex))
@@ -1501,17 +1501,17 @@ class test_entities(tester):
         self.assertIs(the4.third, snare.third)
         self.assertEq(4, snare.count)
 
-        # Appned a duplicate entity again but with the &= operator to ensure
+        # Appned a duplicate entity again but with the |= operator to ensure
         # it won't be appended
-        ks &= the4.first
+        ks |= the4.first
         self.assertIs(the4.first, snare.first)
         self.assertIs(the4.second, snare.second)
         self.assertIs(the4.third, snare.third)
         self.assertEq(4, snare.count)
 
-        # Appned a collection of duplicate entity again but with the &=
+        # Appned a collection of duplicate entity again but with the |=
         # operator to ensure they won't be appended
-        ks &= entities([the4.second, the4.third])
+        ks |= entities([the4.second, the4.third])
         self.assertIs(the4.first, snare.first)
         self.assertIs(the4.second, snare.second)
         self.assertIs(the4.third, snare.third)
@@ -2904,12 +2904,12 @@ class test_jwt(tester):
         t = jwt()
 
         # Exp defaults to 24 hours in the future
-        hours = math.ceil((t.exp - datetime.now()).seconds / 3600)
+        hours = math.ceil((t.exp - datetime.datetime.now()).seconds / 3600)
         self.assertEq(24, hours)
 
         # Specify 48 hours to expire
         t = jwt(ttl=48)
-        hours = math.ceil((t.exp - datetime.now()).seconds / 3600)
+        hours = math.ceil((t.exp - datetime.datetime.now()).seconds / 3600)
         self.assertEq(24, hours)
 
     def it_calls_token(self):
@@ -2919,10 +2919,10 @@ class test_jwt(tester):
 
         d = pyjwt.decode(token, secret)
 
-        exp = datetime.fromtimestamp(d['exp'])
+        exp = datetime.datetime.fromtimestamp(d['exp'])
 
         # Ensure exp is about 24 hours into the future
-        hours = math.ceil((exp - datetime.now()).seconds / 3600)
+        hours = math.ceil((exp - datetime.datetime.now()).seconds / 3600)
         self.assertEq(24, hours)
 
     def it_sets_iss(self):

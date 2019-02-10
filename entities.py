@@ -140,7 +140,7 @@ class entities(object):
         Allow collections to be called providing similar functionality to the
         way they can be indexed. 
         """
-        # Should negative numbers be allowed. If not, why?
+
         try: 
             return self[ix]
         except IndexError: 
@@ -391,7 +391,7 @@ class entities(object):
         self.append(t)
         return self
 
-    def __iand__(self, t):
+    def __ior__(self, t):
         self.append(t, uniq=True)
         return self
 
