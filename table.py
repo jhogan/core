@@ -25,7 +25,8 @@ SOFTWARE.
 from entities import *
 
 class table(entity):
-    def __init__(self, x=None, y=None, initval=None):
+    def __init__(self, x=None, y=None, initval=None, border=('-', '|', '+') ):
+        # TODO Write test for different border values
         self.rows = rows(tbl=self)
         self._fields = fields()
 
@@ -39,6 +40,8 @@ class table(entity):
                 r = self.newrow()
                 for _ in range(x):
                     r.newfield(initval)
+
+        self.border = border
 
     def _fields_onadd(self, src, eargs):
         f = eargs.entity
@@ -181,14 +184,25 @@ class table(entity):
 
         widths = self.columns.widths
 
-        b = '-' * (sum(widths) + len(widths) + (len(widths) * 2) - 1)
+        if self.border:
+            # horizontal (-), vertical (|), corner (+)
+            h, v, c = self.border
+        else:
+            h = v = c = ''
 
-        R += '+' + b + '+'
+
+        b = h * (sum(widths) + len(widths) + (len(widths) * 2) - 1)
+
+        R += c + b + c
+
+        if R:
+            R += '\n'
 
         for i, r in enumerate(self):
-            R += '\n'
+            if i:
+                R += '\n'
             for j, f1 in enumerate(r):
-                R += '| ' if j == 0 else ''
+                R += v + ' ' if v and j == 0 else ''
 
                 if f != None and f1 is f:
                     R += Reverse
@@ -198,14 +212,17 @@ class table(entity):
                 if f != None and f1 is f:
                     R += Endc
 
-                R += ' |'
+                R += ' ' + v
                 if j < r.fields.ubound:
                     R += ' '
 
             if i < self.rows.ubound:
-                R += '\n|' + b + '|'
+                if h:
+                    R += '\n'
+                R += v + b + v
 
-        R += '\n+' + b + '+\n'
+        if b:
+            R += '\n' + c + b + c + '\n'
         return R
                 
 class columns(entities):

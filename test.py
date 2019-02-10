@@ -558,7 +558,6 @@ class test_entities(tester):
 
             # Ensure the elements of the head are as expected
             for j in range(0, i):
-                B()
                 self.assertEq(ks[j], head[j])
 
     def it_calls_tail(self):
