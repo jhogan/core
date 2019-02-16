@@ -390,13 +390,14 @@ class connection(entity):
                 else:
                     raise
 
+# TODO The 'db' prefix on these class names are redundant.
 class dbresultset(entities):
+    """ Represents a collections of rows returned from a db query. """
     def __init__(self, cur):
         super().__init__()
         self._cur = cur
         for r in self._cur:
             self += dbresult(r, self)
-
 
     @property
     def lastrowid(self):
@@ -412,13 +413,14 @@ class dbresultset(entities):
         return self.first
 
 class dbresult(entity):
+    """ Represents a row returned from a db query. """
     def __init__(self, row, ress):
+        super().__init__()
         self._row = row
         self._ress = ress
-
-    def __iter__(self):
-        for f in self._row:
-            yield f
+        self.fields = dbresultfields()
+        for i, _ in enumerate(self._row):
+            self.fields += dbresultfield(i, self)
 
     def __getitem__(self, i):
         if type(i) is str:
@@ -427,6 +429,24 @@ class dbresult(entity):
             desc = self._ress._cur.description
             i = [x[0] for x in desc].index(i)
         return self._row[i]
+
+class dbresultfields(entities):
+    pass
+
+class dbresultfield(entity):
+    """ Represents a field within a dbresult. """
+    def __init__(self, ix, res):
+        self.index = ix
+        self.dbresult = res
+    
+    @property
+    def name(self):
+        desc = self.dbresult._ress._cur.description
+        return desc[self.index][0]
+
+    @property
+    def value(self):
+        return self.dbresult._row[self.index]
 
 class recordnotfounderror(Exception):
     pass
