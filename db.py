@@ -624,3 +624,106 @@ class executioner(entity):
                 cur.close()
                 pl.push(conn)
 
+class predicates(entities):
+    pass
+
+class predicate(entity):
+    
+    class statemachine():
+        def __init__(self):
+            self._chars = str()
+            self.clear()
+
+        @property
+        def character(self):
+            try:
+                return self._chars[-1]
+            except IndexError:
+                return str()
+
+        @character.setter
+        def character(self, v):
+            self._chars += v
+            self.update()
+
+        def update(self):
+            self.clear()
+            c = self.character
+
+            ops = (
+                '=', '<=', '>=', 'like', 'not'
+            )
+
+            if not intoken:
+                if not c.isspace
+                    self.word += c
+
+
+            if c.isspace():
+                print(c)
+                B()
+                if self.incolumn:
+                    self.columndone = True
+                    self.incolumn = False
+                elif self.inoperator:
+                    self.operatordone = True
+                    self.incolumn = False
+
+        def clear(self):
+            self.word = ''
+
+            self.intoken = False
+            self.tokendone = False
+
+            self.incolumn = False
+            self.columndone = False
+
+            self.inoperator = False
+            self.operatordone = False
+
+            self.invalue = False
+            self.valuedone = False
+
+        @property
+        def incolumn(self):
+            return self._incolumn
+
+        @incolumn.setter
+        def incolumn(self, v):
+            self._incolumn = v
+            self.intoken |= v
+
+        @property
+        def states(self):
+            sts = list()
+            if self.incolumn:
+                sts.append('incolumn')
+            return sts
+
+    def __init__(self, expr):
+        self._expr = expr
+        self._parse()
+
+    def _parse(self):
+        sm = predicate.statemachine()
+        buff = str()
+
+        for c in self._expr:
+            buff += c
+            sm.character = c
+
+            if sm.columndone:
+                self.column = buff
+            
+            elif sm.operatordone:
+                self.value = buff
+
+            elif sm.valuedone:
+                self.value = buff
+
+            if sm.tokendone:
+                buff = ''
+
+    @property
+    def predicates(self):
+        return predicates()
