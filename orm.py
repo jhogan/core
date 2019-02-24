@@ -220,9 +220,21 @@ class joins(entitiesmod.entities):
     def table(self):
         return self.entities.orm.table
 
-    def __str__(self):
+    def __str__(self, root=None, rroot=None):
         r = ''
+
         for join in self:
+
+            if root is None:
+                graph = self.entities.orm.table
+            else:
+                graph = root
+
+            if rroot is None:
+                rgraph = self.table
+            else:
+                rgraph = '%s.%s' % (rroot, self.table)
+
             if join.type == join.Inner:
                 r += 'INNER JOIN'
             elif join.type == join.Leftouter:
@@ -230,8 +242,10 @@ class joins(entitiesmod.entities):
             else:
                 raise ValueError('Invalid join type')
 
-            jointable = join.entities.orm.table
-            r += ' ' + jointable
+            jointbl = join.entities.orm.table
+            graph = '%s.%s' % (graph, jointbl)
+            tbl = ' %s' % jointbl
+            r += '%s AS `%s`' % (tbl, graph)
 
             mypk = self.entities.orm.mappings.primarykeymapping.name
             for map in join.entities.orm.mappings.foreignkeymappings:
@@ -241,21 +255,42 @@ class joins(entitiesmod.entities):
             else:
                 msg = 'FK not found: '
                 msg += '%s.%s = %s.%s'
-                msg %= (jointable, '<NOT FOUND>', self.table, mypk)
-                msg += "\nIs '%s' a parent to '%s'" % (self.table, jointable)
+                msg %= (jointbl, '<NOT FOUND>', rgraph, mypk)
+                msg += "\nIs '%s' a parent to '%s'" % (rgraph, jointbl)
                 raise ValueError(msg)
 
-            r += '\n    ON %s.%s = %s.%s'
-            r %= (jointable, joinpk, self.table, mypk)
+            r += '\n    ON `%s`.%s = %s.%s'
+            r %= (graph, joinpk, '`%s`' % rgraph, mypk)
 
+            # TODO This assignment seems unnecessary
             js = join.entities.orm.joins
-            r += '\n' + str(join.entities.orm.joins)
+
+            r += '\n' + join.entities.orm.joins.__str__(root=graph, rroot=rgraph)
 
         return r
 
     @property
     def wheres(self):
         return wheres(initial=[x.where for x in self if x.where])
+
+    # TODO REMOVEME
+    def getwheres(self, graph=None):
+        whs = wheres()
+
+        if graph is None:
+            graph = self.table
+        else:
+            graph = '%s.%s' % (graph, self.table)
+
+        for j in self:
+            if not j.where:
+                continue
+
+            wh = j.where.clone()
+            wh.alias = '%s.%s' % (graph, wh.alias)
+            whs += wh
+
+        return whs
 
 class join(entitiesmod.entity):
     Inner = 0
@@ -266,53 +301,124 @@ class join(entitiesmod.entity):
         self.type = type # inner, outer, etc
 
     @property
+    def table(self):
+        return self.entities.orm.table
+
+    @property
     def where(self):
         return self.entities.orm.where
 
 class wheres(entitiesmod.entities):
-    def __str__(self):
-        r = ''
-        # TODO: Continue ensuring that wheres.__str__ represents where clauses
-        # from nested joins.
-        whs = self
-
-        # TODO How does this work. Will it always ensure whs is in the right
-        # order
-        for wh in self:
-            whs |= wh.entities.orm.joins.wheres
-
-        for i, wh in enumerate(whs):
-            # TODO Why would a where not have a conditional
-            if wh.conditional:
-                if i:
-                    r += ' AND\n      '
-                else:
-                    r = 'WHERE '
-                r += '(%s.%s)' % (wh.entities.orm.table, wh.conditional)
-
-        return r
-
     @property
     def args(self):
         r = []
 
-        for x in self:
-            if x.args:
-                r += x.args
+        for wh in self:
+            if wh.args:
+                r += wh.args
+
+            whs = wh.entities.orm.joins.wheres
+            r += whs.args
 
         return r 
 
+    def __str__(self, graph=''):
+        ''' Return a string representation of the WHERE clause with %s
+        parameters. If the where object's entities collection has joins, those
+        joins will be traversed to captures all where clauses. The %s
+        parameters will occur in the same order as their corresponding values
+        return by wheres.args.  '''
+
+        # Start off with a 'WHERE '
+        r = '' if graph else 'WHERE '
+
+        # For each where object in this collection
+        for i, wh in enumerate(self):
+
+            # Create a cumulative graph string. Recursion will augment this
+            # string so it will denotes the graph's hierarchy.
+            if graph:
+                graph = '%s.%s' % (graph, wh.entities.orm.table)
+            else:
+                graph = '%s' % wh.entities.orm.table
+
+            conj = '\n AND ' if i else ''
+
+            # Conjoin the conditional to the return string. The `graph`
+            # variable will reference the table alias in join string. 
+            # The `graph` string denotes the hierarchy.
+            r += '%s (%s.%s)' % (conj, '`%s`' % graph, wh.conditional)
+
+            # For each of the where object's entities' join objects
+            for j in wh.entities.orm.joins:
+                if not j.where:
+                    continue
+
+                # Traverse into the join's where's __str__ method, passing in
+                # the graph. Note that its logic will proceed to traverse back
+                # into this method.
+                r += '\n AND %s' % j.where.__str__(graph=graph)
+
+        return r
+
 class where(entitiesmod.entity):
     def __init__(self, es, cond, args):
-        self.entities    = es
-        self.conditional = None
-        self.args        = None
+        self.entities     =  es
+        self.conditional  =  None
+        self._args        =  None
+        self._alias       =  None
 
         if cond:
             self.conditional = orm.introduce(cond, args)
 
         if args:
             self.args = args
+
+    @property
+    def args(self):
+        r = []
+        if self._args:
+            r += self._args
+
+        js = self.entities.orm.joins
+        for j in js:
+            if j.where:
+                r += j.where.args
+        return r
+
+    @args.setter
+    def args(self, v):
+        self._args = v
+        
+    def clone(self):
+        return where(
+            self.entities,
+            self.conditional,
+            self.args
+        )
+
+    def __str__(self, graph=''):
+        ''' Return a string representation of the WHERE clause with %s
+        parameters. If the where object's entities collection has joins, those
+        joins will be traversed to captures all where clauses. '''
+
+        # Start off with a 'WHERE '
+        r = '' if graph else 'WHERE '
+
+        # Maintain a cumilitive graph string which denotes the hierarchy as we
+        # recurse back into this method
+        tbl = self.entities.orm.table
+        graph = ('%s.%s') % (graph, tbl) if graph else tbl
+
+        # Concatentate the condititonal with graph to return string
+        r += '(`%s`.%s)' % (graph , self.conditional)
+        for j in self.entities.orm.joins:
+            if not j.where:
+                continue
+
+            # Recurse into the join's where's __str__ passing in graph
+            r += '\n AND %s' % j.where.__str__(graph=graph)
+        return r
 
     def __repr__(self):
         return '%s\n%s' % (self.conditional, self.args)
@@ -341,6 +447,8 @@ class entities(entitiesmod.entities):
     re_alphanum_ = re.compile('^[A-Za-z_]+$')
 
     def __init__(self, initial=None, _p2=None, *args, **kwargs):
+        # TODO Ensure kwargs are in self.orm.mappings collections. Raise
+        # ValueError if any are not there.
         try:
             self.orm = self.orm.clone()
         except AttributeError:
@@ -2660,7 +2768,8 @@ class orm:
         self.isnew = False
         self.isdirty = False
     
-    def getselects(self, depth=0):
+    # TODO Is depth being used
+    def getselects(self, depth=0, rentjoin=None):
         R = table(border=None)
 
         for map in self.entity.orm.mappings:
@@ -2683,15 +2792,19 @@ class orm:
         for join in self.joins:
             e = join.entities.orm.entity
             orm = join.entities.orm
-            for row in orm.getselects(depth + 1):
+            for row in orm.getselects(depth=depth + 1, rentjoin=join):
                 fs = [str(f) for f in row]
                 r = R.newrow()
-                r.newfields(fs[0], 'AS', '%s.%s' % (tbl, fs[2]), ',')
+
+                f1 = alias = '%s.%s' % (tbl, fs[2])
+                r.newfields(f1, 'AS', alias, ',')
 
         r.fields.pop() # Pop the trailing comma
 
         if not depth:
             for r in R:
+                graph, col = r.fields[0].value.rsplit('.', 1)
+                r.fields[0].value = '`%s`.%s' % (graph, col)
                 r.fields[2].value = '`%s`' % r.fields[2].value
                 
         return R
@@ -2702,31 +2815,36 @@ class orm:
 
     @property
     def sql(self):
-        whs = wheres()
+        ''' Returns the SELECT statement needed to load an entities collection.
+        The SELECT takes into account JOINs, WHERE clauses, WHERE arguments and
+        ORDER BY clauses (when streaming). '''
 
-        if self.where:
-            whs += self.where
-
-        joins = ''
-        if self.joins.count:
-            B()
-            joins += str(self.joins) 
-            whs += self.joins.wheres
-
+        # SELECT
         select = textwrap.indent(str(self.selects), ' ' * 4)
 
         sql = 'SELECT \n%s\nFROM %s\n' % (select, self.table)
-        
+
+        # JOINs.
+        if self.joins.count:
+            joins = str(self.joins) 
+        else:
+            joins = None
+
         sql += joins if joins else ''
         
-        if str(whs):
-            sql += '%s\n' % str(whs)
+        # WHERE
+        wh = self.where
+        sql += str(self.where)
 
+        # ORDER BY
         if self.isstreaming:
             if self.stream.orderby:
                 sql += ' ORDER BY ' + self.stream.orderby
         
-        return sql, whs.args
+        # Return the SQL followed by the args from the WHERE object. Note that the 
+        # str(self.where) and self.where.args, though being recursive, will ensure 
+        # that the placeholders (%s) and the arguments occure in the same order.
+        return sql, wh.args
 
     @staticmethod
     def introduce(sql, args):

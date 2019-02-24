@@ -4691,7 +4691,7 @@ class test_orm(tester):
             for _ in range(2):
                 addr = uuid4().hex
                 art.locations += location.getvalid()
-                art.locations.last.description = addr
+                art.locations.last.address = addr
                 
             for _ in range(2):
                 name = uuid4().hex
@@ -4719,7 +4719,6 @@ class test_orm(tester):
             press = arts.last.presentations.sorted()
             press1 = art1.presentations.sorted()
 
-
             for pres, pres1 in zip(press, press1):
                 self.eq(fff, pres.orm.persistencestate)
                 self.eq(pres.id, pres1.id)
@@ -4743,7 +4742,6 @@ class test_orm(tester):
         arts1.innerjoin(press)
         arts1.innerjoin(artlocs)
         orm = arts1.orm
-        print(*orm.sql)
 
         self.two(arts1.orm.joins)
         self.one(press.orm.joins)
@@ -4755,11 +4753,14 @@ class test_orm(tester):
         arts1 = artists(firstname = firstname)
         press = presentations(name = name)
         locs = locations(description = desc)
+        artlocs = locations(address = addr)
 
         press.innerjoin(locs)
         arts1.innerjoin(press)
+        arts1.innerjoin(artlocs)
+        print(*arts1.orm.sql)
 
-        self.one(arts1.orm.joins)
+        self.two(arts1.orm.joins)
         self.one(press.orm.joins)
         self.zero(locs.orm.joins)
         
@@ -4776,6 +4777,18 @@ class test_orm(tester):
         self.one(locs)
         loc = locs.first
         self.eq(desc, loc.description)
+
+    def it_parses_where_clauses(self):
+        expr = 'col = 1'
+        pred = db.predicate(expr)
+
+        # Zero sub-predicates
+        self.zero(pred.predicates)
+
+        # 'col' is the column and 1 is the value
+        self.eq('col', pred.column)
+        self.eq(1, pred.value)
+        self.eq(db.predicate.operators.eq, pred.operator)
 
 class test_blog(tester):
     def __init__(self):
