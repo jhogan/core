@@ -423,6 +423,399 @@ class where(entitiesmod.entity):
     def __repr__(self):
         return '%s\n%s' % (self.conditional, self.args)
 
+    
+class predicates(entitiesmod.entities):
+    pass
+
+class predicate(entitiesmod.entity):
+    Specialops = '=', '==', '<', '<=', '>', '>=', '!='
+    Wordops = 'LIKE', 'NOT', 'NOT LIKE', 'IS', 'IS IN', 'BETWEEN'
+    Ops = Specialops + Wordops
+    
+    def __init__(self, expr, junctionop=None):
+        self._expr        =  expr
+        self._operator    =  ''
+        self.operands     =  list()
+        self.match        =  None
+        self.junction     =  None
+        self._junctionop   =  junctionop
+        self._parse()
+
+    @property
+    def junctionop(self):
+        if self._junctionop:
+            return self._junctionop.strip().upper()
+        return None
+
+    def _parse(self):
+        sm = predicate.statemachine()
+        buff = str()
+        toks = list()
+        
+        # TODO Put this at top
+        from func import enumerate
+
+        adv = None
+        for i, c in enumerate(self._expr):
+
+            if adv and i < adv:
+                continue
+
+            sm.character = c
+
+            if sm.tokendone:
+                buff = buff.strip()
+
+                if sm.inbetween and buff.upper() == 'AND' \
+                                and len(self.operands) < 3:
+                    buff = ''
+                    continue
+
+                elif self._iswordoperator(buff):
+                    self.operator += ' ' + buff
+
+                elif buff.upper() == 'MATCH':
+                    self.operands = None
+                    self.operator = None
+                    self.match, adv = predicate.Match.create(self._expr[i:])
+                    adv += i
+                    continue
+
+                elif buff.upper() in ('AND', 'OR'):
+                    self.junction = predicate(self._expr[i:], buff)
+                    return
+
+                elif self._iscolumn(buff):
+                    self.operands.append(buff)
+
+                elif self._isoperator(buff):
+                    self.operator = buff
+
+                elif self._isliteral(buff):
+                    self.operands.append(buff)
+
+                else:
+                    raise ParseError('Unknown token type: ' + buff)
+
+                buff = c
+
+                if i.last:
+                    break
+            else:
+                buff += c
+
+        if self.operands is not None:
+            self.operands.append(buff.strip())
+
+            consts = 'TRUE', 'FALSE', 'NULL'
+            self.operands = [x.upper() if x.upper() in consts else x 
+                            for x in self.operands]
+
+    @property
+    def operator(self):
+        if self._operator is None:
+            return None
+        return self._operator.strip().upper()
+
+    @operator.setter
+    def operator(self, v):
+        self._operator = v
+
+    def __str__(self):
+        # TODO Uppercase TRUE, FALSE and NULL literals
+
+        if self.match:
+            return str(self.match)
+
+        r = ' %s ' % self.junctionop if self.junctionop else ''
+
+        cnt = len(self.operands)
+        if cnt == 1:
+            r += '%s %s' % (self.operator, self.operands[0])
+        elif cnt == 2:
+            r += '%s %s %s' % (self.operands[0], self.operator, self.operands[1])
+        elif self.operator in ('BETWEEN', 'NOT BETWEEN'):
+            r += '%s %s %s AND %s' % (self.operands[0], self.operator, *self.operands[1:])
+        else:
+            raise ValueError('Incorrect number of operands')
+
+        junc = self.junction
+        if junc:
+            r += str(junc)
+
+        return r
+
+    def __repr__(self):
+        return "predicate('%s')" % str(self)
+
+    class statemachine():
+        def __init__(self):
+            self._chars = str()
+
+            self.intoken    =  False
+            self.tokendone  =  False
+            self.inop       =  False
+            self.inquote    =  False
+            self.inbetween  =  False
+
+        @property
+        def character(self):
+            try:
+                return self._chars[-1]
+            except IndexError:
+                return str()
+
+        @character.setter
+        def character(self, v):
+            self._chars += v
+            self.update()
+
+        def update(self):
+            self.tokendone = False
+
+            c = self.character
+
+            if c in '"\'':
+                if self.inquote:
+                    if self.inquote == c:
+                        self.inquote = False
+                else:
+                    self.inquote    =  c
+
+                if self.inquote:
+                    self.tokendone  =  self.inop
+                    self.intoken    =  True
+
+            elif self.inquote:
+                pass
+
+            elif c.isalnum():
+                self.tokendone  =  self.inop
+                self.intoken    =  True
+                self.inop       =  False
+
+            elif c.isspace():
+                if self.word.upper() == 'BETWEEN':
+                    self.inbetween = True
+
+                self.tokendone = self.intoken
+                self.intoken  =  False
+                self.inop     =  False
+
+            elif c in '()':
+                self.tokendone = self.intoken
+                self.intoken  =  False
+                self.inop     =  False
+
+            elif not self.inop and c in [x[0] for x in predicate.Specialops]:
+                self.tokendone = self.intoken
+                self.inop     =  True
+                self.intoken  =  True
+
+        @property
+        def incolumn(self):
+            return self._incolumn
+
+        @incolumn.setter
+        def incolumn(self, v):
+            self._incolumn = v
+            self.intoken |= v
+
+        @property
+        def states(self):
+            sts = list()
+            if self.incolumn:
+                sts.append('incolumn')
+            return sts
+
+        @property
+        def word(self):
+            cs = self._chars.rstrip()
+            return cs[cs.rfind(' ') + 1:]
+
+    @staticmethod
+    def _iscolumn(tok):
+        # TODO true, false and null are literals, not columns
+        return not predicate._isoperator(tok) \
+               and tok[0].isalpha()           \
+               and tok.isalnum()
+
+    @staticmethod
+    def _isoperator(tok):
+        return tok in predicate.Ops
+
+    @staticmethod
+    def _iswordoperator(tok):
+        return tok.upper() in predicate.Wordops
+
+    @staticmethod
+    def _isliteral(tok):
+        # TODO true, false and null are literals, not columns
+        fl = ''.join((tok[0], tok[-1]))
+
+        # If quoted
+        if fl in ('""', "''"):
+            return True
+
+        # If numeric
+        return tok.isnumeric()
+
+    class Match():
+        # TODO Fix below line by using flags=re.IGNORECASE
+        re_alphanum_ = re.compile('^[A-Za-z_][A-Za-z_0-9]+$')
+
+        re_isnatural = re.compile(
+            r'^\s*in\s+natural\s+language\s+mode\s*$', \
+              flags=re.IGNORECASE
+        )
+
+        re_isboolean = re.compile(
+            r'^\s*in\s+boolean\s+mode\s*$',\
+             flags=re.IGNORECASE
+        )
+
+        def __init__(self, expr):
+            self._expr           =  expr
+            self.columns         =  list()
+            self.searchstring    =  str()
+            self.searchmodifier  =  str()
+            self._mode           =  str()
+
+        def _parse(self):
+            buff = str()
+            sm = predicate.Match.statemachine()
+            for i, c in enumerate(self._expr):
+                sm.character = c
+
+                if sm.tokendone:
+                    buff = buff.strip()
+                    if sm.incolumns:
+                        if self._iscolumn(buff):
+                            self.columns.append(buff)
+
+                    elif not self.searchstring and sm.searchstringdone:
+                        self.searchstring = buff.strip("'")
+
+                    elif sm.searchstringdone:
+                        if buff.upper() in ('IN', 'NATURAL', 'BOOLEAN', 'LANGUAGE', 'MODE'):
+                            self._mode += ' ' + buff
+
+                    elif sm.searchstringdone and buff != "'":
+                        self.searchmodifier += buff
+
+                    if c in '()':
+                        buff = str()
+                        continue
+
+                    buff = c
+                else:
+                    buff += c
+
+            if sm.searchstringdone:
+                if buff.strip().upper() in ('IN', 'NATURAL', 'BOOLEAN', 'LANGUAGE', 'MODE'):
+                    self._mode += ' ' + buff
+
+            return i
+
+        @property
+        def mode(self):
+            mode = self._mode.strip()
+
+            if not mode:
+                return 'natural'
+
+            if self.re_isnatural.match(mode):
+                return 'natural'
+
+            if self.re_isboolean.match(mode):
+                return 'boolean'
+
+            raise ValueError('Incorrect mode: ' + mode)
+
+        def __str__(self):
+            args = ', '.join(self.columns), self.searchstring
+            r = "MATCH (%s) AGAINST ('%s')" % args
+            return r
+
+        def _iscolumn(self, buff):
+            return self.re_alphanum_.match(buff)
+
+        @staticmethod
+        def create(expr):
+            m = predicate.Match(expr)
+            i = m._parse()
+            return m, i
+
+        class statemachine():
+            def __init__(self):
+                self.intoken           =  False
+                self.tokendone         =  False
+                self.incolumns         =  False
+                self.wasincolumns      =  False
+                self.columnsopened     =  None
+                self.columnsclosed     =  None
+                self.afteragainst      =  False
+                self.inquote           =  False
+                self.searchstringdone  =  False
+                self._chars            =  str()
+        
+            @property
+            def character(self):
+                return self._chars[-1]
+
+            @property
+            def word(self):
+                cs = self._chars.rstrip()
+                return cs[cs.rfind(' ') + 1:]
+
+            @character.setter
+            def character(self, v):
+                self._chars += v
+                self.update()
+
+            def update(self):
+                self.tokendone = False
+
+                c = self.character
+
+                self.incolumns = self.columnsopened and not self.columnsclosed
+
+                if self.intoken and c == ',':
+                    self.tokendone = True
+
+                elif c.isspace():
+                    if self.word.upper() == 'AGAINST':
+                        self.afteragainst = True
+                    self.tokendone = True
+                    self.intoken = True
+
+                elif c in '"\'':
+                    if self.afteragainst:
+                        self.inquote = not self.inquote # Naive; doen't handle escaped quotes
+                        self.intoken = not self.inquote
+                        if not self.inquote:
+                            self.searchstringdone = True
+                            self.tokendone = True
+                    else:
+                        raise ParseError('Quote found before AGAINST')
+
+                elif c.isalpha():
+                    self.intoken = True
+
+                elif c in '()':
+                    self.tokendone = True
+                    self.intoken = True
+
+                    if c == ')':
+                        self.columnsclosed = True
+                        self.columnsopened = False
+
+                    if not self.columnsclosed and c == '(':
+                        self.columnsopened = True
+
+class ParseError(ValueError):
+    pass
+
 class allstream(stream):
     pass
         
@@ -444,7 +837,7 @@ class entities(entitiesmod.entities):
     def all(cls):
         return cls(allstream)
 
-    re_alphanum_ = re.compile('^[A-Za-z_]+$')
+    re_alphanum_ = re.compile('^[A-Za-z_][A-Za-z_]+$')
 
     def __init__(self, initial=None, _p2=None, *args, **kwargs):
         # TODO Ensure kwargs are in self.orm.mappings collections. Raise
@@ -757,6 +1150,8 @@ class entities(entitiesmod.entities):
 
         if p2 is not None:
             if p2isscaler:
+                # TODO re_alphanum_ should allow for numbers after first
+                # character, but doesn't.
                 if self.re_alphanum_.match(p1):
                     # If p1 looks like a simple column name (alphanums,
                     # underscores, no operators) assume the user is doing a

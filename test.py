@@ -31,6 +31,7 @@ from parties import *
 from pdb import Pdb
 from tester import *
 from uuid import uuid4
+from func import enumerate
 import argparse
 import dateutil
 import decimal; dec=decimal.Decimal
@@ -4778,17 +4779,232 @@ class test_orm(tester):
         loc = locs.first
         self.eq(desc, loc.description)
 
-    def it_parses_where_clauses(self):
-        expr = 'col = 1'
-        pred = db.predicate(expr)
+    def it_parses_simple_where_predicate(self):
+        def test(expr, pred, first, op, second, third=''):
+            msg = expr
+            self.eq(first,   pred.operands[0],  msg)
+            self.eq(op,      pred.operator,     msg)
+            if second:
+                self.eq(second,  pred.operands[1],  msg)
 
-        # Zero sub-predicates
-        self.zero(pred.predicates)
+            if third:
+                self.eq(third,  pred.operands[2],  msg)
+                
+            self.eq(expr,    str(pred),         msg)
+                        
+        # Simple col = literal
+        for expr in 'col = 11', 'col=11':
+            pred = orm.predicate(expr)
+            test('col = 11', pred, 'col', '=', '11')
 
-        # 'col' is the column and 1 is the value
-        self.eq('col', pred.column)
-        self.eq(1, pred.value)
-        self.eq(db.predicate.operators.eq, pred.operator)
+        # Joined simple col > literal (or|and) col < literal
+        for op in 'and', 'or':
+            for expr in 'col > 0 %s col < 11' % op, 'col>0 %s col<11' % op:
+                pred = orm.predicate(expr)
+                test('col > 0 %s col < 11' % op.upper(), pred, 'col', '>', '0')
+                test(' %s col < 11' % op.upper(), pred.junction, 'col', '<', '11')
+
+        # Simple literal = column
+        for expr in '11 = col', '11=col':
+            pred = orm.predicate(expr)
+            test('11 = col', pred, '11', '=', 'col')
+
+        # Joined simple literal > col (or|and) literal < col
+        for op in 'and', 'or':
+            for expr in '0 > col %s 11 < col' % op, '0>col %s 11<col' % op:
+                pred = orm.predicate(expr)
+                test('0 > col %s 11 < col' % op.upper(), pred, '0', '>', 'col')
+                test(' %s 11 < col' % op.upper(), pred.junction, '11', '<', 'col')
+
+        # Simple c = l
+        for expr in 'c = 1', 'c=1':
+            pred = orm.predicate(expr)
+            test('c = 1', pred, 'c', '=', '1')
+
+        # Joined simple c > 1 (or|and) 1 < c
+        for op in 'and', 'or':
+            for expr in '0 > c %s 1 < c' % op, '0>c %s 1<c' % op:
+                pred = orm.predicate(expr)
+                test('0 > c %s 1 < c' % op.upper(), pred, '0', '>', 'c')
+                test(' %s 1 < c' % op.upper(), pred.junction, '1', '<', 'c')
+
+        # Simple l = c
+        for expr in '1 = c', '1=c':
+            pred = orm.predicate(expr)
+            test('1 = c', pred, '1', '=', 'c')
+
+        # Simple col = 'literal'
+        for expr in "col = '11'", "col='11'":
+            pred = orm.predicate(expr)
+            test("col = '11'", pred, 'col', '=', "'11'")
+
+        # Joined simple col > 'literal' (or|and) col = 'literal'
+        for op in 'and', 'or':
+            exprs = (
+                "col = '11' %s col1 = '111'" % op, 
+                "col='11' %s col1='111'" % op.upper()
+            )
+            for expr in exprs:
+                pred = orm.predicate(expr)
+                test( "col = '11' %s col1 = '111'" % op.upper(), pred, 'col', '=', "'11'")
+                test( " %s col1 = '111'" % op.upper(), pred.junction, 'col1', '=', "'111'")
+
+        # Simple 'literal' = column
+        for expr in "'11' = col", "'11'=col":
+            pred = orm.predicate(expr)
+
+            test("'11' = col", pred, "'11'", '=', 'col')
+
+        # Simple col = "literal"
+        for expr in 'col = "11"', 'col="11"':
+            pred = orm.predicate(expr)
+            test('col = "11"', pred, 'col', '=', '"11"')
+
+        # Simple "literal" <= column ; Test multicharacter special ops)
+        for expr in 'col <= 11', 'col<=11':
+            pred = orm.predicate(expr)
+            test('col <= 11', pred, 'col', '<=', '11')
+
+        # Simple column = 'lit=eral' (literal has operator in it)
+        for expr in  "col = '1 = 1'", "col='1 = 1'":
+            test("col = '1 = 1'", orm.predicate(expr), 'col', '=', "'1 = 1'")
+
+        # Simple 'lit=eral' = column (literal has operator in it)
+        for expr in "'1 = 1' = col", "'1 = 1'=col":
+            test("'1 = 1' = col", orm.predicate(expr), "'1 = 1'", '=', 'col')
+
+        # Test NOT column
+        for expr in "NOT col", "not col":
+            test('NOT col', orm.predicate(expr), 'col', 'NOT', None)
+
+        # Joined NOT column (and|or) col = 1
+        for op in 'and', 'or':
+            exprs = (
+                'not col %s not col1' % op, 
+                'not col %s not col1' % op.upper()
+            )
+            for expr in exprs:
+                pred = orm.predicate(expr)
+                test('NOT col %s NOT col1' % op.upper(), pred, 'col', 'NOT', None )
+                test(' %s NOT col1' % op.upper(), pred.junction, 'col1', 'NOT', None )
+
+        # column is literal
+        for expr in 'col is null', 'col  IS  NULL':
+            test('col IS NULL', orm.predicate(expr), 'col', 'IS', 'NULL')
+
+        # literal is column
+        for expr in 'null is col', 'NULL  IS  col':
+            test('NULL IS col', orm.predicate(expr), 'NULL', 'IS', 'col')
+
+        # column is not literal
+        for expr in 'col is not null', 'col  IS  NOT   NULL':
+            pred = orm.predicate(expr)
+            test('col IS NOT NULL', pred, 'col', 'IS NOT', 'NULL')
+
+        # literal is not column
+        for expr in 'null is not col', 'NULL  IS   NOT col':
+            pred = orm.predicate(expr)
+            test('NULL IS NOT col', pred, 'NULL', 'IS NOT', 'col')
+
+        # column like literal
+        for expr in "col like '%lit%'", "col   LIKE '%lit%'":
+            pred = orm.predicate(expr)
+            test("col LIKE '%lit%'", pred, 'col', 'LIKE', "'%lit%'")
+
+        # column not like literal
+        for expr in "col not like '%lit%'", "col   NOT  LIKE '%lit%'":
+            pred = orm.predicate(expr)
+            test("col NOT LIKE '%lit%'", pred, 'col', 'NOT LIKE', "'%lit%'")
+
+        # column is literal
+        for expr in "col is true", "col   IS   TRUE":
+            pred = orm.predicate(expr)
+            test('col IS TRUE', pred, 'col', 'IS', "TRUE")
+
+        # column is not literal
+        for expr in "col is not true", "col   IS   NOT TRUE":
+            pred = orm.predicate(expr)
+            test('col IS NOT TRUE', pred, 'col', 'IS NOT', "TRUE")
+
+        # column is literal
+        for expr in "col is false", "col   IS   FALSE":
+            pred = orm.predicate(expr)
+            test('col IS FALSE', pred, 'col', 'IS', "FALSE")
+
+        # column is not literal
+        for expr in "col is not false", "col   IS   NOT FALSE":
+            pred = orm.predicate(expr)
+            test('col IS NOT FALSE', pred, 'col', 'IS NOT', "FALSE")
+
+        # column between 1 and 10
+        for expr in 'col between 1 and 10', 'col   BETWEEN  1  AND  10':
+            pred = orm.predicate(expr)
+            test('col BETWEEN 1 AND 10', pred, 'col', 'BETWEEN', '1', '10')
+
+        for op in 'and', 'or':
+            OP = op.upper()
+            exprs = (
+                'col between 1 and 10 %s col1 = 1'% op, 
+                'col   BETWEEN  1  AND  10  %s  col1  =  1' % OP
+            )
+            for expr in exprs:
+                pred = orm.predicate(expr)
+                test(
+                    'col BETWEEN 1 AND 10 %s col1 = 1' % OP, pred,
+                    'col', 'BETWEEN', '1', '10' 
+                )
+                test(
+                    ' %s col1 = 1' % OP, pred.junction, 
+                    'col1', '=', '1'
+                )
+
+        # column not between 1 and 10
+        for expr in 'col not between 1 and 10', 'col   NOT BETWEEN  1  AND  10':
+            pred = orm.predicate(expr)
+            test('col NOT BETWEEN 1 AND 10', pred, 'col', 'NOT BETWEEN', '1', '10')
+
+        def test(pred, cols, expr, mode='natural'):
+            self.none(pred.operands)
+            self.none(pred.operator)
+            self.notnone(pred.match)
+            self.eq(cols, pred.match.columns)
+            self.eq(expr, str(pred))
+            self.eq(expr, str(pred.match))
+            self.eq(mode, pred.match.mode)
+
+        # match(col) against ('keyword')
+
+        # TODO Make sure col1 works here
+        exprs =  "match(col) against ('keyword')",  "MATCH ( col )  AGAINST  ( 'keyword' )"
+        for expr in exprs:
+            pred = orm.predicate(expr)
+            test(pred, ['col'], "MATCH (col) AGAINST ('keyword')")
+
+        # match(col1, col2) against ('keyword')
+        exprs =  "match(col1, col2) against ('keyword')", \
+                 "MATCH ( col1, col2 )  AGAINST  ( 'keyword' )"
+        for expr in exprs:
+            pred = orm.predicate(expr)
+            test(pred, ['col1', 'col2'], "MATCH (col1, col2) AGAINST ('keyword')")
+
+        # match(col1, col2) against ('keyword') in natural language mode
+        exprs =  "match(col1, col2) against ('keyword') in natural language mode", \
+                 "MATCH ( col1, col2 )  AGAINST  ( 'keyword' )  IN  NATURAL     LANGUAGE    MODE"
+        for expr in exprs:
+            pred = orm.predicate(expr)
+            test(pred, ['col1', 'col2'], "MATCH (col1, col2) AGAINST ('keyword')")
+
+        # match(col1, col2) against ('keyword') in boolean mode
+        exprs =  "match(col1, col2) against ('keyword') in boolean mode", \
+                 "MATCH ( col1, col2 )  AGAINST  ( 'keyword' )  IN      BOOLEAN    MODE"
+        for expr in exprs:
+            pred = orm.predicate(expr)
+            test(pred, ['col1', 'col2'], "MATCH (col1, col2) AGAINST ('keyword')", 'boolean')
+
+
+        # TODO Test paranthesis
+        # TODO Test each operator
+        # TODO Implement and test escaped singel and double quotes
 
 class test_blog(tester):
     def __init__(self):
