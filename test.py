@@ -4963,13 +4963,18 @@ class test_orm(tester):
             pred = orm.predicate(expr)
             test('col NOT BETWEEN 1 AND 10', pred, 'col', 'NOT BETWEEN', '1', '10')
 
-        def test(pred, cols, expr, mode='natural'):
+        def testmatch(pred, cols, expr, mode='natural'):
             self.none(pred.operands)
-            self.none(pred.operator)
             self.notnone(pred.match)
             self.eq(cols, pred.match.columns)
-            self.eq(expr, str(pred))
             self.eq(expr, str(pred.match))
+
+            if pred.junctionop:
+                self.eq(' %s %s' % (pred.junctionop, expr), str(pred))
+            else:
+                if not pred.junction:
+                    self.eq(expr, str(pred))
+
             self.eq(mode, pred.match.mode)
 
         # match(col) against ('keyword')
@@ -4978,29 +4983,134 @@ class test_orm(tester):
         exprs =  "match(col) against ('keyword')",  "MATCH ( col )  AGAINST  ( 'keyword' )"
         for expr in exprs:
             pred = orm.predicate(expr)
-            test(pred, ['col'], "MATCH (col) AGAINST ('keyword')")
+            expr = (
+                "MATCH (col) AGAINST ('keyword') "
+                "IN NATURAL LANGUAGE MODE"
+            )
+            testmatch(pred, ['col'], expr)
+
+        # match(col) against ('keyword') and col = 1
+        for op in 'and', 'or':
+            OP = op.upper()
+            exprs = (
+                "match(col) against ('keyword') %s col = 1" % op, 
+                "match(col)  against  ('keyword')  %s col=1" % OP
+            )
+            for expr in exprs:
+                pred = orm.predicate(expr)
+                expr = (
+                    "MATCH (col) AGAINST ('keyword') "
+                    "IN NATURAL LANGUAGE MODE"
+                )
+                testmatch(pred, ['col'], expr)
+
+                expr = (
+                    "MATCH (col) AGAINST ('keyword') "
+                    "IN NATURAL LANGUAGE MODE %s col = 1" % OP
+                )
+
+                self.eq(expr, str(pred))
+
+                test(
+                    ' %s col = 1' % OP, pred.junction, 
+                    'col', '=', '1'
+                )
+
+        # col = 1 and match(col) against ('keyword')
+        for op in 'and', 'or':
+            OP = op.upper()
+            exprs = (
+                "col = 1 %s match(col) against ('keyword')" % op, 
+                "col  =  1  %s  match(col)  against  ('keyword')" % OP
+            )
+            for expr in exprs:
+                pred = orm.predicate(expr)
+                expr = (
+                    "col = 1 " + OP + " MATCH (col) AGAINST ('keyword') "
+                    "IN NATURAL LANGUAGE MODE"
+                )
+                test(expr, pred, 'col', '=', '1')
+                expr = (
+                    "MATCH (col) AGAINST ('keyword') "
+                    "IN NATURAL LANGUAGE MODE"
+                )
+                testmatch(pred.junction, ['col'], expr)
 
         # match(col1, col2) against ('keyword')
         exprs =  "match(col1, col2) against ('keyword')", \
                  "MATCH ( col1, col2 )  AGAINST  ( 'keyword' )"
         for expr in exprs:
             pred = orm.predicate(expr)
-            test(pred, ['col1', 'col2'], "MATCH (col1, col2) AGAINST ('keyword')")
+            expr = (
+                "MATCH (col1, col2) AGAINST ('keyword') "
+                "IN NATURAL LANGUAGE MODE"
+            )
+            testmatch(pred, ['col1', 'col2'], expr)
 
         # match(col1, col2) against ('keyword') in natural language mode
         exprs =  "match(col1, col2) against ('keyword') in natural language mode", \
                  "MATCH ( col1, col2 )  AGAINST  ( 'keyword' )  IN  NATURAL     LANGUAGE    MODE"
         for expr in exprs:
             pred = orm.predicate(expr)
-            test(pred, ['col1', 'col2'], "MATCH (col1, col2) AGAINST ('keyword')")
+            expr = (
+                "MATCH (col1, col2) AGAINST ('keyword') "
+                "IN NATURAL LANGUAGE MODE"
+            )
+            testmatch(pred, ['col1', 'col2'], expr)
 
         # match(col1, col2) against ('keyword') in boolean mode
         exprs =  "match(col1, col2) against ('keyword') in boolean mode", \
                  "MATCH ( col1, col2 )  AGAINST  ( 'keyword' )  IN      BOOLEAN    MODE"
         for expr in exprs:
             pred = orm.predicate(expr)
-            test(pred, ['col1', 'col2'], "MATCH (col1, col2) AGAINST ('keyword')", 'boolean')
+            expr = (
+                "MATCH (col1, col2) AGAINST ('keyword') "
+                "IN BOOLEAN MODE"
+            )
+            testmatch(pred, ['col1', 'col2'], expr, 'boolean')
 
+        # (col = 1)
+        for expr in '(col = 1)', '( col=1 )':
+            pred = orm.predicate(expr)
+            expr = '(col = 1)'
+            test(expr, pred, 'col', '=', '1')
+
+        # (col = 1) and (col1 = 2)
+        for expr in '(col = 1) and (col1 = 2)', '(col=1)AND(col1=2)':
+            pred = orm.predicate(expr)
+            expr = '(col = 1) AND (col1 = 2)'
+            test(expr, pred, 'col', '=', '1')
+
+            expr = ' AND (col1 = 2)'
+            test(expr, pred.junction, 'col1', '=', '2')
+
+        # (col = 1 and col1 = 2)
+        for expr in '(col = 1 and col1 = 2)', '(col=1 AND col1=2)':
+            pred = orm.predicate(expr)
+            expr = '(col = 1 AND col1 = 2)'
+            test(expr, pred, 'col', '=', '1')
+
+            expr = ' AND col1 = 2)'
+            test(expr, pred.junction, 'col1', '=', '2')
+
+
+        # TODO This fails because the final ')' isn't captured. Lets fix
+        # this when we switch to shlex
+        '''
+        # (col = 1 and (col1 = 2 and col2 = 3))
+        exprs = (
+           '(col = 1 and (col1 = 2 and col2 = 3))',
+           # TODO Add a brain-damaged version
+        )
+        for expr in exprs:
+            pred = orm.predicate(expr)
+            B()
+            expr = '(col = 1 AND col1 = 2)'
+            test(expr, pred, 'col', '=', '1')
+
+            expr = ' AND col1 = 2)'
+            test(expr, pred.junction, 'col1', '=', '2')
+        '''
 
         # TODO Test paranthesis
         # TODO Test each operator

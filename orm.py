@@ -438,7 +438,9 @@ class predicate(entitiesmod.entity):
         self.operands     =  list()
         self.match        =  None
         self.junction     =  None
-        self._junctionop   =  junctionop
+        self._junctionop  =  junctionop
+        self.startparan   = False
+        self.endparan     = False
         self._parse()
 
     @property
@@ -463,8 +465,16 @@ class predicate(entitiesmod.entity):
 
             sm.character = c
 
+            if sm.startparan or sm.endparan:
+                lead = self._expr[:max(0, i - 1)]
+
+                if not lead or lead.isspace():
+                    self.startparan |= sm.startparan
+
+                self.endparan |= sm.endparan
+
             if sm.tokendone:
-                buff = buff.strip()
+                buff = buff.strip('() \t\n\r')
 
                 if sm.inbetween and buff.upper() == 'AND' \
                                 and len(self.operands) < 3:
@@ -478,7 +488,8 @@ class predicate(entitiesmod.entity):
                     self.operands = None
                     self.operator = None
                     self.match, adv = predicate.Match.create(self._expr[i:])
-                    adv += i
+                    adv += i + 1
+                    buff = ''
                     continue
 
                 elif buff.upper() in ('AND', 'OR'):
@@ -504,8 +515,9 @@ class predicate(entitiesmod.entity):
             else:
                 buff += c
 
-        if self.operands is not None:
-            self.operands.append(buff.strip())
+        buff = buff.strip().strip('() \t\n\r')
+        if buff and self.operands is not None:
+            self.operands.append(buff)
 
             consts = 'TRUE', 'FALSE', 'NULL'
             self.operands = [x.upper() if x.upper() in consts else x 
@@ -524,20 +536,27 @@ class predicate(entitiesmod.entity):
     def __str__(self):
         # TODO Uppercase TRUE, FALSE and NULL literals
 
+        r = str()
+
+        r += ' %s ' % self.junctionop if self.junctionop else ''
+
+        r += '(' if self.startparan else ''
+
         if self.match:
-            return str(self.match)
-
-        r = ' %s ' % self.junctionop if self.junctionop else ''
-
-        cnt = len(self.operands)
-        if cnt == 1:
-            r += '%s %s' % (self.operator, self.operands[0])
-        elif cnt == 2:
-            r += '%s %s %s' % (self.operands[0], self.operator, self.operands[1])
-        elif self.operator in ('BETWEEN', 'NOT BETWEEN'):
-            r += '%s %s %s AND %s' % (self.operands[0], self.operator, *self.operands[1:])
+            r += str(self.match)
         else:
-            raise ValueError('Incorrect number of operands')
+            cnt = len(self.operands)
+            # TODO Limit the size of these lines to 80 chars
+            if cnt == 1:
+                r += '%s %s' % (self.operator, self.operands[0])
+            elif cnt == 2:
+                r += '%s %s %s' % (self.operands[0], self.operator, self.operands[1])
+            elif self.operator in ('BETWEEN', 'NOT BETWEEN'):
+                r += '%s %s %s AND %s' % (self.operands[0], self.operator, *self.operands[1:])
+            else:
+                raise ValueError('Incorrect number of operands')
+
+        r += ')' if self.endparan else ''
 
         junc = self.junction
         if junc:
@@ -550,28 +569,32 @@ class predicate(entitiesmod.entity):
 
     class statemachine():
         def __init__(self):
-            self._chars = str()
+            self.characters = str()
 
             self.intoken    =  False
             self.tokendone  =  False
             self.inop       =  False
             self.inquote    =  False
             self.inbetween  =  False
+            self.startparan = False
+            self.endparan   = False
 
         @property
         def character(self):
             try:
-                return self._chars[-1]
+                return self.characters[-1]
             except IndexError:
                 return str()
 
         @character.setter
         def character(self, v):
-            self._chars += v
+            self.characters += v
             self.update()
 
         def update(self):
             self.tokendone = False
+            self.startparan = False
+            self.endparan = False
 
             c = self.character
 
@@ -603,6 +626,9 @@ class predicate(entitiesmod.entity):
                 self.inop     =  False
 
             elif c in '()':
+                if not self.inquote:
+                    self.startparan = c == '('
+                    self.endparan   = c == ')'
                 self.tokendone = self.intoken
                 self.intoken  =  False
                 self.inop     =  False
@@ -630,7 +656,7 @@ class predicate(entitiesmod.entity):
 
         @property
         def word(self):
-            cs = self._chars.rstrip()
+            cs = self.characters.rstrip()
             return cs[cs.rfind(' ') + 1:]
 
     @staticmethod
@@ -700,6 +726,9 @@ class predicate(entitiesmod.entity):
                         if buff.upper() in ('IN', 'NATURAL', 'BOOLEAN', 'LANGUAGE', 'MODE'):
                             self._mode += ' ' + buff
 
+                        elif buff.upper() in ('AND', 'OR'):
+                            return i - len(buff) - 1
+
                     elif sm.searchstringdone and buff != "'":
                         self.searchmodifier += buff
 
@@ -735,6 +764,12 @@ class predicate(entitiesmod.entity):
         def __str__(self):
             args = ', '.join(self.columns), self.searchstring
             r = "MATCH (%s) AGAINST ('%s')" % args
+
+            if self.mode == 'natural':
+                r += ' IN NATURAL LANGUAGE MODE'
+            elif self.mode == 'boolean':
+                r += ' IN BOOLEAN MODE'
+                
             return r
 
         def _iscolumn(self, buff):
