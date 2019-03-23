@@ -4779,7 +4779,130 @@ class test_orm(tester):
         loc = locs.first
         self.eq(desc, loc.description)
 
-    def it_parses_simple_where_predicate(self):
+    def it_creates_iter_from_predicate(self):
+        ''' Test the predicates __iter__() '''
+
+        # Iterate over one predicate
+        pred = orm.predicate('col = 1')
+        pred1 = None
+        for i, pred1 in enumerate(pred):
+            self.eq(str(pred1), str(pred))
+
+        self.notnone(pred1)
+        self.eq(0, i)
+
+        # Iterate over two predicates
+        pred = orm.predicate('col = 1 and col1 = 2')
+
+        pred1 = None
+        for i, pred1 in enumerate(pred):
+            if i == 0:
+                self.eq('col = 1 AND col1 = 2', str(pred1))
+            elif i == 1:
+                self.eq(' AND col1 = 2', str(pred1))
+            else:
+                self.fail('Predicate count exceeds 2')
+
+        # Iterate over match predicate and standard
+        pred = orm.predicate("match(col) against ('keyword') and col = 1")
+
+        pred1 = None
+        for i, pred1 in enumerate(pred):
+            if i == 0:
+                self.eq("MATCH (col) AGAINST ('keyword') IN NATURAL LANGUAGE MODE AND col = 1", str(pred1))
+            elif i == 1:
+                self.eq(' AND col = 1', str(pred1))
+            else:
+                self.fail('Predicate count exceeds 2')
+
+        # Iterate over match predicate and standard or standard
+        pred = orm.predicate("match(col) against ('keyword') and col = 1 or col1 = 2")
+
+        pred1 = None
+        for i, pred1 in enumerate(pred):
+            if i == 0:
+                expr = (
+                    "MATCH (col) AGAINST ('keyword') "
+                    "IN NATURAL LANGUAGE MODE AND col = 1 OR col1 = 2"
+                )
+                self.eq(expr, str(pred1))
+            elif i == 1:
+                self.eq(' AND col = 1 OR col1 = 2', str(pred1))
+            elif i == 2:
+                self.eq(' OR col1 = 2', str(pred1))
+            else:
+                self.fail('Predicate count exceeds 2')
+        
+    def it_failes_parsing_malformed_predicates(self):
+        p = orm.predicate("match ((col) against ('search str')")
+        parens = '''
+            (col = 1
+            (col = 1) or (( col = 2)
+            (col = 1) and ( col = 2 or (col = 3)
+            (col = 1) and col = 2 or (col = 3))
+            (col = 1 and col = 2 or (col = 3)
+            (col = 1))
+            ((col = 1)
+            x = 1 and (x = 1 and x = 1
+            match (col) against ('search str') and col = 1)
+            (match (col) against ('search str') and col = 1
+            match (col) against ('search str') and (col = 1
+            match (col) against ('search str')) and col = 1
+            match (col) against ('search str') and )col = 1
+        '''
+
+        unexpected = '''
+            col = 1 and
+            col = 1 =
+            = col = 1
+            = 1
+            1 =
+            or col = 1
+            match against ('search str')
+            match (col) ('search str')
+            match () against ('search str')
+            match () ('search str')
+            match (col) ('search str')
+            match (col) against ()
+            match (col) against ('search str') in UNnatural language mode
+            match (col) against ('search str') mode language natural in
+            match (col,) against ('search str') mode language natural in
+        '''
+
+        invalidop = '''
+            col != 1
+            col === 1
+            () against ('search str')
+        '''
+
+
+        pairs = (
+            (orm.predicate.ParentheticalImbalance, parens),
+            (orm.predicate.UnexpectedToken, unexpected),
+            (orm.predicate.InvalidOperator, invalidop),
+        )
+
+        for ex, exprs in pairs:
+            for expr in exprs.splitlines():
+                expr = expr.strip()
+                if not expr:
+                    continue
+ 
+                try:
+                    pred = orm.predicate(expr)
+                except Exception as ex1:
+                    print(ex1)
+                    if type(ex1) is not ex:
+                        msg = (
+                            'Incorrect exception type; '
+                            'expected: %s; actual: %s'
+                        ) % (ex, type(ex1))
+
+                        self.fail(msg)
+                else:
+                    self.fail('No exception parsing: ' + expr)
+
+    def it_parses_where_predicate(self):
         def test(expr, pred, first, op, second, third=''):
             msg = expr
             self.eq(first,   pred.operands[0],  msg)
@@ -4791,7 +4914,7 @@ class test_orm(tester):
                 self.eq(third,  pred.operands[2],  msg)
                 
             self.eq(expr,    str(pred),         msg)
-                        
+
         # Simple col = literal
         for expr in 'col = 11', 'col=11':
             pred = orm.predicate(expr)
@@ -4802,7 +4925,6 @@ class test_orm(tester):
             for expr in 'col > 0 %s col < 11' % op, 'col>0 %s col<11' % op:
                 pred = orm.predicate(expr)
                 test('col > 0 %s col < 11' % op.upper(), pred, 'col', '>', '0')
-                test(' %s col < 11' % op.upper(), pred.junction, 'col', '<', '11')
 
         # Simple literal = column
         for expr in '11 = col', '11=col':
@@ -4872,21 +4994,6 @@ class test_orm(tester):
         # Simple 'lit=eral' = column (literal has operator in it)
         for expr in "'1 = 1' = col", "'1 = 1'=col":
             test("'1 = 1' = col", orm.predicate(expr), "'1 = 1'", '=', 'col')
-
-        # Test NOT column
-        for expr in "NOT col", "not col":
-            test('NOT col', orm.predicate(expr), 'col', 'NOT', None)
-
-        # Joined NOT column (and|or) col = 1
-        for op in 'and', 'or':
-            exprs = (
-                'not col %s not col1' % op, 
-                'not col %s not col1' % op.upper()
-            )
-            for expr in exprs:
-                pred = orm.predicate(expr)
-                test('NOT col %s NOT col1' % op.upper(), pred, 'col', 'NOT', None )
-                test(' %s NOT col1' % op.upper(), pred.junction, 'col1', 'NOT', None )
 
         # column is literal
         for expr in 'col is null', 'col  IS  NULL':
@@ -4971,9 +5078,6 @@ class test_orm(tester):
 
             if pred.junctionop:
                 self.eq(' %s %s' % (pred.junctionop, expr), str(pred))
-            else:
-                if not pred.junction:
-                    self.eq(expr, str(pred))
 
             self.eq(mode, pred.match.mode)
 
@@ -5012,9 +5116,54 @@ class test_orm(tester):
                 self.eq(expr, str(pred))
 
                 test(
-                    ' %s col = 1' % OP, pred.junction, 
+                    ' %s col = 1' % OP, pred.match.junction, 
                     'col', '=', '1'
                 )
+
+        # (match(col) against ('keyword')) and (col = 1)
+        for op in 'and', 'or':
+            OP = op.upper()
+            exprs = (
+                "(match(col) against ('keyword')) %s (col = 1)" % op, 
+                "(match(col)  against  ('keyword'))  %s (col=1)" % OP
+            )
+            for expr in exprs:
+                pred = orm.predicate(expr)
+                expr = (
+                    "MATCH (col) AGAINST ('keyword') "
+                    "IN NATURAL LANGUAGE MODE"
+                )
+
+                testmatch(pred, ['col'], expr)
+
+                expr = (
+                    "(MATCH (col) AGAINST ('keyword') "
+                    "IN NATURAL LANGUAGE MODE) %s (col = 1)" % OP
+                )
+
+                self.eq(expr, str(pred))
+
+                test(
+                    ' %s (col = 1)' % OP, pred.junction, 
+                    'col', '=', '1'
+                )
+
+        # (match(col) against ('keyword') and col = 1) and (col1 = 2)
+        for op in 'and', 'or':
+            OP = op.upper()
+            exprs = (
+                "(match(col) against ('keyword') and col = 1) %s (col1 = 2)" % op, 
+                "(match(col)  against  ( 'keyword' ) and col=1)  %s (col1=2)" % OP
+            )
+            for expr in exprs:
+                pred = orm.predicate(expr)
+                expr = (
+                    "(MATCH (col) AGAINST ('keyword') "
+                    "IN NATURAL LANGUAGE MODE "
+                    "AND col = 1) %s (col1 = 2)" % OP
+                )
+
+                self.eq(expr, str(pred))
 
         # col = 1 and match(col) against ('keyword')
         for op in 'and', 'or':
@@ -5093,28 +5242,42 @@ class test_orm(tester):
             expr = ' AND col1 = 2)'
             test(expr, pred.junction, 'col1', '=', '2')
 
-
-        # TODO This fails because the final ')' isn't captured. Lets fix
-        # this when we switch to shlex
-        '''
         # (col = 1 and (col1 = 2 and col2 = 3))
         exprs = (
            '(col = 1 and (col1 = 2 and col2 = 3))',
-           # TODO Add a brain-damaged version
+           '(col  =  1  AND ( col1=2 AND col2 = 3 ) )',
         )
         for expr in exprs:
             pred = orm.predicate(expr)
-            B()
-            expr = '(col = 1 AND col1 = 2)'
+            expr = '(col = 1 AND (col1 = 2 AND col2 = 3))'
             test(expr, pred, 'col', '=', '1')
 
-            expr = ' AND col1 = 2)'
+            expr = ' AND (col1 = 2 AND col2 = 3))'
             test(expr, pred.junction, 'col1', '=', '2')
-        '''
 
-        # TODO Test paranthesis
-        # TODO Test each operator
-        # TODO Implement and test escaped singel and double quotes
+        # ((col = 1 and col1 = 2) and col2 = 3)
+        exprs = (
+           '((col = 1 and col1 = 2) and col2 = 3)',
+           '((col=1 AND col1=2) AND col2=3)',
+        )
+        for expr in exprs:
+            pred = orm.predicate(expr)
+            expr = '((col = 1 AND col1 = 2) AND col2 = 3)'
+            test(expr, pred, 'col', '=', '1')
+
+        # col = 'can''t won''t shan''t'
+        expr = "col = 'can''t won''t shan''t'"
+        pred = orm.predicate(expr)
+        expr = "col = 'can''t won''t shan''t'"
+        test(expr, pred, 'col', '=', "'can''t won''t shan''t'")
+
+        for op in orm.predicate.Specialops:
+            expr = 'col %s 123' % op
+            pred = orm.predicate(expr)
+            test(expr, pred, 'col', op, '123')
+
+
+
 
 class test_blog(tester):
     def __init__(self):

@@ -39,6 +39,7 @@ import dateutil
 import decimal
 from datetime import datetime
 import gc
+from shlex import shlex
 
 # Set conditional break points
 def B(x=True):
@@ -428,20 +429,49 @@ class predicates(entitiesmod.entities):
     pass
 
 class predicate(entitiesmod.entity):
-    Specialops = '=', '==', '<', '<=', '>', '>=', '!='
-    Wordops = 'LIKE', 'NOT', 'NOT LIKE', 'IS', 'IS IN', 'BETWEEN'
+    Specialops = '=', '==', '<', '<=', '>', '>=', '<>'
+    Wordops = 'LIKE', 'NOT', 'NOT LIKE', 'IS', 'IS IN', 'IS NOT', 'IS NOT IN', 'BETWEEN', 'NOT BETWEEN'
+    Constants = 'TRUE', 'FALSE', 'NULL'
     Ops = Specialops + Wordops
     
     def __init__(self, expr, junctionop=None):
-        self._expr        =  expr
         self._operator    =  ''
         self.operands     =  list()
         self.match        =  None
-        self.junction     =  None
+        self._junction    =  None
         self._junctionop  =  junctionop
-        self.startparan   = False
-        self.endparan     = False
-        self._parse()
+        self.startparen   =  0
+        self.endparen     =  0
+
+        if isinstance(expr, shlex):
+            lex = expr
+        else:
+            # TODO When we get to Python 3.6, we can use the punctuation_chars
+            # argument to shlex.__init__ which will make operator parsing
+            # easier.
+            lex = shlex(expr, posix=False, punctuation_chars='!=<=>')
+
+        self._parse(lex)
+
+    def __iter__(self):
+        yield self
+        if self.match and self.match.junction:
+            for pred in self.match.junction:
+                yield  pred 
+
+        if self.junction:
+            for pred in self.junction:
+                yield pred
+
+        raise StopIteration
+
+    @property
+    def junction(self):
+        return self._junction
+
+    @junction.setter
+    def junction(self, v):
+        self._junction = v
 
     @property
     def junctionop(self):
@@ -449,79 +479,116 @@ class predicate(entitiesmod.entity):
             return self._junctionop.strip().upper()
         return None
 
-    def _parse(self):
-        sm = predicate.statemachine()
-        buff = str()
-        toks = list()
-        
-        # TODO Put this at top
-        from func import enumerate
+    @staticmethod
+    def _raiseSyntaxError(lex, tok, ex=None, msg=''):
+        if not ex:
+            ex = predicate.SyntaxError
 
-        adv = None
-        for i, c in enumerate(self._expr):
+        cur = lex.instream.tell()
+        str = lex.instream.getvalue()
+        strlen = len(str)
+        start = max(0, cur - 10)
+        stop = min(strlen, cur + 10)
+        snippet = str[start: stop]
 
-            if adv and i < adv:
-                continue
+        raise ex(cur, snippet, tok, msg=msg)
+    
+    def _demandBalancedParens(self):
+        if self.junctionop:
+            return
 
-            sm.character = c
+        startparen = endparen = 0
+        for pred in self:
+            startparen += pred.startparen
+            endparen += pred.endparen
 
-            if sm.startparan or sm.endparan:
-                lead = self._expr[:max(0, i - 1)]
 
-                if not lead or lead.isspace():
-                    self.startparan |= sm.startparan
+        if endparen != startparen:
+            raise predicate.ParentheticalImbalance(startparen, endparen)
 
-                self.endparan |= sm.endparan
+    def _parse(self, lex):
+        tok = lex.get_token()
+        inbetween = False
+        inquote = False
 
-            if sm.tokendone:
-                buff = buff.strip('() \t\n\r')
+        while tok != lex.eof:
+            TOK = tok.upper()
 
-                if sm.inbetween and buff.upper() == 'AND' \
-                                and len(self.operands) < 3:
-                    buff = ''
-                    continue
+            if self._iscolumn(tok):
+                self.operands.append(tok)
 
-                elif self._iswordoperator(buff):
-                    self.operator += ' ' + buff
+            elif TOK == 'MATCH':
+                self.operands = None
+                self.operator = None
+                self.match = predicate.Match(lex)
 
-                elif buff.upper() == 'MATCH':
-                    self.operands = None
-                    self.operator = None
-                    self.match, adv = predicate.Match.create(self._expr[i:])
-                    adv += i + 1
-                    buff = ''
-                    continue
+            elif self._iswordoperator(tok):
+                self.operator += ' ' + tok
+                if TOK == 'BETWEEN':
+                    inbetween = True
 
-                elif buff.upper() in ('AND', 'OR'):
-                    self.junction = predicate(self._expr[i:], buff)
+            elif self._lookslikeoperator(lex, tok):
+                if self.operator:
+                    self._raiseSyntaxError(lex, tok, ex=predicate.UnexpectedToken)
+                    
+                if not len(self.operands):
+                    self._raiseSyntaxError(lex, tok, ex=predicate.UnexpectedToken)
+
+                if not self._isoperator(tok):
+                    raise predicate.InvalidOperator(tok)
+
+                self.operator = tok
+
+            elif self._isliteral(tok):
+                tok = TOK if TOK in self.Constants else tok
+                if inquote:
+                    if tok[0] == "'":
+                        self.operands[-1] += tok
+                else:
+                    inquote = True # Maybe
+                    self.operands.append(tok)
+
+            elif TOK in ('AND', 'OR'):
+                if not self.match and not len(self.operands):
+                    self._raiseSyntaxError(lex, tok, ex=predicate.UnexpectedToken)
+
+                if not (inbetween and TOK == 'AND'):
+                    self.junction = predicate(lex, tok)
+                    self._demandBalancedParens()
                     return
 
-                elif self._iscolumn(buff):
-                    self.operands.append(buff)
+            elif tok == '(':
+                self.startparen += 1
 
-                elif self._isoperator(buff):
-                    self.operator = buff
+            elif tok == ')':
+                self.endparen += 1
 
-                elif self._isliteral(buff):
-                    self.operands.append(buff)
+            if inbetween and len(self.operands) == 3:
+                inbetween = False
 
-                else:
-                    raise ParseError('Unknown token type: ' + buff)
+            tok = lex.get_token()
 
-                buff = c
+            if tok != lex.eof and tok[-1] != "'":
+                inquote = False
 
-                if i.last:
-                    break
+        if not self.match:
+            if self.operator in ('BETWEEN', 'NOT BETWEEN'):
+                if len(self.operands) != 3:
+                    msg = 'Expected 2 operands, not %s' % len(self.operands)
+                    self._raiseSyntaxError(lex, tok, ex=predicate.UnexpectedToken, msg=msg)
             else:
-                buff += c
+                if len(self.operands) != 2:
+                    msg = 'Expected 2 operands, not %s' % len(self.operands)
 
-        buff = buff.strip().strip('() \t\n\r')
-        if buff and self.operands is not None:
-            self.operands.append(buff)
+                    self._raiseSyntaxError(lex, tok, ex=predicate.UnexpectedToken, msg=msg)
 
-            consts = 'TRUE', 'FALSE', 'NULL'
-            self.operands = [x.upper() if x.upper() in consts else x 
-                            for x in self.operands]
+            # TODO When the punctuation_chars argument is available in shlex, we can
+            # capture bad operators when they happen and report the column number.
+            if self.operator not in predicate.Ops:
+                raise predicate.InvalidOperator(self.operator)
+
+        self._demandBalancedParens()
+                
 
     @property
     def operator(self):
@@ -540,13 +607,16 @@ class predicate(entitiesmod.entity):
 
         r += ' %s ' % self.junctionop if self.junctionop else ''
 
-        r += '(' if self.startparan else ''
+        r += '(' * self.startparen
 
         if self.match:
             r += str(self.match)
+            if self.match.junction:
+                r += str(self.match.junction)
         else:
             cnt = len(self.operands)
             # TODO Limit the size of these lines to 80 chars
+            # TODO We shouldn't have 1 operand anymore. That was a mistake (not col)
             if cnt == 1:
                 r += '%s %s' % (self.operator, self.operands[0])
             elif cnt == 2:
@@ -556,7 +626,7 @@ class predicate(entitiesmod.entity):
             else:
                 raise ValueError('Incorrect number of operands')
 
-        r += ')' if self.endparan else ''
+        r += ')' * self.endparen
 
         junc = self.junction
         if junc:
@@ -567,108 +637,27 @@ class predicate(entitiesmod.entity):
     def __repr__(self):
         return "predicate('%s')" % str(self)
 
-    class statemachine():
-        def __init__(self):
-            self.characters = str()
-
-            self.intoken    =  False
-            self.tokendone  =  False
-            self.inop       =  False
-            self.inquote    =  False
-            self.inbetween  =  False
-            self.startparan = False
-            self.endparan   = False
-
-        @property
-        def character(self):
-            try:
-                return self.characters[-1]
-            except IndexError:
-                return str()
-
-        @character.setter
-        def character(self, v):
-            self.characters += v
-            self.update()
-
-        def update(self):
-            self.tokendone = False
-            self.startparan = False
-            self.endparan = False
-
-            c = self.character
-
-            if c in '"\'':
-                if self.inquote:
-                    if self.inquote == c:
-                        self.inquote = False
-                else:
-                    self.inquote    =  c
-
-                if self.inquote:
-                    self.tokendone  =  self.inop
-                    self.intoken    =  True
-
-            elif self.inquote:
-                pass
-
-            elif c.isalnum():
-                self.tokendone  =  self.inop
-                self.intoken    =  True
-                self.inop       =  False
-
-            elif c.isspace():
-                if self.word.upper() == 'BETWEEN':
-                    self.inbetween = True
-
-                self.tokendone = self.intoken
-                self.intoken  =  False
-                self.inop     =  False
-
-            elif c in '()':
-                if not self.inquote:
-                    self.startparan = c == '('
-                    self.endparan   = c == ')'
-                self.tokendone = self.intoken
-                self.intoken  =  False
-                self.inop     =  False
-
-            elif not self.inop and c in [x[0] for x in predicate.Specialops]:
-                self.tokendone = self.intoken
-                self.inop     =  True
-                self.intoken  =  True
-
-        @property
-        def incolumn(self):
-            return self._incolumn
-
-        @incolumn.setter
-        def incolumn(self, v):
-            self._incolumn = v
-            self.intoken |= v
-
-        @property
-        def states(self):
-            sts = list()
-            if self.incolumn:
-                sts.append('incolumn')
-            return sts
-
-        @property
-        def word(self):
-            cs = self.characters.rstrip()
-            return cs[cs.rfind(' ') + 1:]
-
     @staticmethod
     def _iscolumn(tok):
         # TODO true, false and null are literals, not columns
-        return not predicate._isoperator(tok) \
+        # TODO Support underscores in column names
+        TOK = tok.upper()
+        return     not predicate._isoperator(tok) \
+               and not predicate._isliteral(tok) \
                and tok[0].isalpha()           \
-               and tok.isalnum()
+               and tok.isalnum()              \
+               and TOK not in ('AND', 'OR', 'MATCH')
+
+    @staticmethod
+    def _lookslikeoperator(lex, tok):
+        for c in tok:
+            if c not in lex.punctuation_chars:
+                return False
+        return True
 
     @staticmethod
     def _isoperator(tok):
-        return tok in predicate.Ops
+        return tok.upper() in predicate.Ops + predicate.Wordops
 
     @staticmethod
     def _iswordoperator(tok):
@@ -684,7 +673,10 @@ class predicate(entitiesmod.entity):
             return True
 
         # If numeric
-        return tok.isnumeric()
+        if tok.isnumeric():
+            return True
+
+        return tok.upper() in predicate.Constants
 
     class Match():
         # TODO Fix below line by using flags=re.IGNORECASE
@@ -700,51 +692,86 @@ class predicate(entitiesmod.entity):
              flags=re.IGNORECASE
         )
 
-        def __init__(self, expr):
-            self._expr           =  expr
+        def __init__(self, lex):
+            self._lex            =  lex
             self.columns         =  list()
             self.searchstring    =  str()
-            self.searchmodifier  =  str()
             self._mode           =  str()
+            self.junction        =  None
+            self._parse(lex)
 
-        def _parse(self):
-            buff = str()
-            sm = predicate.Match.statemachine()
-            for i, c in enumerate(self._expr):
-                sm.character = c
+        def _parse(self, lex):
+            tok = lex.get_token()
+            incolumns  =  False
+            insearch   =  False
+            inagainst  =  False
+            inmode     =  False
 
-                if sm.tokendone:
-                    buff = buff.strip()
-                    if sm.incolumns:
-                        if self._iscolumn(buff):
-                            self.columns.append(buff)
+            while tok != lex.eof:
+                TOK = tok.upper()
+                if incolumns:
+                    if self._iscolumn(tok):
+                        self.columns.append(tok)
 
-                    elif not self.searchstring and sm.searchstringdone:
-                        self.searchstring = buff.strip("'")
+                elif insearch:
+                    # TODO Test search strings with quotes
+                    if tok == ')':
+                        ex=predicate.UnexpectedToken
+                        msg = 'Missing search string'
+                        predicate._raiseSyntaxError(lex, tok, ex=ex, msg=msg)
 
-                    elif sm.searchstringdone:
-                        if buff.upper() in ('IN', 'NATURAL', 'BOOLEAN', 'LANGUAGE', 'MODE'):
-                            self._mode += ' ' + buff
+                    self.searchstring = tok.strip("'")
+                    insearch = False
 
-                        elif buff.upper() in ('AND', 'OR'):
-                            return i - len(buff) - 1
+                elif inmode:
+                    if TOK in ('IN', 'NATURAL', 'BOOLEAN', 'LANGUAGE', 'MODE'):
+                        self._mode += ' ' + TOK
 
-                    elif sm.searchstringdone and buff != "'":
-                        self.searchmodifier += buff
+                    elif TOK in ('AND', 'OR'):
+                        self.junction = predicate(lex, tok)
 
-                    if c in '()':
-                        buff = str()
-                        continue
+                    elif tok == ')':
+                        lex.push_token(tok)
+                        return
 
-                    buff = c
-                else:
-                    buff += c
+                    else:
+                        ex=predicate.UnexpectedToken
+                        msg = 'Check spelling of search modifiers '
+                        predicate._raiseSyntaxError(lex, tok, ex=ex, msg=msg)
 
-            if sm.searchstringdone:
-                if buff.strip().upper() in ('IN', 'NATURAL', 'BOOLEAN', 'LANGUAGE', 'MODE'):
-                    self._mode += ' ' + buff
+                if tok == '(':
+                    if len(self.columns) and not inagainst:
+                        ex=predicate.UnexpectedToken
+                        msg = 'Are you missing the AGAINST keyword'
+                        predicate._raiseSyntaxError(lex, tok, ex=ex, msg=msg)
 
-            return i
+                    incolumns = not len(self.columns)
+                    insearch = inagainst
+
+                elif tok == ')':
+                    if incolumns and not len(self.columns):
+                        ex=predicate.UnexpectedToken
+                        msg = 'Missing columns list'
+                        predicate._raiseSyntaxError(lex, tok, ex=ex, msg=msg)
+
+                    incolumns = False
+                    if inagainst:
+                        inmode = True
+                    else:
+                        inagainst = False
+
+                elif TOK == 'AGAINST':
+                    inagainst = True
+
+                tok = lex.get_token()
+
+            try:
+                self.mode
+            except:
+                ex=predicate.UnexpectedToken
+                msg = 'Invalid search modifiers'
+                predicate._raiseSyntaxError(lex, tok, ex=ex, msg=msg)
+                
 
         @property
         def mode(self):
@@ -761,6 +788,9 @@ class predicate(entitiesmod.entity):
 
             raise ValueError('Incorrect mode: ' + mode)
 
+        def __repr__(self):
+            return "Match('%s')" % str(self)
+
         def __str__(self):
             args = ', '.join(self.columns), self.searchstring
             r = "MATCH (%s) AGAINST ('%s')" % args
@@ -775,81 +805,51 @@ class predicate(entitiesmod.entity):
         def _iscolumn(self, buff):
             return self.re_alphanum_.match(buff)
 
-        @staticmethod
-        def create(expr):
-            m = predicate.Match(expr)
-            i = m._parse()
-            return m, i
+    class SyntaxError(ValueError):
+        def __init__(self, col=None, ctx=None, tok=None, msg=None):
+            self.column = col
+            self.context = ctx
+            self.token = tok
+            self.message = msg
 
-        class statemachine():
-            def __init__(self):
-                self.intoken           =  False
-                self.tokendone         =  False
-                self.incolumns         =  False
-                self.wasincolumns      =  False
-                self.columnsopened     =  None
-                self.columnsclosed     =  None
-                self.afteragainst      =  False
-                self.inquote           =  False
-                self.searchstringdone  =  False
-                self._chars            =  str()
-        
-            @property
-            def character(self):
-                return self._chars[-1]
+        def __str__(self):
+            args = (self.column, self.context)
 
-            @property
-            def word(self):
-                cs = self._chars.rstrip()
-                return cs[cs.rfind(' ') + 1:]
+            if self.column:
+                msg = "Syntax error at column %s near '%s'" % args
+            elif self.context:
+                msg = "Syntax error %s near '%s'" % self.context
+                
+            if self.message:
+                msg += '. ' + self.message
 
-            @character.setter
-            def character(self, v):
-                self._chars += v
-                self.update()
+            return msg
 
-            def update(self):
-                self.tokendone = False
+    class ParentheticalImbalance(SyntaxError):
+        def __init__(self, startparen, endparen):
+            self.startparen = startparen
+            self.endparen = endparen
 
-                c = self.character
+        def __str__(self):
+            msg = 'Parenthetical imbalance. '
+            return msg
 
-                self.incolumns = self.columnsopened and not self.columnsclosed
+    class InvalidOperator(SyntaxError):
+        def __init__(self, op):
+            self.operator = op
 
-                if self.intoken and c == ',':
-                    self.tokendone = True
+        def __str__(self):
+            return 'Invalid operator: ' + self.operator
 
-                elif c.isspace():
-                    if self.word.upper() == 'AGAINST':
-                        self.afteragainst = True
-                    self.tokendone = True
-                    self.intoken = True
+    class UnexpectedToken(SyntaxError):
+        def __str__(self):
+            msg = ''
+            if self.token:
+                msg += 'Unexpected token: "%s"' % self.token
 
-                elif c in '"\'':
-                    if self.afteragainst:
-                        self.inquote = not self.inquote # Naive; doen't handle escaped quotes
-                        self.intoken = not self.inquote
-                        if not self.inquote:
-                            self.searchstringdone = True
-                            self.tokendone = True
-                    else:
-                        raise ParseError('Quote found before AGAINST')
+            msg = super().__str__() + '. ' + msg
+            return msg
 
-                elif c.isalpha():
-                    self.intoken = True
-
-                elif c in '()':
-                    self.tokendone = True
-                    self.intoken = True
-
-                    if c == ')':
-                        self.columnsclosed = True
-                        self.columnsopened = False
-
-                    if not self.columnsclosed and c == '(':
-                        self.columnsopened = True
-
-class ParseError(ValueError):
-    pass
 
 class allstream(stream):
     pass
