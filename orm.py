@@ -309,6 +309,11 @@ class join(entitiesmod.entity):
     def where(self):
         return self.entities.orm.where
 
+    def __repr__(self):
+        name = type(self.entities).__name__
+        type = 'INNER JOIN' if self.type == self.Inner else 'LEFT OUTER JOIN'
+        return 'join(%s, %s)' % (name, type)
+
 class wheres(entitiesmod.entities):
     @property
     def args(self):
@@ -348,7 +353,7 @@ class wheres(entitiesmod.entities):
             # Conjoin the conditional to the return string. The `graph`
             # variable will reference the table alias in join string. 
             # The `graph` string denotes the hierarchy.
-            r += '%s (%s.%s)' % (conj, '`%s`' % graph, wh.conditional)
+            r += '%s (%s.%s)' % (conj, '`%s`' % graph, wh.predicate)
 
             # For each of the where object's entities' join objects
             for j in wh.entities.orm.joins:
@@ -363,14 +368,16 @@ class wheres(entitiesmod.entities):
         return r
 
 class where(entitiesmod.entity):
-    def __init__(self, es, cond, args):
+    def __init__(self, es, pred, args):
         self.entities     =  es
-        self.conditional  =  None
+        self.predicate    =  None
         self._args        =  None
         self._alias       =  None
 
-        if cond:
-            self.conditional = orm.introduce(cond, args)
+        # TODO Answer why a where clause would not have a pred or an args
+        if pred:
+            pred = orm.introduce(pred, args)
+            self.predicate = predicate(pred)
 
         if args:
             self.args = args
@@ -381,12 +388,17 @@ class where(entitiesmod.entity):
         if self._args:
             r += self._args
 
-        js = self.entities.orm.joins
-        for j in js:
-            if j.where:
-                r += j.where.args
-        return r
+        def join(js):
+            nonlocal r
+            for j in js:
+                if j.where:
+                    r += j.where._args
+                join(j.entities.orm.joins)
 
+        join(self.entities.orm.joins)
+
+        return r
+        
     @args.setter
     def args(self, v):
         self._args = v
@@ -394,7 +406,7 @@ class where(entitiesmod.entity):
     def clone(self):
         return where(
             self.entities,
-            self.conditional,
+            self.predicate, # TODO Do we need to clone the predicate?
             self.args
         )
 
@@ -411,19 +423,40 @@ class where(entitiesmod.entity):
         tbl = self.entities.orm.table
         graph = ('%s.%s') % (graph, tbl) if graph else tbl
 
-        # Concatentate the condititonal with graph to return string
-        r += '(`%s`.%s)' % (graph , self.conditional)
-        for j in self.entities.orm.joins:
-            if not j.where:
-                continue
+        # Concatentate the predicate with graph to return string
+        r += '(%s)' % self.predicate.__str__(columnprefix=graph)
 
-            # Recurse into the join's where's __str__ passing in graph
-            r += '\n AND %s' % j.where.__str__(graph=graph)
+        # Recursively join `where` predicates into the return variable.
+        # Recursions can happen via this join() function, or, if a `where'
+        # object is available on the `join` object, a call to the `where`'s
+        # __str__ method will result in recursion instead.
+        def join(js):
+            nonlocal graph
+            nonlocal r
+            for j in js:
+                if j.where:
+                    # If a join object has a where, use it's where to stringify the
+                    # predicate.
+
+                    # Recurse into the join's where's __str__ passing in graph
+                    r += '\n AND %s' % j.where.__str__(graph=graph)
+                else:
+                    # If the join object has no where object, use the join's
+                    # entities' joins collections and recursively call this
+                    # join method.
+                    js = j.entities.orm.joins
+                    tbl = j.entities.orm.table
+                    oldgraph, graph = graph, ('%s.%s') % (graph, tbl)
+                    join(js)
+                    graph = oldgraph
+
+        # Call join with this where objects entities' joins
+        join(self.entities.orm.joins)
+
         return r
 
     def __repr__(self):
-        return '%s\n%s' % (self.conditional, self.args)
-
+        return '%s\n%s' % (self.predicate, self.args)
     
 class predicates(entitiesmod.entities):
     pass
@@ -479,6 +512,10 @@ class predicate(entitiesmod.entity):
             return self._junctionop.strip().upper()
         return None
 
+    @property
+    def columns(self):
+        return [op for op in self.operands if self._iscolumn(op)]
+
     @staticmethod
     def _raiseSyntaxError(lex, tok, ex=None, msg=''):
         if not ex:
@@ -508,13 +545,26 @@ class predicate(entitiesmod.entity):
 
     def _parse(self, lex):
         tok = lex.get_token()
-        inbetween = False
-        inquote = False
+        inbetween      =  False
+        inquote        =  False
+        inplaceholder  =  False
+        unexpected = predicate.UnexpectedToken
 
         while tok != lex.eof:
             TOK = tok.upper()
 
-            if self._iscolumn(tok):
+            if tok == '%':
+                inplaceholder = True
+            elif inplaceholder:
+                if tok == 's':
+                    self.operands.append('%s')
+                else:
+                    msg = 'Unexpected placeholder type. ' + \
+                          'Consider using %s instead'
+                    self._raiseSyntaxError(lex, tok, ex=unexpected, msg=msg)
+                inplaceholder = False
+                
+            elif self._iscolumn(tok):
                 self.operands.append(tok)
 
             elif TOK == 'MATCH':
@@ -529,10 +579,10 @@ class predicate(entitiesmod.entity):
 
             elif self._lookslikeoperator(lex, tok):
                 if self.operator:
-                    self._raiseSyntaxError(lex, tok, ex=predicate.UnexpectedToken)
+                    self._raiseSyntaxError(lex, tok, ex=unexpected)
                     
                 if not len(self.operands):
-                    self._raiseSyntaxError(lex, tok, ex=predicate.UnexpectedToken)
+                    self._raiseSyntaxError(lex, tok, ex=unexpected)
 
                 if not self._isoperator(tok):
                     raise predicate.InvalidOperator(tok)
@@ -550,7 +600,7 @@ class predicate(entitiesmod.entity):
 
             elif TOK in ('AND', 'OR'):
                 if not self.match and not len(self.operands):
-                    self._raiseSyntaxError(lex, tok, ex=predicate.UnexpectedToken)
+                    self._raiseSyntaxError(lex, tok, ex=unexpected)
 
                 if not (inbetween and TOK == 'AND'):
                     self.junction = predicate(lex, tok)
@@ -575,12 +625,12 @@ class predicate(entitiesmod.entity):
             if self.operator in ('BETWEEN', 'NOT BETWEEN'):
                 if len(self.operands) != 3:
                     msg = 'Expected 2 operands, not %s' % len(self.operands)
-                    self._raiseSyntaxError(lex, tok, ex=predicate.UnexpectedToken, msg=msg)
+                    self._raiseSyntaxError(lex, tok, ex=unexpected, msg=msg)
             else:
                 if len(self.operands) != 2:
                     msg = 'Expected 2 operands, not %s' % len(self.operands)
 
-                    self._raiseSyntaxError(lex, tok, ex=predicate.UnexpectedToken, msg=msg)
+                    self._raiseSyntaxError(lex, tok, ex=unexpected, msg=msg)
 
             # TODO When the punctuation_chars argument is available in shlex, we can
             # capture bad operators when they happen and report the column number.
@@ -600,7 +650,7 @@ class predicate(entitiesmod.entity):
     def operator(self, v):
         self._operator = v
 
-    def __str__(self):
+    def __str__(self, columnprefix=None):
         # TODO Uppercase TRUE, FALSE and NULL literals
 
         r = str()
@@ -609,6 +659,7 @@ class predicate(entitiesmod.entity):
 
         r += '(' * self.startparen
 
+        # TODO Pass columnprefix to match
         if self.match:
             r += str(self.match)
             if self.match.junction:
@@ -620,7 +671,12 @@ class predicate(entitiesmod.entity):
             if cnt == 1:
                 r += '%s %s' % (self.operator, self.operands[0])
             elif cnt == 2:
-                r += '%s %s %s' % (self.operands[0], self.operator, self.operands[1])
+                ops = self.operands.copy()
+                if columnprefix:
+                    for i, op in enumerate(ops):
+                        if self._iscolumn(op):
+                            ops[i] = '`%s`.%s' % (columnprefix, op)
+                r += '%s %s %s' % (ops[0], self.operator, ops[1])
             elif self.operator in ('BETWEEN', 'NOT BETWEEN'):
                 r += '%s %s %s AND %s' % (self.operands[0], self.operator, *self.operands[1:])
             else:
@@ -630,7 +686,7 @@ class predicate(entitiesmod.entity):
 
         junc = self.junction
         if junc:
-            r += str(junc)
+            r += junc.__str__(columnprefix=columnprefix)
 
         return r
 
@@ -930,11 +986,11 @@ class entities(entitiesmod.entities):
                     del args[i]
                     break
 
-            # The parameters express a conditional if the first is a str, or
-            # the arg and kwargs are not empty. Otherwise, the first parameter,
-            # initial, means an initial set of values that the collections
-            # should be set to.  The other parameters will be empty in that
-            # case.
+            # The parameters express a conditional (predicate) if the first is
+            # a str, or the arg and kwargs are not empty. Otherwise, the first
+            # parameter, `initial`, means an initial set of values that the
+            # collections should be set to.  The other parameters will be empty
+            # in that case.
             iscond = type(initial) is str
             iscond = iscond or (initial is None and (_p2 or bool(args) or bool(kwargs)))
 
@@ -942,7 +998,7 @@ class entities(entitiesmod.entities):
                 super().__init__()
 
                 _p1 = '' if initial is None else initial
-                self._prepareconditional(_p1, _p2, *args, **kwargs)
+                self._preparepredicate(_p1, _p2, *args, **kwargs)
                 return
 
             super().__init__(initial=initial)
@@ -1155,7 +1211,7 @@ class entities(entitiesmod.entities):
         super().append(obj, uniq, r)
         return r
 
-    def _prepareconditional(self, _p1='', _p2=None, *args, **kwargs):
+    def _preparepredicate(self, _p1='', _p2=None, *args, **kwargs):
         p1, p2 = _p1, _p2
 
         if p2 is None and p1 != '':
@@ -1228,7 +1284,7 @@ class entities(entitiesmod.entities):
         if self.orm.isloaded:
             return
 
-        # If there is no where conditional, and self is a regular, non-chunk
+        # If there is no where predicate, and self is a regular, non-chunk
         # entities object, then we don't want to load. The fact that we
         # would arrive here in this state is simply due to the __getattribute__
         # attempting to load when almost any attribute is accessed.
@@ -3130,7 +3186,7 @@ class orm:
         ''' Given a dbresultset object, iterate over each of the fields objects
         to populate the object's map values. If nested fields names are
         encounted ('parent.child.id'), the graph is searched recursively until
-        the leaf object is found and its fields are populated vith the field
+        the leaf object is found and its fields are populated with the field
         value. '''
 
         prevnodes = None
@@ -3141,7 +3197,7 @@ class orm:
             nodes = f.name.split('.')[1:]
             col = nodes.pop()
 
-            # If there are no nodes, we must me at the root, so set 'map' and it
+            # If there are no nodes, we must be at the root, so set 'map' and it
             # will be assigned after conditional.
             if len(nodes) == 0:
                 map = self.mappings[col]
@@ -3263,6 +3319,7 @@ class orm:
         sql += joins if joins else ''
         
         # WHERE
+        B()
         wh = self.where
         sql += str(self.where)
 

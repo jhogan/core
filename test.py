@@ -110,14 +110,18 @@ class location(orm.entity):
         return loc
 
 class presentation(orm.entity):
+    date = datetime
+    name = orm.fieldmapping(str)
+    description = str
+    locations = locations
+
     @staticmethod
     def getvalid():
         pres = presentation()
         pres.name = uuid4().hex
+        pres.description = uuid4().hex
         return pres
 
-    name = orm.fieldmapping(str)
-    locations = locations
 
 class concert(presentation):
     @staticmethod
@@ -4682,27 +4686,32 @@ class test_orm(tester):
     def it_calls_innerjoin(self):
         # TODO Ensure constituents are loaded with the correct persistencestate
         arts = artists()
-        for _ in range(2):
-            firstname, lastname = uuid4().hex, uuid4().hex
+
+        for i in range(4):
+            firstname = 'fn-' + uuid4().hex
+            lastname =  'ln-' + uuid4().hex
             art = artist.getvalid()
             art.firstname = firstname
             art.lastname = lastname
+            art.lifeform =  'synthetic' if i else 'organic'
             arts += art
 
             for _ in range(2):
-                addr = uuid4().hex
+                addr = 'loc-addr-' + uuid4().hex
                 art.locations += location.getvalid()
                 art.locations.last.address = addr
+                art.locations.last.description = '1234' if i else '5678'
                 
             for _ in range(2):
-                name = uuid4().hex
+                name = 'pres-' + uuid4().hex
                 art.presentations += presentation.getvalid()
                 art.presentations.last.name = name
 
                 for _ in range(2):
-                    desc = uuid4().hex
+                    desc = 'loc-desc-' + uuid4().hex
                     pres = art.presentations.last
                     pres.locations += location.getvalid()
+                    art.locations.last.description = '1234' if not i else '5678'
                     pres.locations.last.description = desc
 
         arts.save()
@@ -4750,16 +4759,15 @@ class test_orm(tester):
 
         test(arts1)
 
-        # Inner join query: All three have where clauses
-        arts1 = artists(firstname = firstname)
-        press = presentations(name = name)
-        locs = locations(description = desc)
-        artlocs = locations(address = addr)
+        # Inner join query: All four have where clauses
+        arts1    =  artists(firstname      =  firstname)
+        press    =  presentations(name     =  name)
+        locs     =  locations(description  =  desc)
+        artlocs  =  locations(address      =  addr)
 
         press.innerjoin(locs)
         arts1.innerjoin(press)
         arts1.innerjoin(artlocs)
-        print(*arts1.orm.sql)
 
         self.two(arts1.orm.joins)
         self.one(press.orm.joins)
@@ -4778,6 +4786,186 @@ class test_orm(tester):
         self.one(locs)
         loc = locs.first
         self.eq(desc, loc.description)
+
+        # Inner join query: All four have where clauses with simple
+        # predicate, i.e., (x=1)
+        arts1    =  artists(firstname      =  firstname)
+        press    =  presentations(name     =  name)
+        locs     =  locations(description  =  desc)
+        artlocs  =  locations(address      =  addr)
+
+        press.innerjoin(locs)
+        arts1.innerjoin(press)
+        arts1.innerjoin(artlocs)
+
+        self.two(arts1.orm.joins)
+        self.one(press.orm.joins)
+        self.zero(locs.orm.joins)
+        
+        self.one(arts1)
+        art = arts1.first
+        self.eq(firstname, art.firstname)
+
+        press = art.presentations
+        self.one(press)
+        pres = press.first
+        self.eq(name, pres.name)
+
+        locs = pres.locations
+        self.one(locs)
+        loc = locs.first
+        self.eq(desc, loc.description)
+
+        # Inner join query: Artist has a conjoined predicate
+        # i.e, (x=1 and y=1)
+        # firstname=firstname will match the last artist whil lifeform=organic
+        # will match the first artist
+        arts1    =  artists('firstname = %s or lifeform = %s' , (firstname, 'organic'))
+
+        press    =  presentations()
+        locs     =  locations()
+        artlocs  =  locations()
+
+        press.innerjoin(locs)
+        arts1.innerjoin(press)
+        arts1.innerjoin(artlocs)
+
+
+        self.two(arts1.orm.joins)
+        self.one(press.orm.joins)
+        self.zero(locs.orm.joins)
+        
+        self.two(arts1)
+
+        # Test that the correct graph was loaded
+        for i, art1 in arts1.sorted('lifeform').enumerate():
+            # The artists query match the first [0] and last [3] elements that
+            # would be in arts.
+            art = arts[0 if i == 0 else 3] 
+            self.eq(art.firstname, art1.firstname)
+
+            art.presentations.sort('name')
+            press1 = art1.presentations.sorted('name')
+            self.two(press1)
+
+            for i, pres1 in press1.enumerate():
+                pres = art.presentations[i]
+                self.eq(pres.name, pres1.name)
+
+                locs  = pres.locations.sorted('description')
+                locs1 = pres1.locations.sorted('description')
+                self.two(locs1)
+
+                for i, loc1 in locs1.enumerate():
+                    self.eq(locs[i].description, loc1.description)
+
+        # Recreate arts. The artist entities and constituents will have sequential indexes
+        # to query against.
+        arts = artists()
+        for i in range(4):
+            art = artist.getvalid()
+            art.firstname = 'fn-' + str(i)
+            art.lastname = 'ln-'  + str(i + 1)
+            arts += art
+
+            for j in range(4):
+                art.locations += location.getvalid()
+                art.locations.last.address = 'art-loc-addr-' + str(j)
+                art.locations.last.description = 'art-loc-desc-' + str(j + 1)
+                
+            for k in range(4):
+                art.presentations += presentation.getvalid()
+                pres = art.presentations.last
+                pres.name = 'pres-name-' + str(k)
+                pres.description = 'pres-desc-' + str(k + 1)
+
+                for l in range(4):
+                    pres.locations += location.getvalid()
+                    pres.locations.last.address = 'pres-loc-addr-' + str(l)
+                    pres.locations.last.description ='pres-loc-desc-' +  str(l + 1)
+
+        print('saving...')
+        arts.save()
+        print('saved')
+
+        arts1 = artists('firstname = %s and lastname = %s', ('fn-0', 'ln-1'))
+        press = presentations()
+        locs  = locations('address = %s or description = %s', 
+                         ('pres-loc-addr-0', 'pres-loc-desc-2'))
+
+        # TODO It may be useful to type-check the query args before sending
+        # them to MySQL. The below line, because it didn't surround 1234 in
+        # quotes, caused a MySQL Warning Exception of:
+        #
+        #     Truncated incorrect DOUBLE value: 'loc-desc-f707e98079904524936313228d684d80'
+        # 
+        # This seems to be a MySQL error worth ignoring since it is the result
+        # of a SELECT and doesn't really seem to make any sense other than
+        # somehow indicating that an integer is being compared with a
+        # varchar(255).  Either way, since we treat warnings as exceptions, this
+        # resulted in an exception. If we throw a better exception in the orm
+        # complaining that 1234 needs to be quoted because location.address is
+        # a str, we could avoid this confusing MySQL warning/exception.
+
+        #artlocs  =  locations('description = %s and address = %s', (1234, addr))
+        artlocs  =  locations('address = %s or description = %s', 
+                             ('art-loc-addr-0', 'art-loc-desc-2'))
+
+        arts1.innerjoin(artlocs)
+        arts1.innerjoin(press)
+        press.innerjoin(locs)
+
+        # Test join counts
+        self.two(arts1.orm.joins)
+        self.one(press.orm.joins)
+        self.zero(locs.orm.joins)
+        
+        # Only one artist will have been retrieved by the query
+        self.one(arts1)
+
+        # Test artist's locations
+        locs = arts1.first.locations
+        self.two(locs)
+        for loc in locs:
+            self.true(loc.address     == 'art-loc-addr-0' or 
+                      loc.description == 'art-loc-desc-2')
+
+        # Test arts1.first.presentations' locations
+        press = arts1.first.presentations
+
+        # All four presentations were match by the location predicate
+        self.four(press) 
+        for pres in press:
+            self.two(pres.locations)
+            for loc in pres.locations:
+                self.true(loc.address     == 'pres-loc-addr-0' or 
+                          loc.description == 'pres-loc-desc-2')
+
+
+        # Query where the only filter is down the graph three levels
+        # artist->presentation->locations. The algorithm that generates the
+        # where predicate has unusual recursion logic that is sensitive to
+        # top-level joins not having `where` objects so we need to make sure
+        # this doesn't get broken.
+        arts1 = artists()
+        press = presentations()
+        locs  = locations('address = %s or description = %s', 
+                         ('pres-loc-addr-0', 'pres-loc-desc-2'))
+
+        arts1.innerjoin(press)
+        press.innerjoin(locs)
+        B()
+        print(*arts1.orm.sql)
+
+        
+        # FIXME The call to .sql cause a null reference exception because
+        # orm.where is None
+        # arts1    =  artists()
+        # press    =  presentations()
+        # arts1.innerjoin(press)
+        # print(*arts1.orm.sql)
+
+
 
     def it_creates_iter_from_predicate(self):
         ''' Test the predicates __iter__() '''
@@ -4867,6 +5055,7 @@ class test_orm(tester):
             match (col) against ('search str') in UNnatural language mode
             match (col) against ('search str') mode language natural in
             match (col,) against ('search str') mode language natural in
+            col = %S
         '''
 
         invalidop = '''
@@ -5275,10 +5464,11 @@ class test_orm(tester):
             expr = 'col %s 123' % op
             pred = orm.predicate(expr)
             test(expr, pred, 'col', op, '123')
-
-
-
-
+        
+        ## Placeholders ##
+        expr = 'col = %s'
+        pred = orm.predicate(expr)
+        test(expr, pred, 'col', '=', '%s')
 class test_blog(tester):
     def __init__(self):
         super().__init__()
