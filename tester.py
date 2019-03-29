@@ -203,6 +203,9 @@ class tester(entity):
     def assertNotNone(self, o, msg=None):
         if o == None: self._failures += failure()
 
+    def notnone(self, o, msg=None):
+        if o == None: self._failures += failure()
+
     def assertZero(self, actual):
         if len(actual) != 0: self._failures += failure()
 
