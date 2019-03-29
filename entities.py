@@ -244,6 +244,10 @@ class entities(object):
 
         return type(self)(sorted(self._ls, key=key1, reverse=reverse))
 
+    def enumerate(self):
+        for i, e in enumerate(self):
+            yield i, e
+
     def clear(self):
         self.remove(self)
 
