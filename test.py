@@ -2995,20 +2995,6 @@ class test_datetime(tester):
         expect = dt.astimezone('US/Arizona')
         self.eq(expect, actual)
 
-class test_predicate(tester):
-
-    def it_parses_simple_predicate(self):
-        expr = 'col = 1'
-        pred = db.predicate(expr)
-
-        # Zero sub-predicates
-        self.zero(pred.predicates)
-
-        # 'col' is the column and 1 is the value
-        self.eq('col', pred.column)
-        self.eq(1, pred.value)
-        self.eq(db.predicate.operators.eq, pred.operator)
-
 def main():
     # Parse args
     p = argparse.ArgumentParser()
