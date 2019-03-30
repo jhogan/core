@@ -4757,6 +4757,8 @@ class test_orm(tester):
         self.one(press.orm.joins)
         self.zero(locs.orm.joins)
 
+        arts1.load()
+
         test(arts1)
 
         # Inner join query: All four have where clauses
@@ -4773,6 +4775,8 @@ class test_orm(tester):
         self.one(press.orm.joins)
         self.zero(locs.orm.joins)
         
+        arts1.load()
+
         self.one(arts1)
         art = arts1.first
         self.eq(firstname, art.firstname)
@@ -4802,6 +4806,7 @@ class test_orm(tester):
         self.one(press.orm.joins)
         self.zero(locs.orm.joins)
         
+        arts1.load()
         self.one(arts1)
         art = arts1.first
         self.eq(firstname, art.firstname)
@@ -4835,6 +4840,8 @@ class test_orm(tester):
         self.one(press.orm.joins)
         self.zero(locs.orm.joins)
         
+        arts1.load()
+
         self.two(arts1)
 
         # Test that the correct graph was loaded
@@ -4919,6 +4926,8 @@ class test_orm(tester):
         self.two(arts1.orm.joins)
         self.one(press.orm.joins)
         self.zero(locs.orm.joins)
+
+        arts1.load()
         
         # Only one artist will have been retrieved by the query
         self.one(arts1)

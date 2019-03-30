@@ -133,7 +133,7 @@ class stream(entitiesmod.entity):
                 self._stop = slc.stop
 
                 self.chunk.clear()
-                self.chunk._load(self.stream.orderby, self.limit, self.offset)
+                self.chunk.load(self.stream.orderby, self.limit, self.offset)
                 self.chunkloaded = True
 
             return self.chunk[self.getrelativeslice(slc)]
@@ -872,68 +872,65 @@ class entities(entitiesmod.entities):
                 "class."
             )
             raise NotImplementedError(msg)
-        try:
-            self.orm.instance = self
-            self.orm.initing = True
-            self.orm.isloaded = False
-            self.orm.isloading = False
-            self.orm.stream = None
-            self.orm.where = None
-            self.orm.ischunk = False
-            self.orm.joins = joins(es=self)
 
-            self.onbeforereconnect  =  entitiesmod.event()
-            self.onafterreconnect   =  entitiesmod.event()
-            self.onafterload        =  entitiesmod.event()
+        self.orm.instance = self
+        self.orm.isloaded = False
+        self.orm.isloading = False
+        self.orm.stream = None
+        self.orm.where = None
+        self.orm.ischunk = False
+        self.orm.joins = joins(es=self)
 
-            self.onafterload       +=  self._self_onafterload
+        self.onbeforereconnect  =  entitiesmod.event()
+        self.onafterreconnect   =  entitiesmod.event()
+        self.onafterload        =  entitiesmod.event()
 
-            # If a stream is found in the first or second argument, move it to
-            # args
-            args = list(args)
-            if  isinstance(initial, stream):
-                args.append(initial)
-                initial = None
-            elif type(initial) is type and stream in initial.mro():
-                args.append(initial())
-                initial = None
-            elif _p2 is stream or isinstance(_p2, stream):
-                args.append(_p2)
-                _p2 = None
+        self.onafterload       +=  self._self_onafterload
 
-            # Look in *args for stream class or a stream object. If found, ensure
-            # the element is an instantiated stream and set it to self._stream.
-            # Delete the stream from *args.
-            for i, e in enumerate(args):
-                if e is stream:
-                    self.orm.stream = stream()
-                    self.orm.stream.entities = self
-                    del args[i]
-                    break
-                elif isinstance(e, stream):
-                    self.orm.stream = e
-                    self.orm.stream.entities = self
-                    del args[i]
-                    break
+        # If a stream is found in the first or second argument, move it to
+        # args
+        args = list(args)
+        if  isinstance(initial, stream):
+            args.append(initial)
+            initial = None
+        elif type(initial) is type and stream in initial.mro():
+            args.append(initial())
+            initial = None
+        elif _p2 is stream or isinstance(_p2, stream):
+            args.append(_p2)
+            _p2 = None
 
-            # The parameters express a conditional (predicate) if the first is
-            # a str, or the arg and kwargs are not empty. Otherwise, the first
-            # parameter, `initial`, means an initial set of values that the
-            # collections should be set to.  The other parameters will be empty
-            # in that case.
-            iscond = type(initial) is str
-            iscond = iscond or (initial is None and (_p2 or bool(args) or bool(kwargs)))
+        # Look in *args for stream class or a stream object. If found, ensure
+        # the element is an instantiated stream and set it to self._stream.
+        # Delete the stream from *args.
+        for i, e in enumerate(args):
+            if e is stream:
+                self.orm.stream = stream()
+                self.orm.stream.entities = self
+                del args[i]
+                break
+            elif isinstance(e, stream):
+                self.orm.stream = e
+                self.orm.stream.entities = self
+                del args[i]
+                break
 
-            if self.orm.stream or iscond:
-                super().__init__()
+        # The parameters express a conditional (predicate) if the first is
+        # a str, or the arg and kwargs are not empty. Otherwise, the first
+        # parameter, `initial`, means an initial set of values that the
+        # collections should be set to.  The other parameters will be empty
+        # in that case.
+        iscond = type(initial) is str
+        iscond = iscond or (initial is None and (_p2 or bool(args) or bool(kwargs)))
 
-                _p1 = '' if initial is None else initial
-                self._preparepredicate(_p1, _p2, *args, **kwargs)
-                return
+        if self.orm.stream or iscond:
+            super().__init__()
 
-            super().__init__(initial=initial)
-        finally:
-            self.orm.initing = False
+            _p1 = '' if initial is None else initial
+            self._preparepredicate(_p1, _p2, *args, **kwargs)
+            return
+
+        super().__init__(initial=initial)
 
     def clone(self, to=None):
         if not to:
@@ -1023,23 +1020,8 @@ class entities(entitiesmod.entities):
                 return e
     
     def __getattribute__(self, attr):
-        def proceed():
-            dontloads = 'innerjoin', 'join'
-            if not  self.orm.initing      and  \
-               not  self.orm.isloading    and  \
-               not  self.orm.isstreaming  and  \
-               not  self.orm.isremoving   and  \
-               attr not in dontloads:
-                self._load()
-
+        if attr == 'orm' or not self.orm.isstreaming:
             return object.__getattribute__(self, attr)
-            
-
-        if attr in ('orm', 'composite', '_constituents', '_load'):
-            return object.__getattribute__(self, attr)
-
-        if not self.orm.isstreaming:
-            return proceed()
 
         nonos = (
             'getrandom',    'getrandomized',  'where',    'clear',
@@ -1053,7 +1035,6 @@ class entities(entitiesmod.entities):
             msg = "'%s's' attribute '%s' is not available "
             msg += 'while streaming'
             raise AttributeError(msg % (self.__class__.__name__, attr))
-
 
         return proceed()
 
@@ -1076,7 +1057,9 @@ class entities(entitiesmod.entities):
             return self
         else:
             reverse = False if reverse is None else reverse
-            self._load()
+
+            # TODO Why was self being reloaded?
+            #self.load()
             r =  super().sorted(key, reverse)
             self.clone(r)
             return r
@@ -1209,18 +1192,8 @@ class entities(entitiesmod.entities):
             self.orm.isremoving = False
 
 
-    # TODO Move this to orm.load. '_load' could be needed by subclasse of entities
-    def _load(self, orderby=None, limit=None, offset=None):
+    def load(self, orderby=None, limit=None, offset=None):
         if self.orm.isloaded:
-            return
-
-        # If there is no where predicate, and self is a regular, non-chunk
-        # entities object, then we don't want to load. The fact that we
-        # would arrive here in this state is simply due to the __getattribute__
-        # attempting to load when almost any attribute is accessed.
-        if not self.orm.where and not self.orm.ischunk:
-            type(self))
-            B()
             return
 
         try:
@@ -1490,6 +1463,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         
         map.value = v
 
+    # Move to orm
     def _load(self, id):
         sql = 'SELECT * FROM {} WHERE id = _binary %s'
         sql = sql.format(self.orm.table)
@@ -3092,7 +3066,6 @@ class orm:
         self._base                =  undef
         self.instance             =  None
         self.stream               =  None
-        self.initing              =  False
         self.isloaded             =  False
         self.isloading            =  False
         self.isremoving           =  False
