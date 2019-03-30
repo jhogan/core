@@ -4954,7 +4954,7 @@ class test_orm(tester):
 
         arts1.innerjoin(press)
         press.innerjoin(locs)
-        B()
+        arts1.first
         print(*arts1.orm.sql)
 
         

@@ -311,61 +311,11 @@ class join(entitiesmod.entity):
 
     def __repr__(self):
         name = type(self.entities).__name__
-        type = 'INNER JOIN' if self.type == self.Inner else 'LEFT OUTER JOIN'
-        return 'join(%s, %s)' % (name, type)
+        typ = 'INNER' if self.type == self.Inner else 'LEFT OUTER'
+        return 'join(%s, %s)' % (name, typ)
 
 class wheres(entitiesmod.entities):
-    @property
-    def args(self):
-        r = []
-
-        for wh in self:
-            if wh.args:
-                r += wh.args
-
-            whs = wh.entities.orm.joins.wheres
-            r += whs.args
-
-        return r 
-
-    def __str__(self, graph=''):
-        ''' Return a string representation of the WHERE clause with %s
-        parameters. If the where object's entities collection has joins, those
-        joins will be traversed to captures all where clauses. The %s
-        parameters will occur in the same order as their corresponding values
-        return by wheres.args.  '''
-
-        # Start off with a 'WHERE '
-        r = '' if graph else 'WHERE '
-
-        # For each where object in this collection
-        for i, wh in enumerate(self):
-
-            # Create a cumulative graph string. Recursion will augment this
-            # string so it will denotes the graph's hierarchy.
-            if graph:
-                graph = '%s.%s' % (graph, wh.entities.orm.table)
-            else:
-                graph = '%s' % wh.entities.orm.table
-
-            conj = '\n AND ' if i else ''
-
-            # Conjoin the conditional to the return string. The `graph`
-            # variable will reference the table alias in join string. 
-            # The `graph` string denotes the hierarchy.
-            r += '%s (%s.%s)' % (conj, '`%s`' % graph, wh.predicate)
-
-            # For each of the where object's entities' join objects
-            for j in wh.entities.orm.joins:
-                if not j.where:
-                    continue
-
-                # Traverse into the join's where's __str__ method, passing in
-                # the graph. Note that its logic will proceed to traverse back
-                # into this method.
-                r += '\n AND %s' % j.where.__str__(graph=graph)
-
-        return r
+    pass
 
 class where(entitiesmod.entity):
     def __init__(self, es, pred, args):
@@ -382,26 +332,6 @@ class where(entitiesmod.entity):
         if args:
             self.args = args
 
-    @property
-    def args(self):
-        r = []
-        if self._args:
-            r += self._args
-
-        def join(js):
-            nonlocal r
-            for j in js:
-                if j.where:
-                    r += j.where._args
-                join(j.entities.orm.joins)
-
-        join(self.entities.orm.joins)
-
-        return r
-        
-    @args.setter
-    def args(self, v):
-        self._args = v
         
     def clone(self):
         return where(
@@ -1289,13 +1219,14 @@ class entities(entitiesmod.entities):
         # would arrive here in this state is simply due to the __getattribute__
         # attempting to load when almost any attribute is accessed.
         if not self.orm.where and not self.orm.ischunk:
+            type(self))
+            B()
             return
 
         try:
             self.orm.isloading = True
 
             sql, args = self.orm.sql
-
 
             if orderby:
                 sql += ' ORDER BY ' + orderby
@@ -3299,6 +3230,51 @@ class orm:
     def selects(self):
         return self.getselects()
 
+    def getwhere(self):
+        ''' Return a string representation of the WHERE clause with %s
+        parameters. If the where object's entities collection has joins, those
+        joins will be traversed to captures all where clauses. '''
+
+        # Start off with a 'WHERE '
+        r = 'WHERE '
+
+        args = []
+
+        # Concatentate the predicate with graph to return string
+        graph = self.entities.orm.table
+        wh = self.where
+        if wh:
+            r += '(%s)' % wh.predicate.__str__(columnprefix=graph)
+            args += wh.args
+
+
+        # Recursively join `where` predicates into the return variable.
+        # Recursions can happen via this join() function, or, if a `where'
+        # object is available on the `join` object, a call to the `where`'s
+        # __str__ method will result in recursion instead.
+
+        def concatenate(js, graph):
+            nonlocal r, args
+            for j in js:
+                tbl = j.entities.orm.table
+                graph1 = ('%s.%s') % (graph, tbl) if graph else tbl
+                if j.where:
+                    # If a join object has a where, use it's where to stringify the
+                    # predicate.
+
+                    # Recurse into the join's where's __str__ passing in graph
+                    p = '\n AND (%s)'
+                    p %= j.where.predicate.__str__(columnprefix=graph1)
+                    r += p
+                    args += j.where.args
+
+                concatenate(j.entities.orm.joins, graph1)
+
+        # Call join with this where objects entities' joins
+        concatenate(self.joins, graph)
+
+        return r, args
+
     @property
     def sql(self):
         ''' Returns the SELECT statement needed to load an entities collection.
@@ -3319,9 +3295,10 @@ class orm:
         sql += joins if joins else ''
         
         # WHERE
-        B()
         wh = self.where
-        sql += str(self.where)
+        #sql += str(self.where)
+        wh, args = self.getwhere()
+        sql += wh
 
         # ORDER BY
         if self.isstreaming:
@@ -3331,7 +3308,7 @@ class orm:
         # Return the SQL followed by the args from the WHERE object. Note that the 
         # str(self.where) and self.where.args, though being recursive, will ensure 
         # that the placeholders (%s) and the arguments occure in the same order.
-        return sql, wh.args
+        return sql, args
 
     @staticmethod
     def introduce(sql, args):
