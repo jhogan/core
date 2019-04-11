@@ -2,7 +2,7 @@
 """
 MIT License
 
-Copyright (c) 2018 Jesse Hogan
+Copyright (c) 2019 Jesse Hogan
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -4683,191 +4683,15 @@ class test_orm(tester):
 
         print(*arts.orm.sql)
 
-    def it_calls_innerjoin(self):
-        # TODO Ensure constituents are loaded with the correct persistencestate
-        arts = artists()
+    def _create_join_test_data(self):
+        ''' Create test data to be used by the outer/inner join tests. '''
 
-        for i in range(4):
-            firstname = 'fn-' + uuid4().hex
-            lastname =  'ln-' + uuid4().hex
-            art = artist.getvalid()
-            art.firstname = firstname
-            art.lastname = lastname
-            art.lifeform =  'synthetic' if i else 'organic'
-            arts += art
+        # Only do it once
+        if hasattr(self, '_create_join_test_data_arts'):
+            return self._create_join_test_data_arts
 
-            for _ in range(2):
-                addr = 'loc-addr-' + uuid4().hex
-                art.locations += location.getvalid()
-                art.locations.last.address = addr
-                art.locations.last.description = '1234' if i else '5678'
-                
-            for _ in range(2):
-                name = 'pres-' + uuid4().hex
-                art.presentations += presentation.getvalid()
-                art.presentations.last.name = name
-
-                for _ in range(2):
-                    desc = 'loc-desc-' + uuid4().hex
-                    pres = art.presentations.last
-                    pres.locations += location.getvalid()
-                    art.locations.last.description = '1234' if not i else '5678'
-                    pres.locations.last.description = desc
-
-        arts.save()
-
-        def test(arts1):
-            self.one(arts1)
-            self.eq(arts.last.id, arts1.first.id)
-            self.eq(arts.last.firstname, arts1.first.firstname)
-
-            art1 = arts1.first
-            fff = (False,) * 3
-            self.eq(fff, art1.orm.persistencestate)
-
-            self.two(arts1.first.presentations)
-            press = arts.last.presentations.sorted()
-            press1 = art1.presentations.sorted()
-
-            for pres, pres1 in zip(press, press1):
-                self.eq(fff, pres.orm.persistencestate)
-                self.eq(pres.id, pres1.id)
-                self.eq(pres.name, pres1.name)
-
-                locs = pres.locations.sorted()
-                locs1 = pres1.locations.sorted() 
-                self.two(pres1.locations)
-
-                for loc, loc1 in zip(locs, locs1):
-                    self.eq(fff, loc.orm.persistencestate)
-                    self.eq(loc.id, loc1.id)
-                    self.eq(loc.description, loc1.description)
-
-        # Inner join where only artist has a where clause
-        arts1 = artists(firstname = firstname)
-        press = presentations()
-        locs = locations()
-        artlocs = locations()
-        press.innerjoin(locs)
-        arts1.innerjoin(press)
-        arts1.innerjoin(artlocs)
-        orm = arts1.orm
-
-        self.two(arts1.orm.joins)
-        self.one(press.orm.joins)
-        self.zero(locs.orm.joins)
-
-        arts1.load()
-
-        test(arts1)
-
-        # Inner join query: All four have where clauses
-        arts1    =  artists(firstname      =  firstname)
-        press    =  presentations(name     =  name)
-        locs     =  locations(description  =  desc)
-        artlocs  =  locations(address      =  addr)
-
-        press.innerjoin(locs)
-        arts1.innerjoin(press)
-        arts1.innerjoin(artlocs)
-
-        self.two(arts1.orm.joins)
-        self.one(press.orm.joins)
-        self.zero(locs.orm.joins)
-        
-        arts1.load()
-
-        self.one(arts1)
-        art = arts1.first
-        self.eq(firstname, art.firstname)
-
-        press = art.presentations
-        self.one(press)
-        pres = press.first
-        self.eq(name, pres.name)
-
-        locs = pres.locations
-        self.one(locs)
-        loc = locs.first
-        self.eq(desc, loc.description)
-
-        # Inner join query: All four have where clauses with simple
-        # predicate, i.e., (x=1)
-        arts1    =  artists(firstname      =  firstname)
-        press    =  presentations(name     =  name)
-        locs     =  locations(description  =  desc)
-        artlocs  =  locations(address      =  addr)
-
-        press.innerjoin(locs)
-        arts1.innerjoin(press)
-        arts1.innerjoin(artlocs)
-
-        self.two(arts1.orm.joins)
-        self.one(press.orm.joins)
-        self.zero(locs.orm.joins)
-        
-        arts1.load()
-        self.one(arts1)
-        art = arts1.first
-        self.eq(firstname, art.firstname)
-
-        press = art.presentations
-        self.one(press)
-        pres = press.first
-        self.eq(name, pres.name)
-
-        locs = pres.locations
-        self.one(locs)
-        loc = locs.first
-        self.eq(desc, loc.description)
-
-        # Inner join query: Artist has a conjoined predicate
-        # i.e, (x=1 and y=1)
-        # firstname=firstname will match the last artist whil lifeform=organic
-        # will match the first artist
-        arts1    =  artists('firstname = %s or lifeform = %s' , (firstname, 'organic'))
-
-        press    =  presentations()
-        locs     =  locations()
-        artlocs  =  locations()
-
-        press.innerjoin(locs)
-        arts1.innerjoin(press)
-        arts1.innerjoin(artlocs)
-
-
-        self.two(arts1.orm.joins)
-        self.one(press.orm.joins)
-        self.zero(locs.orm.joins)
-        
-        arts1.load()
-
-        self.two(arts1)
-
-        # Test that the correct graph was loaded
-        for i, art1 in arts1.sorted('lifeform').enumerate():
-            # The artists query match the first [0] and last [3] elements that
-            # would be in arts.
-            art = arts[0 if i == 0 else 3] 
-            self.eq(art.firstname, art1.firstname)
-
-            art.presentations.sort('name')
-            press1 = art1.presentations.sorted('name')
-            self.two(press1)
-
-            for i, pres1 in press1.enumerate():
-                pres = art.presentations[i]
-                self.eq(pres.name, pres1.name)
-
-                locs  = pres.locations.sorted('description')
-                locs1 = pres1.locations.sorted('description')
-                self.two(locs1)
-
-                for i, loc1 in locs1.enumerate():
-                    self.eq(locs[i].description, loc1.description)
-
-        # Recreate arts. The artist entities and constituents will have sequential indexes
-        # to query against.
+        # The artist entities and constituents will have sequential indexes to
+        # query against.
         arts = artists()
         for i in range(4):
             art = artist.getvalid()
@@ -4884,98 +4708,356 @@ class test_orm(tester):
                 art.presentations += presentation.getvalid()
                 pres = art.presentations.last
                 pres.name = 'pres-name-' + str(k)
-                pres.description = 'pres-desc-' + str(k + 1)
+                pres.description = 'pres-desc-' + str(k + 1) + '-' + str(i)
 
                 for l in range(4):
                     pres.locations += location.getvalid()
                     pres.locations.last.address = 'pres-loc-addr-' + str(l)
                     pres.locations.last.description ='pres-loc-desc-' +  str(l + 1)
 
+            for k in range(4):
+                aa = artist_artifact.getvalid()
+                aa.role = 'art-art_fact-role-' + str(k)
+                aa.planet = 'art-art_fact-planet-' + str(k + 1)
+                aa.artifact = artifact.getvalid()
+                art.artist_artifacts += aa
+
         print('saving...')
         arts.save()
         print('saved')
+        self._create_join_test_data_arts = arts
+        presentation.getvalid().save()
+        artist.getvalid().save()
+        return arts
 
-        arts1 = artists('firstname = %s and lastname = %s', ('fn-0', 'ln-1'))
-        press = presentations()
-        locs  = locations('address = %s or description = %s', 
-                         ('pres-loc-addr-0', 'pres-loc-desc-2'))
+    def it_calls_innerjoin_on_associations(self):
+        arts = self._create_join_test_data()
 
-        # TODO It may be useful to type-check the query args before sending
-        # them to MySQL. The below line, because it didn't surround 1234 in
-        # quotes, caused a MySQL Warning Exception of:
-        #
-        #     Truncated incorrect DOUBLE value: 'loc-desc-f707e98079904524936313228d684d80'
-        # 
-        # This seems to be a MySQL error worth ignoring since it is the result
-        # of a SELECT and doesn't really seem to make any sense other than
-        # somehow indicating that an integer is being compared with a
-        # varchar(255).  Either way, since we treat warnings as exceptions, this
-        # resulted in an exception. If we throw a better exception in the orm
-        # complaining that 1234 needs to be quoted because location.address is
-        # a str, we could avoid this confusing MySQL warning/exception.
+        # TODO Move this test back to bottom
+        # Test unconditionally joining the associated entities collecties
+        arts1 = artists() 
+        arts1 &= artist_artifacts() & artifacts()
 
-        #artlocs  =  locations('description = %s and address = %s', (1234, addr))
-        artlocs  =  locations('address = %s or description = %s', 
-                             ('art-loc-addr-0', 'art-loc-desc-2'))
+        print(*arts1.orm.sql)
+        B()
 
-        arts1.innerjoin(artlocs)
-        arts1.innerjoin(press)
-        press.innerjoin(locs)
+        # Test artists joined with artist_artifacts with no condititons
+        arts1 = artists()
+        arts1 &= artist_artifacts()
 
-        # Test join counts
-        self.two(arts1.orm.joins)
-        self.one(press.orm.joins)
-        self.zero(locs.orm.joins)
+        self.one(arts1.orm.joins)
 
         arts1.load()
+
+        self.four(arts1)
+
+        arts.sort()
+        arts1.sort()
         
-        # Only one artist will have been retrieved by the query
-        self.one(arts1)
+        for art, art1 in zip(arts, arts1):
+            self.eq(art.id, art1.id)
 
-        # Test artist's locations
-        locs = arts1.first.locations
-        self.two(locs)
-        for loc in locs:
-            self.true(loc.address     == 'art-loc-addr-0' or 
-                      loc.description == 'art-loc-desc-2')
+            self.four(art1.artist_artifacts)
 
-        # Test arts1.first.presentations' locations
-        press = arts1.first.presentations
+            art.artist_artifacts.sort()
+            art1.artist_artifacts.sort()
 
-        # All four presentations were match by the location predicate
-        self.four(press) 
-        for pres in press:
-            self.two(pres.locations)
-            for loc in pres.locations:
-                self.true(loc.address     == 'pres-loc-addr-0' or 
-                          loc.description == 'pres-loc-desc-2')
+            for aa, aa1 in zip(art.artist_artifacts, art1.artist_artifacts):
+                self.eq(aa.id, aa.id)
+                self.eq(aa.artifact.id, aa1.artifact.id)
 
-
-        # Query where the only filter is down the graph three levels
-        # artist->presentation->locations. The algorithm that generates the
-        # where predicate has unusual recursion logic that is sensitive to
-        # top-level joins not having `where` objects so we need to make sure
-        # this doesn't get broken.
+        # Test artists joined with artist_artifacts where the association has a
+        # conditional
         arts1 = artists()
-        press = presentations()
-        locs  = locations('address = %s or description = %s', 
-                         ('pres-loc-addr-0', 'pres-loc-desc-2'))
+        arts1 &= artist_artifacts('role = %s', ('art-art_fact-role-0',))
 
-        arts1.innerjoin(press)
-        press.innerjoin(locs)
-        arts1.first
-        print(*arts1.orm.sql)
+        self.one(arts1.orm.joins)
 
+        arts1.load()
+
+        self.four(arts1)
+        arts1.sort()
+        for art, art1 in zip(arts, arts1):
+            self.eq(art.id, art1.id)
+
+            self.one(art1.artist_artifacts)
+
+            aa1 = art1.artist_artifacts.first
+            self.eq(aa1.role, 'art-art_fact-role-0')
+            self.eq(aa1.artifactid, aa1.artifact.id)
+
+
+
+    def it_calls_outerjoin(self):
+        arts = self._create_join_test_data()
+
+        # Outer join artists with presentations; no predicates
+        arts1 = artists()
+        press1 = presentations()
+
+        # I don't currently see the point in OUTER LEFT JOINs in ORMs, so,
+        # until a use case is presented, we will raise a NotImplementedError
+        self.expect(NotImplementedError, lambda: arts1.outerjoin(press1))
         
-        # FIXME The call to .sql cause a null reference exception because
-        # orm.where is None
-        # arts1    =  artists()
-        # press    =  presentations()
-        # arts1.innerjoin(press)
-        # print(*arts1.orm.sql)
+    def it_calls_innerjoin_on_entities(self):
+        def join(joiner, joinee, type):
+            if type in ('innerjoin', 'join'):
+                getattr(joiner, type)(joinee)
+            elif type  == 'standard':
+                joiner = joiner & joinee
+            elif type  == 'inplace':
+                joiner &= joinee
+
+            # Incorrect implementation of & and &= can nullify `joiner`, even
+            # though the actual join was successful, so ensure `joiner` is
+            # notnone
+            self.notnone(joiner)
+
+        # TODO Ensure constituents are loaded with the correct persistencestate
+        arts = self._create_join_test_data()
+
+        jointypes = 'innerjoin', 'join', 'standard', 'inplace'
+
+        # Inner join where only artist has a where clause
+        for t in jointypes:
+            arts1 = artists(firstname = 'fn-0')
+            press = presentations()
+            locs = locations()
+            artlocs = locations()
+
+            join(press, locs, t)
+            join(arts1, press, t)
+            join(arts1, artlocs, t)
+            #press.innerjoin(locs)
+            #arts1.innerjoin(press)
+            #arts1.innerjoin(artlocs)
+
+            # TODO Remove?
+            orm = arts1.orm
+
+            self.two(arts1.orm.joins)
+            self.one(press.orm.joins)
+            self.zero(locs.orm.joins)
+
+            arts1.load()
+
+            # Test
+            self.one(arts1)
+            art1 = arts1.first
+            self.eq(arts.first.id, art1.id)
+
+            fff = (False,) * 3
+            self.eq(fff, art1.orm.persistencestate)
+
+            press = arts.first.presentations.sorted()
+            press1 = art1.presentations.sorted()
+
+            self.four(press1)
+
+            locs = arts.first.locations.sorted()
+            locs1 = art1.locations.sorted() 
+            self.four(locs1)
+
+            for loc, loc1 in zip(locs, locs1):
+                self.eq(fff, loc.orm.persistencestate)
+                self.eq(loc.id, loc1.id)
+
+            for pres, pres1 in zip(press, press1):
+                self.eq(fff, pres.orm.persistencestate)
+                self.eq(pres.id, pres1.id)
+
+                locs = pres.locations.sorted()
+                locs1 = pres1.locations.sorted() 
+                self.four(pres1.locations)
+
+                for loc, loc1 in zip(locs, locs1):
+                    self.eq(fff, loc.orm.persistencestate)
+                    self.eq(loc.id, loc1.id)
+
+        # Inner join query: All four have where clauses with simple predicate,
+        # i.e., (x=1)
+        for t in jointypes:
+            arts1    =  artists        (firstname    =  'fn-0')
+            press    =  presentations  (name         =  'pres-name-0')
+            locs     =  locations      (description  =  'pres-loc-desc-1')
+            artlocs  =  locations      (address      =  'art-loc-addr-0')
+
+            join(press,  locs,     t)
+            join(arts1,  press,    t)
+            join(arts1,  artlocs,  t)
+
+            self.two(arts1.orm.joins)
+            self.one(press.orm.joins)
+            self.zero(locs.orm.joins)
+            
+            arts1.load()
+
+            self.one(arts1)
+            art1 = arts1.first
+            self.eq('fn-0', art1.firstname)
+
+            locs1 = art1.locations
+            self.one(locs1)
+            loc1 = locs1.first
+            self.eq('art-loc-addr-0', loc1.address)
+
+            press1 = art1.presentations
+            self.one(press1)
+            pres = press1.first
+            self.eq('pres-name-0', pres.name)
+
+            locs1 = pres.locations
+            self.one(locs1)
+            loc = locs1.first
+            self.eq('pres-loc-desc-1', loc.description)
 
 
+        # Inner join query: Artist has a conjoined predicate
+        # i.e, (x=1 and y=1)
+        # firstname=firstname will match the last artist while lifeform=organic
+        # will match the first artist.
+        for t in jointypes:
+            arts1    =  artists('firstname = %s or '
+                                'lastname = %s' , ('fn-0', 'ln-2'))
+            press    =  presentations()
+            locs     =  locations()
+            artlocs  =  locations()
 
+            join(press,  locs,     t)
+            join(arts1,  press,    t)
+            join(arts1,  artlocs,  t)
+
+            self.two(arts1.orm.joins)
+            self.one(press.orm.joins)
+            self.zero(locs.orm.joins)
+            
+            arts1.load()
+
+            self.two(arts1)
+
+            # Test that the correct graph was loaded
+            for art1 in arts1:
+                self.true(art1.firstname == 'fn-0' or
+                          art1.lastname  == 'ln-2')
+
+                arts.first.presentations.sort('name')
+                press1 = art1.presentations.sorted('name')
+                self.four(press1)
+
+                for i, pres1 in press1.enumerate():
+                    pres = arts.first.presentations[i]
+                    self.eq(pres.name, pres1.name)
+
+                    locs  = pres.locations.sorted('description')
+                    locs1 = pres1.locations.sorted('description')
+                    self.four(locs1)
+
+                    for i, loc1 in locs1.enumerate():
+                        self.eq(locs[i].address, loc1.address)
+                        self.eq(locs[i].description, loc1.description)
+
+        for t in jointypes:
+            arts1 = artists('firstname = %s and lastname = %s', 
+                            ('fn-0', 'ln-1'))
+            press = presentations()
+            locs  = locations('address = %s or description = %s', 
+                             ('pres-loc-addr-0', 'pres-loc-desc-2'))
+
+            # TODO It may be useful to type-check the query args before sending
+            # them to MySQL. The below line, because it didn't surround 1234 in
+            # quotes, caused a MySQL Warning Exception of:
+            #
+            #     Truncated incorrect DOUBLE value: 'loc-desc-f707e98079904524936313228d684d80'
+            # 
+            # This seems to be a MySQL error worth ignoring since it is the
+            # result of a SELECT and doesn't really seem to make any sense
+            # other than somehow indicating that an integer is being compared
+            # with a varchar(255).  Either way, since we treat warnings as
+            # exceptions, this resulted in an exception. If we throw a better
+            # exception in the orm complaining that 1234 needs to be quoted
+            # because location.address is a str, we could avoid this confusing
+            # MySQL warning/exception.
+
+            #artlocs  =  locations('description = %s and address = %s', (1234, addr))
+            artlocs  =  locations('address = %s or description = %s', 
+                                 ('art-loc-addr-0', 'art-loc-desc-2'))
+
+            join(arts1,  artlocs,  t)
+            join(arts1,  press,    t)
+            join(press,  locs,     t)
+
+            # Test join counts
+            self.two(arts1.orm.joins)
+            self.one(press.orm.joins)
+            self.zero(locs.orm.joins)
+
+            arts1.load()
+            
+            # Only one artist will have been retrieved by the query
+            self.one(arts1)
+
+            # Test artist's locations
+            locs = arts1.first.locations
+            self.two(locs)
+            for loc in locs:
+                self.true(loc.address     == 'art-loc-addr-0' or 
+                          loc.description == 'art-loc-desc-2')
+
+            # Test arts1.first.presentations' locations
+            press = arts1.first.presentations
+
+            # All four presentations were match by the location predicate
+            self.four(press) 
+            for pres in press:
+                self.two(pres.locations)
+                for loc in pres.locations:
+                    self.true(loc.address     == 'pres-loc-addr-0' or 
+                              loc.description == 'pres-loc-desc-2')
+
+
+        for t in jointypes:
+            # Query where the only filter is down the graph three levels
+            # artist->presentation->locations. The algorithm that generates the
+            # where predicate has unusual recursion logic that is sensitive to
+            # top-level joins not having `where` objects so we need to make
+            # sure this doesn't get broken.
+            arts1 = artists()
+            press = presentations()
+            locs  = locations('address = %s or description = %s', 
+                             ('pres-loc-addr-0', 'pres-loc-desc-2'))
+
+            join(arts1, press, t)
+            join(press, locs, t)
+            arts1.load()
+
+            # Test join counts
+            self.one(arts1.orm.joins)
+            self.one(press.orm.joins)
+            self.zero(locs.orm.joins)
+
+            self.four(arts1)
+            for art in arts1:
+                self.four(art.presentations)
+                for pres in art.presentations:
+                    self.two(pres.locations)
+                    for loc in pres.locations:
+                        self.true(loc.address     == 'pres-loc-addr-0' or
+                                  loc.description == 'pres-loc-desc-2')
+            
+        # Test joining using the three our more & operators.
+        # NOTE Sadely, parenthesis must be used to correct precedence. This
+        # will likely lead to confusion if the & techinique is promoted. I'm
+        # thinking &= should be recommended instead.
+        arts1 = artists() & (presentations() & locations())
+        arts1.load()
+
+        self.four(arts1)
+
+        for art in arts1:
+            self.four(art.presentations)
+            for pres in art.presentations:
+                self.four(pres.locations)
+                    
     def it_creates_iter_from_predicate(self):
         ''' Test the predicates __iter__() '''
 

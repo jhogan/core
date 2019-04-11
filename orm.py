@@ -221,52 +221,86 @@ class joins(entitiesmod.entities):
     def table(self):
         return self.entities.orm.table
 
-    def __str__(self, root=None, rroot=None):
-        r = ''
+    def __str__(self, joinerroot=None, joineeroot=None):
+        
+        def raise_fk_not_found():
+            msg = 'FK not found: '
+            msg += '%s.%s = %s.%s'
+            msg %= (jointbl, '<NOT FOUND>', joinergraph, joinerpk)
+            msg += "\nIs '%s' a parent to '%s'" % (joinergraph, jointbl)
+            raise ValueError(msg)
 
-        for join in self:
-
-            if root is None:
-                graph = self.entities.orm.table
-            else:
-                graph = root
-
-            if rroot is None:
-                rgraph = self.table
-            else:
-                rgraph = '%s.%s' % (rroot, self.table)
-
-            if join.type == join.Inner:
-                r += 'INNER JOIN'
-            elif join.type == join.Leftouter:
-                r += 'LEFT OUTER JOIN'
+        def get_join_type(j):
+            if j.type == join.Inner:
+                return 'INNER JOIN'
+            elif j.type == join.Outer:
+                msg = 'Left outer joins are not currently implemented'
+                raise NotImplementedError(msg)
+                return 'LEFT OUTER JOIN'
             else:
                 raise ValueError('Invalid join type')
+        r = ''
+
+        # TODO Comment on the distinction between joinerroot and joineeroot and rgraph and
+        # graph
+        joiner = self
+        # TODO Change 'join' to 'j'. Also, scan the block for any other uses of
+        # the variable 'j' and ensure they are change (i.e., s/j/j1/) to avoid
+        # conflict
+        for join in self:
+
+            if joinerroot is None:
+                joinergraph = self.table
+            else:
+                joinergraph = '%s.%s' % (joinerroot, self.table)
+
+            if joineeroot is None:
+                joineegraph = self.entities.orm.table
+            else:
+                joineegraph = joineeroot
+
+            r += get_join_type(join)
 
             jointbl = join.entities.orm.table
-            graph = '%s.%s' % (graph, jointbl)
-            tbl = ' %s' % jointbl
-            r += '%s AS `%s`' % (tbl, graph)
+            joineegraph = '%s.%s' % (joineegraph, jointbl)
+            r += ' %s AS `%s`' % (jointbl, joineegraph)
 
-            mypk = self.entities.orm.mappings.primarykeymapping.name
+            joinerpk = self.entities.orm.mappings.primarykeymapping.name
             for map in join.entities.orm.mappings.foreignkeymappings:
                 if self.entities.orm.entity is map.entity:
                     joinpk = map.name
                     break
             else:
-                msg = 'FK not found: '
-                msg += '%s.%s = %s.%s'
-                msg %= (jointbl, '<NOT FOUND>', rgraph, mypk)
-                msg += "\nIs '%s' a parent to '%s'" % (rgraph, jointbl)
-                raise ValueError(msg)
+                raise_fk_not_found()
 
-            r += '\n    ON `%s`.%s = %s.%s'
-            r %= (graph, joinpk, '`%s`' % rgraph, mypk)
+            r += '\n    ON `%s`.%s = `%s`.%s'
+            r %= (joinergraph, joinerpk, joineegraph, joinpk)
 
-            # TODO This assignment seems unnecessary
-            js = join.entities.orm.joins
+            if isinstance(join.entities, associations):
+                for j in join.entities.orm.joins:
+                    joinergraph1 = joineegraph
+                    joineegraph1 = '%s.%s' % (joineegraph, j.entities.orm.table)
+                    joineepk1 = j.entities.orm.mappings.primarykeymapping.name
 
-            r += '\n' + join.entities.orm.joins.__str__(root=graph, rroot=rgraph)
+                    for map in join.entities.orm.mappings.foreignkeymappings:
+                        if map.entity is j.entities.orm.entity:
+                            joineerfk1 = map.name
+                            break;
+                    else:
+                        raise_fk_not_found()
+
+                    r += '\n' + get_join_type(j)
+
+                    joineetbl1 = j.entities.orm.table
+                    r += ' %s AS `%s`' % (joineetbl1, joineegraph1)
+
+                    r += '\n    ON `%s`.%s = `%s`.%s'
+                    r %= (joinergraph1, joineerfk1, joineegraph1, joineepk1)
+                    B()
+            else:
+                js = join.entities.orm.joins
+                r += '\n' + js.__str__(joinerroot=joinergraph, \
+                                       joineeroot=joineegraph)
 
         return r
 
@@ -295,7 +329,7 @@ class joins(entitiesmod.entities):
 
 class join(entitiesmod.entity):
     Inner = 0
-    Leftouter = 0
+    Outer = 1
 
     def __init__(self, es, type):
         self.entities = es
@@ -311,7 +345,7 @@ class join(entitiesmod.entity):
 
     def __repr__(self):
         name = type(self.entities).__name__
-        typ = 'INNER' if self.type == self.Inner else 'LEFT OUTER'
+        typ = ['INNER', 'OUTER'][self.type == self.Outer]
         return 'join(%s, %s)' % (name, typ)
 
 class wheres(entitiesmod.entities):
@@ -948,9 +982,25 @@ class entities(entitiesmod.entities):
         for es in args:
             self.join(es, join.Inner)
 
+    def outerjoin(self, *args):
+        for es in args:
+            self.join(es, join.Outer)
+
     def join(self, es, type=None):
-        type = joins.Inner if type is None else type
+        # I don't currently see a point in having LEFT OUTER JOINS.
+        if join.Outer == type:
+            msg = 'LEFT OUTER JOINs are not currently implemented'
+            raise NotImplementedError(msg)
+        type = join.Inner if type is None else type
         self.orm.joins += join(es=es, type=type)
+
+    def __and__(self, other):
+        self.innerjoin(other)
+        return self
+
+    def __iand__(self, other):
+        self.innerjoin(other)
+        return self
     
     @classproperty
     def count(cls):
@@ -1174,7 +1224,7 @@ class entities(entitiesmod.entities):
         try:
             # Set isremoving to True so entities.__getattribute__ doesn't
             # attempt to load whenever the removing logic calls an attibute on
-            # the entities collection.
+            # the ntities collection.
             self.orm.isremoving = True
             super().clear()
         finally:
@@ -3099,7 +3149,15 @@ class orm:
             # (e.g., 'grandparent.parent.child.id'). Call the first part
             # 'nodes' and the second part col.
             nodes = f.name.split('.')[1:]
-            col = nodes.pop()
+
+            if len(nodes) == 0:
+                # If there are no node elements after the name split above, the
+                # caller's dbresultset is using non-fully-qualified aliases
+                # (i.e., SELECT * FROM tbl). Therefore, the field name is the
+                # column name.
+                col = f.name
+            else:
+                col = nodes.pop()
 
             # If there are no nodes, we must be at the root, so set 'map' and it
             # will be assigned after conditional.
@@ -3122,13 +3180,25 @@ class orm:
                     for i, node in enumerate(nodes):
                         map = maps[node]
 
-                        # Get the entities collection. Create it if it doesn't
-                        # yet exist.
-                        if map.value:
+                        # Get the entities/associations collection. Create it
+                        # if it doesn't yet exist.
+
+                        # NOTE Instead of calling map.value here we have to
+                        # call map._value. This is because a call to
+                        # associationsmapping.value tries to load the
+                        # association from the database (entitiesmapping.value
+                        # currently is equivilant to map._value). This is a
+                        # strange disparity probably arising from the needs of
+                        # entity.__getattr__().
+                        if map._value:
                             es = map.value
                         else:
-                            es = map.entities()
-                            map.value = es
+                            if type(map) is entitiesmapping:
+                                es = map.entities()
+                                map.value = es
+                            elif type(map) is associationsmapping:
+                                es = map.associations()
+                                map.value = es
 
                         # If last node
                         if i + 1 == len(nodes):
@@ -3142,7 +3212,10 @@ class orm:
                                     dup = True
                                     break
                             else:
-                                e = map.entities.orm.entity()
+                                if type(map) is entitiesmapping:
+                                    e = map.entities.orm.entity()
+                                elif type(map) is associationsmapping:
+                                    e = map.associations.orm.entity()
                                 es += e
 
                         maps = e.orm.mappings
@@ -3204,47 +3277,58 @@ class orm:
         return self.getselects()
 
     def getwhere(self):
-        ''' Return a string representation of the WHERE clause with %s
-        parameters. If the where object's entities collection has joins, those
-        joins will be traversed to captures all where clauses. '''
+        ''' Return a tuple containing the entities' WHERE clause with %s
+        parameters as the first element and a corresponding a list of
+        arguments as the second element. If the where object's
+        entities collection has joins, those joins will be traversed to
+        captures all where clauses. '''
 
-        # Start off with a 'WHERE '
-        r = 'WHERE '
-
+        # Initialize the return variables
+        r = ''
         args = []
 
-        # Concatentate the predicate with graph to return string
+        # Set a graph variable to denote the heirchary. This is used in the
+        # recursive function below.
         graph = self.entities.orm.table
+
+        # If self has a where predicate, add to the return variables.
+        # Subsequent where clauses found in the heirarchy of joins will be
+        # added recursively in the recursive function below.
         wh = self.where
         if wh:
             r += '(%s)' % wh.predicate.__str__(columnprefix=graph)
             args += wh.args
 
-
         # Recursively join `where` predicates into the return variable.
-        # Recursions can happen via this join() function, or, if a `where'
-        # object is available on the `join` object, a call to the `where`'s
-        # __str__ method will result in recursion instead.
-
         def concatenate(js, graph):
+            # Make the return variables nonlocal for easy concatenation
             nonlocal r, args
+
+            # Iterate over the joins collection
             for j in js:
+
+                # Set the graph1 variable to denote heirarchy
                 tbl = j.entities.orm.table
                 graph1 = ('%s.%s') % (graph, tbl) if graph else tbl
                 if j.where:
-                    # If a join object has a where, use it's where to stringify the
+                    # If a join object has a where, concatenate its stringified
                     # predicate.
-
-                    # Recurse into the join's where's __str__ passing in graph
-                    p = '\n AND (%s)'
+                    p = '\n AND (%s)' if r else '(%s)'
                     p %= j.where.predicate.__str__(columnprefix=graph1)
                     r += p
+
+                    # Concatenate/extend the args
                     args += j.where.args
 
+                # Recurse
                 concatenate(j.entities.orm.joins, graph1)
 
-        # Call join with this where objects entities' joins
+        # Call recursive function
         concatenate(self.joins, graph)
+
+        # Prepend WHERE if the return string is not empty
+        if r:
+            r = 'WHERE ' + r
 
         return r, args
 
