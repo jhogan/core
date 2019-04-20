@@ -50,7 +50,7 @@ def B(x=True):
         from IPython.core.debugger import Tracer; 
         Tracer().debugger.set_trace(sys._getframe().f_back)
 
-# TODO Research making these constants the same as their function equivilants,
+# TODO Research making these constants the same as their function equivilants.
 # i.e., s/2/str; s/3/int/, etc.
 @unique
 class types(Enum):
@@ -222,8 +222,13 @@ class joins(entitiesmod.entities):
         return self.entities.orm.table
 
     def __str__(self, joinerroot=None, joineeroot=None):
+        ''' Return the join portion of a SELECT query. '''
         
+        # TODO Parametersize this function. Currently it reports on variables
+        # in the global scope which are not correct if the entities type is an
+        # assocition.
         def raise_fk_not_found():
+            ''' Raise a ValueError with a FK not found message. '''
             msg = 'FK not found: '
             msg += '%s.%s = %s.%s'
             msg %= (jointbl, '<NOT FOUND>', joinergraph, joinerpk)
@@ -231,6 +236,7 @@ class joins(entitiesmod.entities):
             raise ValueError(msg)
 
         def get_join_type(j):
+            ''' Get the SQL keyword for the join type. '''
             if j.type == join.Inner:
                 return 'INNER JOIN'
             elif j.type == join.Outer:
@@ -241,14 +247,20 @@ class joins(entitiesmod.entities):
                 raise ValueError('Invalid join type')
         r = ''
 
-        # TODO Comment on the distinction between joinerroot and joineeroot and rgraph and
-        # graph
+        # TODO This appear to be a useless line. Remove it.
         joiner = self
+
         # TODO Change 'join' to 'j'. Also, scan the block for any other uses of
         # the variable 'j' and ensure they are change (i.e., s/j/j1/) to avoid
         # conflict
+
+        # For each join object in this entities collection
         for join in self:
 
+            # Concatenate the table names to the `joineegraph` and
+            # `joineegraph`. This denotes the hierarchy of the table within the
+            # graph. These variables are used as table alias. The accumulate
+            # in size with each recursion.
             if joinerroot is None:
                 joinergraph = self.table
             else:
@@ -259,15 +271,26 @@ class joins(entitiesmod.entities):
             else:
                 joineegraph = joineeroot
 
+            # Get the join type as SQL keyword (i.e., 'INNER JOIN')
             r += get_join_type(join)
 
             jointbl = join.entities.orm.table
+
+            # Concatenate the joineegraph
             joineegraph = '%s.%s' % (joineegraph, jointbl)
+
+            # Now we can concatenate `r` with the table and its alias 
             r += ' %s AS `%s`' % (jointbl, joineegraph)
 
+            # The joiner's primary key will usually be 'id', but lets use the
+            # entities' mappings collection to get the actual name.
             joinerpk = self.entities.orm.mappings.primarykeymapping.name
+
+
+            # Get the joineepk for the joinee table.
             for map in join.entities.orm.mappings.foreignkeymappings:
                 if self.entities.orm.entity is map.entity:
+                    # TODO Rename this to joineepk
                     joinpk = map.name
                     break
             else:
@@ -277,6 +300,10 @@ class joins(entitiesmod.entities):
             r %= (joinergraph, joinerpk, joineegraph, joinpk)
 
             if isinstance(join.entities, associations):
+                # If the join is for an association, things become a little
+                # inverted because each join's entities collection within the
+                # association will have a 1-to-many relationship with the
+                # association. This block makes accomidations for that.
                 for j in join.entities.orm.joins:
                     joinergraph1 = joineegraph
                     joineegraph1 = '%s.%s' % (joineegraph, j.entities.orm.table)
@@ -296,13 +323,15 @@ class joins(entitiesmod.entities):
 
                     r += '\n    ON `%s`.%s = `%s`.%s'
                     r %= (joinergraph1, joineerfk1, joineegraph1, joineepk1)
-                    B()
+                    js = j.entities.orm.joins
+                    r += '\n' + js.__str__(joinerroot=joinergraph1, 
+                                           joineeroot=joineegraph1)
             else:
                 js = join.entities.orm.joins
                 r += '\n' + js.__str__(joinerroot=joinergraph, \
                                        joineeroot=joineegraph)
 
-        return r
+        return r + '\n'
 
     @property
     def wheres(self):
@@ -3176,9 +3205,106 @@ class orm:
                     # the graph until we find the leaf object. Then instantiate
                     # the leaf object and assign it to the correct entities
                     # collection object.
+                    # TODO Use func.enumerator and modernize the usage of `i`.
                     maps = self.mappings
                     for i, node in enumerate(nodes):
-                        map = maps[node]
+                        map = maps(node)
+
+                        if not map:
+                            # If a map wasn't found, the previous node must
+                            # have been an association (i.e.,
+                            # artist_artifacts).  `node' would be pluralized
+                            # ('artifacts') though the association's mappings
+                            # collection would have an entry for the composite
+                            # (i.e., artifact) whose name would be singular.
+
+                            # Make sure `es` is an associations
+                            if not isinstance(es, associations):
+                                raise ValueError('Not an association')
+
+                            # Find the FK in the association's mappings that
+                            # corresponds to `node`. When found, instantiate
+                            # the FK's entity class and assign it to `e`.
+
+                            # If e is the name of the node, then we don't need
+                            # to instantiate it again. Set its mappings
+                            # property to `maps` and continue to the next
+                            # iteration.
+                            if node == e.orm.entities.__name__:
+                                maps = e.orm.mappings
+                                continue
+
+                            # For each of the assocations' fk mappings, look
+                            # for the one corresponding to `node`.  Instantiate
+                            # the composite, if it doesn't exist, or search
+                            # each association for an existing instance of the
+                            # composite.
+                            new = False
+                            for map in maps.foreignkeymappings:
+                                if map.entity.orm.entities.__name__ == node:
+                                    for e in es:
+
+                                        # Get the entity name of node
+                                        # i.e., 'artifacts' => 'actifact'. 
+                                        for es1 in orm.getentities():
+                                            if es1.orm.table == node:
+                                                map1 = es1.orm.entity.__name__
+                                                break
+                                        else:
+                                            msg = "Can't resolve node to entity"
+                                            raise ValueError(msg)
+                                        
+                                        # Get composite from association
+                                        v = e.orm.mappings(map1)._value
+                                        if v and v.id == UUID(bytes=f.value):
+                                            e = v
+                                            maps = e.orm.mappings
+                                            break
+                                    else:
+                                        new = True
+                                        e = map.entity()
+
+                                    break
+                            else:
+                                raise IndexError('Foreign key not found')
+
+                            if not new:
+                                continue
+
+                            # Find the composite entity mapping in the
+                            # assocation's mappings collection. When found, set
+                            # the newly instanciated composite `e` to its
+                            # `value` property. This way the association
+                            # will have a reference to the composite.
+                            for map in maps.entitymappings:
+                                if map.entity.orm.entities.__name__ == node:
+                                    map.value = e
+                                    maps = e.orm.mappings
+                                    break
+                            else:
+                                raise IndexError()
+
+                            # Assign the association to the composite for a
+                            # recursive reference. I.e.,
+                            #     aas = artist.artist_artifacts.last
+                            #     fact = aas.artifact
+                            #     fact.artist_artifacts = aas
+                            # TODO I'm not sure this is necessary. `fact`
+                            # should have a reference to the association
+                            # object, not the associations object. There
+                            # appears to be no test for this in test.py anyway.
+                            # I happen to notice that the `artifact`'s mappings
+                            # collection had a map called 'artist_artifacts' so
+                            # I went ahead and wrote the below code to make the
+                            # assignment.
+                            for map in maps.associationsmappings:
+                                if map.associations is type(es):
+                                    map.value = es
+                                    break
+                            else:
+                                raise IndexError()
+
+                            break
 
                         # Get the entities/associations collection. Create it
                         # if it doesn't yet exist.
@@ -3575,6 +3701,16 @@ class orm:
             if association not in e.mro():
                 if e is not association:
                     r += [e]
+        return r
+
+    @staticmethod
+    def getentities():
+        # NOTE We may want to cache this
+        r = []
+        for es in orm.getsubclasses(of=entities):
+            if association not in es.mro():
+                if es is not association:
+                    r += [es]
         return r
 
     @property

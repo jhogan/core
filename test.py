@@ -4719,8 +4719,17 @@ class test_orm(tester):
                 aa = artist_artifact.getvalid()
                 aa.role = 'art-art_fact-role-' + str(k)
                 aa.planet = 'art-art_fact-planet-' + str(k + 1)
-                aa.artifact = artifact.getvalid()
+                fact = artifact.getvalid()
+
+                aa.artifact = fact
+                fact.title = 'art-art_fact-fact-title-' + str(k)
+                fact.description = 'art-art_fact-fact-desc-' + str(k + 1)
                 art.artist_artifacts += aa
+
+                for l in range(4):
+                    comp = component.getvalid()
+                    comp.name = 'art-art_fact-role-fact-comp-name' + str(l)
+                    fact.components += comp
 
         print('saving...')
         arts.save()
@@ -4731,15 +4740,9 @@ class test_orm(tester):
         return arts
 
     def it_calls_innerjoin_on_associations(self):
+        # TODO Add tests for self.chronicles
         arts = self._create_join_test_data()
-
-        # TODO Move this test back to bottom
-        # Test unconditionally joining the associated entities collecties
-        arts1 = artists() 
-        arts1 &= artist_artifacts() & artifacts()
-
-        print(*arts1.orm.sql)
-        B()
+        arts.sort()
 
         # Test artists joined with artist_artifacts with no condititons
         arts1 = artists()
@@ -4751,7 +4754,6 @@ class test_orm(tester):
 
         self.four(arts1)
 
-        arts.sort()
         arts1.sort()
         
         for art, art1 in zip(arts, arts1):
@@ -4786,9 +4788,140 @@ class test_orm(tester):
             self.eq(aa1.role, 'art-art_fact-role-0')
             self.eq(aa1.artifactid, aa1.artifact.id)
 
+        # Test unconditionally joining the associated entities collecties
+        # (artist_artifacts) with its composite (artifacts)
+        arts1 = artists() 
+        arts1 &= artist_artifacts() & artifacts()
+
+        arts1.load()
+        arts1.sort()
+
+        self.chronicles.clear()
+
+        self.four(arts1)
+
+        for art, art1 in zip(arts, arts1):
+            self.eq(art.id, art1.id)
+
+            self.four(art1.artist_artifacts)
+
+            art.artist_artifacts.sort()
+            art1.artist_artifacts.sort()
+
+            for aa, aa1 in zip(art.artist_artifacts, art1.artist_artifacts):
+                self.eq(aa.id, aa.id)
+                self.eq(aa.artifact.id, aa1.artifact.id)
+
+        self.zero(self.chronicles)
+
+        # Test joining the associated entities collecties (artist_artifacts)
+        # with its composite (artifacts) where the composite's join is
+        # conditional.
+        arts1 = artists() 
+        arts1 &= artist_artifacts() & artifacts('description = %s', ('art-art_fact-role-fact-1',))
+
+        arts1.load()
+        arts1.sort()
+
+        self.chronicles.clear()
+        for art, art1 in zip(arts, arts1):
+            self.eq(art.id, art1.id)
+
+            aas = art1.artist_artifacts
+            self.one(aas)
+            self.eq('art-art_fact-role-fact-1', aas.first.artifact.description)
+
+        self.zero(self.chronicles)
+
+        # Test joining the associated entities collecties (artist_artifacts)
+        # with its composite (artifacts) where the composite's join is
+        # conditional along with the other two.
+        arts1 =  artists('firstname = %s', ('fn-1')) 
+        arts1 &= artist_artifacts('role = %s', ('art-art_fact-role-0',)) & \
+                 artifacts('description = %s', ('art-art_fact-fact-desc-1',))
+
+        arts1.load()
+        self.one(arts1)
+
+        self.chronicles.clear()
+        self.eq('fn-1', arts1.first.firstname)
+
+        aas1 = arts1.first.artist_artifacts
+        self.one(aas1)
+        self.eq('art-art_fact-role-0', aas1.first.role)
+        self.eq('art-art_fact-fact-desc-1', aas1.first.artifact.description)
+
+        self.zero(self.chronicles)
+
+        # Test joining a constituent (component) of the composite (artifacts)
+        # of the association (artist_artifacts) without conditions.
+        arts1 =  artists() & (artist_artifacts() & (artifacts() & components()))
+
+        arts1.load()
+        self.four(arts1)
+
+        arts1.sort()
+
+        self.chronicles.clear()
+
+        for art, art1 in zip(arts, arts1):
+            self.eq(art.id, art1.id)
+            aas = art.artist_artifacts.sorted()
+            aas1 = art1.artist_artifacts.sorted()
+            self.four(aas1)
+
+            for aa, aa1 in zip(aas, aas1):
+                self.eq(aa.id, aa1.id)
+                fact = aa.artifact
+                fact1 = aa1.artifact
+
+                self.eq(fact.id, fact1.id)
+
+                comps = fact.components.sorted()
+                comps1 = fact1.components.sorted()
+
+                self.four(comps1)
+
+                for comp, comp1 in zip(comps, comps1):
+                    self.eq(comp.id, comp1.id)
+
+        # Test joining a constituent (component) of the composite (artifacts)
+        # of the association (artist_artifacts) with conditions.
+        aarole = 'art-art_fact-role-1'
+        facttitle = 'art-art_fact-fact-title-1'
+        compname = 'art-art_fact-role-fact-comp-name1'
+        arts1 =  artists() & (
+                    artist_artifacts(role = aarole) & (
+                        artifacts(title = facttitle) & components(name = compname)
+                    )
+                 )
+
+        arts1.load()
+
+        self.four(arts1)
+
+        arts1.sort()
+
+        self.chronicles.clear()
+
+        for art, art1 in zip(arts, arts1):
+            self.eq(art.id, art1.id)
+            aas1 = art1.artist_artifacts
+            self.one(aas1)
+
+            self.eq(aarole, aas1.first.role)
+
+            self.eq(facttitle, aas1.first.artifact.title)
+
+            self.one(aas1.first.artifact.components)
+
+            self.eq(compname, aas1.first.artifact.components.first.name)
+
+        self.zero(self.chronicles)
 
 
     def it_calls_outerjoin(self):
+        # TODO Add tests for self.chronicles
         arts = self._create_join_test_data()
 
         # Outer join artists with presentations; no predicates
@@ -4800,6 +4933,7 @@ class test_orm(tester):
         self.expect(NotImplementedError, lambda: arts1.outerjoin(press1))
         
     def it_calls_innerjoin_on_entities(self):
+        # TODO Test the chronicled DB operations
         def join(joiner, joinee, type):
             if type in ('innerjoin', 'join'):
                 getattr(joiner, type)(joinee)
