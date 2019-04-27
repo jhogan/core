@@ -1277,6 +1277,9 @@ class test_orm(tester):
         arts1[i - 1] # Don't remove
         self.eq(arts1.count, len(list(arts1)))
 
+    def it_calls__getitem__on_entities(self):
+        ...  # TODO
+
     def it_calls__getitem__on_streamed_entities(self):
         lastname = uuid4().hex
         arts = artists()
@@ -1333,6 +1336,10 @@ class test_orm(tester):
 
             # Ensure that __call__ returns None if the index is out of range
             self.none(arts1(cnt + 1))
+
+            # TODO Test indexing by UUID, i.e.,
+            # arts[id]
+            # Note that UUID indexing on streams has not been implemented yet.
 
     def it_calls_unavailable_attr_on_streamed_entities(self):
         arts = artists(orm.stream)
@@ -1513,6 +1520,8 @@ class test_orm(tester):
         self.eq(arts.first.id, arts1.first.id)
 
         fname, lname = arts.first['firstname', 'lastname']
+
+        # TODO Test where literal has an UUID so introducers (_binary) are tested.
 
         # Test a where string with an args tuple
         arts1 = artists('firstname = %s', (arts.first.firstname,))
@@ -4740,9 +4749,10 @@ class test_orm(tester):
         return arts
 
     def it_calls_innerjoin_on_associations(self):
-        # TODO Add tests for self.chronicles
         arts = self._create_join_test_data()
         arts.sort()
+
+        fff = False, False, False
 
         # Test artists joined with artist_artifacts with no condititons
         arts1 = artists()
@@ -4752,12 +4762,15 @@ class test_orm(tester):
 
         arts1.load()
 
+        self.chronicles.clear()
         self.four(arts1)
 
         arts1.sort()
         
         for art, art1 in zip(arts, arts1):
             self.eq(art.id, art1.id)
+
+            self.eq(fff, art1.orm.persistencestate)
 
             self.four(art1.artist_artifacts)
 
@@ -4766,7 +4779,24 @@ class test_orm(tester):
 
             for aa, aa1 in zip(art.artist_artifacts, art1.artist_artifacts):
                 self.eq(aa.id, aa.id)
+
+                self.eq(fff, aa1.orm.persistencestate)
+
                 self.eq(aa.artifact.id, aa1.artifact.id)
+                self.is_(aa1.artifact, self.chronicles.last.entity)
+                self.eq('retrieve', self.chronicles.last.op)
+
+                self.eq(aa1.artist.id, art1.id)
+                self.eq('retrieve', self.chronicles.last.op)
+                self.is_(aa1.artist, self.chronicles.last.entity)
+
+
+        # NOTE The above will lazy-load aa1.artifact 16 times and aa.artist 16 times
+
+        # TODO art1 should be object-identical to aa.artist and a reference to
+        # aa.artist should not result in a database hit because it should be
+        # eagerly assigned (probably in orm.populate())
+        self.count(32, self.chronicles)
 
         # Test artists joined with artist_artifacts where the association has a
         # conditional
@@ -4777,10 +4807,13 @@ class test_orm(tester):
 
         arts1.load()
 
+        self.chronicles.clear()
         self.four(arts1)
         arts1.sort()
         for art, art1 in zip(arts, arts1):
             self.eq(art.id, art1.id)
+
+            self.eq(fff, art1.orm.persistencestate)
 
             self.one(art1.artist_artifacts)
 
@@ -4788,50 +4821,94 @@ class test_orm(tester):
             self.eq(aa1.role, 'art-art_fact-role-0')
             self.eq(aa1.artifactid, aa1.artifact.id)
 
+            self.eq(fff, aa1.orm.persistencestate)
+
+            # The call to aa1.artifact wil lazy-load artifact which will add to
+            # self.chronicles
+            self.eq('retrieve', self.chronicles.last.op)
+
+            self.is_(aa1.artifact, self.chronicles.last.entity)
+
+            self.eq(fff, aa1.artifact.orm.persistencestate)
+
+        # NOTE This wil lazy-load aa1.artifact 4 times
+        self.four(self.chronicles)
+
         # Test unconditionally joining the associated entities collecties
         # (artist_artifacts) with its composite (artifacts)
-        arts1 = artists() 
-        arts1 &= artist_artifacts() & artifacts()
+        for b in False, True:
+            if b:
+                # Implicitly join artist_artifact
+                arts1 = artists() & artifacts()
+            else:
+                # Explicitly join artist_artifact
+                arts1 = artists() 
+                arts1 &= artist_artifacts() & artifacts()
 
-        arts1.load()
-        arts1.sort()
+            self.one(arts1.orm.joins)
+            self.type(artist_artifacts, arts1.orm.joins.first.entities)
+            self.one(arts1.orm.joins.first.entities.orm.joins)
+            facts = arts1.orm.joins.first.entities.orm.joins.first.entities
+            self.type(artifacts, facts)
 
-        self.chronicles.clear()
+            arts1.load()
+            arts1.sort()
 
-        self.four(arts1)
+            self.chronicles.clear()
 
-        for art, art1 in zip(arts, arts1):
-            self.eq(art.id, art1.id)
+            self.four(arts1)
 
-            self.four(art1.artist_artifacts)
+            for art, art1 in zip(arts, arts1):
+                self.eq(art.id, art1.id)
 
-            art.artist_artifacts.sort()
-            art1.artist_artifacts.sort()
+                self.eq(fff, art1.orm.persistencestate)
 
-            for aa, aa1 in zip(art.artist_artifacts, art1.artist_artifacts):
-                self.eq(aa.id, aa.id)
-                self.eq(aa.artifact.id, aa1.artifact.id)
+                self.four(art1.artist_artifacts)
 
-        self.zero(self.chronicles)
+                art.artist_artifacts.sort()
+                art1.artist_artifacts.sort()
+
+                for aa, aa1 in zip(art.artist_artifacts, art1.artist_artifacts):
+                    self.eq(fff, aa1.orm.persistencestate)
+                    self.eq(aa.id, aa.id)
+                    self.eq(aa.artifact.id, aa1.artifact.id)
+
+            self.zero(self.chronicles)
 
         # Test joining the associated entities collecties (artist_artifacts)
         # with its composite (artifacts) where the composite's join is
         # conditional.
-        arts1 = artists() 
-        arts1 &= artist_artifacts() & artifacts('description = %s', ('art-art_fact-role-fact-1',))
+        for b in True, False:
+            if b:
+                # Explicitly join artist_artifacts
+                arts1 = artists() 
+                arts1 &= artist_artifacts() & artifacts('description = %s', ('art-art_fact-fact-desc-1',))
+            else:
+                # Implicitly join artist_artifacts
+                arts1 = artists() & artifacts('description = %s', ('art-art_fact-fact-desc-1',))
 
-        arts1.load()
-        arts1.sort()
+            self.one(arts1.orm.joins)
+            self.type(artist_artifacts, arts1.orm.joins.first.entities)
+            self.one(arts1.orm.joins.first.entities.orm.joins)
+            facts = arts1.orm.joins.first.entities.orm.joins.first.entities
+            self.type(artifacts, facts)
 
-        self.chronicles.clear()
-        for art, art1 in zip(arts, arts1):
-            self.eq(art.id, art1.id)
+            arts1.load()
+            arts1.sort()
 
-            aas = art1.artist_artifacts
-            self.one(aas)
-            self.eq('art-art_fact-role-fact-1', aas.first.artifact.description)
+            self.four(arts1)
 
-        self.zero(self.chronicles)
+            self.chronicles.clear()
+            for art, art1 in zip(arts, arts1):
+                self.eq(fff, art1.orm.persistencestate)
+                self.eq(art.id, art1.id)
+
+                aas = art1.artist_artifacts
+                self.one(aas)
+                self.eq('art-art_fact-fact-desc-1', aas.first.artifact.description)
+                self.eq(fff, aas.first.orm.persistencestate)
+
+            self.zero(self.chronicles)
 
         # Test joining the associated entities collecties (artist_artifacts)
         # with its composite (artifacts) where the composite's join is
@@ -4848,6 +4925,7 @@ class test_orm(tester):
 
         aas1 = arts1.first.artist_artifacts
         self.one(aas1)
+        self.eq(fff, aas1.first.orm.persistencestate)
         self.eq('art-art_fact-role-0', aas1.first.role)
         self.eq('art-art_fact-fact-desc-1', aas1.first.artifact.description)
 
@@ -4855,35 +4933,54 @@ class test_orm(tester):
 
         # Test joining a constituent (component) of the composite (artifacts)
         # of the association (artist_artifacts) without conditions.
-        arts1 =  artists() & (artist_artifacts() & (artifacts() & components()))
+        for b in True, False:
+            if b:
+                # Explicitly join the associations (artist_artifacts())
+                arts1 =  artists().join(
+                            artist_artifacts().join(
+                                artifacts() & components()
+                            )
+                         )
+            else:
+                # Implicitly join the associations (artist_artifacts())
+                arts1 =  artists().join(
+                            artifacts() & components()
+                         )
 
-        arts1.load()
-        self.four(arts1)
 
-        arts1.sort()
+            arts1.load()
+            self.four(arts1)
 
-        self.chronicles.clear()
+            arts1.sort()
 
-        for art, art1 in zip(arts, arts1):
-            self.eq(art.id, art1.id)
-            aas = art.artist_artifacts.sorted()
-            aas1 = art1.artist_artifacts.sorted()
-            self.four(aas1)
+            self.chronicles.clear()
 
-            for aa, aa1 in zip(aas, aas1):
-                self.eq(aa.id, aa1.id)
-                fact = aa.artifact
-                fact1 = aa1.artifact
+            for art, art1 in zip(arts, arts1):
+                self.eq(fff, art1.orm.persistencestate)
+                self.eq(art.id, art1.id)
+                aas = art.artist_artifacts.sorted()
+                aas1 = art1.artist_artifacts.sorted()
+                self.four(aas1)
 
-                self.eq(fact.id, fact1.id)
+                for aa, aa1 in zip(aas, aas1):
+                    self.eq(fff, aa1.orm.persistencestate)
+                    self.eq(aa.id, aa1.id)
+                    fact = aa.artifact
+                    fact1 = aa1.artifact
+                    self.eq(fff, fact1.orm.persistencestate)
 
-                comps = fact.components.sorted()
-                comps1 = fact1.components.sorted()
+                    self.eq(fact.id, fact1.id)
 
-                self.four(comps1)
+                    comps = fact.components.sorted()
+                    comps1 = fact1.components.sorted()
 
-                for comp, comp1 in zip(comps, comps1):
-                    self.eq(comp.id, comp1.id)
+                    self.four(comps1)
+
+                    for comp, comp1 in zip(comps, comps1):
+                        self.eq(fff, comp1.orm.persistencestate)
+                        self.eq(comp.id, comp1.id)
+
+            self.zero(self.chronicles)
 
         # Test joining a constituent (component) of the composite (artifacts)
         # of the association (artist_artifacts) with conditions.
@@ -4905,23 +5002,26 @@ class test_orm(tester):
         self.chronicles.clear()
 
         for art, art1 in zip(arts, arts1):
+            self.eq(fff, art1.orm.persistencestate)
+
             self.eq(art.id, art1.id)
             aas1 = art1.artist_artifacts
             self.one(aas1)
 
             self.eq(aarole, aas1.first.role)
+            self.eq(fff, aas1.first.orm.persistencestate)
 
             self.eq(facttitle, aas1.first.artifact.title)
+            self.eq(fff, aas1.first.artifact.orm.persistencestate)
 
             self.one(aas1.first.artifact.components)
 
             self.eq(compname, aas1.first.artifact.components.first.name)
+            self.eq(fff, aas1.first.artifact.components.first.orm.persistencestate)
 
         self.zero(self.chronicles)
 
-
     def it_calls_outerjoin(self):
-        # TODO Add tests for self.chronicles
         arts = self._create_join_test_data()
 
         # Outer join artists with presentations; no predicates
@@ -4932,8 +5032,92 @@ class test_orm(tester):
         # until a use case is presented, we will raise a NotImplementedError
         self.expect(NotImplementedError, lambda: arts1.outerjoin(press1))
         
+    def it_parameterizes_predicate(self):
+        ''' Ensure that the literals in predicates get replaced with
+        placeholders and that the literals are moved to the correct 
+        positions in the where.args list. '''
+        # TODO Complete
+        art = artists("firstname = '1234'", ())
+        self.eq("'1234'", art.orm.where.args[-1])
+
+    def it_raises_exception_on_invalid_predicates(self):
+        B()
+        print(*art1.orm.sql)
+        return
+
+        self.expect(TypeError, lambda: artists('firstname = 1234', ()))
+        return 
+
+        self.expect(orm.invalidcolumn, lambda: artists(notacolumn = 1234))
+
+
+        self.expect(TypeError, artists(firstname = 1234))
+
+    def it_calls_innerjoin_on_entities_and_writes_new_records(self):
+        arts = self._create_join_test_data()
+        arts.sort()
+
+        arts1 = artists() & (artifacts() & components())
+
+        # Eager-load artists->artifacts->components. Add an entry to `arts1`
+        # and make sure that the new record persists.
+        arts1.load()
+
+        art1 = artist.getvalid()
+        arts1 += art1
+        aas1 = art1.artist_artifacts
+        aas1 += artist_artifact.getvalid()
+        aas1.last.artifact = artifact.getvalid()
+        aas1.last.artifact.components += component.getvalid()
+        arts1.save()
+
+        art2 = None
+        def instanciate():
+            nonlocal art2
+            art2 = artist(art1.id)
+
+        self.expect(None, instanciate)
+
+        self.eq(art1.id, art2.id)
+
+        aas2 = art2.artist_artifacts
+        facts2 = art2.artifacts
+        self.one(aas2)
+        self.one(facts2)
+
+        self.eq(art1.artist_artifacts.last.id, aas2.last.id)
+        self.eq(art1.artifacts.last.id, facts2.last.id)
+
+        comps2 = facts2.first.components
+        self.one(comps2)
+        
+        self.eq(art1.artifacts.last.components.last.id,
+                comps2.last.id)
+
+        # Reload using the eager-loading, join method and update the record
+        # added above. Ensure that the new data presists.
+        arts3 = artists() & (artifacts() & components())
+        arts3.load()
+        art3 = arts3[art2.id]
+        newval = uuid4().hex
+
+        art3.firstname = newval
+        art3.artist_artifacts.first.role = newval
+        art3.artifacts.first.title = newval
+        art3.artifacts.first.components.first.name = newval
+
+        arts3.save()
+
+        art4 = artist(art3.id)
+
+        self.eq(newval, art4.firstname)
+        self.eq(newval, art4.artist_artifacts.first.role)
+        self.eq(newval, art4.artifacts.first.title)
+        self.eq(newval, art4.artifacts.first.components.first.name)
+
     def it_calls_innerjoin_on_entities(self):
-        # TODO Test the chronicled DB operations
+        fff = False, False, False
+
         def join(joiner, joinee, type):
             if type in ('innerjoin', 'join'):
                 getattr(joiner, type)(joinee)
@@ -4947,7 +5131,6 @@ class test_orm(tester):
             # notnone
             self.notnone(joiner)
 
-        # TODO Ensure constituents are loaded with the correct persistencestate
         arts = self._create_join_test_data()
 
         jointypes = 'innerjoin', 'join', 'standard', 'inplace'
@@ -4962,12 +5145,6 @@ class test_orm(tester):
             join(press, locs, t)
             join(arts1, press, t)
             join(arts1, artlocs, t)
-            #press.innerjoin(locs)
-            #arts1.innerjoin(press)
-            #arts1.innerjoin(artlocs)
-
-            # TODO Remove?
-            orm = arts1.orm
 
             self.two(arts1.orm.joins)
             self.one(press.orm.joins)
@@ -4975,12 +5152,13 @@ class test_orm(tester):
 
             arts1.load()
 
+            self.chronicles.clear()
+
             # Test
             self.one(arts1)
             art1 = arts1.first
             self.eq(arts.first.id, art1.id)
 
-            fff = (False,) * 3
             self.eq(fff, art1.orm.persistencestate)
 
             press = arts.first.presentations.sorted()
@@ -5008,6 +5186,8 @@ class test_orm(tester):
                     self.eq(fff, loc.orm.persistencestate)
                     self.eq(loc.id, loc1.id)
 
+            self.zero(self.chronicles)
+
         # Inner join query: All four have where clauses with simple predicate,
         # i.e., (x=1)
         for t in jointypes:
@@ -5026,25 +5206,32 @@ class test_orm(tester):
             
             arts1.load()
 
+            self.chronicles.clear()
+
             self.one(arts1)
             art1 = arts1.first
+            self.eq(fff, art1.orm.persistencestate)
             self.eq('fn-0', art1.firstname)
 
             locs1 = art1.locations
             self.one(locs1)
             loc1 = locs1.first
+            self.eq(fff, loc1.orm.persistencestate)
             self.eq('art-loc-addr-0', loc1.address)
 
             press1 = art1.presentations
             self.one(press1)
             pres = press1.first
+            self.eq(fff, pres.orm.persistencestate)
             self.eq('pres-name-0', pres.name)
 
             locs1 = pres.locations
             self.one(locs1)
             loc = locs1.first
+            self.eq(fff, loc.orm.persistencestate)
             self.eq('pres-loc-desc-1', loc.description)
 
+            self.zero(self.chronicles)
 
         # Inner join query: Artist has a conjoined predicate
         # i.e, (x=1 and y=1)
@@ -5067,10 +5254,13 @@ class test_orm(tester):
             
             arts1.load()
 
+            self.chronicles.clear()
+
             self.two(arts1)
 
             # Test that the correct graph was loaded
             for art1 in arts1:
+                self.eq(fff, art1.orm.persistencestate)
                 self.true(art1.firstname == 'fn-0' or
                           art1.lastname  == 'ln-2')
 
@@ -5079,6 +5269,7 @@ class test_orm(tester):
                 self.four(press1)
 
                 for i, pres1 in press1.enumerate():
+                    self.eq(fff, pres1.orm.persistencestate)
                     pres = arts.first.presentations[i]
                     self.eq(pres.name, pres1.name)
 
@@ -5087,8 +5278,11 @@ class test_orm(tester):
                     self.four(locs1)
 
                     for i, loc1 in locs1.enumerate():
+                        self.eq(fff, loc1.orm.persistencestate)
                         self.eq(locs[i].address, loc1.address)
                         self.eq(locs[i].description, loc1.description)
+            
+            self.zero(self.chronicles)
 
         for t in jointypes:
             arts1 = artists('firstname = %s and lastname = %s', 
@@ -5126,14 +5320,18 @@ class test_orm(tester):
             self.zero(locs.orm.joins)
 
             arts1.load()
+
+            self.chronicles.clear()
             
             # Only one artist will have been retrieved by the query
             self.one(arts1)
+            self.eq(fff, arts1.first.orm.persistencestate)
 
             # Test artist's locations
             locs = arts1.first.locations
             self.two(locs)
             for loc in locs:
+                self.eq(fff, loc.orm.persistencestate)
                 self.true(loc.address     == 'art-loc-addr-0' or 
                           loc.description == 'art-loc-desc-2')
 
@@ -5143,11 +5341,14 @@ class test_orm(tester):
             # All four presentations were match by the location predicate
             self.four(press) 
             for pres in press:
+                self.eq(fff, pres.orm.persistencestate)
                 self.two(pres.locations)
                 for loc in pres.locations:
+                    self.eq(fff, loc.orm.persistencestate)
                     self.true(loc.address     == 'pres-loc-addr-0' or 
                               loc.description == 'pres-loc-desc-2')
 
+            self.zero(self.chronicles)
 
         for t in jointypes:
             # Query where the only filter is down the graph three levels
@@ -5164,6 +5365,8 @@ class test_orm(tester):
             join(press, locs, t)
             arts1.load()
 
+            self.chronicles.clear()
+
             # Test join counts
             self.one(arts1.orm.joins)
             self.one(press.orm.joins)
@@ -5171,12 +5374,17 @@ class test_orm(tester):
 
             self.four(arts1)
             for art in arts1:
+                self.eq(fff, art.orm.persistencestate)
                 self.four(art.presentations)
                 for pres in art.presentations:
+                    self.eq(fff, pres.orm.persistencestate)
                     self.two(pres.locations)
                     for loc in pres.locations:
+                        self.eq(fff, loc.orm.persistencestate)
                         self.true(loc.address     == 'pres-loc-addr-0' or
                                   loc.description == 'pres-loc-desc-2')
+
+            self.zero(self.chronicles)
             
         # Test joining using the three our more & operators.
         # NOTE Sadely, parenthesis must be used to correct precedence. This
@@ -5185,12 +5393,18 @@ class test_orm(tester):
         arts1 = artists() & (presentations() & locations())
         arts1.load()
 
+        self.chronicles.clear()
+
         self.four(arts1)
 
         for art in arts1:
+            self.eq(fff, art.orm.persistencestate)
             self.four(art.presentations)
             for pres in art.presentations:
+                self.eq(fff, pres.orm.persistencestate)
                 self.four(pres.locations)
+
+        self.zero(self.chronicles)
                     
     def it_creates_iter_from_predicate(self):
         ''' Test the predicates __iter__() '''
@@ -5694,6 +5908,26 @@ class test_orm(tester):
         expr = 'col = %s'
         pred = orm.predicate(expr)
         test(expr, pred, 'col', '=', '%s')
+
+        ## Parse introducers#
+
+        # TODO Add brain damaged version of expr
+        # id = _binary %s
+        expr = 'id = _binary %s'
+        pred = orm.predicate(expr)
+        self.eq('id = _binary %s', str(pred))
+
+        # _binary id = %s
+        expr = '_binary id = %s'
+        pred = orm.predicate(expr)
+        self.eq('_binary id = %s', str(pred))
+
+        # id = _binary %s
+        expr = '_binary id = _binary %s'
+        pred = orm.predicate(expr)
+        self.eq('_binary id = _binary %s', str(pred))
+
+
 class test_blog(tester):
     def __init__(self):
         super().__init__()

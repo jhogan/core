@@ -22,24 +22,25 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-from pprint import pprint
-from table import table
-import builtins
-import textwrap
-from uuid import uuid4, UUID
-import entities as entitiesmod
-import sys
-import db
-from MySQLdb.constants.ER import BAD_TABLE_ERROR
-import MySQLdb
-from enum import Enum, unique
-import re
-import primative
-import dateutil
-import decimal
 from datetime import datetime
-import gc
+from enum import Enum, unique
+from MySQLdb.constants.ER import BAD_TABLE_ERROR
+from pprint import pprint
 from shlex import shlex
+from table import table
+from uuid import uuid4, UUID
+import builtins
+import dateutil
+import db
+import decimal
+import entities as entitiesmod
+import gc
+import itertools
+import MySQLdb
+import primative
+import re
+import sys
+import textwrap
 
 # Set conditional break points
 def B(x=True):
@@ -384,7 +385,6 @@ class where(entitiesmod.entity):
     def __init__(self, es, pred, args):
         self.entities     =  es
         self.predicate    =  None
-        self._args        =  None
         self._alias       =  None
 
         # TODO Answer why a where clause would not have a pred or an args
@@ -392,8 +392,7 @@ class where(entitiesmod.entity):
             pred = orm.introduce(pred, args)
             self.predicate = predicate(pred)
 
-        if args:
-            self.args = args
+        self.args = args
 
         
     def clone(self):
@@ -402,6 +401,52 @@ class where(entitiesmod.entity):
             self.predicate, # TODO Do we need to clone the predicate?
             self.args
         )
+
+    def demandvalid(self):
+        def isquoted(s):
+            return len(s) >= 2 and s[-1] + s[0] == "''"
+
+        def requiresquote(map):
+            return map.isstr or      \
+                   map.isdatetime or \
+                   map.isbytes
+
+        for pred in self.predicate:
+
+            # Get the column
+            col = None
+            for op in pred.operands:
+                # TODO Remove underscore from predicate._iscolumn
+                if predicate._iscolumn(op):
+                    maps = self.entities.orm.entity.orm.mappings
+                    for map in maps:
+                        if not isinstance(map, fieldmapping):
+                            continue
+
+                        if map.name == op:
+                            print(map.name)
+                            col = op
+                            break
+                    else:
+                        # Raise exception if column isn't found in entities' mappings
+                        # collection
+                        msg = 'Column not found for predicate: "%s"' % str(pred)
+                        raise invalidcolumn(msg)
+
+            # Get column's comparative
+            for op in pred.operands:
+                if op == col:
+                    continue
+
+                # TODO Remove underscore from predicat._isliteral
+                if predicate._isliteral(op):
+                    if requiresquote(map) and not isquoted(op):
+                        msg = ('"%s" is a string type so it must ',
+                              'be compared with a quoted literal')
+                        raise TypeError(msg)
+                        
+                
+                
 
     def __str__(self, graph=''):
         ''' Return a string representation of the WHERE clause with %s
@@ -459,15 +504,18 @@ class predicate(entitiesmod.entity):
     Wordops = 'LIKE', 'NOT', 'NOT LIKE', 'IS', 'IS IN', 'IS NOT', 'IS NOT IN', 'BETWEEN', 'NOT BETWEEN'
     Constants = 'TRUE', 'FALSE', 'NULL'
     Ops = Specialops + Wordops
+    Introducers = '_binary',
     
     def __init__(self, expr, junctionop=None):
-        self._operator    =  ''
-        self.operands     =  list()
-        self.match        =  None
-        self._junction    =  None
-        self._junctionop  =  junctionop
-        self.startparen   =  0
-        self.endparen     =  0
+        self._operator      =  ''
+        self.operands       =  list()
+        self.match          =  None
+        self._junction      =  None
+        self._junctionop    =  junctionop
+        self.startparen     =  0
+        self.endparen       =  0
+        self.lhsintroducer  =  ''
+        self.rhsintroducer  =  ''
 
         if isinstance(expr, shlex):
             lex = expr
@@ -548,6 +596,7 @@ class predicate(entitiesmod.entity):
 
             if tok == '%':
                 inplaceholder = True
+
             elif inplaceholder:
                 if tok == 's':
                     self.operands.append('%s')
@@ -556,7 +605,13 @@ class predicate(entitiesmod.entity):
                           'Consider using %s instead'
                     self._raiseSyntaxError(lex, tok, ex=unexpected, msg=msg)
                 inplaceholder = False
-                
+            
+            elif tok in self.Introducers:
+                if len(self.operands):
+                    self.rhsintroducer = tok
+                else:
+                    self.lhsintroducer = tok
+
             elif self._iscolumn(tok):
                 self.operands.append(tok)
 
@@ -669,7 +724,18 @@ class predicate(entitiesmod.entity):
                     for i, op in enumerate(ops):
                         if self._iscolumn(op):
                             ops[i] = '`%s`.%s' % (columnprefix, op)
-                r += '%s %s %s' % (ops[0], self.operator, ops[1])
+
+                # Append a space to the introducers if they exists
+                lhsintro = self.lhsintroducer
+                lhsintro = lhsintro + ' ' if lhsintro else ''
+                rhsintro = self.rhsintroducer
+                rhsintro = rhsintro + ' ' if rhsintro else ''
+
+                r += '%s%s %s %s%s' % (lhsintro,
+                                       ops[0], 
+                                       self.operator, 
+                                       rhsintro,
+                                       ops[1])
             elif self.operator in ('BETWEEN', 'NOT BETWEEN'):
                 r += '%s %s %s AND %s' % (self.operands[0], self.operator, *self.operands[1:])
             else:
@@ -1016,12 +1082,60 @@ class entities(entitiesmod.entities):
             self.join(es, join.Outer)
 
     def join(self, es, type=None):
-        # I don't currently see a point in having LEFT OUTER JOINS.
-        if join.Outer == type:
+        type1, type = type, builtins.type
+        if join.Outer == type1:
             msg = 'LEFT OUTER JOINs are not currently implemented'
             raise NotImplementedError(msg)
-        type = join.Inner if type is None else type
+
+        # Chain self's entitiesmappings and associationsmappings
+        maps = itertools.chain(self.orm.mappings.entitiesmappings, 
+                               self.orm.mappings.associationsmappings)
+
+        # Itrerate over self's entitymappings and associationsmappings
+        for map in maps:
+            if map.entities is type(es):
+                # If the joinee (es) is an entitiesmapping or
+                # associationsmappings of self, then we can add es as a
+                # standard join
+                break
+        else:
+            # If es was not in the above `maps` collection, check if it is
+            # mapped to self through an assocation. This is for join operations
+            # where the associations collection is implied, i.e.:
+            #
+            #     artist().join(artifacts())
+            # 
+            # instead of the more explicit form:
+            #
+            #     artist().join(artist_artifacts().join(artifacts()))
+
+            # For each of self's asssociations mappnigs
+            for map in self.orm.mappings.associationsmappings:
+
+                # For ecah enity mapping in this associationsmapping
+                for map1 in map.associations.orm.mappings.entitymappings:
+
+                    # If the associationsmapping's entity is the same class as
+                    # the joinee (es)
+                    if map1.entity.orm.entities is type(es):
+                        # Create a new instance of the map's associations
+                        # collection, add it to self's joins collection, and
+                        # add es to ass's joins collection.
+                        ass = map.associations()
+                        self &= ass & es
+
+                        # We can return now because the implicit assocation has
+                        # been joined to self, and es has been joined to the
+                        # association.
+                        return self
+                else:
+                    msg = "%s isn't a direct constituent of %s"
+                    msg %= (str(type(es)), str(type(self)))
+                    raise ValueError(msg)
+            
+        type = join.Inner if type1 is None else type1
         self.orm.joins += join(es=es, type=type)
+        return self
 
     def __and__(self, other):
         self.innerjoin(other)
@@ -1083,6 +1197,8 @@ class entities(entitiesmod.entities):
 
     def __getitem__(self, key):
         if self.orm.isstreaming:
+            # TODO Add indexing using a UUID. See alternative block for how
+            # this is done on non-streaming entities collections.
             cur = self.orm.stream.cursor
             es = cur.advance(key)
             if isinstance(key, int):
@@ -1092,6 +1208,12 @@ class entities(entitiesmod.entities):
             return es
                 
         else:
+            if type(key) is UUID:
+                for e in self:
+                    if e.id == key:
+                        return e
+                else:
+                    raise IndexError('Entity id not found: ' + key.hex)
             e = super().__getitem__(key)
             if hasattr(e, '__iter__'):
                 return type(self)(initial=e)
@@ -1247,6 +1369,10 @@ class entities(entitiesmod.entities):
         args = [x.bytes if type(x) is UUID else x for x in args]
 
         self.orm.where = where(self, p1, args)
+
+        self.orm.parameterizepredicate(args)
+
+        #self.orm.where.demandvalid()
 
     def clear(self):
         self.orm.isloaded = False
@@ -2109,7 +2235,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     else:
                         raise ValueError('FK map not found for entity')
 
+                    # NOTE If we switch to implicit loading for entities and
+                    # associations, we shoud still explicitly load here for the
+                    # sake of predictability.
                     es = map.entities(map1.name, self.id)
+                    es.load()
 
                     def setattr1(e, attr, v):
                         e.orm.mappings(attr).value = v
@@ -2162,9 +2292,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             return getattr(asses, attr)
 
             return object.__getattribute__(self, attr)
-            #msg = "'%s' object has no attribute '%s'"
-            #raise AttributeError(msg % (self.__class__.__name__, attr))
-
 
         return map.value
 
@@ -2501,6 +2628,10 @@ class associationsmapping(mapping):
         super().__init__(name, derived)
 
     @property
+    def entities(self):
+        return self.associations
+
+    @property
     def composite(self):
         return self._composite
 
@@ -2518,6 +2649,12 @@ class associationsmapping(mapping):
                 raise ValueError('FK not found')
 
             asses = self.associations(map.name, self.composite.id)
+
+            # NOTE Currently, we may switch to implitly leoading of entities
+            # and assocations. However, we may want to continue explitly
+            # loading this assocations here for the sake of predictablity.
+            asses.load()
+
             asses.composite = self.composite
             self.value = asses
         return self._value
@@ -3165,6 +3302,14 @@ class orm:
 
         return r
 
+    def parameterizepredicate(self, args):
+        for pred in self.instance.orm.where.predicate:
+            for i, op in enumerate(pred.operands):
+                if predicate._isliteral(op):
+                    pred.operands[i] = '%s'
+                    args.append(op)
+
+
     def populate(self, res):
         ''' Given a dbresultset object, iterate over each of the fields objects
         to populate the object's map values. If nested fields names are
@@ -3234,7 +3379,7 @@ class orm:
                                 maps = e.orm.mappings
                                 continue
 
-                            # For each of the assocations' fk mappings, look
+                            # For each of the associations' fk mappings, look
                             # for the one corresponding to `node`.  Instantiate
                             # the composite, if it doesn't exist, or search
                             # each association for an existing instance of the
@@ -3263,6 +3408,7 @@ class orm:
                                     else:
                                         new = True
                                         e = map.entity()
+                                        e.orm.persistencestate = (False,) * 3
 
                                     break
                             else:
@@ -3342,6 +3488,8 @@ class orm:
                                     e = map.entities.orm.entity()
                                 elif type(map) is associationsmapping:
                                     e = map.associations.orm.entity()
+
+                                e.orm.persistencestate = (False,) * 3
                                 es += e
 
                         maps = e.orm.mappings
@@ -3479,7 +3627,6 @@ class orm:
         
         # WHERE
         wh = self.where
-        #sql += str(self.where)
         wh, args = self.getwhere()
         sql += wh
 
@@ -3878,3 +4025,6 @@ class association(entity):
             map.entity.reCREATE(cur, recursive, clss)
 
         super().reCREATE(cur, recursive, clss)
+
+class invalidcolumn(ValueError):
+    pass
