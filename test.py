@@ -195,6 +195,10 @@ class artist(orm.entity):
     locations      =  locations
     presentations  =  presentations
 
+    # title here to be ambigous with artifact.title. It's purpose is to ensure
+    # against ambiguity problems that may arise
+    title          =  str, 0, 1
+
     # Bio's will be longtext. Any str where max > 65,535 can no longer be a
     # varchar, so we make it a longtext.
     bio = str, 1, 65535 + 1, orm.fulltext
@@ -4748,6 +4752,73 @@ class test_orm(tester):
         artist.getvalid().save()
         return arts
 
+    def it_calls_innerjoin_on_entitise_with_MATCH_clauses(self):
+        artkeywords, factkeywords = [], []
+
+        arts = artists()
+        for i in range(2):
+            art = artist.getvalid()
+            artkeyword, factkeyword = uuid4().hex, uuid4().hex
+            artkeywords.append(artkeyword)
+            factkeywords.append(factkeyword)
+            art.bio = 'one two three %s five six' % artkeyword
+            aa = artist_artifact.getvalid()
+
+            art.artist_artifacts += aa
+
+            aa.artifact = artifact.getvalid()
+
+            aa.artifact.title = 'one two three %s five six' % factkeyword
+
+            arts += art
+
+        arts.save()
+
+        # Query where composite and constituent have one MATCH clase each
+        arts1 = artists("match(bio) against ('%s')" % artkeywords[0], ()).join(
+            artifacts(
+                "match(title, description) against ('%s')" %  factkeywords[0], ()
+            )
+        )
+
+        arts1.load()
+        self.one(arts1)
+
+        art1 = arts1.first
+        self.eq(arts.first.id, art1.id)
+
+        facts1 = art1.artifacts
+        self.one(facts1)
+
+        fact1 = facts1.first
+        self.eq(arts1.first.artifacts.first.id, fact1.id)
+
+        # Query where composite and constituent have two MATCH clase each
+        artmatch = (
+            "MATCH(bio) AGAINST ('%s') OR "
+            "MATCH(bio) AGAINST ('%s')"
+        )
+
+        factmatch = (
+            "MATCH(title, description) AGAINST ('%s') OR "
+            "MATCH(title, description) AGAINST ('%s')"
+        )
+
+        artmatch  %= tuple(artkeywords)
+        factmatch %= tuple(factkeywords)
+
+        arts1 = artists(artmatch, ()) & artifacts(factmatch, ())
+
+        arts1.load()
+        self.two(arts1)
+
+        arts.sort()
+        arts1.sort()
+
+        for art, art1 in zip(arts, arts1):
+            self.eq(art.id, art1.id)
+            self.eq(art.artifacts.first.id, art1.artifacts.first.id)
+
     def it_calls_innerjoin_on_associations(self):
         arts = self._create_join_test_data()
         arts.sort()
@@ -5032,26 +5103,121 @@ class test_orm(tester):
         # until a use case is presented, we will raise a NotImplementedError
         self.expect(NotImplementedError, lambda: arts1.outerjoin(press1))
         
+    def it_ensures_that_the_match_columns_have_full_text_indexes(self):
+        exprs = (
+            "match (firstname) against ('keyword') and firstname = 1",
+            "firstname = 1 and match (lastname) against ('keyword')",
+        )
+
+        for expr in exprs:
+            self.expect(orm.invalidcolumn, lambda: artists(expr, ()))
+
+        exprs = (
+            "match (bio) against ('keyword') and firstname = 1",
+            "firstname = 1 and match (bio) against ('keyword')",
+        )
+
+        for expr in exprs:
+            self.expect(None, lambda: artists(expr, ()))
+
+    def it_demand_that_the_column_exists(self):
+        exprs = (
+            "notacolumn = 'value'",
+            "firstname = 'value' or notacolumn = 'value'",
+            "notacolumn between 'value' and 'othervalue'",
+            "match (notacolumn) against ('keyword') and firstname = 1",
+            "firstname = 1 and match (notacolumn) against ('keyword')",
+            "match (bio) against ('keyword') and notacolumn = 1",
+            "notacolumn = 1 and match (bio) against ('keyword')",
+        )
+
+        for expr in exprs:
+            self.expect(orm.invalidcolumn, lambda: artists(expr, ()))
+
     def it_parameterizes_predicate(self):
         ''' Ensure that the literals in predicates get replaced with
         placeholders and that the literals are moved to the correct 
         positions in the where.args list. '''
-        # TODO Complete
+
+        # TODO With the addition of this feature, we can remove the requirement
+        # that a empty tuple be given as the second argument here. It also
+        # seems possible that we remove the args tuple altogether since it no
+        # longer seems necessary. NOTE, on the other hand, we may want to keep
+        # the argument parameter for binary queries, e.g.,:
+        #
+        #     artist('id = %s', (uuid.bytes,))
+        #
+        # Writing the above using string concatenation is difficult.
+
         art = artists("firstname = '1234'", ())
-        self.eq("'1234'", art.orm.where.args[-1])
+        self.eq("'1234'", art.orm.where.args[0])
+        self.eq("%s", art.orm.where.predicate.operands[1])
 
-    def it_raises_exception_on_invalid_predicates(self):
-        B()
-        print(*art1.orm.sql)
-        return
+        art = artists("firstname = '1234' or lastname = '5678'", ())
+        self.eq("'1234'", art.orm.where.args[0])
+        self.eq("'5678'", art.orm.where.args[1])
+        for i, pred in enumerate(art.orm.where.predicate):
+            self.eq("%s", pred.operands[1])
+            self.lt(i, 2)
 
-        self.expect(TypeError, lambda: artists('firstname = 1234', ()))
-        return 
+        expr = (
+            "firstname between '1234' and '5678' or "
+            "lastname  between '2345' and '6789'"
+        )
 
+        art = artists(expr, ())
+        self.eq("'1234'", art.orm.where.args[0])
+        self.eq("'5678'", art.orm.where.args[1])
+        self.eq("'2345'", art.orm.where.args[2])
+        self.eq("'6789'", art.orm.where.args[3])
+        for i, pred in enumerate(art.orm.where.predicate):
+            self.eq("%s", pred.operands[1])
+            self.lt(i, 2)
+
+    def temp(self):
+        arts = artists() & (artifacts() & components())
+        print(*arts.orm.sql)
+        
+    # TODO Remove
+    def it_quotes_str_types(self):
+        ''' When a column that is mapped as str, datetime or bytes is compared
+        with an unquoted numeric literal, the orm should ensure that the
+        literal is quoted. This prevents MySQL from generating "errors" which
+        get raised as an exception. '''
+        
+        exprs = (
+            # str
+            "firstname = 1234",
+            "firstname = '1234' or lastname = 5678",
+            "1234 = firstname",
+            "'1234' = firstname or lastname = 5678",
+            "firstname  between  '1234'  and  5678",
+            "firstname  between  1234    and  '5678'",
+            "firstname  between  1234    and  5678",
+            "firstname  between  '1234'  and  '5678' or "
+                "lastname between '3212' and 4342",
+            # TODO Should we allow two columns?; this still works.
+            "firstname = derp",
+
+            # datetime
+            "dob = 20120202",
+
+            # NOTE Not sure about querying with strings with bytes. This may be
+            # a justification to preserve explicit query parameters. So the
+            # folowing doesn't work and probably shouldn't.
+            # bytes
+            #'password \\x91\\xd4\\xfd8\\xfd\\xf2K\\x81\\x97\\xcd\\xfc\\xe1S\\xbf\\x1b\\x93',
+        )
+
+        for expr in exprs:
+            arts = artists(expr, ())
+            arts.load()
+            for arg in arts.orm.where.args:
+                self.eq("'", arg[0])
+                self.eq("'", arg[-1])
+
+    def it_raises_exception_whene_non_existing_column_is_referenced(self):
         self.expect(orm.invalidcolumn, lambda: artists(notacolumn = 1234))
-
-
-        self.expect(TypeError, artists(firstname = 1234))
 
     def it_calls_innerjoin_on_entities_and_writes_new_records(self):
         arts = self._create_join_test_data()
@@ -5291,22 +5457,6 @@ class test_orm(tester):
             locs  = locations('address = %s or description = %s', 
                              ('pres-loc-addr-0', 'pres-loc-desc-2'))
 
-            # TODO It may be useful to type-check the query args before sending
-            # them to MySQL. The below line, because it didn't surround 1234 in
-            # quotes, caused a MySQL Warning Exception of:
-            #
-            #     Truncated incorrect DOUBLE value: 'loc-desc-f707e98079904524936313228d684d80'
-            # 
-            # This seems to be a MySQL error worth ignoring since it is the
-            # result of a SELECT and doesn't really seem to make any sense
-            # other than somehow indicating that an integer is being compared
-            # with a varchar(255).  Either way, since we treat warnings as
-            # exceptions, this resulted in an exception. If we throw a better
-            # exception in the orm complaining that 1234 needs to be quoted
-            # because location.address is a str, we could avoid this confusing
-            # MySQL warning/exception.
-
-            #artlocs  =  locations('description = %s and address = %s', (1234, addr))
             artlocs  =  locations('address = %s or description = %s', 
                                  ('art-loc-addr-0', 'art-loc-desc-2'))
 
@@ -5478,6 +5628,10 @@ class test_orm(tester):
             match (col) against ('search str') and )col = 1
         '''
 
+        syntax = '''
+            match (col) against (unquoted)
+        '''
+
         unexpected = '''
             col = 1 and
             col = 1 =
@@ -5500,14 +5654,15 @@ class test_orm(tester):
         invalidop = '''
             col != 1
             col === 1
+            col <<< 1
             () against ('search str')
         '''
 
-
         pairs = (
-            (orm.predicate.ParentheticalImbalance, parens),
-            (orm.predicate.UnexpectedToken, unexpected),
-            (orm.predicate.InvalidOperator, invalidop),
+            (orm.predicate.ParentheticalImbalance,  parens),
+            (orm.predicate.SyntaxError,             syntax),
+            (orm.predicate.UnexpectedToken,         unexpected),
+            (orm.predicate.InvalidOperator,         invalidop),
         )
 
         for ex, exprs in pairs:
@@ -5519,7 +5674,6 @@ class test_orm(tester):
                 try:
                     pred = orm.predicate(expr)
                 except Exception as ex1:
-                    print(ex1)
                     if type(ex1) is not ex:
                         msg = (
                             'Incorrect exception type; '
@@ -5710,8 +5864,6 @@ class test_orm(tester):
             self.eq(mode, pred.match.mode)
 
         # match(col) against ('keyword')
-
-        # TODO Make sure col1 works here
         exprs =  "match(col) against ('keyword')",  "MATCH ( col )  AGAINST  ( 'keyword' )"
         for expr in exprs:
             pred = orm.predicate(expr)
@@ -5720,6 +5872,18 @@ class test_orm(tester):
                 "IN NATURAL LANGUAGE MODE"
             )
             testmatch(pred, ['col'], expr)
+
+        # match (col) against ('''keyword has ''single-quoted'' strings''')
+        expr =  "MATCH (col) AGAINST ('''keyword has ''single-quoted'' strings''')"
+        pred = orm.predicate(expr)
+        self.eq("''keyword has ''single-quoted'' strings''", pred.match.searchstring)
+        testmatch(pred, ['col'], expr + ' IN NATURAL LANGUAGE MODE')
+
+        # match (col) against ('"keyword has "double-quoted"' strings"')
+        expr =  "MATCH (col) AGAINST ('\"keyword has \"double-quoted\" strings\"')"
+        pred = orm.predicate(expr)
+        self.eq("\"keyword has \"double-quoted\" strings\"", pred.match.searchstring)
+        testmatch(pred, ['col'], expr + ' IN NATURAL LANGUAGE MODE')
 
         # match(col) against ('keyword') and col = 1
         for op in 'and', 'or':
@@ -5903,6 +6067,16 @@ class test_orm(tester):
             expr = 'col %s 123' % op
             pred = orm.predicate(expr)
             test(expr, pred, 'col', op, '123')
+
+        # col_1 = 1 and col_2 = 2
+        expr = "col_0 = 0 AND col_1 = 1"
+        for i, pred in enumerate(orm.predicate(expr)):
+            col = 'col_' + str(i)
+            if i.first:
+                expr = 'col_0 = 0 AND col_1 = 1' 
+            elif i.second:
+                expr = ' AND col_1 = 1'
+            test(expr, pred, col, '=', str(i))
         
         ## Placeholders ##
         expr = 'col = %s'
@@ -5910,9 +6084,6 @@ class test_orm(tester):
         test(expr, pred, 'col', '=', '%s')
 
         ## Parse introducers#
-
-        # TODO Add brain damaged version of expr
-        # id = _binary %s
         expr = 'id = _binary %s'
         pred = orm.predicate(expr)
         self.eq('id = _binary %s', str(pred))
@@ -5922,11 +6093,10 @@ class test_orm(tester):
         pred = orm.predicate(expr)
         self.eq('_binary id = %s', str(pred))
 
-        # id = _binary %s
+        # _binary id = _binary %s
         expr = '_binary id = _binary %s'
         pred = orm.predicate(expr)
         self.eq('_binary id = _binary %s', str(pred))
-
 
 class test_blog(tester):
     def __init__(self):

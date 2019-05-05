@@ -141,7 +141,7 @@ class stream(entitiesmod.entity):
 
         def __iter__(self):
             # TODO To make this object a proper iterable, shouldn't we override
-            # the __next__()
+            # the __next__()?
             slc= slice(0, self.stream.chunksize)
             self.advance(slc)
             yield self.chunk
@@ -226,8 +226,11 @@ class joins(entitiesmod.entities):
         ''' Return the join portion of a SELECT query. '''
         
         # TODO Parametersize this function. Currently it reports on variables
-        # in the global scope which are not correct if the entities type is an
+        # in the global scope which are not correct if the entities' type is an
         # assocition.
+        # NOTE `entities.join` seems to be catching this condition which means
+        # this function may never be invoked. We should leave it regardless in
+        # case this assumption is wrong or if something changes.
         def raise_fk_not_found():
             ''' Raise a ValueError with a FK not found message. '''
             msg = 'FK not found: '
@@ -248,7 +251,7 @@ class joins(entitiesmod.entities):
                 raise ValueError('Invalid join type')
         r = ''
 
-        # TODO This appear to be a useless line. Remove it.
+        # TODO This appears to be a useless line. Remove it.
         joiner = self
 
         # TODO Change 'join' to 'j'. Also, scan the block for any other uses of
@@ -332,7 +335,7 @@ class joins(entitiesmod.entities):
                 r += '\n' + js.__str__(joinerroot=joinergraph, \
                                        joineeroot=joineegraph)
 
-        return r + '\n'
+        return r.rstrip() + '\n'
 
     @property
     def wheres(self):
@@ -387,14 +390,16 @@ class where(entitiesmod.entity):
         self.predicate    =  None
         self._alias       =  None
 
-        # TODO Answer why a where clause would not have a pred or an args
-        if pred:
-            pred = orm.introduce(pred, args)
-            self.predicate = predicate(pred)
+        if not pred:
+            msg = 'where objects must have predicates'
+            raise ValueError(msg)
+
+        pred = orm.introduce(pred, args)
+        self.predicate = predicate(pred)
 
         self.args = args
-
         
+    # TODO Are we using this clone method. If not, we should probably remove it.
     def clone(self):
         return where(
             self.entities,
@@ -403,6 +408,37 @@ class where(entitiesmod.entity):
         )
 
     def demandvalid(self):
+        def demand(col, exists=False, ft=False):
+            maps = self.entities.orm.entity.orm.mappings
+            for map in maps:
+                if not isinstance(map, fieldmapping):
+                    continue
+
+                if map.name == col:
+                    if ft and type(map.index) is not fulltext:
+                        msg = 'MATCH column "%s" must be have a fulltext index'
+                        msg %= col
+                        raise invalidcolumn(msg)
+                        
+                    break
+            else:
+                e = self.entities.orm.entity.__name__
+                msg = 'Field "%s" does not exist in entity "%s": "%s"'
+                msg %= (col, e, str(pred))
+                raise invalidcolumn(msg)
+
+        for pred in self.predicate:
+            if pred.match:
+                for col in pred.match.columns:
+                    demand(col, exists=True, ft=True)
+                continue
+
+            for op in pred.operands:
+                if predicate.iscolumn(op):
+                    demand(op, exists=True)
+
+    # TODO Remove
+    def ensurequoted(self):
         def isquoted(s):
             return len(s) >= 2 and s[-1] + s[0] == "''"
 
@@ -411,20 +447,21 @@ class where(entitiesmod.entity):
                    map.isdatetime or \
                    map.isbytes
 
+        phix = 0 # Placeholder index
         for pred in self.predicate:
+            if pred.match:
+                continue
 
             # Get the column
             col = None
             for op in pred.operands:
-                # TODO Remove underscore from predicate._iscolumn
-                if predicate._iscolumn(op):
+                if predicate.iscolumn(op):
                     maps = self.entities.orm.entity.orm.mappings
                     for map in maps:
                         if not isinstance(map, fieldmapping):
                             continue
 
                         if map.name == op:
-                            print(map.name)
                             col = op
                             break
                     else:
@@ -433,20 +470,30 @@ class where(entitiesmod.entity):
                         msg = 'Column not found for predicate: "%s"' % str(pred)
                         raise invalidcolumn(msg)
 
-            # Get column's comparative
+                    if col:
+                        break
+
+            # Get column's comparative (or comparitives for BETWEEN clauses
             for op in pred.operands:
                 if op == col:
                     continue
 
-                # TODO Remove underscore from predicat._isliteral
-                if predicate._isliteral(op):
+                if op == '%s':
+                    op = self.args[phix]
+
+                    # NOTE This method will be removed. The following code
+                    # quotes numeric literals with the args list, but this is
+                    # not right. As long as the literal is in the list, it
+                    # doesn't need to be quoted, and all literals are
+                    # parameterized (in args) now thanks to the
+                    # orm.parameterizepredicate method.
+                    '''
                     if requiresquote(map) and not isquoted(op):
-                        msg = ('"%s" is a string type so it must ',
-                              'be compared with a quoted literal')
-                        raise TypeError(msg)
-                        
-                
-                
+                        self.args[phix] = "'%s'" % op
+                        pass
+                    '''
+
+                    phix += 1
 
     def __str__(self, graph=''):
         ''' Return a string representation of the WHERE clause with %s
@@ -500,6 +547,7 @@ class predicates(entitiesmod.entities):
     pass
 
 class predicate(entitiesmod.entity):
+    Isalphanum_ = re.compile(r'^[A-Za-z0-9_]+$')
     Specialops = '=', '==', '<', '<=', '>', '>=', '<>'
     Wordops = 'LIKE', 'NOT', 'NOT LIKE', 'IS', 'IS IN', 'IS NOT', 'IS NOT IN', 'BETWEEN', 'NOT BETWEEN'
     Constants = 'TRUE', 'FALSE', 'NULL'
@@ -520,9 +568,9 @@ class predicate(entitiesmod.entity):
         if isinstance(expr, shlex):
             lex = expr
         else:
-            # TODO When we get to Python 3.6, we can use the punctuation_chars
-            # argument to shlex.__init__ which will make operator parsing
-            # easier.
+            # NOTE If developing with a Python version that is < 3.6, copy
+            # shlex.py into main directory to get the punctuation_chars
+            # parameter to work.
             lex = shlex(expr, posix=False, punctuation_chars='!=<=>')
 
         self._parse(lex)
@@ -555,7 +603,7 @@ class predicate(entitiesmod.entity):
 
     @property
     def columns(self):
-        return [op for op in self.operands if self._iscolumn(op)]
+        return [op for op in self.operands if self.iscolumn(op)]
 
     @staticmethod
     def _raiseSyntaxError(lex, tok, ex=None, msg=''):
@@ -612,7 +660,7 @@ class predicate(entitiesmod.entity):
                 else:
                     self.lhsintroducer = tok
 
-            elif self._iscolumn(tok):
+            elif self.iscolumn(tok):
                 self.operands.append(tok)
 
             elif TOK == 'MATCH':
@@ -620,7 +668,7 @@ class predicate(entitiesmod.entity):
                 self.operator = None
                 self.match = predicate.Match(lex)
 
-            elif self._iswordoperator(tok):
+            elif self.iswordoperator(tok):
                 self.operator += ' ' + tok
                 if TOK == 'BETWEEN':
                     inbetween = True
@@ -632,12 +680,12 @@ class predicate(entitiesmod.entity):
                 if not len(self.operands):
                     self._raiseSyntaxError(lex, tok, ex=unexpected)
 
-                if not self._isoperator(tok):
+                if not self.isoperator(tok):
                     raise predicate.InvalidOperator(tok)
 
                 self.operator = tok
 
-            elif self._isliteral(tok):
+            elif self.isliteral(tok):
                 tok = TOK if TOK in self.Constants else tok
                 if inquote:
                     if tok[0] == "'":
@@ -673,21 +721,20 @@ class predicate(entitiesmod.entity):
             if self.operator in ('BETWEEN', 'NOT BETWEEN'):
                 if len(self.operands) != 3:
                     msg = 'Expected 2 operands, not %s' % len(self.operands)
+                    msg += '\nThere may be unquoted string literals'
                     self._raiseSyntaxError(lex, tok, ex=unexpected, msg=msg)
             else:
                 if len(self.operands) != 2:
                     msg = 'Expected 2 operands, not %s' % len(self.operands)
+                    msg += '\nThere may be unquoted string literals'
 
                     self._raiseSyntaxError(lex, tok, ex=unexpected, msg=msg)
 
-            # TODO When the punctuation_chars argument is available in shlex, we can
-            # capture bad operators when they happen and report the column number.
             if self.operator not in predicate.Ops:
                 raise predicate.InvalidOperator(self.operator)
 
         self._demandBalancedParens()
                 
-
     @property
     def operator(self):
         if self._operator is None:
@@ -699,30 +746,22 @@ class predicate(entitiesmod.entity):
         self._operator = v
 
     def __str__(self, columnprefix=None):
-        # TODO Uppercase TRUE, FALSE and NULL literals
-
         r = str()
 
         r += ' %s ' % self.junctionop if self.junctionop else ''
 
         r += '(' * self.startparen
 
-        # TODO Pass columnprefix to match
         if self.match:
-            r += str(self.match)
-            if self.match.junction:
-                r += str(self.match.junction)
+            r += self.match.__str__(columnprefix=columnprefix)
+
         else:
             cnt = len(self.operands)
-            # TODO Limit the size of these lines to 80 chars
-            # TODO We shouldn't have 1 operand anymore. That was a mistake (not col)
-            if cnt == 1:
-                r += '%s %s' % (self.operator, self.operands[0])
-            elif cnt == 2:
+            if cnt == 2:
                 ops = self.operands.copy()
                 if columnprefix:
                     for i, op in enumerate(ops):
-                        if self._iscolumn(op):
+                        if self.iscolumn(op):
                             ops[i] = '`%s`.%s' % (columnprefix, op)
 
                 # Append a space to the introducers if they exists
@@ -737,7 +776,8 @@ class predicate(entitiesmod.entity):
                                        rhsintro,
                                        ops[1])
             elif self.operator in ('BETWEEN', 'NOT BETWEEN'):
-                r += '%s %s %s AND %s' % (self.operands[0], self.operator, *self.operands[1:])
+                r += '%s %s %s AND %s'
+                r %= (self.operands[0], self.operator, *self.operands[1:])
             else:
                 raise ValueError('Incorrect number of operands')
 
@@ -753,14 +793,12 @@ class predicate(entitiesmod.entity):
         return "predicate('%s')" % str(self)
 
     @staticmethod
-    def _iscolumn(tok):
-        # TODO true, false and null are literals, not columns
-        # TODO Support underscores in column names
+    def iscolumn(tok):
         TOK = tok.upper()
-        return     not predicate._isoperator(tok) \
-               and not predicate._isliteral(tok) \
+        return     not predicate.isoperator(tok) \
+               and not predicate.isliteral(tok) \
                and tok[0].isalpha()           \
-               and tok.isalnum()              \
+               and re.match(predicate.Isalphanum_, tok) \
                and TOK not in ('AND', 'OR', 'MATCH')
 
     @staticmethod
@@ -771,16 +809,15 @@ class predicate(entitiesmod.entity):
         return True
 
     @staticmethod
-    def _isoperator(tok):
+    def isoperator(tok):
         return tok.upper() in predicate.Ops + predicate.Wordops
 
     @staticmethod
-    def _iswordoperator(tok):
+    def iswordoperator(tok):
         return tok.upper() in predicate.Wordops
 
     @staticmethod
-    def _isliteral(tok):
-        # TODO true, false and null are literals, not columns
+    def isliteral(tok):
         fl = ''.join((tok[0], tok[-1]))
 
         # If quoted
@@ -794,9 +831,6 @@ class predicate(entitiesmod.entity):
         return tok.upper() in predicate.Constants
 
     class Match():
-        # TODO Fix below line by using flags=re.IGNORECASE
-        re_alphanum_ = re.compile('^[A-Za-z_][A-Za-z_0-9]+$')
-
         re_isnatural = re.compile(
             r'^\s*in\s+natural\s+language\s+mode\s*$', \
               flags=re.IGNORECASE
@@ -805,6 +839,9 @@ class predicate(entitiesmod.entity):
         re_isboolean = re.compile(
             r'^\s*in\s+boolean\s+mode\s*$',\
              flags=re.IGNORECASE
+        )
+        re_isquoted = re.compile(
+            r"^'.*'$"
         )
 
         def __init__(self, lex):
@@ -825,18 +862,32 @@ class predicate(entitiesmod.entity):
             while tok != lex.eof:
                 TOK = tok.upper()
                 if incolumns:
-                    if self._iscolumn(tok):
+                    if predicate.iscolumn(tok):
                         self.columns.append(tok)
 
                 elif insearch:
-                    # TODO Test search strings with quotes
                     if tok == ')':
-                        ex=predicate.UnexpectedToken
-                        msg = 'Missing search string'
-                        predicate._raiseSyntaxError(lex, tok, ex=ex, msg=msg)
+                        if not self.searchstring:
+                            ex=predicate.UnexpectedToken
+                            msg = 'Missing search string'
+                            predicate._raiseSyntaxError(
+                                lex, tok, ex=ex, msg=msg
+                            )
 
-                    self.searchstring = tok.strip("'")
-                    insearch = False
+                        if not self.re_isquoted.match(self.searchstring):
+                            ex=predicate.SyntaxError
+                            msg = 'Search string "%s" is not quoted'
+                            msg %= self.searchstring
+
+                            predicate._raiseSyntaxError(
+                                lex, tok, ex=ex, msg=msg
+                            )
+                            
+
+                        self.searchstring = self.searchstring[1:-1]
+                        insearch = False
+                    else:
+                        self.searchstring += tok
 
                 elif inmode:
                     if TOK in ('IN', 'NATURAL', 'BOOLEAN', 'LANGUAGE', 'MODE'):
@@ -906,19 +957,27 @@ class predicate(entitiesmod.entity):
         def __repr__(self):
             return "Match('%s')" % str(self)
 
-        def __str__(self):
-            args = ', '.join(self.columns), self.searchstring
-            r = "MATCH (%s) AGAINST ('%s')" % args
+        def __str__(self, columnprefix=None):
+            cols = self.columns.copy()
+            if columnprefix:
+                for i, col in enumerate(cols):
+                    cols[i] = '`%s`.%s' % (columnprefix, col)
+                
+            args = ', '.join(cols), self.searchstring
+            r = "MATCH (%s) AGAINST (%s" % args
 
             if self.mode == 'natural':
                 r += ' IN NATURAL LANGUAGE MODE'
             elif self.mode == 'boolean':
                 r += ' IN BOOLEAN MODE'
+
+            r += ')'
+
+            if self.junction:
+                r += self.junction.__str__(columnprefix)
+
                 
             return r
-
-        def _iscolumn(self, buff):
-            return self.re_alphanum_.match(buff)
 
     class SyntaxError(ValueError):
         def __init__(self, col=None, ctx=None, tok=None, msg=None):
@@ -1045,7 +1104,7 @@ class entities(entitiesmod.entities):
                 break
 
         # The parameters express a conditional (predicate) if the first is
-        # a str, or the arg and kwargs are not empty. Otherwise, the first
+        # a str, or the args and kwargs are not empty. Otherwise, the first
         # parameter, `initial`, means an initial set of values that the
         # collections should be set to.  The other parameters will be empty
         # in that case.
@@ -1109,7 +1168,7 @@ class entities(entitiesmod.entities):
             #
             #     artist().join(artist_artifacts().join(artifacts()))
 
-            # For each of self's asssociations mappnigs
+            # For each of self's asssociations mappings
             for map in self.orm.mappings.associationsmappings:
 
                 # For ecah enity mapping in this associationsmapping
@@ -1372,7 +1431,10 @@ class entities(entitiesmod.entities):
 
         self.orm.parameterizepredicate(args)
 
-        #self.orm.where.demandvalid()
+        # TODO Remove
+        # self.orm.where.ensurequoted()
+
+        self.orm.where.demandvalid()
 
     def clear(self):
         self.orm.isloaded = False
@@ -1432,11 +1494,9 @@ class entities(entitiesmod.entities):
             self.onafterload(self, eargs)
 
             for res in ress:
-                # TODO Tighten up using where()
                 id = UUID(bytes=res.fields.first.value)
                 for e in self:
                     if e.id == id:
-                        # TODO Test for multi-row
                         break
                 else:
                     e = self.orm.entity()
@@ -3304,10 +3364,15 @@ class orm:
 
     def parameterizepredicate(self, args):
         for pred in self.instance.orm.where.predicate:
-            for i, op in enumerate(pred.operands):
-                if predicate._isliteral(op):
-                    pred.operands[i] = '%s'
-                    args.append(op)
+            if pred.match:
+                if pred.match.searchstring != '%s':
+                    args.append(pred.match.searchstring)
+                    pred.match.searchstring = '%s';
+            else:
+                for i, op in enumerate(pred.operands):
+                    if predicate.isliteral(op):
+                        pred.operands[i] = '%s'
+                        args.append(op)
 
 
     def populate(self, res):
