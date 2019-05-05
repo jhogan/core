@@ -185,6 +185,12 @@ class tester(entity):
     def assertLe(self, expect, actual, msg=None):
         if not (expect <= actual): self._failures += failure()
 
+    def lt(self, expect, actual, msg=None):
+        if not (expect < actual): self._failures += failure()
+
+    def le(self, expect, actual, msg=None):
+        if not (expect <= actual): self._failures += failure()
+
     def assertIs(self, expect, actual, msg=None):
         if expect is not actual: self._failures += failure()
 
@@ -232,6 +238,9 @@ class tester(entity):
 
     def four(self, actual):
         if len(actual) != 4: self._failures += failure()
+
+    def five(self, actual):
+        if len(actual) != 5: self._failures += failure()
 
     def six(self, actual):
         if len(actual) != 6: self._failures += failure()
