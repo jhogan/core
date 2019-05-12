@@ -122,7 +122,6 @@ class presentation(orm.entity):
         pres.description = uuid4().hex
         return pres
 
-
 class concert(presentation):
     @staticmethod
     def getvalid():
@@ -198,6 +197,8 @@ class artist(orm.entity):
     # title here to be ambigous with artifact.title. It's purpose is to ensure
     # against ambiguity problems that may arise
     title          =  str, 0, 1
+    phone2         =  str, 0, 1
+    email_1        =  str, 0, 1
 
     # Bio's will be longtext. Any str where max > 65,535 can no longer be a
     # varchar, so we make it a longtext.
@@ -222,11 +223,6 @@ class artist(orm.entity):
             return None
         # Strip non-numerics ( "(555)-555-555" -> "555555555" )
 
-        # TODO Raising AttributeError doesn't seem to have an affect. More
-        # research is needed. Note: the phone local variable is sometimes int,
-        # so isnumeric will raise an AttributeError. However, this never bubble
-        # up so it goes unnoticed. You can invoke a test off of
-        # it_calls_explicit_attr_on_subentity
         if type(phone) is str and not phone.isnumeric():
             phone = re.sub('\D*', '', phone)
 
@@ -395,6 +391,23 @@ class test_orm(tester):
         self.chronicles += eargs.entity
         #print(eargs.entity)
 
+    def it_computes_abbreviation(self):
+        for _ in range(10): # Make sure its preserves the value over calls
+            self.eq('p',    presentation.orm.abbreviation)
+            self.eq('p',    presentations.orm.abbreviation)
+            self.eq('l',    location.orm.abbreviation)
+            self.eq('l',    locations.orm.abbreviation)
+            self.eq('i',    issue.orm.abbreviation)
+            self.eq('i',    issues.orm.abbreviation)
+            self.eq('c',    component.orm.abbreviation)
+            self.eq('c',    components.orm.abbreviation)
+            self.eq('a_a',  artist_artifact.orm.abbreviation)
+            self.eq('a_a',  artist_artifacts.orm.abbreviation)
+            self.eq('ar',   artist.orm.abbreviation)
+            self.eq('ar',   artists.orm.abbreviation)
+            self.eq('a',    artifact.orm.abbreviation)
+            self.eq('a',    artifacts.orm.abbreviation)
+        
     def it_calls_count_on_class(self):
         cnt = 10
         for i in range(cnt):
@@ -632,17 +645,17 @@ class test_orm(tester):
         # explicit attribute raised an AttributeError, the __getttr__ was
         # invoked (this is the reason it gets invoke in the first place) and
         # returned the map.value of the attribute. The effect was that the
-        # explict attribute never had a chance to run, so we got what ever
+        # explict attribute never had a chance to run, so we got whatever
         # was in map.value.
         #
         # To correct this, the __getattr__ was converted to a __getattribute__,
         # and some adjustments were made (map.isexplicit was added). Now, an
         # explicit attribute can raise an AttributeError and it bubble up
         # correctly (as confirmed by this test). The problem isn't likely to
-        # resurface. However, this test was written just a way to ensure the
-        # issue never comes up again. The `issue` class was created for this
-        # test because adding the `raiseAttributeError` explicit attribute to
-        # other classes cause an AttributeError to be raise when the the
+        # resurface. However, this test was written just as a way to ensure the
+        # issue never comes up again. The `issue` entity class was created for
+        # this test because adding the `raiseAttributeError` explicit attribute
+        # to other classes cause an AttributeError to be raise when the the
         # brokenrules logic was invoked, which broke a lot of tests.
         iss = issue()
         self.expect(AttributeError, lambda: iss.raiseAttributeError)
@@ -4752,7 +4765,159 @@ class test_orm(tester):
         artist.getvalid().save()
         return arts
 
-    def it_calls_innerjoin_on_entitise_with_MATCH_clauses(self):
+    def it_calls_innerjoin_on_entities_with_BETWEEN_clauses(self):
+        arts = artists()
+        for i in range(8):
+            art = artist.getvalid()
+            art.weight = i
+
+            aa = artist_artifact.getvalid()
+            art.artist_artifacts += aa
+            aa.artifact = artifact.getvalid()
+            aa.artifact.weight = i + 10
+
+            arts += art
+
+        arts.save()
+
+        for op in '', 'NOT':
+            # Load an innerjoin where both tables have [NOT] IN where clause
+            # 	SELECT *
+            # 	FROM artists
+            # 	INNER JOIN artist_artifacts AS `artists.artist_artifacts`
+            # 		ON `artists`.id = `artists.artist_artifacts`.artistid
+            # 	INNER JOIN artifacts AS `artists.artist_artifacts.artifacts`
+            # 		ON `artists.artist_artifacts`.artifactid = `artists.artist_artifacts.artifacts`.id
+            # 	WHERE (`artists`.firstname [NOT] IN (%s, %s))
+            # 	AND (`artists.artist_artifacts.artifacts`.title[NOT]  IN (%s, %s))
+
+            arts1 = artists('weight %s BETWEEN 0 AND 1' % op, ()).join(
+                        artifacts('weight %s BETWEEN 10 AND 11' %op, ())
+                    )
+            arts1.load()
+
+            if op == 'NOT':
+                self.six(arts1)
+            else:
+                self.two(arts1)
+
+            for art1 in arts1:
+                if op == 'NOT':
+                    self.gt(art1.weight, 1)
+                else:
+                    self.le(art1.weight, 1)
+
+                self.one(art1.artifacts)
+
+                fact1 = art1.artifacts.first
+                
+                if op == 'NOT':
+                    self.gt(fact1.weight, 11)
+                else:
+                    self.le(fact1.weight, 11)
+
+        artwhere = 'weight BETWEEN 0 AND 1 OR weight BETWEEN 3 AND 4'
+        factwhere = 'weight BETWEEN 10 AND 11 OR weight BETWEEN 13 AND 14'
+        arts1 = artists(artwhere, ()).join(
+                    artifacts(factwhere, ())
+                )
+
+        arts1.load()
+
+        self.four(arts1)
+
+        for art1 in arts1:
+            self.true(art1.weight in (0, 1, 3, 4))
+
+            self.one(art1.artifacts)
+
+            fact1 = art1.artifacts.first
+            
+            self.true(fact1.weight in (10, 11, 13, 14))
+
+    def it_calls_innerjoin_on_entities_with_IN_clauses(self):
+        arts = artists()
+        for i in range(8):
+            art = artist.getvalid()
+            art.firstname = uuid4().hex
+
+            aa = artist_artifact.getvalid()
+            art.artist_artifacts += aa
+            aa.artifact = artifact.getvalid()
+            aa.artifact.title = uuid4().hex
+
+            arts += art
+
+        arts.save()
+
+        for op in '', 'NOT':
+            # Load an innerjoin where both tables have [NOT] IN where clause
+            # 	SELECT *
+            # 	FROM artists
+            # 	INNER JOIN artist_artifacts AS `artists.artist_artifacts`
+            # 		ON `artists`.id = `artists.artist_artifacts`.artistid
+            # 	INNER JOIN artifacts AS `artists.artist_artifacts.artifacts`
+            # 		ON `artists.artist_artifacts`.artifactid = `artists.artist_artifacts.artifacts`.id
+            # 	WHERE (`artists`.firstname [NOT] IN (%s, %s))
+            # 	AND (`artists.artist_artifacts.artifacts`.title[NOT]  IN (%s, %s))
+
+            firstnames = ['\'%s\'' % x for x in arts.pluck('firstname')]
+            artwhere = 'firstname %s IN (%s)' % (op, ', '.join(firstnames[:4]))
+
+            titles = ['\'%s\'' % x.first.title for x in arts.pluck('artifacts')]
+            factwhere = 'title %s IN (%s)' % (op, ', '.join(titles[:4]))
+
+            arts1 = artists(artwhere, ()) & artifacts(factwhere, ())
+            arts1.load()
+
+            self.four(arts1)
+            titles = [x[1:-1] for x in titles]
+
+            for art1 in arts1:
+                if op == 'NOT':
+                    self.true(art1.firstname not in arts.pluck('firstname')[:4])
+                else:
+                    self.true(art1.firstname in arts.pluck('firstname')[:4])
+
+                self.one(art1.artifacts)
+
+                fact1 = art1.artifacts.first
+                
+                if op == 'NOT':
+                    self.true(fact1.title not in titles[:4])
+                else:
+                    self.true(fact1.title in titles[:4])
+
+        # Test using conjoined IN clauses in artists and artifacts.
+        # artwhere
+        artwhere1 = 'firstname IN (%s)' % (', '.join(firstnames[:2]))
+        artwhere2 = 'firstname IN (%s)' % (', '.join(firstnames[2:4]))
+
+        artwhere = '%s OR %s' % (artwhere1, artwhere2)
+
+        # factwhere
+        titles = ['\'%s\'' % x.first.title for x in arts.pluck('artifacts')]
+        factwhere1 = 'title IN (%s)' % (', '.join(titles[:2]))
+        factwhere2 = 'title IN (%s)' % (', '.join(titles[2:4]))
+
+        factwhere = '%s OR %s' % (factwhere1, factwhere2)
+
+        arts1 = artists(artwhere, ()).join(
+            artifacts(factwhere, ())
+        )
+
+        arts1.load()
+        self.four(arts1)
+
+        titles = [x[1:-1] for x in titles]
+
+        for art1 in arts1:
+            self.true(art1.firstname in arts.pluck('firstname')[:4])
+            self.one(art1.artifacts)
+            fact1 = art1.artifacts.first
+            self.true(fact1.title in titles[:4])
+
+    def it_calls_innerjoin_on_entities_with_MATCH_clauses(self):
         artkeywords, factkeywords = [], []
 
         arts = artists()
@@ -5175,8 +5340,7 @@ class test_orm(tester):
             self.lt(i, 2)
 
     def temp(self):
-        arts = artists() & (artifacts() & components())
-        print(*arts.orm.sql)
+        artists('phone2', 1)
         
     # TODO Remove
     def it_quotes_str_types(self):
@@ -5868,8 +6032,8 @@ class test_orm(tester):
         for expr in exprs:
             pred = orm.predicate(expr)
             expr = (
-                "MATCH (col) AGAINST ('keyword') "
-                "IN NATURAL LANGUAGE MODE"
+                "MATCH (col) AGAINST ('keyword' "
+                "IN NATURAL LANGUAGE MODE)"
             )
             testmatch(pred, ['col'], expr)
 
@@ -5877,13 +6041,23 @@ class test_orm(tester):
         expr =  "MATCH (col) AGAINST ('''keyword has ''single-quoted'' strings''')"
         pred = orm.predicate(expr)
         self.eq("''keyword has ''single-quoted'' strings''", pred.match.searchstring)
-        testmatch(pred, ['col'], expr + ' IN NATURAL LANGUAGE MODE')
+        expr =  (
+            "MATCH (col) AGAINST ('''keyword has ''single-quoted'' strings''' "
+            "IN NATURAL LANGUAGE MODE)"
+        )
+        testmatch(pred, ['col'], expr)
 
         # match (col) against ('"keyword has "double-quoted"' strings"')
         expr =  "MATCH (col) AGAINST ('\"keyword has \"double-quoted\" strings\"')"
         pred = orm.predicate(expr)
         self.eq("\"keyword has \"double-quoted\" strings\"", pred.match.searchstring)
-        testmatch(pred, ['col'], expr + ' IN NATURAL LANGUAGE MODE')
+
+        expr = (
+            "MATCH (col) AGAINST ('\"keyword has \"double-quoted\" strings\"' "
+            "IN NATURAL LANGUAGE MODE)"
+        )
+
+        testmatch(pred, ['col'], expr)
 
         # match(col) against ('keyword') and col = 1
         for op in 'and', 'or':
@@ -5895,14 +6069,15 @@ class test_orm(tester):
             for expr in exprs:
                 pred = orm.predicate(expr)
                 expr = (
-                    "MATCH (col) AGAINST ('keyword') "
-                    "IN NATURAL LANGUAGE MODE"
+                    "MATCH (col) AGAINST ('keyword' "
+                    "IN NATURAL LANGUAGE MODE) %s col = 1" % OP
                 )
+
                 testmatch(pred, ['col'], expr)
 
                 expr = (
-                    "MATCH (col) AGAINST ('keyword') "
-                    "IN NATURAL LANGUAGE MODE %s col = 1" % OP
+                    "MATCH (col) AGAINST ('keyword' "
+                    "IN NATURAL LANGUAGE MODE) %s col = 1" % OP
                 )
 
                 self.eq(expr, str(pred))
@@ -5922,15 +6097,15 @@ class test_orm(tester):
             for expr in exprs:
                 pred = orm.predicate(expr)
                 expr = (
-                    "MATCH (col) AGAINST ('keyword') "
-                    "IN NATURAL LANGUAGE MODE"
+                    "MATCH (col) AGAINST ('keyword' "
+                    "IN NATURAL LANGUAGE MODE)"
                 )
 
                 testmatch(pred, ['col'], expr)
 
                 expr = (
-                    "(MATCH (col) AGAINST ('keyword') "
-                    "IN NATURAL LANGUAGE MODE) %s (col = 1)" % OP
+                    "(MATCH (col) AGAINST ('keyword' "
+                    "IN NATURAL LANGUAGE MODE)) %s (col = 1)" % OP
                 )
 
                 self.eq(expr, str(pred))
@@ -5950,8 +6125,8 @@ class test_orm(tester):
             for expr in exprs:
                 pred = orm.predicate(expr)
                 expr = (
-                    "(MATCH (col) AGAINST ('keyword') "
-                    "IN NATURAL LANGUAGE MODE "
+                    "(MATCH (col) AGAINST ('keyword' "
+                    "IN NATURAL LANGUAGE MODE) "
                     "AND col = 1) %s (col1 = 2)" % OP
                 )
 
@@ -5967,13 +6142,13 @@ class test_orm(tester):
             for expr in exprs:
                 pred = orm.predicate(expr)
                 expr = (
-                    "col = 1 " + OP + " MATCH (col) AGAINST ('keyword') "
-                    "IN NATURAL LANGUAGE MODE"
+                    "col = 1 " + OP + " MATCH (col) AGAINST ('keyword' "
+                    "IN NATURAL LANGUAGE MODE)"
                 )
                 test(expr, pred, 'col', '=', '1')
                 expr = (
-                    "MATCH (col) AGAINST ('keyword') "
-                    "IN NATURAL LANGUAGE MODE"
+                    "MATCH (col) AGAINST ('keyword' "
+                    "IN NATURAL LANGUAGE MODE)"
                 )
                 testmatch(pred.junction, ['col'], expr)
 
@@ -5983,8 +6158,8 @@ class test_orm(tester):
         for expr in exprs:
             pred = orm.predicate(expr)
             expr = (
-                "MATCH (col1, col2) AGAINST ('keyword') "
-                "IN NATURAL LANGUAGE MODE"
+                "MATCH (col1, col2) AGAINST ('keyword' "
+                "IN NATURAL LANGUAGE MODE)"
             )
             testmatch(pred, ['col1', 'col2'], expr)
 
@@ -5994,8 +6169,8 @@ class test_orm(tester):
         for expr in exprs:
             pred = orm.predicate(expr)
             expr = (
-                "MATCH (col1, col2) AGAINST ('keyword') "
-                "IN NATURAL LANGUAGE MODE"
+                "MATCH (col1, col2) AGAINST ('keyword' "
+                "IN NATURAL LANGUAGE MODE)"
             )
             testmatch(pred, ['col1', 'col2'], expr)
 
@@ -6005,8 +6180,8 @@ class test_orm(tester):
         for expr in exprs:
             pred = orm.predicate(expr)
             expr = (
-                "MATCH (col1, col2) AGAINST ('keyword') "
-                "IN BOOLEAN MODE"
+                "MATCH (col1, col2) AGAINST ('keyword' "
+                "IN BOOLEAN MODE)"
             )
             testmatch(pred, ['col1', 'col2'], expr, 'boolean')
 
@@ -6097,6 +6272,57 @@ class test_orm(tester):
         expr = '_binary id = _binary %s'
         pred = orm.predicate(expr)
         self.eq('_binary id = _binary %s', str(pred))
+
+        # col in (123) 
+        exprs = (
+            'col in (123)',
+            'col IN(123)',
+        )
+
+        for expr in exprs:
+            pred = orm.predicate(expr)
+            self.eq('col IN (123)', str(pred))
+
+        # col in (123, 'test') 
+        exprs = (
+            "col in (123, 'test')",
+            "col IN(123, 'test')",
+        )
+
+        for expr in exprs:
+            pred = orm.predicate(expr)
+            self.eq("col IN (123, 'test')", str(pred))
+
+        # col in (123, '''test ''single-quoted'' strings''')
+        exprs = (
+            "col in (123, '''test ''single-quoted'' strings''')",
+            "col IN(123,'''test ''single-quoted'' strings''')",
+        )
+
+        for expr in exprs:
+            pred = orm.predicate(expr)
+            self.eq("col IN (123, '''test ''single-quoted'' strings''')", str(pred))
+
+        # col in (1 2 3 'test', 'test1')
+        exprs = (
+            "col in (1, 2, 3, 'test', 'test1')",
+            "col IN(1, 2, 3, 'test', 'test1')",
+        )
+
+        for expr in exprs:
+            pred = orm.predicate(expr)
+            self.eq("col IN (1, 2, 3, 'test', 'test1')", str(pred))
+
+        # col not in (1 2 3 'test', 'test1')
+        exprs = (
+            "col not in (1, 2, 3, 'test', 'test1')",
+            "col NOT IN(1, 2, 3, 'test', 'test1')",
+        )
+
+        for expr in exprs:
+            pred = orm.predicate(expr)
+            self.eq("col NOT IN (1, 2, 3, 'test', 'test1')", str(pred))
+
 
 class test_blog(tester):
     def __init__(self):

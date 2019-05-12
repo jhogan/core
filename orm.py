@@ -41,6 +41,7 @@ import primative
 import re
 import sys
 import textwrap
+import func
 
 # Set conditional break points
 def B(x=True):
@@ -549,7 +550,7 @@ class predicates(entitiesmod.entities):
 class predicate(entitiesmod.entity):
     Isalphanum_ = re.compile(r'^[A-Za-z0-9_]+$')
     Specialops = '=', '==', '<', '<=', '>', '>=', '<>'
-    Wordops = 'LIKE', 'NOT', 'NOT LIKE', 'IS', 'IS IN', 'IS NOT', 'IS NOT IN', 'BETWEEN', 'NOT BETWEEN'
+    Wordops = 'LIKE', 'NOT', 'NOT LIKE', 'IS', 'IS NOT', 'IN', 'NOT IN', 'BETWEEN', 'NOT BETWEEN'
     Constants = 'TRUE', 'FALSE', 'NULL'
     Ops = Specialops + Wordops
     Introducers = '_binary',
@@ -672,6 +673,8 @@ class predicate(entitiesmod.entity):
                 self.operator += ' ' + tok
                 if TOK == 'BETWEEN':
                     inbetween = True
+                elif TOK == 'IN':
+                    isin = True
 
             elif self._lookslikeoperator(lex, tok):
                 if self.operator:
@@ -724,7 +727,13 @@ class predicate(entitiesmod.entity):
                     msg += '\nThere may be unquoted string literals'
                     self._raiseSyntaxError(lex, tok, ex=unexpected, msg=msg)
             else:
-                if len(self.operands) != 2:
+                if self.operator in ('IN', 'NOT IN'):
+                    if len(self.operands) < 2:
+                        msg = 'Expected at least 2 operands, not %s'
+                        msg %= len(self.operands)
+                        msg += '\nThere may be unquoted string literals'
+                        self._raiseSyntaxError(lex, tok, ex=unexpected, msg=msg)
+                elif len(self.operands) != 2:
                     msg = 'Expected 2 operands, not %s' % len(self.operands)
                     msg += '\nThere may be unquoted string literals'
 
@@ -754,32 +763,35 @@ class predicate(entitiesmod.entity):
 
         if self.match:
             r += self.match.__str__(columnprefix=columnprefix)
-
         else:
-            cnt = len(self.operands)
-            if cnt == 2:
-                ops = self.operands.copy()
-                if columnprefix:
-                    for i, op in enumerate(ops):
-                        if self.iscolumn(op):
-                            ops[i] = '`%s`.%s' % (columnprefix, op)
+            ops = self.operands.copy()
+            if columnprefix:
+                for i, op in enumerate(ops):
+                    if self.iscolumn(op):
+                        ops[i] = '`%s`.%s' % (columnprefix, op)
 
-                # Append a space to the introducers if they exists
-                lhsintro = self.lhsintroducer
-                lhsintro = lhsintro + ' ' if lhsintro else ''
-                rhsintro = self.rhsintroducer
-                rhsintro = rhsintro + ' ' if rhsintro else ''
+            # append a space to the introducers if they exists
+            lhsintro = self.lhsintroducer
+            lhsintro = lhsintro + ' ' if lhsintro else ''
+            rhsintro = self.rhsintroducer
+            rhsintro = rhsintro + ' ' if rhsintro else ''
 
+            if self.operator in ('IN', 'NOT IN'):
+                # TODO add introducers to in arguments
+                r += '%s %s (%s)' % (ops[0],
+                                       self.operator,
+                                       ', '.join(ops[1:]))
+
+            elif self.operator in ('BETWEEN', 'NOT BETWEEN'):
+                r += '%s %s %s AND %s'
+                r %= (ops[0], self.operator, *ops[1:])
+
+            else:
                 r += '%s%s %s %s%s' % (lhsintro,
                                        ops[0], 
                                        self.operator, 
                                        rhsintro,
                                        ops[1])
-            elif self.operator in ('BETWEEN', 'NOT BETWEEN'):
-                r += '%s %s %s AND %s'
-                r %= (self.operands[0], self.operator, *self.operands[1:])
-            else:
-                raise ValueError('Incorrect number of operands')
 
         r += ')' * self.endparen
 
@@ -964,7 +976,13 @@ class predicate(entitiesmod.entity):
                     cols[i] = '`%s`.%s' % (columnprefix, col)
                 
             args = ', '.join(cols), self.searchstring
-            r = "MATCH (%s) AGAINST (%s" % args
+
+            r = "MATCH (%s) AGAINST ("  % ', '.join(cols)
+
+            if self.searchstring == '%s':
+                r += '%s'
+            else:
+                r += "'%s'" % self.searchstring
 
             if self.mode == 'natural':
                 r += ' IN NATURAL LANGUAGE MODE'
@@ -1046,11 +1064,9 @@ class entities(entitiesmod.entities):
     def all(cls):
         return cls(allstream)
 
-    re_alphanum_ = re.compile('^[A-Za-z_][A-Za-z_]+$')
+    re_alphanum_ = re.compile('^[a-z_][0-9a-z_]+$', flags=re.IGNORECASE)
 
     def __init__(self, initial=None, _p2=None, *args, **kwargs):
-        # TODO Ensure kwargs are in self.orm.mappings collections. Raise
-        # ValueError if any are not there.
         try:
             self.orm = self.orm.clone()
         except AttributeError:
@@ -1218,7 +1234,7 @@ class entities(entitiesmod.entities):
         # If type(cls) is not type, it is being called of an instance.
         #   artists().count
         # 
-        # cls is actuallly a reference to the instance (artists())
+        # cls is actually a reference to the instance (artists())
         # In this case, we just want the number of entities in the given
         # collection.
         if type(cls) is type:
@@ -1414,8 +1430,6 @@ class entities(entitiesmod.entities):
 
         if p2 is not None:
             if p2isscaler:
-                # TODO re_alphanum_ should allow for numbers after first
-                # character, but doesn't.
                 if self.re_alphanum_.match(p1):
                     # If p1 looks like a simple column name (alphanums,
                     # underscores, no operators) assume the user is doing a
@@ -2116,7 +2130,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
     def _getbrokenrules(self, guestbook=None, followentitymapping=True):
         # TODO If an association is added that is the incorrect type, 
-        # append a broken rule, i.e.:
+        # append a brokenrule, i.e.:
         #
         #   arts.artifacts += location() 
         #   arts.artist_artifacts += location()
@@ -3346,6 +3360,7 @@ class orm:
         self.isloading            =  False
         self.isremoving           =  False
         self.joins                =  None
+        self._abbreviation        =  str()
 
     def clone(self):
         r = orm()
@@ -3362,6 +3377,66 @@ class orm:
 
         return r
 
+    @property
+    def abbreviation(self):
+        if not self._abbreviation:
+            suffix = str()
+
+            # Get all entitiy classes sorted by name
+            es = self.getentitys() + self.getassociations()
+            es.sort(key=lambda x: x.__name__)
+
+            def generator():
+                tblelements = self.table.split('_')
+                if len(tblelements) > 1:
+                    # Use underscores to abbreviate, e.g.:
+                    # artist_artifacts => a_a 
+                    m = min(len(x) for x in tblelements)
+                    for i in range(m - 1):
+                        r = str()
+                        for j, tblelement in func.enumerate(tblelements):
+                            r += tblelement[:i + 1]
+                            r += '_' if not j.last else ''
+                        yield r
+                                
+                else:
+                    # If no underscores were found, just yield each character.
+                    for c in self.table:
+                        yield c
+
+            found = False
+            while True:
+                for c in generator():
+                    self._abbreviation += c + suffix
+                    for e in es:
+                        if e.orm.table == self.table:
+                            continue
+
+                        abbr = e.orm.abbreviation
+                        if abbr == self._abbreviation:
+                            break
+                    else:
+                        found = True
+                        break
+                else:
+                    # Couldn't abbreviate so increment suffix
+                    self._abbreviation = str()
+                    if suffix:
+                        suffix = str(int(suffix) + 1)
+                    else:
+                        suffix = '0'
+
+                    continue
+                break
+
+        return self._abbreviation
+
+    @staticmethod 
+    def dequote(s):
+        if s[0] == "'" and s[-1] == "'":
+            return s[1:-1]
+        return s
+
     def parameterizepredicate(self, args):
         for pred in self.instance.orm.where.predicate:
             if pred.match:
@@ -3372,7 +3447,7 @@ class orm:
                 for i, op in enumerate(pred.operands):
                     if predicate.isliteral(op):
                         pred.operands[i] = '%s'
-                        args.append(op)
+                        args.append(self.dequote(op))
 
 
     def populate(self, res):
@@ -3415,7 +3490,7 @@ class orm:
                     # the graph until we find the leaf object. Then instantiate
                     # the leaf object and assign it to the correct entities
                     # collection object.
-                    # TODO Use func.enumerator and modernize the usage of `i`.
+                    # TODO Use func.enumerate and modernize the usage of `i`.
                     maps = self.mappings
                     for i, node in enumerate(nodes):
                         map = maps(node)
@@ -3539,20 +3614,15 @@ class orm:
 
                         # If last node
                         if i + 1 == len(nodes):
-                            # Prevent duplicate entries to an entities
-                            # collection.
-                            # TODO Tighten up by overridding the |= to prevent
-                            # duplicates based on entitiy's id a value
-                            dup = False
-                            for e in es:
-                                if e.id == UUID(bytes=f.value):
-                                    dup = True
-                                    break
-                            else:
+                            e = es(UUID(bytes=f.value))
+                            if not e:
                                 if type(map) is entitiesmapping:
                                     e = map.entities.orm.entity()
                                 elif type(map) is associationsmapping:
                                     e = map.associations.orm.entity()
+                                else:
+                                    msg = 'Invalid map type'
+                                    raise ValueError(msg)
 
                                 e.orm.persistencestate = (False,) * 3
                                 es += e
@@ -3579,7 +3649,7 @@ class orm:
                 continue
             r = R.newrow()
             # FIXME: Aliases can only be 256 chars long. This recursive
-            # algorithm chains aliase names togethr such that a deeply nested
+            # algorithm chains aliase names together such that a deeply nested
             # join may eventually exceed that limit.  A fix would be for entity
             # classes to create unique abbreviations for themselves 
             #
