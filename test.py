@@ -1,4 +1,3 @@
-# vim: set et ts=4 sw=4 fdm=marker
 """
 MIT License
 
@@ -114,6 +113,7 @@ class presentation(orm.entity):
     name = orm.fieldmapping(str)
     description = str
     locations = locations
+    components = components
 
     @staticmethod
     def getvalid():
@@ -392,22 +392,17 @@ class test_orm(tester):
         #print(eargs.entity)
 
     def it_computes_abbreviation(self):
-        for _ in range(10): # Make sure its preserves the value over calls
-            self.eq('p',    presentation.orm.abbreviation)
-            self.eq('p',    presentations.orm.abbreviation)
-            self.eq('l',    location.orm.abbreviation)
-            self.eq('l',    locations.orm.abbreviation)
-            self.eq('i',    issue.orm.abbreviation)
-            self.eq('i',    issues.orm.abbreviation)
-            self.eq('c',    component.orm.abbreviation)
-            self.eq('c',    components.orm.abbreviation)
-            self.eq('a_a',  artist_artifact.orm.abbreviation)
-            self.eq('a_a',  artist_artifacts.orm.abbreviation)
-            self.eq('ar',   artist.orm.abbreviation)
-            self.eq('ar',   artists.orm.abbreviation)
-            self.eq('a',    artifact.orm.abbreviation)
-            self.eq('a',    artifacts.orm.abbreviation)
-        
+        es = orm.orm.getentitys() + orm.orm.getassociations()
+
+        abbrs = [e.orm.abbreviation for e in es]
+        abbrs1 = [e().orm.abbreviation for e in es]
+        self.unique(abbrs)
+        self.eq(abbrs, abbrs1)
+
+        for i in range(10):
+            self.eq(abbrs, [e.orm.abbreviation for e in es])
+            self.eq(abbrs, [e().orm.abbreviation for e in es])
+
     def it_calls_count_on_class(self):
         cnt = 10
         for i in range(cnt):
@@ -1255,6 +1250,33 @@ class test_orm(tester):
         self.false(arts1.orm.isstreaming)
         self.eq(2, arts1.count)
 
+    def it_raises_exception_when_innerjoin_stream_entities(self):
+        ''' Streaming and joins don't mix. An error should be thrown
+        if an attempt to stream joins is detected. The proper way 
+        to stream constituents would probably be with a getter, e.g.:
+
+            for fact in art.get_artifacts(orm.stream):
+                ...
+
+        '''
+
+        fns = (
+            lambda:  artists(orm.stream).join(locations()),
+            lambda:  artists()            &  locations(orm.stream),
+
+            lambda:  artists(orm.stream)  &  artist_artifacts(),
+            lambda:  artists()            &  artist_artifacts(orm.stream),
+
+            lambda:  artists(orm.stream)  &  artifacts(),
+            lambda:  artists()            &  artifacts(orm.stream),
+
+            lambda:  artists() & artist_artifacts() & artifacts(orm.stream)
+
+        )
+
+        for fn in fns:
+            self.expect(orm.invalidstream, fn)
+
     def it_calls__iter__on_streamed_entities(self):
         # Create a variant number of artists to test. This will help
         # discover one-off errors in the __iter__
@@ -1295,7 +1317,24 @@ class test_orm(tester):
         self.eq(arts1.count, len(list(arts1)))
 
     def it_calls__getitem__on_entities(self):
-        ...  # TODO
+        arts = artists()
+        for _ in range(4):
+            art = artist.getvalid()
+            arts += art
+
+        self.is_(art, arts[art.id])
+        self.is_(art, arts[art])
+        self.expect(IndexError, lambda: arts[uuid4()])
+
+        arts.sort()
+        arts1 = arts[:2].sorted()
+
+        for art, art1 in zip(arts, arts1):
+            self.eq(art.id, art1.id)
+
+        art1 = arts[0]
+
+        self.eq(arts.first.id, art1.id)
 
     def it_calls__getitem__on_streamed_entities(self):
         lastname = uuid4().hex
@@ -1356,7 +1395,7 @@ class test_orm(tester):
 
             # TODO Test indexing by UUID, i.e.,
             # arts[id]
-            # Note that UUID indexing on streams has not been implemented yet.
+            # NOTE that UUID indexing on streams has not been implemented yet.
 
     def it_calls_unavailable_attr_on_streamed_entities(self):
         arts = artists(orm.stream)
@@ -1538,7 +1577,7 @@ class test_orm(tester):
 
         fname, lname = arts.first['firstname', 'lastname']
 
-        # TODO Test where literal has an UUID so introducers (_binary) are tested.
+        # TODO Test where literal has a UUID so introducers (_binary) are tested.
 
         # Test a where string with an args tuple
         arts1 = artists('firstname = %s', (arts.first.firstname,))
@@ -4698,17 +4737,6 @@ class test_orm(tester):
         self.expect(db.recordnotfounderror, lambda: concert(conc.id))
         self.expect(db.recordnotfounderror, lambda: location(loc.id))
 
-    def it_cant_currently_query_on_fully_qualified_columns(self):
-        # FIXME This test illustrates a problem. Currently, lastname doesn't
-        # get prefixed with artists, only firstname. We will probabably need
-        # a boolean expression parse to correct this. '''
-        arts = artists("firstname = 'x' and lastname = 'y'", ())
-        expect = "(artists.firstname = 'x' and lastname = 'y')"
-        actual = arts.orm.sql[0].split('WHERE ')[1].strip()
-        self.eq(expect, actual)
-
-        print(*arts.orm.sql)
-
     def _create_join_test_data(self):
         ''' Create test data to be used by the outer/inner join tests. '''
 
@@ -4794,7 +4822,6 @@ class test_orm(tester):
             arts1 = artists('weight %s BETWEEN 0 AND 1' % op, ()).join(
                         artifacts('weight %s BETWEEN 10 AND 11' %op, ())
                     )
-            arts1.load()
 
             if op == 'NOT':
                 self.six(arts1)
@@ -4821,8 +4848,6 @@ class test_orm(tester):
         arts1 = artists(artwhere, ()).join(
                     artifacts(factwhere, ())
                 )
-
-        arts1.load()
 
         self.four(arts1)
 
@@ -4868,7 +4893,6 @@ class test_orm(tester):
             factwhere = 'title %s IN (%s)' % (op, ', '.join(titles[:4]))
 
             arts1 = artists(artwhere, ()) & artifacts(factwhere, ())
-            arts1.load()
 
             self.four(arts1)
             titles = [x[1:-1] for x in titles]
@@ -4906,7 +4930,6 @@ class test_orm(tester):
             artifacts(factwhere, ())
         )
 
-        arts1.load()
         self.four(arts1)
 
         titles = [x[1:-1] for x in titles]
@@ -4946,7 +4969,6 @@ class test_orm(tester):
             )
         )
 
-        arts1.load()
         self.one(arts1)
 
         art1 = arts1.first
@@ -4974,7 +4996,6 @@ class test_orm(tester):
 
         arts1 = artists(artmatch, ()) & artifacts(factmatch, ())
 
-        arts1.load()
         self.two(arts1)
 
         arts.sort()
@@ -4996,10 +5017,9 @@ class test_orm(tester):
 
         self.one(arts1.orm.joins)
 
-        arts1.load()
+        self.four(arts1)
 
         self.chronicles.clear()
-        self.four(arts1)
 
         arts1.sort()
         
@@ -5041,10 +5061,10 @@ class test_orm(tester):
 
         self.one(arts1.orm.joins)
 
-        arts1.load()
+        self.four(arts1)
 
         self.chronicles.clear()
-        self.four(arts1)
+
         arts1.sort()
         for art, art1 in zip(arts, arts1):
             self.eq(art.id, art1.id)
@@ -5087,7 +5107,6 @@ class test_orm(tester):
             facts = arts1.orm.joins.first.entities.orm.joins.first.entities
             self.type(artifacts, facts)
 
-            arts1.load()
             arts1.sort()
 
             self.chronicles.clear()
@@ -5129,7 +5148,6 @@ class test_orm(tester):
             facts = arts1.orm.joins.first.entities.orm.joins.first.entities
             self.type(artifacts, facts)
 
-            arts1.load()
             arts1.sort()
 
             self.four(arts1)
@@ -5153,7 +5171,6 @@ class test_orm(tester):
         arts1 &= artist_artifacts('role = %s', ('art-art_fact-role-0',)) & \
                  artifacts('description = %s', ('art-art_fact-fact-desc-1',))
 
-        arts1.load()
         self.one(arts1)
 
         self.chronicles.clear()
@@ -5184,7 +5201,6 @@ class test_orm(tester):
                          )
 
 
-            arts1.load()
             self.four(arts1)
 
             arts1.sort()
@@ -5228,8 +5244,6 @@ class test_orm(tester):
                         artifacts(title = facttitle) & components(name = compname)
                     )
                  )
-
-        arts1.load()
 
         self.four(arts1)
 
@@ -5339,49 +5353,40 @@ class test_orm(tester):
             self.eq("%s", pred.operands[1])
             self.lt(i, 2)
 
+    def _it_saves_association_FIXME(self):
+        art = artist.getvalid()
+        art.artist_artifacts += artist_artifact.getvalid()
+
+        # FIXME This raises an exception. To work around it,
+        # you have do this:
+        #     art.artist_artifacts.last.artifact = artifact.getvalid()
+        #
+        # This test should be integrated into a more general
+        # it_save_associations test
+        art.artifacts += artifact.getvalid()
+
+        art.save()
+
     def temp(self):
-        artists('phone2', 1)
+        art = artist.getvalid()
+        art.artist_artifacts += artist_artifact.getvalid()
+        art.artist_artifacts.last.artifact = artifact.getvalid()
+        art.save()
+
+        art = artists() & artifacts()
+        print(art.count)
         
-    # TODO Remove
-    def it_quotes_str_types(self):
-        ''' When a column that is mapped as str, datetime or bytes is compared
-        with an unquoted numeric literal, the orm should ensure that the
-        literal is quoted. This prevents MySQL from generating "errors" which
-        get raised as an exception. '''
-        
-        exprs = (
-            # str
-            "firstname = 1234",
-            "firstname = '1234' or lastname = 5678",
-            "1234 = firstname",
-            "'1234' = firstname or lastname = 5678",
-            "firstname  between  '1234'  and  5678",
-            "firstname  between  1234    and  '5678'",
-            "firstname  between  1234    and  5678",
-            "firstname  between  '1234'  and  '5678' or "
-                "lastname between '3212' and 4342",
-            # TODO Should we allow two columns?; this still works.
-            "firstname = derp",
-
-            # datetime
-            "dob = 20120202",
-
-            # NOTE Not sure about querying with strings with bytes. This may be
-            # a justification to preserve explicit query parameters. So the
-            # folowing doesn't work and probably shouldn't.
-            # bytes
-            #'password \\x91\\xd4\\xfd8\\xfd\\xf2K\\x81\\x97\\xcd\\xfc\\xe1S\\xbf\\x1b\\x93',
-        )
-
-        for expr in exprs:
-            arts = artists(expr, ())
-            arts.load()
-            for arg in arts.orm.where.args:
-                self.eq("'", arg[0])
-                self.eq("'", arg[-1])
-
     def it_raises_exception_whene_non_existing_column_is_referenced(self):
         self.expect(orm.invalidcolumn, lambda: artists(notacolumn = 1234))
+
+    def it_raises_exception_when_bytes_type_is_compared_to_nonbinary(self):
+        # TODO This should raise an exception
+        arts1 = artists('id = 123', ())
+        B()
+        return
+        arts1 &= artifacts()
+
+        arts1.load()
 
     def it_calls_innerjoin_on_entities_and_writes_new_records(self):
         arts = self._create_join_test_data()
@@ -5389,8 +5394,8 @@ class test_orm(tester):
 
         arts1 = artists() & (artifacts() & components())
 
-        # Eager-load artists->artifacts->components. Add an entry to `arts1`
-        # and make sure that the new record persists.
+        # Explicitly load artists->artifacts->components. Add an entry to
+        # `arts1` and make sure that the new record persists.
         arts1.load()
 
         art1 = artist.getvalid()
@@ -5424,7 +5429,7 @@ class test_orm(tester):
         self.eq(art1.artifacts.last.components.last.id,
                 comps2.last.id)
 
-        # Reload using the eager-loading, join method and update the record
+        # Reload using the explicit loading, join method and update the record
         # added above. Ensure that the new data presists.
         arts3 = artists() & (artifacts() & components())
         arts3.load()
@@ -5480,12 +5485,11 @@ class test_orm(tester):
             self.one(press.orm.joins)
             self.zero(locs.orm.joins)
 
-            arts1.load()
+            # Test
+            self.one(arts1)
 
             self.chronicles.clear()
 
-            # Test
-            self.one(arts1)
             art1 = arts1.first
             self.eq(arts.first.id, art1.id)
 
@@ -5533,12 +5537,11 @@ class test_orm(tester):
             self.two(arts1.orm.joins)
             self.one(press.orm.joins)
             self.zero(locs.orm.joins)
-            
-            arts1.load()
+
+            self.one(arts1)
 
             self.chronicles.clear()
 
-            self.one(arts1)
             art1 = arts1.first
             self.eq(fff, art1.orm.persistencestate)
             self.eq('fn-0', art1.firstname)
@@ -5582,11 +5585,9 @@ class test_orm(tester):
             self.one(press.orm.joins)
             self.zero(locs.orm.joins)
             
-            arts1.load()
+            self.two(arts1)
 
             self.chronicles.clear()
-
-            self.two(arts1)
 
             # Test that the correct graph was loaded
             for art1 in arts1:
@@ -5633,12 +5634,11 @@ class test_orm(tester):
             self.one(press.orm.joins)
             self.zero(locs.orm.joins)
 
-            arts1.load()
-
-            self.chronicles.clear()
-            
             # Only one artist will have been retrieved by the query
             self.one(arts1)
+
+            self.chronicles.clear()
+
             self.eq(fff, arts1.first.orm.persistencestate)
 
             # Test artist's locations
@@ -5677,9 +5677,7 @@ class test_orm(tester):
 
             join(arts1, press, t)
             join(press, locs, t)
-            arts1.load()
 
-            self.chronicles.clear()
 
             # Test join counts
             self.one(arts1.orm.joins)
@@ -5687,6 +5685,9 @@ class test_orm(tester):
             self.zero(locs.orm.joins)
 
             self.four(arts1)
+
+            self.chronicles.clear()
+
             for art in arts1:
                 self.eq(fff, art.orm.persistencestate)
                 self.four(art.presentations)
@@ -5705,11 +5706,10 @@ class test_orm(tester):
         # will likely lead to confusion if the & techinique is promoted. I'm
         # thinking &= should be recommended instead.
         arts1 = artists() & (presentations() & locations())
-        arts1.load()
-
-        self.chronicles.clear()
 
         self.four(arts1)
+
+        self.chronicles.clear()
 
         for art in arts1:
             self.eq(fff, art.orm.persistencestate)
@@ -5720,6 +5720,53 @@ class test_orm(tester):
 
         self.zero(self.chronicles)
                     
+    def it_eager_loads_constituents(self):
+        arts = artists()
+        for _ in range(4):
+            arts += artist.getvalid()
+            arts.last.artist_artifacts += artist_artifact.getvalid()
+            arts.last.artist_artifacts.last.artifact = artifact.getvalid()
+
+            arts.last.presentations += presentation.getvalid()
+
+            arts.last.locations += location.getvalid()
+        arts.save()
+
+        # Eager load one constituent
+        arts1 = artists(orm.eager('presentations'))
+        self.one(arts1.orm.joins)
+        self.type(presentations, arts1.orm.joins.first.entities)
+
+        self.le(arts.count, arts1.count)
+
+        for art in arts:
+            art1 = arts1(art.id)
+            self.notnone(art1)
+
+            for pres in art.presentations:
+                pres1 = art1.presentations(pres.id)
+                self.notnone(pres1)
+
+        # Eager load two constituents
+        arts1 = artists(orm.eager('presentations', 'locations'))
+        self.two(arts1.orm.joins)
+        self.type(presentations, arts1.orm.joins.first.entities)
+        self.type(locations, arts1.orm.joins.second.entities)
+
+        self.le(arts.count, arts1.count)
+
+        for art in arts:
+            art1 = arts1(art.id)
+            self.notnone(art1)
+
+            for pres in art.presentations:
+                pres1 = art1.presentations(pres.id)
+                self.notnone(pres1)
+
+            for loc in art.locations:
+                loc1 = art1.locations(loc.id)
+                self.notnone(loc1)
+            
     def it_creates_iter_from_predicate(self):
         ''' Test the predicates __iter__() '''
 
@@ -5813,6 +5860,10 @@ class test_orm(tester):
             match (col) against ('search str') mode language natural in
             match (col,) against ('search str') mode language natural in
             col = %S
+            col in ()
+            col in (1) or col in ()
+            col in (
+            col in (1) or col in (
         '''
 
         invalidop = '''

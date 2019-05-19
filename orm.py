@@ -34,6 +34,7 @@ import dateutil
 import db
 import decimal
 import entities as entitiesmod
+import func
 import gc
 import itertools
 import MySQLdb
@@ -41,7 +42,6 @@ import primative
 import re
 import sys
 import textwrap
-import func
 
 # Set conditional break points
 def B(x=True):
@@ -93,9 +93,16 @@ class stream(entitiesmod.entity):
         def chunk(self):
             if self._chunk is None:
                 where = self.entities.orm.where
-                cond = where.conditional
-                args = where.args
-                self._chunk = type(self.entities)(cond, args)
+                if where:
+                    cond = str(where.predicate)
+                    args = where.args
+                    # TODO A similar line is in the alternative block.
+                    # It may be nice if we could make it one line using *args syntax, e.g., 
+                    #   self._chunk = type(self.entities)(*args1)
+                    self._chunk = type(self.entities)(cond, args)
+                else:
+                    self._chunk = type(self.entities)()
+
                 self._chunk.orm.ischunk = True
 
             return self._chunk
@@ -136,6 +143,7 @@ class stream(entitiesmod.entity):
 
                 self.chunk.clear()
                 self.chunk.load(self.stream.orderby, self.limit, self.offset)
+                # TODO Can we remove chuckloaded and replace with self.chunk.orm.isloaded
                 self.chunkloaded = True
 
             return self.chunk[self.getrelativeslice(slc)]
@@ -223,6 +231,10 @@ class joins(entitiesmod.entities):
     def table(self):
         return self.entities.orm.table
 
+    @property
+    def abbreviation(self):
+        return self.entities.orm.abbreviation
+
     def __str__(self, joinerroot=None, joineeroot=None):
         ''' Return the join portion of a SELECT query. '''
         
@@ -267,12 +279,12 @@ class joins(entitiesmod.entities):
             # graph. These variables are used as table alias. The accumulate
             # in size with each recursion.
             if joinerroot is None:
-                joinergraph = self.table
+                joinergraph = self.abbreviation
             else:
-                joinergraph = '%s.%s' % (joinerroot, self.table)
+                joinergraph = '%s.%s' % (joinerroot, self.abbreviation)
 
             if joineeroot is None:
-                joineegraph = self.entities.orm.table
+                joineegraph = self.entities.orm.abbreviation
             else:
                 joineegraph = joineeroot
 
@@ -280,9 +292,10 @@ class joins(entitiesmod.entities):
             r += get_join_type(join)
 
             jointbl = join.entities.orm.table
+            joinabbr = join.entities.orm.abbreviation
 
             # Concatenate the joineegraph
-            joineegraph = '%s.%s' % (joineegraph, jointbl)
+            joineegraph = '%s.%s' % (joineegraph, joinabbr)
 
             # Now we can concatenate `r` with the table and its alias 
             r += ' %s AS `%s`' % (jointbl, joineegraph)
@@ -311,7 +324,7 @@ class joins(entitiesmod.entities):
                 # association. This block makes accomidations for that.
                 for j in join.entities.orm.joins:
                     joinergraph1 = joineegraph
-                    joineegraph1 = '%s.%s' % (joineegraph, j.entities.orm.table)
+                    joineegraph1 = '%s.%s' % (joineegraph, j.entities.orm.abbreviation)
                     joineepk1 = j.entities.orm.mappings.primarykeymapping.name
 
                     for map in join.entities.orm.mappings.foreignkeymappings:
@@ -366,6 +379,10 @@ class join(entitiesmod.entity):
     Outer = 1
 
     def __init__(self, es, type):
+        if es.orm.isstreaming:
+            msg = 'Entities cannot be joined to streaming entities'
+            raise invalidstream(msg)
+            
         self.entities = es
         self.type = type # inner, outer, etc
 
@@ -497,6 +514,7 @@ class where(entitiesmod.entity):
                     phix += 1
 
     def __str__(self, graph=''):
+        B() # TODO IS THIS BEING USED
         ''' Return a string representation of the WHERE clause with %s
         parameters. If the where object's entities collection has joins, those
         joins will be traversed to captures all where clauses. '''
@@ -506,8 +524,8 @@ class where(entitiesmod.entity):
 
         # Maintain a cumilitive graph string which denotes the hierarchy as we
         # recurse back into this method
-        tbl = self.entities.orm.table
-        graph = ('%s.%s') % (graph, tbl) if graph else tbl
+        abbr = self.entities.orm.abbreviation
+        graph = ('%s.%s') % (graph, abbr) if graph else tbl
 
         # Concatentate the predicate with graph to return string
         r += '(%s)' % self.predicate.__str__(columnprefix=graph)
@@ -636,6 +654,7 @@ class predicate(entitiesmod.entity):
     def _parse(self, lex):
         tok = lex.get_token()
         inbetween      =  False
+        isin           =  False
         inquote        =  False
         inplaceholder  =  False
         unexpected = predicate.UnexpectedToken
@@ -707,10 +726,12 @@ class predicate(entitiesmod.entity):
                     return
 
             elif tok == '(':
-                self.startparen += 1
+                if not isin:
+                    self.startparen += 1
 
             elif tok == ')':
-                self.endparen += 1
+                if not isin:
+                    self.endparen += 1
 
             if inbetween and len(self.operands) == 3:
                 inbetween = False
@@ -779,8 +800,8 @@ class predicate(entitiesmod.entity):
             if self.operator in ('IN', 'NOT IN'):
                 # TODO add introducers to in arguments
                 r += '%s %s (%s)' % (ops[0],
-                                       self.operator,
-                                       ', '.join(ops[1:]))
+                                     self.operator,
+                                     ', '.join(ops[1:]))
 
             elif self.operator in ('BETWEEN', 'NOT BETWEEN'):
                 r += '%s %s %s AND %s'
@@ -1058,6 +1079,38 @@ class classproperty(property):
         obj = cls if cls else owner
         return classmethod(self.fget).__get__(None, obj)()
 
+class eager:
+    def __init__(self, *graphs):
+        self._graphs = graphs
+
+    def join(self, to):
+        graphs = []
+
+        for graph in self._graphs:
+            graphs.append(graph.split('.'))
+
+        for graph in graphs:
+            parent = to
+            for node in graph:
+
+                for j in parent.orm.joins:
+                    if type(j.entities).__name__ == node:
+                        e = j.entities
+                        break
+                else:
+                    e = parent.orm.mappings[node].entities()
+                    parent.innerjoin(e)
+
+                parent = e
+    
+    def __repr__(self):
+        # TODO
+        return super().__repr__()
+
+    def __str__(self):
+        # TODO
+        return super().__str__()
+
 class entities(entitiesmod.entities):
 
     @classproperty
@@ -1068,73 +1121,82 @@ class entities(entitiesmod.entities):
 
     def __init__(self, initial=None, _p2=None, *args, **kwargs):
         try:
-            self.orm = self.orm.clone()
-        except AttributeError:
-            msg = (
-                "Can't instantiate abstract orm.entities. "
-                "Use entities.entities for a generic entities collection "
-                "class."
-            )
-            raise NotImplementedError(msg)
+            try:
+                self.orm = self.orm.clone()
+            except AttributeError:
+                msg = (
+                    "Can't instantiate abstract orm.entities. "
+                    "Use entities.entities for a generic entities collection "
+                    "class."
+                )
+                raise NotImplementedError(msg)
 
-        self.orm.instance = self
-        self.orm.isloaded = False
-        self.orm.isloading = False
-        self.orm.stream = None
-        self.orm.where = None
-        self.orm.ischunk = False
-        self.orm.joins = joins(es=self)
+            self.orm.instance = self
 
-        self.onbeforereconnect  =  entitiesmod.event()
-        self.onafterreconnect   =  entitiesmod.event()
-        self.onafterload        =  entitiesmod.event()
+            self.orm.initing = True
 
-        self.onafterload       +=  self._self_onafterload
+            self.orm.isloaded = False
+            self.orm.isloading = False
+            self.orm.stream = None
+            self.orm.where = None
+            self.orm.ischunk = False
+            self.orm.joins = joins(es=self)
 
-        # If a stream is found in the first or second argument, move it to
-        # args
-        args = list(args)
-        if  isinstance(initial, stream):
-            args.append(initial)
-            initial = None
-        elif type(initial) is type and stream in initial.mro():
-            args.append(initial())
-            initial = None
-        elif _p2 is stream or isinstance(_p2, stream):
-            args.append(_p2)
-            _p2 = None
+            self.onbeforereconnect  =  entitiesmod.event()
+            self.onafterreconnect   =  entitiesmod.event()
+            self.onafterload        =  entitiesmod.event()
 
-        # Look in *args for stream class or a stream object. If found, ensure
-        # the element is an instantiated stream and set it to self._stream.
-        # Delete the stream from *args.
-        for i, e in enumerate(args):
-            if e is stream:
-                self.orm.stream = stream()
-                self.orm.stream.entities = self
-                del args[i]
-                break
-            elif isinstance(e, stream):
-                self.orm.stream = e
-                self.orm.stream.entities = self
-                del args[i]
-                break
+            self.onafterload       +=  self._self_onafterload
 
-        # The parameters express a conditional (predicate) if the first is
-        # a str, or the args and kwargs are not empty. Otherwise, the first
-        # parameter, `initial`, means an initial set of values that the
-        # collections should be set to.  The other parameters will be empty
-        # in that case.
-        iscond = type(initial) is str
-        iscond = iscond or (initial is None and (_p2 or bool(args) or bool(kwargs)))
+            # If a stream or eager is found in the first or second argument,
+            # move it to args
+            args = list(args)
+            if  isinstance(initial, (stream, eager)):
+                args.append(initial)
+                initial = None
+            elif type(initial) is type and stream in initial.mro():
+                args.append(initial())
+                initial = None
+            elif _p2 is stream or isinstance(_p2, (stream, eager)):
+                args.append(_p2)
+                _p2 = None
 
-        if self.orm.stream or iscond:
-            super().__init__()
+            # Look in *args for stream class or a stream object. If found, ensure
+            # the element is an instantiated stream and set it to self._stream.
+            # Delete the stream from *args.
+            for i, e in enumerate(args):
+                if e is stream:
+                    self.orm.stream = stream()
+                    self.orm.stream.entities = self
+                    del args[i]
+                elif isinstance(e, stream):
+                    self.orm.stream = e
+                    self.orm.stream.entities = self
+                    del args[i]
+                elif isinstance(e, eager):
+                    e.join(to=self)
 
-            _p1 = '' if initial is None else initial
-            self._preparepredicate(_p1, _p2, *args, **kwargs)
-            return
+                    del args[i]
 
-        super().__init__(initial=initial)
+            # The parameters express a conditional (predicate) if the first is
+            # a str, or the args and kwargs are not empty. Otherwise, the first
+            # parameter, `initial`, means an initial set of values that the
+            # collections should be set to.  The other parameters will be empty
+            # in that case.
+            iscond = type(initial) is str
+            iscond = iscond or (initial is None and (_p2 or bool(args) or bool(kwargs)))
+
+            if self.orm.stream or iscond:
+                super().__init__()
+
+                _p1 = '' if initial is None else initial
+                self._preparepredicate(_p1, _p2, *args, **kwargs)
+                return
+
+            super().__init__(initial=initial)
+
+        finally:
+            self.orm.initing = False
 
     def clone(self, to=None):
         if not to:
@@ -1161,6 +1223,9 @@ class entities(entitiesmod.entities):
         if join.Outer == type1:
             msg = 'LEFT OUTER JOINs are not currently implemented'
             raise NotImplementedError(msg)
+
+        if self.orm.isstreaming:
+            raise invalidstream('Streaming entities cannot contain joins')
 
         # Chain self's entitiesmappings and associationsmappings
         maps = itertools.chain(self.orm.mappings.entitiesmappings, 
@@ -1241,18 +1306,19 @@ class entities(entitiesmod.entities):
             return cls.all.count
         else:
             # TODO Subscribe to executioner's on*connect events
-
             self = cls
             if self.orm.isstreaming:
                 sql = 'SELECT COUNT(*) FROM ' + self.orm.table
-                if self.orm.where.conditional:
-                    # TODO Update for joins
-                    sql += ' WHERE ' + self.orm.where.conditional
+                #if self.orm.where.predicate:
+                if self.orm.where:
+                    sql += '\nWHERE ' + str(self.orm.where.predicate)
 
                 ress = None
                 def exec(cur):
                     nonlocal ress
-                    cur.execute(sql, self.orm.where.args)
+                    args = self.orm.where.args if self.orm.where else ()
+                        
+                    cur.execute(sql, args)
                     ress = db.dbresultset(cur)
 
                 db.executioner(exec).execute()
@@ -1289,6 +1355,9 @@ class entities(entitiesmod.entities):
                         return e
                 else:
                     raise IndexError('Entity id not found: ' + key.hex)
+            elif isinstance(key, entity):
+                return self[key.id]
+
             e = super().__getitem__(key)
             if hasattr(e, '__iter__'):
                 return type(self)(initial=e)
@@ -1296,23 +1365,57 @@ class entities(entitiesmod.entities):
                 return e
     
     def __getattribute__(self, attr):
-        if attr == 'orm' or not self.orm.isstreaming:
+        if attr == 'orm':
             return object.__getattribute__(self, attr)
 
-        nonos = (
-            'getrandom',    'getrandomized',  'where',    'clear',
-            'remove',       'shift',          'pop',      'reversed',
-            'reverse',      'insert',         'push',     'has',
-            'unshift',      'append',         '__sub__',  'getcount',
-            '__setitem__',  'getindex',       'delete'
-        )
+        if self.orm.isstreaming:
+            nonos = (
+                'getrandom',    'getrandomized',  'where',    'clear',
+                'remove',       'shift',          'pop',      'reversed',
+                'reverse',      'insert',         'push',     'has',
+                'unshift',      'append',         '__sub__',  'getcount',
+                '__setitem__',  'getindex',       'delete'
+            )
 
-        if attr in nonos:
-            msg = "'%s's' attribute '%s' is not available "
-            msg += 'while streaming'
-            raise AttributeError(msg % (self.__class__.__name__, attr))
+            if attr in nonos:
+                msg = "'%s's' attribute '%s' is not available "
+                msg += 'while streaming'
+                raise AttributeError(msg % (self.__class__.__name__, attr))
 
-        return proceed()
+            # TODO This is at the end of the alternative block as well
+            return object.__getattribute__(self, attr)
+        else:
+            load = True
+
+            # Don't load if joining or attr == 'load'
+            load &= attr not in ('innerjoin', 'join', 'load')
+
+            # Don't load if attr = '__class__'. This is typically an attempt
+            # to test the instance type using isinstance().
+            load &= attr != '__class__'
+
+            # Don't load if the entities collection is __init__'ing
+            load &= not self.orm.initing
+
+            # Don't load if the entities collection is currently being loading
+            load &= not self.orm.isloading
+
+            # Don't load if self has already been loaded
+            load &= not self.orm.isloaded
+
+            # Don't load an entiity object is being removed from an entities
+            # collection
+            load &= not self.orm.isremoving
+
+
+            # Don't load unless self has joins or self has a where
+            # clause/predicate
+            load &= self.orm.joins.ispopulated or bool(self.orm.where)
+
+            if load:
+                self.load()
+
+            return object.__getattribute__(self, attr)
 
     def sort(self, key=None, reverse=None):
         key = 'id' if key is None else key
@@ -1441,14 +1544,15 @@ class entities(entitiesmod.entities):
 
         args = [x.bytes if type(x) is UUID else x for x in args]
 
-        self.orm.where = where(self, p1, args)
+        if p1:
+            self.orm.where = where(self, p1, args)
+            self.orm.parameterizepredicate(args)
+            self.orm.where.demandvalid()
 
-        self.orm.parameterizepredicate(args)
 
         # TODO Remove
         # self.orm.where.ensurequoted()
 
-        self.orm.where.demandvalid()
 
     def clear(self):
         self.orm.isloaded = False
@@ -1551,9 +1655,16 @@ class entities(entitiesmod.entities):
         super().getindex(e)
 
     def __repr__(self):
-        hdr = '%s object at %s count: %s\n' % (type(self), 
-                                               hex(id(self)), 
-                                               self.count)
+        hdr = '%s object at %s' % (type(self), hex(id(self)))
+
+        try:
+            hdr += ' count: ' + self.count
+        except:
+            # self.count can raise exceptions (e.g., on object
+            # initialization) so `try` to include it.
+            pass
+
+        hdr += '\n'
 
         tbl = table()
         r = tbl.newrow()
@@ -1562,15 +1673,26 @@ class entities(entitiesmod.entities):
         r.newfield('str')
         r.newfield('Broken Rules')
 
-        for e in self:
-            r = tbl.newrow()
-            r.newfield(hex(id(e)))
-            r.newfield(e.id.hex[:8])
-            r.newfield(str(e))
-            b = ''
-            for br in e.brokenrules:
-                b += '%s:%s ' % (br.property, br.type)
-            r.newfield(b)
+        try:
+            for e in self:
+                try:
+                    r = tbl.newrow()
+                    r.newfield(hex(id(e)))
+                    r.newfield(e.id.hex[:8])
+                    r.newfield(str(e))
+                    b = ''
+                    for br in e.brokenrules:
+                        b += '%s:%s ' % (br.property, br.type)
+                    r.newfield(b)
+                except:
+                    r = tbl.newrow()
+                    msg = "There was an exception __repr__'ing '%s'"
+                    msg %= id(e)
+                    r.newfield(msg)
+        except:
+            # If we aren't able to enumerate (perhaps the self._ls hasn't been
+            # set), just ignore.
+            pass
 
         return '%s\n%s' % (hdr, tbl)
 
@@ -2873,10 +2995,6 @@ class attr:
                     return v
 
             self.fget.__globals__['attr'] = attr
-            # FIXME If an AttributeError is raised in the fget invocation, it
-            # is ignored for some reason. Though counterintuitive, some
-            # information may be here to help explain why:
-            # https://stackoverflow.com/questions/50542177/correct-handling-of-attributeerror-in-getattr-when-using-property
             return self.fget(e)
 
     def __init__(self, *args, **kwargs):
@@ -3339,6 +3457,9 @@ class constituent(ormclasswrapper):
     pass
 
 class orm:
+    _abbrdict            =  dict()
+    _namedict            =  dict()
+
     def __init__(self):
         self.mappings             =  None
         self.isnew                =  False
@@ -3361,6 +3482,7 @@ class orm:
         self.isremoving           =  False
         self.joins                =  None
         self._abbreviation        =  str()
+        self.initing              =  False
 
     def clone(self):
         r = orm()
@@ -3493,6 +3615,7 @@ class orm:
                     # TODO Use func.enumerate and modernize the usage of `i`.
                     maps = self.mappings
                     for i, node in enumerate(nodes):
+                        node = orm.getentity(abbr=node).orm.entities.__name__
                         map = maps(node)
 
                         if not map:
@@ -3519,7 +3642,7 @@ class orm:
                                 maps = e.orm.mappings
                                 continue
 
-                            # For each of the associations' fk mappings, look
+                            # For each of the associations' FK mappings, look
                             # for the one corresponding to `node`.  Instantiate
                             # the composite, if it doesn't exist, or search
                             # each association for an existing instance of the
@@ -3530,7 +3653,7 @@ class orm:
                                     for e in es:
 
                                         # Get the entity name of node
-                                        # i.e., 'artifacts' => 'actifact'. 
+                                        # i.e., 'artifacts' => 'artifact'. 
                                         for es1 in orm.getentities():
                                             if es1.orm.table == node:
                                                 map1 = es1.orm.entity.__name__
@@ -3648,19 +3771,11 @@ class orm:
             if not isinstance(map, fieldmapping):
                 continue
             r = R.newrow()
-            # FIXME: Aliases can only be 256 chars long. This recursive
-            # algorithm chains aliase names together such that a deeply nested
-            # join may eventually exceed that limit.  A fix would be for entity
-            # classes to create unique abbreviations for themselves 
-            #
-            # assert artist.orm.abbreviation == 'ar'
-            #
-            # The abbreviations can be used in place of the table names in the
-            # aliase.  This should make virtually any sane, deeply-nested join
-            # possible.
-            r.newfields(map.fullname, 'AS', map.fullname, ',')
+            abbr = '%s.%s' % (map.orm.abbreviation, map.name)
 
-        tbl = self.table
+            r.newfields(abbr, 'AS', abbr, ',')
+
+        tbl = self.entities.orm.abbreviation
         for join in self.joins:
             e = join.entities.orm.entity
             orm = join.entities.orm
@@ -3698,10 +3813,10 @@ class orm:
 
         # Set a graph variable to denote the heirchary. This is used in the
         # recursive function below.
-        graph = self.entities.orm.table
+        graph = self.abbreviation
 
         # If self has a where predicate, add to the return variables.
-        # Subsequent where clauses found in the heirarchy of joins will be
+        # Subsequent where clauses found in the hierarchy of joins will be
         # added recursively in the recursive function below.
         wh = self.where
         if wh:
@@ -3716,9 +3831,9 @@ class orm:
             # Iterate over the joins collection
             for j in js:
 
-                # Set the graph1 variable to denote heirarchy
-                tbl = j.entities.orm.table
-                graph1 = ('%s.%s') % (graph, tbl) if graph else tbl
+                # Set the graph1 variable to denote hierarchy
+                abbr = j.entities.orm.abbreviation
+                graph1 = ('%s.%s') % (graph, abbr) if graph else abbr
                 if j.where:
                     # If a join object has a where, concatenate its stringified
                     # predicate.
@@ -3750,7 +3865,9 @@ class orm:
         # SELECT
         select = textwrap.indent(str(self.selects), ' ' * 4)
 
-        sql = 'SELECT \n%s\nFROM %s\n' % (select, self.table)
+        # FROM
+        sql = 'SELECT \n%s\nFROM %s AS `%s`\n' 
+        sql %= (select, self.table, self.abbreviation)
 
         # JOINs.
         if self.joins.count:
@@ -3977,6 +4094,26 @@ class orm:
         return orm.getsubclasses(of=association)
 
     @staticmethod
+    def getentity(name=None, abbr=None):
+        es = orm.getentitys() + orm.getassociations()
+
+        if name:
+            # Lookup entity/association class by abbreviation.
+            if not orm._namedict:
+                for e in es:
+                    orm._namedict[e.__name__] = e
+
+            return orm._namedict[name]
+            
+        elif abbr:
+            # Lookup entity/association class by abbreviation.
+            if not orm._abbrdict:
+                for e in es:
+                    orm._abbrdict[e.orm.abbreviation] = e
+
+            return orm._abbrdict[abbr]
+
+    @staticmethod
     def getentitys():
         r = []
         for e in orm.getsubclasses(of=entity):
@@ -4163,3 +4300,7 @@ class association(entity):
 
 class invalidcolumn(ValueError):
     pass
+
+class invalidstream(ValueError):
+    pass
+
