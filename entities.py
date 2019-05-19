@@ -453,15 +453,26 @@ class entities(object):
 
     def _tostr(self, fn=str, includeHeader=True):
         if includeHeader:
-            r = '{} object at {} count: {}\n' \
-                .format(type(self), hex(id(self)), self.count)
+            r = '%s object at %s' % (type(self), hex(id(self)))
+
+            try:
+                r += ' count: %s\n' % self.count
+            except:
+                # self.count can raise exceptions (e.g., on object
+                # initialization) so `try` to include it.
+                pass
             indent = ' ' * 4 
         else:
             r = ''
             indent = ''
 
-        for i, t in enumerate(self):
-            r += indent + fn(t) + '\n'
+        try:
+            for i, t in enumerate(self):
+                r += indent + fn(t) + '\n'
+        except:
+            # If we aren't able to enumerate (perhaps the self._ls hasn't been
+            # set), just ignore.
+            pass
         return r
 
     def __setitem__(self, key, item):
