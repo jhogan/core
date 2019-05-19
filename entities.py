@@ -493,7 +493,7 @@ class entities(object):
             self.onremove(self, entityremoveeventargs(e))
 
     def __getitem__(self, key):
-        if type(key) == int or type(key) == slice:
+        if isinstance(key, int) or type(key) == slice:
             return self._ls[key]
 
         try:
