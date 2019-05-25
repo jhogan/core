@@ -1611,18 +1611,10 @@ class entities(entitiesmod.entities):
             eargs = db.operationeventargs(self, 'retrieve', sql, args)
             self.onafterload(self, eargs)
 
-            for res in ress:
-                id = UUID(bytes=res.fields.first.value)
-                for e in self:
-                    if e.id == id:
-                        break
-                else:
-                    e = self.orm.entity()
-                    self += e
+            edict = dict()
 
-                e.orm.populate(res)
+            orm.populate(self, ress)
 
-                e.orm.persistencestate = (False,) * 3
         finally:
             self.orm.isloaded = True
             self.orm.isloading = False
@@ -3571,198 +3563,56 @@ class orm:
                         pred.operands[i] = '%s'
                         args.append(self.dequote(op))
 
+    
+    def populate(es, ress):
+        edict = dict()
+        skip = False
 
-    def populate(self, res):
-        ''' Given a dbresultset object, iterate over each of the fields objects
-        to populate the object's map values. If nested fields names are
-        encounted ('parent.child.id'), the graph is searched recursively until
-        the leaf object is found and its fields are populated with the field
-        value. '''
+        for res in ress:
+            for i, f in func.enumerate(res.fields):
+                alias, _, col = f.name.rpartition('.')
 
-        prevnodes = None
-        for f in res.fields:
-            # The field.name proprety is assumed to be a graph description
-            # (e.g., 'grandparent.parent.child.id'). Call the first part
-            # 'nodes' and the second part col.
-            nodes = f.name.split('.')[1:]
+                if not skip or col == 'id':
+                    if col == 'id':
+                        id = f.value
+                        skip = id in edict
+                        if skip:
+                            continue
 
-            if len(nodes) == 0:
-                # If there are no node elements after the name split above, the
-                # caller's dbresultset is using non-fully-qualified aliases
-                # (i.e., SELECT * FROM tbl). Therefore, the field name is the
-                # column name.
-                col = f.name
-            else:
-                col = nodes.pop()
+                        _, _, abbr = alias.rpartition('.')
+                        eclass = orm.getentity(abbr=abbr)
+                        e = eclass()
+                        edict[id] = e
 
-            # If there are no nodes, we must be at the root, so set 'map' and it
-            # will be assigned after conditional.
-            if len(nodes) == 0:
-                map = self.mappings[col]
-            else:
-
-                # If graph has changed
-                if nodes != prevnodes:
-
-                    # Only need to do this once for each graph
-                    if col != 'id':
-                        continue
-
-                    # Go through each node in nodes. The goal is to drill down
-                    # the graph until we find the leaf object. Then instantiate
-                    # the leaf object and assign it to the correct entities
-                    # collection object.
-                    # TODO Use func.enumerate and modernize the usage of `i`.
-                    maps = self.mappings
-                    for i, node in enumerate(nodes):
-                        node = orm.getentity(abbr=node).orm.entities.__name__
-                        map = maps(node)
-
-                        if not map:
-                            # If a map wasn't found, the previous node must
-                            # have been an association (i.e.,
-                            # artist_artifacts).  `node' would be pluralized
-                            # ('artifacts') though the association's mappings
-                            # collection would have an entry for the composite
-                            # (i.e., artifact) whose name would be singular.
-
-                            # Make sure `es` is an associations
-                            if not isinstance(es, associations):
-                                raise ValueError('Not an association')
-
-                            # Find the FK in the association's mappings that
-                            # corresponds to `node`. When found, instantiate
-                            # the FK's entity class and assign it to `e`.
-
-                            # If e is the name of the node, then we don't need
-                            # to instantiate it again. Set its mappings
-                            # property to `maps` and continue to the next
-                            # iteration.
-                            if node == e.orm.entities.__name__:
-                                maps = e.orm.mappings
-                                continue
-
-                            # For each of the associations' FK mappings, look
-                            # for the one corresponding to `node`.  Instantiate
-                            # the composite, if it doesn't exist, or search
-                            # each association for an existing instance of the
-                            # composite.
-                            new = False
-                            for map in maps.foreignkeymappings:
-                                if map.entity.orm.entities.__name__ == node:
-                                    for e in es:
-
-                                        # Get the entity name of node
-                                        # i.e., 'artifacts' => 'artifact'. 
-                                        for es1 in orm.getentities():
-                                            if es1.orm.table == node:
-                                                map1 = es1.orm.entity.__name__
-                                                break
-                                        else:
-                                            msg = "Can't resolve node to entity"
-                                            raise ValueError(msg)
-                                        
-                                        # Get composite from association
-                                        v = e.orm.mappings(map1)._value
-                                        if v and v.id == UUID(bytes=f.value):
-                                            e = v
-                                            maps = e.orm.mappings
-                                            break
-                                    else:
-                                        new = True
-                                        e = map.entity()
-                                        e.orm.persistencestate = (False,) * 3
-
-                                    break
-                            else:
-                                raise IndexError('Foreign key not found')
-
-                            if not new:
-                                continue
-
-                            # Find the composite entity mapping in the
-                            # assocation's mappings collection. When found, set
-                            # the newly instanciated composite `e` to its
-                            # `value` property. This way the association
-                            # will have a reference to the composite.
-                            for map in maps.entitymappings:
-                                if map.entity.orm.entities.__name__ == node:
-                                    map.value = e
-                                    maps = e.orm.mappings
-                                    break
-                            else:
-                                raise IndexError()
-
-                            # Assign the association to the composite for a
-                            # recursive reference. I.e.,
-                            #     aas = artist.artist_artifacts.last
-                            #     fact = aas.artifact
-                            #     fact.artist_artifacts = aas
-                            # TODO I'm not sure this is necessary. `fact`
-                            # should have a reference to the association
-                            # object, not the associations object. There
-                            # appears to be no test for this in test.py anyway.
-                            # I happen to notice that the `artifact`'s mappings
-                            # collection had a map called 'artist_artifacts' so
-                            # I went ahead and wrote the below code to make the
-                            # assignment.
-                            for map in maps.associationsmappings:
-                                if map.associations is type(es):
-                                    map.value = es
-                                    break
-                            else:
-                                raise IndexError()
-
-                            break
-
-                        # Get the entities/associations collection. Create it
-                        # if it doesn't yet exist.
-
-                        # NOTE Instead of calling map.value here we have to
-                        # call map._value. This is because a call to
-                        # associationsmapping.value tries to load the
-                        # association from the database (entitiesmapping.value
-                        # currently is equivilant to map._value). This is a
-                        # strange disparity probably arising from the needs of
-                        # entity.__getattr__().
-                        if map._value:
-                            es = map.value
-                        else:
-                            if type(map) is entitiesmapping:
-                                es = map.entities()
-                                map.value = es
-                            elif type(map) is associationsmapping:
-                                es = map.associations()
-                                map.value = es
-
-                        # If last node
-                        if i + 1 == len(nodes):
-                            e = es(UUID(bytes=f.value))
-                            if not e:
-                                if type(map) is entitiesmapping:
-                                    e = map.entities.orm.entity()
-                                elif type(map) is associationsmapping:
-                                    e = map.associations.orm.entity()
-                                else:
-                                    msg = 'Invalid map type'
-                                    raise ValueError(msg)
-
-                                e.orm.persistencestate = (False,) * 3
-                                es += e
+                        if i.first:
+                            es += e
 
                         maps = e.orm.mappings
-                            
-                # Now that we have the correct maps collection, we can get the
-                # map by indexing it off the column name.
-                map = maps[col]
 
-            # Assign the field value (from the db), to the map. 
-            map.value = f.value
-            prevnodes = nodes
+                        for map in maps.entitiesmappings:
+                            map._value = map.entities()
 
-        self.isnew = False
-        self.isdirty = False
-    
+                        e.orm.persistencestate = (False,) * 3
+
+                if skip:
+                    continue
+
+                maps[col]._value = f.value
+
+        orm.link(edict)
+
+    @staticmethod
+    def link(edict):
+        for k, e in edict.items():
+            for map in e.orm.mappings.foreignkeymappings:
+                if not map.value:
+                    continue
+                comp = edict[map.value.bytes]
+
+                for map1 in comp.orm.mappings.entitiesmappings:
+                    if isinstance(e, map1.entities.orm.entity):
+                        map1._value += e
+
     # TODO Is depth being used
     def getselects(self, depth=0, rentjoin=None):
         R = table(border=None)

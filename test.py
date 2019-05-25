@@ -5368,14 +5368,12 @@ class test_orm(tester):
         art.save()
 
     def temp(self):
-        art = artist.getvalid()
-        art.artist_artifacts += artist_artifact.getvalid()
-        art.artist_artifacts.last.artifact = artifact.getvalid()
-        art.save()
+        arts = self._create_join_test_data()
+        arts1 = artists(firstname = 'fn-0') & presentations()
 
-        art = artists() & artifacts()
-        print(art.count)
-        
+        B()
+        print(arts1)
+
     def it_raises_exception_whene_non_existing_column_is_referenced(self):
         self.expect(orm.invalidcolumn, lambda: artists(notacolumn = 1234))
 
