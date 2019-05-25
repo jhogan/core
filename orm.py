@@ -1828,7 +1828,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
     def __getitem__(self, args):
         if type(args) is str:
             try:
-                return getattr(lself, args)
+                return getattr(self, args)
             except AttributeError as ex:
                 raise IndexError(str(ex))
 

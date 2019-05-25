@@ -5724,13 +5724,14 @@ class test_orm(tester):
             arts += artist.getvalid()
             arts.last.artist_artifacts += artist_artifact.getvalid()
             arts.last.artist_artifacts.last.artifact = artifact.getvalid()
+            arts.last.locations += location.getvalid()
 
             arts.last.presentations += presentation.getvalid()
-
-            arts.last.locations += location.getvalid()
+            arts.last.presentations.last.locations  += location.getvalid()
+            arts.last.presentations.last.components += component.getvalid()
         arts.save()
 
-        # Eager load one constituent
+        # Eager-load one constituent
         arts1 = artists(orm.eager('presentations'))
         self.one(arts1.orm.joins)
         self.type(presentations, arts1.orm.joins.first.entities)
@@ -5745,7 +5746,27 @@ class test_orm(tester):
                 pres1 = art1.presentations(pres.id)
                 self.notnone(pres1)
 
-        # Eager load two constituents
+        # Eager-load two constituents
+        arts1 = artists(orm.eager('presentations', 'locations'))
+        self.two(arts1.orm.joins)
+        self.type(presentations, arts1.orm.joins.first.entities)
+        self.type(locations, arts1.orm.joins.second.entities)
+
+        self.le(arts.count, arts1.count)
+
+        for art in arts:
+            art1 = arts1(art.id)
+            self.notnone(art1)
+
+            for pres in art.presentations:
+                pres1 = art1.presentations(pres.id)
+                self.notnone(pres1)
+
+            for loc in art.locations:
+                loc1 = art1.locations(loc.id)
+                self.notnone(loc1)
+
+        # Eager-load two constituents
         arts1 = artists(orm.eager('presentations', 'locations'))
         self.two(arts1.orm.joins)
         self.type(presentations, arts1.orm.joins.first.entities)
@@ -5765,6 +5786,32 @@ class test_orm(tester):
                 loc1 = art1.locations(loc.id)
                 self.notnone(loc1)
             
+        # Eager-load two constituents
+        arts1 = artists(orm.eager('presentations.locations', 'presentations.components'))
+        self.one(arts1.orm.joins)
+        self.two(arts1.orm.joins.first.entities.orm.joins)
+        presjoins = arts1.orm.joins.first.entities.orm.joins
+        self.type(locations, presjoins.first.entities)
+        self.type(components, presjoins.second.entities)
+
+        self.le(arts.count, arts1.count)
+
+        for art in arts:
+            art1 = arts1(art.id)
+            self.notnone(art1)
+
+            for pres in art.presentations:
+                pres1 = art1.presentations(pres.id)
+                self.notnone(pres1)
+
+                for loc in pres.locations:
+                    loc1 = pres1.locations(loc.id)
+                    self.notnone(loc1)
+
+                for comp in pres.components:
+                    comp1 = pres1.components(comp.id)
+                    self.notnone(comp1)
+
     def it_creates_iter_from_predicate(self):
         ''' Test the predicates __iter__() '''
 
