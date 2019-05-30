@@ -43,6 +43,9 @@ import re
 import sys
 import textwrap
 
+# TODO Add hard and softdelete logic
+# TODO Add reflective (self joined) relationships
+
 # Set conditional break points
 def B(x=True):
     if type(x) is str:
@@ -798,7 +801,7 @@ class predicate(entitiesmod.entity):
             rhsintro = rhsintro + ' ' if rhsintro else ''
 
             if self.operator in ('IN', 'NOT IN'):
-                # TODO add introducers to in arguments
+                # TODO add introducers to IN arguments
                 r += '%s %s (%s)' % (ops[0],
                                      self.operator,
                                      ', '.join(ops[1:]))
@@ -1224,6 +1227,7 @@ class entities(entitiesmod.entities):
             msg = 'LEFT OUTER JOINs are not currently implemented'
             raise NotImplementedError(msg)
 
+        # Streaming entities can't contain joins
         if self.orm.isstreaming:
             raise invalidstream('Streaming entities cannot contain joins')
 
@@ -1577,6 +1581,7 @@ class entities(entitiesmod.entities):
             self.orm.isremoving = False
 
 
+    # TODO Move this to orm
     def load(self, orderby=None, limit=None, offset=None):
         if self.orm.isloaded:
             return
@@ -1613,7 +1618,7 @@ class entities(entitiesmod.entities):
 
             edict = dict()
 
-            orm.populate(self, ress)
+            self.orm.populate(ress)
 
         finally:
             self.orm.isloaded = True
@@ -3386,7 +3391,7 @@ class primarykeyfieldmapping(fieldmapping):
         # If a super instance exists, use that because we want a subclass and
         # its super class to share the same id. Here we use ._super instead of
         # .super because we don't want the invoke the super accessor because it
-        # calls the id accessor (which calls this accessor). This leads to
+        # calls the id accessor (which calls this accessor) - leading to
         # infinite recursion. This, of course, assumes that the .super accessor
         # has previously been called.
 
@@ -3564,15 +3569,26 @@ class orm:
                         args.append(self.dequote(op))
 
     
-    def populate(es, ress):
+    def populate(self, ress):
         edict = dict()
         skip = False
+
+        es = self.instance
+        if type(ress) is db.dbresult:
+            ress = [ress]
+            simple = True
+            maps = self.mappings
+        elif type(ress) is db.dbresultset:
+            simple = False
+        else:
+            raise ValueError('Invalid type of `ress`')
+
 
         for res in ress:
             for i, f in func.enumerate(res.fields):
                 alias, _, col = f.name.rpartition('.')
 
-                if not skip or col == 'id':
+                if not simple and (not skip or col == 'id'):
                     if col == 'id':
                         id = f.value
                         skip = id in edict
@@ -3589,7 +3605,12 @@ class orm:
 
                         maps = e.orm.mappings
 
-                        for map in maps.entitiesmappings:
+                        # TODO We probably should use itertools.chain since
+                        # these properties are generators
+                        maps1 = list(maps.entitiesmappings) + \
+                                list(maps.associationsmappings)
+
+                        for map in maps1:
                             map._value = map.entities()
 
                         e.orm.persistencestate = (False,) * 3
@@ -3607,11 +3628,30 @@ class orm:
             for map in e.orm.mappings.foreignkeymappings:
                 if not map.value:
                     continue
-                comp = edict[map.value.bytes]
 
-                for map1 in comp.orm.mappings.entitiesmappings:
+                try:
+                    comp = edict[map.value.bytes]
+                except KeyError:
+                    # Composite for the FK can't be found. The object for the
+                    # FK isn't in edict, perhaps because the FK corresponds to
+                    # a composite on one side of an associations that wasn't
+                    # loaded, e.g., given `artists().join(artist_artifacts())`,
+                    # artist_artifacts will have an FK for an artist and an
+                    # artifact, but only artist will have been loaded.
+                    continue
+                    
+                maps = list(comp.orm.mappings.entitiesmappings) + \
+                       list(comp.orm.mappings.associationsmappings)
+
+                for map1 in maps:
                     if isinstance(e, map1.entities.orm.entity):
                         map1._value += e
+
+                for map1 in e.orm.mappings.entitymappings:
+                    if map1.entity is type(comp):
+                        map1._value = comp
+
+
 
     # TODO Is depth being used
     def getselects(self, depth=0, rentjoin=None):
@@ -3879,12 +3919,12 @@ class orm:
     @property
     def super(self):
         """ For orms that have no instance, return the super class of
-        orm.entity.  If orm.instance is not None, return an instance of that
-        objects super class.  A super class here means the base class of of an
-        entity class where the base itself is not entity, but rather a subclass
-        of entity. So if class A inherits directly from entity, it will have a
-        super of None. However if class B inherits from A. class B will have a
-        super of A."""
+        `orm.entity`.  If orm.instance is not None, return an instance of that
+        object's super class.  A super class here means the base class of an
+        entity class where the base itself is not `entity`, but rather a
+        subclass of `entity`. So if class A inherits directly from entity, it
+        will have a super of None. However if class B inherits from A. class B
+        will have a super of A."""
         if self._super:
             return self._super
 
@@ -3919,7 +3959,6 @@ class orm:
                         self._super = base(e.id)
 
                 return self._super
-
         return None
 
     @property
@@ -4052,9 +4091,10 @@ class associations(entities):
     def append(self, obj, uniq=False, r=None):
         if isinstance(obj, association):
             for map in obj.orm.mappings.entitymappings:
-                # TODO We probably should be using the association's (self) mappings
-                # collection to test the composites names. The name that matters is
-                # on the LHS of the map when being defined in the association class.
+                # TODO We probably should be using the association's (self)
+                # mappings collection to test the composites names. The name
+                # that matters is on the LHS of the map when being defined in
+                # the association class.
                 if map.name == type(self.composite).__name__:
                     setattr(obj, map.name, self.composite)
                     break;

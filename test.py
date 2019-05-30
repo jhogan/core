@@ -5019,10 +5019,10 @@ class test_orm(tester):
 
         self.four(arts1)
 
-        self.chronicles.clear()
-
         arts1.sort()
         
+        self.chronicles.clear()
+
         for art, art1 in zip(arts, arts1):
             self.eq(art.id, art1.id)
 
@@ -5038,21 +5038,18 @@ class test_orm(tester):
 
                 self.eq(fff, aa1.orm.persistencestate)
 
+                aa1.artifact
+
                 self.eq(aa.artifact.id, aa1.artifact.id)
+                
                 self.is_(aa1.artifact, self.chronicles.last.entity)
                 self.eq('retrieve', self.chronicles.last.op)
 
                 self.eq(aa1.artist.id, art1.id)
-                self.eq('retrieve', self.chronicles.last.op)
-                self.is_(aa1.artist, self.chronicles.last.entity)
 
 
-        # NOTE The above will lazy-load aa1.artifact 16 times and aa.artist 16 times
-
-        # TODO art1 should be object-identical to aa.artist and a reference to
-        # aa.artist should not result in a database hit because it should be
-        # eagerly assigned (probably in orm.populate())
-        self.count(32, self.chronicles)
+        # NOTE The above will lazy-load aa1.artifact 16 times
+        self.count(16, self.chronicles)
 
         # Test artists joined with artist_artifacts where the association has a
         # conditional
@@ -5129,6 +5126,7 @@ class test_orm(tester):
                     self.eq(aa.artifact.id, aa1.artifact.id)
 
             self.zero(self.chronicles)
+
 
         # Test joining the associated entities collecties (artist_artifacts)
         # with its composite (artifacts) where the composite's join is
