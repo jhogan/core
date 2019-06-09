@@ -277,10 +277,10 @@ class joins(entitiesmod.entities):
         # For each join object in this entities collection
         for join in self:
 
-            # Concatenate the table names to the `joineegraph` and
-            # `joineegraph`. This denotes the hierarchy of the table within the
-            # graph. These variables are used as table alias. The accumulate
-            # in size with each recursion.
+            # Concatenate the table's abbreviation/alias to the `joineegraph`
+            # and `joineegraph`. This denotes the hierarchy of the table within
+            # the graph. These variables are used as table alias. They
+            # accumulate in length with each recursion.
             if joinerroot is None:
                 joinergraph = self.abbreviation
             else:
@@ -303,7 +303,7 @@ class joins(entitiesmod.entities):
             # Now we can concatenate `r` with the table and its alias 
             r += ' %s AS `%s`' % (jointbl, joineegraph)
 
-            # The joiner's primary key will usually be 'id', but lets use the
+            # The joiner's primary key will usually be "id", but let's use the
             # entities' mappings collection to get the actual name.
             joinerpk = self.entities.orm.mappings.primarykeymapping.name
 
@@ -571,7 +571,8 @@ class predicates(entitiesmod.entities):
 class predicate(entitiesmod.entity):
     Isalphanum_ = re.compile(r'^[A-Za-z0-9_]+$')
     Specialops = '=', '==', '<', '<=', '>', '>=', '<>'
-    Wordops = 'LIKE', 'NOT', 'NOT LIKE', 'IS', 'IS NOT', 'IN', 'NOT IN', 'BETWEEN', 'NOT BETWEEN'
+    Wordops = 'LIKE', 'NOT', 'NOT LIKE', 'IS', 'IS NOT', 'IN', 'NOT IN', \
+              'BETWEEN', 'NOT BETWEEN'
     Constants = 'TRUE', 'FALSE', 'NULL'
     Ops = Specialops + Wordops
     Introducers = '_binary',
@@ -587,8 +588,17 @@ class predicate(entitiesmod.entity):
         self.lhsintroducer  =  ''
         self.rhsintroducer  =  ''
 
-        if isinstance(expr, shlex):
-            lex = expr
+        if expr:
+            if isinstance(expr, shlex):
+                lex = expr
+            elif expr is not None:
+                # NOTE If developing with a Python version that is < 3.6, copy
+                # shlex.py into main directory to get the punctuation_chars
+                # parameter to work.
+                # FIXME '=' is present twice in `punctuation_chars`.
+                lex = shlex(expr, posix=False, punctuation_chars='!=<=>')
+
+            self._parse(lex)
         else:
             # NOTE If developing with a Python version that is < 3.6, copy
             # shlex.py into main directory to get the punctuation_chars
@@ -616,6 +626,7 @@ class predicate(entitiesmod.entity):
     @junction.setter
     def junction(self, v):
         self._junction = v
+
 
     @property
     def junctionop(self):
@@ -1018,7 +1029,6 @@ class predicate(entitiesmod.entity):
             if self.junction:
                 r += self.junction.__str__(columnprefix)
 
-                
             return r
 
     class SyntaxError(ValueError):
@@ -1313,7 +1323,6 @@ class entities(entitiesmod.entities):
             self = cls
             if self.orm.isstreaming:
                 sql = 'SELECT COUNT(*) FROM ' + self.orm.table
-                #if self.orm.where.predicate:
                 if self.orm.where:
                     sql += '\nWHERE ' + str(self.orm.where.predicate)
 
@@ -1550,13 +1559,11 @@ class entities(entitiesmod.entities):
 
         if p1:
             self.orm.where = where(self, p1, args)
-            self.orm.parameterizepredicate(args)
             self.orm.where.demandvalid()
-
+            self.orm.parameterizepredicate(args)
 
         # TODO Remove
         # self.orm.where.ensurequoted()
-
 
     def clear(self):
         self.orm.isloaded = False
@@ -3390,11 +3397,10 @@ class primarykeyfieldmapping(fieldmapping):
     def value(self):
         # If a super instance exists, use that because we want a subclass and
         # its super class to share the same id. Here we use ._super instead of
-        # .super because we don't want the invoke the super accessor because it
+        # .super because we don't want to invoke the super accessor because it
         # calls the id accessor (which calls this accessor) - leading to
         # infinite recursion. This, of course, assumes that the .super accessor
         # has previously been called.
-
         super = self.orm._super
         if super:
             return super.id
@@ -3567,7 +3573,6 @@ class orm:
                     if predicate.isliteral(op):
                         pred.operands[i] = '%s'
                         args.append(self.dequote(op))
-
     
     def populate(self, ress):
         edict = dict()

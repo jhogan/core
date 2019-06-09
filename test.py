@@ -5403,11 +5403,11 @@ class test_orm(tester):
         arts1.save()
 
         art2 = None
-        def instanciate():
+        def instantiate():
             nonlocal art2
             art2 = artist(art1.id)
 
-        self.expect(None, instanciate)
+        self.expect(None, instantiate)
 
         self.eq(art1.id, art2.id)
 
@@ -5446,6 +5446,8 @@ class test_orm(tester):
         self.eq(newval, art4.artifacts.first.title)
         self.eq(newval, art4.artifacts.first.components.first.name)
 
+    # TODO Allow the .join, .innerjoin, et. al. to accept an entities class in
+    # addition to of an entitiues object
     def it_calls_innerjoin_on_entities(self):
         fff = False, False, False
 
