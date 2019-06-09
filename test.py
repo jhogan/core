@@ -1656,6 +1656,7 @@ class test_orm(tester):
             sng = singer.getvalid()
             sngs += sng
             sng.voice = uuid4().hex
+            sng.firstname = uuid4().hex
 
             if i >= 2:
                 sng.register = uuid
@@ -1681,15 +1682,15 @@ class test_orm(tester):
         self.zero(self.chronicles) # defered
 
         self.one(sngs1)
-        self.two(self.chronicles)
-        self._chrons(sngs1, 'retrieve')
-        self._chrons(sngs1.first.orm.super, 'retrieve')
-
         self.eq(sngs.first.id, sngs1.first.id)
 
-        return
-        # TODO: Add support for querying on super attributes.
+        self.one(self.chronicles)
+        self._chrons(sngs1, 'retrieve')
+
+        # Add support for querying on attributes of superentity.
         sngs1 = singers("firstname = '%s'" % sngs.first.firstname, ())
+        B()
+        print(*sngs1.orm.sql)
         self.zero(self.chronicles) # defered
 
         self.one(sngs1)

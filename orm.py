@@ -307,15 +307,25 @@ class joins(entitiesmod.entities):
             # entities' mappings collection to get the actual name.
             joinerpk = self.entities.orm.mappings.primarykeymapping.name
 
-
-            # Get the joineepk for the joinee table.
-            for map in join.entities.orm.mappings.foreignkeymappings:
-                if self.entities.orm.entity is map.entity:
-                    # TODO Rename this to joineepk
-                    joinpk = map.name
-                    break
+            if join.entities.orm.issuperentity(of=self.entities):
+                # If `join`'s entities collection is a superentity to
+                # self.entities, then the joinpx will be the PK of
+                # join.enitites - which will almost always be 'id'. This is
+                # because the relationship between super and subentities is
+                # one-to-one so joinerpk and joinpk will both always be 'id'
+                joinpk = join.entities.orm.mappings.primarykeymapping.name
             else:
-                raise_fk_not_found()
+                # Get the joineepk for the joinee table. As opposed to the
+                # consequent block above, this block represents the typical
+                # one-to-many relationship for which we will need the foreign
+                # key of the joinee table.
+                for map in join.entities.orm.mappings.foreignkeymappings:
+                    if self.entities.orm.entity is map.entity:
+                        # TODO Rename this to joineepk
+                        joinpk = map.name
+                        break
+                else:
+                    raise_fk_not_found()
 
             r += '\n    ON `%s`.%s = `%s`.%s'
             r %= (joinergraph, joinerpk, joineegraph, joinpk)
@@ -447,6 +457,13 @@ class where(entitiesmod.entity):
                 msg = 'Field "%s" does not exist in entity "%s": "%s"'
                 msg %= (col, e, str(pred))
                 raise invalidcolumn(msg)
+
+
+
+        # TODO REMOVE ME
+        return
+
+
 
         for pred in self.predicate:
             if pred.match:
@@ -600,12 +617,22 @@ class predicate(entitiesmod.entity):
 
             self._parse(lex)
         else:
-            # NOTE If developing with a Python version that is < 3.6, copy
-            # shlex.py into main directory to get the punctuation_chars
-            # parameter to work.
-            lex = shlex(expr, posix=False, punctuation_chars='!=<=>')
+            # When cloning, we want to pass in a None expr
+            pass
 
-        self._parse(lex)
+    def clone(self):
+        pred = predicate(None, self.junctionop)
+        pred.operands = self.operands.copy()
+        pred.operator = self.operator
+        self.startparen     =  self.startparen
+        self.endparen       =  self.endparen
+        self.lhsintroducer  =  self.lhsintroducer
+        self.rhsintroducer  =  self.rhsintroducer
+
+        if self.match:
+            pred.match = self.match.clone()
+
+        return pred
 
     def __iter__(self):
         yield self
@@ -898,6 +925,13 @@ class predicate(entitiesmod.entity):
             self._mode           =  str()
             self.junction        =  None
             self._parse(lex)
+
+        def clone(self):
+            m = Match(None)
+            m.columns = self.columns.copy()
+            m.searchstring = self.searchstring
+            m.mode = self.mode
+            m.junction = self.junction
 
         def _parse(self, lex):
             tok = lex.get_token()
@@ -1204,7 +1238,9 @@ class entities(entitiesmod.entities):
 
                 _p1 = '' if initial is None else initial
                 self._preparepredicate(_p1, _p2, *args, **kwargs)
+                self.orm.joinsupers()
                 return
+
 
             super().__init__(initial=initial)
 
@@ -3395,6 +3431,20 @@ class primarykeyfieldmapping(fieldmapping):
 
     @property
     def value(self):
+
+        # NOTE This code was changed to privilege the value of self._value over
+        # self.orm._super.id. This was done because when adding
+        # entities.joinsupers() to complete the needs of
+        # test_orm.it_searches_entities when searching on properties of
+        # singer's super entities (e.g., artist). I'm not sure why self._value
+        # wasn't privileged in the first place so I sort of expect the below
+        # logic to be an issue.
+        if self._value is not undef:
+            if type(self._value) is bytes:
+                self._value = UUID(bytes=self._value)
+
+        return self._value
+
         # If a super instance exists, use that because we want a subclass and
         # its super class to share the same id. Here we use ._super instead of
         # .super because we don't want to invoke the super accessor because it
@@ -3405,10 +3455,7 @@ class primarykeyfieldmapping(fieldmapping):
         if super:
             return super.id
 
-        if type(self._value) is bytes:
-            self._value = UUID(bytes=self._value)
-            
-        return self._value
+        return None
 
     @value.setter
     def value(self, v):
@@ -3501,6 +3548,26 @@ class orm:
         r.mappings = self.mappings.clone(r)
 
         return r
+
+    def joinsupers(self):
+        for pred in self.where.predicate:
+
+            # FIXME If multiple columns are supported, fix below
+            col = pred.columns[0]
+
+            e = self.entity
+
+            while True:
+                map = e.orm.mappings(col) 
+                if map:
+                    if e is not self.entity:
+                        # TODO We should be able to join a class instead of of
+                        # an instantiated object. See TODO at
+                        # test_orm.it_calls_innerjoin_on_entities.
+                        self.instance.join(e.orm.entities())
+                    break
+                else:
+                    e = e.orm.super
 
     @property
     def abbreviation(self):
@@ -3892,6 +3959,9 @@ class orm:
 
         return props
 
+    def issuperentity(self, of):
+        return self.entity in of.orm.entity.orm.supers
+
     @staticmethod
     def getsubclasses(of):
         r = []
@@ -3920,6 +3990,19 @@ class orm:
 
         return False
         
+
+    @property
+    def supers(self):
+        ''' Returns a list of classes of which self is a subentity. '''
+
+        r = list()
+        e = self.super
+
+        while e:
+            r.append(e)
+            e = e.orm.super
+
+        return r
 
     @property
     def super(self):
