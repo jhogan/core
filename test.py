@@ -1933,6 +1933,72 @@ class test_entities(tester):
                     elif type(k.name) == list:
                         self.assertEq(k.name, [i, j])
 
+    def it_calls_pluck(self):
+        ks = knights()
+        ks += knight(' Sir Lancelot ')
+        ks.last.trait = 'UPPER UPPER'
+
+        ks += knight(' sir authur ')
+        ks.last.trait = 'lower UPPER'
+
+        ks += knight(' Sir galahad ')
+        ks.last.trait = 'lower lower'
+
+        ks += knight(' sir Bedevere ')
+        ks.last.trait = 'Cap Cap'
+
+        self.eq([k.name for k in ks], ks.pluck('name'))
+
+        ls = list()
+        for k in ks:
+            ls.append( [k.name, k.trait] )
+
+        # Test multi *args
+        self.eq(
+            [[x.name, x.trait] for x in ks], 
+            ks.pluck('name', 'trait')
+        )
+            
+        # Test standandard replacement field
+        self.eq(
+            [x.name for x in ks], 
+            ks.pluck('{name}')
+        )
+
+        # Test multiple replacement fields
+        self.eq(
+            [x.name + '-'  + x.trait for x in ks], 
+            ks.pluck('{name}-{trait}')
+        )
+
+        # Test custom conversion flags 
+        # Uppercase and lowercase
+        self.eq(
+            [x.name.upper() + '-'  + x.trait.lower() for x in ks], 
+            ks.pluck('{name!u}-{trait!l}')
+        )
+
+        # Test custom conversion flags 
+        # Capitalize and title case
+        self.eq(
+            [x.name.capitalize() + '-'  + x.trait.title() for x in ks], 
+            ks.pluck('{name!c}-{trait!t}')
+        )
+
+        # Test custom conversion flags 
+        # Strip and reverse
+        self.eq(
+            [x.name.strip() + '-'  + x.trait[::-1] for x in ks], 
+            ks.pluck('{name!s}-{trait!r}')
+        )
+
+        # Test custom conversion flag: first n-characters of
+        for i in range(10):
+            self.eq(
+                [x.name[:i] + '-'  + x.trait for x in ks], 
+                ks.pluck('{name!' + str(i) + '}-{trait}')
+            )
+
 
 class test_entity(tester):
     def it_calls__add__(self):

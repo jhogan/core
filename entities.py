@@ -31,6 +31,7 @@ import builtins
 from pprint import pprint
 from functools import total_ordering, reduce
 import decimal
+import string
 
 def rgetattr(obj, attr, *args):
     def rgetattr(obj, attr):
@@ -166,12 +167,51 @@ class entities(object):
         start = cnt - number
         return type(self)(initial=self[start:cnt])
 
-    def pluck(self, prop):
-        # TODO: Write test
+    def pluck(self, *ss):
+        class formatter(string.Formatter):
+            def convert_field(self, v, conv):
+                if conv:
+                    if conv == "u":
+                        return str(v).upper()
+                    elif conv == "l":
+                        return str(v).lower()
+                    elif conv == "c":
+                        return str(v).capitalize()
+                    elif conv == "t":
+                        return str(v).title()
+                    elif conv == "s":
+                        return str(v).strip()
+                    elif conv == "r":
+                        return str(v)[::-1]
+                    elif conv.isdigit():
+                        return str(v)[:int(conv)]
 
-        ls = []
+                return super().convert_field(v, conv)
+
+        ls = list()
+
+        if len(ss) == 1:
+            s = ss[0]
+        elif hasattr(ss, '__iter__'):
+            for s in ss:
+                ls.append(self.pluck(s))
+                
+            return [list(e) for e in zip(*ls)]
+        else:
+            raise ValueError()
+
         for e in self:
-            ls.append(getattr(e, prop))
+            if '{' in s:
+                args = dict()
+                for prop in dir(e):
+                    args[prop] = str(getattr(e, prop))
+
+
+                fmt = formatter()
+                ls.append(formatter().format(s, **args))
+                #ls.append(s.format(**args))
+            else:
+                ls.append(getattr(e, s))
 
         return ls
 
