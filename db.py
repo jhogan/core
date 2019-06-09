@@ -413,6 +413,24 @@ class dbresultset(entities):
             raise recordnotfounderror('A single record was not found')
         return self.first
 
+    def __repr__(self):
+        tbl = table()
+
+        for i, res in func.enumerate(self):
+            if i.first:
+                hdr = tbl.newrow()
+                for f in res.fields:
+                    hdr.newfield(f.name)
+
+            r = tbl.newrow()
+            for f in res.fields:
+                r.newfield(f.value)
+
+        return str(tbl)
+
+    def __str__(self):
+        return repr(self)
+
 class dbresult(entity):
     """ Represents a row returned from a db query. """
     def __init__(self, row, ress):
