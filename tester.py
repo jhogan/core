@@ -500,3 +500,55 @@ class failure(entity):
                     r += "\n - " + str(br)
         return r
         
+class cli:
+    def __init__(self):
+        # If we are instantiating, convert the @classmethod cli.run to the
+        # instance method cli._run. This makes it possible to call the run()
+        # method either as cli.run() or cli().run(). This also works with
+        # subclasses of cli. This makes it convenient for unit test developers
+        # who may or may not want to customize or override the default
+        # implementation.
+        #
+        # See M. I. Wright's comment at:
+        # https://stackoverflow.com/questions/28237955/same-name-for-classmethod-and-instancemethod
+        self.run = self._run
+        
+        self.testers = testers()
+
+        self.parseargs()
+
+        self.registertraceevents()
+
+    @classmethod
+    def run(cls):
+        cls().run()
+
+    def _run(self):
+        ts = self.testers
+
+        # Run tests
+        ts.run(self.args.testunit)
+
+        # Show results
+        print(ts)
+
+        # Return exit code (0=success, 1=fail)
+        sys.exit(int(not ts.ok))
+
+    def parseargs(self):
+        # Parse args
+        ts = self.testers
+        p = argparse.ArgumentParser()
+        p.add_argument('testunit',  help='The test class or method to run',  nargs='?')
+        p.add_argument('-b', '--break-on-exception', action='store_true', dest='breakonexception')
+        self.args = p.parse_args()
+
+        self.testers.breakonexception = self.args.breakonexception
+
+    def registertraceevents(self):
+        ts = self.testers
+        ts.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)
+        ts.oninvoketest += lambda src, eargs: print(eargs.method[0], flush=True)
+
+
+

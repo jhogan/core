@@ -29,7 +29,6 @@ from auth import jwt
 import jwt as pyjwt
 from configfile import configfile
 from uuid import uuid4
-import argparse
 import datetime
 import primative
 import dateutil
@@ -3061,29 +3060,9 @@ class test_datetime(tester):
         expect = dt.astimezone('US/Arizona')
         self.eq(expect, actual)
 
-def main():
-    # Parse args
-    p = argparse.ArgumentParser()
-    p.add_argument('testunit',  help='The test class or method to run',  nargs='?')
-    p.add_argument('-b', '--break-on-exception', action='store_true', dest='breakonexception')
-    args = p.parse_args()
-
-    # Create testers object
-    t = testers()
-    t.breakonexception = args.breakonexception
-
-    # Register trace events
-    t.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)
-    t.oninvoketest += lambda src, eargs: print(eargs.method[0], flush=True)
-
-    # Run
-    t.run(args.testunit)
-
-    # Show results
-    print(t)
-
-    # Return exit code (0=success, 1=fail)
-    sys.exit(int(not t.ok))
-
-main()
-
+class mycli(cli):
+    def registertraceevents(self):
+        ts = self.testers
+        ts.oninvoketest += lambda src, eargs: print('.', end='', flush=True)
+       
+cli().run()
