@@ -327,7 +327,7 @@ class singer(artist):
 
     @staticmethod
     def getvalid():
-        super = singer().orm.super.getvalid()
+        super = singer.orm.super.getvalid()
 
         sng = singer()
         keymaps = (orm.primarykeyfieldmapping, orm.foreignkeyfieldmapping)
@@ -1682,15 +1682,17 @@ class test_orm(tester):
         self.zero(self.chronicles) # defered
 
         self.one(sngs1)
+
         self.eq(sngs.first.id, sngs1.first.id)
 
         self.one(self.chronicles)
         self._chrons(sngs1, 'retrieve')
 
-        # Add support for querying on attributes of superentity.
+        self.chronicles.clear()
+
+        # Each firstname will be unique so we should should only get one result
+        # from this query and it should be entity-equivalent sngs.first
         sngs1 = singers("firstname = '%s'" % sngs.first.firstname, ())
-        B()
-        print(*sngs1.orm.sql)
         self.zero(self.chronicles) # defered
 
         self.one(sngs1)
@@ -11660,29 +11662,4 @@ duration of a given query.]]></content:encoded>
 </rss>
 """
 
-def main():
-    # Parse args
-    p = argparse.ArgumentParser()
-    p.add_argument('testunit',  help='The test class or method to run',  nargs='?')
-    p.add_argument('-b', '--break-on-exception', action='store_true', dest='breakonexception')
-    args = p.parse_args()
-
-    # Create testers object
-    t = testers()
-    t.breakonexception = args.breakonexception
-
-    # Register trace events
-    t.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)
-    t.oninvoketest += lambda src, eargs: print(eargs.method[0], flush=True)
-
-    # Run
-    t.run(args.testunit)
-
-    # Show results
-    print(t)
-
-    # Return exit code (0=success, 1=fail)
-    sys.exit(int(not t.ok))
-
-main()
-
+cli.run()

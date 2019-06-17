@@ -30,6 +30,7 @@ from shlex import shlex
 from table import table
 from uuid import uuid4, UUID
 import builtins
+from contextlib import suppress
 import dateutil
 import db
 import decimal
@@ -426,7 +427,7 @@ class where(entitiesmod.entity):
             raise ValueError(msg)
 
         pred = orm.introduce(pred, args)
-        self.predicate = predicate(pred)
+        self.predicate = predicate(pred, wh=self)
 
         self.args = args
         
@@ -594,7 +595,7 @@ class predicate(entitiesmod.entity):
     Ops = Specialops + Wordops
     Introducers = '_binary',
     
-    def __init__(self, expr, junctionop=None):
+    def __init__(self, expr, junctionop=None, wh=None):
         self._operator      =  ''
         self.operands       =  list()
         self.match          =  None
@@ -604,6 +605,7 @@ class predicate(entitiesmod.entity):
         self.endparen       =  0
         self.lhsintroducer  =  ''
         self.rhsintroducer  =  ''
+        self.where          =  wh
 
         if expr:
             if isinstance(expr, shlex):
@@ -613,7 +615,14 @@ class predicate(entitiesmod.entity):
                 # shlex.py into main directory to get the punctuation_chars
                 # parameter to work.
                 # FIXME '=' is present twice in `punctuation_chars`.
-                lex = shlex(expr, posix=False, punctuation_chars='!=<=>')
+                try:
+                    lex = shlex(expr, posix=False, punctuation_chars='!=<=>')
+                except Exception as ex:
+                    # TODO Remove all this when Python <3.6 is unsupported
+                    print(ex)
+                    print('Is an updated version of shlex missing. Try:')
+                    print('    wget https://raw.githubusercontent.com/python/cpython/master/Lib/shlex.py')
+                    raise
 
             self._parse(lex)
         else:
@@ -621,7 +630,7 @@ class predicate(entitiesmod.entity):
             pass
 
     def clone(self):
-        pred = predicate(None, self.junctionop)
+        pred = predicate(None, self.junctionop, wh=self.where)
         pred.operands = self.operands.copy()
         pred.operator = self.operator
         self.startparen     =  self.startparen
@@ -762,7 +771,7 @@ class predicate(entitiesmod.entity):
                     self._raiseSyntaxError(lex, tok, ex=unexpected)
 
                 if not (inbetween and TOK == 'AND'):
-                    self.junction = predicate(lex, tok)
+                    self.junction = predicate(lex, tok, wh=self.where)
                     self._demandBalancedParens()
                     return
 
@@ -830,16 +839,32 @@ class predicate(entitiesmod.entity):
             if columnprefix:
                 for i, op in enumerate(ops):
                     if self.iscolumn(op):
-                        ops[i] = '`%s`.%s' % (columnprefix, op)
+                        col = op
 
-            # append a space to the introducers if they exists
+                        
+                        e = self.where.entities.orm.entity
+                        while e:
+                            if col in e.orm.mappings:
+                                if e is not self.where.entities.orm.entity:
+                                    columnprefix += '.' + e.orm.abbreviation
+                                break
+                            e = e.orm.super
+
+
+                        ops[i] = '`%s`.%s' % (columnprefix, op)
+            else:
+                # TODO Is this block ever executed. When is columnprefix falsey
+                pass
+
+
+            # Append a space to the introducers if they exists
             lhsintro = self.lhsintroducer
             lhsintro = lhsintro + ' ' if lhsintro else ''
             rhsintro = self.rhsintroducer
             rhsintro = rhsintro + ' ' if rhsintro else ''
 
             if self.operator in ('IN', 'NOT IN'):
-                # TODO add introducers to IN arguments
+                # TODO Add introducers to IN arguments
                 r += '%s %s (%s)' % (ops[0],
                                      self.operator,
                                      ', '.join(ops[1:]))
@@ -975,7 +1000,7 @@ class predicate(entitiesmod.entity):
                         self._mode += ' ' + TOK
 
                     elif TOK in ('AND', 'OR'):
-                        self.junction = predicate(lex, tok)
+                        self.junction = predicate(lex, tok, wh=self.where)
 
                     elif tok == ')':
                         lex.push_token(tok)
@@ -1180,7 +1205,7 @@ class entities(entitiesmod.entities):
 
             self.orm.instance = self
 
-            self.orm.initing = True
+            self.orm.initing = True # change to isiniting
 
             self.orm.isloaded = False
             self.orm.isloading = False
@@ -1659,6 +1684,7 @@ class entities(entitiesmod.entities):
             eargs = db.operationeventargs(self, 'retrieve', sql, args)
             self.onafterload(self, eargs)
 
+            # TODO Remove edict here
             edict = dict()
 
             self.orm.populate(ress)
@@ -1843,35 +1869,39 @@ class entitymeta(type):
 
 class entity(entitiesmod.entity, metaclass=entitymeta):
     def __init__(self, o=None, _depth=0):
-        self.orm = self.orm.clone()
-        self.orm.instance = self
+        try:
+            self.orm = self.orm.clone()
+            self.orm.initing = True # change to `isiniting`
+            self.orm.instance = self
 
-        self.onbeforesave       =  entitiesmod.event()
-        self.onaftersave        =  entitiesmod.event()
-        self.onafterload        =  entitiesmod.event()
-        self.onbeforereconnect  =  entitiesmod.event()
-        self.onafterreconnect   =  entitiesmod.event()
+            self.onbeforesave       =  entitiesmod.event()
+            self.onaftersave        =  entitiesmod.event()
+            self.onafterload        =  entitiesmod.event()
+            self.onbeforereconnect  =  entitiesmod.event()
+            self.onafterreconnect   =  entitiesmod.event()
 
-        self.onaftersave       +=  self._self_onaftersave
-        self.onafterload       +=  self._self_onafterload
-        self.onafterreconnect  +=  self._self_onafterreconnect
+            self.onaftersave       +=  self._self_onaftersave
+            self.onafterload       +=  self._self_onafterload
+            self.onafterreconnect  +=  self._self_onafterreconnect
 
-        if o is None:
-            self.orm.isnew = True
-            self.orm.isdirty = False
-            self.id = uuid4()
-        else:
-            if type(o) is UUID:
-                res = self._load(o)
+            if o is None:
+                self.orm.isnew = True
+                self.orm.isdirty = False
+                self.id = uuid4()
             else:
-                res = o
+                if type(o) is UUID:
+                    res = self._load(o)
+                else:
+                    res = o
 
-            self.orm.populate(res)
+                self.orm.populate(res)
 
-        super().__init__()
+            super().__init__()
 
-        # Post super().__init__() events
-        self.onaftervaluechange  +=  self._self_onaftervaluechange
+            # Post super().__init__() events
+            self.onaftervaluechange  +=  self._self_onaftervaluechange
+        finally:
+            self.orm.initing = False
 
     def __getitem__(self, args):
         if type(args) is str:
@@ -1971,6 +2001,13 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         map = self.orm.mappings(attr)
 
         if map is None:
+            maps = self.orm.mappings.supermappings
+            if (not maps._populated):
+                maps = self.orm.mappings.supermappings
+
+            if attr not in maps:
+                return object.__setattr__(self, attr, v)
+                
             super = self.orm.super
             if super and super.orm.mappings(attr):
                 super.__setattr__(attr, v, cmp)
@@ -2420,14 +2457,15 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # TODO Why would self.orm.mappings ever be false... it's a collection
         if attr != 'orm' and self.orm.mappings:
             map = self.orm.mappings(attr)
-            if not map:
+
+            # Is attr in one of the supers' mappings collections. We don't want
+            # to start loading super entities from the database unless we know
+            # that the attr is actually in one of them.
+            insuper = attr in self.orm.mappings.supermappings
+
+            if not map and insuper: 
                 super = self.orm.super
                 if super:
-                    # TODO Before begining an ascent up the inheritence
-                    # hierarchy, we need to first ensure that the attr is a map
-                    # in that hierarchy; not just in the super. So the below
-                    # line should be something like:
-                    #     self.getmap(attr, recursive=True)
                     map = super.orm.mappings(attr)
                     if map:
                         if type(map) is entitymapping:
@@ -2615,7 +2653,21 @@ class mappings(entitiesmod.entities):
         self._populate()
         return super().__iter__()
 
+    def __contains__(self, key):
+        if isinstance(key, str):
+            return any(x.name == key for x in self)
+        else:
+            # NOTE entities.entities should have a __contains__ method.
+            # Surprisingly, I couldn't find one.
+            raise ValueError('Invalid type')
+            return super().__contains__(key)
+
     def _populate(self):
+        # If there is no ._orm, then we are using this class just for
+        # collection purposes, so don't try to populate here.
+        if self._orm is None:
+            return
+
         if not self._populated and not self._populating:
             self._populating = True
 
@@ -2706,6 +2758,18 @@ class mappings(entitiesmod.entities):
         for map in self:
             if builtins.type(map) is type:
                 yield map
+
+    @property
+    def supermappings(self):
+        e = self.orm.entity.orm.super
+        maps = mappings()
+
+        while e:
+            maps += e.orm.mappings
+            e = e.orm.super
+
+        return maps
+            
     @property
     def orm(self):
         return self._orm
@@ -3431,6 +3495,24 @@ class primarykeyfieldmapping(fieldmapping):
 
     @property
     def value(self):
+        # If a super instance exists, use that because we want a subclass and
+        # its super class to share the same id. Here we use ._super instead of
+        # .super because we don't want the invoke the super accessor because it
+        # calls the id accessor (which calls this accessor) - leading to
+        # infinite recursion. This, of course, assumes that the .super accessor
+        # has previously been called.
+
+        super = self.orm._super
+        if super:
+            return super.id
+
+        if type(self._value) is bytes:
+            self._value = UUID(bytes=self._value)
+
+        return self._value
+
+    @property
+    def xvalue(self):
 
         # NOTE This code was changed to privilege the value of self._value over
         # self.orm._super.id. This was done because when adding
@@ -3574,7 +3656,7 @@ class orm:
         if not self._abbreviation:
             suffix = str()
 
-            # Get all entitiy classes sorted by name
+            # Get all entity classes sorted by name
             es = self.getentitys() + self.getassociations()
             es.sort(key=lambda x: x.__name__)
 
@@ -3655,7 +3737,6 @@ class orm:
         else:
             raise ValueError('Invalid type of `ress`')
 
-
         for res in ress:
             for i, f in func.enumerate(res.fields):
                 alias, _, col = f.name.rpartition('.')
@@ -3663,19 +3744,41 @@ class orm:
                 if not simple and (not skip or col == 'id'):
                     if col == 'id':
                         id = f.value
-                        skip = id in edict
-                        if skip:
-                            continue
 
                         _, _, abbr = alias.rpartition('.')
                         eclass = orm.getentity(abbr=abbr)
+
+                        key = (id, eclass)
+                        skip = key in edict
+                        if skip:
+                            continue
+
                         e = eclass()
-                        edict[id] = e
+
+                        edict[key]= e
 
                         if i.first:
                             es += e
 
                         maps = e.orm.mappings
+
+                        # During e's __init__'ing, a new instance of a super
+                        # entity may be set (e.g., because an __init__ sets an
+                        # attribute that is only in a super). When this
+                        # happens, the super will have it's own, new id value.
+                        # But this will be the wrong value. Each super should
+                        # have the id value loaded here from the database so we
+                        # update it here.
+                        #
+                        # Also note the use of ._super to get the super entity.
+                        # We only want to correct the id's of super entity's
+                        # that have already been instantiated, we don't want to
+                        # create new ones by invoking the orm.super property.
+                        sup = e.orm._super 
+                        while sup: # :=
+                            sup.id = f.value
+                            sup = sup.orm._super
+                        
 
                         # TODO We probably should use itertools.chain since
                         # these properties are generators
@@ -3696,13 +3799,59 @@ class orm:
 
     @staticmethod
     def link(edict):
+        """ For each entity or entities object in <edict>, search <edict> for any
+        composites, constituents and supers then assign them to the entity's
+        appropriate mapping object. 
+
+        :param dict[tuple, entity] edict: A dict of entity or entites objects
+
+        :returns: void
+
+        For example, if <edict> contains an artist entity and a location entity,
+        and the location entity belongs to the artist entity (i.e, the location
+        entity's `artistid` foreign key has the same value as the artist
+        entity's id), the location entity will be assigned to the artist
+        entity's locations collection. So when the method is complete, the
+        location entity can be obtained from the artist entity via its
+        `locations` collection, i.e.:: 
+            
+            edict = dict()
+            edict[(art.id, type(art)] = art
+            edict[(loc.id, type(loc)] = loc
+
+            assert loc not in art.locations
+
+            orm.link(edict)
+            
+            assert loc in art.locations
+
+        Noticed that the keys for <edict> are tuples of the entity's id and type.
+        Usally id is enough to distinguish between two entities. However, a
+        superentity will have the same id as its subentity. In those cases, the
+        class is needed to distinguish between the subentity and the super
+        entity. 
+        
+        """
+
+        # TODO `k` isn't being used here. I think we should use 
+        #     `for e in edict.values()`
+
+        # For each value in edict
         for k, e in edict.items():
+            
+            # Does `e` have a foreign key that is the id of another entity in
+            # edict, i.e., is `e` a child (or constituent) of other entity in
+            # edict.
             for map in e.orm.mappings.foreignkeymappings:
                 if not map.value:
                     continue
 
                 try:
-                    comp = edict[map.value.bytes]
+                    # TODO I think we can remove the parenthesis that are attempting
+                    # to indicate that the key edict is a tuple. In other words, just
+                    # do:
+                    #     comp = edict[map.value.bytes, map.entity]
+                    comp = edict[(map.value.bytes, map.entity)]
                 except KeyError:
                     # Composite for the FK can't be found. The object for the
                     # FK isn't in edict, perhaps because the FK corresponds to
@@ -3712,20 +3861,34 @@ class orm:
                     # artifact, but only artist will have been loaded.
                     continue
                     
+                # If we are here, a composite was found
+
+                # Chain the composite's entitiesmappings and
+                # associationsmappings collection into `maps`
+
+                # TODO itertools.chain may be a better option here
                 maps = list(comp.orm.mappings.entitiesmappings) + \
                        list(comp.orm.mappings.associationsmappings)
 
+                # For each of the composite mappings, if `e` is the same type
+                # as the map then assign e to that mappings's value property.
+                # This links entity objects to their constituents (e.g.,
+                # artist,locations.last)
                 for map1 in maps:
                     if isinstance(e, map1.entities.orm.entity):
                         map1._value += e
 
+                # For each entity mapping of `e`, if the `comp` is the same
+                # type as the mapping, then assign `comp` to that mapping's
+                # value property. This links entity objects with their
+                # composites (e.g., loc.artist)
                 for map1 in e.orm.mappings.entitymappings:
                     if map1.entity is type(comp):
                         map1._value = comp
 
+            with suppress(KeyError):
+                e.orm.super = edict[e.id, e.orm.entity.orm.super]
 
-
-    # TODO Is depth being used
     def getselects(self, depth=0, rentjoin=None):
         R = table(border=None)
 
@@ -3778,7 +3941,7 @@ class orm:
         graph = self.abbreviation
 
         # If self has a where predicate, add to the return variables.
-        # Subsequent where clauses found in the hierarchy of joins will be
+        # Subsequent WHERE clauses found in the hierarchy of joins will be
         # added recursively in the recursive function below.
         wh = self.where
         if wh:
@@ -3993,7 +4156,8 @@ class orm:
 
     @property
     def supers(self):
-        ''' Returns a list of classes of which self is a subentity. '''
+        ''' Returns a list of entity classes or entity objects (depending on
+        whether or not self.isinstance) of which self is a subentity. '''
 
         r = list()
         e = self.super
@@ -4044,10 +4208,15 @@ class orm:
                         msg %= str(type(e))
                         raise AttributeError(msg)
                     if e.id is not undef:
-                        self._super = base(e.id)
+                        if not e.orm.isnew:
+                            self._super = base(e.id)
 
                 return self._super
         return None
+
+    @super.setter
+    def super(self, v):
+        self._super = v
 
     @property
     def isstatic(self):
