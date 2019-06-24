@@ -22,6 +22,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+
+"""
+This file contains all classes related to object-relational mapping.
+"""
+
+
 from datetime import datetime
 from enum import Enum, unique
 from MySQLdb.constants.ER import BAD_TABLE_ERROR
@@ -46,6 +52,7 @@ import textwrap
 
 # TODO Add hard and softdelete logic
 # TODO Add reflective (self joined) relationships
+# TODO Make exceptions PascalCase
 
 # Set conditional break points
 def B(x=True):
@@ -60,6 +67,11 @@ def B(x=True):
 # i.e., s/2/str; s/3/int/, etc.
 @unique
 class types(Enum):
+    """
+    An ``Enum`` contanining members which represent the basic data types
+    supported by the ORM such as ``str``, ``int``, ``datetime`` as well as
+    ``pk`` (primary key) and ``fk`` (foreign key).  
+    """
     pk        =  0
     fk        =  1
     str       =  2
@@ -71,10 +83,39 @@ class types(Enum):
     bytes     =  8
 
 class undef:
+    """ 
+    A class which indicates a value has not been set.::
+
+        x = orm.undef
+
+        if x is orm.undef:
+            x = None
+
+    Indicating a variable or property is undef is useful for situations where
+    ``None`` has a specific meaning. For example, an instance of `fieldmapping`
+    may have a ``value`` property equal to None which would mean its
+    corresponding field in the database is (or will be) ``null``. However,
+    there are still times when its ``value`` property will need to be set to
+    ``undef`` such as to indicate that it has not yet been set by the code -
+    cases which ``None`` is typically used for.
+    """
     pass
 
 class stream(entitiesmod.entity):
+    """
+    ``stream`` objects are used to configure ``entities``. Passing a ``stream``
+    object to an ``entities`` ``__init__`` method instructs the `entities`
+    object to function in streaming/chunking mode.
+    """
+
     def __init__(self, chunksize=100):
+        """
+        Sets the chunksize of the stream object.
+
+        :param: int chunksize: The number of records to load (or chunk) at a
+            time.
+
+        """
         self.cursor = self.cursor(self)
         self.chunksize = chunksize
         self.orderby = ''
@@ -2570,6 +2611,46 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         return map.value
 
     def __repr__(self):
+        # TODO For subentity objects, we should go up the chain of supers so
+        # superentities are being represented as well. The supers should be
+        # identified in headers. For instance, give a singer:
+        #
+        # +------------------------------------------------+
+        # | id          | c706b76                          |
+        # |------------------------------------------------|
+        # | singerid    | None                             |
+        # |------------------------------------------------|
+        # | createdat   | 2019-06-20 14:49:52.618974+00:00 |
+        # |------------------------------------------------|
+        # | record      | 3230da584a84418d9ea0746f26f22f90 |
+        # |------------------------------------------------|
+        # | ticketprice | 0                                |
+        # |------------------------------------------------|
+        # | attendees   | 0                                |
+        # |------------------------------------------------|
+        # | duration    | 0                                |
+        # |------------------------------------------------|
+        # | capacity    | 0                                |
+        # |------------------------------------------------|
+        # | externalid  | 0                                |
+        # |------------------------------------------------|
+        # | externalid1 | 0                                |
+        # |------------------------------------------------|
+        # | updatedat   | 2019-06-20 14:49:52.618974+00:00 |
+        # |------------------------------------------------|
+        # | singer      | None                             |
+        # +------------------------------------------------+
+        # | INHERITED FROM  <artist>                       | <- Inheritance
+        # +------------------------------------------------+    starts
+        # | firstname   | None                             |
+        # |------------------------------------------------|
+        # | lastname    | 2019-06-20 14:49:52.618974+00:00 |
+        # |------------------------------------------------|
+        # | lifeform    | 3230da584a84418d9ea0746f26f22f90 |
+        # |------------------------------------------------|
+        # | etc, etc    | etc                              |
+        # +------------------------------------------------+
+
         try:
             tbl = table()
 
