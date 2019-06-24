@@ -3057,6 +3057,16 @@ class test_datetime(tester):
         expect = dt.astimezone(aztz)
         self.eq(expect, actual)
 
+        # FIXME
+        # If datetime.astimezone is given an invalid argument for the timezone
+        # (i.e., dt.astimezone('XXX')), it will give the following warning but
+        # will not throw an exception. This needs to be investigated and
+        # probably remedied.
+        #
+        #     /usr/lib/python3/dist-packages/dateutil/zoneinfo/__init__.py:36:
+        #     UserWarning: I/O error(2): No such file or directory
+        #     warnings.warn("I/O error({0}): {1}".format(e.errno, e.strerror))
+
         expect = dt.astimezone('US/Arizona')
         self.eq(expect, actual)
 
