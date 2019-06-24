@@ -748,6 +748,7 @@ class predicate(entitiesmod.entity):
         isin           =  False
         inquote        =  False
         inplaceholder  =  False
+        intro          =  str()
         unexpected = predicate.UnexpectedToken
 
         while tok != lex.eof:
@@ -758,7 +759,8 @@ class predicate(entitiesmod.entity):
 
             elif inplaceholder:
                 if tok == 's':
-                    self.operands.append('%s')
+                    self.operands.append(intro + ' %s')
+                    intro = str()
                 else:
                     msg = 'Unexpected placeholder type. ' + \
                           'Consider using %s instead'
@@ -766,10 +768,13 @@ class predicate(entitiesmod.entity):
                 inplaceholder = False
             
             elif tok in self.Introducers:
-                if len(self.operands):
-                    self.rhsintroducer = tok
+                if isin:
+                    intro = tok
                 else:
-                    self.lhsintroducer = tok
+                    if len(self.operands):
+                        self.rhsintroducer = tok
+                    else:
+                        self.lhsintroducer = tok
 
             elif self.iscolumn(tok):
                 self.operands.append(tok)
@@ -777,7 +782,7 @@ class predicate(entitiesmod.entity):
             elif TOK == 'MATCH':
                 self.operands = None
                 self.operator = None
-                self.match = predicate.Match(lex)
+                self.match = predicate.Match(lex, self.where)
 
             elif self.iswordoperator(tok):
                 self.operator += ' ' + tok
@@ -881,7 +886,6 @@ class predicate(entitiesmod.entity):
                 for i, op in enumerate(ops):
                     if self.iscolumn(op):
                         col = op
-
                         
                         e = self.where.entities.orm.entity
                         while e:
@@ -984,15 +988,17 @@ class predicate(entitiesmod.entity):
             r"^'.*'$"
         )
 
-        def __init__(self, lex):
+        def __init__(self, lex, wh=None):
             self._lex            =  lex
             self.columns         =  list()
             self.searchstring    =  str()
             self._mode           =  str()
             self.junction        =  None
+            self.where           =  wh
             self._parse(lex)
 
         def clone(self):
+            # TODO Should we add self.where as the second argument
             m = Match(None)
             m.columns = self.columns.copy()
             m.searchstring = self.searchstring
@@ -1108,8 +1114,18 @@ class predicate(entitiesmod.entity):
             cols = self.columns.copy()
             if columnprefix:
                 for i, col in enumerate(cols):
-                    cols[i] = '`%s`.%s' % (columnprefix, col)
+                    e = self.where.entities.orm.entity
+                    while e: # :=
+                        if col in e.orm.mappings:
+                            if e is self.where.entities.orm.entity:
+                                cols[i] = '`%s`.%s' % (columnprefix, col)
+                            else:
+                                pre = columnprefix + '.' + e.orm.abbreviation
+                                cols[i] = '`%s`.%s' % (pre, col)
+                            break
+                        e = e.orm.super
                 
+            # TODO Remove this line; `args` isn't being used
             args = ', '.join(cols), self.searchstring
 
             r = "MATCH (%s) AGAINST ("  % ', '.join(cols)
@@ -1304,14 +1320,21 @@ class entities(entitiesmod.entities):
 
                 _p1 = '' if initial is None else initial
                 self._preparepredicate(_p1, _p2, *args, **kwargs)
-                self.orm.joinsupers()
+
+                # Create joins to superentities where necessary if not in
+                # streaming mode. (Streaming does not support (and can't
+                # support) joins.)
+                if not self.orm.isstreaming:
+                    self.orm.joinsupers()
+
                 return
 
 
             super().__init__(initial=initial)
 
         finally:
-            self.orm.initing = False
+            if hasattr(self, 'orm'):
+                self.orm.initing = False
 
     def clone(self, to=None):
         if not to:
@@ -1522,7 +1545,6 @@ class entities(entitiesmod.entities):
             # collection
             load &= not self.orm.isremoving
 
-
             # Don't load unless self has joins or self has a where
             # clause/predicate
             load &= self.orm.joins.ispopulated or bool(self.orm.where)
@@ -1668,6 +1690,10 @@ class entities(entitiesmod.entities):
         # self.orm.where.ensurequoted()
 
     def clear(self):
+
+        # NOTE: This line is slated for removal. See the explainaition given in
+        # the FIXME in
+        # test_orm.it_moves_constituent_to_a_different_composite().
         self.orm.isloaded = False
         try:
             # Set isremoving to True so entities.__getattribute__ doesn't
@@ -1762,6 +1788,11 @@ class entities(entitiesmod.entities):
         super().getindex(e)
 
     def __repr__(self):
+        # TODO Add a count of the object the way enities.__str__ does:
+        # Instead of the header saying:
+        #     <class '__main__.concerts'> object at 0x7f9ba3cf8ba8
+        # have it say something like:
+        #     <class '__main__.concerts'> object at 0x7f9ba3cf8ba8 count: 123
         hdr = '%s object at %s' % (type(self), hex(id(self)))
 
         try:
@@ -2212,7 +2243,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                               followassociationmapping=True):
 
         if not self.orm.ismarkedfordeletion and not self.isvalid:
-            raise db.brokenruleserror("Can't save invalid object" , self)
+            raise db.brokenruleserror("Can't save invalid object", self)
 
         if self.orm.ismarkedfordeletion:
             crud = 'delete'
@@ -2587,6 +2618,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                 # Assign the superentities composite reference to the
                 # constituent i.e., art.concert.artist = art
+
                 super = self.orm.super
                 if super:
                     setattr(map.value, super.orm.entity.__name__, super)
@@ -3592,34 +3624,6 @@ class primarykeyfieldmapping(fieldmapping):
 
         return self._value
 
-    @property
-    def xvalue(self):
-
-        # NOTE This code was changed to privilege the value of self._value over
-        # self.orm._super.id. This was done because when adding
-        # entities.joinsupers() to complete the needs of
-        # test_orm.it_searches_entities when searching on properties of
-        # singer's super entities (e.g., artist). I'm not sure why self._value
-        # wasn't privileged in the first place so I sort of expect the below
-        # logic to be an issue.
-        if self._value is not undef:
-            if type(self._value) is bytes:
-                self._value = UUID(bytes=self._value)
-
-        return self._value
-
-        # If a super instance exists, use that because we want a subclass and
-        # its super class to share the same id. Here we use ._super instead of
-        # .super because we don't want to invoke the super accessor because it
-        # calls the id accessor (which calls this accessor) - leading to
-        # infinite recursion. This, of course, assumes that the .super accessor
-        # has previously been called.
-        super = self.orm._super
-        if super:
-            return super.id
-
-        return None
-
     @value.setter
     def value(self, v):
         self._value = v
@@ -3716,11 +3720,12 @@ class orm:
         for pred in self.where.predicate:
 
             # FIXME If multiple columns are supported, fix below
+            pred = pred.match or pred
             col = pred.columns[0]
 
             e = self.entity
 
-            while True:
+            while e: # :=
                 map = e.orm.mappings(col) 
                 if map:
                     if e is not self.entity:
@@ -3844,30 +3849,23 @@ class orm:
                         maps = e.orm.mappings
 
                         # During e's __init__'ing, a new instance of a super
-                        # entity may be set (e.g., because an __init__ sets an
-                        # attribute that is only in a super). When this
-                        # happens, the super will have it's own, new id value.
-                        # But this will be the wrong value. Each super should
-                        # have the id value loaded here from the database so we
-                        # update it here.
+                        # entity may be created (e.g., because an __init__ sets
+                        # an attribute that is only in a super). Since we are
+                        # loading here, we want to make sure this super set to
+                        # None. 
                         #
-                        # Also note the use of ._super to get the super entity.
-                        # We only want to correct the id's of super entity's
-                        # that have already been instantiated, we don't want to
-                        # create new ones by invoking the orm.super property.
-                        sup = e.orm._super 
-                        while sup: # :=
-                            sup.id = f.value
-                            sup = sup.orm._super
+                        # The result will be that the super will either
+                        # be lazy-loaded when needed, or, if we have the supers
+                        # record from the database here somewhere in `ress`,
+                        # e.orm.super will be set by orm.link() to that
+                        # super entity.
                         
+                        e.orm.super = None
 
                         # TODO We probably should use itertools.chain since
                         # these properties are generators
                         maps1 = list(maps.entitiesmappings) + \
                                 list(maps.associationsmappings)
-
-                        for map in maps1:
-                            map._value = map.entities()
 
                         e.orm.persistencestate = (False,) * 3
 
@@ -3957,6 +3955,8 @@ class orm:
                 # artist,locations.last)
                 for map1 in maps:
                     if isinstance(e, map1.entities.orm.entity):
+                        if map1._value is None:
+                            map1._value = map1.entities()
                         map1._value += e
 
                 # For each entity mapping of `e`, if the `comp` is the same
@@ -3968,7 +3968,7 @@ class orm:
                         map1._value = comp
 
             with suppress(KeyError):
-                e.orm.super = edict[e.id, e.orm.entity.orm.super]
+                e.orm.super = edict[e.id.bytes, e.orm.entity.orm.super]
 
     def getselects(self, depth=0, rentjoin=None):
         R = table(border=None)
@@ -4289,7 +4289,8 @@ class orm:
                         msg %= str(type(e))
                         raise AttributeError(msg)
                     if e.id is not undef:
-                        if not e.orm.isnew:
+                        # TODO What happens if we remove this line
+                        if not e.orm.isnew: 
                             self._super = base(e.id)
 
                 return self._super
