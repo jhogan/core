@@ -744,6 +744,17 @@ class brokenruleserror(Exception):
         self.message = msg
         self.object = obj
 
+    def __str__(self):
+        obj = self.object
+        r = self.message + ' '
+        r += '%s at %s' % (type(obj), hex(id(obj))) + '\n'
+        for br in self.object.brokenrules:
+            r += '\t* ' + str(br) + '\n'
+        return r
+
+    def __repr__(self):
+        return str(self)
+
 class brokenrules(entities):
     def append(self, o, r=None):
         if isinstance(o, str):
