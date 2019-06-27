@@ -636,15 +636,18 @@ class test_orm(tester):
         sng1 = singer(sng.id)
 
         chrons.clear()
+
         self.eq(sng.locations.first.id, sng1.locations.first.id)
         self.eq(sng.concerts.first.locations.first.id, 
                 sng1.concerts.first.locations.first.id)
 
-        self.four(chrons)
+        print(chrons)
+        self.five(chrons)
         self._chrons(sng1.concerts,                  'retrieve')
         self._chrons(sng1.concerts.first.orm.super,  'retrieve')
         self._chrons(sng1.concerts.first.locations,  'retrieve')
         self._chrons(sng1.locations,                 'retrieve')
+        self._chrons(sng1.locations.artist,          'retrieve')
 
     def it_receives_AttributeError_from_explicit_attributes(self):
         # An issue was discovered in the former entities.__getattr__. When an
@@ -1219,7 +1222,6 @@ class test_orm(tester):
         # Create a new presentation and give the location in art1 to the
         # locations collection of art.
         art.presentations += presentation.getvalid()
-        B()
         art1.presentations.first.locations.give(art.presentations.last.locations)
 
         chrons.clear()
@@ -1866,9 +1868,9 @@ class test_orm(tester):
         self.one(sngs1)
         self.eq(sngs.first.id, sngs1.first.id)
 
-        # FIXME This should raise an exception indicating that xxx isn't a column.
         # For some reason, at the moment, this isn't happening
-        concs1 = concerts("match(title, xxx) against('%s')", 'zero')
+        l = lambda: concerts("match(title, xxx) against('%s')", 'zero')
+        self.expect(orm.invalidcolumn, l)
 
         # Test "composite" full-text search
 
@@ -3344,6 +3346,9 @@ class test_orm(tester):
         art1.ssn        = '2' * 11
         art1.bio        = uuid4().hex
         art1.email      = 'username1@domain.tld'
+        art1.title      = uuid4().hex[0]
+        art1.phone2     = uuid4().hex[0]
+        art1.email_1    = uuid4().hex[0]
 
         self.false(art1.orm.isnew)
         self.true(art1.orm.isdirty)
@@ -4690,7 +4695,10 @@ class test_orm(tester):
         sng1.password  = bytes([random.randint(0, 255) for _ in range(32)])
         sng1.ssn       = '2' * 11
         sng1.bio       = uuid4().hex
-        sng1.email      = 'username1@domain.tld'
+        sng1.email     = 'username1@domain.tld'
+        sng1.title     = uuid4().hex[0]
+        sng1.phone2    = uuid4().hex[0]
+        sng1.email_1   = uuid4().hex[0]
 
         self.eq((False, True, False), sng1.orm.persistencestate)
 
@@ -4881,9 +4889,8 @@ class test_orm(tester):
     def _create_join_test_data(self):
         ''' Create test data to be used by the outer/inner join tests. '''
 
-        # Only do it once
-        if hasattr(self, '_create_join_test_data_arts'):
-            return self._create_join_test_data_arts
+        for c in (artist, presentation, location, artist_artifact, artifact):
+            c.orm.truncate()
 
         # The artist entities and constituents will have sequential indexes to
         # query against.
@@ -4929,9 +4936,11 @@ class test_orm(tester):
         print('saving...')
         arts.save()
         print('saved')
-        self._create_join_test_data_arts = arts
+
+        # TODO Do these two lines serve a purpose?
         presentation.getvalid().save()
         artist.getvalid().save()
+
         return arts
 
     def it_calls_innerjoin_on_entities_with_BETWEEN_clauses(self):
@@ -5401,8 +5410,6 @@ class test_orm(tester):
         self.zero(self.chronicles)
 
     def it_calls_outerjoin(self):
-        arts = self._create_join_test_data()
-
         # Outer join artists with presentations; no predicates
         arts1 = artists()
         press1 = presentations()
@@ -5570,7 +5577,7 @@ class test_orm(tester):
         self.eq(newval, art4.artifacts.first.components.first.name)
 
     # TODO Allow the .join, .innerjoin, et. al. to accept an entities class in
-    # addition to of an entitiues object
+    # addition to of an entities object
     def it_calls_innerjoin_on_entities(self):
         fff = False, False, False
 
@@ -5965,7 +5972,7 @@ class test_orm(tester):
         pred1 = None
         for i, pred1 in enumerate(pred):
             if i == 0:
-                self.eq("MATCH (col) AGAINST ('keyword') IN NATURAL LANGUAGE MODE AND col = 1", str(pred1))
+                self.eq("MATCH (col) AGAINST ('keyword' IN NATURAL LANGUAGE MODE) AND col = 1", str(pred1))
             elif i == 1:
                 self.eq(' AND col = 1', str(pred1))
             else:
@@ -5978,8 +5985,8 @@ class test_orm(tester):
         for i, pred1 in enumerate(pred):
             if i == 0:
                 expr = (
-                    "MATCH (col) AGAINST ('keyword') "
-                    "IN NATURAL LANGUAGE MODE AND col = 1 OR col1 = 2"
+                    "MATCH (col) AGAINST ('keyword' "
+                    "IN NATURAL LANGUAGE MODE) AND col = 1 OR col1 = 2"
                 )
                 self.eq(expr, str(pred1))
             elif i == 1:

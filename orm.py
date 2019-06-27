@@ -482,8 +482,7 @@ class where(entitiesmod.entity):
 
     def demandvalid(self):
         def demand(col, exists=False, ft=False):
-            maps = self.entities.orm.entity.orm.mappings
-            for map in maps:
+            for map in self.entities.orm.mappings.all:
                 if not isinstance(map, fieldmapping):
                     continue
 
@@ -492,20 +491,12 @@ class where(entitiesmod.entity):
                         msg = 'MATCH column "%s" must be have a fulltext index'
                         msg %= col
                         raise invalidcolumn(msg)
-                        
                     break
             else:
                 e = self.entities.orm.entity.__name__
                 msg = 'Field "%s" does not exist in entity "%s": "%s"'
                 msg %= (col, e, str(pred))
                 raise invalidcolumn(msg)
-
-
-
-        # TODO REMOVE ME
-        return
-
-
 
         for pred in self.predicate:
             if pred.match:
@@ -759,7 +750,8 @@ class predicate(entitiesmod.entity):
 
             elif inplaceholder:
                 if tok == 's':
-                    self.operands.append(intro + ' %s')
+                    placeholder = intro + ' %s' if intro else '%s'
+                    self.operands.append(placeholder)
                     intro = str()
                 else:
                     msg = 'Unexpected placeholder type. ' + \
@@ -1134,6 +1126,7 @@ class predicate(entitiesmod.entity):
                 r += '%s'
             else:
                 r += "'%s'" % self.searchstring
+
 
             if self.mode == 'natural':
                 r += ' IN NATURAL LANGUAGE MODE'
@@ -2187,6 +2180,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 if cur:
                     cur.close()
 
+    # TODO lowercase these and put them in orm
     @classmethod
     def DROP(cls, cur=None):
         # TODO Use executioner
@@ -2873,7 +2867,18 @@ class mappings(entitiesmod.entities):
                 yield map
 
     @property
+    def all(self):
+        ''' Returns a generator of all mapping objects including supermappings.
+        '''
+        for map in self:
+            yield map
+
+        for map in self.supermappings:
+            yield map
+
+    @property
     def supermappings(self):
+        # TODO:OPT Memoize
         e = self.orm.entity.orm.super
         maps = mappings()
 
@@ -3269,7 +3274,8 @@ class fieldmapping(mapping):
 
     def clone(self):
         ix = self.index
-        ix = index(name=ix.name, ordinal=ix.ordinal) if ix else None
+
+        ix = type(ix)(name=ix.name, ordinal=ix.ordinal) if ix else None
 
         map = fieldmapping(
             self.type,
@@ -3715,6 +3721,17 @@ class orm:
         r.mappings = self.mappings.clone(r)
 
         return r
+
+    def truncate(self, cur=None):
+        # TODO Use executioner
+        sql = 'TRUNCATE TABLE %s;' % self.table
+
+        if cur:
+            cur.execute(sql)
+        else:
+            pool = db.pool.getdefault()
+            with pool.take() as conn:
+                conn.query(sql)
 
     def joinsupers(self):
         for pred in self.where.predicate:
