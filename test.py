@@ -641,13 +641,25 @@ class test_orm(tester):
         self.eq(sng.concerts.first.locations.first.id, 
                 sng1.concerts.first.locations.first.id)
 
-        print(chrons)
         self.five(chrons)
         self._chrons(sng1.concerts,                  'retrieve')
         self._chrons(sng1.concerts.first.orm.super,  'retrieve')
         self._chrons(sng1.concerts.first.locations,  'retrieve')
         self._chrons(sng1.locations,                 'retrieve')
+
+        # NOTE Loading locations requires that we load singer's superentity
+        # (artist) first because `locations` is a constituent of `artist`.
+        # Though this may seem ineffecient, since the orm has what it needs to
+        # load `locations` without loading `artist`, we would want the
+        # following to work for the sake of predictability:
+        #
+        #     assert sng1.locations.artists is sng1.orm.super
+        #
         self._chrons(sng1.locations.artist,          'retrieve')
+
+        chrons.clear()
+        self.is_(sng1.locations.artist, sng1.orm.super)
+        self.zero(chrons)
 
     def it_receives_AttributeError_from_explicit_attributes(self):
         # An issue was discovered in the former entities.__getattr__. When an
@@ -3831,8 +3843,9 @@ class test_orm(tester):
                 loc, loc1 = locs.first, locs1.first
 
                 if i:
-                    self.one(chrons)
                     self.eq(chrons.where('entity', conc.locations).first.op, 'retrieve')
+                    self.eq(chrons.where('entity', conc.orm.super).first.op, 'retrieve')
+                    self.two(chrons)
                 else:
                     self.zero(chrons)
 
@@ -3889,7 +3902,7 @@ class test_orm(tester):
         chrons.clear()
         press = sng1.presentations
 
-        self.one(chrons)
+        self.two(chrons)
 
         self.eq(chrons.where('entity', press).first.op, 'retrieve')
 
@@ -4017,7 +4030,7 @@ class test_orm(tester):
         chrons.clear()
         concs = sng1.concerts
 
-        self.three(chrons)
+        self.two(chrons)
 
         self.eq(chrons.where('entity', concs).first.op, 'retrieve')
         self.eq(chrons.where('entity', concs[0].orm.super).first.op, 'retrieve')
@@ -4063,11 +4076,11 @@ class test_orm(tester):
             chrons.clear()
             conc1.locations.sort('id')
 
-            self.one(chrons)
-
             locs = conc1.locations
 
             self.eq(chrons.where('entity', locs).first.op, 'retrieve')
+            self.eq(chrons.where('entity', conc1.orm.super).first.op, 'retrieve')
+            self.two(chrons)
 
             for loc, loc1 in zip(conc.locations, conc1.locations):
                 for map in loc.orm.mappings:
@@ -4366,9 +4379,9 @@ class test_orm(tester):
 
         chrons.clear()
         self.eq(conc1.singer.id, conc.singer.id)
-        self.two(chrons)
+
         self._chrons(conc1.singer,            'retrieve')
-        self._chrons(conc1.singer.orm.super,  'retrieve')
+        self.one(chrons)
 
         sng1 = singer.getvalid()
         conc1.singer = sng1
