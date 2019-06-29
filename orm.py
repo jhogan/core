@@ -1035,7 +1035,10 @@ class predicate(entitiesmod.entity):
                                 lex, tok, ex=ex, msg=msg
                             )
 
-                        if not self.re_isquoted.match(self.searchstring):
+                        isplaceholder = self.searchstring == '%s'
+                        isquoted = bool(self.re_isquoted.match(self.searchstring))
+
+                        if not isplaceholder and not isquoted:
                             ex=predicate.SyntaxError
                             msg = 'Search string "%s" is not quoted'
                             msg %= self.searchstring
@@ -1045,7 +1048,8 @@ class predicate(entitiesmod.entity):
                             )
                             
 
-                        self.searchstring = self.searchstring[1:-1]
+                        if not isplaceholder:
+                            self.searchstring = self.searchstring[1:-1]
                         insearch = False
                     else:
                         self.searchstring += tok
