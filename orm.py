@@ -27,7 +27,6 @@ SOFTWARE.
 This file contains all classes related to object-relational mapping.
 """
 
-
 from datetime import datetime
 from enum import Enum, unique
 from MySQLdb.constants.ER import BAD_TABLE_ERROR
@@ -53,6 +52,7 @@ import textwrap
 # TODO Add hard and softdelete logic
 # TODO Add reflective (self joined) relationships
 # TODO Make exceptions PascalCase
+# TODO Consider making ? the placeholder token instead of %s
 
 # Set conditional break points
 def B(x=True):
@@ -266,7 +266,11 @@ class stream(entitiesmod.entity):
             return self.start
 
 class joins(entitiesmod.entities):
+    """
+    A collection of ``join`` classes.
+    """
     def __init__(self, initial=None, es=None):
+        # TODO Do we need this check?
         if es is None:
             raise ValueError('Missing entities')
         self.entities = es
@@ -274,10 +278,22 @@ class joins(entitiesmod.entities):
 
     @property
     def table(self):
+        """
+        Return the table name for this ``joins`` collection
+
+        :rtype: str
+        :returns: The name of the table for this ``joins`` collection.
+        """
         return self.entities.orm.table
 
     @property
     def abbreviation(self):
+        """
+        Returns the entities's abbreviation 
+
+        :rtype: str
+        :returns: Returns the entities's abbreviation 
+        """
         return self.entities.orm.abbreviation
 
     def __str__(self, joinerroot=None, joineeroot=None):
@@ -2613,6 +2629,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 # Assign the superentities composite reference to the
                 # constituent i.e., art.concert.artist = art
 
+                # TODO Should we be eager loading the super?
                 super = self.orm.super
                 if super:
                     setattr(map.value, super.orm.entity.__name__, super)
