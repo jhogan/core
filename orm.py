@@ -1003,6 +1003,7 @@ class predicate(entitiesmod.entity):
             self._mode           =  str()
             self.junction        =  None
             self.where           =  wh
+            self.searchstringisplaceholder = False
             self._parse(lex)
 
         def clone(self):
@@ -1036,6 +1037,7 @@ class predicate(entitiesmod.entity):
                             )
 
                         isplaceholder = self.searchstring == '%s'
+                        self.searchstringisplaceholder = isplaceholder
                         isquoted = bool(self.re_isquoted.match(self.searchstring))
 
                         if not isplaceholder and not isquoted:
@@ -1142,10 +1144,13 @@ class predicate(entitiesmod.entity):
 
             r = "MATCH (%s) AGAINST ("  % ', '.join(cols)
 
-            if self.searchstring == '%s':
+            if self.searchstringisplaceholder:
                 r += '%s'
             else:
-                r += "'%s'" % self.searchstring
+                if self.searchstring == '%s':
+                    r += '%s'
+                else:
+                    r += "'%s'" % self.searchstring
 
 
             if self.mode == 'natural':
@@ -1703,10 +1708,11 @@ class entities(entitiesmod.entities):
         # self.orm.where.ensurequoted()
 
     def clear(self):
-
         # NOTE: This line is slated for removal. See the explainaition given in
         # the FIXME in
         # test_orm.it_moves_constituent_to_a_different_composite().
+        # UPDATE: Commenting this line out causes some problems. See
+        # ~/tmp/test_orm
         self.orm.isloaded = False
         try:
             # Set isremoving to True so entities.__getattribute__ doesn't
@@ -3838,7 +3844,7 @@ class orm:
     def parameterizepredicate(self, args):
         for pred in self.instance.orm.where.predicate:
             if pred.match:
-                if pred.match.searchstring != '%s':
+                if not pred.match.searchstringisplaceholder:
                     args.append(pred.match.searchstring)
                     pred.match.searchstring = '%s';
             else:
@@ -4138,18 +4144,68 @@ class orm:
 
     @staticmethod
     def introduce(sql, args):
-        """Use args to add introducers (_binary, et. al.) before the %s in
-        sql."""
+        """
+        Use ``args`` to add introducers ('_binary', et. al.) before the
+        unquoted placeholder tokens (%s) in ``sql``.
+
+        :param: str  sql:  A whole are partial SQL statement.
+        :param: list args: Parameters to use with query.
+        :rtype: str
+        :returns: Returns the ``sql`` argument with introducers added where
+                  appropriate
+        """
 
         # Where the arg is binary (bytearray or bytes), replace '%s' with
         # '_binary %s' so it's clear to MySQL where the UTF8 SQL string 
         # becomes pure binary not intended for character decoding.
-        return sql % tuple(
-            [
-                '_binary %s' if type(x) in (bytearray, bytes) else '%s' 
-                for x in args
-            ]
-        )
+        r = str()
+        insingle       =  False
+        indouble       =  False
+        inquote        =  False
+        inplaceholder  =  False
+        argix          =  0
+
+        # Iterate over sql instead of using a simple search-and-replace
+        # approach so we don't add introducer to quoted instances of the
+        # placeholder token
+        for s in sql:
+            # Detect quotes
+            if s == "'":
+                insingle = not insingle
+
+            if s == '"':
+                indouble = not indouble
+
+            inquote = indouble or insingle
+
+            if inplaceholder:
+                if s == 's':
+                    if type(args[argix]) in (bytearray, bytes):
+                        # Here we add the _binary introducer because the arg is
+                        # binary and we are not in quoted text
+                        r += '_binary %s'
+                    else:
+                        # A non-binary placeholder
+                        r += '%s'
+                    argix += 1
+                else:
+                    # False alarm. The previous '%' didn't indicate a
+                    # placeholder token so just append '%' + s to the return
+                    # string
+                    r += '%' + s
+
+                inplaceholder = False
+                continue
+
+            # Is `s` a '%' indicating the beginning of a placeholder token (%s)
+            if not inquote and s == '%':
+                inplaceholder = True
+
+            if not inplaceholder:
+                # Concatentate the SQL character to the return str 
+                r += s
+
+        return r
 
     @property
     def isstreaming(self):

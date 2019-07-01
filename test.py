@@ -1449,7 +1449,6 @@ class test_orm(tester):
             '__setitem__',  'getindex',       'delete'
         )
 
-
         for nono in nonos:
             self.expect(AttributeError, lambda: getattr(arts, nono))
         
@@ -1461,7 +1460,6 @@ class test_orm(tester):
             art.lastname = lastname
             arts += art
             art.save()
-
 
         arts1 = artists(orm.stream, lastname=lastname).sorted('id')
         arts.sort('id')
@@ -1619,7 +1617,10 @@ class test_orm(tester):
 
         fname, lname = arts.first['firstname', 'lastname']
 
-        # TODO Test where literal has a UUID so introducers (_binary) are tested.
+        # Test where literal has a UUID so introducers (_binary) are tested.
+        arts1 = artists("id", arts.first.id)
+        self.one(arts1)
+        self.eq(arts.first.id, arts1.first.id)
 
         # Test a where string with an args tuple
         arts1 = artists('firstname = %s', (arts.first.firstname,))
@@ -1790,15 +1791,19 @@ class test_orm(tester):
         self.one(self.chronicles)
 
     def it_searches_entities_using_fulltext_index(self):
+        for e in artists, artifacts:
+            e.orm.truncate()
+
         arts, facts = artists(), artifacts()
         for i in range(2):
             art = artist.getvalid()
             fact = artifact.getvalid()
             if i:
-                art.bio = fact.title = 'one two three four five six'
-                fact.description = 'seven eight nine ten'
+                art.bio = fact.title = 'one two three %s four five six'
+                fact.description = 'seven eight %s nine ten'
             else:
-                art.bio = fact.title = la2gr('one two three four five six')
+                art.bio = la2gr('one two three four five six')
+                fact.title = art.bio
                 fact.description = la2gr('seven eight nine ten')
 
             arts += art; facts += fact
@@ -1806,45 +1811,62 @@ class test_orm(tester):
         arts.save(facts)
 
         # Search string of 'zero' should produce zero results
-        res = artists('match(bio) against (%s)', 'zero')
-        self.zero(res)
+        arts1 = artists('match(bio) against (%s)', 'zero')
+        self.zero(arts1)
 
         # Search for the word "three"
-        res = artists('match(bio) against (%s)', 'three')
-        self.one(res)
-        self.eq(arts.second.id, res.first.id)
+        arts1 = artists('match(bio) against (%s)', 'three')
+        self.one(arts1)
+        self.eq(arts.second.id, arts1.first.id)
 
         # Search for the Greek transliteration of "three". We want to ensure
         # there is no issue with Unicode characters.
-        res = artists('match(bio) against (%s)', la2gr('three'))
-        self.one(res)
-        self.eq(arts.first.id, res.first.id)
+        arts1 = artists('match(bio) against (%s)', la2gr('three'))
+        self.one(arts1)
+        self.eq(arts.first.id, arts1.first.id)
 
         # Test "composite" full-text search
 
         # Search string of 'zero' should produce zero results
-        res = artifacts('match(title, description) against(%s)', 'zero')
-        self.zero(res)
+        arts1 = artifacts('match(title, description) against(%s)', 'zero')
+        self.zero(arts1)
 
         # Search for the word "three". "three" is in 'title'.
-        res = artifacts('match(title, description) against(%s)', 'three')
-        self.one(res)
-        self.eq(facts.second.id, res.first.id)
+        arts1 = artifacts('match(title, description) against(%s)', 'three')
+        self.one(arts1)
+        self.eq(facts.second.id, arts1.first.id)
 
         # Search for eight. "eight" is in 'description'.
-        res = artifacts('match(title, description) against(%s)', 'eight')
-        self.one(res)
-        self.eq(facts.second.id, res.first.id)
+        arts1 = artifacts('match(title, description) against(%s)', 'eight')
+        self.one(arts1)
+        self.eq(facts.second.id, arts1.first.id)
 
         # Search for the Greek transliteration of "three". It is in 'title';
-        res = artifacts('match(title, description) against(%s)', la2gr('three'))
-        self.one(res)
-        self.eq(facts.first.id, res.first.id)
+        arts1 = artifacts('match(title, description) against(%s)', la2gr('three'))
+        self.one(arts1)
+        self.eq(facts.first.id, arts1.first.id)
 
         # Search for the Greek transliteration of "eight". It is in 'description'.
-        res = artifacts('match(title, description) against(%s)', la2gr('eight'))
-        self.one(res)
-        self.eq(facts.first.id, res.first.id)
+        arts1 = artifacts('match(title, description) against(%s)', la2gr('eight'))
+        self.one(arts1)
+        self.eq(facts.first.id, arts1.first.id)
+
+        # Search for literal placeholders string (i.e., '%s')
+        arts1 = artists("match(bio) against (%s)", 'three %s')
+        self.one(arts1)
+        self.eq(arts.second.id, arts1.first.id)
+
+        # NOTE MySQL doesn't return a match here, even though there is a
+        # literal '%s' in the artist.bio field
+        arts1 = artists("match(bio) against ('%s')", ())
+        self.zero(arts1)
+
+        arts1 = artists("match(bio) against ('three %s')", ())
+        self.one(arts1)
+        self.eq(arts.second.id, arts1.first.id)
+
+        arts1 = artists("match(bio) against ('%x')", ())
+        self.zero(arts1)
 
     def it_searches_subentities_using_fulltext_index(self):
         sngs, concs = artists(), concerts()
@@ -1866,47 +1888,75 @@ class test_orm(tester):
         # artists("firstanme = %s", ())
 
         # Search string of 'zero' should produce zero results
-        sngs1 = singers("match(bio) against ('%s')", 'zero')
+        sngs1 = singers("match(bio) against (%s)", 'zero')
+        self.zero(sngs1)
+
+        # Search string of 'zero' should produce zero results
+        sngs1 = singers("match(bio) against ('zero')", ())
         self.zero(sngs1)
 
         # Search for the word "three"
-        sngs1 = singers("match(bio) against ('%s')", 'three')
+        sngs1 = singers("match(bio) against (%s)", 'three')
+        self.one(sngs1)
+        self.eq(sngs.second.id, sngs1.first.id)
+
+        # Search for the word "three"
+        sngs1 = singers("match(bio) against ('three')", ())
         self.one(sngs1)
         self.eq(sngs.second.id, sngs1.first.id)
 
         # Search for the Greek transliteration of "three". We want to ensure
         # there is no issue with Unicode characters.
-        sngs1 = singers("match(bio) against ('%s')", la2gr('three'))
+        sngs1 = singers("match(bio) against (%s)", la2gr('three'))
         self.one(sngs1)
         self.eq(sngs.first.id, sngs1.first.id)
 
-        # For some reason, at the moment, this isn't happening
-        l = lambda: concerts("match(title, xxx) against('%s')", 'zero')
+        l = lambda: concerts("match(title, xxx) against(%s)", 'zero')
         self.expect(orm.invalidcolumn, l)
 
         # Test "composite" full-text search
 
         # Search string of 'zero' should produce zero results
-        concs1 = concerts("match(title, description1) against('%s')", 'zero')
+        concs1 = concerts("match(title, description1) against(%s)", 'zero')
+        self.zero(concs1)
+        
+        concs1 = concerts("match(title, description1) against('zero')", ())
         self.zero(concs1)
 
         # Search for the word "three". "three" is in 'title'.
-        concs1 = concerts("match(title, description1) against('%s')", 'three')
+        concs1 = concerts("match(title, description1) against(%s)", 'three')
+        self.one(concs1)
+        self.eq(concs.second.id, concs1.first.id)
+
+        # Search for the word "three". "three" is in 'title'.
+        concs1 = concerts("match(title, description1) against('three')", ())
         self.one(concs1)
         self.eq(concs.second.id, concs1.first.id)
 
         # Search for eight. "eight" is in 'description1'.
-        concs1 = concerts("match(title, description1) against('%s')", 'eight')
+        concs1 = concerts("match(title, description1) against(%s)", 'eight')
+        self.one(concs1)
+        self.eq(concs.second.id, concs1.first.id)
+
+        # Search for eight. "eight" is in 'description1'.
+        concs1 = concerts("match(title, description1) against('eight')", ())
         self.one(concs1)
         self.eq(concs.second.id, concs1.first.id)
 
         # Search for the Greek transliteration of "three". It is in 'title';
-        concs1 = concerts("match(title, description1) against('%s')", la2gr('three'))
+        wh = "match(title, description1) against('%s')" % la2gr('three')
+        concs1 = concerts(wh, ())
         self.one(concs1)
         self.eq(concs.first.id, concs1.first.id)
 
         # Search for the Greek transliteration of "eight". It is in 'description1'
-        concs1 = concerts("match(title, description1) against('%s')", la2gr('eight'))
+        concs1 = concerts("match(title, description1) against(%s)", la2gr('eight'))
+        self.one(concs1)
+        self.eq(concs.first.id, concs1.first.id)
+
+        # Search for the Greek transliteration of "eight". It is in 'description1'
+        wh = "match(title, description1) against('%s')" % la2gr('eight')
+        concs1 = concerts(wh, ())
         self.one(concs1)
         self.eq(concs.first.id, concs1.first.id)
         
@@ -4946,9 +4996,7 @@ class test_orm(tester):
                     comp.name = 'art-art_fact-role-fact-comp-name' + str(l)
                     fact.components += comp
 
-        print('saving...')
         arts.save()
-        print('saved')
 
         # TODO Do these two lines serve a purpose?
         presentation.getvalid().save()
@@ -5024,6 +5072,8 @@ class test_orm(tester):
             self.true(fact1.weight in (10, 11, 13, 14))
 
     def it_calls_innerjoin_on_entities_with_IN_clauses(self):
+        for e in artists, artifacts:
+            e.orm.truncate()
         arts = artists()
         for i in range(8):
             art = artist.getvalid()
@@ -5477,14 +5527,14 @@ class test_orm(tester):
         #
         # Writing the above using string concatenation is difficult.
 
-        art = artists("firstname = '1234'", ())
-        self.eq("'1234'", art.orm.where.args[0])
-        self.eq("%s", art.orm.where.predicate.operands[1])
+        arts = artists("firstname = '1234'", ())
+        self.eq("1234", arts.orm.where.args[0])
+        self.eq("%s", arts.orm.where.predicate.operands[1])
 
-        art = artists("firstname = '1234' or lastname = '5678'", ())
-        self.eq("'1234'", art.orm.where.args[0])
-        self.eq("'5678'", art.orm.where.args[1])
-        for i, pred in enumerate(art.orm.where.predicate):
+        arts = artists("firstname = '1234' or lastname = '5678'", ())
+        self.eq("1234", arts.orm.where.args[0])
+        self.eq("5678", arts.orm.where.args[1])
+        for i, pred in enumerate(arts.orm.where.predicate):
             self.eq("%s", pred.operands[1])
             self.lt(i, 2)
 
@@ -5493,12 +5543,12 @@ class test_orm(tester):
             "lastname  between '2345' and '6789'"
         )
 
-        art = artists(expr, ())
-        self.eq("'1234'", art.orm.where.args[0])
-        self.eq("'5678'", art.orm.where.args[1])
-        self.eq("'2345'", art.orm.where.args[2])
-        self.eq("'6789'", art.orm.where.args[3])
-        for i, pred in enumerate(art.orm.where.predicate):
+        arts = artists(expr, ())
+        self.eq("1234", arts.orm.where.args[0])
+        self.eq("5678", arts.orm.where.args[1])
+        self.eq("2345", arts.orm.where.args[2])
+        self.eq("6789", arts.orm.where.args[3])
+        for i, pred in enumerate(arts.orm.where.predicate):
             self.eq("%s", pred.operands[1])
             self.lt(i, 2)
 
@@ -6259,6 +6309,7 @@ class test_orm(tester):
             self.none(pred.operands)
             self.notnone(pred.match)
             self.eq(cols, pred.match.columns)
+            B(expr != str(pred.match))
             self.eq(expr, str(pred.match))
 
             if pred.junctionop:
