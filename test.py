@@ -1461,6 +1461,8 @@ class test_orm(tester):
             arts += art
             art.save()
 
+        # TODO Remove all 'id' argument being passed to the `sorted()` methods
+        # since it is the default.
         arts1 = artists(orm.stream, lastname=lastname).sorted('id')
         arts.sort('id')
 
@@ -1883,9 +1885,6 @@ class test_orm(tester):
             sngs += sng; concs += conc
 
         sngs.save(concs)
-
-        # TODO Query args to orm.entities() should no require single-quotes, i.e.,
-        # artists("firstanme = %s", ())
 
         # Search string of 'zero' should produce zero results
         sngs1 = singers("match(bio) against (%s)", 'zero')
@@ -2525,7 +2524,7 @@ class test_orm(tester):
         self.zero(art.presentations)
         self.zero(art.locations)
 
-        # Test a custome @property
+        # Test a custom @property
         self.false(art.processing)
         art.processing = True
         self.true(art.processing)
@@ -2555,12 +2554,12 @@ class test_orm(tester):
         self.zero(sng.concerts)
         self.zero(sng.locations)
 
-        # Test a custome @property
+        # Test a custom @property
         self.false(sng.transmitting)
         sng.transmitting = True
         self.true(sng.transmitting)
 
-        # Test a custome @property in super class 
+        # Test a custom @property in super class 
         self.false(sng.processing)
         sng.processing = True
         self.true(sng.processing)
@@ -3623,9 +3622,13 @@ class test_orm(tester):
         # then subscribe so we have to clear arts next.
         arts.onafterreconnect += art_onafterreconnect
 
-        # Subscribing to the event above loads arts, so call the clear()
-        # method.
+        # Subscribing to the event above loads arts so call the clear() method.
         arts.clear()
+
+        # In addition to clear()ing the collection, flag the collection as
+        # unloaded to ensure an attempt is made to reload the collection when
+        # `arts.count` is called below.
+        arts.orm.isloaded = False
 
         # Make sure connections are drowned.
         drown()
@@ -4998,10 +5001,6 @@ class test_orm(tester):
 
         arts.save()
 
-        # TODO Do these two lines serve a purpose?
-        presentation.getvalid().save()
-        artist.getvalid().save()
-
         return arts
 
     def it_calls_innerjoin_on_entities_with_BETWEEN_clauses(self):
@@ -5526,6 +5525,15 @@ class test_orm(tester):
         #     artist('id = %s', (uuid.bytes,))
         #
         # Writing the above using string concatenation is difficult.
+        #
+        # HOWEVER: Given that the predicate parser (`predicate._parse()`) has
+        # not been thoroughly review by security specialists, it is considered
+        # unsafe to rely on it to correctly identify literals and columns in
+        # WHERE predicates.  Because of this, until we have a proof that the
+        # predicate parser is invincible to malicious attacts, we should
+        # continue to insist that the user use the `args` tuple to pass in
+        # varient values when querying entities collections so the underlying
+        # MySQL library can safely deal with these arguments seperately.
 
         arts = artists("firstname = '1234'", ())
         self.eq("1234", arts.orm.where.args[0])

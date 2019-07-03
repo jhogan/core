@@ -84,7 +84,7 @@ class types(Enum):
 
 class undef:
     """ 
-    A class which indicates a value has not been set.::
+    A class which indicates a value has not been set.:
 
         x = orm.undef
 
@@ -162,6 +162,18 @@ class stream(entitiesmod.entity):
                    self.stop  >= slc.stop
 
         def advance(self, slc):
+            """
+            Advance the cursor in accordance with the ``slice`` argument's
+            ``start`` and ``stop`` properties. If the slice calls for data
+            not currently loaded in the ``chunk`` collecion, the ``chunk``
+            is cleared and loaded with new data from the database.
+
+            :param: slice slc: The ``start`` and ``stop`` properties of the
+                               slice indicate which rows in the stream to 
+                               which the cursor should be advanced.
+            """
+
+            # Convert int to a slice
             if isinstance(slc, int):
                 slc = slice(slc, slc + 1)
 
@@ -177,11 +189,13 @@ class stream(entitiesmod.entity):
                     # TODO es[3:3] or es[3:2] will produce empty results like
                     # lists do. However, es[3:-1] should produces a non-empty
                     # result (also like lists). However, this case is currently
-                    # not implemented at the moment.
+                    # unimplemented.
                     msg = 'Negative stops not implemented'
                     raise NotImplementedError(msg)
                 return self.chunk[0:0]
 
+            # Does the chunk need to be reloaded to get the data requested by
+            # the slice?
             if slc not in self or not self.chunkloaded:
                 self._start = slc.start
                 self._stop = slc.stop
@@ -368,7 +382,7 @@ class joins(entitiesmod.entities):
             if join.entities.orm.issuperentity(of=self.entities):
                 # If `join`'s entities collection is a superentity to
                 # self.entities, then the joinpx will be the PK of
-                # join.enitites - which will almost always be 'id'. This is
+                # join.entities - which will almost always be 'id'. This is
                 # because the relationship between super and subentities is
                 # one-to-one so joinerpk and joinpk will both always be 'id'
                 joinpk = join.entities.orm.mappings.primarykeymapping.name
@@ -1259,7 +1273,6 @@ class eager:
         return super().__str__()
 
 class entities(entitiesmod.entities):
-
     @classproperty
     def all(cls):
         return cls(allstream)
@@ -1409,7 +1422,7 @@ class entities(entitiesmod.entities):
             # For each of self's asssociations mappings
             for map in self.orm.mappings.associationsmappings:
 
-                # For ecah enity mapping in this associationsmapping
+                # For ecah entity mapping in this associationsmapping
                 for map1 in map.associations.orm.mappings.entitymappings:
 
                     # If the associationsmapping's entity is the same class as
@@ -1708,6 +1721,9 @@ class entities(entitiesmod.entities):
         # self.orm.where.ensurequoted()
 
     def clear(self):
+        """
+        Remove all elements from the entities collection.
+        """
         # NOTE: This line is slated for removal. See the explainaition given in
         # the FIXME in
         # test_orm.it_moves_constituent_to_a_different_composite().
@@ -1717,7 +1733,7 @@ class entities(entitiesmod.entities):
         try:
             # Set isremoving to True so entities.__getattribute__ doesn't
             # attempt to load whenever the removing logic calls an attibute on
-            # the ntities collection.
+            # the entities collection.
             self.orm.isremoving = True
             super().clear()
         finally:
@@ -1737,42 +1753,79 @@ class entities(entitiesmod.entities):
 
     # TODO Move this to orm
     def load(self, orderby=None, limit=None, offset=None):
+        """
+        Loads data from the database into the collection. The SQL used 
+        to load the data is generated mostly from arguments passed to
+        the entities collection's contructor.
+
+        Note that an ORM user typically doesn't call ``load`` explicitly. The
+        call to ``load`` is usually made by the ORM after the entities
+        collection has been instantiated and during the invocation of one of
+        the collection's properties or methods. See
+        ``entities.__getattribute__``.
+
+        :param: str orderby: The list of columns to be passed to the ``ORDER
+                             BY`` clause. Used only streaming mode.
+
+        :param: int limit:   An integer value to pass to the ``LIMIT`` keyword.
+                             Used only in streaming mode.
+
+        :param: int offset:  An integer value to pass to the ``OFFSET``
+                             keyword.  Used only in streaming mode.
+        """
+
+        # Don't attemt to load if already loaded.
         if self.orm.isloaded:
             return
 
         try:
             self.orm.isloading = True
 
+            # Get SQL and SQL parameters/args
             sql, args = self.orm.sql
 
+            # Concatenate the orderby
             if orderby:
                 sql += ' ORDER BY ' + orderby
 
+            # Concatenate the LIMIT and OFFSET
             if limit is not None:
                 offset = 0 if offset is None else offset
                 sql += ' LIMIT %s OFFSET %s' % (limit, offset)
 
+            # Set up a function to be called by the database's executioner to
+            # populate `ress` with the resultset
             ress = None
             def exec(cur):
                 nonlocal ress
+                
+                # Call execute on the cursor
                 cur.execute(sql, args)
+
+                # Assign ress the resultset
                 ress = db.dbresultset(cur)
 
+            # Instantiate the executioner
             exec = db.executioner(exec)
 
+            # Connect the executioner's *reconnect events to self's
             exec.onbeforereconnect += \
                 lambda src, eargs: self.onbeforereconnect(src, eargs)
             exec.onafterreconnect  += \
                 lambda src, eargs: self.onafterreconnect(src, eargs)
 
+            # Execute the query. `ress` will be populated with the results.
             exec.execute()
 
+            # Raise self's onafterload event
             eargs = db.operationeventargs(self, 'retrieve', sql, args)
             self.onafterload(self, eargs)
 
             # TODO Remove edict here
             edict = dict()
 
+            # Use the resultset to populate the entities collection (self) and
+            # link the entities together (linking is done in `orm.link()`).
             self.orm.populate(ress)
 
         finally:
@@ -1781,6 +1834,9 @@ class entities(entitiesmod.entities):
 
     def _getbrokenrules(self, es=None, followentitymapping=True):
         brs = entitiesmod.brokenrules()
+
+        # TODO Replace with 
+        #     `if any(not isinstance(x, self.orm.entity) for x in self)`
         for e in self:
             #if self.orm.entities not in e.orm.entities.mro():
             if not isinstance(e, self.orm.entity):
@@ -1807,7 +1863,7 @@ class entities(entitiesmod.entities):
         super().getindex(e)
 
     def __repr__(self):
-        # TODO Add a count of the object the way enities.__str__ does:
+        # TODO Add a count of the object the way entities.__str__ does:
         # Instead of the header saying:
         #     <class '__main__.concerts'> object at 0x7f9ba3cf8ba8
         # have it say something like:
@@ -2523,12 +2579,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         brs += v._getbrokenrules(guestbook, 
                             followentitymapping=followentitymapping
                         )
+
             elif type(map) is associationsmapping:
                 if map.isloaded:
                     v = map.value
                     if v:
                         brs += v._getbrokenrules(guestbook)
-
 
         return brs
 
@@ -3999,6 +4055,7 @@ class orm:
                 # artist,locations.last)
                 for map1 in maps:
                     if isinstance(e, map1.entities.orm.entity):
+                        # TODO Replace with `if map1.isloaded:`
                         if map1._value is None:
                             map1._value = map1.entities()
                         map1._value += e
@@ -4557,7 +4614,26 @@ class associations(entities):
         super()._self_onremove(src, eargs)
 
     def entities_onadd(self, src, eargs):
+        """
+        An event handler invoked when an entity is added to the association
+        (``self``) through the associations psuedo-collection, e.g.::
+
+            # Create artist entity
+            art = artist()            
+
+            # Add artifact entity to the artist's psuedocollection
+            art.artifact += artifact() 
+
+        :param: src entities:    The psuedocollection's entities object.
+        :param: eargs eventargs: The event arguments. Its ``entity`` property
+                                 is the entity object being added to the 
+                                 psuedocollection.
+        """
         ass = None
+
+        # Look through the association collection's (self's) entity mappings
+        # for one that matches eargs.entity by type. That entity mapping will
+        # refer to the association's reference to the entity being added.
         for map in self.orm.mappings.entitymappings:
             if map.entity is type(eargs.entity):
                 for ass in self:
@@ -4567,8 +4643,12 @@ class associations(entities):
                         # to add it again.
                         return
 
+                # eargs.entity is not a constituent entity in this collection
+                # of associations yet so create a new association and assign
+                # eargs.entity to it.
                 ass = self.orm.entity()
                 setattr(ass, map.name, eargs.entity)
+
             if map.entity is type(self.composite):
                 compmap = map
         
