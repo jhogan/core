@@ -1054,11 +1054,11 @@ class test_orm(tester):
             for fact in art1.artifacts:
                 self.ne(rmfact.id, fact.id)
 
-            self.expect(db.recordnotfounderror, lambda: artist_artifact(rmaa.id))
-            self.expect(db.recordnotfounderror, lambda: artifact(rmfact.id))
+            self.expect(db.RecordNotFoundError, lambda: artist_artifact(rmaa.id))
+            self.expect(db.RecordNotFoundError, lambda: artifact(rmfact.id))
 
             for comp in rmcomps:
-                self.expect(db.recordnotfounderror, lambda: component(comp.id))
+                self.expect(db.RecordNotFoundError, lambda: component(comp.id))
 
         # TODO Test deeply nested associations
 
@@ -1093,7 +1093,7 @@ class test_orm(tester):
 
         self.zero(artist(art.id).presentations)
 
-        self.expect(db.recordnotfounderror, lambda: presentation(trashid))
+        self.expect(db.RecordNotFoundError, lambda: presentation(trashid))
 
         # Test associations
         art = artist.getvalid()
@@ -1146,8 +1146,8 @@ class test_orm(tester):
         self.zero(artist(art.id).artifacts)
         self.zero(artist(art.id).artist_artifacts)
 
-        self.expect(db.recordnotfounderror, lambda: artist_artifact(aa.id))
-        self.expect(db.recordnotfounderror, lambda: artifact(factid))
+        self.expect(db.RecordNotFoundError, lambda: artist_artifact(aa.id))
+        self.expect(db.RecordNotFoundError, lambda: artifact(factid))
 
     def it_raises_error_on_invalid_attributes_of_associations(self):
         art = artist()
@@ -1984,7 +1984,7 @@ class test_orm(tester):
         self.one(self.chronicles)
         self._chrons(art, 'delete')
 
-        self.expect(db.recordnotfounderror, lambda: artist(art.id))
+        self.expect(db.RecordNotFoundError, lambda: artist(art.id))
         
         # Ensure the remaining artist still exists in database
         self.expect(None, lambda: artist(arts.first.id))
@@ -2429,7 +2429,7 @@ class test_orm(tester):
         self.false(art.orm.ismarkedfordeletion)
 
         # Ensure artist wasn't saved
-        self.expect(db.recordnotfounderror, lambda: artist(art.id))
+        self.expect(db.RecordNotFoundError, lambda: artist(art.id))
 
         # For each presentations, ensure state was not modified and no presentation 
         # object was saved.
@@ -2437,7 +2437,7 @@ class test_orm(tester):
             self.true(pres.orm.isnew)
             self.false(pres.orm.isdirty)
             self.false(pres.orm.ismarkedfordeletion)
-            self.expect(db.recordnotfounderror, lambda: presentation(pres.id))
+            self.expect(db.RecordNotFoundError, lambda: presentation(pres.id))
 
     def it_calls_entities(self):
         
@@ -3454,7 +3454,7 @@ class test_orm(tester):
 
             self.eq((True, False, False), art.orm.persistencestate)
 
-            self.expect(db.recordnotfounderror, lambda: artist(art.id))
+            self.expect(db.RecordNotFoundError, lambda: artist(art.id))
 
     def it_deletes_from_entitys_collections(self):
         # Create artist with a presentation and save
@@ -3495,8 +3495,8 @@ class test_orm(tester):
         self.zero(art.presentations)
         self.zero(art.presentations.orm.trash)
 
-        self.expect(db.recordnotfounderror, lambda: presentation(pres.id))
-        self.expect(db.recordnotfounderror, lambda: location(loc.id))
+        self.expect(db.RecordNotFoundError, lambda: presentation(pres.id))
+        self.expect(db.RecordNotFoundError, lambda: location(loc.id))
 
 
     def it_raises_exception_on_unknown_id(self):
@@ -3504,7 +3504,7 @@ class test_orm(tester):
             try:
                 cls(uuid4())
             except Exception as ex:
-                self.type(db.recordnotfounderror, ex)
+                self.type(db.RecordNotFoundError, ex)
             else:
                 self.fail('Exception not thrown')
 
@@ -3671,12 +3671,12 @@ class test_orm(tester):
 
         self.expect(None, lambda: singer(sng.id))
 
-        self.expect(db.recordnotfounderror, lambda: presentation(pres.id))
-        self.expect(db.recordnotfounderror, lambda: location(loc.id))
+        self.expect(db.RecordNotFoundError, lambda: presentation(pres.id))
+        self.expect(db.RecordNotFoundError, lambda: location(loc.id))
 
         for e in art1 + art2 + arts + sng:
             e.delete()
-            self.expect(db.recordnotfounderror, lambda: artist(pres.id))
+            self.expect(db.RecordNotFoundError, lambda: artist(pres.id))
 
         arts.save(art1, art2, sng)
 
@@ -4587,17 +4587,17 @@ class test_orm(tester):
         self.eq((True, False, False), sng.orm.persistencestate)
 
         # Ensure singer wasn't saved
-        self.expect(db.recordnotfounderror, lambda: singer(sng.id))
+        self.expect(db.RecordNotFoundError, lambda: singer(sng.id))
 
         # For each presentations and concerts, ensure state was not modified
         # and no presentation object was saved.
         for pres in sng.presentations:
             self.eq((True, False, False), pres.orm.persistencestate)
-            self.expect(db.recordnotfounderror, lambda: presentation(pres.id))
+            self.expect(db.RecordNotFoundError, lambda: presentation(pres.id))
 
         for conc in sng.concerts:
             self.eq((True, False, False), conc.orm.persistencestate)
-            self.expect(db.recordnotfounderror, lambda: concert(conc.id))
+            self.expect(db.RecordNotFoundError, lambda: concert(conc.id))
 
     def it_deletes_subentities(self):
         # Create two artists
@@ -4623,7 +4623,7 @@ class test_orm(tester):
         self._chrons(sng.orm.super, 'delete')
 
         for sng in sng, sng.orm.super:
-            self.expect(db.recordnotfounderror, lambda: singer(sng.id))
+            self.expect(db.RecordNotFoundError, lambda: singer(sng.id))
             
         # Ensure the remaining singer and artist still exists in database
         for sng in sngs.first, sngs.first.orm.super:
@@ -4820,8 +4820,8 @@ class test_orm(tester):
 
         self.eq((True, False, False), sng.orm.persistencestate)
 
-        self.expect(db.recordnotfounderror, lambda: artist(sng.id))
-        self.expect(db.recordnotfounderror, lambda: singer(sng.id))
+        self.expect(db.RecordNotFoundError, lambda: artist(sng.id))
+        self.expect(db.RecordNotFoundError, lambda: singer(sng.id))
 
         # Ensure that an invalid sng can be deleted
         sng = singer.getvalid()
@@ -4833,8 +4833,8 @@ class test_orm(tester):
         sng.lastname  = 'X' * 256 # Invalidate
 
         sng.delete()
-        self.expect(db.recordnotfounderror, lambda: artist(sng.id))
-        self.expect(db.recordnotfounderror, lambda: singer(sng.id))
+        self.expect(db.RecordNotFoundError, lambda: artist(sng.id))
+        self.expect(db.RecordNotFoundError, lambda: singer(sng.id))
 
     def it_deletes_from_subentitys_entities_collections(self):
         chrons = self.chronicles
@@ -4878,8 +4878,8 @@ class test_orm(tester):
         self.zero(sng.presentations)
         self.zero(sng.presentations.orm.trash)
 
-        self.expect(db.recordnotfounderror, lambda: presentation(pres.id))
-        self.expect(db.recordnotfounderror, lambda: location(loc.id))
+        self.expect(db.RecordNotFoundError, lambda: presentation(pres.id))
+        self.expect(db.RecordNotFoundError, lambda: location(loc.id))
 
     def it_deletes_from_subentitys_subentities_collections(self):
         chrons = self.chronicles
@@ -4923,9 +4923,8 @@ class test_orm(tester):
         self.zero(sng.concerts)
         self.zero(sng.concerts.orm.trash)
 
-        # TODO Rename recordnotfounderror to missingrecord
-        self.expect(db.recordnotfounderror, lambda: concert(conc.id))
-        self.expect(db.recordnotfounderror, lambda: location(loc.id))
+        self.expect(db.RecordNotFoundError, lambda: concert(conc.id))
+        self.expect(db.RecordNotFoundError, lambda: location(loc.id))
 
     def _create_join_test_data(self):
         ''' Create test data to be used by the outer/inner join tests. '''
@@ -7590,7 +7589,7 @@ class test_blogpost(tester):
         try:
             blogpost(uuid4().hex, self.blog)
         except Exception as ex:
-            self.type(db.recordnotfounderror, ex)
+            self.type(db.RecordNotFoundError, ex)
         else:
             self.fail('Exception not thrown')
 
@@ -7601,7 +7600,7 @@ class test_blogpost(tester):
         try:
             blogpost(slug, bl)
         except Exception as ex:
-            self.type(db.recordnotfounderror, ex)
+            self.type(db.RecordNotFoundError, ex)
         else:
             self.fail('Exception not thrown')
 
