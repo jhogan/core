@@ -824,7 +824,7 @@ class test_orm(tester):
         for _ in range(2):
             comps3 += component.getvalid()
 
-        comps3.sort('id')
+        comps3.sort()
         art3.artist_artifacts.first.artifact.components += comps3.first
         art3.artifacts.first.components += comps3.second
 
@@ -1319,7 +1319,7 @@ class test_orm(tester):
             # Iterate over the streamed collection and compare it two the
             # non-streameed artists collections above. Do this twice so we know
             # __iter__ resets itself correctly.
-            arts.sort('id')
+            arts.sort()
             for _ in range(2):
                 j = -1
                 for j, art in enumerate(arts1):
@@ -1367,7 +1367,7 @@ class test_orm(tester):
             stm = orm.stream(chunksize=chunksize)
             arts1 = artists(stm, lastname=lastname).sorted('id')
 
-            arts.sort('id')
+            arts.sort()
             
             # Test indexing in asceding order
             for i in range(10):
@@ -1439,7 +1439,7 @@ class test_orm(tester):
         # TODO Remove all 'id' argument being passed to the `sorted()` methods
         # since it is the default.
         arts1 = artists(orm.stream, lastname=lastname).sorted('id')
-        arts.sort('id')
+        arts.sort()
 
         self.eq(arts.head(2).pluck('id'), arts1.head(2).pluck('id'))
 
@@ -2125,12 +2125,12 @@ class test_orm(tester):
         chrons.clear()
 
         press = art1.presentations
-        art.presentations.sort('id')
+        art.presentations.sort()
 
         self.one(chrons)
 
         self.eq(chrons.where('entity', press).first.op, 'retrieve')
-        art1.presentations.sort('id')
+        art1.presentations.sort()
         for pres, pres1 in zip(art.presentations, art1.presentations):
             self.eq((False, False, False), pres.orm.persistencestate)
             self.eq((False, False, False), pres1.orm.persistencestate)
@@ -2162,14 +2162,14 @@ class test_orm(tester):
         art1 = artist(art.id)
         self.two(art1.presentations)
 
-        art.presentations.sort('id')
-        art1.presentations.sort('id')
+        art.presentations.sort()
+        art1.presentations.sort()
         for pres, pres1 in zip(art.presentations, art1.presentations):
 
-            pres.locations.sort('id')
+            pres.locations.sort()
 
             chrons.clear()
-            pres1.locations.sort('id')
+            pres1.locations.sort()
 
             self.one(chrons)
             locs = pres1.locations
@@ -3934,8 +3934,8 @@ class test_orm(tester):
 
         self.eq(chrons.where('entity', press).first.op, 'retrieve')
 
-        sng.presentations.sort('id')
-        sng1.presentations.sort('id')
+        sng.presentations.sort()
+        sng1.presentations.sort()
         for pres, pres1 in zip(sng.presentations, sng1.presentations):
             for map in pres.orm.mappings:
                 if isinstance(map, orm.fieldmapping):
@@ -3966,14 +3966,14 @@ class test_orm(tester):
         sng1 = singer(sng.id)
         self.two(sng1.presentations)
 
-        sng.presentations.sort('id') # TODO Remove argument; its the default
-        sng1.presentations.sort('id') # TODO Remove argument; its the default
+        sng.presentations.sort()
+        sng1.presentations.sort()
         for pres, pres1 in zip(sng.presentations, sng1.presentations):
 
-            pres.locations.sort('id')# TODO Remove argument; its the default
+            pres.locations.sort()
 
             chrons.clear()
-            pres1.locations.sort('id')# TODO Remove argument; its the default
+            pres1.locations.sort()
 
             self.one(chrons)
             locs = pres1.locations
@@ -4064,8 +4064,8 @@ class test_orm(tester):
         self.eq(chrons.where('entity', concs[0].orm.super).first.op, 'retrieve')
         self.eq(chrons.where('entity', concs[1].orm.super).first.op, 'retrieve')
 
-        sng.concerts.sort('id')
-        sng1.concerts.sort('id')
+        sng.concerts.sort()
+        sng1.concerts.sort()
         for conc, conc1 in zip(sng.concerts, sng1.concerts):
             for map in conc.orm.mappings:
                 if isinstance(map, orm.fieldmapping):
@@ -4095,14 +4095,14 @@ class test_orm(tester):
         sng1 = singer(sng.id)
         self.two(sng1.concerts)
 
-        sng.concerts.sort('id')
-        sng1.concerts.sort('id')
+        sng.concerts.sort()
+        sng1.concerts.sort()
         for conc, conc1 in zip(sng.concerts, sng1.concerts):
 
-            conc.locations.sort('id')
+            conc.locations.sort()
 
             chrons.clear()
-            conc1.locations.sort('id')
+            conc1.locations.sort()
 
             locs = conc1.locations
 
@@ -9473,7 +9473,7 @@ Phone: 555 555 5555
 
         self.assertTwo(p.users)
 
-        us.sort('id'); p.users.sort('id')
+        us.sort(); p.users.sort()
         for u, pu in zip(us, p.users):
             self.assertEq(u.service,    pu.service)
             self.assertEq(u.name,       pu.name)
@@ -9493,12 +9493,12 @@ Phone: 555 555 5555
         # makes the test work.  It conceals the fact that shift()ing doesn't
         # mark the user entity for deletion.
         us += u
-        us.sort('id')
+        us.sort()
         us.shift()
 
         ## Add to p.users, sort and shift. We we are adding one and removing another.
         p.users += u
-        p.users.sort('id')
+        p.users.sort()
         p.users.shift()
 
         self.assertTwo(p.users)
@@ -9512,7 +9512,7 @@ Phone: 555 555 5555
 
         self.assertTwo(p.users)
 
-        us.sort('id'); p.users.sort('id')
+        us.sort(); p.users.sort()
         for u, pu in zip(us, p.users):
             self.assertEq(u.service,    pu.service)
             self.assertEq(u.name,       pu.name)
