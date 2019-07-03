@@ -1239,32 +1239,7 @@ class test_orm(tester):
         chrons.clear()
         art.save()
 
-        # FIXME In addition to the CREATE and UPDATE, a SELECT is being
-        # chronicled here. This seems to have been caused by the the new
-        # streaming logic.
-        #
-        # UPDATE: The reason for the SELECT is due to the fact that, in the
-        # `give()` method, a call is made to `super().give(es)`, which calls
-        # `self.clear()`. If you notice in orm.entities.clear(), there is
-        # the assignment `self.orm.isloaded = False`. So, in other words,
-        # art1.presentations.first.locations.orm.isloaded is set to False
-        # because the give() method is called on it.  It would seem that this
-        # line should be removed because it implies that clearing an entities
-        # object is the same as unloading the object which sets it up to be
-        # reloaded when it is later evaluated for reloading.
-        #
-        # The recommendations is that, once all tests are working (they
-        # currently aren't), the line `self.orm.isloaded = False` should be
-        # removed from `orm.entities.clear()`. I'm not sure why I ever thought it
-        # would be a good idea to put it there in the first place.
-
-        # self.two(chrons)
-
-        # TODO: This is changed to three even though it should be two (see
-        # above). This was added just to detect if it changes again. Either
-        # way, it should be two as above, and this particular line should
-        # eventually changed to self.two(chrons).
-        self.three(chrons)
+        self.two(chrons)
 
         loc = art.presentations.last.locations.last
         pres = art.presentations.last
