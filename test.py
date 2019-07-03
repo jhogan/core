@@ -2690,15 +2690,22 @@ class test_orm(tester):
 
         self.broken(loc, 'artist', 'valid')
 
-        return
-
-        # FIXME
         # associations
+
+        # Add wrong type to association
         art = artist.getvalid()
-        #art.artifacts += artifact.getvalid()
-        art.artist_artifacts += locations()
-        self.one(art.brokenrules)
-        self.broken(art, 'artifacts', 'valid')
+        art.artist_artifacts += location()
+        self.three(art.brokenrules)
+        self.broken(art, 'artist_artifacts', 'valid')
+
+        # Add wrong type to the pseudo-collection
+        art = artist.getvalid()
+        facts = art.artifacts 
+        loc = location.getvalid()
+        facts += loc
+
+        self.three(art.brokenrules)
+        self.broken(art, 'artifact', 'valid')
         
     def it_calls_explicit_attr_on_subentity(self):
         # Test inherited attr (phone)

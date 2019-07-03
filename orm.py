@@ -1852,6 +1852,10 @@ class entities(entitiesmod.entities):
             self.orm.isloaded = True
             self.orm.isloading = False
 
+    @property
+    def brokenrules(self):
+        return self._getbrokenrules()
+
     def _getbrokenrules(self, es=None, followentitymapping=True):
         brs = entitiesmod.brokenrules()
 
@@ -4672,6 +4676,22 @@ class associations(entities):
             if map.entity is type(self.composite):
                 compmap = map
         
+        if ass is None:
+            # If ass is None, there was an issue. Likely the user attempted to
+            # assign the wrong type of object to a psuedocollection (e.g.,
+            # art.artifacts = locations()). Since we don't want to raise
+            # exceptions in cases like these (preferring to allow the
+            # brokenrules property to flag them as invalid), we will go ahead
+            # and create a new association referencing the invalid composite
+            # (eargs.entity) instead.
+            ass = self.orm.entity()
+            for map1 in ass.orm.mappings.entitymappings:
+                if map1.name != compmap.name:
+                    setattr(ass, map1.name, eargs.entity)
+
+        # Assign the association collections's `composite` property to the
+        # new association object's composite field; completing the
+        # association
         setattr(ass, compmap.name, self.composite)
         self += ass
 
