@@ -410,7 +410,7 @@ class dbresultset(entities):
 
     def demandhasone(self):
         if not self.hasone:
-            raise recordnotfounderror('A single record was not found')
+            raise RecordNotFoundError('A single record was not found')
         return self.first
 
     def __repr__(self):
@@ -467,7 +467,7 @@ class dbresultfield(entity):
     def value(self):
         return self.dbresult._row[self.index]
 
-class recordnotfounderror(Exception):
+class RecordNotFoundError(Exception):
     pass
 
 class pool(entity):
