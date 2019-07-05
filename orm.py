@@ -51,7 +51,6 @@ import textwrap
 
 # TODO Add hard and softdelete logic
 # TODO Add reflective (self joined) relationships
-# TODO Consider making ? the placeholder token instead of %s
 
 # Set conditional break points
 def B(x=True):
@@ -870,14 +869,6 @@ class predicate(entitiesmod.entity):
             self.where           =  wh
             self.searchstringisplaceholder = False
             self._parse(lex)
-
-        def clone(self):
-            # TODO Should we add self.where as the second argument
-            m = Match(None)
-            m.columns = self.columns.copy()
-            m.searchstring = self.searchstring
-            m.mode = self.mode
-            m.junction = self.junction
 
         def _parse(self, lex):
             tok = lex.get_token()
@@ -2333,13 +2324,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         return self._getbrokenrules()
 
     def _getbrokenrules(self, guestbook=None, followentitymapping=True, followentitiesmapping=True):
-        # TODO If an association is added that is the incorrect type, 
-        # append a brokenrule, i.e.:
-        #
-        #   arts.artifacts += location() 
-        #   arts.artist_artifacts += location()
-        #
-
         brs = entitiesmod.brokenrules()
 
         # This "guestbook" logic prevents infinite recursion and duplicated
