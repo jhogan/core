@@ -2391,6 +2391,17 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         max=type(self).maxdatetime,
                     )
 
+            # NOTE I added a `followentitiesmapping` flag (7d3bc6ce) which I
+            # only applied to associations (see below) because assocations are
+            # a subtype of entities. However, I could have added it to the
+            # below line so that it would read:
+            #
+            #     `followentitiesmapping and elif type(map) is entitiesmapping:`
+            #
+            # However, I didn't do it because, at the moment, there is no issue
+            # here with the current logic. However, that may change and we will
+            # want to add (as one would expect) the `followentitiesmapping`
+            # flag here as well.
             elif type(map) is entitiesmapping:
                 # Currently, map.value will not load the entities on invocation
                 # so we get None for es. This is good because we don't want to
