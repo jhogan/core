@@ -4441,10 +4441,10 @@ class test_orm(tester):
         # concert().locations exists, so it would seem that the answer would be
         # "yes". However, the logic for this would be strange since we would
         # need to query the mappings collection of each subentities of the
-        # presentation collection to find a match. Plus, this seems like
-        # a very unlikely way for someone to want to use the ORM. I would like 
-        # to wait to see if this comes up in a real life situation before writing 
-        # the logic and tests for this. 
+        # presentation collection to find a match. Plus, this seems like a very
+        # unlikely way for someone to want to use the ORM. I would like to wait
+        # to see if this comes up in a real life situation before writing the
+        # logic and tests for this. 
         """
         self.expect(AttributeError, lambda: loc.concert)
        

@@ -275,7 +275,9 @@ class joins(entitiesmod.entities):
     A collection of ``join`` classes.
     """
     def __init__(self, initial=None, es=None):
-        # TODO Do we need this check?
+        # NOTE In order to conform to the entitymod.entities.__init__'s
+        # signature, we have to make es=None by default. However, we actually
+        # don't want es to have a default, so we simulate the behavior here.
         if es is None:
             raise ValueError('Missing entities')
         self.entities = es
@@ -2563,6 +2565,20 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         elif map is None:
             if attr != 'orm':
+                # For each of self's association mappings, look for the one
+                # that has entity mapping that matches `attr`. If found, get
+                # the associations collection object from the association
+                # mapping.  Then return that collection's `attr` property.
+                #
+                # For example, if `self` is an `artist`, and  `attr` is
+                # 'artifacts', return the association collection `artifacts`
+                # collection, i.e., ::
+                #
+                #     art.artist_arifacts.artifacts
+                #
+                # This gets you the pseudocollection of the artist_artifacts
+                # associations collection.
+
                 for map in self.orm.mappings.associationsmappings:
                     for map1 in map.associations.orm.mappings.entitymappings:
                         if map1.entity.orm.entities.__name__ == attr:
@@ -4540,16 +4556,38 @@ class associations(entities):
         self.remove(ass)
 
     def __getattr__(self, attr):
+        """
+        Return a composite object or constituent collection (psuedocollection)
+        requested by the user.
+
+        :param: str attr: The name of the attribute to return.
+        :rtype: orm.entity or orm.entities
+        :returns: Returns the composite or psuedocollection being requested for
+                  ``attr``
+        """
+
         # TODO Use the mappings collection to get __name__'s value.
+
+        # If `attr` matches the assocations composite, return the composite.
+        # This is for the less likely case where the ORM user is requesting the
+        # composite of the associations collection, e.g.,:
+        #
+        #     art.artist_artifacts.artist
+        #
+        # Note that `assert art is art.artist_artifacts.artists`.
         if attr == type(self.composite).__name__:
             return self.composite
 
         try:
+            # Returned a memoized constituent. These are created in the `except
+            # KeyError` block.
             return self._constituents[attr]
         except KeyError:
             for map in self.orm.mappings.entitymappings:
                 es = map.entity.orm.entities
                 if es.__name__ == attr:
+                    # Create a psuedocollection for the associations collection
+                    # object (self). Append it to the self's _constituents list.
                     es = es()
                     es.onadd    += self.entities_onadd
                     es.onremove += self.entities_onremove
@@ -4558,10 +4596,15 @@ class associations(entities):
             else:
                 raise AttributeError('Entity not found')
 
+            # Get all the entity objects stored in `self` then add them in to
+            # the pseudocollection (es).
             for ass in self:
-                es += getattr(ass, map.name)
+                e = getattr(ass, map.name) # :=
+                if e:
+                    es += e
 
-        return self._constituents[attr]
+            # Return pseudocollection.
+            return es
     
 class association(entity):
     @classmethod
