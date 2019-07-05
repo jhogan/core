@@ -135,17 +135,12 @@ class stream(entitiesmod.entity):
         @property
         def chunk(self):
             if self._chunk is None:
-                where = self.entities.orm.where
-                if where:
-                    cond = str(where.predicate)
-                    args = where.args
-                    # TODO A similar line is in the alternative block.
-                    # It may be nice if we could make it one line using *args syntax, e.g., 
-                    #   self._chunk = type(self.entities)(*args1)
-                    self._chunk = type(self.entities)(cond, args)
+                wh = self.entities.orm.where
+                if wh: # :=
+                    args1 = str(wh.predicate), wh.args 
                 else:
-                    self._chunk = type(self.entities)()
-
+                    args1 = tuple()
+                self._chunk = type(self.entities)(*args1)
                 self._chunk.orm.ischunk = True
 
             return self._chunk
@@ -309,7 +304,7 @@ class joins(entitiesmod.entities):
     def __str__(self, joinerroot=None, joineeroot=None):
         ''' Return the join portion of a SELECT query. '''
         
-        # TODO Parametersize this function. Currently it reports on variables
+        # TODO Parameterize this function. Currently it reports on variables
         # in the global scope which are not correct if the entities' type is an
         # assocition.
         # NOTE `entities.join` seems to be catching this condition which means
@@ -335,15 +330,8 @@ class joins(entitiesmod.entities):
                 raise ValueError('Invalid join type')
         r = ''
 
-        # TODO This appears to be a useless line. Remove it.
-        joiner = self
-
-        # TODO Change 'join' to 'j'. Also, scan the block for any other uses of
-        # the variable 'j' and ensure they are change (i.e., s/j/j1/) to avoid
-        # conflict
-
         # For each join object in this entities collection
-        for join in self:
+        for j in self:
 
             # Concatenate the table's abbreviation/alias to the `joineegraph`
             # and `joineegraph`. This denotes the hierarchy of the table within
@@ -360,10 +348,10 @@ class joins(entitiesmod.entities):
                 joineegraph = joineeroot
 
             # Get the join type as SQL keyword (i.e., 'INNER JOIN')
-            r += get_join_type(join)
+            r += get_join_type(j)
 
-            jointbl = join.entities.orm.table
-            joinabbr = join.entities.orm.abbreviation
+            jointbl = j.entities.orm.table
+            joinabbr = j.entities.orm.abbreviation
 
             # Concatenate the joineegraph
             joineegraph = '%s.%s' % (joineegraph, joinabbr)
@@ -375,58 +363,57 @@ class joins(entitiesmod.entities):
             # entities' mappings collection to get the actual name.
             joinerpk = self.entities.orm.mappings.primarykeymapping.name
 
-            if join.entities.orm.issuperentity(of=self.entities):
-                # If `join`'s entities collection is a superentity to
+            if j.entities.orm.issuperentity(of=self.entities):
+                # If `j`'s entities collection is a superentity to
                 # self.entities, then the joinpx will be the PK of
-                # join.entities - which will almost always be 'id'. This is
+                # j.entities - which will almost always be 'id'. This is
                 # because the relationship between super and subentities is
-                # one-to-one so joinerpk and joinpk will both always be 'id'
-                joinpk = join.entities.orm.mappings.primarykeymapping.name
+                # one-to-one so joinerpk and joineepk will both always be 'id'
+                joineepk = j.entities.orm.mappings.primarykeymapping.name
             else:
                 # Get the joineepk for the joinee table. As opposed to the
                 # consequent block above, this block represents the typical
                 # one-to-many relationship for which we will need the foreign
                 # key of the joinee table.
-                for map in join.entities.orm.mappings.foreignkeymappings:
+                for map in j.entities.orm.mappings.foreignkeymappings:
                     if self.entities.orm.entity is map.entity:
-                        # TODO Rename this to joineepk
-                        joinpk = map.name
+                        joineepk = map.name
                         break
                 else:
                     raise_fk_not_found()
 
             r += '\n    ON `%s`.%s = `%s`.%s'
-            r %= (joinergraph, joinerpk, joineegraph, joinpk)
+            r %= (joinergraph, joinerpk, joineegraph, joineepk)
 
-            if isinstance(join.entities, associations):
+            if isinstance(j.entities, associations):
                 # If the join is for an association, things become a little
                 # inverted because each join's entities collection within the
                 # association will have a 1-to-many relationship with the
                 # association. This block makes accomidations for that.
-                for j in join.entities.orm.joins:
+                for j1 in j.entities.orm.joins:
                     joinergraph1 = joineegraph
-                    joineegraph1 = '%s.%s' % (joineegraph, j.entities.orm.abbreviation)
-                    joineepk1 = j.entities.orm.mappings.primarykeymapping.name
+                    joineegraph1 = '%s.%s' % (joineegraph, j1.entities.orm.abbreviation)
+                    joineepk1 = j1.entities.orm.mappings.primarykeymapping.name
 
-                    for map in join.entities.orm.mappings.foreignkeymappings:
-                        if map.entity is j.entities.orm.entity:
+                    for map in j.entities.orm.mappings.foreignkeymappings:
+                        if map.entity is j1.entities.orm.entity:
                             joineerfk1 = map.name
                             break;
                     else:
                         raise_fk_not_found()
 
-                    r += '\n' + get_join_type(j)
+                    r += '\n' + get_join_type(j1)
 
-                    joineetbl1 = j.entities.orm.table
+                    joineetbl1 = j1.entities.orm.table
                     r += ' %s AS `%s`' % (joineetbl1, joineegraph1)
 
                     r += '\n    ON `%s`.%s = `%s`.%s'
                     r %= (joinergraph1, joineerfk1, joineegraph1, joineepk1)
-                    js = j.entities.orm.joins
+                    js = j1.entities.orm.joins
                     r += '\n' + js.__str__(joinerroot=joinergraph1, 
                                            joineeroot=joineegraph1)
             else:
-                js = join.entities.orm.joins
+                js = j.entities.orm.joins
                 r += '\n' + js.__str__(joinerroot=joinergraph, \
                                        joineeroot=joineegraph)
 
@@ -435,25 +422,6 @@ class joins(entitiesmod.entities):
     @property
     def wheres(self):
         return wheres(initial=[x.where for x in self if x.where])
-
-    # TODO REMOVEME
-    def getwheres(self, graph=None):
-        whs = wheres()
-
-        if graph is None:
-            graph = self.table
-        else:
-            graph = '%s.%s' % (graph, self.table)
-
-        for j in self:
-            if not j.where:
-                continue
-
-            wh = j.where.clone()
-            wh.alias = '%s.%s' % (graph, wh.alias)
-            whs += wh
-
-        return whs
 
 class join(entitiesmod.entity):
     Inner = 0
@@ -498,14 +466,6 @@ class where(entitiesmod.entity):
 
         self.args = args
         
-    # TODO Are we using this clone method. If not, we should probably remove it.
-    def clone(self):
-        return where(
-            self.entities,
-            self.predicate, # TODO Do we need to clone the predicate?
-            self.args
-        )
-
     def demandvalid(self):
         def demand(col, exists=False, ft=False):
             for map in self.entities.orm.mappings.all:
@@ -534,109 +494,6 @@ class where(entitiesmod.entity):
                 if predicate.iscolumn(op):
                     demand(op, exists=True)
 
-    # TODO Remove
-    def ensurequoted(self):
-        def isquoted(s):
-            return len(s) >= 2 and s[-1] + s[0] == "''"
-
-        def requiresquote(map):
-            return map.isstr or      \
-                   map.isdatetime or \
-                   map.isbytes
-
-        phix = 0 # Placeholder index
-        for pred in self.predicate:
-            if pred.match:
-                continue
-
-            # Get the column
-            col = None
-            for op in pred.operands:
-                if predicate.iscolumn(op):
-                    maps = self.entities.orm.entity.orm.mappings
-                    for map in maps:
-                        if not isinstance(map, fieldmapping):
-                            continue
-
-                        if map.name == op:
-                            col = op
-                            break
-                    else:
-                        # Raise exception if column isn't found in entities' mappings
-                        # collection
-                        msg = 'Column not found for predicate: "%s"' % str(pred)
-                        raise invalidcolumn(msg)
-
-                    if col:
-                        break
-
-            # Get column's comparative (or comparitives for BETWEEN clauses
-            for op in pred.operands:
-                if op == col:
-                    continue
-
-                if op == '%s':
-                    op = self.args[phix]
-
-                    # NOTE This method will be removed. The following code
-                    # quotes numeric literals with the args list, but this is
-                    # not right. As long as the literal is in the list, it
-                    # doesn't need to be quoted, and all literals are
-                    # parameterized (in args) now thanks to the
-                    # orm.parameterizepredicate method.
-                    '''
-                    if requiresquote(map) and not isquoted(op):
-                        self.args[phix] = "'%s'" % op
-                        pass
-                    '''
-
-                    phix += 1
-
-    def __str__(self, graph=''):
-        B() # TODO IS THIS BEING USED
-        ''' Return a string representation of the WHERE clause with %s
-        parameters. If the where object's entities collection has joins, those
-        joins will be traversed to captures all where clauses. '''
-
-        # Start off with a 'WHERE '
-        r = '' if graph else 'WHERE '
-
-        # Maintain a cumilitive graph string which denotes the hierarchy as we
-        # recurse back into this method
-        abbr = self.entities.orm.abbreviation
-        graph = ('%s.%s') % (graph, abbr) if graph else tbl
-
-        # Concatentate the predicate with graph to return string
-        r += '(%s)' % self.predicate.__str__(columnprefix=graph)
-
-        # Recursively join `where` predicates into the return variable.
-        # Recursions can happen via this join() function, or, if a `where'
-        # object is available on the `join` object, a call to the `where`'s
-        # __str__ method will result in recursion instead.
-        def join(js):
-            nonlocal graph
-            nonlocal r
-            for j in js:
-                if j.where:
-                    # If a join object has a where, use it's where to stringify the
-                    # predicate.
-
-                    # Recurse into the join's where's __str__ passing in graph
-                    r += '\n AND %s' % j.where.__str__(graph=graph)
-                else:
-                    # If the join object has no where object, use the join's
-                    # entities' joins collections and recursively call this
-                    # join method.
-                    js = j.entities.orm.joins
-                    tbl = j.entities.orm.table
-                    oldgraph, graph = graph, ('%s.%s') % (graph, tbl)
-                    join(js)
-                    graph = oldgraph
-
-        # Call join with this where objects entities' joins
-        join(self.entities.orm.joins)
-
-        return r
 
     def __repr__(self):
         return '%s\n%s' % (self.predicate, self.args)
@@ -672,9 +529,8 @@ class predicate(entitiesmod.entity):
                 # NOTE If developing with a Python version that is < 3.6, copy
                 # shlex.py into main directory to get the punctuation_chars
                 # parameter to work.
-                # FIXME '=' is present twice in `punctuation_chars`.
                 try:
-                    lex = shlex(expr, posix=False, punctuation_chars='!=<=>')
+                    lex = shlex(expr, posix=False, punctuation_chars='!=<>')
                 except Exception as ex:
                     # TODO Remove all this when Python <3.6 is unsupported
                     print(ex)
@@ -915,10 +771,6 @@ class predicate(entitiesmod.entity):
 
 
                         ops[i] = '`%s`.%s' % (columnprefix, op)
-            else:
-                # TODO Is this block ever executed. When is columnprefix falsey
-                pass
-
 
             # Append a space to the introducers if they exists
             lhsintro = self.lhsintroducer
@@ -1149,9 +1001,6 @@ class predicate(entitiesmod.entity):
                             break
                         e = e.orm.super
                 
-            # TODO Remove this line; `args` isn't being used
-            args = ', '.join(cols), self.searchstring
-
             r = "MATCH (%s) AGAINST ("  % ', '.join(cols)
 
             if self.searchstringisplaceholder:
@@ -1546,9 +1395,6 @@ class entities(entitiesmod.entities):
                 msg = "'%s's' attribute '%s' is not available "
                 msg += 'while streaming'
                 raise AttributeError(msg % (self.__class__.__name__, attr))
-
-            # TODO This is at the end of the alternative block as well
-            return object.__getattribute__(self, attr)
         else:
             load = True
 
@@ -1579,7 +1425,7 @@ class entities(entitiesmod.entities):
             if load:
                 self.load()
 
-            return object.__getattribute__(self, attr)
+        return object.__getattribute__(self, attr)
 
     def sort(self, key=None, reverse=None):
         key = 'id' if key is None else key
@@ -1595,14 +1441,10 @@ class entities(entitiesmod.entities):
         key = 'id' if key is None else key
         if self.orm.isstreaming:
             key = '%s %s' % (key, 'DESC' if reverse else 'ASC')
-
             self.orm.stream.orderby = key
             return self
         else:
             reverse = False if reverse is None else reverse
-
-            # TODO Why was self being reloaded?
-            #self.load()
             r =  super().sorted(key, reverse)
             self.clone(r)
             return r
@@ -1712,9 +1554,6 @@ class entities(entitiesmod.entities):
             self.orm.where = where(self, p1, args)
             self.orm.where.demandvalid()
             self.orm.parameterizepredicate(args)
-
-        # TODO Remove
-        # self.orm.where.ensurequoted()
 
     def clear(self):
         """
@@ -1838,9 +1677,6 @@ class entities(entitiesmod.entities):
             eargs = db.operationeventargs(self, 'retrieve', sql, args)
             self.onafterload(self, eargs)
 
-            # TODO Remove edict here
-            edict = dict()
-
             # Use the resultset to populate the entities collection (self) and
             # link the entities together (linking is done in `orm.link()`).
             self.orm.populate(ress)
@@ -1856,10 +1692,7 @@ class entities(entitiesmod.entities):
     def _getbrokenrules(self, es=None, followentitymapping=True):
         brs = entitiesmod.brokenrules()
 
-        # TODO Replace with 
-        #     `if any(not isinstance(x, self.orm.entity) for x in self)`
         for e in self:
-            #if self.orm.entities not in e.orm.entities.mro():
             if not isinstance(e, self.orm.entity):
                 prop = type(self).__name__
                 msg = "'%s' collection contains a '%s' object"

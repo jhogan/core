@@ -5555,7 +5555,7 @@ class test_orm(tester):
 
         art.save()
 
-    def it_raises_exception_whene_non_existing_column_is_referenced(self):
+    def it_raises_exception_when_a_non_existing_column_is_referenced(self):
         self.expect(orm.invalidcolumn, lambda: artists(notacolumn = 1234))
 
     def it_raises_exception_when_bytes_type_is_compared_to_nonbinary(self):
