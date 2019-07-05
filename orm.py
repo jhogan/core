@@ -2331,7 +2331,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
     def brokenrules(self):
         return self._getbrokenrules()
 
-    def _getbrokenrules(self, guestbook=None, followentitymapping=True):
+    def _getbrokenrules(self, guestbook=None, followentitymapping=True, followentitiesmapping=True):
         # TODO If an association is added that is the incorrect type, 
         # append a brokenrule, i.e.:
         #
@@ -2433,10 +2433,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             args = msg, map.name, 'valid'
                             brs += entitiesmod.brokenrule(*args)
                         brs += v._getbrokenrules(guestbook, 
-                            followentitymapping=followentitymapping
+                            followentitymapping=followentitymapping,
+                            followentitiesmapping=False
                         )
 
-            elif type(map) is associationsmapping:
+            elif followentitiesmapping and type(map) is associationsmapping:
                 if map.isloaded:
                     v = map.value
                     if v:

@@ -851,6 +851,24 @@ class test_orm(tester):
         self.eq(comps4.first.id, comps3.first.id)
         self.eq(comps4.second.id, comps3.second.id)
 
+        # This fixes an issue that came up in development: When you add valid
+        # aa to art, then add a fact to art (thus adding an invalid aa to art),
+        # strange things where happening with the brokenrules. 
+        art = artist.getvalid()
+        art.artist_artifacts += artist_artifact.getvalid()
+        art.artifacts += artifact.getvalid()
+
+        self.zero(art.artist_artifacts.first.brokenrules)
+        self.two(art.artist_artifacts.second.brokenrules)
+        self.two(art.brokenrules)
+
+        # Fix broken aa
+        art.artist_artifacts.second.role = uuid4().hex
+        art.artist_artifacts.second.timespan = uuid4().hex
+
+        self.zero(art.artist_artifacts.second.brokenrules)
+        self.zero(art.brokenrules)
+
     def it_updates_associations_constituent_entity(self):
         art = artist.getvalid()
         chrons = self.chronicles
@@ -5540,20 +5558,6 @@ class test_orm(tester):
         for i, pred in enumerate(arts.orm.where.predicate):
             self.eq("%s", pred.operands[1])
             self.lt(i, 2)
-
-    def _it_saves_association_FIXME(self):
-        art = artist.getvalid()
-        art.artist_artifacts += artist_artifact.getvalid()
-
-        # FIXME This raises an exception. To work around it,
-        # you have do this:
-        #     art.artist_artifacts.last.artifact = artifact.getvalid()
-        #
-        # This test should be integrated into a more general
-        # it_save_associations test
-        art.artifacts += artifact.getvalid()
-
-        art.save()
 
     def it_raises_exception_when_a_non_existing_column_is_referenced(self):
         self.expect(orm.invalidcolumn, lambda: artists(notacolumn = 1234))
