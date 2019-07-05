@@ -2427,6 +2427,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             elif followentitymapping and type(map) is entitymapping:
                 if map.isloaded:
                     v = map.value
+                    # TODO Do we need to check v here for truthyness. We
+                    # already know tha the map.isloaded. This seems to be
+                    # synonymous with a non-None value.
                     if v:
                         if not isinstance(v, map.entity):
                             msg = "'%s' attribute is wrong type: %s"

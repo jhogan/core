@@ -308,6 +308,8 @@ class artist_artifact(orm.association):
 
     @staticmethod
     def getvalid():
+        # TODO Is an aa without an artifact object valid, i.e., should it not
+        # have a brokenrule for the missing artifact?
         aa = artist_artifact()
         aa.role = uuid4().hex
         aa.timespan = uuid4().hex
