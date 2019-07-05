@@ -2457,39 +2457,36 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             msg += 'Ensure the overridden __init__ called the base __init__'
             raise ValueError(msg)
 
-        # TODO attr would never be 'orm', see above
-        # TODO Why would self.orm.mappings ever be false... it's a collection
-        if attr != 'orm' and self.orm.mappings:
-            map = self.orm.mappings(attr)
+        map = self.orm.mappings(attr)
 
-            # Is attr in one of the supers' mappings collections. We don't want
-            # to start loading super entities from the database unless we know
-            # that the attr is actually in one of them.
-            insuper = attr in self.orm.mappings.supermappings
+        # Is attr in one of the supers' mappings collections. We don't want
+        # to start loading super entities from the database unless we know
+        # that the attr is actually in one of them.
+        insuper = attr in self.orm.mappings.supermappings
 
-            if not map and insuper: 
-                super = self.orm.super
-                if super:
-                    map = super.orm.mappings(attr)
-                    if map:
-                        if type(map) is entitymapping:
-                            # We don't want an entitymapping from a super
-                            # returned.  This would mean conc.artist would
-                            # work. But concerts don't have artists;
-                            # presentations do. Concerts have singers.
-                            msg = "'%s' object has no attribute '%s'"
-                            msg %= self.__class__.__name__, attr
-                            raise AttributeError(msg)
-                            
-                        v = getattr(super, map.name)
-                        # Assign the composite reference to the constituent
-                        #   i.e., sng.presentations.singer = sng
-                        if type(map) is entitiesmapping:
-                            es = v
-                            for e in (es,) +  tuple(es):
-                                if not hasattr(e, self.orm.entity.__name__):
-                                    setattr(e, self.orm.entity.__name__, self)
-                        return v
+        if not map and insuper: 
+            super = self.orm.super
+            if super:
+                map = super.orm.mappings(attr)
+                if map:
+                    if type(map) is entitymapping:
+                        # We don't want an entitymapping from a super
+                        # returned.  This would mean conc.artist would
+                        # work. But concerts don't have artists;
+                        # presentations do. Concerts have singers.
+                        msg = "'%s' object has no attribute '%s'"
+                        msg %= self.__class__.__name__, attr
+                        raise AttributeError(msg)
+                        
+                    v = getattr(super, map.name)
+                    # Assign the composite reference to the constituent
+                    #   i.e., sng.presentations.singer = sng
+                    if type(map) is entitiesmapping:
+                        es = v
+                        for e in (es,) +  tuple(es):
+                            if not hasattr(e, self.orm.entity.__name__):
+                                setattr(e, self.orm.entity.__name__, self)
+                    return v
 
         # Lazy-load constituent entities map
         if type(map) is entitiesmapping:
