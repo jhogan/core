@@ -4595,7 +4595,9 @@ class associations(entities):
                     self._constituents[attr] = es
                     break
             else:
-                raise AttributeError('Entity not found')
+                msg = "'%s' object has no attribute '%s'"
+                msg %= self.__class__.__name__, attr
+                raise AttributeError(msg)
 
             # Get all the entity objects stored in `self` then add them in to
             # the pseudocollection (es).
