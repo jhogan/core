@@ -125,7 +125,6 @@ class stream(entitiesmod.entity):
             self._chunk = None
             self._start = start
             self._stop = stop
-            self.chunkloaded = False
 
         def __repr__(self):
             r = type(self).__name__ + ': '
@@ -195,13 +194,12 @@ class stream(entitiesmod.entity):
 
             # Does the chunk need to be reloaded to get the data requested by
             # the slice?
-            if slc not in self or not self.chunkloaded:
+            if slc not in self or not self.chunk.orm.isloaded:
                 self._start = slc.start
                 self._stop = slc.stop
 
                 self.chunk.reload(self.stream.orderby, self.limit, self.offset)
-                # TODO Can we remove chuckloaded and replace with self.chunk.orm.isloaded
-                self.chunkloaded = True
+                self.chunk.orm.isloaded = True
 
             return self.chunk[self.getrelativeslice(slc)]
 
