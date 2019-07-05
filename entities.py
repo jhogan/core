@@ -739,7 +739,7 @@ class entity():
     def isvalid(self):
         return self.brokenrules.isempty
 
-class brokenruleserror(Exception):
+class BrokenRulesError(Exception):
     def __init__(self, msg, obj):
         self.message = msg
         self.object = obj

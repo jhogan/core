@@ -272,7 +272,7 @@ class dbentity(entity):
             self._isdirty = False
             self._isnew = False
         else:
-            raise brokenruleserror('Won\'t save invalid object', self)
+            raise BrokenRulesError('Won\'t save invalid object', self)
 
     def delete(self):
         sql = 'delete from ' + self._table + ' where id = %s'
