@@ -51,7 +51,6 @@ import textwrap
 
 # TODO Add hard and softdelete logic
 # TODO Add reflective (self joined) relationships
-# TODO Make exceptions PascalCase
 # TODO Consider making ? the placeholder token instead of %s
 
 # Set conditional break points
@@ -2343,7 +2342,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                               followassociationmapping=True):
 
         if not self.orm.ismarkedfordeletion and not self.isvalid:
-            raise db.brokenruleserror("Can't save invalid object", self)
+            raise db.BrokenRulesError("Can't save invalid object", self)
 
         if self.orm.ismarkedfordeletion:
             crud = 'delete'

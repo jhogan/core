@@ -24,7 +24,7 @@ SOFTWARE.
 from articles import *
 from configfile import configfile
 from datetime import timezone, datetime
-from entities import brokenruleserror, rgetattr
+from entities import BrokenRulesError, rgetattr
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
 from parties import *
 from pdb import Pdb
@@ -3435,7 +3435,7 @@ class test_orm(tester):
         try:
             art.save()
         except Exception as ex:
-            self.type(brokenruleserror, ex)
+            self.type(BrokenRulesError, ex)
         else:
             self.fail('Exception not thrown')
 
@@ -4809,7 +4809,7 @@ class test_orm(tester):
             try:
                 sng.save()
             except Exception as ex:
-                self.type(brokenruleserror, ex)
+                self.type(BrokenRulesError, ex)
             else:
                 self.fail('Exception not thrown')
 
@@ -6905,10 +6905,10 @@ class test_blogpostrevision(tester):
         rev = blogpostrevision()
         try:
             rev.save()
-        except brokenruleserror as ex:
+        except BrokenRulesError as ex:
             self.assertIs(rev, ex.object)
         except Exception as ex:
-            msg = ('brokenruleserror expected however a different exception '
+            msg = ('BrokenRulesError expected however a different exception '
                   ' was thrown: ' + str(type(ex)))
             self.assertFail(msg)
         else:
@@ -8260,7 +8260,7 @@ class test_article(tester):
         art.body = str(uuid4())
         try:
             art.save()
-        except brokenruleserror:
+        except BrokenRulesError:
             pass
         except:
             self.assertFail('Wrong exception thrown')
@@ -8367,7 +8367,7 @@ class test_article(tester):
         art.title = str(uuid4())
         try:
             art.save()
-        except brokenruleserror:
+        except BrokenRulesError:
             pass
         except:
             self.assertFail('Wrong exception thrown')
@@ -8556,7 +8556,7 @@ class test_article(tester):
 
         try:
             art.save()
-        except brokenruleserror:
+        except BrokenRulesError:
             pass
         except:
             self.assertFail('Wrong exception thrown')
@@ -8605,7 +8605,7 @@ class test_article(tester):
         art = article()
         try:
             art.save()
-        except brokenruleserror as ex:
+        except BrokenRulesError as ex:
             self.assertIs(art, ex.object)
         except:
             msg = ('BrokenRulesError expected however a different exception '
@@ -8951,10 +8951,10 @@ Status:         {}
         rev = articlerevision()
         try:
             rev.save()
-        except brokenruleserror as ex:
+        except BrokenRulesError as ex:
             self.assertIs(rev, ex.object)
         except Exception as ex:
-            msg = ('brokenruleserror expected however a different exception '
+            msg = ('BrokenRulesError expected however a different exception '
                   ' was thrown: ' + str(type(ex)))
             self.assertFail(msg)
         else:
@@ -9375,7 +9375,7 @@ Phone: 555 555 5555
 
         try:
             p.save()
-        except brokenruleserror:
+        except BrokenRulesError:
             pass # This should happen
         except Exception as ex:
             self.assertFail('Incorrect exception type: ' + str(type(ex)))
@@ -10085,7 +10085,7 @@ Person:   Gary Francione
 
         try:
             u.save()
-        except brokenruleserror as ex:
+        except BrokenRulesError as ex:
             self.assertOne(ex.object.brokenrules)
             self.assertBroken(ex.object, 'roleid', 'full')
         except:
