@@ -42,33 +42,10 @@ def rgetattr(obj, attr, *args):
 
 class entities(object):
     def __init__(self, initial=None):
-        self._ls = []
-
-        # The event and indexes classes are subtypes of entites. Don't add
-        # events and indexes to these types in order to avoid infinite
-        # recursion.
-        if not isinstance(self, event) and not isinstance(self, indexes):
-
-            # Instantiate events
-            self.onadd                =  event()
-            self.onremove             =  event()
-            self.oncountchange        =  event()
-
-            # TODO Write tests for these two events
-            self.onbeforevaluechange  =  event()
-            self.onaftervaluechange   =  event()
-
-            # Local subscriptions to events
-            self.onadd                +=  self._self_onadd
-            self.onremove             +=  self._self_onremove
-
-            # Instatiate indexes
-            ix = index(name='identity', keyfn=lambda e: e)
-            ix.indexes = self.indexes
-            self.indexes._ls.append(ix)
+        self._ls = list()
 
         # Append initial collection
-        if initial != None:
+        if initial is not None:
             self.append(initial)
 
     def __bool__(self):
@@ -124,9 +101,66 @@ class entities(object):
                 ix += eargs.entity
 
     @property
+    def onadd(self):
+        if not hasattr(self, '_onadd'):
+            self._onadd = event()
+            self.onadd += self._self_onadd
+
+        return self._onadd
+
+    @onadd.setter
+    def onadd(self, v):
+        self._onadd = v
+
+    @property
+    def onremove(self):
+        if not hasattr(self, '_onremove'):
+            self._onremove = event()
+            self.onremove += self._self_onremove
+        return self._onremove
+
+    @onremove.setter
+    def onremove(self, v):
+        self._onremove = v
+
+    @property
+    def oncountchange(self):
+        if not hasattr(self, '_oncountchange'):
+            self._oncountchange = event()
+        return self._oncountchange
+
+    @oncountchange.setter
+    def oncountchange(self, v):
+        self._oncountchange = v
+
+    @property
+    def onbeforevaluechange(self):
+        if not hasattr(self, '_onbeforevaluechange'):
+            self._onbeforevaluechange = event()
+        return self._onbeforevaluechange
+
+    @onbeforevaluechange.setter
+    def onbeforevaluechange(self, v):
+        self._onbeforevaluechange = v
+
+    @property
+    def onaftervaluechange(self):
+        if not hasattr(self, '_onaftervaluechange'):
+            self._onaftervaluechange = event()
+        return self._onaftervaluechange
+
+    @onaftervaluechange.setter
+    def onaftervaluechange(self, v):
+        self._onaftervaluechange = v
+
+    @property
     def indexes(self):
         if not hasattr(self, '_indexes'):
             self._indexes = indexes(type(self))
+
+            ix = index(name='identity', keyfn=lambda e: e)
+            ix.indexes = self._indexes
+            self._indexes._ls.append(ix)
         return self._indexes
 
     @indexes.setter
