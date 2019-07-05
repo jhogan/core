@@ -279,7 +279,8 @@ class joins(entitiesmod.entities):
         # signature, we have to make es=None by default. However, we actually
         # don't want es to have a default, so we simulate the behavior here.
         if es is None:
-            raise ValueError('Missing entities')
+            raise TypeError(" __init__() missing 1 required keyword argument: 'es'")
+
         self.entities = es
         super().__init__(initial=initial)
 
