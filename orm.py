@@ -3031,7 +3031,7 @@ class associationsmapping(mapping):
             # loading this assocations here for the sake of predictablity.
             asses.load()
 
-            asses.composite = self.composite
+            asses.orm.composite = self.composite
             self.value = asses
         return self._value
 
@@ -3649,6 +3649,7 @@ class orm:
         self.entities             =  None
         self.entity               =  None
         self.table                =  None
+        self.composite            =  None  # For assocations
         self._composits           =  None
         self._constituents        =  None
         self._associations        =  None
@@ -4449,7 +4450,7 @@ class associations(entities):
         # TODO Why do associations have composite and _constituents have
         # properties.  Shouldn't these be behind the associations' orm
         # property, i.e., asses.orm.composite, etc.
-        self.composite = None
+        self.orm.composite = None
         self._constituents = {}
         super().__init__(*args, **kwargs)
 
@@ -4460,8 +4461,8 @@ class associations(entities):
                 # mappings collection to test the composites names. The name
                 # that matters is on the LHS of the map when being defined in
                 # the association class.
-                if map.name == type(self.composite).__name__:
-                    setattr(obj, map.name, self.composite)
+                if map.name == type(self.orm.composite).__name__:
+                    setattr(obj, map.name, self.orm.composite)
                     break;
             
         super().append(obj, uniq, r)
@@ -4479,7 +4480,7 @@ class associations(entities):
         ass = eargs.entity
 
         for i, map in enumerate(ass.orm.mappings.entitymappings):
-            if map.entity is not type(self.composite):
+            if map.entity is not type(self.orm.composite):
                 e = map.value
                 if not e.orm.ismarkedfordeletion:
                     es = getattr(self, e.orm.entities.__name__)
@@ -4524,7 +4525,7 @@ class associations(entities):
                 ass = self.orm.entity()
                 setattr(ass, map.name, eargs.entity)
 
-            if map.entity is type(self.composite):
+            if map.entity is type(self.orm.composite):
                 compmap = map
         
         if ass is None:
@@ -4543,7 +4544,7 @@ class associations(entities):
         # Assign the association collections's `composite` property to the
         # new association object's composite field; completing the
         # association
-        setattr(ass, compmap.name, self.composite)
+        setattr(ass, compmap.name, self.orm.composite)
         self += ass
 
     def entities_onremove(self, src, eargs):
@@ -4580,8 +4581,8 @@ class associations(entities):
         #     art.artist_artifacts.artist
         #
         # Note that `assert art is art.artist_artifacts.artists`.
-        if attr == type(self.composite).__name__:
-            return self.composite
+        if attr == type(self.orm.composite).__name__:
+            return self.orm.composite
 
         try:
             # Returned a memoized constituent. These are created in the `except
