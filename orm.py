@@ -2317,26 +2317,19 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
             elif followentitymapping and type(map) is entitymapping:
                 if map.isloaded:
-                    v = map.value
-                    # TODO Do we need to check v here for truthyness. We
-                    # already know tha the map.isloaded. This seems to be
-                    # synonymous with a non-None value.
-                    if v:
-                        if not isinstance(v, map.entity):
-                            msg = "'%s' attribute is wrong type: %s"
-                            msg %= (map.name, type(v))
-                            args = msg, map.name, 'valid'
-                            brs += entitiesmod.brokenrule(*args)
-                        brs += v._getbrokenrules(guestbook, 
-                            followentitymapping=followentitymapping,
-                            followentitiesmapping=False
-                        )
+                    if not isinstance(map.value, map.entity):
+                        msg = "'%s' attribute is wrong type: %s"
+                        msg %= (map.name, type(map.value))
+                        args = msg, map.name, 'valid'
+                        brs += entitiesmod.brokenrule(*args)
+                    brs += map.value._getbrokenrules(guestbook, 
+                        followentitymapping=followentitymapping,
+                        followentitiesmapping=False
+                    )
 
             elif followentitiesmapping and type(map) is associationsmapping:
                 if map.isloaded:
-                    v = map.value
-                    if v:
-                        brs += v._getbrokenrules(guestbook)
+                    brs += map.value._getbrokenrules(guestbook)
 
         return brs
 
