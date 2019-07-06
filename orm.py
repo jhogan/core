@@ -3208,7 +3208,6 @@ class fieldmapping(mapping):
         # TODO Currently, a field is limited to being part of only one
         # composite or fulltext index. This code could be improved to allow for
         # multiple indexes per fieldmapping.
-
         if ix is not None                and \
            isinstance(ix, builtins.type) and \
            index in ix.mro():
@@ -4415,7 +4414,7 @@ class orm:
 
     @property
     def constituents(self):
-        if not self._constituents:
+        if self._constituents is None:
             self._constituents = constituents()
             for map in self.mappings.entitiesmappings:
                 e = map.entities.orm.entity
@@ -4439,12 +4438,13 @@ class saveeventargs(entitiesmod.eventargs):
 
 class associations(entities):
     def __init__(self, *args, **kwargs):
-        # TODO Why do associations have composite and _constituents have
-        # properties.  Shouldn't these be behind the associations' orm
-        # property, i.e., asses.orm.composite, etc.
-        self.orm.composite = None
-        self._constituents = {}
         super().__init__(*args, **kwargs)
+        self.orm.composite = None
+
+        # NOTE, in entities collections, the orm._constituents is of type
+        # `constituents` which is an `ormclasseswrapper`.  However, here we
+        # simply want it to be a dict.
+        self.orm._constituents = dict()
 
     def append(self, obj, uniq=False, r=None):
         if isinstance(obj, association):
@@ -4564,6 +4564,13 @@ class associations(entities):
                   ``attr``
         """
 
+        def raiseAttributeError():
+            """ Raise a generic AttributeError.
+            """
+            msg = "'%s' object has no attribute '%s'"
+            msg %= self.__class__.__name__, attr
+            raise AttributeError(msg)
+
         # TODO Use the mappings collection to get __name__'s value.
 
         # If `attr` matches the assocations composite, return the composite.
@@ -4579,22 +4586,21 @@ class associations(entities):
         try:
             # Returned a memoized constituent. These are created in the `except
             # KeyError` block.
-            return self._constituents[attr]
+            return self.orm.constituents[attr]
         except KeyError:
             for map in self.orm.mappings.entitymappings:
                 es = map.entity.orm.entities
                 if es.__name__ == attr:
                     # Create a psuedocollection for the associations collection
-                    # object (self). Append it to the self's _constituents list.
+                    # object (self). Append it to the self's _constituents
+                    # collection.
                     es = es()
                     es.onadd    += self.entities_onadd
                     es.onremove += self.entities_onremove
-                    self._constituents[attr] = es
+                    self.orm.constituents[attr] = es
                     break
             else:
-                msg = "'%s' object has no attribute '%s'"
-                msg %= self.__class__.__name__, attr
-                raise AttributeError(msg)
+                raiseAttributeError()
 
             # Get all the entity objects stored in `self` then add them in to
             # the pseudocollection (es).
@@ -4605,6 +4611,8 @@ class associations(entities):
 
             # Return pseudocollection.
             return es
+        except Exception:
+            raiseAttributeError()
     
 class association(entity):
     @classmethod
