@@ -3617,7 +3617,7 @@ class test_orm(tester):
 
         self.expect(None, lambda: art._load(id))
 
-        # Ensure that es.load() recovers correctly from a reconnect
+        # Ensure that es.orm.load() recovers correctly from a reconnect
         arts = artists(id=id)
 
         # Subscribe to event to ensure loads fail. This will load arts first
@@ -5570,7 +5570,7 @@ class test_orm(tester):
         return
         arts1 &= artifacts()
 
-        arts1.load()
+        arts1.orm.load()
 
     def it_calls_innerjoin_on_entities_and_writes_new_records(self):
         arts = self._create_join_test_data()
@@ -5580,7 +5580,7 @@ class test_orm(tester):
 
         # Explicitly load artists->artifacts->components. Add an entry to
         # `arts1` and make sure that the new record persists.
-        arts1.load()
+        arts1.orm.load()
 
         art1 = artist.getvalid()
         arts1 += art1
@@ -5616,7 +5616,7 @@ class test_orm(tester):
         # Reload using the explicit loading, join method and update the record
         # added above. Ensure that the new data presists.
         arts3 = artists() & (artifacts() & components())
-        arts3.load()
+        arts3.orm.load()
         art3 = arts3[art2.id]
         newval = uuid4().hex
 
