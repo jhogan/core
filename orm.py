@@ -4437,7 +4437,10 @@ class saveeventargs(entitiesmod.eventargs):
         self.entity = e
 
 class associations(entities):
+    """ Holds a collection of :class:`.association` objects. """
+
     def __init__(self, *args, **kwargs):
+        """ Constructs an association collection. """
         super().__init__(*args, **kwargs)
         self.orm.composite = None
 
@@ -4447,6 +4450,22 @@ class associations(entities):
         self.orm._constituents = dict()
 
     def append(self, obj, uniq=False, r=None):
+        """ Adds a :class:`.association` entity to the collection.
+
+            :param: obj   The association object to append.
+            :param: uniq  If True, only adds the object if it does not already
+                          exist.
+            :param: r     An `entities` collection containing the objects that
+                          were added.
+        """
+
+        # If `obj` is an `association`, set it's `composite` to the `self`'s
+        # `composite`, e.g.::
+        #
+        #     artist_artifact.artist = self.orm.composite
+        # 
+        # Otherwise, pass `obj` to the `super()`'s `append()` method. In this
+        # case, it will likely be an a collection of `association` objects.
         if isinstance(obj, association):
             for map in obj.orm.mappings.entitymappings:
                 # TODO We probably should be using the association's (self)
