@@ -2200,7 +2200,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     if map.value is undef:
                         map.value = None
 
-            super = self.orm.super
+            super = self.orm._super
             if super:
                 if crud == 'delete':
                     super.orm.ismarkedfordeletion = True
@@ -2229,7 +2229,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         else:
             guestbook += self,
 
-        super = self.orm.super
+        super = self.orm._super
         if super:
             brs += super._getbrokenrules(
                 guestbook, 
@@ -2432,14 +2432,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 # Assign the composite reference to the constituent
                 #   i.e., art.presentations.artist = art
                 setattr(map.value, self.orm.entity.__name__, self)
-
-                # Assign the superentities composite reference to the
-                # constituent i.e., art.concert.artist = art
-
-                # TODO Should we be eager loading the super?
-                super = self.orm.super
-                if super:
-                    setattr(map.value, super.orm.entity.__name__, super)
 
         elif type(map) is associationsmapping:
             map.composite = self
@@ -4117,7 +4109,7 @@ class orm:
         if self._isdirty:
             return True
 
-        if self.super:
+        if self._super:
             return self.super.orm.isdirty
 
         return False
