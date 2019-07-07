@@ -4059,6 +4059,7 @@ class test_orm(tester):
         self.zero(sng.concerts)
 
         sng = singer(sng.id)
+
         self.zero(sng.concerts)
 
         self.is_(sng,            sng.concerts.singer)

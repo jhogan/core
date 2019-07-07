@@ -2467,100 +2467,77 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         return map.value
 
     def __repr__(self):
-        # TODO For subentity objects, we should go up the chain of supers so
-        # superentities are being represented as well. The supers should be
-        # identified in headers. For instance, give a singer:
-        #
-        # +------------------------------------------------+
-        # | id          | c706b76                          |
-        # |------------------------------------------------|
-        # | singerid    | None                             |
-        # |------------------------------------------------|
-        # | createdat   | 2019-06-20 14:49:52.618974+00:00 |
-        # |------------------------------------------------|
-        # | record      | 3230da584a84418d9ea0746f26f22f90 |
-        # |------------------------------------------------|
-        # | ticketprice | 0                                |
-        # |------------------------------------------------|
-        # | attendees   | 0                                |
-        # |------------------------------------------------|
-        # | duration    | 0                                |
-        # |------------------------------------------------|
-        # | capacity    | 0                                |
-        # |------------------------------------------------|
-        # | externalid  | 0                                |
-        # |------------------------------------------------|
-        # | externalid1 | 0                                |
-        # |------------------------------------------------|
-        # | updatedat   | 2019-06-20 14:49:52.618974+00:00 |
-        # |------------------------------------------------|
-        # | singer      | None                             |
-        # +------------------------------------------------+
-        # | INHERITED FROM  <artist>                       | <- Inheritance
-        # +------------------------------------------------+    starts
-        # | firstname   | None                             |
-        # |------------------------------------------------|
-        # | lastname    | 2019-06-20 14:49:52.618974+00:00 |
-        # |------------------------------------------------|
-        # | lifeform    | 3230da584a84418d9ea0746f26f22f90 |
-        # |------------------------------------------------|
-        # | etc, etc    | etc                              |
-        # +------------------------------------------------+
-
         try:
             tbl = table()
 
-            for map in self.orm.mappings:
+            es = entitiesmod.entities()
+            e = self
+            while e:
+                es += e
+                e = e.orm.super
+
+            for i, e in enumerate(es.reversed()):
+                if i:
+                    r = tbl.newrow()
                 r = tbl.newrow()
-                try:
-                    v = getattr(self, map.name)
-                except Exception as ex:
-                    v = 'Exception: %s' % str(ex)
-                    
-                if type(map) in (primarykeyfieldmapping, foreignkeyfieldmapping):
-                    if type(map.value) is UUID:
-                        v = v.hex[:7]
-                    else:
-                        v = str(v)
-                else:
+                r.newfield('Class')
+                r.newfield('%s' % type(e).__name__)
+
+
+                for map in e.orm.mappings:
+                    r = tbl.newrow()
                     try:
-                        if type(map) in (entitiesmapping, associationsmapping):
-                            es = v
-                            if es:
-                                brs = es._getbrokenrules(
-                                    es=None, 
-                                    followentitymapping=False
-                                )
-                                args = es.count, brs.count
-                                v = 'Count: %s; Broken Rules: %s' % args
-                            else:
-                                v = str(es)
+                        v = getattr(e, map.name)
+                    except Exception as ex:
+                        v = 'Exception: %s' % str(ex)
+                        
+                    if type(map) in (primarykeyfieldmapping, foreignkeyfieldmapping):
+                        if type(map.value) is UUID:
+                            v = v.hex[:7]
                         else:
                             v = str(v)
-                    except Exception as ex:
-                        v = '(%s)' % str(ex)
+                    else:
+                        try:
+                            if type(map) in (entitiesmapping, associationsmapping):
+                                es = v
+                                if es:
+                                    brs = es._getbrokenrules(
+                                        es=None, 
+                                        followentitymapping=False
+                                    )
+                                    args = es.count, brs.count
+                                    v = 'Count: %s; Broken Rules: %s' % args
+                                else:
+                                    v = str(es)
+                            else:
+                                v = str(v)
+                        except Exception as ex:
+                            v = '(%s)' % str(ex)
 
-                r.newfield(map.name)
-                r.newfield(v)
+                    r.newfield(map.name)
+                    r.newfield(v)
 
             tblbr = table()
 
-            if not self.isvalid:
+            r = tblbr.newrow()
+            r.newfield('Broken Rules')
+            r.newfield('')
+            r.newfield('')
+
+            r = tblbr.newrow()
+            r.newfield('property')
+            r.newfield('type')
+            r.newfield('message')
+
+
+            for br in self.brokenrules:
                 r = tblbr.newrow()
-                r.newfield('property')
-                r.newfield('type')
-                r.newfield('message')
-
-
-                for br in self.brokenrules:
-                    r = tblbr.newrow()
-                    r.newfield(br.property)
-                    r.newfield(br.type)
-                    r.newfield(br.message)
+                r.newfield(br.property)
+                r.newfield(br.type)
+                r.newfield(br.message)
                 
-            return '%s\n%s\n%s\n%s' % (super().__repr__(), 
+            return '%s\n%s\n%s' % (super().__repr__(), 
                                        str(tbl), 
-                                       'Broken Rules', 
                                        str(tblbr))
         except Exception as ex:
             return '%s (Exception: %s) ' % (super().__repr__(), str(ex))
@@ -4191,7 +4168,7 @@ class orm:
         return props
 
     def issuperentity(self, of):
-        return self.entity in of.orm.entity.orm.supers
+        return self.entity in of.orm.entity.orm.superclasess
 
     @staticmethod
     def getsubclasses(of):
@@ -4223,7 +4200,7 @@ class orm:
         
 
     @property
-    def supers(self):
+    def superclasess(self):
         ''' Returns a list of entity classes or entity objects (depending on
         whether or not self.isinstance) of which self is a subentity. '''
 
