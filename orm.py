@@ -2558,6 +2558,7 @@ class mappings(entitiesmod.entities):
         self._orm = orm
         self._populated = False
         self._populating = False
+        self._supermappings = None
         self.oncountchange += self._self_oncountchange
 
     def _self_oncountchange(self, src, eargs):
@@ -2689,15 +2690,15 @@ class mappings(entitiesmod.entities):
 
     @property
     def supermappings(self):
-        # TODO:OPT Memoize
-        e = self.orm.entity.orm.super
-        maps = mappings()
+        if not self._supermappings:
+            e = self.orm.entity.orm.super
+            self._supermappings = mappings()
 
-        while e:
-            maps += e.orm.mappings
-            e = e.orm.super
+            while e:
+                self._supermappings += e.orm.mappings
+                e = e.orm.super
 
-        return maps
+        return self._supermappings
             
     @property
     def orm(self):
