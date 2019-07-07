@@ -2467,6 +2467,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         return map.value
 
     def __repr__(self):
+        """ Return a tabularized list of ``self``'s properties and their
+        corresponding values. Any exceptions that happen to occure will be
+        trapped and a string representations of the exception will be
+        returned."""
         try:
             tbl = table()
 
