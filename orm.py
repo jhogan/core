@@ -781,7 +781,6 @@ class predicate(entitiesmod.entity):
             rhsintro = rhsintro + ' ' if rhsintro else ''
 
             if self.operator in ('IN', 'NOT IN'):
-                # TODO Add introducers to IN arguments
                 r += '%s %s (%s)' % (ops[0],
                                      self.operator,
                                      ', '.join(ops[1:]))
@@ -3822,11 +3821,6 @@ class orm:
                         
                         e.orm.super = None
 
-                        # TODO We probably should use itertools.chain since
-                        # these properties are generators
-                        maps1 = list(maps.entitiesmappings) + \
-                                list(maps.associationsmappings)
-
                         e.orm.persistencestate = (False,) * 3
 
                 if skip:
@@ -3869,14 +3863,10 @@ class orm:
         superentity will have the same id as its subentity. In those cases, the
         class is needed to distinguish between the subentity and the super
         entity. 
-        
         """
 
-        # TODO `k` isn't being used here. I think we should use 
-        #     `for e in edict.values()`
-
         # For each value in edict
-        for k, e in edict.items():
+        for e in edict.values():
             
             # Does `e` have a foreign key that is the id of another entity in
             # edict, i.e., is `e` a child (or constituent) of other entity in
@@ -3886,11 +3876,7 @@ class orm:
                     continue
 
                 try:
-                    # TODO I think we can remove the parenthesis that are attempting
-                    # to indicate that the key edict is a tuple. In other words, just
-                    # do:
-                    #     comp = edict[map.value.bytes, map.entity]
-                    comp = edict[(map.value.bytes, map.entity)]
+                    comp = edict[map.value.bytes, map.entity]
                 except KeyError:
                     # Composite for the FK can't be found. The object for the
                     # FK isn't in edict, perhaps because the FK corresponds to
@@ -3904,10 +3890,8 @@ class orm:
 
                 # Chain the composite's entitiesmappings and
                 # associationsmappings collection into `maps`
-
-                # TODO itertools.chain may be a better option here
-                maps = list(comp.orm.mappings.entitiesmappings) + \
-                       list(comp.orm.mappings.associationsmappings)
+                maps = itertools.chain(comp.orm.mappings.entitiesmappings,
+                                       comp.orm.mappings.associationsmappings)
 
                 # For each of the composite mappings, if `e` is the same type
                 # as the map then assign e to that mappings's value property.
@@ -3916,7 +3900,7 @@ class orm:
                 for map1 in maps:
                     if isinstance(e, map1.entities.orm.entity):
                         # TODO Replace with `if map1.isloaded:`
-                        if map1._value is None:
+                        if not map1.isloaded:
                             map1._value = map1.entities()
                         map1._value += e
 

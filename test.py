@@ -4237,6 +4237,7 @@ class test_orm(tester):
 
         chrons.clear()
         sng1.save()
+
         self.eight(chrons)
         for conc in sng1.concerts:
             self.eq(chrons.where('entity', conc).first.op, 'update')
@@ -4941,11 +4942,12 @@ class test_orm(tester):
 
         chrons.clear()
         sng.save()
+
         self.three(chrons)
         self._chrons(rmconc, 'delete')
         self._chrons(rmconc.orm.super, 'delete')
         self._chrons(rmconc.locations.first, 'delete')
-        
+
         sng = singer(sng.id)
         self.zero(sng.concerts)
         self.zero(sng.concerts.orm.trash)
