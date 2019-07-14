@@ -49,8 +49,8 @@ import re
 import sys
 import textwrap
 
-# TODO Add hard and softdelete logic
 # TODO Add reflective (self joined) relationships
+# TODO Add indexes to FK's
 
 # Set conditional break points
 def B(x=True):
@@ -435,7 +435,7 @@ class join(entitiesmod.entity):
             raise invalidstream(msg)
             
         self.entities = es
-        self.type = type # inner, outer, etc
+        self.type = type # inner, outer, etc.
 
     @property
     def table(self):
@@ -1062,7 +1062,6 @@ class predicate(entitiesmod.entity):
             msg = super().__str__() + '. ' + msg
             return msg
 
-
 class allstream(stream):
     pass
         
@@ -1110,7 +1109,17 @@ class eager:
         # TODO
         return super().__str__()
 
-class entities(entitiesmod.entities):
+class entitiesmeta(type):
+    def __and__(self, other):
+        self = self()
+        self.join(other)
+        return self
+
+    @property
+    def count(cls):
+        return cls.all.count
+
+class entities(entitiesmod.entities, metaclass=entitiesmeta):
     @classproperty
     def all(cls):
         return cls(allstream)
@@ -1139,6 +1148,8 @@ class entities(entitiesmod.entities):
             self.orm.where = None
             self.orm.ischunk = False
             self.orm.joins = joins(es=self)
+            self.join = self._join
+
 
             self.onbeforereconnect  =  entitiesmod.event()
             self.onafterreconnect   =  entitiesmod.event()
@@ -1225,7 +1236,13 @@ class entities(entitiesmod.entities):
         for es in args:
             self.join(es, join.Outer)
 
-    def join(self, es, type=None):
+    @classmethod
+    def join(cls, es, type=None):
+        es1 = cls()
+        es1._join(es, type)
+        return es1
+        
+    def _join(self, es=None, type=None):
         type1, type = type, builtins.type
         if join.Outer == type1:
             msg = 'LEFT OUTER JOINs are not currently implemented'
@@ -1239,17 +1256,19 @@ class entities(entitiesmod.entities):
         maps = itertools.chain(self.orm.mappings.entitiesmappings, 
                                self.orm.mappings.associationsmappings)
 
-        # Itrerate over self's entitymappings and associationsmappings
+        es = es() if type(es) is entitiesmeta else es
+
+        # Iterate over self's entitymappings and associationsmappings
         for map in maps:
             if map.entities is type(es):
                 # If the joinee (es) is an entitiesmapping or
                 # associationsmappings of self, then we can add es as a
-                # standard join
+                # standard join.
                 break
         else:
             # If es was not in the above `maps` collection, check if it is
-            # mapped to self through an assocation. This is for join operations
-            # where the associations collection is implied, i.e.:
+            # mapped to `self` through an `assocation`. This is for join
+            # operations where the `associations1 collection is implied, i.e.:
             #
             #     artist().join(artifacts())
             # 
@@ -1269,8 +1288,10 @@ class entities(entitiesmod.entities):
                         # Create a new instance of the map's associations
                         # collection, add it to self's joins collection, and
                         # add es to ass's joins collection.
-                        ass = map.associations()
-                        self &= ass & es
+
+                        # TODO We should be able to use classes here instead of
+                        # instances once that feature has been added.
+                        self &= map.associations & es
 
                         # We can return now because the implicit assocation has
                         # been joined to self, and es has been joined to the
@@ -1296,7 +1317,7 @@ class entities(entitiesmod.entities):
     @classproperty
     def count(cls):
         # If type(cls) is type then count is being called directly off the
-        # class:
+        # class::
         #
         #   artists.count
         #
@@ -1304,7 +1325,7 @@ class entities(entitiesmod.entities):
         # because the request is interpreted as "give me the the number of rows
         # in the artists table.
         #
-        # If type(cls) is not type, it is being called of an instance.
+        # If type(cls) is not type, it is being called of an instance::
         #   artists().count
         # 
         # cls is actually a reference to the instance (artists())
@@ -1892,17 +1913,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         if map is None:
             maps = self.orm.mappings.supermappings
-            if (not maps._populated):
-                maps = self.orm.mappings.supermappings
 
             if attr not in maps:
                 return object.__setattr__(self, attr, v)
                 
-            super = self.orm.super
-            if super and super.orm.mappings(attr):
-                super.__setattr__(attr, v, cmp)
-            else:
-                return object.__setattr__(self, attr, v)
+            self.orm.super.__setattr__(attr, v, cmp)
         else:
             # Call entity._setvalue to take advantage of its event raising
             # code. Pass in a custom setattr function for it to call. Use
@@ -1949,15 +1964,29 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     setattr(selfsuper, attr, attrsuper)
 
     @classmethod
-    def reCREATE(cls, cur=None, recursive=False, clss=None):
+    def reCREATE(cls, cur=None, recursive=False, guestbook=None):
+        """ Drop and recreate the table for the entity ``cls``. 
+
+        :param: cls: A class that inherits directly or indirectly from
+                    :class:`.orm.entities`
+
+        :param: recursive: If True, the constituents and subclasses of ``cls``
+                           will be recursively be discovered and their tables
+                           recreated. Used internally.
+
+        :param: guestbook: A list to keep track of which classes' tables have
+                           been recreated. Used internally to prevent infinite
+                           recursion.
+
+        """
 
         # Prevent infinite recursion
-        if clss is None:
-            clss = []
+        if guestbook is None:
+            guestbook = []
         else:
-            if cls in clss:
+            if cls in guestbook:
                 return
-        clss += [cls]
+        guestbook += [cls]
 
         try: 
             if cur:
@@ -1983,13 +2012,13 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
             if recursive:
                 for map in cls.orm.mappings.entitiesmappings:
-                    map.entities.orm.entity.reCREATE(cur, True, clss)
+                    map.entities.orm.entity.reCREATE(cur, True, guestbook)
 
                 for ass in cls.orm.associations:
-                    ass.entity.reCREATE(cur, True, clss)
+                    ass.entity.reCREATE(cur, True, guestbook)
 
                 for sub in cls.orm.subclasses:
-                    sub.reCREATE(cur)
+                    sub.reCREATE(cur, True, guestbook)
                             
         except Exception as ex:
             # Rollback unless conn and cur weren't successfully instantiated.
@@ -2149,8 +2178,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                         setattr(e, map.name, self.id)
                                         break
 
-                            # Call save(). If there is an Exception, restore state then
-                            # re-raise
+                            # Call save(). If there is an Exception, restore
+                            # state then re-raise
                             try:
                                 # If self was deleted, delete each child
                                 # constituents. Here, cascade deletes are
@@ -2287,7 +2316,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     )
 
             # NOTE I added a `followentitiesmapping` flag (7d3bc6ce) which I
-            # only applied to associations (see below) because assocations are
+            # only applied to associations (see below) because association are
             # a subtype of entities. However, I could have added it to the
             # below line so that it would read:
             #
@@ -2347,15 +2376,15 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         map = self.orm.mappings(attr)
 
-        # Is attr in one of the supers' mappings collections. We don't want
-        # to start loading super entities from the database unless we know
-        # that the attr is actually in one of them.
+        # Is attr in one of the supers' mappings collections. We don't
+        # want to start loading super entities from the database unless
+        # we know that the attr is actually in one of them.
         insuper = attr in self.orm.mappings.supermappings
 
         if not map and insuper: 
-            super = self.orm.super
-            if super:
-                map = super.orm.mappings(attr)
+            sup = self.orm.super
+            while sup: # :=
+                map = sup.orm.mappings(attr)
                 if map:
                     if type(map) is entitymapping:
                         # We don't want an entitymapping from a super
@@ -2366,7 +2395,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         msg %= self.__class__.__name__, attr
                         raise AttributeError(msg)
                         
-                    v = getattr(super, map.name)
+                    v = getattr(sup, map.name)
                     # Assign the composite reference to the constituent
                     #   i.e., sng.presentations.singer = sng
                     if type(map) is entitiesmapping:
@@ -2375,6 +2404,15 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             if not hasattr(e, self.orm.entity.__name__):
                                 setattr(e, self.orm.entity.__name__, self)
                     return v
+
+                # NOTE Each time we ascend to the next super, we are
+                # loading the super. This may not be necessary.  We
+                # could ascend using class names. However, this may be
+                # less efficient because we would have to load the super
+                # each time a request for its attribute value came in
+                # where as the `super` proprety memoizes the super
+                # object.
+                sup = sup.orm.super
 
         # Lazy-load constituent entities map
         if type(map) is entitiesmapping:
@@ -2680,8 +2718,8 @@ class mappings(entitiesmod.entities):
 
     @property
     def all(self):
-        ''' Returns a generator of all mapping objects including supermappings.
-        '''
+        ''' Returns a generator of all mapping objects including
+        supermappings.  '''
         for map in self:
             yield map
 
@@ -2881,8 +2919,8 @@ class associationsmapping(mapping):
             asses = self.associations(map.name, self.composite.id)
 
             # NOTE Currently, we may switch to implitly leoading of entities
-            # and assocations. However, we may want to continue explitly
-            # loading this assocations here for the sake of predictablity.
+            # and association. However, we may want to continue explitly
+            # loading this association here for the sake of predictablity.
             asses.orm.load()
 
             asses.orm.composite = self.composite
@@ -3502,7 +3540,7 @@ class orm:
         self.entities             =  None
         self.entity               =  None
         self.table                =  None
-        self.composite            =  None  # For assocations
+        self.composite            =  None  # For association
         self._composits           =  None
         self._constituents        =  None
         self._associations        =  None
@@ -3558,7 +3596,7 @@ class orm:
                 map = e.orm.mappings(col) 
                 if map:
                     if e is not self.entity:
-                        # TODO We should be able to join a class instead of of
+                        # TODO We should be able to join a class instead of
                         # an instantiated object. See TODO at
                         # test_orm.it_calls_innerjoin_on_entities.
                         self.instance.join(e.orm.entities())
@@ -4202,7 +4240,6 @@ class orm:
             super = super.orm.super
 
         return False
-        
 
     @property
     def superclasess(self):
@@ -4543,7 +4580,7 @@ class associations(entities):
 
         # TODO Use the mappings collection to get __name__'s value.
 
-        # If `attr` matches the assocations composite, return the composite.
+        # If `attr` matches the association composite, return the composite.
         # This is for the less likely case where the ORM user is requesting the
         # composite of the associations collection, e.g.,:
         #
