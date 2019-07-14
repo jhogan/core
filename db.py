@@ -543,6 +543,12 @@ class chronicles(entities):
         self.chronicler = chronicler
         super().__init__(initial=initial)
 
+    def clone(self):
+        r = chronicles()
+        for chron in self:
+            r += chron.clone()
+        return r
+
     def append(self, obj, uniq=False, r=None):
         if self.chronicler and self.count == self.chronicler.max - 1:
             self.shift()
@@ -587,6 +593,11 @@ class chronicle(entity):
             tuple(args)
         )
         return r
+
+    def clone(self):
+        return chronicle(self.entity, self.op, self.sql, self.args)
+
+
 
 class executioner(entity):
     def __init__(self, exec, max=2):
