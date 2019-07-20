@@ -89,6 +89,9 @@ class presentations(orm.entities):
 class concerts(presentations):
     pass
 
+class battles(concerts):
+    pass
+
 class components(orm.entities):
     pass
 
@@ -158,6 +161,21 @@ class concert(presentation):
 
     # bigint unsigned
     externalid1  =  orm.fieldmapping(int,  min=0,         max=(2**64)-1)
+
+class battle(concert):
+    views = int
+
+    @staticmethod
+    def getvalid():
+        conc = concert.getvalid()
+        btl = battle()
+
+        for map in conc.orm.mappings.all:
+            if type(map) is not orm.fieldmapping:
+                continue
+            setattr(btl, map.name, getattr(conc, map.name))
+
+        return btl
 
 class component(orm.entity):
     @staticmethod
@@ -235,11 +253,12 @@ class artist(orm.entity):
         if type(phone) is str and not phone.isnumeric():
             phone = re.sub('\D*', '', phone)
 
-            # Cache in map so we don't have to do this every time the phone
-            # attribute is read. (Normally, caching in the map would be needed
-            # if the operation actually took a really long time.  The output
-            # for the re.sub wouldn't typically need to be cached. This is
-            # simply to test the attr() function's ability to set map values.)
+            # Cache in map so we don't have to do this every time the
+            # phone attribute is read. (Normally, caching in the map
+            # would be needed if the operation actually took a really
+            # long time.  The output for the re.sub wouldn't typically
+            # need to be cached. This is simply to test the attr()
+            # function's ability to set map values.)
             attr(phone)
 
         return attr()
@@ -249,16 +268,17 @@ class artist(orm.entity):
         return attr().lower()
 
     # Though it seems logical that there would be mutator analog to the
-    # accessor logic (used above for the 'phone' attr), there doesn't seem to
-    # be a need for this. Conversions should be done in the accessor (as in the
-    # 'phone' accessor above).  If functionality needs to run when a mutator is
-    # called, this can be handled in an onaftervaluechange handler (though this
-    # seems rare).  Since at the moment, no use-case can be imagined for
-    # mutator @attr's, we should leave this unimplemented. If a use-case
-    # presents itself, the below, commented-out code approximates how it should
-    # look.  The 'setter' method in the 'Property' class here
-    # https://docs.python.org/3/howto/descriptor.html#properties hints at how
-    # this may be implemented in orm.attr.
+    # accessor logic (used above for the 'phone' attr), there doesn't
+    # seem to be a need for this. Conversions should be done in the
+    # accessor (as in the 'phone' accessor above).  If functionality
+    # needs to run when a mutator is called, this can be handled in an
+    # onaftervaluechange handler (though this seems rare).  Since at the
+    # moment, no use-case can be imagined for mutator @attr's, we should
+    # leave this unimplemented. If a use-case presents itself, the
+    # below, commented-out code approximates how it should look.  The
+    # 'setter' method in the 'Property' class here
+    # https://docs.python.org/3/howto/descriptor.html#properties hints
+    # at how this may be implemented in orm.attr.
     """
     @phone.setter(str)
     def phone(self,)
@@ -382,6 +402,13 @@ class rappers(singers):
 class rapper(singer):
     nice = int
     stagename = str
+    battles = battles
+
+    def __init__(self, o=None):
+        super().__init__(o)
+        if self.orm.isnew:
+            self.nice = 10
+            self._elevating = False
 
     @staticmethod
     def getvalid():
@@ -398,8 +425,26 @@ class rapper(singer):
 
         rpr.nice = randint(1, 255)
         rpr.stagename = '1337 h4x0r'
-
         return rpr
+
+    @property
+    def elevating(self):
+        return self._elevating
+
+    @elevating.setter
+    def elevating(self, v):
+        self._elevating = v
+
+    @orm.attr(str)
+    def abilities(self):
+        def bs():
+            r = list()
+            r.append('endless rhymes')
+            r.append('delivery')
+            r.append('money')
+            return r
+
+        return str(attr()) if attr() else attr(str(bs()))
 
 class issues(orm.entities):
     pass
@@ -456,9 +501,11 @@ class test_orm(tester):
                     test_orm._failures += failure()
 
             def _test(self, e, op):
-                self.count += 1
                 chron = self.chronicles.where('entity',  e)
-                return chron.hasone and chron.first.op == op
+                if chron.hasone and chron.first.op == op:
+                    self.count += 1
+                    return True
+                return False
 
             def __str__(self):
                 r = 'Test count: %s\n\n' % self.count
@@ -694,7 +741,8 @@ class test_orm(tester):
 
 
         B(chrons.count != 4)
-        # NOTE The below line produced a failure today, but it went away.  (Jul 6)
+        # NOTE The below line produced a failure today, but it went
+        # away.  (Jul 6)
         self.four(chrons)
 
 
@@ -735,11 +783,12 @@ class test_orm(tester):
         self._chrons(sng1.concerts.first.locations,  'retrieve')
         self._chrons(sng1.locations,                 'retrieve')
 
-        # NOTE Loading locations requires that we load singer's superentity
-        # (artist) first because `locations` is a constituent of `artist`.
-        # Though this may seem ineffecient, since the orm has what it needs to
-        # load `locations` without loading `artist`, we would want the
-        # following to work for the sake of predictability:
+        # NOTE Loading locations requires that we load singer's
+        # superentity (artist) first because `locations` is a
+        # constituent of `artist`.  Though this may seem ineffecient,
+        # since the orm has what it needs to load `locations` without
+        # loading `artist`, we would want the following to work for the
+        # sake of predictability:
         #
         #     assert sng1.locations.artists is sng1.orm.super
         #
@@ -750,7 +799,76 @@ class test_orm(tester):
         self.zero(chrons)
 
     def it_loads_and_saves_multicomposite_subsubentity(self):
-        pass # TODO
+        # Create rapper with battle with empty locations and
+        # battles, reload and test
+        rpr = rapper.getvalid()
+        btl = battle.getvalid()
+
+        self.zero(rpr.locations)
+        self.zero(btl.locations)
+        self.isnot(rpr.locations, btl.locations)
+
+        rpr.battles += btl
+
+        with self._chrontest() as t:
+            t.run(rpr.save)
+            t.created(rpr)
+            t.created(rpr.orm.super)
+            t.created(rpr.orm.super.orm.super)
+            t.created(btl)
+            t.created(btl.orm.super)
+            t.created(btl.orm.super.orm.super)
+
+        rpr = rapper(rpr.id)
+        
+        self.zero(rpr.battles.first.locations)
+        self.zero(rpr.locations)
+
+        # Add locations, save, test, reload, test
+        rpr.locations += location.getvalid()
+        rpr.battles.first.locations += location.getvalid()
+
+        with self._chrontest() as t:
+            t.run(rpr.save)
+            t.created(rpr.locations.first)
+            t.created(rpr.battles.first.locations.first)
+            
+        rpr1 = rapper(rpr.id)
+
+        def f():
+            self.eq(rpr.locations.first.id, rpr1.locations.first.id)
+            self.eq(rpr.battles.first.locations.first.id, 
+                    rpr1.battles.first.locations.first.id)
+
+        with self._chrontest() as t:
+            t.run(f)
+            t.retrieved(rpr1.orm.super)
+            t.retrieved(rpr1.orm.super.orm.super)
+            t.retrieved(rpr1.battles)
+            t.retrieved(rpr1.battles.first.orm.super)
+            t.retrieved(rpr1.battles.first.orm.super.orm.super)
+            t.retrieved(rpr1.battles.first.locations)
+            t.retrieved(rpr1.locations)
+
+        # NOTE Loading locations requires that we load rapper's
+        # superentity (artist) first because `locations` is a
+        # constituent of `artist`.  Though this may seem ineffecient,
+        # since the orm has what it needs to load `locations` without
+        # loading `artist`, we would want the following to work for the
+        # sake of predictability:
+        #
+        #     assert rpr1.locations.artists is rpr1.orm.super
+        #
+        def f():
+            self.is_(rpr1.locations.artist, rpr1.orm.super.orm.super)
+
+            # This doesn't work
+            #self.is_(rpr1.locations.singer, rpr1.orm.super)
+
+            self.is_(rpr1.locations.rapper, rpr1)
+
+        with self._chrontest() as t:
+            t.run(f)
 
     def it_receives_AttributeError_from_explicit_attributes(self):
         # An issue was discovered in the former entities.__getattr__. When an
@@ -1571,6 +1689,15 @@ class test_orm(tester):
         for ord in ords:
             self.eq(getattr(arts, ord).id, getattr(arts1, ord).id)
 
+    def it_appends_subentity_to_superentiies_collection(self):
+        sng = singer.getvalid()
+        B()
+        sng.concerts += presentation.getvalid()
+
+        self.one(sng.concerts)
+        self.one(sng.presentations)
+        self.is_(sng.concerts.first, sng.presentations.first)
+
     def it_calls_sort_and_sorted_on_streamed_entities(self):
         lastname = uuid4().hex
         arts = artists()
@@ -1957,7 +2084,8 @@ class test_orm(tester):
 
             self.fail('FIXME')
 
-            # TODO See above
+            # TODO The following fails because rprs1.orm.sql returns bad
+            # SQL.
             '''
             rprs1.sort()
 
@@ -1969,9 +2097,9 @@ class test_orm(tester):
         # Make sure valid
         self.true(rprs1.isvalid)
 
-        # isvalid should not cause any additional queries to be chronicled (if
-        # we had not included the firstname in the above query, isvalid would
-        # need to load rapper's super
+        # isvalid should not cause any additional queries to be
+        # chronicled (if we had not included the firstname in the above
+        # query, isvalid would need to load rapper's super
         self.one(self.chronicles)
 
         self.two(rprs1)
@@ -1995,7 +2123,7 @@ class test_orm(tester):
 
         wh = "nice = '%s' or voice = '%s'" 
         wh %= rprs.first.nice, rprs.second.voice
-        rprs1 = t.run(lambda: rappers(wh, ()))
+        rprs1 = rappers(wh, ())
 
         with self._chrontest() as t:
             t.run(lambda: self.two(rprs1))
@@ -2342,8 +2470,9 @@ class test_orm(tester):
         art = artist.getvalid()
         self.zero(art.presentations)
 
-        # Ensure a saved composite object with zero elements in a constiuent
-        # collection loads with zero the constiuent collection containing zero
+        # Ensure a saved composite object with zero elements in a
+        # constituent
+        # collection loads with zero the constituent collection containing zero
         # elements.
         art.firstname = uuid4().hex
         art.lastname = uuid4().hex
@@ -2616,9 +2745,9 @@ class test_orm(tester):
         self.eq(loc1.presentation.artist.id, loc2.presentation.artist.id)
         self.ne(art.id, loc2.presentation.artist.id)
 
-        # Note: Going up the graph, mutating attributes and persisting lower in
-        # the graph won't work because of the problem of infinite recursion.
-        # The below tests demonstrate this.
+        # NOTE Going up the graph, mutating attributes and persisting
+        # lower in the graph won't work because of the problem of
+        # infinite recursion.  The below tests demonstrate this.
 
         # Assign a new name
         name = uuid4().hex
@@ -2773,8 +2902,8 @@ class test_orm(tester):
     def it_calls_custom_methods_on_subentity(self):
         sng = singer()
 
-        # Ensure artist.__init__ got called. It will default "lifeform" to
-        # 'organic'
+        # Ensure artist.__init__ got called. It will default "lifeform"
+        # to 'organic'
         self.eq('organic', sng.lifeform)
 
         sng.concerts += concert()
@@ -2806,7 +2935,56 @@ class test_orm(tester):
         self.eq(uuid, sng.test)
 
     def it_calls_custom_methods_on_subsubentity(self):
-        pass # TODO
+        # TODO Currently, concerts and locations entities collections
+        # are being added to rpr. Once we have a subentity of concerts
+        # that belongs to rapper, we should append one of those here as
+        # well. Then we should add a clear() override (i.e., an actual
+        # custom method to test) to rapper that will clear the new
+        # subentity of concerts as well as calling the super()'s clear()
+        # method which will clear the concerts and locations.
+        rpr = rapper()
+
+        # Ensure artist.__init__ got called. It will default "lifeform"
+        # to 'organic'
+        self.eq('organic', rpr.lifeform)
+
+        # Ensure rapper.__init__ got called. It will default "nice"
+        # to 10
+        self.eq(10, rpr.nice)
+
+        rpr.concerts += concert()
+        rpr.locations += location()
+
+        self.one(rpr.concerts)
+        self.one(rpr.locations)
+
+        # Ensure the custom method clear() is called and successfully
+        # clears the presentations and locations collections.
+        rpr.clear()
+
+        self.zero(rpr.concerts)
+        self.zero(rpr.locations)
+
+        # Test a custom @property
+        self.false(rpr.elevating)
+        rpr.elevating = True
+        self.true(rpr.elevating)
+
+        # Test a custom @property on super entity (singer)
+        self.false(rpr.transmitting)
+        rpr.transmitting = True
+        self.true(rpr.transmitting)
+
+        # Test a custom @property in super's super entity (artist)
+        self.false(rpr.processing)
+        rpr.processing = True
+        self.true(rpr.processing)
+
+        # Test it calls fields
+        uuid = uuid4().hex
+        rpr.test = uuid
+        self.eq(uuid, rpr.test)
+
 
     def it_calls__getitem__on_entity(self):
         art = artist()
@@ -3061,7 +3239,85 @@ class test_orm(tester):
         self.eq(art1.register, art2.register)
 
     def it_calls_explicit_attr_on_subsubentity(self):
-        pass # TODO
+        # Test inherited attr (artist.phone)
+        rpr = rapper()
+        rpr.firstname = uuid4().hex
+        rpr.lastname  = uuid4().hex
+        rpr.voice     = uuid4().hex
+        rpr.lifeform  = uuid4().hex
+        rpr.stagename  = uuid4().hex
+        rpr.password  = bytes([randint(0, 255) for _ in range(32)])
+        rpr.ssn       = '1' * 11
+        rpr.register  = 'laryngealization'
+        rpr.email     = 'username@domain.tld'
+        self.eq(int(), rpr.phone)
+
+        rpr.phone = '1' * 7
+        self.type(int, rpr.phone)
+
+        rpr.save()
+
+        rpr1 = rapper(rpr.id)
+        self.eq(rpr.phone, rpr1.phone)
+
+        rpr1.phone = '1' * 7
+        self.type(int, rpr1.phone)
+
+        rpr1.save()
+
+        self.eq(rpr1.phone, rapper(rpr1.id).phone)
+
+        # Test inherited attr from super (singer.register)
+        rpr = rapper()
+        rpr.firstname = uuid4().hex
+        rpr.lastname  = uuid4().hex
+        rpr.voice     = uuid4().hex
+        rpr.lifeform  = uuid4().hex
+        rpr.stagename  = uuid4().hex
+        rpr.password  = bytes([randint(0, 255) for _ in range(32)])
+        rpr.ssn       = '1' * 11
+        rpr.phone     = '1' * 7
+        rpr.email     = 'username@domain.tld'
+        self.is_(str(), rpr.register)
+
+        rpr.register = 'Vocal Fry'
+        self.eq('vocal fry', rpr.register)
+
+        rpr.save()
+
+        rpr1 = rapper(rpr.id)
+        self.eq(rpr.register, rpr1.register)
+
+        rpr1.register = 'flute'
+        self.eq('whistle', rpr1.register)
+
+        rpr1.save()
+
+        rpr2 = rapper(rpr1.id)
+        self.eq(rpr1.register, rpr2.register)
+
+        # Test non-inherited attr from rapper
+        rpr = rapper()
+        rpr.firstname = uuid4().hex
+        rpr.lastname  = uuid4().hex
+        rpr.voice     = uuid4().hex
+        rpr.lifeform  = uuid4().hex
+        rpr.stagename  = uuid4().hex
+        rpr.password  = bytes([randint(0, 255) for _ in range(32)])
+        rpr.ssn       = '1' * 11
+        rpr.phone     = '1' * 7
+        rpr.email     = 'username@domain.tld'
+        rpr.register  = 'laryngealization'
+        abilities     = "['endless rhymes', 'delivery', 'money']"
+        self.eq(abilities, rpr.abilities)
+
+        rpr.abilities = abilities = ['being wack']
+
+        self.eq(str(abilities), rpr.abilities)
+
+        rpr.save()
+
+        self.eq(rpr.abilities, rapper(rpr.id).abilities)
 
     def it_calls_explicit_attr_on_association(self):
         art = artist.getvalid()
@@ -3825,16 +4081,16 @@ class test_orm(tester):
             self.eq(1, dir.count(p))
 
     def it_calls_dir_on_subentity(self):
-        # Make sure mapped properties are returned when dir() is called.  Also
-        # ensure there is only one of each property in the directory. If there
-        # are more, entitymeta may not be deleting the original property from
-        # the class body.
+        # Make sure mapped properties are returned when dir() is called.
+        # Also ensure there is only one of each property in the
+        # directory. If there are more, entitymeta may not be deleting
+        # the original property from the class body.
 
         art = artist()
         sng = singer()
         dir = builtins.dir(sng)
 
-        # Non-inherited
+        # Inherited
         for p in art.orm.properties:
             self.eq(1, dir.count(p))
 
@@ -3843,7 +4099,27 @@ class test_orm(tester):
             self.eq(1, dir.count(p))
 
     def it_calls_dir_on_subsubentity(self):
-        pass # TODO
+        # Make sure mapped properties are returned when dir() is called.
+        # Also ensure there is only one of each property in the
+        # directory. If there are more, entitymeta may not be deleting
+        # the original property from the class body.
+
+        art = artist()
+        sng = singer()
+        rpr = rapper()
+        dir = builtins.dir(rpr)
+
+        # Indirectly inherited
+        for p in art.orm.properties:
+            self.eq(1, dir.count(p), p)
+
+        # Directly inherited
+        for p in sng.orm.properties:
+            self.eq(1, dir.count(p), p)
+
+        # Not inherited
+        for p in rpr.orm.properties:
+            self.eq(1, dir.count(p), p)
 
     def it_calls_dir_on_association(self):
         art = artist()
@@ -4144,7 +4420,36 @@ class test_orm(tester):
                 self.eq(old, singer(sngs.first.id).firstname)
 
     def it_rollsback_save_of_subsubentities(self):
-        pass # TODO
+        # Create two rappers
+        rprs = rappers()
+
+        for _ in range(2):
+            rprs += rapper.getvalid()
+            rprs.last.firstname = uuid4().hex
+            rprs.last.lastname = uuid4().hex
+
+        rprs.save()
+
+        # First, break the save method so a rollback occurs, and test
+        # the rollback. Second, fix the save method and ensure success.
+        for i in range(2):
+            if i:
+                # Restore original save method
+                rprs.second._save = save
+
+                # Update property 
+                rprs.first.firstname = new = uuid4().hex
+                rprs.save()
+                self.eq(new, rapper(rprs.first.id).firstname)
+            else:
+                # Update property
+                old, rprs[0].firstname = rprs[0].firstname, uuid4().hex
+
+                # Break save method
+                save, rprs[1]._save = rprs[1]._save, lambda x: 0/0
+
+                self.expect(ZeroDivisionError, lambda: rprs.save())
+                self.eq(old, rapper(rprs.first.id).firstname)
 
     def it_sets_reference_to_composite_on_subentity(self):
         chrons = self.chronicles
@@ -4221,7 +4526,98 @@ class test_orm(tester):
                 self.eq(loc.id, loc1.id)
 
     def it_sets_reference_to_composite_on_subsubentity(self):
-        pass # TODO
+        rpr = rapper.getvalid()
+        for _ in range(2):
+            pres = presentation.getvalid()
+            rpr.presentations += pres
+            pres.locations += location.getvalid()
+
+        rpr.save()
+
+        for i, rpr1 in enumerate((rpr, rapper(rpr.id))):
+            for pres in rpr1.presentations:
+
+                # TODO Calling pres.singer raise exception
+                #self.is_(rpr1.orm.super,  pres.singer)
+                #self.eq(pres.singer.id,   pres.artist.id)
+                #self.type(artist,         pres.singer.orm.super)
+                self.is_(rpr1,                      pres.rapper)
+                self.is_(rpr1.orm.super.orm.super,  pres.artist)
+                self.type(rapper,                   pres.rapper)
+                self.type(artist,         rpr1.orm.super.orm.super)
+
+                locs = rpr.presentations[pres].locations.sorted()
+
+                with self._chrontest() as t:
+                    locs1 = t.run(pres.locations.sorted)
+
+                self.one(locs)
+                self.one(locs1)
+                self.eq(locs.first.id, locs1.first.id)
+
+        rpr = rapper.getvalid()
+
+        for _ in range(2):
+            rpr.concerts += concert.getvalid()
+            rpr.concerts.last.locations += location.getvalid()
+
+        rpr.save()
+
+        for i, rpr in enumerate((rpr, rapper(rpr.id))):
+            for j, conc in rpr.concerts.enumerate():
+                
+                def f():
+                    self.is_(rpr,            conc.rapper)
+                    self.is_(rpr.orm.super,  conc.singer)
+
+                    # TODO Calling cons.artists failes
+                    # self.is_(rpr.orm.super.orm.super,  conc.artist)
+                    self.type(singer,        rpr.orm.super)
+                    self.type(artist,        conc.singer.orm.super)
+
+                with self._chrontest() as t:
+                    t.run(f)
+                    if i and not j:
+                        t.retrieved(conc.singer.orm.super)
+
+                def f():
+                    locs = rpr.concerts[conc].locations.sorted()
+                    locs1 = conc.locations.sorted()
+                    return locs, locs1
+
+                with self._chrontest() as t:
+                    locs, locs1 = t.run(f)
+
+                    if i:
+                        t.retrieved(conc.locations)
+                        t.retrieved(conc.orm.super)
+
+                    loc, loc1 = locs.first, locs1.first
+                    self.one(locs)
+                    self.one(locs1)
+                    self.eq(loc.id, loc1.id)
+
+        for _ in range(2):
+            rpr.battles += battle.getvalid()
+            rpr.battles.last.locations += location.getvalid()
+
+        rpr.save()
+
+        for i, rpr in enumerate((rpr, rapper(rpr.id))):
+            for j, btl in rpr.battles.enumerate():
+                def f():
+                    self.is_(rpr,                      btl.rapper)
+
+                    # TODO Accessing btl.singer and btl.artist 
+                    #self.is_(rpr.orm.super,            btl.singer)
+                    #self.is_(rpr.orm.super.orm.super,  btl.artist)
+
+                    self.type(rapper,                  btl.rapper)
+                    #self.type(singer,                  btl.singer)
+                    #self.type(artist,                  btl.artist)
+
+                with self._chrontest() as t:
+                    t.run(f)
 
     def it_loads_and_saves_subentitys_constituents(self):
         chrons = self.chronicles
@@ -4231,9 +4627,9 @@ class test_orm(tester):
         sng = singer.getvalid()
         self.zero(sng.presentations)
 
-        # Ensure a saved composite object with zero elements in a constiuent
-        # collection loads with zero the constiuent collection containing zero
-        # elements.
+        # Ensure a saved composite object with zero elements in a
+        # constituent collection loads with zero the constituent
+        # collection containing zero elements.
         sng.firstname = uuid4().hex
         sng.lastname  = uuid4().hex
         sng.voice     = uuid4().hex
@@ -4286,8 +4682,8 @@ class test_orm(tester):
             self.is_(pres1.singer, sng1)
             self.is_(pres1.artist, sng1.orm.super)
 
-        # Create some locations with the presentations, save singer, reload and
-        # test
+        # Create some locations with the presentations, save singer,
+        # reload and test
         for pres in sng.presentations:
             for _ in range(2):
                 pres.locations += location.getvalid()
@@ -4350,19 +4746,174 @@ class test_orm(tester):
                 self.is_(sng.orm.super, pres.artist)
 
     def it_loads_and_saves_subsubentitys_constituents(self):
-        pass # TODO
+        rpr = rapper.getvalid()
+        self.zero(rpr.presentations)
+        self.zero(rpr.concerts)
+
+        # Ensure a saved composite object with zero elements in a
+        # constituent collection loads with zero the constituent
+        # collection containing zero elements.
+        rpr.firstname = uuid4().hex
+        rpr.lastname  = uuid4().hex
+        rpr.voice     = uuid4().hex
+
+        self.zero(rpr.presentations)
+        self.zero(rpr.concerts)
+
+        rpr.save()
+
+        self.zero(rpr.presentations)
+        self.zero(rpr.concerts)
+
+        rpr = rapper(rpr.id)
+
+        self.zero(rpr.presentations)
+        self.zero(rpr.concerts)
+        self.is_(rpr,                      rpr.presentations.rapper)
+
+        # TODO rpr.presentations.singer isn't available here, though it
+        # feels like it should be. The reason `rapper` is available is
+        # because rpr.__getattribute__ sets it. The reason `artist` is
+        # available is because `presentations` is a constituent of
+        # artist.
+        #
+        # `singer` could be made available, but its implementation would
+        # be tricky. Code in entities.__getattribute__ could look for
+        # artist or rapper and try to work out the id for singer, then
+        # load singer from the db. I'd like this to be presented as a
+        # realistic use case before proceeding with an implementation.
+        #self.is_(rpr.orm.super,            rpr.presentations.singer)
+        self.is_(rpr.orm.super.orm.super,  rpr.presentations.artist)
+
+        rpr = rapper.getvalid()
+
+        for _ in range(2):
+            rpr.concerts                 +=  concert.getvalid()
+            rpr.presentations            +=  presentation.getvalid()
+            rpr.presentations.last.name  =   uuid4().hex
+            rpr.concerts.last.name       =   uuid4().hex
+
+        with self._chrontest() as t:
+            t.run(rpr.save)
+
+            t.created(rpr)
+            t.created(rpr.orm.super)
+            t.created(rpr.orm.super.orm.super)
+            t.created(rpr.concerts.first)
+            t.created(rpr.concerts.second)
+            t.created(rpr.concerts.first.orm.super)
+            t.created(rpr.concerts.second.orm.super)
+            t.created(rpr.presentations.first)
+            t.created(rpr.presentations.second)
+
+        rpr1 = rapper(rpr.id)
+
+        with self._chrontest() as t:
+            press = t.run(lambda: rpr1.presentations)
+            t.retrieved(press)
+            t.retrieved(rpr1.orm.super)
+            t.retrieved(rpr1.orm.super.orm.super)
+
+        rpr.presentations.sort()
+        rpr1.presentations.sort()
+        B()
+
+        # FIXME To get the below to work, we need to correct a
+        # fundamental problem. When adding concert objects to
+        # rpr.concerts, these concerts need be added to the
+        # rpr.presentations collection since concerts are a subentity of
+        # presentations. The reason the below code doesn't work is
+        # because when rpr1 is loaded, the rpr1.presentations collection
+        # is loaded with the two concert objects (which is correct).
+        # Well, they are loaded with the presenation objects which
+        # correspond to the concert objects. 
+
+        self.fail('FIXME')
+        for pres, pres1 in zip(rpr.presentations, rpr1.presentations):
+            for map in pres.orm.mappings:
+                if isinstance(map, orm.fieldmapping):
+                    self.eq(getattr(pres, map.name), 
+                            getattr(pres1, map.name))
+            
+            #self.is_(pres1.rapper, rpr1)
+            #self.is_(pres1.artist, rpr1.orm.super)
+        return
+
+        # Create some locations with the presentations, save rapper,
+        # reload and test
+        for pres in rpr.presentations:
+            for _ in range(2):
+                pres.locations += location.getvalid()
+
+        chrons.clear()
+        rpr.save()
+
+        self.four(chrons)
+
+        locs = rpr.presentations.first.locations
+        self.eq(chrons.where('entity', locs.first).first.op, 'create')
+        self.eq(chrons.where('entity', locs.second).first.op, 'create')
+
+        locs = rpr.presentations.second.locations
+        self.eq(chrons.where('entity', locs.first).first.op, 'create')
+        self.eq(chrons.where('entity', locs.second).first.op, 'create')
+
+        rpr1 = rapper(rpr.id)
+        self.two(rpr1.presentations)
+
+        rpr.presentations.sort()
+        rpr1.presentations.sort()
+        for pres, pres1 in zip(rpr.presentations, rpr1.presentations):
+
+            pres.locations.sort()
+
+            chrons.clear()
+            pres1.locations.sort()
+
+            self.one(chrons)
+            locs = pres1.locations
+            self.eq(chrons.where('entity', locs).first.op, 'retrieve')
+
+            for loc, loc1 in zip(pres.locations, pres1.locations):
+                for map in loc.orm.mappings:
+                    if isinstance(map, orm.fieldmapping):
+                        self.eq(getattr(loc, map.name), getattr(loc1, map.name))
+            
+                self.is_(pres1, loc1.presentation)
+
+        # Test appending a collection of constituents to a constituents
+        # collection. Save, reload and test.
+        rpr = rapper.getvalid()
+        press = presentations()
+
+        for _ in range(2):
+            press += presentation.getvalid()
+
+        rpr.presentations += press
+
+        for i in range(2):
+            if i:
+                rpr.save()
+                rpr = rapper(rpr.id)
+
+            self.eq(press.count, rpr.presentations.count)
+
+            for pres in rpr.presentations:
+                self.is_(rpr, pres.rapper)
+                self.is_(rpr.orm.super, pres.artist)
+
 
     def it_loads_and_saves_subentitys_subentity_constituents(self):
         chrons = self.chronicles
 
-        # Ensure that a new composite has a constituent subentities with zero
-        # elements
+        # Ensure that a new composite has a constituent subentities with
+        # zero elements
         sng = singer.getvalid()
         self.zero(sng.concerts)
 
-        # Ensure a saved composite object with zero elements in a subentities
-        # constiuent collection loads with zero the constiuent collection
-        # containing zero elements.
+        # Ensure a saved composite object with zero elements in a
+        # subentities constituent collection loads with zero the
+        # constituent collection containing zero elements.
         sng.firstname = uuid4().hex
         sng.lastname  = uuid4().hex
         sng.voice     = uuid4().hex
@@ -4380,11 +4931,11 @@ class test_orm(tester):
         self.is_(sng,            sng.concerts.singer)
 
         # TODO Entities collections can't load super composites:
-        # `sng.concerts.singer` above works because when `concerts` is loaded
-        # by sng's __getattribute__, self is assigned to the `singer`
-        # reference. However, the super's of singer don't get assigned. When
-        # sng.concerts.artist is called below, the artist should be
-        # lazy-loaded.
+        # `sng.concerts.singer` above works because when `concerts` is
+        # loaded by sng's __getattribute__, self is assigned to the
+        # `singer` reference. However, the super's of singer don't get
+        # assigned. When sng.concerts.artist is called below, the artist
+        # should be lazy-loaded.
         # self.is_(sng.orm.super,  sng.concerts.artist)
 
         sng = singer.getvalid()
@@ -4489,8 +5040,134 @@ class test_orm(tester):
                 self.is_(sng, conc.singer)
                 self.type(artist, sng.orm.super)
 
-    def it_loads_and_saves_subsubentitys_subentity_constituents(self):
-        pass # TODO
+    def it_loads_and_saves_subsubentitys_subsubentity_constituents(
+        self):
+
+        # Ensure that a new composite has a constituent subentities with
+        # zero elements
+        rpr = rapper.getvalid()
+        self.zero(rpr.battles)
+
+        # Ensure a saved composite object with zero elements in a
+        # subentities constituent collection loads with zero the
+        # constituent collection containing zero elements.
+        rpr.firstname  =  uuid4().hex
+        rpr.lastname   =  uuid4().hex
+        rpr.voice      =  uuid4().hex
+        rpr.stagename  =  uuid4().hex
+
+        self.zero(rpr.battles)
+
+        rpr.save()
+
+        self.zero(rpr.battles)
+
+        rpr = rapper(rpr.id)
+
+        self.zero(rpr.battles)
+
+        self.is_(rpr,            rpr.battles.rapper)
+
+        # TODO Entities collections can't load super composites:
+        # `rpr.battles.rapper` above works because when `battles` is
+        # loaded by rpr's __getattribute__, self is assigned to the
+        # `rapper` reference. However, the super's of rapper don't get
+        # assigned. When rpr.battles.artist is called below, the artist
+        # should be lazy-loaded.
+        # self.is_(rpr.orm.super,  rpr.battles.artist)
+
+        rpr = rapper.getvalid()
+
+        rpr.battles += battle.getvalid()
+        rpr.battles += battle.getvalid()
+
+        for btl in rpr.battles:
+            btl.name = uuid4().hex
+
+        with self._chrontest() as t:
+            t.run(rpr.save)
+            t.created(rpr)
+            t.created(rpr.orm.super)
+            t.created(rpr.orm.super.orm.super)
+            t.created(rpr.battles.first)
+            t.created(rpr.battles.first.orm.super)
+            t.created(rpr.battles.first.orm.super.orm.super)
+            t.created(rpr.battles.second)
+            t.created(rpr.battles.second.orm.super)
+            t.created(rpr.battles.second.orm.super.orm.super)
+        
+        rpr1 = rapper(rpr.id)
+
+        with self._chrontest() as t:
+            btls = t.run(lambda: rpr1.battles)
+            t.retrieved(btls)
+
+        rpr.battles.sort()
+        rpr1.battles.sort()
+        for btl, btl1 in zip(rpr.battles, rpr1.battles):
+            for map in btl.orm.mappings:
+                if isinstance(map, orm.fieldmapping):
+                    self.eq(
+                        getattr(btl, map.name), 
+                        getattr(btl1, map.name)
+                    )
+            
+            self.is_(btl1.rapper, rpr1)
+
+        # Create some locations with the battles, save rapper, reload
+        # and test
+        for btl in rpr.battles:
+            for _ in range(2):
+                btl.locations += location.getvalid()
+
+        with self._chrontest() as t:
+            t.run(rpr.save)
+            t.created(rpr.battles.first.locations.first)
+            t.created(rpr.battles.first.locations.second)
+            t.created(rpr.battles.second.locations.first)
+            t.created(rpr.battles.second.locations.second)
+
+        rpr1 = rapper(rpr.id)
+        self.two(rpr1.battles)
+
+        rpr.battles.sort()
+        rpr1.battles.sort()
+        for btl, btl1 in zip(rpr.battles, rpr1.battles):
+            btl.locations.sort()
+
+            with self._chrontest() as t:
+                t.run(lambda: btl1.locations.sort)
+                t.retrieved(btl1.locations)
+                t.retrieved(btl1.orm.super)
+                t.retrieved(btl1.orm.super.orm.super)
+
+            for loc, loc1 in zip(btl.locations, btl1.locations):
+                for map in loc.orm.mappings:
+                    if isinstance(map, orm.fieldmapping):
+                        self.eq(getattr(loc, map.name), getattr(loc1, map.name))
+            
+                self.is_(btl1, loc1.battle)
+
+        # Test appending a collection of constituents to a constituents
+        # collection. Save, reload and test.
+        rpr = rapper.getvalid()
+        btls = battles()
+
+        for _ in range(2):
+            btls += battle.getvalid()
+
+        rpr.battles += btls
+
+        for i in range(2):
+            if i:
+                rpr.save()
+                rpr = rapper(rpr.id)
+
+            self.eq(btls.count, rpr.battles.count)
+
+            for btl in rpr.battles:
+                self.is_(rpr, btl.rapper)
+                self.type(singer, rpr.orm.super)
 
     def it_updates_subentities_constituents_properties(self):
         chrons = self.chronicles
@@ -4541,7 +5218,63 @@ class test_orm(tester):
                 self.eq(getattr(loc2, 'description'), getattr(loc1, 'description'))
 
     def it_updates_subsubentities_constituents_properties(self):
-        pass # TODO
+        rpr = rapper.getvalid()
+
+        for _ in range(2):
+            rpr.presentations += presentation.getvalid()
+            rpr.presentations.last.name = uuid4().hex
+
+            for _ in range(2):
+                rpr.presentations.last.locations \
+                    += location.getvalid()
+                rpr.presentations.last.locations.last.description \
+                    = uuid4().hex
+
+        rpr.save()
+
+        rpr1 = rapper(rpr.id)
+        for pres in rpr1.presentations:
+            pres.name = uuid4().hex
+            
+            for loc in pres.locations:
+                loc.description = uuid4().hex
+
+        with self._chrontest() as t:
+            t.run(rpr1.save)
+            for pres in rpr1.presentations:
+                t.updated(pres)
+                for loc in pres.locations:
+                    t.updated(loc)
+            
+        rpr2 = rapper(rpr.id)
+
+        press = (
+            rpr.presentations, 
+            rpr1.presentations, 
+            rpr2.presentations
+        )
+
+        for pres, pres1, pres2 in zip(*press):
+
+            # Make sure the properties were changed
+            self.ne(getattr(pres2, 'name'), getattr(pres,  'name'))
+
+            # Make user rpr1.presentations props match those of rpr2
+            self.eq(getattr(pres2, 'name'), getattr(pres1, 'name'))
+
+            locs = pres.locations, pres1.locations, pres2.locations
+            for loc, loc1, loc2 in zip(*locs):
+                # Make sure the properties were changed
+                self.ne(
+                    getattr(loc2, 'description'),
+                    getattr(loc,  'description')
+                )
+
+                # Make user rpr1 locations props match those of rpr2
+                self.eq(
+                    getattr(loc2, 'description'), 
+                    getattr(loc1, 'description')
+                )
 
     def it_updates_subentitys_subentities_constituents_properties(self):
         chrons = self.chronicles
@@ -4595,8 +5328,109 @@ class test_orm(tester):
                 # Make user sng1 locations props match those of sng2
                 self.eq(getattr(loc2, 'description'), getattr(loc1, 'description'))
 
-    def it_updates_subsubentitys_subentities_constituents_properties(self):
-        pass # TODO
+    def it_updates_subsubentitys_subsubentities_constituents_properties(
+        self):
+
+        rpr = rapper.getvalid()
+
+        for _ in range(2):
+            rpr.concerts += concert.getvalid()
+            rpr.concerts.last.record = uuid4().hex
+
+            for _ in range(2):
+                rpr.concerts.last.locations \
+                    += location.getvalid()
+
+                rpr.concerts.last.locations.last.description \
+                    = uuid4().hex
+
+        rpr.save()
+
+        rpr1 = rapper(rpr.id)
+        for conc in rpr1.concerts:
+            conc.record = uuid4().hex
+            conc.name   = uuid4().hex
+            
+            for loc in conc.locations:
+                loc.description = uuid4().hex
+
+        with self._chrontest() as t:
+            t.run(rpr1.save)
+            for conc in rpr1.concerts:
+                t.updated(conc)
+                t.updated(conc.orm.super)
+                for loc in conc.locations:
+                    t.updated(loc)
+
+        rpr2 = rapper(rpr.id)
+        concs = (rpr.concerts, rpr1.concerts, rpr2.concerts)
+        for conc, conc1, conc2 in zip(*concs):
+            # Make sure the properties were changed
+            self.ne(getattr(conc2, 'record'), getattr(conc,  'record'))
+            self.ne(getattr(conc2, 'name'),   getattr(conc,  'name'))
+
+            # Make user rpr1.concerts props match those of rpr2
+            self.eq(getattr(conc2, 'record'), getattr(conc1, 'record'))
+            self.eq(getattr(conc2, 'name'),   getattr(conc1, 'name'))
+
+            locs = conc.locations, conc1.locations, conc2.locations
+            for loc, loc1, loc2 in zip(*locs):
+                # Make sure the properties were changed
+                self.ne(
+                    getattr(loc2, 'description'), 
+                    getattr(loc,  'description')
+                )
+
+                # Make user rpr1 locations props match those of rpr2
+                self.eq(
+                    getattr(loc2, 'description'), 
+                    getattr(loc1, 'description')
+                )
+
+        # Battles
+        rpr1 = rapper(rpr.id)
+        for btl in rpr1.battles:
+            btl.record = uuid4().hex
+            btl.name   = uuid4().hex
+            btl.views  = rand(1, 255)
+            
+            for loc in btl.locations:
+                loc.description = uuid4().hex
+
+        with self._chrontest() as t:
+            t.run(rpr1.save)
+            for btl in rpr1.battles:
+                t.updated(btl)
+                t.updated(btl.orm.super)
+                for loc in btl.locations:
+                    t.updated(loc)
+
+        rpr2 = rapper(rpr.id)
+        btls = (rpr.battles, rpr1.battles, rpr2.battles)
+        for btl, btl1, btl2 in zip(*btls):
+            # Make sure the properties were changed
+            self.ne(getattr(btl2,  'record'),  getattr(btl,  'record'))
+            self.ne(getattr(btl2,  'name'),    getattr(btl,  'name'))
+            self.ne(getattr(btl2,  'views'),   getattr(btl,  'views'))
+
+            # Make user rpr1.battles props match those of rpr2
+            self.eq(getattr(btl2,  'record'),  getattr(btl1,  'record'))
+            self.eq(getattr(btl2,  'views'),   getattr(btl1,  'views'))
+            self.ne(getattr(btl2,  'name'),    getattr(btl,   'name'))
+
+            locs = btl.locations, btl1.locations, btl2.locations
+            for loc, loc1, loc2 in zip(*locs):
+                # Make sure the properties were changed
+                self.ne(
+                    getattr(loc2, 'description'), 
+                    getattr(loc,  'description')
+                )
+
+                # Make user rpr1 locations props match those of rpr2
+                self.eq(
+                    getattr(loc2, 'description'), 
+                    getattr(loc1, 'description')
+                )
 
     def it_saves_and_loads_subentity_constituent(self):
         chrons = self.chronicles
@@ -4704,9 +5538,9 @@ class test_orm(tester):
         self.eq(loc1.presentation.artist.id, loc2.presentation.artist.id)
         self.ne(sng.id, loc2.presentation.artist.id)
 
-        # Note: Going up the graph, mutating attributes and persisting lower in
-        # the graph won't work because of the problem of infinite recursion.
-        # The below tests demonstrate this.
+        # NOTE Going up the graph, mutating attributes and persisting
+        # lower in the graph won't work because of the problem of
+        # infinite recursion.  The below tests demonstrate this.
 
         # Assign a new name
         name = uuid4().hex
@@ -4733,7 +5567,140 @@ class test_orm(tester):
         self.ne(loc2.presentation.artist.presentations.first.name, name)
 
     def it_saves_and_loads_subsubentity_constituent(self):
-        pass # TODO
+        # Make sure the constituent is None for new composites
+        pres = presentation.getvalid()
+
+        with self._chrontest() as t:
+            t.run(lambda: pres.artist)
+
+        self.none(pres.artist)
+
+        self.zero(pres.brokenrules)
+
+        # Test setting an entity constituent then test saving and
+        # loading
+        rpr = rapper.getvalid()
+        pres.artist = rpr
+        self.is_(rpr, pres.artist)
+
+        with self._chrontest() as t:
+            t.run(pres.save)
+            t.created(rpr)
+            t.created(rpr.orm.super)
+            t.created(rpr.orm.super.orm.super)
+            t.created(pres)
+
+        # Load by artist then lazy-load presentations to test
+        art1 = artist(pres.artist.id)
+        self.one(art1.presentations)
+        self.eq(art1.presentations.first.id, pres.id)
+
+        # Load by presentation and lazy-load artist to test
+        pres1 = presentation(pres.id)
+
+        with self._chrontest() as t:
+            t.run(lambda: pres1.artist)
+            t.retrieved(pres1.artist)
+           
+        self.eq(pres1.artist.id, pres.artist.id)
+
+        rpr1 = rapper.getvalid()
+        pres1.artist = rpr1
+
+        with self._chrontest() as t:
+            t.run(pres1.save)
+            t.created(rpr1)
+            t.created(rpr1.orm.super)
+            t.created(rpr1.orm.super.orm.super)
+            t.updated(pres1)
+
+        pres2 = presentation(pres1.id)
+        self.eq(rpr1.id, pres2.artist.id)
+        self.ne(rpr1.id, rpr.id)
+
+        # Test deeply-nested (>2)
+        # Set entity constuents, save, load, test
+       
+        loc = location.getvalid()
+        self.none(loc.presentation)
+
+        loc.presentation = pres = presentation.getvalid()
+        self.is_(pres, loc.presentation)
+
+        with self._chrontest() as t:
+            t.run(lambda: loc.presentation.artist)
+
+        self.none(loc.presentation.artist)
+
+        loc.presentation.artist = rpr = rapper.getvalid()
+        self.is_(rpr, loc.presentation.artist)
+
+        with self._chrontest() as t:
+            t.run(loc.save)
+            t.created(loc)
+            t.created(loc.presentation)
+            t.created(rpr)
+            t.created(rpr.orm.super)
+            t.created(rpr.orm.super.orm.super)
+
+        with self._chrontest() as t:
+            def f():
+                loc1 = location(loc.id)
+                pres1 = loc1.presentation
+                pres1.artist
+                return loc1, pres1
+            loc1, pres1 = t.run(f)
+
+            t.retrieved(loc1)
+            t.retrieved(pres1)
+            t.retrieved(pres1.artist)
+
+        self.eq(loc.id, loc1.id)
+        self.eq(loc.presentation.id, loc1.presentation.id)
+        self.eq(loc.presentation.artist.id, loc1.presentation.artist.id)
+
+        # Change the artist
+        loc1.presentation.artist = rpr1 = rapper.getvalid()
+
+        with self._chrontest() as t:
+            t.run(loc1.save)
+            t.updated(loc1.presentation)
+            t.created(rpr1)
+            t.created(rpr1.orm.super)
+            t.created(rpr1.orm.super.orm.super)
+
+        loc2 = location(loc1.id)
+
+        self.eq(
+            loc1.presentation.artist.id, 
+            loc2.presentation.artist.id
+        )
+
+        self.ne(rpr.id, loc2.presentation.artist.id)
+
+        # NOTE: Going up the graph, mutating attributes and persisting
+        # lower in the graph won't work because of the problem of
+        # infinite recursion.  The below tests demonstrate this.  Assign
+        # a new name
+        name = uuid4().hex
+        loc2.presentation.artist.presentations.first.name = name
+
+        # The presentation objects here aren't the same reference so
+        # they will have different states.
+        self.ne(loc2.presentation.name, name)
+
+        with self._chrontest() as t:
+            t.run(loc2.save)
+
+        with self._chrontest() as t:
+            loc2 = t.run(lambda: location(loc2.id))
+            t.retrieved(loc2)
+
+        # The above save() didn't save the new artist's presentation
+        # collection so the new name will not be present in the reloaded
+        # presentation object.
+        self.ne(loc2.presentation.name, name)
+        self.ne(loc2.presentation.artist.presentations.first.name, name)
 
     def it_saves_and_loads_subentities_subentity_constituent(self):
         chrons = self.chronicles
@@ -4795,13 +5762,14 @@ class test_orm(tester):
         # Set entity constuents, save, load, test
 
         # TODO We need to answer the question should loc.concert exist.
-        # concert().locations exists, so it would seem that the answer would be
-        # "yes". However, the logic for this would be strange since we would
-        # need to query the mappings collection of each subentities of the
-        # presentation collection to find a match. Plus, this seems like a very
-        # unlikely way for someone to want to use the ORM. I would like to wait
-        # to see if this comes up in a real life situation before writing the
-        # logic and tests for this. 
+        # concert().locations exists, so it would seem that the answer
+        # would be "yes". However, the logic for this would be strange
+        # since we would need to query the mappings collection of each
+        # subentities of the presentation collection to find a match.
+        # Plus, this seems like a very unlikely way for someone to want
+        # to use the ORM. I would like to wait to see if this comes up
+        # in a real life situation before writing the logic and tests
+        # for this. 
         """
         self.expect(AttributeError, lambda: loc.concert)
        
@@ -4885,8 +5853,63 @@ class test_orm(tester):
         self.ne(loc2.concert.singer.concerts.first.name, name)
         """
 
-    def it_saves_and_loads_subsubentities_subentity_constituent(self):
-        pass # TODO
+    def it_saves_and_loads_subsubentities_subsubentity_constituent(
+        self):
+
+        # Make sure the constituent is None for new composites
+        btl = battle.getvalid()
+
+        with self._chrontest() as t:
+            def f():
+                self.none(btl.rapper)
+                self.expect(AttributeError, lambda: btl.singer)
+                self.expect(AttributeError, lambda: btl.artist)
+            t.run(f)
+
+        self.zero(btl.brokenrules)
+
+        # Test setting an entity constituent then test saving and
+        # loading
+        rpr = rapper.getvalid()
+        btl.rapper = rpr
+        self.is_(rpr, btl.rapper)
+
+        with self._chrontest() as t:
+            t.run(btl.save)
+            t.created(rpr)
+            t.created(rpr.orm.super)
+            t.created(rpr.orm.super.orm.super)
+            t.created(btl)
+            t.created(btl.orm.super)
+            t.created(btl.orm.super.orm.super)
+
+        # Load by rapper then lazy-load battles to test
+        rpr1 = rapper(btl.rapper.id)
+        self.one(rpr1.battles)
+        self.eq(rpr1.battles.first.id, btl.id)
+
+        # Load by battle and lazy-load rapper to test
+        btl1 = battle(btl.id)
+
+        with self._chrontest() as t:
+            t.run(lambda: self.eq(btl1.rapper.id, btl.rapper.id))
+            t.retrieved(btl1.rapper)
+
+        rpr1 = rapper.getvalid()
+        btl1.rapper = rpr1
+
+        with self._chrontest() as t:
+            t.run(btl1.save)
+            t.created(rpr1)
+            t.created(rpr1.orm.super)
+            t.created(rpr1.orm.super.orm.super)
+            t.updated(btl1)
+            t.updated(btl1.orm.super)
+            t.updated(btl1.orm.super.orm.super)
+
+        btl2 = battle(btl1.id)
+        self.eq(rpr1.id, btl2.rapper.id)
+        self.ne(rpr1.id, rpr.id)
 
     def subentity_constituents_break_entity(self):
         pres = presentation.getvalid()
@@ -4919,7 +5942,35 @@ class test_orm(tester):
             self.broken(loc, prop, 'fits')
 
     def subsubentity_constituents_break_entity(self):
-        pass # TODO
+        pres = presentation.getvalid()
+        pres.artist = rapper.getvalid()
+
+        # Get max lengths for various properties
+        presmax  =  presentation.  orm.  mappings['name'].         max
+        locmax   =  location.      orm.  mappings['description'].  max
+        artmax   =  artist.        orm.  mappings['firstname'].    max
+        x = 'x'
+
+        pres.artist.firstname = x * (artmax + 1)
+        self.one(pres.brokenrules)
+        self.broken(pres, 'firstname', 'fits')
+
+        pres.artist.firstname = uuid4().hex # Unbreak
+        self.zero(pres.brokenrules)
+
+        loc = location.getvalid()
+        loc.description = x * (locmax + 1) # break
+
+        loc.presentation = presentation.getvalid()
+        loc.presentation.name = x * (presmax + 1) # break
+
+        loc.presentation.artist = rapper.getvalid()
+        loc.presentation.artist.firstname = x * (artmax + 1) # break
+
+        self.three(loc.brokenrules)
+        for prop in 'description', 'name', 'firstname':
+            self.broken(loc, prop, 'fits')
+
 
     def subentity_constituents_break_subentity(self):
         conc = concert.getvalid()
@@ -4934,8 +5985,18 @@ class test_orm(tester):
         conc.singer.firstname = uuid4().hex # Unbreak
         self.zero(conc.brokenrules)
 
-    def subsubentity_constituents_break_subentity(self):
-        pass # TODO
+    def subsubentity_constituents_break_subsubentity(self):
+        btl = battle.getvalid()
+        btl.rapper = rapper.getvalid()
+
+        # Break rule that art.firstname should be a str
+        btl.rapper.firstname = 'x' * 256 # Break
+
+        self.one(btl.brokenrules)
+        self.broken(btl, 'firstname', 'fits')
+
+        btl.rapper.firstname = uuid4().hex # Unbreak
+        self.zero(btl.brokenrules)
 
     def it_rollsback_save_of_subentity_with_broken_constituents(self):
         sng = singer.getvalid()
@@ -4972,8 +6033,47 @@ class test_orm(tester):
             self.eq((True, False, False), conc.orm.persistencestate)
             self.expect(db.RecordNotFoundError, lambda: concert(conc.id))
 
-    def it_rollsback_save_of_subsubentity_with_broken_constituents(self):
-        pass # TODO
+    def it_rollsback_save_of_subsubentity_with_broken_constituents(
+        self):
+        rpr = rapper.getvalid()
+
+        rpr.presentations += presentation.getvalid()
+        rpr.presentations.last.name = uuid4().hex
+
+        rpr.presentations += presentation.getvalid()
+        rpr.presentations.last.name = uuid4().hex
+
+        rpr.concerts += concert.getvalid()
+        rpr.concerts.last.name = uuid4().hex
+
+        # Cause the last presentation's invocation of save() to raise an
+        # Exception to cause a rollback
+        rpr.presentations.last._save = lambda cur, followentitymapping: 1/0
+
+        # Save expecting the ZeroDivisionError
+        self.expect(ZeroDivisionError, lambda: rpr.save())
+
+        # Ensure state of rpr was restored to original
+        self.eq((True, False, False), rpr.orm.persistencestate)
+
+        # Ensure rapper wasn't saved
+        self.expect(db.RecordNotFoundError, lambda: rapper(rpr.id))
+
+        # For each presentations and concerts, ensure state was not
+        # modified and no presentation object was saved.
+        for pres in rpr.presentations:
+            self.eq((True, False, False), pres.orm.persistencestate)
+            self.expect(
+                db.RecordNotFoundError, 
+                lambda: presentation(pres.id)
+            )
+
+        for conc in rpr.concerts:
+            self.eq((True, False, False), conc.orm.persistencestate)
+            self.expect(
+                db.RecordNotFoundError,
+                lambda: concert(conc.id)
+            )
 
     def it_deletes_subentities(self):
         # Create two singers
@@ -5108,7 +6208,59 @@ class test_orm(tester):
                 self.zero(chrons)
 
     def it_doesnt_needlessly_save_subsubentity(self):
-        pass # TODO
+        rpr = rapper.getvalid()
+        rpr.firstname  =  uuid4().hex
+        rpr.lastname   =  uuid4().hex
+        rpr.voice      =  uuid4().hex
+        rpr.stagename  =  uuid4().hex
+
+        for i in range(2):
+            with self._chrontest() as t:
+                t.run(rpr.save)
+                if i == 0:
+                    t.created(rpr)
+                    t.created(rpr.orm.super)
+                    t.created(rpr.orm.super.orm.super)
+
+        # Dirty rpr and save. Ensure the object was actually saved
+        rpr.firstname  =  uuid4().hex
+        rpr.voice      =  uuid4().hex
+        rpr.stagename  =  uuid4().hex
+
+        for i in range(2):
+            with self._chrontest() as t:
+                t.run(rpr.save)
+                if i == 0:
+                    t.updated(rpr)
+                    t.updated(rpr.orm.super)
+                    t.updated(rpr.orm.super.orm.super)
+
+        # Test constituents
+        rpr.presentations += presentation.getvalid()
+        rpr.concerts      += concert.getvalid()
+        rpr.battles       += battle.getvalid()
+        
+        for i in range(2):
+            with self._chrontest() as t:
+                t.run(rpr.save)
+                if i == 0:
+                    t.created(rpr.presentations.last)
+                    t.created(rpr.concerts.last)
+                    t.created(rpr.concerts.last.orm.super)
+                    t.created(rpr.battles.last)
+                    t.created(rpr.battles.last.orm.super)
+                    t.created(rpr.battles.last.orm.super.orm.super)
+
+        # Test deeply-nested (>2) constituents
+        rpr.presentations.last.locations += location.getvalid()
+        rpr.concerts.last.locations      += location.getvalid()
+
+        for i in range(2):
+            with self._chrontest() as t:
+                t.run(rpr.save)
+                if i == 0:
+                    t.created(rpr.presentations.last.locations.last)
+                    t.created(rpr.concerts.last.locations.last)
 
     def it_calls_id_on_subentity(self):
         sng = singer.getvalid()
@@ -5258,6 +6410,7 @@ class test_orm(tester):
         rpr1.email_1   = uuid4().hex[0]
         rpr1.nice      = randint(0, 255)
         rpr1.stagename = uuid4().hex
+        rpr1.abilities = list('wackness')
 
         self.eq((False, True, False), rpr1.orm.persistencestate)
 
@@ -5439,7 +6592,56 @@ class test_orm(tester):
         self.expect(db.RecordNotFoundError, lambda: location(loc.id))
 
     def it_deletes_from_subsubentitys_entities_collections(self):
-        pass # TODO
+        # Create rapper with a presentation and save
+        rpr = rapper.getvalid()
+        pres = presentation.getvalid()
+        rpr.presentations += pres
+        loc = location.getvalid()
+        locs = rpr.presentations.last.locations 
+        locs += loc
+        rpr.save()
+
+        # Reload
+        rpr = rapper(rpr.id)
+
+        # Test presentations and its trash collection
+        self.one(rpr.presentations)
+        self.zero(rpr.presentations.orm.trash)
+        
+        self.one(rpr.presentations.first.locations)
+        self.zero(rpr.presentations.first.locations.orm.trash)
+
+        # Remove the presentation
+        rmrpr = rpr.presentations.pop()
+
+        # Test presentations and its trash collection
+        self.zero(rpr.presentations)
+        self.one(rpr.presentations.orm.trash)
+
+        self.one(
+            rpr.presentations.orm.trash.first.locations)
+
+        self.zero(
+            rpr.presentations.orm.trash.first.locations.orm.trash)
+
+        with self._chrontest() as t:
+            t.run(rpr.save)
+            t.deleted(rmrpr)
+            t.deleted(rmrpr.locations.first)
+
+        rpr = rapper(rpr.id)
+        self.zero(rpr.presentations)
+        self.zero(rpr.presentations.orm.trash)
+
+        self.expect(
+            db.RecordNotFoundError, 
+            lambda: presentation(pres.id)
+        )
+
+        self.expect(
+            db.RecordNotFoundError, 
+            lambda: location(loc.id)
+        )
 
     def it_deletes_from_subentitys_subentities_collections(self):
         chrons = self.chronicles
@@ -5487,8 +6689,48 @@ class test_orm(tester):
         self.expect(db.RecordNotFoundError, lambda: concert(conc.id))
         self.expect(db.RecordNotFoundError, lambda: location(loc.id))
 
-    def it_deletes_from_subsubentitys_subentities_collections(self):
-        pass # TODO
+    def it_deletes_from_subsubentitys_subsubentities_collections(self):
+        # Create rapper with a battle and save
+        rpr = rapper.getvalid()
+        btl = battle.getvalid()
+        rpr.battles += btl
+        loc = location.getvalid()
+        rpr.battles.last.locations += loc
+        rpr.save()
+
+        # Reload
+        rpr = rapper(rpr.id)
+
+        # Test battles and its trash collection
+        self.one(rpr.battles)
+        self.zero(rpr.battles.orm.trash)
+
+        self.one(rpr.battles.first.locations)
+        self.zero(rpr.battles.first.locations.orm.trash)
+
+        # Remove the battle
+        rmbtl = rpr.battles.pop()
+
+        # Test battles and its trash collection
+        self.zero(rpr.battles)
+        self.one(rpr.battles.orm.trash)
+
+        self.one(rpr.battles.orm.trash.first.locations)
+        self.zero(rpr.battles.orm.trash.first.locations.orm.trash)
+
+        with self._chrontest() as t:
+            t.run(rpr.save)
+            t.deleted(rmbtl)
+            t.deleted(rmbtl.orm.super)
+            t.deleted(rmbtl.orm.super.orm.super)
+            t.deleted(rmbtl.locations.first,)
+
+        rpr = rapper(rpr.id)
+        self.zero(rpr.battles)
+        self.zero(rpr.battles.orm.trash)
+
+        self.expect(db.RecordNotFoundError, lambda: battle(btl.id))
+        self.expect(db.RecordNotFoundError, lambda: location(loc.id))
 
     def _create_join_test_data(self):
         ''' Create test data to be used by the outer/inner join tests. '''

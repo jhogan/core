@@ -1,27 +1,27 @@
 # vim: set et ts=4 sw=4 fdm=marker
-"""
-MIT License
 
-Copyright (c) 2018 Jesse Hogan
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-"""
+# MIT License
+# 
+# Copyright (c) 2018 Jesse Hogan
+# 
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+# 
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+# CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 """
 This file contains all classes related to object-relational mapping.
@@ -107,12 +107,10 @@ class stream(entitiesmod.entity):
     """
 
     def __init__(self, chunksize=100):
-        """
-        Sets the chunksize of the stream object.
+        """ Sets the chunksize of the stream object.
 
-        :param: int chunksize: The number of records to load (or chunk) at a
-            time.
-
+        :param: int chunksize: The number of records to load (or chunk)
+                at a time.
         """
         self.cursor = self.cursor(self)
         self.chunksize = chunksize
@@ -2436,7 +2434,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     else:
                         raise ValueError('FK map not found for entity')
 
-                    # NOTE If we switch to implicit loading for entities and
+                    # NOTE Though we've switch to implicit loading for entities and
                     # associations, we shoud still explicitly load here for the
                     # sake of predictability.
                     es = map.entities(map1.name, self.id)
@@ -2694,6 +2692,10 @@ class mappings(entitiesmod.entities):
     @property
     def foreignkeymappings(self):
         return self._generate(type=foreignkeyfieldmapping)
+
+    @property
+    def fieldmappings(self):
+        return self._generate(type=fieldmapping)
 
     @property
     def primarykeymapping(self):
@@ -3037,6 +3039,7 @@ class fulltext(index):
         return name
 
 class attr:
+    """ A decorator to make a method an explicit attribute. """
     class wrap:
         def __init__(self, *args, **kwargs):
             args = list(args)
@@ -3052,20 +3055,29 @@ class attr:
 
         def __get__(self, e, etype=None):
             name = self.fget.__name__
+
             def attr(v=undef):
+                """ Sets the map's value to ``v``. Returns the mapped
+                value.
+
+                This function is injected into explicit attributes to
+                provide easy access to the the attributes mapping value.
+                """
                 if v is undef:
                     try:
                         return e.orm.mappings[name].value
                     except IndexError:
-                        # If it's not in the subentity's mapping collection,
-                        # make a regular getattr() call on e's super. 
-                        super = e.orm.super
+                        # If it's not in the subentity's mapping
+                        # collection, make a regular getattr() call on
+                        # e's super. 
+                        super = e.orm.super # :=
                         if super:
                             return getattr(super, name)
                 else:
                     e.__setattr__(name, v, cmp=False)
                     return v
 
+            # Inject into explicit attribute
             self.fget.__globals__['attr'] = attr
             return self.fget(e)
 
@@ -4196,13 +4208,17 @@ class orm:
 
     @property
     def properties(self):
+        """ Returns a list of all property names for this entity
+        including those inherited from super entities.
+
+        :returns: list A list of all the property names for this entity.
+        """
         props = [x.name for x in self.mappings]
 
         for map in self.mappings.associationsmappings:
             for map1 in map.associations.orm.mappings.entitymappings:
                 if self.entity is not map1.entity:
                     props.append(map1.entity.orm.entities.__name__)
-
 
         super = self.super
         if super:
