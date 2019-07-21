@@ -1102,12 +1102,13 @@ class eager:
                 parent = e
     
     def __repr__(self):
-        # TODO
-        return super().__repr__()
+        r = '%s(%s)'
+        graphs = ', '.join(["'%s'" % x for x in self._graphs])
+        r %= (type(self).__name__, graphs)
+        return r
 
     def __str__(self):
-        # TODO
-        return super().__str__()
+        return ', '.join(self._graphs)
 
 class entitiesmeta(type):
     def __and__(self, other):
@@ -2914,6 +2915,18 @@ class mapping(entitiesmod.entity):
 
     def clone(self):
         raise NotImplementedError('Abstract')
+
+    def __repr__(self):
+        r = '%s (%s)'
+            
+        args = 'fullname = "%s", isloaded = %s'
+        args %= (self.fullname, self.isloaded)
+
+        r %= (type(self).__name__, args)
+        return r
+
+    def __str__(self):
+        return repr(self)
     
 class associationsmapping(mapping):
     def __init__(self, name, ass, derived=False):
