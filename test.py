@@ -7727,13 +7727,22 @@ class test_orm(tester):
         arts = artists()
         for _ in range(4):
             arts += artist.getvalid()
-            arts.last.artist_artifacts += artist_artifact.getvalid()
-            arts.last.artist_artifacts.last.artifact = artifact.getvalid()
+
+            arts.last.artist_artifacts \
+                += artist_artifact.getvalid()
+
+            arts.last.artist_artifacts.last.artifact \
+                = artifact.getvalid()
+
             arts.last.locations += location.getvalid()
 
             arts.last.presentations += presentation.getvalid()
-            arts.last.presentations.last.locations  += location.getvalid()
-            arts.last.presentations.last.components += component.getvalid()
+
+            arts.last.presentations.last.locations  \
+                += location.getvalid()
+
+            arts.last.presentations.last.components \
+                += component.getvalid()
         arts.save()
 
         # Eager-load one constituent

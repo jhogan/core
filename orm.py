@@ -61,7 +61,8 @@ def B(x=True):
         from IPython.core.debugger import Tracer; 
         Tracer().debugger.set_trace(sys._getframe().f_back)
 
-# TODO Research making these constants the same as their function equivilants.
+# TODO Research making these constants the same as their function
+# equivilants.
 # i.e., s/2/str; s/3/int/, etc.
 @unique
 class types(Enum):
@@ -526,13 +527,14 @@ class predicate(entitiesmod.entity):
             if isinstance(expr, shlex):
                 lex = expr
             elif expr is not None:
-                # NOTE If developing with a Python version that is < 3.6, copy
-                # shlex.py into main directory to get the punctuation_chars
-                # parameter to work.
+                # NOTE If developing with a Python version that is <
+                # 3.6, copy shlex.py into main directory to get the
+                # punctuation_chars parameter to work.
                 try:
                     lex = shlex(expr, posix=False, punctuation_chars='!=<>')
                 except Exception as ex:
-                    # TODO Remove all this when Python <3.6 is unsupported
+                    # TODO Remove all this when Python <3.6 is
+                    # unsupported
                     print(ex)
                     print('Is an updated version of shlex missing. Try:')
                     print('    wget https://raw.githubusercontent.com/python/cpython/master/Lib/shlex.py')
@@ -2121,74 +2123,86 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                 # Update new state
                 self.orm.isnew = self.orm.ismarkedfordeletion
-                self.orm.isdirty, self.orm.ismarkedfordeletion = (False,) * 2
-
+                self.orm.isdirty, self.orm.ismarkedfordeletion \
+                                                    = (False,) * 2
                 # Raise event
                 self.onaftersave(self, eargs)
             else:
-                # If there is no sql, then the entity isn't new, dirty or 
-                # marked for deletion. In that case, don't save. However, 
-                # allow any constituents to be saved.
+                # If there is no sql, then the entity isn't new, dirty
+                # or marked for deletion. In that case, don't save.
+                # However, allow any constituents to be saved.
                 pass
 
-            # For each of the constituent entities classes mapped to self,
-            # set the foreignkeyfieldmapping to the id of self, i.e., give
-            # the child objects the value of the parent id for their
-            # foreign keys
+            # For each of the constituent entities classes mapped to
+            # self, set the foreignkeyfieldmapping to the id of self,
+            # i.e., give the child objects the value of the parent id
+            # for their foreign keys
             for map in self.orm.mappings if follow else tuple():
 
                 if followentitymapping and type(map) is entitymapping:
                     # Call the entity constituent's save method. Setting
                     # followentitiesmapping to false here prevents it's
-                    # child/entitiesmapping constituents from being saved. This
-                    # prevents infinite recursion. 
+                    # child/entitiesmapping constituents from being
+                    # saved. This prevents infinite recursion. 
                     if map.isloaded:
-                        map.value._save(cur, followentitiesmapping=False,
-                                             followassociationmapping=False)
+                        map.value._save(
+                            cur, 
+                            followentitiesmapping=False,
+                            followassociationmapping=False
+                        )
 
-                if followentitiesmapping and type(map) is entitiesmapping:
+                if followentitiesmapping \
+                   and type(map) is entitiesmapping:
 
                     es = map.value
 
                     # es is None if the constituent hasn't been loaded,
                     # so conditionally save()
+                    # TODO Use map.isloaded
                     if es:
                         # Take snapshot of states
                         sts = es.orm.persistencestates
 
-                        # Iterate over each entity and save them individually
+                        # Iterate over each entity and save them
+                        # individually
                         for e in es:
                             
                             # Set the entity's FK to self.id value
                             for map in e.orm.mappings:
                                 if type(map) is foreignkeyfieldmapping:
                                     if map.entity is self.orm.entity:
-                                        # Set map.value to self.id. But rather
-                                        # than a direct assignment, map.value =
-                                        # self.id use setattr() to invoke the
-                                        # _setvalue logic. This ensures that
-                                        # the proper events get raised, but
-                                        # even more importantly, it dirties e
-                                        # so e's FK will be changed in the
-                                        # database.  This is mainly for
-                                        # instances where the constituent is
-                                        # being moved to a different composite.
+                                        # Set map.value to self.id. But
+                                        # rather than a direct
+                                        # assignment, map.value =
+                                        # self.id use setattr() to
+                                        # invoke the _setvalue logic.
+                                        # This ensures that the proper
+                                        # events get raised, but even
+                                        # more importantly, it dirties e
+                                        # so e's FK will be changed in
+                                        # the database.  This is mainly
+                                        # for instances where the
+                                        # constituent is being moved to
+                                        # a different composite.
                                         setattr(e, map.name, self.id)
                                         break
 
-                            # Call save(). If there is an Exception, restore
-                            # state then re-raise
+                            # Call save(). If there is an Exception,
+                            # restore state then re-raise
                             try:
                                 # If self was deleted, delete each child
-                                # constituents. Here, cascade deletes are
-                                # hard-code.
+                                # constituents. Here, cascade deletes
+                                # are hard-code.
                                 if crud == 'delete':
                                     e.orm.ismarkedfordeletion = True
-                                # If the previous operation on self was a
-                                # delete, don't ascend back to self
-                                # (followentitymapping == False). Doing so will
-                                # recreate self in the database.
-                                e._save(cur, followentitymapping=(crud!='delete'))
+                                # If the previous operation on self was
+                                # a delete, don't ascend back to self
+                                # (followentitymapping == False). Doing
+                                # so will recreate self in the database.
+                                e._save(
+                                    cur, 
+                                    followentitymapping=(crud!='delete')
+                                )
                             except Exception:
                                 # Restore states
                                 es.orm.persistencestates = sts
@@ -2202,24 +2216,32 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                 e.orm.persistencestate = trashst
                                 raise
 
-                        # TODO If there is a rollback, shouldn't the entities
-                        # be restored to the trash collection. Also, shouldn't
-                        # deleting the associations trash (see below) do the
-                        # same restoration.
+                        # TODO If there is a rollback, shouldn't the
+                        # entities be restored to the trash collection.
+                        # Also, shouldn't deleting the associations
+                        # trash (see below) do the same restoration.
                         es.orm.trash.clear()
                             
-                if followassociationmapping and type(map) is associationsmapping:
+                if followassociationmapping \
+                   and type(map) is associationsmapping:
+
                     if map.isloaded:
-                        # For each association then each trashed association
+                        # For each association then each trashed
+                        # association
                         for asses in map.value, map.value.orm.trash:
                             for ass in asses:
                                 ass._save(cur, follow=False)
-                                for map in ass.orm.mappings.entitymappings:
+                                for map in \
+                                    ass.orm.mappings.entitymappings:
                                     if map.isloaded:
                                         if map.value is self:
                                             continue
                                         e = map.value
-                                        e._save(cur, followassociationmapping=False)
+                                        e._save(
+                                            cur, 
+                                            followassociationmapping \
+                                                =False
+                                        )
 
                         asses.orm.trash.clear()
 
@@ -2478,19 +2500,20 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         elif map is None:
             if attr != 'orm':
-                # For each of self's association mappings, look for the one
-                # that has entity mapping that matches `attr`. If found, get
-                # the associations collection object from the association
-                # mapping.  Then return that collection's `attr` property.
+                # For each of self's association mappings, look for the
+                # one that has entity mapping that matches `attr`. If
+                # found, get the associations collection object from the
+                # association mapping.  Then return that collection's
+                # `attr` property.
                 #
                 # For example, if `self` is an `artist`, and  `attr` is
-                # 'artifacts', return the association collection `artifacts`
-                # collection, i.e., ::
+                # 'artifacts', return the association collection
+                # `artifacts` collection, i.e., ::
                 #
                 #     art.artist_arifacts.artifacts
                 #
-                # This gets you the pseudocollection of the artist_artifacts
-                # associations collection.
+                # This gets you the pseudocollection of the
+                # artist_artifacts associations collection.
 
                 for map in self.orm.mappings.associationsmappings:
                     for map1 in map.associations.orm.mappings.entitymappings:
@@ -2504,8 +2527,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
     def __repr__(self):
         """ Return a tabularized list of ``self``'s properties and their
-        corresponding values. Any exceptions that happen to occure will be
-        trapped and a string representations of the exception will be
+        corresponding values. Any exceptions that happen to occure will
+        be trapped and a string representations of the exception will be
         returned."""
         try:
             tbl = table()
@@ -2877,11 +2900,13 @@ class mapping(entitiesmod.entity):
 
     @property
     def value(self):
-        raise NotImplementedError('Value should be implemented by the subclass')
+        msg = 'Value should be implemented by the subclass'
+        raise NotImplementedError(msg)
 
     @value.setter
     def value(self, v):
-        raise NotImplementedError('Value should be implemented by the subclass')
+        msg = 'Value should be implemented by the subclass'
+        raise NotImplementedError(msg)
 
     @property
     def isloaded(self):
@@ -2920,9 +2945,10 @@ class associationsmapping(mapping):
 
             asses = self.associations(map.name, self.composite.id)
 
-            # NOTE Currently, we may switch to implitly leoading of entities
-            # and association. However, we may want to continue explitly
-            # loading this association here for the sake of predictablity.
+            # NOTE Currently, we may switch to implitly leoading of
+            # entities and association. However, we may want to continue
+            # explitly loading this association here for the sake of
+            # predictablity.
             asses.orm.load()
 
             asses.orm.composite = self.composite
@@ -3118,8 +3144,8 @@ class fieldmapping(mapping):
         self.isexplicit  =  isexplicit
 
         # TODO Currently, a field is limited to being part of only one
-        # composite or fulltext index. This code could be improved to allow for
-        # multiple indexes per fieldmapping.
+        # composite or fulltext index. This code could be improved to
+        # allow for multiple indexes per fieldmapping.
         if ix is not None                and \
            isinstance(ix, builtins.type) and \
            index in ix.mro():
@@ -3608,8 +3634,8 @@ class orm:
                 map = e.orm.mappings(col) 
                 if map:
                     if e is not self.entity:
-                        # TODO We should be able to join a class instead of
-                        # an instantiated object. See TODO at
+                        # TODO We should be able to join a class instead
+                        # of an instantiated object. See TODO at
                         # test_orm.it_calls_innerjoin_on_entities.
                         self.instance.join(e.orm.entities())
                     break
@@ -3902,12 +3928,14 @@ class orm:
                 try:
                     comp = edict[map.value.bytes, map.entity]
                 except KeyError:
-                    # Composite for the FK can't be found. The object for the
-                    # FK isn't in edict, perhaps because the FK corresponds to
-                    # a composite on one side of an associations that wasn't
-                    # loaded, e.g., given `artists().join(artist_artifacts())`,
-                    # artist_artifacts will have an FK for an artist and an
-                    # artifact, but only artist will have been loaded.
+                    # Composite for the FK can't be found. The object
+                    # for the FK isn't in edict, perhaps because the FK
+                    # corresponds to a composite on one side of an
+                    # associations that wasn't loaded, e.g., given
+                    # `artists().join(artist_artifacts())`,
+                    # artist_artifacts will have an FK for an artist and
+                    # an artifact, but only artist will have been
+                    # loaded.
                     continue
                     
                 # If we are here, a composite was found
@@ -3917,10 +3945,10 @@ class orm:
                 maps = itertools.chain(comp.orm.mappings.entitiesmappings,
                                        comp.orm.mappings.associationsmappings)
 
-                # For each of the composite mappings, if `e` is the same type
-                # as the map then assign e to that mappings's value property.
-                # This links entity objects to their constituents (e.g.,
-                # artist,locations.last)
+                # For each of the composite mappings, if `e` is the same
+                # type as the map then assign e to that mappings's value
+                # property.  This links entity objects to their
+                # constituents (e.g., artist,locations.last)
                 for map1 in maps:
                     if isinstance(e, map1.entities.orm.entity):
                         # TODO Replace with `if map1.isloaded:`
@@ -3928,10 +3956,10 @@ class orm:
                             map1._value = map1.entities()
                         map1._value += e
 
-                # For each entity mapping of `e`, if the `comp` is the same
-                # type as the mapping, then assign `comp` to that mapping's
-                # value property. This links entity objects with their
-                # composites (e.g., loc.artist)
+                # For each entity mapping of `e`, if the `comp` is the
+                # same type as the mapping, then assign `comp` to that
+                # mapping's value property. This links entity objects
+                # with their composites (e.g., loc.artist)
                 for map1 in e.orm.mappings.entitymappings:
                     if map1.entity is type(comp):
                         map1._value = comp
@@ -4463,19 +4491,20 @@ class associations(entities):
                           were added.
         """
 
-        # If `obj` is an `association`, set it's `composite` to the `self`'s
-        # `composite`, e.g.::
+        # If `obj` is an `association`, set it's `composite` to the
+        # `self`'s `composite`, e.g.::
         #
         #     artist_artifact.artist = self.orm.composite
         # 
-        # Otherwise, pass `obj` to the `super()`'s `append()` method. In this
-        # case, it will likely be an a collection of `association` objects.
+        # Otherwise, pass `obj` to the `super()`'s `append()` method. In
+        # this case, it will likely be an a collection of `association`
+        # objects.
         if isinstance(obj, association):
             for map in obj.orm.mappings.entitymappings:
-                # TODO We probably should be using the association's (self)
-                # mappings collection to test the composites names. The name
-                # that matters is on the LHS of the map when being defined in
-                # the association class.
+                # TODO We probably should be using the association's
+                # (self) mappings collection to test the composites
+                # names. The name that matters is on the LHS of the map
+                # when being defined in the association class.
                 if map.name == type(self.orm.composite).__name__:
                     setattr(obj, map.name, self.orm.composite)
                     break;
@@ -4484,13 +4513,14 @@ class associations(entities):
         return r
 
     def _self_onremove(self, src, eargs):
-        """ This event handler occures when an association is removed from an
-        assoctions collection. When this happens, we want to remove the
-        association's constituent entity (the non-composite entity) from its
-        pseudocollection class - but only if it hasn't already been marked for
-        deletion (ismarkedfordeletion). If it has been marked for deletion,
-        that means the psuedocollection class is invoking this handler - so
-        removing the constituent would result in infinite recursion.  """
+        """ This event handler occures when an association is removed
+        from an assoctions collection. When this happens, we want to
+        remove the association's constituent entity (the non-composite
+        entity) from its pseudocollection class - but only if it hasn't
+        already been marked for deletion (ismarkedfordeletion). If it
+        has been marked for deletion, that means the psuedocollection
+        class is invoking this handler - so removing the constituent
+        would result in infinite recursion.  """
 
         ass = eargs.entity
 
@@ -4506,8 +4536,9 @@ class associations(entities):
 
     def entities_onadd(self, src, eargs):
         """
-        An event handler invoked when an entity is added to the association
-        (``self``) through the associations psuedo-collection, e.g.::
+        An event handler invoked when an entity is added to the
+        association (``self``) through the associations
+        psuedo-collection, e.g.::
 
             # Create artist entity
             art = artist()            
@@ -4516,9 +4547,9 @@ class associations(entities):
             art.artifact += artifact() 
 
         :param: src entities:    The psuedocollection's entities object.
-        :param: eargs eventargs: The event arguments. Its ``entity`` property
-                                 is the entity object being added to the 
-                                 psuedocollection.
+        :param: eargs eventargs: The event arguments. Its ``entity``
+                                 property is the entity object being
+                                 added to the psuedocollection.
         """
         ass = None
 
@@ -4596,9 +4627,10 @@ class associations(entities):
 
         # TODO Use the mappings collection to get __name__'s value.
 
-        # If `attr` matches the association composite, return the composite.
-        # This is for the less likely case where the ORM user is requesting the
-        # composite of the associations collection, e.g.,:
+        # If `attr` matches the association composite, return the
+        # composite.  This is for the less likely case where the ORM
+        # user is requesting the composite of the associations
+        # collection, e.g.,:
         #
         #     art.artist_artifacts.artist
         #
@@ -4607,16 +4639,16 @@ class associations(entities):
             return self.orm.composite
 
         try:
-            # Returned a memoized constituent. These are created in the `except
-            # KeyError` block.
+            # Returned a memoized constituent. These are created in the
+            # `except KeyError` block.
             return self.orm.constituents[attr]
         except KeyError:
             for map in self.orm.mappings.entitymappings:
                 es = map.entity.orm.entities
                 if es.__name__ == attr:
-                    # Create a psuedocollection for the associations collection
-                    # object (self). Append it to the self's _constituents
-                    # collection.
+                    # Create a psuedocollection for the associations
+                    # collection object (self). Append it to the self's
+                    # _constituents collection.
                     es = es()
                     es.onadd    += self.entities_onadd
                     es.onremove += self.entities_onremove
@@ -4625,8 +4657,8 @@ class associations(entities):
             else:
                 raiseAttributeError()
 
-            # Get all the entity objects stored in `self` then add them in to
-            # the pseudocollection (es).
+            # Get all the entity objects stored in `self` then add them
+            # in to the pseudocollection (es).
             for ass in self:
                 e = getattr(ass, map.name) # :=
                 if e:
