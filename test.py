@@ -329,8 +329,8 @@ class artist_artifact(orm.association):
 
     @staticmethod
     def getvalid():
-        # TODO Is an aa without an artifact object valid, i.e., should it not
-        # have a brokenrule for the missing artifact?
+        # TODO Is an aa without an artifact object valid, i.e., should
+        # it not have a brokenrule for the missing artifact?
         aa = artist_artifact()
         aa.role = uuid4().hex
         aa.timespan = uuid4().hex
@@ -1637,9 +1637,10 @@ class test_orm(tester):
             # Ensure that __call__ returns None if the index is out of range
             self.none(arts1(cnt + 1))
 
+            # NOTE that UUID indexing on streams has not been
+            # implemented yet.
             # TODO Test indexing by UUID, i.e.,
             # arts[id]
-            # NOTE that UUID indexing on streams has not been implemented yet.
 
     def it_calls_unavailable_attr_on_streamed_entities(self):
         arts = artists(orm.stream)
@@ -1781,8 +1782,8 @@ class test_orm(tester):
 
         arts.save()
 
-        # For clarity, this is a recipe for doing `where x in ([...])` queries.
-        # The where string has to be created manually.
+        # For clarity, this is a recipe for doing `where x in ([...])`
+        # queries.  The where string has to be created manually.
         ids = sorted(arts[0:2].pluck('id'))
         where = 'id in (' + ','.join(['%s'] * len(ids)) + ')'
 
@@ -4286,8 +4287,8 @@ class test_orm(tester):
 
         saveall()
 
-        # First, break the save method so a rollback occurs, and test the
-        # rollback. Second, fix the save method and ensure success.
+        # First, break the save method so a rollback occurs, and test
+        # the rollback. Second, fix the save method and ensure success.
         for i in range(2):
             if i:
                 # Restore original save method
@@ -7297,24 +7298,27 @@ class test_orm(tester):
         placeholders and that the literals are moved to the correct 
         positions in the where.args list. '''
 
-        # TODO With the addition of this feature, we can remove the requirement
-        # that a empty tuple be given as the second argument here. It also
-        # seems possible that we remove the args tuple altogether since it no
-        # longer seems necessary. NOTE, on the other hand, we may want to keep
-        # the argument parameter for binary queries, e.g.,:
+        # TODO With the addition of this feature, we can remove the
+        # requirement that a empty tuple be given as the second argument
+        # here. It also seems possible that we remove the args tuple
+        # altogether since it no longer seems necessary. NOTE, on the
+        # other hand, we may want to keep the argument parameter for
+        # binary queries, e.g.,:
         #
         #     artist('id = %s', (uuid.bytes,))
         #
         # Writing the above using string concatenation is difficult.
         #
-        # HOWEVER: Given that the predicate parser (`predicate._parse()`) has
-        # not been thoroughly review by security specialists, it is considered
-        # unsafe to rely on it to correctly identify literals and columns in
-        # WHERE predicates.  Because of this, until we have a proof that the
-        # predicate parser is invincible to malicious attacts, we should
-        # continue to insist that the user use the `args` tuple to pass in
-        # varient values when querying entities collections so the underlying
-        # MySQL library can safely deal with these arguments seperately.
+        # HOWEVER: Given that the predicate parser
+        # (`predicate._parse()`) has not been thoroughly review by
+        # security specialists, it is considered unsafe to rely on it to
+        # correctly identify literals and columns in WHERE predicates.
+        # Because of this, until we have a proof that the predicate
+        # parser is invincible to malicious attacts, we should continue
+        # to insist that the user use the `args` tuple to pass in
+        # varient values when querying entities collections so the
+        # underlying MySQL library can safely deal with these arguments
+        # seperately.
 
         arts = artists("firstname = '1234'", ())
         self.eq("1234", arts.orm.where.args[0])

@@ -305,12 +305,13 @@ class joins(entitiesmod.entities):
     def __str__(self, joinerroot=None, joineeroot=None):
         ''' Return the join portion of a SELECT query. '''
         
-        # TODO Parameterize this function. Currently it reports on variables
-        # in the global scope which are not correct if the entities' type is an
-        # assocition.
-        # NOTE `entities.join` seems to be catching this condition which means
-        # this function may never be invoked. We should leave it regardless in
-        # case this assumption is wrong or if something changes.
+        # TODO Parameterize this function. Currently it reports on
+        # variables in the global scope which are not correct if the
+        # entities' type is an assocition.
+        # NOTE `entities.join` seems to be catching this condition which
+        # means this function may never be invoked. We should leave it
+        # regardless in case this assumption is wrong or if something
+        # changes.
         def raise_fk_not_found():
             ''' Raise a ValueError with a FK not found message. '''
             msg = 'FK not found: '
@@ -334,10 +335,11 @@ class joins(entitiesmod.entities):
         # For each join object in this entities collection
         for j in self:
 
-            # Concatenate the table's abbreviation/alias to the `joineegraph`
-            # and `joineegraph`. This denotes the hierarchy of the table within
-            # the graph. These variables are used as table alias. They
-            # accumulate in length with each recursion.
+            # Concatenate the table's abbreviation/alias to the
+            # `joineegraph` and `joineegraph`. This denotes the
+            # hierarchy of the table within the graph. These variables
+            # are used as table alias. They accumulate in length with
+            # each recursion.
             if joinerroot is None:
                 joinergraph = self.abbreviation
             else:
@@ -360,22 +362,24 @@ class joins(entitiesmod.entities):
             # Now we can concatenate `r` with the table and its alias 
             r += ' %s AS `%s`' % (jointbl, joineegraph)
 
-            # The joiner's primary key will usually be "id", but let's use the
-            # entities' mappings collection to get the actual name.
+            # The joiner's primary key will usually be "id", but let's
+            # use the entities' mappings collection to get the actual
+            # name.
             joinerpk = self.entities.orm.mappings.primarykeymapping.name
 
             if j.entities.orm.issuperentity(of=self.entities):
                 # If `j`'s entities collection is a superentity to
                 # self.entities, then the joinpx will be the PK of
                 # j.entities - which will almost always be 'id'. This is
-                # because the relationship between super and subentities is
-                # one-to-one so joinerpk and joineepk will both always be 'id'
+                # because the relationship between super and subentities
+                # is one-to-one so joinerpk and joineepk will both
+                # always be 'id'
                 joineepk = j.entities.orm.mappings.primarykeymapping.name
             else:
-                # Get the joineepk for the joinee table. As opposed to the
-                # consequent block above, this block represents the typical
-                # one-to-many relationship for which we will need the foreign
-                # key of the joinee table.
+                # Get the joineepk for the joinee table. As opposed to
+                # the consequent block above, this block represents the
+                # typical one-to-many relationship for which we will
+                # need the foreign key of the joinee table.
                 for map in j.entities.orm.mappings.foreignkeymappings:
                     if self.entities.orm.entity is map.entity:
                         joineepk = map.name
@@ -387,10 +391,11 @@ class joins(entitiesmod.entities):
             r %= (joinergraph, joinerpk, joineegraph, joineepk)
 
             if isinstance(j.entities, associations):
-                # If the join is for an association, things become a little
-                # inverted because each join's entities collection within the
-                # association will have a 1-to-many relationship with the
-                # association. This block makes accomidations for that.
+                # If the join is for an association, things become a
+                # little inverted because each join's entities
+                # collection within the association will have a
+                # 1-to-many relationship with the association. This
+                # block makes accomidations for that.
                 for j1 in j.entities.orm.joins:
                     joinergraph1 = joineegraph
                     joineegraph1 = '%s.%s' % (joineegraph, j1.entities.orm.abbreviation)
@@ -1290,8 +1295,6 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                         # collection, add it to self's joins collection, and
                         # add es to ass's joins collection.
 
-                        # TODO We should be able to use classes here instead of
-                        # instances once that feature has been added.
                         self &= map.associations & es
 
                         # We can return now because the implicit assocation has
@@ -1367,8 +1370,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
     def __getitem__(self, key):
         if self.orm.isstreaming:
-            # TODO Add indexing using a UUID. See alternative block for how
-            # this is done on non-streaming entities collections.
+            # TODO Add indexing using a UUID. See alternative block for
+            # how this is done on non-streaming entities collections.
             cur = self.orm.stream.cursor
             es = cur.advance(key)
             if isinstance(key, int):
@@ -2168,6 +2171,26 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         # individually
                         for e in es:
                             
+                            # Elements in the `es` collection may not be
+                            # of the same type as the es collection.
+                            # This occures when subentity objects are
+                            # injected into the superentities
+                            # collections. E.g.,:
+                            #
+                            #     sng.concerts = conc = concert()
+                            #     assert conc in sng.presentations
+                            #
+                            # (See
+                            # it_adds_subentity_to_superentiies_collection)
+                            # In this case, we wouldn't want to save the
+                            # reference to the concert element when
+                            # iterating over the presentations
+                            # collection because it causes infinine
+                            # recursion. The below line will prevent
+                            # this.
+                            if e.orm.entities is not type(es):
+                                continue
+
                             # Set the entity's FK to self.id value
                             for map in e.orm.mappings:
                                 if type(map) is foreignkeyfieldmapping:
@@ -2196,6 +2219,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                 # are hard-code.
                                 if crud == 'delete':
                                     e.orm.ismarkedfordeletion = True
+
                                 # If the previous operation on self was
                                 # a delete, don't ascend back to self
                                 # (followentitymapping == False). Doing
@@ -2448,7 +2472,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             if map1.entity is e:
                                 break
 
-                            # If not found, go up the inheritance tree and try again
+                            # If not found, go up the inheritance tree
+                            # and try again
                             super = e.orm.super
                             e = super.orm.entity if super else None
                         else:
@@ -2457,17 +2482,18 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     else:
                         raise ValueError('FK map not found for entity')
 
-                    # NOTE Though we've switch to implicit loading for entities and
-                    # associations, we shoud still explicitly load here for the
-                    # sake of predictability.
+                    # NOTE Though we've switch to implicit loading for
+                    # entities and associations, we shoud still
+                    # explicitly load here for the sake of
+                    # predictability.
                     es = map.entities(map1.name, self.id)
                     es.orm.load()
 
                     def setattr1(e, attr, v):
                         e.orm.mappings(attr).value = v
 
-                    # Assign the composite reference to the constituent's
-                    # elements
+                    # Assign the composite reference to the
+                    # constituent's elements
                     #   i.e., art.presentations.first.artist = art
                     for e in es:
                         attr = self.orm.entity.__name__
@@ -2546,7 +2572,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 r = tbl.newrow()
                 r.newfield('Class')
                 r.newfield('%s' % type(e).__name__)
-
 
                 for map in e.orm.mappings:
                     r = tbl.newrow()
@@ -2895,9 +2920,6 @@ class mapping(entitiesmod.entity):
     @property
     def fullname(self):
         return '%s.%s' % (self.orm.table, self.name)
-
-    def __str__(self):
-        return self.name
 
     @property
     def value(self):
@@ -4019,21 +4041,21 @@ class orm:
     def getwhere(self):
         ''' Return a tuple containing the entities' WHERE clause with %s
         parameters as the first element and a corresponding a list of
-        arguments as the second element. If the where object's
-        entities collection has joins, those joins will be traversed to
-        captures all where clauses. '''
+        arguments as the second element. If the where object's entities
+        collection has joins, those joins will be traversed to captures
+        all where clauses. '''
 
         # Initialize the return variables
         r = ''
         args = []
 
-        # Set a graph variable to denote the heirchary. This is used in the
-        # recursive function below.
+        # Set a graph variable to denote the heirchary. This is used in
+        # the recursive function below.
         graph = self.abbreviation
 
         # If self has a where predicate, add to the return variables.
-        # Subsequent WHERE clauses found in the hierarchy of joins will be
-        # added recursively in the recursive function below.
+        # Subsequent WHERE clauses found in the hierarchy of joins will
+        # be added recursively in the recursive function below.
         wh = self.where
         if wh:
             r += '(%s)' % wh.predicate.__str__(columnprefix=graph)
