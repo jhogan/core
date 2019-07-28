@@ -2518,6 +2518,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 #   i.e., art.presentations.artist = art
                 setattr(map.value, self.orm.entity.__name__, self)
 
+                map.value.onadd += self.entities_onadd
+
         elif type(map) is associationsmapping:
             map.composite = self
 
@@ -2551,6 +2553,75 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             return object.__getattribute__(self, attr)
 
         return map.value
+
+    def entities_onadd(self, src, eargs):
+        """
+        An event handler invoked when an entity is added to
+        an entity object's collection property::
+
+            # Create rapper entity
+            rpr = rapper()            
+
+            # Add a new battel to the rapper's battles property
+            rpr.battles += battle() 
+
+        This handler ensures that entity objects added to thes
+        collections are also appended to the superentities collections
+        of the entities collection they are being appended to. 
+
+        For example, in the above code, a ``battle`` is added to the
+        ``rapper``'s ``battles`` property. But since ``battle`` is a
+        subentity of ``concert``, and ``concert`` is a subentity of
+        ``presentation``, the ``battle`` entity will, by the logic in
+        this handler,  be made present in ``rpr.concerts`` as well as
+        ``rpr.presentations``.
+
+        :param: src entities:    The entities collection that the 
+                                 ``eaarg.entity`` is being appended to.
+        :param: eargs eventargs: The event arguments. Its ``entity``
+                                 property is the entity object that will
+                                 be appended to the superentities.
+        """
+        e = eargs.entity
+        
+        # Get the superentity of self
+        sup = self.orm.entities.orm.super #(self: rapper)
+
+        # If self has a superentity
+        if sup:
+            # For each of the entities mappings of the superentity
+            for map in sup.orm.mappings.entitiesmappings:
+
+                # Get e's superentities class
+                # TODO sup becomes the entity class (concert). However,
+                # it should be the entities class (concerts) since it is
+                # called on an entities class.
+                # The conditional below:
+                #
+                #   if map.entities is sup.orm.entities:
+                #
+                # compensates for this, though it should read:
+                #    
+                #   if map.entities is sup:
+                #
+                sup = src.orm.entities.orm.super
+
+                # If the map's entities matches sup
+                if map.entities is sup.orm.entities:
+
+                    # (map.entitiesmapping: <class>: concert)
+
+                    # Get the collection property of self that is super
+                    # for e that is super to e (i.e., battles ->
+                    # concerts)
+                    es = getattr(self, map.name)
+
+                    # Add `e` to the collection. NOTE that this
+                    # operation will result in a recursive call back
+                    # into this handler until the final superentity for
+                    # self has been reached.
+                    es += e
+                    break
 
     def __repr__(self):
         """ Return a tabularized list of ``self``'s properties and their
