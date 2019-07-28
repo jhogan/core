@@ -483,8 +483,9 @@ class entities(object):
     def __sub__(self, es):
         r = type(self)()
 
-        # If es is not an iterable, such as an entitities collection, assume 
-        # it is an entity object and convert it into a collection of one.
+        # If es is not an iterable, such as an entitities collection,
+        # assume it is an entity object and convert it into a collection
+        # of one.
         if not hasattr(es, '__iter__'):
             es = entities([es])
 
@@ -556,7 +557,7 @@ class entities(object):
 
         # If key is a slice. then what was removed and what was added could
         # have been an iterable. Therefore, we need to convert them to
-        # iterable then raise the onadd and onremove events for each entity
+        # iterables then raise the onadd and onremove events for each entity
         # that had been removed and added.
         items  =  item  if  hasattr(item,  '__iter__')  else  [item]
         es     =  e     if  hasattr(e,     '__iter__')  else  [e]

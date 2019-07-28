@@ -322,6 +322,16 @@ class row(entity):
         for v in vs:
             self.newfield(v)
 
+    # TODO
+    '''
+    def __repr__(self):
+        pass
+
+    def __str__(self):
+        pass
+    '''
+
+
 class fields(entities):
     def __init__(self, initial=None, row=None):
 
