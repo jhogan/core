@@ -1257,7 +1257,6 @@ class test_orm(tester):
             self.one(chrons.where('entity', rmfact))
             self.one(chrons.where('entity', art.artist_artifacts.orm.trash.first))
 
-
             art1 = artist(art.id)
 
             self.one(art1.artist_artifacts)
@@ -1837,7 +1836,6 @@ class test_orm(tester):
                 arts.sort(sort, reverse)
                 arts1 = artists(orm.stream, lastname=lastname)
                 arts1.sort(sort, reverse)
-                arts1.orm.sql
 
                 # Test sort()
                 for i, art1 in enumerate(arts1):
@@ -1932,7 +1930,6 @@ class test_orm(tester):
         # themselves to SQL injection attacks.
         self.expect(ValueError, fn)
 
-
         self.chronicles.clear()
 
         arts1 = artists("firstname = '%s'" % arts.first.firstname, ())
@@ -2014,7 +2011,6 @@ class test_orm(tester):
 
         def fn():
             artists('id = id', firstname = fname, lastname = lname)
-
 
         # Force user to supply an empty args list
         self.expect(ValueError, fn)
@@ -2205,42 +2201,31 @@ class test_orm(tester):
         '''
         rprs.sort()
 
+        wh = "voice = '%s' or firstname = '%s'" 
+        wh %= rprs.first.voice, rprs.second.firstname
+        rprs1 = rappers(wh, ())
         with self._chrontest() as t:
-            wh = "voice = '%s' or firstname = '%s'" 
-            wh %= rprs.first.voice, rprs.second.firstname
-            rprs1 = t.run(lambda: rappers(wh, ()))
-
-            self.fail('FIXME')
-
-            # TODO The following fails because rprs1.orm.sql returns bad
-            # SQL.
-            '''
-            rprs1.sort()
-
-            # Sorting will cause a load
-            self.one(self.chronicles)
+            t.run(lambda: self.two(rprs1))
 
             t.retrieved(rprs1)
 
         # Make sure valid
-        self.true(rprs1.isvalid)
 
-        # isvalid should not cause any additional queries to be
-        # chronicled (if we had not included the firstname in the above
-        # query, isvalid would need to load rapper's super
-        self.one(self.chronicles)
+        with self._chrontest() as t:
+            t.run(lambda: self.true(rprs1.isvalid))
+            # isvalid should not cause any additional queries to be
+            # chronicled (if we had not included the firstname in the
+            # above query, isvalid would need to load rapper's super
 
-        self.two(rprs1)
-        self.eq(rprs.first.id, rprs1.first.id)
-        self.eq(rprs.second.id, rprs1.second.id)
+            self.two(rprs1)
+            self.eq(rprs.first.id, rprs1.first.id)
+            self.eq(rprs.second.id, rprs1.second.id)
 
-        # Still nothing new chronicled
-        self.one(self.chronicles)
-        '''
+            # Still nothing new chronicled
 
         wh = "voice = '%s'" 
         wh %= rprs.first.voice
-        rprs1 = t.run(lambda: rappers(wh, ()))
+        rprs1 = rappers(wh, ())
 
         with self._chrontest() as t:
             t.run(lambda: self.one(rprs1))
@@ -2265,7 +2250,7 @@ class test_orm(tester):
 
         wh = "nice = '%s'" 
         wh %= rprs.first.nice
-        rprs1 = t.run(lambda: rappers(wh, ()))
+        rprs1 = rappers(wh, ())
 
         with self._chrontest() as t:
             t.run(lambda: self.one(rprs1))
@@ -2535,7 +2520,7 @@ class test_orm(tester):
         arts = artists()
 
         for _ in range(2):
-            arts += artist()
+            arts += artist.getvalid()
             arts.last.firstname = uuid4().hex
             arts.last.lastname = uuid4().hex
 
@@ -2781,6 +2766,8 @@ class test_orm(tester):
                         self.eq(v, v1)
             
                 self.is_(pres1, loc1.presentation)
+
+        # TODO Remove this. I'm not sure why it's here.
         return
 
         # Test appending a collection of constituents to a constituents
@@ -2870,7 +2857,8 @@ class test_orm(tester):
         chrons.clear()
         pres.save()
 
-        # NOTE The below line produced a failure today, but it went away.  (Jul 6)
+        # NOTE The below line produced a failure today, but it went
+        # away.  (Jul 6)
         B(chrons.count != 2)
         self.two(chrons)
 
@@ -2899,7 +2887,6 @@ class test_orm(tester):
         self.two(chrons)
         self.eq(chrons.where('entity', art1).first.op,  'create')
         self.eq(chrons.where('entity', pres1).first.op, 'update')
-
 
         pres2 = presentation(pres1.id)
         self.eq(art1.id, pres2.artist.id)
@@ -3196,7 +3183,6 @@ class test_orm(tester):
         uuid = uuid4().hex
         rpr.test = uuid
         self.eq(uuid, rpr.test)
-
 
     def it_calls__getitem__on_entity(self):
         art = artist()
@@ -3693,7 +3679,6 @@ class test_orm(tester):
             art.email = o
             self.type(str, art.email)
             self.eq(str(o).lower(), art.email)
-
 
         Delta = la2gr('d')
         for art in (artist(), singer()):
@@ -4271,7 +4256,6 @@ class test_orm(tester):
 
         self.expect(db.RecordNotFoundError, lambda: presentation(pres.id))
         self.expect(db.RecordNotFoundError, lambda: location(loc.id))
-
 
     def it_raises_exception_on_unknown_id(self):
         for cls in singer, artist:
@@ -6184,7 +6168,6 @@ class test_orm(tester):
         for prop in 'description', 'name', 'firstname':
             self.broken(loc, prop, 'fits')
 
-
     def subentity_constituents_break_subentity(self):
         conc = concert.getvalid()
         conc.singer = singer.getvalid()
@@ -6680,7 +6663,6 @@ class test_orm(tester):
 
             self.eq((False, False, False), rpr.orm.persistencestate)
 
-
     def it_fails_to_save_broken_subentity(self):
         sng = singer()
 
@@ -6757,7 +6739,6 @@ class test_orm(tester):
         rpr.delete()
         for e in es:
             self.expect(db.RecordNotFoundError, lambda: e(rpr.id))
-
 
     def it_deletes_from_subentitys_entities_collections(self):
         chrons = self.chronicles
@@ -7179,7 +7160,6 @@ class test_orm(tester):
             )
         )
 
-
         # Query where composite and constituent have two MATCH clase each
         artmatch = (
             "MATCH(bio) AGAINST ('%s') OR "
@@ -7207,6 +7187,7 @@ class test_orm(tester):
 
     def it_calls_innerjoin_on_associations(self):
         arts = self._create_join_test_data()
+
         arts.sort()
 
         fff = False, False, False
@@ -7246,7 +7227,6 @@ class test_orm(tester):
                 self.eq('retrieve', self.chronicles.last.op)
 
                 self.eq(aa1.artist.id, art1.id)
-
 
         # NOTE The above will lazy-load aa1.artifact 16 times
         self.count(16, self.chronicles)
@@ -7328,7 +7308,6 @@ class test_orm(tester):
 
             self.zero(self.chronicles)
 
-
         # Test joining the associated entities collecties (artist_artifacts)
         # with its composite (artifacts) where the composite's join is
         # conditional.
@@ -7398,7 +7377,6 @@ class test_orm(tester):
                 arts1 =  artists.join(
                             artifacts & components
                          )
-
 
             self.four(arts1)
 
@@ -7651,21 +7629,7 @@ class test_orm(tester):
             # notnone
             self.notnone(joiner)
 
-
-
-
-
-
-
-        # TODO RESTORE
-        #arts = self._create_join_test_data()
-        arts = artists()
-
-
-
-
-
-
+        arts = self._create_join_test_data()
 
         jointypes = 'innerjoin', 'join', 'standard', 'inplace', 'class'
 
@@ -7911,7 +7875,6 @@ class test_orm(tester):
                 join(arts1, press, t)
                 join(press, locs, t)
 
-
             # Test join counts
             self.one(arts1.orm.joins)
             self.one(press.orm.joins)
@@ -8091,7 +8054,12 @@ class test_orm(tester):
         pred1 = None
         for i, pred1 in enumerate(pred):
             if i == 0:
-                self.eq("MATCH (col) AGAINST ('keyword' IN NATURAL LANGUAGE MODE) AND col = 1", str(pred1))
+                expr = (
+                    "MATCH (col) AGAINST "
+                   "('keyword' IN NATURAL LANGUAGE MODE) "
+                   "AND col = 1"
+                )
+                self.eq(expr, str(pred1))
             elif i == 1:
                 self.eq(' AND col = 1', str(pred1))
             else:
@@ -8365,7 +8333,6 @@ class test_orm(tester):
             self.none(pred.operands)
             self.notnone(pred.match)
             self.eq(cols, pred.match.columns)
-            B(expr != str(pred.match))
             self.eq(expr, str(pred.match))
 
             if pred.junctionop:
@@ -8509,6 +8476,8 @@ class test_orm(tester):
             )
             testmatch(pred, ['col1', 'col2'], expr)
 
+        # FIXME This is incorrect syntax 
+        # (8e385bb9-41cd-4943-bba8-d72cb9f5b938)
         # match(col1, col2) against ('keyword') in natural language mode
         exprs =  "match(col1, col2) against ('keyword') in natural language mode", \
                  "MATCH ( col1, col2 )  AGAINST  ( 'keyword' )  IN  NATURAL     LANGUAGE    MODE"
@@ -8520,6 +8489,7 @@ class test_orm(tester):
             )
             testmatch(pred, ['col1', 'col2'], expr)
 
+        # FIXME This is incorrect syntax
         # match(col1, col2) against ('keyword') in boolean mode
         exprs =  "match(col1, col2) against ('keyword') in boolean mode", \
                  "MATCH ( col1, col2 )  AGAINST  ( 'keyword' )  IN      BOOLEAN    MODE"
@@ -8890,7 +8860,6 @@ Description: {}
         expect = expect.format(str(bl.id), bl.slug, bl.description)
 
         self.eq(expect, str(bl1))
-
 
     def it_violates_unique_constraint_on_slug(self):
         bl = blog()
