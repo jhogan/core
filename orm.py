@@ -3009,13 +3009,15 @@ class mapping(entitiesmod.entity):
     def clone(self):
         raise NotImplementedError('Abstract')
 
+    @property
+    def _reprargs(self):
+        args = 'fullname="%s"'
+        args %= self.fullname
+        return args
+        
     def __repr__(self):
-        r = '%s (%s)'
-            
-        args = 'fullname = "%s", isloaded = %s'
-        args %= (self.fullname, self.isloaded)
-
-        r %= (type(self).__name__, args)
+        r = '%s(%s)'
+        r %= (type(self).__name__, self._reprargs)
         return r
 
     def __str__(self):
@@ -3027,6 +3029,11 @@ class associationsmapping(mapping):
         self._value = None
         self._composite = None
         super().__init__(name, derived)
+
+    def clone(self):
+        return associationsmapping(
+            self.name, self.associations, self.derived
+        )
 
     @property
     def entities(self):
@@ -3065,8 +3072,11 @@ class associationsmapping(mapping):
     def value(self, v):
         self._setvalue('_value', v, 'value')
 
-    def clone(self):
-        return associationsmapping(self.name, self.associations, self.derived)
+    @property
+    def _reprargs(self):
+        args = super()._reprargs
+        args += ', isloaded=%s' % self.isloaded
+        return args
 
 class entitiesmapping(mapping):
     def __init__(self, name, es):
@@ -3081,6 +3091,12 @@ class entitiesmapping(mapping):
     @value.setter
     def value(self, v):
         self._setvalue('_value', v, 'value')
+
+    @property
+    def _reprargs(self):
+        args = super()._reprargs
+        args += ', isloaded=%s' % self.isloaded
+        return args
 
     def clone(self):
         return entitiesmapping(self.name, self.entities)
@@ -3107,6 +3123,12 @@ class entitymapping(mapping):
 
     def clone(self):
         return entitymapping(self.name, self.entity, derived=self.derived)
+
+    @property
+    def _reprargs(self):
+        args = super()._reprargs
+        args += ', isloaded=%s' % self.isloaded
+        return args
 
 class aggregateindexes(entitiesmod.entities):
     pass
@@ -3288,6 +3310,19 @@ class fieldmapping(mapping):
         map._value = self._value
 
         return map
+
+    @property
+    def _reprargs(self):
+        args = super()._reprargs
+        args  +=  ',  type=%s'        %  str(self.type)
+        args  +=  ',  min=%s'         %  str(self.min)
+        args  +=  ',  max=%s'         %  str(self.max)
+        args  +=  ',  m=%s'           %  str(self.precision)
+        args  +=  ',  d=%s'           %  str(self.scale)
+        args  +=  ',  ix=%s'          %  str(self.index)
+        args  +=  ',  isexplicit=%s'  %  str(self.isexplicit)
+        args  +=  ',  value=%s'  %  str(self.value)
+        return args
 
     @property
     def index(self):
