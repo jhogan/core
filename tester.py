@@ -481,6 +481,7 @@ class failure(entity):
                 self._message = inspect.getargvalues(stack[1][0])[3]['msg']
             except KeyError:
                 pass
+
     def __str__(self):
         if self.cause:
             r = "{}: {} in {}".format(self.cause.__class__.__name__,

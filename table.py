@@ -80,6 +80,12 @@ class table(entity):
     def __call__(self, y, x):
         return self[y][x]
 
+    def add(self, e):
+        for r in e:
+            self.rows += r
+
+        return self
+
     def newrow(self):
         r = row()
         self.rows += r

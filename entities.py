@@ -33,6 +33,7 @@ from functools import total_ordering, reduce
 import decimal
 import string
 
+
 def rgetattr(obj, attr, *args):
     def rgetattr(obj, attr):
         if obj:
