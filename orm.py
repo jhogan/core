@@ -3751,6 +3751,18 @@ class orm:
 
         return r
 
+    def __repr__(self):
+        r = 'orm(type=<%s>, %s=True)'
+
+        if self.isinstance:
+            args = [type(self.instance).__name__]
+        else:
+            args = [self.entity.__name__]
+
+        args += ['instance' if self.isinstance else 'static']
+
+        return r % tuple(args)
+
     def truncate(self, cur=None):
         # TODO Use executioner
         sql = 'TRUNCATE TABLE %s;' % self.table
