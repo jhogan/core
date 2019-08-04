@@ -23,8 +23,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-"""
-This file contains all classes related to object-relational mapping.
+""" This file contains all classes related to object-relational mapping.
 """
 
 from datetime import datetime
@@ -269,8 +268,7 @@ class stream(entitiesmod.entity):
             return self.start
 
 class joins(entitiesmod.entities):
-    """
-    A collection of ``join`` classes.
+    """ A collection of ``join`` classes.
     """
     def __init__(self, initial=None, es=None):
         # NOTE In order to conform to the entitymod.entities.__init__'s
@@ -307,10 +305,26 @@ class joins(entitiesmod.entities):
         return wheres(initial=[x.where for x in self if x.where])
 
 class join(entitiesmod.entity):
+    """ Represents an SQL JOIN clause. 
+    
+    An entities collection class can have zero or more join objects in
+    its ``joins`` collection. These are used to generate the JOIN
+    portion of its SELECT statement (``entities.orm.sql``).
+    """
+    
+    # Constants for the types of a join. Currently, noly INNER JOINS are
+    # supported.
     Inner = 0
     Outer = 1
 
     def __init__(self, es, type):
+        """ Sets the initial properties of the join. 
+
+        :param: entities es: The :class:`entities` that this join
+                             corresponds to.
+        :param: int type: The type of join (e.g., INNER, OUTER, etc.)
+        """
+
         if es.orm.isstreaming:
             msg = 'Entities cannot be joined to streaming entities'
             raise invalidstream(msg)
@@ -320,15 +334,19 @@ class join(entitiesmod.entity):
 
     @property
     def table(self):
+        """ Returns the table name for the join. This is the same as the
+        table name for the entities' table.
+        """
         return self.entities.orm.table
 
     @property
     def where(self):
+        # TODO Test if this is actually used
         return self.entities.orm.where
 
     @property
     def keywords(self):
-        ''' Get the SQL keyword for the join type. '''
+        """ Get the SQL keyword for the join type. """
         if self.type == join.Inner:
             return 'INNER JOIN'
         elif self.type == join.Outer:
@@ -339,17 +357,36 @@ class join(entitiesmod.entity):
             raise ValueError('Invalid join type')
 
     def __repr__(self):
+        """ Returns a representation of the ``join`` object useful for
+        debugging. """
         name = type(self.entities).__name__
         typ = ['INNER', 'OUTER'][self.type == self.Outer]
         return 'join(%s, %s)' % (name, typ)
 
 class wheres(entitiesmod.entities):
+    """ A collection of ``where`` objects """
     pass
 
 class where(entitiesmod.entity):
+    """ Represents a WHERE clause of an SQL statement. """
+
     def __init__(self, es, pred, args):
+        """ Sets the initial propreties for the ``where`` object. 
+        
+        :param:  entities  es:   The ``entities`` collection associated
+                                 with this ``where`` object.
+
+        :param:  predicate pred: The ``predicate`` object associated
+                                 with this ``where`` object
+
+        :param:  list      args: A list of arguments associated with
+                                 this ``where`` object.
+        """
+
         self.entities     =  es
         self.predicate    =  None
+
+        # TODO This isn't being used
         self._alias       =  None
 
         if not pred:
@@ -479,7 +516,6 @@ class predicate(entitiesmod.entity):
     def junction(self, v):
         self._junction = v
 
-
     @property
     def junctionop(self):
         if self._junctionop:
@@ -512,7 +548,6 @@ class predicate(entitiesmod.entity):
         for pred in self:
             startparen += pred.startparen
             endparen += pred.endparen
-
 
         if endparen != startparen:
             raise predicate.ParentheticalImbalance(startparen, endparen)
@@ -2441,7 +2476,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         ``rpr.presentations``.
 
         :param: src entities:    The entities collection that the 
-                                 ``eaarg.entity`` is being appended to.
+                                 ``eargs.entity`` is being appended to.
         :param: eargs eventargs: The event arguments. Its ``entity``
                                  property is the entity object that will
                                  be appended to the superentities.
