@@ -4060,19 +4060,10 @@ class orm:
 
     @property
     def sql(self):
-        select, joins, whs, args = self._getsql()
-
-        sql = 'SELECT\n%s\nFROM %s AS `%s` \n%s' 
-        sql %= (textwrap.indent(str(select), ' ' * 4), 
-                self.table, 
-                self.abbreviation, 
-                joins)
-
-        if whs:
-            sql += 'WHERE ' 
-            sql +=' AND'.join('(%s)' % x.predicate for x in whs)
-
-        return sql, args
+        """ Return a tuple containing the SELECT statement as the first
+        elelement and the args list as the second.
+        """
+        return self._getsql()
 
     def _getsql(self, graph=str(), whstack=None, joiner=None, join=None):
 
@@ -4230,43 +4221,24 @@ class orm:
             # Pop the trailing comma of select field
             select.rows.last.fields.pop()
 
+            # Concatenate the select, join, and where elements
+            sql = 'SELECT\n%s\nFROM %s AS `%s` \n%s' 
+            sql %= (textwrap.indent(str(select), ' ' * 4), 
+                    self.table, 
+                    self.abbreviation, 
+                    joins)
+
+            if whs:
+                sql += 'WHERE ' 
+                sql +=' AND'.join('(%s)' % x.predicate for x in whs)
+
+            # Finally, we are done. Return the sql and the args
+            # seperately because the sql will have placeholders and the
+            # args will be executed in a parameterized fashion (see
+            # `orm.load()`)
+            return sql, args
+
         return select, joins, whs, args
-
-    @property
-    def _sql(self):
-        ''' Returns the SELECT statement needed to load an entities collection.
-        The SELECT takes into account JOINs, WHERE clauses, WHERE arguments and
-        ORDER BY clauses (when streaming). '''
-
-        # SELECT
-        select = textwrap.indent(str(self.selects), ' ' * 4)
-
-        # FROM
-        sql = 'SELECT \n%s\nFROM %s AS `%s`\n' 
-        sql %= (select, self.table, self.abbreviation)
-
-        # JOINs.
-        if self.joins.count:
-            joins = str(self.joins) 
-        else:
-            joins = None
-
-        sql += joins if joins else ''
-        
-        # WHERE
-        wh = self.where
-        wh, args = self.getwhere()
-        sql += wh
-
-        # ORDER BY
-        if self.isstreaming:
-            if self.stream.orderby:
-                sql += ' ORDER BY ' + self.stream.orderby
-        
-        # Return the SQL followed by the args from the WHERE object. Note that the 
-        # str(self.where) and self.where.args, though being recursive, will ensure 
-        # that the placeholders (%s) and the arguments occure in the same order.
-        return sql, args
 
     @staticmethod
     def introduce(sql, args):
