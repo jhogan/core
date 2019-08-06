@@ -4066,6 +4066,10 @@ class orm:
         return self._getsql()
 
     def _getsql(self, graph=str(), whstack=None, joiner=None, join=None):
+        """ The lower-level private method which bulids and returns the
+        SELECT statement for the entities (self.instance) collection
+        object.
+        """
 
         def raise_fk_not_found(joiner, join):
             ''' Raise a ValueError with a FK not found message. '''
@@ -4081,8 +4085,14 @@ class orm:
             raise ValueError(msg)
 
         def alias(whs):
+            """ Takes a ``where`` object or collection of ``where``
+            objects and replaces their predicate's column's names with
+            fully-qualified verision that contain the table alias. 
+            """
+            # Convert to a collection if needed
             whs = whs if hasattr(whs, '__iter__') else [whs]
             
+            # Iterate over collection
             for wh in whs:
                 for pred in wh.predicate:
                     if pred.match:
@@ -4090,6 +4100,7 @@ class orm:
                     else:
                         cols = pred.operands
 
+                    # Prepend `graph` to each column name
                     for i, op in enumerate(cols):
                         if not pred.iscolumn(op):
                             continue
@@ -4099,17 +4110,22 @@ class orm:
                             col = '`%s`.%s' % (graph, col)
                             cols[i] = col
 
+        # Create the where stack
         whstack = list() if whstack is None else whstack
 
+        # Update the graph. The graph is an abbreviated table alias
+        # which will grow as this method recurses into itself. 
         if graph:
             parentgraph = graph
             graph += '.' + join.entities.orm.abbreviation
         else:
             graph = self.abbreviation
 
+        # Put the SELECT in a table so it is formatted nicely
         select = table(border=None)
 
         ''' SELECT '''
+        # Build SELECT table for the current instance of recursion
         for map in self.entity.orm.mappings:
             if not isinstance(map, fieldmapping):
                 continue
@@ -4120,12 +4136,16 @@ class orm:
             r.newfields(abbr, 'AS', abbr, ',')
 
         ''' JOINS '''
-        joins = str()
+        joins = str() # The string that contains the JOIN SQL
+
+        # If a `join` object was passed in
         if join:
+            
+            # Prepend columns in where clause with aliase
             alias(whstack)
 
             if join.entities.orm.issuperentity(of=joiner.entities):
-                # If `j`'s entities collection is a superentity to
+                # If `joins`'s entities collection is a superentity to
                 # self.entities, then the `pk` will be the PK of
                 # j.entities - which will virtually always be 'id'. This
                 # is because the relationship between super and
@@ -4134,21 +4154,23 @@ class orm:
                 id = joiner.entities.orm.mappings.primarykeymapping.name
                 pk = join.entities.orm.mappings.primarykeymapping.name
             else:
-                # Get the joineepk for the joinee table. As opposed to
-                # the consequent block above, this block represents the
-                # typical one-to-many relationship for which we will
-                # need the foreign key of the joinee table.
                 if associations in joiner.entities.mro():
                     pk = join.entities.orm.mappings.primarykeymapping.name
-                    for map in joiner.entities.orm.mappings.foreignkeymappings:
+                    fks = joiner.entities.orm.mappings.foreignkeymappings
+                    for map in fks: 
                         if join.entities.orm.entity is map.entity:
                             id = map.name
                             break
                     else:
                         raise_fk_not_found(joiner, join)
                 else:
+                    # Get the joineepk for the joinee table.  This block
+                    # represents the typical one-to-many relationship
+                    # for which we will need the foreign key of the
+                    # join table.
                     id = joiner.entity.orm.mappings.primarykeymapping.name
-                    for map in join.entities.orm.mappings.foreignkeymappings:
+                    fks = join.entities.orm.mappings.foreignkeymappings
+                    for map in fks:
                         if joiner.entities.orm.entity is map.entity:
                             pk = map.name
                             break
@@ -4182,6 +4204,9 @@ class orm:
             # names.
             wh = self.where.clone()
             alias(wh)
+
+            # Append the cloned `where` object and args to be return
+            # later
             whs.append(wh)
             args += wh.args
 
@@ -4189,6 +4214,7 @@ class orm:
         for j in self.joins:
             wh and whstack.append(wh)
 
+            # Recurse into the join to collect its SQL elements
             select1, joins1, whs1, args1 = j.entities.orm._getsql(
                 graph=graph,
                 whstack=whstack,
@@ -4198,6 +4224,9 @@ class orm:
 
             wh and whstack.pop()
 
+            # Collect the return values form the recursion and
+            # concatenate them to the variables that will be returned by
+            # the current stack frame.
             select += select1         # cat select
 
             joins += joins1           # cat joins
@@ -4206,6 +4235,7 @@ class orm:
 
             args += args1             # cat args
 
+        # Are we recursing
         recursing = graph != self.abbreviation
 
         # If we are at the top-level of the function, i.e., if we are
