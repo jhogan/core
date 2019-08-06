@@ -373,14 +373,16 @@ class where(entitiesmod.entity):
     def __init__(self, es, pred, args):
         """ Sets the initial propreties for the ``where`` object. 
         
-        :param:  entities  es:   The ``entities`` collection associated
-                                 with this ``where`` object.
+        :param:  entities  es:          The ``entities`` collection
+                                        associated with this ``where``
+                                        object.
 
-        :param:  predicate pred: The ``predicate`` object associated
-                                 with this ``where`` object
+        :param:  str or predicate pred: A str or ``predicate`` object
+                                        associated with this ``where``
+                                        object
 
-        :param:  list      args: A list of arguments associated with
-                                 this ``where`` object.
+        :param:  list      args:        A list of arguments associated
+                                        with this ``where`` object.
         """
 
         self.entities     =  es
@@ -393,17 +395,26 @@ class where(entitiesmod.entity):
             msg = 'where objects must have predicates'
             raise ValueError(msg)
 
-        pred = orm.introduce(pred, args)
-        self.predicate = predicate(pred, wh=self)
+        if isinstance(pred, predicate):
+            self.predicate = pred
+        elif isinstance(pred, str):
+            pred = orm.introduce(pred, args)
+            self.predicate = predicate(pred, wh=self)
+        else:
+            raise TypeError()
 
         self.args = args
 
     def clone(self):
-        return type(self)(
+        wh = type(self)(
             self.entities, 
-            str(self.predicate),
+            self.predicate.clone(),
             self.args.copy()
         )
+
+        wh.predicate.where = wh
+
+        return wh
 
     def demandvalid(self):
         def demand(col, exists=False, ft=False):
@@ -484,12 +495,20 @@ class predicate(entitiesmod.entity):
 
     def clone(self):
         pred = predicate(None, self.junctionop, wh=self.where)
-        pred.operands       =  self.operands.copy()
+
+        if self.operands is None:
+            pred.operands = None
+        else:
+            pred.operands       =  self.operands.copy()
+
         pred.operator       =  self.operator
-        self.startparen     =  self.startparen
-        self.endparen       =  self.endparen
-        self.lhsintroducer  =  self.lhsintroducer
-        self.rhsintroducer  =  self.rhsintroducer
+        pred.startparen     =  self.startparen
+        pred.endparen       =  self.endparen
+        pred.lhsintroducer  =  self.lhsintroducer
+        pred.rhsintroducer  =  self.rhsintroducer
+
+        if self.junction:
+            pred.junction = self.junction.clone()
 
         if self.match:
             pred.match = self.match.clone()
@@ -779,7 +798,7 @@ class predicate(entitiesmod.entity):
             r"^'.*'$"
         )
 
-        def __init__(self, lex, wh=None):
+        def __init__(self, lex=None, wh=None):
             self._lex            =  lex
             self.columns         =  list()
             self.searchstring    =  str()
@@ -787,7 +806,22 @@ class predicate(entitiesmod.entity):
             self.junction        =  None
             self.where           =  wh
             self.searchstringisplaceholder = False
-            self._parse(lex)
+            if lex:
+                self._parse(lex)
+
+        def clone(self):
+            m = type(self)()
+            m.columns       =  self.columns.copy()
+            m.searchstring  =  self.searchstring
+            m._mode         =  self._mode
+
+            m.searchstringisplaceholder \
+                =  self.searchstringisplaceholder
+
+            if self.junction:
+                m.junction = self.junction.clone()
+
+            return m
 
         def _parse(self, lex):
             tok = lex.get_token()
@@ -913,6 +947,7 @@ class predicate(entitiesmod.entity):
 
             if self.mode == 'natural':
                 r += ' IN NATURAL LANGUAGE MODE'
+
             elif self.mode == 'boolean':
                 r += ' IN BOOLEAN MODE'
 
@@ -4151,11 +4186,10 @@ class orm:
         ''' WHERE/args '''
         args, whs, wh = list(), list(), None
         if self.where:
-            # FIXME The clone method does not work on ``where`` objects
-            # because the SQL parser incorrectly parses the mode
-            # operators in a MATCH query.
-            # See (8e385bb9-41cd-4943-bba8-d72cb9f5b938) in test.py
-            wh = self.where #.clone()
+
+            # Clone the entities' `where` object then alise its column
+            # names.
+            wh = self.where.clone()
             alias(wh)
             whs.append(wh)
             args += wh.args
