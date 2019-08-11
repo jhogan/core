@@ -1907,6 +1907,7 @@ class test_orm(tester):
                 self.eq(getattr(art, map.name), getattr(art1, map.name))
 
     def it_searches_entities(self):
+        artists.orm.truncate()
         arts = artists()
         uuid = uuid4().hex
         for i in range(4):
@@ -2047,6 +2048,8 @@ class test_orm(tester):
         self.eq(arts1.first.id, arts.first.id)
 
     def it_searches_subentities(self):
+        artists.orm.truncate()
+        singers.orm.truncate()
         sngs = singers()
         uuid = uuid4().hex
         for i in range(4):
@@ -2140,6 +2143,10 @@ class test_orm(tester):
         self.one(self.chronicles)
 
     def it_searches_subsubentities(self):
+        artists.orm.truncate()
+        singers.orm.truncate()
+        rappers.orm.truncate()
+
         rprs = rappers()
         uuid = uuid4().hex
         for i in range(4):
@@ -2358,6 +2365,9 @@ class test_orm(tester):
         self.zero(arts1)
 
     def it_searches_subentities_using_fulltext_index(self):
+        artists.orm.truncate()
+        singers.orm.truncate()
+
         sngs, concs = artists(), concerts()
         for i in range(2):
             sng = singer.getvalid()
@@ -2447,6 +2457,10 @@ class test_orm(tester):
         self.eq(concs.first.id, concs1.first.id)
 
     def it_searches_subsubentities_using_fulltext_index(self):
+        artists.orm.truncate()
+        singers.orm.truncate()
+        rappers.orm.truncate()
+
         rprs, btls = rappers(), battles()
         for i in range(2):
             rpr = rapper.getvalid()
