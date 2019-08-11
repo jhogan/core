@@ -80,6 +80,21 @@ def getattr(obj, attr, *args):
         return None
     return functools.reduce(rgetattr, [obj] + attr.split('.'))
 
+class comments(orm.entities):
+    pass
+
+class comment(orm.entity):
+    title = str
+    body = str
+    comments = comments
+
+    @staticmethod
+    def getvalid():
+        com = comment()
+        com.title = uuid4().hex
+        com.body = '%s\n%s' % (uuid4().hex, uuid4().hex)
+        return com
+
 class locations(orm.entities):
     pass
 
@@ -230,6 +245,8 @@ class artist(orm.entity):
     # Bio's will be longtext. Any str where max > 65,535 can no longer be a
     # varchar, so we make it a longtext.
     bio = str, 1, 65535 + 1, orm.fulltext
+
+    comments = comments
 
     @staticmethod
     def getvalid():
@@ -461,6 +478,7 @@ class test_orm(tester):
         db.chronicler.getinstance().chronicles.onadd += self._chronicler_onadd
 
         artist.reCREATE(recursive=True)
+        comment.reCREATE()
     
     def _chrons(self, e, op):
         chrons = self.chronicles.where('entity',  e)
@@ -521,6 +539,22 @@ class test_orm(tester):
         msg = "test in %s at %s: Incorrect chronicles count." 
         msg %= inspect.stack()[2][2:4]
         self.eq(t.chronicles.count, t.count, msg)
+
+    def it_calls_isrecursive_property(self):
+        self.false(artist.orm.isrecursive)
+        self.false(artist().orm.isrecursive)
+        self.false(artists.orm.isrecursive)
+        self.false(artists().orm.isrecursive)
+
+        self.false(artist_artifact.orm.isrecursive)
+        self.false(artist_artifact().orm.isrecursive)
+        self.false(artist_artifacts.orm.isrecursive)
+        self.false(artist_artifacts().orm.isrecursive)
+
+        self.true(comment.orm.isrecursive)
+        self.true(comment().orm.isrecursive)
+        self.true(comments.orm.isrecursive)
+        self.true(comments().orm.isrecursive)
 
     def it_computes_abbreviation(self):
         es = orm.orm.getentitys() + orm.orm.getassociations()
@@ -652,10 +686,11 @@ class test_orm(tester):
 
     def it_has_static_constituents_reference(self):
         consts = [x.entity for x in artist.orm.constituents]
-        self.three(consts)
+        self.four(consts)
         self.true(presentation in consts)
         self.true(artifact     in consts)
         self.true(location     in consts)
+        self.true(comment     in consts)
 
         consts = artist.orm.constituents['presentation'].orm.constituents
         self.two(consts)
@@ -669,6 +704,10 @@ class test_orm(tester):
         consts.sort('name')
         self.is_(consts.first.entity, artist)
         self.is_(consts.second.entity, component)
+
+        consts = [x.entity for x in comments.orm.constituents]
+        self.one(consts)
+        self.true(comment in consts)
 
     def it_has_static_super_references(self):
         self.is_(artist, singer.orm.super)
@@ -8709,6 +8748,208 @@ class test_orm(tester):
         for expr in exprs:
             pred = orm.predicate(expr)
             self.eq("col IN (_binary %s, _binary %s)", str(pred))
+
+    def it_saves_recursive_entity(self):
+
+        def recurse(com1, com2, expecteddepth, curdepth=0):
+            with self._chrontest() as t:
+                t.run(lambda: com2.comments)
+                t.retrieved(com2.comments)
+
+            self.is_(com2, com2.comments.comment)
+
+            self.eq(com1.comments.count, com2.comments.count)
+
+            self.eq(com1.id, com2.id)
+            for prop in ('id', 'title', 'body'):
+                self.eq(getattr(com1, prop), getattr(com2, prop))
+
+            maxdepth = curdepth
+
+            [com.comments.sort() for com in (com1, com2)]
+
+            for com1, com2 in zip(com1.comments, com2.comments):
+                maxdepth = recurse(
+                    com1, 
+                    com2, 
+                    expecteddepth=expecteddepth, 
+                    curdepth = curdepth + 1
+                )
+                maxdepth = max(maxdepth, curdepth)
+
+            if curdepth == 0:
+                self.eq(expecteddepth, maxdepth)
+
+            return maxdepth
+
+        ' Test non-recursive (no constituent comments) '
+        com = comment.getvalid()
+        com.save()
+
+        recurse(com, comment(com.id), expecteddepth=0)
+
+        ' Test recursive shallow recursion (1 level) '
+        com = comment.getvalid()
+        self.zero(com.comments)
+
+        for _ in range(2):
+            com.comments += comment.getvalid()
+            com.comments.last.title = uuid4().hex
+            com.comments.last.body = uuid4().hex
+
+        with self._chrontest() as t:
+            t.run(com.save)
+            t.created(com)
+            t.created(com.comments.first)
+            t.created(com.comments.second)
+
+        recurse(com, comment(com.id), expecteddepth=1)
+
+        ''' Test deep recursion '''
+        com = comment.getvalid()
+
+        # Create
+        for _ in range(2):
+            com.comments += comment.getvalid()
+            com1 = com.comments.last
+            com1.title = uuid4().hex
+            com1.body = uuid4().hex
+            for _ in range(2):
+                com1.comments += comment.getvalid()
+                com2 = com1.comments.last
+                com2.title = uuid4().hex
+                com2.body = uuid4().hex
+
+        with self._chrontest() as t:
+            t.run(com.save)
+            t.created(com)
+            t.created(com.comments.first)
+            t.created(com.comments.first.comments.first)
+            t.created(com.comments.first.comments.second)
+            t.created(com.comments.second)
+            t.created(com.comments.second.comments.first)
+            t.created(com.comments.second.comments.second)
+
+        recurse(com, comment(com.id), expecteddepth=2)
+
+    def it_updates_recursive_entity(self):
+        def recurse(com1, com2):
+            for prop in ('id', 'title', 'body'):
+                self.eq(getattr(com1, prop), getattr(com2, prop))
+
+            self.eq(com1.comments.count, com2.comments.count)
+
+            for com11, com22 in zip(com1.comments, com2.comments):
+                recurse(com11, com22)
+
+        ' Test non-recursive (no constituent comments) '
+        com = comment.getvalid()
+        com.save()
+        
+        com = comment(com.id)
+        com.title = uuid4().hex
+        com.body = uuid4().hex
+
+        with self._chrontest() as t:
+            t.run(com.save)
+            t.updated(com)
+
+        com1 = comment(com.id)
+        
+        recurse(com1, com)
+
+        ' Test recursive shallow recursion (1 level) '
+        for _ in range(2):
+            com1.comments += comment.getvalid()
+            com1.comments.last.title = uuid4().hex
+            com1.comments.last.body = uuid4().hex
+
+        com1.save()
+
+        com1 = comment(com1.id)
+
+        com1.title = uuid4().hex
+        com1.body = uuid4().hex
+
+        for com in com1.comments:
+            com.title = uuid4().hex
+            com.body = uuid4().hex
+
+        with self._chrontest() as t:
+            t.run(com1.save)
+            t.updated(com1)
+            t.updated(com1.comments.first)
+            t.updated(com1.comments.second)
+
+        com2 = comment(com1.id)
+
+        recurse(com1, com2)
+
+        ''' Test deep recursion '''
+        com2.title = uuid4().hex
+        com2.body = uuid4().hex
+
+        for com in com2.comments:
+            for _ in range(2):
+                com.comments += comment.getvalid()
+
+        com2.save()
+        com2 = comment(com2.id)
+
+        com2.title = uuid4().hex
+        com2.body = uuid4().hex
+
+        for com in com2.comments:
+            com.title = uuid4().hex
+            com.body = uuid4().hex
+            for com in com.comments:
+                com.title = uuid4().hex
+                com.body = uuid4().hex
+                
+        with self._chrontest() as t:
+            t.run(com2.save)
+            t.updated(com2)
+            for com in com2.comments:
+                t.updated(com)
+                for com in com.comments:
+                    t.updated(com)
+
+        recurse(com2, comment(com2.id))
+
+    def it_loads_and_saves_entitys_recursive_entities(self):
+        art = artist.getvalid()
+
+        for _ in range(2):
+            art.comments += comment.getvalid()
+
+        for com in art.comments:
+            for _ in range(2):
+                com.comments += comment.getvalid()
+
+        with self._chrontest() as t:
+            t.run(art.save)
+            t.created(art)
+            for com in art.comments:
+                t.created(com)
+                for com in com.comments:
+                    t.created(com)
+
+        art1 = artist(art.id)
+
+        self.eq(art.id, art1.id)
+
+        coms, coms1 = art.comments, art1.comments
+
+        self.two(coms1)
+
+        for com, com1 in zip(coms.sorted(), coms1.sorted()):
+            self.eq(com.id, com1.id)
+            coms, coms1 = com.comments, com.comments
+
+            self.two(coms1)
+
+            for com, com1 in zip(coms.sorted(), coms1.sorted()):
+                self.eq(com.id, com1.id)
 
 class test_blog(tester):
     def __init__(self):

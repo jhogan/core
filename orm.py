@@ -2757,8 +2757,10 @@ class mappings(entitiesmod.entities):
                 maps.append(foreignkeyfieldmapping(map.entity, derived=True))
 
             for e in orm.getentitys():
-                if e is self.orm.entity:
+
+                if e is self.orm.entity and not self.orm.isrecursive:
                     continue
+
                 for map in e.orm.mappings.entitiesmappings:
                     if map.entities is self.orm.entities:
                         maps.append(entitymapping(e.__name__, e, derived=True))
@@ -3765,6 +3767,11 @@ class orm:
         args += ['instance' if self.isinstance else 'static']
 
         return r % tuple(args)
+
+    @property
+    def isrecursive(self):
+        map = self.mappings(self.entities.__name__)
+        return map is not None and map.entities is self.entities
 
     def truncate(self, cur=None):
         # TODO Use executioner
