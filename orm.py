@@ -1615,15 +1615,24 @@ class entitymeta(type):
     def __new__(cls, name, bases, body):
         # If name == 'entity', the `class entity` statement is being executed.
         if name not in ('entity', 'association'):
+
+            # Instantiate an `orm` object for this class
             ormmod = sys.modules['orm']
             orm_ = orm()
+
+            # Instantiate a `mappings' collection for the `orm`
             orm_.mappings = mappings(orm=orm_)
 
+            # See if we have an `entities` property, i.e., the
+            # `entities` class that corresponds to this class.
             try:
                 body['entities']
             except KeyError:
+                # If we don't have an `entities` property, go through
+                # each subclass of `orm.entities` looking for one whose
+                # name is the plural of this class's name. When found,
+                # assign it to this class's `entities`.
                 for sub in orm_.getsubclasses(of=entities):
-
                     if sub.__name__   == name + 's' and \
                        sub.__module__ == body['__module__']:
 
@@ -1634,86 +1643,147 @@ class entitymeta(type):
                     msg += "Either specify one or define one with a predictable name"
                     raise AttributeError(msg)
 
+            # Make sure the `orm` has a reference to the entities
+            # collection class and that the entities collection class
+            # has a refernce to the orm.
             orm_.entities = body['entities']
             orm_.entities.orm = orm_
 
+            # Now that the `entities` property has been
+            # discovered/created and assigned to the `orm`, lets keep it
+            # there and delete it from this entity class's namespace.
             del body['entities']
 
+            # If a class wants to define a custom table name, assign it
+            # to the `orm` here and remove it from this entity class's
+            # namespace. 
             try:
                 orm_.table = body['table']
                 del body['table']
             except KeyError:
+                # Normally, classes want define a table name, so we can
+                # just use the entities name (we want table names to be
+                # pluralized) as the table name.
                 orm_.table = orm_.entities.__name__
 
+            # Create standard field names in the `body` list. They will
+            # later be converted to mapping objects which are added to
+            # the `orm`'s `mappings` collection and removed from the
+            # `body` list, i.e., this entity class's namespace.
             body['id'] = primarykeyfieldmapping()
             body['createdat'] = fieldmapping(datetime)
             body['updatedat'] = fieldmapping(datetime)
 
             for k, v in body.items():
 
+                # Ignore the double underscore attributes
                 if k.startswith('__'):
                     continue
                 
                 if isinstance(v, mapping):
+                    # If the item is already a mapping, we don't need to
+                    # do anything; just assign it to the map variable.
                     map = v
                 elif v in fieldmapping.types:
+                    # If the item is a primitive type (str, int,
+                    # datetime, etc.), create a fieldmapping.
                     map = fieldmapping(v)
+
                 elif type(v) is tuple:
+                    # `v` will be a tuple if multiple, comma seperated
+                    # type arguments are declared, i.e., 
+                    #    `str, 0, 1, orm.fulltext`
                     args, kwargs = [], {}
+
+                    # Iterate over tuple
                     for e in v:
+                        # Is item is an index or a full index
                         isix = (
                             hasattr(e, 'mro') and index in e.mro()
                             or isinstance(e, index)
                         )
+                        
                         if isix:
                             kwargs['ix'] = e
                         else:
                             args.append(e)
 
+                    # Create a new map based on the tuple's values
                     map = fieldmapping(*args, **kwargs)
 
                 elif hasattr(v, 'mro'):
                     mro = v.mro()
                     if ormmod.entities in mro:
+                        # If `v` is a reference to an existing class
+                        # that inherits from `orm.entities`, create a
+                        # `entitiesmapping` object. `v` represents the
+                        # "many' side of a one-to-many relationship with
+                        # this class.
                         map = entitiesmapping(k, v)
+
                     elif ormmod.entity in mro:
+                        # if v is a class that inherits from
+                        # orm.entities, create an entitymapping. This
+                        # is for the the composites of an association.
                         map = entitymapping(k, v)
                     else:
-                        raise ValueError()
+                        raise ValueError() # Shouldn't happen
                 else:
                     if type(v) is ormmod.attr.wrap:
+                        # `v` represents an explicit attribute. It will
+                        # contain its own mapping object so just assign
+                        # reference. See the `attr` class.
                         map = v.mapping
                     else:
+                        # If we are here, `v` represents a staticmethod,
+                        # method, property or some other attribute that
+                        # is not intended for mapping.
                         continue
                
+                # Name the map and append the map to the orm's mapping
+                # collections.
                 map._name = k
                 orm_.mappings += map
 
+            # Iterate of orm's mapping collection. NOTE that iterating
+            # over mappings invokes it's _populating method which
+            # updates the composition of the collection. (See
+            # mappings._populated.)
             for map in orm_.mappings:
                 try:
+                    # Now that we have all the approprite attributes
+                    # from this class in orm.mappings, we can delete
+                    # them.
                     prop = body[map.name]
-                    if type(prop) is ormmod.attr.wrap:
-                        body[map.name] = prop
-                    else:
+
+                    # Delete attribute if it is not an explicit
+                    # attribute.
+                    if type(prop) is not ormmod.attr.wrap:
                         del body[map.name]
                 except KeyError:
-                    # The orm_.mappings.__iter__ adds new mappings which won't
-                    # be in body, so ignore KeyErrors
+                    # The orm_.mappings.__iter__ adds new mappings which
+                    # won't be in body, so ignore KeyErrors
                     pass
 
+            # Ensure this class has a reference to the `orm` instantiated
+            # above.
             body['orm'] = orm_
 
+        # Recreate the class
         entity = super().__new__(cls, name, bases, body)
 
+        # If this class is not the base entity or association class
         if name not in ('entity', 'association'):
             orm_.entity = entity
 
-            # Since a new entity has been created, invalidate the derived cache
-            # of each mappings collection's object.  They must be recomputed
-            # since they are based on the existing entity object available.
+            # Since a new entity has been created, invalidate the
+            # derived cache of each mappings collection's object.  They
+            # must be recomputed since they are based on the existing
+            # entity object available.
             for e in orm.getentitys():
                 e.orm.mappings._populated = False
 
+        # Return newly defined class
         return entity
 
 class entity(entitiesmod.entity, metaclass=entitymeta):
@@ -3736,19 +3806,21 @@ class orm:
     def reload(self, orderby=None, limit=None, offset=None):
         """
         Reload the entities collection (self). A different query will be
-        executed if the arguments are different, though most of the SELECT
-        statement is generated by arguments passed to the entities collection's
-        constructor.
+        executed if the arguments are different, though most of the
+        SELECT statement is generated by arguments passed to the
+        entities collection's constructor.
 
-        :param: str orderby: The list of columns to be passed to the ``ORDER
-                             BY`` clause. Used only streaming mode.
+        :param: str orderby: The list of columns to be passed to the
+                            ``ORDER BY`` clause. Used only streaming
+                            mode.
 
-        :param: int limit:   An integer value to pass to the ``LIMIT`` keyword.
-                             Used only in streaming mode.
+        :param: int limit:   An integer value to pass to the ``LIMIT``
+                             keyword.  Used only in streaming mode.
 
         :param: int offset:  An integer value to pass to the ``OFFSET``
                              keyword.  Used only in streaming mode.
         """
+
         try:
             # Remove all elements from collection.
             self.instance.clear()
