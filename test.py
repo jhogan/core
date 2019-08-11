@@ -4144,6 +4144,9 @@ class test_orm(tester):
 
         self.chronicles.clear()
         art.save()
+
+        # SPORADIC Please investigate if this breaks on a test
+        B(self.chronicles.count != 1)
         self.one(self.chronicles)
         self._chrons(art, 'create')
 
@@ -6450,6 +6453,23 @@ class test_orm(tester):
                     t.created(rpr)
                     t.created(rpr.orm.super)
                     t.created(rpr.orm.super.orm.super)
+
+                if t.chronicles.count > 3:
+                    print(t.chronicles)
+                    print(
+                        '''
+                        # SPORADIC The following came up in one test
+                        # run: Aug 6 2019
+                        eq in _chrontest at 523
+                        expect: 4
+                        actual: 3
+                        message: test in 6446 at
+                        it_doesnt_needlessly_save_subsubentity: Incorrect
+                        chronicles count.
+                        '''
+                    )
+                    B()
+
 
         # Dirty rpr and save. Ensure the object was actually saved
         rpr.firstname  =  uuid4().hex
