@@ -48,7 +48,6 @@ import re
 import sys
 import textwrap
 
-# TODO Add reflective (self joined) relationships
 # TODO Add indexes to FK's
 
 # Set conditional break points
@@ -2749,38 +2748,80 @@ class mappings(entitiesmod.entities):
         if not self._populated and not self._populating:
             self._populating = True
 
+            # Remove mapping objects for self which are derive, i.e.,
+            # added by this method.
             self.clear(derived=True)
 
-            maps = []
+            # Create a list to store mapping objects to be appended to
+            # `self` later.
+            maps = list()
 
+            ''' Add FK mapings to association objects '''
+            # For association objects, look for entity mappings and add
+            # a foreign key mapping (e.g., For artist_artifact, add an
+            # FK callesd artistid and artifactid.
             for map in self.entitymappings:
-                maps.append(foreignkeyfieldmapping(map.entity, derived=True))
+                maps.append(
+                    foreignkeyfieldmapping(map.entity, derived=True)
+                )
 
+            ''' Add composite and constiuent mappings '''
+            # For each class that inherits from `orm.entity`
             for e in orm.getentitys():
 
+                # If the entity is `self`, ignore unless this is a
+                # recursive entity.
                 if e is self.orm.entity and not self.orm.isrecursive:
                     continue
 
+                # Look through each of the entities mappings in the
+                # giving entity (`e`).
                 for map in e.orm.mappings.entitiesmappings:
-                    if map.entities is self.orm.entities:
-                        maps.append(entitymapping(e.__name__, e, derived=True))
-                        maps.append(foreignkeyfieldmapping(e, derived=True))
 
+                    # If `e` is a constituent of `self`
+                    if map.entities is self.orm.entities:
+
+                        # Add a entity mapping for the composite
+                        maps.append(
+                            entitymapping(e.__name__, e, derived=True)
+                        )
+
+                        # Add an FK for the constituents
+                        maps.append(
+                            foreignkeyfieldmapping(e, derived=True)
+                        )
+
+            ''' Add associations mappings to self '''
+            # For each class that inherits form `orm.association`
             for ass in orm.getassociations():
+
+                # For each of the `association`'s entity mappings
                 for map in ass.orm.mappings.entitymappings:
+
+                    # If the association`s entity mapping  corresponds
+                    # to the self, add associations mapping.
                     if map.entity is self.orm.entity:
                         asses = ass.orm.entities
-                        map = associationsmapping(asses.__name__, asses, derived=True)
+                        map = associationsmapping(
+                            asses.__name__, asses, derived=True
+                        )
                         maps.append(map)
                         break
 
+            # Add the list of mapping object collected above to `self`
             for map in maps:
                 self += map
             
+            # All mapping objects will be united through their `orm`
+            # reference.
             for map in self:
                 map.orm = self.orm
                     
+            # Ensure that the mapping objects are sorted in a
+            # predictable way. See the mappings.sort() method for
+            # details.
             self.sort()
+
             self._populating = False
 
         self._populated = True
