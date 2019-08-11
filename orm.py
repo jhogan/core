@@ -3017,8 +3017,17 @@ WHERE id = %s;
 
     def clone(self, orm_):
         r = mappings(orm=orm_)
+
         for map in self:
             r += map.clone()
+
+        # NOTE Set _populated after adding to `r` because the
+        # oncountchange event will set self._populated to False
+        r._populated = self._populated
+
+        for map in r:
+            map.orm = orm_
+
         return r
 
 class mapping(entitiesmod.entity):
