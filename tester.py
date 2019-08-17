@@ -329,7 +329,7 @@ class tester(entity):
             ok = 'FAIL'
 
         name = self.__class__.__name__
-        r += "[{}]{}{}".format(name, ' ' * (72 - len(name)), ok)
+        r += "[{}]{}{}".format(name, ' ' * (72 - len(name) - 4), ok)
 
         if self.failures.isempty:
             return r
