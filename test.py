@@ -392,7 +392,8 @@ class singer(artist):
 
     @orm.attr(str)
     def register(self):
-        v = self.orm.mappings['register'].value.lower()
+        #v = self.orm.mappings['register'].value.lower()
+        v = attr().lower()
 
         if v in ('laryngealization', 'pulse phonation', 'creak'):
             return 'vocal fry'
@@ -918,22 +919,31 @@ class test_orm(tester):
             t.run(f)
 
     def it_receives_AttributeError_from_explicit_attributes(self):
-        # An issue was discovered in the former entities.__getattr__. When an
-        # explicit attribute raised an AttributeError, the __getttr__ was
-        # invoked (this is the reason it gets invoke in the first place) and
-        # returned the map.value of the attribute. The effect was that the
-        # explict attribute never had a chance to run, so we got whatever
-        # was in map.value.
+        # An issue was discovered in the former entities.__getattr__.
+        # When an explicit attribute raised an AttributeError, the
+        # __getttr__ was invoked (this is the reason it gets invoke in
+        # the first place) and returned the map.value of the attribute.
+        # The effect was that the explict attribute never had a chance
+        # to run, so we got whatever was in map.value.
         #
-        # To correct this, the __getattr__ was converted to a __getattribute__,
-        # and some adjustments were made (map.isexplicit was added). Now, an
-        # explicit attribute can raise an AttributeError and it bubble up
-        # correctly (as confirmed by this test). The problem isn't likely to
-        # resurface. However, this test was written just as a way to ensure the
-        # issue never comes up again. The `issue` entity class was created for
-        # this test because adding the `raiseAttributeError` explicit attribute
-        # to other classes cause an AttributeError to be raise when the the
-        # brokenrules logic was invoked, which broke a lot of tests.
+        # To correct this, the __getattr__ was converted to a
+        # __getattribute__, and some adjustments were made
+        # (map.isexplicit was added). Now, an explicit attribute can
+        # raise an AttributeError and it bubble up correctly (as
+        # confirmed by this test). The problem isn't likely to
+        # resurface. However, this test was written just as a way to
+        # ensure the issue never comes up again. The `issue` entity
+        # class was created for this test because adding the
+        # `raiseAttributeError` explicit attribute to other classes
+        # cause an AttributeError to be raise when the the brokenrules
+        # logic was invoked, which broke a lot of tests.
+        #
+        # Update 20090814: This issue did arise again when optimizing
+        # the entity__getattribute__ method. To solve the issue, the
+        # AttributeError from the explicit attritute is wrappped in
+        # orm.attr.AttributeErrorWrapper then converted to a regular
+        # AttributeError.
+
         iss = issue()
         self.expect(AttributeError, lambda: iss.raiseAttributeError)
 

@@ -1328,10 +1328,20 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 return self[key.id]
 
             e = super().__getitem__(key)
-            if hasattr(e, '__iter__'):
+
+            # NOTE The below code original tested wheher or not
+            # hasattr(e, '__init__'). However, since this invoked
+            # e.__getattribute__, it was causeing unnecessary work. So
+            # for performance sake, it was tweaked to not do that. `e`
+            # should only be e or a list. However, this may not always
+            # be the case, so a modification here will be necessary if
+            # another type received.
+            if isinstance(e, entity):
+                return e
+            elif type(e) is list:
                 return type(self)(initial=e)
             else:
-                return e
+                raise ValueError()
     
     def __getattribute__(self, attr):
         if attr == 'orm':
@@ -1803,6 +1813,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             self.onafterload       +=  self._self_onafterload
             self.onafterreconnect  +=  self._self_onafterreconnect
 
+            super().__init__()
             if o is None:
                 self.orm.isnew = True
                 self.orm.isdirty = False
@@ -1815,7 +1826,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                 self.orm.populate(res)
 
-            super().__init__()
 
             # Post super().__init__() events
             self.onaftervaluechange  +=  self._self_onaftervaluechange
@@ -2410,32 +2420,107 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         return brs
 
-    def __getattribute__(self, attr):
-        if attr in ('orm', '__class__'):
-            return object.__getattribute__(self, attr)
+    @staticmethod
+    def _setattr(e, attr, v):
+        e.orm.mappings[attr].value = v
 
-        # self.orm.instance is set in entity.__init__. If the user overrides
-        # __init__ and doesn't call the base __init__, self.orm.instance is
-        # never set. Do a quick check here to inform the user if they forgot to
-        # call the base __init__
-        if self.orm.isstatic:
+    def __getattribute__(self, attr):
+        try:
+            return object.__getattribute__(self, attr)
+        except sys.modules['orm'].attr.AttributeErrorWrapper as ex:
+            raise ex.inner
+        except AttributeError as ex:
+            pass
+
+        self_orm = self.orm
+        self_orm_entity__name__ = self_orm.entity.__name__
+
+        # self.orm.instance is set in entity.__init__. If the user
+        # overrides __init__ and doesn't call the base __init__,
+        # self.orm.instance is never set. Do a quick check here to
+        # inform the user if they forgot to call the base __init__
+        if self_orm.isstatic:
             msg = 'orm is static. '
             msg += 'Ensure the overridden __init__ called the base __init__'
             raise ValueError(msg)
 
-        map = self.orm.mappings(attr)
+        map = self_orm.mappings(attr)
+
+        map_type = type(map)
+
+        # Lazy-load constituent entities map
+        if map_type is entitiesmapping:
+            if map.value is None:
+                es = None
+                map_entities = map.entities
+                if not self_orm.isnew:
+
+                    # Get the FK map of the entities constituent. 
+                    maps = map_entities.orm.mappings.foreignkeymappings
+                    for map1 in maps:
+                        e = self_orm.entity
+                        while e:
+                            if map1.entity is e:
+                                break
+
+                            # If not found, go up the inheritance tree
+                            # and try again
+                            sup = e.orm.super
+                            e = sup.orm.entity if sup else None
+                        else:
+                            continue
+                        break
+                    else:
+                        raise ValueError('FK map not found for entity')
+
+                    # NOTE Though we've switch to implicit loading for
+                    # entities and associations, we shoud still
+                    # explicitly load here for the sake of
+                    # predictability.
+                    es = map_entities(map1.name, self.id)
+                    es.orm.load()
+
+                    # Assign the composite reference to the
+                    # constituent's elements
+                    #   i.e., art.presentations.first.artist = art
+                    for e in es:
+                        attr = self_orm.entity.__name__
+
+                        # Set cmp to False and use a custom setattr.
+                        # Simply calling setattr(e, attr, self) would
+                        # cause e.attr to be loaded from the database
+                        # for comparison when __setattr__ calls
+                        # _setvalue.  However, the composite doesn't
+                        # need to be loaded from the database.
+                        e._setvalue(attr, self, attr, cmp=False, 
+                                    setattr=self._setattr)
+
+                        # Since we just set e's composite, e now thinks its
+                        # dirty.  Correct that here.
+                        e.orm.persistencestate = False, False, False
+
+                if es is None:
+                    es = map_entities()
+
+                map.value = es
+
+                # Assign the composite reference to the constituent
+                #   i.e., art.presentations.artist = art
+                setattr(map.value, self_orm.entity.__name__, self)
+
+                map.value.onadd.append(self.entities_onadd)
 
         # Is attr in one of the supers' mappings collections. We don't
         # want to start loading super entities from the database unless
         # we know that the attr is actually in one of them.
-        insuper = attr in self.orm.mappings.supermappings
-
-        if not map and insuper: 
-            sup = self.orm.super
+        elif not map and attr in self_orm.mappings.supermappings:
+            sup = self_orm.super
             while sup: # :=
-                map = sup.orm.mappings(attr)
+                sup_orm = sup.orm
+                map = sup_orm.mappings(attr)
                 if map:
-                    if type(map) is entitymapping:
+                    map_type = type(map)
+                    if map_type is entitymapping:
                         # We don't want an entitymapping from a super
                         # returned.  This would mean conc.artist would
                         # work. But concerts don't have artists;
@@ -2447,11 +2532,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     v = getattr(sup, map.name)
                     # Assign the composite reference to the constituent
                     #   i.e., sng.presentations.singer = sng
-                    if type(map) is entitiesmapping:
+                    if map_type is entitiesmapping:
                         es = v
                         for e in (es,) +  tuple(es):
-                            if not hasattr(e, self.orm.entity.__name__):
-                                setattr(e, self.orm.entity.__name__, self)
+                            setattr(e, self_orm_entity__name__, self)
                     return v
 
                 # NOTE Each time we ascend to the next super, we are
@@ -2461,98 +2545,35 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 # each time a request for its attribute value came in
                 # where as the `super` proprety memoizes the super
                 # object.
-                sup = sup.orm.super
+                sup = sup_orm.super
 
-        # Lazy-load constituent entities map
-        if type(map) is entitiesmapping:
-            if map.value is None:
-                es = None
-                if not self.orm.isnew:
+            raise ValueError()
 
-                    # Get the FK map of the entities constituent. 
-                    for map1 in map.entities.orm.mappings.foreignkeymappings:
-                        e = self.orm.entity
-                        while e:
-                            if map1.entity is e:
-                                break
-
-                            # If not found, go up the inheritance tree
-                            # and try again
-                            super = e.orm.super
-                            e = super.orm.entity if super else None
-                        else:
-                            continue
-                        break
-                    else:
-                        raise ValueError('FK map not found for entity')
-
-                    # NOTE Though we've switch to implicit loading for
-                    # entities and associations, we shoud still
-                    # explicitly load here for the sake of
-                    # predictability.
-                    es = map.entities(map1.name, self.id)
-                    es.orm.load()
-
-                    def setattr1(e, attr, v):
-                        e.orm.mappings(attr).value = v
-
-                    # Assign the composite reference to the
-                    # constituent's elements
-                    #   i.e., art.presentations.first.artist = art
-                    for e in es:
-                        attr = self.orm.entity.__name__
-
-                        # Set cmp to False and use a custom setattr. Simply
-                        # calling setattr(e, attr, self) would cause e.attr to
-                        # be loaded from the database for comparison when __setattr__
-                        # calls _setvalue.  However, the composite doesn't need
-                        # to be loaded from the database.
-                        e._setvalue(attr, self, attr, cmp=False, setattr=setattr1)
-
-                        # Since we just set e's composite, e now thinks its
-                        # dirty.  Correct that here.
-                        e.orm.persistencestate = (False,) * 3
-
-                if es is None:
-                    es = map.entities()
-
-                map.value = es
-
-                # Assign the composite reference to the constituent
-                #   i.e., art.presentations.artist = art
-                setattr(map.value, self.orm.entity.__name__, self)
-
-                map.value.onadd += self.entities_onadd
-
-        elif type(map) is associationsmapping:
+        elif map_type is associationsmapping:
             map.composite = self
 
-        elif type(map) is fieldmapping:
-            if map.isexplicit:
-                return object.__getattribute__(self, attr)
-
         elif map is None:
-            if attr != 'orm':
-                # For each of self's association mappings, look for the
-                # one that has entity mapping that matches `attr`. If
-                # found, get the associations collection object from the
-                # association mapping.  Then return that collection's
-                # `attr` property.
-                #
-                # For example, if `self` is an `artist`, and  `attr` is
-                # 'artifacts', return the association collection
-                # `artifacts` collection, i.e., ::
-                #
-                #     art.artist_arifacts.artifacts
-                #
-                # This gets you the pseudocollection of the
-                # artist_artifacts associations collection.
+            # For each of self's association mappings, look for the
+            # one that has entity mapping that matches `attr`. If
+            # found, get the associations collection object from the
+            # association mapping.  Then return that collection's
+            # `attr` property.
+            #
+            # For example, if `self` is an `artist`, and  `attr` is
+            # 'artifacts', return the association collection
+            # `artifacts` collection, i.e., ::
+            #
+            #     art.artist_arifacts.artifacts
+            #
+            # This gets you the pseudocollection of the
+            # artist_artifacts associations collection.
 
-                for map in self.orm.mappings.associationsmappings:
-                    for map1 in map.associations.orm.mappings.entitymappings:
-                        if map1.entity.orm.entities.__name__ == attr:
-                            asses = getattr(self, map.name)
-                            return getattr(asses, attr)
+            for map in self_orm.mappings.associationsmappings:
+                maps = map.associations.orm.mappings.entitymappings
+                for map1 in maps:
+                    if map1.entity.orm.entities.__name__ == attr:
+                        asses = getattr(self, map.name)
+                        return getattr(asses, attr)
 
             return object.__getattribute__(self, attr)
 
@@ -2718,6 +2739,7 @@ class mappings(entitiesmod.entities):
         self._populated = False
         self._populating = False
         self._supermappings = None
+        self._nameix = None
         self.oncountchange += self._self_oncountchange
 
     def _self_oncountchange(self, src, eargs):
@@ -2725,6 +2747,13 @@ class mappings(entitiesmod.entities):
 
     def __getitem__(self, key):
         self._populate()
+
+        if self._nameix is not None and isinstance(key, str):
+            try:
+                return self._nameix[key]
+            except KeyError as ex:
+                raise IndexError(str(ex))
+            
         return super().__getitem__(key)
 
     def __iter__(self):
@@ -2815,8 +2844,10 @@ class mappings(entitiesmod.entities):
             
             # All mapping objects will be united through their `orm`
             # reference.
+            self._nameix = dict()
             for map in self:
                 map.orm = self.orm
+                self._nameix[map.name] = map
                     
             # Ensure that the mapping objects are sorted in a
             # predictable way. See the mappings.sort() method for
@@ -3019,8 +3050,11 @@ WHERE id = %s;
     def clone(self, orm_):
         r = mappings(orm=orm_)
 
+        r._nameix = dict()
         for map in self:
-            r += map.clone()
+            map = map.clone()
+            r += map
+            r._nameix[map.name] = map
 
         # NOTE Set _populated after adding to `r` because the
         # oncountchange event will set self._populated to False
@@ -3250,6 +3284,12 @@ class fulltext(index):
         return name
 
 class attr:
+
+    class AttributeErrorWrapper(Exception):
+        """ An AttributeError wrapper. """
+        def __init__(self, ex):
+            self.inner = ex
+
     """ A decorator to make a method an explicit attribute. """
     class wrap:
         def __init__(self, *args, **kwargs):
@@ -3290,7 +3330,16 @@ class attr:
 
             # Inject into explicit attribute
             self.fget.__globals__['attr'] = attr
-            return self.fget(e)
+
+            try:
+                # Invoke the explicit attribute
+                return self.fget(e)
+            except AttributeError as ex:
+                # If it raises an AttributeError, wrap it. If the call
+                # from e.__getattribute__ sees a regural AttributeError,
+                # it will ignore it because it will assume its caller is
+                # requesting the value of a mapping object.
+                raise sys.modules['orm'].attr.AttributeErrorWrapper(ex)
 
     def __init__(self, *args, **kwargs):
         self.args = list(args)
