@@ -26,6 +26,8 @@
 """ This file contains all classes related to object-relational mapping.
 """
 
+from collections.abc import Iterable
+from contextlib import suppress
 from datetime import datetime
 from enum import Enum, unique
 from MySQLdb.constants.ER import BAD_TABLE_ERROR
@@ -34,7 +36,6 @@ from shlex import shlex
 from table import table
 from uuid import uuid4, UUID
 import builtins
-from contextlib import suppress
 import dateutil
 import db
 import decimal
@@ -3037,6 +3038,7 @@ class mapping(entitiesmod.entity):
         self._name = name
         mapping.ordinal += 1
         self._ordinal = mapping.ordinal
+        # TODO Change to 'isderived'
         self.derived = derived
 
     @property

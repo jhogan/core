@@ -32,7 +32,10 @@ from parties import *
 from pdb import Pdb
 from tester import *
 from uuid import uuid4
+
+# TODO Do we need this any more now that we use tester.cli
 import argparse
+
 import dateutil
 import decimal; dec=decimal.Decimal
 import functools
@@ -538,7 +541,12 @@ class test_orm(tester):
         # TODO Correct the above HACK.
         msg = "test in %s at %s: Incorrect chronicles count." 
         msg %= inspect.stack()[2][2:4]
-        self.eq(t.chronicles.count, t.count, msg)
+
+        cnt = 0
+        for chron in t.chronicles:
+            cnt += int(chron.op not in ('reconnect',))
+            
+        self.eq(cnt, t.count, msg)
 
     def it_calls_isrecursive_property(self):
         self.false(artist.orm.isrecursive)
@@ -2326,7 +2334,7 @@ class test_orm(tester):
         self.eq(rprs.first.id, rprs1.first.id)
 
     def it_searches_entities_using_fulltext_index(self):
-        for e in artists, artifacts:
+        for e in artists, artifacts, concerts:
             e.orm.truncate()
 
         arts, facts = artists(), artifacts()
@@ -2406,6 +2414,8 @@ class test_orm(tester):
     def it_searches_subentities_using_fulltext_index(self):
         artists.orm.truncate()
         singers.orm.truncate()
+        rappers.orm.truncate()
+        concerts.orm.truncate()
 
         sngs, concs = artists(), concerts()
         for i in range(2):
@@ -2660,6 +2670,7 @@ class test_orm(tester):
             art.save()
             
             if i == 0:
+                B(chrons.count != 1) # Aug 11 2019
                 self.one(chrons)
                 self.eq(chrons.where('entity', art).first.op, 'create')
             elif i == 1:
@@ -2926,16 +2937,10 @@ class test_orm(tester):
         pres.artist = art
         self.is_(art, pres.artist)
 
-        chrons.clear()
-        pres.save()
-
-        # NOTE The below line produced a failure today, but it went
-        # away.  (Jul 6)
-        B(chrons.count != 2)
-        self.two(chrons)
-
-        self.eq(chrons.where('entity', art).first.op,  'create')
-        self.eq(chrons.where('entity', pres).first.op, 'create')
+        with self._chrontest() as t:
+            t.run(pres.save)
+            t.created(art)
+            t.created(pres)
 
         # Load by artist then lazy-load presentations to test
         art1 = artist(pres.artist.id)
@@ -4181,13 +4186,9 @@ class test_orm(tester):
         self.true(art.orm.isnew)
         self.false(art.orm.isdirty)
 
-        self.chronicles.clear()
-        art.save()
-
-        # SPORADIC Please investigate if this breaks on a test
-        B(self.chronicles.count != 1)
-        self.one(self.chronicles)
-        self._chrons(art, 'create')
+        with self._chrontest() as t:
+            t.run(art.save)
+            t.created(art)
 
         self.false(art.orm.isnew)
         self.false(art.orm.isdirty)
@@ -4259,6 +4260,10 @@ class test_orm(tester):
         art.firstname = 'x' * 256
         self.broken(art, 'firstname', 'fits')
 
+        # TODO Today (20150815) we can get a 
+        #     MySQLdb.OperationalError(2006, 'MySQL server has gone away')
+        # error instead of a BrokenRulesError. Why would we get this
+        # from as simple save.
         try:
             art.save()
         except Exception as ex:
@@ -5992,13 +5997,12 @@ class test_orm(tester):
         conc.singer = sng
         self.is_(sng, conc.singer)
 
-        chrons.clear()
-        conc.save()
-        self.four(chrons)
-        self.eq(chrons.where('entity',  sng).first.op,             'create')
-        self.eq(chrons.where('entity',  sng.orm.super).first.op,   'create')
-        self.eq(chrons.where('entity',  conc).first.op,            'create')
-        self.eq(chrons.where('entity',  conc.orm.super).first.op,  'create')
+        with self._chrontest() as t:
+            t.run(conc.save)
+            t.created(sng)
+            t.created(sng.orm.super)
+            t.created(conc)
+            t.created(conc.orm.super)
 
         # Load by singer then lazy-load concerts to test
         sng1 = singer(conc.singer.id)
