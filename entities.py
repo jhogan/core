@@ -33,7 +33,6 @@ from functools import total_ordering, reduce
 import decimal
 import string
 
-
 def rgetattr(obj, attr, *args):
     def rgetattr(obj, attr):
         if obj:
@@ -187,14 +186,12 @@ class entities(object):
             yield t
 
     def head(self, number=10):
-        # TODO Write test
         if number <= 0:
             return type(self)()
 
         return type(self)(initial=self[:number])
 
     def tail(self, number=10):
-        # TODO Write test
         if number <= 0:
             return type(self)()
             
@@ -273,8 +270,8 @@ class entities(object):
             if p2 is None:
                 raise ValueError()
 
-            # If p1 is a str, it is an attribute and we should test it against
-            # p2
+            # If p1 is a str, it is an attribute and we should test it
+            # against p2
             attr, operand = p1, p2
             def fn(e):
                 return rgetattr(e, attr) == operand
@@ -287,7 +284,6 @@ class entities(object):
 
         return es
 
-
     @total_ordering
     class mintype(object):
         def __le__(self, e): return True
@@ -295,7 +291,6 @@ class entities(object):
 
     # TODO Test reverse parameter
     def sort(self, key, reverse=False):
-
         if type(key) == str:
             min = entities.mintype()
             def key1(x):
@@ -901,7 +896,6 @@ class brokenrules(entities):
             if builtins.type(v) != datetime:
                 self += brokenrule(prop + " isn't a date", prop, 'valid')
 
-
     def contains(self, prop=None, type=None):
         for br in self:
             if (prop == None or br.property == prop) and \
@@ -1030,10 +1024,9 @@ class index(entity):
 
     @staticmethod
     def _getkey(val):
-        # TODO: Since lists aren't hashable, we convert the list to a string.
-        # This isn't ideal since using (0, 1) as the index value on retrieval
-        # is the same as using [0, 1].
-
+        # TODO: Since lists aren't hashable, we convert the list to a
+        # string.  This isn't ideal since using (0, 1) as the index
+        # value on retrieval is the same as using [0, 1].
 
         # Try to return a hashable version of the value
         if val.__hash__:

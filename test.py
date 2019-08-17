@@ -33,6 +33,7 @@ import datetime
 import primative
 import dateutil
 import db
+import textwrap
 
 class knights(entities):
     def __init__(self, initial=None):
@@ -245,7 +246,6 @@ class test_entities(tester):
     def it_calls_where(self):
         """ Where queries the entities collection."""
 
-
         n = philosopher('neitzsche')
         s = philosopher('schopenhaurer')
         sj = singer('salena jones')
@@ -368,7 +368,6 @@ class test_entities(tester):
         ks += knight('Bedevere')
         cnt = ks.count
 
-
         # Sort them by name
         ks.sort(key=lambda k: k.name)
 
@@ -396,7 +395,6 @@ class test_entities(tester):
         self.assertEq('Galahad',   ks.second.name)
         self.assertEq('Bedevere',  ks.third.name)
         self.assertEq('Authur',    ks.fourth.name)
-
 
         Light = 12000000 # miles per minute
         cs = constants()
@@ -1998,7 +1996,6 @@ class test_entities(tester):
                 ks.pluck('{name!' + str(i) + '}-{trait}')
             )
 
-
 class test_entity(tester):
     def it_calls__add__(self):
         """ The + operator concatenates an entity with another
@@ -2135,7 +2132,6 @@ class test_table(tester):
             x, y = i % 5, int(i / 5)
             self.assertEq([y, x], f.value)
 
-
         # Create a new row to test adding to it
         r = tbl.newrow()
 
@@ -2167,7 +2163,6 @@ class test_table(tester):
 
         tbl.rows -= r
         self.assertEq(5 * 5, fs.count)
-
 
         # Test fields property after setting them in the table object.
 
@@ -2475,9 +2470,9 @@ class test_row(tester):
                 self.assertIs(f1, r[j])
 
     def it_gets_index(self):
-        """ A row's index property contains the 0-based ordinal, i.e., the
-        first row in a table has an index of 0, the second has an index of 1,
-        and so on. """
+        """ A row's index property contains the 0-based ordinal, i.e.,
+        the first row in a table has an index of 0, the second has an
+        index of 1, and so on. """
 
         # Create a table with 5 rows and ensure their index property is equal
         # to the position of the row in the table.
@@ -2522,6 +2517,18 @@ class test_row(tester):
         self.assertIs(f, r.fields.first)
         self.assertIs(f, tbl.rows.first.fields.first)
         self.assertEq(123, f.value)
+
+    def it_calls__repr__(self):
+        tbl = createtable(2, 2)
+
+        expect = '''
+        +-----------------+
+        | [1, 0] | [1, 1] |
+        +-----------------+
+        '''
+        expect = textwrap.dedent(expect).lstrip()
+
+        self.eq(expect, repr(tbl.rows.second))
 
 class test_fields(tester):
     def it_get_row(self):
@@ -2697,7 +2704,6 @@ class test_field(tester):
         """ This is the generic method for all the self.it_calls_get*()
         methods.  It tests the field.get<direction> methods like
         field.getabove().
-
 
         :param str fn: The name of the method we are testing, e.g., 'getabove'
 
