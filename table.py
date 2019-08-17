@@ -321,15 +321,14 @@ class row(entity):
         for v in vs:
             self.newfield(v)
 
-    # TODO
-    '''
     def __repr__(self):
-        pass
+        tbl = table()
+        r = tbl.newrow()
 
-    def __str__(self):
-        pass
-    '''
+        for f in self:
+            r.newfield(f)
 
+        return str(tbl)
 
 class fields(entities):
     def __init__(self, initial=None, row=None):
