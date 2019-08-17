@@ -236,12 +236,23 @@ class entities(object):
             if '{' in s:
                 args = dict()
                 for prop in dir(e):
-                    args[prop] = str(getattr(e, prop))
 
+                    # NOTE Ignoring these props because the process
+                    # stalled when plucking from a recursive orm entity.
+                    # Feel free to include these props here if you are
+                    # able to correct that. See the `pluck` lines in
+                    # it_saves_recursive_entity.
+                    if prop in ('__dict__', 
+                                'onaftervaluechange',
+                                'onbeforevaluechange',
+                                '_onaftervaluechange',
+                                '_onbeforevaluechange'):
+                        continue
+
+                    args[prop] = str(getattr(e, prop))
 
                 fmt = formatter()
                 ls.append(formatter().format(s, **args))
-                #ls.append(s.format(**args))
             else:
                 ls.append(getattr(e, s))
 
