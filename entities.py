@@ -463,7 +463,9 @@ class entities(object):
         self._ls.append(t)
 
         try:
-            if not isinstance(self, event) and not isinstance(self, indexes):
+            if      not isinstance(self, event) \
+                and not isinstance(self, indexes):
+
                 self.onadd(self, entityaddeventargs(t))
         except AttributeError as ex:
             msg = str(ex)
@@ -716,8 +718,30 @@ class entities(object):
 
 class entity():
     def __init__(self):
-        self.onbeforevaluechange = event()
-        self.onaftervaluechange = event()
+        self._onaftervaluechange = None
+        self._onbeforevaluechange = None
+
+    @property
+    def onbeforevaluechange(self):
+        if self._onbeforevaluechange is None:
+            self._onbeforevaluechange = event()
+
+        return self._onbeforevaluechange
+
+    @onbeforevaluechange.setter
+    def onbeforevaluechange(self, v):
+        self._onbeforevaluechange = v
+
+    @property
+    def onaftervaluechange(self):
+        if self._onaftervaluechange is None:
+            self._onaftervaluechange = event()
+
+        return self._onaftervaluechange
+
+    @onaftervaluechange.setter
+    def onaftervaluechange(self, v):
+        self._onaftervaluechange = v
 
     @property
     def log(self):
