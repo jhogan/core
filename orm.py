@@ -2969,7 +2969,7 @@ class mappings(entitiesmod.entities):
     def aggregateindexes(self):
         ixs = aggregateindexes()
         for map in self:
-            if type(map) is fieldmapping and map.index:
+            if type(map) in (fieldmapping, foreignkeyfieldmapping) and map.index:
                 try:
                     ix = ixs[map.index.name]
                 except IndexError:
@@ -3707,7 +3707,11 @@ class foreignkeyfieldmapping(fieldmapping):
     def __init__(self, e, derived=False):
         self.entity = e
         self.value = None
-        super().__init__(type=types.fk, derived=derived)
+        super().__init__(
+            type=types.fk, 
+            derived=derived,
+            ix=index
+        )
 
     @property
     def name(self):

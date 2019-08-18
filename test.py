@@ -549,6 +549,17 @@ class test_orm(tester):
             
         self.eq(cnt, t.count, msg)
 
+    def it_creates_indexes_on_foreign_keys(self):
+        # Standard entity
+        self.notnone(presentation.orm.mappings['artistid'].index)
+
+        # Recursive entity
+        self.notnone(comment.orm.mappings['commentid'].index)
+
+        # Associations
+        self.notnone(artist_artifact.orm.mappings['artistid'].index)
+        self.notnone(artist_artifact.orm.mappings['artifactid'].index)
+        
     def it_calls_isrecursive_property(self):
         self.false(artist.orm.isrecursive)
         self.false(artist().orm.isrecursive)
