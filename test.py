@@ -165,402 +165,6 @@ def createtable(x, y):
             r.newfield([i, j])
     return tbl
 
-##################################################################################
-''' ORM Tests '''
-##################################################################################
-
-class comments(orm.entities):
-    pass
-
-class comment(orm.entity):
-    title = str
-    body = str
-    comments = comments
-
-    @staticmethod
-    def getvalid():
-        com = comment()
-        com.title = uuid4().hex
-        com.body = '%s\n%s' % (uuid4().hex, uuid4().hex)
-        return com
-
-class locations(orm.entities):
-    pass
-
-class presentations(orm.entities):
-    pass
-
-class concerts(presentations):
-    pass
-
-class battles(concerts):
-    pass
-
-class components(orm.entities):
-    pass
-
-class artifacts(orm.entities):
-    pass
-
-class artists(orm.entities):
-    pass
-
-class location(orm.entity):
-    address     = str
-    description = str
-
-    @staticmethod
-    def getvalid():
-        loc = location()
-        loc.description = uuid4().hex
-        loc.address     = uuid4().hex
-        return loc
-
-class presentation(orm.entity):
-    date         =  datetime
-    name         =  orm.fieldmapping(str)
-    description  =  str
-    locations    =  locations
-    components   =  components
-    title        =  str,        orm.fulltext('title_desc',0)
-    description1 =  str,        orm.fulltext('title_desc',1)
-
-    @staticmethod
-    def getvalid():
-        pres = presentation()
-        pres.name          =  uuid4().hex
-        pres.description   =  uuid4().hex
-        pres.description1  =  uuid4().hex
-        pres.title         =  uuid4().hex
-        return pres
-
-class concert(presentation):
-    @staticmethod
-    def getvalid():
-        pres = presentation.getvalid()
-        conc = concert()
-        conc.record = uuid4().hex
-        conc.name = uuid4().hex
-        conc.title = pres.title
-        conc.description = pres.description
-        conc.description1 = pres.description1
-        return conc
-    
-    record = orm.fieldmapping(str)
-
-    # tinyint
-    ticketprice  =  orm.fieldmapping(int,  min=-128,      max=127)
-
-    # mediumint
-    attendees    =  orm.fieldmapping(int,  min=-8388608,  max=8388607)
-
-    # tinyint unsigned
-    duration     =  orm.fieldmapping(int,  min=0,         max=255)
-
-    # mediumint unsigned
-    capacity     =  orm.fieldmapping(int,  min=0,         max=16777215)
-
-    # int unsigned
-    externalid   =  orm.fieldmapping(int,  min=0,         max=4294967295)
-
-    # bigint unsigned
-    externalid1  =  orm.fieldmapping(int,  min=0,         max=(2**64)-1)
-
-class battle(concert):
-    views = int
-
-    @staticmethod
-    def getvalid():
-        conc = concert.getvalid()
-        btl = battle()
-
-        for map in conc.orm.mappings.all:
-            if type(map) is not orm.fieldmapping:
-                continue
-            setattr(btl, map.name, getattr(conc, map.name))
-
-        return btl
-
-class component(orm.entity):
-    @staticmethod
-    def getvalid():
-        comp = component()
-        comp.name = uuid4().hex
-        comp.digest = bytes([randint(0, 255) for _ in range(32)])
-        return comp
-
-    name    =  str
-    weight  =  float,  8,   7
-    height  =  float
-    digest  =  bytes,  16,  255
-
-    @orm.attr(float, 5, 1)
-    def width(self):
-        return attr(abs(attr()))
-
-class artifact(orm.entity):
-    def getvalid():
-        fact = artifact()
-        fact.title = uuid4().hex
-        fact.description = uuid4().hex
-        return fact
-
-    title        =  str,        orm.fulltext('title_desc',0)
-    description  =  str,        orm.fulltext('title_desc',1)
-    weight       =  int,        -2**63,                       2**63-1
-    abstract     =  bool
-    price        =  dec
-    components   =  components
-
-class artist(orm.entity):
-    firstname      =  str, orm.index('fullname', 1)
-    lastname       =  str, orm.index('fullname', 0)
-    lifeform       =  str
-    weight         =  int, 0, 1000
-    networth       =  int
-    style          =  str, 1, 50
-    dob            =  datetime
-    password       =  bytes, 32, 32
-    ssn            =  str, 11, 11, orm.index #  char
-    locations      =  locations
-    presentations  =  presentations
-
-    # title here to be ambigous with artifact.title. It's purpose is to ensure
-    # against ambiguity problems that may arise
-    title          =  str, 0, 1
-    phone2         =  str, 0, 1
-    email_1        =  str, 0, 1
-
-    # Bio's will be longtext. Any str where max > 65,535 can no longer be a
-    # varchar, so we make it a longtext.
-    bio = str, 1, 65535 + 1, orm.fulltext
-
-    comments = comments
-
-    @staticmethod
-    def getvalid():
-        art = artist()
-        art.firstname = 'Gary'
-        art.lastname  = 'Yourofsky'
-        art.lifeform  = uuid4().hex
-        art.password  = bytes([randint(0, 255) for _ in range(32)])
-        art.ssn       = '1' * 11
-        art.phone     = '1' * 7
-        art.email     = 'username@domain.tld'
-        return art
-
-    @orm.attr(int, 1000000, 9999999)
-    def phone(self):
-        phone = attr()
-        if phone is None:
-            return None
-        # Strip non-numerics ( "(555)-555-555" -> "555555555" )
-
-        if type(phone) is str and not phone.isnumeric():
-            phone = re.sub('\D*', '', phone)
-
-            # Cache in map so we don't have to do this every time the
-            # phone attribute is read. (Normally, caching in the map
-            # would be needed if the operation actually took a really
-            # long time.  The output for the re.sub wouldn't typically
-            # need to be cached. This is simply to test the attr()
-            # function's ability to set map values.)
-            attr(phone)
-
-        return attr()
-
-    @orm.attr(str, 3, 254)
-    def email(self):
-        return attr().lower()
-
-    # Though it seems logical that there would be mutator analog to the
-    # accessor logic (used above for the 'phone' attr), there doesn't
-    # seem to be a need for this. Conversions should be done in the
-    # accessor (as in the 'phone' accessor above).  If functionality
-    # needs to run when a mutator is called, this can be handled in an
-    # onaftervaluechange handler (though this seems rare).  Since at the
-    # moment, no use-case can be imagined for mutator @attr's, we should
-    # leave this unimplemented. If a use-case presents itself, the
-    # below, commented-out code approximates how it should look.  The
-    # 'setter' method in the 'Property' class here
-    # https://docs.python.org/3/howto/descriptor.html#properties hints
-    # at how this may be implemented in orm.attr.
-    """
-    @phone.setter(str)
-    def phone(self,)
-        self.orm.mappings('phone').value = v
-    """
-
-    def __init__(self, o=None):
-        super().__init__(o)
-
-        if self.orm.isnew:
-            self.lifeform = 'organic'
-            self.bio = None
-            self.style = 'classicism'
-            self._processing = False
-
-    def clear(self):
-        self.locations.clear()
-        self.presentations.clear()
-
-    @property
-    def processing(self):
-        return self._processing
-
-    @processing.setter
-    def processing(self, v):
-        self._processing = v
-
-    @property
-    def fullname(self):
-        return self.firstname + ' ' + self.lastname
-
-    def __str__(self):
-        return self.fullname
-        
-class artist_artifacts(orm.associations):
-    pass
-
-class artist_artifact(orm.association):
-    artist    =  artist
-    artifact  =  artifact
-    role      =  str
-    planet    =  str
-
-    def __init__(self, o=None):
-        self['planet'] = 'Earth'
-        self._processing = False
-        super().__init__(o)
-
-    @staticmethod
-    def getvalid():
-        # TODO Is an aa without an artifact object valid, i.e., should
-        # it not have a brokenrule for the missing artifact?
-        aa = artist_artifact()
-        aa.role = uuid4().hex
-        aa.timespan = uuid4().hex
-        return aa
-
-    # The duration an artist worked on an artifact
-    @orm.attr(str)
-    def timespan(self):
-        return attr().replace(' ', '-')
-
-    @property
-    def processing(self):
-        return self._processing
-
-    @processing.setter
-    def processing(self, v):
-        self._processing = v
-
-class singers(artists):
-    pass
-
-class singer(artist):
-    voice    = str
-    concerts = concerts
-
-    @staticmethod
-    def getvalid():
-        super = singer.orm.super.getvalid()
-
-        sng = singer()
-        keymaps = (orm.primarykeyfieldmapping, orm.foreignkeyfieldmapping)
-        for map in super.orm.mappings:
-            if isinstance(map, orm.fieldmapping) and type(map) not in keymaps:
-                setattr(sng, map.name, getattr(super, map.name))
-
-        sng.voice     = uuid4().hex
-        sng.register  = 'laryngealization'
-        return sng
-
-    @orm.attr(str)
-    def register(self):
-        #v = self.orm.mappings['register'].value.lower()
-        v = attr().lower()
-
-        if v in ('laryngealization', 'pulse phonation', 'creak'):
-            return 'vocal fry'
-        if v in ('flute', 'whistle tone'):
-            return 'whistle'
-        return v
-
-    def __init__(self, o=None):
-        self._transmitting = False
-        super().__init__(o)
-
-    def clear(self):
-        super().clear()
-        self.concerts.clear()
-
-    @property
-    def transmitting(self):
-        return self._transmitting
-
-    @transmitting.setter
-    def transmitting(self, v):
-        self._transmitting = v
-
-class rappers(singers):
-    pass
-
-class rapper(singer):
-    nice = int
-    stagename = str
-    battles = battles
-
-    def __init__(self, o=None):
-        super().__init__(o)
-        if self.orm.isnew:
-            self.nice = 10
-            self._elevating = False
-
-    @staticmethod
-    def getvalid():
-        keymaps = (orm.primarykeyfieldmapping, orm.foreignkeyfieldmapping)
-
-        rpr = rapper()
-        sup = type(rpr.orm.super).getvalid()
-        while sup: # :=
-            for map in sup.orm.mappings:
-                if isinstance(map, orm.fieldmapping) and type(map) not in keymaps:
-                    setattr(rpr, map.name, getattr(sup, map.name))
-
-            sup = type(sup.orm.super).getvalid() if sup.orm.super else None
-
-        rpr.nice = randint(1, 255)
-        rpr.stagename = '1337 h4x0r'
-        return rpr
-
-    @property
-    def elevating(self):
-        return self._elevating
-
-    @elevating.setter
-    def elevating(self, v):
-        self._elevating = v
-
-    @orm.attr(str)
-    def abilities(self):
-        def bs():
-            r = list()
-            r.append('endless rhymes')
-            r.append('delivery')
-            r.append('money')
-            return r
-
-        return str(attr()) if attr() else attr(str(bs()))
-
-class issues(orm.entities):
-    pass
-
-class issue(orm.entity):
-    @orm.attr(str)
-    def raiseAttributeError(self):
-        raise AttributeError()
-
 class test_entities(tester):
     def it_instantiates(self):
 
@@ -3507,3 +3111,8902 @@ class mycli(cli):
         ts.oninvoketest += lambda src, eargs: print('.', end='', flush=True)
        
 cli().run()
+
+##################################################################################
+''' ORM Tests '''
+##################################################################################
+
+class comments(orm.entities):
+    pass
+
+class comment(orm.entity):
+    title = str
+    body = str
+    comments = comments
+
+    @staticmethod
+    def getvalid():
+        com = comment()
+        com.title = uuid4().hex
+        com.body = '%s\n%s' % (uuid4().hex, uuid4().hex)
+        return com
+
+class locations(orm.entities):
+    pass
+
+class presentations(orm.entities):
+    pass
+
+class concerts(presentations):
+    pass
+
+class battles(concerts):
+    pass
+
+class components(orm.entities):
+    pass
+
+class artifacts(orm.entities):
+    pass
+
+class artists(orm.entities):
+    pass
+
+class location(orm.entity):
+    address     = str
+    description = str
+
+    @staticmethod
+    def getvalid():
+        loc = location()
+        loc.description = uuid4().hex
+        loc.address     = uuid4().hex
+        return loc
+
+class presentation(orm.entity):
+    date         =  datetime
+    name         =  orm.fieldmapping(str)
+    description  =  str
+    locations    =  locations
+    components   =  components
+    title        =  str,        orm.fulltext('title_desc',0)
+    description1 =  str,        orm.fulltext('title_desc',1)
+
+    @staticmethod
+    def getvalid():
+        pres = presentation()
+        pres.name          =  uuid4().hex
+        pres.description   =  uuid4().hex
+        pres.description1  =  uuid4().hex
+        pres.title         =  uuid4().hex
+        return pres
+
+class concert(presentation):
+    @staticmethod
+    def getvalid():
+        pres = presentation.getvalid()
+        conc = concert()
+        conc.record = uuid4().hex
+        conc.name = uuid4().hex
+        conc.title = pres.title
+        conc.description = pres.description
+        conc.description1 = pres.description1
+        return conc
+    
+    record = orm.fieldmapping(str)
+
+    # tinyint
+    ticketprice  =  orm.fieldmapping(int,  min=-128,      max=127)
+
+    # mediumint
+    attendees    =  orm.fieldmapping(int,  min=-8388608,  max=8388607)
+
+    # tinyint unsigned
+    duration     =  orm.fieldmapping(int,  min=0,         max=255)
+
+    # mediumint unsigned
+    capacity     =  orm.fieldmapping(int,  min=0,         max=16777215)
+
+    # int unsigned
+    externalid   =  orm.fieldmapping(int,  min=0,         max=4294967295)
+
+    # bigint unsigned
+    externalid1  =  orm.fieldmapping(int,  min=0,         max=(2**64)-1)
+
+class battle(concert):
+    views = int
+
+    @staticmethod
+    def getvalid():
+        conc = concert.getvalid()
+        btl = battle()
+
+        for map in conc.orm.mappings.all:
+            if type(map) is not orm.fieldmapping:
+                continue
+            setattr(btl, map.name, getattr(conc, map.name))
+
+        return btl
+
+class component(orm.entity):
+    @staticmethod
+    def getvalid():
+        comp = component()
+        comp.name = uuid4().hex
+        comp.digest = bytes([randint(0, 255) for _ in range(32)])
+        return comp
+
+    name    =  str
+    weight  =  float,  8,   7
+    height  =  float
+    digest  =  bytes,  16,  255
+
+    @orm.attr(float, 5, 1)
+    def width(self):
+        return attr(abs(attr()))
+
+class artifact(orm.entity):
+    def getvalid():
+        fact = artifact()
+        fact.title = uuid4().hex
+        fact.description = uuid4().hex
+        return fact
+
+    title        =  str,        orm.fulltext('title_desc',0)
+    description  =  str,        orm.fulltext('title_desc',1)
+    weight       =  int,        -2**63,                       2**63-1
+    abstract     =  bool
+    price        =  dec
+    components   =  components
+
+class artist(orm.entity):
+    firstname      =  str, orm.index('fullname', 1)
+    lastname       =  str, orm.index('fullname', 0)
+    lifeform       =  str
+    weight         =  int, 0, 1000
+    networth       =  int
+    style          =  str, 1, 50
+    dob            =  datetime
+    password       =  bytes, 32, 32
+    ssn            =  str, 11, 11, orm.index #  char
+    locations      =  locations
+    presentations  =  presentations
+
+    # title here to be ambigous with artifact.title. It's purpose is to ensure
+    # against ambiguity problems that may arise
+    title          =  str, 0, 1
+    phone2         =  str, 0, 1
+    email_1        =  str, 0, 1
+
+    # Bio's will be longtext. Any str where max > 65,535 can no longer be a
+    # varchar, so we make it a longtext.
+    bio = str, 1, 65535 + 1, orm.fulltext
+
+    comments = comments
+
+    @staticmethod
+    def getvalid():
+        art = artist()
+        art.firstname = 'Gary'
+        art.lastname  = 'Yourofsky'
+        art.lifeform  = uuid4().hex
+        art.password  = bytes([randint(0, 255) for _ in range(32)])
+        art.ssn       = '1' * 11
+        art.phone     = '1' * 7
+        art.email     = 'username@domain.tld'
+        return art
+
+    @orm.attr(int, 1000000, 9999999)
+    def phone(self):
+        phone = attr()
+        if phone is None:
+            return None
+        # Strip non-numerics ( "(555)-555-555" -> "555555555" )
+
+        if type(phone) is str and not phone.isnumeric():
+            phone = re.sub('\D*', '', phone)
+
+            # Cache in map so we don't have to do this every time the
+            # phone attribute is read. (Normally, caching in the map
+            # would be needed if the operation actually took a really
+            # long time.  The output for the re.sub wouldn't typically
+            # need to be cached. This is simply to test the attr()
+            # function's ability to set map values.)
+            attr(phone)
+
+        return attr()
+
+    @orm.attr(str, 3, 254)
+    def email(self):
+        return attr().lower()
+
+    # Though it seems logical that there would be mutator analog to the
+    # accessor logic (used above for the 'phone' attr), there doesn't
+    # seem to be a need for this. Conversions should be done in the
+    # accessor (as in the 'phone' accessor above).  If functionality
+    # needs to run when a mutator is called, this can be handled in an
+    # onaftervaluechange handler (though this seems rare).  Since at the
+    # moment, no use-case can be imagined for mutator @attr's, we should
+    # leave this unimplemented. If a use-case presents itself, the
+    # below, commented-out code approximates how it should look.  The
+    # 'setter' method in the 'Property' class here
+    # https://docs.python.org/3/howto/descriptor.html#properties hints
+    # at how this may be implemented in orm.attr.
+    """
+    @phone.setter(str)
+    def phone(self,)
+        self.orm.mappings('phone').value = v
+    """
+
+    def __init__(self, o=None):
+        super().__init__(o)
+
+        if self.orm.isnew:
+            self.lifeform = 'organic'
+            self.bio = None
+            self.style = 'classicism'
+            self._processing = False
+
+    def clear(self):
+        self.locations.clear()
+        self.presentations.clear()
+
+    @property
+    def processing(self):
+        return self._processing
+
+    @processing.setter
+    def processing(self, v):
+        self._processing = v
+
+    @property
+    def fullname(self):
+        return self.firstname + ' ' + self.lastname
+
+    def __str__(self):
+        return self.fullname
+        
+class artist_artifacts(orm.associations):
+    pass
+
+class artist_artifact(orm.association):
+    artist    =  artist
+    artifact  =  artifact
+    role      =  str
+    planet    =  str
+
+    def __init__(self, o=None):
+        self['planet'] = 'Earth'
+        self._processing = False
+        super().__init__(o)
+
+    @staticmethod
+    def getvalid():
+        # TODO Is an aa without an artifact object valid, i.e., should
+        # it not have a brokenrule for the missing artifact?
+        aa = artist_artifact()
+        aa.role = uuid4().hex
+        aa.timespan = uuid4().hex
+        return aa
+
+    # The duration an artist worked on an artifact
+    @orm.attr(str)
+    def timespan(self):
+        return attr().replace(' ', '-')
+
+    @property
+    def processing(self):
+        return self._processing
+
+    @processing.setter
+    def processing(self, v):
+        self._processing = v
+
+class singers(artists):
+    pass
+
+class singer(artist):
+    voice    = str
+    concerts = concerts
+
+    @staticmethod
+    def getvalid():
+        super = singer.orm.super.getvalid()
+
+        sng = singer()
+        keymaps = (orm.primarykeyfieldmapping, orm.foreignkeyfieldmapping)
+        for map in super.orm.mappings:
+            if isinstance(map, orm.fieldmapping) and type(map) not in keymaps:
+                setattr(sng, map.name, getattr(super, map.name))
+
+        sng.voice     = uuid4().hex
+        sng.register  = 'laryngealization'
+        return sng
+
+    @orm.attr(str)
+    def register(self):
+        #v = self.orm.mappings['register'].value.lower()
+        v = attr().lower()
+
+        if v in ('laryngealization', 'pulse phonation', 'creak'):
+            return 'vocal fry'
+        if v in ('flute', 'whistle tone'):
+            return 'whistle'
+        return v
+
+    def __init__(self, o=None):
+        self._transmitting = False
+        super().__init__(o)
+
+    def clear(self):
+        super().clear()
+        self.concerts.clear()
+
+    @property
+    def transmitting(self):
+        return self._transmitting
+
+    @transmitting.setter
+    def transmitting(self, v):
+        self._transmitting = v
+
+class rappers(singers):
+    pass
+
+class rapper(singer):
+    nice = int
+    stagename = str
+    battles = battles
+
+    def __init__(self, o=None):
+        super().__init__(o)
+        if self.orm.isnew:
+            self.nice = 10
+            self._elevating = False
+
+    @staticmethod
+    def getvalid():
+        keymaps = (orm.primarykeyfieldmapping, orm.foreignkeyfieldmapping)
+
+        rpr = rapper()
+        sup = type(rpr.orm.super).getvalid()
+        while sup: # :=
+            for map in sup.orm.mappings:
+                if isinstance(map, orm.fieldmapping) and type(map) not in keymaps:
+                    setattr(rpr, map.name, getattr(sup, map.name))
+
+            sup = type(sup.orm.super).getvalid() if sup.orm.super else None
+
+        rpr.nice = randint(1, 255)
+        rpr.stagename = '1337 h4x0r'
+        return rpr
+
+    @property
+    def elevating(self):
+        return self._elevating
+
+    @elevating.setter
+    def elevating(self, v):
+        self._elevating = v
+
+    @orm.attr(str)
+    def abilities(self):
+        def bs():
+            r = list()
+            r.append('endless rhymes')
+            r.append('delivery')
+            r.append('money')
+            return r
+
+        return str(attr()) if attr() else attr(str(bs()))
+
+class issues(orm.entities):
+    pass
+
+class issue(orm.entity):
+    @orm.attr(str)
+    def raiseAttributeError(self):
+        raise AttributeError()
+
+class test_orm(tester):
+    def __init__(self):
+        super().__init__()
+        self.chronicles = db.chronicles()
+        db.chronicler.getinstance().chronicles.onadd += self._chronicler_onadd
+
+        artist.reCREATE(recursive=True)
+        comment.reCREATE()
+    
+    def _chrons(self, e, op):
+        chrons = self.chronicles.where('entity',  e)
+        if not (chrons.hasone and chrons.first.op == op):
+            self._failures += failure()
+
+    def _chronicler_onadd(self, src, eargs):
+        self.chronicles += eargs.entity
+        #print(eargs.entity)
+
+    @contextmanager
+    def _chrontest(self):
+        test_orm = self
+        class tester:
+            def __init__(self):
+                self.count = 0
+
+            def run(self, callable):
+                test_orm.chronicles.clear()
+                r = callable()
+                self.chronicles = test_orm.chronicles.clone()
+                return r
+
+            def created(self, e):
+                if not self._test(e, 'create'):
+                    test_orm._failures += failure()
+
+            def retrieved(self, e):
+                if not self._test(e, 'retrieve'):
+                    test_orm._failures += failure()
+
+            def updated(self, e):
+                if not self._test(e, 'update'):
+                    test_orm._failures += failure()
+
+            def deleted(self, e):
+                if not self._test(e, 'delete'):
+                    test_orm._failures += failure()
+
+            def _test(self, e, op):
+                chron = self.chronicles.where('entity',  e)
+                if chron.hasone and chron.first.op == op:
+                    self.count += 1
+                    return True
+                return False
+
+            def __str__(self):
+                r = 'Test count: %s\n\n' % self.count
+                r += str(self.chronicles)
+                return r
+
+        t = tester() # :=
+        yield t
+
+        # HACK The below gets around the fact that tester.py can't deal
+        # with stack offsets at the moment.
+        # TODO Correct the above HACK.
+        msg = "test in %s at %s: Incorrect chronicles count." 
+        msg %= inspect.stack()[2][2:4]
+
+        cnt = 0
+        for chron in t.chronicles:
+            cnt += int(chron.op not in ('reconnect',))
+            
+        self.eq(cnt, t.count, msg)
+
+    def it_creates_indexes_on_foreign_keys(self):
+        # Standard entity
+        self.notnone(presentation.orm.mappings['artistid'].index)
+
+        # Recursive entity
+        self.notnone(comment.orm.mappings['commentid'].index)
+
+        # Associations
+        self.notnone(artist_artifact.orm.mappings['artistid'].index)
+        self.notnone(artist_artifact.orm.mappings['artifactid'].index)
+        
+    def it_calls_isrecursive_property(self):
+        self.false(artist.orm.isrecursive)
+        self.false(artist().orm.isrecursive)
+        self.false(artists.orm.isrecursive)
+        self.false(artists().orm.isrecursive)
+
+        self.false(artist_artifact.orm.isrecursive)
+        self.false(artist_artifact().orm.isrecursive)
+        self.false(artist_artifacts.orm.isrecursive)
+        self.false(artist_artifacts().orm.isrecursive)
+
+        self.true(comment.orm.isrecursive)
+        self.true(comment().orm.isrecursive)
+        self.true(comments.orm.isrecursive)
+        self.true(comments().orm.isrecursive)
+
+    def it_computes_abbreviation(self):
+        es = orm.orm.getentitys() + orm.orm.getassociations()
+
+        abbrs = [e.orm.abbreviation for e in es]
+        abbrs1 = [e().orm.abbreviation for e in es]
+        self.unique(abbrs)
+        self.eq(abbrs, abbrs1)
+
+        for i in range(10):
+            self.eq(abbrs, [e.orm.abbreviation for e in es])
+            self.eq(abbrs, [e().orm.abbreviation for e in es])
+
+    def it_calls_count_on_class(self):
+        cnt = 10
+        for i in range(cnt):
+            artist.getvalid().save()
+
+        self.ge(artists.count, cnt)
+
+        arts = artists()
+        arts += artist.getvalid()
+        arts.count
+
+    def it_calls__str__on_entities(self):
+        arts = artists()
+        arts += artist.getvalid()
+        arts += artist.getvalid()
+
+        r = '%s object at %s count: %s\n' % (type(arts), 
+                                             hex(id(arts)), 
+                                             arts.count)
+        for art in arts:
+            r += '    ' + str(art) + '\n'
+            
+        self.eq(r, str(arts))
+
+    def it_has_index(self):
+        # TODO When DDL reading facilities are made available through
+        # the DDL migration code, use them to ensure that artists.ssn
+        # and other indexed columns are sucessfully being index in
+        # MySQL.
+        ...
+
+    def it_has_composite_index(self):
+        # TODO When DDL reading facilities are made available through
+        # the DDL migration code, use them to ensure that
+        # artist.firstname and artist.lastname share a composite index.
+        ...
+
+    def it_calls_createdat(self):
+        art = artist.getvalid()
+        self.none(art.createdat)
+        
+        # Ensure the createdat gets the current datetime
+
+        # Strip seconds and microsecond for comparison
+        expect = primative.datetime.utcnow().replace(microsecond=0, second=0)
+        art.save()
+        actual = art.createdat.replace(microsecond=0, second=0)
+
+        art = artist(art.id)
+        self.eq(expect, actual)
+
+        # Ensure the createdat isn't change on subsequest saves
+        art.firstname == uuid4().hex
+        art.save()
+        art1 = artist(art.id)
+        self.eq(art.createdat, art1.createdat)
+
+    def it_calls_updatedate(self):
+        art = artist.getvalid()
+        self.none(art.updatedat)
+        
+        # Ensure the updatedat gets the current datetime on creation
+
+        # Strip seconds and microsecond for comparison
+        expect = primative.datetime.utcnow().replace(microsecond=0, second=0)
+        art.save()
+        actual = art.updatedat.replace(microsecond=0, second=0)
+
+        art = artist(art.id)
+        self.eq(expect, actual)
+
+        # Ensure the updatedat is change on subsequest saves
+        art.firstname = uuid4().hex
+        expected = art.updatedat
+        art.save()
+        art1 = artist(art.id)
+        self.gt(art.updatedat, expected)
+
+    def it_cant_instantiate_entities(self):
+        ''' Since orm.entities() wouldn't have an orm property (since a
+        subclass hasn't invoked the metaclass code that would assign it the orm
+        property), generic entities collections shouldn't be allowed. They
+        should basically be considered abstract. '''
+        self.expect(NotImplementedError, lambda: orm.entities())
+
+    def it_calls__str__on_entity(self):
+        art = artist.getvalid()
+        self.eq(art.fullname, str(art))
+        
+    def it_has_static_composites_reference(self):
+        comps = location.orm.composites
+        es = [x.entity for x in comps]
+        self.two(comps)
+        self.true(presentation in es)
+        self.true(artist in es)
+
+        comps = presentation.orm.composites
+        self.one(comps)
+        self.is_(comps.first.entity, artist)
+
+        comps = artifact.orm.composites
+        self.one(comps)
+        self.is_(comps.first.entity, artist)
+
+        comps = artist.orm.composites
+        self.one(comps)
+        self.is_(comps.first.entity, artifact)
+
+        comps = singer.orm.composites
+        self.one(comps)
+        self.is_(comps.first.entity, artifact)
+
+        comps = concert.orm.composites
+        self.one(comps)
+        self.is_(comps.first.entity, singer)
+
+    def it_has_static_constituents_reference(self):
+        consts = [x.entity for x in artist.orm.constituents]
+        self.four(consts)
+        self.true(presentation in consts)
+        self.true(artifact     in consts)
+        self.true(location     in consts)
+        self.true(comment     in consts)
+
+        consts = artist.orm.constituents['presentation'].orm.constituents
+        self.two(consts)
+        consts.sort('name')
+        self.is_(consts.first.entity, component)
+        self.is_(consts.second.entity, location)
+
+        consts = artifact.orm.constituents
+        self.two(consts)
+
+        consts.sort('name')
+        self.is_(consts.first.entity, artist)
+        self.is_(consts.second.entity, component)
+
+        consts = [x.entity for x in comments.orm.constituents]
+        self.one(consts)
+        self.true(comment in consts)
+
+    def it_has_static_super_references(self):
+        self.is_(artist, singer.orm.super)
+
+    def it_loads_and_saves_multicomposite_entity(self):
+        chrons = self.chronicles
+
+        # Create artist with presentation with empty locations and
+        # presentations, reload and test
+        art = artist.getvalid()
+        pres = presentation.getvalid()
+
+        self.zero(art.locations)
+        self.zero(pres.locations)
+        self.isnot(art.locations, pres.locations)
+
+        art.presentations += pres
+
+        chrons.clear()
+        art.save()
+        self.two(chrons)
+        self._chrons(art, 'create')
+        self._chrons(pres, 'create')
+
+        art = artist(art.id)
+        
+        self.zero(art.presentations.first.locations)
+        self.zero(art.locations)
+
+        # Add locations, save, test, reload, test
+        art.locations += location.getvalid()
+        art.presentations.first.locations += location.getvalid()
+
+        chrons.clear()
+        art.save()
+        self.two(chrons)
+        self._chrons(art.locations.first,                     'create')
+        self._chrons(art.presentations.first.locations.first, 'create')
+
+        art1 = artist(art.id)
+
+        chrons.clear()
+        self.eq(art.locations.first.id, art1.locations.first.id)
+        self.eq(art.presentations.first.locations.first.id, 
+                art1.presentations.first.locations.first.id)
+
+        self.three(chrons)
+        self._chrons(art1.presentations,                  'retrieve')
+        self._chrons(art1.presentations.first.locations,  'retrieve')
+        self._chrons(art1.locations,                      'retrieve')
+
+    def it_loads_and_saves_multicomposite_subentity(self):
+        chrons = self.chronicles
+
+        # Create singer with concert with empty locations and
+        # concerts, reload and test
+        sng = singer.getvalid()
+        conc = concert.getvalid()
+
+        self.zero(sng.locations)
+        self.zero(conc.locations)
+        self.isnot(sng.locations, conc.locations)
+
+        sng.concerts += conc
+
+        chrons.clear()
+        sng.save()
+
+
+
+
+        B(chrons.count != 4)
+        # NOTE The below line produced a failure today, but it went
+        # away.  (Jul 6)
+        self.four(chrons)
+
+
+
+
+
+        self._chrons(sng, 'create')
+        self._chrons(conc, 'create')
+        self._chrons(sng.orm.super, 'create')
+        self._chrons(conc.orm.super, 'create')
+
+        sng = singer(sng.id)
+        
+        self.zero(sng.concerts.first.locations)
+        self.zero(sng.locations)
+
+        # Add locations, save, test, reload, test
+        sng.locations += location.getvalid()
+        sng.concerts.first.locations += location.getvalid()
+
+        chrons.clear()
+        sng.save()
+        self.two(chrons)
+        self._chrons(sng.locations.first, 'create')
+        self._chrons(sng.concerts.first.locations.first, 'create')
+
+        sng1 = singer(sng.id)
+
+        chrons.clear()
+
+        self.eq(sng.locations.first.id, sng1.locations.first.id)
+        self.eq(sng.concerts.first.locations.first.id, 
+                sng1.concerts.first.locations.first.id)
+
+        self.five(chrons)
+        self._chrons(sng1.concerts,                  'retrieve')
+        self._chrons(sng1.concerts.first.orm.super,  'retrieve')
+        self._chrons(sng1.concerts.first.locations,  'retrieve')
+        self._chrons(sng1.locations,                 'retrieve')
+
+        # NOTE Loading locations requires that we load singer's
+        # superentity (artist) first because `locations` is a
+        # constituent of `artist`.  Though this may seem ineffecient,
+        # since the orm has what it needs to load `locations` without
+        # loading `artist`, we would want the following to work for the
+        # sake of predictability:
+        #
+        #     assert sng1.locations.artists is sng1.orm.super
+        #
+        self._chrons(sng1.locations.artist,          'retrieve')
+
+        chrons.clear()
+        self.is_(sng1.locations.artist, sng1.orm.super)
+        self.zero(chrons)
+
+    def it_loads_and_saves_multicomposite_subsubentity(self):
+        # Create rapper with battle with empty locations and
+        # battles, reload and test
+        rpr = rapper.getvalid()
+        btl = battle.getvalid()
+
+        self.zero(rpr.locations)
+        self.zero(btl.locations)
+        self.isnot(rpr.locations, btl.locations)
+
+        rpr.battles += btl
+
+        with self._chrontest() as t:
+            t.run(rpr.save)
+            t.created(rpr)
+            t.created(rpr.orm.super)
+            t.created(rpr.orm.super.orm.super)
+            t.created(btl)
+            t.created(btl.orm.super)
+            t.created(btl.orm.super.orm.super)
+
+        rpr = rapper(rpr.id)
+        
+        self.zero(rpr.battles.first.locations)
+        self.zero(rpr.locations)
+
+        # Add locations, save, test, reload, test
+        rpr.locations += location.getvalid()
+        rpr.battles.first.locations += location.getvalid()
+
+        with self._chrontest() as t:
+            t.run(rpr.save)
+            t.created(rpr.locations.first)
+            t.created(rpr.battles.first.locations.first)
+            
+        rpr1 = rapper(rpr.id)
+
+        def f():
+            self.eq(rpr.locations.first.id, rpr1.locations.first.id)
+            self.eq(rpr.battles.first.locations.first.id, 
+                    rpr1.battles.first.locations.first.id)
+
+        with self._chrontest() as t:
+            t.run(f)
+            t.retrieved(rpr1.orm.super)
+            t.retrieved(rpr1.orm.super.orm.super)
+            t.retrieved(rpr1.battles)
+            t.retrieved(rpr1.battles.first.orm.super)
+            t.retrieved(rpr1.battles.first.orm.super.orm.super)
+            t.retrieved(rpr1.battles.first.locations)
+            t.retrieved(rpr1.locations)
+
+        # NOTE Loading locations requires that we load rapper's
+        # superentity (artist) first because `locations` is a
+        # constituent of `artist`.  Though this may seem ineffecient,
+        # since the orm has what it needs to load `locations` without
+        # loading `artist`, we would want the following to work for the
+        # sake of predictability:
+        #
+        #     assert rpr1.locations.artists is rpr1.orm.super
+        #
+        def f():
+            self.is_(rpr1.locations.artist, rpr1.orm.super.orm.super)
+
+            # This doesn't work
+            #self.is_(rpr1.locations.singer, rpr1.orm.super)
+
+            self.is_(rpr1.locations.rapper, rpr1)
+
+        with self._chrontest() as t:
+            t.run(f)
+
+    def it_receives_AttributeError_from_explicit_attributes(self):
+        # An issue was discovered in the former entities.__getattr__.
+        # When an explicit attribute raised an AttributeError, the
+        # __getttr__ was invoked (this is the reason it gets invoke in
+        # the first place) and returned the map.value of the attribute.
+        # The effect was that the explict attribute never had a chance
+        # to run, so we got whatever was in map.value.
+        #
+        # To correct this, the __getattr__ was converted to a
+        # __getattribute__, and some adjustments were made
+        # (map.isexplicit was added). Now, an explicit attribute can
+        # raise an AttributeError and it bubble up correctly (as
+        # confirmed by this test). The problem isn't likely to
+        # resurface. However, this test was written just as a way to
+        # ensure the issue never comes up again. The `issue` entity
+        # class was created for this test because adding the
+        # `raiseAttributeError` explicit attribute to other classes
+        # cause an AttributeError to be raise when the the brokenrules
+        # logic was invoked, which broke a lot of tests.
+        #
+        # Update 20090814: This issue did arise again when optimizing
+        # the entity__getattribute__ method. To solve the issue, the
+        # AttributeError from the explicit attritute is wrappped in
+        # orm.attr.AttributeErrorWrapper then converted to a regular
+        # AttributeError.
+
+        iss = issue()
+        self.expect(AttributeError, lambda: iss.raiseAttributeError)
+
+    def it_loads_and_saves_associations(self):
+        # TODO Test loading and saving deeply nested associations
+        chrons = self.chronicles
+        
+        chrons.clear()
+        art = artist.getvalid()
+
+        self.zero(chrons)
+
+        aa = art.artist_artifacts
+        self.zero(aa)
+
+        # Ensure property caches
+        self.is_(aa, art.artist_artifacts)
+
+        # Test loading associated collection
+        facts = art.artifacts
+        self.zero(facts)
+
+        # Ensure property caches
+        self.is_(facts, art.artifacts)
+
+        # Ensure the association's associated collections is the same as the
+        # associated collection of the entity.
+        self.is_(art.artifacts, art.artist_artifacts.artifacts)
+
+        self.is_(art, art.artist_artifacts.artist)
+
+        # Save and load an association
+        art                   =   artist.getvalid()
+        fact                  =   artifact.getvalid()
+        aa                    =   artist_artifact.getvalid()
+        aa.role               =   uuid4().hex
+        aa.artifact           =   fact
+        art.artist_artifacts  +=  aa
+
+        self.is_(fact,    art.artist_artifacts.first.artifact)
+        self.is_(art,     art.artist_artifacts.first.artist)
+        self.eq(aa.role,  art.artist_artifacts.first.role)
+        self.one(art.artist_artifacts)
+        self.one(art.artifacts)
+
+        chrons.clear()
+        art.save()
+
+        self.three(chrons)
+        self.three(chrons.where('create'))
+        self.one(chrons.where('entity', art))
+        self.one(chrons.where('entity', aa))
+        self.one(chrons.where('entity', fact))
+
+        chrons.clear()
+        art1 = artist(art.id)
+
+        self.one(chrons)
+        self.one(chrons.where('retrieve'))
+        self.one(chrons.where('entity', art1))
+
+        self.one(art1.artist_artifacts)
+        self.one(art1.artifacts)
+
+        aa1 = art1.artist_artifacts.first
+
+        self.eq(art.id,          art1.id)
+        self.eq(aa.id,           aa1.id)
+        self.eq(aa.role,         aa1.role)
+
+        self.eq(aa.artist.id,    aa1.artist.id)
+        self.eq(aa.artistid,     aa1.artistid)
+
+        self.eq(aa.artifact.id,  aa1.artifact.id)
+        self.eq(aa.artifactid,   aa1.artifactid)
+
+        # Add as second artist_artifact, save, reload and test
+        aa2 = artist_artifact.getvalid()
+        aa2.artifact = artifact.getvalid()
+
+        art1.artist_artifacts += aa2
+
+        chrons.clear()
+        art1.save()
+
+        self.two(chrons)
+        self.two(chrons.where('create'))
+        self.one(chrons.where('entity', aa2))
+        self.one(chrons.where('entity', aa2.artifact))
+
+        art2 = artist(art1.id)
+        self.eq(art1.id,         art2.id)
+
+        aas1=art1.artist_artifacts.sorted('role')
+        aas2=art2.artist_artifacts.sorted('role')
+
+        for aa1, aa2 in zip(aas1, aas2):
+
+            self.eq(aa1.id,           aa2.id)
+            self.eq(aa1.role,         aa2.role)
+
+            self.eq(aa1.artist.id,    aa2.artist.id)
+            self.eq(aa1.artistid,     aa2.artistid)
+
+            self.eq(aa1.artifact.id,  aa2.artifact.id)
+            self.eq(aa1.artifactid,   aa2.artifactid)
+
+        # Add a third artifact to artist's pseudo-collection.
+        # Save, reload and test.
+        art2.artifacts += artifact.getvalid()
+        art2.artist_artifacts.last.role = uuid4().hex
+        art2.artist_artifacts.last.planet = uuid4().hex
+        art2.artist_artifacts.last.timespan = uuid4().hex
+        self.three(art2.artifacts)
+        self.three(art2.artist_artifacts)
+
+        chrons.clear()
+        art2.save()
+        self.two(chrons)
+        self.two(chrons.where('create'))
+        self.one(chrons.where('entity', art2.artist_artifacts.third))
+        self.one(chrons.where('entity', art2.artist_artifacts.third.artifact))
+
+        art3 = artist(art2.id)
+
+        self.three(art3.artifacts)
+        self.three(art3.artist_artifacts)
+
+        aas2 = art2.artist_artifacts.sorted('role')
+        aas3 = art3.artist_artifacts.sorted('role')
+
+        for aa2, aa3 in zip(aas2, aas3):
+            self.eq(aa2.id,           aa3.id)
+            self.eq(aa2.role,         aa3.role)
+
+            self.eq(aa2.artist.id,    aa3.artist.id)
+            self.eq(aa2.artistid,     aa3.artistid)
+
+            self.eq(aa2.artifact.id,  aa3.artifact.id)
+            self.eq(aa2.artifactid,   aa3.artifactid)
+
+        # Add two components to the artifact's components collection
+        comps3 = components()
+        for _ in range(2):
+            comps3 += component.getvalid()
+
+        comps3.sort()
+        art3.artist_artifacts.first.artifact.components += comps3.first
+        art3.artifacts.first.components += comps3.second
+
+        self.two(art3.artist_artifacts.first.artifact.components)
+        self.two(art3.artifacts.first.components)
+
+        self.is_(comps3[0], art3.artist_artifacts.first.artifact.components[0])
+        self.is_(comps3[1], art3.artist_artifacts.first.artifact.components[1])
+        self.is_(comps3[0], art3.artifacts.first.components[0])
+        self.is_(comps3[1], art3.artifacts.first.components[1])
+
+        chrons.clear()
+        art3.save()
+
+        self.two(chrons)
+        self.two(chrons.where('create'))
+        self.one(chrons.where('entity', comps3.first))
+        self.one(chrons.where('entity', comps3.second))
+
+        art4 = artist(art3.id)
+        comps4 = art4.artist_artifacts.first.artifact.components.sorted()
+
+        self.two(comps4)
+        self.eq(comps4.first.id, comps3.first.id)
+        self.eq(comps4.second.id, comps3.second.id)
+
+        # This fixes an issue that came up in development: When you add valid
+        # aa to art, then add a fact to art (thus adding an invalid aa to art),
+        # strange things where happening with the brokenrules. 
+        art = artist.getvalid()
+        art.artist_artifacts += artist_artifact.getvalid()
+        art.artifacts += artifact.getvalid()
+
+        self.zero(art.artist_artifacts.first.brokenrules)
+        self.two(art.artist_artifacts.second.brokenrules)
+        self.two(art.brokenrules)
+
+        # Fix broken aa
+        art.artist_artifacts.second.role = uuid4().hex
+        art.artist_artifacts.second.timespan = uuid4().hex
+
+        self.zero(art.artist_artifacts.second.brokenrules)
+        self.zero(art.brokenrules)
+
+    def it_updates_associations_constituent_entity(self):
+        art = artist.getvalid()
+        chrons = self.chronicles
+
+        for i in range(2):
+            aa = artist_artifact.getvalid()
+            aa.artifact = artifact.getvalid()
+            art.artist_artifacts += aa
+
+        art.save()
+
+        art1 = artist(art.id)
+
+        for fact in art1.artifacts:
+            fact.title = uuid4().hex
+
+        # Save and reload
+        self.chronicles.clear()
+        art1.save()
+
+        # Ensure the four entities where updated
+        self.two(chrons)
+        self.two(chrons.where('update'))
+        self.one(chrons.where('entity', art1.artifacts.first))
+        self.one(chrons.where('entity', art1.artifacts.second))
+        
+        art2 = artist(art1.id)
+
+        self.two(art1.artifacts)
+        self.two(art2.artifacts)
+
+        facts  = art. artifacts.sorted('title')
+        facts1 = art1.artifacts.sorted('title')
+        facts2 = art2.artifacts.sorted('title')
+
+        for f, f2 in zip(facts, facts2):
+            self.ne(f.title, f2.title)
+
+        for f1, f2 in zip(facts1, facts2):
+            self.eq(f1.title, f2.title)
+
+        attrs = 'artifacts.first.components', \
+               'artist_artifacts.first.artifact.components'
+
+        for attr in attrs:
+            comps = getattr(art2, attr)
+            comps += component.getvalid()
+
+        art2.save()
+
+        art3 = artist(art2.id)
+
+        for attr in attrs:
+            comps = getattr(art3, attr)
+            for comp in comps:
+                comp.name = uuid4().hex
+
+        chrons.clear()
+        art3.save()
+
+        self.two(chrons)
+        self.two(chrons.where('update'))
+        self.one(chrons.where('entity', art3.artifacts.first.components.first))
+        self.one(chrons.where('entity', art3.artifacts.first.components.second))
+
+        art4 = artist(art3.id)
+
+        for attr in attrs:
+            comps2 = getattr(art2, attr)
+            comps3 = getattr(art3, attr)
+            comps4 = getattr(art4, attr)
+
+            self.two(comps2)
+            self.two(comps3)
+            self.two(comps4)
+
+            for comp4 in comps4:
+                for comp2 in comps2:
+                    self.ne(comp2.name, comp4.name)
+
+            for comp4 in comps4:
+                for comp3 in comps3:
+                    if comp4.name == comp3.name:
+                        break
+                else:
+                    self.fail('No match within comps4 and comps3')
+
+        # TODO Test deeply nested associations
+
+    def it_updates_association(self):
+        chrons = self.chronicles
+
+        art = artist.getvalid()
+
+        for i in range(2):
+            aa = artist_artifact.getvalid()
+            aa.artifact = artifact.getvalid()
+            art.artist_artifacts += aa
+
+        art.save()
+
+        art1 = artist(art.id)
+
+        for aa in art1.artist_artifacts:
+            aa.role = uuid4().hex
+
+        # Save and reload
+        chrons.clear()
+        art1.save()
+
+        self.two(chrons)
+        self.two(chrons.where('update'))
+        self.one(chrons.where('entity', art1.artist_artifacts.first))
+        self.one(chrons.where('entity', art1.artist_artifacts.first))
+
+        art2 = artist(art1.id)
+
+        aas  = art. artist_artifacts.sorted('role')
+        aas1 = art1.artist_artifacts.sorted('role')
+        aas2 = art2.artist_artifacts.sorted('role')
+
+        for aa, aa2 in zip(aas, aas2):
+            self.ne(aa.role, aa2.role)
+
+        for aa1, aa2 in zip(aas1, aas2):
+            self.eq(aa1.role, aa2.role)
+
+        # TODO Test deeply nested associations
+
+    def it_removes_associations(self):
+        chrons = self.chronicles
+
+        for removeby in 'pseudo-collection', 'association':
+            art = artist.getvalid()
+
+            for i in range(2):
+                aa = artist_artifact.getvalid()
+                aa.artifact = artifact.getvalid()
+                aa.artifact.components += component.getvalid()
+                art.artist_artifacts += aa
+                art.artist_artifacts.last.artifact.components += component.getvalid()
+
+            art.save()
+
+            art = artist(art.id)
+            
+            self.two(art.artist_artifacts)
+            self.zero(art.artist_artifacts.orm.trash)
+            self.two(art.artifacts)
+            self.zero(art.artifacts.orm.trash)
+
+            if removeby == 'pseudo-collection':
+                rmfact = art.artifacts.shift()
+            elif removeby == 'association':
+                rmfact = art.artist_artifacts.shift().artifact
+
+            rmcomps = rmfact.components
+
+            rmaa = art.artist_artifacts.orm.trash.first
+
+            self.one(art.artist_artifacts)
+            self.one(art.artist_artifacts.orm.trash)
+            self.one(art.artifacts)
+            self.one(art.artifacts.orm.trash)
+
+            for f1, f2 in zip(art.artifacts, art.artist_artifacts.artifacts):
+                self.isnot(f1, rmfact)
+                self.isnot(f2, rmfact)
+
+            chrons.clear()
+            art.save()
+
+            self.four(chrons)
+            self.four(chrons.where('delete'))
+            self.one(chrons.where('entity', rmcomps.first))
+            self.one(chrons.where('entity', rmcomps.second))
+            self.one(chrons.where('entity', rmfact))
+            self.one(chrons.where('entity', art.artist_artifacts.orm.trash.first))
+
+            art1 = artist(art.id)
+
+            self.one(art1.artist_artifacts)
+            self.zero(art1.artist_artifacts.orm.trash)
+            self.one(art1.artifacts)
+            self.zero(art1.artifacts.orm.trash)
+                
+            aas = art.artist_artifacts.sorted('role')
+            aas1 = art1.artist_artifacts.sorted('role')
+
+            for aa, aa1 in zip(aas, aas1):
+                self.eq(aa.id,           aa1.id)
+                self.eq(aa.role,         aa1.role)
+
+                self.eq(aa.artist.id,    aa1.artist.id)
+                self.eq(aa.artistid,     aa1.artistid)
+
+                self.eq(aa.artifact.id,  aa1.artifact.id)
+                self.eq(aa.artifactid,   aa1.artifactid)
+
+            for fact in art1.artifacts:
+                self.ne(rmfact.id, fact.id)
+
+            self.expect(db.RecordNotFoundError, lambda: artist_artifact(rmaa.id))
+            self.expect(db.RecordNotFoundError, lambda: artifact(rmfact.id))
+
+            for comp in rmcomps:
+                self.expect(db.RecordNotFoundError, lambda: component(comp.id))
+
+        # TODO Test deeply nested associations
+
+    def it_rollsback_save_with_broken_trash(self):
+        art = artist.getvalid()
+        art.presentations += presentation.getvalid()
+        art.save()
+
+        art = artist(art.id)
+        art.presentations.pop()
+
+        self.zero(art.presentations)
+        self.one(art.presentations.orm.trash)
+
+        artst     =  art.orm.persistencestate
+        presssts  =  art.presentations.orm.trash.orm.persistencestates
+
+        # Break save method
+        pres = art.presentations.orm.trash.first
+        save, pres._save = pres._save, lambda cur: 0/0
+
+        self.expect(ZeroDivisionError, lambda: art.save())
+
+        self.eq(artst,     art.orm.persistencestate)
+        self.eq(presssts,  art.presentations.orm.trash.orm.persistencestates)
+
+        # Restore unbroken save method
+        pres._save = save
+        trashid = art.presentations.orm.trash.first.id
+
+        art.save()
+
+        self.zero(artist(art.id).presentations)
+
+        self.expect(db.RecordNotFoundError, lambda: presentation(trashid))
+
+        # Test associations
+        art = artist.getvalid()
+        art.artifacts += artifact.getvalid()
+        factid = art.artifacts.first.id
+        aa = art.artist_artifacts.first
+        aaid = aa.id
+        aa.role = uuid4().hex
+        aa.timespan = uuid4().hex
+
+        art.save()
+
+        art = artist(art.id)
+        art.artifacts.pop()
+
+        aatrash = art.artist_artifacts.orm.trash
+        artst    =  art.orm.persistencestate
+        aasts    =  aatrash.orm.persistencestates
+        aassts   =  aatrash.first.orm.trash.orm.persistencestates
+        factssts =  art.artifacts.orm.trash.orm.persistencestates
+
+        self.zero(art.artifacts)
+        self.one(art.artist_artifacts.orm.trash)
+        self.one(art.artifacts.orm.trash)
+
+        # Break save method
+        fn = lambda cur, follow: 0/0
+        save = art.artist_artifacts.orm.trash.first._save
+        art.artist_artifacts.orm.trash.first._save = fn
+
+        self.expect(ZeroDivisionError, lambda: art.save())
+
+        aatrash = art.artist_artifacts.orm.trash
+
+        self.eq(artst,     art.orm.persistencestate)
+        self.eq(aasts,     aatrash.orm.persistencestates)
+        self.eq(aassts,    aatrash.first.orm.trash.orm.persistencestates)
+        self.eq(factssts,  art.artifacts.orm.trash.orm.persistencestates)
+
+        self.zero(art.artifacts)
+        self.one(art.artist_artifacts.orm.trash)
+        self.one(art.artifacts.orm.trash)
+        self.one(artist(art.id).artifacts)
+        self.one(artist(art.id).artist_artifacts)
+
+        # Restore unbroken save method
+        art.artist_artifacts.orm.trash.first._save = save
+
+        art.save()
+        self.zero(artist(art.id).artifacts)
+        self.zero(artist(art.id).artist_artifacts)
+
+        self.expect(db.RecordNotFoundError, lambda: artist_artifact(aa.id))
+        self.expect(db.RecordNotFoundError, lambda: artifact(factid))
+
+    def it_raises_error_on_invalid_attributes_of_associations(self):
+        art = artist()
+        self.expect(AttributeError, lambda: art.artist_artifacts.artifactsX)
+
+    def it_has_broken_rules_of_constituents(self):
+        art                =   artist.getvalid()
+        pres               =   presentation.getvalid()
+        loc                =   location.getvalid()
+        pres.locations     +=  loc
+        art.presentations  +=  pres
+
+        # Break the max-size rule on presentation.name
+        pres.name = 'x' * (presentation.orm.mappings['name'].max + 1)
+
+        self.one(art.brokenrules)
+        self.broken(art, 'name', 'fits')
+
+        # Break deeply (>2) nested constituent
+        # Break the max-size rule on location.description
+
+        loc.description = 'x' * (location.orm.mappings['description'].max + 1)
+        self.two(art.brokenrules)
+        self.broken(art, 'description', 'fits')
+
+        # unbreak
+        loc.description = 'x' * location.orm.mappings['description'].min
+        pres.name =       'x' * presentation.orm.mappings['name'].min
+        self.zero(art.brokenrules)
+
+        # The artist_artifact created when assigning a valid artifact will
+        # itself have two broken rules by default. Make sure they bubble up to
+        # art.
+        art.artifacts += artifact.getvalid()
+        self.two(art.brokenrules)
+        self.broken(art, 'timespan', 'fits')
+        self.broken(art, 'role',     'fits')
+
+        # Fix the artist_artifact
+        art.artist_artifacts.first.role     = uuid4().hex
+        art.artist_artifacts.first.timespan = uuid4().hex
+        self.true(art.isvalid) # Ensure fixed
+
+        # Break an artifact and ensure the brokenrule bubbles up to art
+        art.artifacts.first.weight = uuid4().hex # break
+        self.one(art.brokenrules)
+        self.broken(art, 'weight', 'valid')
+
+    def it_moves_constituent_to_a_different_composite(self):
+        chrons = self.chronicles
+
+        # Persist an art with a pres
+        art = artist.getvalid()
+        art.presentations += presentation.getvalid()
+        art.presentations.last.name = uuid4().hex
+        art.save()
+
+        # Give the pres to a new artist (art1)
+        art1 = artist.getvalid()
+        art.presentations.give(art1.presentations)
+
+        # Ensure the move was made in memory
+        self.zero(art.presentations)
+        self.one(art1.presentations)
+        
+        # Save art1 and ensure the pres's artistid is art1.id
+        chrons.clear()
+        art1.save()
+
+        self.two(chrons)
+        self.one(chrons.where('entity', art1))
+        self.one(chrons.where('entity', art1.presentations.first))
+
+        self.zero(artist(art.id).presentations)
+        self.one(artist(art1.id).presentations)
+
+        # Move deeply nested entity
+
+        # Create and save a new location
+        art1.presentations.first.locations += location.getvalid()
+
+        art1.save()
+
+        # Create a new presentation and give the location in art1 to the
+        # locations collection of art.
+        art.presentations += presentation.getvalid()
+        art1.presentations.first.locations.give(art.presentations.last.locations)
+
+        chrons.clear()
+        art.save()
+
+        self.two(chrons)
+
+        loc = art.presentations.last.locations.last
+        pres = art.presentations.last
+
+        self.eq(chrons.where('entity', pres).first.op, 'create')
+        self.eq(chrons.where('entity', loc).first.op, 'update')
+
+        self.zero(artist(art1.id).presentations.first.locations)
+        self.one(artist(art.id).presentations.first.locations)
+
+    def it_calls_count_on_streamed_entities_after_calling_sql(self):
+        # An issue occured which cause counts on streamed entities to
+        # fail if the ``sql`` property was called first. This was
+        # because the ``sql`` property did not clone it entities
+        # collection's ``where`` object which meant the where object
+        # would be permenately mutated; meeting the needs of the `sql`
+        # property, but not the needs of other clients.
+        #
+        # The solution has been fixed, but this test will remain to
+        # ensure the problem dosen't arise again.
+
+        arts = artists(orm.stream, firstname=uuid4().hex)
+
+        # Call `sql` to mutate `arts`'s ``where` object
+        arts.orm.sql
+
+        # We exect no exception when calling `count`
+        self.expect(None, lambda: arts.count)
+
+    def it_calls_count_on_streamed_entities(self):
+        arts1 = artists()
+        firstname = uuid4().hex
+        for i in range(2):
+            art = artist.getvalid()
+            art.firstname = firstname
+            arts1 += art
+            art.save()
+
+        arts = artists(orm.stream, firstname=firstname)
+        self.true(arts.orm.isstreaming)
+        self.eq(2, arts.count)
+
+        # Ensure count works in nonstreaming mode
+        self.false(arts1.orm.isstreaming)
+        self.eq(2, arts1.count)
+
+    def it_raises_exception_when_innerjoin_stream_entities(self):
+        ''' Streaming and joins don't mix. An error should be thrown
+        if an attempt to stream joins is detected. The proper way 
+        to stream constituents would probably be with a getter, e.g.:
+
+            for fact in art.get_artifacts(orm.stream):
+                ...
+
+        '''
+
+        fns = (
+            lambda:  artists(orm.stream).join(locations()),
+            lambda:  artists()            &  locations(orm.stream),
+
+            lambda:  artists(orm.stream)  &  artist_artifacts(),
+            lambda:  artists()            &  artist_artifacts(orm.stream),
+
+            lambda:  artists(orm.stream)  &  artifacts(),
+            lambda:  artists()            &  artifacts(orm.stream),
+
+            lambda:  artists() & artist_artifacts() & artifacts(orm.stream)
+
+        )
+
+        for fn in fns:
+            self.expect(orm.invalidstream, fn)
+
+    def it_calls__iter__on_streamed_entities(self):
+        # Create a variant number of artists to test. This will help
+        # discover one-off errors in the __iter__
+        for i in range(4):
+            # Create some artists in db with the same lastname 
+            lastname = uuid4().hex
+            arts = artists()
+            for _ in range(i):
+                arts += artist.getvalid()
+                arts.last.lastname = lastname
+                arts.last.save()
+
+            # Create a streamed artists collection where lastname is the same as
+            # the artists created above. Set chunksize to a very low value of 2 so
+            # the test isn't too slow. Order by id so the iteration test
+            # below can be preformed correctly.
+            stm = orm.stream(chunksize=2)
+            arts1 = artists(stm, lastname=lastname).sorted()
+
+            # Ensure streamed collection count matches non-streamed count
+            self.eq(arts1.count, arts.count)
+
+            # Iterate over the streamed collection and compare it two the
+            # non-streameed artists collections above. Do this twice so we know
+            # __iter__ resets itself correctly.
+            arts.sort()
+            for _ in range(2):
+                j = -1
+                for j, art in enumerate(arts1):
+                    self.eq(arts[j].id, art.id)
+                    self.eq(lastname, art.lastname)
+
+                self.eq(i, j + 1)
+
+        # Ensure that interation works after fetching an element from a chunk
+        # that comes after the first chunk.
+        arts1[i - 1] # Don't remove
+        self.eq(arts1.count, len(list(arts1)))
+
+    def it_calls__getitem__on_entities(self):
+        arts = artists()
+        for _ in range(4):
+            art = artist.getvalid()
+            arts += art
+
+        self.is_(art, arts[art.id])
+        self.is_(art, arts[art])
+        self.expect(IndexError, lambda: arts[uuid4()])
+
+        arts.sort()
+        arts1 = arts[:2].sorted()
+
+        for art, art1 in zip(arts, arts1):
+            self.eq(art.id, art1.id)
+
+        art1 = arts[0]
+
+        self.eq(arts.first.id, art1.id)
+
+    def it_calls__getitem__on_streamed_entities(self):
+        lastname = uuid4().hex
+        arts = artists()
+        cnt = 10
+        for _ in range(cnt):
+            arts += artist.getvalid()
+            arts.last.lastname = lastname
+            arts.last.save()
+
+        # Test every chunk size
+        for chunksize in range(1, 12):
+            stm = orm.stream(chunksize=chunksize)
+            arts1 = artists(stm, lastname=lastname).sorted()
+
+            arts.sort()
+            
+            # Test indexing in asceding order
+            for i in range(10):
+                self.eq(arts[i].id, arts1[i].id)
+                self.eq(arts[i].id, arts1(i).id)
+
+            # Test indexing in descending order
+            for i in range(9, 0, -1):
+                self.eq(arts[i].id, arts1[i].id)
+
+            # Test negative indexing in descending order
+            for i in range(0, -10, -1):
+                self.eq(arts[i].id, arts1[i].id)
+                self.eq(arts[i].id, arts1(i).id)
+
+            # Test getting chunks from different ends of the ultimate
+            # result-set in an alternating fashion
+            for i in range(0, -10, -1):
+                self.eq(arts[i].id, arts1[i].id)
+                self.eq(arts[abs(i)].id, arts1[abs(i)].id)
+
+            # Test slices
+            for i in range(10):
+                for j in range(10):
+                    self.eq(arts[i:j].pluck('id'), arts1[i:j].pluck('id'))
+
+            # Negative slices (i.e., arts1[4:3]) should produce empty results
+            for i in range(10):
+                for j in range(i -1, 0, -1):
+                    self.zero(arts1[i:j])
+                for j in range(0, -10 -1):
+                    # TODO Negative stops (arts1[4:-4]) are currently not
+                    # implemented.
+                    self.expect(NotImplementedError, lambda: arts1[i:j])
+
+            # Ensure that __getitem__ raises IndexError if the index is out of
+            # range
+            self.expect(IndexError, lambda: arts1[cnt + 1])
+
+            # Ensure that __call__ returns None if the index is out of range
+            self.none(arts1(cnt + 1))
+
+            # NOTE that UUID indexing on streams has not been
+            # implemented yet.
+            # TODO Test indexing by UUID, i.e.,
+            # arts[id]
+
+    def it_calls_unavailable_attr_on_streamed_entities(self):
+        arts = artists(orm.stream)
+        nonos = (
+            'getrandom',    'getrandomized',  'where',    'clear',
+            'remove',       'shift',          'pop',      'reversed',
+            'reverse',      'insert',         'push',     'has',
+            'unshift',      'append',         '__sub__',  'getcount',
+            '__setitem__',  'getindex',       'delete'
+        )
+
+        for nono in nonos:
+            self.expect(AttributeError, lambda: getattr(arts, nono))
+        
+    def it_calls_head_and_tail_on_streamed_entities(self):
+        lastname = uuid4().hex
+        arts = artists()
+        for i in range(10):
+            art = artist.getvalid()
+            art.lastname = lastname
+            arts += art
+            art.save()
+
+        arts1 = artists(orm.stream, lastname=lastname).sorted()
+        arts.sort()
+
+        self.eq(arts.head(2).pluck('id'), arts1.head(2).pluck('id'))
+
+        arts1.tail(2)
+        self.eq(arts.tail(2).pluck('id'), arts1.tail(2).pluck('id'))
+
+    def it_calls_ordinals_on_streamed_entities(self):
+        ords = ('first',            'second',             'third',
+                'fourth',           'fifth',              'sixth',
+                'last',             'ultimate',           'penultimate',
+                'antepenultimate',  'preantepenultimate')
+
+        lastname = uuid4().hex
+        arts = artists()
+        for _ in range(6):
+            arts += artist.getvalid()
+            arts.last.lastname = lastname
+            arts.last.save()
+
+        arts1 = artists(orm.stream, lastname=lastname).sorted()
+        arts.sort()
+        for ord in ords:
+            self.eq(getattr(arts, ord).id, getattr(arts1, ord).id)
+
+    def it_adds_subentity_to_superentities_collection(self):
+        """ Ensure that entity objects (concert) added to collection
+        propreties (concerts) are availibale in the superentities
+        collection properties (presentations) before and after save.
+        """
+
+        # Add concert to concerts property and ensure it exists in
+        # presentations propreties
+        sng = singer.getvalid()
+        sng.concerts += concert.getvalid()
+
+        self.one(sng.concerts)
+        self.one(sng.presentations)
+        self.is_(sng.concerts.first, sng.presentations.first)
+
+        # Ensure that, afer reloading, the presentations and concerts
+        # properties have the same concert object.
+        sng.save()
+
+        sng1 = singer(sng.id)
+
+        self.one(sng1.presentations)
+        self.eq(sng.presentations.first.id, sng1.presentations.first.id)
+
+        self.one(sng1.concerts)
+        self.eq(sng.concerts.first.id, sng1.concerts.first.id)
+
+        self.eq(sng.concerts.first.id, sng1.presentations.first.id)
+
+        # Add another concert, save and reload to ensure the the above
+        # logic works when using a non-new singer
+        sng = sng1
+
+        sng.concerts += concert.getvalid()
+
+        self.two(sng.concerts)
+        self.two(sng.presentations)
+
+        for conc, pres in zip(sng.concerts, sng.presentations):
+            self.eq(conc.id, pres.id)
+
+        # Ensure that, afer reloading, the presentations and concerts
+        # properties have the same concert objects
+        sng.save()
+
+        sng1 = singer(sng.id)
+
+        self.two(sng1.presentations)
+        self.two(sng1.concerts)
+
+        sng.concerts.sort()
+        sng1.concerts.sort()
+        sng1.presentations.sort()
+
+        for conc, conc1 in zip(sng.concerts, sng1.concerts):
+            self.eq(conc.id, conc1.id)
+
+        for conc, pres in zip(sng1.concerts, sng1.presentations):
+            self.eq(conc.id, pres.id)
+
+    def it_adds_subsubentity_to_superentities_collection(self):
+        # Add concert to concerts property and ensure it exists in
+        # presentations propreties
+        rpr = rapper.getvalid()
+
+        btl = battle.getvalid()
+        rpr.battles  += btl
+
+        conc = concert.getvalid()
+        rpr.concerts += conc
+
+        self.one(rpr.battles)
+        self.two(rpr.concerts)
+        self.two(rpr.presentations)
+        self.type(battle,             rpr.battles.first)
+        self.type(battle,             rpr.concerts.first)
+        self.type(concert,            rpr.concerts.second)
+        self.type(battle,             rpr.presentations.first)
+        self.type(concert,            rpr.presentations.second)
+        self.is_(rpr.battles.first,   rpr.concerts.first)
+        self.is_(rpr.concerts.first,  rpr.presentations.first)
+
+        # Ensure that, after reloading, the presentations and concerts
+        # properties have the same concert object.
+        rpr.save()
+
+        rpr1 = rapper(rpr.id)
+
+        self.two(rpr1.presentations)
+        self.true(btl.id   in  rpr1.presentations.pluck('id'))
+        self.true(conc.id  in  rpr1.presentations.pluck('id'))
+
+        self.two(rpr1.concerts)
+        self.true(btl.id   in  rpr1.concerts.pluck('id'))
+        self.true(conc.id  in  rpr1.concerts.pluck('id'))
+
+        self.one(rpr1.battles)
+        self.eq(btl.id, rpr1.battles.first.id)
+
+        # Add another battle, save and reload to ensure the the above
+        # logic works when using a non-new rapper
+        rpr = rpr1
+
+        btl = battle.getvalid()
+        rpr.battles += btl
+
+        self.two(rpr.battles)
+        self.three(rpr.concerts)
+        self.three(rpr.presentations)
+
+        self.true(btl  in  rpr1.battles)
+        self.true(btl  in  rpr1.concerts)
+        self.true(btl  in  rpr1.presentations)
+
+        # Ensure that, afer reloading, the presentations and concerts
+        # properties have the same concert objects
+        rpr.save()
+
+        rpr1 = rapper(rpr.id)
+
+        self.two(rpr1.battles)
+        self.three(rpr1.concerts)
+        self.three(rpr1.presentations)
+
+        for btl in rpr.battles:
+            self.true(btl.id in rpr1.concerts.pluck('id'))
+            self.true(btl.id in rpr1.presentations.pluck('id'))
+
+        for conc in rpr.concerts:
+            self.true(conc.id in rpr1.presentations.pluck('id'))
+
+    def it_calls_sort_and_sorted_on_streamed_entities(self):
+        lastname = uuid4().hex
+        arts = artists()
+        for _ in range(10):
+            arts += artist.getvalid()
+            arts.last.firstname = uuid4().hex
+            arts.last.lastname = lastname
+            arts.last.save()
+
+        # Test sorting on None - which means: 'sort on id', since id is the
+        # default.  Then sort on firstname
+        for sort in None, 'firstname':
+            for reverse in None, False, True:
+                arts.sort(sort, reverse)
+                arts1 = artists(orm.stream, lastname=lastname)
+                arts1.sort(sort, reverse)
+
+                # Test sort()
+                for i, art1 in enumerate(arts1):
+                    self.eq(arts[i].id, art1.id)
+
+                # Test sorted()
+                for i, art1 in enumerate(arts1.sorted(sort, reverse)):
+                    self.eq(arts[i].id, art1.id)
+
+    def it_calls_all(self):
+        arts = artists()
+        cnt = 10
+        firstname = uuid4().hex
+        for _ in range(cnt):
+            arts += artist.getvalid()
+            arts.last.firstname = firstname
+            arts.last.save()
+
+        arts1 = artists.all
+        self.true(arts1.orm.isstreaming)
+        self.ge(arts1.count, cnt)
+
+        arts = [x for x in arts1 if x.firstname == firstname]
+        self.count(cnt, arts)
+
+    def it_saves_entities(self):
+        chrons = self.chronicles
+
+        arts = artists()
+
+        for _ in range(2):
+            arts += artist.getvalid()
+            arts.last.firstname = uuid4().hex
+            arts.last.lastname = uuid4().hex
+
+        chrons.clear()
+        arts.save()
+
+        self.two(chrons)
+        self.eq(chrons.where('entity', arts.first).first.op, 'create')
+        self.eq(chrons.where('entity', arts.second).first.op, 'create')
+
+        for art in arts:
+            art1 = artist(art.id)
+
+            for map in art.orm.mappings:
+                if not isinstance(map, orm.fieldmapping):
+                    continue
+
+                self.eq(getattr(art, map.name), getattr(art1, map.name))
+
+    def it_searches_entities(self):
+        artists.orm.truncate()
+        arts = artists()
+        uuid = uuid4().hex
+        for i in range(4):
+            art = artist.getvalid()
+            arts += art
+            art.firstname = uuid4().hex
+
+            if i >= 2:
+                art.lastname = uuid
+            else:
+                art.lastname = uuid4().hex
+
+        arts.save()
+
+        # For clarity, this is a recipe for doing `where x in ([...])`
+        # queries.  The where string has to be created manually.
+        ids = sorted(arts[0:2].pluck('id'))
+        where = 'id in (' + ','.join(['%s'] * len(ids)) + ')'
+
+        self.chronicles.clear()
+
+        arts1 = artists(where, ids)
+        self.zero(self.chronicles) # defered
+
+        with self._chrontest() as t:
+            t.run(lambda: self.two(arts1))
+            t.retrieved(arts1)
+
+        arts1.sort() 
+        self.eq(ids[0], arts1.first.id)
+        self.eq(ids[1], arts1.second.id)
+        # Test a plain where string with no args
+        def fn():
+            artists("firstname = '%s'" % arts.first.firstname)
+
+        # This should throw an error because we want the user to specify an
+        # empty tuple if they don't want to pass in args. This serves as a
+        # reminder that they are not taking advantage of the
+        # prepared/parameterized statements and may therefore be exposing
+        # themselves to SQL injection attacks.
+        self.expect(ValueError, fn)
+
+        self.chronicles.clear()
+
+        arts1 = artists("firstname = '%s'" % arts.first.firstname, ())
+        self.zero(self.chronicles) # defered
+
+        with self._chrontest() as t:
+            t.run(lambda: len(arts1)) # load
+            t.retrieved(arts1)
+
+        self.one(arts1)
+
+        self.eq(arts.first.id, arts1.first.id)
+
+        # Test a simple 2 arg equality test
+        arts1 = artists("firstname", arts.first.firstname)
+        self.one(arts1)
+        self.eq(arts.first.id, arts1.first.id)
+
+        fname, lname = arts.first['firstname', 'lastname']
+
+        # Test where literal has a UUID so introducers (_binary) are
+        # tested.
+        arts1 = artists("id", arts.first.id)
+        self.one(arts1)
+        self.eq(arts.first.id, arts1.first.id)
+
+        # Test a where string with an args tuple
+        arts1 = artists('firstname = %s', (arts.first.firstname,))
+        self.one(arts1)
+        self.eq(arts.first.id, arts1.first.id)
+
+        # Test a where string with an args tuple and an args param
+        where = 'firstname = %s and lastname = %s'
+        arts1 = artists(where, (fname,), lname)
+        self.one(arts1)
+        self.eq(arts.first.id, arts1.first.id)
+
+        # Test a where string with an args tuple and a *args element
+        arts1 = artists('firstname = %s and lastname = %s', fname, lname)
+        self.one(arts1)
+        self.eq(arts.first.id, arts1.first.id)
+
+        # Test a where string with one *args param
+        arts1 = artists('firstname = %s', arts.first.firstname)
+        self.one(arts1)
+        self.eq(arts.first.id, arts1.first.id)
+
+        # Test a where string with a multi-args tuple
+        args = arts.first['firstname', 'lastname']
+        arts1 = artists('firstname = %s and lastname = %s', args)
+        self.one(arts1)
+        self.eq(arts.first.id, arts1.first.id)
+
+        # Test a where string with a multi-args tuple and an *arg
+        # element
+        args = arts.first['firstname', 'lastname']
+        where = 'firstname = %s and lastname = %s and id = %s'
+        arts1 = artists(where, args, arts.first.id)
+        self.one(arts1)
+        self.eq(arts.first.id, arts1.first.id)
+
+        # Test a search that gets us two results
+        arts1 = artists('lastname = %s', (uuid,))
+        arts1 = arts1.sorted()
+        self.two(arts1)
+        arts2 = (arts.third + arts.fourth).sorted('id')
+        self.eq(arts2.first.id, arts1.first.id)
+        self.eq(arts2.second.id, arts1.second.id)
+
+        arts1 = artists(firstname = arts.first.firstname)
+        self.one(arts1)
+        self.eq(arts1.first.id, arts.first.id)
+
+        arts1 = artists(firstname = fname, lastname = lname)
+        self.one(arts1)
+        self.eq(arts1.first.id, arts.first.id)
+
+        id = arts.first.id
+
+        def fn():
+            artists('id = id', firstname = fname, lastname = lname)
+
+        # Force user to supply an empty args list
+        self.expect(ValueError, fn)
+        arts = artists('id = id', (), firstname = fname, lastname = lname)
+        self.one(arts1)
+        arts.first
+        self.eq(arts1.first.id, arts.first.id)
+
+        arts = artists('id = %s', (id,), firstname = fname, lastname = lname)
+        self.one(arts1)
+        self.eq(arts1.first.id, arts.first.id)
+
+        arts = artists('id = %s', (id,), firstname = fname, lastname = lname)
+        self.one(arts1)
+        self.eq(arts1.first.id, arts.first.id)
+
+    def it_searches_subentities(self):
+        artists.orm.truncate()
+        singers.orm.truncate()
+        sngs = singers()
+        uuid = uuid4().hex
+        for i in range(4):
+            sng = singer.getvalid()
+            sngs += sng
+            sng.voice = uuid4().hex
+            sng.firstname = uuid4().hex
+
+            if i >= 2:
+                sng.register = uuid
+            else:
+                sng.register = uuid4().hex
+
+            sng.save()
+
+        # Test a plain where string with no args
+        def fn():
+            singers("firstname = '%s'" % sngs.first.firstname)
+
+        # This should throw an error because we want the user to specify an
+        # empty tuple if they don't want to pass in args. This serves as a
+        # reminder that they are not taking advantage of the
+        # prepared/parameterized statements and may therefore be exposing
+        # themselves to SQL injection attacks.
+        self.expect(ValueError, fn)
+
+        '''
+        Test searching on subentity's properties
+        '''
+        self.chronicles.clear()
+        sngs1 = singers("voice = '%s'" % sngs.first.voice, ())
+        self.zero(self.chronicles) # defered
+
+        self.one(sngs1)
+
+        self.eq(sngs.first.id, sngs1.first.id)
+
+        # Only one query will have been executed
+        self.one(self.chronicles)
+        self._chrons(sngs1, 'retrieve')
+
+        '''
+        Test searching on a property of singer's superentity
+        '''
+        # Each firstname will be unique so we should should only get one result
+        # from this query and it should be entity-equivalent sngs.first
+        self.chronicles.clear()
+        sngs1 = singers("firstname = '%s'" % sngs.first.firstname, ())
+        self.zero(self.chronicles) # defered
+
+        self.one(sngs1)
+        self.one(self.chronicles) # defered
+        self._chrons(sngs1, 'retrieve')
+
+        # Calling isvalid will result in zero additional queries
+        self.true(sngs1.isvalid)
+        self.one(self.chronicles)
+
+        self.eq(sngs.first.id, sngs1.first.id)
+
+        '''
+        Test searching on a property of singer and a property of singer's
+        superentity (artist)
+        '''
+        sngs.sort()
+        self.chronicles.clear()
+        where = "voice = '%s' or firstname = '%s'" 
+        where %= sngs.first.voice, sngs.second.firstname
+        sngs1 = singers(where, ())
+        self.zero(self.chronicles) # defered
+
+        sngs1.sort()
+
+        # Sorting will cause a load
+        self.one(self.chronicles)
+        self._chrons(sngs1, 'retrieve')
+
+        # Make sure valid
+        self.true(sngs1.isvalid)
+
+        # isvalid should not cause any additional queries to be chronicled (if
+        # we had not included the firstname in the above query, isvalid would
+        # need to load singer's super
+        self.one(self.chronicles)
+
+        self.two(sngs1)
+        self.eq(sngs.first.id, sngs1.first.id)
+        self.eq(sngs.second.id, sngs1.second.id)
+
+        # Still nothing new chronicled
+        self.one(self.chronicles)
+
+    def it_searches_subsubentities(self):
+        artists.orm.truncate()
+        singers.orm.truncate()
+        rappers.orm.truncate()
+
+        rprs = rappers()
+        uuid = uuid4().hex
+        for i in range(4):
+            rpr = rapper.getvalid()
+            rprs += rpr
+            rpr.stagename = uuid4().hex
+            rpr.voice = uuid4().hex
+            rpr.firstname = uuid4().hex
+
+            if i >= 2:
+                rpr.register = uuid
+            else:
+                rpr.register = uuid4().hex
+
+            rpr.save()
+
+        # Test a plain where string with no args
+        def fn():
+            rappers("firstname = '%s'" % rprs.first.firstname)
+
+        # This should throw an error because we want the user to specify
+        # an empty tuple if they don't want to pass in args. This serves
+        # as a reminder that they are not taking advantage of the
+        # prepared/parameterized statements and may therefore be
+        # exposing themselves to SQL injection attacks.
+        self.expect(ValueError, fn)
+
+        '''
+        Test searching on subentity's properties
+        '''
+
+        self.chronicles.clear()
+        rprs1 = rappers("voice = '%s'" % rprs.first.voice, ())
+        self.zero(self.chronicles) # defered
+
+        self.one(rprs1)
+
+        self.eq(rprs.first.id, rprs1.first.id)
+
+        ''' Test searching on a property of rapper's immediate
+        superentity (singer)'''
+        self.chronicles.clear()
+        rprs1 = rappers("voice = '%s'" % rprs.first.voice, ())
+        self.zero(self.chronicles) # defered
+
+        with self._chrontest() as t:
+            t.run(lambda: self.one(rprs1))
+            t.retrieved(rprs1)
+
+        self.eq(rprs.first.id, rprs1.first.id)
+
+        self.true(rprs1.isvalid)
+
+        '''
+        Test searching on a property of rapper's superentity's
+        superentity (artist)
+        '''
+        # Each firstname will be unique so we should should only get one
+        # result from this query and it should be entity-equivalent
+        # rprs.first
+        self.chronicles.clear()
+        rprs1 = rappers("firstname = '%s'" % rprs.first.firstname, ())
+        self.zero(self.chronicles) # defered
+
+        with self._chrontest() as t:
+            # This will result in a query
+            t.run(lambda: self.one(rprs1))
+
+            # Calling isvalid will result in zero additional queries
+            self.true(rprs1.isvalid)
+            t.retrieved(rprs1)
+
+        self.eq(rprs.first.id, rprs1.first.id)
+
+        '''
+        Test searching on a property of singer and a property of
+        rapper's superentity (artist)
+        '''
+        rprs.sort()
+
+        wh = "voice = '%s' or firstname = '%s'" 
+        wh %= rprs.first.voice, rprs.second.firstname
+        rprs1 = rappers(wh, ())
+        with self._chrontest() as t:
+            t.run(lambda: self.two(rprs1))
+
+            t.retrieved(rprs1)
+
+        # Make sure valid
+
+        with self._chrontest() as t:
+            t.run(lambda: self.true(rprs1.isvalid))
+            # isvalid should not cause any additional queries to be
+            # chronicled (if we had not included the firstname in the
+            # above query, isvalid would need to load rapper's super
+
+            self.two(rprs1)
+            self.eq(rprs.first.id, rprs1.first.id)
+            self.eq(rprs.second.id, rprs1.second.id)
+
+            # Still nothing new chronicled
+
+        wh = "voice = '%s'" 
+        wh %= rprs.first.voice
+        rprs1 = rappers(wh, ())
+
+        with self._chrontest() as t:
+            t.run(lambda: self.one(rprs1))
+            t.retrieved(rprs1)
+
+        self.true(rprs1.isvalid)
+        self.eq(rprs.first.id, rprs1.first.id)
+
+        wh = "nice = '%s' or voice = '%s'" 
+        wh %= rprs.first.nice, rprs.second.voice
+        rprs1 = rappers(wh, ())
+
+        with self._chrontest() as t:
+            t.run(lambda: self.two(rprs1))
+            t.retrieved(rprs1)
+
+        self.true(rprs1.isvalid)
+
+        rprs1.sort()
+        self.eq(rprs.first.id, rprs1.first.id)
+        self.eq(rprs.second.id, rprs1.second.id)
+
+        wh = "nice = '%s'" 
+        wh %= rprs.first.nice
+        rprs1 = rappers(wh, ())
+
+        with self._chrontest() as t:
+            t.run(lambda: self.one(rprs1))
+            t.retrieved(rprs1)
+
+        self.true(rprs1.isvalid)
+
+        self.eq(rprs.first.id, rprs1.first.id)
+
+    def it_searches_entities_using_fulltext_index(self):
+        for e in artists, artifacts, concerts:
+            e.orm.truncate()
+
+        arts, facts = artists(), artifacts()
+        for i in range(2):
+            art = artist.getvalid()
+            fact = artifact.getvalid()
+            if i:
+                art.bio = fact.title = 'one two three %s four five six'
+                fact.description = 'seven eight %s nine ten'
+            else:
+                art.bio = la2gr('one two three four five six')
+                fact.title = art.bio
+                fact.description = la2gr('seven eight nine ten')
+
+            arts += art; facts += fact
+
+        arts.save(facts)
+
+        # Search string of 'zero' should produce zero results
+        arts1 = artists('match(bio) against (%s)', 'zero')
+        self.zero(arts1)
+
+        # Search for the word "three"
+        arts1 = artists('match(bio) against (%s)', 'three')
+        self.one(arts1)
+        self.eq(arts.second.id, arts1.first.id)
+
+        # Search for the Greek transliteration of "three". We want to ensure
+        # there is no issue with Unicode characters.
+        arts1 = artists('match(bio) against (%s)', la2gr('three'))
+        self.one(arts1)
+        self.eq(arts.first.id, arts1.first.id)
+
+        # Test "composite" full-text search
+
+        # Search string of 'zero' should produce zero results
+        arts1 = artifacts('match(title, description) against(%s)', 'zero')
+        self.zero(arts1)
+
+        # Search for the word "three". "three" is in 'title'.
+        arts1 = artifacts('match(title, description) against(%s)', 'three')
+        self.one(arts1)
+        self.eq(facts.second.id, arts1.first.id)
+
+        # Search for eight. "eight" is in 'description'.
+        arts1 = artifacts('match(title, description) against(%s)', 'eight')
+        self.one(arts1)
+        self.eq(facts.second.id, arts1.first.id)
+
+        # Search for the Greek transliteration of "three". It is in 'title';
+        arts1 = artifacts('match(title, description) against(%s)', la2gr('three'))
+        self.one(arts1)
+        self.eq(facts.first.id, arts1.first.id)
+
+        # Search for the Greek transliteration of "eight". It is in 'description'.
+        arts1 = artifacts('match(title, description) against(%s)', la2gr('eight'))
+        self.one(arts1)
+        self.eq(facts.first.id, arts1.first.id)
+
+        # Search for literal placeholders string (i.e., '%s')
+        arts1 = artists("match(bio) against (%s)", 'three %s')
+        self.one(arts1)
+        self.eq(arts.second.id, arts1.first.id)
+
+        # NOTE MySQL doesn't return a match here, even though there is a
+        # literal '%s' in the artist.bio field
+        arts1 = artists("match(bio) against ('%s')", ())
+        self.zero(arts1)
+
+        arts1 = artists("match(bio) against ('three %s')", ())
+        self.one(arts1)
+        self.eq(arts.second.id, arts1.first.id)
+
+        arts1 = artists("match(bio) against ('%x')", ())
+        self.zero(arts1)
+
+    def it_searches_subentities_using_fulltext_index(self):
+        artists.orm.truncate()
+        singers.orm.truncate()
+        rappers.orm.truncate()
+        concerts.orm.truncate()
+
+        sngs, concs = artists(), concerts()
+        for i in range(2):
+            sng = singer.getvalid()
+            conc = concert.getvalid()
+            if i:
+                sng.bio = conc.title = 'one two three four five six'
+                conc.description1 = 'seven eight nine ten'
+            else:
+                sng.bio = conc.title = la2gr('one two three four five six')
+                conc.description1 = la2gr('seven eight nine ten')
+
+            sngs += sng; concs += conc
+
+        sngs.save(concs)
+
+        # Search string of 'zero' should produce zero results
+        sngs1 = singers("match(bio) against (%s)", 'zero')
+        self.zero(sngs1)
+
+        # Search string of 'zero' should produce zero results
+        sngs1 = singers("match(bio) against ('zero')", ())
+        self.zero(sngs1)
+
+        # Search for the word "three"
+        sngs1 = singers("match(bio) against (%s)", 'three')
+        self.one(sngs1)
+        self.eq(sngs.second.id, sngs1.first.id)
+
+        # Search for the word "three"
+        sngs1 = singers("match(bio) against ('three')", ())
+        self.one(sngs1)
+        self.eq(sngs.second.id, sngs1.first.id)
+
+        # Search for the Greek transliteration of "three". We want to ensure
+        # there is no issue with Unicode characters.
+        sngs1 = singers("match(bio) against (%s)", la2gr('three'))
+        self.one(sngs1)
+        self.eq(sngs.first.id, sngs1.first.id)
+
+        l = lambda: concerts("match(title, xxx) against(%s)", 'zero')
+        self.expect(orm.invalidcolumn, l)
+
+        # Test "composite" full-text search
+
+        # Search string of 'zero' should produce zero results
+        concs1 = concerts("match(title, description1) against(%s)", 'zero')
+        self.zero(concs1)
+        
+        concs1 = concerts("match(title, description1) against('zero')", ())
+        self.zero(concs1)
+
+        # Search for the word "three". "three" is in 'title'.
+        concs1 = concerts("match(title, description1) against(%s)", 'three')
+        self.one(concs1)
+        self.eq(concs.second.id, concs1.first.id)
+
+        # Search for the word "three". "three" is in 'title'.
+        concs1 = concerts("match(title, description1) against('three')", ())
+        self.one(concs1)
+        self.eq(concs.second.id, concs1.first.id)
+
+        # Search for eight. "eight" is in 'description1'.
+        concs1 = concerts("match(title, description1) against(%s)", 'eight')
+        self.one(concs1)
+        self.eq(concs.second.id, concs1.first.id)
+
+        # Search for eight. "eight" is in 'description1'.
+        concs1 = concerts("match(title, description1) against('eight')", ())
+        self.one(concs1)
+        self.eq(concs.second.id, concs1.first.id)
+
+        # Search for the Greek transliteration of "three". It is in 'title';
+        wh = "match(title, description1) against('%s')" % la2gr('three')
+        concs1 = concerts(wh, ())
+        self.one(concs1)
+        self.eq(concs.first.id, concs1.first.id)
+
+        # Search for the Greek transliteration of "eight". It is in 'description1'
+        concs1 = concerts("match(title, description1) against(%s)", la2gr('eight'))
+        self.one(concs1)
+        self.eq(concs.first.id, concs1.first.id)
+
+        # Search for the Greek transliteration of "eight". It is in 'description1'
+        wh = "match(title, description1) against('%s')" % la2gr('eight')
+        concs1 = concerts(wh, ())
+        self.one(concs1)
+        self.eq(concs.first.id, concs1.first.id)
+
+    def it_searches_subsubentities_using_fulltext_index(self):
+        artists.orm.truncate()
+        singers.orm.truncate()
+        rappers.orm.truncate()
+
+        rprs, btls = rappers(), battles()
+        for i in range(2):
+            rpr = rapper.getvalid()
+            btl = battle.getvalid()
+            if i:
+                rpr.bio = btl.title = 'one two three four five six'
+                btl.description1 = 'seven eight nine ten'
+            else:
+                rpr.bio = btl.title = la2gr('one two three four five six')
+                btl.description1 = la2gr('seven eight nine ten')
+
+            rprs += rpr; btls += btl
+
+        rprs.save(btls)
+
+        # Search string of 'zero' should produce zero results
+        rprs1 = rappers("match(bio) against (%s)", 'zero')
+        self.zero(rprs1)
+
+        # Search string of 'zero' should produce zero results
+        rprs1 = rappers("match(bio) against ('zero')", ())
+        self.zero(rprs1)
+
+        # Search for the word "three"
+        rprs1 = rappers("match(bio) against (%s)", 'three')
+        self.one(rprs1)
+
+        # Search for the word "three"
+        rprs1 = rappers("match(bio) against ('three')", ())
+        self.one(rprs1)
+        self.eq(rprs.second.id, rprs1.first.id)
+
+        # Search for the Greek transliteration of "three". We want to
+        # ensure there is no issue with Unicode characters.
+        rprs1 = rappers("match(bio) against (%s)", la2gr('three'))
+        self.one(rprs1)
+        self.eq(rprs.first.id, rprs1.first.id)
+
+        l = lambda: battles("match(title, xxx) against(%s)", 'zero')
+        self.expect(orm.invalidcolumn, l)
+
+        # Test "composite" full-text search
+
+        # Search string of 'zero' should produce zero results
+        btls1 = battles("match(title, description1) against(%s)", 'zero')
+        self.zero(btls1)
+        
+        btls1 = battles("match(title, description1) against('zero')", ())
+        self.zero(btls1)
+
+        # Search for the word "three". "three" is in 'title'.
+        btls1 = battles("match(title, description1) against(%s)", 'three')
+        self.one(btls1)
+        self.eq(btls.second.id, btls1.first.id)
+
+        # Search for the word "three". "three" is in 'title'.
+        btls1 = battles("match(title, description1) against('three')", ())
+        self.one(btls1)
+        self.eq(btls.second.id, btls1.first.id)
+
+        # Search for eight. "eight" is in 'description1'.
+        btls1 = battles("match(title, description1) against(%s)", 'eight')
+        self.one(btls1)
+        self.eq(btls.second.id, btls1.first.id)
+
+        # Search for eight. "eight" is in 'description1'.
+        btls1 = battles("match(title, description1) against('eight')", ())
+        self.one(btls1)
+        self.eq(btls.second.id, btls1.first.id)
+
+        # Search for the Greek transliteration of "three". It is in 'title';
+        wh = "match(title, description1) against('%s')" % la2gr('three')
+        btls1 = battles(wh, ())
+        self.one(btls1)
+        self.eq(btls.first.id, btls1.first.id)
+
+        # Search for the Greek transliteration of "eight". It is in 'description1'
+        btls1 = battles("match(title, description1) against(%s)", la2gr('eight'))
+        self.one(btls1)
+        self.eq(btls.first.id, btls1.first.id)
+
+        # Search for the Greek transliteration of "eight". It is in 'description1'
+        wh = "match(title, description1) against('%s')" % la2gr('eight')
+        btls1 = battles(wh, ())
+        self.one(btls1)
+        self.eq(btls.first.id, btls1.first.id)
+        
+    def it_rollsback_save_of_entities(self):
+        # Create two artists
+        arts = artists()
+
+        for _ in range(2):
+            arts += artist.getvalid()
+            arts.last.firstname = uuid4().hex
+            arts.last.lastname = uuid4().hex
+
+        arts.save()
+
+        # First, break the save method so a rollback occurs, and test
+        # the rollback. Second, fix the save method and ensure success.
+        for i in range(2):
+            if i:
+                # Restore original save method
+                arts.second._save = save
+
+                # Update property 
+                arts.first.firstname = new = uuid4().hex
+                arts.save()
+                self.eq(new, artist(arts.first.id).firstname)
+            else:
+                # Update property
+                old, arts.first.firstname \
+                    = arts.first.firstname, uuid4().hex
+
+                # Break save method
+                save, arts.second._save = arts.second._save, lambda x: 0/0
+
+                self.expect(ZeroDivisionError, lambda: arts.save())
+                self.eq(old, artist(arts.first.id).firstname)
+
+    def it_deletes_entities(self):
+        # Create two artists
+        arts = artists()
+
+        for _ in range(2):
+            arts += artist.getvalid()
+        
+        arts.save()
+
+        art = arts.shift()
+        self.one(arts)
+        self.one(arts.orm.trash)
+
+        self.chronicles.clear()
+        arts.save()
+        self.one(self.chronicles)
+        self._chrons(art, 'delete')
+
+        self.expect(db.RecordNotFoundError, lambda: artist(art.id))
+        
+        # Ensure the remaining artist still exists in database
+        self.expect(None, lambda: artist(arts.first.id))
+
+    def it_doesnt_needlessly_save_entitity(self):
+        chrons = self.chronicles
+
+        art = artist()
+
+        art.firstname = uuid4().hex
+        art.lastname = uuid4().hex
+        art.ssn = '1' * 11
+        art.phone = '1' * 7
+        art.password  = bytes([randint(0, 255) for _ in range(32)])
+        art.email = 'username@domain.tld'
+
+        for i in range(2):
+            chrons.clear()
+            art.save()
+            
+            if i == 0:
+                B(chrons.count != 1) # Aug 11 2019
+                self.one(chrons)
+                self.eq(chrons.where('entity', art).first.op, 'create')
+            elif i == 1:
+                self.zero(chrons)
+
+        # Dirty art and save. Ensure the object was actually saved if needed
+        art.firstname = uuid4().hex
+        for i in range(2):
+            chrons.clear()
+            art.save()
+
+            if i == 0:
+                self.one(chrons)
+                self.eq(chrons.where('entity', art).first.op, 'update')
+            elif i == 1:
+                self.zero(chrons)
+
+        # Test constituents
+        art.presentations += presentation.getvalid()
+        
+        for i in range(2):
+            chrons.clear()
+            art.save()
+
+            if i == 0:
+                self.one(chrons)
+                pres = art.presentations.last
+                self.eq(chrons.where('entity', pres).first.op, 'create')
+            elif i == 1:
+                self.zero(chrons)
+
+        # Test deeply-nested (>2) constituents
+        art.presentations.last.locations += location.getvalid()
+
+        for i in range(2):
+
+            chrons.clear()
+            art.save()
+
+            if i == 0:
+                self.one(chrons)
+                loc = art.presentations.last.locations.last
+                self.eq(chrons.where('entity', loc).first.op, 'create')
+            elif i == 1:
+                self.zero(chrons)
+
+    def entity_contains_reference_to_composite(self):
+        chrons = self.chronicles
+
+        art = artist.getvalid()
+
+        for _ in range(2):
+            art.presentations += presentation.getvalid()
+
+            for _ in range(2):
+                art.presentations.last.locations += location.getvalid()
+
+        art.save()
+
+        for i, art in enumerate((art, artist(art.id))):
+            for pres in art.presentations:
+                chrons.clear()
+                    
+                self.is_(art, pres.artist)
+                self.zero(chrons)
+
+                for loc in pres.locations:
+                    chrons.clear()
+                    self.is_(pres, loc.presentation)
+                    self.zero(chrons)
+
+    def it_loads_and_saves_entities_constituents(self):
+        chrons = self.chronicles
+
+        # Ensure that a new composite has a constituent object with zero
+        # elements
+        art = artist.getvalid()
+        self.zero(art.presentations)
+
+        # Ensure a saved composite object with zero elements in a
+        # constituent
+        # collection loads with zero the constituent collection containing zero
+        # elements.
+        art.firstname = uuid4().hex
+        art.lastname = uuid4().hex
+
+        self.is_(art.presentations.artist, art)
+        self.zero(art.presentations)
+
+        art.save()
+
+        self.is_(art.presentations.artist, art)
+        self.zero(art.presentations)
+
+        art = artist(art.id)
+        self.zero(art.presentations)
+        self.is_(art.presentations.artist, art)
+
+        # Create some presentations within artist, save artist, reload and test
+        art = artist.getvalid()
+        art.presentations += presentation.getvalid()
+        art.presentations += presentation.getvalid()
+
+        for pres in art.presentations:
+            pres.name = uuid4().hex
+
+        chrons.clear()
+        art.save()
+
+        self.three(chrons)
+        press = art.presentations
+        self.eq(chrons.where('entity', art).first.op, 'create')
+        self.eq(chrons.where('entity', press.first).first.op, 'create')
+        self.eq(chrons.where('entity', press.second).first.op, 'create')
+
+        art1 = artist(art.id)
+
+        chrons.clear()
+
+        press = art1.presentations
+        art.presentations.sort()
+
+        self.one(chrons)
+
+        self.eq(chrons.where('entity', press).first.op, 'retrieve')
+        art1.presentations.sort()
+        for pres, pres1 in zip(art.presentations, art1.presentations):
+            self.eq((False, False, False), pres.orm.persistencestate)
+            self.eq((False, False, False), pres1.orm.persistencestate)
+            for map in pres.orm.mappings:
+                if isinstance(map, orm.fieldmapping):
+                    self.eq(getattr(pres, map.name), getattr(pres1, map.name))
+            
+            self.is_(art1, pres1.artist)
+
+        # Create some locations with the presentations, save artist, reload and
+        # test
+        for pres in art.presentations:
+            for _ in range(2):
+                pres.locations += location.getvalid()
+
+        chrons.clear()
+        art.save()
+
+        self.four(chrons)
+
+        locs = art.presentations.first.locations
+        self.eq(chrons.where('entity', locs.first).first.op, 'create')
+        self.eq(chrons.where('entity', locs.second).first.op, 'create')
+
+        locs = art.presentations.second.locations
+        self.eq(chrons.where('entity', locs.first).first.op, 'create')
+        self.eq(chrons.where('entity', locs.second).first.op, 'create')
+
+        art1 = artist(art.id)
+        self.two(art1.presentations)
+
+        art.presentations.sort()
+        art1.presentations.sort()
+        for pres, pres1 in zip(art.presentations, art1.presentations):
+
+            pres.locations.sort()
+
+            chrons.clear()
+            pres1.locations.sort()
+
+            self.one(chrons)
+            locs = pres1.locations
+
+            self.eq(chrons.where('entity', locs).first.op, 'retrieve')
+
+            for loc, loc1 in zip(pres.locations, pres1.locations):
+                for map in loc.orm.mappings:
+                    if isinstance(map, orm.fieldmapping):
+                        v, v1 = getattr(loc, map.name), getattr(loc1, map.name)
+                        self.eq(v, v1)
+            
+                self.is_(pres1, loc1.presentation)
+
+        # TODO Remove this. I'm not sure why it's here.
+        return
+
+        # Test appending a collection of constituents to a constituents
+        # collection. Save, reload and test.
+        art = artist.getvalid()
+        press = presentations()
+
+        for _ in range(2):
+            press += presentation.getvalid()
+
+        art.presentations += press
+
+        for i in range(2):
+            if i:
+                art.save()
+                art = artist(art.id)
+
+            self.eq(press.count, art.presentations.count)
+
+            for pres in art.presentations:
+                self.is_(art, pres.artist)
+
+    def it_updates_entity_constituents_properties(self):
+        chrons = self.chronicles
+        art = artist.getvalid()
+
+        for _ in range(2):
+            art.presentations += presentation.getvalid()
+            art.presentations.last.name = uuid4().hex
+
+            for _ in range(2):
+                art.presentations.last.locations += location.getvalid()
+                art.presentations.last.locations.last.description = uuid4().hex
+
+        art.save()
+
+        art1 = artist(art.id)
+        for pres in art1.presentations:
+            pres.name = uuid4().hex
+            
+            for loc in pres.locations:
+                loc.description = uuid4().hex
+
+        chrons.clear()
+        art1.save()
+        self.six(chrons)
+        for pres in art1.presentations:
+            self.eq(chrons.where('entity', pres).first.op, 'update')
+            for loc in pres.locations:
+                self.eq(chrons.where('entity', loc).first.op, 'update')
+            
+
+        art2 = artist(art.id)
+        press = (art.presentations, art1.presentations, art2.presentations)
+        for pres, pres1, pres2 in zip(*press):
+            # Make sure the properties were changed
+            self.ne(getattr(pres2, 'name'), getattr(pres,  'name'))
+
+            # Make user art1.presentations props match those of art2
+            self.eq(getattr(pres2, 'name'), getattr(pres1, 'name'))
+
+            locs = pres.locations, pres1.locations, pres2.locations
+            for loc, loc1, loc2 in zip(*locs):
+                # Make sure the properties were changed
+                self.ne(getattr(loc2, 'description'), getattr(loc,  'description'))
+
+                # Make user art1 locations props match those of art2
+                self.eq(getattr(loc2, 'description'), getattr(loc1, 'description'))
+
+    def it_saves_and_loads_entity_constituent(self):
+        chrons = self.chronicles
+
+        # Make sure the constituent is None for new composites
+        pres = presentation.getvalid()
+
+        chrons.clear()
+        self.none(pres.artist)
+        self.zero(chrons)
+
+        self.zero(pres.brokenrules)
+        
+        # Test setting an entity constituent then test saving and loading
+        art = artist.getvalid()
+        pres.artist = art
+        self.is_(art, pres.artist)
+
+        with self._chrontest() as t:
+            t.run(pres.save)
+            t.created(art)
+            t.created(pres)
+
+        # Load by artist then lazy-load presentations to test
+        art1 = artist(pres.artist.id)
+        self.one(art1.presentations)
+        self.eq(art1.presentations.first.id, pres.id)
+
+        # Load by presentation and lazy-load artist to test
+        pres1 = presentation(pres.id)
+
+        chrons.clear()
+        self.eq(pres1.artist.id, pres.artist.id)
+        self.one(chrons)
+        self.eq(chrons.where('entity', pres1.artist).first.op,  'retrieve')
+
+        art1 = artist.getvalid()
+        pres1.artist = art1
+
+        chrons.clear()
+        pres1.save()
+
+        self.two(chrons)
+        self.eq(chrons.where('entity', art1).first.op,  'create')
+        self.eq(chrons.where('entity', pres1).first.op, 'update')
+
+        pres2 = presentation(pres1.id)
+        self.eq(art1.id, pres2.artist.id)
+        self.ne(art1.id, art.id)
+
+        # Test deeply-nested (>2)
+        # Set entity constuents, save, load, test
+       
+        loc = location.getvalid()
+        self.none(loc.presentation)
+
+        loc.presentation = pres = presentation.getvalid()
+        self.is_(pres, loc.presentation)
+
+        chrons.clear()
+        self.none(loc.presentation.artist)
+        self.zero(chrons)
+
+        loc.presentation.artist = art = artist.getvalid()
+        self.is_(art, loc.presentation.artist)
+
+        loc.save()
+
+        self.three(chrons)
+        self.eq(chrons.where('entity',  loc).first.op,               'create')
+        self.eq(chrons.where('entity',  loc.presentation).first.op,  'create')
+        self.eq(chrons.where('entity',  art).first.op,               'create')
+
+        chrons.clear()
+        loc1 = location(loc.id)
+        pres1 = loc1.presentation
+
+        self.eq(loc.id, loc1.id)
+        self.eq(loc.presentation.id, loc1.presentation.id)
+        self.eq(loc.presentation.artist.id, loc1.presentation.artist.id)
+
+        self.three(chrons)
+        self.eq(chrons.where('entity',  loc1).first.op,          'retrieve')
+        self.eq(chrons.where('entity',  pres1).first.op,         'retrieve')
+        self.eq(chrons.where('entity',  pres1.artist).first.op,  'retrieve')
+
+        # Change the artist
+        loc1.presentation.artist = art1 = artist.getvalid()
+
+        chrons.clear()
+        loc1.save()
+
+        self.two(chrons)
+        pres1 = loc1.presentation
+
+        self.eq(chrons.where('entity',  pres1).first.op,  'update')
+        self.eq(chrons.where('entity',  art1).first.op,   'create')
+
+        loc2 = location(loc1.id)
+        self.eq(loc1.presentation.artist.id, loc2.presentation.artist.id)
+        self.ne(art.id, loc2.presentation.artist.id)
+
+        # NOTE Going up the graph, mutating attributes and persisting
+        # lower in the graph won't work because of the problem of
+        # infinite recursion.  The below tests demonstrate this.
+
+        # Assign a new name
+        name = uuid4().hex
+        loc2.presentation.artist.presentations.first.name = name
+
+        # The presentation objects here aren't the same reference so they will
+        # have different states.
+        self.ne(loc2.presentation.name, name)
+
+        chrons.clear()
+        loc2.save()
+
+        self.zero(chrons)
+
+        loc2 = location(loc2.id)
+
+        self.one(chrons)
+        self.eq(chrons.where('entity',  loc2).first.op,   'retrieve')
+
+        # The above save() didn't save the new artist's presentation collection
+        # so the new name will not be present in the reloaded presentation
+        # object.
+        self.ne(loc2.presentation.name, name)
+        self.ne(loc2.presentation.artist.presentations.first.name, name)
+
+    def entity_constituents_break_entity(self):
+        pres = presentation.getvalid()
+        pres.artist = artist.getvalid()
+
+        # Break rule that art.networth should be an int
+        pres.artist.networth = str() # Break
+
+        self.one(pres.brokenrules)
+        self.broken(pres, 'networth', 'valid')
+
+        pres.artist.networth = int() # Unbreak
+        self.zero(pres.brokenrules)
+
+        loc = location.getvalid()
+        loc.description = 'x' * 256 # break
+        loc.presentation = presentation.getvalid()
+        loc.presentation.name = 'x' * 256 # break
+        loc.presentation.artist = artist.getvalid()
+        loc.presentation.artist.firstname = 'x' * 256 # break
+
+        self.three(loc.brokenrules)
+        for prop in 'description', 'name', 'firstname':
+            self.broken(loc, prop, 'fits')
+
+    def it_rollsback_save_of_entity_with_broken_constituents(self):
+        art = artist.getvalid()
+
+        art.presentations += presentation.getvalid()
+        art.presentations.last.name = uuid4().hex
+
+        art.presentations += presentation.getvalid()
+        art.presentations.last.name = uuid4().hex
+
+        # Cause the last presentation's invocation of save() to raise an
+        # Exception to cause a rollback
+        art.presentations.last._save = lambda cur, followentitymapping: 1/0
+
+        # Save expecting the ZeroDivisionError
+        self.expect(ZeroDivisionError, lambda: art.save())
+
+        # Ensure state of art was restored to original
+        self.true(art.orm.isnew)
+        self.false(art.orm.isdirty)
+        self.false(art.orm.ismarkedfordeletion)
+
+        # Ensure artist wasn't saved
+        self.expect(db.RecordNotFoundError, lambda: artist(art.id))
+
+        # For each presentations, ensure state was not modified and no presentation 
+        # object was saved.
+        for pres in art.presentations:
+            self.true(pres.orm.isnew)
+            self.false(pres.orm.isdirty)
+            self.false(pres.orm.ismarkedfordeletion)
+            self.expect(db.RecordNotFoundError, lambda: presentation(pres.id))
+
+    def it_calls_entities(self):
+        
+        # Creating a single orm.entity with no collection should produce an
+        # AttributeError
+        def fn():
+            class single(orm.entity):
+                firstname = orm.fieldmapping(str)
+
+        self.expect(AttributeError, fn)
+
+        # Test explicit detection of orm.entities 
+        class bacteria(orm.entities):
+            pass
+
+        class bacterium(orm.entity):
+            entities = bacteria
+            name = orm.fieldmapping(str)
+
+        b = bacterium()
+        self.is_(b.orm.entities, bacteria)
+        self.eq(b.orm.table, 'bacteria')
+
+        # Test implicit entities detection based on naive pluralisation
+        art = artist()
+        self.is_(art.orm.entities, artists)
+        self.eq(art.orm.table, 'artists')
+
+        # Test implicit entities detection of entities subclass based on naive
+        # pluralisation
+        s = singer()
+        self.is_(s.orm.entities, singers)
+        self.eq(s.orm.table, 'singers')
+
+    def it_calls_id_on_entity(self):
+        art = artist.getvalid()
+
+        self.true(hasattr(art, 'id'))
+        self.type(uuid.UUID, art.id)
+        self.zero(art.brokenrules)
+
+    def it_calls_custom_methods_on_entity(self):
+        art = artist()
+
+        # Ensure artist.__init__ got called. It will default "lifeform" to
+        # 'organic'
+        self.eq('organic', art.lifeform)
+
+        art.presentations += presentation()
+        art.locations += location()
+
+        self.one(art.presentations)
+        self.one(art.locations)
+
+        # Ensure the custom method clear() is called and successfully clears
+        # the presentations and locations collections.
+        art.clear()
+
+        self.zero(art.presentations)
+        self.zero(art.locations)
+
+        # Test a custom @property
+        self.false(art.processing)
+        art.processing = True
+        self.true(art.processing)
+
+        # Test it calls fields
+        uuid = uuid4().hex
+        art.test = uuid
+        self.eq(uuid, art.test)
+
+    def it_calls_custom_methods_on_subentity(self):
+        sng = singer()
+
+        # Ensure artist.__init__ got called. It will default "lifeform"
+        # to 'organic'
+        self.eq('organic', sng.lifeform)
+
+        sng.concerts += concert()
+        sng.locations += location()
+
+        self.one(sng.concerts)
+        self.one(sng.locations)
+
+        # Ensure the custom method clear() is called and successfully clears
+        # the presentations and locations collections.
+        sng.clear()
+
+        self.zero(sng.concerts)
+        self.zero(sng.locations)
+
+        # Test a custom @property
+        self.false(sng.transmitting)
+        sng.transmitting = True
+        self.true(sng.transmitting)
+
+        # Test a custom @property in super class 
+        self.false(sng.processing)
+        sng.processing = True
+        self.true(sng.processing)
+
+        # Test it calls fields
+        uuid = uuid4().hex
+        sng.test = uuid
+        self.eq(uuid, sng.test)
+
+    def it_calls_custom_methods_on_subsubentity(self):
+        # TODO Currently, concerts and locations entities collections
+        # are being added to rpr. Once we have a subentity of concerts
+        # that belongs to rapper, we should append one of those here as
+        # well. Then we should add a clear() override (i.e., an actual
+        # custom method to test) to rapper that will clear the new
+        # subentity of concerts as well as calling the super()'s clear()
+        # method which will clear the concerts and locations.
+        rpr = rapper()
+
+        # Ensure artist.__init__ got called. It will default "lifeform"
+        # to 'organic'
+        self.eq('organic', rpr.lifeform)
+
+        # Ensure rapper.__init__ got called. It will default "nice"
+        # to 10
+        self.eq(10, rpr.nice)
+
+        rpr.concerts += concert()
+        rpr.locations += location()
+
+        self.one(rpr.concerts)
+        self.one(rpr.locations)
+
+        # Ensure the custom method clear() is called and successfully
+        # clears the presentations and locations collections.
+        rpr.clear()
+
+        self.zero(rpr.concerts)
+        self.zero(rpr.locations)
+
+        # Test a custom @property
+        self.false(rpr.elevating)
+        rpr.elevating = True
+        self.true(rpr.elevating)
+
+        # Test a custom @property on super entity (singer)
+        self.false(rpr.transmitting)
+        rpr.transmitting = True
+        self.true(rpr.transmitting)
+
+        # Test a custom @property in super's super entity (artist)
+        self.false(rpr.processing)
+        rpr.processing = True
+        self.true(rpr.processing)
+
+        # Test it calls fields
+        uuid = uuid4().hex
+        rpr.test = uuid
+        self.eq(uuid, rpr.test)
+
+    def it_calls__getitem__on_entity(self):
+        art = artist()
+        art.firstname = uuid4().hex
+        art.lastname = uuid4().hex
+        art.phone = '1' * 7
+
+        self.eq(art['firstname'], art.firstname)
+
+        expected = art.firstname, art.lastname
+        actual = art['firstname', 'lastname']
+
+        self.eq(expected, actual)
+        self.expect(IndexError, lambda: art['idontexist'])
+
+        actual = art['presentations', 'locations']
+        expected = art.presentations, art.locations
+
+        actual = art['phone']
+        expected = art.phone
+
+        self.eq(actual, expected)
+
+    def it_calls__getitem__on_subentity(self):
+        sng = singer()
+        sng.firstname = uuid4().hex
+        sng.lastname = uuid4().hex
+        sng.voice = uuid4().hex
+        sng.register = 'laryngealization'
+
+        self.eq(sng['firstname'], sng.firstname)
+
+        names = sng.firstname, sng.lastname
+        self.eq(names, sng['firstname', 'lastname'])
+        self.expect(IndexError, lambda: sng['idontexist'])
+
+        actual = sng['presentations', 'locations']
+        expected = sng.presentations, sng.locations
+
+        self.eq(actual, expected)
+
+        actual = sng['voice', 'concerts']
+        expected = sng.voice, sng.concerts
+
+        self.eq(actual, expected)
+
+        actual = sng['phone']
+        expected = sng.phone
+
+        self.eq(actual, expected)
+
+    def it_calls__getitem__on_subsubentity(self):
+        rpr = rapper()
+        rpr.firstname = uuid4().hex
+        rpr.lastname = uuid4().hex
+        rpr.voice = uuid4().hex
+        rpr.register = 'laryngealization'
+
+        self.eq(rpr['firstname'], rpr.firstname)
+
+        names = rpr.firstname, rpr.lastname
+        self.eq(names, rpr['firstname', 'lastname'])
+        self.expect(IndexError, lambda: rpr['idontexist'])
+
+        actual = rpr['presentations', 'locations']
+        expected = rpr.presentations, rpr.locations
+
+        self.eq(actual, expected)
+
+        actual = rpr['voice', 'concerts']
+        expected = rpr.voice, rpr.concerts
+
+        self.eq(actual, expected)
+
+        actual = rpr['phone']
+        expected = rpr.phone
+
+        self.eq(actual, expected)
+
+        actual = rpr['nice', 'stagename']
+        expected = rpr.nice, rpr.stagename
+
+        self.eq(actual, expected)
+
+        actual = rpr['nice']
+        expected = rpr.nice
+
+        self.eq(actual, expected)
+
+    def it_calls__getitem__on_association(self):
+        art = artist()
+        art.artist_artifacts += artist_artifact()
+        aa = art.artist_artifacts.first
+
+        self.eq(aa['role'], aa.role)
+
+        expected = aa.role, aa.planet
+        actual = aa['role', 'planet']
+
+        self.eq(expected, actual)
+        self.expect(IndexError, lambda: aa['idontexist'])
+
+        actual = aa['artist', 'artifact']
+        expected = aa.artist, aa.artifact
+
+        self.eq(actual, expected)
+
+        aa.timespan = '1/1/2001 3/3/2001'
+        actual = aa['timespan', 'processing']
+        expected = aa.timespan, aa.processing
+
+        self.eq(actual, expected)
+
+    def it_doesnt_raise_exception_on_invalid_attr_values(self):
+        # For each type of attribute, ensure that any invalid value can be
+        # given. The invalid value should cause a brokenrule but should never
+        # result in a type coercion exception on assignment or retrieval
+
+        # datetime
+        art = artist.getvalid()
+        art.dob = uuid4().hex       
+        self.expect(None, lambda: art.dob) 
+        self.one(art.brokenrules)
+        self.broken(art, 'dob', 'valid')
+
+        # int
+        art = artist.getvalid()
+        art.weight = uuid4().hex       
+        self.expect(None, lambda: art.weight) 
+        self.one(art.brokenrules)
+        self.broken(art, 'weight', 'valid')
+
+        # float
+        comp = component.getvalid()
+        comp.height = uuid4().bytes       
+        self.expect(None, lambda: comp.height) 
+        self.one(comp.brokenrules)
+        self.broken(comp, 'height', 'valid')
+
+        # decimal
+        fact = artifact.getvalid()
+        fact.price = uuid4().bytes       
+        self.expect(None, lambda: fact.price) 
+        self.one(fact.brokenrules)
+        self.broken(fact, 'price', 'valid')
+
+        # bytes
+        comp = component.getvalid()
+        comp.digest = uuid4().hex       
+        self.expect(None, lambda: comp.digest) 
+        self.one(comp.brokenrules)
+        self.broken(comp, 'digest', 'valid')
+
+        # constituent entity
+        art = artist.getvalid()
+        art.presentations += location.getvalid() # break
+        self.expect(None, lambda: art.presentations) 
+        self.one(art.brokenrules)
+        self.broken(art, 'presentations', 'valid')
+
+        # constituent
+        art = artist.getvalid()
+        art.presentations = locations() # break
+        self.expect(None, lambda: art.presentations) 
+        self.one(art.brokenrules)
+        self.broken(art, 'presentations', 'valid')
+
+        # composite
+        pres = presentation.getvalid()
+        pres.artist = location.getvalid()
+
+        self.one(pres.brokenrules)
+        self.broken(pres, 'artist', 'valid')
+
+        loc = location.getvalid()
+        loc.presentation = pres
+
+        self.broken(loc, 'artist', 'valid')
+
+        # associations
+
+        # Add wrong type to association
+        art = artist.getvalid()
+        art.artist_artifacts += location()
+        self.three(art.brokenrules)
+        self.broken(art, 'artist_artifacts', 'valid')
+
+        # Add wrong type to the pseudo-collection
+        art = artist.getvalid()
+        facts = art.artifacts 
+        loc = location.getvalid()
+        facts += loc
+
+        self.three(art.brokenrules)
+        self.broken(art, 'artifact', 'valid')
+        
+    def it_calls_explicit_attr_on_subentity(self):
+        # Test inherited attr (phone)
+        sng = singer()
+        sng.firstname = uuid4().hex
+        sng.lastname  = uuid4().hex
+        sng.voice     = uuid4().hex
+        sng.lifeform  = uuid4().hex
+        sng.password  = bytes([randint(0, 255) for _ in range(32)])
+        sng.ssn       = '1' * 11
+        sng.register  = 'laryngealization'
+        sng.email     = 'username@domain.tld'
+        self.eq(int(), sng.phone)
+
+        sng.phone = '1' * 7
+        self.type(int, sng.phone)
+
+        sng.save()
+
+        art1 = singer(sng.id)
+        self.eq(sng.phone, art1.phone)
+
+        art1.phone = '1' * 7
+        self.type(int, art1.phone)
+
+        art1.save()
+
+        art2 = singer(art1.id)
+        self.eq(art1.phone, art2.phone)
+
+        # Test non-inherited attr (register)
+        sng = singer()
+        sng.firstname = uuid4().hex
+        sng.lastname  = uuid4().hex
+        sng.voice     = uuid4().hex
+        sng.lifeform  = uuid4().hex
+        sng.password  = bytes([randint(0, 255) for _ in range(32)])
+        sng.ssn       = '1' * 11
+        sng.phone     = '1' * 7
+        sng.email     = 'username@domain.tld'
+        self.is_(str(), sng.register)
+
+        sng.register = 'Vocal Fry'
+        self.eq('vocal fry', sng.register)
+
+        sng.save()
+
+        art1 = singer(sng.id)
+        self.eq(sng.register, art1.register)
+
+        art1.register = 'flute'
+        self.eq('whistle', art1.register)
+
+        art1.save()
+
+        art2 = singer(art1.id)
+        self.eq(art1.register, art2.register)
+
+    def it_calls_explicit_attr_on_subsubentity(self):
+        # Test inherited attr (artist.phone)
+        rpr = rapper()
+        rpr.firstname = uuid4().hex
+        rpr.lastname  = uuid4().hex
+        rpr.voice     = uuid4().hex
+        rpr.lifeform  = uuid4().hex
+        rpr.stagename  = uuid4().hex
+        rpr.password  = bytes([randint(0, 255) for _ in range(32)])
+        rpr.ssn       = '1' * 11
+        rpr.register  = 'laryngealization'
+        rpr.email     = 'username@domain.tld'
+        self.eq(int(), rpr.phone)
+
+        rpr.phone = '1' * 7
+        self.type(int, rpr.phone)
+
+        rpr.save()
+
+        rpr1 = rapper(rpr.id)
+        self.eq(rpr.phone, rpr1.phone)
+
+        rpr1.phone = '1' * 7
+        self.type(int, rpr1.phone)
+
+        rpr1.save()
+
+        self.eq(rpr1.phone, rapper(rpr1.id).phone)
+
+        # Test inherited attr from super (singer.register)
+        rpr = rapper()
+        rpr.firstname = uuid4().hex
+        rpr.lastname  = uuid4().hex
+        rpr.voice     = uuid4().hex
+        rpr.lifeform  = uuid4().hex
+        rpr.stagename  = uuid4().hex
+        rpr.password  = bytes([randint(0, 255) for _ in range(32)])
+        rpr.ssn       = '1' * 11
+        rpr.phone     = '1' * 7
+        rpr.email     = 'username@domain.tld'
+        self.is_(str(), rpr.register)
+
+        rpr.register = 'Vocal Fry'
+        self.eq('vocal fry', rpr.register)
+
+        rpr.save()
+
+        rpr1 = rapper(rpr.id)
+        self.eq(rpr.register, rpr1.register)
+
+        rpr1.register = 'flute'
+        self.eq('whistle', rpr1.register)
+
+        rpr1.save()
+
+        rpr2 = rapper(rpr1.id)
+        self.eq(rpr1.register, rpr2.register)
+
+        # Test non-inherited attr from rapper
+        rpr = rapper()
+        rpr.firstname = uuid4().hex
+        rpr.lastname  = uuid4().hex
+        rpr.voice     = uuid4().hex
+        rpr.lifeform  = uuid4().hex
+        rpr.stagename  = uuid4().hex
+        rpr.password  = bytes([randint(0, 255) for _ in range(32)])
+        rpr.ssn       = '1' * 11
+        rpr.phone     = '1' * 7
+        rpr.email     = 'username@domain.tld'
+        rpr.register  = 'laryngealization'
+        abilities     = "['endless rhymes', 'delivery', 'money']"
+        self.eq(abilities, rpr.abilities)
+
+        rpr.abilities = abilities = ['being wack']
+
+        self.eq(str(abilities), rpr.abilities)
+
+        rpr.save()
+
+        self.eq(rpr.abilities, rapper(rpr.id).abilities)
+
+    def it_calls_explicit_attr_on_association(self):
+        art = artist.getvalid()
+
+        art.artist_artifacts += artist_artifact.getvalid()
+        aa = art.artist_artifacts.first
+
+        # Ensure the overridden __init__ was called. It defaults planet to
+        # "Earth".
+        self.eq('Earth', aa.planet)
+
+        # Test the explicit attribute timespan. It removes spaces from the
+        # value and replaces them with dashes.
+        art.artist_artifacts.first.timespan = '1/10/2018 2/10/2018'
+        self.eq('1/10/2018-2/10/2018', aa.timespan)
+
+        art.save()
+        art1 = artist(art.id)
+        self.eq('1/10/2018-2/10/2018', aa.timespan)
+
+        # Test non-mapped property
+        self.false(aa.processing)
+        aa.processing = True
+        self.true(aa.processing)
+
+        # Test field
+        uuid = str(uuid4())
+        self.test = uuid
+        self.eq(uuid, self.test)
+
+    def it_calls_bytes_attr_on_entity(self):
+        def saveok(e, attr):
+            getattr(e, 'save')()
+            e1 = type(e)(e.id)
+
+            return getattr(e, attr) == getattr(e1, attr)
+
+        def rand(size):
+            return bytes([randint(0, 255) for _ in range(size)])
+
+        # Test bytes attribute as a varbinary (min != max)
+        comp = component()
+        comp.name = uuid4().hex
+        map = comp.orm.mappings['digest']
+
+        # Make sure the password field hasn't been tampered with
+        self.ne(map.min, map.max) 
+        self.eq('varbinary(%s)' % map.max, map.dbtype)
+        self.true(hasattr(comp, 'digest'))
+        self.type(bytes, comp.digest)
+        self.one(comp.brokenrules)
+        self.broken(comp, 'digest', 'fits')
+
+        # Test max
+        self.ne(map.min, map.max) 
+        comp.digest = rand(map.max)
+        self.true(saveok(comp, 'digest'))
+
+        comp.digest = rand(map.max + 1)
+        self.broken(comp, 'digest', 'fits')
+
+        # Test min
+        comp.digest = rand(map.max)
+        self.true(saveok(comp, 'digest'))
+        
+        comp.digest = rand(map.min - 1)
+        self.broken(comp, 'digest', 'fits')
+
+        # Ensure non-Bytes are coerced in accordance with bytes()'s rules.
+        arrint = [randint(0, 255) for _ in range(32)]
+        for v in arrint, bytearray(arrint):
+            comp.digest = v
+            self.eq(bytes(arrint), comp.digest)
+            self.type(bytes, comp.digest)
+            self.true(saveok(comp, 'digest'))
+
+        # Test bytes attribute as a binary (min != max)
+        art = artist()
+        art.firstname = uuid4().hex
+        art.lastname = uuid4().hex
+        art.ssn = '1' * 11
+        art.phone = '1' * 7
+        art.email = 'username@domain.tld'
+        map = art.orm.mappings['password']
+
+        # Make sure the password field hasn't been tampered with
+        self.eq(map.min, map.max) 
+        self.eq('binary(%s)' % map.max, map.dbtype)
+        self.true(hasattr(art, 'password'))
+        self.type(bytes, art.password)
+        self.one(art.brokenrules)
+        self.broken(art, 'password', 'fits')
+
+        # Test default
+        self.eq(b'', art.password)
+
+        # Test max
+        art.password = rand(map.max)
+        self.true(saveok(art, 'password'))
+
+        art.password = rand(map.max + 1)
+        self.broken(art, 'password', 'fits')
+
+        # Test min
+        art.password = rand(map.max)
+        self.true(saveok(art, 'password'))
+        
+        art.password = rand(map.min - 1)
+        self.broken(art, 'password', 'fits')
+
+        # Ensure non-Bytes are coerced in accordance with bytes()'s rules.
+        arrint = [randint(0, 255) for _ in range(32)]
+        for v in arrint, bytearray(arrint):
+            art.password = v
+            self.eq(bytes(arrint), art.password)
+            self.type(bytes, art.password)
+            self.true(saveok(art, 'password'))
+
+    def it_calls_bool_attr_on_entity(self):
+        def saveok(e, attr):
+            getattr(e, 'save')()
+            e1 = type(e)(e.id)
+            return getattr(e, attr) == getattr(e1, attr)
+
+        fact = artifact.getvalid()
+        self.eq('bit', fact.orm.mappings['abstract'].dbtype)
+        self.type(bool, fact.abstract)
+        self.true(hasattr(fact, 'abstract'))
+        self.zero(fact.brokenrules)
+
+        # Test default
+        self.false(fact.abstract)
+        self.true(saveok(fact, 'abstract'))
+
+        # Test save
+        for b in True, False:
+            fact.abstract = b
+            self.type(bool, fact.abstract)
+            self.eq(b, fact.abstract)
+            self.true(saveok(fact, 'abstract'))
+
+        # Falsys and Truthys not allowed
+        for v in int(), float(), str():
+            fact.abstract = v
+            self.one(fact.brokenrules)
+            self.broken(fact, 'abstract', 'valid')
+
+        # None, of course, is allowed despite being Falsy
+        fact.abstract = None
+        self.zero(fact.brokenrules)
+
+    def it_calls_explicit_str_attr_on_entity(self):
+        def saveok(e, attr):
+            getattr(e, 'save')()
+            e1 = type(e)(e.id)
+            return getattr(e, attr) == getattr(e1, attr)
+
+        # Ensure that a non-str gets converted to a str
+        for o in int(1), float(3.14), dec(1.99), datetime.now(), True:
+            art = artist()
+            art.email = o
+            self.type(str, art.email)
+            self.eq(str(o).lower(), art.email)
+
+        Delta = la2gr('d')
+        for art in (artist(), singer()):
+            map = art.orm.mappings('email')
+            if not map:
+                map = art.orm.super.orm.mappings['email']
+            self.true(hasattr(art, 'email'))
+            self.eq(str(), art.email)
+            self.eq((3, 254), (map.min, map.max))
+
+            art.email = email = 'USERNAME@DOMAIN.TDL'
+            self.eq(email.lower(), art.email)
+
+            art.email = '\n\t ' + email + '\n\t '
+            self.eq(email.lower(), art.email)
+
+            art = artist.getvalid()
+            min, max = map.min, map.max
+
+            art.email = Delta * map.max
+            self.true(saveok(art, 'email'))
+
+            art.email += Delta
+            self.one(art.brokenrules)
+            self.broken(art, 'email', 'fits')
+
+            art.email = Delta * min
+            self.true(saveok(art, 'email'))
+
+            art.email = (Delta * (min - 1))
+            self.one(art.brokenrules)
+            self.broken(art, 'email', 'fits')
+
+    def it_calls_str_attr_on_entity(self):
+        def saveok(e, attr):
+            getattr(e, 'save')()
+            e1 = type(e)(e.id)
+            return getattr(e, attr) == getattr(e1, attr)
+
+        # Ensure that a non-str gets converted to a str
+        for o in int(1), float(3.14), dec(1.99), datetime.now(), True:
+            art = artist()
+            art.firstname = o
+            self.type(str, art.firstname)
+            self.eq(str(o), art.firstname)
+
+        for art in (artist(), singer()):
+            art.lastname  = uuid4().hex
+            art.lifeform  = uuid4().hex
+            art.password  = bytes([randint(0, 255) for _ in range(32)])
+            art.ssn       = '1' * 11
+            art.phone     = '1' * 7
+            art.email     = 'username@domain.tld'
+            if type(art) is singer:
+                art.voice     = uuid4().hex
+                art.register  = 'laryngealization'
+            
+            map = art.orm.mappings('firstname')
+            if not map:
+                map = art.orm.super.orm.mappings['firstname']
+
+            self.false(map.isfixed)
+            self.eq('varchar(%s)' % (str(map.max),), map.dbtype)
+
+            min, max = map.min, map.max
+
+            art.firstname = firstname = '\n\t ' + (Delta * 10) + '\n\t '
+            self.eq(firstname.strip(), art.firstname)
+
+            art.firstname = Delta * max
+            self.true(saveok(art, 'firstname'))
+
+            art.firstname += Delta
+            self.one(art.brokenrules)
+            self.broken(art, 'firstname', 'fits')
+
+            art.firstname = Delta * min
+            self.true(saveok(art, 'firstname'))
+
+            art.firstname = (Delta * (min - 1))
+            self.one(art.brokenrules)
+            self.broken(art, 'firstname', 'fits')
+
+            art.firstname = Cunei_a * 255
+            self.true(saveok(art, 'firstname'))
+
+            art.firstname += Cunei_a
+            self.one(art.brokenrules)
+            self.broken(art, 'firstname', 'fits')
+
+            art.firstname = Cunei_a * 255 # Unbreak
+
+            art.firstname = None
+            self.true(saveok(art, 'firstname'))
+
+            # Test fixed-length ssn property
+            art = artist()
+            art.firstname = uuid4().hex
+            art.lastname  = uuid4().hex
+            art.lifeform  = uuid4().hex
+            art.password  = bytes([randint(0, 255) for _ in range(32)])
+            art.phone     = '1' * 7
+            art.email     = 'username@domain.tld'
+            if type(art) is singer:
+                art.voice     = uuid4().hex
+                art.register  = 'laryngealization'
+
+            map = art.orm.mappings['ssn']
+            self.true(map.isfixed)
+            self.eq('char(%s)' % (map.max,), map.dbtype)
+            self.empty(art.ssn)
+
+            # We are treating ssn as a fixed-length string that can hold any
+            # unicode character - not just numeric characters. So lets user a roman
+            # numeral V.
+            art.ssn = V * map.max
+            self.true(saveok(art, 'ssn'))
+
+            art.ssn = V * (map.max + 1)
+            self.one(art.brokenrules)
+            self.broken(art, 'ssn', 'fits')
+
+            art.ssn = V * (map.min - 1)
+            self.one(art.brokenrules)
+            self.broken(art, 'ssn', 'fits')
+
+            art.ssn = None
+            self.true(saveok(art, 'ssn'))
+
+            # Test longtext
+            art = artist()
+            art.firstname = uuid4().hex
+            art.lastname  = uuid4().hex
+            art.lifeform  = uuid4().hex
+            art.password  = bytes([randint(0, 255) for _ in range(32)])
+            art.phone     = '1' * 7
+            art.email     = 'username@domain.tld'
+            art.ssn       = V * 11
+            if type(art) is singer:
+                art.voice     = uuid4().hex
+                art.register  = 'laryngealization'
+
+            map = art.orm.mappings['bio']
+            self.false(map.isfixed)
+            self.eq('longtext', map.dbtype)
+            self.none(art.bio)
+
+            art.bio = V * map.max
+            self.true(saveok(art, 'bio'))
+
+            art.bio = V * (map.max + 1)
+            self.one(art.brokenrules)
+            self.broken(art, 'bio', 'fits')
+
+            art.bio = V * (map.min - 1)
+            self.one(art.brokenrules)
+            self.broken(art, 'bio', 'fits')
+
+            art.bio = None
+            self.true(saveok(art, 'bio'))
+
+    def it_calls_explicit_float_attr_on_entity(self):
+        def saveok(e, attr):
+            getattr(e, 'save')()
+            e1 = builtins.type(e)(e.id)
+            return getattr(e, attr) == getattr(e1, attr)
+
+        comp = component.getvalid()
+
+        map = comp.orm.mappings['width']
+        self.type(float, comp.width)
+        self.eq(-9999.9, map.min)
+        self.eq(9999.9, map.max)
+
+        comp.width = -100
+        self.eq(100, comp.width)
+
+        saveok(comp, 'width')
+
+    def it_calls_explicit_int_attr_on_entity(self):
+        def saveok(e, attr):
+            getattr(e, 'save')()
+            e1 = builtins.type(e)(e.id)
+            return getattr(e, attr) == getattr(e1, attr)
+
+        art = artist.getvalid()
+
+        map = art.orm.mappings['phone']
+        self.type(int, art.phone)
+        self.eq(1000000, map.min)
+        self.eq(9999999, map.max)
+
+        art.phone = '555-5555'
+        self.eq(5555555, art.phone)
+
+        saveok(art, 'phone')
+
+    def it_calls_num_attr_on_entity(self):
+        def saveok(e, attr):
+            getattr(e, 'save')()
+            e1 = builtins.type(e)(e.id)
+            return getattr(e, attr) == getattr(e1, attr)
+
+        constraints = (
+            {
+                'cls': artifact,
+                'attr': 'price',
+                'type': 'decimal(12, 2)',
+                'signed': True,
+            },
+            {
+                'cls': component,
+                'attr': 'height',
+                'type': 'double(12, 2)',
+                'signed': True,
+            },
+            {
+                'cls': component,
+                'attr': 'weight',
+                'type': 'double(8, 7)',
+                'signed': True,
+            },
+            {
+                'cls': concert,
+                'attr': 'ticketprice',
+                'type': 'tinyint',
+                'signed': True,
+            },
+            {
+                'cls': concert,
+                'type': 'tinyint unsigned',
+                'attr': 'duration',
+                'signed': False,
+            },
+            {
+                'cls': concert,
+                'type': 'mediumint',
+                'attr': 'attendees',
+                'signed': True,
+            },
+            {
+                'cls': concert,
+                'type': 'mediumint unsigned',
+                'attr': 'capacity',
+                'signed': False,
+            },
+            {
+                'cls': artist,
+                'type': 'smallint unsigned',
+                'attr': 'weight',
+                'signed': False,
+            },
+            {
+                'cls': artist,
+                'type': 'int',
+                'attr': 'networth',
+                'signed': True,
+            },
+            {
+                'cls': concert,
+                'type': 'int unsigned',
+                'attr': 'externalid',
+                'signed': False,
+            },
+            {
+                'cls': artifact,
+                'type': 'bigint',
+                'attr': 'weight',
+                'signed': True,
+            },
+            {
+                'cls': concert,
+                'type': 'bigint unsigned',
+                'attr': 'externalid1',
+                'signed': False,
+            },
+        )
+        for const in constraints:
+            type    =  const['type']
+            attr    =  const['attr']
+            cls     =  const['cls']
+            signed  =  const['signed']
+
+            if 'double' in type:
+                pytype =  float
+            elif 'decimal' in type:
+                pytype = dec
+            elif 'int' in type:
+                pytype = int
+
+            dectype = pytype in (float, dec)
+
+            obj = cls.getvalid()
+            map = obj.orm.mappings[attr]
+
+            min, max = map.min, map.max
+
+            self.eq(type, map.dbtype, str(const))
+            self.eq(signed, map.signed, str(const))
+            self.true(hasattr(obj, attr))
+            self.zero(obj.brokenrules)
+            self.type(pytype, getattr(obj, attr))
+
+            # Test default
+            self.eq(pytype(), getattr(obj, attr))
+            self.true(saveok(obj, attr))
+
+            # Test min
+            setattr(obj, attr, min)
+            self.zero(obj.brokenrules)
+            self.true(saveok(obj, attr))
+
+            setattr(obj, attr, getattr(obj, attr) - 1)
+            self.one(obj.brokenrules)
+            self.broken(obj, attr, 'fits')
+
+            # Test max
+            setattr(obj, attr, max)
+            self.zero(obj.brokenrules)
+            self.true(saveok(obj, attr))
+
+            setattr(obj, attr, getattr(obj, attr) + 1)
+            self.one(obj.brokenrules)
+            self.broken(obj, attr, 'fits')
+
+            # Test given an int as a str
+            v = randint(int(min), int(max))
+            setattr(obj, attr, str(v))
+            self.eq(pytype(v), getattr(obj, attr))
+
+            # Test given a float/decimal as a str. This also ensures that floats and
+            # Decimals round to their scales.
+            if pytype is not int:
+                v = round(uniform(float(min), float(max)), map.scale)
+                setattr(obj, attr, str(v))
+
+                self.eq(round(pytype(v), map.scale), 
+                        getattr(obj, attr), str(const))
+
+                self.type(pytype, getattr(obj, attr))
+                self.true(saveok(obj, attr))
+
+            # Nullable
+            setattr(obj, attr, None)
+            self.zero(obj.brokenrules)
+            self.true(saveok(obj, attr))
+
+    def it_calls_datetime_attr_on_entity(self):
+        utc = timezone.utc
+
+        # It converts naive datetime to UTC
+        art = artist.getvalid()
+        self.none(art.dob)
+        art.dob = '2004-01-10'
+        self.type(primative.datetime, art.dob)
+        self.type(primative.datetime, art.dob)
+        expect = datetime(2004, 1, 10, tzinfo=utc)
+        self.eq(expect, art.dob)
+       
+        # Save, reload, test
+        art.save()
+        self.eq(expect, artist(art.id).dob)
+        self.type(primative.datetime, artist(art.id).dob)
+
+        # It converts aware datetime to UTC
+        aztz = dateutil.tz.gettz('US/Arizona')
+        azdt = datetime(2003, 10, 11, 10, 13, 46, tzinfo=aztz)
+        art.dob = azdt
+        expect = azdt.astimezone(utc)
+
+        self.eq(expect, art.dob)
+
+        # Save, reload, test
+        art.save()
+        self.eq(expect, artist(art.id).dob)
+        self.type(primative.datetime, artist(art.id).dob)
+
+        # It converts backt to AZ time using string tz
+        self.eq(azdt, art.dob.astimezone('US/Arizona'))
+
+        # Test invalid date times
+        art = art.getvalid()
+        
+        # Python can do a 1 CE, but MySQL can't so this should break validation.
+        art.dob = datetime(1, 1, 1)
+        self.one(art.brokenrules)
+        self.broken(art, 'dob', 'fits')
+
+        # Ensure microseconds are persisted
+        ms = randint(100000, 999999)
+        art.dob = primative.datetime('9999-12-31 23:59:59.%s' % ms)
+        art.save()
+        self.eq(ms, artist(art.id).dob.microsecond)
+
+        # The max is 9999-12-31 23:59:59.999999
+        art.dob = primative.datetime('9999-12-31 23:59:59.999999')
+        art.save()
+        self.eq(art.dob, artist(art.id).dob)
+        
+    def it_calls_str_propertys_setter_on_entity(self):
+        class persons(orm.entities):
+            pass
+
+        class person(orm.entity):
+            firstname = orm.fieldmapping(str)
+
+        p = person()
+
+        uuid = uuid4().hex
+        p.firstname = uuid
+
+        self.eq(uuid, p.firstname)
+        self.zero(p.brokenrules)
+
+        # Ensure whitespace in strip()ed from str values.
+        p.firstname = ' \n\t' + uuid + ' \n\t'
+        self.eq(uuid, p.firstname)
+        self.zero(p.brokenrules)
+
+    def it_calls_save_on_entity(self):
+        art = artist.getvalid()
+
+        # Test creating and retrieving an entity
+        art.firstname = uuid4().hex
+        art.lastname  = uuid4().hex
+        art.lifeform  = uuid4().hex
+
+        self.true(art.orm.isnew)
+        self.false(art.orm.isdirty)
+
+        with self._chrontest() as t:
+            t.run(art.save)
+            t.created(art)
+
+        self.false(art.orm.isnew)
+        self.false(art.orm.isdirty)
+
+        art1 = artist(art.id)
+
+        self.false(art1.orm.isnew)
+        self.false(art1.orm.isdirty)
+
+        for map in art1.orm.mappings:
+            if isinstance(map, orm.fieldmapping):
+                expect = getattr(art, map.name)
+                actual = getattr(art1, map.name)
+                self.eq(expect, actual, map.name)
+
+        # Test changing, saving and retrieving an entity
+        art1.firstname  =  uuid4().hex
+        art1.lastname   =  uuid4().hex
+        art1.phone      =  '2' * 7
+        art1.lifeform   =  uuid4().hex
+        art1.style      =  uuid4().hex
+        art1.weight     += 1
+        art1.networth   =  1
+        art1.dob        =  primative.datetime.now().replace(tzinfo=timezone.utc)
+        art1.password   = bytes([randint(0, 255) for _ in range(32)])
+        art1.ssn        = '2' * 11
+        art1.bio        = uuid4().hex
+        art1.email      = 'username1@domain.tld'
+        art1.title      = uuid4().hex[0]
+        art1.phone2     = uuid4().hex[0]
+        art1.email_1    = uuid4().hex[0]
+
+        self.false(art1.orm.isnew)
+        self.true(art1.orm.isdirty)
+
+        # Ensure that changing art1's properties don't change art's. This
+        # problem is likely to not reoccure, but did come up in early
+        # development.
+        for prop in art.orm.properties:
+            if prop == 'id':
+                self.eq(getattr(art1, prop), getattr(art, prop), prop)
+            else:
+                if prop in ('createdat', 'updatedat'):
+                    continue
+                self.ne(getattr(art1, prop), getattr(art, prop), prop)
+
+        self.chronicles.clear()
+        art1.save()
+        self._chrons(art1, 'update')
+
+        self.false(art1.orm.isnew)
+        self.false(art1.orm.isdirty)
+
+        art2 = artist(art.id)
+
+        for map in art2.orm.mappings:
+            if isinstance(map, orm.fieldmapping):
+                if map.isdatetime:
+                    name = map.name
+                    dt1 = getattr(art1, name)
+                    dt2 = getattr(art2, name)
+                    setattr(art1, name, dt1.replace(second=0, microsecond=0))
+                    setattr(art2, name, dt2.replace(second=0, microsecond=0))
+                self.eq(getattr(art1, map.name), getattr(art2, map.name))
+
+    def it_fails_to_save_broken_entity(self):
+        art = artist()
+
+        art.firstname = 'x' * 256
+        self.broken(art, 'firstname', 'fits')
+
+        # TODO Today (20150815) we can get a 
+        #     MySQLdb.OperationalError(2006, 'MySQL server has gone away')
+        # error instead of a BrokenRulesError. Why would we get this
+        # from as simple save.
+        try:
+            art.save()
+        except Exception as ex:
+            self.type(BrokenRulesError, ex)
+        else:
+            self.fail('Exception not thrown')
+
+    def it_hard_deletes_entity(self):
+        for i in range(2):
+            art = artist.getvalid()
+
+            art.save()
+
+            self.expect(None, lambda: artist(art.id))
+
+            if i:
+                art.lastname  = uuid4().hex
+                self.zero(art.brokenrules)
+            else:
+                art.lastname  = 'X' * 265 # break rule
+                self.one(art.brokenrules)
+
+            self.chronicles.clear()
+            art.delete()
+            self.one(self.chronicles)
+            self._chrons(art, 'delete')
+
+            self.eq((True, False, False), art.orm.persistencestate)
+
+            self.expect(db.RecordNotFoundError, lambda: artist(art.id))
+
+    def it_deletes_from_entitys_collections(self):
+        # Create artist with a presentation and save
+        art = artist.getvalid()
+        pres = presentation.getvalid()
+        art.presentations += pres
+        loc = location.getvalid()
+        art.presentations.last.locations += loc
+        art.save()
+
+        # Reload
+        art = artist(art.id)
+
+        # Test presentations and its trash collection
+        self.one(art.presentations)
+        self.zero(art.presentations.orm.trash)
+
+        self.one(art.presentations.first.locations)
+        self.zero(art.presentations.first.locations.orm.trash)
+
+        # Remove the presentation
+        pres = art.presentations.pop()
+
+        # Test presentations and its trash collection
+        self.zero(art.presentations)
+        self.one(art.presentations.orm.trash)
+
+        self.one(art.presentations.orm.trash.first.locations)
+        self.zero(art.presentations.orm.trash.first.locations.orm.trash)
+
+        self.chronicles.clear()
+        art.save()
+        self.two(self.chronicles)
+        self._chrons(pres, 'delete')
+        self._chrons(pres.locations.first, 'delete')
+
+        art = artist(art.id)
+        self.zero(art.presentations)
+        self.zero(art.presentations.orm.trash)
+
+        self.expect(db.RecordNotFoundError, lambda: presentation(pres.id))
+        self.expect(db.RecordNotFoundError, lambda: location(loc.id))
+
+    def it_raises_exception_on_unknown_id(self):
+        for cls in singer, artist:
+            try:
+                cls(uuid4())
+            except Exception as ex:
+                self.type(db.RecordNotFoundError, ex)
+            else:
+                self.fail('Exception not thrown')
+
+    def it_calls_dir_on_entity(self):
+        # Make sure mapped properties are returned when dir() is called.
+        # Also ensure there is only one of each property in the directory. If
+        # there are more, entitymeta may not be deleting the original property
+        # from the class body.
+        art = artist()
+        dir = builtins.dir(art)
+        for p in art.orm.properties:
+            self.eq(1, dir.count(p))
+
+    def it_calls_dir_on_subentity(self):
+        # Make sure mapped properties are returned when dir() is called.
+        # Also ensure there is only one of each property in the
+        # directory. If there are more, entitymeta may not be deleting
+        # the original property from the class body.
+
+        art = artist()
+        sng = singer()
+        dir = builtins.dir(sng)
+
+        # Inherited
+        for p in art.orm.properties:
+            self.eq(1, dir.count(p))
+
+        # Non-inherited
+        for p in sng.orm.properties:
+            self.eq(1, dir.count(p))
+
+    def it_calls_dir_on_subsubentity(self):
+        # Make sure mapped properties are returned when dir() is called.
+        # Also ensure there is only one of each property in the
+        # directory. If there are more, entitymeta may not be deleting
+        # the original property from the class body.
+
+        art = artist()
+        sng = singer()
+        rpr = rapper()
+        dir = builtins.dir(rpr)
+
+        # Indirectly inherited
+        for p in art.orm.properties:
+            self.eq(1, dir.count(p), p)
+
+        # Directly inherited
+        for p in sng.orm.properties:
+            self.eq(1, dir.count(p), p)
+
+        # Not inherited
+        for p in rpr.orm.properties:
+            self.eq(1, dir.count(p), p)
+
+    def it_calls_dir_on_association(self):
+        art = artist()
+        art.artifacts += artifact()
+        aa = art.artist_artifacts.first
+
+        d = dir(aa)
+
+        for prop in aa.orm.properties:
+            self.eq(1, d.count(prop))
+
+    def it_reconnects_closed_database_connections(self):
+        def art_onafterreconnect(src, eargs):
+            drown()
+
+        def drown():
+            pool = db.pool.getdefault()
+            for conn in pool._in + pool._out:
+                conn.kill()
+
+        # Kill all connections in and out of the pool
+        drown()
+
+        art = artist.getvalid()
+
+        # Subscribe to the onafterreconnect event so the connections can
+        # be re-drowned. This will ensure that the connections never get
+        # sucessfully reconnected which will cause an OperationalError.
+        art.onafterreconnect += art_onafterreconnect
+
+        self.expect(MySQLdb.OperationalError, lambda: art.save())
+
+        # Make sure the connections have been killed.
+        drown()
+
+        # Unsubscribe so .save() is allowed to reconnect. This will cause
+        # save() to be successful.
+        art.onafterreconnect -= art_onafterreconnect
+
+        self.expect(None, lambda: art.save())
+
+        # Ensure e._load recovers correctly from a disconnect like we did with
+        # e.save() above.  (Normally, __init__(id) for an entity calls
+        # self._load(id) internally.  Here we call art._load directly so we
+        # have time to subscribe to art's onafterreconnect event.)
+        drown()
+        id, art = art.id, artist.getvalid()
+        art.onafterreconnect += art_onafterreconnect
+
+        self.expect(MySQLdb.OperationalError, lambda: art._load(id))
+
+        art.onafterreconnect -= art_onafterreconnect
+
+        self.expect(None, lambda: art._load(id))
+
+        # Ensure that es.orm.load() recovers correctly from a reconnect
+        arts = artists(id=id)
+
+        # Subscribe to event to ensure loads fail. This will load arts first
+        # then subscribe so we have to clear arts next.
+        arts.onafterreconnect += art_onafterreconnect
+
+        # Subscribing to the event above loads arts so call the clear() method.
+        arts.clear()
+
+        # In addition to clear()ing the collection, flag the collection as
+        # unloaded to ensure an attempt is made to reload the collection when
+        # `arts.count` is called below.
+        arts.orm.isloaded = False
+
+        # Make sure connections are drowned.
+        drown()
+
+        # Calling count (or any attr) forces a load. Enuser the load causing an
+        # exception due to the previous drown()ing of connections.
+        self.expect(MySQLdb.OperationalError, lambda: arts.count)
+
+        # Remove the drowning event. 
+        arts.onafterreconnect -= art_onafterreconnect
+
+        # Drown again. We want to ensure that the next load will cause a
+        # recovery form the dead connection.
+        drown()
+
+        # Clear to force a reload
+        arts.clear()
+
+        # Calling the count property (like any attr) will load arts. No
+        # exception will be thrown because the drowning event handler was
+        # unsubscribed from.
+        self.expect(None, lambda: arts.count)
+
+    def it_mysql_warnings_are_exceptions(self):
+        def warn(cur):
+            cur.execute('select 0/0')
+
+        exec = db.executioner(warn)
+
+        self.expect(_mysql_exceptions.Warning, lambda: exec.execute())
+
+    def it_saves_multiple_graphs(self):
+        art1 = artist.getvalid()
+        art2 = artist.getvalid()
+        sng = singer.getvalid()
+
+        pres     =  presentation.getvalid()
+        sngpres  =  presentation.getvalid()
+        loc      =  location.getvalid()
+
+        art1.presentations += pres
+        sng.presentations += sngpres
+        art1.presentations.first.locations += loc
+
+        arts = artists()
+        for _ in range(2):
+            arts += artist.getvalid()
+
+        art1.save(art2, arts, sng)
+
+        for e in art1 + art2 + arts + sng:
+            self.expect(None, lambda: artist(e.id))
+
+        self.expect(None, lambda: presentation(pres.id))
+        self.expect(None, lambda: presentation(sngpres.id))
+        self.expect(None, lambda: location(loc.id))
+        self.expect(None, lambda: singer(sng.id))
+
+        art1.presentations.pop()
+
+        art2.save(art1, arts)
+
+        for e in art1 + art2 + arts + sng:
+            self.expect(None, lambda: artist(e.id))
+
+        self.expect(None, lambda: singer(sng.id))
+
+        self.expect(db.RecordNotFoundError, lambda: presentation(pres.id))
+        self.expect(db.RecordNotFoundError, lambda: location(loc.id))
+
+        for e in art1 + art2 + arts + sng:
+            e.delete()
+            self.expect(db.RecordNotFoundError, lambda: artist(pres.id))
+
+        arts.save(art1, art2, sng)
+
+        for e in art1 + art2 + arts + sng:
+            self.expect(None, lambda: artist(e.id))
+
+    def it_rollsback_save_of_entities_constituent(self):
+        # Create two artists
+        pres = presentation.getvalid()
+        art = artist.getvalid()
+        art.presentations += pres
+
+        arts = artists()
+
+        for _ in range(2):
+            arts += artist.getvalid()
+            arts.last.firstname = uuid4().hex
+
+        def saveall():
+            pres.save(arts.first, arts.second)
+
+        saveall()
+
+        # First, break the save method so a rollback occurs, and test
+        # the rollback. Second, fix the save method and ensure success.
+        for i in range(2):
+            if i:
+                # Restore original save method
+                arts.second._save = save
+
+                # Update property 
+                arts.first.firstname = new = uuid4().hex
+                saveall()
+                self.eq(new, artist(arts.first.id).firstname)
+            else:
+                # Update property
+                old, arts.first.firstname \
+                    = arts.first.firstname, uuid4().hex
+
+                # Break save method
+                save, arts.second._save \
+                    = arts.second._save, lambda x: 0/0
+
+                self.expect(ZeroDivisionError, saveall)
+
+                self.eq(old, artist(arts.first.id).firstname)
+
+    def it_calls_inherited_property(self):
+        s = singer()
+        uuid = uuid4().hex
+        s.firstname = uuid 
+        self.eq(uuid, s.firstname)
+
+    def it_inherited_class_has_same_id_as_super(self):
+        s = singer()
+        self.eq(s.orm.super.id, s.id)
+
+    def it_saves_and_loads_inherited_entity(self):
+        sng = singer.getvalid()
+        sng.firstname  =  fname  =  uuid4().hex
+        sng.voice      =  voc    =  uuid4().hex
+        sng.save()
+
+        art = sng1 = None
+        def load():
+            nonlocal art, sng1
+            art   = artist(sng.id)
+            sng1 = singer(sng.id)
+
+        self.expect(None, load)
+
+        self.eq(fname,  art.firstname)
+        self.eq(fname,  sng1.firstname)
+        self.eq(voc,    sng1.voice)
+
+    def it_saves_subentities(self):
+        chrons = self.chronicles
+
+        sngs = singers()
+
+        for _ in range(2):
+            sngs += singer.getvalid()
+            sngs.last.firstname = uuid4().hex
+            sngs.last.lastname = uuid4().hex
+
+        with self._chrontest() as t:
+            t.run(lambda: sngs.save())
+            t.created(sngs.first)
+            t.created(sngs.second)
+            t.created(sngs.first.orm.super)
+            t.created(sngs.second.orm.super)
+
+        for sng in sngs:
+            sng1 = singer(sng.id)
+            for map in sng.orm.mappings.all:
+                if not isinstance(map, orm.fieldmapping):
+                    continue
+
+                self.eq(getattr(sng, map.name), getattr(sng1, map.name))
+
+    def it_saves_subsubentities(self):
+        rprs = rappers()
+
+        for _ in range(2):
+            rprs += rapper.getvalid()
+            rprs.last.firstname = uuid4().hex
+            rprs.last.lastname = uuid4().hex
+
+        with self._chrontest() as t:
+            t.run(lambda: rprs.save())
+            t.created(rprs.first)
+            t.created(rprs.second)
+            t.created(rprs.first.orm.super)
+            t.created(rprs.second.orm.super)
+            t.created(rprs.first.orm.super.orm.super)
+            t.created(rprs.second.orm.super.orm.super)
+
+        for rpr in rprs:
+            rpr1 = rapper(rpr.id)
+
+            for map in rpr.orm.mappings.all:
+                if not isinstance(map, orm.fieldmapping):
+                    continue
+
+                self.eq(getattr(rpr, map.name), getattr(rpr1, map.name))
+
+    def it_rollsback_save_of_subentities(self):
+        # Create two singers
+        sngs = singers()
+
+        for _ in range(2):
+            sngs += singer.getvalid()
+            sngs.last.firstname = uuid4().hex
+            sngs.last.lastname = uuid4().hex
+
+        sngs.save()
+
+        # First, break the save method so a rollback occurs, and test the
+        # rollback. Second, fix the save method and ensure success.
+        for i in range(2):
+            if i:
+                # Restore original save method
+                sngs.second._save = save
+
+                # Update property 
+                sngs.first.firstname = new = uuid4().hex
+                sngs.save()
+                self.eq(new, singer(sngs.first.id).firstname)
+            else:
+                # Update property
+                old, sngs.first.firstname = sngs.first.firstname, uuid4().hex
+
+                # Break save method
+                save, sngs.second._save = sngs.second._save, lambda x: 0/0
+
+                self.expect(ZeroDivisionError, lambda: sngs.save())
+                self.eq(old, singer(sngs.first.id).firstname)
+
+    def it_rollsback_save_of_subsubentities(self):
+        # Create two rappers
+        rprs = rappers()
+
+        for _ in range(2):
+            rprs += rapper.getvalid()
+            rprs.last.firstname = uuid4().hex
+            rprs.last.lastname = uuid4().hex
+
+        rprs.save()
+
+        # First, break the save method so a rollback occurs, and test
+        # the rollback. Second, fix the save method and ensure success.
+        for i in range(2):
+            if i:
+                # Restore original save method
+                rprs.second._save = save
+
+                # Update property 
+                rprs.first.firstname = new = uuid4().hex
+                rprs.save()
+                self.eq(new, rapper(rprs.first.id).firstname)
+            else:
+                # Update property
+                old, rprs[0].firstname = rprs[0].firstname, uuid4().hex
+
+                # Break save method
+                save, rprs[1]._save = rprs[1]._save, lambda x: 0/0
+
+                self.expect(ZeroDivisionError, lambda: rprs.save())
+                self.eq(old, rapper(rprs.first.id).firstname)
+
+    def it_sets_reference_to_composite_on_subentity(self):
+        chrons = self.chronicles
+
+        sng = singer.getvalid()
+        for _ in range(2):
+            pres = presentation.getvalid()
+            sng.presentations += pres
+
+            pres.locations += location.getvalid()
+
+        sng.save()
+
+        for i, sng1 in enumerate((sng, singer(sng.id))):
+            for pres in sng1.presentations:
+                self.is_(sng1,            pres.singer)
+                self.is_(sng1.orm.super,  pres.artist)
+                self.eq(pres.singer.id,   pres.artist.id)
+                self.type(artist,         sng1.orm.super)
+                self.type(artist,         pres.singer.orm.super)
+
+                chrons.clear()
+                locs = sng.presentations[pres].locations.sorted()
+                locs1 = pres.locations.sorted()
+
+                loc, loc1 = locs.first, locs1.first
+
+                if i:
+                    self.one(chrons)
+                    self.eq(chrons.where('entity', pres.locations).first.op, 'retrieve')
+                else:
+                    self.zero(chrons)
+
+                self.one(locs)
+                self.one(locs1)
+                self.eq(loc.id, loc1.id)
+
+        sng = singer.getvalid()
+
+        for _ in range(2):
+            sng.concerts += concert.getvalid()
+            sng.concerts.last.locations += location.getvalid()
+
+        sng.save()
+
+        for i, sng in enumerate((sng, singer(sng.id))):
+            for j, conc in sng.concerts.enumerate():
+                chrons.clear()
+                self.is_(sng,            conc.singer)
+                self.is_(sng.orm.super,  conc.singer.orm.super)
+                self.type(artist,        sng.orm.super)
+                self.type(artist,        conc.singer.orm.super)
+
+                if i and not j:
+                    self.one(chrons)
+                else:
+                    self.zero(chrons)
+
+                chrons.clear()
+                locs = sng.concerts[conc].locations.sorted()
+                locs1 = conc.locations.sorted()
+
+                loc, loc1 = locs.first, locs1.first
+
+                if i:
+                    self.eq(chrons.where('entity', conc.locations).first.op, 'retrieve')
+                    self.eq(chrons.where('entity', conc.orm.super).first.op, 'retrieve')
+                    self.two(chrons)
+                else:
+                    self.zero(chrons)
+
+                self.one(locs)
+                self.one(locs1)
+                self.eq(loc.id, loc1.id)
+
+    def it_sets_reference_to_composite_on_subsubentity(self):
+        rpr = rapper.getvalid()
+        for _ in range(2):
+            pres = presentation.getvalid()
+            rpr.presentations += pres
+            pres.locations += location.getvalid()
+
+        rpr.save()
+
+        for i, rpr1 in enumerate((rpr, rapper(rpr.id))):
+            for pres in rpr1.presentations:
+
+                # TODO Calling pres.singer raise exception
+                #self.is_(rpr1.orm.super,  pres.singer)
+                #self.eq(pres.singer.id,   pres.artist.id)
+                #self.type(artist,         pres.singer.orm.super)
+                self.is_(rpr1,                      pres.rapper)
+                self.is_(rpr1.orm.super.orm.super,  pres.artist)
+                self.type(rapper,                   pres.rapper)
+                self.type(artist,         rpr1.orm.super.orm.super)
+
+                locs = rpr.presentations[pres].locations.sorted()
+
+                with self._chrontest() as t:
+                    locs1 = t.run(pres.locations.sorted)
+
+                self.one(locs)
+                self.one(locs1)
+                self.eq(locs.first.id, locs1.first.id)
+
+        rpr = rapper.getvalid()
+
+        for _ in range(2):
+            rpr.concerts += concert.getvalid()
+            rpr.concerts.last.locations += location.getvalid()
+
+        rpr.save()
+
+        for i, rpr in enumerate((rpr, rapper(rpr.id))):
+            for j, conc in rpr.concerts.enumerate():
+                
+                def f():
+                    self.is_(rpr,            conc.rapper)
+                    self.is_(rpr.orm.super,  conc.singer)
+
+                    # TODO Calling cons.artists failes
+                    # self.is_(rpr.orm.super.orm.super,  conc.artist)
+                    self.type(singer,        rpr.orm.super)
+                    self.type(artist,        conc.singer.orm.super)
+
+                with self._chrontest() as t:
+                    t.run(f)
+                    if i and not j:
+                        t.retrieved(conc.singer.orm.super)
+
+                def f():
+                    locs = rpr.concerts[conc].locations.sorted()
+                    locs1 = conc.locations.sorted()
+                    return locs, locs1
+
+                with self._chrontest() as t:
+                    locs, locs1 = t.run(f)
+
+                    if i:
+                        t.retrieved(conc.locations)
+                        t.retrieved(conc.orm.super)
+
+                    loc, loc1 = locs.first, locs1.first
+                    self.one(locs)
+                    self.one(locs1)
+                    self.eq(loc.id, loc1.id)
+
+        for _ in range(2):
+            rpr.battles += battle.getvalid()
+            rpr.battles.last.locations += location.getvalid()
+
+        rpr.save()
+
+        for i, rpr in enumerate((rpr, rapper(rpr.id))):
+            for j, btl in rpr.battles.enumerate():
+                def f():
+                    self.is_(rpr,                      btl.rapper)
+
+                    # TODO Accessing btl.singer and btl.artist 
+                    #self.is_(rpr.orm.super,            btl.singer)
+                    #self.is_(rpr.orm.super.orm.super,  btl.artist)
+
+                    self.type(rapper,                  btl.rapper)
+                    #self.type(singer,                  btl.singer)
+                    #self.type(artist,                  btl.artist)
+
+                with self._chrontest() as t:
+                    t.run(f)
+
+    def it_loads_and_saves_subentitys_constituents(self):
+        chrons = self.chronicles
+
+        # Ensure that a new composite has a constituent object with zero
+        # elements
+        sng = singer.getvalid()
+        self.zero(sng.presentations)
+
+        # Ensure a saved composite object with zero elements in a
+        # constituent collection loads with zero the constituent
+        # collection containing zero elements.
+        sng.firstname = uuid4().hex
+        sng.lastname  = uuid4().hex
+        sng.voice     = uuid4().hex
+
+        self.zero(sng.presentations)
+
+        sng.save()
+
+        self.zero(sng.presentations)
+
+        sng = singer(sng.id)
+        self.zero(sng.presentations)
+        self.is_(sng,            sng.presentations.singer)
+        self.is_(sng.orm.super,  sng.presentations.artist)
+
+        sng = singer.getvalid()
+
+        sng.presentations += presentation.getvalid()
+        sng.presentations += presentation.getvalid()
+
+        for pres in sng.presentations:
+            pres.name = uuid4().hex
+
+        chrons.clear()
+        sng.save()
+
+        self.four(chrons)
+        press = sng.presentations
+        self.eq(chrons.where('entity', sng.orm.super).first.op, 'create')
+        self.eq(chrons.where('entity', sng).first.op, 'create')
+        self.eq(chrons.where('entity', press.first).first.op, 'create')
+        self.eq(chrons.where('entity', press.second).first.op, 'create')
+
+        sng1 = singer(sng.id)
+
+        chrons.clear()
+        press = sng1.presentations
+
+        self.two(chrons)
+
+        self.eq(chrons.where('entity', press).first.op, 'retrieve')
+
+        sng.presentations.sort()
+        sng1.presentations.sort()
+        for pres, pres1 in zip(sng.presentations, sng1.presentations):
+            for map in pres.orm.mappings:
+                if isinstance(map, orm.fieldmapping):
+                    self.eq(getattr(pres, map.name), getattr(pres1, map.name))
+            
+            self.is_(pres1.singer, sng1)
+            self.is_(pres1.artist, sng1.orm.super)
+
+        # Create some locations with the presentations, save singer,
+        # reload and test
+        for pres in sng.presentations:
+            for _ in range(2):
+                pres.locations += location.getvalid()
+
+        chrons.clear()
+        sng.save()
+
+        self.four(chrons)
+
+        locs = sng.presentations.first.locations
+        self.eq(chrons.where('entity', locs.first).first.op, 'create')
+        self.eq(chrons.where('entity', locs.second).first.op, 'create')
+
+        locs = sng.presentations.second.locations
+        self.eq(chrons.where('entity', locs.first).first.op, 'create')
+        self.eq(chrons.where('entity', locs.second).first.op, 'create')
+
+        sng1 = singer(sng.id)
+        self.two(sng1.presentations)
+
+        sng.presentations.sort()
+        sng1.presentations.sort()
+        for pres, pres1 in zip(sng.presentations, sng1.presentations):
+
+            pres.locations.sort()
+
+            chrons.clear()
+            pres1.locations.sort()
+
+            self.one(chrons)
+            locs = pres1.locations
+            self.eq(chrons.where('entity', locs).first.op, 'retrieve')
+
+            for loc, loc1 in zip(pres.locations, pres1.locations):
+                for map in loc.orm.mappings:
+                    if isinstance(map, orm.fieldmapping):
+                        self.eq(getattr(loc, map.name), getattr(loc1, map.name))
+            
+                self.is_(pres1, loc1.presentation)
+
+        # Test appending a collection of constituents to a constituents
+        # collection. Save, reload and test.
+        sng = singer.getvalid()
+        press = presentations()
+
+        for _ in range(2):
+            press += presentation.getvalid()
+
+        sng.presentations += press
+
+        for i in range(2):
+            if i:
+                sng.save()
+                sng = singer(sng.id)
+
+            self.eq(press.count, sng.presentations.count)
+
+            for pres in sng.presentations:
+                self.is_(sng, pres.singer)
+                self.is_(sng.orm.super, pres.artist)
+
+    def it_loads_and_saves_subsubentitys_constituents(self):
+        rpr = rapper.getvalid()
+        self.zero(rpr.presentations)
+        self.zero(rpr.concerts)
+
+        # Ensure a saved composite object with zero elements in a
+        # constituent collection loads with zero the constituent
+        # collection containing zero elements.
+        rpr.firstname = uuid4().hex
+        rpr.lastname  = uuid4().hex
+        rpr.voice     = uuid4().hex
+
+        self.zero(rpr.presentations)
+        self.zero(rpr.concerts)
+
+        rpr.save()
+
+        self.zero(rpr.presentations)
+        self.zero(rpr.concerts)
+
+        rpr = rapper(rpr.id)
+
+        self.zero(rpr.presentations)
+        self.zero(rpr.concerts)
+        self.is_(rpr,                      rpr.presentations.rapper)
+
+        # TODO rpr.presentations.singer isn't available here, though it
+        # id: e217aa8b6db242eebfd88f11a55d1fde
+        # feels like it should be. The reason `rapper` is available is
+        # because rpr.__getattribute__ sets it. The reason `artist` is
+        # available is because `presentations` is a constituent of
+        # artist.
+        #
+        # `singer` could be made available, but its implementation would
+        # be tricky. Code in entities.__getattribute__ could look for
+        # artist or rapper and try to work out the id for singer, then
+        # load singer from the db. I'd like this to be presented as a
+        # realistic use case before proceeding with an implementation.
+        #self.is_(rpr.orm.super,            rpr.presentations.singer)
+        self.is_(rpr.orm.super.orm.super,  rpr.presentations.artist)
+
+        rpr = rapper.getvalid()
+
+        for _ in range(2):
+            rpr.concerts                 +=  concert.getvalid()
+            rpr.presentations            +=  presentation.getvalid()
+            rpr.presentations.last.name  =   uuid4().hex
+            rpr.concerts.last.name       =   uuid4().hex
+
+        with self._chrontest() as t:
+            t.run(rpr.save)
+
+            t.created(rpr)
+            t.created(rpr.orm.super)
+            t.created(rpr.orm.super.orm.super)
+            t.created(rpr.concerts.first)
+            t.created(rpr.concerts.second)
+            t.created(rpr.concerts.first.orm.super)
+            t.created(rpr.concerts.second.orm.super)
+            t.created(rpr.presentations.first)
+            t.created(rpr.presentations.second)
+
+        rpr1 = rapper(rpr.id)
+
+        with self._chrontest() as t:
+            press = t.run(lambda: rpr1.presentations)
+            t.retrieved(press)
+            t.retrieved(rpr1.orm.super)
+            t.retrieved(rpr1.orm.super.orm.super)
+
+        rpr.presentations.sort()
+        rpr1.presentations.sort()
+
+        for pres, pres1 in zip(rpr.presentations, rpr1.presentations):
+            if presentation in [x.__class__ for x in (pres, pres1)]:
+                maps = presentations.orm.mappings
+            else:
+                maps = concerts.orm.mappings
+
+            for map in maps:
+                if map.name in ('createdat', 'updatedat'):
+                    continue
+
+                if isinstance(map, orm.fieldmapping):
+                    self.eq(getattr(pres, map.name), 
+                            getattr(pres1, map.name), map.name)
+            
+            self.is_(pres1.rapper, rpr1)
+            # TODO The below dosen't work because pres has an artist
+            # but doesn't know how to downcast that artist to
+            # singer.
+            # See e217aa8b6db242eebfd88f11a55d1fde
+            # self.is_(pres1.singer, rpr1.orm.super)
+            self.is_(pres1.artist, rpr1.orm.super.orm.super)
+
+        # Create some locations with the presentations, save rapper,
+        # reload and test
+        for pres in rpr.presentations:
+            for _ in range(2):
+                pres.locations += location.getvalid()
+
+        with self._chrontest() as t:
+            t.run(rpr.save)
+            for pres in rpr.presentations:
+                for i in range(2):
+                    t.created(pres.locations[i])
+
+        rpr1 = rapper(rpr.id)
+        self.four(rpr1.presentations)
+
+        rpr.presentations.sort()
+        rpr1.presentations.sort()
+
+        for pres, pres1 in zip(rpr.presentations, rpr1.presentations):
+            pres.locations.sort()
+
+            with self._chrontest() as t:
+                t.run(lambda: pres1.locations.sort())
+                t.retrieved(pres1.locations)
+
+            for loc, loc1 in zip(pres.locations, pres1.locations):
+                for map in loc.orm.mappings:
+                    if isinstance(map, orm.fieldmapping):
+                        self.eq(
+                            getattr(loc, map.name), 
+                            getattr(loc1, map.name)
+                        )
+            
+                self.is_(pres1, loc1.presentation)
+
+        # Test appending a collection of constituents to a constituents
+        # collection. Save, reload and test.
+        rpr = rapper.getvalid()
+        press = presentations()
+
+        for _ in range(2):
+            press += presentation.getvalid()
+
+        rpr.presentations += press
+
+        for i in range(2):
+            if i:
+                rpr.save()
+                rpr = rapper(rpr.id)
+
+            self.eq(press.count, rpr.presentations.count)
+
+            for pres in rpr.presentations:
+                self.is_(rpr, pres.rapper)
+
+                # TODO The below dosen't work because pres has an artist
+                # but doesn't know how to downcast that artist to
+                # singer.
+                # See e217aa8b6db242eebfd88f11a55d1fde
+                #self.is_(rpr.orm.super.id, pres.singer.id)
+
+                self.is_(rpr.orm.super.orm.super.id, pres.artist.id)
+
+    def it_loads_and_saves_subentitys_subentity_constituents(self):
+        chrons = self.chronicles
+
+        # Ensure that a new composite has a constituent subentities with
+        # zero elements
+        sng = singer.getvalid()
+        self.zero(sng.concerts)
+
+        # Ensure a saved composite object with zero elements in a
+        # subentities constituent collection loads with zero the
+        # constituent collection containing zero elements.
+        sng.firstname = uuid4().hex
+        sng.lastname  = uuid4().hex
+        sng.voice     = uuid4().hex
+
+        self.zero(sng.concerts)
+
+        sng.save()
+
+        self.zero(sng.concerts)
+
+        sng = singer(sng.id)
+
+        self.zero(sng.concerts)
+
+        self.is_(sng,            sng.concerts.singer)
+
+        # TODO Entities collections can't load super composites:
+        # `sng.concerts.singer` above works because when `concerts` is
+        # loaded by sng's __getattribute__, self is assigned to the
+        # `singer` reference. However, the super's of singer don't get
+        # assigned. When sng.concerts.artist is called below, the artist
+        # should be lazy-loaded.
+        # self.is_(sng.orm.super,  sng.concerts.artist)
+
+        sng = singer.getvalid()
+
+        sng.concerts += concert.getvalid()
+        sng.concerts += concert.getvalid()
+
+        for conc in sng.concerts:
+            conc.name = uuid4().hex
+
+        chrons.clear()
+        sng.save()
+
+        self.six(chrons)
+        concs = sng.concerts
+        self.eq(chrons.where('entity',  sng.orm.super).first.op,    'create')
+        self.eq(chrons.where('entity',  sng).first.op,              'create')
+        self.eq(chrons.where('entity',  concs.first).first.op,      'create')
+        self.eq(chrons.where('entity',  concs.second).first.op,     'create')
+        self.eq(chrons.where('entity',  concs[0].orm.super)[0].op,  'create')
+        self.eq(chrons.where('entity',  concs[1].orm.super)[0].op,  'create')
+
+        sng1 = singer(sng.id)
+
+        chrons.clear()
+        concs = sng1.concerts
+
+        self.one(chrons)
+        self.eq(chrons.where('entity', concs).first.op, 'retrieve')
+
+        sng.concerts.sort()
+        sng1.concerts.sort()
+        for conc, conc1 in zip(sng.concerts, sng1.concerts):
+            for map in conc.orm.mappings:
+                if isinstance(map, orm.fieldmapping):
+                    self.eq(getattr(conc, map.name), getattr(conc1, map.name))
+            
+            self.is_(conc1.singer, sng1)
+
+        # Create some locations with the concerts, save singer, reload and
+        # test
+        for conc in sng.concerts:
+            for _ in range(2):
+                conc.locations += location.getvalid()
+
+        chrons.clear()
+        sng.save()
+
+        self.four(chrons)
+
+        locs = sng.concerts.first.locations
+        self.eq(chrons.where('entity', locs.first).first.op, 'create')
+        self.eq(chrons.where('entity', locs.second).first.op, 'create')
+
+        locs = sng.concerts.second.locations
+        self.eq(chrons.where('entity', locs.first).first.op, 'create')
+        self.eq(chrons.where('entity', locs.second).first.op, 'create')
+
+        sng1 = singer(sng.id)
+        self.two(sng1.concerts)
+
+        sng.concerts.sort()
+        sng1.concerts.sort()
+        for conc, conc1 in zip(sng.concerts, sng1.concerts):
+
+            conc.locations.sort()
+
+            chrons.clear()
+            conc1.locations.sort()
+
+            locs = conc1.locations
+
+            self.eq(chrons.where('entity', locs).first.op, 'retrieve')
+            self.eq(chrons.where('entity', conc1.orm.super).first.op, 'retrieve')
+            self.two(chrons)
+
+            for loc, loc1 in zip(conc.locations, conc1.locations):
+                for map in loc.orm.mappings:
+                    if isinstance(map, orm.fieldmapping):
+                        self.eq(getattr(loc, map.name), getattr(loc1, map.name))
+            
+                self.is_(conc1, loc1.concert)
+
+        # Test appending a collection of constituents to a constituents
+        # collection. Save, reload and test.
+        sng = singer.getvalid()
+        concs = concerts()
+
+        for _ in range(2):
+            concs += concert.getvalid()
+
+        sng.concerts += concs
+
+        for i in range(2):
+            if i:
+                sng.save()
+                sng = singer(sng.id)
+
+            self.eq(concs.count, sng.concerts.count)
+
+            for conc in sng.concerts:
+                self.is_(sng, conc.singer)
+                self.type(artist, sng.orm.super)
+
+    def it_loads_and_saves_subsubentitys_subsubentity_constituents(
+        self):
+
+        # Ensure that a new composite has a constituent subentities with
+        # zero elements
+        rpr = rapper.getvalid()
+        self.zero(rpr.battles)
+
+        # Ensure a saved composite object with zero elements in a
+        # subentities constituent collection loads with zero the
+        # constituent collection containing zero elements.
+        rpr.firstname  =  uuid4().hex
+        rpr.lastname   =  uuid4().hex
+        rpr.voice      =  uuid4().hex
+        rpr.stagename  =  uuid4().hex
+
+        self.zero(rpr.battles)
+
+        rpr.save()
+
+        self.zero(rpr.battles)
+
+        rpr = rapper(rpr.id)
+
+        self.zero(rpr.battles)
+
+        self.is_(rpr,            rpr.battles.rapper)
+
+        # TODO Entities collections can't load super composites:
+        # `rpr.battles.rapper` above works because when `battles` is
+        # loaded by rpr's __getattribute__, self is assigned to the
+        # `rapper` reference. However, the super's of rapper don't get
+        # assigned. When rpr.battles.artist is called below, the artist
+        # should be lazy-loaded.
+        # self.is_(rpr.orm.super,  rpr.battles.artist)
+
+        rpr = rapper.getvalid()
+
+        rpr.battles += battle.getvalid()
+        rpr.battles += battle.getvalid()
+
+        for btl in rpr.battles:
+            btl.name = uuid4().hex
+
+        with self._chrontest() as t:
+            t.run(rpr.save)
+            t.created(rpr)
+            t.created(rpr.orm.super)
+            t.created(rpr.orm.super.orm.super)
+            t.created(rpr.battles.first)
+            t.created(rpr.battles.first.orm.super)
+            t.created(rpr.battles.first.orm.super.orm.super)
+            t.created(rpr.battles.second)
+            t.created(rpr.battles.second.orm.super)
+            t.created(rpr.battles.second.orm.super.orm.super)
+        
+        rpr1 = rapper(rpr.id)
+
+        with self._chrontest() as t:
+            btls = t.run(lambda: rpr1.battles)
+            t.retrieved(btls)
+
+        rpr.battles.sort()
+        rpr1.battles.sort()
+        for btl, btl1 in zip(rpr.battles, rpr1.battles):
+            for map in btl.orm.mappings:
+                if isinstance(map, orm.fieldmapping):
+                    self.eq(
+                        getattr(btl, map.name), 
+                        getattr(btl1, map.name)
+                    )
+            
+            self.is_(btl1.rapper, rpr1)
+
+        # Create some locations with the battles, save rapper, reload
+        # and test
+        for btl in rpr.battles:
+            for _ in range(2):
+                btl.locations += location.getvalid()
+
+        with self._chrontest() as t:
+            t.run(rpr.save)
+            t.created(rpr.battles.first.locations.first)
+            t.created(rpr.battles.first.locations.second)
+            t.created(rpr.battles.second.locations.first)
+            t.created(rpr.battles.second.locations.second)
+
+        rpr1 = rapper(rpr.id)
+        self.two(rpr1.battles)
+
+        rpr.battles.sort()
+        rpr1.battles.sort()
+        for btl, btl1 in zip(rpr.battles, rpr1.battles):
+            btl.locations.sort()
+
+            with self._chrontest() as t:
+                t.run(lambda: btl1.locations.sort)
+                t.retrieved(btl1.locations)
+                t.retrieved(btl1.orm.super)
+                t.retrieved(btl1.orm.super.orm.super)
+
+            for loc, loc1 in zip(btl.locations, btl1.locations):
+                for map in loc.orm.mappings:
+                    if isinstance(map, orm.fieldmapping):
+                        self.eq(getattr(loc, map.name), getattr(loc1, map.name))
+            
+                self.is_(btl1, loc1.battle)
+
+        # Test appending a collection of constituents to a constituents
+        # collection. Save, reload and test.
+        rpr = rapper.getvalid()
+        btls = battles()
+
+        for _ in range(2):
+            btls += battle.getvalid()
+
+        rpr.battles += btls
+
+        for i in range(2):
+            if i:
+                rpr.save()
+                rpr = rapper(rpr.id)
+
+            self.eq(btls.count, rpr.battles.count)
+
+            for btl in rpr.battles:
+                self.is_(rpr, btl.rapper)
+                self.type(singer, rpr.orm.super)
+
+    def it_updates_subentities_constituents_properties(self):
+        chrons = self.chronicles
+        sng = singer.getvalid()
+
+        for _ in range(2):
+            sng.presentations += presentation.getvalid()
+            sng.presentations.last.name = uuid4().hex
+
+            for _ in range(2):
+                sng.presentations.last.locations += location.getvalid()
+                sng.presentations.last.locations.last.description = uuid4().hex
+
+        sng.save()
+
+        sng1 = singer(sng.id)
+        for pres in sng1.presentations:
+            pres.name = uuid4().hex
+            
+            for loc in pres.locations:
+                loc.description = uuid4().hex
+
+        chrons.clear()
+        sng1.save()
+        self.six(chrons)
+        for pres in sng1.presentations:
+            self.eq(chrons.where('entity', pres).first.op, 'update')
+            for loc in pres.locations:
+                self.eq(chrons.where('entity', loc).first.op, 'update')
+            
+
+        sng2 = singer(sng.id)
+        press = sng.presentations, sng1.presentations, sng2.presentations
+        for pres, pres1, pres2 in zip(*press):
+
+            # Make sure the properties were changed
+            self.ne(getattr(pres2, 'name'), getattr(pres,  'name'))
+
+            # Make user sng1.presentations props match those of sng2
+            self.eq(getattr(pres2, 'name'), getattr(pres1, 'name'))
+
+            locs = pres.locations, pres1.locations, pres2.locations
+            for loc, loc1, loc2 in zip(*locs):
+                # Make sure the properties were changed
+                self.ne(getattr(loc2, 'description'), getattr(loc,  'description'))
+
+                # Make user sng1 locations props match those of sng2
+                self.eq(getattr(loc2, 'description'), getattr(loc1, 'description'))
+
+    def it_updates_subsubentities_constituents_properties(self):
+        rpr = rapper.getvalid()
+
+        for _ in range(2):
+            rpr.presentations += presentation.getvalid()
+            rpr.presentations.last.name = uuid4().hex
+
+            for _ in range(2):
+                rpr.presentations.last.locations \
+                    += location.getvalid()
+                rpr.presentations.last.locations.last.description \
+                    = uuid4().hex
+
+        rpr.save()
+
+        rpr1 = rapper(rpr.id)
+        for pres in rpr1.presentations:
+            pres.name = uuid4().hex
+            
+            for loc in pres.locations:
+                loc.description = uuid4().hex
+
+        with self._chrontest() as t:
+            t.run(rpr1.save)
+            for pres in rpr1.presentations:
+                t.updated(pres)
+                for loc in pres.locations:
+                    t.updated(loc)
+            
+        rpr2 = rapper(rpr.id)
+
+        press = (
+            rpr.presentations, 
+            rpr1.presentations, 
+            rpr2.presentations
+        )
+
+        for pres, pres1, pres2 in zip(*press):
+
+            # Make sure the properties were changed
+            self.ne(getattr(pres2, 'name'), getattr(pres,  'name'))
+
+            # Make user rpr1.presentations props match those of rpr2
+            self.eq(getattr(pres2, 'name'), getattr(pres1, 'name'))
+
+            locs = pres.locations, pres1.locations, pres2.locations
+            for loc, loc1, loc2 in zip(*locs):
+                # Make sure the properties were changed
+                self.ne(
+                    getattr(loc2, 'description'),
+                    getattr(loc,  'description')
+                )
+
+                # Make user rpr1 locations props match those of rpr2
+                self.eq(
+                    getattr(loc2, 'description'), 
+                    getattr(loc1, 'description')
+                )
+
+    def it_updates_subentitys_subentities_constituents_properties(self):
+        chrons = self.chronicles
+        sng = singer.getvalid()
+
+        for _ in range(2):
+            sng.concerts += concert.getvalid()
+            sng.concerts.last.record = uuid4().hex
+
+            for _ in range(2):
+                sng.concerts.last.locations += location.getvalid()
+                sng.concerts.last.locations.last.description = uuid4().hex
+
+        sng.save()
+
+        sng1 = singer(sng.id)
+        for conc in sng1.concerts:
+            conc.record = uuid4().hex
+            conc.name   = uuid4().hex
+            
+            for loc in conc.locations:
+                loc.description = uuid4().hex
+
+        chrons.clear()
+        sng1.save()
+
+        self.eight(chrons)
+        for conc in sng1.concerts:
+            self.eq(chrons.where('entity', conc).first.op, 'update')
+            self.eq(chrons.where('entity', conc.orm.super).first.op, 'update')
+            for loc in conc.locations:
+                self.eq(chrons.where('entity', loc).first.op, 'update')
+            
+
+        sng2 = singer(sng.id)
+        concs = (sng.concerts, sng1.concerts, sng2.concerts)
+        for conc, conc1, conc2 in zip(*concs):
+            # Make sure the properties were changed
+            self.ne(getattr(conc2, 'record'), getattr(conc,  'record'))
+            self.ne(getattr(conc2, 'name'),   getattr(conc,  'name'))
+
+            # Make user sng1.concerts props match those of sng2
+            self.eq(getattr(conc2, 'record'), getattr(conc1, 'record'))
+            self.eq(getattr(conc2, 'name'),   getattr(conc1, 'name'))
+
+            locs = conc.locations, conc1.locations, conc2.locations
+            for loc, loc1, loc2 in zip(*locs):
+                # Make sure the properties were changed
+                self.ne(getattr(loc2, 'description'), getattr(loc,  'description'))
+
+                # Make user sng1 locations props match those of sng2
+                self.eq(getattr(loc2, 'description'), getattr(loc1, 'description'))
+
+    def it_updates_subsubentitys_subsubentities_constituents_properties(
+        self):
+
+        rpr = rapper.getvalid()
+
+        for _ in range(2):
+            rpr.concerts += concert.getvalid()
+            rpr.concerts.last.record = uuid4().hex
+
+            for _ in range(2):
+                rpr.concerts.last.locations \
+                    += location.getvalid()
+
+                rpr.concerts.last.locations.last.description \
+                    = uuid4().hex
+
+        rpr.save()
+
+        rpr1 = rapper(rpr.id)
+        for conc in rpr1.concerts:
+            conc.record = uuid4().hex
+            conc.name   = uuid4().hex
+            
+            for loc in conc.locations:
+                loc.description = uuid4().hex
+
+        with self._chrontest() as t:
+            t.run(rpr1.save)
+            for conc in rpr1.concerts:
+                t.updated(conc)
+                t.updated(conc.orm.super)
+                for loc in conc.locations:
+                    t.updated(loc)
+
+        rpr2 = rapper(rpr.id)
+        concs = (rpr.concerts, rpr1.concerts, rpr2.concerts)
+        for conc, conc1, conc2 in zip(*concs):
+            # Make sure the properties were changed
+            self.ne(getattr(conc2, 'record'), getattr(conc,  'record'))
+            self.ne(getattr(conc2, 'name'),   getattr(conc,  'name'))
+
+            # Make user rpr1.concerts props match those of rpr2
+            self.eq(getattr(conc2, 'record'), getattr(conc1, 'record'))
+            self.eq(getattr(conc2, 'name'),   getattr(conc1, 'name'))
+
+            locs = conc.locations, conc1.locations, conc2.locations
+            for loc, loc1, loc2 in zip(*locs):
+                # Make sure the properties were changed
+                self.ne(
+                    getattr(loc2, 'description'), 
+                    getattr(loc,  'description')
+                )
+
+                # Make user rpr1 locations props match those of rpr2
+                self.eq(
+                    getattr(loc2, 'description'), 
+                    getattr(loc1, 'description')
+                )
+
+        # Battles
+        rpr1 = rapper(rpr.id)
+        for btl in rpr1.battles:
+            btl.record = uuid4().hex
+            btl.name   = uuid4().hex
+            btl.views  = rand(1, 255)
+            
+            for loc in btl.locations:
+                loc.description = uuid4().hex
+
+        with self._chrontest() as t:
+            t.run(rpr1.save)
+            for btl in rpr1.battles:
+                t.updated(btl)
+                t.updated(btl.orm.super)
+                for loc in btl.locations:
+                    t.updated(loc)
+
+        rpr2 = rapper(rpr.id)
+        btls = (rpr.battles, rpr1.battles, rpr2.battles)
+        for btl, btl1, btl2 in zip(*btls):
+            # Make sure the properties were changed
+            self.ne(getattr(btl2,  'record'),  getattr(btl,  'record'))
+            self.ne(getattr(btl2,  'name'),    getattr(btl,  'name'))
+            self.ne(getattr(btl2,  'views'),   getattr(btl,  'views'))
+
+            # Make user rpr1.battles props match those of rpr2
+            self.eq(getattr(btl2,  'record'),  getattr(btl1,  'record'))
+            self.eq(getattr(btl2,  'views'),   getattr(btl1,  'views'))
+            self.ne(getattr(btl2,  'name'),    getattr(btl,   'name'))
+
+            locs = btl.locations, btl1.locations, btl2.locations
+            for loc, loc1, loc2 in zip(*locs):
+                # Make sure the properties were changed
+                self.ne(
+                    getattr(loc2, 'description'), 
+                    getattr(loc,  'description')
+                )
+
+                # Make user rpr1 locations props match those of rpr2
+                self.eq(
+                    getattr(loc2, 'description'), 
+                    getattr(loc1, 'description')
+                )
+
+    def it_saves_and_loads_subentity_constituent(self):
+        chrons = self.chronicles
+
+        # Make sure the constituent is None for new composites
+        pres = presentation.getvalid()
+
+        chrons.clear()
+        self.none(pres.artist)
+        self.zero(chrons)
+
+        self.zero(pres.brokenrules)
+
+        # Test setting an entity constituent then test saving and loading
+        sng = singer.getvalid()
+        pres.artist = sng
+        self.is_(sng, pres.artist)
+
+        chrons.clear()
+        pres.save()
+        self.three(chrons)
+        self.eq(chrons.where('entity',  sng).first.op,            'create')
+        self.eq(chrons.where('entity',  sng.orm.super).first.op,  'create')
+        self.eq(chrons.where('entity',  pres).first.op,           'create')
+
+        # Load by artist then lazy-load presentations to test
+        art1 = artist(pres.artist.id)
+        self.one(art1.presentations)
+        self.eq(art1.presentations.first.id, pres.id)
+
+        # Load by presentation and lazy-load artist to test
+        pres1 = presentation(pres.id)
+
+        chrons.clear()
+        self.eq(pres1.artist.id, pres.artist.id)
+        self.one(chrons)
+        self.eq(chrons.where('entity', pres1.artist).first.op,  'retrieve')
+
+        sng1 = singer.getvalid()
+        pres1.artist = sng1
+
+        chrons.clear()
+        pres1.save()
+
+        self.three(chrons)
+        self.eq(chrons.where('entity', sng1).first.op,  'create')
+        self.eq(chrons.where('entity', sng1.orm.super).first.op, 'create')
+        self.eq(chrons.where('entity', pres1).first.op, 'update')
+
+        pres2 = presentation(pres1.id)
+        self.eq(sng1.id, pres2.artist.id)
+        self.ne(sng1.id, sng.id)
+
+        # Test deeply-nested (>2)
+        # Set entity constuents, save, load, test
+       
+        loc = location.getvalid()
+        self.none(loc.presentation)
+
+        loc.presentation = pres = presentation.getvalid()
+        self.is_(pres, loc.presentation)
+
+        chrons.clear()
+        self.none(loc.presentation.artist)
+        self.zero(chrons)
+
+        loc.presentation.artist = sng = singer.getvalid()
+        self.is_(sng, loc.presentation.artist)
+
+        loc.save()
+
+        self.four(chrons)
+        self.eq(chrons.where('entity',  loc).first.op,               'create')
+        self.eq(chrons.where('entity',  loc.presentation).first.op,  'create')
+        self.eq(chrons.where('entity',  sng).first.op,               'create')
+        self.eq(chrons.where('entity',  sng.orm.super).first.op,     'create')
+
+        chrons.clear()
+        loc1 = location(loc.id)
+        pres1 = loc1.presentation
+
+        self.eq(loc.id, loc1.id)
+        self.eq(loc.presentation.id, loc1.presentation.id)
+        self.eq(loc.presentation.artist.id, loc1.presentation.artist.id)
+
+        self.three(chrons)
+        self.eq(chrons.where('entity',  loc1).first.op,          'retrieve')
+        self.eq(chrons.where('entity',  pres1).first.op,         'retrieve')
+        self.eq(chrons.where('entity',  pres1.artist).first.op,  'retrieve')
+
+        # Change the artist
+        loc1.presentation.artist = sng1 = singer.getvalid()
+
+        chrons.clear()
+        loc1.save()
+
+        self.three(chrons)
+        pres1 = loc1.presentation
+
+        self.eq(chrons.where('entity',  pres1).first.op,           'update')
+        self.eq(chrons.where('entity',  sng1).first.op,            'create')
+        self.eq(chrons.where('entity',  sng1.orm.super).first.op,  'create')
+
+        loc2 = location(loc1.id)
+        self.eq(loc1.presentation.artist.id, loc2.presentation.artist.id)
+        self.ne(sng.id, loc2.presentation.artist.id)
+
+        # NOTE Going up the graph, mutating attributes and persisting
+        # lower in the graph won't work because of the problem of
+        # infinite recursion.  The below tests demonstrate this.
+
+        # Assign a new name
+        name = uuid4().hex
+        loc2.presentation.artist.presentations.first.name = name
+
+        # The presentation objects here aren't the same reference so they will
+        # have different states.
+        self.ne(loc2.presentation.name, name)
+
+        chrons.clear()
+        loc2.save()
+
+        self.zero(chrons)
+
+        loc2 = location(loc2.id)
+
+        self.one(chrons)
+        self.eq(chrons.where('entity',  loc2).first.op,   'retrieve')
+
+        # The above save() didn't save the new artist's presentation collection
+        # so the new name will not be present in the reloaded presentation
+        # object.
+        self.ne(loc2.presentation.name, name)
+        self.ne(loc2.presentation.artist.presentations.first.name, name)
+
+    def it_saves_and_loads_subsubentity_constituent(self):
+        # Make sure the constituent is None for new composites
+        pres = presentation.getvalid()
+
+        with self._chrontest() as t:
+            t.run(lambda: pres.artist)
+
+        self.none(pres.artist)
+
+        self.zero(pres.brokenrules)
+
+        # Test setting an entity constituent then test saving and
+        # loading
+        rpr = rapper.getvalid()
+        pres.artist = rpr
+        self.is_(rpr, pres.artist)
+
+        with self._chrontest() as t:
+            t.run(pres.save)
+            t.created(rpr)
+            t.created(rpr.orm.super)
+            t.created(rpr.orm.super.orm.super)
+            t.created(pres)
+
+        # Load by artist then lazy-load presentations to test
+        art1 = artist(pres.artist.id)
+        self.one(art1.presentations)
+        self.eq(art1.presentations.first.id, pres.id)
+
+        # Load by presentation and lazy-load artist to test
+        pres1 = presentation(pres.id)
+
+        with self._chrontest() as t:
+            t.run(lambda: pres1.artist)
+            t.retrieved(pres1.artist)
+           
+        self.eq(pres1.artist.id, pres.artist.id)
+
+        rpr1 = rapper.getvalid()
+        pres1.artist = rpr1
+
+        with self._chrontest() as t:
+            t.run(pres1.save)
+            t.created(rpr1)
+            t.created(rpr1.orm.super)
+            t.created(rpr1.orm.super.orm.super)
+            t.updated(pres1)
+
+        pres2 = presentation(pres1.id)
+        self.eq(rpr1.id, pres2.artist.id)
+        self.ne(rpr1.id, rpr.id)
+
+        # Test deeply-nested (>2)
+        # Set entity constuents, save, load, test
+       
+        loc = location.getvalid()
+        self.none(loc.presentation)
+
+        loc.presentation = pres = presentation.getvalid()
+        self.is_(pres, loc.presentation)
+
+        with self._chrontest() as t:
+            t.run(lambda: loc.presentation.artist)
+
+        self.none(loc.presentation.artist)
+
+        loc.presentation.artist = rpr = rapper.getvalid()
+        self.is_(rpr, loc.presentation.artist)
+
+        with self._chrontest() as t:
+            t.run(loc.save)
+            t.created(loc)
+            t.created(loc.presentation)
+            t.created(rpr)
+            t.created(rpr.orm.super)
+            t.created(rpr.orm.super.orm.super)
+
+        with self._chrontest() as t:
+            def f():
+                loc1 = location(loc.id)
+                pres1 = loc1.presentation
+                pres1.artist
+                return loc1, pres1
+            loc1, pres1 = t.run(f)
+
+            t.retrieved(loc1)
+            t.retrieved(pres1)
+            t.retrieved(pres1.artist)
+
+        self.eq(loc.id, loc1.id)
+        self.eq(loc.presentation.id, loc1.presentation.id)
+        self.eq(loc.presentation.artist.id, loc1.presentation.artist.id)
+
+        # Change the artist
+        loc1.presentation.artist = rpr1 = rapper.getvalid()
+
+        with self._chrontest() as t:
+            t.run(loc1.save)
+            t.updated(loc1.presentation)
+            t.created(rpr1)
+            t.created(rpr1.orm.super)
+            t.created(rpr1.orm.super.orm.super)
+
+        loc2 = location(loc1.id)
+
+        self.eq(
+            loc1.presentation.artist.id, 
+            loc2.presentation.artist.id
+        )
+
+        self.ne(rpr.id, loc2.presentation.artist.id)
+
+        # NOTE: Going up the graph, mutating attributes and persisting
+        # lower in the graph won't work because of the problem of
+        # infinite recursion.  The below tests demonstrate this.  Assign
+        # a new name
+        name = uuid4().hex
+        loc2.presentation.artist.presentations.first.name = name
+
+        # The presentation objects here aren't the same reference so
+        # they will have different states.
+        self.ne(loc2.presentation.name, name)
+
+        with self._chrontest() as t:
+            t.run(loc2.save)
+
+        with self._chrontest() as t:
+            loc2 = t.run(lambda: location(loc2.id))
+            t.retrieved(loc2)
+
+        # The above save() didn't save the new artist's presentation
+        # collection so the new name will not be present in the reloaded
+        # presentation object.
+        self.ne(loc2.presentation.name, name)
+        self.ne(loc2.presentation.artist.presentations.first.name, name)
+
+    def it_saves_and_loads_subentities_subentity_constituent(self):
+        chrons = self.chronicles
+
+        # Make sure the constituent is None for new composites
+        conc = concert.getvalid()
+
+        chrons.clear()
+        self.none(conc.singer)
+        self.expect(AttributeError, lambda: conc.artist)
+        self.zero(chrons)
+
+        self.zero(conc.brokenrules)
+
+        # Test setting an entity constituent then test saving and loading
+        sng = singer.getvalid()
+        conc.singer = sng
+        self.is_(sng, conc.singer)
+
+        with self._chrontest() as t:
+            t.run(conc.save)
+            t.created(sng)
+            t.created(sng.orm.super)
+            t.created(conc)
+            t.created(conc.orm.super)
+
+        # Load by singer then lazy-load concerts to test
+        sng1 = singer(conc.singer.id)
+        self.one(sng1.concerts)
+        self.eq(sng1.concerts.first.id, conc.id)
+
+        # Load by concert and lazy-load singer to test
+        conc1 = concert(conc.id)
+
+        chrons.clear()
+        self.eq(conc1.singer.id, conc.singer.id)
+
+        self._chrons(conc1.singer,            'retrieve')
+        self.one(chrons)
+
+        sng1 = singer.getvalid()
+        conc1.singer = sng1
+
+        chrons.clear()
+        conc1.save()
+
+        self.four(chrons)
+        self._chrons(sng1,             'create')
+        self._chrons(sng1.orm.super,   'create')
+        self._chrons(conc1,            'update')
+        self._chrons(conc1.orm.super,  'update')
+
+        conc2 = concert(conc1.id)
+        self.eq(sng1.id, conc2.singer.id)
+        self.ne(sng1.id, sng.id)
+
+        # TODO Test deeply-nested (>2)
+        # Set entity constuents, save, load, test
+
+        # TODO We need to answer the question should loc.concert exist.
+        # concert().locations exists, so it would seem that the answer
+        # would be "yes". However, the logic for this would be strange
+        # since we would need to query the mappings collection of each
+        # subentities of the presentation collection to find a match.
+        # Plus, this seems like a very unlikely way for someone to want
+        # to use the ORM. I would like to wait to see if this comes up
+        # in a real life situation before writing the logic and tests
+        # for this. 
+        """
+        self.expect(AttributeError, lambda: loc.concert)
+       
+        loc = location.getvalid()
+        self.none(loc.concert)
+
+        loc.concert = conc = concert.getvalid()
+        self.is_(conc, loc.concert)
+
+        chrons.clear()
+        self.none(loc.concert.singer)
+        self.zero(chrons)
+
+        loc.concert.singer = sng = singer.getvalid()
+        self.is_(sng, loc.concert.singer)
+
+        loc.save()
+
+        self.four(chrons)
+        self.eq(chrons.where('entity',  loc).first.op,               'create')
+        self.eq(chrons.where('entity',  loc.concert).first.op,  'create')
+        self.eq(chrons.where('entity',  sng).first.op,               'create')
+        self.eq(chrons.where('entity',  sng.orm.super).first.op,     'create')
+
+        chrons.clear()
+        loc1 = location(loc.id)
+        conc1 = loc1.concert
+
+        self.eq(loc.id, loc1.id)
+        self.eq(loc.concert.id, loc1.concert.id)
+        self.eq(loc.concert.singer.id, loc1.concert.singer.id)
+
+        self.three(chrons)
+        self.eq(chrons.where('entity',  loc1).first.op,          'retrieve')
+        self.eq(chrons.where('entity',  conc1).first.op,         'retrieve')
+        self.eq(chrons.where('entity',  conc1.singer).first.op,  'retrieve')
+
+        # Change the singer
+        loc1.concert.singer = sng1 = singer.getvalid()
+
+        chrons.clear()
+        loc1.save()
+
+        self.three(chrons)
+        conc1 = loc1.concert
+
+        self.eq(chrons.where('entity',  conc1).first.op,           'update')
+        self.eq(chrons.where('entity',  sng1).first.op,            'create')
+        self.eq(chrons.where('entity',  sng1.orm.super).first.op,  'create')
+
+        loc2 = location(loc1.id)
+        self.eq(loc1.concert.singer.id, loc2.concert.singer.id)
+        self.ne(sng.id, loc2.concert.singer.id)
+
+        # Note: Going up the graph, mutating attributes and persisting lower in
+        # the graph won't work because of the problem of infinite recursion.
+        # The below tests demonstrate this.
+
+        # Assign a new name
+        name = uuid4().hex
+        loc2.concert.singer.concerts.first.name = name
+
+        # The concert objects here aren't the same reference so they will
+        # have different states.
+        self.ne(loc2.concert.name, name)
+
+        chrons.clear()
+        loc2.save()
+
+        self.zero(chrons)
+
+        loc2 = location(loc2.id)
+
+        self.one(chrons)
+        self.eq(chrons.where('entity',  loc2).first.op,   'retrieve')
+
+        # The above save() didn't save the new singer's concert collection
+        # so the new name will not be present in the reloaded concert
+        # object.
+        self.ne(loc2.concert.name, name)
+        self.ne(loc2.concert.singer.concerts.first.name, name)
+        """
+
+    def it_saves_and_loads_subsubentities_subsubentity_constituent(
+        self):
+
+        # Make sure the constituent is None for new composites
+        btl = battle.getvalid()
+
+        with self._chrontest() as t:
+            def f():
+                self.none(btl.rapper)
+                self.expect(AttributeError, lambda: btl.singer)
+                self.expect(AttributeError, lambda: btl.artist)
+            t.run(f)
+
+        self.zero(btl.brokenrules)
+
+        # Test setting an entity constituent then test saving and
+        # loading
+        rpr = rapper.getvalid()
+        btl.rapper = rpr
+        self.is_(rpr, btl.rapper)
+
+        with self._chrontest() as t:
+            t.run(btl.save)
+            t.created(rpr)
+            t.created(rpr.orm.super)
+            t.created(rpr.orm.super.orm.super)
+            t.created(btl)
+            t.created(btl.orm.super)
+            t.created(btl.orm.super.orm.super)
+
+        # Load by rapper then lazy-load battles to test
+        rpr1 = rapper(btl.rapper.id)
+        self.one(rpr1.battles)
+        self.eq(rpr1.battles.first.id, btl.id)
+
+        # Load by battle and lazy-load rapper to test
+        btl1 = battle(btl.id)
+
+        with self._chrontest() as t:
+            t.run(lambda: self.eq(btl1.rapper.id, btl.rapper.id))
+            t.retrieved(btl1.rapper)
+
+        rpr1 = rapper.getvalid()
+        btl1.rapper = rpr1
+
+        with self._chrontest() as t:
+            t.run(btl1.save)
+            t.created(rpr1)
+            t.created(rpr1.orm.super)
+            t.created(rpr1.orm.super.orm.super)
+            t.updated(btl1)
+            t.updated(btl1.orm.super)
+            t.updated(btl1.orm.super.orm.super)
+
+        btl2 = battle(btl1.id)
+        self.eq(rpr1.id, btl2.rapper.id)
+        self.ne(rpr1.id, rpr.id)
+
+    def subentity_constituents_break_entity(self):
+        pres = presentation.getvalid()
+        pres.artist = singer.getvalid()
+
+        # Get max lengths for various properties
+        presmax  =  presentation.  orm.  mappings['name'].         max
+        locmax   =  location.      orm.  mappings['description'].  max
+        artmax   =  artist.        orm.  mappings['firstname'].    max
+        x = 'x'
+
+        pres.artist.firstname = x * (artmax + 1)
+        self.one(pres.brokenrules)
+        self.broken(pres, 'firstname', 'fits')
+
+        pres.artist.firstname = uuid4().hex # Unbreak
+        self.zero(pres.brokenrules)
+
+        loc = location.getvalid()
+        loc.description = x * (locmax + 1) # break
+
+        loc.presentation = presentation.getvalid()
+        loc.presentation.name = x * (presmax + 1) # break
+
+        loc.presentation.artist = singer.getvalid()
+        loc.presentation.artist.firstname = x * (artmax + 1) # break
+
+        self.three(loc.brokenrules)
+        for prop in 'description', 'name', 'firstname':
+            self.broken(loc, prop, 'fits')
+
+    def subsubentity_constituents_break_entity(self):
+        pres = presentation.getvalid()
+        pres.artist = rapper.getvalid()
+
+        # Get max lengths for various properties
+        presmax  =  presentation.  orm.  mappings['name'].         max
+        locmax   =  location.      orm.  mappings['description'].  max
+        artmax   =  artist.        orm.  mappings['firstname'].    max
+        x = 'x'
+
+        pres.artist.firstname = x * (artmax + 1)
+        self.one(pres.brokenrules)
+        self.broken(pres, 'firstname', 'fits')
+
+        pres.artist.firstname = uuid4().hex # Unbreak
+        self.zero(pres.brokenrules)
+
+        loc = location.getvalid()
+        loc.description = x * (locmax + 1) # break
+
+        loc.presentation = presentation.getvalid()
+        loc.presentation.name = x * (presmax + 1) # break
+
+        loc.presentation.artist = rapper.getvalid()
+        loc.presentation.artist.firstname = x * (artmax + 1) # break
+
+        self.three(loc.brokenrules)
+        for prop in 'description', 'name', 'firstname':
+            self.broken(loc, prop, 'fits')
+
+    def subentity_constituents_break_subentity(self):
+        conc = concert.getvalid()
+        conc.singer = singer.getvalid()
+
+        # Break rule that art.firstname should be a str
+        conc.singer.firstname = 'x' * 256 # Break
+
+        self.one(conc.brokenrules)
+        self.broken(conc, 'firstname', 'fits')
+
+        conc.singer.firstname = uuid4().hex # Unbreak
+        self.zero(conc.brokenrules)
+
+    def subsubentity_constituents_break_subsubentity(self):
+        btl = battle.getvalid()
+        btl.rapper = rapper.getvalid()
+
+        # Break rule that art.firstname should be a str
+        btl.rapper.firstname = 'x' * 256 # Break
+
+        self.one(btl.brokenrules)
+        self.broken(btl, 'firstname', 'fits')
+
+        btl.rapper.firstname = uuid4().hex # Unbreak
+        self.zero(btl.brokenrules)
+
+    def it_rollsback_save_of_subentity_with_broken_constituents(self):
+        sng = singer.getvalid()
+
+        sng.presentations += presentation.getvalid()
+        sng.presentations.last.name = uuid4().hex
+
+        sng.presentations += presentation.getvalid()
+        sng.presentations.last.name = uuid4().hex
+
+        sng.concerts += concert.getvalid()
+        sng.concerts.last.name = uuid4().hex
+
+        # Cause the last presentation's invocation of save() to raise an
+        # Exception to cause a rollback
+        sng.presentations.last._save = lambda cur, followentitymapping: 1/0
+
+        # Save expecting the ZeroDivisionError
+        self.expect(ZeroDivisionError, lambda: sng.save())
+
+        # Ensure state of sng was restored to original
+        self.eq((True, False, False), sng.orm.persistencestate)
+
+        # Ensure singer wasn't saved
+        self.expect(db.RecordNotFoundError, lambda: singer(sng.id))
+
+        # For each presentations and concerts, ensure state was not modified
+        # and no presentation object was saved.
+        for pres in sng.presentations:
+            self.eq((True, False, False), pres.orm.persistencestate)
+            self.expect(db.RecordNotFoundError, lambda: presentation(pres.id))
+
+        for conc in sng.concerts:
+            self.eq((True, False, False), conc.orm.persistencestate)
+            self.expect(db.RecordNotFoundError, lambda: concert(conc.id))
+
+    def it_rollsback_save_of_subsubentity_with_broken_constituents(
+        self):
+        rpr = rapper.getvalid()
+
+        rpr.presentations += presentation.getvalid()
+        rpr.presentations.last.name = uuid4().hex
+
+        rpr.presentations += presentation.getvalid()
+        rpr.presentations.last.name = uuid4().hex
+
+        rpr.concerts += concert.getvalid()
+        rpr.concerts.last.name = uuid4().hex
+
+        # Cause the last presentation's invocation of save() to raise an
+        # Exception to cause a rollback
+        rpr.presentations.last._save = lambda cur, followentitymapping: 1/0
+
+        # Save expecting the ZeroDivisionError
+        self.expect(ZeroDivisionError, lambda: rpr.save())
+
+        # Ensure state of rpr was restored to original
+        self.eq((True, False, False), rpr.orm.persistencestate)
+
+        # Ensure rapper wasn't saved
+        self.expect(db.RecordNotFoundError, lambda: rapper(rpr.id))
+
+        # For each presentations and concerts, ensure state was not
+        # modified and no presentation object was saved.
+        for pres in rpr.presentations:
+            self.eq((True, False, False), pres.orm.persistencestate)
+            self.expect(
+                db.RecordNotFoundError, 
+                lambda: presentation(pres.id)
+            )
+
+        for conc in rpr.concerts:
+            self.eq((True, False, False), conc.orm.persistencestate)
+            self.expect(
+                db.RecordNotFoundError,
+                lambda: concert(conc.id)
+            )
+
+    def it_deletes_subentities(self):
+        # Create two singers
+        sngs = singers()
+
+        for _ in range(2):
+            sngs += singer.getvalid()
+            sngs.last.firstname = uuid4().hex
+            sngs.last.lastname = uuid4().hex
+        
+        self.chronicles.clear()
+        sngs.save()
+        self.four(self.chronicles)
+
+        sng = sngs.shift()
+        self.one(sngs)
+        self.one(sngs.orm.trash)
+
+        self.chronicles.clear()
+        sngs.save()
+        self.two(self.chronicles)
+        self._chrons(sng, 'delete')
+        self._chrons(sng.orm.super, 'delete')
+
+        for sng in sng, sng.orm.super:
+            self.expect(db.RecordNotFoundError, lambda: singer(sng.id))
+            
+        # Ensure the remaining singer and artist still exists in database
+        for sng in sngs.first, sngs.first.orm.super:
+            self.expect(None, lambda: singer(sng.id))
+
+    def it_deletes_subsubentities(self):
+        # Create two rappers
+        rprs = rappers()
+
+        for _ in range(2):
+            rprs += rapper.getvalid()
+            rprs.last.firstname = uuid4().hex
+            rprs.last.lastname = uuid4().hex
+        
+        with self._chrontest() as t:
+            t.run(lambda: rprs.save())
+            t.created(rprs.first)
+            t.created(rprs.second)
+            t.created(rprs.first.orm.super)
+            t.created(rprs.second.orm.super)
+            t.created(rprs.first.orm.super.orm.super)
+            t.created(rprs.second.orm.super.orm.super)
+
+        rpr = rprs.shift()
+        self.one(rprs)
+        self.one(rprs.orm.trash)
+
+        with self._chrontest() as t:
+            t.run(lambda: rprs.save())
+            t.deleted(rpr)
+            t.deleted(rpr.orm.super)
+            t.deleted(rpr.orm.super.orm.super)
+
+        while rpr:
+            self.expect(db.RecordNotFoundError, lambda: rapper(rpr.id))
+            rpr = rpr.orm.super
+            
+        # Ensure the remaining rapper and artist still exists in database
+        rpr = rprs.first
+        while rpr:
+            self.expect(None, lambda: rapper(rpr.id))
+            rpr = rpr.orm.super
+
+    def it_doesnt_needlessly_save_subentity(self):
+        chrons = self.chronicles
+
+        sng = singer.getvalid()
+        sng.firstname  =  uuid4().hex
+        sng.lastname   =  uuid4().hex
+        sng.voice      =  uuid4().hex
+
+        for i in range(2):
+            chrons.clear()
+            sng.save()
+            
+            if i == 0:
+                self.two(chrons)
+                self.eq(chrons.where('entity', sng).first.op,           'create')
+                self.eq(chrons.where('entity', sng.orm.super).first.op, 'create')
+            elif i == 1:
+                self.zero(chrons)
+
+        # Dirty sng and save. Ensure the object was actually saved
+        sng.firstname = uuid4().hex
+        sng.voice     = uuid4().hex
+
+        for i in range(2):
+            chrons.clear()
+            sng.save()
+            if i == 0:
+                self.two(chrons)
+                self.eq(chrons.where('entity', sng).first.op,           'update')
+                self.eq(chrons.where('entity', sng.orm.super).first.op, 'update')
+            elif i == 1:
+                self.zero(chrons)
+
+        # Test constituents
+        sng.presentations += presentation.getvalid()
+        sng.concerts      += concert.getvalid()
+        
+        for i in range(2):
+            chrons.clear()
+            sng.save()
+
+            if i == 0:
+                self.three(chrons)
+                self._chrons(sng.presentations.last,       'create')
+                self._chrons(sng.concerts.last,            'create')
+                self._chrons(sng.concerts.last.orm.super,  'create')
+            elif i == 1:
+                self.zero(chrons)
+
+        # Test deeply-nested (>2) constituents
+        sng.presentations.last.locations += location.getvalid()
+        sng.concerts.last.locations      += location.getvalid()
+
+        for i in range(2):
+            chrons.clear()
+            sng.save()
+
+            if i == 0:
+                self.two(chrons)
+                self._chrons(sng.presentations.last.locations.last, 'create')
+                self._chrons(sng.concerts.last.locations.last,      'create')
+            elif i == 1:
+                self.zero(chrons)
+
+    def it_doesnt_needlessly_save_subsubentity(self):
+        rpr = rapper.getvalid()
+        rpr.firstname  =  uuid4().hex
+        rpr.lastname   =  uuid4().hex
+        rpr.voice      =  uuid4().hex
+        rpr.stagename  =  uuid4().hex
+
+        for i in range(2):
+            with self._chrontest() as t:
+                t.run(rpr.save)
+                if i == 0:
+                    t.created(rpr)
+                    t.created(rpr.orm.super)
+                    t.created(rpr.orm.super.orm.super)
+
+                if t.chronicles.count > 3:
+                    print(t.chronicles)
+                    print(
+                        '''
+                        # SPORADIC The following came up in one test
+                        # run: Aug 6 2019
+                        eq in _chrontest at 523
+                        expect: 4
+                        actual: 3
+                        message: test in 6446 at
+                        it_doesnt_needlessly_save_subsubentity: Incorrect
+                        chronicles count.
+                        '''
+                    )
+                    B()
+
+
+        # Dirty rpr and save. Ensure the object was actually saved
+        rpr.firstname  =  uuid4().hex
+        rpr.voice      =  uuid4().hex
+        rpr.stagename  =  uuid4().hex
+
+        for i in range(2):
+            with self._chrontest() as t:
+                t.run(rpr.save)
+                if i == 0:
+                    t.updated(rpr)
+                    t.updated(rpr.orm.super)
+                    t.updated(rpr.orm.super.orm.super)
+
+        # Test constituents
+        rpr.presentations += presentation.getvalid()
+        rpr.concerts      += concert.getvalid()
+        rpr.battles       += battle.getvalid()
+        
+        for i in range(2):
+            with self._chrontest() as t:
+                t.run(rpr.save)
+                if i == 0:
+                    t.created(rpr.presentations.last)
+                    t.created(rpr.concerts.last)
+                    t.created(rpr.concerts.last.orm.super)
+                    t.created(rpr.battles.last)
+                    t.created(rpr.battles.last.orm.super)
+                    t.created(rpr.battles.last.orm.super.orm.super)
+
+        # Test deeply-nested (>2) constituents
+        rpr.presentations.last.locations += location.getvalid()
+        rpr.concerts.last.locations      += location.getvalid()
+
+        for i in range(2):
+            with self._chrontest() as t:
+                t.run(rpr.save)
+                if i == 0:
+                    t.created(rpr.presentations.last.locations.last)
+                    t.created(rpr.concerts.last.locations.last)
+
+    def it_calls_id_on_subentity(self):
+        sng = singer.getvalid()
+
+        self.true(hasattr(sng, 'id'))
+        self.type(uuid.UUID, sng.id)
+        self.zero(sng.brokenrules)
+
+    def it_calls_id_on_subsubentity(self):
+        rpr = rapper.getvalid()
+
+        self.true(hasattr(rpr, 'id'))
+        self.type(uuid.UUID, rpr.id)
+        self.zero(rpr.brokenrules)
+
+    def it_calls_save_on_subentity(self):
+        chrons = self.chronicles
+        sng = singer.getvalid()
+
+        # Test creating and retrieving an entity
+        self.eq((True, False, False), sng.orm.persistencestate)
+
+        chrons.clear()
+        sng.save()
+        self.eq(chrons.where('entity', sng).first.op,           'create')
+        self.eq(chrons.where('entity', sng.orm.super).first.op, 'create')
+
+        self.eq((False, False, False), sng.orm.persistencestate)
+
+        sng1 = singer(sng.id)
+
+        self.eq((False, False, False), sng1.orm.persistencestate)
+
+        for map in sng1.orm.mappings.all:
+            if isinstance(map, orm.fieldmapping):
+                self.eq(getattr(sng, map.name), getattr(sng1, map.name))
+
+        # Test changing, saving and retrieving an entity
+        sng1.firstname = uuid4().hex
+        sng1.lastname  = uuid4().hex
+        sng1.voice     = uuid4().hex
+        sng1.lifeform  = uuid4().hex
+        sng1.phone     = '2' * 7
+        sng1.register  = uuid4().hex
+        sng1.style     = uuid4().hex
+        sng1.weight    = 1
+        sng1.networth  =- 1
+        sng1.dob       = datetime.now()
+        sng1.password  = bytes([randint(0, 255) for _ in range(32)])
+        sng1.ssn       = '2' * 11
+        sng1.bio       = uuid4().hex
+        sng1.email     = 'username1@domain.tld'
+        sng1.title     = uuid4().hex[0]
+        sng1.phone2    = uuid4().hex[0]
+        sng1.email_1   = uuid4().hex[0]
+
+        self.eq((False, True, False), sng1.orm.persistencestate)
+
+        # Ensure that changing sng1's properties don't change sng's.
+        # This problem is likely to not reoccur, but did come up in
+        # early development.
+
+        for prop in sng.orm.properties:
+            if prop == 'artifacts':
+                # The subentity-to-associations relationship has not
+                # been implemented, so skip the call to sng.artifacts
+                # TODO Implement the subentity-to-associations
+                # relationships
+                continue
+
+            if prop == 'id':
+                self.eq(getattr(sng1, prop), getattr(sng, prop), prop)
+            else:
+                if prop in ('createdat', 'updatedat'):
+                    continue
+                self.ne(getattr(sng1, prop), getattr(sng, prop), prop)
+
+        sng1.save()
+
+        self.eq((False, False, False), sng1.orm.persistencestate)
+
+        sng2 = singer(sng.id)
+
+        for map in sng2.orm.mappings.all:
+            if isinstance(map, orm.fieldmapping):
+                self.eq(getattr(sng1, map.name), getattr(sng2, map.name))
+
+        # Ensure that the entity is persisted correctly when inherited and
+        # non-inherited properties change.
+        for prop in 'firstname', 'voice':
+            sng = singer(sng.id)
+            
+            self.eq((False, False, False), sng.orm.persistencestate, prop)
+
+            setattr(sng, prop, uuid4().hex)
+
+            self.eq((False, True, False), sng.orm.persistencestate, prop)
+
+            chrons.clear()
+            sng.save()
+
+            self.one(chrons)
+            e = sng.orm.super if prop == 'firstname' else sng
+            self.eq(chrons.where('entity', e).first.op, 'update')
+
+            self.eq((False, False, False), sng.orm.persistencestate, prop)
+
+    def it_calls_save_on_subsubentity(self):
+        rpr = rapper.getvalid()
+
+        # Test creating and retrieving an entity
+        self.eq((True, False, False), rpr.orm.persistencestate)
+
+        with self._chrontest() as t:
+            t.run(lambda: rpr.save())
+            t.created(rpr)
+            t.created(rpr.orm.super)
+            t.created(rpr.orm.super.orm.super)
+
+        self.eq((False, False, False), rpr.orm.persistencestate)
+
+        rpr1 = rapper(rpr.id)
+
+        self.eq((False, False, False), rpr1.orm.persistencestate)
+
+        for map in rpr1.orm.mappings.all:
+            if isinstance(map, orm.fieldmapping):
+                self.eq(getattr(rpr, map.name), getattr(rpr1, map.name))
+
+        # Test changing, saving and retrieving an entity
+        rpr1.firstname = uuid4().hex
+        rpr1.lastname  = uuid4().hex
+        rpr1.voice     = uuid4().hex
+        rpr1.lifeform  = uuid4().hex
+        rpr1.phone     = '2' * 7
+        rpr1.register  = uuid4().hex
+        rpr1.style     = uuid4().hex
+        rpr1.weight    = 1
+        rpr1.networth  =- 1
+        rpr1.dob       = datetime.now()
+        rpr1.password  = bytes([randint(0, 255) for _ in range(32)])
+        rpr1.ssn       = '2' * 11
+        rpr1.bio       = uuid4().hex
+        rpr1.email     = 'username1@domain.tld'
+        rpr1.title     = uuid4().hex[0]
+        rpr1.phone2    = uuid4().hex[0]
+        rpr1.email_1   = uuid4().hex[0]
+        rpr1.nice      = randint(0, 255)
+        rpr1.stagename = uuid4().hex
+        rpr1.abilities = list('wackness')
+
+        self.eq((False, True, False), rpr1.orm.persistencestate)
+
+        # Ensure that changing rpr1's properties don't change rpr's.
+        # This problem is likely to not reoccur, but did come up in
+        # early development.
+        for prop in rpr.orm.properties:
+            if prop == 'artifacts':
+                # The subentity-to-associations relationship has not
+                # been implemented, so skip the call to rpr.artifacts
+                # TODO Implement the subentity-to-associations
+                # relationships
+                continue
+
+            if prop == 'id':
+                self.eq(getattr(rpr1, prop), getattr(rpr, prop), prop)
+            else:
+                if prop in ('createdat', 'updatedat'):
+                    continue
+                self.ne(getattr(rpr1, prop), getattr(rpr, prop), prop)
+    
+        rpr1.save()
+
+        self.eq((False, False, False), rpr1.orm.persistencestate)
+
+        rpr2 = rapper(rpr.id)
+
+        for map in rpr2.orm.mappings.all:
+            if isinstance(map, orm.fieldmapping):
+                self.eq(getattr(rpr1, map.name), getattr(rpr2, map.name))
+
+        # Ensure that the entity is persisted correctly when inherited
+        # and non-inherited properties change.
+        for prop in 'firstname', 'voice', 'stagename':
+            rpr = rapper(rpr.id)
+            
+            self.eq((False, False, False), rpr.orm.persistencestate)
+
+            setattr(rpr, prop, uuid4().hex)
+
+            self.eq((False, True, False), rpr.orm.persistencestate)
+
+            with self._chrontest() as t:
+                t.run(lambda: rpr.save())
+                if prop == 'firstname':
+                    e = rpr.orm.super.orm.super
+                elif prop == 'voice':
+                    e = rpr.orm.super
+                elif prop == 'stagename':
+                    e = rpr
+                else:
+                    raise ValueError()
+                t.updated(e)
+
+            self.eq((False, False, False), rpr.orm.persistencestate)
+
+    def it_fails_to_save_broken_subentity(self):
+        sng = singer()
+
+        for prop in 'firstname', 'voice':
+            setattr(sng, prop, 'x' * 256)
+
+            self.broken(sng, prop, 'fits')
+
+            try:
+                sng.save()
+            except Exception as ex:
+                self.type(BrokenRulesError, ex)
+            else:
+                self.fail('Exception not thrown')
+
+    def it_hard_deletes_subentity(self):
+        chrons = self.chronicles
+        sng = singer.getvalid()
+
+        sng.save()
+
+        chrons.clear()
+        sng.delete()
+        self.two(chrons)
+        self.eq(chrons.where('entity', sng).first.op,           'delete')
+        self.eq(chrons.where('entity', sng.orm.super).first.op, 'delete')
+
+        self.eq((True, False, False), sng.orm.persistencestate)
+
+        self.expect(db.RecordNotFoundError, lambda: artist(sng.id))
+        self.expect(db.RecordNotFoundError, lambda: singer(sng.id))
+
+        # Ensure that an invalid sng can be deleted
+        sng = singer.getvalid()
+
+        sng.firstname = uuid4().hex
+        sng.lastname  = uuid4().hex
+        sng.save()
+
+        sng.lastname  = 'X' * 256 # Invalidate
+
+        sng.delete()
+        self.expect(db.RecordNotFoundError, lambda: artist(sng.id))
+        self.expect(db.RecordNotFoundError, lambda: singer(sng.id))
+
+    def it_hard_deletes_subsubentity(self):
+        rpr = rapper.getvalid()
+
+        rpr.save()
+
+        with self._chrontest() as t:
+            t.run(rpr.delete)
+            t.deleted(rpr)
+            t.deleted(rpr.orm.super)
+            t.deleted(rpr.orm.super.orm.super)
+
+        self.eq((True, False, False), rpr.orm.persistencestate)
+
+        es = [rpr.orm.entity] + rpr.orm.entity.orm.superclasess
+        for e in es:
+            self.expect(db.RecordNotFoundError, lambda: e(rpr.id))
+
+        # Ensure that an invalid rpr can be deleted
+        rpr = rapper.getvalid()
+
+        rpr.firstname = uuid4().hex
+        rpr.lastname  = uuid4().hex
+        rpr.save()
+
+        rpr.lastname  = 'X' * 256 # Invalidate
+
+        self.false(rpr.isvalid)
+
+        rpr.delete()
+        for e in es:
+            self.expect(db.RecordNotFoundError, lambda: e(rpr.id))
+
+    def it_deletes_from_subentitys_entities_collections(self):
+        chrons = self.chronicles
+
+        # Create singer with a presentation and save
+        sng = singer.getvalid()
+        pres = presentation.getvalid()
+        sng.presentations += pres
+        loc = location.getvalid()
+        locs = sng.presentations.last.locations 
+        locs += loc
+        sng.save()
+
+        # Reload
+        sng = singer(sng.id)
+
+        # Test presentations and its trash collection
+        self.one(sng.presentations)
+        self.zero(sng.presentations.orm.trash)
+        
+        self.one(sng.presentations.first.locations)
+        self.zero(sng.presentations.first.locations.orm.trash)
+
+        # Remove the presentation
+        rmsng = sng.presentations.pop()
+
+        # Test presentations and its trash collection
+        self.zero(sng.presentations)
+        self.one(sng.presentations.orm.trash)
+
+        self.one(sng.presentations.orm.trash.first.locations)
+        self.zero(sng.presentations.orm.trash.first.locations.orm.trash)
+
+        chrons.clear()
+        sng.save()
+        self.two(chrons)
+        self._chrons(rmsng, 'delete')
+        self._chrons(rmsng.locations.first, 'delete')
+        
+        sng = singer(sng.id)
+        self.zero(sng.presentations)
+        self.zero(sng.presentations.orm.trash)
+
+        self.expect(db.RecordNotFoundError, lambda: presentation(pres.id))
+        self.expect(db.RecordNotFoundError, lambda: location(loc.id))
+
+    def it_deletes_from_subsubentitys_entities_collections(self):
+        # Create rapper with a presentation and save
+        rpr = rapper.getvalid()
+        pres = presentation.getvalid()
+        rpr.presentations += pres
+        loc = location.getvalid()
+        locs = rpr.presentations.last.locations 
+        locs += loc
+        rpr.save()
+
+        # Reload
+        rpr = rapper(rpr.id)
+
+        # Test presentations and its trash collection
+        self.one(rpr.presentations)
+        self.zero(rpr.presentations.orm.trash)
+        
+        self.one(rpr.presentations.first.locations)
+        self.zero(rpr.presentations.first.locations.orm.trash)
+
+        # Remove the presentation
+        rmrpr = rpr.presentations.pop()
+
+        # Test presentations and its trash collection
+        self.zero(rpr.presentations)
+        self.one(rpr.presentations.orm.trash)
+
+        self.one(
+            rpr.presentations.orm.trash.first.locations)
+
+        self.zero(
+            rpr.presentations.orm.trash.first.locations.orm.trash)
+
+        with self._chrontest() as t:
+            t.run(rpr.save)
+            t.deleted(rmrpr)
+            t.deleted(rmrpr.locations.first)
+
+        rpr = rapper(rpr.id)
+        self.zero(rpr.presentations)
+        self.zero(rpr.presentations.orm.trash)
+
+        self.expect(
+            db.RecordNotFoundError, 
+            lambda: presentation(pres.id)
+        )
+
+        self.expect(
+            db.RecordNotFoundError, 
+            lambda: location(loc.id)
+        )
+
+    def it_deletes_from_subentitys_subentities_collections(self):
+        chrons = self.chronicles
+
+        # Create singer with a concert and save
+        sng = singer.getvalid()
+        conc = concert.getvalid()
+        sng.concerts += conc
+        loc = location.getvalid()
+        sng.concerts.last.locations += loc
+        sng.save()
+
+        # Reload
+        sng = singer(sng.id)
+
+        # Test concerts and its trash collection
+        self.one(sng.concerts)
+        self.zero(sng.concerts.orm.trash)
+
+        self.one(sng.concerts.first.locations)
+        self.zero(sng.concerts.first.locations.orm.trash)
+
+        # Remove the concert
+        rmconc = sng.concerts.pop()
+
+        # Test concerts and its trash collection
+        self.zero(sng.concerts)
+        self.one(sng.concerts.orm.trash)
+
+        self.one(sng.concerts.orm.trash.first.locations)
+        self.zero(sng.concerts.orm.trash.first.locations.orm.trash)
+
+        chrons.clear()
+        sng.save()
+
+        self.three(chrons)
+        self._chrons(rmconc, 'delete')
+        self._chrons(rmconc.orm.super, 'delete')
+        self._chrons(rmconc.locations.first, 'delete')
+
+        sng = singer(sng.id)
+        self.zero(sng.concerts)
+        self.zero(sng.concerts.orm.trash)
+
+        self.expect(db.RecordNotFoundError, lambda: concert(conc.id))
+        self.expect(db.RecordNotFoundError, lambda: location(loc.id))
+
+    def it_deletes_from_subsubentitys_subsubentities_collections(self):
+        # Create rapper with a battle and save
+        rpr = rapper.getvalid()
+        btl = battle.getvalid()
+        rpr.battles += btl
+        loc = location.getvalid()
+        rpr.battles.last.locations += loc
+        rpr.save()
+
+        # Reload
+        rpr = rapper(rpr.id)
+
+        # Test battles and its trash collection
+        self.one(rpr.battles)
+        self.zero(rpr.battles.orm.trash)
+
+        self.one(rpr.battles.first.locations)
+        self.zero(rpr.battles.first.locations.orm.trash)
+
+        # Remove the battle
+        rmbtl = rpr.battles.pop()
+
+        # Test battles and its trash collection
+        self.zero(rpr.battles)
+        self.one(rpr.battles.orm.trash)
+
+        self.one(rpr.battles.orm.trash.first.locations)
+        self.zero(rpr.battles.orm.trash.first.locations.orm.trash)
+
+        with self._chrontest() as t:
+            t.run(rpr.save)
+            t.deleted(rmbtl)
+            t.deleted(rmbtl.orm.super)
+            t.deleted(rmbtl.orm.super.orm.super)
+            t.deleted(rmbtl.locations.first,)
+
+        rpr = rapper(rpr.id)
+        self.zero(rpr.battles)
+        self.zero(rpr.battles.orm.trash)
+
+        self.expect(db.RecordNotFoundError, lambda: battle(btl.id))
+        self.expect(db.RecordNotFoundError, lambda: location(loc.id))
+
+    def _create_join_test_data(self):
+        ''' Create test data to be used by the outer/inner join tests. '''
+
+        for c in (artist, presentation, location, artist_artifact, artifact):
+            c.orm.truncate()
+
+        # The artist entities and constituents will have sequential indexes to
+        # query against.
+        arts = artists()
+        for i in range(4):
+            art = artist.getvalid()
+            art.firstname = 'fn-' + str(i)
+            art.lastname = 'ln-'  + str(i + 1)
+            arts += art
+
+            for j in range(4):
+                art.locations += location.getvalid()
+                art.locations.last.address = 'art-loc-addr-' + str(j)
+                art.locations.last.description = 'art-loc-desc-' + str(j + 1)
+                
+            for k in range(4):
+                art.presentations += presentation.getvalid()
+                pres = art.presentations.last
+                pres.name = 'pres-name-' + str(k)
+                pres.description = 'pres-desc-' + str(k + 1) + '-' + str(i)
+
+                for l in range(4):
+                    pres.locations += location.getvalid()
+                    pres.locations.last.address = 'pres-loc-addr-' + str(l)
+                    pres.locations.last.description ='pres-loc-desc-' +  str(l + 1)
+
+            for k in range(4):
+                aa = artist_artifact.getvalid()
+                aa.role = 'art-art_fact-role-' + str(k)
+                aa.planet = 'art-art_fact-planet-' + str(k + 1)
+                fact = artifact.getvalid()
+
+                aa.artifact = fact
+                fact.title = 'art-art_fact-fact-title-' + str(k)
+                fact.description = 'art-art_fact-fact-desc-' + str(k + 1)
+
+                # TODO:OPT Even though art.orm.isnew, artist_artifacts
+                # is still loaded from the database. There should be a
+                # check that ensures this doesn't happen. This could
+                # lead to a large performance boast.
+                art.artist_artifacts += aa
+
+                for l in range(4):
+                    comp = component.getvalid()
+                    comp.name = 'art-art_fact-role-fact-comp-name' + str(l)
+                    fact.components += comp
+
+        arts.save()
+
+        return arts
+
+    def it_calls_innerjoin_on_entities_with_BETWEEN_clauses(self):
+        arts = artists()
+        for i in range(8):
+            art = artist.getvalid()
+            art.weight = i
+
+            aa = artist_artifact.getvalid()
+            art.artist_artifacts += aa
+            aa.artifact = artifact.getvalid()
+            aa.artifact.weight = i + 10
+
+            arts += art
+
+        arts.save()
+
+        for op in '', 'NOT':
+            # Load an innerjoin where both tables have [NOT] IN where clause
+            # 	SELECT *
+            # 	FROM artists
+            # 	INNER JOIN artist_artifacts AS `artists.artist_artifacts`
+            # 		ON `artists`.id = `artists.artist_artifacts`.artistid
+            # 	INNER JOIN artifacts AS `artists.artist_artifacts.artifacts`
+            # 		ON `artists.artist_artifacts`.artifactid = `artists.artist_artifacts.artifacts`.id
+            # 	WHERE (`artists`.firstname [NOT] IN (%s, %s))
+            # 	AND (`artists.artist_artifacts.artifacts`.title[NOT]  IN (%s, %s))
+
+            arts1 = artists('weight %s BETWEEN 0 AND 1' % op, ()).join(
+                        artifacts('weight %s BETWEEN 10 AND 11' %op, ())
+                    )
+
+            if op == 'NOT':
+                self.six(arts1)
+            else:
+                self.two(arts1)
+
+            for art1 in arts1:
+                if op == 'NOT':
+                    self.gt(art1.weight, 1)
+                else:
+                    self.le(art1.weight, 1)
+
+                self.one(art1.artifacts)
+
+                fact1 = art1.artifacts.first
+                
+                if op == 'NOT':
+                    self.gt(fact1.weight, 11)
+                else:
+                    self.le(fact1.weight, 11)
+
+        artwhere = 'weight BETWEEN 0 AND 1 OR weight BETWEEN 3 AND 4'
+        factwhere = 'weight BETWEEN 10 AND 11 OR weight BETWEEN 13 AND 14'
+        arts1 = artists(artwhere, ()).join(
+                    artifacts(factwhere, ())
+                )
+
+        self.four(arts1)
+
+        for art1 in arts1:
+            self.true(art1.weight in (0, 1, 3, 4))
+
+            self.one(art1.artifacts)
+
+            fact1 = art1.artifacts.first
+            
+            self.true(fact1.weight in (10, 11, 13, 14))
+
+    def it_calls_innerjoin_on_entities_with_IN_clauses(self):
+        for e in artists, artifacts:
+            e.orm.truncate()
+        arts = artists()
+        for i in range(8):
+            art = artist.getvalid()
+            art.firstname = uuid4().hex
+
+            aa = artist_artifact.getvalid()
+            art.artist_artifacts += aa
+            aa.artifact = artifact.getvalid()
+            aa.artifact.title = uuid4().hex
+
+            arts += art
+
+        arts.save()
+
+        for op in '', 'NOT':
+            # Load an innerjoin where both tables have [NOT] IN where clause
+            # 	SELECT *
+            # 	FROM artists
+            # 	INNER JOIN artist_artifacts AS `artists.artist_artifacts`
+            # 		ON `artists`.id = `artists.artist_artifacts`.artistid
+            # 	INNER JOIN artifacts AS `artists.artist_artifacts.artifacts`
+            # 		ON `artists.artist_artifacts`.artifactid = `artists.artist_artifacts.artifacts`.id
+            # 	WHERE (`artists`.firstname [NOT] IN (%s, %s))
+            # 	AND (`artists.artist_artifacts.artifacts`.title[NOT]  IN (%s, %s))
+
+            firstnames = ['\'%s\'' % x for x in arts.pluck('firstname')]
+            artwhere = 'firstname %s IN (%s)' % (op, ', '.join(firstnames[:4]))
+
+            titles = ['\'%s\'' % x.first.title for x in arts.pluck('artifacts')]
+            factwhere = 'title %s IN (%s)' % (op, ', '.join(titles[:4]))
+
+            arts1 = artists(artwhere, ()) & artifacts(factwhere, ())
+
+            self.four(arts1)
+            titles = [x[1:-1] for x in titles]
+
+            for art1 in arts1:
+                if op == 'NOT':
+                    self.true(art1.firstname not in arts.pluck('firstname')[:4])
+                else:
+                    self.true(art1.firstname in arts.pluck('firstname')[:4])
+
+                self.one(art1.artifacts)
+
+                fact1 = art1.artifacts.first
+                
+                if op == 'NOT':
+                    self.true(fact1.title not in titles[:4])
+                else:
+                    self.true(fact1.title in titles[:4])
+
+        # Test using conjoined IN clauses in artists and artifacts.
+        # artwhere
+        artwhere1 = 'firstname IN (%s)' % (', '.join(firstnames[:2]))
+        artwhere2 = 'firstname IN (%s)' % (', '.join(firstnames[2:4]))
+
+        artwhere = '%s OR %s' % (artwhere1, artwhere2)
+
+        # factwhere
+        titles = ['\'%s\'' % x.first.title for x in arts.pluck('artifacts')]
+        factwhere1 = 'title IN (%s)' % (', '.join(titles[:2]))
+        factwhere2 = 'title IN (%s)' % (', '.join(titles[2:4]))
+
+        factwhere = '%s OR %s' % (factwhere1, factwhere2)
+
+        arts1 = artists(artwhere, ()).join(
+            artifacts(factwhere, ())
+        )
+
+        self.four(arts1)
+
+        titles = [x[1:-1] for x in titles]
+
+        for art1 in arts1:
+            self.true(art1.firstname in arts.pluck('firstname')[:4])
+            self.one(art1.artifacts)
+            fact1 = art1.artifacts.first
+            self.true(fact1.title in titles[:4])
+
+    def it_calls_innerjoin_on_entities_with_MATCH_clauses(self):
+        artkeywords, factkeywords = [], []
+
+        arts = artists()
+        for i in range(2):
+            art = artist.getvalid()
+            artkeyword, factkeyword = uuid4().hex, uuid4().hex
+            artkeywords.append(artkeyword)
+            factkeywords.append(factkeyword)
+            art.bio = 'one two three %s five six' % artkeyword
+            aa = artist_artifact.getvalid()
+
+            art.artist_artifacts += aa
+
+            aa.artifact = artifact.getvalid()
+
+            aa.artifact.title = 'one two three %s five six' % factkeyword
+
+            arts += art
+
+        arts.save()
+
+        # Query where composite and constituent have one MATCH clase each
+        arts1 = artists("match(bio) against ('%s')" % artkeywords[0], ()).join(
+            artifacts(
+                "match(title, description) against ('%s')" %  factkeywords[0], ()
+            )
+        )
+
+        # Query where composite and constituent have two MATCH clase each
+        artmatch = (
+            "MATCH(bio) AGAINST ('%s') OR "
+            "MATCH(bio) AGAINST ('%s')"
+        )
+
+        factmatch = (
+            "MATCH(title, description) AGAINST ('%s') OR "
+            "MATCH(title, description) AGAINST ('%s')"
+        )
+
+        artmatch  %= tuple(artkeywords)
+        factmatch %= tuple(factkeywords)
+
+        arts1 = artists(artmatch, ()) & artifacts(factmatch, ())
+
+        self.two(arts1)
+
+        arts.sort()
+        arts1.sort()
+
+        for art, art1 in zip(arts, arts1):
+            self.eq(art.id, art1.id)
+            self.eq(art.artifacts.first.id, art1.artifacts.first.id)
+
+    def it_calls_innerjoin_on_associations(self):
+        arts = self._create_join_test_data()
+
+        arts.sort()
+
+        fff = False, False, False
+
+        # Test artists joined with artist_artifacts with no condititons
+        arts1 = artists()
+        arts1 &= artist_artifacts()
+
+        self.one(arts1.orm.joins)
+
+        self.four(arts1)
+
+        arts1.sort()
+        
+        self.chronicles.clear()
+
+        for art, art1 in zip(arts, arts1):
+            self.eq(art.id, art1.id)
+
+            self.eq(fff, art1.orm.persistencestate)
+
+            self.four(art1.artist_artifacts)
+
+            art.artist_artifacts.sort()
+            art1.artist_artifacts.sort()
+
+            for aa, aa1 in zip(art.artist_artifacts, art1.artist_artifacts):
+                self.eq(aa.id, aa.id)
+
+                self.eq(fff, aa1.orm.persistencestate)
+
+                aa1.artifact
+
+                self.eq(aa.artifact.id, aa1.artifact.id)
+                
+                self.is_(aa1.artifact, self.chronicles.last.entity)
+                self.eq('retrieve', self.chronicles.last.op)
+
+                self.eq(aa1.artist.id, art1.id)
+
+        # NOTE The above will lazy-load aa1.artifact 16 times
+        self.count(16, self.chronicles)
+
+        # Test artists joined with artist_artifacts where the association has a
+        # conditional
+        arts1 = artists.join(
+            artist_artifacts('role = %s', ('art-art_fact-role-0',))
+        )
+
+        self.one(arts1.orm.joins)
+
+        self.four(arts1)
+
+        self.chronicles.clear()
+
+        arts1.sort()
+        for art, art1 in zip(arts, arts1):
+            self.eq(art.id, art1.id)
+
+            self.eq(fff, art1.orm.persistencestate)
+
+            self.one(art1.artist_artifacts)
+
+            aa1 = art1.artist_artifacts.first
+            self.eq(aa1.role, 'art-art_fact-role-0')
+            self.eq(aa1.artifactid, aa1.artifact.id)
+
+            self.eq(fff, aa1.orm.persistencestate)
+
+            # The call to aa1.artifact wil lazy-load artifact which will add to
+            # self.chronicles
+            self.eq('retrieve', self.chronicles.last.op)
+
+            self.is_(aa1.artifact, self.chronicles.last.entity)
+
+            self.eq(fff, aa1.artifact.orm.persistencestate)
+
+        # NOTE This wil lazy-load aa1.artifact 4 times
+        self.four(self.chronicles)
+
+        # Test unconditionally joining the associated entities collecties
+        # (artist_artifacts) with its composite (artifacts)
+        for b in False, True:
+            if b:
+                # Implicitly join artist_artifact
+                arts1 = artists.join(artifacts)
+            else:
+                # Explicitly join artist_artifact
+                arts1 = artists() 
+                arts1 &= artist_artifacts & artifacts
+
+            self.one(arts1.orm.joins)
+            self.type(artist_artifacts, arts1.orm.joins.first.entities)
+            self.one(arts1.orm.joins.first.entities.orm.joins)
+            facts = arts1.orm.joins.first.entities.orm.joins.first.entities
+            self.type(artifacts, facts)
+
+            arts1.sort()
+
+            self.chronicles.clear()
+
+            self.four(arts1)
+
+            for art, art1 in zip(arts, arts1):
+                self.eq(art.id, art1.id)
+
+                self.eq(fff, art1.orm.persistencestate)
+
+                self.four(art1.artist_artifacts)
+
+                art.artist_artifacts.sort()
+                art1.artist_artifacts.sort()
+
+                for aa, aa1 in zip(art.artist_artifacts, art1.artist_artifacts):
+                    self.eq(fff, aa1.orm.persistencestate)
+                    self.eq(aa.id, aa.id)
+                    self.eq(aa.artifact.id, aa1.artifact.id)
+
+            self.zero(self.chronicles)
+
+        # Test joining the associated entities collecties (artist_artifacts)
+        # with its composite (artifacts) where the composite's join is
+        # conditional.
+        for b in True, False:
+            if b:
+                # Explicitly join artist_artifacts
+                arts1 = artists() 
+                arts1 &= artist_artifacts & artifacts('description = %s', ('art-art_fact-fact-desc-1',))
+            else:
+                # Implicitly join artist_artifacts
+                arts1 = artists() & artifacts('description = %s', ('art-art_fact-fact-desc-1',))
+
+            self.one(arts1.orm.joins)
+            self.type(artist_artifacts, arts1.orm.joins.first.entities)
+            self.one(arts1.orm.joins.first.entities.orm.joins)
+            facts = arts1.orm.joins.first.entities.orm.joins.first.entities
+            self.type(artifacts, facts)
+
+            arts1.sort()
+
+            self.four(arts1)
+
+            self.chronicles.clear()
+            for art, art1 in zip(arts, arts1):
+                self.eq(fff, art1.orm.persistencestate)
+                self.eq(art.id, art1.id)
+
+                aas = art1.artist_artifacts
+                self.one(aas)
+                self.eq('art-art_fact-fact-desc-1', aas.first.artifact.description)
+                self.eq(fff, aas.first.orm.persistencestate)
+
+            self.zero(self.chronicles)
+
+        # Test joining the associated entities collecties (artist_artifacts)
+        # with its composite (artifacts) where the composite's join is
+        # conditional along with the other two.
+        arts1 =  artists('firstname = %s', ('fn-1')) 
+        arts1 &= artist_artifacts('role = %s', ('art-art_fact-role-0',)) & \
+                 artifacts('description = %s', ('art-art_fact-fact-desc-1',))
+
+        self.one(arts1)
+
+        self.chronicles.clear()
+        self.eq('fn-1', arts1.first.firstname)
+
+        aas1 = arts1.first.artist_artifacts
+        self.one(aas1)
+        self.eq(fff, aas1.first.orm.persistencestate)
+        self.eq('art-art_fact-role-0', aas1.first.role)
+        self.eq('art-art_fact-fact-desc-1', aas1.first.artifact.description)
+
+        self.zero(self.chronicles)
+
+        # Test joining a constituent (component) of the composite (artifacts)
+        # of the association (artist_artifacts) without conditions.
+        for b in True, False:
+            if b:
+                # Explicitly join the associations (artist_artifacts())
+                arts1 = artists.join(
+                            artist_artifacts.join(
+                                artifacts & components
+                            )
+                        )
+            else:
+                # Implicitly join the associations (artist_artifacts())
+                arts1 =  artists.join(
+                            artifacts & components
+                         )
+
+            self.four(arts1)
+
+            arts1.sort()
+
+            self.chronicles.clear()
+
+            for art, art1 in zip(arts, arts1):
+                self.eq(fff, art1.orm.persistencestate)
+                self.eq(art.id, art1.id)
+                aas = art.artist_artifacts.sorted()
+                aas1 = art1.artist_artifacts.sorted()
+                self.four(aas1)
+
+                for aa, aa1 in zip(aas, aas1):
+                    self.eq(fff, aa1.orm.persistencestate)
+                    self.eq(aa.id, aa1.id)
+                    fact = aa.artifact
+                    fact1 = aa1.artifact
+                    self.eq(fff, fact1.orm.persistencestate)
+
+                    self.eq(fact.id, fact1.id)
+
+                    comps = fact.components.sorted()
+                    comps1 = fact1.components.sorted()
+
+                    self.four(comps1)
+
+                    for comp, comp1 in zip(comps, comps1):
+                        self.eq(fff, comp1.orm.persistencestate)
+                        self.eq(comp.id, comp1.id)
+
+            self.zero(self.chronicles)
+
+        # Test joining a constituent (component) of the composite (artifacts)
+        # of the association (artist_artifacts) with conditions.
+        aarole = 'art-art_fact-role-1'
+        facttitle = 'art-art_fact-fact-title-1'
+        compname = 'art-art_fact-role-fact-comp-name1'
+        arts1 =  artists() & (
+                    artist_artifacts(role = aarole) & (
+                        artifacts(title = facttitle) & components(name = compname)
+                    )
+                 )
+
+        self.four(arts1)
+
+        arts1.sort()
+
+        self.chronicles.clear()
+
+        for art, art1 in zip(arts, arts1):
+            self.eq(fff, art1.orm.persistencestate)
+
+            self.eq(art.id, art1.id)
+            aas1 = art1.artist_artifacts
+            self.one(aas1)
+
+            self.eq(aarole, aas1.first.role)
+            self.eq(fff, aas1.first.orm.persistencestate)
+
+            self.eq(facttitle, aas1.first.artifact.title)
+            self.eq(fff, aas1.first.artifact.orm.persistencestate)
+
+            self.one(aas1.first.artifact.components)
+
+            self.eq(compname, aas1.first.artifact.components.first.name)
+            self.eq(fff, aas1.first.artifact.components.first.orm.persistencestate)
+
+        self.zero(self.chronicles)
+
+    def it_calls_outerjoin(self):
+        # Outer join artists with presentations; no predicates
+        arts1 = artists()
+        press1 = presentations()
+
+        # I don't currently see the point in OUTER LEFT JOINs in ORMs, so,
+        # until a use case is presented, we will raise a NotImplementedError
+        self.expect(NotImplementedError, lambda: arts1.outerjoin(press1))
+        
+    def it_ensures_that_the_match_columns_have_full_text_indexes(self):
+        exprs = (
+            "match (firstname) against ('keyword') and firstname = 1",
+            "firstname = 1 and match (lastname) against ('keyword')",
+        )
+
+        for expr in exprs:
+            self.expect(orm.invalidcolumn, lambda: artists(expr, ()))
+
+        exprs = (
+            "match (bio) against ('keyword') and firstname = 1",
+            "firstname = 1 and match (bio) against ('keyword')",
+        )
+
+        for expr in exprs:
+            self.expect(None, lambda: artists(expr, ()))
+
+    def it_demand_that_the_column_exists(self):
+        exprs = (
+            "notacolumn = 'value'",
+            "firstname = 'value' or notacolumn = 'value'",
+            "notacolumn between 'value' and 'othervalue'",
+            "match (notacolumn) against ('keyword') and firstname = 1",
+            "firstname = 1 and match (notacolumn) against ('keyword')",
+            "match (bio) against ('keyword') and notacolumn = 1",
+            "notacolumn = 1 and match (bio) against ('keyword')",
+        )
+
+        for expr in exprs:
+            self.expect(orm.invalidcolumn, lambda: artists(expr, ()))
+
+    def it_parameterizes_predicate(self):
+        ''' Ensure that the literals in predicates get replaced with
+        placeholders and that the literals are moved to the correct 
+        positions in the where.args list. '''
+
+        # TODO With the addition of this feature, we can remove the
+        # requirement that a empty tuple be given as the second argument
+        # here. It also seems possible that we remove the args tuple
+        # altogether since it no longer seems necessary. NOTE, on the
+        # other hand, we may want to keep the argument parameter for
+        # binary queries, e.g.,:
+        #
+        #     artist('id = %s', (uuid.bytes,))
+        #
+        # Writing the above using string concatenation is difficult.
+        #
+        # HOWEVER: Given that the predicate parser
+        # (`predicate._parse()`) has not been thoroughly review by
+        # security specialists, it is considered unsafe to rely on it to
+        # correctly identify literals and columns in WHERE predicates.
+        # Because of this, until we have a proof that the predicate
+        # parser is invincible to malicious attacts, we should continue
+        # to insist that the user use the `args` tuple to pass in
+        # varient values when querying entities collections so the
+        # underlying MySQL library can safely deal with these arguments
+        # seperately.
+
+        arts = artists("firstname = '1234'", ())
+        self.eq("1234", arts.orm.where.args[0])
+        self.eq("%s", arts.orm.where.predicate.operands[1])
+
+        arts = artists("firstname = '1234' or lastname = '5678'", ())
+        self.eq("1234", arts.orm.where.args[0])
+        self.eq("5678", arts.orm.where.args[1])
+        for i, pred in enumerate(arts.orm.where.predicate):
+            self.eq("%s", pred.operands[1])
+            self.lt(i, 2)
+
+        expr = (
+            "firstname between '1234' and '5678' or "
+            "lastname  between '2345' and '6789'"
+        )
+
+        arts = artists(expr, ())
+        self.eq("1234", arts.orm.where.args[0])
+        self.eq("5678", arts.orm.where.args[1])
+        self.eq("2345", arts.orm.where.args[2])
+        self.eq("6789", arts.orm.where.args[3])
+        for i, pred in enumerate(arts.orm.where.predicate):
+            self.eq("%s", pred.operands[1])
+            self.lt(i, 2)
+
+    def it_raises_exception_when_a_non_existing_column_is_referenced(self):
+        self.expect(orm.invalidcolumn, lambda: artists(notacolumn = 1234))
+
+    def it_raises_exception_when_bytes_type_is_compared_to_nonbinary(self):
+        # TODO This should raise an exception
+        arts1 = artists('id = 123', ())
+        return
+        arts1 &= artifacts()
+
+        arts1.orm.load()
+
+    def it_calls_innerjoin_on_entities_and_writes_new_records(self):
+        arts = self._create_join_test_data()
+        arts.sort()
+
+        arts1 = artists() & (artifacts() & components())
+
+        # Explicitly load artists->artifacts->components. Add an entry to
+        # `arts1` and make sure that the new record persists.
+        arts1.orm.load()
+
+        art1 = artist.getvalid()
+        arts1 += art1
+        aas1 = art1.artist_artifacts
+        aas1 += artist_artifact.getvalid()
+        aas1.last.artifact = artifact.getvalid()
+        aas1.last.artifact.components += component.getvalid()
+        arts1.save()
+
+        art2 = None
+        def instantiate():
+            nonlocal art2
+            art2 = artist(art1.id)
+
+        self.expect(None, instantiate)
+
+        self.eq(art1.id, art2.id)
+
+        aas2 = art2.artist_artifacts
+        facts2 = art2.artifacts
+        self.one(aas2)
+        self.one(facts2)
+
+        self.eq(art1.artist_artifacts.last.id, aas2.last.id)
+        self.eq(art1.artifacts.last.id, facts2.last.id)
+
+        comps2 = facts2.first.components
+        self.one(comps2)
+        
+        self.eq(art1.artifacts.last.components.last.id,
+                comps2.last.id)
+
+        # Reload using the explicit loading, join method and update the record
+        # added above. Ensure that the new data presists.
+        arts3 = artists() & (artifacts() & components())
+        arts3.orm.load()
+        art3 = arts3[art2.id]
+        newval = uuid4().hex
+
+        art3.firstname = newval
+        art3.artist_artifacts.first.role = newval
+        art3.artifacts.first.title = newval
+        art3.artifacts.first.components.first.name = newval
+
+        arts3.save()
+
+        art4 = artist(art3.id)
+
+        self.eq(newval, art4.firstname)
+        self.eq(newval, art4.artist_artifacts.first.role)
+        self.eq(newval, art4.artifacts.first.title)
+        self.eq(newval, art4.artifacts.first.components.first.name)
+
+    def it_calls_innerjoin_on_entities(self):
+        fff = False, False, False
+
+        def join(joiner, joinee, type):
+            if type in ('innerjoin', 'join'):
+                getattr(joiner, type)(joinee)
+            elif type  == 'standard':
+                joiner = joiner & joinee
+            elif type  == 'inplace':
+                joiner &= joinee
+
+            # Incorrect implementation of & and &= can nullify `joiner`, even
+            # though the actual join was successful, so ensure `joiner` is
+            # notnone
+            self.notnone(joiner)
+
+        arts = self._create_join_test_data()
+
+        jointypes = 'innerjoin', 'join', 'standard', 'inplace', 'class'
+
+        # Inner join where only artist has a where clause
+        for t in jointypes:
+            arts1 = artists(firstname = 'fn-0')
+
+            if t == 'class':
+                join(arts1, presentations, 'innerjoin')
+                press = arts1.orm.joins.last.entities
+                join(press, locations, 'innerjoin')
+                locs = press.orm.joins.last.entities
+                join(arts1, locations, 'innerjoin')
+                artlocs = arts1.orm.joins.last.entities
+            else:
+                press = presentations()
+                locs = locations()
+                artlocs = locations()
+                join(arts1, press, t)
+                join(press, locs, t)
+                join(arts1, artlocs, t)
+
+            self.two(arts1.orm.joins)
+            self.one(press.orm.joins)
+            self.zero(locs.orm.joins)
+
+            # Test
+            self.one(arts1)
+
+            self.chronicles.clear()
+
+            art1 = arts1.first
+            self.eq(arts.first.id, art1.id)
+
+            self.eq(fff, art1.orm.persistencestate)
+
+            press = arts.first.presentations.sorted()
+            press1 = art1.presentations.sorted()
+
+            self.four(press1)
+
+            locs = arts.first.locations.sorted()
+            locs1 = art1.locations.sorted() 
+            self.four(locs1)
+
+            for loc, loc1 in zip(locs, locs1):
+                self.eq(fff, loc.orm.persistencestate)
+                self.eq(loc.id, loc1.id)
+
+            for pres, pres1 in zip(press, press1):
+                self.eq(fff, pres.orm.persistencestate)
+                self.eq(pres.id, pres1.id)
+
+                locs = pres.locations.sorted()
+                locs1 = pres1.locations.sorted() 
+                self.four(pres1.locations)
+
+                for loc, loc1 in zip(locs, locs1):
+                    self.eq(fff, loc.orm.persistencestate)
+                    self.eq(loc.id, loc1.id)
+
+            self.zero(self.chronicles)
+
+        # Inner join query: All four have where clauses with simple predicate,
+        # i.e., (x=1)
+        for t in jointypes:
+            if t == 'class':
+                continue
+
+            arts1    =  artists        (firstname    =  'fn-0')
+            press    =  presentations  (name         =  'pres-name-0')
+            locs     =  locations      (description  =  'pres-loc-desc-1')
+            artlocs  =  locations      (address      =  'art-loc-addr-0')
+
+            join(press,  locs,     t)
+            join(arts1,  press,    t)
+            join(arts1,  artlocs,  t)
+
+            self.two(arts1.orm.joins)
+            self.one(press.orm.joins)
+            self.zero(locs.orm.joins)
+
+            self.one(arts1)
+
+            self.chronicles.clear()
+
+            art1 = arts1.first
+            self.eq(fff, art1.orm.persistencestate)
+            self.eq('fn-0', art1.firstname)
+
+            locs1 = art1.locations
+            self.one(locs1)
+            loc1 = locs1.first
+            self.eq(fff, loc1.orm.persistencestate)
+            self.eq('art-loc-addr-0', loc1.address)
+
+            press1 = art1.presentations
+            self.one(press1)
+            pres = press1.first
+            self.eq(fff, pres.orm.persistencestate)
+            self.eq('pres-name-0', pres.name)
+
+            locs1 = pres.locations
+            self.one(locs1)
+            loc = locs1.first
+            self.eq(fff, loc.orm.persistencestate)
+            self.eq('pres-loc-desc-1', loc.description)
+
+            self.zero(self.chronicles)
+
+        # Inner join query: Artist has a conjoined predicate
+        # i.e, (x=1 and y=1)
+        # firstname=firstname will match the last artist while lifeform=organic
+        # will match the first artist.
+        for t in jointypes:
+            if t == 'class':
+                continue
+
+            arts1    =  artists('firstname = %s or '
+                                'lastname = %s' , ('fn-0', 'ln-2'))
+
+            if t == 'class':
+                join(arts1, presentations, 'innerjoin')
+                press = arts1.orm.joins.last.entities
+                join(press, locations, 'innerjoin')
+                locs = press.orm.joins.last.entities
+                join(arts1, locations, 'innerjoin')
+                artlocs = arts1.orm.joins.last.entities
+            else:
+                press = presentations()
+                locs = locations()
+                artlocs = locations()
+                join(arts1, press, t)
+                join(press, locs, t)
+                join(arts1, artlocs, t)
+                
+
+            self.two(arts1.orm.joins)
+            self.one(press.orm.joins)
+            self.zero(locs.orm.joins)
+            
+            self.two(arts1)
+
+            self.chronicles.clear()
+
+            # Test that the correct graph was loaded
+            for art1 in arts1:
+                self.eq(fff, art1.orm.persistencestate)
+                self.true(art1.firstname == 'fn-0' or
+                          art1.lastname  == 'ln-2')
+
+                arts.first.presentations.sort('name')
+                press1 = art1.presentations.sorted('name')
+                self.four(press1)
+
+                for i, pres1 in press1.enumerate():
+                    self.eq(fff, pres1.orm.persistencestate)
+                    pres = arts.first.presentations[i]
+                    self.eq(pres.name, pres1.name)
+
+                    locs  = pres.locations.sorted('description')
+                    locs1 = pres1.locations.sorted('description')
+                    self.four(locs1)
+
+                    for i, loc1 in locs1.enumerate():
+                        self.eq(fff, loc1.orm.persistencestate)
+                        self.eq(locs[i].address, loc1.address)
+                        self.eq(locs[i].description, loc1.description)
+            
+            self.zero(self.chronicles)
+
+        for t in jointypes:
+            arts1 = artists('firstname = %s and lastname = %s', 
+                            ('fn-0', 'ln-1'))
+            locs  = locations('address = %s or description = %s', 
+                             ('pres-loc-addr-0', 'pres-loc-desc-2'))
+
+            artlocs  =  locations('address = %s or description = %s', 
+                                 ('art-loc-addr-0', 'art-loc-desc-2'))
+
+            if t == 'class':
+                join(arts1, presentations, 'innerjoin')
+                press = arts1.orm.joins.last.entities
+                join(arts1,  artlocs,  'innerjoin')
+                join(press,  locs,     'innerjoin')
+            else:
+                press = presentations()
+                join(arts1,  press,    t)
+                join(arts1,  artlocs,  t)
+                join(press,  locs,     t)
+
+            # Test join counts
+            self.two(arts1.orm.joins)
+            self.one(press.orm.joins)
+            self.zero(locs.orm.joins)
+
+            # Only one artist will have been retrieved by the query
+            self.one(arts1)
+
+            self.chronicles.clear()
+
+            self.eq(fff, arts1.first.orm.persistencestate)
+
+            # Test artist's locations
+            locs = arts1.first.locations
+            self.two(locs)
+            for loc in locs:
+                self.eq(fff, loc.orm.persistencestate)
+                self.true(loc.address     == 'art-loc-addr-0' or 
+                          loc.description == 'art-loc-desc-2')
+
+            # Test arts1.first.presentations' locations
+            press = arts1.first.presentations
+
+            # All four presentations were match by the location predicate
+            self.four(press) 
+            for pres in press:
+                self.eq(fff, pres.orm.persistencestate)
+                self.two(pres.locations)
+                for loc in pres.locations:
+                    self.eq(fff, loc.orm.persistencestate)
+                    self.true(loc.address     == 'pres-loc-addr-0' or 
+                              loc.description == 'pres-loc-desc-2')
+
+            self.zero(self.chronicles)
+
+        for t in jointypes:
+            # Query where the only filter is down the graph three levels
+            # artist->presentation->locations. The algorithm that generates the
+            # where predicate has unusual recursion logic that is sensitive to
+            # top-level joins not having `where` objects so we need to make
+            # sure this doesn't get broken.
+            locs  = locations('address = %s or description = %s', 
+                             ('pres-loc-addr-0', 'pres-loc-desc-2'))
+
+            if t == 'class':
+                arts1 = artists.join(presentations)
+                press = arts1.orm.joins.last.entities
+                join(press, locs, 'innerjoin')
+            else:
+                press = presentations()
+                arts1 = artists()
+                join(arts1, press, t)
+                join(press, locs, t)
+
+            # Test join counts
+            self.one(arts1.orm.joins)
+            self.one(press.orm.joins)
+            self.zero(locs.orm.joins)
+
+            self.four(arts1)
+
+            self.chronicles.clear()
+
+            for art in arts1:
+                self.eq(fff, art.orm.persistencestate)
+                self.four(art.presentations)
+                for pres in art.presentations:
+                    self.eq(fff, pres.orm.persistencestate)
+                    self.two(pres.locations)
+                    for loc in pres.locations:
+                        self.eq(fff, loc.orm.persistencestate)
+                        self.true(loc.address     == 'pres-loc-addr-0' or
+                                  loc.description == 'pres-loc-desc-2')
+
+            self.zero(self.chronicles)
+            
+        # Test joining using the three our more & operators.
+
+        # NOTE Sadely, parenthesis must be used to correct precedence. This
+        # will likely lead to confusion if the & techinique is promoted. I'm
+        # thinking &= should be recommended instead.
+        for t in ('class', 'instance'):
+            if t == 'class':
+                arts1 = artists & (presentations & locations)
+            else:
+                arts1 = artists() & (presentations() & locations())
+
+            self.four(arts1)
+
+            self.chronicles.clear()
+
+            for art in arts1:
+                self.eq(fff, art.orm.persistencestate)
+                self.four(art.presentations)
+                for pres in art.presentations:
+                    self.eq(fff, pres.orm.persistencestate)
+                    self.four(pres.locations)
+
+            self.zero(self.chronicles)
+                    
+    def it_eager_loads_constituents(self):
+        arts = artists()
+        for _ in range(4):
+            arts += artist.getvalid()
+
+            arts.last.artist_artifacts \
+                += artist_artifact.getvalid()
+
+            arts.last.artist_artifacts.last.artifact \
+                = artifact.getvalid()
+
+            arts.last.locations += location.getvalid()
+
+            arts.last.presentations += presentation.getvalid()
+
+            arts.last.presentations.last.locations  \
+                += location.getvalid()
+
+            arts.last.presentations.last.components \
+                += component.getvalid()
+        arts.save()
+
+        # Eager-load one constituent
+        arts1 = artists(orm.eager('presentations'))
+        self.one(arts1.orm.joins)
+        self.type(presentations, arts1.orm.joins.first.entities)
+
+        self.le(arts.count, arts1.count)
+
+        for art in arts:
+            art1 = arts1(art.id)
+            self.notnone(art1)
+
+            for pres in art.presentations:
+                pres1 = art1.presentations(pres.id)
+                self.notnone(pres1)
+
+        # Eager-load two constituents
+        arts1 = artists(orm.eager('presentations', 'locations'))
+        self.two(arts1.orm.joins)
+        self.type(presentations, arts1.orm.joins.first.entities)
+        self.type(locations, arts1.orm.joins.second.entities)
+
+        self.le(arts.count, arts1.count)
+
+        for art in arts:
+            art1 = arts1(art.id)
+            self.notnone(art1)
+
+            for pres in art.presentations:
+                pres1 = art1.presentations(pres.id)
+                self.notnone(pres1)
+
+            for loc in art.locations:
+                loc1 = art1.locations(loc.id)
+                self.notnone(loc1)
+
+        # Eager-load two constituents
+        arts1 = artists(orm.eager('presentations', 'locations'))
+        self.two(arts1.orm.joins)
+        self.type(presentations, arts1.orm.joins.first.entities)
+        self.type(locations, arts1.orm.joins.second.entities)
+
+        self.le(arts.count, arts1.count)
+
+        for art in arts:
+            art1 = arts1(art.id)
+            self.notnone(art1)
+
+            for pres in art.presentations:
+                pres1 = art1.presentations(pres.id)
+                self.notnone(pres1)
+
+            for loc in art.locations:
+                loc1 = art1.locations(loc.id)
+                self.notnone(loc1)
+            
+        # Eager-load two constituents
+        arts1 = artists(orm.eager('presentations.locations', 'presentations.components'))
+        self.one(arts1.orm.joins)
+        self.two(arts1.orm.joins.first.entities.orm.joins)
+        presjoins = arts1.orm.joins.first.entities.orm.joins
+        self.type(locations, presjoins.first.entities)
+        self.type(components, presjoins.second.entities)
+
+        self.le(arts.count, arts1.count)
+
+        for art in arts:
+            art1 = arts1(art.id)
+            self.notnone(art1)
+
+            for pres in art.presentations:
+                pres1 = art1.presentations(pres.id)
+                self.notnone(pres1)
+
+                for loc in pres.locations:
+                    loc1 = pres1.locations(loc.id)
+                    self.notnone(loc1)
+
+                for comp in pres.components:
+                    comp1 = pres1.components(comp.id)
+                    self.notnone(comp1)
+
+    def it_creates_iter_from_predicate(self):
+        ''' Test the predicates __iter__() '''
+
+        # Iterate over one predicate
+        pred = orm.predicate('col = 1')
+        pred1 = None
+        for i, pred1 in enumerate(pred):
+            self.eq(str(pred1), str(pred))
+
+        self.notnone(pred1)
+        self.eq(0, i)
+
+        # Iterate over two predicates
+        pred = orm.predicate('col = 1 and col1 = 2')
+
+        pred1 = None
+        for i, pred1 in enumerate(pred):
+            if i == 0:
+                self.eq('col = 1 AND col1 = 2', str(pred1))
+            elif i == 1:
+                self.eq(' AND col1 = 2', str(pred1))
+            else:
+                self.fail('Predicate count exceeds 2')
+
+        # Iterate over match predicate and standard
+        pred = orm.predicate("match(col) against ('keyword') and col = 1")
+
+        pred1 = None
+        for i, pred1 in enumerate(pred):
+            if i == 0:
+                expr = (
+                    "MATCH (col) AGAINST "
+                   "('keyword' IN NATURAL LANGUAGE MODE) "
+                   "AND col = 1"
+                )
+                self.eq(expr, str(pred1))
+            elif i == 1:
+                self.eq(' AND col = 1', str(pred1))
+            else:
+                self.fail('Predicate count exceeds 2')
+
+        # Iterate over match predicate and standard or standard
+        pred = orm.predicate("match(col) against ('keyword') and col = 1 or col1 = 2")
+
+        pred1 = None
+        for i, pred1 in enumerate(pred):
+            if i == 0:
+                expr = (
+                    "MATCH (col) AGAINST ('keyword' "
+                    "IN NATURAL LANGUAGE MODE) AND col = 1 OR col1 = 2"
+                )
+                self.eq(expr, str(pred1))
+            elif i == 1:
+                self.eq(' AND col = 1 OR col1 = 2', str(pred1))
+            elif i == 2:
+                self.eq(' OR col1 = 2', str(pred1))
+            else:
+                self.fail('Predicate count exceeds 2')
+        
+    def it_failes_parsing_malformed_predicates(self):
+        p = orm.predicate("match ((col) against ('search str')")
+        parens = '''
+            (col = 1
+            (col = 1) or (( col = 2)
+            (col = 1) and ( col = 2 or (col = 3)
+            (col = 1) and col = 2 or (col = 3))
+            (col = 1 and col = 2 or (col = 3)
+            (col = 1))
+            ((col = 1)
+            x = 1 and (x = 1 and x = 1
+            match (col) against ('search str') and col = 1)
+            (match (col) against ('search str') and col = 1
+            match (col) against ('search str') and (col = 1
+            match (col) against ('search str')) and col = 1
+            match (col) against ('search str') and )col = 1
+        '''
+
+        syntax = '''
+            match (col) against (unquoted)
+        '''
+
+        unexpected = '''
+            col = 1 and
+            col = 1 =
+            = col = 1
+            = 1
+            1 =
+            or col = 1
+            match against ('search str')
+            match (col) ('search str')
+            match () against ('search str')
+            match () ('search str')
+            match (col) ('search str')
+            match (col) against ()
+            match (col) against ('search str') in UNnatural language mode
+            match (col) against ('search str') mode language natural in
+            match (col,) against ('search str') mode language natural in
+            col = %S
+            col in ()
+            col in (1) or col in ()
+            col in (
+            col in (1) or col in (
+        '''
+
+        invalidop = '''
+            col != 1
+            col === 1
+            col <<< 1
+            () against ('search str')
+        '''
+
+        pairs = (
+            (orm.predicate.ParentheticalImbalance,  parens),
+            (orm.predicate.SyntaxError,             syntax),
+            (orm.predicate.UnexpectedToken,         unexpected),
+            (orm.predicate.InvalidOperator,         invalidop),
+        )
+
+        for ex, exprs in pairs:
+            for expr in exprs.splitlines():
+                expr = expr.strip()
+                if not expr:
+                    continue
+ 
+                try:
+                    pred = orm.predicate(expr)
+                except Exception as ex1:
+                    if type(ex1) is not ex:
+                        msg = (
+                            'Incorrect exception type; '
+                            'expected: %s; actual: %s'
+                        ) % (ex, type(ex1))
+
+                        self.fail(msg)
+                else:
+                    self.fail('No exception parsing: ' + expr)
+
+    def it_parses_where_predicate(self):
+        def test(expr, pred, first, op, second, third=''):
+            msg = expr
+            self.eq(first,   pred.operands[0],  msg)
+            self.eq(op,      pred.operator,     msg)
+            if second:
+                self.eq(second,  pred.operands[1],  msg)
+
+            if third:
+                self.eq(third,  pred.operands[2],  msg)
+                
+            self.eq(expr,    str(pred),         msg)
+
+        # Simple col = literal
+        for expr in 'col = 11', 'col=11':
+            pred = orm.predicate(expr)
+            test('col = 11', pred, 'col', '=', '11')
+
+        # Joined simple col > literal (or|and) col < literal
+        for op in 'and', 'or':
+            for expr in 'col > 0 %s col < 11' % op, 'col>0 %s col<11' % op:
+                pred = orm.predicate(expr)
+                test('col > 0 %s col < 11' % op.upper(), pred, 'col', '>', '0')
+
+        # Simple literal = column
+        for expr in '11 = col', '11=col':
+            pred = orm.predicate(expr)
+            test('11 = col', pred, '11', '=', 'col')
+
+        # Joined simple literal > col (or|and) literal < col
+        for op in 'and', 'or':
+            for expr in '0 > col %s 11 < col' % op, '0>col %s 11<col' % op:
+                pred = orm.predicate(expr)
+                test('0 > col %s 11 < col' % op.upper(), pred, '0', '>', 'col')
+                test(' %s 11 < col' % op.upper(), pred.junction, '11', '<', 'col')
+
+        # Simple c = l
+        for expr in 'c = 1', 'c=1':
+            pred = orm.predicate(expr)
+            test('c = 1', pred, 'c', '=', '1')
+
+        # Joined simple c > 1 (or|and) 1 < c
+        for op in 'and', 'or':
+            for expr in '0 > c %s 1 < c' % op, '0>c %s 1<c' % op:
+                pred = orm.predicate(expr)
+                test('0 > c %s 1 < c' % op.upper(), pred, '0', '>', 'c')
+                test(' %s 1 < c' % op.upper(), pred.junction, '1', '<', 'c')
+
+        # Simple l = c
+        for expr in '1 = c', '1=c':
+            pred = orm.predicate(expr)
+            test('1 = c', pred, '1', '=', 'c')
+
+        # Simple col = 'literal'
+        for expr in "col = '11'", "col='11'":
+            pred = orm.predicate(expr)
+            test("col = '11'", pred, 'col', '=', "'11'")
+
+        # Joined simple col > 'literal' (or|and) col = 'literal'
+        for op in 'and', 'or':
+            exprs = (
+                "col = '11' %s col1 = '111'" % op, 
+                "col='11' %s col1='111'" % op.upper()
+            )
+            for expr in exprs:
+                pred = orm.predicate(expr)
+                test( "col = '11' %s col1 = '111'" % op.upper(), pred, 'col', '=', "'11'")
+                test( " %s col1 = '111'" % op.upper(), pred.junction, 'col1', '=', "'111'")
+
+        # Simple 'literal' = column
+        for expr in "'11' = col", "'11'=col":
+            pred = orm.predicate(expr)
+
+            test("'11' = col", pred, "'11'", '=', 'col')
+
+        # Simple col = "literal"
+        for expr in 'col = "11"', 'col="11"':
+            pred = orm.predicate(expr)
+            test('col = "11"', pred, 'col', '=', '"11"')
+
+        # Simple "literal" <= column ; Test multicharacter special ops)
+        for expr in 'col <= 11', 'col<=11':
+            pred = orm.predicate(expr)
+            test('col <= 11', pred, 'col', '<=', '11')
+
+        # Simple column = 'lit=eral' (literal has operator in it)
+        for expr in  "col = '1 = 1'", "col='1 = 1'":
+            test("col = '1 = 1'", orm.predicate(expr), 'col', '=', "'1 = 1'")
+
+        # Simple 'lit=eral' = column (literal has operator in it)
+        for expr in "'1 = 1' = col", "'1 = 1'=col":
+            test("'1 = 1' = col", orm.predicate(expr), "'1 = 1'", '=', 'col')
+
+        # column is literal
+        for expr in 'col is null', 'col  IS  NULL':
+            test('col IS NULL', orm.predicate(expr), 'col', 'IS', 'NULL')
+
+        # literal is column
+        for expr in 'null is col', 'NULL  IS  col':
+            test('NULL IS col', orm.predicate(expr), 'NULL', 'IS', 'col')
+
+        # column is not literal
+        for expr in 'col is not null', 'col  IS  NOT   NULL':
+            pred = orm.predicate(expr)
+            test('col IS NOT NULL', pred, 'col', 'IS NOT', 'NULL')
+
+        # literal is not column
+        for expr in 'null is not col', 'NULL  IS   NOT col':
+            pred = orm.predicate(expr)
+            test('NULL IS NOT col', pred, 'NULL', 'IS NOT', 'col')
+
+        # column like literal
+        for expr in "col like '%lit%'", "col   LIKE '%lit%'":
+            pred = orm.predicate(expr)
+            test("col LIKE '%lit%'", pred, 'col', 'LIKE', "'%lit%'")
+
+        # column not like literal
+        for expr in "col not like '%lit%'", "col   NOT  LIKE '%lit%'":
+            pred = orm.predicate(expr)
+            test("col NOT LIKE '%lit%'", pred, 'col', 'NOT LIKE', "'%lit%'")
+
+        # column is literal
+        for expr in "col is true", "col   IS   TRUE":
+            pred = orm.predicate(expr)
+            test('col IS TRUE', pred, 'col', 'IS', "TRUE")
+
+        # column is not literal
+        for expr in "col is not true", "col   IS   NOT TRUE":
+            pred = orm.predicate(expr)
+            test('col IS NOT TRUE', pred, 'col', 'IS NOT', "TRUE")
+
+        # column is literal
+        for expr in "col is false", "col   IS   FALSE":
+            pred = orm.predicate(expr)
+            test('col IS FALSE', pred, 'col', 'IS', "FALSE")
+
+        # column is not literal
+        for expr in "col is not false", "col   IS   NOT FALSE":
+            pred = orm.predicate(expr)
+            test('col IS NOT FALSE', pred, 'col', 'IS NOT', "FALSE")
+
+        # column between 1 and 10
+        for expr in 'col between 1 and 10', 'col   BETWEEN  1  AND  10':
+            pred = orm.predicate(expr)
+            test('col BETWEEN 1 AND 10', pred, 'col', 'BETWEEN', '1', '10')
+
+        for op in 'and', 'or':
+            OP = op.upper()
+            exprs = (
+                'col between 1 and 10 %s col1 = 1'% op, 
+                'col   BETWEEN  1  AND  10  %s  col1  =  1' % OP
+            )
+            for expr in exprs:
+                pred = orm.predicate(expr)
+                test(
+                    'col BETWEEN 1 AND 10 %s col1 = 1' % OP, pred,
+                    'col', 'BETWEEN', '1', '10' 
+                )
+                test(
+                    ' %s col1 = 1' % OP, pred.junction, 
+                    'col1', '=', '1'
+                )
+
+        # column not between 1 and 10
+        for expr in 'col not between 1 and 10', 'col   NOT BETWEEN  1  AND  10':
+            pred = orm.predicate(expr)
+            test('col NOT BETWEEN 1 AND 10', pred, 'col', 'NOT BETWEEN', '1', '10')
+
+        def testmatch(pred, cols, expr, mode='natural'):
+            self.none(pred.operands)
+            self.notnone(pred.match)
+            self.eq(cols, pred.match.columns)
+            self.eq(expr, str(pred.match))
+
+            if pred.junctionop:
+                self.eq(' %s %s' % (pred.junctionop, expr), str(pred))
+
+            self.eq(mode, pred.match.mode)
+
+        # match(col) against ('keyword')
+        exprs =  "match(col) against ('keyword')",  "MATCH ( col )  AGAINST  ( 'keyword' )"
+        for expr in exprs:
+            pred = orm.predicate(expr)
+            expr = (
+                "MATCH (col) AGAINST ('keyword' "
+                "IN NATURAL LANGUAGE MODE)"
+            )
+            testmatch(pred, ['col'], expr)
+
+        # match (col) against ('''keyword has ''single-quoted'' strings''')
+        expr =  "MATCH (col) AGAINST ('''keyword has ''single-quoted'' strings''')"
+        pred = orm.predicate(expr)
+        self.eq("''keyword has ''single-quoted'' strings''", pred.match.searchstring)
+        expr =  (
+            "MATCH (col) AGAINST ('''keyword has ''single-quoted'' strings''' "
+            "IN NATURAL LANGUAGE MODE)"
+        )
+        testmatch(pred, ['col'], expr)
+
+        # match (col) against ('"keyword has "double-quoted"' strings"')
+        expr =  "MATCH (col) AGAINST ('\"keyword has \"double-quoted\" strings\"')"
+        pred = orm.predicate(expr)
+        self.eq("\"keyword has \"double-quoted\" strings\"", pred.match.searchstring)
+
+        expr = (
+            "MATCH (col) AGAINST ('\"keyword has \"double-quoted\" strings\"' "
+            "IN NATURAL LANGUAGE MODE)"
+        )
+
+        testmatch(pred, ['col'], expr)
+
+        # match(col) against ('keyword') and col = 1
+        for op in 'and', 'or':
+            OP = op.upper()
+            exprs = (
+                "match(col) against ('keyword') %s col = 1" % op, 
+                "match(col)  against  ('keyword')  %s col=1" % OP
+            )
+            for expr in exprs:
+                pred = orm.predicate(expr)
+                expr = (
+                    "MATCH (col) AGAINST ('keyword' "
+                    "IN NATURAL LANGUAGE MODE) %s col = 1" % OP
+                )
+
+                testmatch(pred, ['col'], expr)
+
+                expr = (
+                    "MATCH (col) AGAINST ('keyword' "
+                    "IN NATURAL LANGUAGE MODE) %s col = 1" % OP
+                )
+
+                self.eq(expr, str(pred))
+
+                test(
+                    ' %s col = 1' % OP, pred.match.junction, 
+                    'col', '=', '1'
+                )
+
+        # (match(col) against ('keyword')) and (col = 1)
+        for op in 'and', 'or':
+            OP = op.upper()
+            exprs = (
+                "(match(col) against ('keyword')) %s (col = 1)" % op, 
+                "(match(col)  against  ('keyword'))  %s (col=1)" % OP
+            )
+            for expr in exprs:
+                pred = orm.predicate(expr)
+                expr = (
+                    "MATCH (col) AGAINST ('keyword' "
+                    "IN NATURAL LANGUAGE MODE)"
+                )
+
+                testmatch(pred, ['col'], expr)
+
+                expr = (
+                    "(MATCH (col) AGAINST ('keyword' "
+                    "IN NATURAL LANGUAGE MODE)) %s (col = 1)" % OP
+                )
+
+                self.eq(expr, str(pred))
+
+                test(
+                    ' %s (col = 1)' % OP, pred.junction, 
+                    'col', '=', '1'
+                )
+
+        # (match(col) against ('keyword') and col = 1) and (col1 = 2)
+        for op in 'and', 'or':
+            OP = op.upper()
+            exprs = (
+                "(match(col) against ('keyword') and col = 1) %s (col1 = 2)" % op, 
+                "(match(col)  against  ( 'keyword' ) and col=1)  %s (col1=2)" % OP
+            )
+            for expr in exprs:
+                pred = orm.predicate(expr)
+                expr = (
+                    "(MATCH (col) AGAINST ('keyword' "
+                    "IN NATURAL LANGUAGE MODE) "
+                    "AND col = 1) %s (col1 = 2)" % OP
+                )
+
+                self.eq(expr, str(pred))
+
+        # col = 1 and match(col) against ('keyword')
+        for op in 'and', 'or':
+            OP = op.upper()
+            exprs = (
+                "col = 1 %s match(col) against ('keyword')" % op, 
+                "col  =  1  %s  match(col)  against  ('keyword')" % OP
+            )
+            for expr in exprs:
+                pred = orm.predicate(expr)
+                expr = (
+                    "col = 1 " + OP + " MATCH (col) AGAINST ('keyword' "
+                    "IN NATURAL LANGUAGE MODE)"
+                )
+                test(expr, pred, 'col', '=', '1')
+                expr = (
+                    "MATCH (col) AGAINST ('keyword' "
+                    "IN NATURAL LANGUAGE MODE)"
+                )
+                testmatch(pred.junction, ['col'], expr)
+
+        # match(col1, col2) against ('keyword')
+        exprs =  "match(col1, col2) against ('keyword')", \
+                 "MATCH ( col1, col2 )  AGAINST  ( 'keyword' )"
+        for expr in exprs:
+            pred = orm.predicate(expr)
+            expr = (
+                "MATCH (col1, col2) AGAINST ('keyword' "
+                "IN NATURAL LANGUAGE MODE)"
+            )
+            testmatch(pred, ['col1', 'col2'], expr)
+
+        # FIXME This is incorrect syntax 
+        # (8e385bb9-41cd-4943-bba8-d72cb9f5b938)
+        # match(col1, col2) against ('keyword') in natural language mode
+        exprs =  "match(col1, col2) against ('keyword') in natural language mode", \
+                 "MATCH ( col1, col2 )  AGAINST  ( 'keyword' )  IN  NATURAL     LANGUAGE    MODE"
+        for expr in exprs:
+            pred = orm.predicate(expr)
+            expr = (
+                "MATCH (col1, col2) AGAINST ('keyword' "
+                "IN NATURAL LANGUAGE MODE)"
+            )
+            testmatch(pred, ['col1', 'col2'], expr)
+
+        # FIXME This is incorrect syntax
+        # match(col1, col2) against ('keyword') in boolean mode
+        exprs =  "match(col1, col2) against ('keyword') in boolean mode", \
+                 "MATCH ( col1, col2 )  AGAINST  ( 'keyword' )  IN      BOOLEAN    MODE"
+        for expr in exprs:
+            pred = orm.predicate(expr)
+            expr = (
+                "MATCH (col1, col2) AGAINST ('keyword' "
+                "IN BOOLEAN MODE)"
+            )
+            testmatch(pred, ['col1', 'col2'], expr, 'boolean')
+
+        # (col = 1)
+        for expr in '(col = 1)', '( col=1 )':
+            pred = orm.predicate(expr)
+            expr = '(col = 1)'
+            test(expr, pred, 'col', '=', '1')
+
+        # (col = 1) and (col1 = 2)
+        for expr in '(col = 1) and (col1 = 2)', '(col=1)AND(col1=2)':
+            pred = orm.predicate(expr)
+            expr = '(col = 1) AND (col1 = 2)'
+            test(expr, pred, 'col', '=', '1')
+
+            expr = ' AND (col1 = 2)'
+            test(expr, pred.junction, 'col1', '=', '2')
+
+        # (col = 1 and col1 = 2)
+        for expr in '(col = 1 and col1 = 2)', '(col=1 AND col1=2)':
+            pred = orm.predicate(expr)
+            expr = '(col = 1 AND col1 = 2)'
+            test(expr, pred, 'col', '=', '1')
+
+            expr = ' AND col1 = 2)'
+            test(expr, pred.junction, 'col1', '=', '2')
+
+        # (col = 1 and (col1 = 2 and col2 = 3))
+        exprs = (
+           '(col = 1 and (col1 = 2 and col2 = 3))',
+           '(col  =  1  AND ( col1=2 AND col2 = 3 ) )',
+        )
+        for expr in exprs:
+            pred = orm.predicate(expr)
+            expr = '(col = 1 AND (col1 = 2 AND col2 = 3))'
+            test(expr, pred, 'col', '=', '1')
+
+            expr = ' AND (col1 = 2 AND col2 = 3))'
+            test(expr, pred.junction, 'col1', '=', '2')
+
+        # ((col = 1 and col1 = 2) and col2 = 3)
+        exprs = (
+           '((col = 1 and col1 = 2) and col2 = 3)',
+           '((col=1 AND col1=2) AND col2=3)',
+        )
+        for expr in exprs:
+            pred = orm.predicate(expr)
+            expr = '((col = 1 AND col1 = 2) AND col2 = 3)'
+            test(expr, pred, 'col', '=', '1')
+
+        # col = 'can''t won''t shan''t'
+        expr = "col = 'can''t won''t shan''t'"
+        pred = orm.predicate(expr)
+        expr = "col = 'can''t won''t shan''t'"
+        test(expr, pred, 'col', '=', "'can''t won''t shan''t'")
+
+        for op in orm.predicate.Specialops:
+            expr = 'col %s 123' % op
+            pred = orm.predicate(expr)
+            test(expr, pred, 'col', op, '123')
+
+        # col_1 = 1 and col_2 = 2
+        expr = "col_0 = 0 AND col_1 = 1"
+        for i, pred in enumerate(orm.predicate(expr)):
+            col = 'col_' + str(i)
+            if i.first:
+                expr = 'col_0 = 0 AND col_1 = 1' 
+            elif i.second:
+                expr = ' AND col_1 = 1'
+            test(expr, pred, col, '=', str(i))
+        
+        ## Placeholders ##
+        expr = 'col = %s'
+        pred = orm.predicate(expr)
+        test(expr, pred, 'col', '=', '%s')
+
+        ## Parse introducers#
+        expr = 'id = _binary %s'
+        pred = orm.predicate(expr)
+        self.eq('id = _binary %s', str(pred))
+
+        # _binary id = %s
+        expr = '_binary id = %s'
+        pred = orm.predicate(expr)
+        self.eq('_binary id = %s', str(pred))
+
+        # _binary id = _binary %s
+        expr = '_binary id = _binary %s'
+        pred = orm.predicate(expr)
+        self.eq('_binary id = _binary %s', str(pred))
+
+        # col in (123) 
+        exprs = (
+            'col in (123)',
+            'col IN(123)',
+        )
+
+        for expr in exprs:
+            pred = orm.predicate(expr)
+            self.eq('col IN (123)', str(pred))
+
+        # col in (123, 'test') 
+        exprs = (
+            "col in (123, 'test')",
+            "col IN(123, 'test')",
+        )
+
+        for expr in exprs:
+            pred = orm.predicate(expr)
+            self.eq("col IN (123, 'test')", str(pred))
+
+        # col in (123, '''test ''single-quoted'' strings''')
+        exprs = (
+            "col in (123, '''test ''single-quoted'' strings''')",
+            "col IN(123,'''test ''single-quoted'' strings''')",
+        )
+
+        for expr in exprs:
+            pred = orm.predicate(expr)
+            self.eq("col IN (123, '''test ''single-quoted'' strings''')", str(pred))
+
+        # col in (1 2 3 'test', 'test1')
+        exprs = (
+            "col in (1, 2, 3, 'test', 'test1')",
+            "col IN(1, 2, 3, 'test', 'test1')",
+        )
+
+        for expr in exprs:
+            pred = orm.predicate(expr)
+            self.eq("col IN (1, 2, 3, 'test', 'test1')", str(pred))
+
+        # col not in (1 2 3 'test', 'test1')
+        exprs = (
+            "col not in (1, 2, 3, 'test', 'test1')",
+            "col NOT IN(1, 2, 3, 'test', 'test1')",
+        )
+
+        for expr in exprs:
+            pred = orm.predicate(expr)
+            self.eq("col NOT IN (1, 2, 3, 'test', 'test1')", str(pred))
+
+        exprs = (
+            'col in (_binary %s)',
+            'col IN(_binary %s)',
+        )
+
+        for expr in exprs:
+            pred = orm.predicate(expr)
+            self.eq("col IN (_binary %s)", str(pred))
+
+        exprs = (
+            'col in (_binary %s, _binary %s)',
+            'col IN(_binary %s,_binary %s)',
+        )
+
+        for expr in exprs:
+            pred = orm.predicate(expr)
+            self.eq("col IN (_binary %s, _binary %s)", str(pred))
+
+    def it_saves_recursive_entity(self):
+
+        def recurse(com1, com2, expecteddepth, curdepth=0):
+            with self._chrontest() as t:
+                t.run(lambda: com2.comments)
+                t.retrieved(com2.comments)
+
+            self.is_(com2, com2.comments.comment)
+
+            self.eq(com1.comments.count, com2.comments.count)
+
+            self.eq(com1.id, com2.id)
+            for prop in ('id', 'title', 'body'):
+                self.eq(getattr(com1, prop), getattr(com2, prop))
+
+            maxdepth = curdepth
+
+            [com.comments.sort() for com in (com1, com2)]
+
+            for com1, com2 in zip(com1.comments, com2.comments):
+                maxdepth = recurse(
+                    com1, 
+                    com2, 
+                    expecteddepth=expecteddepth, 
+                    curdepth = curdepth + 1
+                )
+                maxdepth = max(maxdepth, curdepth)
+
+            if curdepth == 0:
+                self.eq(expecteddepth, maxdepth)
+
+            return maxdepth
+
+        ' Test non-recursive (no constituent comments) '
+        com = comment.getvalid()
+        com.save()
+
+        recurse(com, comment(com.id), expecteddepth=0)
+
+        ' Test recursive shallow recursion (1 level) '
+        com = comment.getvalid()
+        self.zero(com.comments)
+
+        for _ in range(2):
+            com.comments += comment.getvalid()
+            com.comments.last.title = uuid4().hex
+            com.comments.last.body = uuid4().hex
+
+        with self._chrontest() as t:
+            t.run(com.save)
+            t.created(com)
+            t.created(com.comments.first)
+            t.created(com.comments.second)
+
+        recurse(com, comment(com.id), expecteddepth=1)
+
+        ''' Test deep recursion '''
+        com = comment.getvalid()
+
+        # Create
+        for _ in range(2):
+            com.comments += comment.getvalid()
+            com1 = com.comments.last
+            com1.title = uuid4().hex
+            com1.body = uuid4().hex
+            for _ in range(2):
+                com1.comments += comment.getvalid()
+                com2 = com1.comments.last
+                com2.title = uuid4().hex
+                com2.body = uuid4().hex
+
+        with self._chrontest() as t:
+            t.run(com.save)
+            t.created(com)
+            t.created(com.comments.first)
+            t.created(com.comments.first.comments.first)
+            t.created(com.comments.first.comments.second)
+            t.created(com.comments.second)
+            t.created(com.comments.second.comments.first)
+            t.created(com.comments.second.comments.second)
+
+        recurse(com, comment(com.id), expecteddepth=2)
+
+    def it_updates_recursive_entity(self):
+        def recurse(com1, com2):
+            for prop in ('id', 'title', 'body'):
+                self.eq(getattr(com1, prop), getattr(com2, prop))
+
+            self.eq(com1.comments.count, com2.comments.count)
+
+            for com11, com22 in zip(com1.comments, com2.comments):
+                recurse(com11, com22)
+
+        ' Test non-recursive (no constituent comments) '
+        com = comment.getvalid()
+        com.save()
+        
+        com = comment(com.id)
+        com.title = uuid4().hex
+        com.body = uuid4().hex
+
+        with self._chrontest() as t:
+            t.run(com.save)
+            t.updated(com)
+
+        com1 = comment(com.id)
+        
+        recurse(com1, com)
+
+        ' Test recursive shallow recursion (1 level) '
+        for _ in range(2):
+            com1.comments += comment.getvalid()
+            com1.comments.last.title = uuid4().hex
+            com1.comments.last.body = uuid4().hex
+
+        com1.save()
+
+        com1 = comment(com1.id)
+
+        com1.title = uuid4().hex
+        com1.body = uuid4().hex
+
+        for com in com1.comments:
+            com.title = uuid4().hex
+            com.body = uuid4().hex
+
+        with self._chrontest() as t:
+            t.run(com1.save)
+            t.updated(com1)
+            t.updated(com1.comments.first)
+            t.updated(com1.comments.second)
+
+        com2 = comment(com1.id)
+
+        recurse(com1, com2)
+
+        ''' Test deep recursion '''
+        com2.title = uuid4().hex
+        com2.body = uuid4().hex
+
+        for com in com2.comments:
+            for _ in range(2):
+                com.comments += comment.getvalid()
+
+        com2.save()
+        com2 = comment(com2.id)
+
+        com2.title = uuid4().hex
+        com2.body = uuid4().hex
+
+        for com in com2.comments:
+            com.title = uuid4().hex
+            com.body = uuid4().hex
+            for com in com.comments:
+                com.title = uuid4().hex
+                com.body = uuid4().hex
+                
+        with self._chrontest() as t:
+            t.run(com2.save)
+            t.updated(com2)
+            for com in com2.comments:
+                t.updated(com)
+                for com in com.comments:
+                    t.updated(com)
+
+        recurse(com2, comment(com2.id))
+
+    def it_loads_and_saves_entitys_recursive_entities(self):
+        art = artist.getvalid()
+
+        for _ in range(2):
+            art.comments += comment.getvalid()
+
+        for com in art.comments:
+            for _ in range(2):
+                com.comments += comment.getvalid()
+
+        with self._chrontest() as t:
+            t.run(art.save)
+            t.created(art)
+            for com in art.comments:
+                t.created(com)
+                for com in com.comments:
+                    t.created(com)
+
+        art1 = artist(art.id)
+
+        self.eq(art.id, art1.id)
+
+        coms, coms1 = art.comments, art1.comments
+
+        self.two(coms1)
+
+        for com, com1 in zip(coms.sorted(), coms1.sorted()):
+            self.eq(com.id, com1.id)
+            coms, coms1 = com.comments, com.comments
+
+            self.two(coms1)
+
+            for com, com1 in zip(coms.sorted(), coms1.sorted()):
+                self.eq(com.id, com1.id)
+
+
