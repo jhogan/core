@@ -1,27 +1,11 @@
 # vim: set et ts=4 sw=4 fdm=marker
-"""
-MIT License
 
-Copyright (c) 2016 Jesse Hogan
+# Copyright (C) Jesse Hogan - All Rights Reserved
+# Unauthorized copying of this file, via any medium is strictly
+# prohibited
+# Proprietary and confidential
+# Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-"""
 # TODO Add Tests
 from configfile import configfile
 from entities import *
@@ -29,7 +13,16 @@ from MySQLdb.constants.ER import BAD_TABLE_ERROR
 from pdb import set_trace; B=set_trace
 from table import table
 import MySQLdb
+import warnings
 import uuid
+import func
+from contextlib import contextmanager
+
+# Some errors in MySQL are classified as "warnings" (such as 'SELECT 0/0').
+# This means that no exception is raised; just an error message is printed to
+# stderr. We want these warnings to be proper exceptions so they
+# won't go unnoticed. The below code does just that.
+warnings.filterwarnings('error', category=MySQLdb.Warning)
 
 class dbentities(entities):
     def __init__(self, ress=None):
@@ -263,7 +256,7 @@ class dbentity(entity):
             self._isdirty = False
             self._isnew = False
         else:
-            raise brokenruleserror('Won\'t save invalid object', self)
+            raise BrokenRulesError('Won\'t save invalid object', self)
 
     def delete(self):
         sql = 'delete from ' + self._table + ' where id = %s'
@@ -314,11 +307,27 @@ class connection(entity):
             acct = self.account
             self._conn = MySQLdb.connect(acct.host, acct.username, 
                                          acct.password, acct.database, 
-                                         port=acct.port)
+                                         port=acct.port, charset='utf8mb4',
+                                         use_unicode=True)
         return self._conn                
+
+    def kill(self):
+        try:
+            _conn = self._connection
+            id = _conn.thread_id()
+            _conn.kill(id)
+        except MySQLdb.OperationalError as ex:
+            # If exception isn't 1317, 'Query execution was interrupted'),
+            # re-raise
+            if ex.args[0] not in (1317, 2006):
+                raise
 
     def close(self):
         return self._connection.close()
+
+    @property
+    def isopen(self):
+        return bool(self._connection.open)
 
     def commit(self):
         return self._connection.commit()
@@ -329,7 +338,7 @@ class connection(entity):
     def createcursor(self):
         return self._connection.cursor()
 
-    def _reconnect(self):
+    def reconnect(self):
         self._conn = None # force a reconnect
         self._connection
 
@@ -362,16 +371,18 @@ class connection(entity):
                     msg = msg.format(_, errno, isopen)
 
                     self.log.debug('Reconnect ' + str(_))
-                    self._reconnect()
+                    self.reconnect()
                 else:
                     raise
 
+# TODO The 'db' prefix on these class names are redundant.
 class dbresultset(entities):
+    """ Represents a collections of rows returned from a db query. """
     def __init__(self, cur):
         super().__init__()
         self._cur = cur
         for r in self._cur:
-            self += dbresult(r)
+            self += dbresult(r, self)
 
     @property
     def lastrowid(self):
@@ -386,16 +397,242 @@ class dbresultset(entities):
             raise RecordNotFoundError('A single record was not found')
         return self.first
 
-class dbresult(entity):
-    def __init__(self, row):
-        self._row = row
+    def __repr__(self):
+        tbl = table()
 
-    def __iter__(self):
-        for f in self._row:
-            yield f
+        for i, res in func.enumerate(self):
+            if i.first:
+                hdr = tbl.newrow()
+                for f in res.fields:
+                    hdr.newfield(f.name)
+
+            r = tbl.newrow()
+            for f in res.fields:
+                r.newfield(f.value)
+
+        return str(tbl)
+
+    def __str__(self):
+        return repr(self)
+
+class dbresult(entity):
+    """ Represents a row returned from a db query. """
+    def __init__(self, row, ress):
+        super().__init__()
+        self._row = row
+        self._ress = ress
+        self.fields = dbresultfields()
+        for i, _ in enumerate(self._row):
+            self.fields += dbresultfield(i, self)
 
     def __getitem__(self, i):
-        return self._row[0]
+        if type(i) is str:
+            # If i is str, it's a column name. Use the description property to
+            # get the index to pass to _row
+            desc = self._ress._cur.description
+            i = [x[0] for x in desc].index(i)
+        return self._row[i]
+
+class dbresultfields(entities):
+    pass
+
+class dbresultfield(entity):
+    """ Represents a field within a dbresult. """
+    def __init__(self, ix, res):
+        self.index = ix
+        self.dbresult = res
+    
+    @property
+    def name(self):
+        desc = self.dbresult._ress._cur.description
+        return desc[self.index][0]
+
+    @property
+    def value(self):
+        return self.dbresult._row[self.index]
 
 class RecordNotFoundError(Exception):
     pass
+
+class pool(entity):
+    _default = None
+
+    def __init__(self):
+        # TODO Currently, connections.__init__() populates itself with
+        # connection objects from the config file so we can't use it for
+        # collecting connections objects that are in and out of the pool.
+        self._in = entities()
+        self._out = entities()
+
+    @staticmethod
+    def getdefault():
+        if not pool._default:
+            pool._default = pool()
+
+            # Seed with one connection
+            pool._default._in += connections.getinstance().default.clone()
+        return pool._default
+
+    def pull(self):
+        conn = self._in.pop()
+
+        # Grow as needed
+        if not conn:
+            conn = self._out.last.clone()
+
+        self._out += conn
+
+        return conn
+
+    def push(self, conn):
+        self._in += self._out.remove(conn)
+
+    @contextmanager
+    def take(self):
+        conn = self.pull()
+
+        yield conn
+
+        self.push(conn)
+
+class operationeventargs(eventargs):
+    def __init__(self, e, op, sql, args):
+        self.entity  =  e
+        self.op      =  op
+        self.sql     =  sql
+        self.args    =  args
+
+class chronicler(entity):
+    _instance = None
+
+    def __init__(self):
+        self.chronicles = chronicles(self)
+        self.max = 20
+
+    @staticmethod
+    def getinstance():
+        if not chronicler._instance:
+            chronicler._instance = chronicler()
+        return chronicler._instance
+
+    def append(self, obj):
+        self.chronicles += obj
+
+    def __iadd__(self, t):
+        self.append(t)
+        return self
+
+class chronicles(entities):
+    def __init__(self, chronicler=None, initial=None):
+        self.chronicler = chronicler
+        super().__init__(initial=initial)
+
+    def clone(self):
+        r = chronicles()
+        for chron in self:
+            r += chron.clone()
+        return r
+
+    def append(self, obj, uniq=False, r=None):
+        if self.chronicler and self.count == self.chronicler.max - 1:
+            self.shift()
+        
+        super().append(obj, uniq=False, r=None)
+
+    def where(self, p1, p2=None):
+        if (type(p1), type(p2)) == (str, type(None)):
+            # Passing in one argument will result in a test of p1 against
+            # the value of 'op'.
+            p1, p2 = 'op', p1
+
+        return super().where(p1, p2)
+
+    def __str__(self):
+        return self._tostr(includeHeader=False)
+
+class chronicle(entity):
+    def __init__(self, e, op, sql, args):
+        self.entity  =  e
+        self.op      =  op
+        self.sql     =  sql
+        self.args    =  args
+
+    def __str__(self):
+        if self.op in ('reconnect',):
+            return 'DB: ' + self.op.upper()
+
+        args = []
+        for arg in self.args:
+            if type(arg) is bytes:
+                try:
+                    arg = uuid.UUID(bytes=arg)
+                except:
+                    pass
+            args.append(arg)
+        sql = self.sql.strip()
+
+        r = '%s\n%s\n'
+        r %= (
+            sql,
+            tuple(args)
+        )
+        return r
+
+    def clone(self):
+        return chronicle(self.entity, self.op, self.sql, self.args)
+
+class executioner(entity):
+    def __init__(self, exec, max=2):
+        self._execute = exec
+        self.max = max
+        self.onbeforereconnect  =  event()
+        self.onafterreconnect   =  event()
+    
+    def execute(self, es=None):
+        pl = pool.getdefault()
+        for i in range(self.max):
+            conn = pl.pull()
+            cur = conn.createcursor()
+
+            try:
+                if es:
+                    self._execute(cur, es)
+                else:
+                    self._execute(cur)
+            except MySQLdb.OperationalError as ex:
+                # Reconnect if the connection object has timed out and no
+                # longer holds a connection to the database.
+                # https://stackoverflow.com/questions/3335342/how-to-check-if-a-mysql-connection-is-closed-in-python
+
+                if i + 1 == self.max:
+                    raise
+
+                try:
+                    errno = ex.args[0]
+                except:
+                    errno = ''
+
+                if errno in (2006, 2013) or not conn.isopen:
+                    msg = 'Reconnect[{0}]: errno: {1}; isopen: {2}'
+                    msg = msg.format(i, errno, conn.isopen)
+                    self.log.debug(msg)
+
+                    eargs = operationeventargs(self, 'reconnect', None, None)
+                    self.onbeforereconnect(self, eargs)
+
+                    conn.reconnect()
+
+                    self.onafterreconnect(self, eargs)
+                else:
+                    conn.rollback()
+                    raise
+            except Exception as ex:
+                conn.rollback()
+                raise
+            else:
+                conn.commit()
+                return
+            finally:
+                cur.close()
+                pl.push(conn)
+

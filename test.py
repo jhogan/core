@@ -1,27 +1,11 @@
 # vim: set et ts=4 sw=4 fdm=marker
-"""
-MIT License
 
-Copyright (c) 2016 Jesse Hogan
+# Copyright (C) Jesse Hogan - All Rights Reserved
+# Unauthorized copying of this file, via any medium is strictly
+# prohibited
+# Proprietary and confidential
+# Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-"""
 from tester import *
 from table import *
 import math
@@ -29,6 +13,11 @@ from auth import jwt
 import jwt as pyjwt
 from configfile import configfile
 from uuid import uuid4
+import datetime
+import primative
+import dateutil
+import db
+import textwrap
 
 class knights(entities):
     def __init__(self, initial=None):
@@ -241,7 +230,6 @@ class test_entities(tester):
     def it_calls_where(self):
         """ Where queries the entities collection."""
 
-
         n = philosopher('neitzsche')
         s = philosopher('schopenhaurer')
         sj = singer('salena jones')
@@ -364,7 +352,6 @@ class test_entities(tester):
         ks += knight('Bedevere')
         cnt = ks.count
 
-
         # Sort them by name
         ks.sort(key=lambda k: k.name)
 
@@ -392,7 +379,6 @@ class test_entities(tester):
         self.assertEq('Galahad',   ks.second.name)
         self.assertEq('Bedevere',  ks.third.name)
         self.assertEq('Authur',    ks.fourth.name)
-
 
         Light = 12000000 # miles per minute
         cs = constants()
@@ -535,6 +521,27 @@ class test_entities(tester):
         self.assertEq(math.pi,  cs1.second.value)
         self.assertEq(math.e,   cs1.third.value)
 
+    def it_calls_head(self):
+        """ Head returns an entities collection containing the first 'number' of
+        entities in the collection."""
+
+        # Create some knights
+        ks = knights()
+        ks += knight('Lancelot')
+        ks += knight('Authur')
+        ks += knight('Galahad')
+        ks += knight('Bedevere')
+
+        # Call head() with a number for 0 to 4
+        for i in range(ks.count + 1):
+            head = ks.head(i)
+            self.assertEq(i, head.count)
+            self.assertEq(knights, type(head))
+
+            # Ensure the elements of the head are as expected
+            for j in range(0, i):
+                self.assertEq(ks[j], head[j])
+
     def it_calls_tail(self):
         """ Tail returns an entities collection containing the last 'number'
         of entities in the collection."""
@@ -551,6 +558,7 @@ class test_entities(tester):
             t = ks.tail(i)
             self.assertEq(i, t.count)
             self.assertEq(knights, type(t))
+
             # Ensure the elements of the tail are as expected
             for j in range(1, i + 1):
                 self.assertEq(ks[-j], t[-j])
@@ -964,21 +972,21 @@ class test_entities(tester):
         for i, k in enumerate([fk, bk, fk]):
             self.assertIs(sks[i], k)
 
-        # Append a unique knight insisting in be unique
+        # Append a unique knight insisting it be unique
         ni = knight('knight who says ni')
-        sks &= ni
+        sks |= ni
         self.assertEq(4, sks.count)
         for i, k in enumerate([fk, bk, fk, ni]):
             self.assertIs(sks[i], k)
 
         # Append a non-unique knight insisting in be unique
-        sks &= ni
+        sks |= ni
         self.assertEq(4, sks.count)
         for i, k in enumerate([fk, bk, fk, ni]):
             self.assertIs(sks[i], k)
 
         # Append a non-unique knight insisting in be unique using the append
-        # method rather than the &= operator in order to obtain the results
+        # method rather than the |= operator in order to obtain the results
         res = sks.append(ni, uniq=True)
         self.assertTrue(res.isempty)
         self.assertEq(4, sks.count)
@@ -986,7 +994,7 @@ class test_entities(tester):
             self.assertIs(sks[i], k)
 
         # Append a non-unique collection of knights insisting they be unique
-        # using the append method rather than the &= operator in order to
+        # using the append method rather than the |= operator in order to
         # obtain the results
         ks = ni + knight('knight who says ni2')
         res = sks.append(ks, uniq=True)
@@ -1042,14 +1050,14 @@ class test_entities(tester):
             self.assertEq(ValueError, type(ex))
 
     def it_calls__iand__(self):
-        """ The &= opreator (__iand__) wraps the append() methed setting
-        the unique flag to True. So &= is like a regular append accept 
+        """ The |= opreator (__iand__) wraps the append() methed setting
+        the unique flag to True. So |= is like a regular append accept 
         objecs won't be appended if already exist in the collection."""
 
         ## Test appending one unique entity ##
         ks = knights.createthe4()
         ni = knight('knight who says ni')
-        ks &= ni
+        ks |= ni
 
         self.assertEq(5, ks.count)
         self.assertIs(ks.last, ni)
@@ -1058,7 +1066,7 @@ class test_entities(tester):
         # be appended.
 
         ks = knights.createthe4()
-        ks &= ks.first
+        ks |= ks.first
 
         self.assertEq(4, ks.count)
 
@@ -1070,7 +1078,7 @@ class test_entities(tester):
         nis += knight('knight who says ni 1')
         nis += ks.first # The non-unique entity
 
-        ks &= nis
+        ks |= nis
 
         self.assertEq(5, ks.count)
         self.assertIs(nis.first,   ks.last)
@@ -1083,7 +1091,7 @@ class test_entities(tester):
         nis += ks.first
         nis += ks.second # The non-unique entity
 
-        ks &= nis
+        ks |= nis
 
         self.assertEq(4, ks.count)
 
@@ -1091,7 +1099,7 @@ class test_entities(tester):
         ## an entity or entities type
         ks = knights.createthe4()
         try:
-            ks &= 1
+            ks |= 1
             self.assertFail('Append accepted invalid type')
         except Exception as ex:
             self.assertEq(ValueError, type(ex))
@@ -1397,7 +1405,6 @@ class test_entities(tester):
         self.assertIs(ni6, ks.sixth)
 
     def it_gets_brokenrules(self):
-
         """ A broken rule is an entity that represents a problem with the
         state of an entitiy. Each entities collection by default returns a
         broken rules collection which is an aggregates of the broken rules
@@ -1475,17 +1482,17 @@ class test_entities(tester):
         self.assertIs(the4.third, snare.third)
         self.assertEq(4, snare.count)
 
-        # Appned a duplicate entity again but with the &= operator to ensure
+        # Appned a duplicate entity again but with the |= operator to ensure
         # it won't be appended
-        ks &= the4.first
+        ks |= the4.first
         self.assertIs(the4.first, snare.first)
         self.assertIs(the4.second, snare.second)
         self.assertIs(the4.third, snare.third)
         self.assertEq(4, snare.count)
 
-        # Appned a collection of duplicate entity again but with the &=
+        # Appned a collection of duplicate entity again but with the |=
         # operator to ensure they won't be appended
-        ks &= entities([the4.second, the4.third])
+        ks |= entities([the4.second, the4.third])
         self.assertIs(the4.first, snare.first)
         self.assertIs(the4.second, snare.second)
         self.assertIs(the4.third, snare.third)
@@ -1907,6 +1914,71 @@ class test_entities(tester):
                     elif type(k.name) == list:
                         self.assertEq(k.name, [i, j])
 
+    def it_calls_pluck(self):
+        ks = knights()
+        ks += knight(' Sir Lancelot ')
+        ks.last.trait = 'UPPER UPPER'
+
+        ks += knight(' sir authur ')
+        ks.last.trait = 'lower UPPER'
+
+        ks += knight(' Sir galahad ')
+        ks.last.trait = 'lower lower'
+
+        ks += knight(' sir Bedevere ')
+        ks.last.trait = 'Cap Cap'
+
+        self.eq([k.name for k in ks], ks.pluck('name'))
+
+        ls = list()
+        for k in ks:
+            ls.append( [k.name, k.trait] )
+
+        # Test multi *args
+        self.eq(
+            [[x.name, x.trait] for x in ks], 
+            ks.pluck('name', 'trait')
+        )
+            
+        # Test standandard replacement field
+        self.eq(
+            [x.name for x in ks], 
+            ks.pluck('{name}')
+        )
+
+        # Test multiple replacement fields
+        self.eq(
+            [x.name + '-'  + x.trait for x in ks], 
+            ks.pluck('{name}-{trait}')
+        )
+
+        # Test custom conversion flags 
+        # Uppercase and lowercase
+        self.eq(
+            [x.name.upper() + '-'  + x.trait.lower() for x in ks], 
+            ks.pluck('{name!u}-{trait!l}')
+        )
+
+        # Test custom conversion flags 
+        # Capitalize and title case
+        self.eq(
+            [x.name.capitalize() + '-'  + x.trait.title() for x in ks], 
+            ks.pluck('{name!c}-{trait!t}')
+        )
+
+        # Test custom conversion flags 
+        # Strip and reverse
+        self.eq(
+            [x.name.strip() + '-'  + x.trait[::-1] for x in ks], 
+            ks.pluck('{name!s}-{trait!r}')
+        )
+
+        # Test custom conversion flag: first n-characters of
+        for i in range(10):
+            self.eq(
+                [x.name[:i] + '-'  + x.trait for x in ks], 
+                ks.pluck('{name!' + str(i) + '}-{trait}')
+            )
 
 class test_entity(tester):
     def it_calls__add__(self):
@@ -2044,7 +2116,6 @@ class test_table(tester):
             x, y = i % 5, int(i / 5)
             self.assertEq([y, x], f.value)
 
-
         # Create a new row to test adding to it
         r = tbl.newrow()
 
@@ -2076,7 +2147,6 @@ class test_table(tester):
 
         tbl.rows -= r
         self.assertEq(5 * 5, fs.count)
-
 
         # Test fields property after setting them in the table object.
 
@@ -2384,9 +2454,9 @@ class test_row(tester):
                 self.assertIs(f1, r[j])
 
     def it_gets_index(self):
-        """ A row's index property contains the 0-based ordinal, i.e., the
-        first row in a table has an index of 0, the second has an index of 1,
-        and so on. """
+        """ A row's index property contains the 0-based ordinal, i.e.,
+        the first row in a table has an index of 0, the second has an
+        index of 1, and so on. """
 
         # Create a table with 5 rows and ensure their index property is equal
         # to the position of the row in the table.
@@ -2431,6 +2501,18 @@ class test_row(tester):
         self.assertIs(f, r.fields.first)
         self.assertIs(f, tbl.rows.first.fields.first)
         self.assertEq(123, f.value)
+
+    def it_calls__repr__(self):
+        tbl = createtable(2, 2)
+
+        expect = '''
+        +-----------------+
+        | [1, 0] | [1, 1] |
+        +-----------------+
+        '''
+        expect = textwrap.dedent(expect).lstrip()
+
+        self.eq(expect, repr(tbl.rows.second))
 
 class test_fields(tester):
     def it_get_row(self):
@@ -2606,7 +2688,6 @@ class test_field(tester):
         """ This is the generic method for all the self.it_calls_get*()
         methods.  It tests the field.get<direction> methods like
         field.getabove().
-
 
         :param str fn: The name of the method we are testing, e.g., 'getabove'
 
@@ -2807,6 +2888,9 @@ class test_index(tester):
         # Ensure that it has been removed.
         self.assertTrue(ix(str).isempty)
 
+        # TODO
+        # Test the return value from the remove() method
+
     def it_calls_move(self):
         ks = knights.createthe4()
         ix = ks.indexes['traittype']
@@ -2875,12 +2959,12 @@ class test_jwt(tester):
         t = jwt()
 
         # Exp defaults to 24 hours in the future
-        hours = math.ceil((t.exp - datetime.now()).seconds / 3600)
+        hours = math.ceil((t.exp - datetime.datetime.now()).seconds / 3600)
         self.assertEq(24, hours)
 
         # Specify 48 hours to expire
         t = jwt(ttl=48)
-        hours = math.ceil((t.exp - datetime.now()).seconds / 3600)
+        hours = math.ceil((t.exp - datetime.datetime.now()).seconds / 3600)
         self.assertEq(24, hours)
 
     def it_calls_token(self):
@@ -2890,10 +2974,10 @@ class test_jwt(tester):
 
         d = pyjwt.decode(token, secret)
 
-        exp = datetime.fromtimestamp(d['exp'])
+        exp = datetime.datetime.fromtimestamp(d['exp'])
 
         # Ensure exp is about 24 hours into the future
-        hours = math.ceil((exp - datetime.now()).seconds / 3600)
+        hours = math.ceil((exp - datetime.datetime.now()).seconds / 3600)
         self.assertEq(24, hours)
 
     def it_sets_iss(self):
@@ -2936,10 +3020,49 @@ class test_jwt(tester):
         # Invalid
         t = jwt('an invalid token')
         self.assertFalse(t.isvalid)
-        
 
-t = testers()
-t.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)
-t.oninvoketest += lambda src, eargs: print(eargs.method[0], flush=True)
-t.run()
-print(t)
+class test_datetime(tester):
+    def it_calls__init__(self):
+        utc = datetime.timezone.utc
+        
+        # Test datetime with standard args
+        args = (2003, 10, 11, 17, 13, 46)
+        expect = datetime.datetime(*args, tzinfo=utc)
+        actual = primative.datetime(*args, tzinfo=utc)
+        self.eq(expect, actual)
+
+        # Test datetime with standard a string arg intended for datautil.parser
+        actual = primative.datetime('Sat Oct 11 17:13:46 UTC 2003')
+        self.eq(expect, actual)
+
+    def it_calls_astimezone(self):
+        utc = datetime.timezone.utc
+
+        args = (2003, 10, 11, 17, 13, 46)
+        dt = primative.datetime(*args, tzinfo=utc)
+        
+        aztz = dateutil.tz.gettz('US/Arizona')
+        actual = datetime.datetime(2003, 10, 11, 10, 13, 46, tzinfo=aztz)
+
+        expect = dt.astimezone(aztz)
+        self.eq(expect, actual)
+
+        # FIXME
+        # If datetime.astimezone is given an invalid argument for the timezone
+        # (i.e., dt.astimezone('XXX')), it will give the following warning but
+        # will not throw an exception. This needs to be investigated and
+        # probably remedied.
+        #
+        #     /usr/lib/python3/dist-packages/dateutil/zoneinfo/__init__.py:36:
+        #     UserWarning: I/O error(2): No such file or directory
+        #     warnings.warn("I/O error({0}): {1}".format(e.errno, e.strerror))
+
+        expect = dt.astimezone('US/Arizona')
+        self.eq(expect, actual)
+
+class mycli(cli):
+    def registertraceevents(self):
+        ts = self.testers
+        ts.oninvoketest += lambda src, eargs: print('.', end='', flush=True)
+       
+cli().run()

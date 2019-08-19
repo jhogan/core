@@ -1,15 +1,25 @@
+# Copyright (C) Jesse Hogan - All Rights Reserved
+# Unauthorized copying of this file, via any medium is strictly
+# prohibited
+# Proprietary and confidential
+# Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
+
+from configfile import configfile
+from contextlib import contextmanager
 from entities import *
 from pprint import pprint
+from pprint import pprint
 from textwrap import dedent
+from timer import stopwatch
 from types import FunctionType
+import argparse
 import inspect
 import json
 import pdb; B=pdb.set_trace
 import pprint
+import primative
 import sys
 import uuid
-from pprint import pprint
-from configfile import configfile
 
 # TODO Ensure tester.py won't run in non-dev environment
 
@@ -23,7 +33,6 @@ class testers(entities):
         super().__init__(initial=initial)
         self.breakonexception = False
 
-
     def run(self, tu=None):
         testclass, testmethod, *_ = tu.split('.') + [None] if tu else [None] * 2
 
@@ -31,9 +40,10 @@ class testers(entities):
         if cfg.isloaded and cfg.inproduction:
             raise Exception("Won't run in production environment.")
 
-        for subcls in tester.__subclasses__():
+        for subcls in self.testerclasses:
             if testclass and subcls.__name__ != testclass:
                 continue
+
             inst = subcls()
             inst.testers = self
             self += inst
@@ -51,7 +61,17 @@ class testers(entities):
                         print(ex)
                         pdb.post_mortem(ex.__traceback__)
                     inst._failures += failure(ex, assert_=meth[0])
+                finally:
+                    inst.eventregistrations.unregister()
         print('')
+
+    @property
+    def testerclasses(self):
+        return tester.__subclasses__()
+
+    @property
+    def ok(self):
+        return any([x.ok for x in self])
 
     def __str__(self):
         return self._tostr(str, includeHeader=False)
@@ -60,6 +80,17 @@ class tester(entity):
     def __init__(self):
         self._failures = failures()
         self.testers = None
+        self.eventregistrations = eventregistrations()
+
+    def print(self, *args, **kwargs):
+        print(*args, **kwargs)
+
+    @property
+    def ok(self):
+        return self.failures.isempty
+
+    def register(self, event, handler):
+        self.eventregistrations.register(event, handler)
 
     def assertFull(self, actual, msg=None):
         if type(actual) != str or actual.strip() == '':
@@ -150,10 +181,19 @@ class tester(entity):
     def assertNe(self, expect, actual, msg=None):
         if expect == actual: self._failures += failure()
 
+    def ne(self, expect, actual, msg=None):
+        if expect == actual: self._failures += failure()
+
     def assertGt(self, expect, actual, msg=None):
         if not (expect > actual): self._failures += failure()
 
+    def gt(self, expect, actual, msg=None):
+        if not (expect > actual): self._failures += failure()
+
     def assertGe(self, expect, actual, msg=None):
+        if not (expect >= actual): self._failures += failure()
+
+    def ge(self, expect, actual, msg=None):
         if not (expect >= actual): self._failures += failure()
 
     def assertLt(self, expect, actual, msg=None):
@@ -162,8 +202,20 @@ class tester(entity):
     def assertLe(self, expect, actual, msg=None):
         if not (expect <= actual): self._failures += failure()
 
+    def lt(self, expect, actual, msg=None):
+        if not (expect < actual): self._failures += failure()
+
+    def le(self, expect, actual, msg=None):
+        if not (expect <= actual): self._failures += failure()
+
     def assertIs(self, expect, actual, msg=None):
         if expect is not actual: self._failures += failure()
+
+    def is_(self, expect, actual, msg=None):
+        if expect is not actual: self._failures += failure()
+
+    def isnot(self, expect, actual, msg=None):
+        if expect is actual: self._failures += failure()
 
     def assertNone(self, o, msg=None):
         if o != None: self._failures += failure()
@@ -174,7 +226,13 @@ class tester(entity):
     def assertNotNone(self, o, msg=None):
         if o == None: self._failures += failure()
 
+    def notnone(self, o, msg=None):
+        if o == None: self._failures += failure()
+
     def assertZero(self, actual):
+        if len(actual) != 0: self._failures += failure()
+
+    def zero(self, actual):
         if len(actual) != 0: self._failures += failure()
 
     def assertOne(self, actual):
@@ -195,6 +253,18 @@ class tester(entity):
     def three(self, actual):
         if len(actual) != 3: self._failures += failure()
 
+    def four(self, actual):
+        if len(actual) != 4: self._failures += failure()
+
+    def five(self, actual):
+        if len(actual) != 5: self._failures += failure()
+
+    def six(self, actual):
+        if len(actual) != 6: self._failures += failure()
+
+    def eight(self, actual):
+        if len(actual) != 8: self._failures += failure()
+        
     def nine(self, actual):
         if len(actual) != 9: self._failures += failure()
 
@@ -239,6 +309,19 @@ class tester(entity):
         if not ent.brokenrules.contains(prop, rule):
             self._failures += failure()
 
+    def unique(self, ls):
+        if len(ls) != len(set(ls)): self._failures += failure()
+
+    def expect(self, expect, fn):
+        try:
+            fn()
+        except Exception as ex:
+            if type(ex) is not expect:
+                self._failures += failure(actual=ex)
+        else:
+            if expect is not None:
+                self._failures += failure(actual=None)
+
     @property
     def failures(self):
         return self._failures
@@ -252,7 +335,7 @@ class tester(entity):
             ok = 'FAIL'
 
         name = self.__class__.__name__
-        r += "[{}]{}{}".format(name, ' ' * (72 - len(name)), ok)
+        r += "[{}]{}{}".format(name, ' ' * (72 - len(name) - 4), ok)
 
         if self.failures.isempty:
             return r
@@ -314,6 +397,50 @@ class tester(entity):
             statuscode0 = int(statuscode[:3])
             return httpresponse(statuscode0, statusmessage, resheads, body)
 
+class stresstesters(testers):
+    @property
+    def testerclasses(self):
+        return stresstester.__subclasses__()
+
+class stresstester(tester):
+    @contextmanager
+    def within(self, ms):
+        sw = stopwatch()
+
+        yield
+
+        msg = "test in %s at %s"
+        msg %= inspect.stack()[2][2:4]
+        self.ge(ms, sw.milliseconds, msg)
+
+    @contextmanager
+    def time(self):
+        sw = stopwatch()
+        yield sw
+
+class eventregistrations(entities):
+    def register(self, event, handler):
+        er = eventregistration(event, handler)
+        er.register()
+        self += er
+
+    def unregister(self):
+        for er in self:
+            er.unregister()
+        self.clear()
+
+class eventregistration(entity):
+    def __init__(self, event, handler):
+        self.event = event
+        self.handler = handler
+        super().__init__()
+
+    def register(self):
+        self.event += self.handler
+
+    def unregister(self):
+        self.event -= self.handler
+
 class httpresponse(entity):
     def __init__(self, statuscode, statusmessage, headers, body):
         self.statuscode = statuscode
@@ -367,10 +494,11 @@ class failures(entities):
     pass
 
 class failure(entity):
-    def __init__(self, cause=None, assert_=None, ent=None):
+    def __init__(self, cause=None, assert_=None, ent=None, actual=None):
         self._assert = assert_
         self.cause = cause
         self.entity = ent
+        self._actual = actual
         if not cause:
             stack = inspect.stack()
             self._assert = stack[1][3]
@@ -390,6 +518,7 @@ class failure(entity):
                 self._message = inspect.getargvalues(stack[1][0])[3]['msg']
             except KeyError:
                 pass
+
     def __str__(self):
         if self.cause:
             r = "{}: {} in {}".format(self.cause.__class__.__name__,
@@ -409,3 +538,69 @@ class failure(entity):
                     r += "\n - " + str(br)
         return r
         
+class cli:
+    def __init__(self):
+        # If we are instantiating, convert the @classmethod cli.run to the
+        # instance method cli._run. This makes it possible to call the run()
+        # method either as cli.run() or cli().run(). This also works with
+        # subclasses of cli. This makes it convenient for unit test developers
+        # who may or may not want to customize or override the default
+        # implementation.
+        #
+        # See M. I. Wright's comment at:
+        # https://stackoverflow.com/questions/28237955/same-name-for-classmethod-and-instancemethod
+        self.run = self._run
+        
+        self._testers = None
+
+        self.parseargs()
+
+        self.registertraceevents()
+
+    @property
+    def testers(self):
+        if self._testers is None:
+            self._testers = testers()
+        return self._testers
+        
+
+    @classmethod
+    def run(cls):
+        cls().run()
+
+    def _run(self):
+        ts = self.testers
+
+        # Run tests
+        ts.run(self.args.testunit)
+
+        # Show results
+        print(ts)
+
+        # Return exit code (0=success, 1=fail)
+        sys.exit(int(not ts.ok))
+
+    def parseargs(self):
+        # Parse args
+        ts = self.testers
+        p = argparse.ArgumentParser()
+        p.add_argument('testunit',  help='The test class or method to run',  nargs='?')
+        p.add_argument('-b', '--break-on-exception', action='store_true', dest='breakonexception')
+        self.args = p.parse_args()
+
+        self.testers.breakonexception = self.args.breakonexception
+
+    def registertraceevents(self):
+        ts = self.testers
+        ts.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)
+        ts.oninvoketest += lambda src, eargs: print(eargs.method[0], flush=True)
+
+
+class stresscli(cli):
+    @property
+    def testers(self):
+        if self._testers is None:
+            self._testers = stresstesters()
+        return self._testers
+        
+    

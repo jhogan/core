@@ -1,27 +1,11 @@
 # vim: set et ts=4 sw=4 fdm=marker
-"""
-MIT License
 
-Copyright (c) 2016 Jesse Hogan
+# Copyright (C) Jesse Hogan - All Rights Reserved
+# Unauthorized copying of this file, via any medium is strictly
+# prohibited
+# Proprietary and confidential
+# Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-"""
 from datetime import datetime
 from pdb import set_trace; B=set_trace
 from random import randint, sample
@@ -29,36 +13,23 @@ import re
 import sys
 import builtins
 from pprint import pprint
-from functools import total_ordering
+from functools import total_ordering, reduce
+import decimal
+import string
+
+def rgetattr(obj, attr, *args):
+    def rgetattr(obj, attr):
+        if obj:
+            return builtins.getattr(obj, attr, *args)
+        return None
+    return reduce(rgetattr, [obj] + attr.split('.'))
 
 class entities(object):
     def __init__(self, initial=None):
-        self._ls = []
-
-        # The event and indexes classes are subtypes of entites. Don't add
-        # events and indexes to these types in order to avoid infinite
-        # recursion.
-        if not isinstance(self, event) and not isinstance(self, indexes):
-
-            # Instantiate events
-            self.onadd                =  event()
-            self.onremove             =  event()
-
-            # TODO Write tests for these two events
-            self.onbeforevaluechange  =  event()
-            self.onaftervaluechange   =  event()
-
-            # Local subscriptions to events
-            self.onadd                +=  self._self_onadd
-            self.onremove             +=  self._self_onremove
-
-            # Instatiate indexes
-            ix = index(name='identity', keyfn=lambda e: e)
-            ix.indexes = self.indexes
-            self.indexes._ls.append(ix)
+        self._ls = list()
 
         # Append initial collection
-        if initial != None:
+        if initial is not None:
             self.append(initial)
 
     def __bool__(self):
@@ -76,6 +47,8 @@ class entities(object):
         if hasattr(eargs.entity, 'onaftervaluechange'):
             eargs.entity.onaftervaluechange += \
                 self._entity_onaftervaluechange 
+
+        self.oncountchange(self, eventargs())
             
     def _self_onremove(self, src, eargs):
         for ix in self.indexes:
@@ -88,6 +61,8 @@ class entities(object):
         if hasattr(eargs.entity, 'onaftervaluechange'):
             eargs.entity.onaftervaluechange -= \
                 self._entity_onaftervaluechange 
+
+        self.oncountchange(self, eventargs())
 
     def _entity_onbeforevaluechange(self, src, eargs):
         # Invoked before a change is made to a value on one of the collected
@@ -110,9 +85,66 @@ class entities(object):
                 ix += eargs.entity
 
     @property
+    def onadd(self):
+        if not hasattr(self, '_onadd'):
+            self._onadd = event()
+            self.onadd += self._self_onadd
+
+        return self._onadd
+
+    @onadd.setter
+    def onadd(self, v):
+        self._onadd = v
+
+    @property
+    def onremove(self):
+        if not hasattr(self, '_onremove'):
+            self._onremove = event()
+            self.onremove += self._self_onremove
+        return self._onremove
+
+    @onremove.setter
+    def onremove(self, v):
+        self._onremove = v
+
+    @property
+    def oncountchange(self):
+        if not hasattr(self, '_oncountchange'):
+            self._oncountchange = event()
+        return self._oncountchange
+
+    @oncountchange.setter
+    def oncountchange(self, v):
+        self._oncountchange = v
+
+    @property
+    def onbeforevaluechange(self):
+        if not hasattr(self, '_onbeforevaluechange'):
+            self._onbeforevaluechange = event()
+        return self._onbeforevaluechange
+
+    @onbeforevaluechange.setter
+    def onbeforevaluechange(self, v):
+        self._onbeforevaluechange = v
+
+    @property
+    def onaftervaluechange(self):
+        if not hasattr(self, '_onaftervaluechange'):
+            self._onaftervaluechange = event()
+        return self._onaftervaluechange
+
+    @onaftervaluechange.setter
+    def onaftervaluechange(self, v):
+        self._onaftervaluechange = v
+
+    @property
     def indexes(self):
         if not hasattr(self, '_indexes'):
             self._indexes = indexes(type(self))
+
+            ix = index(name='identity', keyfn=lambda e: e)
+            ix.indexes = self._indexes
+            self._indexes._ls.append(ix)
         return self._indexes
 
     @indexes.setter
@@ -127,7 +159,7 @@ class entities(object):
         Allow collections to be called providing similar functionality to the
         way they can be indexed. 
         """
-        # Should negative numbers be allowed. If not, why?
+
         try: 
             return self[ix]
         except IndexError: 
@@ -137,12 +169,76 @@ class entities(object):
         for t in self._ls:
             yield t
 
-    def pluck(self, prop):
-        # TODO: Write test
+    def head(self, number=10):
+        if number <= 0:
+            return type(self)()
 
-        ls = []
+        return type(self)(initial=self[:number])
+
+    def tail(self, number=10):
+        if number <= 0:
+            return type(self)()
+            
+        cnt = self.count
+        start = cnt - number
+        return type(self)(initial=self[start:cnt])
+
+    def pluck(self, *ss):
+        class formatter(string.Formatter):
+            def convert_field(self, v, conv):
+                if conv:
+                    if conv == "u":
+                        return str(v).upper()
+                    elif conv == "l":
+                        return str(v).lower()
+                    elif conv == "c":
+                        return str(v).capitalize()
+                    elif conv == "t":
+                        return str(v).title()
+                    elif conv == "s":
+                        return str(v).strip()
+                    elif conv == "r":
+                        return str(v)[::-1]
+                    elif conv.isdigit():
+                        return str(v)[:int(conv)]
+
+                return super().convert_field(v, conv)
+
+        ls = list()
+
+        if len(ss) == 1:
+            s = ss[0]
+        elif hasattr(ss, '__iter__'):
+            for s in ss:
+                ls.append(self.pluck(s))
+                
+            return [list(e) for e in zip(*ls)]
+        else:
+            raise ValueError()
+
         for e in self:
-            ls.append(getattr(e, prop))
+            if '{' in s:
+                args = dict()
+                for prop in dir(e):
+
+                    # NOTE Ignoring these props because the process
+                    # stalled when plucking from a recursive orm entity.
+                    # Feel free to include these props here if you are
+                    # able to correct that. See the `pluck` lines in
+                    # it_saves_recursive_entity.
+                    if prop in ('__dict__', 
+                                'onaftervaluechange',
+                                'onbeforevaluechange',
+                                '_onaftervaluechange',
+                                '_onbeforevaluechange'):
+                        continue
+
+                    args[prop] = str(getattr(e, prop))
+
+                fmt = formatter()
+                ls.append(formatter().format(s, **args))
+            else:
+                ls.append(getattr(e, s))
 
         return ls
 
@@ -158,17 +254,30 @@ class entities(object):
         """ Return a randomized version of self."""
         return type(self)(initial=sample(self._ls, self.count))
 
-    def where(self, qry):
-        if type(qry) == type:
+    def where(self, p1, p2=None):
+        if type(p1) == type:
             cls = self.__class__
-            return cls([x for x in self if type(x) == qry])
+            return cls([x for x in self if type(x) == p1])
 
-        fn = qry
+        if type(p1) is str:
+            # TODO Write test for this condition
+
+            if p2 is None:
+                raise ValueError()
+
+            # If p1 is a str, it is an attribute and we should test it
+            # against p2
+            attr, operand = p1, p2
+            def fn(e):
+                return rgetattr(e, attr) == operand
+        else:
+            fn = p1
+
         es = type(self)()
         for e in self:
             if fn(e): es += e
-        return es
 
+        return es
 
     @total_ordering
     class mintype(object):
@@ -177,7 +286,6 @@ class entities(object):
 
     # TODO Test reverse parameter
     def sort(self, key, reverse=False):
-
         if type(key) == str:
             min = entities.mintype()
             def key1(x):
@@ -201,10 +309,9 @@ class entities(object):
 
         return type(self)(sorted(self._ls, key=key1, reverse=reverse))
 
-    def tail(self, number):
-        if number > 0:
-            return type(self)(self[-number:])
-        return type(self)()
+    def enumerate(self):
+        for i, e in enumerate(self):
+            yield i, e
 
     def clear(self):
         self.remove(self)
@@ -212,6 +319,8 @@ class entities(object):
     def remove(self, e):
         if isinstance(e, entities):
             rms = e
+        elif isinstance(e, entity):
+            rms = [e]
         elif callable(e) and not isinstance(self, event):
             rms = self.where(e)
         elif type(e) == int:
@@ -229,6 +338,8 @@ class entities(object):
                     self.onremove(self, entityremoveeventargs(rm))
                     break
 
+        return type(self)(rms)
+
     def __isub__(self, e):
         self.remove(e)
         return self
@@ -243,9 +354,14 @@ class entities(object):
         if ix == None: 
             e = self.last
             self._ls.pop()
-        else:
+        elif type(ix) is int:
             e = self[ix]
             self._ls.pop(ix)
+        elif type(ix) is str:
+            ix = self.getindex(ix)
+            e = self[ix]
+            self._ls.pop(ix)
+
         self.onremove(self, entityremoveeventargs(e))
         return e
 
@@ -265,6 +381,7 @@ class entities(object):
         self.insertbefore(ix, e)
 
     def insertbefore(self, ix, e):
+        # TODO Support inserting collections
         self._ls.insert(ix, e)
         try:
             self.onadd(self, entityaddeventargs(e))
@@ -283,16 +400,13 @@ class entities(object):
     def push(self, e):
         self += e
 
-    def move(self, srcix, dstix):
-        raise NotImplementedError('move has not been implemented yet')
-        # TODO: This is untested
-        # NOTE When implemented, ensure that onadd does not get needlessly 
-        # called
-        if srcix == dstix:
-            raise Exception('Source and destination are the same: {}'.format((srcix, dstix)))
+    def give(self, es):
+        """ Move the elements self to es. Clear es. A slice parameter can be used
+        to limit what is moved. """
 
-        e = self.pop(srcix)
-        self.insert(dstix, e)
+        # TODO: Write test
+        es += self
+        self.clear()
 
     def has(self, e):
         return self.indexes['identity'](e).ispopulated
@@ -333,7 +447,9 @@ class entities(object):
         self._ls.append(t)
 
         try:
-            if not isinstance(self, event) and not isinstance(self, indexes):
+            if      not isinstance(self, event) \
+                and not isinstance(self, indexes):
+
                 self.onadd(self, entityaddeventargs(t))
         except AttributeError as ex:
             msg = str(ex)
@@ -346,7 +462,7 @@ class entities(object):
         self.append(t)
         return self
 
-    def __iand__(self, t):
+    def __ior__(self, t):
         self.append(t, uniq=True)
         return self
 
@@ -359,8 +475,9 @@ class entities(object):
     def __sub__(self, es):
         r = type(self)()
 
-        # If es is not an iterable, such as an entitities collection, assume 
-        # it is an entity object and convert it into a collection of one.
+        # If es is not an iterable, such as an entitities collection,
+        # assume it is an entity object and convert it into a collection
+        # of one.
         if not hasattr(es, '__iter__'):
             es = entities([es])
 
@@ -404,15 +521,26 @@ class entities(object):
 
     def _tostr(self, fn=str, includeHeader=True):
         if includeHeader:
-            r = '{} object at {} count: {}\n' \
-                .format(type(self), hex(id(self)), self.count)
+            r = '%s object at %s' % (type(self), hex(id(self)))
+
+            try:
+                r += ' count: %s\n' % self.count
+            except:
+                # self.count can raise exceptions (e.g., on object
+                # initialization) so `try` to include it.
+                pass
             indent = ' ' * 4 
         else:
             r = ''
             indent = ''
 
-        for i, t in enumerate(self):
-            r += indent + fn(t) + '\n'
+        try:
+            for i, t in enumerate(self):
+                r += indent + fn(t) + '\n'
+        except:
+            # If we aren't able to enumerate (perhaps the self._ls hasn't been
+            # set), just ignore.
+            pass
         return r
 
     def __setitem__(self, key, item):
@@ -421,7 +549,7 @@ class entities(object):
 
         # If key is a slice. then what was removed and what was added could
         # have been an iterable. Therefore, we need to convert them to
-        # iterable then raise the onadd and onremove events for each entity
+        # iterables then raise the onadd and onremove events for each entity
         # that had been removed and added.
         items  =  item  if  hasattr(item,  '__iter__')  else  [item]
         es     =  e     if  hasattr(e,     '__iter__')  else  [e]
@@ -433,14 +561,15 @@ class entities(object):
             self.onremove(self, entityremoveeventargs(e))
 
     def __getitem__(self, key):
-        if type(key) == int or type(key) == slice:
+        if isinstance(key, int) or type(key) == slice:
             return self._ls[key]
 
-        for e in self._ls:
-            if hasattr(e, 'id'):
-                if e.id == key:   return e
-            elif hasattr(e, 'name'):
-                if e.name == key: return e
+        try:
+            ix = self.getindex(key)
+        except ValueError as ex:
+            raise IndexError(str(ex))
+
+        return self[ix]
 
     def getindex(self, e):
         """ Return the first index of e in the collection.
@@ -451,9 +580,19 @@ class entities(object):
         # TODO:OPT We may be able to cache this and invalidate the cache using
         # the standard events
 
-        for ix, e1 in enumerate(self):
-            if e is e1: return ix
-        raise ValueError("'{}' is not in the collection " + repr(e))
+        if isinstance(e, entity):
+            for ix, e1 in enumerate(self):
+                if e is e1: return ix
+        elif type(e) is str:
+            # TODO Write test
+            for i, e1 in enumerate(self._ls):
+                if hasattr(e1, 'id'):
+                    if e1.id == e:   return i
+                elif hasattr(e1, 'name'):
+                    if e1.name == e: return i
+
+        # Raise ValueError in imitation of list.index()'s behavior
+        raise ValueError("'{}' is not in the collection".format(e))
 
     @property
     def first(self): 
@@ -563,8 +702,30 @@ class entities(object):
 
 class entity():
     def __init__(self):
-        self.onbeforevaluechange = event()
-        self.onaftervaluechange = event()
+        self._onaftervaluechange = None
+        self._onbeforevaluechange = None
+
+    @property
+    def onbeforevaluechange(self):
+        if self._onbeforevaluechange is None:
+            self._onbeforevaluechange = event()
+
+        return self._onbeforevaluechange
+
+    @onbeforevaluechange.setter
+    def onbeforevaluechange(self, v):
+        self._onbeforevaluechange = v
+
+    @property
+    def onaftervaluechange(self):
+        if self._onaftervaluechange is None:
+            self._onaftervaluechange = event()
+
+        return self._onaftervaluechange
+
+    @onaftervaluechange.setter
+    def onaftervaluechange(self, v):
+        self._onaftervaluechange = v
 
     @property
     def log(self):
@@ -572,7 +733,7 @@ class entity():
         from configfile import configfile
         return configfile.getinstance().logs.default
 
-    def _setvalue(self, field, new, prop):
+    def _setvalue(self, field, new, prop, setattr=setattr, cmp=True):
         # TODO: It's nice to strip any string because that's vitually
         # always the desired behaviour.  However, at some point, we will
         # want to preserve the whitespace on either side.  Therefore, we
@@ -581,9 +742,23 @@ class entity():
         if type(new) == str:
             new = new.strip()
 
-        old = getattr(self, field)
+        if cmp:
+            old = getattr(self, field)
 
-        if old != new:
+            # old and new are not equal if they are of different type - unless
+            # one of those types is NoneType. In other words, setting a
+            # previously None value to a non-None value should count as a value
+            # change - and vice-versa. However, if neither value is None, a
+            # difference in type and equality should exist to count as value
+            # change. For example, if old is int(0) and new is bool(False), a
+            # value change is happening even though the equality (according to
+            # Python) is the same (falsey).
+            if old is None or new is None:
+                ne = old != new
+            else:
+                ne = old != new or type(old) is not type(new)
+
+        if not cmp or ne:
             if hasattr(self, 'onbeforevaluechange'):
                 eargs = entityvaluechangeeventargs(self, prop)
                 self.onbeforevaluechange(self, eargs)
@@ -614,10 +789,21 @@ class entity():
     def isvalid(self):
         return self.brokenrules.isempty
 
-class brokenruleserror(Exception):
+class BrokenRulesError(Exception):
     def __init__(self, msg, obj):
         self.message = msg
         self.object = obj
+
+    def __str__(self):
+        obj = self.object
+        r = self.message + ' '
+        r += '%s at %s' % (type(obj), hex(id(obj))) + '\n'
+        for br in self.object.brokenrules:
+            r += '\t* ' + str(br) + '\n'
+        return r
+
+    def __repr__(self):
+        return str(self)
 
 class brokenrules(entities):
     def append(self, o, r=None):
@@ -626,18 +812,53 @@ class brokenrules(entities):
         super().append(o, r)
 
     def demand(self, cls, prop, 
-                     isfull=False, 
+                     full=False, 
                      isemail=False, 
                      isdate=False,
-                     maxlen=None,
-                     type=None):
+                     min=None,
+                     max=None,
+                     precision=None,
+                     scale=None,
+                     type=None,
+                     instanceof=None):
+
+        # TODO Write unit tests
         v = getattr(cls, prop)
 
-        if type is not None and v is not None:
-            if builtins.type(v) is not type:
-                self += brokenrule(prop + ' is wrong type', prop, 'valid')
+        wrongtype = False
+        if v is not None:
 
-        if isfull:
+            if type is not None:
+                if builtins.type(v) is not type:
+                    self += brokenrule(prop + ' is wrong type', prop, 'valid')
+                    wrongtype = True
+
+            if instanceof is not None :
+                if not isinstance(v, instanceof):
+                    self += brokenrule(prop + ' is wrong type', prop, 'valid')
+                    wrongtype = True
+
+        if not wrongtype and type in (float, decimal.Decimal):
+            strv = str(v).lstrip('-')
+            parts = strv.split('.')
+
+            try:
+                decpart = parts[1]
+            except IndexError:
+                decpart = ''
+
+            msg = None
+
+            if len(strv) - 1 > precision:
+                msg = 'number is too long'
+
+            if len(decpart) > scale:
+                msg = 'decimal part is too long'
+
+            if msg:
+                self += brokenrule(msg, prop, 'fits')
+
+        if full:
             if (builtins.type(v) == str and v.strip() == '') or v is None:
                 self += brokenrule(prop + ' is empty', prop, 'full')
 
@@ -646,14 +867,49 @@ class brokenrules(entities):
             if v == None or not re.match(pattern, v):
                 self += brokenrule(prop + ' is invalid', prop, 'valid')
 
-        if maxlen != None:
-            if v != None and len(v) > maxlen:
-                # property can only break the 'fits' rule if it hasn't broken
-                # the 'full' rule. E.g., a property can be a string of
-                # whitespaces which may break the 'full' rule. In that case,
-                # a broken 'fits' rule would't make sense.
-                if not self.contains(prop, 'full'):
-                    self += brokenrule(prop + ' is too lengthy', prop, 'fits')
+        if not wrongtype:
+            for i, limit in enumerate((max, min)):
+                if limit is not None:
+                    try:
+                        broke = False
+                        if builtins.type(v) in (str, bytes, bytearray):
+                            if i == 0:
+                                broke = len(v) > limit
+                            else:
+                                broke = len(v) < limit
+                        elif builtins.type(v) is int or isinstance(v, datetime):
+                            if i:
+                                broke = v < limit
+                            else:
+                                broke = v > limit
+                    except TypeError:
+                        # If len(v) raises a TypeError then v's length can't be
+                        # determined because it is the wrong type (perhaps it's
+                        # an int). Silently ignore.  It is the calling code's
+                        # responsibility to ensure the correct type is passed
+                        # in for the cases where the 'type' argument is False.
+                        pass
+                    else:
+                        # property can only break the 'fits' rule if it hasn't
+                        # broken the 'full' rule. E.g., a property can be a
+                        # string of whitespaces which may break the 'full'
+                        # rule. In that case, a broken 'fits' rule would't make
+                        # sense.
+                        if broke:
+                            if not self.contains(prop, 'full'):
+                                if builtins.type(v) in (str, bytes, bytearray):
+                                    if i == 0:
+                                        msg = prop 
+                                        msg += ' is too long'
+                                    else:
+                                        msg = prop
+                                        msg += ' is too short'
+                                elif builtins.type(v) is int or isinstance(v, datetime):
+                                    msg = prop + ' is out of range'
+                                else:
+                                    raise NotImplementedError()
+
+                                self += brokenrule(msg, prop, 'fits')
 
         if isdate:
             if builtins.type(v) != datetime:
@@ -787,10 +1043,9 @@ class index(entity):
 
     @staticmethod
     def _getkey(val):
-        # TODO: Since lists aren't hashable, we convert the list to a string.
-        # This isn't ideal since using (0, 1) as the index value on retrieval
-        # is the same as using [0, 1].
-
+        # TODO: Since lists aren't hashable, we convert the list to a
+        # string.  This isn't ideal since using (0, 1) as the index
+        # value on retrieval is the same as using [0, 1].
 
         # Try to return a hashable version of the value
         if val.__hash__:

@@ -1,31 +1,16 @@
 # vim: set et ts=4 sw=4 fdm=marker
-"""
-MIT License
 
-Copyright (c) 2016 Jesse Hogan
+# Copyright (C) Jesse Hogan - All Rights Reserved
+# Unauthorized copying of this file, via any medium is strictly
+# prohibited
+# Proprietary and confidential
+# Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-"""
 from entities import *
 
 class table(entity):
-    def __init__(self, x=None, y=None, initval=None):
+    def __init__(self, x=None, y=None, initval=None, border=('-', '|', '+') ):
+        # TODO Write test for different border values
         self.rows = rows(tbl=self)
         self._fields = fields()
 
@@ -39,6 +24,8 @@ class table(entity):
                 r = self.newrow()
                 for _ in range(x):
                     r.newfield(initval)
+
+        self.border = border
 
     def _fields_onadd(self, src, eargs):
         f = eargs.entity
@@ -76,6 +63,12 @@ class table(entity):
 
     def __call__(self, y, x):
         return self[y][x]
+
+    def add(self, e):
+        for r in e:
+            self.rows += r
+
+        return self
 
     def newrow(self):
         r = row()
@@ -181,14 +174,25 @@ class table(entity):
 
         widths = self.columns.widths
 
-        b = '-' * (sum(widths) + len(widths) + (len(widths) * 2) - 1)
+        if self.border:
+            # horizontal (-), vertical (|), corner (+)
+            h, v, c = self.border
+        else:
+            h = v = c = ''
 
-        R += '+' + b + '+'
+
+        b = h * (sum(widths) + len(widths) + (len(widths) * 2) - 1)
+
+        R += c + b + c
+
+        if R:
+            R += '\n'
 
         for i, r in enumerate(self):
-            R += '\n'
+            if i:
+                R += '\n'
             for j, f1 in enumerate(r):
-                R += '| ' if j == 0 else ''
+                R += v + ' ' if v and j == 0 else ''
 
                 if f != None and f1 is f:
                     R += Reverse
@@ -198,14 +202,17 @@ class table(entity):
                 if f != None and f1 is f:
                     R += Endc
 
-                R += ' |'
+                R += ' ' + v
                 if j < r.fields.ubound:
                     R += ' '
 
             if i < self.rows.ubound:
-                R += '\n|' + b + '|'
+                if h:
+                    R += '\n'
+                R += v + b + v
 
-        R += '\n+' + b + '+\n'
+        if b:
+            R += '\n' + c + b + c + '\n'
         return R
                 
 class columns(entities):
@@ -298,6 +305,15 @@ class row(entity):
     def newfields(self, *vs):
         for v in vs:
             self.newfield(v)
+
+    def __repr__(self):
+        tbl = table()
+        r = tbl.newrow()
+
+        for f in self:
+            r.newfield(f)
+
+        return str(tbl)
 
 class fields(entities):
     def __init__(self, initial=None, row=None):
