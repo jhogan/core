@@ -6,18 +6,62 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
-from tester import *
-from table import *
-import math
+from articles import *
 from auth import jwt
-import jwt as pyjwt
 from configfile import configfile
+from contextlib import contextmanager
+from datetime import timezone, datetime
+from entities import BrokenRulesError, rgetattr
+from func import enumerate
+from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
+from parties import *
+from pdb import Pdb
+from table import *
+from tester import *
 from uuid import uuid4
 import datetime
-import primative
 import dateutil
 import db
+import jwt as pyjwt
+import math
+import primative
 import textwrap
+
+# Set conditional break points
+def B(x=True):
+    if x: 
+        #Pdb().set_trace(sys._getframe().f_back)
+        from IPython.core.debugger import Tracer; 
+        Tracer().debugger.set_trace(sys._getframe().f_back)
+
+# We will use basic and supplementary multilingual plane UTF-8 characters when
+# testing str attributes to ensure unicode is being supported.
+
+# A two byte character from the Basic Multilingual Plane
+Delta = bytes("\N{GREEK CAPITAL LETTER DELTA}", 'utf-8').decode()
+
+# A three byte character
+V = bytes("\N{ROMAN NUMERAL FIVE}", 'utf-8').decode()
+
+# A four byte character from the Supplementary Multilingual Plane
+Cunei_a = bytes("\N{CUNEIFORM SIGN A}", 'utf-8').decode()
+
+def getattr(obj, attr, *args):
+    # Redefine getattr() to support deep attribututes 
+    # 
+    # For example:
+    #    Instead of this:
+    #        entity.constituents.first.id
+    #    we can do this:
+    #        getattr(entity, 'constituents.first.id')
+
+    def rgetattr(obj, attr):
+        if obj:
+            return builtins.getattr(obj, attr, *args)
+
+        return None
+    return functools.reduce(rgetattr, [obj] + attr.split('.'))
+
 
 class knights(entities):
     def __init__(self, initial=None):
@@ -105,6 +149,7 @@ class philosopher(entity):
 class singer(entity):
     def __init__(self, name):
         self.name = name
+
 class constants(entities):
     pass
 
@@ -119,6 +164,402 @@ def createtable(x, y):
         for j in range(x):
             r.newfield([i, j])
     return tbl
+
+##################################################################################
+''' ORM Tests '''
+##################################################################################
+
+class comments(orm.entities):
+    pass
+
+class comment(orm.entity):
+    title = str
+    body = str
+    comments = comments
+
+    @staticmethod
+    def getvalid():
+        com = comment()
+        com.title = uuid4().hex
+        com.body = '%s\n%s' % (uuid4().hex, uuid4().hex)
+        return com
+
+class locations(orm.entities):
+    pass
+
+class presentations(orm.entities):
+    pass
+
+class concerts(presentations):
+    pass
+
+class battles(concerts):
+    pass
+
+class components(orm.entities):
+    pass
+
+class artifacts(orm.entities):
+    pass
+
+class artists(orm.entities):
+    pass
+
+class location(orm.entity):
+    address     = str
+    description = str
+
+    @staticmethod
+    def getvalid():
+        loc = location()
+        loc.description = uuid4().hex
+        loc.address     = uuid4().hex
+        return loc
+
+class presentation(orm.entity):
+    date         =  datetime
+    name         =  orm.fieldmapping(str)
+    description  =  str
+    locations    =  locations
+    components   =  components
+    title        =  str,        orm.fulltext('title_desc',0)
+    description1 =  str,        orm.fulltext('title_desc',1)
+
+    @staticmethod
+    def getvalid():
+        pres = presentation()
+        pres.name          =  uuid4().hex
+        pres.description   =  uuid4().hex
+        pres.description1  =  uuid4().hex
+        pres.title         =  uuid4().hex
+        return pres
+
+class concert(presentation):
+    @staticmethod
+    def getvalid():
+        pres = presentation.getvalid()
+        conc = concert()
+        conc.record = uuid4().hex
+        conc.name = uuid4().hex
+        conc.title = pres.title
+        conc.description = pres.description
+        conc.description1 = pres.description1
+        return conc
+    
+    record = orm.fieldmapping(str)
+
+    # tinyint
+    ticketprice  =  orm.fieldmapping(int,  min=-128,      max=127)
+
+    # mediumint
+    attendees    =  orm.fieldmapping(int,  min=-8388608,  max=8388607)
+
+    # tinyint unsigned
+    duration     =  orm.fieldmapping(int,  min=0,         max=255)
+
+    # mediumint unsigned
+    capacity     =  orm.fieldmapping(int,  min=0,         max=16777215)
+
+    # int unsigned
+    externalid   =  orm.fieldmapping(int,  min=0,         max=4294967295)
+
+    # bigint unsigned
+    externalid1  =  orm.fieldmapping(int,  min=0,         max=(2**64)-1)
+
+class battle(concert):
+    views = int
+
+    @staticmethod
+    def getvalid():
+        conc = concert.getvalid()
+        btl = battle()
+
+        for map in conc.orm.mappings.all:
+            if type(map) is not orm.fieldmapping:
+                continue
+            setattr(btl, map.name, getattr(conc, map.name))
+
+        return btl
+
+class component(orm.entity):
+    @staticmethod
+    def getvalid():
+        comp = component()
+        comp.name = uuid4().hex
+        comp.digest = bytes([randint(0, 255) for _ in range(32)])
+        return comp
+
+    name    =  str
+    weight  =  float,  8,   7
+    height  =  float
+    digest  =  bytes,  16,  255
+
+    @orm.attr(float, 5, 1)
+    def width(self):
+        return attr(abs(attr()))
+
+class artifact(orm.entity):
+    def getvalid():
+        fact = artifact()
+        fact.title = uuid4().hex
+        fact.description = uuid4().hex
+        return fact
+
+    title        =  str,        orm.fulltext('title_desc',0)
+    description  =  str,        orm.fulltext('title_desc',1)
+    weight       =  int,        -2**63,                       2**63-1
+    abstract     =  bool
+    price        =  dec
+    components   =  components
+
+class artist(orm.entity):
+    firstname      =  str, orm.index('fullname', 1)
+    lastname       =  str, orm.index('fullname', 0)
+    lifeform       =  str
+    weight         =  int, 0, 1000
+    networth       =  int
+    style          =  str, 1, 50
+    dob            =  datetime
+    password       =  bytes, 32, 32
+    ssn            =  str, 11, 11, orm.index #  char
+    locations      =  locations
+    presentations  =  presentations
+
+    # title here to be ambigous with artifact.title. It's purpose is to ensure
+    # against ambiguity problems that may arise
+    title          =  str, 0, 1
+    phone2         =  str, 0, 1
+    email_1        =  str, 0, 1
+
+    # Bio's will be longtext. Any str where max > 65,535 can no longer be a
+    # varchar, so we make it a longtext.
+    bio = str, 1, 65535 + 1, orm.fulltext
+
+    comments = comments
+
+    @staticmethod
+    def getvalid():
+        art = artist()
+        art.firstname = 'Gary'
+        art.lastname  = 'Yourofsky'
+        art.lifeform  = uuid4().hex
+        art.password  = bytes([randint(0, 255) for _ in range(32)])
+        art.ssn       = '1' * 11
+        art.phone     = '1' * 7
+        art.email     = 'username@domain.tld'
+        return art
+
+    @orm.attr(int, 1000000, 9999999)
+    def phone(self):
+        phone = attr()
+        if phone is None:
+            return None
+        # Strip non-numerics ( "(555)-555-555" -> "555555555" )
+
+        if type(phone) is str and not phone.isnumeric():
+            phone = re.sub('\D*', '', phone)
+
+            # Cache in map so we don't have to do this every time the
+            # phone attribute is read. (Normally, caching in the map
+            # would be needed if the operation actually took a really
+            # long time.  The output for the re.sub wouldn't typically
+            # need to be cached. This is simply to test the attr()
+            # function's ability to set map values.)
+            attr(phone)
+
+        return attr()
+
+    @orm.attr(str, 3, 254)
+    def email(self):
+        return attr().lower()
+
+    # Though it seems logical that there would be mutator analog to the
+    # accessor logic (used above for the 'phone' attr), there doesn't
+    # seem to be a need for this. Conversions should be done in the
+    # accessor (as in the 'phone' accessor above).  If functionality
+    # needs to run when a mutator is called, this can be handled in an
+    # onaftervaluechange handler (though this seems rare).  Since at the
+    # moment, no use-case can be imagined for mutator @attr's, we should
+    # leave this unimplemented. If a use-case presents itself, the
+    # below, commented-out code approximates how it should look.  The
+    # 'setter' method in the 'Property' class here
+    # https://docs.python.org/3/howto/descriptor.html#properties hints
+    # at how this may be implemented in orm.attr.
+    """
+    @phone.setter(str)
+    def phone(self,)
+        self.orm.mappings('phone').value = v
+    """
+
+    def __init__(self, o=None):
+        super().__init__(o)
+
+        if self.orm.isnew:
+            self.lifeform = 'organic'
+            self.bio = None
+            self.style = 'classicism'
+            self._processing = False
+
+    def clear(self):
+        self.locations.clear()
+        self.presentations.clear()
+
+    @property
+    def processing(self):
+        return self._processing
+
+    @processing.setter
+    def processing(self, v):
+        self._processing = v
+
+    @property
+    def fullname(self):
+        return self.firstname + ' ' + self.lastname
+
+    def __str__(self):
+        return self.fullname
+        
+class artist_artifacts(orm.associations):
+    pass
+
+class artist_artifact(orm.association):
+    artist    =  artist
+    artifact  =  artifact
+    role      =  str
+    planet    =  str
+
+    def __init__(self, o=None):
+        self['planet'] = 'Earth'
+        self._processing = False
+        super().__init__(o)
+
+    @staticmethod
+    def getvalid():
+        # TODO Is an aa without an artifact object valid, i.e., should
+        # it not have a brokenrule for the missing artifact?
+        aa = artist_artifact()
+        aa.role = uuid4().hex
+        aa.timespan = uuid4().hex
+        return aa
+
+    # The duration an artist worked on an artifact
+    @orm.attr(str)
+    def timespan(self):
+        return attr().replace(' ', '-')
+
+    @property
+    def processing(self):
+        return self._processing
+
+    @processing.setter
+    def processing(self, v):
+        self._processing = v
+
+class singers(artists):
+    pass
+
+class singer(artist):
+    voice    = str
+    concerts = concerts
+
+    @staticmethod
+    def getvalid():
+        super = singer.orm.super.getvalid()
+
+        sng = singer()
+        keymaps = (orm.primarykeyfieldmapping, orm.foreignkeyfieldmapping)
+        for map in super.orm.mappings:
+            if isinstance(map, orm.fieldmapping) and type(map) not in keymaps:
+                setattr(sng, map.name, getattr(super, map.name))
+
+        sng.voice     = uuid4().hex
+        sng.register  = 'laryngealization'
+        return sng
+
+    @orm.attr(str)
+    def register(self):
+        #v = self.orm.mappings['register'].value.lower()
+        v = attr().lower()
+
+        if v in ('laryngealization', 'pulse phonation', 'creak'):
+            return 'vocal fry'
+        if v in ('flute', 'whistle tone'):
+            return 'whistle'
+        return v
+
+    def __init__(self, o=None):
+        self._transmitting = False
+        super().__init__(o)
+
+    def clear(self):
+        super().clear()
+        self.concerts.clear()
+
+    @property
+    def transmitting(self):
+        return self._transmitting
+
+    @transmitting.setter
+    def transmitting(self, v):
+        self._transmitting = v
+
+class rappers(singers):
+    pass
+
+class rapper(singer):
+    nice = int
+    stagename = str
+    battles = battles
+
+    def __init__(self, o=None):
+        super().__init__(o)
+        if self.orm.isnew:
+            self.nice = 10
+            self._elevating = False
+
+    @staticmethod
+    def getvalid():
+        keymaps = (orm.primarykeyfieldmapping, orm.foreignkeyfieldmapping)
+
+        rpr = rapper()
+        sup = type(rpr.orm.super).getvalid()
+        while sup: # :=
+            for map in sup.orm.mappings:
+                if isinstance(map, orm.fieldmapping) and type(map) not in keymaps:
+                    setattr(rpr, map.name, getattr(sup, map.name))
+
+            sup = type(sup.orm.super).getvalid() if sup.orm.super else None
+
+        rpr.nice = randint(1, 255)
+        rpr.stagename = '1337 h4x0r'
+        return rpr
+
+    @property
+    def elevating(self):
+        return self._elevating
+
+    @elevating.setter
+    def elevating(self, v):
+        self._elevating = v
+
+    @orm.attr(str)
+    def abilities(self):
+        def bs():
+            r = list()
+            r.append('endless rhymes')
+            r.append('delivery')
+            r.append('money')
+            return r
+
+        return str(attr()) if attr() else attr(str(bs()))
+
+class issues(orm.entities):
+    pass
+
+class issue(orm.entity):
+    @orm.attr(str)
+    def raiseAttributeError(self):
+        raise AttributeError()
 
 class test_entities(tester):
     def it_instantiates(self):
