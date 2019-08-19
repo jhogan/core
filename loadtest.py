@@ -1,3 +1,9 @@
+# Copyright (C) Jesse Hogan - All Rights Reserved
+# Unauthorized copying of this file, via any medium is strictly
+# prohibited
+# Proprietary and confidential
+# Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
+
 from configfile import configfile
 from pdb import Pdb
 from tester import *
