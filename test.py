@@ -16,15 +16,23 @@ from func import enumerate
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
 from parties import *
 from pdb import Pdb
+from random import randint, uniform
 from table import *
 from tester import *
 from uuid import uuid4
-import datetime
 import dateutil
 import db
+import decimal; dec=decimal.Decimal
+import functools
+import io
 import jwt as pyjwt
 import math
+import MySQLdb
+import _mysql_exceptions
+import orm
+import pathlib
 import primative
+import re
 import textwrap
 
 # Set conditional break points
@@ -38,7 +46,8 @@ def B(x=True):
 # testing str attributes to ensure unicode is being supported.
 
 # A two byte character from the Basic Multilingual Plane
-Delta = bytes("\N{GREEK CAPITAL LETTER DELTA}", 'utf-8').decode()
+
+Δ = bytes("\N{GREEK CAPITAL LETTER DELTA}", 'utf-8').decode()
 
 # A three byte character
 V = bytes("\N{ROMAN NUMERAL FIVE}", 'utf-8').decode()
@@ -62,7 +71,24 @@ def getattr(obj, attr, *args):
         return None
     return functools.reduce(rgetattr, [obj] + attr.split('.'))
 
+def la2gr(chars):
+    map = {
+        'a': b'\u03b1', 'b': b'\u03b2', 'c': b'\u03ba', 'd': b'\u03b4', 'e': b'\u03b5',
+        'f': b'\u03c6', 'g': b'\u03b3', 'h': b'\u03b7', 'i': b'\u03b9', 'j': b'\u03c3',
+        'k': b'\u03ba', 'l': b'\u03bb', 'm': b'\u03b1', 'n': b'\u03bc', 'o': b'\u03c0',
+        'p': b'\u03b1', 'q': b'\u03b8', 'r': b'\u03c1', 's': b'\u03c3', 't': b'\u03c4',
+        'u': b'\u03c5', 'v': b'\u03b2', 'w': b'\u03c9', 'x': b'\u03be', 'y': b'\u03c5',
+        'z': b'\u03b6',
+    }
 
+    r = ''
+    for c in chars.lower():
+        try:
+            r += map[c].decode('unicode_escape')
+        except:
+            r += ' '
+    return r
+        
 class knights(entities):
     def __init__(self, initial=None):
         self.indexes += index(name='name', 
@@ -3110,7 +3136,6 @@ class mycli(cli):
         ts = self.testers
         ts.oninvoketest += lambda src, eargs: print('.', end='', flush=True)
        
-cli().run()
 
 ##################################################################################
 ''' ORM Tests '''
@@ -3514,8 +3539,8 @@ class test_orm(tester):
         self.chronicles = db.chronicles()
         db.chronicler.getinstance().chronicles.onadd += self._chronicler_onadd
 
-        artist.reCREATE(recursive=True)
-        comment.reCREATE()
+        artist.orm.recreate(recursive=True)
+        comment.orm.recreate()
     
     def _chrons(self, e, op):
         chrons = self.chronicles.where('entity',  e)
@@ -5721,14 +5746,14 @@ class test_orm(tester):
 
         for i in range(2):
             chrons.clear()
-            art.save()
             
-            if i == 0:
-                B(chrons.count != 1) # Aug 11 2019
-                self.one(chrons)
-                self.eq(chrons.where('entity', art).first.op, 'create')
-            elif i == 1:
-                self.zero(chrons)
+            with self._chrontest() as t:
+                t.run(art.save)
+                if i == 0:
+                    t.created(art)
+                elif i == 1:
+                    # Nothing created second time
+                    pass
 
         # Dirty art and save. Ensure the object was actually saved if needed
         art.firstname = uuid4().hex
@@ -6811,7 +6836,8 @@ class test_orm(tester):
             self.type(str, art.email)
             self.eq(str(o).lower(), art.email)
 
-        Delta = la2gr('d')
+        Δ = la2gr('d')
+
         for art in (artist(), singer()):
             map = art.orm.mappings('email')
             if not map:
@@ -6829,17 +6855,17 @@ class test_orm(tester):
             art = artist.getvalid()
             min, max = map.min, map.max
 
-            art.email = Delta * map.max
+            art.email = Δ * map.max
             self.true(saveok(art, 'email'))
 
-            art.email += Delta
+            art.email += Δ
             self.one(art.brokenrules)
             self.broken(art, 'email', 'fits')
 
-            art.email = Delta * min
+            art.email = Δ * min
             self.true(saveok(art, 'email'))
 
-            art.email = (Delta * (min - 1))
+            art.email = (Δ * (min - 1))
             self.one(art.brokenrules)
             self.broken(art, 'email', 'fits')
 
@@ -6876,20 +6902,20 @@ class test_orm(tester):
 
             min, max = map.min, map.max
 
-            art.firstname = firstname = '\n\t ' + (Delta * 10) + '\n\t '
+            art.firstname = firstname = '\n\t ' + (Δ * 10) + '\n\t '
             self.eq(firstname.strip(), art.firstname)
 
-            art.firstname = Delta * max
+            art.firstname = Δ * max
             self.true(saveok(art, 'firstname'))
 
-            art.firstname += Delta
+            art.firstname += Δ
             self.one(art.brokenrules)
             self.broken(art, 'firstname', 'fits')
 
-            art.firstname = Delta * min
+            art.firstname = Δ * min
             self.true(saveok(art, 'firstname'))
 
-            art.firstname = (Delta * (min - 1))
+            art.firstname = (Δ * (min - 1))
             self.one(art.brokenrules)
             self.broken(art, 'firstname', 'fits')
 
@@ -7314,10 +7340,11 @@ class test_orm(tester):
         art.firstname = 'x' * 256
         self.broken(art, 'firstname', 'fits')
 
-        # TODO Today (20150815) we can get a 
+        # TODO Today (20190815) we got a 
         #     MySQLdb.OperationalError(2006, 'MySQL server has gone away')
         # error instead of a BrokenRulesError. Why would we get this
         # from as simple save.
+        # UPDATE Happened again 20190819
         try:
             art.save()
         except Exception as ex:
@@ -12009,4 +12036,5 @@ class test_orm(tester):
             for com, com1 in zip(coms.sorted(), coms1.sorted()):
                 self.eq(com.id, com1.id)
 
+cli().run()
 

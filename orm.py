@@ -32,8 +32,6 @@ import re
 import sys
 import textwrap
 
-# TODO Add indexes to FK's
-
 # Set conditional break points
 def B(x=True):
     if type(x) is str:
@@ -179,7 +177,8 @@ class stream(entitiesmod.entity):
             return self.chunk[self.getrelativeslice(slc)]
 
         def __iter__(self):
-            # TODO To make this object a proper iterable, shouldn't we override
+            # TODO To make this object a proper iterable, shouldn't we
+            # override
             # the __next__()?
             slc= slice(0, self.stream.chunksize)
             self.advance(slc)
@@ -323,11 +322,6 @@ class join(entitiesmod.entity):
         return self.entities.orm.table
 
     @property
-    def where(self):
-        # TODO Test if this is actually used
-        return self.entities.orm.where
-
-    @property
     def keywords(self):
         """ Get the SQL keyword for the join type. """
         if self.type == join.Inner:
@@ -370,9 +364,6 @@ class where(entitiesmod.entity):
 
         self.entities     =  es
         self.predicate    =  None
-
-        # TODO This isn't being used
-        self._alias       =  None
 
         if not pred:
             msg = 'where objects must have predicates'
@@ -1558,12 +1549,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         super().getindex(e)
 
     def __repr__(self):
-        # TODO Add a count of the object the way entities.__str__ does:
-        # Instead of the header saying:
-        #     <class '__main__.concerts'> object at 0x7f9ba3cf8ba8
-        # have it say something like:
-        #     <class '__main__.concerts'> object at 0x7f9ba3cf8ba8 count: 123
-        hdr = '%s object at %s' % (type(self), hex(id(self)))
+        hdr = '%s object at %s count: %s' 
+        hdr %= type(self), hex(id(self)), self.count
 
         try:
             hdr += ' count: ' + self.count
@@ -1606,175 +1593,177 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
 class entitymeta(type):
     def __new__(cls, name, bases, body):
-        # If name == 'entity', the `class entity` statement is being executed.
-        if name not in ('entity', 'association'):
+        if name in ('entity', 'association'):
+            return super().__new__(cls, name, bases, body)
 
-            # Instantiate an `orm` object for this class
-            ormmod = sys.modules['orm']
-            orm_ = orm()
+        # Instantiate an `orm` object for this class
+        ormmod = sys.modules['orm']
+        orm_ = orm()
 
-            # Instantiate a `mappings' collection for the `orm`
-            orm_.mappings = mappings(orm=orm_)
+        # Instantiate a `mappings' collection for the `orm`
+        orm_.mappings = mappings(orm=orm_)
 
-            # See if we have an `entities` property, i.e., the
-            # `entities` class that corresponds to this class.
-            try:
-                body['entities']
-            except KeyError:
-                # If we don't have an `entities` property, go through
-                # each subclass of `orm.entities` looking for one whose
-                # name is the plural of this class's name. When found,
-                # assign it to this class's `entities`.
-                for sub in orm_.getsubclasses(of=entities):
-                    if sub.__name__   == name + 's' and \
-                       sub.__module__ == body['__module__']:
+        # See if we have an `entities` property, i.e., the `entities`
+        # class that corresponds to this class.
+        try:
+            body['entities']
+        except KeyError:
+            # If we don't have an `entities` property, go through each
+            # subclass of `orm.entities` looking for one whose name is
+            # the plural of this class's name. When found, assign it to
+            # this class's `entities`.
+            for sub in orm_.getsubclasses(of=entities):
+                if sub.__name__   == name + 's' and \
+                   sub.__module__ == body['__module__']:
 
-                        body['entities'] = sub
-                        break
+                    body['entities'] = sub
+                    break
+            else:
+                msg =  "Entities class coudn't be found. "
+                msg += "Either specify one or define one with a predictable name"
+                raise AttributeError(msg)
+
+        # Make sure the `orm` has a reference to the entities collection
+        # class and that the entities collection class has a refernce to
+        # the orm.
+        orm_.entities = body['entities']
+        orm_.entities.orm = orm_
+
+        # Now that the `entities` property has been discovered/created
+        # and assigned to the `orm`, lets keep it there and delete it
+        # from this entity class's namespace.
+        del body['entities']
+
+        # If a class wants to define a custom table name, assign it to
+        # the `orm` here and remove it from this entity class's
+        # namespace. 
+        try:
+            orm_.table = body['table']
+            del body['table']
+        except KeyError:
+            # Normally, classes want define a table name, so we can just
+            # use the entities name (we want table names to be
+            # pluralized) as the table name.
+            orm_.table = orm_.entities.__name__
+
+        # Create standard field names in the `body` list. They will
+        # later be converted to mapping objects which are added to the
+        # `orm`'s `mappings` collection and removed from the `body`
+        # list, i.e., this entity class's namespace.
+        body['id'] = primarykeyfieldmapping()
+        body['createdat'] = fieldmapping(datetime)
+        body['updatedat'] = fieldmapping(datetime)
+
+        for k, v in body.items():
+
+            # Ignore the double underscore attributes
+            if k.startswith('__'):
+                continue
+            
+            if isinstance(v, mapping):
+                # If the item is already a mapping, we don't need to do
+                # anything; just assign it to the map variable.
+                map = v
+            elif v in fieldmapping.types:
+                # If the item is a primitive type (str, int, datetime,
+                # etc.), create a fieldmapping.
+
+                # TODO Currently, if v is a reference to the datetime
+                # module, as oppose to the datetime module's `datetime`
+                # property, the field won't map because the datetime
+                # module is not in fieldmapping.types. It may be nice if
+                # a datetime module reference meant the same thing.
+
+                map = fieldmapping(v)
+
+            elif type(v) is tuple:
+                # `v` will be a tuple if multiple, comma seperated type
+                # arguments are declared, i.e., `str, 0, 1,
+                # orm.fulltext`
+                args, kwargs = [], {}
+
+                # Iterate over tuple
+                for e in v:
+                    # Is item is an index or a full index
+                    isix = (
+                        hasattr(e, 'mro') and index in e.mro()
+                        or isinstance(e, index)
+                    )
+                    
+                    if isix:
+                        kwargs['ix'] = e
+                    else:
+                        args.append(e)
+
+                # Create a new map based on the tuple's values
+                map = fieldmapping(*args, **kwargs)
+
+            elif hasattr(v, 'mro'):
+                mro = v.mro()
+                if ormmod.entities in mro:
+                    # If `v` is a reference to an existing class that
+                    # inherits from `orm.entities`, create a
+                    # `entitiesmapping` object. `v` represents the
+                    # "many' side of a one-to-many relationship with
+                    # this class.
+                    map = entitiesmapping(k, v)
+
+                elif ormmod.entity in mro:
+                    # if v is a class that inherits from orm.entities,
+                    # create an entitymapping. This is for the the
+                    # composites of an association.
+                    map = entitymapping(k, v)
                 else:
-                    msg =  "Entities class coudn't be found. "
-                    msg += "Either specify one or define one with a predictable name"
-                    raise AttributeError(msg)
-
-            # Make sure the `orm` has a reference to the entities
-            # collection class and that the entities collection class
-            # has a refernce to the orm.
-            orm_.entities = body['entities']
-            orm_.entities.orm = orm_
-
-            # Now that the `entities` property has been
-            # discovered/created and assigned to the `orm`, lets keep it
-            # there and delete it from this entity class's namespace.
-            del body['entities']
-
-            # If a class wants to define a custom table name, assign it
-            # to the `orm` here and remove it from this entity class's
-            # namespace. 
-            try:
-                orm_.table = body['table']
-                del body['table']
-            except KeyError:
-                # Normally, classes want define a table name, so we can
-                # just use the entities name (we want table names to be
-                # pluralized) as the table name.
-                orm_.table = orm_.entities.__name__
-
-            # Create standard field names in the `body` list. They will
-            # later be converted to mapping objects which are added to
-            # the `orm`'s `mappings` collection and removed from the
-            # `body` list, i.e., this entity class's namespace.
-            body['id'] = primarykeyfieldmapping()
-            body['createdat'] = fieldmapping(datetime)
-            body['updatedat'] = fieldmapping(datetime)
-
-            for k, v in body.items():
-
-                # Ignore the double underscore attributes
-                if k.startswith('__'):
+                    raise ValueError() # Shouldn't happen
+            else:
+                if type(v) is ormmod.attr.wrap:
+                    # `v` represents an explicit attribute. It will
+                    # contain its own mapping object so just assign
+                    # reference. See the `attr` class.
+                    map = v.mapping
+                else:
+                    # If we are here, `v` represents a staticmethod,
+                    # method, property or some other attribute that is
+                    # not intended for mapping.
                     continue
-                
-                if isinstance(v, mapping):
-                    # If the item is already a mapping, we don't need to
-                    # do anything; just assign it to the map variable.
-                    map = v
-                elif v in fieldmapping.types:
-                    # If the item is a primitive type (str, int,
-                    # datetime, etc.), create a fieldmapping.
-                    map = fieldmapping(v)
+           
+            # Name the map and append the map to the orm's mapping
+            # collections.
+            map._name = k
+            orm_.mappings += map
 
-                elif type(v) is tuple:
-                    # `v` will be a tuple if multiple, comma seperated
-                    # type arguments are declared, i.e., 
-                    #    `str, 0, 1, orm.fulltext`
-                    args, kwargs = [], {}
+        # Iterate of orm's mapping collection. NOTE that iterating over
+        # mappings invokes it's _populating method which updates the
+        # composition of the collection. (See mappings._populated.)
+        for map in orm_.mappings:
+            try:
+                # Now that we have all the approprite attributes from
+                # this class in orm.mappings, we can delete them.
+                prop = body[map.name]
 
-                    # Iterate over tuple
-                    for e in v:
-                        # Is item is an index or a full index
-                        isix = (
-                            hasattr(e, 'mro') and index in e.mro()
-                            or isinstance(e, index)
-                        )
-                        
-                        if isix:
-                            kwargs['ix'] = e
-                        else:
-                            args.append(e)
+                # Delete attribute if it is not an explicit attribute.
+                if type(prop) is not ormmod.attr.wrap:
+                    del body[map.name]
+            except KeyError:
+                # The orm_.mappings.__iter__ adds new mappings which
+                # won't be in body, so ignore KeyErrors
+                pass
 
-                    # Create a new map based on the tuple's values
-                    map = fieldmapping(*args, **kwargs)
-
-                elif hasattr(v, 'mro'):
-                    mro = v.mro()
-                    if ormmod.entities in mro:
-                        # If `v` is a reference to an existing class
-                        # that inherits from `orm.entities`, create a
-                        # `entitiesmapping` object. `v` represents the
-                        # "many' side of a one-to-many relationship with
-                        # this class.
-                        map = entitiesmapping(k, v)
-
-                    elif ormmod.entity in mro:
-                        # if v is a class that inherits from
-                        # orm.entities, create an entitymapping. This
-                        # is for the the composites of an association.
-                        map = entitymapping(k, v)
-                    else:
-                        raise ValueError() # Shouldn't happen
-                else:
-                    if type(v) is ormmod.attr.wrap:
-                        # `v` represents an explicit attribute. It will
-                        # contain its own mapping object so just assign
-                        # reference. See the `attr` class.
-                        map = v.mapping
-                    else:
-                        # If we are here, `v` represents a staticmethod,
-                        # method, property or some other attribute that
-                        # is not intended for mapping.
-                        continue
-               
-                # Name the map and append the map to the orm's mapping
-                # collections.
-                map._name = k
-                orm_.mappings += map
-
-            # Iterate of orm's mapping collection. NOTE that iterating
-            # over mappings invokes it's _populating method which
-            # updates the composition of the collection. (See
-            # mappings._populated.)
-            for map in orm_.mappings:
-                try:
-                    # Now that we have all the approprite attributes
-                    # from this class in orm.mappings, we can delete
-                    # them.
-                    prop = body[map.name]
-
-                    # Delete attribute if it is not an explicit
-                    # attribute.
-                    if type(prop) is not ormmod.attr.wrap:
-                        del body[map.name]
-                except KeyError:
-                    # The orm_.mappings.__iter__ adds new mappings which
-                    # won't be in body, so ignore KeyErrors
-                    pass
-
-            # Ensure this class has a reference to the `orm` instantiated
-            # above.
-            body['orm'] = orm_
+        # Ensure this class has a reference to the `orm` instantiated
+        # above.
+        body['orm'] = orm_
 
         # Recreate the class
         entity = super().__new__(cls, name, bases, body)
 
-        # If this class is not the base entity or association class
-        if name not in ('entity', 'association'):
-            orm_.entity = entity
+        orm_.entity = entity
 
-            # Since a new entity has been created, invalidate the
-            # derived cache of each mappings collection's object.  They
-            # must be recomputed since they are based on the existing
-            # entity object available.
-            for e in orm.getentitys():
-                e.orm.mappings._populated = False
+        # Since a new entity has been created, invalidate the derived
+        # cache of each mappings collection's object.  They must be
+        # recomputed since they are based on the existing entity object
+        # available.
+        for e in orm.getentitys():
+            e.orm.mappings._populated = False
 
         # Return newly defined class
         return entity
@@ -1964,102 +1953,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     attr = maps(attrsuper.__class__.__name__).name
                     setattr(selfsuper, attr, attrsuper)
 
-    @classmethod
-    def reCREATE(cls, cur=None, recursive=False, guestbook=None):
-        """ Drop and recreate the table for the entity ``cls``. 
-
-        :param: cls: A class that inherits directly or indirectly from
-                    :class:`.orm.entities`
-
-        :param: recursive: If True, the constituents and subclasses of ``cls``
-                           will be recursively be discovered and their tables
-                           recreated. Used internally.
-
-        :param: guestbook: A list to keep track of which classes' tables have
-                           been recreated. Used internally to prevent infinite
-                           recursion.
-
-        """
-
-        # Prevent infinite recursion
-        if guestbook is None:
-            guestbook = []
-        else:
-            if cls in guestbook:
-                return
-        guestbook += [cls]
-
-        try: 
-            if cur:
-                conn = None
-            else:
-                # TODO Use executioner
-                pool = db.pool.getdefault()
-                conn = pool.pull()
-                cur = conn.createcursor()
-
-            try:
-                cls.DROP(cur)
-            except MySQLdb.OperationalError as ex:
-                try:
-                    errno = ex.args[0]
-                except:
-                    raise
-
-                if errno != BAD_TABLE_ERROR: # 1051
-                    raise
-
-            cls.CREATE(cur)
-
-            if recursive:
-                for map in cls.orm.mappings.entitiesmappings:
-                    map.entities.orm.entity.reCREATE(cur, True, guestbook)
-
-                for ass in cls.orm.associations:
-                    ass.entity.reCREATE(cur, True, guestbook)
-
-                for sub in cls.orm.subclasses:
-                    sub.reCREATE(cur, True, guestbook)
-                            
-        except Exception as ex:
-            # Rollback unless conn and cur weren't successfully instantiated.
-            if conn and cur:
-                conn.rollback()
-            raise
-        else:
-            if conn:
-                conn.commit()
-        finally:
-            if conn:
-                pool.push(conn)
-                if cur:
-                    cur.close()
-
-    # TODO lowercase these and put them in orm
-    @classmethod
-    def DROP(cls, cur=None):
-        # TODO Use executioner
-        sql = 'drop table ' + cls.orm.table + ';'
-
-        if cur:
-            cur.execute(sql)
-        else:
-            pool = db.pool.getdefault()
-            with pool.take() as conn:
-                conn.query(sql)
-    
-    @classmethod
-    def CREATE(cls, cur=None):
-        # TODO Use executioner
-        sql = cls.orm.mappings.createtable
-
-        if cur:
-            cur.execute(sql)
-        else:
-            pool = db.pool.getdefault()
-            with pool.take() as conn:
-                conn.query(sql)
-
     def delete(self):
         self.orm.ismarkedfordeletion = True
         self.save()
@@ -2155,12 +2048,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 if followentitiesmapping \
                    and type(map) is entitiesmapping:
 
-                    es = map.value
-
-                    # es is None if the constituent hasn't been loaded,
-                    # so conditionally save()
-                    # TODO Use map.isloaded
-                    if es:
+                    if map.isloaded:
+                        es = map.value
                         # Take snapshot of states
                         sts = es.orm.persistencestates
 
@@ -2775,7 +2664,7 @@ class mappings(entitiesmod.entities):
             # FK callesd artistid and artifactid.
             for map in self.entitymappings:
                 maps.append(
-                    foreignkeyfieldmapping(map.entity, derived=True)
+                    foreignkeyfieldmapping(map.entity, isderived=True)
                 )
 
             ''' Add composite and constiuent mappings '''
@@ -2796,12 +2685,12 @@ class mappings(entitiesmod.entities):
 
                         # Add a entity mapping for the composite
                         maps.append(
-                            entitymapping(e.__name__, e, derived=True)
+                            entitymapping(e.__name__, e, isderived=True)
                         )
 
                         # Add an FK for the constituents
                         maps.append(
-                            foreignkeyfieldmapping(e, derived=True)
+                            foreignkeyfieldmapping(e, isderived=True)
                         )
 
             ''' Add associations mappings to self '''
@@ -2816,7 +2705,7 @@ class mappings(entitiesmod.entities):
                     if map.entity is self.orm.entity:
                         asses = ass.orm.entities
                         map = associationsmapping(
-                            asses.__name__, asses, derived=True
+                            asses.__name__, asses, isderived=True
                         )
                         maps.append(map)
                         break
@@ -2843,7 +2732,7 @@ class mappings(entitiesmod.entities):
 
     def clear(self, derived=False):
         if derived:
-            for map in [x for x in self if x.derived]:
+            for map in [x for x in self if x.isderived]:
                 self.remove(map)
         else:
             super().clear()
@@ -2924,29 +2813,6 @@ class mappings(entitiesmod.entities):
     @property
     def orm(self):
         return self._orm
-
-    @property
-    def createtable(self):
-        r = 'CREATE TABLE ' + self.orm.table + '(\n'
-
-        for i, map in enumerate(self):
-            if not isinstance(map, fieldmapping):
-                continue
-
-            if i:
-                r += ',\n'
-
-            r += '    ' + map.name
-
-            if isinstance(map, fieldmapping):
-                r += ' ' + map.dbtype
-
-        for ix in self.aggregateindexes:
-            r += ',\n    ' + str(ix)
-
-        r += '\n) '
-        r += 'ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;'
-        return r
 
     @property
     def aggregateindexes(self):
@@ -3051,12 +2917,11 @@ WHERE id = %s;
 class mapping(entitiesmod.entity):
     ordinal = 0
 
-    def __init__(self, name, derived=False):
+    def __init__(self, name, isderived=False):
         self._name = name
         mapping.ordinal += 1
         self._ordinal = mapping.ordinal
-        # TODO Change to 'isderived'
-        self.derived = derived
+        self.isderived = isderived
 
     @property
     def name(self):
@@ -3098,15 +2963,15 @@ class mapping(entitiesmod.entity):
         return repr(self)
     
 class associationsmapping(mapping):
-    def __init__(self, name, ass, derived=False):
+    def __init__(self, name, ass, isderived=False):
         self.associations = ass
         self._value = None
         self._composite = None
-        super().__init__(name, derived)
+        super().__init__(name, isderived)
 
     def clone(self):
         return associationsmapping(
-            self.name, self.associations, self.derived
+            self.name, self.associations, self.isderived
         )
 
     @property
@@ -3176,10 +3041,10 @@ class entitiesmapping(mapping):
         return entitiesmapping(self.name, self.entities)
 
 class entitymapping(mapping):
-    def __init__(self, name, e, derived=False):
+    def __init__(self, name, e, isderived=False):
         self.entity = e
         self._value = None
-        super().__init__(name, derived)
+        super().__init__(name, isderived)
 
     @property
     def value(self):
@@ -3196,7 +3061,8 @@ class entitymapping(mapping):
         self._setvalue('_value', v, 'value')
 
     def clone(self):
-        return entitymapping(self.name, self.entity, derived=self.derived)
+        return entitymapping(self.name, self.entity,
+        isderived=self.isderived)
 
     @property
     def _reprargs(self):
@@ -3343,7 +3209,7 @@ class fieldmapping(mapping):
                        d=None,     # Scale (in decimals and floats)
                        name=None,  # Name of the field
                        ix=None,    # Database index
-                       derived=False,
+                       isderived=False,
                        isexplicit=False):
 
         if type in (float, decimal.Decimal):
@@ -3374,7 +3240,7 @@ class fieldmapping(mapping):
         if self.index:
             self.index.map = self
 
-        super().__init__(name, derived)
+        super().__init__(name, isderived)
 
     def clone(self):
         ix = self.index
@@ -3389,7 +3255,7 @@ class fieldmapping(mapping):
             self.scale,
             self.name,
             ix,
-            self.derived,
+            self.isderived,
             self.isexplicit
         )
 
@@ -3687,12 +3553,12 @@ class fieldmapping(mapping):
         self._value = v
 
 class foreignkeyfieldmapping(fieldmapping):
-    def __init__(self, e, derived=False):
+    def __init__(self, e, isderived=False):
         self.entity = e
         self.value = None
         super().__init__(
             type=types.fk, 
-            derived=derived,
+            isderived=isderived,
             ix=index
         )
 
@@ -3701,7 +3567,7 @@ class foreignkeyfieldmapping(fieldmapping):
         return self.entity.__name__ + 'id'
 
     def clone(self):
-        return foreignkeyfieldmapping(self.entity, self.derived)
+        return foreignkeyfieldmapping(self.entity, self.isderived)
 
     @property
     def dbtype(self):
@@ -3897,6 +3763,137 @@ class orm:
             sup = es.orm.entities.orm.super.orm.entities()
             es = es.join(sup)
             es = sup
+
+    def recreate(self, cur=None, recursive=False, guestbook=None):
+        """ Drop and recreate the table for the orm ``self``. 
+
+        :param: cur:       The MySQLdb cursor used by this and all
+                           subsequent CREATE and DROPs
+
+        :param: recursive: If True, the constituents and subclasses of
+                           ``self`` will be recursively discovered and
+                           their tables recreated. Used internally.
+
+        :param: guestbook: A list to keep track of which classes' tables have
+                           been recreated. Used internally to prevent
+                           infinite recursion.
+        """
+
+        # if association:
+        '''
+        @classmethod
+        def reCREATE(cls, cur, recursive=False, clss=None):
+            for map in cls.orm.mappings.entitymappings:
+                map.entity.reCREATE(cur, recursive, clss)
+
+            super().reCREATE(cur, recursive, clss)
+        '''
+        # Prevent infinite recursion
+        if guestbook is None:
+            guestbook = list()
+        else:
+            if self in guestbook:
+                return
+        guestbook += [self]
+
+        try: 
+            if cur:
+                conn = None
+            else:
+                # TODO Use executioner
+                pool = db.pool.getdefault()
+                conn = pool.pull()
+                cur = conn.createcursor()
+
+            try:
+                self.drop(cur)
+            except MySQLdb.OperationalError as ex:
+                try:
+                    errno = ex.args[0]
+                except:
+                    raise
+
+                if errno != BAD_TABLE_ERROR: # 1051
+                    raise
+
+            self.create(cur)
+
+            if recursive:
+                for map in self.mappings.entitiesmappings:
+                    map.entities.orm.recreate(
+                        cur, True, guestbook
+                    )
+
+                for ass in self.associations:
+                    ass.entity.orm.recreate(cur, True, guestbook)
+
+                    for map in ass.orm.mappings.entitymappings:
+                        map.entity.orm.recreate(
+                            cur, recursive, guestbook
+                        )
+
+                for sub in self.subclasses:
+                    sub.orm.recreate(cur, True, guestbook)
+                            
+        except Exception as ex:
+            # Rollback unless conn and cur weren't successfully
+            # instantiated.
+            if conn and cur:
+                conn.rollback()
+            raise
+        else:
+            if conn:
+                conn.commit()
+        finally:
+            if conn:
+                pool.push(conn)
+                if cur:
+                    cur.close()
+
+    def drop(self, cur=None):
+        # TODO Use executioner
+        sql = 'drop table ' + self.table + ';'
+
+        if cur:
+            cur.execute(sql)
+        else:
+            pool = db.pool.getdefault()
+            with pool.take() as conn:
+                conn.query(sql)
+    
+    def create(self, cur=None):
+        # TODO Use executioner
+        sql = self.createtable
+
+        if cur:
+            cur.execute(sql)
+        else:
+            pool = db.pool.getdefault()
+            with pool.take() as conn:
+                conn.query(sql)
+
+    @property
+    def createtable(self):
+        r = 'CREATE TABLE ' + self.table + '(\n'
+
+        for i, map in enumerate(self.mappings):
+            if not isinstance(map, fieldmapping):
+                continue
+
+            if i:
+                r += ',\n'
+
+            r += '    ' + map.name
+
+            if isinstance(map, fieldmapping):
+                r += ' ' + map.dbtype
+
+        for ix in self.mappings.aggregateindexes:
+            r += ',\n    ' + str(ix)
+
+        r += '\n) '
+        r += 'ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;'
+        return r
 
     def reload(self, orderby=None, limit=None, offset=None):
         """
@@ -4200,8 +4197,10 @@ class orm:
 
                 # Chain the composite's entitiesmappings and
                 # associationsmappings collection into `maps`
-                maps = itertools.chain(comp.orm.mappings.entitiesmappings,
-                                       comp.orm.mappings.associationsmappings)
+                maps = itertools.chain(
+                    comp.orm.mappings.entitiesmappings,
+                    comp.orm.mappings.associationsmappings
+                )
 
                 # For each of the composite mappings, if `e` is the same
                 # type as the map then assign e to that mappings's value
@@ -4209,7 +4208,6 @@ class orm:
                 # constituents (e.g., artist,locations.last)
                 for map1 in maps:
                     if isinstance(e, map1.entities.orm.entity):
-                        # TODO Replace with `if map1.isloaded:`
                         if not map1.isloaded:
                             map1._value = map1.entities()
                         map1._value += e
@@ -4681,9 +4679,7 @@ class orm:
                         msg %= str(type(e))
                         raise AttributeError(msg)
                     if e.id is not undef:
-                        # TODO What happens if we remove this line
-                        if not e.orm.isnew: 
-                            self._super = base(e.id)
+                        self._super = base(e.id)
 
                 return self._super
         return None
@@ -5012,12 +5008,7 @@ class associations(entities):
             raiseAttributeError()
     
 class association(entity):
-    @classmethod
-    def reCREATE(cls, cur, recursive=False, clss=None):
-        for map in cls.orm.mappings.entitymappings:
-            map.entity.reCREATE(cur, recursive, clss)
-
-        super().reCREATE(cur, recursive, clss)
+    pass
 
 class invalidcolumn(ValueError):
     pass
