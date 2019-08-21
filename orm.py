@@ -1,10 +1,12 @@
 # vim: set et ts=4 sw=4 fdm=marker
 
+########################################################################
 # Copyright (C) Jesse Hogan - All Rights Reserved
 # Unauthorized copying of this file, via any medium is strictly
 # prohibited
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
+########################################################################
 
 """ This file contains all classes related to object-relational mapping.
 """
@@ -2490,21 +2492,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             for map in sup.orm.mappings.entitiesmappings:
 
                 # Get e's superentities class
-                # TODO sup becomes the entity class (concert). However,
-                # it should be the entities class (concerts) since it is
-                # called on an entities class.
-                # The conditional below:
-                #
-                #   if map.entities is sup.orm.entities:
-                #
-                # compensates for this, though it should read:
-                #    
-                #   if map.entities is sup:
-                #
-                sup = src.orm.entities.orm.super
+                sup = src.orm.entities.orm.super.orm.entities
 
                 # If the map's entities matches sup
-                if map.entities is sup.orm.entities:
+                if map.entities is sup:
 
                     # (map.entitiesmapping: <class>: concert)
 
@@ -3727,17 +3718,6 @@ class orm:
         map = self.mappings(self.entities.__name__)
         return map is not None and map.entities is self.entities
 
-    def truncate(self, cur=None):
-        # TODO Use executioner
-        sql = 'TRUNCATE TABLE %s;' % self.table
-
-        if cur:
-            cur.execute(sql)
-        else:
-            pool = db.pool.getdefault()
-            with pool.take() as conn:
-                conn.query(sql)
-
     def joinsupers(self):
         top = None
         for pred in self.where.predicate:
@@ -3763,6 +3743,17 @@ class orm:
             sup = es.orm.entities.orm.super.orm.entities()
             es = es.join(sup)
             es = sup
+
+    def truncate(self, cur=None):
+        # TODO Use executioner
+        sql = 'TRUNCATE TABLE %s;' % self.table
+
+        if cur:
+            cur.execute(sql)
+        else:
+            pool = db.pool.getdefault()
+            with pool.take() as conn:
+                conn.query(sql)
 
     def recreate(self, cur=None, recursive=False, guestbook=None):
         """ Drop and recreate the table for the orm ``self``. 

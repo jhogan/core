@@ -4770,8 +4770,8 @@ class test_orm(tester):
                 for j in range(i -1, 0, -1):
                     self.zero(arts1[i:j])
                 for j in range(0, -10 -1):
-                    # TODO Negative stops (arts1[4:-4]) are currently not
-                    # implemented.
+                    # TODO Negative stops (arts1[4:-4]) are currently
+                    # not implemented.
                     self.expect(NotImplementedError, lambda: arts1[i:j])
 
             # Ensure that __getitem__ raises IndexError if the index is out of
@@ -5928,9 +5928,6 @@ class test_orm(tester):
                         self.eq(v, v1)
             
                 self.is_(pres1, loc1.presentation)
-
-        # TODO Remove this. I'm not sure why it's here.
-        return
 
         # Test appending a collection of constituents to a constituents
         # collection. Save, reload and test.
@@ -8130,11 +8127,10 @@ class test_orm(tester):
         self.is_(rpr,                      rpr.presentations.rapper)
 
         # TODO rpr.presentations.singer isn't available here, though it
-        # id: e217aa8b6db242eebfd88f11a55d1fde
-        # feels like it should be. The reason `rapper` is available is
-        # because rpr.__getattribute__ sets it. The reason `artist` is
-        # available is because `presentations` is a constituent of
-        # artist.
+        # id: e217aa8b6db242eebfd88f11a55d1fde feels like it should be.
+        # The reason `rapper` is available is because
+        # rpr.__getattribute__ sets it. The reason `artist` is available
+        # is because `presentations` is a constituent of artist.
         #
         # `singer` could be made available, but its implementation would
         # be tricky. Code in entities.__getattribute__ could look for
