@@ -8,7 +8,6 @@ from configfile import configfile
 from contextlib import contextmanager
 from entities import *
 from pprint import pprint
-from pprint import pprint
 from textwrap import dedent
 from timer import stopwatch
 from types import FunctionType
@@ -19,6 +18,7 @@ import pdb; B=pdb.set_trace
 import pprint
 import primative
 import sys
+import textwrap
 import uuid
 
 # TODO Ensure tester.py won't run in non-dev environment
@@ -88,6 +88,10 @@ class tester(entity):
     @property
     def ok(self):
         return self.failures.isempty
+
+    @staticmethod
+    def dedent(str, *args):
+        return textwrap.dedent(str).strip() % args
 
     def register(self, event, handler):
         self.eventregistrations.register(event, handler)

@@ -1,10 +1,12 @@
 # vim: set et ts=4 sw=4 fdm=marker
 
+########################################################################
 # Copyright (C) Jesse Hogan - All Rights Reserved
 # Unauthorized copying of this file, via any medium is strictly
 # prohibited
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
+########################################################################
 
 from articles import *
 from auth import jwt
@@ -34,6 +36,7 @@ import pathlib
 import primative
 import re
 import textwrap
+import web
 
 # Set conditional break points
 def B(x=True):
@@ -42,8 +45,9 @@ def B(x=True):
         from IPython.core.debugger import Tracer; 
         Tracer().debugger.set_trace(sys._getframe().f_back)
 
-# We will use basic and supplementary multilingual plane UTF-8 characters when
-# testing str attributes to ensure unicode is being supported.
+# We will use basic and supplementary multilingual plane UTF-8
+# characters when testing str attributes to ensure unicode is being
+# supported.
 
 # A two byte character from the Basic Multilingual Plane
 
@@ -1613,9 +1617,9 @@ class test_entities(tester):
         # Instantiate with collection
         ks = entities([the4.first, the4.second])
         # TODO We need to test that instatiating with a list of entities
-        # invokes the onadd event. Obviously, we can't subscribe to the event
-        # until the object is instantiated. There needs to be a workaround
-        # that doesn't involve altering the entities classes.
+        # invokes the onadd event. Obviously, we can't subscribe to the
+        # event until the object is instantiated. There needs to be a
+        # workaround that doesn't involve altering the entities classes.
 
     def it_raises_onremove(self):
         """ The onremove event is called whenever an entity is removed from
@@ -10171,7 +10175,8 @@ class test_orm(tester):
         arts.save()
 
         for op in '', 'NOT':
-            # Load an innerjoin where both tables have [NOT] IN where clause
+            # Load an innerjoin where both tables have [NOT] IN where
+            # clause
             # 	SELECT *
             # 	FROM artists
             # 	INNER JOIN artist_artifacts AS `artists.artist_artifacts`
@@ -10667,10 +10672,10 @@ class test_orm(tester):
         positions in the where.args list. '''
 
         # TODO With the addition of this feature, we can remove the
-        # requirement that a empty tuple be given as the second argument
-        # here. It also seems possible that we remove the args tuple
-        # altogether since it no longer seems necessary. NOTE, on the
-        # other hand, we may want to keep the argument parameter for
+        # requirement that an empty tuple be given as the second
+        # argument here. It also seems possible that we remove the args
+        # tuple altogether since it no longer seems necessary. NOTE, on
+        # the other hand, we may want to keep the argument parameter for
         # binary queries, e.g.,:
         #
         #     artist('id = %s', (uuid.bytes,))
@@ -10716,7 +10721,9 @@ class test_orm(tester):
     def it_raises_exception_when_a_non_existing_column_is_referenced(self):
         self.expect(orm.invalidcolumn, lambda: artists(notacolumn = 1234))
 
-    def it_raises_exception_when_bytes_type_is_compared_to_nonbinary(self):
+    def it_raises_exception_when_bytes_type_is_compared_to_nonbinary(
+        self):
+
         # TODO This should raise an exception
         arts1 = artists('id = 123', ())
         return
@@ -12031,6 +12038,110 @@ class test_orm(tester):
 
             for com, com1 in zip(coms.sorted(), coms1.sorted()):
                 self.eq(com.id, com1.id)
+
+class test_site(tester):
+    def it_calls__init__(self):
+        name = uuid4().hex
+        ws = web.site(name)
+        self.eq(ws.name, name)
+        self.zero(ws.pages)
+
+class test_page(tester):
+    def it_calls__init__(self):
+        name = uuid4().hex
+        pg = web.page(name)
+        self.eq(pg.name, name)
+        self.zero(pg.pages)
+
+class test_paragraph(tester):
+    def it_calls__init___with_str_and_args(self):
+        ''' With str arg '''
+        hex1, hex2 = [x.hex for x in (uuid4(), uuid4())]
+        p = web.paragraph('''
+        hex1: %s
+        hex2: %s
+        ''', hex1, hex2)
+        
+        expect = self.dedent('''
+        <p>
+          hex1: %s
+          hex2: %s
+        </p>
+        ''', hex1, hex2)
+
+        self.eq(expect, p.html)
+
+        ''' With element arg '''
+        txt = web.text('Plain white sauce!')
+
+        strong = web.strong('''
+            Plain white sauce will make your teeth
+        ''')
+
+        # Nest <span> into <strong>
+        strong += web.span('go grey.');
+        txt += strong
+
+        # NOTE The spacing is botched. This should be corrected when we
+        # write tests for web.text.
+        expect = self.dedent('''
+        <p>
+          Plain white sauce!
+            <strong>
+              Plain white sauce will make your teeth
+              <span>
+                go grey.
+              </span>
+            </strong>
+        </p>''')
+
+        print(web.paragraph(txt).html)
+        self.eq(expect, web.paragraph(txt).html)
+
+        # Expect a ValueError if *args are given for a non-str first
+        # argument
+        self.expect(
+          ValueError, 
+          lambda: web.paragraph(txt, 'arg1', 'arg2')
+        )
+
+    def it_calls_html(self):
+        p = web.paragraph()
+
+        p += '''
+            Plain white sauce!
+        '''
+
+        strong = web.strong('''
+            Plain white sauce will make your teeth
+        ''')
+
+        # Nest <span> into <strong>
+        strong += web.span('go grey.');
+
+        p += strong
+
+        p += '''
+            Doesn't matter, just throw it away!
+        '''
+
+        expect = self.dedent('''
+        <p>
+          Plain white sauce!
+          <strong>
+            Plain white sauce will make your teeth
+            <span>
+              go grey.
+            </span>
+          </strong>
+          Doesn't matter, just throw it away!
+        </p>
+        ''')
+
+        self.eq(expect, p.html)
+
+class test_header(tester):
+    pass
 
 cli().run()
 
