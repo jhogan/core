@@ -9,12 +9,6 @@
 import orm
 from primative import datetime
 
-class partytypes(orm.entities):
-    pass
-
-class partytype(orm.entity):
-    pass
-
 class parties(orm.entities):
     pass
 
@@ -36,7 +30,7 @@ class party(orm.entity):
     # The International Standard of Industrial Classification of All
     # Economic Activities (ISIC), Revision 4 code for a particular
     # organization, business person, or place.
-    isicv4 = char, min=1, max=1
+    #isicv4 = char, 1, 1
 
 class organizations(parties):
     pass
@@ -66,11 +60,3 @@ class person(party):
     # TODO
     # passport = passport
 
-class partyclassifications(orm.associations):
-    pass
-
-class partyclassification(orm.association):
-    partytype  =  partytype
-    party      =  party
-    from       =  datetime
-    to         =  datetime

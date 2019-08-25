@@ -11,6 +11,7 @@
 import entities
 import textwrap
 import orm
+import html
 from dbg import B
 
 class site(entities.entity):
@@ -22,26 +23,121 @@ class site(entities.entity):
     def header(self):
         return self.headers.default
 
-class components(entities.entities):
+class pages(entities.entities):
     pass
 
-class component(entities.entity):
-    def __init__(self):
-        self.menus = menus()
+class page(entities.entity):
+    def __init__(self, name):
+        self.pages = pages()
 
-class headers(components):
+class attributes(entities.entities):
     pass
 
-class header(component):
+class attribute(entities.entity):
+    def __init__(self, name, v):
+        self.name = name
+        self.value = v
+
+class elements(entities.entities):
+    pass
+
+class element(entities.entity):
+    def __init__(self, str=None):
+        self.attributes = attributes()
+        if str is not None:
+            self.elements += text(str)
+
+    @property
+    def elements(self):
+        if not hasattr(self, '_elements'):
+            self._elements = elements()
+        return self._elements
+
+    @elements.setter
+    def elements(self, v):
+        self._elements = v
+
+    @property
+    def attributes(self):
+        if not hasattr(self, '_attributes'):
+            self._attributes = attributes()
+        return self._attributes
+
+    @attributes.setter
+    def attributes(self, v):
+        self._attributes = v
+
+    def __iadd__(self, el):
+        if type(el) is str:
+            el = text(el)
+
+        if not isinstance(el, element):
+            raise ValueError('Invalid element type: ' + str(type(el)))
+
+        self.elements += el
+        return self
+
+    @property
+    def tag(self):
+        return type(self).__name__
+
+    @property
+    def html(self):
+        body = str()
+        if isinstance(self, text):
+            body = self.html
+
+        for i, el in enumerate(self.elements):
+            if body: body += '\n'
+            body += el.html
+
+        if isinstance(self, text):
+            return body
+
+        body = textwrap.indent(body, '  ')
+
+        r = '<%s'
+        args = list(self.tag)
+        B()
+        if self.attributes.count:
+            r += ' %s'
+            args.append(self.attributes)
+
+        r += '>\n%s\n</%s>'
+        args += [body, self.tag]
+
+        return r % args
+
+    def __repr__(self):
+        return str(self)
+
+class paragraphs(elements):
+    pass
+
+class paragraph(element):
+    def __init__(self, body=None, *args):
+        if body is not None:
+            if type(body) is str:
+                body %= args
+            elif args:
+                raise ValueError('No args allowed')
+
+            self += body
+
+    @property
+    def tag(self):
+        return 'p'
+
+class header(element):
     def __init__(self):
         self.logo = None
         self.searchbox = None
         self.notifications = None
 
-class footers(components):
+class footers(elements):
     pass
 
-class footer(component):
+class footer(element):
     # Reference:
     # https://www.orbitmedia.com/blog/website-footer-design-best-practices/
     def __init__(self):
@@ -73,85 +169,6 @@ class footer(component):
         # Derived or overridden
         pass
 
-class header(component):
-    pass
-
-class pages(entities.entities):
-    pass
-
-class page(entities.entity):
-    def __init__(self, name):
-        self.pages = pages()
-
-class elements(entities.entities):
-    pass
-
-class element(entities.entity):
-    def __init__(self, str=None):
-        if str is not None:
-            self.elements += text(str)
-
-    @property
-    def elements(self):
-        if not hasattr(self, '_elements'):
-            self._elements = elements()
-        return self._elements
-
-    @elements.setter
-    def elements(self, v):
-        self._elements = v
-
-    def __iadd__(self, el):
-        if type(el) is str:
-            el = text(el)
-
-        if not isinstance(el, element):
-            raise ValueError('Invalid element type: ' + str(type(el)))
-
-        self.elements += el
-        return self
-
-    @property
-    def tag(self):
-        return type(self).__name__
-
-    @property
-    def html(self):
-
-        body = str()
-        if isinstance(self, text):
-            body = str(self)
-
-        for i, el in enumerate(self.elements):
-            if i: body += '\n'
-            body += textwrap.indent(el.html, '  ')
-
-        if isinstance(self, text):
-            return body
-
-        return '<%s>\n%s\n</%s>' % (self.tag, body, self.tag)
-
-    def __repr__(self):
-        B()
-        return str(self)
-
-class paragraphs(elements):
-    pass
-
-class paragraph(element):
-    def __init__(self, body=None, *args):
-        if body is not None:
-            if type(body) is str:
-                body %= args
-            elif args:
-                raise ValueError('No args allowed')
-
-            self += body
-
-    @property
-    def tag(self):
-        return 'p'
-
 class text(element):
     def __init__(self, str):
         self._str = str
@@ -159,11 +176,18 @@ class text(element):
     def __str__(self):
         return textwrap.dedent(self._str).strip()
 
+    @property
+    def html(self):
+        return html.escape(
+            textwrap.dedent(self._str)
+        ).strip()
+        
 class strong(element):
     pass
 
 class span(element):
     pass
+
 
     
     

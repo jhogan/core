@@ -36,11 +36,8 @@ import pathlib
 import primative
 import re
 import textwrap
-<<<<<<< HEAD
 import web
-=======
 import gem
->>>>>>> master
 
 # Set conditional break points
 def B(x=True):
@@ -12095,16 +12092,17 @@ class test_paragraph(tester):
         expect = self.dedent('''
         <p>
           Plain white sauce!
-            <strong>
-              Plain white sauce will make your teeth
-              <span>
-                go grey.
-              </span>
-            </strong>
-        </p>''')
+          <strong>
+            Plain white sauce will make your teeth
+            <span>
+              go grey.
+            </span>
+          </strong>
+        </p>
+        ''')
 
-        print(web.paragraph(txt).html)
-        self.eq(expect, web.paragraph(txt).html)
+        p = web.paragraph(txt)
+        self.eq(expect, p.html)
 
         # Expect a ValueError if *args are given for a non-str first
         # argument
@@ -12132,6 +12130,67 @@ class test_paragraph(tester):
         p += '''
             Doesn't matter, just throw it away!
         '''
+        expect = self.dedent('''
+        <p>
+          Plain white sauce!
+          <strong>
+            Plain white sauce will make your teeth
+            <span>
+              go grey.
+            </span>
+          </strong>
+          Doesn&#x27;t matter, just throw it away!
+        </p>
+        ''')
+
+        print(expect, p.html)
+        self.eq(expect, p.html)
+
+class test_text(tester):
+
+    def it_calls_html(self):
+        txt = self.dedent('''
+        <p>
+          Plain white sauce!
+          <strong>
+            Plain white sauce will make your teeth
+            <span>
+              go grey.
+            </span>
+          </strong>
+          Doesn't matter, just throw it away!
+        </p>
+        ''')
+
+        expect = self.dedent('''
+        &lt;p&gt;
+          Plain white sauce!
+          &lt;strong&gt;
+            Plain white sauce will make your teeth
+            &lt;span&gt;
+              go grey.
+            &lt;/span&gt;
+          &lt;/strong&gt;
+          Doesn&#x27;t matter, just throw it away!
+        &lt;/p&gt;
+        ''')
+
+        txt = web.text(txt)
+        self.eq(expect, txt.html)
+
+    def it_calls__str__(self):
+        txt = self.dedent('''
+        <p>
+          Plain white sauce!
+          <strong>
+            Plain white sauce will make your teeth
+            <span>
+              go grey.
+            </span>
+          </strong>
+          Doesn't matter, just throw it away!
+        </p>
+        ''')
 
         expect = self.dedent('''
         <p>
@@ -12146,7 +12205,14 @@ class test_paragraph(tester):
         </p>
         ''')
 
-        self.eq(expect, p.html)
+        txt = web.text(txt)
+        self.eq(expect, str(txt))
+
+class test_attributes(tester):
+    p = web.paragraph()
+    p.attributes += web.attribute('name', 'myname')
+        
+        
 
 class test_header(tester):
     pass
