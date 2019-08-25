@@ -1716,6 +1716,16 @@ class entitymeta(type):
                     # composites of an association.
                     map = entitymapping(k, v)
                 else:
+                    # TODO This can happen if we pass an incorrect type.
+                    #
+                    # For example
+                    #    from primative import datetime
+                    #    class myentity(orm.entity)
+                    #       begin = datetime
+                    #
+                    # It would be nice to have more information
+                    # presented to the ORM user as to what they did
+                    # wrong.
                     raise ValueError() # Shouldn't happen
             else:
                 if type(v) is ormmod.attr.wrap:
@@ -1772,6 +1782,8 @@ class entitymeta(type):
 
 class entity(entitiesmod.entity, metaclass=entitymeta):
     def __init__(self, o=None, _depth=0):
+        # TODO Base64 id's:
+        # https://stackoverflow.com/questions/12270852/convert-uuid-32-character-hex-string-into-a-youtube-style-short-id-and-back
         try:
             self.orm = self.orm.clone()
             self.orm.initing = True # change to `isiniting`
@@ -2633,6 +2645,9 @@ class mappings(entitiesmod.entities):
             return super().__contains__(key)
 
     def _populate(self):
+        """ Reflect on the entities and associations to populate the
+        mappings collection with up-to-date mappings values.
+        """
         # If there is no ._orm, then we are using this class just for
         # collection purposes, so don't try to populate here.
         if self._orm is None:
@@ -2652,10 +2667,14 @@ class mappings(entitiesmod.entities):
             ''' Add FK mapings to association objects '''
             # For association objects, look for entity mappings and add
             # a foreign key mapping (e.g., For artist_artifact, add an
-            # FK callesd artistid and artifactid.
+            # FK called artistid and artifactid.
             for map in self.entitymappings:
                 maps.append(
-                    foreignkeyfieldmapping(map.entity, isderived=True)
+                    foreignkeyfieldmapping(
+                        map.entity, 
+                        fkname = map.name, 
+                        isderived=True
+                    )
                 )
 
             ''' Add composite and constiuent mappings '''
@@ -2666,7 +2685,7 @@ class mappings(entitiesmod.entities):
                 # recursive entity.
                 if e is self.orm.entity and not self.orm.isrecursive:
                     continue
-
+                     
                 # Look through each of the entities mappings in the
                 # giving entity (`e`).
                 for map in e.orm.mappings.entitiesmappings:
@@ -2980,18 +2999,37 @@ class associationsmapping(mapping):
     @property
     def value(self):
         if not self._value:
+            maps = mappings()
             for map in self.associations.orm.mappings.foreignkeymappings:
                 if map.entity is type(self.composite):
-                    break
+                    maps += map
+
+            if maps.isempty:
+                raise ValueError('Foreign key not found')
+
+            if maps.count == 1:
+                map = maps.first
+            elif maps.count == 2:
+                B()
+                for map in maps:
+                    if map.name.startswith('subject_'):
+                        break
+                else:
+                    raise ValueError(
+                        'Foreign key not found for presumed '
+                        'reflexive association'
+                    )
             else:
-                raise ValueError('FK not found')
+                raise ValueError(
+                    'Incorrect number of foreign key '
+                    ' mappings were discovered'
+                )
 
             asses = self.associations(map.name, self.composite.id)
 
-            # NOTE Currently, we may switch to implitly leoading of
-            # entities and association. However, we may want to continue
-            # explitly loading this association here for the sake of
-            # predictablity.
+            # NOTE Currently, we implitly load entities and association.
+            # However, we will want to continue explitly loading this
+            # association here for the sake of predictablity.
             asses.orm.load()
 
             asses.orm.composite = self.composite
@@ -3261,12 +3299,7 @@ class fieldmapping(mapping):
     def _reprargs(self):
         args = super()._reprargs
         args  +=  ',  type=%s'        %  str(self.type)
-        args  +=  ',  min=%s'         %  str(self.min)
-        args  +=  ',  max=%s'         %  str(self.max)
-        args  +=  ',  m=%s'           %  str(self.precision)
-        args  +=  ',  d=%s'           %  str(self.scale)
         args  +=  ',  ix=%s'          %  str(self.index)
-        args  +=  ',  isexplicit=%s'  %  str(self.isexplicit)
         args  +=  ',  value=%s'  %  str(self.value)
         return args
 
@@ -3544,8 +3577,9 @@ class fieldmapping(mapping):
         self._value = v
 
 class foreignkeyfieldmapping(fieldmapping):
-    def __init__(self, e, isderived=False):
+    def __init__(self, e, fkname=None, isderived=False):
         self.entity = e
+        self._fkname = fkname
         self.value = None
         super().__init__(
             type=types.fk, 
@@ -3555,10 +3589,14 @@ class foreignkeyfieldmapping(fieldmapping):
 
     @property
     def name(self):
+        if self._fkname:
+            return '%s__%s' \
+                % (self._fkname, self.entity.__name__ + 'id')
+
         return self.entity.__name__ + 'id'
 
     def clone(self):
-        return foreignkeyfieldmapping(self.entity, self.isderived)
+        return foreignkeyfieldmapping(self.entity, self._fkname, self.isderived)
 
     @property
     def dbtype(self):

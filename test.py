@@ -1,10 +1,12 @@
 # vim: set et ts=4 sw=4 fdm=marker
 
-# Copyright (C) Jesse Hogan - All Rights Reserved
-# Unauthorized copying of this file, via any medium is strictly
-# prohibited
-# Proprietary and confidential
-# Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
+########################################################################
+# Copyright (C) Jesse Hogan - All Rights Reserved                      #
+# Unauthorized copying of this file, via any medium is strictly        #
+# prohibited                                                           #
+# Proprietary and confidential                                         #
+# Written by Jesse Hogan <jessehogan0@gmail.com>, 2019                 #
+########################################################################
 
 from articles import *
 from auth import jwt
@@ -43,8 +45,9 @@ def B(x=True):
         from IPython.core.debugger import Tracer; 
         Tracer().debugger.set_trace(sys._getframe().f_back)
 
-# We will use basic and supplementary multilingual plane UTF-8 characters when
-# testing str attributes to ensure unicode is being supported.
+# We will use basic and supplementary multilingual plane UTF-8
+# characters when testing str attributes to ensure unicode is being
+# supported.
 
 # A two byte character from the Basic Multilingual Plane
 
@@ -3534,6 +3537,14 @@ class issue(orm.entity):
     def raiseAttributeError(self):
         raise AttributeError()
 
+class artist_artists(orm.associations):
+    pass
+
+class artist_artist(orm.association):
+    subject = artist
+    object  = artist
+    role    = str
+
 class test_orm(tester):
     def __init__(self):
         super().__init__()
@@ -3610,14 +3621,14 @@ class test_orm(tester):
 
     def it_creates_indexes_on_foreign_keys(self):
         # Standard entity
-        self.notnone(presentation.orm.mappings['artistid'].index)
+        self.notnone(presentation.orm.mappings['artist_id__artistid'].index)
 
         # Recursive entity
-        self.notnone(comment.orm.mappings['commentid'].index)
+        self.notnone(comment.orm.mappings['comment_id__commentid'].index)
 
         # Associations
-        self.notnone(artist_artifact.orm.mappings['artistid'].index)
-        self.notnone(artist_artifact.orm.mappings['artifactid'].index)
+        self.notnone(artist_artifact.orm.mappings['artist_id__artistid'].index)
+        self.notnone(artist_artifact.orm.mappings['artifact_id__artifactid'].index)
         
     def it_calls_isrecursive_property(self):
         self.false(artist.orm.isrecursive)
@@ -4085,10 +4096,13 @@ class test_orm(tester):
         self.eq(aa.role,         aa1.role)
 
         self.eq(aa.artist.id,    aa1.artist.id)
-        self.eq(aa.artistid,     aa1.artistid)
+        self.eq(aa.artist_id__artistid, aa1.artist_id__artistid)
 
         self.eq(aa.artifact.id,  aa1.artifact.id)
-        self.eq(aa.artifactid,   aa1.artifactid)
+        self.eq(
+            aa.artifact_id__artifactid,
+            aa1.artifact_id__artifactid
+        )
 
         # Add as second artist_artifact, save, reload and test
         aa2 = artist_artifact.getvalid()
@@ -4116,10 +4130,16 @@ class test_orm(tester):
             self.eq(aa1.role,         aa2.role)
 
             self.eq(aa1.artist.id,    aa2.artist.id)
-            self.eq(aa1.artistid,     aa2.artistid)
+            self.eq(
+                aa1.artist_id__artistid,     
+                aa2.artist_id__artistid
+            )
 
             self.eq(aa1.artifact.id,  aa2.artifact.id)
-            self.eq(aa1.artifactid,   aa2.artifactid)
+            self.eq(
+                aa1.artifact_id__artifactid,
+                aa2.artifact_id__artifactid
+            )
 
         # Add a third artifact to artist's pseudo-collection.
         # Save, reload and test.
@@ -4150,10 +4170,13 @@ class test_orm(tester):
             self.eq(aa2.role,         aa3.role)
 
             self.eq(aa2.artist.id,    aa3.artist.id)
-            self.eq(aa2.artistid,     aa3.artistid)
+            self.eq(aa2.artist_id__artistid,     aa3.artist_id__artistid)
 
             self.eq(aa2.artifact.id,  aa3.artifact.id)
-            self.eq(aa2.artifactid,   aa3.artifactid)
+            self.eq(
+                aa2.artifact_id__artifactid,
+                aa3.artifact_id__artifactid
+            )
 
         # Add two components to the artifact's components collection
         comps3 = components()
@@ -4399,10 +4422,16 @@ class test_orm(tester):
                 self.eq(aa.role,         aa1.role)
 
                 self.eq(aa.artist.id,    aa1.artist.id)
-                self.eq(aa.artistid,     aa1.artistid)
+                self.eq(
+                    aa.artist_id__artistid,
+                    aa1.artist_id__artistid
+                )
 
                 self.eq(aa.artifact.id,  aa1.artifact.id)
-                self.eq(aa.artifactid,   aa1.artifactid)
+                self.eq(
+                    aa.artifact_id__artifactid,
+                    aa1.artifact_id__artifactid
+                )
 
             for fact in art1.artifacts:
                 self.ne(rmfact.id, fact.id)
@@ -10427,7 +10456,8 @@ class test_orm(tester):
 
             aa1 = art1.artist_artifacts.first
             self.eq(aa1.role, 'art-art_fact-role-0')
-            self.eq(aa1.artifactid, aa1.artifact.id)
+
+            self.eq(aa1.artifact_id__artifactid, aa1.artifact.id)
 
             self.eq(fff, aa1.orm.persistencestate)
 
@@ -12033,12 +12063,216 @@ class test_orm(tester):
             for com, com1 in zip(coms.sorted(), coms1.sorted()):
                 self.eq(com.id, com1.id)
 
+    def it_loads_and_saves_reflexive_associations(self):
+        art = artist.getvalid()
+        aa = art.artist_artists
+        self.zero(aa)
+
+        # Ensure property caches
+        self.is_(aa, art.artist_artists)
+
+        # Test loading associated collection
+        artsb = art.artists
+        self.zero(artsb)
+
+        # Ensure property caches
+        self.is_(artsb, art.artists)
+
+        # Ensure the association's associated collections is the same as
+        # the associated collection of the entity.
+        self.is_(art.artists, art.artist_artists.artists)
+        return
+
+        self.is_(art, art.artist_artifacts.artist)
+
+        # Save and load an association
+        art                   =   artist.getvalid()
+        fact                  =   artifact.getvalid()
+        aa                    =   artist_artifact.getvalid()
+        aa.role               =   uuid4().hex
+        aa.artifact           =   fact
+        art.artist_artifacts  +=  aa
+
+        self.is_(fact,    art.artist_artifacts.first.artifact)
+        self.is_(art,     art.artist_artifacts.first.artist)
+        self.eq(aa.role,  art.artist_artifacts.first.role)
+        self.one(art.artist_artifacts)
+        self.one(art.artifacts)
+
+        chrons.clear()
+        art.save()
+
+        self.three(chrons)
+        self.three(chrons.where('create'))
+        self.one(chrons.where('entity', art))
+        self.one(chrons.where('entity', aa))
+        self.one(chrons.where('entity', fact))
+
+        chrons.clear()
+        art1 = artist(art.id)
+
+        self.one(chrons)
+        self.one(chrons.where('retrieve'))
+        self.one(chrons.where('entity', art1))
+
+        self.one(art1.artist_artifacts)
+        self.one(art1.artifacts)
+
+        aa1 = art1.artist_artifacts.first
+
+        self.eq(art.id,          art1.id)
+        self.eq(aa.id,           aa1.id)
+        self.eq(aa.role,         aa1.role)
+
+        self.eq(aa.artist.id,    aa1.artist.id)
+        self.eq(aa.artist_id__artistid, aa1.artist_id__artistid)
+
+        self.eq(aa.artifact.id,  aa1.artifact.id)
+        self.eq(
+            aa.artifact_id__artifactid,
+            aa1.artifact_id__artifactid
+        )
+
+        # Add as second artist_artifact, save, reload and test
+        aa2 = artist_artifact.getvalid()
+        aa2.artifact = artifact.getvalid()
+
+        art1.artist_artifacts += aa2
+
+        chrons.clear()
+        art1.save()
+
+        self.two(chrons)
+        self.two(chrons.where('create'))
+        self.one(chrons.where('entity', aa2))
+        self.one(chrons.where('entity', aa2.artifact))
+
+        art2 = artist(art1.id)
+        self.eq(art1.id,         art2.id)
+
+        aas1=art1.artist_artifacts.sorted('role')
+        aas2=art2.artist_artifacts.sorted('role')
+
+        for aa1, aa2 in zip(aas1, aas2):
+
+            self.eq(aa1.id,           aa2.id)
+            self.eq(aa1.role,         aa2.role)
+
+            self.eq(aa1.artist.id,    aa2.artist.id)
+            self.eq(
+                aa1.artist_id__artistid,     
+                aa2.artist_id__artistid
+            )
+
+            self.eq(aa1.artifact.id,  aa2.artifact.id)
+            self.eq(
+                aa1.artifact_id__artifactid,
+                aa2.artifact_id__artifactid
+            )
+
+        # Add a third artifact to artist's pseudo-collection.
+        # Save, reload and test.
+        art2.artifacts += artifact.getvalid()
+        art2.artist_artifacts.last.role = uuid4().hex
+        art2.artist_artifacts.last.planet = uuid4().hex
+        art2.artist_artifacts.last.timespan = uuid4().hex
+        self.three(art2.artifacts)
+        self.three(art2.artist_artifacts)
+
+        chrons.clear()
+        art2.save()
+        self.two(chrons)
+        self.two(chrons.where('create'))
+        self.one(chrons.where('entity', art2.artist_artifacts.third))
+        self.one(chrons.where('entity', art2.artist_artifacts.third.artifact))
+
+        art3 = artist(art2.id)
+
+        self.three(art3.artifacts)
+        self.three(art3.artist_artifacts)
+
+        aas2 = art2.artist_artifacts.sorted('role')
+        aas3 = art3.artist_artifacts.sorted('role')
+
+        for aa2, aa3 in zip(aas2, aas3):
+            self.eq(aa2.id,           aa3.id)
+            self.eq(aa2.role,         aa3.role)
+
+            self.eq(aa2.artist.id,    aa3.artist.id)
+            self.eq(aa2.artist_id__artistid,     aa3.artist_id__artistid)
+
+            self.eq(aa2.artifact.id,  aa3.artifact.id)
+            self.eq(
+                aa2.artifact_id__artifactid,
+                aa3.artifact_id__artifactid
+            )
+
+        # Add two components to the artifact's components collection
+        comps3 = components()
+        for _ in range(2):
+            comps3 += component.getvalid()
+
+        comps3.sort()
+        art3.artist_artifacts.first.artifact.components += comps3.first
+        art3.artifacts.first.components += comps3.second
+
+        self.two(art3.artist_artifacts.first.artifact.components)
+        self.two(art3.artifacts.first.components)
+
+        self.is_(comps3[0], art3.artist_artifacts.first.artifact.components[0])
+        self.is_(comps3[1], art3.artist_artifacts.first.artifact.components[1])
+        self.is_(comps3[0], art3.artifacts.first.components[0])
+        self.is_(comps3[1], art3.artifacts.first.components[1])
+
+        chrons.clear()
+        art3.save()
+
+        self.two(chrons)
+        self.two(chrons.where('create'))
+        self.one(chrons.where('entity', comps3.first))
+        self.one(chrons.where('entity', comps3.second))
+
+        art4 = artist(art3.id)
+        comps4 = art4.artist_artifacts.first.artifact.components.sorted()
+
+        self.two(comps4)
+        self.eq(comps4.first.id, comps3.first.id)
+        self.eq(comps4.second.id, comps3.second.id)
+
+        # This fixes an issue that came up in development: When you add valid
+        # aa to art, then add a fact to art (thus adding an invalid aa to art),
+        # strange things where happening with the brokenrules. 
+        art = artist.getvalid()
+        art.artist_artifacts += artist_artifact.getvalid()
+        art.artifacts += artifact.getvalid()
+
+        self.zero(art.artist_artifacts.first.brokenrules)
+        self.two(art.artist_artifacts.second.brokenrules)
+        self.two(art.brokenrules)
+
+        # Fix broken aa
+        art.artist_artifacts.second.role = uuid4().hex
+        art.artist_artifacts.second.timespan = uuid4().hex
+
+        self.zero(art.artist_artifacts.second.brokenrules)
+        self.zero(art.brokenrules)
+
 ########################################################################
 # Test parties                                                         #
 ########################################################################
 class test_gem(tester):
     def __init__(self):
         super().__init__()
+
+
+
+        o = gem.partyassociation.orm
+        print(o.createtable)
+        B()
+
+
+
+
         gem.party.orm.recreate(recursive=True)
 
     def it_loads_and_saves_organization(self):

@@ -7,13 +7,9 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
 import orm
-from primative import datetime
-
-class partytypes(orm.entities):
-    pass
-
-class partytype(orm.entity):
-    pass
+import primative
+from datetime import datetime
+from dbg import B
 
 class parties(orm.entities):
     pass
@@ -36,7 +32,7 @@ class party(orm.entity):
     # The International Standard of Industrial Classification of All
     # Economic Activities (ISIC), Revision 4 code for a particular
     # organization, business person, or place.
-    isicv4 = char, min=1, max=1
+    isicv4 = str, 1, 1
 
 class organizations(parties):
     pass
@@ -48,7 +44,6 @@ class organization(party):
     organizations may include teams, families, etc.
     """
     name = str
-
 
 class persons(parties):
     pass
@@ -66,11 +61,11 @@ class person(party):
     # TODO
     # passport = passport
 
-class partyclassifications(orm.associations):
+class partyassociations(orm.associations):
     pass
 
-class partyclassification(orm.association):
-    partytype  =  partytype
-    party      =  party
-    from       =  datetime
-    to         =  datetime
+class partyassociation(orm.association):
+    begin    =  datetime
+    end      =  datetime
+    subject  =  party
+    object   =  party
