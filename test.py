@@ -36,7 +36,11 @@ import pathlib
 import primative
 import re
 import textwrap
+<<<<<<< HEAD
 import web
+=======
+import gem
+>>>>>>> master
 
 # Set conditional break points
 def B(x=True):
@@ -12039,6 +12043,10 @@ class test_orm(tester):
             for com, com1 in zip(coms.sorted(), coms1.sorted()):
                 self.eq(com.id, com1.id)
 
+########################################################################
+# Test web                                                             #
+########################################################################
+
 class test_site(tester):
     def it_calls__init__(self):
         name = uuid4().hex
@@ -12143,5 +12151,22 @@ class test_paragraph(tester):
 class test_header(tester):
     pass
 
+########################################################################
+# Test parties                                                         #
+########################################################################
+class test_gem(tester):
+    def __init__(self):
+        super().__init__()
+        gem.party.orm.recreate(recursive=True)
+
+    def it_loads_and_saves_organization(self):
+        org = gem.organization()
+        org.name = uuid4().hex
+        org.save()
+
+        self.eq(org.id, gem.organization(org.id).id)
+
+
 cli().run()
+
 
