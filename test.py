@@ -61,7 +61,7 @@ V = bytes("\N{ROMAN NUMERAL FIVE}", 'utf-8').decode()
 Cunei_a = bytes("\N{CUNEIFORM SIGN A}", 'utf-8').decode()
 
 def getattr(obj, attr, *args):
-    # Redefine getattr() to support deep attribututes 
+    # Redefine getattr() to support deep attributes 
     # 
     # For example:
     #    Instead of this:
@@ -12208,11 +12208,100 @@ class test_text(tester):
         txt = web.text(txt)
         self.eq(expect, str(txt))
 
-class test_attributes(tester):
-    p = web.paragraph()
-    p.attributes += web.attribute('name', 'myname')
-        
-        
+class test_attribute(tester):
+    def it_appends_attribute(self):
+        # Append attribute object
+        p = web.paragraph()
+        self.zero(p.attributes)
+        id = uuid4().hex
+        p.attributes += web.attribute('id', id)
+        self.one(p.attributes)
+        self.eq('id', p.attributes.first.name)
+        self.eq(id, p.attributes.first.value)
+
+        # Append a tuple
+        name = uuid4().hex
+        p.attributes += 'name', name
+        self.two(p.attributes)
+        self.eq('name', p.attributes.second.name)
+        self.eq(name, p.attributes.second.value)
+
+        # Append a list
+        style = 'color: 8ec298'
+        p.attributes += ['style', style]
+        self.three(p.attributes)
+        self.eq('style', p.attributes.third.name)
+        self.eq(style, p.attributes.third.value)
+
+        # It appends using kvp as argument
+        title = uuid4().hex
+        p.attributes.append('title', title)
+        self.four(p.attributes)
+        self.eq('title', p.attributes.fourth.name)
+        self.eq(title, p.attributes.fourth.value)
+
+    def it_removes_attribute(self):
+        # Add three attributes
+        p = web.paragraph()
+        id, name = uuid4().hex, uuid4().hex, 
+        style = web.attribute('style', 'color: 8ec298')
+        p.attributes += 'id', id
+        p.attributes += 'name', name
+        p.attributes += style
+        self.three(p.attributes)
+        self.true('id'    in  p.attributes)
+        self.true('name'  in  p.attributes)
+        self.true(style   in  p.attributes)
+
+        # Remove by str usinge method
+        p.attributes.remove('id')
+        self.two(p.attributes)
+        self.false('id' in p.attributes)
+
+        # Remove by str using operator
+        p.attributes -= 'name'
+        self.one(p.attributes)
+        self.false('name' in p.attributes)
+
+        # Remove by object using operator
+        p.attributes -= style
+        self.zero(p.attributes)
+        self.false(style in p.attributes)
+
+    def it_updates_attribute(self):
+        # Add three attributes
+        p = web.paragraph()
+        id, name = uuid4().hex, uuid4().hex, 
+        style = web.attribute('style', 'color: 8ec298')
+        p.attributes += 'id', id
+        p.attributes += 'name', name
+        p.attributes += style
+        self.true('id'    in  p.attributes)
+        self.true('name'  in  p.attributes)
+        self.true(style   in  p.attributes)
+
+        id, name = uuid4().hex, uuid4().hex, 
+        style = web.attribute('style', 'color: 8ec298')
+
+        p.attributes['id'].value = id
+        self.eq(id, p.attributes.first.value)
+
+    def it_doesnt_append_nonunique(self):
+        # Add three attributes
+        p = web.paragraph()
+        id, name = uuid4().hex, uuid4().hex, 
+        style = web.attribute('style', 'color: 8ec298')
+        p.attributes += 'id', id
+        p.attributes += 'name', name
+        p.attributes += style
+
+        attrs = p.attributes
+        ex = web.AttributeExistsError
+        self.expect(ex, lambda: attrs.append('id', id))
+        self.expect(ex, lambda: attrs.append('name', name))
+        self.expect(ex, lambda: attrs.append('style', style))
+
+
 
 class test_header(tester):
     pass

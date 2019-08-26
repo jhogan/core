@@ -323,11 +323,8 @@ class entities(object):
             rms = [e]
         elif callable(e) and not isinstance(self, event):
             rms = self.where(e)
-        elif type(e) == int:
-            rm = self._ls[e]
-            del self._ls[e]
-            self.onremove(self, entityremoveeventargs(rm))
-            return
+        elif type(e) in (int, str):
+            rms = [self[e]]
         else:
             rms = [e]
 

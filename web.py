@@ -30,13 +30,40 @@ class page(entities.entity):
     def __init__(self, name):
         self.pages = pages()
 
-class attributes(entities.entities):
+class AttributeExistsError(Exception):
     pass
+
+class attributes(entities.entities):
+    def __iadd__(self, o):
+        if type(o) in (tuple, list):
+            o = attribute(o[0], o[1])
+        super().__iadd__(o)
+        return self
+
+    def append(self, o, v=None, uniq=False, r=None):
+        if type(o) is str:
+            o = attribute(o, v)
+
+        if self(o.name) is not None:
+            msg = 'Attribute already exists: ' + o.name
+            raise AttributeExistsError(msg)
+
+        return super().append(o, uniq, r)
 
 class attribute(entities.entity):
     def __init__(self, name, v):
         self.name = name
         self.value = v
+
+    def __repr__(self):
+        r = "%s(name='%s', value='%s')"
+        r %= type(self).__name__, self.name, self.value
+        return r
+
+    def __str__(self):
+        r = '%s="%s"'
+        r %= self.name, self.value
+        return r
 
 class elements(entities.entities):
     pass
@@ -98,7 +125,6 @@ class element(entities.entity):
 
         r = '<%s'
         args = list(self.tag)
-        B()
         if self.attributes.count:
             r += ' %s'
             args.append(self.attributes)
