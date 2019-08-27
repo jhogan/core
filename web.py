@@ -41,6 +41,9 @@ class attributes(entities.entities):
         return self
 
     def append(self, o, v=None, uniq=False, r=None):
+        if type(o) is list:
+            return super().append(o, uniq, r)
+            
         if type(o) is str:
             o = attribute(o, v)
 
@@ -49,6 +52,17 @@ class attributes(entities.entities):
             raise AttributeExistsError(msg)
 
         return super().append(o, uniq, r)
+
+    def __setitem__(self, key, item):
+        if not isinstance(key, str):
+            super().__setitem__(key, item)
+            
+        attr = self(key)
+
+        if attr:
+            attr.value = item
+        else:
+            self += key, item
 
 class attribute(entities.entity):
     def __init__(self, name, v):
@@ -124,15 +138,15 @@ class element(entities.entity):
         body = textwrap.indent(body, '  ')
 
         r = '<%s'
-        args = list(self.tag)
+        args = [self.tag]
         if self.attributes.count:
             r += ' %s'
-            args.append(self.attributes)
+            args.append(self.attributes.html)
 
         r += '>\n%s\n</%s>'
         args += [body, self.tag]
 
-        return r % args
+        return r % tuple(args)
 
     def __repr__(self):
         return str(self)

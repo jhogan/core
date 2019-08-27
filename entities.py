@@ -316,6 +316,13 @@ class entities(object):
     def clear(self):
         self.remove(self)
 
+    def __delitem__(self, key):
+        # TODO Write test. This will probably work but is only used in
+        # one place at the time of this writting. We should also
+        # test for `key` being a slice.
+        e = self[key]
+        self.remove(e)
+
     def remove(self, e):
         if isinstance(e, entities):
             rms = e
@@ -554,10 +561,10 @@ class entities(object):
         e = self[key]
         self._ls[key]=item
 
-        # If key is a slice. then what was removed and what was added could
-        # have been an iterable. Therefore, we need to convert them to
-        # iterables then raise the onadd and onremove events for each entity
-        # that had been removed and added.
+        # If key is a slice. then what was removed and what was added
+        # could have been an iterable. Therefore, we need to convert
+        # them to iterables then raise the onadd and onremove events for
+        # each entity that had been removed and added.
         items  =  item  if  hasattr(item,  '__iter__')  else  [item]
         es     =  e     if  hasattr(e,     '__iter__')  else  [e]
             

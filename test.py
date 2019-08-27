@@ -12143,11 +12143,22 @@ class test_paragraph(tester):
         </p>
         ''')
 
-        print(expect, p.html)
         self.eq(expect, p.html)
 
-class test_text(tester):
+    def it_appends_attributes(self):
+        p = web.paragraph()
+        id = uuid4().hex
+        p.attributes['id'] = id
 
+        expect = self.dedent('''
+        <p id="%s">
+        <p>
+        ''', id)
+
+        self.eq(expect, p.html)
+
+
+class test_text(tester):
     def it_calls_html(self):
         txt = self.dedent('''
         <p>
@@ -12240,51 +12251,71 @@ class test_attribute(tester):
         self.eq('title', p.attributes.fourth.name)
         self.eq(title, p.attributes.fourth.value)
 
+        # It appends using indexer
+        cls = uuid4().hex
+        p.attributes['class'] = cls
+        self.five(p.attributes)
+        self.eq('class', p.attributes.fifth.name)
+        self.eq(cls, p.attributes.fifth.value)
+
     def it_removes_attribute(self):
         # Add three attributes
         p = web.paragraph()
-        id, name = uuid4().hex, uuid4().hex, 
+        id, name, cls = [uuid4().hex for _ in range(3)]
         style = web.attribute('style', 'color: 8ec298')
         p.attributes += 'id', id
         p.attributes += 'name', name
         p.attributes += style
-        self.three(p.attributes)
+        p.attributes += 'class', cls
+        self.four(p.attributes)
         self.true('id'    in  p.attributes)
         self.true('name'  in  p.attributes)
         self.true(style   in  p.attributes)
+        self.true('class' in  p.attributes)
 
         # Remove by str usinge method
         p.attributes.remove('id')
-        self.two(p.attributes)
+        self.three(p.attributes)
         self.false('id' in p.attributes)
 
         # Remove by str using operator
         p.attributes -= 'name'
-        self.one(p.attributes)
+        self.two(p.attributes)
         self.false('name' in p.attributes)
 
         # Remove by object using operator
         p.attributes -= style
-        self.zero(p.attributes)
+        self.one(p.attributes)
         self.false(style in p.attributes)
+
+        del p.attributes['class']
+        self.zero(p.attributes)
+        self.false('class' in p.attributes)
 
     def it_updates_attribute(self):
         # Add three attributes
         p = web.paragraph()
         id, name = uuid4().hex, uuid4().hex, 
         style = web.attribute('style', 'color: 8ec298')
+        cls = uuid4().hex
         p.attributes += 'id', id
         p.attributes += 'name', name
         p.attributes += style
+        p.attributes += 'class', cls
         self.true('id'    in  p.attributes)
         self.true('name'  in  p.attributes)
         self.true(style   in  p.attributes)
+        self.true('class' in  p.attributes)
 
         id, name = uuid4().hex, uuid4().hex, 
         style = web.attribute('style', 'color: 8ec298')
 
         p.attributes['id'].value = id
         self.eq(id, p.attributes.first.value)
+
+        cls = uuid4().hex
+        p.attributes['class'] = cls
+        self.eq(cls, p.attributes.fourth.value)
 
     def it_doesnt_append_nonunique(self):
         # Add three attributes
