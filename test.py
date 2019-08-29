@@ -12058,6 +12058,132 @@ class test_page(tester):
         self.eq(pg.name, name)
         self.zero(pg.pages)
 
+class test_element(tester):
+    def it_appends_attributes(self):
+        p = web.paragraph()
+        id = uuid4().hex
+        p.attributes['id'] = id
+
+        expect = self.dedent('''
+        <p id="%s">
+        <p>
+        ''', id)
+
+        self.eq(expect, p.html)
+
+    def it_adds_classes(self):
+        ''' Add by various methods '''
+        p = web.paragraph()
+        cls = web.cssclass('my-class-1')
+        p.classes.append(cls)
+        self.one(p.classes)
+        self.eq(p.classes.first.name, 'my-class-1')
+
+        expect = self.dedent('''
+        <p class="%s">
+        </p>
+        ''', 'my-class-1')
+        self.eq(expect, p.html)
+
+        p.classes.append('my-class-2')
+        self.two(p.classes)
+        self.eq(p.classes.second.name, 'my-class-2')
+
+        expect = self.dedent('''
+        <p class="%s">
+        </p>
+        ''', 'my-class-1 my-class-2')
+        self.eq(expect, p.html)
+
+        p.classes += 'my-class-3'
+        self.three(p.classes)
+        self.eq(p.classes.third.name, 'my-class-3')
+
+        expect = self.dedent('''
+        <p class="%s">
+        </p>
+        ''', 'my-class-1 my-class-2 my-class-3')
+        self.eq(expect, p.html)
+
+        ''' Re-add the same class and expect an exception '''
+        for i in range(1, 4):
+            cls = 'my-class-%s' % str(i)
+            self.expect(
+                web.ClassExistsError, 
+                lambda: p.classes.append(web.cssclass(cls))
+            )
+
+            self.expect(
+                web.ClassExistsError, 
+                lambda: p.classes.append(cls)
+            )
+
+            def f():
+                p.classes += cls
+
+            self.expect(
+                web.ClassExistsError, 
+                f
+            )
+
+    def it_adds_multiple_classes_at_a_time(self):
+        ''' Add by various methods '''
+        p = web.paragraph()
+
+        # This would be a mistake
+        self.expect(
+            ValueError, 
+            lambda: web.cssclass('my-class-1 my-class-b')
+        )
+        self.zero(p.classes)
+
+        expect = self.dedent('''
+        <p>
+        </p>
+        ''')
+        self.eq(expect, p.html)
+
+
+        p.classes.append('my-class-1 my-class-b')
+        self.two(p.classes)
+        self.eq(p.classes.html, 'class="my-class-1 my-class-b"')
+
+        expect = self.dedent('''
+        <p class="%s">
+        </p>
+        ''', 'my-class-1 my-class-b')
+
+        self.eq(expect, p.html)
+
+        ''''''
+        p.classes.append('my-class-2', 'my-class-c')
+        self.four(p.classes)
+        self.eq(
+            'class="my-class-1 my-class-b my-class-2 my-class-c"',
+            p.classes.html
+        )
+
+
+        expect = self.dedent('''
+        <p class="%s">
+        </p>
+        ''', 'my-class-1 my-class-b my-class-2 my-class-c')
+
+        self.eq(expect, p.html)
+
+
+        p.classes += 'my-class-3', 'my-class-d'
+        self.three(p.classes)
+        self.eq(p.classes.third.name, 'my-class-3')
+        ''''''
+
+        expect = self.dedent('''
+        <p class="%s">
+        </p>
+        ''', 'my-class-1 my-class-2 my-class-3')
+        self.eq(expect, p.html)
+
+
 class test_paragraph(tester):
     def it_calls__init___with_str_and_args(self):
         ''' With str arg '''
@@ -12144,19 +12270,6 @@ class test_paragraph(tester):
         ''')
 
         self.eq(expect, p.html)
-
-    def it_appends_attributes(self):
-        p = web.paragraph()
-        id = uuid4().hex
-        p.attributes['id'] = id
-
-        expect = self.dedent('''
-        <p id="%s">
-        <p>
-        ''', id)
-
-        self.eq(expect, p.html)
-
 
 class test_text(tester):
     def it_calls_html(self):

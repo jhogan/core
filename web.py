@@ -33,6 +33,9 @@ class page(entities.entity):
 class AttributeExistsError(Exception):
     pass
 
+class ClassExistsError(Exception):
+    pass
+
 class attributes(entities.entities):
     def __iadd__(self, o):
         if type(o) in (tuple, list):
@@ -79,12 +82,63 @@ class attribute(entities.entity):
         r %= self.name, self.value
         return r
 
+class cssclasses(entities.entities):
+    def append(self, *os, uniq=False, r=None):
+        if r is None:
+            r = type(self)()
+
+        clss = list()
+
+        for o in os:
+            if type(o) is str:
+                for o in o.split():
+                    clss += [cssclass(o)]
+
+            elif isinstance(o, cssclass):
+                clss += [o]
+            elif hasattr(o, '__iter__'):
+                os = o
+                for o in os:
+                    self.append(o, uniq=uniq, r=r)
+            else:
+                raise ValueError('Invalid type: ' + type(o).__name__)
+                    
+
+        for cls in clss:
+            if cls.name in self:
+                msg = 'Class already exists: ' + cls.name
+                raise ClassExistsError(msg)
+
+        for cls in clss:
+            super().append(cls, uniq, r)
+
+        return r
+
+    @property
+    def html(self):
+        if self.count:
+            return 'class="%s"' % ' '.join([x.html for x in self])
+
+        return ''
+
+class cssclass(entities.entity):
+    def __init__(self, name):
+        # TODO Remove the brackets to make the argumen a generator
+        if any([x.isspace() for x in name]):
+            # TODO Test
+            raise ValueError("CSS classes can't contain whitespace")
+        self.name = name
+
+    @property
+    def html(self):
+        return self.name
+
 class elements(entities.entities):
     pass
 
 class element(entities.entity):
     def __init__(self, str=None):
-        self.attributes = attributes()
+        #self.attributes = attributes()
         if str is not None:
             self.elements += text(str)
 
@@ -107,6 +161,17 @@ class element(entities.entity):
     @attributes.setter
     def attributes(self, v):
         self._attributes = v
+
+    @property
+    def classes(self):
+        if not hasattr(self, '_cssclasses'):
+            self._cssclasses = cssclasses()
+        return self._cssclasses
+
+    @classes.setter
+    def classes(self, v):
+        self._cssclasses = v
+
 
     def __iadd__(self, el):
         if type(el) is str:
@@ -139,12 +204,22 @@ class element(entities.entity):
 
         r = '<%s'
         args = [self.tag]
+
         if self.attributes.count:
             r += ' %s'
             args.append(self.attributes.html)
 
-        r += '>\n%s\n</%s>'
-        args += [body, self.tag]
+        if self.classes.count:
+            r += ' %s'
+            args.append(self.classes.html)
+
+        r += '>\n'
+        if body:
+            r += '%s\n'
+            args += [body]
+
+        r += '</%s>'
+        args += [self.tag]
 
         return r % tuple(args)
 
