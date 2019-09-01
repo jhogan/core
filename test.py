@@ -3747,6 +3747,24 @@ class test_orm(tester):
         art = artist.getvalid()
         self.eq(art.fullname, str(art))
         
+    def it_calls_isreflexive(self):
+        self.false(artists.orm.isreflexive)
+        self.false(artist.orm.isreflexive)
+        self.false(artist().orm.isreflexive)
+        self.false(artists().orm.isreflexive)
+
+        self.false(artist_artifact.orm.isreflexive)
+        self.false(artist_artifact().orm.isreflexive)
+        self.false(artist_artifacts.orm.isreflexive)
+        self.false(artist_artifacts().orm.isreflexive)
+
+        self.true(artist_artist.orm.isreflexive)
+        self.true(artist_artist().orm.isreflexive)
+        self.true(artist_artists.orm.isreflexive)
+        self.true(artist_artists().orm.isreflexive)
+
+
+
     def it_has_static_composites_reference(self):
         comps = location.orm.composites
         es = [x.entity for x in comps]

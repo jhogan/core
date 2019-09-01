@@ -3738,6 +3738,12 @@ class orm:
         return r % tuple(args)
 
     @property
+    def isreflexive(self):
+        maps = self.mappings.entitymappings
+        types = [x.entity.__name__ for x in maps]
+        return bool(len(types)) and len(types) > len(set(types))
+        
+    @property
     def isrecursive(self):
         map = self.mappings(self.entities.__name__)
         return map is not None and map.entities is self.entities
