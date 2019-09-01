@@ -3007,25 +3007,11 @@ class associationsmapping(mapping):
             if maps.isempty:
                 raise ValueError('Foreign key not found')
 
-            if maps.count == 1:
-                map = maps.first
-            elif maps.count == 2:
-                B()
-                for map in maps:
-                    if map.name.startswith('subject_'):
-                        break
-                else:
-                    raise ValueError(
-                        'Foreign key not found for presumed '
-                        'reflexive association'
-                    )
-            else:
-                raise ValueError(
-                    'Incorrect number of foreign key '
-                    ' mappings were discovered'
-                )
+            wh = ' OR '.join([x.name + ' = %s' for x in maps])
+            args = [self.composite.id] * maps.count
 
-            asses = self.associations(map.name, self.composite.id)
+
+            asses = self.associations(wh, args)
 
             # NOTE Currently, we implitly load entities and association.
             # However, we will want to continue explitly loading this

@@ -12080,10 +12080,12 @@ class test_orm(tester):
 
         # Ensure the association's associated collections is the same as
         # the associated collection of the entity.
-        self.is_(art.artists, art.artist_artists.artists)
-        return
+        B()
+        art.artists
+        #self.is_(art.artists, art.artist_artists.artists)
 
-        self.is_(art, art.artist_artifacts.artist)
+        self.is_(art, art.artist_artists.artist)
+        return
 
         # Save and load an association
         art                   =   artist.getvalid()
