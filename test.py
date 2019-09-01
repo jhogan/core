@@ -12155,14 +12155,12 @@ class test_element(tester):
 
         self.eq(expect, p.html)
 
-        ''''''
         p.classes.append('my-class-2', 'my-class-c')
         self.four(p.classes)
         self.eq(
             'class="my-class-1 my-class-b my-class-2 my-class-c"',
             p.classes.html
         )
-
 
         expect = self.dedent('''
         <p class="%s">
@@ -12171,17 +12169,53 @@ class test_element(tester):
 
         self.eq(expect, p.html)
 
-
         p.classes += 'my-class-3', 'my-class-d'
-        self.three(p.classes)
-        self.eq(p.classes.third.name, 'my-class-3')
-        ''''''
+        self.six(p.classes)
 
-        expect = self.dedent('''
-        <p class="%s">
-        </p>
-        ''', 'my-class-1 my-class-2 my-class-3')
-        self.eq(expect, p.html)
+        expect = (
+            'class="my-class-1 my-class-b '
+            'my-class-2 my-class-c '
+            'my-class-3 my-class-d"'
+        )
+
+        self.eq(expect, p.classes.html)
+
+        p.classes += 'my-class-4 my-class-e'
+        self.eight(p.classes)
+
+        expect = (
+            'class="my-class-1 my-class-b '
+            'my-class-2 my-class-c '
+            'my-class-3 my-class-d '
+            'my-class-4 my-class-e"'
+        )
+
+        self.eq(expect, p.classes.html)
+
+    def it_removes_classes(self):
+        p = web.paragraph()
+        p.classes += 'c1 c2 c3 c4 c5 c6 c7 c8'
+        self.eight(p.classes)
+
+        p.classes.remove('c4')
+        self.seven(p.classes)
+        self.eq('class="c1 c2 c3 c5 c6 c7 c8"', p.classes.html)
+
+        p.classes -= 'c3'
+        self.six(p.classes)
+        self.eq('class="c1 c2 c5 c6 c7 c8"', p.classes.html)
+
+        del p.classes['c2']
+        self.five(p.classes)
+        self.eq('class="c1 c5 c6 c7 c8"', p.classes.html)
+
+        B()
+        p.classes.remove('c1 c8')
+        self.three(p.classes)
+        self.eq('class="c5 c6 c7"', p.classes.html)
+
+        self.expect(IndexError, lambda: p.classes.remove(uuid4().hex))
+
 
 
 class test_paragraph(tester):
