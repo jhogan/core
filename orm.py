@@ -4897,7 +4897,7 @@ class associations(entities):
         """
         An event handler invoked when an entity is added to the
         association (``self``) through the associations
-        psuedo-collection, e.g.::
+        psuedocollection, e.g.::
 
             # Create artist entity
             art = artist()            
@@ -4973,7 +4973,8 @@ class associations(entities):
 
         :param: str attr: The name of the attribute to return.
         :rtype: orm.entity or orm.entities
-        :returns: Returns the composite or psuedocollection being requested for
+        :returns: Returns the composite or psuedocollection being
+                  requested for by
                   ``attr``
         """
 

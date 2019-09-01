@@ -3738,9 +3738,9 @@ class test_orm(tester):
 
     def it_cant_instantiate_entities(self):
         ''' Since orm.entities() wouldn't have an orm property (since a
-        subclass hasn't invoked the metaclass code that would assign it the orm
-        property), generic entities collections shouldn't be allowed. They
-        should basically be considered abstract. '''
+        subclass hasn't invoked the metaclass code that would assign it
+        the orm property), generic entities collections shouldn't be
+        allowed. They should basically be considered abstract. '''
         self.expect(NotImplementedError, lambda: orm.entities())
 
     def it_calls__str__on_entity(self):
