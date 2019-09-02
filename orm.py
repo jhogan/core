@@ -1195,7 +1195,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             #
             #     artist().join(artist_artifacts().join(artifacts()))
 
-            # For each of self's asssociations mappings
+            # For each of self's associations mappings
             for map in self.orm.mappings.associationsmappings:
 
                 # For ecah entity mapping in this associationsmapping
@@ -4835,19 +4835,19 @@ class associations(entities):
         super().__init__(*args, **kwargs)
         self.orm.composite = None
 
-        # NOTE, in entities collections, the orm._constituents is of type
-        # `constituents` which is an `ormclasseswrapper`.  However, here we
-        # simply want it to be a dict.
+        # NOTE, in entities collections, the orm._constituents is of
+        # type `constituents` which is an `ormclasseswrapper`.  However,
+        # here we simply want it to be a dict.
         self.orm._constituents = dict()
 
     def append(self, obj, uniq=False, r=None):
         """ Adds a :class:`.association` entity to the collection.
 
             :param: obj   The association object to append.
-            :param: uniq  If True, only adds the object if it does not already
-                          exist.
-            :param: r     An `entities` collection containing the objects that
-                          were added.
+            :param: uniq  If True, only adds the object if it does not
+                          already exist.
+            :param: r     An `entities` collection containing the
+                          objects that were added.
         """
 
         # If `obj` is an `association`, set it's `composite` to the
@@ -4968,8 +4968,8 @@ class associations(entities):
 
     def __getattr__(self, attr):
         """
-        Return a composite object or constituent collection (psuedocollection)
-        requested by the user.
+        Return a composite object or constituent collection
+        (psuedocollection) requested by the user.
 
         :param: str attr: The name of the attribute to return.
         :rtype: orm.entity or orm.entities
@@ -4977,7 +4977,6 @@ class associations(entities):
                   requested for by
                   ``attr``
         """
-
         def raiseAttributeError():
             """ Raise a generic AttributeError.
             """

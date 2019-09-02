@@ -12284,15 +12284,6 @@ class test_gem(tester):
     def __init__(self):
         super().__init__()
 
-
-
-        o = gem.partyassociation.orm
-        print(o.createtable)
-        B()
-
-
-
-
         gem.party.orm.recreate(recursive=True)
 
     def it_loads_and_saves_organization(self):
