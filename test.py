@@ -3545,6 +3545,12 @@ class artist_artist(orm.association):
     object  = artist
     role    = str
 
+    @staticmethod
+    def getvalid():
+        aa = artist_artist()
+        aa.role = uuid4().hex
+        return aa
+
 class test_orm(tester):
     def __init__(self):
         super().__init__()
@@ -3621,14 +3627,14 @@ class test_orm(tester):
 
     def it_creates_indexes_on_foreign_keys(self):
         # Standard entity
-        self.notnone(presentation.orm.mappings['artist_id__artistid'].index)
+        self.notnone(presentation.orm.mappings['artistid'].index)
 
         # Recursive entity
-        self.notnone(comment.orm.mappings['comment_id__commentid'].index)
+        self.notnone(comment.orm.mappings['commentid'].index)
 
         # Associations
-        self.notnone(artist_artifact.orm.mappings['artist_id__artistid'].index)
-        self.notnone(artist_artifact.orm.mappings['artifact_id__artifactid'].index)
+        self.notnone(artist_artifact.orm.mappings['artist__artistid'].index)
+        self.notnone(artist_artifact.orm.mappings['artifact__artifactid'].index)
         
     def it_calls_isrecursive_property(self):
         self.false(artist.orm.isrecursive)
@@ -4114,12 +4120,12 @@ class test_orm(tester):
         self.eq(aa.role,         aa1.role)
 
         self.eq(aa.artist.id,    aa1.artist.id)
-        self.eq(aa.artist_id__artistid, aa1.artist_id__artistid)
+        self.eq(aa.artist__artistid, aa1.artist__artistid)
 
         self.eq(aa.artifact.id,  aa1.artifact.id)
         self.eq(
-            aa.artifact_id__artifactid,
-            aa1.artifact_id__artifactid
+            aa.artifact__artifactid,
+            aa1.artifact__artifactid
         )
 
         # Add as second artist_artifact, save, reload and test
@@ -4149,14 +4155,14 @@ class test_orm(tester):
 
             self.eq(aa1.artist.id,    aa2.artist.id)
             self.eq(
-                aa1.artist_id__artistid,     
-                aa2.artist_id__artistid
+                aa1.artist__artistid,     
+                aa2.artist__artistid
             )
 
             self.eq(aa1.artifact.id,  aa2.artifact.id)
             self.eq(
-                aa1.artifact_id__artifactid,
-                aa2.artifact_id__artifactid
+                aa1.artifact__artifactid,
+                aa2.artifact__artifactid
             )
 
         # Add a third artifact to artist's pseudo-collection.
@@ -4188,12 +4194,12 @@ class test_orm(tester):
             self.eq(aa2.role,         aa3.role)
 
             self.eq(aa2.artist.id,    aa3.artist.id)
-            self.eq(aa2.artist_id__artistid,     aa3.artist_id__artistid)
+            self.eq(aa2.artist__artistid,     aa3.artist__artistid)
 
             self.eq(aa2.artifact.id,  aa3.artifact.id)
             self.eq(
-                aa2.artifact_id__artifactid,
-                aa3.artifact_id__artifactid
+                aa2.artifact__artifactid,
+                aa3.artifact__artifactid
             )
 
         # Add two components to the artifact's components collection
@@ -4441,14 +4447,14 @@ class test_orm(tester):
 
                 self.eq(aa.artist.id,    aa1.artist.id)
                 self.eq(
-                    aa.artist_id__artistid,
-                    aa1.artist_id__artistid
+                    aa.artist__artistid,
+                    aa1.artist__artistid
                 )
 
                 self.eq(aa.artifact.id,  aa1.artifact.id)
                 self.eq(
-                    aa.artifact_id__artifactid,
-                    aa1.artifact_id__artifactid
+                    aa.artifact__artifactid,
+                    aa1.artifact__artifactid
                 )
 
             for fact in art1.artifacts:
@@ -10475,7 +10481,7 @@ class test_orm(tester):
             aa1 = art1.artist_artifacts.first
             self.eq(aa1.role, 'art-art_fact-role-0')
 
-            self.eq(aa1.artifact_id__artifactid, aa1.artifact.id)
+            self.eq(aa1.artifact__artifactid, aa1.artifact.id)
 
             self.eq(fff, aa1.orm.persistencestate)
 
@@ -12098,26 +12104,25 @@ class test_orm(tester):
 
         # Ensure the association's associated collections is the same as
         # the associated collection of the entity.
-        B()
-        art.artists
-        #self.is_(art.artists, art.artist_artists.artists)
 
+        self.is_(art.artists, art.artist_artists.artists)
         self.is_(art, art.artist_artists.artist)
-        return
 
         # Save and load an association
-        art                   =   artist.getvalid()
-        fact                  =   artifact.getvalid()
-        aa                    =   artist_artifact.getvalid()
+        aa                    =   artist_artist.getvalid()
         aa.role               =   uuid4().hex
-        aa.artifact           =   fact
-        art.artist_artifacts  +=  aa
 
-        self.is_(fact,    art.artist_artifacts.first.artifact)
-        self.is_(art,     art.artist_artifacts.first.artist)
-        self.eq(aa.role,  art.artist_artifacts.first.role)
-        self.one(art.artist_artifacts)
-        self.one(art.artifacts)
+        artb                  =   artist.getvalid()
+        B()
+        aa.object             =   artb
+
+        art.artist_artists    +=  aa
+
+        self.is_(art,    art.artist_artists.first.subject)
+        self.is_(artb,     art.artist_artists.first.object)
+        self.eq(aa.role,  art.artist_artists.first.role)
+        self.one(art.artist_artists)
+        self.one(art.artists)
 
         chrons.clear()
         art.save()
@@ -12145,12 +12150,12 @@ class test_orm(tester):
         self.eq(aa.role,         aa1.role)
 
         self.eq(aa.artist.id,    aa1.artist.id)
-        self.eq(aa.artist_id__artistid, aa1.artist_id__artistid)
+        self.eq(aa.artist__artistid, aa1.artist__artistid)
 
         self.eq(aa.artifact.id,  aa1.artifact.id)
         self.eq(
-            aa.artifact_id__artifactid,
-            aa1.artifact_id__artifactid
+            aa.artifact__artifactid,
+            aa1.artifact__artifactid
         )
 
         # Add as second artist_artifact, save, reload and test
@@ -12180,14 +12185,14 @@ class test_orm(tester):
 
             self.eq(aa1.artist.id,    aa2.artist.id)
             self.eq(
-                aa1.artist_id__artistid,     
-                aa2.artist_id__artistid
+                aa1.artist__artistid,     
+                aa2.artist__artistid
             )
 
             self.eq(aa1.artifact.id,  aa2.artifact.id)
             self.eq(
-                aa1.artifact_id__artifactid,
-                aa2.artifact_id__artifactid
+                aa1.artifact__artifactid,
+                aa2.artifact__artifactid
             )
 
         # Add a third artifact to artist's pseudo-collection.
@@ -12219,12 +12224,12 @@ class test_orm(tester):
             self.eq(aa2.role,         aa3.role)
 
             self.eq(aa2.artist.id,    aa3.artist.id)
-            self.eq(aa2.artist_id__artistid,     aa3.artist_id__artistid)
+            self.eq(aa2.artist__artistid,     aa3.artist__artistid)
 
             self.eq(aa2.artifact.id,  aa3.artifact.id)
             self.eq(
-                aa2.artifact_id__artifactid,
-                aa3.artifact_id__artifactid
+                aa2.artifact__artifactid,
+                aa3.artifact__artifactid
             )
 
         # Add two components to the artifact's components collection
@@ -12285,6 +12290,7 @@ class test_gem(tester):
         super().__init__()
 
         gem.party.orm.recreate(recursive=True)
+        gem.address.orm.recreate()
 
     def it_loads_and_saves_organization(self):
         org = gem.organization()

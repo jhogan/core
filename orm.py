@@ -1939,8 +1939,20 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 while True:
                     for map in self.orm.mappings.foreignkeymappings:
                         if map.entity is e:
-                            self._setvalue(map.name, v.id, map.name, setattr0, cmp=cmp)
-                            break;
+                            if self.orm.isreflexive:
+                                if map.name.startswith(attr + '__'):
+                                    self._setvalue(
+                                        map.name, v.id, map.name, 
+                                        setattr0, cmp=cmp
+                                    )
+                            else:
+                                self._setvalue(
+                                    map.name, v.id, map.name, 
+                                    setattr0, cmp=cmp
+                                )
+                                break;
+                        else:
+                            raise ValueError('Foreign key not found')
                     else:
                         e = e.orm.super
                         if e:
@@ -2458,6 +2470,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 maps = map.associations.orm.mappings.entitymappings
                 for map1 in maps:
                     if map1.entity.orm.entities.__name__ == attr:
+                        if (
+                            map1.entity is type(self) 
+                            and not map.entities.orm.isreflexive
+                        ):
+                            continue
+
                         asses = getattr(self, map.name)
                         return getattr(asses, attr)
 
@@ -4864,9 +4882,14 @@ class associations(entities):
                 # (self) mappings collection to test the composites
                 # names. The name that matters is on the LHS of the map
                 # when being defined in the association class.
-                if map.name == type(self.orm.composite).__name__:
+                if self.orm.isreflexive:
+                    if map.name == 'subject':
+                        setattr(obj, map.name, self.orm.composite)
+                        break
+                elif map.name == type(self.orm.composite).__name__:
+                    B()
                     setattr(obj, map.name, self.orm.composite)
-                    break;
+                    break
             
         super().append(obj, uniq, r)
         return r
