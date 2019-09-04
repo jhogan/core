@@ -43,8 +43,8 @@ def B(x=True):
         from IPython.core.debugger import Tracer; 
         Tracer().debugger.set_trace(sys._getframe().f_back)
 
-# TODO Research making these constants the same as their function
-# equivilants.
+# TODO Research making these constants the same as their functional
+# equivalents.
 # i.e., s/2/str; s/3/int/, etc.
 @unique
 class types(Enum):
@@ -1667,6 +1667,21 @@ class entitymeta(type):
                 # anything; just assign it to the map variable.
                 map = v
             elif v in fieldmapping.types:
+                # TODO I'm begining to thing we should have alias types.
+                # For example, instead of writing::
+                #
+                # class myent(entity):
+                #     directions = str, 1, 65535
+                #     isicv4     = str, 1, 1
+                #     type       = int, 0, 255
+                #
+                # We should instead be able to just write:
+                #
+                # class myent(entity):
+                #     directions = text
+                #     isicv4     = char
+                #     type       = tinyint
+
                 # If the item is a primitive type (str, int, datetime,
                 # etc.), create a fieldmapping.
 
@@ -3074,31 +3089,82 @@ class entitiesmapping(mapping):
         return entitiesmapping(self.name, self.entities)
 
 class entitymapping(mapping):
+    """ Represents a mapping to another entity.
+    """
+
     def __init__(self, name, e, isderived=False):
+        """ Sets the initial values.
+
+        :param: str name:       The name of the map
+        :param: entity e:       The entity class associatied with this
+                                map
+        :param: bool isderived: Indicates whether or not the the map was
+                                created/derived by the
+                                mappings._populate() method
+        """
         self.entity = e
         self._value = None
         super().__init__(name, isderived)
 
     @property
     def value(self):
+        """ Return the ``entity`` instance for this ``entitymapping``.
+        If the ``entity`` hasn't been loaded, the foreign key for the
+        entity will be used to load the entity. If the foreign key has
+        no value, the entity will not be loaded and None will be return.
+        Otherwise, the entity will be loaded, returned and memozied so
+        subsequent calls won't result in a reload.
+        """
+
         if not self._value:
-            for map in self.orm.mappings:
-                if type(map) is foreignkeyfieldmapping:
-                    if map.entity is self.entity:
-                        if map.value not in (undef, None):
-                            self._value = self.entity(map.value)
+            # Look for the foreign key for this entity. If it has a
+            # value, use that value to load the entity object. If the
+            # foreign key for this entity has no value, then we can't
+            # load the entity so we will just return None.
+            for map in self.orm.mappings.foreignkeymappings:
+
+                # Experimental reflexive logic. Here we are trying to
+                # make sure that the correct map is selected since doing
+                # a simple type test (like the one below) is
+                # insufficient because reflexive maps will have two
+                # mappings with the same type.
+                if (
+                    self.orm.isreflexive
+                    and not map.name.startswith(self.name + '__')
+                ):
+                    continue
+
+                # If the given foreign key is mapped to the entity
+                # corresponding to self...
+                if map.entity is self.entity:
+                    
+                    # ... and if we have a foreign key value 
+                    if map.value not in (undef, None):
+                        
+                        # ... then we can load the entity using the
+                        # foreign key's value
+                        self._value = self.entity(map.value)
+
         return self._value
 
     @value.setter
     def value(self, v):
+        """ Set the entity.
+        """
         self._setvalue('_value', v, 'value')
 
     def clone(self):
-        return entitymapping(self.name, self.entity,
-        isderived=self.isderived)
+        """ Clone the entitymapping object.
+        """
+        return entitymapping(
+            self.name, self.entity, isderived=self.isderived
+        )
 
     @property
     def _reprargs(self):
+        """ A list of arguments used by the super classes __repr__
+        method.
+        """
         args = super()._reprargs
         args += ', isloaded=%s' % self.isloaded
         return args
@@ -3452,6 +3518,14 @@ class fieldmapping(mapping):
     @property
     def dbtype(self):
         if self.isstr:
+            # FIXME
+            # When a class declares a map the following map:
+            #
+            # class myent(orm.entity)
+            #     directions = str, 1, 65536-1
+            #
+            # A MySQL exception is raised. Appearently, 65536-1 is too low
+            # for a TEXT datatype but too high for a VARCHAR datatype.
             if self.max <= 65535:
                 if self.isfixed:
                     return 'char(' + str(self.max) + ')'
@@ -4887,7 +4961,6 @@ class associations(entities):
                         setattr(obj, map.name, self.orm.composite)
                         break
                 elif map.name == type(self.orm.composite).__name__:
-                    B()
                     setattr(obj, map.name, self.orm.composite)
                     break
             

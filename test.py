@@ -12113,7 +12113,6 @@ class test_orm(tester):
         aa.role               =   uuid4().hex
 
         artb                  =   artist.getvalid()
-        B()
         aa.object             =   artb
 
         art.artist_artists    +=  aa
