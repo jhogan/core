@@ -1966,8 +1966,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                     setattr0, cmp=cmp
                                 )
                                 break;
-                        else:
-                            raise ValueError('Foreign key not found')
                     else:
                         e = e.orm.super
                         if e:
