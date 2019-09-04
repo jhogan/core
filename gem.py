@@ -38,6 +38,12 @@ class party_contactmechanisms(orm.associations):
 class contactmechanisms(orm.entities):
     pass
 
+class phones(contactmechanisms):
+    pass
+
+class emails(contactmechanisms):
+    pass
+
 class party(orm.entity):
     entities = parties
     
@@ -116,18 +122,62 @@ class region(orm.entity):
     abbreviation = str
 
 class contactmechanism(orm.entity):
-    pass
+    """ An abstract class representing a mechanism through which a party
+    or facility can be contacted. Subtypes include ``phone``, ``email``,
+    ``address`` and so on.
+    """
 
-'''
 class phone(contactmechanism):
-    pass
+    """ Represents a phone number contact mechanism.
+    """
+
+    # The area code as defined by the North American Numbering Plan.
+    # This should probably be None for phone numbers outside of North
+    # America and the Caribean. NOTE many of the numbers within the 200,
+    # 999 range are currently considered invalid. The should probably
+    # result in `brokenrules` if given. See
+    # https://en.wikipedia.org/wiki/List_of_North_American_Numbering_Plan_area_codes
+    areacode = int, 200, 999
+
+    # The phone number excluding the country code, area code and
+    # extension. (See `party_contactmechanism` for `extension`.)
+    number = str
 
 class email(contactmechanism):
     pass
 
 class party_contactmechanism(orm.association):
-    party = part
+    # The date range through which this contactmechanism applied to the
+    # given ``party``.
+    begin          =  datetime
+    end            =  datetime
+
+    # If True, indicates that the mechanism may be called for
+    # solicitation purposes. If False, the mechanism may not be called
+    # for solicitation purposes. It will default to `None` meaning that
+    # no preference on solicitation has been given, which is
+    # functionally equivalent to True.
+    solicitations  =  bool
+    
+    # TODO Multiple comments should be made about the contact mechanism.
+    # Ensure the `comment` entity can polymorphically record comments on
+    # contactmechanism types
+
+    # The line extension
+    extension = str
+
+    # The reflective association properties, i.e.,
+    # party-to-contactmechanism
+    party = party
     contactmechanism = contactmechanism
+
+    # The purpose that the contactmechanism is currently being used by
+    # the party. (Exmples: 'mobile', 'main fax', 'general',
+    # 'headquarters', 'billing inquiries', 'sales office', 'central
+    # internet address', 'service address', 'main office number', 'main
+    # home number', 'secondary office number', 'work email address',
+    # 'personal email address', 'main home address')
+    purpose = str
 
 class address(orm.entity):
     """ A postal address.
@@ -148,7 +198,7 @@ class address(orm.entity):
     regions = regions
 
     # Prosaic directions to the address
-    directions = text
+    directions = str, 1, 65535
 
 class address_region(orm.association):
     """ An association between a postal address (``address``) and a
@@ -166,5 +216,3 @@ class party_address(orm.association):
     address   =  address
     begin     =  datetime
     end       =  datetime
-
-'''
