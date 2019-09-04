@@ -332,6 +332,12 @@ class entities(object):
             rms = self.where(e)
         elif type(e) in (int, str):
             rms = [self[e]]
+
+        # TODO Should't remove() handle iterators. (See
+        # web.cssclasses.remove().) I.e.;
+        # elif e.hasattr('__iter__'):
+        #      ...
+
         else:
             rms = [e]
 

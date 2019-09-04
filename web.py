@@ -1,6 +1,6 @@
 # vim: set et ts=4 sw=4 fdm=marker
 
-#######################################################################r
+#######################################################################
 # Copyright (C) Jesse Hogan - All Rights Reserved
 # Unauthorized copying of this file, via any medium is strictly
 # prohibited
@@ -50,25 +50,68 @@ class attributes(entities.entities):
         if type(o) is str:
             o = attribute(o, v)
 
-        if self(o.name) is not None:
-            msg = 'Attribute already exists: ' + o.name
-            raise AttributeExistsError(msg)
+        for attr in self:
+            if o.name == attr.name:
+                msg = 'Attribute already exists: ' + o.name
+                raise AttributeExistsError(msg)
 
         return super().append(o, uniq, r)
+
+    def __getitem__(self, key):
+        if not isinstance(key, str):
+            return super().__getitem__(key)
+
+        try:
+            ix = self.getindex(key)
+        except ValueError as ex:
+            attr = None
+        else:
+            attr = self[ix]
+
+
+        if attr:
+            return attr
+        else:
+            if key == 'class':
+                self += cssclass()
+            else:
+                self += key, item
+            
+            return self.last
 
     def __setitem__(self, key, item):
         if not isinstance(key, str):
             super().__setitem__(key, item)
             
-        attr = self(key)
+        try:
+            ix = self.getindex(key)
+        except ValueError as ex:
+            attr = None
+        else:
+            attr = self[ix]
 
         if attr:
-            attr.value = item
+            if isinstance(attr, cssclass):
+                attr._classes = item._classes
+            else:
+                attr.value = item
         else:
-            self += key, item
+            if key == 'class':
+                self += cssclass(item)
+            else:
+                self += key, item
 
+    def brokenrules(self):
+        brs = brokenrules()
+        if self.value is None:
+            brs += 'Value is None'
+        return brs
+    @property
+    def html(self):
+        return ' '.join([x.html for x in self if x.isvalid])
+        
 class attribute(entities.entity):
-    def __init__(self, name, v):
+    def __init__(self, name, v=None):
         self.name = name
         self.value = v
 
@@ -82,56 +125,74 @@ class attribute(entities.entity):
         r %= self.name, self.value
         return r
 
-class cssclasses(entities.entities):
-    def append(self, *os, uniq=False, r=None):
-        if r is None:
-            r = type(self)()
+    @property
+    def html(self):
+        return '%s="%s"' % (self.name, self.value)
 
-        clss = list()
+class cssclass(attribute):
+    def __init__(self, value=None):
+        super().__init__('class')
 
-        for o in os:
-            if type(o) is str:
-                for o in o.split():
-                    clss += [cssclass(o)]
+        self._classes = list()
 
-            elif isinstance(o, cssclass):
-                clss += [o]
-            elif hasattr(o, '__iter__'):
-                os = o
-                for o in os:
-                    self.append(o, uniq=uniq, r=r)
+        if value:
+            self += value
+
+    def __contains__(self, e):
+        return e in self._classes
+
+    def __len__(self):
+        return len(self._classes)
+
+    def __bool__(self):
+        # By default, if __len__ returns 0, the object is falsey. If the
+        # object exists (as a nonNone property, for example), it should
+        # be True. So it should always be truthy.
+        return True
+
+    def __getitem__(self, ix):
+        return self._classes[ix]
+
+    def __iadd__(self, o):
+        self.append(o)
+        return self
+
+    def append(self, *clss):
+        for cls in clss:
+            if isinstance(cls, str):
+                for cls in cls.split():
+
+                    # TODO Remove the brackets to make the argument a generator
+                    if any(x.isspace() for x in cls):
+                        # TODO Test
+                        raise ValueError("CSS classes can't contain whitespace")
+
+                    if cls in self._classes:
+                        raise ClassExistsError(
+                            'Class already exists: ' + cls
+                        )
+                    self._classes.append(cls)
+            elif isinstance(cls, cssclass):
+                self.append(*cls._classes)
+            elif hasattr(cls, '__iter__'):
+                self.append(cls)
             else:
-                raise ValueError('Invalid type: ' + type(o).__name__)
-                    
+                raise ValueError('Invalid type: ' + type(clss).__name__)
 
+    def __delitem__(self, *clss):
+        self.remove(*clss)
+
+    def remove(self, *clss):
         for cls in clss:
-            if cls.name in self:
-                msg = 'Class already exists: ' + cls.name
-                raise ClassExistsError(msg)
-
-        for cls in clss:
-            super().append(cls, uniq, r)
-
-        return r
+            del self._classes[cls]
 
     @property
     def html(self):
-        if self.count:
-            return 'class="%s"' % ' '.join([x.html for x in self])
+        clss = self._classes
+        return 'class="%s"' % ' '.join(clss)
 
-        return ''
-
-class cssclass(entities.entity):
-    def __init__(self, name):
-        # TODO Remove the brackets to make the argumen a generator
-        if any([x.isspace() for x in name]):
-            # TODO Test
-            raise ValueError("CSS classes can't contain whitespace")
-        self.name = name
-
-    @property
-    def html(self):
-        return self.name
+    def __repr__(self):
+        return '%s(value=%s)' % (type(self).__name__, self._classes)
 
 class elements(entities.entities):
     pass
@@ -153,6 +214,14 @@ class element(entities.entity):
         self._elements = v
 
     @property
+    def classes(self):
+        return self.attributes['class']
+
+    @classes.setter
+    def classes(self, v):
+        self.attributes['class'] = v
+
+    @property
     def attributes(self):
         if not hasattr(self, '_attributes'):
             self._attributes = attributes()
@@ -161,17 +230,6 @@ class element(entities.entity):
     @attributes.setter
     def attributes(self, v):
         self._attributes = v
-
-    @property
-    def classes(self):
-        if not hasattr(self, '_cssclasses'):
-            self._cssclasses = cssclasses()
-        return self._cssclasses
-
-    @classes.setter
-    def classes(self, v):
-        self._cssclasses = v
-
 
     def __iadd__(self, el):
         if type(el) is str:
@@ -205,13 +263,10 @@ class element(entities.entity):
         r = '<%s'
         args = [self.tag]
 
-        if self.attributes.count:
+        B()
+        if any(x for x in self.attributes if x.isvalid):
             r += ' %s'
             args.append(self.attributes.html)
-
-        if self.classes.count:
-            r += ' %s'
-            args.append(self.classes.html)
 
         r += '>\n'
         if body:

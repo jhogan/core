@@ -321,7 +321,13 @@ class tester(entity):
 
     def expect(self, expect, fn):
         try:
-            fn()
+            if not callable(fn):
+                raise NotCallableError((
+                    'The fn parameter must be a callable object. '
+                    'Consider using a function or lambda instead of '
+                    'a: ' + type(fn).__name__
+                ))
+
         except Exception as ex:
             if type(ex) is not expect:
                 self._failures += failure(actual=ex)
@@ -609,5 +615,7 @@ class stresscli(cli):
         if self._testers is None:
             self._testers = stresstesters()
         return self._testers
-        
+
+class NotCallableError(Exception):
+    pass
     

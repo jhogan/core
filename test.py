@@ -12058,166 +12058,6 @@ class test_page(tester):
         self.eq(pg.name, name)
         self.zero(pg.pages)
 
-class test_element(tester):
-    def it_appends_attributes(self):
-        p = web.paragraph()
-        id = uuid4().hex
-        p.attributes['id'] = id
-
-        expect = self.dedent('''
-        <p id="%s">
-        <p>
-        ''', id)
-
-        self.eq(expect, p.html)
-
-    def it_adds_classes(self):
-        ''' Add by various methods '''
-        p = web.paragraph()
-        cls = web.cssclass('my-class-1')
-        p.classes.append(cls)
-        self.one(p.classes)
-        self.eq(p.classes.first.name, 'my-class-1')
-
-        expect = self.dedent('''
-        <p class="%s">
-        </p>
-        ''', 'my-class-1')
-        self.eq(expect, p.html)
-
-        p.classes.append('my-class-2')
-        self.two(p.classes)
-        self.eq(p.classes.second.name, 'my-class-2')
-
-        expect = self.dedent('''
-        <p class="%s">
-        </p>
-        ''', 'my-class-1 my-class-2')
-        self.eq(expect, p.html)
-
-        p.classes += 'my-class-3'
-        self.three(p.classes)
-        self.eq(p.classes.third.name, 'my-class-3')
-
-        expect = self.dedent('''
-        <p class="%s">
-        </p>
-        ''', 'my-class-1 my-class-2 my-class-3')
-        self.eq(expect, p.html)
-
-        ''' Re-add the same class and expect an exception '''
-        for i in range(1, 4):
-            cls = 'my-class-%s' % str(i)
-            self.expect(
-                web.ClassExistsError, 
-                lambda: p.classes.append(web.cssclass(cls))
-            )
-
-            self.expect(
-                web.ClassExistsError, 
-                lambda: p.classes.append(cls)
-            )
-
-            def f():
-                p.classes += cls
-
-            self.expect(
-                web.ClassExistsError, 
-                f
-            )
-
-    def it_adds_multiple_classes_at_a_time(self):
-        ''' Add by various methods '''
-        p = web.paragraph()
-
-        # This would be a mistake
-        self.expect(
-            ValueError, 
-            lambda: web.cssclass('my-class-1 my-class-b')
-        )
-        self.zero(p.classes)
-
-        expect = self.dedent('''
-        <p>
-        </p>
-        ''')
-        self.eq(expect, p.html)
-
-
-        p.classes.append('my-class-1 my-class-b')
-        self.two(p.classes)
-        self.eq(p.classes.html, 'class="my-class-1 my-class-b"')
-
-        expect = self.dedent('''
-        <p class="%s">
-        </p>
-        ''', 'my-class-1 my-class-b')
-
-        self.eq(expect, p.html)
-
-        p.classes.append('my-class-2', 'my-class-c')
-        self.four(p.classes)
-        self.eq(
-            'class="my-class-1 my-class-b my-class-2 my-class-c"',
-            p.classes.html
-        )
-
-        expect = self.dedent('''
-        <p class="%s">
-        </p>
-        ''', 'my-class-1 my-class-b my-class-2 my-class-c')
-
-        self.eq(expect, p.html)
-
-        p.classes += 'my-class-3', 'my-class-d'
-        self.six(p.classes)
-
-        expect = (
-            'class="my-class-1 my-class-b '
-            'my-class-2 my-class-c '
-            'my-class-3 my-class-d"'
-        )
-
-        self.eq(expect, p.classes.html)
-
-        p.classes += 'my-class-4 my-class-e'
-        self.eight(p.classes)
-
-        expect = (
-            'class="my-class-1 my-class-b '
-            'my-class-2 my-class-c '
-            'my-class-3 my-class-d '
-            'my-class-4 my-class-e"'
-        )
-
-        self.eq(expect, p.classes.html)
-
-    def it_removes_classes(self):
-        p = web.paragraph()
-        p.classes += 'c1 c2 c3 c4 c5 c6 c7 c8'
-        self.eight(p.classes)
-
-        p.classes.remove('c4')
-        self.seven(p.classes)
-        self.eq('class="c1 c2 c3 c5 c6 c7 c8"', p.classes.html)
-
-        p.classes -= 'c3'
-        self.six(p.classes)
-        self.eq('class="c1 c2 c5 c6 c7 c8"', p.classes.html)
-
-        del p.classes['c2']
-        self.five(p.classes)
-        self.eq('class="c1 c5 c6 c7 c8"', p.classes.html)
-
-        B()
-        p.classes.remove('c1 c8')
-        self.three(p.classes)
-        self.eq('class="c5 c6 c7"', p.classes.html)
-
-        self.expect(IndexError, lambda: p.classes.remove(uuid4().hex))
-
-
-
 class test_paragraph(tester):
     def it_calls__init___with_str_and_args(self):
         ''' With str arg '''
@@ -12405,6 +12245,12 @@ class test_attribute(tester):
         self.eq('class', p.attributes.fifth.name)
         self.eq(cls, p.attributes.fifth.value)
 
+    def it_makes_class_attribute_a_cssclass(self):
+        p = web.paragraph()
+        p.attributes['class'] = 'form-group'
+        cls = p.attributes['class']
+        self.type(web.cssclass, cls)
+
     def it_removes_attribute(self):
         # Add three attributes
         p = web.paragraph()
@@ -12478,6 +12324,180 @@ class test_attribute(tester):
         self.expect(ex, lambda: attrs.append('id', id))
         self.expect(ex, lambda: attrs.append('name', name))
         self.expect(ex, lambda: attrs.append('style', style))
+
+class test_cssclass(tester):
+    def it_calls_class_twice(self):
+        # Calling p.classes raised an error in development. This is a
+        # test to ensure the problem doesn't somehow resurface.
+        p = web.paragraph()
+        self.expect(None, lambda: p.classes)
+        self.expect(None, lambda: p.classes)
+        
+    def it_appends_classes(self):
+        ''' Add by various methods '''
+        p = web.paragraph()
+        self.eq(p.classes.html, p.attributes['class'].html)
+        cls = web.cssclass('my-class-1')
+        p.attributes['class'].append(cls)
+        self.is_(p.classes, p.attributes['class'])
+        self.one(p.classes)
+        self.true('my-class-1' in p.attributes['class'])
+
+        expect = self.dedent('''
+        <p class="%s">
+        </p>
+        ''', 'my-class-1')
+        self.eq(expect, p.html)
+
+        p.classes.append('my-class-2')
+        self.two(p.classes)
+        self.true('my-class-2' in p.classes)
+
+        expect = self.dedent('''
+        <p class="%s">
+        </p>
+        ''', 'my-class-1 my-class-2')
+        self.eq(expect, p.html)
+
+        p.classes += 'my-class-3'
+        self.three(p.classes)
+        self.eq(p.classes[2], 'my-class-3')
+
+        expect = self.dedent('''
+        <p class="%s">
+        </p>
+        ''', 'my-class-1 my-class-2 my-class-3')
+        self.eq(expect, p.html)
+
+        ''' Re-add the same class and expect an exception '''
+        for i in range(1, 4):
+            cls = 'my-class-%s' % str(i)
+            self.expect(
+                web.ClassExistsError, 
+                lambda: p.classes.append(web.cssclass(cls))
+            )
+
+            self.expect(
+                web.ClassExistsError, 
+                lambda: p.classes.append(cls)
+            )
+
+            def f():
+                p.classes += cls
+
+            self.expect(
+                web.ClassExistsError, 
+                f
+            )
+
+    def it_adds_multiple_classes_at_a_time(self):
+        ''' Add by various methods '''
+        p = web.paragraph()
+        self.eq(p.classes.html, p.attributes['class'].html)
+
+        expect = self.dedent('''
+        <p>
+        </p>
+        ''')
+        B()
+        self.eq(expect, p.html)
+
+        p.classes += web.cssclass('my-class-1 my-class-a')
+        self.eq(p.classes.html, p.attributes['class'].html)
+        self.two(p.classes)
+        self.two(p.attributes['class'])
+
+        expect = self.dedent('''
+        <p class="%s">
+        </p>
+        ''', 'my-class-1 my-class-a')
+
+        p.classes.append('my-class-2 my-class-b')
+        self.four(p.classes)
+        self.eq(p.classes.html, p.attributes['class'].html)
+        self.eq(
+            'class="my-class-1 my-class-a my-class-2 my-class-b"',
+            p.classes.html
+        )
+        return
+
+        expect = self.dedent('''
+        <p class="%s">
+        </p>
+        ''', 'my-class-1 my-class-b')
+
+        self.eq(expect, p.html)
+
+        p.classes.append('my-class-2', 'my-class-c')
+        self.four(p.classes)
+        self.eq(
+            'class="my-class-1 my-class-b my-class-2 my-class-c"',
+            p.classes.html
+        )
+
+        expect = self.dedent('''
+        <p class="%s">
+        </p>
+        ''', 'my-class-1 my-class-b my-class-2 my-class-c')
+
+        self.eq(expect, p.html)
+
+        p.classes += 'my-class-3', 'my-class-d'
+        self.six(p.classes)
+
+        expect = (
+            'class="my-class-1 my-class-b '
+            'my-class-2 my-class-c '
+            'my-class-3 my-class-d"'
+        )
+
+        self.eq(expect, p.classes.html)
+
+        p.classes += 'my-class-4 my-class-e'
+        self.eight(p.classes)
+
+        expect = (
+            'class="my-class-1 my-class-b '
+            'my-class-2 my-class-c '
+            'my-class-3 my-class-d '
+            'my-class-4 my-class-e"'
+        )
+
+        self.eq(expect, p.classes.html)
+
+    def it_removes_classes(self):
+        p = web.paragraph()
+        p.classes += 'c1 c2 c3 c4 c5 c6 c7 c8'
+        self.eight(p.classes)
+
+        p.classes.remove('c4')
+        self.seven(p.classes)
+        self.eq('class="c1 c2 c3 c5 c6 c7 c8"', p.classes.html)
+
+        p.classes -= 'c3'
+        self.six(p.classes)
+        self.eq('class="c1 c2 c5 c6 c7 c8"', p.classes.html)
+
+        del p.classes['c2']
+        self.five(p.classes)
+        self.eq('class="c1 c5 c6 c7 c8"', p.classes.html)
+
+    def it_removes_multiple_classes(self):
+        p = web.paragraph()
+        p.classes += 'c1 c2 c3 c4 c5 c6 c7 c8'
+        self.eight(p.classes)
+
+        p.classes.remove('c1 c8')
+        self.six(p.classes)
+        self.eq('class="c2 c3 c4 c5 c6 c7"', p.classes.html)
+
+        p.classes -= 'c2', 'c7'
+        self.four(p.classes)
+        self.eq('class="c3 c4 c5 c6"', p.classes.html)
+
+        rm = '%s %s' % (uuid4().hex, uuid4().hex)
+        self.expect(IndexError, lambda: p.classes.remove(rm))
+
 
 
 
