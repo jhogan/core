@@ -3582,9 +3582,10 @@ class test_orm(tester):
                 self.chronicles = test_orm.chronicles.clone()
                 return r
 
-            def created(self, e):
-                if not self._test(e, 'create'):
-                    test_orm._failures += failure()
+            def created(self, *es):
+                for e in es:
+                    if not self._test(e, 'create'):
+                        test_orm._failures += failure()
 
             def retrieved(self, e):
                 if not self._test(e, 'retrieve'):
@@ -4069,56 +4070,58 @@ class test_orm(tester):
         facts = art.artifacts
         self.zero(facts)
 
-        # Ensure property caches
-        self.is_(facts, art.artifacts)
-
-        # Ensure the association's associated collections is the same as the
-        # associated collection of the entity.
-        self.is_(art.artifacts, art.artist_artifacts.artifacts)
-
         self.is_(art, art.artist_artifacts.artist)
 
         # Save and load an association
         art                   =   artist.getvalid()
-        fact                  =   artifact.getvalid()
+        fact1                 =   artifact.getvalid()
         aa                    =   artist_artifact.getvalid()
         aa.role               =   uuid4().hex
-        aa.artifact           =   fact
-        art.artist_artifacts  +=  aa
+        aa.artifact           =   fact1
+        art.artist_artifacts  +=  aa 
 
-        self.is_(fact,    art.artist_artifacts.first.artifact)
-        self.is_(art,     art.artist_artifacts.first.artist)
-        self.eq(aa.role,  art.artist_artifacts.first.role)
+        self.is_(fact1,    art.artist_artifacts.first.artifact)
+        self.is_(art,      art.artist_artifacts.first.artist)
+        self.eq(aa .role,  art.artist_artifacts.first.role)
         self.one(art.artist_artifacts)
         self.one(art.artifacts)
 
-        chrons.clear()
-        art.save()
+        # Add a second association and test
+        fact2                  =   artifact.getvalid()
+        aa1                    =   artist_artifact.getvalid()
+        aa1.role               =   uuid4().hex
+        aa1.artifact           =   fact2
+        art.artist_artifacts   +=  aa1
 
-        self.three(chrons)
-        self.three(chrons.where('create'))
-        self.one(chrons.where('entity', art))
-        self.one(chrons.where('entity', aa))
-        self.one(chrons.where('entity', fact))
+        self.is_(fact2,    art.artist_artifacts.last.artifact)
+        self.is_(art,      art.artist_artifacts.last.artist)
+        self.eq(aa1.role,  art.artist_artifacts.last.role)
+        self.two(art.artist_artifacts)
+        self.two(art.artifacts)
 
-        chrons.clear()
-        art1 = artist(art.id)
+        with self._chrontest() as t:
+            t.run(art.save)
+            t.created(art)
+            t.created(aa )
+            t.created(aa1)
+            t.created(fact1)
+            t.created(fact2)
 
-        self.one(chrons)
-        self.one(chrons.where('retrieve'))
-        self.one(chrons.where('entity', art1))
 
-        self.one(art1.artist_artifacts)
-        self.one(art1.artifacts)
+        with self._chrontest() as t:
+            art1 = t.run(lambda: artist(art.id))
+            t.retrieved(art1)
 
-        aa1 = art1.artist_artifacts.first
+        self.two(art1.artist_artifacts)
+        self.two(art1.artifacts)
 
-        self.eq(art.id,          art1.id)
-        self.eq(aa.id,           aa1.id)
-        self.eq(aa.role,         aa1.role)
+        aa1 = art1.artist_artifacts[aa.id]
 
-        self.eq(aa.artist.id,    aa1.artist.id)
-        self.eq(aa.artist__artistid, aa1.artist__artistid)
+        self.eq(art.id,               art1.id)
+        self.eq(aa.id,                aa1.id)
+        self.eq(aa.role,              aa1.role)
+        self.eq(aa.artist.id,         aa1.artist.id)
+        self.eq(aa.artist__artistid,  aa1.artist__artistid)
 
         self.eq(aa.artifact.id,  aa1.artifact.id)
         self.eq(
@@ -4132,13 +4135,13 @@ class test_orm(tester):
 
         art1.artist_artifacts += aa2
 
-        chrons.clear()
-        art1.save()
+        self.three(art1.artist_artifacts)
+        self.three(art1.artifacts)
 
-        self.two(chrons)
-        self.two(chrons.where('create'))
-        self.one(chrons.where('entity', aa2))
-        self.one(chrons.where('entity', aa2.artifact))
+        with self._chrontest() as t:
+            t.run(art1.save)
+            t.created(aa2)
+            t.created(aa2.artifact)
 
         art2 = artist(art1.id)
         self.eq(art1.id,         art2.id)
@@ -4169,36 +4172,30 @@ class test_orm(tester):
         art2.artist_artifacts.last.role = uuid4().hex
         art2.artist_artifacts.last.planet = uuid4().hex
         art2.artist_artifacts.last.timespan = uuid4().hex
-        self.three(art2.artifacts)
-        self.three(art2.artist_artifacts)
+        
+        self.four(art2.artifacts)
+        self.four(art2.artist_artifacts)
 
-        chrons.clear()
-        art2.save()
-        self.two(chrons)
-        self.two(chrons.where('create'))
-        self.one(chrons.where('entity', art2.artist_artifacts.third))
-        self.one(chrons.where('entity', art2.artist_artifacts.third.artifact))
+        with self._chrontest() as t:
+            t.run(art2.save)
+            t.created(art2.artist_artifacts.fourth)
+            t.created(art2.artist_artifacts.fourth.artifact)
 
         art3 = artist(art2.id)
 
-        self.three(art3.artifacts)
-        self.three(art3.artist_artifacts)
+        self.four(art3.artifacts)
+        self.four(art3.artist_artifacts)
 
         aas2 = art2.artist_artifacts.sorted('role')
         aas3 = art3.artist_artifacts.sorted('role')
 
         for aa2, aa3 in zip(aas2, aas3):
-            self.eq(aa2.id,           aa3.id)
-            self.eq(aa2.role,         aa3.role)
-
-            self.eq(aa2.artist.id,    aa3.artist.id)
-            self.eq(aa2.artist__artistid,     aa3.artist__artistid)
-
-            self.eq(aa2.artifact.id,  aa3.artifact.id)
-            self.eq(
-                aa2.artifact__artifactid,
-                aa3.artifact__artifactid
-            )
+            self.eq(aa2.id,                    aa3.id)
+            self.eq(aa2.role,                  aa3.role)
+            self.eq(aa2.artist.id,             aa3.artist.id)
+            self.eq(aa2.artist__artistid,      aa3.artist__artistid)
+            self.eq(aa2.artifact.id,           aa3.artifact.id)
+            self.eq(aa2.artifact__artifactid,  aa3.artifact__artifactid)
 
         # Add two components to the artifact's components collection
         comps3 = components()
@@ -4212,29 +4209,39 @@ class test_orm(tester):
         self.two(art3.artist_artifacts.first.artifact.components)
         self.two(art3.artifacts.first.components)
 
-        self.is_(comps3[0], art3.artist_artifacts.first.artifact.components[0])
-        self.is_(comps3[1], art3.artist_artifacts.first.artifact.components[1])
-        self.is_(comps3[0], art3.artifacts.first.components[0])
-        self.is_(comps3[1], art3.artifacts.first.components[1])
+        self.is_(
+            comps3[0], 
+            art3.artist_artifacts[0].artifact.components[0]
+        )
+        self.is_(
+            comps3[1], 
+            art3.artist_artifacts[0].artifact.components[1]
+        )
+        self.is_(
+            comps3[0], 
+            art3.artifacts[0].components[0]
+        )
+        self.is_(
+            comps3[1], 
+            art3.artifacts[0].components[1]
+        )
 
-        chrons.clear()
-        art3.save()
-
-        self.two(chrons)
-        self.two(chrons.where('create'))
-        self.one(chrons.where('entity', comps3.first))
-        self.one(chrons.where('entity', comps3.second))
+        with self._chrontest() as t:
+            t.run(art3.save)
+            t.created(comps3.first)
+            t.created(comps3.second)
 
         art4 = artist(art3.id)
-        comps4 = art4.artist_artifacts.first.artifact.components.sorted()
+        comps4 = art4.artist_artifacts[0].artifact.components.sorted()
 
         self.two(comps4)
         self.eq(comps4.first.id, comps3.first.id)
         self.eq(comps4.second.id, comps3.second.id)
 
-        # This fixes an issue that came up in development: When you add valid
-        # aa to art, then add a fact to art (thus adding an invalid aa to art),
-        # strange things where happening with the brokenrules. 
+        # This fixes an issue that came up in development: When you add
+        # valid aa to art, then add a fact to art (thus adding an
+        # invalid aa to art), strange things where happening with the
+        # brokenrules. 
         art = artist.getvalid()
         art.artist_artifacts += artist_artifact.getvalid()
         art.artifacts += artifact.getvalid()
@@ -4382,7 +4389,8 @@ class test_orm(tester):
     def it_removes_associations(self):
         chrons = self.chronicles
 
-        for removeby in 'pseudo-collection', 'association':
+        #for removeby in 'pseudo-collection', 'association':
+        for removeby in 'association',:
             art = artist.getvalid()
 
             for i in range(2):
@@ -12109,112 +12117,104 @@ class test_orm(tester):
         # Save and load an association
         aa                    =   artist_artist.getvalid()
         aa.role               =   uuid4().hex
-
-        artb                  =   artist.getvalid()
-        aa.object             =   artb
-
+        objart                =   artist.getvalid()
+        aa.object             =   objart
         art.artist_artists    +=  aa
 
-        self.is_(art,    art.artist_artists.first.subject)
-        self.is_(artb,     art.artist_artists.first.object)
+        self.is_(art,     art.artist_artists.first.subject)
+        self.is_(objart,  art.artist_artists.first.object)
+        self.isnot(art,   art.artist_artists.first.object)
         self.eq(aa.role,  art.artist_artists.first.role)
+
         self.one(art.artist_artists)
         self.one(art.artists)
 
-        chrons.clear()
-        art.save()
+        with self._chrontest() as t:
+            t.run(art.save)
+            t.created(art, aa, objart)
 
-        self.three(chrons)
-        self.three(chrons.where('create'))
-        self.one(chrons.where('entity', art))
-        self.one(chrons.where('entity', aa))
-        self.one(chrons.where('entity', fact))
+        with self._chrontest() as t:
+            art1 = t.run(lambda: artist(art.id))
+            t.retrieved(art1)
+        
+        self.one(art1.artist_artists)
+        self.one(art1.artists)
 
-        chrons.clear()
-        art1 = artist(art.id)
-
-        self.one(chrons)
-        self.one(chrons.where('retrieve'))
-        self.one(chrons.where('entity', art1))
-
-        self.one(art1.artist_artifacts)
-        self.one(art1.artifacts)
-
-        aa1 = art1.artist_artifacts.first
+        aa1 = art1.artist_artists.first
 
         self.eq(art.id,          art1.id)
         self.eq(aa.id,           aa1.id)
         self.eq(aa.role,         aa1.role)
 
-        self.eq(aa.artist.id,    aa1.artist.id)
-        self.eq(aa.artist__artistid, aa1.artist__artistid)
+        self.eq(aa.subject.id,         aa1.subject.id)
+        self.eq(aa.subject__artistid,  aa1.subject__artistid)
+        self.eq(aa.object.id,          aa1.object.id)
+        self.eq(aa.object__artistid,   aa1.object__artistid)
 
-        self.eq(aa.artifact.id,  aa1.artifact.id)
-        self.eq(
-            aa.artifact__artifactid,
-            aa1.artifact__artifactid
-        )
+        # Add as second artist_artist, save, reload and test
+        aa2           =  artist_artist.getvalid()
+        aa2.object    =  artist.getvalid()
 
-        # Add as second artist_artifact, save, reload and test
-        aa2 = artist_artifact.getvalid()
-        aa2.artifact = artifact.getvalid()
+        art1.artist_artists += aa2
 
-        art1.artist_artifacts += aa2
+        self.is_(art1,    aa2.subject)
+        self.isnot(art1,  aa2.object)
 
-        chrons.clear()
-        art1.save()
-
-        self.two(chrons)
-        self.two(chrons.where('create'))
-        self.one(chrons.where('entity', aa2))
-        self.one(chrons.where('entity', aa2.artifact))
+        with self._chrontest() as t:
+            t.run(art1.save)
+            t.created(aa2, aa2.object)
 
         art2 = artist(art1.id)
         self.eq(art1.id,         art2.id)
 
-        aas1=art1.artist_artifacts.sorted('role')
-        aas2=art2.artist_artifacts.sorted('role')
+        aas1=art1.artist_artists.sorted('role')
+        aas2=art2.artist_artists.sorted('role')
 
         for aa1, aa2 in zip(aas1, aas2):
-
             self.eq(aa1.id,           aa2.id)
             self.eq(aa1.role,         aa2.role)
 
-            self.eq(aa1.artist.id,    aa2.artist.id)
-            self.eq(
-                aa1.artist__artistid,     
-                aa2.artist__artistid
-            )
+            self.eq(aa1.subject.id,         aa2.subject.id)
+            self.eq(aa1.subject__artistid,  aa2.subject__artistid)
+            self.eq(aa1.object.id,          aa2.object.id)
+            self.eq(aa1.object__artistid,   aa2.object__artistid)
 
-            self.eq(aa1.artifact.id,  aa2.artifact.id)
-            self.eq(
-                aa1.artifact__artifactid,
-                aa2.artifact__artifactid
-            )
-
-        # Add a third artifact to artist's pseudo-collection.
+        # Add a third artist to artist's pseudo-collection.
         # Save, reload and test.
-        art2.artifacts += artifact.getvalid()
-        art2.artist_artifacts.last.role = uuid4().hex
-        art2.artist_artifacts.last.planet = uuid4().hex
-        art2.artist_artifacts.last.timespan = uuid4().hex
-        self.three(art2.artifacts)
-        self.three(art2.artist_artifacts)
+        B()
+        art2.artists += artist.getvalid()
+        art2.artist_artists.last.role = uuid4().hex
+        aa2 = art2.artist_artists.last
+
+        self.three(art2.artists)
+        self.three(art2.artist_artists)
+
+        self.is_(art2,    aa2.subject)
+        B()
+        self.isnot(art2,  aa2.object)
+        self.is_(aa2.object,  art2.artists.last)
+        return
+
+        with self._chrontest() as t:
+            t.run(art2.save)
+            self.created(art2.artist_artists.third)
+            self.created(art2.artist_artists.third.object)
+        return
 
         chrons.clear()
         art2.save()
         self.two(chrons)
         self.two(chrons.where('create'))
-        self.one(chrons.where('entity', art2.artist_artifacts.third))
-        self.one(chrons.where('entity', art2.artist_artifacts.third.artifact))
+        self.one(chrons.where('entity', art2.artist_artists.third))
+        self.one(chrons.where('entity', art2.artist_artists.third.artifact))
 
         art3 = artist(art2.id)
 
         self.three(art3.artifacts)
-        self.three(art3.artist_artifacts)
+        self.three(art3.artist_artists)
 
-        aas2 = art2.artist_artifacts.sorted('role')
-        aas3 = art3.artist_artifacts.sorted('role')
+        aas2 = art2.artist_artists.sorted('role')
+        aas3 = art3.artist_artists.sorted('role')
 
         for aa2, aa3 in zip(aas2, aas3):
             self.eq(aa2.id,           aa3.id)
@@ -12235,14 +12235,14 @@ class test_orm(tester):
             comps3 += component.getvalid()
 
         comps3.sort()
-        art3.artist_artifacts.first.artifact.components += comps3.first
+        art3.artist_artists.first.artifact.components += comps3.first
         art3.artifacts.first.components += comps3.second
 
-        self.two(art3.artist_artifacts.first.artifact.components)
+        self.two(art3.artist_artists.first.artifact.components)
         self.two(art3.artifacts.first.components)
 
-        self.is_(comps3[0], art3.artist_artifacts.first.artifact.components[0])
-        self.is_(comps3[1], art3.artist_artifacts.first.artifact.components[1])
+        self.is_(comps3[0], art3.artist_artists.first.artifact.components[0])
+        self.is_(comps3[1], art3.artist_artists.first.artifact.components[1])
         self.is_(comps3[0], art3.artifacts.first.components[0])
         self.is_(comps3[1], art3.artifacts.first.components[1])
 
@@ -12255,7 +12255,7 @@ class test_orm(tester):
         self.one(chrons.where('entity', comps3.second))
 
         art4 = artist(art3.id)
-        comps4 = art4.artist_artifacts.first.artifact.components.sorted()
+        comps4 = art4.artist_artists.first.artifact.components.sorted()
 
         self.two(comps4)
         self.eq(comps4.first.id, comps3.first.id)
@@ -12265,18 +12265,18 @@ class test_orm(tester):
         # aa to art, then add a fact to art (thus adding an invalid aa to art),
         # strange things where happening with the brokenrules. 
         art = artist.getvalid()
-        art.artist_artifacts += artist_artifact.getvalid()
+        art.artist_artists += artist_artifact.getvalid()
         art.artifacts += artifact.getvalid()
 
-        self.zero(art.artist_artifacts.first.brokenrules)
-        self.two(art.artist_artifacts.second.brokenrules)
+        self.zero(art.artist_artists.first.brokenrules)
+        self.two(art.artist_artists.second.brokenrules)
         self.two(art.brokenrules)
 
         # Fix broken aa
-        art.artist_artifacts.second.role = uuid4().hex
-        art.artist_artifacts.second.timespan = uuid4().hex
+        art.artist_artists.second.role = uuid4().hex
+        art.artist_artists.second.timespan = uuid4().hex
 
-        self.zero(art.artist_artifacts.second.brokenrules)
+        self.zero(art.artist_artists.second.brokenrules)
         self.zero(art.brokenrules)
 
 ########################################################################

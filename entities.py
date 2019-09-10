@@ -362,7 +362,8 @@ class entities(object):
             e = self[ix]
             self._ls.pop(ix)
 
-        self.onremove(self, entityremoveeventargs(e))
+        eargs = entityremoveeventargs(e)
+        self.onremove(self, eargs)
         return e
 
     def reversed(self):

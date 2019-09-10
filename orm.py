@@ -4956,12 +4956,60 @@ class associations(entities):
                 # when being defined in the association class.
                 if self.orm.isreflexive:
                     if map.name == 'subject':
-                        setattr(obj, map.name, self.orm.composite)
-                        break
+                        # NOTE self.orm.composite can be None when the
+                        # association is new. Calling 
+                        #
+                        #     settattr(obj, map.name, None)
+                        #
+                        # results in an error. The alternative block
+                        # avoided this because the following will
+                        # always be False. TODO We need to only run this
+                        # code `if self.orm.composite`
+                        #     self.name == type(None).__name__ 
+                        #
+                        # Or we could make the setattr() call accept a
+                        # composite of None.
+                        if self.orm.composite is not None:
+                            setattr(obj, map.name, self.orm.composite)
+                            break
                 elif map.name == type(self.orm.composite).__name__:
                     setattr(obj, map.name, self.orm.composite)
                     break
-            
+
+            for map in obj.orm.mappings.entitymappings:
+                if not map.value:
+                    continue
+
+                # self.orm.composite will not exist when loading the
+                # association.
+                if not self.orm.composite:
+                    continue
+
+                if (
+                    self.orm.isreflexive and map.name == 'object'
+                    or (map.entity is not self.orm.composite.orm.entity)
+                ):
+                    es = getattr(self, map.entity.orm.entities.__name__)
+                    meths = [
+                        x for x in es.onadd 
+                        if x.__name__ == 'entities_onadd'
+                    ]
+
+                    try:
+                        for meth in meths:
+                            es.onadd -= meth
+
+                        # NOTE We may want to override __contains__ such
+                        # that `map.value no in es` does the same thing.
+                        # Currently, identity comparisons will be done.
+                        if map.value.id not in [x.id for x in es]:
+                            es += map.value
+                        else:
+                            map.value not in es
+                    finally:
+                        for meth in meths:
+                            es.onadd += meth
+
         super().append(obj, uniq, r)
         return r
 
