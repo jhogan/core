@@ -3769,8 +3769,6 @@ class test_orm(tester):
         self.true(artist_artists.orm.isreflexive)
         self.true(artist_artists().orm.isreflexive)
 
-
-
     def it_has_static_composites_reference(self):
         comps = location.orm.composites
         es = [x.entity for x in comps]

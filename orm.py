@@ -4971,7 +4971,7 @@ class associations(entities):
         remove the association's constituent entity (the non-composite
         entity) from its pseudocollection class - but only if it hasn't
         already been marked for deletion (ismarkedfordeletion). If it
-        has been marked for deletion, that means the psuedocollection
+        has been marked for deletion, that means the pseudocollection
         class is invoking this handler - so removing the constituent
         would result in infinite recursion.  """
 
@@ -4991,18 +4991,18 @@ class associations(entities):
         """
         An event handler invoked when an entity is added to the
         association (``self``) through the associations
-        psuedocollection, e.g.::
+        pseudocollection, e.g.::
 
             # Create artist entity
             art = artist()            
 
-            # Add artifact entity to the artist's psuedocollection
+            # Add artifact entity to the artist's pseudocollection
             art.artifact += artifact() 
 
-        :param: src entities:    The psuedocollection's entities object.
+        :param: src entities:    The pseudocollection's entities object.
         :param: eargs eventargs: The event arguments. Its ``entity``
                                  property is the entity object being
-                                 added to the psuedocollection.
+                                 added to the pseudocollection.
         """
         ass = None
 
@@ -5029,7 +5029,7 @@ class associations(entities):
         
         if ass is None:
             # If ass is None, there was an issue. Likely the user attempted to
-            # assign the wrong type of object to a psuedocollection (e.g.,
+            # assign the wrong type of object to a pseudocollection (e.g.,
             # art.artifacts = locations()). Since we don't want to raise
             # exceptions in cases like these (preferring to allow the
             # brokenrules property to flag them as invalid), we will go ahead
@@ -5043,6 +5043,13 @@ class associations(entities):
         # Assign the association collections's `composite` property to the
         # new association object's composite field; completing the
         # association
+
+        # TODO LEFTOFF
+        # I think that the object should be set here like so:
+        #     if obj.orm.isreflexive:
+        #         setattr(ass, 'object', src.last)
+        # 
+
         setattr(ass, compmap.name, self.orm.composite)
         self += ass
 
@@ -5063,14 +5070,15 @@ class associations(entities):
     def __getattr__(self, attr):
         """
         Return a composite object or constituent collection
-        (psuedocollection) requested by the user.
+        (pseudocollection) requested by the user.
 
         :param: str attr: The name of the attribute to return.
         :rtype: orm.entity or orm.entities
-        :returns: Returns the composite or psuedocollection being
+        :returns: Returns the composite or pseudocollection being
                   requested for by
                   ``attr``
         """
+
         def raiseAttributeError():
             """ Raise a generic AttributeError.
             """
@@ -5090,7 +5098,6 @@ class associations(entities):
         # Note that `assert art is art.artist_artifacts.artists`.
         if attr == type(self.orm.composite).__name__:
             return self.orm.composite
-
         try:
             # Returned a memoized constituent. These are created in the
             # `except KeyError` block.
@@ -5099,7 +5106,7 @@ class associations(entities):
             for map in self.orm.mappings.entitymappings:
                 es = map.entity.orm.entities
                 if es.__name__ == attr:
-                    # Create a psuedocollection for the associations
+                    # Create a pseudocollection for the associations
                     # collection object (self). Append it to the self's
                     # _constituents collection.
                     es = es()
