@@ -328,6 +328,8 @@ class tester(entity):
                     'a: ' + type(fn).__name__
                 ))
 
+            fn()
+
         except Exception as ex:
             if type(ex) is not expect:
                 self._failures += failure(actual=ex)

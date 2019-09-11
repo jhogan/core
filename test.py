@@ -12207,6 +12207,22 @@ class test_text(tester):
         self.eq(expect, str(txt))
 
 class test_attribute(tester):
+    def it_deals_with_undef_attr(self):
+        p = web.paragraph()
+        uuid = uuid4().hex
+        attr = p.attributes[uuid]
+        self.is_(p.attributes[uuid], attr)
+        self.zero(p.classes)
+        self.zero(p.attributes)
+        
+        for p in p.attributes:
+            self.fail()
+
+        attr.value = uuid4().hex
+        self.zero(p.classes)
+        self.one(p.attributes)
+        self.eq(p.attributes.first.value, attr.value)
+        
     def it_appends_attribute(self):
         # Append attribute object
         p = web.paragraph()
@@ -12261,6 +12277,7 @@ class test_attribute(tester):
         p.attributes += style
         p.attributes += 'class', cls
         self.four(p.attributes)
+
         self.true('id'    in  p.attributes)
         self.true('name'  in  p.attributes)
         self.true(style   in  p.attributes)
@@ -12326,12 +12343,28 @@ class test_attribute(tester):
         self.expect(ex, lambda: attrs.append('style', style))
 
 class test_cssclass(tester):
+    def it_deals_with_undef_attr(self):
+        p = web.paragraph()
+        attr = p.attributes['class']
+        self.is_(p.attributes['class'], attr)
+        self.zero(p.classes)
+        self.zero(p.attributes)
+        
+        for p in p.attributes:
+            self.fail()
+
+        attr.value = uuid4().hex
+        self.one(p.classes)
+        self.one(p.attributes)
+        self.eq(p.attributes.first.value, attr.value)
+
     def it_calls_class_twice(self):
         # Calling p.classes raised an error in development. This is a
         # test to ensure the problem doesn't somehow resurface.
         p = web.paragraph()
         self.expect(None, lambda: p.classes)
         self.expect(None, lambda: p.classes)
+
         
     def it_appends_classes(self):
         ''' Add by various methods '''
@@ -12399,7 +12432,6 @@ class test_cssclass(tester):
         <p>
         </p>
         ''')
-        B()
         self.eq(expect, p.html)
 
         p.classes += web.cssclass('my-class-1 my-class-a')
@@ -12497,9 +12529,6 @@ class test_cssclass(tester):
 
         rm = '%s %s' % (uuid4().hex, uuid4().hex)
         self.expect(IndexError, lambda: p.classes.remove(rm))
-
-
-
 
 class test_header(tester):
     pass

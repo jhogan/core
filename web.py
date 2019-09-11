@@ -14,6 +14,11 @@ import orm
 import html
 from dbg import B
 
+class undef:
+    pass
+
+# TODO All html should pass the W3C validation service at:
+# https://validator.w3.org/#validate_by_input
 class site(entities.entity):
     def __init__(self, name):
         self.name = name
@@ -75,7 +80,7 @@ class attributes(entities.entities):
             if key == 'class':
                 self += cssclass()
             else:
-                self += key, item
+                self += attribute(key)
             
             return self.last
 
@@ -101,17 +106,29 @@ class attributes(entities.entities):
             else:
                 self += key, item
 
-    def brokenrules(self):
-        brs = brokenrules()
-        if self.value is None:
-            brs += 'Value is None'
-        return brs
+    @property
+    def _defined(self):
+        return [x for x in self._ls if x.value is not undef]
+
+    def __iter__(self):
+        for attr in self._defined:
+            yield attr
+
+    def __contains__(self, attr):
+        if isinstance(attr, str):
+            return attr in [x.name for x in self._defined]
+        else:
+            return attr in self._defined
+
+    def __len__(self):
+        return len(self._defined)
+
     @property
     def html(self):
         return ' '.join([x.html for x in self if x.isvalid])
         
 class attribute(entities.entity):
-    def __init__(self, name, v=None):
+    def __init__(self, name, v=undef):
         self.name = name
         self.value = v
 
@@ -128,6 +145,7 @@ class attribute(entities.entity):
     @property
     def html(self):
         return '%s="%s"' % (self.name, self.value)
+
 
 class cssclass(attribute):
     def __init__(self, value=None):
@@ -179,17 +197,45 @@ class cssclass(attribute):
             else:
                 raise ValueError('Invalid type: ' + type(clss).__name__)
 
+
     def __delitem__(self, *clss):
         self.remove(*clss)
 
+    def __isub__(self, o):
+        self.remove(o)
+        return self
+
     def remove(self, *clss):
         for cls in clss:
-            del self._classes[cls]
+            if isinstance(cls, str):
+                for cls in cls.split():
+                    if cls not in self._classes:
+                        raise IndexError('Class not found: ' + cls)
+                    self._classes.remove(cls)
+            elif hasattr(cls, '__iter__'):
+                for cls in cls:
+                    self.remove(cls)
+            else:
+                raise ValueError(
+                    'Class wrong type: ' + type(cls).__name__
+                )
+
+    @property
+    def value(self):
+        if not self._classes:
+            return undef
+        return ' '.join(self._classes)
+
+    @value.setter
+    def value(self, v):
+        if v is None:
+            self._classes = list()
+        elif v is not undef:
+            self._classes = v.split()
 
     @property
     def html(self):
-        clss = self._classes
-        return 'class="%s"' % ' '.join(clss)
+        return 'class="%s"' % self.value
 
     def __repr__(self):
         return '%s(value=%s)' % (type(self).__name__, self._classes)
@@ -263,7 +309,6 @@ class element(entities.entity):
         r = '<%s'
         args = [self.tag]
 
-        B()
         if any(x for x in self.attributes if x.isvalid):
             r += ' %s'
             args.append(self.attributes.html)
