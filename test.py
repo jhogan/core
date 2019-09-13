@@ -12058,6 +12058,52 @@ class test_page(tester):
         self.eq(pg.name, name)
         self.zero(pg.pages)
 
+class test_element(tester):
+    def it_calls_id(self):
+        p = web.paragraph()
+        uuid = uuid4().hex
+        p.id = uuid
+        self.one(p.attributes)
+        self.eq(uuid, p.id)
+
+    def it_fails_to_get_attritributes_for_wrong_element_types(self):
+        # web.input has a max HTML attribute, so we should expect to get
+        # the 'max' attribute without error.
+        inp = web.input()
+        self.expect(None, lambda: inp.max)
+
+        # web.paragraph does not have a 'max' HTML attribute, so we
+        # would expect to get an AttributeError
+        p = web.paragraph()
+        self.expect(AttributeError, lambda: p.max)
+    
+    def it_fails_to_get_attributes_that_dont_exist(self):
+        # Since web.element uses __getattr__ and __setattr__, make sure
+        # that trying to get an element that doesn't exist still throws
+        # an AttributeError.
+        el = web.element()
+        self.expect(AttributeError, lambda: el.f11b3fc2787a)
+
+        # On the other hand, setting (monkey patching) an attribute
+        # variable that doesn't exist should still work.
+        self.expect(
+            None, 
+            lambda: setattr(el, 'f11b3fc2787a', 'derp')
+        )
+
+    def it_has_applicable_html_attributes(self):
+        for attr, els in web.html5attrs.items():
+            for tag in els.split():
+                if tag == '*':
+                    ...
+                else:
+                    el = web.elements.getby(tag=tag)
+                    B()
+                    el().tag
+                    self.expect(None,  getattr(el(), attr))
+                    self.true(hasattr(el, attr))
+
+
 class test_paragraph(tester):
     def it_calls__init___with_str_and_args(self):
         ''' With str arg '''
@@ -12223,6 +12269,32 @@ class test_attribute(tester):
         self.one(p.attributes)
         self.eq(p.attributes.first.value, attr.value)
         
+    def it_sets_None_attr(self):
+        expect = self.dedent('''
+        <input disabled>
+        </input>
+        ''')
+
+        inp = web.input()
+        inp.attributes['disabled'] = None
+        self.one(inp.attributes)
+        self.eq(expect, inp.html)
+
+        inp = web.input()
+        inp.attributes.append('disabled')
+        self.one(inp.attributes)
+        self.eq(expect, inp.html)
+
+        inp = web.input()
+        inp.attributes += 'disabled'
+        self.one(inp.attributes)
+        self.eq(expect, inp.html)
+        
+        inp = web.input()
+        inp.attributes += 'disabled', None
+        self.one(inp.attributes)
+        self.eq(expect, inp.html)
+
     def it_appends_attribute(self):
         # Append attribute object
         p = web.paragraph()
@@ -12365,7 +12437,6 @@ class test_cssclass(tester):
         self.expect(None, lambda: p.classes)
         self.expect(None, lambda: p.classes)
 
-        
     def it_appends_classes(self):
         ''' Add by various methods '''
         p = web.paragraph()
