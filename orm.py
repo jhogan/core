@@ -5054,25 +5054,35 @@ class associations(entities):
         """
         ass = None
 
-        # Look through the association collection's (self's) entity mappings
-        # for one that matches eargs.entity by type. That entity mapping will
-        # refer to the association's reference to the entity being added.
+        # Look through the association collection's (self's) entity
+        # mappings for one that matches eargs.entity by type. That
+        # entity mapping will refer to the association's reference to
+        # the entity being added.
         for map in self.orm.mappings.entitymappings:
             if map.entity is type(eargs.entity):
-                for ass in self:
-                    if getattr(ass, map.name) is eargs.entity:
-                        # eargs.entity already exists as a constitutent entity
-                        # in this collection of associations. There is no need
-                        # to add it again.
-                        return
 
-                # eargs.entity is not a constituent entity in this collection
-                # of associations yet so create a new association and assign
-                # eargs.entity to it.
-                ass = self.orm.entity()
-                setattr(ass, map.name, eargs.entity)
+                # If we are adding entitiy object's to reflexive
+                # association collection, we add them as the 'object' of
+                # the association.
+                if not (self.orm.isreflexive and map.name != 'object'):
+                    for ass in self:
+                        if getattr(ass, map.name) is eargs.entity:
+                            # eargs.entity already exists as a
+                            # constitutent entity in this collection of
+                            # associations. There is no need to add it
+                            # again.
+                            return
 
-            if map.entity is type(self.orm.composite):
+                    # eargs.entity is not a constituent entity in this
+                    # collection of associations yet so create a new
+                    # association and assign eargs.entity to it.
+                    ass = self.orm.entity()
+                    setattr(ass, map.name, eargs.entity)
+
+            if self.orm.isreflexive:
+                if map.name == 'subject':
+                    compmap = map
+            elif map.entity is type(self.orm.composite):
                 compmap = map
         
         if ass is None:
@@ -5091,13 +5101,6 @@ class associations(entities):
         # Assign the association collections's `composite` property to the
         # new association object's composite field; completing the
         # association
-
-        # TODO LEFTOFF
-        # I think that the object should be set here like so:
-        #     if obj.orm.isreflexive:
-        #         setattr(ass, 'object', src.last)
-        # 
-
         setattr(ass, compmap.name, self.orm.composite)
         self += ass
 
@@ -5152,6 +5155,8 @@ class associations(entities):
             return self.orm.constituents[attr]
         except KeyError:
             for map in self.orm.mappings.entitymappings:
+                if (self.orm.isreflexive and map.name != 'object'):
+                    continue
                 es = map.entity.orm.entities
                 if es.__name__ == attr:
                     # Create a pseudocollection for the associations

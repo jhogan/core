@@ -3591,9 +3591,10 @@ class test_orm(tester):
                 if not self._test(e, 'retrieve'):
                     test_orm._failures += failure()
 
-            def updated(self, e):
-                if not self._test(e, 'update'):
-                    test_orm._failures += failure()
+            def updated(self, *es):
+                for e in es:
+                    if not self._test(e, 'update'):
+                        test_orm._failures += failure()
 
             def deleted(self, e):
                 if not self._test(e, 'delete'):
@@ -4240,7 +4241,7 @@ class test_orm(tester):
 
         # This fixes an issue that came up in development: When you add
         # valid aa to art, then add a fact to art (thus adding an
-        # invalid aa to art), strange things where happening with the
+        # invalid aa to art), strange things were happening with the
         # brokenrules. 
         art = artist.getvalid()
         art.artist_artifacts += artist_artifact.getvalid()
@@ -4369,6 +4370,7 @@ class test_orm(tester):
 
         self.two(chrons)
         self.two(chrons.where('update'))
+        # FIXME The below two lines are the same
         self.one(chrons.where('entity', art1.artist_artifacts.first))
         self.one(chrons.where('entity', art1.artist_artifacts.first))
 
@@ -12181,103 +12183,214 @@ class test_orm(tester):
 
         # Add a third artist to artist's pseudo-collection.
         # Save, reload and test.
-        B()
-        art2.artists += artist.getvalid()
+        objart = artist.getvalid()
+        art2.artists += objart
+
+        self.is_(art2,            art2.artist_artists.last.subject)
+        self.is_(objart,          art2.artist_artists.last.object)
         art2.artist_artists.last.role = uuid4().hex
         aa2 = art2.artist_artists.last
 
         self.three(art2.artists)
         self.three(art2.artist_artists)
-
-        self.is_(art2,    aa2.subject)
-        B()
-        self.isnot(art2,  aa2.object)
-        self.is_(aa2.object,  art2.artists.last)
-        return
+        self.isnot(aa2.subject,  aa2.object)
 
         with self._chrontest() as t:
             t.run(art2.save)
-            self.created(art2.artist_artists.third)
-            self.created(art2.artist_artists.third.object)
-        return
-
-        chrons.clear()
-        art2.save()
-        self.two(chrons)
-        self.two(chrons.where('create'))
-        self.one(chrons.where('entity', art2.artist_artists.third))
-        self.one(chrons.where('entity', art2.artist_artists.third.artifact))
+            t.created(art2.artist_artists.third)
+            t.created(art2.artist_artists.third.object)
 
         art3 = artist(art2.id)
 
-        self.three(art3.artifacts)
+        self.three(art3.artists)
         self.three(art3.artist_artists)
 
         aas2 = art2.artist_artists.sorted('role')
         aas3 = art3.artist_artists.sorted('role')
 
         for aa2, aa3 in zip(aas2, aas3):
-            self.eq(aa2.id,           aa3.id)
-            self.eq(aa2.role,         aa3.role)
+            self.eq(aa2.id,                 aa3.id)
+            self.eq(aa2.role,               aa3.role)
+            self.eq(aa2.subject.id,         aa3.subject.id)
+            self.eq(aa2.object.id,          aa3.object.id)
+            self.eq(aa2.subject__artistid,  aa3.subject__artistid)
+            self.eq(aa2.object__artistid,   aa3.object__artistid)
 
-            self.eq(aa2.artist.id,    aa3.artist.id)
-            self.eq(aa2.artist__artistid,     aa3.artist__artistid)
-
-            self.eq(aa2.artifact.id,  aa3.artifact.id)
-            self.eq(
-                aa2.artifact__artifactid,
-                aa3.artifact__artifactid
-            )
-
-        # Add two components to the artifact's components collection
-        comps3 = components()
+        # Add two presentations to the artist's presentations collection
+        press3 = presentations()
         for _ in range(2):
-            comps3 += component.getvalid()
+            press3 += presentation.getvalid()
 
-        comps3.sort()
-        art3.artist_artists.first.artifact.components += comps3.first
-        art3.artifacts.first.components += comps3.second
+        press3.sort()
+        art3.artist_artists.first.object.presentations += press3.first
+        art3.artists.first.presentations += press3.second
 
-        self.two(art3.artist_artists.first.artifact.components)
-        self.two(art3.artifacts.first.components)
+        self.two(art3.artist_artists.first.object.presentations)
+        self.two(art3.artists.first.presentations)
 
-        self.is_(comps3[0], art3.artist_artists.first.artifact.components[0])
-        self.is_(comps3[1], art3.artist_artists.first.artifact.components[1])
-        self.is_(comps3[0], art3.artifacts.first.components[0])
-        self.is_(comps3[1], art3.artifacts.first.components[1])
+        self.is_(press3[0], art3.artist_artists[0].object.presentations[0])
+        self.is_(press3[1], art3.artist_artists[0].object.presentations[1])
+        self.is_(press3[0], art3.artists[0].presentations[0])
+        self.is_(press3[1], art3.artists[0].presentations[1])
+
+        with self._chrontest() as t:
+            t.run(art3.save)
+            t.created(press3.first)
+            t.created(press3.second)
+
+        art4 = artist(art3.id)
+        press4 = art4.artist_artists.first.object.presentations.sorted()
+
+        self.two(press4)
+        self.eq(press4.first.id, press3.first.id)
+        self.eq(press4.second.id, press3.second.id)
+
+        # NOTE The below comment and tests were carried over from
+        # it_loads_and_saves_associations:
+        # This fixes an issue that came up in development: When you add valid
+        # aa to art, then add a fact to art (thus adding an invalid aa to art),
+        # strange things where happening with the brokenrules. 
+        art = artist.getvalid()
+        art.artist_artists += artist_artist.getvalid()
+        art.artists += artist.getvalid()
+
+        self.zero(art.artist_artists.first.brokenrules)
+        self.zero(art.artist_artists.first.brokenrules)
+        self.one(art.artist_artists.second.brokenrules)
+        self.one(art.brokenrules)
+
+        # Fix broken aa
+        art.artist_artists.second.role = uuid4().hex
+
+        self.zero(art.artist_artists.second.brokenrules)
+        self.zero(art.brokenrules)
+
+    def it_updates_reflexive_association(self):
+        art = artist.getvalid()
+
+        for i in range(2):
+            aa = artist_artist.getvalid()
+            aa.artist = artist.getvalid()
+            art.artist_artists += aa
+
+        art.save()
+
+        art1 = artist(art.id)
+
+        for aa in art1.artist_artists:
+            aa.role = uuid4().hex
+
+        # Save and reload
+        with self._chrontest() as t:
+            t.run(art1.save)
+            t.updated(*art1.artist_artists)
+
+        art2 = artist(art1.id)
+
+        aas  = art. artist_artists.sorted('role')
+        aas1 = art1.artist_artists.sorted('role')
+        aas2 = art2.artist_artists.sorted('role')
+
+        for aa, aa2 in zip(aas, aas2):
+            self.ne(aa.role, aa2.role)
+
+        for aa1, aa2 in zip(aas1, aas2):
+            self.eq(aa1.role, aa2.role)
+
+        # TODO Test deeply nested associations
+
+    def it_updates_reflexive_associations_constituent_entity(self):
+        art = artist.getvalid()
+
+        for i in range(2):
+            aa = artist_artist.getvalid()
+            aa.artists = artist.getvalid()
+            art.artist_artists += aa
+
+        art.save()
+
+        art1 = artist(art.id)
+
+        for art in art1.artists:
+            art.title = uuid4().hex
+
+        with self._chrontest() as t:
+            t.run(art1.save)
+            print(t)
+            t.created(*art1.artists)
+            t.created(*art1.artist_artists)
+        return
+
+        # Ensure the four entities where updated
+        self.two(chrons)
+        self.two(chrons.where('update'))
+        self.one(chrons.where('entity', art1.artifacts.first))
+        self.one(chrons.where('entity', art1.artifacts.second))
+        
+        art2 = artist(art1.id)
+
+        self.two(art1.artifacts)
+        self.two(art2.artifacts)
+
+        facts  = art. artifacts.sorted('title')
+        facts1 = art1.artifacts.sorted('title')
+        facts2 = art2.artifacts.sorted('title')
+
+        for f, f2 in zip(facts, facts2):
+            self.ne(f.title, f2.title)
+
+        for f1, f2 in zip(facts1, facts2):
+            self.eq(f1.title, f2.title)
+
+        attrs = 'artifacts.first.components', \
+               'artist_artifacts.first.artifact.components'
+
+        for attr in attrs:
+            comps = getattr(art2, attr)
+            comps += component.getvalid()
+
+        art2.save()
+
+        art3 = artist(art2.id)
+
+        for attr in attrs:
+            comps = getattr(art3, attr)
+            for comp in comps:
+                comp.name = uuid4().hex
 
         chrons.clear()
         art3.save()
 
         self.two(chrons)
-        self.two(chrons.where('create'))
-        self.one(chrons.where('entity', comps3.first))
-        self.one(chrons.where('entity', comps3.second))
+        self.two(chrons.where('update'))
+        self.one(chrons.where('entity', art3.artifacts.first.components.first))
+        self.one(chrons.where('entity', art3.artifacts.first.components.second))
 
         art4 = artist(art3.id)
-        comps4 = art4.artist_artists.first.artifact.components.sorted()
 
-        self.two(comps4)
-        self.eq(comps4.first.id, comps3.first.id)
-        self.eq(comps4.second.id, comps3.second.id)
+        for attr in attrs:
+            comps2 = getattr(art2, attr)
+            comps3 = getattr(art3, attr)
+            comps4 = getattr(art4, attr)
 
-        # This fixes an issue that came up in development: When you add valid
-        # aa to art, then add a fact to art (thus adding an invalid aa to art),
-        # strange things where happening with the brokenrules. 
-        art = artist.getvalid()
-        art.artist_artists += artist_artifact.getvalid()
-        art.artifacts += artifact.getvalid()
+            self.two(comps2)
+            self.two(comps3)
+            self.two(comps4)
 
-        self.zero(art.artist_artists.first.brokenrules)
-        self.two(art.artist_artists.second.brokenrules)
-        self.two(art.brokenrules)
+            for comp4 in comps4:
+                for comp2 in comps2:
+                    self.ne(comp2.name, comp4.name)
 
-        # Fix broken aa
-        art.artist_artists.second.role = uuid4().hex
-        art.artist_artists.second.timespan = uuid4().hex
+            for comp4 in comps4:
+                for comp3 in comps3:
+                    if comp4.name == comp3.name:
+                        break
+                else:
+                    self.fail('No match within comps4 and comps3')
 
-        self.zero(art.artist_artists.second.brokenrules)
-        self.zero(art.brokenrules)
+        # TODO Test deeply nested associations
+
+
 
 ########################################################################
 # Test parties                                                         #
