@@ -3556,6 +3556,7 @@ class artist_artist(orm.association):
         aa = artist_artist()
         aa.role = uuid4().hex
         aa.slug = uuid4().hex
+        aa.timespan = uuid4().hex
         return aa
 
     # The duration an artist worked with another artist
@@ -10242,6 +10243,46 @@ class test_orm(tester):
 
         return arts
 
+    def _create_join_test_reflexive_data(self):
+        """ Create test data to test inner/outer joins against reflexive
+        associations.
+        """
+
+        for c in (artist, presentation, artist_artist):
+            c.orm.truncate()
+
+        # The artist entities and constituents will have sequential
+        # indexes to query against.
+        arts = artists()
+        for i in range(4):
+            art = artist.getvalid()
+            art.firstname = 'fn-' + str(i)
+            art.lastname = 'ln-'  + str(i + 1)
+            art.lifeform = 'subject'
+            arts += art
+
+            for k in range(4):
+                aa = artist_artist.getvalid()
+                aa.role = 'art_art-role-' + str(k)
+                aa.slug = 'art_art-slug-' + str(k + 1)
+                artobj = artist.getvalid()
+
+                aa.object = artobj
+                artobj.firstname = 'art-art_art-art-fn-' + str(k)
+                artobj.lastname = 'art-art_art-art-ln' + str(k + 1)
+                artobj.lifeform = 'object'
+
+                art.artist_artists += aa
+
+                for l in range(4):
+                    pres = presentation.getvalid()
+                    name = 'art-art_art-art-presentation-name-' + str(l)
+                    pres.name =  name
+                    artobj.presentations += pres
+
+        arts.save()
+        return arts
+
     def it_calls_innerjoin_on_entities_with_BETWEEN_clauses(self):
         arts = artists()
         for i in range(8):
@@ -10479,7 +10520,7 @@ class test_orm(tester):
 
                 self.eq(fff, aa1.orm.persistencestate)
 
-                aa1.artifact
+                # TODO This should be removed aa1.artifact
 
                 self.eq(aa.artifact.id, aa1.artifact.id)
                 
@@ -12439,22 +12480,19 @@ class test_orm(tester):
         self.eq(actual, expected)
 
     def it_calls_innerjoin_on_reflexive_associations(self):
-        # TODO LEFTOFF
-        #arts = self._create_join_test_data()
+        arts = self._create_join_test_reflexive_data()
 
-        #arts.sort()
 
         fff = False, False, False
 
         # Test artists joined with artist_artifacts with no condititons
         arts1 = artists & artist_artists
-        print(*arts1.orm.sql)
-        return
 
         self.one(arts1.orm.joins)
 
         self.four(arts1)
 
+        arts.sort()
         arts1.sort()
         
         self.chronicles.clear()
@@ -12464,24 +12502,27 @@ class test_orm(tester):
 
             self.eq(fff, art1.orm.persistencestate)
 
-            self.four(art1.artist_artifacts)
+            self.four(art1.artist_artists)
 
-            art.artist_artifacts.sort()
-            art1.artist_artifacts.sort()
+            art.artist_artists.sort()
+            art1.artist_artists.sort()
 
-            for aa, aa1 in zip(art.artist_artifacts, art1.artist_artifacts):
+            for aa, aa1 in zip(art.artist_artists, art1.artist_artists):
                 self.eq(aa.id, aa.id)
 
                 self.eq(fff, aa1.orm.persistencestate)
 
-                aa1.artifact
+                self.eq(aa.subject.id, aa1.subject.id)
 
-                self.eq(aa.artifact.id, aa1.artifact.id)
+                # TODO LEFTOFF aa1.object.id != aa1.object__artistid
+                self.eq(aa.object.id, aa1.object.id)
                 
+                continue
                 self.is_(aa1.artifact, self.chronicles.last.entity)
                 self.eq('retrieve', self.chronicles.last.op)
 
                 self.eq(aa1.artist.id, art1.id)
+        return
 
         # NOTE The above will lazy-load aa1.artifact 16 times
         self.count(16, self.chronicles)

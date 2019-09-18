@@ -4447,7 +4447,11 @@ class orm:
                     id = joiner.entity.orm.mappings.primarykeymapping.name
                     fks = join.entities.orm.mappings.foreignkeymappings
                     for map in fks:
-                        if joiner.entities.orm.entity is map.entity:
+                        if join.entities.orm.isreflexive:
+                            if map.name.startswith('subject__'):
+                                pk = map.name
+                                break
+                        elif joiner.entities.orm.entity is map.entity:
                             pk = map.name
                             break
                     else:
