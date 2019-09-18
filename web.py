@@ -351,34 +351,6 @@ class element(entities.entity):
     def __repr__(self):
         return str(self)
 
-    def _demandvalid(self, attr):
-        try:
-            tags = html5attrs[attr]
-        except KeyError:
-            raise AttributeError(
-                'Invalid HTML5 attribute: ' + attr
-            )
-        else:
-            if not(tags == '*' or self.tag in tags.split()):
-                raise AttributeError(
-                    'Invalid attritute for <%s>' % self.tag
-                )
-
-    def __getattr__(self, attr):
-        try:
-            object.__getattribute__(self, attr)
-        except AttributeError:
-            self._demandvalid(attr)
-            return self.attributes[attr].value
-
-    def __setattr__(self, attr, v):
-        try:
-            self._demandvalid(attr)
-        except AttributeError:
-            object.__setattr__(self, attr, v)
-        else:
-            self.attributes[attr].value = v
-                
 class paragraphs(elements):
     pass
 
@@ -450,375 +422,2628 @@ class text(element):
             textwrap.dedent(self._str)
         ).strip()
         
-class strong(element):
-    pass
-
-class span(element):
-    pass
-
-class inputs(elements):
-    pass
-
-class input(element):
-    pass
-
-class blockquotes(elements):
-    pass
-
-class blockquote(element):
-    pass
-
-class dels(elements):
-    pass
-
-class del_(element):
-    pass
-
-class inss(elements):
-    pass
-
-class ins(element):
-    pass
-
-class qs(elements):
-    pass
-
-class q(element):
-    pass
-
-class audios(elements):
-    pass
-
-class audio(element):
-    pass
-
-class videos(elements):
-    pass
-
-class video(element):
-    pass
-
-class optgroups(elements):
-    pass
-
-class optgroup(element):
-    pass
-
-class options(elements):
-    pass
-
-class option(element):
-    pass
-
-class tracks(elements):
-    pass
-
-class track(element):
-    pass
-
-class tds(elements):
-    pass
-
-class td(element):
-    pass
-
-class ths(elements):
-    pass
-
-class th(element):
-    pass
-
-class scripts(elements):
-    pass
-
-class script(element):
-    pass
-
-class selects(elements):
-    pass
-
-class select(element):
-    pass
-
-class meters(elements):
-    pass
-
-class meter(element):
-    pass
-
-class progresss(elements):
-    pass
-
-class progress(element):
-    pass
-
-class labels(elements):
-    pass
-
-class label(element):
-    pass
-
-class outputs(elements):
-    pass
-
-class output(element):
-    pass
-
 class forms(elements):
     pass
 
 class form(element):
-    pass
+    @property
+    def method(self):
+        return self.attributes['method'].value
 
-class as_(elements):
-    pass
+    @method.setter
+    def method(self, v):
+        self.attributes['method'].value = v
 
-class a(element):
-    pass
+    @property
+    def novalidate(self):
+        return self.attributes['novalidate'].value
 
-class areas(elements):
-    pass
+    @novalidate.setter
+    def novalidate(self, v):
+        self.attributes['novalidate'].value = v
 
-class area(element):
-    pass
+    @property
+    def accept_charset(self):
+        return self.attributes['accept-charset'].value
 
-class textareas(elements):
-    pass
+    @accept_charset.setter
+    def accept_charset(self, v):
+        self.attributes['accept-charset'].value = v
 
-class textarea(element):
-    pass
+    @property
+    def action(self):
+        return self.attributes['action'].value
 
-class buttons(elements):
-    pass
+    @action.setter
+    def action(self, v):
+        self.attributes['action'].value = v
 
-class button(element):
-    pass
+    @property
+    def target(self):
+        return self.attributes['target'].value
 
-class imgs(elements):
-    pass
+    @target.setter
+    def target(self, v):
+        self.attributes['target'].value = v
 
-class img(element):
-    pass
+    @property
+    def accept(self):
+        return self.attributes['accept'].value
 
-class times(elements):
-    pass
+    @accept.setter
+    def accept(self, v):
+        self.attributes['accept'].value = v
 
-class time(element):
-    pass
+    @property
+    def enctype(self):
+        return self.attributes['enctype'].value
 
-class iframes(elements):
-    pass
+    @enctype.setter
+    def enctype(self, v):
+        self.attributes['enctype'].value = v
 
-class iframe(element):
-    pass
+    @property
+    def name(self):
+        return self.attributes['name'].value
 
-class detailss(elements):
-    pass
+    @name.setter
+    def name(self, v):
+        self.attributes['name'].value = v
 
-class details(element):
-    pass
+    @property
+    def autocomplete(self):
+        return self.attributes['autocomplete'].value
 
-# TODO Since this would conflict with Python's bulitin `object` object,
-# uncomment these and ensure everything works as expected.
-'''
-class objects(elements):
-    pass
+    @autocomplete.setter
+    def autocomplete(self, v):
+        self.attributes['autocomplete'].value = v
 
-class object(element):
-    pass
-'''
-
-class commands(elements):
-    pass
-
-class command(element):
-    pass
-
-class cols(elements):
-    pass
-
-class col(element):
-    pass
-
-class colgroups(elements):
-    pass
-
-class colgroup(element):
-    pass
-
-class fieldsets(elements):
-    pass
-
-class fieldset(element):
-    pass
-
-class keygens(elements):
-    pass
-
-class keygen(element):
-    pass
-
-class metas(elements):
-    pass
-
-class meta(element):
-    pass
-
-class tables(elements):
-    pass
-
-class table(element):
-    pass
-
-class basefonts(elements):
-    pass
-
-class basefont(element):
-    pass
-
-class fonts(elements):
-    pass
-
-class font(element):
-    pass
-
-class hrs(elements):
-    pass
-
-class hr(element):
-    pass
 
 class links(elements):
     pass
 
 class link(element):
+    @property
+    def crossorigin(self):
+        return self.attributes['crossorigin'].value
+
+    @crossorigin.setter
+    def crossorigin(self, v):
+        self.attributes['crossorigin'].value = v
+
+    @property
+    def referrerpolicy(self):
+        return self.attributes['referrerpolicy'].value
+
+    @referrerpolicy.setter
+    def referrerpolicy(self, v):
+        self.attributes['referrerpolicy'].value = v
+
+    @property
+    def integrity(self):
+        return self.attributes['integrity'].value
+
+    @integrity.setter
+    def integrity(self, v):
+        self.attributes['integrity'].value = v
+
+    @property
+    def hreflang(self):
+        return self.attributes['hreflang'].value
+
+    @hreflang.setter
+    def hreflang(self, v):
+        self.attributes['hreflang'].value = v
+
+    @property
+    def importance(self):
+        return self.attributes['importance'].value
+
+    @importance.setter
+    def importance(self, v):
+        self.attributes['importance'].value = v
+
+    @property
+    def media(self):
+        return self.attributes['media'].value
+
+    @media.setter
+    def media(self, v):
+        self.attributes['media'].value = v
+
+    @property
+    def href(self):
+        return self.attributes['href'].value
+
+    @href.setter
+    def href(self, v):
+        self.attributes['href'].value = v
+
+    @property
+    def sizes(self):
+        return self.attributes['sizes'].value
+
+    @sizes.setter
+    def sizes(self, v):
+        self.attributes['sizes'].value = v
+
+    @property
+    def rel(self):
+        return self.attributes['rel'].value
+
+    @rel.setter
+    def rel(self, v):
+        self.attributes['rel'].value = v
+
+class buttons(elements):
     pass
 
-class bases(elements):
-    pass
+class button(element):
+    @property
+    def formtarget(self):
+        return self.attributes['formtarget'].value
 
-class base(element):
-    pass
+    @formtarget.setter
+    def formtarget(self, v):
+        self.attributes['formtarget'].value = v
 
-class htmls(elements):
-    pass
+    @property
+    def formaction(self):
+        return self.attributes['formaction'].value
 
-class html(element):
-    pass
+    @formaction.setter
+    def formaction(self, v):
+        self.attributes['formaction'].value = v
 
-class bodys(elements):
-    pass
+    @property
+    def autofocus(self):
+        return self.attributes['autofocus'].value
 
-class body(element):
-    pass
+    @autofocus.setter
+    def autofocus(self, v):
+        self.attributes['autofocus'].value = v
 
-class marquees(elements):
-    pass
+    @property
+    def type(self):
+        return self.attributes['type'].value
 
-class marquee(element):
-    pass
+    @type.setter
+    def type(self, v):
+        self.attributes['type'].value = v
 
-class tbodys(elements):
-    pass
+    @property
+    def formnovalidate(self):
+        return self.attributes['formnovalidate'].value
 
-class tbody(element):
-    pass
+    @formnovalidate.setter
+    def formnovalidate(self, v):
+        self.attributes['formnovalidate'].value = v
 
-class tfoots(elements):
-    pass
+    @property
+    def form(self):
+        return self.attributes['form'].value
 
-class tfoot(element):
-    pass
+    @form.setter
+    def form(self, v):
+        self.attributes['form'].value = v
 
-class trs(elements):
-    pass
+    @property
+    def name(self):
+        return self.attributes['name'].value
 
-class tr(element):
-    pass
+    @name.setter
+    def name(self, v):
+        self.attributes['name'].value = v
 
-class sources(elements):
-    pass
+    @property
+    def formenctype(self):
+        return self.attributes['formenctype'].value
 
-class source(element):
-    pass
+    @formenctype.setter
+    def formenctype(self, v):
+        self.attributes['formenctype'].value = v
 
-class maps(elements):
-    pass
+    @property
+    def disabled(self):
+        return self.attributes['disabled'].value
 
-class map(element):
-    pass
+    @disabled.setter
+    def disabled(self, v):
+        self.attributes['disabled'].value = v
 
-class params(elements):
-    pass
+    @property
+    def value(self):
+        return self.attributes['value'].value
 
-class param(element):
-    pass
+    @value.setter
+    def value(self, v):
+        self.attributes['value'].value = v
 
-class datas(elements):
-    pass
+    @property
+    def formmethod(self):
+        return self.attributes['formmethod'].value
 
-class data(element):
-    pass
+    @formmethod.setter
+    def formmethod(self, v):
+        self.attributes['formmethod'].value = v
 
 class lis(elements):
     pass
 
 class li(element):
+    @property
+    def value(self):
+        return self.attributes['value'].value
+
+    @value.setter
+    def value(self, v):
+        self.attributes['value'].value = v
+
+class outputs(elements):
     pass
 
-class ols(elements):
+class output(element):
+    @property
+    def for_(self):
+        return self.attributes['for'].value
+
+    @for_.setter
+    def for_(self, v):
+        self.attributes['for'].value = v
+
+    @property
+    def form(self):
+        return self.attributes['form'].value
+
+    @form.setter
+    def form(self, v):
+        self.attributes['form'].value = v
+
+    @property
+    def name(self):
+        return self.attributes['name'].value
+
+    @name.setter
+    def name(self, v):
+        self.attributes['name'].value = v
+
+class fieldsets(elements):
     pass
 
-class ol(element):
+class fieldset(element):
+    @property
+    def form(self):
+        return self.attributes['form'].value
+
+    @form.setter
+    def form(self, v):
+        self.attributes['form'].value = v
+
+    @property
+    def name(self):
+        return self.attributes['name'].value
+
+    @name.setter
+    def name(self, v):
+        self.attributes['name'].value = v
+
+    @property
+    def disabled(self):
+        return self.attributes['disabled'].value
+
+    @disabled.setter
+    def disabled(self, v):
+        self.attributes['disabled'].value = v
+
+class tfoots(elements):
     pass
+
+class tfoot(element):
+    @property
+    def bgcolor(self):
+        return self.attributes['bgcolor'].value
+
+    @bgcolor.setter
+    def bgcolor(self, v):
+        self.attributes['bgcolor'].value = v
+
+    @property
+    def align(self):
+        return self.attributes['align'].value
+
+    @align.setter
+    def align(self, v):
+        self.attributes['align'].value = v
+
+class params(elements):
+    pass
+
+class param(element):
+    @property
+    def name(self):
+        return self.attributes['name'].value
+
+    @name.setter
+    def name(self, v):
+        self.attributes['name'].value = v
+
+    @property
+    def value(self):
+        return self.attributes['value'].value
+
+    @value.setter
+    def value(self, v):
+        self.attributes['value'].value = v
+
+class anchors(elements):
+    pass
+
+class anchor(element):
+    @property
+    def referrerpolicy(self):
+        return self.attributes['referrerpolicy'].value
+
+    @referrerpolicy.setter
+    def referrerpolicy(self, v):
+        self.attributes['referrerpolicy'].value = v
+
+    @property
+    def target(self):
+        return self.attributes['target'].value
+
+    @target.setter
+    def target(self, v):
+        self.attributes['target'].value = v
+
+    @property
+    def hreflang(self):
+        return self.attributes['hreflang'].value
+
+    @hreflang.setter
+    def hreflang(self, v):
+        self.attributes['hreflang'].value = v
+
+    @property
+    def ping(self):
+        return self.attributes['ping'].value
+
+    @ping.setter
+    def ping(self, v):
+        self.attributes['ping'].value = v
+
+    @property
+    def media(self):
+        return self.attributes['media'].value
+
+    @media.setter
+    def media(self, v):
+        self.attributes['media'].value = v
+
+    @property
+    def href(self):
+        return self.attributes['href'].value
+
+    @href.setter
+    def href(self, v):
+        self.attributes['href'].value = v
+
+    @property
+    def download(self):
+        return self.attributes['download'].value
+
+    @download.setter
+    def download(self, v):
+        self.attributes['download'].value = v
+
+    @property
+    def rel(self):
+        return self.attributes['rel'].value
+
+    @rel.setter
+    def rel(self, v):
+        self.attributes['rel'].value = v
+
+    @property
+    def shape(self):
+        return self.attributes['shape'].value
+
+    @shape.setter
+    def shape(self, v):
+        self.attributes['shape'].value = v
+
+class audios(elements):
+    pass
+
+class audio(element):
+    @property
+    def crossorigin(self):
+        return self.attributes['crossorigin'].value
+
+    @crossorigin.setter
+    def crossorigin(self, v):
+        self.attributes['crossorigin'].value = v
+
+    @property
+    def loop(self):
+        return self.attributes['loop'].value
+
+    @loop.setter
+    def loop(self, v):
+        self.attributes['loop'].value = v
+
+    @property
+    def buffered(self):
+        return self.attributes['buffered'].value
+
+    @buffered.setter
+    def buffered(self, v):
+        self.attributes['buffered'].value = v
+
+    @property
+    def src(self):
+        return self.attributes['src'].value
+
+    @src.setter
+    def src(self, v):
+        self.attributes['src'].value = v
+
+    @property
+    def controls(self):
+        return self.attributes['controls'].value
+
+    @controls.setter
+    def controls(self, v):
+        self.attributes['controls'].value = v
+
+    @property
+    def autoplay(self):
+        return self.attributes['autoplay'].value
+
+    @autoplay.setter
+    def autoplay(self, v):
+        self.attributes['autoplay'].value = v
+
+    @property
+    def muted(self):
+        return self.attributes['muted'].value
+
+    @muted.setter
+    def muted(self, v):
+        self.attributes['muted'].value = v
+
+    @property
+    def preload(self):
+        return self.attributes['preload'].value
+
+    @preload.setter
+    def preload(self, v):
+        self.attributes['preload'].value = v
+
+class bases(elements):
+    pass
+
+class base(element):
+    @property
+    def target(self):
+        return self.attributes['target'].value
+
+    @target.setter
+    def target(self, v):
+        self.attributes['target'].value = v
+
+    @property
+    def href(self):
+        return self.attributes['href'].value
+
+    @href.setter
+    def href(self, v):
+        self.attributes['href'].value = v
+
+class images(elements):
+    pass
+
+class images(element):
+    @property
+    def crossorigin(self):
+        return self.attributes['crossorigin'].value
+
+    @crossorigin.setter
+    def crossorigin(self, v):
+        self.attributes['crossorigin'].value = v
+
+    @property
+    def referrerpolicy(self):
+        return self.attributes['referrerpolicy'].value
+
+    @referrerpolicy.setter
+    def referrerpolicy(self, v):
+        self.attributes['referrerpolicy'].value = v
+
+    @property
+    def loading(self):
+        return self.attributes['loading'].value
+
+    @loading.setter
+    def loading(self, v):
+        self.attributes['loading'].value = v
+
+    @property
+    def height(self):
+        return self.attributes['height'].value
+
+    @height.setter
+    def height(self, v):
+        self.attributes['height'].value = v
+
+    @property
+    def intrinsicsize(self):
+        return self.attributes['intrinsicsize'].value
+
+    @intrinsicsize.setter
+    def intrinsicsize(self, v):
+        self.attributes['intrinsicsize'].value = v
+
+    @property
+    def src(self):
+        return self.attributes['src'].value
+
+    @src.setter
+    def src(self, v):
+        self.attributes['src'].value = v
+
+    @property
+    def ismap(self):
+        return self.attributes['ismap'].value
+
+    @ismap.setter
+    def ismap(self, v):
+        self.attributes['ismap'].value = v
+
+    @property
+    def importance(self):
+        return self.attributes['importance'].value
+
+    @importance.setter
+    def importance(self, v):
+        self.attributes['importance'].value = v
+
+    @property
+    def usemap(self):
+        return self.attributes['usemap'].value
+
+    @usemap.setter
+    def usemap(self, v):
+        self.attributes['usemap'].value = v
+
+    @property
+    def align(self):
+        return self.attributes['align'].value
+
+    @align.setter
+    def align(self, v):
+        self.attributes['align'].value = v
+
+    @property
+    def alt(self):
+        return self.attributes['alt'].value
+
+    @alt.setter
+    def alt(self, v):
+        self.attributes['alt'].value = v
+
+    @property
+    def sizes(self):
+        return self.attributes['sizes'].value
+
+    @sizes.setter
+    def sizes(self, v):
+        self.attributes['sizes'].value = v
+
+    @property
+    def width(self):
+        return self.attributes['width'].value
+
+    @width.setter
+    def width(self, v):
+        self.attributes['width'].value = v
+
+    @property
+    def border(self):
+        return self.attributes['border'].value
+
+    @border.setter
+    def border(self, v):
+        self.attributes['border'].value = v
+
+    @property
+    def srcset(self):
+        return self.attributes['srcset'].value
+
+    @srcset.setter
+    def srcset(self, v):
+        self.attributes['srcset'].value = v
+
+    @property
+    def decoding(self):
+        return self.attributes['decoding'].value
+
+    @decoding.setter
+    def decoding(self, v):
+        self.attributes['decoding'].value = v
+
+class tablerows(elements):
+    pass
+
+class tablerow(element):
+    @property
+    def bgcolor(self):
+        return self.attributes['bgcolor'].value
+
+    @bgcolor.setter
+    def bgcolor(self, v):
+        self.attributes['bgcolor'].value = v
+
+    @property
+    def align(self):
+        return self.attributes['align'].value
+
+    @align.setter
+    def align(self, v):
+        self.attributes['align'].value = v
+
 
 class applets(elements):
     pass
 
 class applet(element):
+    @property
+    def code(self):
+        return self.attributes['code'].value
+
+    @code.setter
+    def code(self, v):
+        self.attributes['code'].value = v
+
+    @property
+    def codebase(self):
+        return self.attributes['codebase'].value
+
+    @codebase.setter
+    def codebase(self, v):
+        self.attributes['codebase'].value = v
+
+    @property
+    def align(self):
+        return self.attributes['align'].value
+
+    @align.setter
+    def align(self, v):
+        self.attributes['align'].value = v
+
+    @property
+    def alt(self):
+        return self.attributes['alt'].value
+
+    @alt.setter
+    def alt(self, v):
+        self.attributes['alt'].value = v
+
+class objects(elements):
     pass
 
-class canvass(elements):
+class object(element):
+    @property
+    def data(self):
+        return self.attributes['data'].value
+
+    @data.setter
+    def data(self, v):
+        self.attributes['data'].value = v
+
+    @property
+    def type(self):
+        return self.attributes['type'].value
+
+    @type.setter
+    def type(self, v):
+        self.attributes['type'].value = v
+
+    @property
+    def height(self):
+        return self.attributes['height'].value
+
+    @height.setter
+    def height(self, v):
+        self.attributes['height'].value = v
+
+    @property
+    def form(self):
+        return self.attributes['form'].value
+
+    @form.setter
+    def form(self, v):
+        self.attributes['form'].value = v
+
+    @property
+    def name(self):
+        return self.attributes['name'].value
+
+    @name.setter
+    def name(self, v):
+        self.attributes['name'].value = v
+
+    @property
+    def usemap(self):
+        return self.attributes['usemap'].value
+
+    @usemap.setter
+    def usemap(self, v):
+        self.attributes['usemap'].value = v
+
+    @property
+    def width(self):
+        return self.attributes['width'].value
+
+    @width.setter
+    def width(self, v):
+        self.attributes['width'].value = v
+
+    @property
+    def border(self):
+        return self.attributes['border'].value
+
+    @border.setter
+    def border(self, v):
+        self.attributes['border'].value = v
+
+class cols(elements):
     pass
 
-class canvas(element):
+class col(element):
+    @property
+    def bgcolor(self):
+        return self.attributes['bgcolor'].value
+
+    @bgcolor.setter
+    def bgcolor(self, v):
+        self.attributes['bgcolor'].value = v
+
+    @property
+    def span(self):
+        return self.attributes['span'].value
+
+    @span.setter
+    def span(self, v):
+        self.attributes['span'].value = v
+
+    @property
+    def align(self):
+        return self.attributes['align'].value
+
+    @align.setter
+    def align(self, v):
+        self.attributes['align'].value = v
+
+
+class maps(elements):
     pass
+
+class map(element):
+    @property
+    def name(self):
+        return self.attributes['name'].value
+
+    @name.setter
+    def name(self, v):
+        self.attributes['name'].value = v
+
 
 class embeds(elements):
     pass
 
 class embed(element):
+    @property
+    def type(self):
+        return self.attributes['type'].value
+
+    @type.setter
+    def type(self, v):
+        self.attributes['type'].value = v
+
+    @property
+    def height(self):
+        return self.attributes['height'].value
+
+    @height.setter
+    def height(self, v):
+        self.attributes['height'].value = v
+
+    @property
+    def src(self):
+        return self.attributes['src'].value
+
+    @src.setter
+    def src(self, v):
+        self.attributes['src'].value = v
+
+    @property
+    def width(self):
+        return self.attributes['width'].value
+
+    @width.setter
+    def width(self, v):
+        self.attributes['width'].value = v
+
+
+class meters(elements):
     pass
 
-class styles(elements):
+class meter(element):
+    @property
+    def min(self):
+        return self.attributes['min'].value
+
+    @min.setter
+    def min(self, v):
+        self.attributes['min'].value = v
+
+    @property
+    def optimum(self):
+        return self.attributes['optimum'].value
+
+    @optimum.setter
+    def optimum(self, v):
+        self.attributes['optimum'].value = v
+
+    @property
+    def high(self):
+        return self.attributes['high'].value
+
+    @high.setter
+    def high(self, v):
+        self.attributes['high'].value = v
+
+    @property
+    def form(self):
+        return self.attributes['form'].value
+
+    @form.setter
+    def form(self, v):
+        self.attributes['form'].value = v
+
+    @property
+    def max(self):
+        return self.attributes['max'].value
+
+    @max.setter
+    def max(self, v):
+        self.attributes['max'].value = v
+
+    @property
+    def value(self):
+        return self.attributes['value'].value
+
+    @value.setter
+    def value(self, v):
+        self.attributes['value'].value = v
+
+    @property
+    def low(self):
+        return self.attributes['low'].value
+
+    @low.setter
+    def low(self, v):
+        self.attributes['low'].value = v
+
+
+class times(elements):
     pass
 
-class style(element):
-    pass
+class time(element):
+    @property
+    def datetime(self):
+        return self.attributes['datetime'].value
+
+    @datetime.setter
+    def datetime(self, v):
+        self.attributes['datetime'].value = v
+
 
 class menus(elements):
     pass
 
 class menu(element):
+    @property
+    def type(self):
+        return self.attributes['type'].value
+
+    @type.setter
+    def type(self, v):
+        self.attributes['type'].value = v
+
+
+class bodys(elements):
     pass
 
-class bgsounds(elements):
+class body(element):
+    @property
+    def bgcolor(self):
+        return self.attributes['bgcolor'].value
+
+    @bgcolor.setter
+    def bgcolor(self, v):
+        self.attributes['bgcolor'].value = v
+
+    @property
+    def background(self):
+        return self.attributes['background'].value
+
+    @background.setter
+    def background(self, v):
+        self.attributes['background'].value = v
+
+
+class progresss(elements):
     pass
 
-class bgsound(element):
+class progress(element):
+    @property
+    def form(self):
+        return self.attributes['form'].value
+
+    @form.setter
+    def form(self, v):
+        self.attributes['form'].value = v
+
+    @property
+    def max(self):
+        return self.attributes['max'].value
+
+    @max.setter
+    def max(self, v):
+        self.attributes['max'].value = v
+
+    @property
+    def value(self):
+        return self.attributes['value'].value
+
+    @value.setter
+    def value(self, v):
+        self.attributes['value'].value = v
+
+
+class commands(elements):
     pass
+
+class command(element):
+    @property
+    def radiogroup(self):
+        return self.attributes['radiogroup'].value
+
+    @radiogroup.setter
+    def radiogroup(self, v):
+        self.attributes['radiogroup'].value = v
+
+    @property
+    def icon(self):
+        return self.attributes['icon'].value
+
+    @icon.setter
+    def icon(self, v):
+        self.attributes['icon'].value = v
+
+    @property
+    def type(self):
+        return self.attributes['type'].value
+
+    @type.setter
+    def type(self, v):
+        self.attributes['type'].value = v
+
+    @property
+    def checked(self):
+        return self.attributes['checked'].value
+
+    @checked.setter
+    def checked(self, v):
+        self.attributes['checked'].value = v
+
+    @property
+    def disabled(self):
+        return self.attributes['disabled'].value
+
+    @disabled.setter
+    def disabled(self, v):
+        self.attributes['disabled'].value = v
+
+
+class blockquotes(elements):
+    pass
+
+class blockquote(element):
+    @property
+    def cite(self):
+        return self.attributes['cite'].value
+
+    @cite.setter
+    def cite(self, v):
+        self.attributes['cite'].value = v
+
+
+class options(elements):
+    pass
+
+class option(element):
+    @property
+    def label(self):
+        return self.attributes['label'].value
+
+    @label.setter
+    def label(self, v):
+        self.attributes['label'].value = v
+
+    @property
+    def disabled(self):
+        return self.attributes['disabled'].value
+
+    @disabled.setter
+    def disabled(self, v):
+        self.attributes['disabled'].value = v
+
+    @property
+    def selected(self):
+        return self.attributes['selected'].value
+
+    @selected.setter
+    def selected(self, v):
+        self.attributes['selected'].value = v
+
+    @property
+    def value(self):
+        return self.attributes['value'].value
+
+    @value.setter
+    def value(self, v):
+        self.attributes['value'].value = v
+
+
+class canvass(elements):
+    pass
+
+class canvas(element):
+    @property
+    def height(self):
+        return self.attributes['height'].value
+
+    @height.setter
+    def height(self, v):
+        self.attributes['height'].value = v
+
+    @property
+    def width(self):
+        return self.attributes['width'].value
+
+    @width.setter
+    def width(self, v):
+        self.attributes['width'].value = v
+
+
+class ols(elements):
+    pass
+
+class ol(element):
+    @property
+    def reversed(self):
+        return self.attributes['reversed'].value
+
+    @reversed.setter
+    def reversed(self, v):
+        self.attributes['reversed'].value = v
+
+    @property
+    def start(self):
+        return self.attributes['start'].value
+
+    @start.setter
+    def start(self, v):
+        self.attributes['start'].value = v
+
+
+class keygens(elements):
+    pass
+
+class keygen(element):
+    @property
+    def autofocus(self):
+        return self.attributes['autofocus'].value
+
+    @autofocus.setter
+    def autofocus(self, v):
+        self.attributes['autofocus'].value = v
+
+    @property
+    def form(self):
+        return self.attributes['form'].value
+
+    @form.setter
+    def form(self, v):
+        self.attributes['form'].value = v
+
+    @property
+    def name(self):
+        return self.attributes['name'].value
+
+    @name.setter
+    def name(self, v):
+        self.attributes['name'].value = v
+
+    @property
+    def disabled(self):
+        return self.attributes['disabled'].value
+
+    @disabled.setter
+    def disabled(self, v):
+        self.attributes['disabled'].value = v
+
+    @property
+    def keytype(self):
+        return self.attributes['keytype'].value
+
+    @keytype.setter
+    def keytype(self, v):
+        self.attributes['keytype'].value = v
+
+    @property
+    def challenge(self):
+        return self.attributes['challenge'].value
+
+    @challenge.setter
+    def challenge(self, v):
+        self.attributes['challenge'].value = v
+
+
+class tracks(elements):
+    pass
+
+class track(element):
+    @property
+    def default(self):
+        return self.attributes['default'].value
+
+    @default.setter
+    def default(self, v):
+        self.attributes['default'].value = v
+
+    @property
+    def label(self):
+        return self.attributes['label'].value
+
+    @label.setter
+    def label(self, v):
+        self.attributes['label'].value = v
+
+    @property
+    def src(self):
+        return self.attributes['src'].value
+
+    @src.setter
+    def src(self, v):
+        self.attributes['src'].value = v
+
+    @property
+    def srclang(self):
+        return self.attributes['srclang'].value
+
+    @srclang.setter
+    def srclang(self, v):
+        self.attributes['srclang'].value = v
+
+    @property
+    def kind(self):
+        return self.attributes['kind'].value
+
+    @kind.setter
+    def kind(self, v):
+        self.attributes['kind'].value = v
+
+
+class dels(elements):
+    pass
+
+class del_(element):
+    @property
+    def datetime(self):
+        return self.attributes['datetime'].value
+
+    @datetime.setter
+    def datetime(self, v):
+        self.attributes['datetime'].value = v
+
+    @property
+    def cite(self):
+        return self.attributes['cite'].value
+
+    @cite.setter
+    def cite(self, v):
+        self.attributes['cite'].value = v
+
+
+class tbodys(elements):
+    pass
+
+class tbody(element):
+    @property
+    def bgcolor(self):
+        return self.attributes['bgcolor'].value
+
+    @bgcolor.setter
+    def bgcolor(self, v):
+        self.attributes['bgcolor'].value = v
+
+    @property
+    def align(self):
+        return self.attributes['align'].value
+
+    @align.setter
+    def align(self, v):
+        self.attributes['align'].value = v
+
+
+class inss(elements):
+    pass
+
+class ins(element):
+    @property
+    def datetime(self):
+        return self.attributes['datetime'].value
+
+    @datetime.setter
+    def datetime(self, v):
+        self.attributes['datetime'].value = v
+
+    @property
+    def cite(self):
+        return self.attributes['cite'].value
+
+    @cite.setter
+    def cite(self, v):
+        self.attributes['cite'].value = v
+
+
+class textareas(elements):
+    pass
+
+class textarea(element):
+    @property
+    def readonly(self):
+        return self.attributes['readonly'].value
+
+    @readonly.setter
+    def readonly(self, v):
+        self.attributes['readonly'].value = v
+
+    @property
+    def dirname(self):
+        return self.attributes['dirname'].value
+
+    @dirname.setter
+    def dirname(self, v):
+        self.attributes['dirname'].value = v
+
+    @property
+    def cols(self):
+        return self.attributes['cols'].value
+
+    @cols.setter
+    def cols(self, v):
+        self.attributes['cols'].value = v
+
+    @property
+    def required(self):
+        return self.attributes['required'].value
+
+    @required.setter
+    def required(self, v):
+        self.attributes['required'].value = v
+
+    @property
+    def rows(self):
+        return self.attributes['rows'].value
+
+    @rows.setter
+    def rows(self, v):
+        self.attributes['rows'].value = v
+
+    @property
+    def autofocus(self):
+        return self.attributes['autofocus'].value
+
+    @autofocus.setter
+    def autofocus(self, v):
+        self.attributes['autofocus'].value = v
+
+    @property
+    def enterkeyhint(self):
+        return self.attributes['enterkeyhint'].value
+
+    @enterkeyhint.setter
+    def enterkeyhint(self, v):
+        self.attributes['enterkeyhint'].value = v
+
+    @property
+    def form(self):
+        return self.attributes['form'].value
+
+    @form.setter
+    def form(self, v):
+        self.attributes['form'].value = v
+
+    @property
+    def placeholder(self):
+        return self.attributes['placeholder'].value
+
+    @placeholder.setter
+    def placeholder(self, v):
+        self.attributes['placeholder'].value = v
+
+    @property
+    def minlength(self):
+        return self.attributes['minlength'].value
+
+    @minlength.setter
+    def minlength(self, v):
+        self.attributes['minlength'].value = v
+
+    @property
+    def name(self):
+        return self.attributes['name'].value
+
+    @name.setter
+    def name(self, v):
+        self.attributes['name'].value = v
+
+    @property
+    def maxlength(self):
+        return self.attributes['maxlength'].value
+
+    @maxlength.setter
+    def maxlength(self, v):
+        self.attributes['maxlength'].value = v
+
+    @property
+    def disabled(self):
+        return self.attributes['disabled'].value
+
+    @disabled.setter
+    def disabled(self, v):
+        self.attributes['disabled'].value = v
+
+    @property
+    def wrap(self):
+        return self.attributes['wrap'].value
+
+    @wrap.setter
+    def wrap(self, v):
+        self.attributes['wrap'].value = v
+
+    @property
+    def autocomplete(self):
+        return self.attributes['autocomplete'].value
+
+    @autocomplete.setter
+    def autocomplete(self, v):
+        self.attributes['autocomplete'].value = v
+
+    @property
+    def inputmode(self):
+        return self.attributes['inputmode'].value
+
+    @inputmode.setter
+    def inputmode(self, v):
+        self.attributes['inputmode'].value = v
+
 
 class captions(elements):
     pass
 
 class caption(element):
+    @property
+    def align(self):
+        return self.attributes['align'].value
+
+    @align.setter
+    def align(self, v):
+        self.attributes['align'].value = v
+
+
+class inputs(elements):
     pass
+
+class input(element):
+    @property
+    def min(self):
+        return self.attributes['min'].value
+
+    @min.setter
+    def min(self, v):
+        self.attributes['min'].value = v
+
+    @property
+    def readonly(self):
+        return self.attributes['readonly'].value
+
+    @readonly.setter
+    def readonly(self, v):
+        self.attributes['readonly'].value = v
+
+    @property
+    def formtarget(self):
+        return self.attributes['formtarget'].value
+
+    @formtarget.setter
+    def formtarget(self, v):
+        self.attributes['formtarget'].value = v
+
+    @property
+    def dirname(self):
+        return self.attributes['dirname'].value
+
+    @dirname.setter
+    def dirname(self, v):
+        self.attributes['dirname'].value = v
+
+    @property
+    def required(self):
+        return self.attributes['required'].value
+
+    @required.setter
+    def required(self, v):
+        self.attributes['required'].value = v
+
+    @property
+    def formaction(self):
+        return self.attributes['formaction'].value
+
+    @formaction.setter
+    def formaction(self, v):
+        self.attributes['formaction'].value = v
+
+    @property
+    def multiple(self):
+        return self.attributes['multiple'].value
+
+    @multiple.setter
+    def multiple(self, v):
+        self.attributes['multiple'].value = v
+
+    @property
+    def autofocus(self):
+        return self.attributes['autofocus'].value
+
+    @autofocus.setter
+    def autofocus(self, v):
+        self.attributes['autofocus'].value = v
+
+    @property
+    def type(self):
+        return self.attributes['type'].value
+
+    @type.setter
+    def type(self, v):
+        self.attributes['type'].value = v
+
+    @property
+    def step(self):
+        return self.attributes['step'].value
+
+    @step.setter
+    def step(self, v):
+        self.attributes['step'].value = v
+
+    @property
+    def height(self):
+        return self.attributes['height'].value
+
+    @height.setter
+    def height(self, v):
+        self.attributes['height'].value = v
+
+    @property
+    def src(self):
+        return self.attributes['src'].value
+
+    @src.setter
+    def src(self, v):
+        self.attributes['src'].value = v
+
+    @property
+    def accept(self):
+        return self.attributes['accept'].value
+
+    @accept.setter
+    def accept(self, v):
+        self.attributes['accept'].value = v
+
+    @property
+    def size(self):
+        return self.attributes['size'].value
+
+    @size.setter
+    def size(self, v):
+        self.attributes['size'].value = v
+
+    @property
+    def pattern(self):
+        return self.attributes['pattern'].value
+
+    @pattern.setter
+    def pattern(self, v):
+        self.attributes['pattern'].value = v
+
+    @property
+    def formnovalidate(self):
+        return self.attributes['formnovalidate'].value
+
+    @formnovalidate.setter
+    def formnovalidate(self, v):
+        self.attributes['formnovalidate'].value = v
+
+    @property
+    def form(self):
+        return self.attributes['form'].value
+
+    @form.setter
+    def form(self, v):
+        self.attributes['form'].value = v
+
+    @property
+    def checked(self):
+        return self.attributes['checked'].value
+
+    @checked.setter
+    def checked(self, v):
+        self.attributes['checked'].value = v
+
+    @property
+    def placeholder(self):
+        return self.attributes['placeholder'].value
+
+    @placeholder.setter
+    def placeholder(self, v):
+        self.attributes['placeholder'].value = v
+
+    @property
+    def minlength(self):
+        return self.attributes['minlength'].value
+
+    @minlength.setter
+    def minlength(self, v):
+        self.attributes['minlength'].value = v
+
+    @property
+    def list(self):
+        return self.attributes['list'].value
+
+    @list.setter
+    def list(self, v):
+        self.attributes['list'].value = v
+
+    @property
+    def max(self):
+        return self.attributes['max'].value
+
+    @max.setter
+    def max(self, v):
+        self.attributes['max'].value = v
+
+    @property
+    def name(self):
+        return self.attributes['name'].value
+
+    @name.setter
+    def name(self, v):
+        self.attributes['name'].value = v
+
+    @property
+    def maxlength(self):
+        return self.attributes['maxlength'].value
+
+    @maxlength.setter
+    def maxlength(self, v):
+        self.attributes['maxlength'].value = v
+
+    @property
+    def usemap(self):
+        return self.attributes['usemap'].value
+
+    @usemap.setter
+    def usemap(self, v):
+        self.attributes['usemap'].value = v
+
+    @property
+    def formenctype(self):
+        return self.attributes['formenctype'].value
+
+    @formenctype.setter
+    def formenctype(self, v):
+        self.attributes['formenctype'].value = v
+
+    @property
+    def disabled(self):
+        return self.attributes['disabled'].value
+
+    @disabled.setter
+    def disabled(self, v):
+        self.attributes['disabled'].value = v
+
+    @property
+    def alt(self):
+        return self.attributes['alt'].value
+
+    @alt.setter
+    def alt(self, v):
+        self.attributes['alt'].value = v
+
+    @property
+    def width(self):
+        return self.attributes['width'].value
+
+    @width.setter
+    def width(self, v):
+        self.attributes['width'].value = v
+
+    @property
+    def autocomplete(self):
+        return self.attributes['autocomplete'].value
+
+    @autocomplete.setter
+    def autocomplete(self, v):
+        self.attributes['autocomplete'].value = v
+
+    @property
+    def value(self):
+        return self.attributes['value'].value
+
+    @value.setter
+    def value(self, v):
+        self.attributes['value'].value = v
+
+    @property
+    def formmethod(self):
+        return self.attributes['formmethod'].value
+
+    @formmethod.setter
+    def formmethod(self, v):
+        self.attributes['formmethod'].value = v
+
+
+class ths(elements):
+    pass
+
+class th(element):
+    @property
+    def scope(self):
+        return self.attributes['scope'].value
+
+    @scope.setter
+    def scope(self, v):
+        self.attributes['scope'].value = v
+
+    @property
+    def colspan(self):
+        return self.attributes['colspan'].value
+
+    @colspan.setter
+    def colspan(self, v):
+        self.attributes['colspan'].value = v
+
+    @property
+    def bgcolor(self):
+        return self.attributes['bgcolor'].value
+
+    @bgcolor.setter
+    def bgcolor(self, v):
+        self.attributes['bgcolor'].value = v
+
+    @property
+    def align(self):
+        return self.attributes['align'].value
+
+    @align.setter
+    def align(self, v):
+        self.attributes['align'].value = v
+
+    @property
+    def headers(self):
+        return self.attributes['headers'].value
+
+    @headers.setter
+    def headers(self, v):
+        self.attributes['headers'].value = v
+
+    @property
+    def rowspan(self):
+        return self.attributes['rowspan'].value
+
+    @rowspan.setter
+    def rowspan(self, v):
+        self.attributes['rowspan'].value = v
+
+    @property
+    def background(self):
+        return self.attributes['background'].value
+
+    @background.setter
+    def background(self, v):
+        self.attributes['background'].value = v
+
+
+class tds(elements):
+    pass
+
+class td(element):
+    @property
+    def colspan(self):
+        return self.attributes['colspan'].value
+
+    @colspan.setter
+    def colspan(self, v):
+        self.attributes['colspan'].value = v
+
+    @property
+    def bgcolor(self):
+        return self.attributes['bgcolor'].value
+
+    @bgcolor.setter
+    def bgcolor(self, v):
+        self.attributes['bgcolor'].value = v
+
+    @property
+    def align(self):
+        return self.attributes['align'].value
+
+    @align.setter
+    def align(self, v):
+        self.attributes['align'].value = v
+
+    @property
+    def headers(self):
+        return self.attributes['headers'].value
+
+    @headers.setter
+    def headers(self, v):
+        self.attributes['headers'].value = v
+
+    @property
+    def rowspan(self):
+        return self.attributes['rowspan'].value
+
+    @rowspan.setter
+    def rowspan(self, v):
+        self.attributes['rowspan'].value = v
+
+    @property
+    def background(self):
+        return self.attributes['background'].value
+
+    @background.setter
+    def background(self, v):
+        self.attributes['background'].value = v
+
 
 class theads(elements):
     pass
 
 class thead(element):
+    @property
+    def align(self):
+        return self.attributes['align'].value
+
+    @align.setter
+    def align(self, v):
+        self.attributes['align'].value = v
+
+
+class metas(elements):
     pass
+
+class meta(element):
+    @property
+    def charset(self):
+        return self.attributes['charset'].value
+
+    @charset.setter
+    def charset(self, v):
+        self.attributes['charset'].value = v
+
+    @property
+    def content(self):
+        return self.attributes['content'].value
+
+    @content.setter
+    def content(self, v):
+        self.attributes['content'].value = v
+
+    @property
+    def name(self):
+        return self.attributes['name'].value
+
+    @name.setter
+    def name(self, v):
+        self.attributes['name'].value = v
+
+    @property
+    def http_equiv(self):
+        return self.attributes['http-equiv'].value
+
+    @http_equiv.setter
+    def http_equiv(self, v):
+        self.attributes['http-equiv'].value = v
+
+
+class styles(elements):
+    pass
+
+class style(element):
+    @property
+    def type(self):
+        return self.attributes['type'].value
+
+    @type.setter
+    def type(self, v):
+        self.attributes['type'].value = v
+
+    @property
+    def media(self):
+        return self.attributes['media'].value
+
+    @media.setter
+    def media(self, v):
+        self.attributes['media'].value = v
+
+    @property
+    def scoped(self):
+        return self.attributes['scoped'].value
+
+    @scoped.setter
+    def scoped(self, v):
+        self.attributes['scoped'].value = v
+
+
+class datas(elements):
+    pass
+
+class data(element):
+    @property
+    def value(self):
+        return self.attributes['value'].value
+
+    @value.setter
+    def value(self, v):
+        self.attributes['value'].value = v
+
+
+class labels(elements):
+    pass
+
+class label(element):
+    @property
+    def for_(self):
+        return self.attributes['for'].value
+
+    @for_.setter
+    def for_(self, v):
+        self.attributes['for'].value = v
+
+    @property
+    def form(self):
+        return self.attributes['form'].value
+
+    @form.setter
+    def form(self, v):
+        self.attributes['form'].value = v
+
+
+class detailss(elements):
+    pass
+
+class details(element):
+    @property
+    def open(self):
+        return self.attributes['open'].value
+
+    @open.setter
+    def open(self, v):
+        self.attributes['open'].value = v
+
+
+class tables(elements):
+    pass
+
+class table(element):
+    @property
+    def bgcolor(self):
+        return self.attributes['bgcolor'].value
+
+    @bgcolor.setter
+    def bgcolor(self, v):
+        self.attributes['bgcolor'].value = v
+
+    @property
+    def summary(self):
+        return self.attributes['summary'].value
+
+    @summary.setter
+    def summary(self, v):
+        self.attributes['summary'].value = v
+
+    @property
+    def align(self):
+        return self.attributes['align'].value
+
+    @align.setter
+    def align(self, v):
+        self.attributes['align'].value = v
+
+    @property
+    def border(self):
+        return self.attributes['border'].value
+
+    @border.setter
+    def border(self, v):
+        self.attributes['border'].value = v
+
+    @property
+    def background(self):
+        return self.attributes['background'].value
+
+    @background.setter
+    def background(self, v):
+        self.attributes['background'].value = v
+
+
+class selects(elements):
+    pass
+
+class select(element):
+    @property
+    def required(self):
+        return self.attributes['required'].value
+
+    @required.setter
+    def required(self, v):
+        self.attributes['required'].value = v
+
+    @property
+    def multiple(self):
+        return self.attributes['multiple'].value
+
+    @multiple.setter
+    def multiple(self, v):
+        self.attributes['multiple'].value = v
+
+    @property
+    def autofocus(self):
+        return self.attributes['autofocus'].value
+
+    @autofocus.setter
+    def autofocus(self, v):
+        self.attributes['autofocus'].value = v
+
+    @property
+    def size(self):
+        return self.attributes['size'].value
+
+    @size.setter
+    def size(self, v):
+        self.attributes['size'].value = v
+
+    @property
+    def form(self):
+        return self.attributes['form'].value
+
+    @form.setter
+    def form(self, v):
+        self.attributes['form'].value = v
+
+    @property
+    def name(self):
+        return self.attributes['name'].value
+
+    @name.setter
+    def name(self, v):
+        self.attributes['name'].value = v
+
+    @property
+    def disabled(self):
+        return self.attributes['disabled'].value
+
+    @disabled.setter
+    def disabled(self, v):
+        self.attributes['disabled'].value = v
+
+    @property
+    def autocomplete(self):
+        return self.attributes['autocomplete'].value
+
+    @autocomplete.setter
+    def autocomplete(self, v):
+        self.attributes['autocomplete'].value = v
+
+
+class optgroups(elements):
+    pass
+
+class optgroup(element):
+    @property
+    def label(self):
+        return self.attributes['label'].value
+
+    @label.setter
+    def label(self, v):
+        self.attributes['label'].value = v
+
+    @property
+    def disabled(self):
+        return self.attributes['disabled'].value
+
+    @disabled.setter
+    def disabled(self, v):
+        self.attributes['disabled'].value = v
+
+
+class bgsounds(elements):
+    pass
+
+class bgsound(element):
+    @property
+    def loop(self):
+        return self.attributes['loop'].value
+
+    @loop.setter
+    def loop(self, v):
+        self.attributes['loop'].value = v
+
+
+class basefonts(elements):
+    pass
+
+class basefont(element):
+    @property
+    def color(self):
+        return self.attributes['color'].value
+
+    @color.setter
+    def color(self, v):
+        self.attributes['color'].value = v
+
+
+class qs(elements):
+    pass
+
+class q(element):
+    @property
+    def cite(self):
+        return self.attributes['cite'].value
+
+    @cite.setter
+    def cite(self, v):
+        self.attributes['cite'].value = v
+
+
+class sources(elements):
+    pass
+
+class source(element):
+    @property
+    def type(self):
+        return self.attributes['type'].value
+
+    @type.setter
+    def type(self, v):
+        self.attributes['type'].value = v
+
+    @property
+    def src(self):
+        return self.attributes['src'].value
+
+    @src.setter
+    def src(self, v):
+        self.attributes['src'].value = v
+
+    @property
+    def media(self):
+        return self.attributes['media'].value
+
+    @media.setter
+    def media(self, v):
+        self.attributes['media'].value = v
+
+    @property
+    def sizes(self):
+        return self.attributes['sizes'].value
+
+    @sizes.setter
+    def sizes(self, v):
+        self.attributes['sizes'].value = v
+
+    @property
+    def srcset(self):
+        return self.attributes['srcset'].value
+
+    @srcset.setter
+    def srcset(self, v):
+        self.attributes['srcset'].value = v
+
+
+class scripts(elements):
+    pass
+
+class script(element):
+    @property
+    def crossorigin(self):
+        return self.attributes['crossorigin'].value
+
+    @crossorigin.setter
+    def crossorigin(self, v):
+        self.attributes['crossorigin'].value = v
+
+    @property
+    def referrerpolicy(self):
+        return self.attributes['referrerpolicy'].value
+
+    @referrerpolicy.setter
+    def referrerpolicy(self, v):
+        self.attributes['referrerpolicy'].value = v
+
+    @property
+    def integrity(self):
+        return self.attributes['integrity'].value
+
+    @integrity.setter
+    def integrity(self, v):
+        self.attributes['integrity'].value = v
+
+    @property
+    def defer(self):
+        return self.attributes['defer'].value
+
+    @defer.setter
+    def defer(self, v):
+        self.attributes['defer'].value = v
+
+    @property
+    def type(self):
+        return self.attributes['type'].value
+
+    @type.setter
+    def type(self, v):
+        self.attributes['type'].value = v
+
+    @property
+    def charset(self):
+        return self.attributes['charset'].value
+
+    @charset.setter
+    def charset(self, v):
+        self.attributes['charset'].value = v
+
+    @property
+    def src(self):
+        return self.attributes['src'].value
+
+    @src.setter
+    def src(self, v):
+        self.attributes['src'].value = v
+
+    @property
+    def importance(self):
+        return self.attributes['importance'].value
+
+    @importance.setter
+    def importance(self, v):
+        self.attributes['importance'].value = v
+
+    @property
+    def language(self):
+        return self.attributes['language'].value
+
+    @language.setter
+    def language(self, v):
+        self.attributes['language'].value = v
+
+    @property
+    def async(self):
+        return self.attributes['async'].value
+
+    @async.setter
+    def async(self, v):
+        self.attributes['async'].value = v
+
+
+class videos(elements):
+    pass
+
+class video(element):
+    @property
+    def crossorigin(self):
+        return self.attributes['crossorigin'].value
+
+    @crossorigin.setter
+    def crossorigin(self, v):
+        self.attributes['crossorigin'].value = v
+
+    @property
+    def loop(self):
+        return self.attributes['loop'].value
+
+    @loop.setter
+    def loop(self, v):
+        self.attributes['loop'].value = v
+
+    @property
+    def buffered(self):
+        return self.attributes['buffered'].value
+
+    @buffered.setter
+    def buffered(self, v):
+        self.attributes['buffered'].value = v
+
+    @property
+    def height(self):
+        return self.attributes['height'].value
+
+    @height.setter
+    def height(self, v):
+        self.attributes['height'].value = v
+
+    @property
+    def src(self):
+        return self.attributes['src'].value
+
+    @src.setter
+    def src(self, v):
+        self.attributes['src'].value = v
+
+    @property
+    def controls(self):
+        return self.attributes['controls'].value
+
+    @controls.setter
+    def controls(self, v):
+        self.attributes['controls'].value = v
+
+    @property
+    def poster(self):
+        return self.attributes['poster'].value
+
+    @poster.setter
+    def poster(self, v):
+        self.attributes['poster'].value = v
+
+    @property
+    def width(self):
+        return self.attributes['width'].value
+
+    @width.setter
+    def width(self, v):
+        self.attributes['width'].value = v
+
+    @property
+    def autoplay(self):
+        return self.attributes['autoplay'].value
+
+    @autoplay.setter
+    def autoplay(self, v):
+        self.attributes['autoplay'].value = v
+
+    @property
+    def muted(self):
+        return self.attributes['muted'].value
+
+    @muted.setter
+    def muted(self, v):
+        self.attributes['muted'].value = v
+
+    @property
+    def preload(self):
+        return self.attributes['preload'].value
+
+    @preload.setter
+    def preload(self, v):
+        self.attributes['preload'].value = v
+
+
+class marquees(elements):
+    pass
+
+class marquee(element):
+    @property
+    def bgcolor(self):
+        return self.attributes['bgcolor'].value
+
+    @bgcolor.setter
+    def bgcolor(self, v):
+        self.attributes['bgcolor'].value = v
+
+    @property
+    def loop(self):
+        return self.attributes['loop'].value
+
+    @loop.setter
+    def loop(self, v):
+        self.attributes['loop'].value = v
+
+
+class htmls(elements):
+    pass
+
+class html(element):
+    @property
+    def manifest(self):
+        return self.attributes['manifest'].value
+
+    @manifest.setter
+    def manifest(self, v):
+        self.attributes['manifest'].value = v
+
+
+class hrs(elements):
+    pass
+
+class hr(element):
+    @property
+    def align(self):
+        return self.attributes['align'].value
+
+    @align.setter
+    def align(self, v):
+        self.attributes['align'].value = v
+
+    @property
+    def color(self):
+        return self.attributes['color'].value
+
+    @color.setter
+    def color(self, v):
+        self.attributes['color'].value = v
+
+
+class fonts(elements):
+    pass
+
+class font(element):
+    @property
+    def color(self):
+        return self.attributes['color'].value
+
+    @color.setter
+    def color(self, v):
+        self.attributes['color'].value = v
+
+
+class areas(elements):
+    pass
+
+class area(element):
+    @property
+    def referrerpolicy(self):
+        return self.attributes['referrerpolicy'].value
+
+    @referrerpolicy.setter
+    def referrerpolicy(self, v):
+        self.attributes['referrerpolicy'].value = v
+
+    @property
+    def target(self):
+        return self.attributes['target'].value
+
+    @target.setter
+    def target(self, v):
+        self.attributes['target'].value = v
+
+    @property
+    def coords(self):
+        return self.attributes['coords'].value
+
+    @coords.setter
+    def coords(self, v):
+        self.attributes['coords'].value = v
+
+    @property
+    def hreflang(self):
+        return self.attributes['hreflang'].value
+
+    @hreflang.setter
+    def hreflang(self, v):
+        self.attributes['hreflang'].value = v
+
+    @property
+    def ping(self):
+        return self.attributes['ping'].value
+
+    @ping.setter
+    def ping(self, v):
+        self.attributes['ping'].value = v
+
+    @property
+    def media(self):
+        return self.attributes['media'].value
+
+    @media.setter
+    def media(self, v):
+        self.attributes['media'].value = v
+
+    @property
+    def href(self):
+        return self.attributes['href'].value
+
+    @href.setter
+    def href(self, v):
+        self.attributes['href'].value = v
+
+    @property
+    def alt(self):
+        return self.attributes['alt'].value
+
+    @alt.setter
+    def alt(self, v):
+        self.attributes['alt'].value = v
+
+    @property
+    def download(self):
+        return self.attributes['download'].value
+
+    @download.setter
+    def download(self, v):
+        self.attributes['download'].value = v
+
+    @property
+    def rel(self):
+        return self.attributes['rel'].value
+
+    @rel.setter
+    def rel(self, v):
+        self.attributes['rel'].value = v
+
+    @property
+    def shape(self):
+        return self.attributes['shape'].value
+
+    @shape.setter
+    def shape(self, v):
+        self.attributes['shape'].value = v
+
+
+class colgroups(elements):
+    pass
+
+class colgroup(element):
+    @property
+    def bgcolor(self):
+        return self.attributes['bgcolor'].value
+
+    @bgcolor.setter
+    def bgcolor(self, v):
+        self.attributes['bgcolor'].value = v
+
+    @property
+    def span(self):
+        return self.attributes['span'].value
+
+    @span.setter
+    def span(self, v):
+        self.attributes['span'].value = v
+
+    @property
+    def align(self):
+        return self.attributes['align'].value
+
+    @align.setter
+    def align(self, v):
+        self.attributes['align'].value = v
+
+
+class iframes(elements):
+    pass
+
+class iframe(element):
+    @property
+    def csp(self):
+        return self.attributes['csp'].value
+
+    @csp.setter
+    def csp(self, v):
+        self.attributes['csp'].value = v
+
+    @property
+    def referrerpolicy(self):
+        return self.attributes['referrerpolicy'].value
+
+    @referrerpolicy.setter
+    def referrerpolicy(self, v):
+        self.attributes['referrerpolicy'].value = v
+
+    @property
+    def loading(self):
+        return self.attributes['loading'].value
+
+    @loading.setter
+    def loading(self, v):
+        self.attributes['loading'].value = v
+
+    @property
+    def srcdoc(self):
+        return self.attributes['srcdoc'].value
+
+    @srcdoc.setter
+    def srcdoc(self, v):
+        self.attributes['srcdoc'].value = v
+
+    @property
+    def height(self):
+        return self.attributes['height'].value
+
+    @height.setter
+    def height(self, v):
+        self.attributes['height'].value = v
+
+    @property
+    def src(self):
+        return self.attributes['src'].value
+
+    @src.setter
+    def src(self, v):
+        self.attributes['src'].value = v
+
+    @property
+    def importance(self):
+        return self.attributes['importance'].value
+
+    @importance.setter
+    def importance(self, v):
+        self.attributes['importance'].value = v
+
+    @property
+    def allow(self):
+        return self.attributes['allow'].value
+
+    @allow.setter
+    def allow(self, v):
+        self.attributes['allow'].value = v
+
+    @property
+    def name(self):
+        return self.attributes['name'].value
+
+    @name.setter
+    def name(self, v):
+        self.attributes['name'].value = v
+
+    @property
+    def align(self):
+        return self.attributes['align'].value
+
+    @align.setter
+    def align(self, v):
+        self.attributes['align'].value = v
+
+    @property
+    def width(self):
+        return self.attributes['width'].value
+
+    @width.setter
+    def width(self, v):
+        self.attributes['width'].value = v
+
+    @property
+    def sandbox(self):
+        return self.attributes['sandbox'].value
+
+    @sandbox.setter
+    def sandbox(self, v):
+        self.attributes['sandbox'].value = v
+
 
 
     

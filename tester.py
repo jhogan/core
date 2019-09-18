@@ -170,6 +170,9 @@ class tester(entity):
     def assertIsInstance(self, expect, actual, msg=None):
         if not isinstance(expect, actual): self._failures += failure()
 
+    def isinstance(self, expect, actual, msg=None):
+        if not isinstance(expect, actual): self._failures += failure()
+
     def assertType(self, expect, actual, msg=None):
         if type(actual) is not expect: self._failures += failure()
 
