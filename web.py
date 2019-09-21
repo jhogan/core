@@ -8,21 +8,27 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 ########################################################################
 
-import entities
-import textwrap
-import orm
-import html
+
 from dbg import B
+from html.parser import HTMLParser
+import entities
+import html as htmlmod
+import orm
+import textwrap
 
 class undef:
+    """ Used to indicate that an attribute has not been defined.
+    """
+    # TODO This is used in orm.py so it should probably be centralized
+    # somewhere.
     pass
 
 class classproperty(property):
-    # TODO This is in orm.py, too. It should be be moved to a central
-    # location.
-
     ''' Add this decorator to a method and it becomes a class method
     that can be used like a property.'''
+
+    # TODO This is in orm.py, too. It should be be moved to a central
+    # location.
 
     def __get__(self, cls, owner):
         # If cls is not None, it will be the instance. If there is an
@@ -51,17 +57,12 @@ class page(entities.entity):
     def __init__(self, name):
         self.pages = pages()
 
-class AttributeExistsError(Exception):
-    pass
-
-class ClassExistsError(Exception):
-    pass
-
 class attributes(entities.entities):
-    def __iadd__(self, o):
-        if type(o) in (tuple, list):
-            o = attribute(o[0], o[1])
-        super().__iadd__(o)
+    def __iadd__(self, *o):
+        for o in o:
+            if type(o) in (tuple, list):
+                o = attribute(o[0], o[1])
+            super().__iadd__(o)
         return self
 
     def append(self, o, v=None, uniq=False, r=None):
@@ -88,7 +89,6 @@ class attributes(entities.entities):
             attr = None
         else:
             attr = self[ix]
-
 
         if attr:
             return attr
@@ -141,6 +141,7 @@ class attributes(entities.entities):
 
     @property
     def html(self):
+        # TODO We could probably remove the list() brakets
         return ' '.join([x.html for x in self if x.isvalid])
         
 class attribute(entities.entity):
@@ -215,7 +216,6 @@ class cssclass(attribute):
             else:
                 raise ValueError('Invalid type: ' + type(clss).__name__)
 
-
     def __delitem__(self, *clss):
         self.remove(*clss)
 
@@ -266,11 +266,20 @@ class elements(entities.entities):
                 return el
         return None
 
+    @property
+    def html(self):
+        return '\n'.join(x.html for x in self)
+        
+
 class element(entities.entity):
     def __init__(self, str=None):
         if str is not None:
             self.elements += text(str)
 
+    # There must be a closing tag on elements by default. In cases,
+    # such as the `base` element, there should not be a closing tag so
+    # `noend` is set to True
+    noend = False
 
     @property
     def elements(self):
@@ -338,18 +347,28 @@ class element(entities.entity):
             r += ' %s'
             args.append(self.attributes.html)
 
-        r += '>\n'
+        r += '>'
+        if not self.noend:
+            r += '\n'
+
         if body:
             r += '%s\n'
             args += [body]
 
-        r += '</%s>'
-        args += [self.tag]
+        if self.noend:
+            pass
+            #r += '>'
+        else:
+            r += '</%s>'
+            args += [self.tag]
 
         return r % tuple(args)
 
     def __repr__(self):
-        return str(self)
+        r = '%s(%s)'
+        attrs = ' '.join(self.attributes)
+        r %= type(self).__name__, attrs
+        return r
 
 class paragraphs(elements):
     pass
@@ -418,9 +437,21 @@ class text(element):
 
     @property
     def html(self):
-        return html.escape(
+        return htmlmod.escape(
             textwrap.dedent(self._str)
         ).strip()
+
+class comments(elements):
+    pass
+
+class comment(element):
+    def __init__(self, txt):
+        self.text = txt
+
+    @property
+    def html(self):
+        return '<!--%s-->' % self.text
+    
         
 class forms(elements):
     pass
@@ -497,7 +528,6 @@ class form(element):
     @autocomplete.setter
     def autocomplete(self, v):
         self.attributes['autocomplete'].value = v
-
 
 class links(elements):
     pass
@@ -779,6 +809,10 @@ class anchors(elements):
     pass
 
 class anchor(element):
+    @classproperty
+    def tag(cls):
+        return 'a'
+
     @property
     def referrerpolicy(self):
         return self.attributes['referrerpolicy'].value
@@ -923,6 +957,12 @@ class bases(elements):
     pass
 
 class base(element):
+    """ The HTML <base> element specifies the base URL to use for all
+    relative URLs contained within a document. There can be only one
+    <base> element in a document.
+    """
+    noend = True
+
     @property
     def target(self):
         return self.attributes['target'].value
@@ -1091,7 +1131,6 @@ class tablerow(element):
     def align(self, v):
         self.attributes['align'].value = v
 
-
 class applets(elements):
     pass
 
@@ -1224,7 +1263,6 @@ class col(element):
     def align(self, v):
         self.attributes['align'].value = v
 
-
 class maps(elements):
     pass
 
@@ -1236,7 +1274,6 @@ class map(element):
     @name.setter
     def name(self, v):
         self.attributes['name'].value = v
-
 
 class embeds(elements):
     pass
@@ -1273,7 +1310,6 @@ class embed(element):
     @width.setter
     def width(self, v):
         self.attributes['width'].value = v
-
 
 class meters(elements):
     pass
@@ -1335,7 +1371,6 @@ class meter(element):
     def low(self, v):
         self.attributes['low'].value = v
 
-
 class times(elements):
     pass
 
@@ -1347,7 +1382,6 @@ class time(element):
     @datetime.setter
     def datetime(self, v):
         self.attributes['datetime'].value = v
-
 
 class menus(elements):
     pass
@@ -1361,8 +1395,7 @@ class menu(element):
     def type(self, v):
         self.attributes['type'].value = v
 
-
-class bodys(elements):
+class bodyies(elements):
     pass
 
 class body(element):
@@ -1382,8 +1415,7 @@ class body(element):
     def background(self, v):
         self.attributes['background'].value = v
 
-
-class progresss(elements):
+class progresses(elements):
     pass
 
 class progress(element):
@@ -1410,7 +1442,6 @@ class progress(element):
     @value.setter
     def value(self, v):
         self.attributes['value'].value = v
-
 
 class commands(elements):
     pass
@@ -1456,7 +1487,6 @@ class command(element):
     def disabled(self, v):
         self.attributes['disabled'].value = v
 
-
 class blockquotes(elements):
     pass
 
@@ -1468,7 +1498,6 @@ class blockquote(element):
     @cite.setter
     def cite(self, v):
         self.attributes['cite'].value = v
-
 
 class options(elements):
     pass
@@ -1506,7 +1535,6 @@ class option(element):
     def value(self, v):
         self.attributes['value'].value = v
 
-
 class canvass(elements):
     pass
 
@@ -1527,7 +1555,6 @@ class canvas(element):
     def width(self, v):
         self.attributes['width'].value = v
 
-
 class ols(elements):
     pass
 
@@ -1547,7 +1574,6 @@ class ol(element):
     @start.setter
     def start(self, v):
         self.attributes['start'].value = v
-
 
 class keygens(elements):
     pass
@@ -1601,7 +1627,6 @@ class keygen(element):
     def challenge(self, v):
         self.attributes['challenge'].value = v
 
-
 class tracks(elements):
     pass
 
@@ -1646,7 +1671,6 @@ class track(element):
     def kind(self, v):
         self.attributes['kind'].value = v
 
-
 class dels(elements):
     pass
 
@@ -1666,7 +1690,6 @@ class del_(element):
     @cite.setter
     def cite(self, v):
         self.attributes['cite'].value = v
-
 
 class tbodys(elements):
     pass
@@ -1688,7 +1711,6 @@ class tbody(element):
     def align(self, v):
         self.attributes['align'].value = v
 
-
 class inss(elements):
     pass
 
@@ -1708,7 +1730,6 @@ class ins(element):
     @cite.setter
     def cite(self, v):
         self.attributes['cite'].value = v
-
 
 class textareas(elements):
     pass
@@ -1842,7 +1863,6 @@ class textarea(element):
     def inputmode(self, v):
         self.attributes['inputmode'].value = v
 
-
 class captions(elements):
     pass
 
@@ -1854,7 +1874,6 @@ class caption(element):
     @align.setter
     def align(self, v):
         self.attributes['align'].value = v
-
 
 class inputs(elements):
     pass
@@ -2116,7 +2135,6 @@ class input(element):
     def formmethod(self, v):
         self.attributes['formmethod'].value = v
 
-
 class ths(elements):
     pass
 
@@ -2177,7 +2195,6 @@ class th(element):
     def background(self, v):
         self.attributes['background'].value = v
 
-
 class tds(elements):
     pass
 
@@ -2230,7 +2247,6 @@ class td(element):
     def background(self, v):
         self.attributes['background'].value = v
 
-
 class theads(elements):
     pass
 
@@ -2242,7 +2258,6 @@ class thead(element):
     @align.setter
     def align(self, v):
         self.attributes['align'].value = v
-
 
 class metas(elements):
     pass
@@ -2280,7 +2295,6 @@ class meta(element):
     def http_equiv(self, v):
         self.attributes['http-equiv'].value = v
 
-
 class styles(elements):
     pass
 
@@ -2309,7 +2323,6 @@ class style(element):
     def scoped(self, v):
         self.attributes['scoped'].value = v
 
-
 class datas(elements):
     pass
 
@@ -2321,7 +2334,6 @@ class data(element):
     @value.setter
     def value(self, v):
         self.attributes['value'].value = v
-
 
 class labels(elements):
     pass
@@ -2343,7 +2355,6 @@ class label(element):
     def form(self, v):
         self.attributes['form'].value = v
 
-
 class detailss(elements):
     pass
 
@@ -2355,7 +2366,6 @@ class details(element):
     @open.setter
     def open(self, v):
         self.attributes['open'].value = v
-
 
 class tables(elements):
     pass
@@ -2400,7 +2410,6 @@ class table(element):
     @background.setter
     def background(self, v):
         self.attributes['background'].value = v
-
 
 class selects(elements):
     pass
@@ -2470,7 +2479,6 @@ class select(element):
     def autocomplete(self, v):
         self.attributes['autocomplete'].value = v
 
-
 class optgroups(elements):
     pass
 
@@ -2491,7 +2499,6 @@ class optgroup(element):
     def disabled(self, v):
         self.attributes['disabled'].value = v
 
-
 class bgsounds(elements):
     pass
 
@@ -2503,7 +2510,6 @@ class bgsound(element):
     @loop.setter
     def loop(self, v):
         self.attributes['loop'].value = v
-
 
 class basefonts(elements):
     pass
@@ -2517,7 +2523,6 @@ class basefont(element):
     def color(self, v):
         self.attributes['color'].value = v
 
-
 class qs(elements):
     pass
 
@@ -2529,7 +2534,6 @@ class q(element):
     @cite.setter
     def cite(self, v):
         self.attributes['cite'].value = v
-
 
 class sources(elements):
     pass
@@ -2574,7 +2578,6 @@ class source(element):
     @srcset.setter
     def srcset(self, v):
         self.attributes['srcset'].value = v
-
 
 class scripts(elements):
     pass
@@ -2659,7 +2662,6 @@ class script(element):
     @async.setter
     def async(self, v):
         self.attributes['async'].value = v
-
 
 class videos(elements):
     pass
@@ -2753,7 +2755,6 @@ class video(element):
     def preload(self, v):
         self.attributes['preload'].value = v
 
-
 class marquees(elements):
     pass
 
@@ -2774,11 +2775,20 @@ class marquee(element):
     def loop(self, v):
         self.attributes['loop'].value = v
 
-
 class htmls(elements):
     pass
 
 class html(element):
+    def __init__(self, html=None, *args, **kwargs):
+        if isinstance(html, str):
+            self.__class__ = elements
+            super(elements, self).__init__(*args, **kwargs)
+            prs = _htmlparser()
+            prs.feed(html)
+            self += prs.elements
+        else:
+            super().__init__(*args, **kwargs)
+
     @property
     def manifest(self):
         return self.attributes['manifest'].value
@@ -2787,6 +2797,11 @@ class html(element):
     def manifest(self, v):
         self.attributes['manifest'].value = v
 
+class heads(elements):
+    pass
+
+class head(element):
+    pass
 
 class hrs(elements):
     pass
@@ -2808,7 +2823,6 @@ class hr(element):
     def color(self, v):
         self.attributes['color'].value = v
 
-
 class fonts(elements):
     pass
 
@@ -2820,7 +2834,6 @@ class font(element):
     @color.setter
     def color(self, v):
         self.attributes['color'].value = v
-
 
 class areas(elements):
     pass
@@ -2914,7 +2927,6 @@ class area(element):
     def shape(self, v):
         self.attributes['shape'].value = v
 
-
 class colgroups(elements):
     pass
 
@@ -2942,7 +2954,6 @@ class colgroup(element):
     @align.setter
     def align(self, v):
         self.attributes['align'].value = v
-
 
 class iframes(elements):
     pass
@@ -3044,139 +3055,79 @@ class iframe(element):
     def sandbox(self, v):
         self.attributes['sandbox'].value = v
 
+class _htmlparser(HTMLParser):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.elements = elements()
+        self.stack = list()
 
+    def handle_starttag(self, tag, attrs):
+        el = elements.getby(tag=tag)
+        el = el()
+        for attr in attrs:
+            el.attributes += attr
+        try:
+            cur = self.stack[-1]
+        except IndexError:
+            self.elements += el
+        else:
+            cur += el
+        finally:
+            if not el.noend:
+                self.stack.append(el)
 
-    
-html5attrs = {
-    'accept': 'form input',
-    'accept-charset': 'form',
-    'accesskey': '*',
-    'action': 'form',
-    'align': 'applet caption col colgroup hr iframe img table tbody td tfoot  th thead tr',
-    'allow': 'iframe',
-    'alt': 'applet area img input',
-    'async': 'script',
-    'autocapitalize': '*',
-    'autocomplete': 'form input select textarea',
-    'autofocus': 'button input keygen select textarea',
-    'autoplay': 'audio video',
-    'background': 'body table td th',
-    'bgcolor': 'body col colgroup marquee table tbody tfoot td th tr',
-    'border': 'img object table',
-    'buffered': 'audio video',
-    'challenge': 'keygen',
-    'charset': 'meta script',
-    'checked': 'command input',
-    'cite': 'blockquote del ins q',
-    'class': '*',
-    'code': 'applet',
-    'codebase': 'applet',
-    'color': 'basefont font hr',
-    'cols': 'textarea',
-    'colspan': 'td th',
-    'content': 'meta',
-    'contenteditable': '*',
-    'contextmenu': '*',
-    'controls': 'audio video',
-    'coords': 'area',
-    'crossorigin': 'audio img link script video',
-    'csp':	'iframe',
-    'data': 'object',
-    'data-': '*',
-    'datetime': 'del ins time',
-    'decoding': 'img',
-    'default': 'track',
-    'defer': 'script',
-    'dir': '*',
-    'dirname': 'input textarea',
-    'disabled': 'button command fieldset input keygen optgroup option select textarea',
-    'download': 'a area',
-    'draggable': '*',
-    'dropzone': '*',
-    'enctype': 'form',
-    'enterkeyhint': 'textarea',
-    'for': 'label output',
-    'form': 'button fieldset input keygen label meter object output progress select textarea',
-    'formaction': 'input button',
-    'formenctype': 'button input',
-    'formmethod': 'button input',
-    'formnovalidate': 'button input',
-    'formtarget': 'button input',
-    'headers': 'td th',
-    'height': 'canvas embed iframe img input object video',
-    'hidden': '*',
-    'high': 'meter',
-    'href': 'a area base link',
-    'hreflang': 'a area link',
-    'http-equiv': 'meta',
-    'icon': 'command',
-    'id': '*',
-    'importance': 'iframe img link script',
-    'integrity': 'link script',
-    'intrinsicsize': 'img',
-    'inputmode': 'textarea',
-    'ismap': 'img',
-    'itemprop': '*',
-    'keytype': 'keygen',
-    'kind': 'track',
-    'label': 'optgroup option track',
-    'lang': '*',
-    'language': 'script',
-    'loading': 'img iframe',
-    'list': 'input',
-    'loop': 'audio bgsound marquee video',
-    'low': 'meter',
-    'manifest': 'html',
-    'max': 'input meter progress',
-    'maxlength': 'input textarea',
-    'minlength': 'input textarea',
-    'media': 'a area link source style',
-    'method': 'form',
-    'min': 'input meter',
-    'multiple': 'input select',
-    'muted': 'audio video',
-    'name': 'button form fieldset iframe input keygen object output select textarea map meta param',
-    'novalidate': 'form',
-    'open': 'details',
-    'optimum': 'meter',
-    'pattern': 'input',
-    'ping': 'a area',
-    'placeholder': 'input textarea',
-    'poster': 'video',
-    'preload': 'audio video',
-    'radiogroup': 'command',
-    'readonly': 'input textarea',
-    'referrerpolicy': 'a area iframe img link script',
-    'rel': 'a area link',
-    'required': 'input select textarea',
-    'reversed': 'ol',
-    'rows': 'textarea',
-    'rowspan': 'td th',
-    'sandbox': 'iframe',
-    'scope': 'th',
-    'scoped': 'style',
-    'selected': 'option',
-    'shape': 'a area',
-    'size': 'input select',
-    'sizes': 'link img source',
-    'slot': '*',
-    'span': 'col colgroup',
-    'spellcheck': '*',
-    'src': 'audio embed iframe img input script source track video',
-    'srcdoc': 'iframe',
-    'srclang': 'track',
-    'srcset': 'img source',
-    'start': 'ol',
-    'step': 'input',
-    'style': '*',
-    'summary': 'table',
-    'tabindex': '*',
-    'target': 'a area base form',
-    'title': '*',
-    'translate': '*',
-    'type': 'button input command embed object script source style menu',
-    'usemap': 'img input object',
-    'value': 'button data input li meter option progress param',
-    'width': 'canvas embed iframe img input object video',
-    'wrap': 'textarea',
-}
+    def handle_endtag(self, tag):
+        try:
+            cur = self.stack[-1]
+        except IndexError:
+            pass
+        else:
+            if cur.tag == tag:
+                self.stack.pop()
+
+    def handle_data(self, data):
+        data = data.strip()
+
+        # Ignore data that is just whitespace
+        if not data:
+            return
+
+        try:
+            cur = self.stack[-1]
+        except IndexError:
+            raise HtmlParseError('No element to add text to')
+        finally:
+            cur += data
+
+    def handle_comment(self, data):
+        try:
+            cur = self.stack[-1]
+        except IndexError:
+            raise HtmlParseError('No element to add comment to')
+        finally:
+            cur += comment(data)
+
+    def handle_decl(self, decl):
+        raise NotImplementedError(
+            'HTML doctype declaration are not implemented'
+        )
+
+    def unknown_decl(self, data):
+        raise NotImplementedError(
+            'HTML doctype declaration are not implemented'
+        )
+
+    def handle_pi(self, decl):
+        raise NotImplementedError(
+            'Processing instructions are not implemented'
+        )
+
+        
+class AttributeExistsError(Exception):
+    pass
+
+class ClassExistsError(Exception):
+    pass
+
+class HtmlParseError(Exception):
+    pass

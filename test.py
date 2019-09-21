@@ -12059,6 +12059,13 @@ class test_page(tester):
         self.zero(pg.pages)
 
 class test_element(tester):
+    def it_calls_noend(self):
+        self.false(web.paragraph.noend)
+        self.false(web.paragraph().noend)
+
+        self.true(web.base.noend)
+        self.true(web.base().noend)
+
     def it_calls_id(self):
         p = web.paragraph()
         uuid = uuid4().hex
@@ -12076,7 +12083,6 @@ class test_element(tester):
 
         self.isinstance(as_, web.elements)
         self.isinstance(a, web.element)
-        B()
 
         attrs = (
             'referrerpolicy',  'target',  'hreflang',
@@ -12090,6 +12096,14 @@ class test_element(tester):
             self.eq(uuid, getattr(a, attr))
             self.count(i + 1, a.attributes)
         
+class test_comment(tester):
+    def it_calls_html(self):
+        txt = 'Who wrote this crap'
+        com = web.comment(txt)
+
+        expect = '<!--%s-->' % txt
+        self.eq(expect, com.html)
+
 class test_paragraph(tester):
     def it_calls__init___with_str_and_args(self):
         ''' With str arg '''
@@ -12590,6 +12604,57 @@ class test_cssclass(tester):
 class test_header(tester):
     pass
 
+class test_html(tester):
+    def it_morphs(self):
+        # When web.html is given a string, it morphs into a subtype of
+        # `elements`. When single str argument is given, it remains a
+        # web.html.
+        self.type(web.html, web.html())
+        self.type(web.elements, web.html('<p></p>'))
+
+    def it_parses(self):
+        els = web.html(testhtml)
+        expect = testhtml.replace('&', '&amp;')
+        self.eq(expect, els.html)
+
+    def it_doesnt_parse_decls(self):
+        html = '''
+        <!DOCTYPE html>
+        <html>
+        </html>
+        '''
+        self.expect(NotImplementedError, lambda: web.html(html))
+
+    def it_doesnt_parse_unknown_decls(self):
+        # TODO The below dosen't work. The fake uknown declaration is
+        # interpreted as a comment. The parses `unknown_decl` method is
+        # never called. I'm not sure how to create an unknown
+        # declaration. I also don't know why <!DERPTYPE herp> is
+        # interpreted as a comment.
+        return
+        html = '''
+        <html>
+        <!DERPTYPE herp>
+        </html>
+        '''
+        web.html(html)
+        self.expect(NotImplementedError, lambda: web.html(html))
+
+    def it_doesnt_parse_processing_instructions(self):
+        html = '''
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <html>
+        </html>
+        '''
+        self.expect(NotImplementedError, lambda: web.html(html))
+
+class test_site(tester):
+    def it_calls_name(self):
+        name = uuid4().hex
+        s = web.site(name)
+        self.eq(name, s.name)
+
+
 ########################################################################
 # Test parties                                                         #
 ########################################################################
@@ -12606,6 +12671,22 @@ class test_gem(tester):
         self.eq(org.id, gem.organization(org.id).id)
 
 
+testhtml = tester.dedent('''
+<html id="myhtml" arbit="trary">
+  <!-- This is an HTML document -->
+  <head>
+    <!-- This is the head of the HTML document -->
+    <base href="www.example.com">
+  </head>
+  <body>
+    <p>
+      Lorum & Ipsum Δ
+    </p>
+  </body>
+</html>
+''')
 cli().run()
+
+
 
 
