@@ -10263,8 +10263,8 @@ class test_orm(tester):
 
             for k in range(4):
                 aa = artist_artist.getvalid()
-                aa.role = 'art_art-role-' + str(k)
-                aa.slug = 'art_art-slug-' + str(k + 1)
+                aa.role = 'art-art_art-role-' + str(k)
+                aa.slug = 'art-art_art-slug-' + str(k + 1)
                 artobj = artist.getvalid()
 
                 aa.object = artobj
@@ -10520,7 +10520,7 @@ class test_orm(tester):
 
                 self.eq(fff, aa1.orm.persistencestate)
 
-                # TODO This should be removed aa1.artifact
+                aa1.artifact
 
                 self.eq(aa.artifact.id, aa1.artifact.id)
                 
@@ -10570,8 +10570,8 @@ class test_orm(tester):
         # NOTE This wil lazy-load aa1.artifact 4 times
         self.four(self.chronicles)
 
-        # Test unconditionally joining the associated entities collecties
-        # (artist_artifacts) with its composite (artifacts)
+        # Test unconditionally joining the associated entities
+        # collections (artist_artifacts) with its composite (artifacts)
         for b in False, True:
             if b:
                 # Implicitly join artist_artifact
@@ -10610,9 +10610,9 @@ class test_orm(tester):
 
             self.zero(self.chronicles)
 
-        # Test joining the associated entities collecties (artist_artifacts)
-        # with its composite (artifacts) where the composite's join is
-        # conditional.
+        # Test joining the associated entities collections
+        # (artist_artifacts) with its composite (artifacts) where the
+        # composite's join is conditional.
         for b in True, False:
             if b:
                 # Explicitly join artist_artifacts
@@ -10644,9 +10644,9 @@ class test_orm(tester):
 
             self.zero(self.chronicles)
 
-        # Test joining the associated entities collecties (artist_artifacts)
-        # with its composite (artifacts) where the composite's join is
-        # conditional along with the other two.
+        # Test joining the associated entities collections
+        # (artist_artifacts) with its composite (artifacts) where the
+        # composite's join is conditional along with the other two.
         arts1 =  artists('firstname = %s', ('fn-1')) 
         arts1 &= artist_artifacts('role = %s', ('art-art_fact-role-0',)) & \
                  artifacts('description = %s', ('art-art_fact-fact-desc-1',))
@@ -12482,7 +12482,6 @@ class test_orm(tester):
     def it_calls_innerjoin_on_reflexive_associations(self):
         arts = self._create_join_test_reflexive_data()
 
-
         fff = False, False, False
 
         # Test artists joined with artist_artifacts with no condititons
@@ -12513,25 +12512,29 @@ class test_orm(tester):
                 self.eq(fff, aa1.orm.persistencestate)
 
                 self.eq(aa.subject.id, aa1.subject.id)
+                aa1.object
 
-                # TODO LEFTOFF aa1.object.id != aa1.object__artistid
                 self.eq(aa.object.id, aa1.object.id)
+
+                self.zero(self.chronicles)
                 
-                continue
-                self.is_(aa1.artifact, self.chronicles.last.entity)
-                self.eq('retrieve', self.chronicles.last.op)
+                self.is_(aa1.subject, art1)
 
-                self.eq(aa1.artist.id, art1.id)
-        return
-
-        # NOTE The above will lazy-load aa1.artifact 16 times
-        self.count(16, self.chronicles)
+        # NOTE There is some confusion at the momement with
+        # self.chronicles being loaded with aa1.subject or aa1.object
+        # being loaded. Currentely, it appears that all this is loaded
+        # and set by the inner join query and the orm.link() method.
+        # However, in `it_calls_innerjoin_on_associations`,
+        # `aa1.artifact` was presumed to result in a database retrieval
+        # being chronicled.
+        self.zero(self.chronicles)
 
         # Test artists joined with artist_artifacts where the association has a
         # conditional
         arts1 = artists.join(
-            artist_artifacts('role = %s', ('art-art_fact-role-0',))
+            artist_artists('role = %s', ('art-art_art-role-0',))
         )
+
 
         self.one(arts1.orm.joins)
 
@@ -12545,36 +12548,32 @@ class test_orm(tester):
 
             self.eq(fff, art1.orm.persistencestate)
 
-            self.one(art1.artist_artifacts)
+            self.one(art1.artist_artists)
 
-            aa1 = art1.artist_artifacts.first
-            self.eq(aa1.role, 'art-art_fact-role-0')
+            aa1 = art1.artist_artists.first
+            self.eq(aa1.role, 'art-art_art-role-0')
 
-            self.eq(aa1.artifact__artifactid, aa1.artifact.id)
+            self.is_(art1, aa1.subject)
+            self.eq(aa1.subject__artistid, aa1.subject.id)
+            self.eq(aa1.object__artistid, aa1.object.id)
 
             self.eq(fff, aa1.orm.persistencestate)
 
-            # The call to aa1.artifact wil lazy-load artifact which will add to
-            # self.chronicles
-            self.eq('retrieve', self.chronicles.last.op)
+            self.eq(fff, aa1.subject.orm.persistencestate)
+            self.eq(fff, aa1.object.orm.persistencestate)
 
-            self.is_(aa1.artifact, self.chronicles.last.entity)
-
-            self.eq(fff, aa1.artifact.orm.persistencestate)
-
-        # NOTE This wil lazy-load aa1.artifact 4 times
-        self.four(self.chronicles)
-
-        # Test unconditionally joining the associated entities collecties
-        # (artist_artifacts) with its composite (artifacts)
+        # Test unconditionally joining the associated entities
+        # collections (artist_artists) with its composite (artists)
         for b in False, True:
             if b:
                 # Implicitly join artist_artifact
-                arts1 = artists.join(artifacts)
+                arts1 = artists & artists
             else:
-                # Explicitly join artist_artifact
-                arts1 = artists() 
-                arts1 &= artist_artifacts & artifacts
+                # Explicitly join artist_artists
+                arts1 = artists
+                arts1 &= artist_artists & artists
+                B()
+                print(*arts1.orm.sql)
 
             self.one(arts1.orm.joins)
             self.type(artist_artifacts, arts1.orm.joins.first.entities)
@@ -12605,7 +12604,7 @@ class test_orm(tester):
 
             self.zero(self.chronicles)
 
-        # Test joining the associated entities collecties (artist_artifacts)
+        # Test joining the associated entities collections (artist_artifacts)
         # with its composite (artifacts) where the composite's join is
         # conditional.
         for b in True, False:
@@ -12639,7 +12638,7 @@ class test_orm(tester):
 
             self.zero(self.chronicles)
 
-        # Test joining the associated entities collecties (artist_artifacts)
+        # Test joining the associated entities collections (artist_artifacts)
         # with its composite (artifacts) where the composite's join is
         # conditional along with the other two.
         arts1 =  artists('firstname = %s', ('fn-1')) 

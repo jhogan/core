@@ -4328,7 +4328,10 @@ class orm:
                 # mapping's value property. This links entity objects
                 # with their composites (e.g., loc.artist)
                 for map1 in e.orm.mappings.entitymappings:
-                    if map1.entity is type(comp):
+                    if e.orm.isreflexive:
+                        if map1.name == 'subject':
+                            map1._value = comp
+                    elif map1.entity is type(comp):
                         map1._value = comp
 
             with suppress(KeyError):
