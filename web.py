@@ -13,7 +13,9 @@ from dbg import B
 from html.parser import HTMLParser
 import entities
 import html as htmlmod
+import mistune
 import orm
+import sys
 import textwrap
 
 class undef:
@@ -166,6 +168,13 @@ class attribute(entities.entity):
 
         return '%s="%s"' % (self.name, self.value)
 
+    @property
+    def brokenrules(self):
+        # TODO: 
+        # * Attribute name should be [a-z-_]+
+        # * Attribute value should be [a-zA-Z-_]+
+        return super().brokenrules
+
 class cssclass(attribute):
     def __init__(self, value=None):
         super().__init__('class')
@@ -269,22 +278,53 @@ class elements(entities.entities):
     @property
     def html(self):
         return '\n'.join(x.html for x in self)
+
+    @property
+    def parent(self):
+        if not hasattr(self, '_parent'):
+            self._parent = None
+        return self._parent
+
+    def _setparent(self, v):
+        if self.parent:
+            raise ValueError('Parent already set')
+        self._parent = v
         
 
 class element(entities.entity):
-    def __init__(self, str=None):
-        if str is not None:
-            self.elements += text(str)
-
     # There must be a closing tag on elements by default. In cases,
     # such as the `base` element, there should not be a closing tag so
     # `noend` is set to True
     noend = False
 
+    def __init__(self, o=None):
+
+        if isinstance(o, str):
+            self.elements += text(o)
+        elif isinstance(o, element) or isinstance(o, elements):
+            self.elements += o
+
+    def _elements_onadd(self, src, eargs):
+        el = eargs.entity
+        el._setparent(self)
+
+    @property
+    def parent(self):
+        if not hasattr(self, '_parent'):
+            self._parent = None
+        return self._parent
+
+    def _setparent(self, v):
+        if self.parent:
+            raise ValueError('Parent already set')
+        self._parent = v
+
     @property
     def elements(self):
         if not hasattr(self, '_elements'):
             self._elements = elements()
+            self.elements.onadd += self._elements_onadd
+            self._elements._setparent(self)
         return self._elements
 
     @elements.setter
@@ -2781,10 +2821,20 @@ class htmls(elements):
 class html(element):
     def __init__(self, html=None, *args, **kwargs):
         if isinstance(html, str):
+            # Morph the object into an `elements` object
             self.__class__ = elements
             super(elements, self).__init__(*args, **kwargs)
+
+            # Assume the input st is HTML and convert the elements in
+            # the HTML sting into a collection of `elements` objects.
             prs = _htmlparser()
             prs.feed(html)
+            if prs.stack:
+                raise HtmlParseError('Unclosed tag', frm=prs.stack[-1])
+                
+
+            # The parse HTML elements tree becomes this `elements`
+            # collection's constituents.
             self += prs.elements
         else:
             super().__init__(*args, **kwargs)
@@ -2796,6 +2846,75 @@ class html(element):
     @manifest.setter
     def manifest(self, v):
         self.attributes['manifest'].value = v
+
+class _htmlparser(HTMLParser):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.elements = elements()
+        self.stack = list()
+
+    def handle_starttag(self, tag, attrs):
+        el = elements.getby(tag=tag)
+        el = el()
+        for attr in attrs:
+            el.attributes += attr
+        try:
+            cur = self.stack[-1]
+        except IndexError:
+            self.elements += el
+        else:
+            cur[0] += el
+        finally:
+            if not el.noend:
+                self.stack.append([el, self.getpos()])
+
+    def handle_comment(self, data):
+        try:
+            cur = self.stack[-1]
+        except IndexError:
+            self.elements += comment(data)
+        else:
+            cur[0] += comment(data)
+
+    def handle_endtag(self, tag):
+        try:
+            cur = self.stack[-1]
+        except IndexError:
+            pass
+        else:
+            if cur[0].tag == tag:
+                self.stack.pop()
+
+    def handle_data(self, data):
+        data = data.strip()
+
+        # Ignore data that is just whitespace
+        if not data:
+            return
+
+        try:
+            cur = self.stack[-1]
+        except IndexError:
+            raise HtmlParseError(
+                'No element to add text to', [None, self.getpos()]
+            )
+        else:
+            cur[0] += data
+
+    def handle_decl(self, decl):
+        raise NotImplementedError(
+            'HTML doctype declaration are not implemented'
+        )
+
+    def unknown_decl(self, data):
+        raise NotImplementedError(
+            'HTML doctype declaration are not implemented'
+        )
+
+    def handle_pi(self, decl):
+        raise NotImplementedError(
+            'Processing instructions are not implemented'
+        )
 
 class heads(elements):
     pass
@@ -3055,74 +3174,104 @@ class iframe(element):
     def sandbox(self, v):
         self.attributes['sandbox'].value = v
 
-class _htmlparser(HTMLParser):
+class pres(elements):
+    pass
+
+class pre(element):
+    pass
+
+class strongs(elements):
+    pass
+
+class strong(element):
+    pass
+
+class spans(elements):
+    pass
+
+class span(element):
+    pass
+
+class codes(elements):
+    pass
+
+class code(element):
+    tag = 'code'
+
+class codeblocks(codes):
+    pass
+
+class codeblock(code):
+    """ A subtype of `code` which represents a block of code instead of
+    of inline code. The CSS class of `block' is added to distinguish it
+    from inline <code> elements.
+
+    CSS will be needed to cause preserve whitespace, e.g.,::
+
+        code.block{
+          white-space: pre
+        }
+
+    """
+
+    # TODO The text in the <code> will have a leading linebreak because
+    # of the way element.html renders. Work will need to be done to
+    # for element.html to remove this white space. I.e.,:
+    # 
+    #     <code>
+    #         Some code
+    #     </code>
+    #
+    #  should be
+    #
+    #     <code>Some code
+    #     </code>
+    #
+    #  A CSS solution is available for this:
+    # 
+    #      code:first-line{
+    #        font-size: 0;
+    #      }
+    # 
+    #  But this is likely a bad idea. Some better ideas may be found
+    #  here: https://stackoverflow.com/questions/17365838/remove-leading-whitespace-from-whitespace-pre-element
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.elements = elements()
-        self.stack = list()
+        self.classes += 'block'
 
-    def handle_starttag(self, tag, attrs):
-        el = elements.getby(tag=tag)
-        el = el()
-        for attr in attrs:
-            el.attributes += attr
-        try:
-            cur = self.stack[-1]
-        except IndexError:
-            self.elements += el
-        else:
-            cur += el
-        finally:
-            if not el.noend:
-                self.stack.append(el)
+class markdown(elements):
+    def __init__(self, text):
+        super().__init__(self)
+        self._text = text
+        self._parse()
 
-    def handle_endtag(self, tag):
-        try:
-            cur = self.stack[-1]
-        except IndexError:
-            pass
-        else:
-            if cur.tag == tag:
-                self.stack.pop()
+    @property
+    def text(self):
+        return textwrap.dedent(self._text)
 
-    def handle_data(self, data):
-        data = data.strip()
+    def _parse(self):
+        class renderer(mistune.Renderer):
+            def __init__(self, els):
+                super().__init__()
+                self.elements = els
 
-        # Ignore data that is just whitespace
-        if not data:
-            return
+            def paragraph(self, text):
+                self.elements += paragraph(text)
+                return str()
 
-        try:
-            cur = self.stack[-1]
-        except IndexError:
-            raise HtmlParseError('No element to add text to')
-        finally:
-            cur += data
+            def block_code(self, code, language=None):
+                cb = codeblock(code)
+                cb.lang = language or undef
+                self.elements += cb
+                return str()
 
-    def handle_comment(self, data):
-        try:
-            cur = self.stack[-1]
-        except IndexError:
-            raise HtmlParseError('No element to add comment to')
-        finally:
-            cur += comment(data)
+        md = mistune.Markdown(renderer=renderer(els=self))
+        md(self.text)
 
-    def handle_decl(self, decl):
-        raise NotImplementedError(
-            'HTML doctype declaration are not implemented'
-        )
 
-    def unknown_decl(self, data):
-        raise NotImplementedError(
-            'HTML doctype declaration are not implemented'
-        )
+    
 
-    def handle_pi(self, decl):
-        raise NotImplementedError(
-            'Processing instructions are not implemented'
-        )
-
-        
 class AttributeExistsError(Exception):
     pass
 
@@ -3130,4 +3279,43 @@ class ClassExistsError(Exception):
     pass
 
 class HtmlParseError(Exception):
-    pass
+    def __init__(self, msg=None, frm=None):
+        self._frame = frm
+        self._msg = msg
+
+    @property
+    def line(self):
+        frm = self._frame
+
+        if not frm:
+            return None
+
+        return frm[1][0]
+
+    @property
+    def column(self):
+        frm = self._frame
+
+        if not frm:
+            return None
+
+        return frm[1][1]
+
+    @property
+    def element(self):
+        frm = self._frame
+
+        if not frm:
+            return None
+
+        return frm[0]
+       
+    def __str__(self):
+        r = self._msg
+        if self._frame:
+
+            if self.element:
+                r += ' <%s>' % self.element.tag
+
+            r += ' at line %s column %s' % (self.line, self.column)
+        return r

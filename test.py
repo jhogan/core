@@ -12059,6 +12059,23 @@ class test_page(tester):
         self.zero(pg.pages)
 
 class test_element(tester):
+    def it_calls_parent(self):
+        p = web.paragraph()
+        self.none(p.parent)
+
+        txt = web.text('some text')
+        B()
+        p += txt
+        self.none(p.parent)
+        self.is_(p, txt.parent)
+
+        b = web.strong('strong text')
+        txt += b
+        self.none(p.parent)
+        self.is_(p, txt.parent)
+        self.is_(txt, b.parent)
+        self.is_(p, b.parent.parent)
+
     def it_calls_noend(self):
         self.false(web.paragraph.noend)
         self.false(web.paragraph().noend)
@@ -12611,7 +12628,41 @@ class test_html(tester):
         # web.html.
         self.type(web.html, web.html())
         self.type(web.elements, web.html('<p></p>'))
+    
+    def it_raises_on_unclosed_tags(self):
+        html = self.dedent('''
+        <body>
+          <p>
+        </body>
+        ''')
 
+        ex = self.expect(web.HtmlParseError, lambda: web.html(html))
+
+        if type(ex) is web.HtmlParseError:
+            self.eq((2, 2), (ex.line, ex.column))
+
+    def it_doesnt_raise_on_unnested_comment(self):
+        html = self.dedent('''
+          <!-- A comment -->
+          <p>
+            A paragraph.
+          </p>
+        ''')
+
+        self.expect(None, lambda: web.html(html))
+
+    def it_raises_on_unexpected_text(self):
+        html = self.dedent('''
+          Some unexpected text
+          </p>
+        </body>
+        ''')
+
+        ex = self.expect(web.HtmlParseError, lambda: web.html(html))
+
+        if type(ex) is web.HtmlParseError:
+            self.eq((1, 0), (ex.line, ex.column))
+        
     def it_parses(self):
         els = web.html(testhtml)
         expect = testhtml.replace('&', '&amp;')
@@ -12647,6 +12698,161 @@ class test_html(tester):
         </html>
         '''
         self.expect(NotImplementedError, lambda: web.html(html))
+
+class test_markdown(tester):
+    def it_parses_code_blocks(self):
+        md = web.markdown('''
+        This is a normal paragraph:
+
+            # This is a code block.
+            print('Hello, World')
+            sys.exit(0)
+
+
+        This is another paragraph.
+        ''')
+
+        self.type(web.paragraph, md.first)
+
+        self.eq(
+            'This is a normal paragraph:', 
+            md.first.elements.first.html
+        )
+
+        self.type(web.codeblock, md.second)
+
+        self.type(web.paragraph, md.third)
+        self.eq(
+            'This is another paragraph.', 
+            md.third.elements.first.html
+        )
+
+        expect = self.dedent('''
+        <p>
+          This is a normal paragraph:
+        </p>
+        <code class="block">
+          # This is a code block.
+          print(&#x27;Hello, World&#x27;)
+          sys.exit(0)
+        </code>
+        <p>
+          This is another paragraph.
+        </p>
+        ''')
+
+        self.eq(expect, md.html)
+
+    def it_parses_block_quotes(self):
+        md = self.dedent('''
+          > This is a blockquote with two paragraphs. Lorem ipsum dolor
+          > sit amet, consectetuer adipiscing elit.
+          > 
+          > Donec sit amet nisl. Aliquam semper ipsum sit amet velit.
+          > Suspendisse id sem consectetuer libero luctus adipiscing.
+
+          > This is a blockquote with two paragraphs. Lorem ipsum dolor
+          sit amet, consectetuer adipiscing elit.
+
+          > This is the first level of quoting.
+          >
+          > > This is nested blockquote.
+          >
+          > Back to the first level.
+        ''')
+
+        # TODO Get the below working when other elements are working.
+        # Blockquotes can contain other Markdown elements, including
+        # headers, lists, and code blocks:
+        return
+
+        md = self.dedent('''
+          > ## This is a header.
+          > 
+          > 1.   This is the first list item.
+          > 2.   This is the second list item.
+          > 
+          > Here's some example code:
+          > 
+          >     return shell_exec("echo $input | $markdown_script");
+        ''')
+
+    def it_parses_paragraph(self):
+        ''' Parse a simple, one-line paragraph '''
+        md = web.markdown('''
+        This is a paragraph.
+        ''')
+
+        self.one(md)
+        self.type(web.paragraph, md.first)
+
+        expect = self.dedent('''
+        <p>
+          This is a paragraph.
+        </p>
+        ''')
+
+        self.eq(expect, md.first.html)
+
+        ''' Parse two paragraphs '''
+        md = web.markdown('''
+        Parcite, mortales, dapibus temerare nefandis
+        corpora! Sunt fruges, sunt deducentia ramos
+        pondere poma suo tumidaeque in vitibus uvae,
+        sunt herbae dulces, sunt quae mitescere flamma
+        mollirique queant; nec vobis lacteus umor
+        eripitur, nec mella thymi redolentia flore:
+        prodiga divitias alimentaque mitia tellus
+        suggerit atque epulas sine caede et sanguine praebet.
+
+        Carne ferae sedant ieiunia, nec tamen omnes:
+        quippe equus et pecudes armentaque gramine vivunt.
+        At quibus ingenium est inmansuetumque ferumque,
+        Armeniae tigres iracundique leones
+        cumque lupis ursi, dapibus cum sanguine gaudent.
+        Heu quantum scelus est in viscera viscera condi
+        congestoque avidum pinguescere corpore corpus
+        alteriusque animantem animantis vivere leto!
+        Scilicet in tantis opibus, quas optima matrum
+        terra parit, nil te nisi tristia mandere saevo
+        vulnera dente iuvat ritusque referre Cyclopum,
+        nec, nisi perdideris alium, placare voracis
+        et male morati poteris ieiunia ventris?
+        ''')
+
+        self.two(md)
+        self.type(web.paragraph, md.first)
+        self.type(web.paragraph, md.second)
+
+        expect = self.dedent('''
+        <p>
+          Parcite, mortales, dapibus temerare nefandis
+          corpora! Sunt fruges, sunt deducentia ramos
+          pondere poma suo tumidaeque in vitibus uvae,
+          sunt herbae dulces, sunt quae mitescere flamma
+          mollirique queant; nec vobis lacteus umor
+          eripitur, nec mella thymi redolentia flore:
+          prodiga divitias alimentaque mitia tellus
+          suggerit atque epulas sine caede et sanguine praebet.
+        </p>
+        <p>
+          Carne ferae sedant ieiunia, nec tamen omnes:
+          quippe equus et pecudes armentaque gramine vivunt.
+          At quibus ingenium est inmansuetumque ferumque,
+          Armeniae tigres iracundique leones
+          cumque lupis ursi, dapibus cum sanguine gaudent.
+          Heu quantum scelus est in viscera viscera condi
+          congestoque avidum pinguescere corpore corpus
+          alteriusque animantem animantis vivere leto!
+          Scilicet in tantis opibus, quas optima matrum
+          terra parit, nil te nisi tristia mandere saevo
+          vulnera dente iuvat ritusque referre Cyclopum,
+          nec, nisi perdideris alium, placare voracis
+          et male morati poteris ieiunia ventris?
+        </p>
+        ''')
+
+        self.eq(expect, md.html)
 
 class test_site(tester):
     def it_calls_name(self):
