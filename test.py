@@ -12484,7 +12484,7 @@ class test_orm(tester):
 
         fff = False, False, False
 
-        # Test artists joined with artist_artifacts with no condititons
+        # Test artists joined with artist_artists with no condititons
         arts1 = artists & artist_artists
 
         self.one(arts1.orm.joins)
@@ -12529,7 +12529,7 @@ class test_orm(tester):
         # being chronicled.
         self.zero(self.chronicles)
 
-        # Test artists joined with artist_artifacts where the association has a
+        # Test artists joined with artist_artists where the association has a
         # conditional
         arts1 = artists.join(
             artist_artists('role = %s', ('art-art_art-role-0',))
@@ -12566,20 +12566,19 @@ class test_orm(tester):
         # collections (artist_artists) with its composite (artists)
         for b in False, True:
             if b:
-                # Implicitly join artist_artifact
+                # Implicitly join artist_artists
                 arts1 = artists & artists
             else:
                 # Explicitly join artist_artists
                 arts1 = artists
                 arts1 &= artist_artists & artists
-                B()
-                print(*arts1.orm.sql)
 
             self.one(arts1.orm.joins)
-            self.type(artist_artifacts, arts1.orm.joins.first.entities)
+
+            self.type(artist_artists, arts1.orm.joins.first.entities)
             self.one(arts1.orm.joins.first.entities.orm.joins)
-            facts = arts1.orm.joins.first.entities.orm.joins.first.entities
-            self.type(artifacts, facts)
+            objarts = arts1.orm.joins.first.entities.orm.joins.first.entities
+            self.type(artists, objarts)
 
             arts1.sort()
 
@@ -12592,17 +12591,28 @@ class test_orm(tester):
 
                 self.eq(fff, art1.orm.persistencestate)
 
-                self.four(art1.artist_artifacts)
+                self.four(art1.artist_artists)
 
-                art.artist_artifacts.sort()
-                art1.artist_artifacts.sort()
+                art.artist_artists.sort()
+                art1.artist_artists.sort()
 
-                for aa, aa1 in zip(art.artist_artifacts, art1.artist_artifacts):
+                aass = zip(art.artist_artists, art1.artist_artists)
+                for aa, aa1 in aass:
                     self.eq(fff, aa1.orm.persistencestate)
                     self.eq(aa.id, aa.id)
-                    self.eq(aa.artifact.id, aa1.artifact.id)
+                    self.eq(
+                        aa.subject__artistid, 
+                        aa1.subject__artistid
+                    )
+                    self.eq(
+                        aa.object__artistid, 
+                        aa1.object__artistid
+                    )
+                    self.eq(aa.subject.id, aa1.subject.id)
+                    self.eq(aa.object.id, aa1.object.id)
 
             self.zero(self.chronicles)
+        return
 
         # Test joining the associated entities collections (artist_artifacts)
         # with its composite (artifacts) where the composite's join is

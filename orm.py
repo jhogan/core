@@ -1198,8 +1198,17 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             # For each of self's associations mappings
             for map in self.orm.mappings.associationsmappings:
 
-                # For ecah entity mapping in this associationsmapping
+                # If self and es are the same type, we are looking for
+                # a reflexive association.
+                if (
+                    type(self) is type(es) 
+                    and not map.associations.orm.isreflexive
+                ):
+                    continue
+
+                # For each entity mapping in this associationsmapping
                 for map1 in map.associations.orm.mappings.entitymappings:
+
 
                     # If the associationsmapping's entity is the same class as
                     # the joinee (es)
@@ -4314,7 +4323,7 @@ class orm:
                 )
 
                 # For each of the composite mappings, if `e` is the same
-                # type as the map then assign e to that mappings's value
+                # type as the map then assign `e` to that mappings's value
                 # property.  This links entity objects to their
                 # constituents (e.g., artist,locations.last)
                 for map1 in maps:
@@ -4329,7 +4338,22 @@ class orm:
                 # with their composites (e.g., loc.artist)
                 for map1 in e.orm.mappings.entitymappings:
                     if e.orm.isreflexive:
-                        if map1.name == 'subject':
+                        # If the FK (map) is refers to the subject side
+                        # of the association, and the entitymapping
+                        # (map1) is the subject of the association, then
+                        # then FK's value should be the composite. The
+                        # same logic applies analogously to the object
+                        # side.
+                        if (
+                            (
+                                map.name.startswith('subject__') 
+                                and map1.name == 'subject'
+                            )
+                            or (
+                                map.name.startswith('object__') 
+                                and map1.name == 'object'
+                            )
+                        ):
                             map1._value = comp
                     elif map1.entity is type(comp):
                         map1._value = comp
@@ -4340,7 +4364,7 @@ class orm:
     @property
     def sql(self):
         """ Return a tuple containing the SELECT statement as the first
-        elelement and the args list as the second.
+        element and the args list as the second.
         """
         return self._getsql()
 
@@ -4437,7 +4461,11 @@ class orm:
                     pk = join.entities.orm.mappings.primarykeymapping.name
                     fks = joiner.entities.orm.mappings.foreignkeymappings
                     for map in fks: 
-                        if join.entities.orm.entity is map.entity:
+                        if joiner.entities.orm.isreflexive:
+                            if map.name.startswith('object__'):
+                                id = map.name
+                                break
+                        elif join.entities.orm.entity is map.entity:
                             id = map.name
                             break
                     else:
