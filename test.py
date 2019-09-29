@@ -12064,7 +12064,6 @@ class test_element(tester):
         self.none(p.parent)
 
         txt = web.text('some text')
-        B()
         p += txt
         self.none(p.parent)
         self.is_(p, txt.parent)
@@ -12074,7 +12073,51 @@ class test_element(tester):
         self.none(p.parent)
         self.is_(p, txt.parent)
         self.is_(txt, b.parent)
+        self.is_(txt, b.getparent())
+        self.is_(txt, b.getparent(0))
         self.is_(p, b.parent.parent)
+        self.is_(p, b.grandparent)
+        self.is_(p, b.getparent(1))
+        self.is_(b, b.elements.first.parent)
+        self.is_(txt, b.elements.first.grandparent)
+        self.is_(p, b.elements.first.greatgrandparent)
+        self.is_(p, b.elements.first.getparent(2))
+
+    def it_calls_siblings(self):
+        p = web.paragraph()
+
+        txt = web.text('some text')
+        p += txt
+        self.zero(txt.siblings)
+
+        b = web.strong('some strong text')
+        p += b
+        self.one(txt.siblings)
+        self.is_(b, txt.siblings.first)
+        self.one(b.siblings)
+        self.is_(txt, b.siblings.first)
+
+        i = web.emphasis('some emphasized text')
+        p += i
+        self.two(txt.siblings)
+        self.is_(b, txt.siblings.first)
+        self.is_(i, txt.siblings.second)
+
+        self.two(b.siblings)
+        self.is_(txt, b.siblings.first)
+        self.is_(i, b.siblings.second)
+
+        self.two(i.siblings)
+        self.is_(txt, i.siblings.first)
+        self.is_(b, i.siblings.second)
+
+    def it_raises_when_moving_elements(self):
+        p = web.paragraph()
+        txt = web.text('some text')
+        p += txt
+
+        p1 = web.paragraph()
+        self.expect(web.DomMoveError, lambda: p1.__iadd__(txt))
 
     def it_calls_noend(self):
         self.false(web.paragraph.noend)

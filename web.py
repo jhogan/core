@@ -309,15 +309,58 @@ class element(entities.entity):
         el._setparent(self)
 
     @property
+    def id(self):
+        """ Defines a unique identifier (ID) which must be unique in the
+        whole document. Its purpose is to identify the element when
+        linking (using a fragment identifier), scripting, or styling
+        (with CSS). [_moz_global_attributes]
+        """
+        return self.attributes['id'].value
+
+    @id.setter
+    def id(self, v):
+        self.attributes['id'] = v
+
+    @property
     def parent(self):
         if not hasattr(self, '_parent'):
             self._parent = None
         return self._parent
 
+    @property
+    def grandparent(self):
+        return self.getparent(1)
+
+    @property
+    def greatgrandparent(self):
+        return self.getparent(2)
+
+    def getparent(self, num=0):
+        rent = self.parent
+
+        for _ in range(num):
+            rent = rent.parent
+
+        return rent
+
     def _setparent(self, v):
         if self.parent:
-            raise ValueError('Parent already set')
+            raise DomMoveError('Parent already set')
         self._parent = v
+
+    @property
+    def siblings(self):
+        els = elements()
+        rent = self.parent
+
+        if rent:
+            for el in rent.elements:
+                if el is self:
+                    continue
+
+                els += el
+
+        return els
 
     @property
     def elements(self):
