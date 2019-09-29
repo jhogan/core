@@ -18,6 +18,10 @@ import orm
 import sys
 import textwrap
 
+"""
+.. _moz_global_attributes https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes
+"""
+
 class undef:
     """ Used to indicate that an attribute has not been defined.
     """
@@ -287,10 +291,10 @@ class elements(entities.entities):
 
     def _setparent(self, v):
         if self.parent:
-            raise ValueError('Parent already set')
+            # TODO Write test for this 
+            raise DomMoveError('Parent already set')
         self._parent = v
         
-
 class element(entities.entity):
     # There must be a closing tag on elements by default. In cases,
     # such as the `base` element, there should not be a closing tag so
@@ -3229,6 +3233,20 @@ class strongs(elements):
 class strong(element):
     pass
 
+class emphases(elements):
+    """ A collection of ``emphasis`` elements.
+    """
+    pass
+
+class emphasis(element):
+    """ The HTML <em> element which marks text that has stress emphasis.
+    This element can be nested, with each level of nesting
+    indicating a greater degree of emphasis. 
+
+    See: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/em
+    """
+    tag = 'em'
+
 class spans(elements):
     pass
 
@@ -3362,3 +3380,6 @@ class HtmlParseError(Exception):
 
             r += ' at line %s column %s' % (self.line, self.column)
         return r
+
+class DomMoveError(ValueError):
+    pass
