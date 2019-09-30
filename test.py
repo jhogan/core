@@ -12787,7 +12787,30 @@ class test_markdown(tester):
         self.eq(expect, md.html)
 
     def it_parses_block_quotes(self):
-        md = self.dedent('''
+        # REMOVE ME
+        import mistune
+        md = mistune.Markdown()(textwrap.dedent('''
+          A paragraph.
+
+          > This is a blockquote with two paragraphs. Lorem ipsum dolor
+          > sit amet, consectetuer adipiscing elit.
+          > 
+          > Donec sit amet nisl. Aliquam semper ipsum sit amet velit.
+          > Suspendisse id sem consectetuer libero luctus adipiscing.
+
+          > This is a blockquote with two paragraphs. Lorem ipsum dolor
+          sit amet, consectetuer adipiscing elit.
+
+          > This is the first level of quoting.
+          >
+          > > This is nested blockquote.
+          >
+          > Back to the first level.
+        '''))
+
+        md = dom.markdown('''
+          A paragraph.
+
           > This is a blockquote with two paragraphs. Lorem ipsum dolor
           > sit amet, consectetuer adipiscing elit.
           > 
@@ -12803,6 +12826,8 @@ class test_markdown(tester):
           >
           > Back to the first level.
         ''')
+
+
 
         # TODO Get the below working when other elements are working.
         # Blockquotes can contain other Markdown elements, including

@@ -13,10 +13,10 @@ from dbg import B
 from html.parser import HTMLParser
 import entities
 import html as htmlmod
-import mistune
+from mistune import Markdown
 import orm
 import sys
-import textwrap
+from textwrap import dedent
 
 """
 .. _moz_global_attributes https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes
@@ -520,12 +520,12 @@ class text(element):
         self._str = str
 
     def __str__(self):
-        return textwrap.dedent(self._str).strip()
+        return dedent(self._str).strip()
 
     @property
     def html(self):
         return htmlmod.escape(
-            textwrap.dedent(self._str)
+            dedent(self._str)
         ).strip()
 
 class comments(elements):
@@ -3304,34 +3304,7 @@ class codeblock(code):
 class markdown(elements):
     def __init__(self, text):
         super().__init__(self)
-        self._text = text
-        self._parse()
-
-    @property
-    def text(self):
-        return textwrap.dedent(self._text)
-
-    def _parse(self):
-        class renderer(mistune.Renderer):
-            def __init__(self, els):
-                super().__init__()
-                self.elements = els
-
-            def paragraph(self, text):
-                self.elements += paragraph(text)
-                return str()
-
-            def block_code(self, code, language=None):
-                cb = codeblock(code)
-                cb.lang = language or undef
-                self.elements += cb
-                return str()
-
-        md = mistune.Markdown(renderer=renderer(els=self))
-        md(self.text)
-
-
-    
+        self += html(Markdown()(dedent(text).strip()))
 
 class AttributeExistsError(Exception):
     pass
