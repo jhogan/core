@@ -1198,13 +1198,16 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             # For each of self's associations mappings
             for map in self.orm.mappings.associationsmappings:
 
-                # If self and es are the same type, we are looking for
-                # a reflexive association.
-                if (
-                    type(self) is type(es) 
-                    and not map.associations.orm.isreflexive
-                ):
-                    continue
+                # If the association is reflexive, we are only
+                # interested in it if self and es are the same type.
+                # However, if the association is not reflexive, we are
+                # not interested in it if self and es are the same type.
+                if map.associations.orm.isreflexive:
+                    if type(self) is not type(es):
+                        continue
+                else:
+                    if type(self) is type(es):
+                        continue
 
                 # For each entity mapping in this associationsmapping
                 for map1 in map.associations.orm.mappings.entitymappings:

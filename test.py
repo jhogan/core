@@ -7573,6 +7573,16 @@ class test_orm(tester):
         for prop in aa.orm.properties:
             self.eq(1, d.count(prop))
 
+        # Reflexive
+        art.artists += artist.getvalid()
+        aa = art.artist_artists.first
+
+        d = dir(aa)
+
+        for prop in aa.orm.properties:
+            self.eq(1, d.count(prop))
+
+
     def it_reconnects_closed_database_connections(self):
         def art_onafterreconnect(src, eargs):
             drown()
@@ -12535,7 +12545,6 @@ class test_orm(tester):
             artist_artists('role = %s', ('art-art_art-role-0',))
         )
 
-
         self.one(arts1.orm.joins)
 
         self.four(arts1)
@@ -12746,18 +12755,19 @@ class test_orm(tester):
 
             self.zero(self.chronicles)
 
-        # Test joining a constituent (component) of the composite (artifacts)
-        # of the association (artist_artifacts) with conditions.
-        aarole = 'art-art_fact-role-1'
-        facttitle = 'art-art_fact-fact-title-1'
-        compname = 'art-art_fact-role-fact-comp-name1'
-        arts1 =  artists() & (
-                    artist_artifacts(role = aarole) & (
-                        artifacts(title = facttitle) & components(name = compname)
+        # Test joining a constituent (presentation) of the composite
+        # (artists) of the association (artist_artists) with conditions.
+        aarole = 'art-art_art-role-1'
+        fn = 'art-art_art-art-fn-1'
+        presname = 'art-art_art-art-presentation-name-1'
+        arts1 =  artists().join(
+                    artist_artists(role = aarole).join(
+                        artists(firstname = fn).join(
+                            presentations(name = presname)
+                        )
                     )
                  )
 
-        self.four(arts1)
 
         arts1.sort()
 
@@ -12767,19 +12777,22 @@ class test_orm(tester):
             self.eq(fff, art1.orm.persistencestate)
 
             self.eq(art.id, art1.id)
-            aas1 = art1.artist_artifacts
+            aas1 = art1.artist_artists
             self.one(aas1)
 
             self.eq(aarole, aas1.first.role)
             self.eq(fff, aas1.first.orm.persistencestate)
 
-            self.eq(facttitle, aas1.first.artifact.title)
-            self.eq(fff, aas1.first.artifact.orm.persistencestate)
+            self.eq(fn, aas1.first.object.firstname)
+            self.eq(fff, aas1.first.object.orm.persistencestate)
 
-            self.one(aas1.first.artifact.components)
+            self.one(aas1.first.object.presentations)
 
-            self.eq(compname, aas1.first.artifact.components.first.name)
-            self.eq(fff, aas1.first.artifact.components.first.orm.persistencestate)
+            self.eq(
+                presname, 
+                aas1.first.object.presentations.first.name
+            )
+
 
         self.zero(self.chronicles)
 ########################################################################
