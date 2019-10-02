@@ -16,7 +16,7 @@ import html as htmlmod
 from mistune import Markdown
 import orm
 import sys
-from textwrap import dedent
+from textwrap import dedent, indent
 
 """
 .. _moz_global_attributes https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes
@@ -281,6 +281,21 @@ class elements(entities.entities):
 
     @property
     def html(self):
+        # TODO This adds a "tab" to the first tag of each element.
+		#     <class 'dom.markdown'> object at 0x7f8b7a8c1ef0 count: 4
+		#         <p>
+		#       <em>
+		#         single asterisks
+		#       </em>
+		#     </p>
+		#         <p>
+		#       <em>
+		#         single underscores
+		#       </em>
+        #
+        # Also, that top line shouldn't be hesince it's not HTML:
+		#     <class 'dom.markdown'> object at 0x7f8b7a8c1ef0 count: 4
+		
         return '\n'.join(x.html for x in self)
 
     @property
@@ -302,7 +317,6 @@ class element(entities.entity):
     noend = False
 
     def __init__(self, o=None):
-
         if isinstance(o, str):
             self.elements += text(o)
         elif isinstance(o, element) or isinstance(o, elements):
@@ -324,6 +338,17 @@ class element(entities.entity):
     @id.setter
     def id(self, v):
         self.attributes['id'] = v
+
+    @property
+    def title(self):
+        """ The title global attribute contains text representing
+        advisory information related to the element it belongs to.
+        """
+        return self.attributes['title'].value
+
+    @title.setter
+    def title(self, v):
+        self.attributes['title'] = v
 
     @property
     def parent(self):
@@ -425,7 +450,7 @@ class element(entities.entity):
         if isinstance(self, text):
             return body
 
-        body = textwrap.indent(body, '  ')
+        body = indent(body, '  ')
 
         r = '<%s'
         args = [self.tag]
@@ -451,16 +476,19 @@ class element(entities.entity):
 
         return r % tuple(args)
 
+    def __str__(self):
+        return self.html
+
     def __repr__(self):
         r = '%s(%s)'
         attrs = ' '.join(self.attributes)
         r %= type(self).__name__, attrs
         return r
 
-class paragraphs(elements):
+class ps(elements):
     pass
 
-class paragraph(element):
+class p(element):
     def __init__(self, body=None, *args):
         if body is not None:
             if type(body) is str:
@@ -469,10 +497,7 @@ class paragraph(element):
                 raise ValueError('No args allowed')
 
             self += body
-
-    @classproperty
-    def tag(cls):
-        return 'p'
+paragraph = p
 
 class header(element):
     def __init__(self):
@@ -527,6 +552,19 @@ class text(element):
         return htmlmod.escape(
             dedent(self._str)
         ).strip()
+
+class breaks(elements):
+    pass
+
+class break_(element):
+    """ The HTML <br> element produces a line break in text
+    (carriage-return). It is useful for writing a poem or an address,
+    where the division of lines is significant.
+
+    https://developer.mozilla.org/en-US/docs/Web/HTML/Element/br
+    """
+    noend=True
+    tag = 'br'
 
 class comments(elements):
     pass
@@ -892,14 +930,10 @@ class param(element):
     def value(self, v):
         self.attributes['value'].value = v
 
-class anchors(elements):
+class as_(elements):
     pass
 
-class anchor(element):
-    @classproperty
-    def tag(cls):
-        return 'a'
-
+class a(element):
     @property
     def referrerpolicy(self):
         return self.attributes['referrerpolicy'].value
@@ -971,6 +1005,9 @@ class anchor(element):
     @shape.setter
     def shape(self, v):
         self.attributes['shape'].value = v
+
+anchors = as_
+anchor = a
 
 class audios(elements):
     pass
@@ -1642,6 +1679,15 @@ class canvas(element):
     def width(self, v):
         self.attributes['width'].value = v
 
+class uls(elements):
+    pass
+
+class ul(element):
+    pass
+
+unorderedlists = uls
+unorderedlist = ul
+
 class ols(elements):
     pass
 
@@ -2282,10 +2328,17 @@ class th(element):
     def background(self, v):
         self.attributes['background'].value = v
 
-class tds(elements):
+class tabledatas(elements):
     pass
 
-class td(element):
+class tabledata(element):
+    """ The HTML <td> element defines a cell of a table that contains
+    data. It participates in the table model.
+
+    https://developer.mozilla.org/en-US/docs/Web/HTML/Element/td
+    """
+
+    tag = 'td'
     @property
     def colspan(self):
         return self.attributes['colspan'].value
@@ -2293,22 +2346,6 @@ class td(element):
     @colspan.setter
     def colspan(self, v):
         self.attributes['colspan'].value = v
-
-    @property
-    def bgcolor(self):
-        return self.attributes['bgcolor'].value
-
-    @bgcolor.setter
-    def bgcolor(self, v):
-        self.attributes['bgcolor'].value = v
-
-    @property
-    def align(self):
-        return self.attributes['align'].value
-
-    @align.setter
-    def align(self, v):
-        self.attributes['align'].value = v
 
     @property
     def headers(self):
@@ -2325,14 +2362,6 @@ class td(element):
     @rowspan.setter
     def rowspan(self, v):
         self.attributes['rowspan'].value = v
-
-    @property
-    def background(self):
-        return self.attributes['background'].value
-
-    @background.setter
-    def background(self, v):
-        self.attributes['background'].value = v
 
 class theads(elements):
     pass
@@ -2497,6 +2526,13 @@ class table(element):
     @background.setter
     def background(self, v):
         self.attributes['background'].value = v
+
+
+class tablerows(elements):
+    pass
+
+class tablerow(element):
+    tag = 'tr'
 
 class selects(elements):
     pass
@@ -2963,6 +2999,61 @@ class _htmlparser(HTMLParser):
             'Processing instructions are not implemented'
         )
 
+class h1s(elements):
+    pass
+
+class h1(element):
+    """ <h1> is the highest section level heading.
+    """
+    pass
+
+class h2s(elements):
+    pass
+
+class h2(element):
+    """ <h2> is the second highest section level heading.
+    """
+    pass
+
+class h3s(elements):
+    pass
+
+class h3(element):
+    """ <h3> is the third highest section level heading.
+    """
+    pass
+
+class h4s(elements):
+    pass
+
+class h4(element):
+    """ <h4> is the fourth highest section level heading.
+    """
+    pass
+
+class h5s(elements):
+    pass
+
+class h5(element):
+    """ <h5> is the fifth highest section level heading.
+    """
+    pass
+
+class h6s(elements):
+    pass
+
+class h6(element):
+    """ <h6> is the six highest section level heading.
+    """
+    pass
+
+heading1 = h1
+heading2 = h2
+heading3 = h3
+heading4 = h4
+heading5 = h5
+heading6 = h6
+
 class heads(elements):
     pass
 
@@ -2973,6 +3064,7 @@ class hrs(elements):
     pass
 
 class hr(element):
+    noend = True
     @property
     def align(self):
         return self.attributes['align'].value
@@ -2988,6 +3080,9 @@ class hr(element):
     @color.setter
     def color(self, v):
         self.attributes['color'].value = v
+
+hrules = hrs
+hrule = hr
 
 class fonts(elements):
     pass
@@ -3233,19 +3328,22 @@ class strongs(elements):
 class strong(element):
     pass
 
-class emphases(elements):
+class ems(elements):
     """ A collection of ``emphasis`` elements.
     """
     pass
 
-class emphasis(element):
+class em(element):
     """ The HTML <em> element which marks text that has stress emphasis.
     This element can be nested, with each level of nesting
     indicating a greater degree of emphasis. 
 
     See: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/em
     """
-    tag = 'em'
+    pass
+
+emphases = ems
+emphasis = em
 
 class spans(elements):
     pass

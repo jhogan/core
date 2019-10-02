@@ -12708,8 +12708,7 @@ class test_html(tester):
         
     def it_parses(self):
         els = dom.html(testhtml)
-        expect = testhtml.replace('&', '&amp;')
-        self.eq(expect, els.html)
+        self.eq(testhtml, els.html)
 
     def it_doesnt_parse_decls(self):
         html = '''
@@ -12786,64 +12785,468 @@ class test_markdown(tester):
 
         self.eq(expect, md.html)
 
-    def it_parses_block_quotes(self):
-        # REMOVE ME
-        import mistune
-        md = mistune.Markdown()(textwrap.dedent('''
-          A paragraph.
+    def it_parses_horizontal_rules(self):
+        md = dom.markdown('''
+        * * *
 
-          > This is a blockquote with two paragraphs. Lorem ipsum dolor
-          > sit amet, consectetuer adipiscing elit.
-          > 
-          > Donec sit amet nisl. Aliquam semper ipsum sit amet velit.
-          > Suspendisse id sem consectetuer libero luctus adipiscing.
+        ***
 
-          > This is a blockquote with two paragraphs. Lorem ipsum dolor
-          sit amet, consectetuer adipiscing elit.
+        *****
 
-          > This is the first level of quoting.
-          >
-          > > This is nested blockquote.
-          >
-          > Back to the first level.
-        '''))
+        - - -
+
+        ---------------------------------------
+        ''')
+        self.five(md)
+        for hr in md:
+            self.type(dom.hr, hr)
+
+    def it_parses_inline_links(self):
+        md = dom.markdown('''
+        This is [an example](http://example.com/ "Title") inline link.
+
+        [This link](http://example.net/) has no title attribute.
+        ''')
+
+        self.two(md)
+        self.three(md.first.elements)
+        self.type(dom.a, md.first.elements.second)
+        self.two(md.first.elements.second.attributes)
+        self.eq('Title', md.first.elements.second.title)
+        self.eq('http://example.com/', md.first.elements.second.href)
+        self.two(md.second.elements)
+        self.type(dom.a, md.second.elements.first)
+        self.one(md.second.elements.first.attributes)
+        self.is_(dom.undef, md.second.elements.first.title)
+        self.eq('http://example.net/', md.second.elements.first.href)
+
+
+        md = dom.markdown('See my [About](/about/) page for details.')
+        self.one(md)
+        self.type(dom.p, md.first)
+        self.type(dom.a, md.first.elements.second)
+        self.eq('/about/', md.first.elements.second.href)
+
+        defs = [
+          '[id]: http://example.com/  "Optional Title Here"',
+
+          # NOTE Single quotes don't work here which is strangly
+          # consistent with a bug noted on the official Markdown page:
+          # "NOTE: There is a known bug in Markdown.pl 1.0.1 which
+          # prevents single quotes from being used to delimit link
+          # titles."
+          # (https://daringfireball.net/projects/markdown/syntax#list)
+          # "[id]: http://example.com/  'Optional Title Here'",
+
+          '[id]: http://example.com/  (Optional Title Here)',
+          '[ID]: <http://example.com/>  (Optional Title Here)',
+
+          # NOTE This should probably work, but it dosen't in mistune,
+          # "You can put the title attribute on the next line and use
+          # extra spaces or tabs for padding, which tends to look better
+          # with longer URLs:"
+          #     [id]: http://example.com/longish/path/to/resource/here
+          #         "Optional Title Here"
+          # '[id]: http://example.com\n             "Optional Title Here"'
+        ]
+
+        for def_ in defs:
+          md = dom.markdown('''
+          This is [an example][id] reference-style link.
+          %s
+          ''' % def_)
+          self.eq('http://example.com/', md[0].elements[1].href)
+          self.eq('Optional Title Here', md[0].elements[1].title)
+
 
         md = dom.markdown('''
-          A paragraph.
-
-          > This is a blockquote with two paragraphs. Lorem ipsum dolor
-          > sit amet, consectetuer adipiscing elit.
-          > 
-          > Donec sit amet nisl. Aliquam semper ipsum sit amet velit.
-          > Suspendisse id sem consectetuer libero luctus adipiscing.
-
-          > This is a blockquote with two paragraphs. Lorem ipsum dolor
-          sit amet, consectetuer adipiscing elit.
-
-          > This is the first level of quoting.
-          >
-          > > This is nested blockquote.
-          >
-          > Back to the first level.
+        [Google][]
+        [Google]: http://google.com/
         ''')
 
+        self.type(dom.a, md.first.elements.first)
+        self.eq('Google', md.first.elements.first.elements.first.html)
+
+        md = dom.markdown('''
+        Visit [Daring Fireball][] for more information.
+        [Daring Fireball]: http://daringfireball.net/
+        ''')
+
+        self.type(dom.a, md.first.elements.second)
+        self.eq('Daring Fireball', md[0].elements[1].elements[0].html)
+
+    def it_parses_emphasis(self):
+        # NOTE "emphasis" here includes both <em> and <strong>
+        md = dom.markdown('''
+        *single asterisks*
+
+        _single underscores_
+
+        **double asterisks**
+
+        __double underscores__
+        ''')
+        self.type(dom.em, md.first.elements.first)
+        self.type(dom.em, md.second.elements.first)
+        self.type(dom.strong, md.third.elements.first)
+        self.type(dom.strong, md.fourth.elements.first)
+
+        md = dom.markdown('''
+        un*frigging*believable
+
+        un_frigging_believable
+
+        un**frigging**believable
+
+        un__frigging__believable
+        ''')
+        print(md)
+
+    def it_parses_inline_html(self):
+        md = dom.markdown('''
+          This is a regular paragraph.
+
+          <table>
+            <tr>
+              <td>Foo</td>
+            </tr>
+          </table>
+
+          This is another regular paragraph.
+        ''')
+
+        self.three(md)
+        self.type(dom.paragraph, md.first)
+        self.type(dom.table, md.second)
+        self.one(md.second.elements)
+        self.type(dom.tablerow, md.second.elements.first)
+        self.one(md.second.elements.first.elements)
+        self.type(
+            dom.tabledata, 
+            md.second.elements.first.elements.first
+        )
+        self.one(md.second.elements.first.elements.first.elements)
+        self.type(
+            dom.text, 
+            md.second.elements.first.elements.first.elements.first
+        )
+
+        self.eq(
+            'Foo',
+            md.second.elements.first.elements.first.elements.first.html
+        )
+        self.type(dom.paragraph, md.third)
+
+    def it_parses_html_entities(self):
+        md = dom.markdown('&copy;')
+        expect = self.dedent('''
+        <p>
+          &copy;
+        </p>
+        ''')
+
+        # FIXME
+        self.eq(expect, md.html)
+
+        md = dom.markdown('AT&T')
+        expect = self.dedent('''
+        <p>
+          AT&amp;T
+        </p>
+        ''')
+
+        self.eq(expect, md.html)
 
 
-        # TODO Get the below working when other elements are working.
-        # Blockquotes can contain other Markdown elements, including
-        # headers, lists, and code blocks:
-        return
+        md = dom.markdown('4 < 5')
 
+        expect = self.dedent('''
+        <p>
+          4 &lt; 5
+        </p>
+        ''')
+        self.eq(expect, md.html)
+
+    def it_adds_linebreaks_to_paragraphs(self):
+        # "When you do want to insert a <br /> break tag using Markdown,
+        # you end a line with two or more spaces, then type return."
+        # https://daringfireball.net/projects/markdown/syntax#block
         md = self.dedent('''
-          > ## This is a header.
-          > 
-          > 1.   This is the first list item.
-          > 2.   This is the second list item.
-          > 
-          > Here's some example code:
-          > 
-          >     return shell_exec("echo $input | $markdown_script");
+        This is a paragraph with a  
+        hard line break.
         ''')
+
+        expect = self.dedent('''
+        <p>
+          This is a paragraph with a
+          <br>
+          hard line break.
+        </p>
+        ''')
+        
+        md = dom.markdown(md)
+        self.eq(expect, md.html)
+
+    def it_raises_with_nonstandard_inline_html_tags(self):
+        # TODO  
+        pass
+
+    def it_parses_headers(self):
+        # Setext-style headers 
+        md = dom.markdown('''
+        This is an H1
+        =============
+
+        This is an H2
+        -------------
+        ''')
+
+        self.two(md)
+        self.type(dom.h1, md.first)
+        self.eq('This is an H1', md.first.elements.first.html)
+        self.type(dom.h2, md.second)
+        self.eq('This is an H2', md.second.elements.first.html)
+
+        # Atx-style headers
+        md = dom.markdown('''
+        # This is an H1
+
+        ## This is an H2
+
+        ###### This is an H6
+        ''')
+        self.three(md)
+        self.type(dom.h1, md.first)
+        self.eq('This is an H1', md.first.elements.first.html)
+        self.type(dom.h2, md.second)
+        self.eq('This is an H2', md.second.elements.first.html)
+        self.type(dom.h6, md.third)
+        self.eq('This is an H6', md.third.elements.first.html)
+    
+    def it_parses_blockquotes(self):
+        md = dom.markdown('''
+        > This is a blockquote with two paragraphs. Lorem ipsum dolor
+        > sit amet,
+        > consectetuer adipiscing elit. Aliquam hendrerit mi posuere
+        > lectus.
+        > Vestibulum enim wisi, viverra nec, fringilla in, laoreet
+        > vitae, risus.
+        > 
+        > Donec sit amet nisl. Aliquam semper ipsum sit amet velit.
+        > Suspendisse
+        > id sem consectetuer libero luctus adipiscing.
+        ''')
+
+        self.one(md)
+        self.type(dom.blockquote, md.first)
+
+        self.two(md.first.elements)
+        self.type(dom.paragraph, md.first.elements.first)
+        self.type(dom.paragraph, md.first.elements.second)
+
+        md = dom.markdown('''
+        > This is a blockquote with two paragraphs. Lorem ipsum dolor sit amet,
+        consectetuer adipiscing elit. Aliquam hendrerit mi posuere lectus.
+        Vestibulum enim wisi, viverra nec, fringilla in, laoreet vitae, risus.
+
+        > Donec sit amet nisl. Aliquam semper ipsum sit amet velit. Suspendisse
+        id sem consectetuer libero luctus adipiscing.
+        ''')
+
+        self.one(md)
+        self.type(dom.blockquote, md.first)
+
+        self.two(md.first.elements)
+        self.type(dom.paragraph, md.first.elements.first)
+        self.type(dom.paragraph, md.first.elements.second)
+
+        # Nested
+
+        md = dom.markdown('''
+        > This is the first level of quoting.
+        >
+        > > This is nested blockquote.
+        >
+        > Back to the first level.
+        ''')
+        self.one(md)
+        self.type(dom.blockquote, md.first)
+
+        self.three(md.first.elements)
+        self.type(dom.paragraph, md.first.elements.first)
+        self.type(dom.blockquote, md.first.elements.second)
+        self.type(dom.paragraph, md.first.elements[1].elements.first)
+        self.type(dom.paragraph, md.first.elements.third)
+
+        md = dom.markdown('''
+        > ## This is a header.
+        > 
+        > 1.   This is the first list item.
+        > 2.   This is the second list item.
+        > 
+        > Here's some example code:
+        > 
+        >     return shell_exec("echo $input | $markdown_script");
+
+        ''')
+
+        self.one(md)
+        self.type(dom.blockquote, md.first)
+        self.type(dom.h2, md.first.elements.first)
+        self.type(dom.ol, md.first.elements.second)
+        self.type(dom.li, md.first.elements.second.elements.first)
+        self.type(dom.li, md.first.elements.second.elements.second)
+        self.type(dom.p, md.first.elements.third)
+        self.type(dom.pre, md.first.elements.fourth)
+        self.type(dom.code, md.first.elements.fourth.elements.first)
+
+    def it_parses_lists(self):
+        for bullet in '*', '+', '-':
+          md = self.dedent('''
+          ?   Red
+          ?   Green
+          ?   Blue
+          ''')
+
+          md = md.replace('?', bullet)
+
+          md = dom.markdown(md)
+
+          self.one(md)
+          self.type(dom.ul, md.first)
+          self.three(md.first.elements)
+          self.type(dom.li, md.first.elements.first)
+          self.type(dom.li, md.first.elements.second)
+          self.type(dom.li, md.first.elements.third)
+
+        # NOTE Ordered list are created by starting the lines with
+        # orditals (1., 2., etc). However, "he actual numbers you use to
+        # mark the list have no effect on the HTML output Markdown
+        # produces.".
+        # (https://daringfireball.net/projects/markdown/syntax#list). So
+        # the below test is writtes 1, 3, 2.
+        md = dom.markdown('''
+        1.  Bird
+        3.  Parish
+        2.  McHale
+        ''')
+
+        self.one(md)
+        self.type(dom.ol, md.first)
+        self.three(md.first.elements)
+        self.type(dom.li, md.first.elements.first)
+        self.type(dom.li, md.first.elements.second)
+        self.type(dom.li, md.first.elements.third)
+
+        for lazy in True, False:
+            if lazy:
+                md = dom.markdown('''
+                *   Lorem ipsum dolor sit amet, consectetuer adipiscing elit.
+                Aliquam hendrerit mi posuere lectus. Vestibulum enim
+                wisi, viverra nec, fringilla in, laoreet vitae, risus.
+                *   Donec sit amet nisl. Aliquam semper ipsum sit amet
+                velit.  Suspendisse id sem consectetuer libero luctus
+                adipiscing.
+                ''')
+            else:
+                md = dom.markdown('''
+                *   Lorem ipsum dolor sit amet, consectetuer adipiscing
+                    elit.  Aliquam hendrerit mi posuere lectus.
+                    Vestibulum enim wisi, viverra nec, fringilla in,
+                    laoreet vitae, risus.
+                *   Donec sit amet nisl. Aliquam semper ipsum sit amet
+                    velit.  Suspendisse id sem consectetuer libero
+                    luctus adipiscing.
+                ''')
+            self.one(md)
+            self.type(dom.ul, md.first)
+            self.two(md.first.elements)
+            self.type(dom.li, md.first.elements.first)
+            self.type(dom.li, md.first.elements.second)
+
+        md = dom.markdown('''
+        *   Bird
+
+        *   Magic
+        ''')
+
+        self.one(md)
+        self.type(dom.ul, md.first)
+        self.two(md.first.elements)
+        self.one(md.first.elements.first.elements)
+        self.type(dom.p, md.first.elements.first.elements.first)
+        self.type(dom.p, md.first.elements.second.elements.first)
+
+        for lazy in True, False:
+            if lazy:
+              md = dom.markdown('''
+              *   This is a list item with two paragraphs.
+
+                  This is the second paragraph in the list item. You're
+              only required to indent the first line. Lorem ipsum dolor
+              sit amet, consectetuer adipiscing elit.
+
+              *   Another item in the same list.
+              ''')
+            else:
+                md = dom.markdown('''
+                1.  This is a list item with two paragraphs. Lorem ipsum
+                    dolor sit amet, consectetuer adipiscing elit.
+                    Aliquam hendrerit mi posuere lectus.
+
+                    Vestibulum enim wisi, viverra nec, fringilla in,
+                    laoreet vitae, risus. Donec sit amet nisl. Aliquam
+                    semper ipsum sit amet velit.
+
+                2.  Suspendisse id sem consectetuer libero luctus
+                    adipiscing.
+
+              ''')
+            self.one(md)
+            self.type(dom.ul if lazy else dom.ol, md.first)
+            self.two(md.first.elements)
+            self.two(md.first.elements.first.elements)
+            self.type(dom.p, md.first.elements.first.elements.first)
+            self.type(dom.p, md.first.elements.second.elements.first)
+
+        md = dom.markdown('''
+        *   A list item with a blockquote:
+
+            > This is a blockquote
+            > inside a list item.
+        ''')
+
+        self.one(md)
+        self.type(dom.ul, md.first)
+        self.type(dom.li, md.first.elements.first)
+        self.two(md.first.elements.first.elements)
+        self.type(dom.p, md.first.elements.first.elements.first)
+        self.type(dom.blockquote, md[0].elements[0].elements[1])
+
+        md = dom.markdown('''
+        *   A list item with a code block:
+
+                <code goes here>
+        ''')
+        self.one(md)
+        self.type(dom.ul, md.first)
+        self.one(md.first.elements)
+        self.two(md.first.elements.first.elements)
+        self.type(dom.p, md.first.elements.first.elements.first)
+        self.type(dom.pre, md.first.elements.first.elements.second)
+        self.one(md.first.elements.first.elements.second.elements)
+        self.type(
+            dom.code,
+            md.first.elements.first.elements.second.elements.first
+        )
+
+        md = dom.markdown('''
+        1986\. What a great season.
+        ''')
+        self.one(md)
+        self.type(dom.p, md.first)
+
+
 
     def it_parses_paragraph(self):
         ''' Parse a simple, one-line paragraph '''
@@ -12954,7 +13357,7 @@ testhtml = tester.dedent('''
   </head>
   <body>
     <p>
-      Lorum & Ipsum Δ
+      Lorum &amp; Ipsum Δ
     </p>
   </body>
 </html>
