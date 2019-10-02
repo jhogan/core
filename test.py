@@ -12526,18 +12526,10 @@ class test_orm(tester):
 
                 self.eq(aa.object.id, aa1.object.id)
 
-                self.zero(self.chronicles)
-                
                 self.is_(aa1.subject, art1)
 
-        # NOTE There is some confusion at the momement with
-        # self.chronicles being loaded with aa1.subject or aa1.object
-        # being loaded. Currentely, it appears that all this is loaded
-        # and set by the inner join query and the orm.link() method.
-        # However, in `it_calls_innerjoin_on_associations`,
-        # `aa1.artifact` was presumed to result in a database retrieval
-        # being chronicled.
-        self.zero(self.chronicles)
+        # NOTE The above will lazy-load aa1.object 16 times
+        self.count(16, self.chronicles)
 
         # Test artists joined with artist_artists where the association has a
         # conditional

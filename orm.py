@@ -5015,7 +5015,7 @@ class associations(entities):
                     break
 
             for map in obj.orm.mappings.entitymappings:
-                if not map.value:
+                if not map.isloaded:
                     continue
 
                 # self.orm.composite will not exist when loading the
