@@ -3739,7 +3739,11 @@ class primarykeyfieldmapping(fieldmapping):
         self._value = v
 
 class ormclasseswrapper(entitiesmod.entities):
+    """ A collection of ormclasswrapper objects.
+    """
     def append(self, obj, uniq=False, r=None):
+        """ Add an wrapped orm class to the collection.
+        """
         if isinstance(obj, type):
             obj = ormclasswrapper(obj)
         elif isinstance(obj, ormclasswrapper):
@@ -3749,26 +3753,59 @@ class ormclasseswrapper(entitiesmod.entities):
         super().append(obj, uniq, r)
         return r
 
+    def __contains__(self, e):
+        """ Returrns True if e is in self or is one of the wrapped
+        entity in self, False otherwise.
+        """
+        for e1 in self:
+            if e1.entity is e:
+                return True
+        return super().__contains__(e)
+
 class ormclasswrapper(entitiesmod.entity):
+    """ Creates a wrapper class around an entity class. The wrapped
+    class is stored in the `entity` attribute. Most of the classe's
+    attributes are proxies for the wrapped entity class's corresponding
+    attribute.
+    """
+
+    # Note: If I remember correctly, I created this wrapper class
+    # because I wanted a way to add class references to
+    # entities.entities collections since the only objects that can be
+    # added to entities.entities are entities.entity objects.
     def __init__(self, entity):
+        """ Sets the wrapped entity.
+        :param: entity The entity to be wrapped.
+        """
         self.entity = entity
         super().__init__()
 
     def __str__(self):
+        """ A proxy to the wrapped entity's __str__ method.
+        """
         return str(self.entity)
 
     def __repr__(self):
+        """ A proxy to the wrapped entity's __repr__ method.
+        """
         return repr(self.entity)
 
     def __getattr__(self, attr):
+        """ A proxy to any of the wrapped entity's attributes not
+        imlemented here.
+        """
         return getattr(self.entity, attr)
 
     @property
     def orm(self):
+        """ A proxy to the wrapped entity's __orm__ object.
+        """
         return self.entity.orm
 
     @property
     def name(self):
+        """ A proxy to the wrapped entity's name attribute.
+        """
         return self.entity.__name__
 
 class composites(ormclasseswrapper):
@@ -4759,6 +4796,11 @@ class orm:
 
     @staticmethod
     def issub(obj1,  obj2):
+        """ Returns true if obj1 is a subentity of obj2, False
+        otherwise.
+            :param: obj1  An entities class
+            :param: obj2  An entities class
+        """
         if not (isinstance(obj1, type) and isinstance(obj2, type)):
             msg = 'Only static types are currently supported'
             raise NotImplementedError(msg)
