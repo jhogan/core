@@ -12268,6 +12268,8 @@ class test_orm(tester):
         self.is_(art2,            art2.artist_artists.last.subject)
         self.is_(objart,          art2.artist_artists.last.object)
         art2.artist_artists.last.role = uuid4().hex
+        art2.artist_artists.last.slug = uuid4().hex
+        art2.artist_artists.last.timespan = uuid4().hex
         aa2 = art2.artist_artists.last
 
         self.three(art2.artists)
@@ -12335,11 +12337,13 @@ class test_orm(tester):
 
         self.zero(art.artist_artists.first.brokenrules)
         self.zero(art.artist_artists.first.brokenrules)
-        self.one(art.artist_artists.second.brokenrules)
-        self.one(art.brokenrules)
+        self.three(art.artist_artists.second.brokenrules)
+        self.three(art.brokenrules)
 
         # Fix broken aa
         art.artist_artists.second.role = uuid4().hex
+        art.artist_artists.second.slug = uuid4().hex
+        art.artist_artists.second.timespan = uuid4().hex
 
         self.zero(art.artist_artists.second.brokenrules)
         self.zero(art.brokenrules)
