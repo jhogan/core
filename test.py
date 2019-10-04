@@ -12742,6 +12742,62 @@ class test_html(tester):
         self.expect(NotImplementedError, lambda: dom.html(html))
 
 class test_markdown(tester):
+    def it_parses_code(self):
+        md = dom.markdown('''
+        Use the `printf()` function.
+        ''')
+        self.type(dom.code, md.first.elements.second)
+        self.eq(
+            'printf()', 
+            md.first.elements.second.elements.first.html
+        )
+
+        md = dom.markdown('''
+        ``There is a literal backtick (`) here.``
+        ''')
+        self.type(dom.code, md.first.elements.first)
+        self.eq(
+            'There is a literal backtick (`) here.', 
+            md.first.elements.first.elements.first.html
+        )
+
+        md = dom.markdown('''
+        A single backtick in a code span: `` ` ``
+
+        A backtick-delimited string in a code span: `` `foo` ``
+        ''')
+        self.type(dom.code, md.first.elements.second)
+        self.eq('`', md.first.elements.second.elements.first.html)
+        self.type(dom.code, md.second.elements.second)
+        self.eq('`foo`', md.second.elements.second.elements.first.html)
+
+        md = dom.markdown('''
+        Please don't use any `<blink>` tags.
+        ''')
+        self.type(dom.code, md.first.elements.second)
+
+        self.eq(
+            '&lt;blink&gt;', 
+            md.first.elements.second.elements.first.html
+        )
+
+        md = dom.markdown('''
+        `&#8212;` is the decimal-encoded equivalent of `&mdash;`.
+        ''')
+
+        self.type(dom.code, md.first.elements.first)
+        self.eq(
+            '&amp;#8212;', 
+            md.first.elements.first.elements.first.html
+        )
+        self.eq(
+            '&amp;mdash;', 
+            md.first.elements.third.elements.first.html
+        )
+
+        print(md)
+
+        
     def it_parses_code_blocks(self):
         md = dom.markdown('''
         This is a normal paragraph:
@@ -12877,6 +12933,7 @@ class test_markdown(tester):
 
     def it_parses_emphasis(self):
         # NOTE "emphasis" here includes both <em> and <strong>
+
         md = dom.markdown('''
         *single asterisks*
 
@@ -12891,6 +12948,8 @@ class test_markdown(tester):
         self.type(dom.strong, md.third.elements.first)
         self.type(dom.strong, md.fourth.elements.first)
 
+        # NOTE The second one, un_frigging_believable, correctly does
+        # not result in emphasization.
         md = dom.markdown('''
         un*frigging*believable
 
@@ -12900,7 +12959,24 @@ class test_markdown(tester):
 
         un__frigging__believable
         ''')
-        print(md)
+        self.type(dom.em, md.first.elements.second)
+        # The second one doesn't cause emphasization so comment this
+        # out.
+        # self.type(dom.em, md.second.elements.second)
+        self.type(dom.strong, md.third.elements.second)
+        self.type(dom.strong, md.fourth.elements.second)
+
+        md = dom.markdown('''
+        \*this text is surrounded by literal asterisks\*
+        ''')
+
+        self.eq(
+            '*this text is surrounded by literal asterisks*',
+            md.first.elements.first.html
+        )
+
+
+
 
     def it_parses_inline_html(self):
         md = dom.markdown('''
