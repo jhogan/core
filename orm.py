@@ -5099,12 +5099,21 @@ class associations(entities):
         already been marked for deletion (ismarkedfordeletion). If it
         has been marked for deletion, that means the pseudocollection
         class is invoking this handler - so removing the constituent
-        would result in infinite recursion.  """
-
+        would result in infinite recursion.  
+        """
         ass = eargs.entity
 
+        isreflexive = ass.orm.isreflexive
+
         for i, map in enumerate(ass.orm.mappings.entitymappings):
-            if map.entity is not type(self.orm.composite):
+            isobjective = map.name == 'object'
+
+            if isreflexive:
+                cond = isobjective
+            else:
+                cond = map.entity is not type(self.orm.composite)
+
+            if cond:
                 e = map.value
                 if not e.orm.ismarkedfordeletion:
                     es = getattr(self, e.orm.entities.__name__)
@@ -5204,8 +5213,7 @@ class associations(entities):
         :param: str attr: The name of the attribute to return.
         :rtype: orm.entity or orm.entities
         :returns: Returns the composite or pseudocollection being
-                  requested for by
-                  ``attr``
+                  requested for by ``attr``
         """
 
         def raiseAttributeError():

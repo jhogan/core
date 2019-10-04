@@ -4415,8 +4415,7 @@ class test_orm(tester):
     def it_removes_associations(self):
         chrons = self.chronicles
 
-        #for removeby in 'pseudo-collection', 'association':
-        for removeby in 'association',:
+        for removeby in 'pseudo-collection', 'association':
             art = artist.getvalid()
 
             for i in range(2):
@@ -12794,6 +12793,101 @@ class test_orm(tester):
 
 
         self.zero(self.chronicles)
+
+    def it_removes_reflexive_associations(self):
+        for removeby in 'pseudo-collection', 'association':
+            art = artist.getvalid()
+            for _ in range(2):
+                art.presentations += presentation.getvalid()
+
+            for i in range(2):
+                aa = artist_artist.getvalid()
+                aa.object = artist.getvalid()
+                for _ in range(2):
+                    aa.object.presentations += presentation.getvalid()
+                art.artist_artists += aa
+                
+            art.save()
+
+            art = artist(art.id)
+            
+            self.two(art.artist_artists)
+            self.zero(art.artist_artists.orm.trash)
+            self.two(art.artists)
+            self.zero(art.artists.orm.trash)
+
+            if removeby == 'pseudo-collection':
+                rmart = art.artists.shift()
+            elif removeby == 'association':
+                rmart = art.artist_artists.shift().object
+
+            rmpress = rmart.presentations
+
+            rmaa = art.artist_artists.orm.trash.first
+
+            self.one(art.artist_artists)
+            self.one(art.artist_artists.orm.trash)
+            self.one(art.artists)
+            self.one(art.artists.orm.trash)
+
+            for a1, a2 in zip(art.artists, art.artist_artists.artists):
+                self.isnot(a1, rmart)
+                self.isnot(a2, rmart)
+
+            with self._chrontest() as t:
+                t.run(art.save)
+                t.deleted(rmpress.first)
+                t.deleted(rmpress.second)
+                t.deleted(rmart)
+                t.deleted(art.artist_artists.orm.trash.first)
+
+            art1 = artist(art.id)
+
+            self.one(art1.artist_artists)
+            self.zero(art1.artist_artists.orm.trash)
+            self.one(art1.artists)
+            self.zero(art1.artists.orm.trash)
+                
+            aas = art.artist_artists.sorted('role')
+            aas1 = art1.artist_artists.sorted('role')
+
+            for aa, aa1 in zip(aas, aas1):
+                self.eq(aa.id,           aa1.id)
+                self.eq(aa.role,         aa1.role)
+
+                self.eq(
+                    aa.subject__artistid,
+                    aa1.subject__artistid
+                )
+
+                self.eq(
+                    aa.object__artistid,
+                    aa1.object__artistid
+                )
+
+                self.eq(aa.subject.id,  aa1.subject.id)
+                self.eq(aa.object.id,   aa1.object.id)
+
+            for art in art1.artists:
+                self.ne(rmart.id, art.id)
+
+            self.expect(
+                db.RecordNotFoundError, 
+                lambda: artist_artist(rmaa.id)
+            )
+
+            self.expect(
+                db.RecordNotFoundError,
+                lambda: artist(rmart.id)
+            )
+
+            for pres in rmpress:
+                self.expect(
+                    db.RecordNotFoundError, 
+                    lambda: presentation(pres.id)
+                )
+
+        # TODO Test deeply nested associations
 ########################################################################
 # Test parties                                                         #
 ########################################################################
