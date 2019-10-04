@@ -3808,24 +3808,27 @@ class test_orm(tester):
         self.is_(comps.first.entity, artist)
 
         comps = artist.orm.composites
-        self.one(comps)
-        self.is_(comps.first.entity, artifact)
+        self.two(comps)
+        self.true(artifact in comps)
+        self.true(artist in comps)
 
         comps = singer.orm.composites
-        self.one(comps)
-        self.is_(comps.first.entity, artifact)
+        self.two(comps)
+        self.true(artifact in comps)
+        self.true(artist in comps)
 
         comps = concert.orm.composites
         self.one(comps)
         self.is_(comps.first.entity, singer)
 
     def it_has_static_constituents_reference(self):
-        consts = [x.entity for x in artist.orm.constituents]
-        self.four(consts)
-        self.true(presentation in consts)
-        self.true(artifact     in consts)
-        self.true(location     in consts)
-        self.true(comment     in consts)
+        consts = artist.orm.constituents
+        self.five(artist.orm.constituents)
+        self.true(presentation  in  consts)
+        self.true(artifact      in  consts)
+        self.true(location      in  consts)
+        self.true(comment       in  consts)
+        self.true(artist        in  consts)
 
         consts = artist.orm.constituents['presentation'].orm.constituents
         self.two(consts)

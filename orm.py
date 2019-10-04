@@ -4964,12 +4964,11 @@ class orm:
                 maps = list(ass.orm.mappings.entitymappings)
                 for i, map in enumerate(maps):
                     if orm.issub(map.entity, self.entity):
+                        if ass.orm.isreflexive:
+                            if map.name != 'subject':
+                                continue
                         e = maps[int(not bool(i))].entity
                         self._composits += composite(e)
-                        break
-                else:
-                    continue
-                break
 
         return self._composits
 
@@ -4985,12 +4984,11 @@ class orm:
                 maps = list(ass.orm.mappings.entitymappings)
                 for i, map in enumerate(maps):
                     if map.entity is self.entity:
+                        if ass.orm.isreflexive:
+                            if map.name != 'subject':
+                                continue
                         e = maps[int(not bool(i))].entity
                         self._constituents += constituent(e)
-                        break
-                else:
-                    continue
-                break
         return self._constituents
 
 class saveeventargs(entitiesmod.eventargs):
