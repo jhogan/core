@@ -1103,10 +1103,11 @@ class base(element):
     def href(self, v):
         self.attributes['href'].value = v
 
-class images(elements):
+class imgs(elements):
     pass
 
-class images(element):
+class img(element):
+    noend = True
     @property
     def crossorigin(self):
         return self.attributes['crossorigin'].value
@@ -1234,6 +1235,9 @@ class images(element):
     @decoding.setter
     def decoding(self, v):
         self.attributes['decoding'].value = v
+
+images = imgs
+image = img
 
 class tablerows(elements):
     pass
