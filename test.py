@@ -12915,10 +12915,23 @@ class test_orm(tester):
                 )
 
         # TODO Test deeply nested associations
+
 ########################################################################
 # Test parties                                                         #
 ########################################################################
-class test_gem(tester):
+class test_parties(tester):
+    def _getvalidperson(self):
+        per = gem.person()
+        per.firstname      =  uuid4().hex
+        per.middlename     =  uuid4().hex
+        per.lastname       =  uuid4().hex
+        per.title          =  uuid4().hex
+        per.suffix         =  uuid4().hex
+        per.gender         =  False
+        per.mothersmaiden  =  uuid4().hex
+        per.maritalstatus  =  True
+        return per
+
     def __init__(self):
         super().__init__()
 
@@ -12931,6 +12944,14 @@ class test_gem(tester):
         org.save()
 
         self.eq(org.id, gem.organization(org.id).id)
+
+    def it_loads_and_saves_preson(self):
+        per = self._getvalidperson()
+        per.save()
+
+        self.eq(per.id, gem.person(per.id).id)
+
+
 
 
 cli().run()
