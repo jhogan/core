@@ -198,7 +198,13 @@ class address(orm.entity):
     regions = regions
 
     # Prosaic directions to the address
-    directions = str, 1, 65535
+
+    # FIXME The following line results in an exception from MySQL:
+    #     _mysql_exceptions.OperationalError: (1074, "Column length too
+    #     big for column 'directions' (max = 16383); use BLOB or TEXT
+    #     instead")
+    #directions = str, 1, 65535
+    directions = str, 1, 65536
 
 class address_region(orm.association):
     """ An association between a postal address (``address``) and a
