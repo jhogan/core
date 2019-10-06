@@ -4413,6 +4413,33 @@ class test_orm(tester):
         # TODO Test deeply nested associations
 
     def it_removes_associations(self):
+        # FIXME Removing associations is broken at the moment because it
+        # cascades any deletion of an association. 
+        #
+        # The following code
+        #     
+        #     art.artifacts.shift()
+        #
+        # should delete the artist_artists association and the artifact.
+        # However, the (presumed synonymous): code:
+        #
+        #     art.artist_artifacts.shift()
+        #
+        # should remove the association but not the artifact.
+        #
+        # In associations._self._onremove, a line was added which is
+        # currently commented out:
+        # 
+        #   es.orm.trash.pop()
+        #
+        # It corrects the problem with adding the artifact to the trash
+        # collection. However, the entity._save method still causes the
+        # artifact to be deleted. Some investigation into that should be
+        # undertaken to correct the issue.
+        #
+        # Note that the it_removes_reflexive_associations test will also
+        # need to be updated when this bug has been corrected.
+
         chrons = self.chronicles
 
         for removeby in 'pseudo-collection', 'association':

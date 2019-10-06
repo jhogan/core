@@ -5116,8 +5116,27 @@ class associations(entities):
             if cond:
                 e = map.value
                 if not e.orm.ismarkedfordeletion:
+                    # Get the pseudocollection
                     es = getattr(self, e.orm.entities.__name__)
                     es.remove(e)
+
+                    # When removing an entity from a pseudocollection
+                    # class, the class will inevitably trash the removed
+                    # entity to mark it for removal from the database.
+                    # However, this would mean that removing an
+                    # association from the db would cause the
+                    # constitutent (artifact) object to removed from the
+                    # db (cascading deletes). This is not what we want:
+                    # We should be able to delete as association between
+                    # two entity object without deleting the entities
+                    # themselves.  pop()ing the entity off the trash
+                    # collection will prevent the constitutent from
+                    # being deleted.
+
+                    # Commenting out until it_removes_*_associations is
+                    # fixed
+                    #es.orm.trash.pop()
+
                     break
             
         super()._self_onremove(src, eargs)
