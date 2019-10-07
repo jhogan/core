@@ -17,6 +17,7 @@ from mistune import Markdown
 import orm
 import sys
 from textwrap import dedent, indent
+import cssselect
 
 """
 .. _moz_global_attributes https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes
@@ -279,6 +280,33 @@ class elements(entities.entities):
                 return el
         return None
 
+    def __getitem__(self, sel):
+        els = elements()
+        sels = cssselect.parse(sel)
+        for sel in sels:
+            pt = sel.parsed_tree
+            if type(pt) is cssselect.parser.CombinedSelector:
+                if hasattr(pt, 'subselector'):
+                    els = self[pt.subselector.element]
+                    
+                    B()
+                    while hasattr(pt, 'selector'):
+                        sel = sel.selector
+                    B()
+            elif type(pt) is cssselect.parser.Element:
+                els += self.getelements(tag=pt.element)
+        return els
+
+    def getelements(self, tag=None):
+        els = elements()
+        for el in self:
+            if tag is None or tag == el.tag:
+                els += el
+
+        for el in self:
+            els += el.getelements(tag=tag, recursive=True)
+        return els
+
     @property
     def html(self):
         # TODO This adds a "tab" to the first tag of each element.
@@ -399,6 +427,17 @@ class element(entities.entity):
             self._elements._setparent(self)
         return self._elements
 
+    def getelements(self, tag=None, recursive=False):
+        els = elements()
+        for el in self.elements:
+            if tag is None or tag == el.tag:
+                els += el
+
+            if recursive:
+                els += el.getelements(tag=tag, recursive=True)
+
+        return els
+                
     @elements.setter
     def elements(self, v):
         self._elements = v
@@ -481,7 +520,7 @@ class element(entities.entity):
 
     def __repr__(self):
         r = '%s(%s)'
-        attrs = ' '.join(self.attributes)
+        attrs = ' '.join(str(x) for x in self.attributes)
         r %= type(self).__name__, attrs
         return r
 
@@ -3407,6 +3446,87 @@ class markdown(elements):
     def __init__(self, text):
         super().__init__(self)
         self += html(Markdown()(dedent(text).strip()))
+
+class selectors(entities.entities):
+    """ Represents a group of selectors.
+    """
+    def __init__(self, sel=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._sel = sel
+        self._parse()
+
+    def _parse(self):
+        sel = selector()
+        self += sel
+        smp = comb =  None
+        for tok in cssselect.parser.tokenize(self._sel):
+            if tok.type == 'IDENT':
+                smp = selector.simple()
+                smp.element = tok.value
+                smp.combinator = comb
+                sel.simples += smp
+            elif tok.type == 'S':
+                if smp and comb is None:
+                    comb = selector.Descendant
+                
+    def __repr__(self):
+        return ', '.join(str(x) for x in self)
+
+    def __str__(self):
+        return repr(self)
+
+class selector(entities.entity):
+    Descendant         =  0
+    Child              =  1
+    Nextsibling        =  2
+    Subsequentsibling  =  3
+
+    class _simples(entities.entities):
+        pass
+
+    class simple(entities.entity):
+        def __init__(self):
+            self.element = None
+            self.combinator = None
+
+        @property
+        def str_combinator(self):
+            return selector.comb2str(self.combinator)
+
+        def __repr__(self):
+            r = str()
+            if self.combinator not in (None, selector.Descendant):
+                r += self.str_combinator + ' '
+
+            r += self.element
+            return r
+
+    @staticmethod
+    def comb2str(comb):
+        return [' ', '>', '+', '~'][comb]
+
+    def __init__(self):
+        self.simples = selector._simples()
+
+    def __repr__(self):
+        r = str()
+        for i, smp in self.simples.enumerate():
+            if i:
+                r += smp.str_combinator
+                if smp.combinator != selector.Descendant:
+                    r + ' '
+
+            r += smp.element
+
+        return r
+
+    def __str__(self):
+        return repr(self)
+            
+            
+
+
+
 
 class AttributeExistsError(Exception):
     pass

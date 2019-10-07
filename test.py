@@ -1,11 +1,11 @@
 # vim: set et ts=4 sw=4 fdm=marker
 
 ########################################################################
-# Copyright (C) Jesse Hogan - All Rights Reserved
-# Unauthorized copying of this file, via any medium is strictly
-# prohibited
-# Proprietary and confidential
-# Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
+# Copyright (C) Jesse Hogan - All Rights Reserved                      #
+# Unauthorized copying of this file, via any medium is strictly        #
+# prohibited                                                           #
+# Proprietary and confidential                                         #
+# Written by Jesse Hogan <jessehogan0@gmail.com>, 2019                 #
 ########################################################################
 
 from articles import *
@@ -13451,6 +13451,49 @@ class test_site(tester):
         s = dom.site(name)
         self.eq(name, s.name)
 
+class test_selectors(tester):
+    def it_parses_chain_of_entities(self):
+        ''' One '''
+        sels = dom.selectors('E')
+        self.one(sels)
+        simps = sels.first.simples
+        self.one(simps)
+        self.eq(['E'], simps.pluck('element'))
+
+        desc = dom.selector.Descendant
+        self.none(simps.first.combinator)
+        self.eq('E', repr(sels))
+        self.eq('E', str(sels))
+
+        ''' Two '''
+        sels = dom.selectors('E F')
+        self.one(sels)
+        simps = sels.first.simples
+        self.two(simps)
+        self.eq(['E', 'F'], simps.pluck('element'))
+
+        desc = dom.selector.Descendant
+        self.none(simps.first.combinator)
+        self.eq(desc, simps.second.combinator)
+        self.eq('E F', repr(sels))
+        self.eq('E F', str(sels))
+
+        ''' Three '''
+        sels = dom.selectors('E F G')
+        self.one(sels)
+        simps = sels.first.simples
+        self.three(simps)
+        self.eq(['E', 'F', 'G'], simps.pluck('element'))
+
+        desc = dom.selector.Descendant
+        self.none(simps.first.combinator)
+        self.eq(desc, simps.second.combinator)
+        self.eq(desc, simps.third.combinator)
+        self.eq('E F G', repr(sels))
+        self.eq('E F G', str(sels))
+
+
+
 
 ########################################################################
 # Test parties                                                         #
@@ -13483,7 +13526,3 @@ testhtml = tester.dedent('''
 </html>
 ''')
 cli().run()
-
-
-
-
