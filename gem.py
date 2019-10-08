@@ -6,6 +6,9 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
+# TODO Checkout http://wiki.goodrelations-vocabulary.org/Quickstart for
+# an standard for ecommerce markup when marking up parties, places, etc.
+
 import orm
 import primative
 from datetime import datetime
@@ -15,6 +18,9 @@ class parties(orm.entities):
     pass
 
 class organizations(parties):
+    pass
+
+class party_parties(orm.associations):
     pass
 
 class party_addresses(orm.associations):
@@ -222,3 +228,9 @@ class party_address(orm.association):
     address   =  address
     begin     =  datetime
     end       =  datetime
+
+class party_party(orm.association):
+    entities = party_parties
+    subject  =  party
+    object   =  party
+    role     =  str

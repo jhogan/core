@@ -5048,6 +5048,13 @@ class associations(entities):
                         # Or we could make the setattr() call accept a
                         # composite of None.
                         if self.orm.composite is not None:
+                            
+
+                            # TODO LEFTOFF
+                            # The below code overwrites the association
+                            # object's subject property.
+
+
                             setattr(obj, map.name, self.orm.composite)
                             break
                 elif map.name == type(self.orm.composite).__name__:

@@ -12920,6 +12920,12 @@ class test_orm(tester):
 # Test parties                                                         #
 ########################################################################
 class test_parties(tester):
+    def __init__(self):
+        super().__init__()
+
+        gem.party.orm.recreate(recursive=True)
+        gem.address.orm.recreate()
+
     def _getvalidperson(self):
         per = gem.person()
         per.firstname      =  uuid4().hex
@@ -12930,13 +12936,20 @@ class test_parties(tester):
         per.gender         =  False
         per.mothersmaiden  =  uuid4().hex
         per.maritalstatus  =  True
+        per.nationalids    =  uuid4().hex
+        per.isicv4         =  None
+        per.dun            =  None
         return per
 
-    def __init__(self):
-        super().__init__()
+    def _getvalidorganization(self):
+        org = gem.organization()
+        org.name = uuid4().hex
+        return org
 
-        gem.party.orm.recreate(recursive=True)
-        gem.address.orm.recreate()
+    def _getvalidparty_party(self):
+        pp = gem.party_party()
+        pp.role = uuid4().hex
+        return pp
 
     def it_loads_and_saves_organization(self):
         org = gem.organization()
@@ -12950,6 +12963,23 @@ class test_parties(tester):
         per.save()
 
         self.eq(per.id, gem.person(per.id).id)
+
+    def it_associates_person_with_organization(self):
+        org = self._getvalidorganization()
+        per = self._getvalidperson()
+
+        pp = gem.party_party()
+        pp.role = 'employed-to'
+        pp.subject = per
+        pp.object = org
+
+        B()
+        per.party_parties += pp
+
+        per.save()
+
+
+        
 
 
 
