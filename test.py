@@ -4389,14 +4389,10 @@ class test_orm(tester):
             aa.role = uuid4().hex
 
         # Save and reload
-        chrons.clear()
-        art1.save()
 
-        self.two(chrons)
-        self.two(chrons.where('update'))
-        # FIXME The below two lines are the same
-        self.one(chrons.where('entity', art1.artist_artifacts.first))
-        self.one(chrons.where('entity', art1.artist_artifacts.first))
+        with self._chrontest() as t:
+            t.run(art1.save)
+            t.updated(*art1.artist_artifacts)
 
         art2 = artist(art1.id)
 
@@ -7454,15 +7450,21 @@ class test_orm(tester):
         art.firstname = 'x' * 256
         self.broken(art, 'firstname', 'fits')
 
-        # TODO Today (20190815) we got a 
-        #     MySQLdb.OperationalError(2006, 'MySQL server has gone away')
-        # error instead of a BrokenRulesError. Why would we get this
-        # from as simple save.
-        # UPDATE Happened again 20190819
         try:
             art.save()
         except Exception as ex:
             self.type(BrokenRulesError, ex)
+        except MySQLdb.OperationalError as ex:
+            # TODO Today, 20190815, we got a 
+            #     MySQLdb.OperationalError(2006, 'MySQL server has gone away')
+            # error instead of a BrokenRulesError. Why would we get this
+            # from a simple save.
+            # UPDATE Happened again 20190819
+            print(
+                'An MySQLdb.OperationalError occured. '
+                'See comment above in source code.'
+            )
+            B()
         else:
             self.fail('Exception not thrown')
 
