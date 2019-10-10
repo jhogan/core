@@ -8,6 +8,7 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 ########################################################################
 
+
 """ This file contains all classes related to object-relational mapping.
 """
 
@@ -3117,6 +3118,16 @@ class entitymapping(mapping):
         super().__init__(name, isderived)
 
     @property
+    def issubjective(self):
+        return self.orm.isreflexive \
+               and self.name.startswith('subject') 
+
+    @property
+    def isobjective(self):
+        return self.orm.isreflexive \
+               and self.name.startswith('object') 
+
+    @property
     def value(self):
         """ Return the ``entity`` instance for this ``entitymapping``.
         If the ``entity`` hasn't been loaded, the foreign key for the
@@ -3685,6 +3696,16 @@ class foreignkeyfieldmapping(fieldmapping):
 
     def clone(self):
         return foreignkeyfieldmapping(self.entity, self._fkname, self.isderived)
+
+    @property
+    def issubjective(self):
+        return self.orm.isreflexive \
+               and self.name.startswith('subject__') 
+
+    @property
+    def isobjective(self):
+        return self.orm.isreflexive \
+               and self.name.startswith('object__') 
 
     @property
     def dbtype(self):
@@ -4384,15 +4405,10 @@ class orm:
                         # then FK's value should be the composite. The
                         # same logic applies analogously to the object
                         # side.
-                        if (
-                            (
-                                map.name.startswith('subject__') 
-                                and map1.name == 'subject'
-                            )
-                            or (
-                                map.name.startswith('object__') 
-                                and map1.name == 'object'
-                            )
+                        if ( 
+                            (map.issubjective and map1.issubjective)
+                            or 
+                            (map.isobjective and map1.isobjective)
                         ):
                             map1._value = comp
                     elif map1.entity is type(comp):
@@ -4502,7 +4518,7 @@ class orm:
                     fks = joiner.entities.orm.mappings.foreignkeymappings
                     for map in fks: 
                         if joiner.entities.orm.isreflexive:
-                            if map.name.startswith('object__'):
+                            if map.isobjective:
                                 id = map.name
                                 break
                         elif join.entities.orm.entity is map.entity:
@@ -4519,7 +4535,7 @@ class orm:
                     fks = join.entities.orm.mappings.foreignkeymappings
                     for map in fks:
                         if join.entities.orm.isreflexive:
-                            if map.name.startswith('subject__'):
+                            if map.issubjective:
                                 pk = map.name
                                 break
                         elif joiner.entities.orm.entity is map.entity:
@@ -4965,7 +4981,7 @@ class orm:
                 for i, map in enumerate(maps):
                     if orm.issub(map.entity, self.entity):
                         if ass.orm.isreflexive:
-                            if map.name != 'subject':
+                            if map.issubjective:
                                 continue
                         e = maps[int(not bool(i))].entity
                         self._composits += composite(e)
@@ -4985,7 +5001,7 @@ class orm:
                 for i, map in enumerate(maps):
                     if map.entity is self.entity:
                         if ass.orm.isreflexive:
-                            if map.name != 'subject':
+                            if map.issubjective:
                                 continue
                         e = maps[int(not bool(i))].entity
                         self._constituents += constituent(e)
@@ -5033,7 +5049,7 @@ class associations(entities):
                 # names. The name that matters is on the LHS of the map
                 # when being defined in the association class.
                 if self.orm.isreflexive:
-                    if map.name == 'subject':
+                    if map.issubjective:
                         # NOTE self.orm.composite can be None when the
                         # association is new. Calling 
                         #
@@ -5071,7 +5087,7 @@ class associations(entities):
                     continue
 
                 if (
-                    self.orm.isreflexive and map.name == 'object'
+                    self.orm.isreflexive and map.isobjective
                     or (map.entity is not self.orm.composite.orm.entity)
                 ):
                     es = getattr(self, map.entity.orm.entities.__name__)
@@ -5113,10 +5129,8 @@ class associations(entities):
         isreflexive = ass.orm.isreflexive
 
         for i, map in enumerate(ass.orm.mappings.entitymappings):
-            isobjective = map.name == 'object'
-
             if isreflexive:
-                cond = isobjective
+                cond = map.isobjective
             else:
                 cond = map.entity is not type(self.orm.composite)
 
@@ -5177,7 +5191,7 @@ class associations(entities):
                 # If we are adding entitiy object's to reflexive
                 # association collection, we add them as the 'object' of
                 # the association.
-                if not (self.orm.isreflexive and map.name != 'object'):
+                if not (self.orm.isreflexive and not map.isobjective):
                     for ass in self:
                         if getattr(ass, map.name) is eargs.entity:
                             # eargs.entity already exists as a
@@ -5193,7 +5207,7 @@ class associations(entities):
                     setattr(ass, map.name, eargs.entity)
 
             if self.orm.isreflexive:
-                if map.name == 'subject':
+                if map.issubjective:
                     compmap = map
             elif map.entity is type(self.orm.composite):
                 compmap = map
@@ -5267,7 +5281,7 @@ class associations(entities):
             return self.orm.constituents[attr]
         except KeyError:
             for map in self.orm.mappings.entitymappings:
-                if (self.orm.isreflexive and map.name != 'object'):
+                if (self.orm.isreflexive and not map.isobjective):
                     continue
                 es = map.entity.orm.entities
                 if es.__name__ == attr:

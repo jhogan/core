@@ -12973,7 +12973,6 @@ class test_parties(tester):
         pp.subject = per
         pp.object = org
 
-        B()
         per.party_parties += pp
 
         per.save()
