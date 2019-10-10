@@ -289,10 +289,8 @@ class elements(entities.entities):
                 if hasattr(pt, 'subselector'):
                     els = self[pt.subselector.element]
                     
-                    B()
                     while hasattr(pt, 'selector'):
                         sel = sel.selector
-                    B()
             elif type(pt) is cssselect.parser.Element:
                 els += self.getelements(tag=pt.element)
         return els
@@ -3458,16 +3456,53 @@ class selectors(entities.entities):
     def _parse(self):
         sel = selector()
         self += sel
-        smp = comb =  None
+        smp = comb = attr = None
         for tok in cssselect.parser.tokenize(self._sel):
+            print(tok)
             if tok.type == 'IDENT':
-                smp = selector.simple()
-                smp.element = tok.value
-                smp.combinator = comb
-                sel.simples += smp
+                if smp:
+                    if attr:
+                        for attr1 in ['key', 'value']:
+                            if getattr(attr, attr1) is None:
+                                setattr(attr, attr1, tok.value)
+                                break
+                        else:
+                            # Parse error
+                            ...
+                else:
+                    smp = selector.simple()
+                    smp.element = tok.value
+                    smp.combinator = comb
+                    sel.simples += smp
+            elif tok.type == 'STRING':
+                if attr:
+                    attr.value = tok.value
             elif tok.type == 'S':
-                if smp and comb is None:
-                    comb = selector.Descendant
+                if smp:
+                    smp = None
+                    if comb is None:
+                        comb = selector.Descendant
+                    
+            elif tok.type == 'DELIM':    
+                if attr:
+                    if tok.value == ']':
+                        attr = None
+                    else:
+                        if attr.operator is None:
+                            attr.operator = ''
+
+                        attr.operator += tok.value
+                        # TODO Test attr.operator for validity here.
+                        # Raise if invalid.
+                else:
+                    if tok.value == '[':
+                        if smp:
+                            attr = selector.attribute()
+                            smp.attributes += attr
+                        else:
+                            # Parse Error
+                            ...
+
                 
     def __repr__(self):
         return ', '.join(str(x) for x in self)
@@ -3482,12 +3517,18 @@ class selector(entities.entity):
     Subsequentsibling  =  3
 
     class _simples(entities.entities):
-        pass
+        def __str__(self):
+            return repr(self)
+
+        def __repr__(self):
+            return ' '.join(str(x) for x in self)
 
     class simple(entities.entity):
         def __init__(self):
             self.element = None
             self.combinator = None
+            self.attributes = selector.attributes()
+
 
         @property
         def str_combinator(self):
@@ -3499,6 +3540,8 @@ class selector(entities.entity):
                 r += self.str_combinator + ' '
 
             r += self.element
+            if self.attributes.count:
+                r += str(self.attributes)
             return r
 
     @staticmethod
@@ -3516,17 +3559,31 @@ class selector(entities.entity):
                 if smp.combinator != selector.Descendant:
                     r + ' '
 
-            r += smp.element
+            r += str(smp)
 
         return r
 
     def __str__(self):
         return repr(self)
-            
-            
 
+    class attributes(_simples):
+        def __repr__(self):
+            return ''.join(str(x) for x in self)
 
+    class attribute(simple):
+        def __init__(self):
+            self.key       =  None
+            self.operator  =  None
+            self.value     =  None
 
+        def __repr__(self):
+            k   =  self.key       or  ''
+            op  =  self.operator  or  ''
+            v   =  self.value     or  ''
+            return '[%s%s%s]' % (k, op, v)
+
+        def __str__(self):
+            return repr(self)
 
 class AttributeExistsError(Exception):
     pass

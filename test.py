@@ -13492,7 +13492,65 @@ class test_selectors(tester):
         self.eq('E F G', repr(sels))
         self.eq('E F G', str(sels))
 
+    def it_parses_attribute_entities(self):
+        sels = 'E[foo=bar] F[qux="quux"] G[garply=waldo]'
+        sels = dom.selectors(sels)
+        self.one(sels)
+        sel = sels.first
 
+        smp = sel.simples.first
+        self.eq('E', smp.element)
+        self.one(smp.attributes)
+        attr = smp.attributes.first
+        self.eq('foo', attr.key)
+        self.eq('=', attr.operator)
+        self.eq('bar', attr.value)
+
+        smp = sel.simples.second
+        self.eq('F', smp.element)
+        self.one(smp.attributes)
+        attr = smp.attributes.first
+        self.eq('qux', attr.key)
+        self.eq('=', attr.operator)
+        self.eq('quux', attr.value)
+
+        smp = sel.simples.third
+        self.eq('G', smp.element)
+        self.one(smp.attributes)
+        attr = smp.attributes.first
+        self.eq('garply', attr.key)
+        self.eq('=', attr.operator)
+        self.eq('waldo', attr.value)
+
+        sels = 'E[foo~=bar] F[qux^="quux"] G[garply$=waldo]'
+        sels = dom.selectors(sels)
+        B()
+        self.one(sels)
+        sel = sels.first
+
+        smp = sel.simples.first
+        self.eq('E', smp.element)
+        self.one(smp.attributes)
+        attr = smp.attributes.first
+        self.eq('foo', attr.key)
+        self.eq('~=', attr.operator)
+        self.eq('bar', attr.value)
+
+        smp = sel.simples.second
+        self.eq('F', smp.element)
+        self.one(smp.attributes)
+        attr = smp.attributes.first
+        self.eq('qux', attr.key)
+        self.eq('^=', attr.operator)
+        self.eq('quux', attr.value)
+
+        smp = sel.simples.third
+        self.eq('G', smp.element)
+        self.one(smp.attributes)
+        attr = smp.attributes.first
+        self.eq('garply', attr.key)
+        self.eq('$=', attr.operator)
+        self.eq('waldo', attr.value)
 
 
 ########################################################################
