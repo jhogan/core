@@ -18,6 +18,7 @@ import orm
 import sys
 from textwrap import dedent, indent
 import cssselect
+from func import enumerate
 
 """
 .. _moz_global_attributes https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes
@@ -282,27 +283,29 @@ class elements(entities.entities):
 
     def __getitem__(self, sel):
         els = elements()
-        sels = cssselect.parse(sel)
-        for sel in sels:
-            pt = sel.parsed_tree
-            if type(pt) is cssselect.parser.CombinedSelector:
-                if hasattr(pt, 'subselector'):
-                    els = self[pt.subselector.element]
+        for sel in selectors(sel):
+            el1 = sel.elements.last
+            els += self.getelements(test=el1.match)
+
+            rms = elements()
+
+            for el in els:
+                for el1, an in zip(sel.elements[:-1], el.ancestors):
+                    if not el1.match(an):
+                        rms += el
+                        break
+            
+            els.remove(rms)
                     
-                    while hasattr(pt, 'selector'):
-                        sel = sel.selector
-            elif type(pt) is cssselect.parser.Element:
-                els += self.getelements(tag=pt.element)
         return els
 
-    def getelements(self, tag=None):
+    def getelements(self, test=None):
         els = elements()
         for el in self:
-            if tag is None or tag == el.tag:
+            if test is None or test(el):
                 els += el
 
-        for el in self:
-            els += el.getelements(tag=tag, recursive=True)
+            els += el.getelements(test=test, recursive=True)
         return els
 
     @property
@@ -390,6 +393,16 @@ class element(entities.entity):
     def greatgrandparent(self):
         return self.getparent(2)
 
+    def ancestors(self):
+        els = elements()
+        rent = self.parent
+
+        while rent:
+            els += rent
+            rent = rent.parent
+
+        return els
+
     def getparent(self, num=0):
         rent = self.parent
 
@@ -417,6 +430,8 @@ class element(entities.entity):
 
         return els
 
+        
+
     @property
     def elements(self):
         if not hasattr(self, '_elements'):
@@ -425,14 +440,15 @@ class element(entities.entity):
             self._elements._setparent(self)
         return self._elements
 
-    def getelements(self, tag=None, recursive=False):
+
+    def getelements(self, test=None, recursive=False):
         els = elements()
         for el in self.elements:
-            if tag is None or tag == el.tag:
+            if test is None or test(el):
                 els += el
 
             if recursive:
-                els += el.getelements(tag=tag, recursive=True)
+                els += el.getelements(test=test, recursive=True)
 
         return els
                 
@@ -607,8 +623,10 @@ class comments(elements):
     pass
 
 class comment(element):
+    tag = '<!---->'
     def __init__(self, txt):
         self.text = txt
+
 
     @property
     def html(self):
@@ -3456,11 +3474,10 @@ class selectors(entities.entities):
     def _parse(self):
         sel = selector()
         self += sel
-        smp = comb = attr = None
+        el = comb = attr = None
         for tok in cssselect.parser.tokenize(self._sel):
-            print(tok)
             if tok.type == 'IDENT':
-                if smp:
+                if el:
                     if attr:
                         for attr1 in ['key', 'value']:
                             if getattr(attr, attr1) is None:
@@ -3470,16 +3487,16 @@ class selectors(entities.entities):
                             # Parse error
                             ...
                 else:
-                    smp = selector.simple()
-                    smp.element = tok.value
-                    smp.combinator = comb
-                    sel.simples += smp
+                    el = selector.element()
+                    el.element = tok.value
+                    el.combinator = comb
+                    sel.elements += el
             elif tok.type == 'STRING':
                 if attr:
                     attr.value = tok.value
             elif tok.type == 'S':
-                if smp:
-                    smp = None
+                if el:
+                    el = None
                     if comb is None:
                         comb = selector.Descendant
                     
@@ -3496,9 +3513,9 @@ class selectors(entities.entities):
                         # Raise if invalid.
                 else:
                     if tok.value == '[':
-                        if smp:
+                        if el:
                             attr = selector.attribute()
-                            smp.attributes += attr
+                            el.attributes += attr
                         else:
                             # Parse Error
                             ...
@@ -3524,11 +3541,22 @@ class selector(entities.entity):
             return ' '.join(str(x) for x in self)
 
     class simple(entities.entity):
+        pass
+
+    class elements(entities.entities):
+        pass
+
+    class element(entities.entity):
         def __init__(self):
             self.element = None
             self.combinator = None
             self.attributes = selector.attributes()
 
+        def match(self, el):
+            if el.tag != self.element:
+                return False
+
+            # TODO Test attribtes, classes, etc...
 
         @property
         def str_combinator(self):
@@ -3549,17 +3577,17 @@ class selector(entities.entity):
         return [' ', '>', '+', '~'][comb]
 
     def __init__(self):
-        self.simples = selector._simples()
+        self.elements = selector.elements()
 
     def __repr__(self):
         r = str()
-        for i, smp in self.simples.enumerate():
+        for i, el in self.elements.enumerate():
             if i:
-                r += smp.str_combinator
-                if smp.combinator != selector.Descendant:
+                r += el.str_combinator
+                if el.combinator != selector.Descendant:
                     r + ' '
 
-            r += str(smp)
+            r += str(el)
 
         return r
 

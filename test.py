@@ -13456,41 +13456,46 @@ class test_selectors(tester):
         ''' One '''
         sels = dom.selectors('E')
         self.one(sels)
-        simps = sels.first.simples
-        self.one(simps)
-        self.eq(['E'], simps.pluck('element'))
+        els = sels.first.elements
+        self.one(els)
+        self.eq(['E'], els.pluck('element'))
 
         desc = dom.selector.Descendant
-        self.none(simps.first.combinator)
+        self.none(els.first.combinator)
         self.eq('E', repr(sels))
         self.eq('E', str(sels))
 
         ''' Two '''
         sels = dom.selectors('E F')
         self.one(sels)
-        simps = sels.first.simples
-        self.two(simps)
-        self.eq(['E', 'F'], simps.pluck('element'))
+        els = sels.first.elements
+        self.two(els)
+        self.eq(['E', 'F'], els.pluck('element'))
 
         desc = dom.selector.Descendant
-        self.none(simps.first.combinator)
-        self.eq(desc, simps.second.combinator)
+        self.none(els.first.combinator)
+        self.eq(desc, els.second.combinator)
         self.eq('E F', repr(sels))
         self.eq('E F', str(sels))
 
         ''' Three '''
         sels = dom.selectors('E F G')
         self.one(sels)
-        simps = sels.first.simples
-        self.three(simps)
-        self.eq(['E', 'F', 'G'], simps.pluck('element'))
+        els = sels.first.elements
+        self.three(els)
+        self.eq(['E', 'F', 'G'], els.pluck('element'))
 
         desc = dom.selector.Descendant
-        self.none(simps.first.combinator)
-        self.eq(desc, simps.second.combinator)
-        self.eq(desc, simps.third.combinator)
+        self.none(els.first.combinator)
+        self.eq(desc, els.second.combinator)
+        self.eq(desc, els.third.combinator)
         self.eq('E F G', repr(sels))
         self.eq('E F G', str(sels))
+
+    def it_selects_with_chain_of_entities(self):
+        return
+        html = dom.html(testhtml)
+        bs = html['strong']
 
     def it_parses_attribute_entities(self):
         sels = 'E[foo=bar] F[qux="quux"] G[garply=waldo]'
@@ -13498,60 +13503,88 @@ class test_selectors(tester):
         self.one(sels)
         sel = sels.first
 
-        smp = sel.simples.first
-        self.eq('E', smp.element)
-        self.one(smp.attributes)
-        attr = smp.attributes.first
+        el = sel.elements.first
+        self.eq('E', el.element)
+        self.one(el.attributes)
+        attr = el.attributes.first
         self.eq('foo', attr.key)
         self.eq('=', attr.operator)
         self.eq('bar', attr.value)
 
-        smp = sel.simples.second
-        self.eq('F', smp.element)
-        self.one(smp.attributes)
-        attr = smp.attributes.first
+        el = sel.elements.second
+        self.eq('F', el.element)
+        self.one(el.attributes)
+        attr = el.attributes.first
         self.eq('qux', attr.key)
         self.eq('=', attr.operator)
         self.eq('quux', attr.value)
 
-        smp = sel.simples.third
-        self.eq('G', smp.element)
-        self.one(smp.attributes)
-        attr = smp.attributes.first
+        el = sel.elements.third
+        self.eq('G', el.element)
+        self.one(el.attributes)
+        attr = el.attributes.first
         self.eq('garply', attr.key)
         self.eq('=', attr.operator)
         self.eq('waldo', attr.value)
 
         sels = 'E[foo~=bar] F[qux^="quux"] G[garply$=waldo]'
         sels = dom.selectors(sels)
-        B()
         self.one(sels)
         sel = sels.first
 
-        smp = sel.simples.first
-        self.eq('E', smp.element)
-        self.one(smp.attributes)
-        attr = smp.attributes.first
+        el = sel.elements.first
+        self.eq('E', el.element)
+        self.one(el.attributes)
+        attr = el.attributes.first
         self.eq('foo', attr.key)
         self.eq('~=', attr.operator)
         self.eq('bar', attr.value)
 
-        smp = sel.simples.second
-        self.eq('F', smp.element)
-        self.one(smp.attributes)
-        attr = smp.attributes.first
+        el = sel.elements.second
+        self.eq('F', el.element)
+        self.one(el.attributes)
+        attr = el.attributes.first
         self.eq('qux', attr.key)
         self.eq('^=', attr.operator)
         self.eq('quux', attr.value)
 
-        smp = sel.simples.third
-        self.eq('G', smp.element)
-        self.one(smp.attributes)
-        attr = smp.attributes.first
+        el = sel.elements.third
+        self.eq('G', el.element)
+        self.one(el.attributes)
+        attr = el.attributes.first
         self.eq('garply', attr.key)
         self.eq('$=', attr.operator)
         self.eq('waldo', attr.value)
 
+        # multiple attribute selectors
+        sels = 'E[foo=bar][qux="quux"] F[garply=waldo][foo=bar]'
+        sels = dom.selectors(sels)
+        self.one(sels)
+        sel = sels.first
+
+        el = sel.elements.first
+        self.eq('E', el.element)
+        self.two(el.attributes)
+        attr = el.attributes.first
+        self.eq('foo', attr.key)
+        self.eq('=', attr.operator)
+        self.eq('bar', attr.value)
+        attr = el.attributes.second
+        self.eq('qux', attr.key)
+        self.eq('=', attr.operator)
+        self.eq('quux', attr.value)
+
+        el = sel.elements.second
+        self.eq('F', el.element)
+        self.two(el.attributes)
+        attr = el.attributes.first
+        self.eq('garply', attr.key)
+        self.eq('=', attr.operator)
+        self.eq('waldo', attr.value)
+        attr = el.attributes.second
+        self.eq('foo', attr.key)
+        self.eq('=', attr.operator)
+        self.eq('bar', attr.value)
 
 ########################################################################
 # Test parties                                                         #
@@ -13579,6 +13612,18 @@ testhtml = tester.dedent('''
   <body>
     <p>
       Lorum &amp; Ipsum Δ
+    </p>
+    <p>
+      This is some
+      <strong>
+        strong text.
+      </strong>
+    </p>
+    <p>
+      This too is some
+      <strong>
+        strong text.
+      </strong>
     </p>
   </body>
 </html>
