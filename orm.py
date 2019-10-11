@@ -2492,18 +2492,21 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # This gets you the pseudocollection of the
             # artist_artifacts associations collection.
 
-            for map in self_orm.mappings.associationsmappings:
-                maps = map.associations.orm.mappings.entitymappings
-                for map1 in maps:
-                    if map1.entity.orm.entities.__name__ == attr:
-                        if (
-                            map1.entity is type(self) 
-                            and not map.entities.orm.isreflexive
-                        ):
-                            continue
+            orm = self_orm
+            while orm:
+                for map in orm.mappings.associationsmappings:
+                    maps = map.associations.orm.mappings.entitymappings
+                    for map1 in maps:
+                        if map1.entity.orm.entities.__name__ == attr:
+                            if (
+                                map1.entity is type(self) 
+                                and not map.entities.orm.isreflexive
+                            ):
+                                continue
 
-                        asses = getattr(self, map.name)
-                        return getattr(asses, attr)
+                            asses = getattr(self, map.name)
+                            return getattr(asses, attr)
+                orm = orm.super.orm
 
             return object.__getattribute__(self, attr)
 
@@ -5069,7 +5072,8 @@ class associations(entities):
                             # TODO LEFTOFF
                             # The below code overwrites the association
                             # object's subject property.
-
+                            #
+                            # UPDATE The self.orm.composite is the 
 
                             setattr(obj, map.name, self.orm.composite)
                             break

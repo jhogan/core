@@ -12918,6 +12918,185 @@ class test_orm(tester):
 
         # TODO Test deeply nested associations
 
+    def it_loads_and_saves_reflexive_associations_of_subentity_objects\
+                                                                (self):
+        sng = singer.getvalid()
+        aa = sng.artist_artists
+        self.zero(aa)
+
+        # Ensure property caches
+        self.is_(aa, sng.artist_artists)
+
+        # Test loading associated collection
+        B()
+        artsb = sng.artists
+        self.zero(artsb)
+        self.type(artists, artsb)
+
+        return
+
+        # Ensure property caches
+        self.is_(artsb, art.artists)
+
+        # Ensure the association's associated collections is the same as
+        # the associated collection of the entity.
+
+        self.is_(art.artists, art.artist_artists.artists)
+        self.is_(art, art.artist_artists.artist)
+
+        # Save and load an association
+        aa                    =   artist_artist.getvalid()
+        aa.role               =   uuid4().hex
+        objart                =   artist.getvalid()
+        aa.object             =   objart
+        art.artist_artists    +=  aa
+
+        self.is_(art,     art.artist_artists.first.subject)
+        self.is_(objart,  art.artist_artists.first.object)
+        self.isnot(art,   art.artist_artists.first.object)
+        self.eq(aa.role,  art.artist_artists.first.role)
+
+        self.one(art.artist_artists)
+        self.one(art.artists)
+
+        with self._chrontest() as t:
+            t.run(art.save)
+            t.created(art, aa, objart)
+
+        with self._chrontest() as t:
+            art1 = t.run(lambda: artist(art.id))
+            t.retrieved(art1)
+        
+        self.one(art1.artist_artists)
+        self.one(art1.artists)
+
+        aa1 = art1.artist_artists.first
+
+        self.eq(art.id,          art1.id)
+        self.eq(aa.id,           aa1.id)
+        self.eq(aa.role,         aa1.role)
+
+        self.eq(aa.subject.id,         aa1.subject.id)
+        self.eq(aa.subject__artistid,  aa1.subject__artistid)
+        self.eq(aa.object.id,          aa1.object.id)
+        self.eq(aa.object__artistid,   aa1.object__artistid)
+
+        # Add as second artist_artist, save, reload and test
+        aa2           =  artist_artist.getvalid()
+        aa2.object    =  artist.getvalid()
+
+        art1.artist_artists += aa2
+
+        self.is_(art1,    aa2.subject)
+        self.isnot(art1,  aa2.object)
+
+        with self._chrontest() as t:
+            t.run(art1.save)
+            t.created(aa2, aa2.object)
+
+        art2 = artist(art1.id)
+        self.eq(art1.id,         art2.id)
+
+        aas1=art1.artist_artists.sorted('role')
+        aas2=art2.artist_artists.sorted('role')
+
+        for aa1, aa2 in zip(aas1, aas2):
+            self.eq(aa1.id,           aa2.id)
+            self.eq(aa1.role,         aa2.role)
+
+            self.eq(aa1.subject.id,         aa2.subject.id)
+            self.eq(aa1.subject__artistid,  aa2.subject__artistid)
+            self.eq(aa1.object.id,          aa2.object.id)
+            self.eq(aa1.object__artistid,   aa2.object__artistid)
+
+        # Add a third artist to artist's pseudo-collection.
+        # Save, reload and test.
+        objart = artist.getvalid()
+        art2.artists += objart
+
+        self.is_(art2,            art2.artist_artists.last.subject)
+        self.is_(objart,          art2.artist_artists.last.object)
+        art2.artist_artists.last.role = uuid4().hex
+        art2.artist_artists.last.slug = uuid4().hex
+        art2.artist_artists.last.timespan = uuid4().hex
+        aa2 = art2.artist_artists.last
+
+        self.three(art2.artists)
+        self.three(art2.artist_artists)
+        self.isnot(aa2.subject,  aa2.object)
+
+        with self._chrontest() as t:
+            t.run(art2.save)
+            t.created(art2.artist_artists.third)
+            t.created(art2.artist_artists.third.object)
+
+        art3 = artist(art2.id)
+
+        self.three(art3.artists)
+        self.three(art3.artist_artists)
+
+        aas2 = art2.artist_artists.sorted('role')
+        aas3 = art3.artist_artists.sorted('role')
+
+        for aa2, aa3 in zip(aas2, aas3):
+            self.eq(aa2.id,                 aa3.id)
+            self.eq(aa2.role,               aa3.role)
+            self.eq(aa2.subject.id,         aa3.subject.id)
+            self.eq(aa2.object.id,          aa3.object.id)
+            self.eq(aa2.subject__artistid,  aa3.subject__artistid)
+            self.eq(aa2.object__artistid,   aa3.object__artistid)
+
+        # Add two presentations to the artist's presentations collection
+        press3 = presentations()
+        for _ in range(2):
+            press3 += presentation.getvalid()
+
+        press3.sort()
+        art3.artist_artists.first.object.presentations += press3.first
+        art3.artists.first.presentations += press3.second
+
+        self.two(art3.artist_artists.first.object.presentations)
+        self.two(art3.artists.first.presentations)
+
+        self.is_(press3[0], art3.artist_artists[0].object.presentations[0])
+        self.is_(press3[1], art3.artist_artists[0].object.presentations[1])
+        self.is_(press3[0], art3.artists[0].presentations[0])
+        self.is_(press3[1], art3.artists[0].presentations[1])
+
+        with self._chrontest() as t:
+            t.run(art3.save)
+            t.created(press3.first)
+            t.created(press3.second)
+
+        art4 = artist(art3.id)
+        press4 = art4.artist_artists.first.object.presentations.sorted()
+
+        self.two(press4)
+        self.eq(press4.first.id, press3.first.id)
+        self.eq(press4.second.id, press3.second.id)
+
+        # NOTE The below comment and tests were carried over from
+        # it_loads_and_saves_associations:
+        # This fixes an issue that came up in development: When you add valid
+        # aa to art, then add a fact to art (thus adding an invalid aa to art),
+        # strange things where happening with the brokenrules. 
+        art = artist.getvalid()
+        art.artist_artists += artist_artist.getvalid()
+        art.artists += artist.getvalid()
+
+        self.zero(art.artist_artists.first.brokenrules)
+        self.zero(art.artist_artists.first.brokenrules)
+        self.three(art.artist_artists.second.brokenrules)
+        self.three(art.brokenrules)
+
+        # Fix broken aa
+        art.artist_artists.second.role = uuid4().hex
+        art.artist_artists.second.slug = uuid4().hex
+        art.artist_artists.second.timespan = uuid4().hex
+
+        self.zero(art.artist_artists.second.brokenrules)
+        self.zero(art.brokenrules)
+
 ########################################################################
 # Test parties                                                         #
 ########################################################################
