@@ -2500,15 +2500,21 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 for map in orm.mappings.associationsmappings:
                     maps = map.associations.orm.mappings.entitymappings
                     for map1 in maps:
-                        if map1.entity.orm.entities.__name__ == attr:
-                            if (
-                                map1.entity is type(self) 
-                                and not map.entities.orm.isreflexive
-                            ):
-                                continue
 
-                            asses = getattr(self, map.name)
-                            return getattr(asses, attr)
+                        es = [map1.entity]
+                        es.extend(
+                            [x.entity for x in map1.entity.orm.subclasses]
+                        )
+                        for e in es:
+                            if e.orm.entities.__name__ == attr:
+                                if (
+                                    e is type(self) 
+                                    and not map.entities.orm.isreflexive
+                                ):
+                                    continue
+
+                                asses = getattr(self, map.name)
+                                return getattr(asses, attr)
 
                 orm = orm.super.orm
 
