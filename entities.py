@@ -581,8 +581,11 @@ class entities(object):
             self.onremove(self, entityremoveeventargs(e))
 
     def __getitem__(self, key):
-        if isinstance(key, int) or type(key) == slice:
+        if isinstance(key, int):
             return self._ls[key]
+
+        if isinstance(key, slice):
+            return type(self)(initial=self._ls[key])
 
         try:
             ix = self.getindex(key)
