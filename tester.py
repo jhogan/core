@@ -239,7 +239,7 @@ class tester(entity):
     def assertZero(self, actual):
         if len(actual) != 0: self._failures += failure()
 
-    def zero(self, actual):
+    def zero(self, actual, msg=None):
         if len(actual) != 0: self._failures += failure()
 
     def assertOne(self, actual):

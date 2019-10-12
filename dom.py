@@ -282,6 +282,11 @@ class elements(entities.entities):
         return None
 
     def __getitem__(self, sel):
+        if isinstance(sel, int):
+            return super().__getitem__(sel)
+        elif not isinstance(sel, str):
+            raise ValueError('Invalid type: ' + type(sel).__name__)
+
         els = elements()
         for sel in selectors(sel):
             el1 = sel.elements.last
@@ -290,10 +295,13 @@ class elements(entities.entities):
             rms = elements()
 
             for el in els:
-                for el1, an in zip(sel.elements[:-1], el.ancestors):
-                    if not el1.match(an):
+                for el1 in reversed(sel.elements[:-1]):
+                    # Logic for Descendant combinator
+                    for an in el.ancestors:
+                        if el1.match(an):
+                            break
+                    else:
                         rms += el
-                        break
             
             els.remove(rms)
                     
@@ -343,6 +351,13 @@ class element(entities.entity):
     # There must be a closing tag on elements by default. In cases,
     # such as the `base` element, there should not be a closing tag so
     # `noend` is set to True
+
+    # TODO Consider renaming this to `void` because 
+    # "Void elements only have a start tag; end tags must not be
+    # specified for void elements."
+
+    # https://www.w3.org/TR/2011/WD-html-markup-20110405/syntax.html
+
     noend = False
 
     def __init__(self, o=None):
@@ -393,6 +408,7 @@ class element(entities.entity):
     def greatgrandparent(self):
         return self.getparent(2)
 
+    @property
     def ancestors(self):
         els = elements()
         rent = self.parent
@@ -605,6 +621,22 @@ class text(element):
         return htmlmod.escape(
             dedent(self._str)
         ).strip()
+
+class wbrs(elements):
+    pass
+
+class wbr(element):
+    """The HTML <wbr> element represents a word break opportunity—a
+    position within text where the browser may optionally break a line,
+    though its line-breaking rules would not otherwise create a break at
+    that location.
+
+    https://developer.mozilla.org/en-US/docs/Web/HTML/Element/wbr
+    """
+    pass
+
+wordbreaks = wbrs
+wordbreak = wbr
 
 class breaks(elements):
     pass
@@ -2438,6 +2470,7 @@ class metas(elements):
     pass
 
 class meta(element):
+    noend = True
     @property
     def charset(self):
         return self.attributes['charset'].value
@@ -2997,6 +3030,10 @@ class _htmlparser(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         el = elements.getby(tag=tag)
+        if not el:
+            raise NotImplementedError(
+                'The <%s> tag has no DOM implementation' % tag
+            )
         el = el()
         for attr in attrs:
             el.attributes += attr
@@ -3404,6 +3441,19 @@ class em(element):
 emphases = ems
 emphasis = em
 
+class divs(elements):
+    pass
+
+class div(element):
+    """ The HTML Content Division element (<div>) is the generic
+    container for flow content. It has no effect on the content or
+    layout until styled using CSS.
+    """
+    pass
+
+divisions = divs
+division = div
+
 class spans(elements):
     pass
 
@@ -3472,6 +3522,9 @@ class selectors(entities.entities):
         self._parse()
 
     def _parse(self):
+        if not self._sel:
+            return
+
         sel = selector()
         self += sel
         el = comb = attr = None
@@ -3486,6 +3539,8 @@ class selectors(entities.entities):
                         else:
                             # Parse error
                             ...
+                    elif cls:
+                        cls.value = tok.value
                 else:
                     el = selector.element()
                     el.element = tok.value
@@ -3520,6 +3575,9 @@ class selectors(entities.entities):
                             # Parse Error
                             ...
 
+                if tok.value == '.':
+                    cls = selector.class_()
+                    el.classes += cls
                 
     def __repr__(self):
         return ', '.join(str(x) for x in self)
@@ -3551,12 +3609,15 @@ class selector(entities.entity):
             self.element = None
             self.combinator = None
             self.attributes = selector.attributes()
+            self.classes = selector.classes()
 
         def match(self, el):
             if el.tag != self.element:
                 return False
 
             # TODO Test attribtes, classes, etc...
+
+            return True
 
         @property
         def str_combinator(self):
@@ -3610,6 +3671,11 @@ class selector(entities.entity):
             v   =  self.value     or  ''
             return '[%s%s%s]' % (k, op, v)
 
+    class classes(_simples):
+        def __repr__(self):
+            return '.'.join(str(x) for x in self)
+
+    class class_(simple):
         def __str__(self):
             return repr(self)
 
