@@ -2506,6 +2506,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                             asses = getattr(self, map.name)
                             return getattr(asses, attr)
+
                 orm = orm.super.orm
 
             return object.__getattribute__(self, attr)
@@ -3020,61 +3021,103 @@ class mapping(entitiesmod.entity):
         return repr(self)
     
 class associationsmapping(mapping):
+    """ Represents a mapping to an entity's associations collection.
+    """
     def __init__(self, name, ass, isderived=False):
+        """ Set initial values.
+        """
+
+        # Store a reference to the actual association class
         self.associations = ass
         self._value = None
         self._composite = None
         super().__init__(name, isderived)
 
     def clone(self):
+        """ Create a new associationsmapping with same attribute values.
+        """
         return associationsmapping(
             self.name, self.associations, self.isderived
         )
 
     @property
     def entities(self):
+        """ Returns the associations collection class.
+        """
         return self.associations
 
     @property
     def composite(self):
+        """ Returns the composite (i.e., parent) of the associations
+        collections.
+        """
         return self._composite
 
     @composite.setter
     def composite(self, v):
+        """ Sets the composite (i.e., parent) of the associations
+        collections.
+        """
         self._composite = v
         
     @property
     def value(self):
+        """ Load and memoize the associations collection object that the
+        this map represents.
+        """
         if not self._value:
             maps = mappings()
+
+            # Get the forign keys that correspond to the composite
             for map in self.associations.orm.mappings.foreignkeymappings:
                 if map.entity is type(self.composite):
-                    maps += map
+                    if self.associations.orm.isreflexive:
+                        # If the association is reflexive, we want the
+                        # subjective foreign key which corresponds to
+                        # the composite's primary key.
+                        if map.issubjective:
+                            maps += map
+                    else:
+                        maps += map
 
             if maps.isempty:
                 raise ValueError('Foreign key not found')
 
+            # Create the where clause by disjunctivly joining the
+            # foreign keys.
             wh = ' OR '.join([x.name + ' = %s' for x in maps])
             args = [self.composite.id] * maps.count
 
 
+            # Create the associations collection
             asses = self.associations(wh, args)
 
+            # Load the association.
             # NOTE Currently, we implitly load entities and association.
             # However, we will want to continue explitly loading this
             # association here for the sake of predictablity.
             asses.orm.load()
 
+            # Make sure the associations collection knows it's composite
             asses.orm.composite = self.composite
+
+            # Memoize. Using the setter here ensure that self._setvalue
+            # gets called.
             self.value = asses
         return self._value
 
     @value.setter
     def value(self, v):
+        """ Sets the associations collection object that the this map
+        represents.
+        """
         self._setvalue('_value', v, 'value')
 
     @property
     def _reprargs(self):
+        """ Returns the interpolation arguments for this object's
+        __repr__ method. See ``mapping.__repr__``.
+        """
         args = super()._reprargs
         args += ', isloaded=%s' % self.isloaded
         return args

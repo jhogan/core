@@ -3598,6 +3598,8 @@ class test_orm(tester):
                 self.count = 0
 
             def run(self, callable):
+                # TODO If `callable` is not a callable, throw an
+                # exception.
                 test_orm.chronicles.clear()
                 r = callable()
                 self.chronicles = test_orm.chronicles.clone()
