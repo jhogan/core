@@ -12242,6 +12242,7 @@ class test_orm(tester):
 
         with self._chrontest() as t:
             t.run(art.save)
+            print(t)
             t.created(art, aa, objart)
 
         with self._chrontest() as t:
@@ -12923,12 +12924,8 @@ class test_orm(tester):
     def it_loads_and_saves_reflexive_associations_of_subentity_objects\
                                                                 (self):
         sng = singer.getvalid()
-
         with self._chrontest() as t:
-            B()
             aa = t.run(lambda: sng.artist_artists)
-            t.retrieved(aa)
-            print(t)
 
         self.zero(aa)
 
@@ -12936,10 +12933,27 @@ class test_orm(tester):
         self.is_(aa, sng.artist_artists)
 
         # Test loading associated collection
-        B()
-        artsb = sng.artists
+        with self._chrontest() as t:
+            artsb = t.run(lambda: sng.artists)
+
         self.zero(artsb)
         self.type(artists, artsb)
+        return
+
+
+
+        sng.singers
+
+
+
+
+        # Test loading associated collection
+        with self._chrontest() as t:
+            sngsb = t.run(lambda: sng.singers)
+
+        self.zero(sngsb)
+        self.type(singers, sngsb)
+
 
         return
 
