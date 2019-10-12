@@ -12923,7 +12923,13 @@ class test_orm(tester):
     def it_loads_and_saves_reflexive_associations_of_subentity_objects\
                                                                 (self):
         sng = singer.getvalid()
-        aa = sng.artist_artists
+
+        with self._chrontest() as t:
+            B()
+            aa = t.run(lambda: sng.artist_artists)
+            t.retrieved(aa)
+            print(t)
+
         self.zero(aa)
 
         # Ensure property caches
