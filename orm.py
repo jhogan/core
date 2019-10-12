@@ -3101,11 +3101,15 @@ class associationsmapping(mapping):
             # Create the associations collection
             asses = self.associations(wh, args)
 
-            # Load the association.
-            # NOTE Currently, we implitly load entities and association.
-            # However, we will want to continue explitly loading this
-            # association here for the sake of predictablity.
-            asses.orm.load()
+            # Load the association if the composite is not new. If the
+            # composite is new, there would be no existing associations
+            #i for it to load.
+            if not self.composite.orm.isnew:
+                # NOTE Currently, we implitly load entities and
+                # association.  However, we will want to continue
+                # explitly loading this association here for the sake of
+                # predictablity.
+                asses.orm.load()
 
             # Make sure the associations collection knows it's composite
             asses.orm.composite = self.composite
@@ -3823,6 +3827,8 @@ class ormclasseswrapper(entitiesmod.entities):
         if isinstance(obj, type):
             obj = ormclasswrapper(obj)
         elif isinstance(obj, ormclasswrapper):
+            pass
+        elif isinstance(obj, ormclasseswrapper):
             pass
         else:
             raise ValueError()
@@ -4855,17 +4861,6 @@ class orm:
         return self.entity in of.orm.entity.orm.superclasess
 
     @staticmethod
-    def getsubclasses(of):
-        r = []
-
-        for sub in of.__subclasses__():
-            if sub not in (associations, association):
-                r.append(sub)
-            r.extend(orm.getsubclasses(sub))
-
-        return r
-
-    @staticmethod
     def issub(obj1,  obj2):
         """ Returns true if obj1 is a subentity of obj2, False
         otherwise.
@@ -4966,6 +4961,19 @@ class orm:
                 clss += sub
             self._subclasses = clss
         return self._subclasses
+
+    @staticmethod
+    def getsubclasses(of):
+        r = []
+
+        for sub in of.__subclasses__():
+            if sub not in (associations, association):
+                r.append(sub)
+            r.extend(orm.getsubclasses(sub))
+
+        return r
+
+
         
     @staticmethod
     def getassociations():
