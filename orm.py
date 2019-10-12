@@ -1352,6 +1352,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         else:
             load = True
 
+            if self.orm.composite:
+                load &= not self.orm.composite.orm.isnew
+
             # Don't load if joining or attr == 'load'
             load &= attr not in ('innerjoin', 'join', 'load')
 
