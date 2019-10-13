@@ -4973,8 +4973,6 @@ class orm:
 
         return r
 
-
-        
     @staticmethod
     def getassociations():
         return orm.getsubclasses(of=association)
@@ -5347,18 +5345,34 @@ class associations(entities):
             for map in self.orm.mappings.entitymappings:
                 if (self.orm.isreflexive and not map.isobjective):
                     continue
-                es = map.entity.orm.entities
-                if es.__name__ == attr:
-                    # Create a pseudocollection for the associations
-                    # collection object (self). Append it to the self's
-                    # _constituents collection.
-                    es = es()
-                    es.onadd    += self.entities_onadd
-                    es.onremove += self.entities_onremove
-                    self.orm.constituents[attr] = es
-                    break
-            else:
-                raiseAttributeError()
+
+                # Get the entity for the entity map then concatenate
+                # it with its subentities.
+                # TODO Clean this up a little
+                ess = [map.entity.orm.entities]
+                ess.extend(x.entity.orm.entities for x in map.entity.orm.subclasses)
+
+                # Iterate down the inheritance tree until we find an
+                # entity/subentity with the name of the attr.
+                # NOTE For most request, the entity (ess[0]) will be
+                # what we want. Subentities will be needed when we
+                # request a pseudocollection that is a subtype of the
+                # association's objective entity:
+                #    sng.<artist_artist>.singers
+                for es in ess:
+                    if es.__name__ == attr:
+                        # Create a pseudocollection for the associations
+                        # collection object (self). Append it to the self's
+                        # _constituents collection.
+                        es = es()
+                        es.onadd    += self.entities_onadd
+                        es.onremove += self.entities_onremove
+                        self.orm.constituents[attr] = es
+                        break
+                else:
+                    raiseAttributeError()
+
+                break
 
             # Get all the entity objects stored in `self` then add them
             # in to the pseudocollection (es).

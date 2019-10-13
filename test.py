@@ -12938,11 +12938,12 @@ class test_orm(tester):
 
         self.zero(artsb)
         self.type(artists, artsb)
+
+
+
+        self.type(singers, sng.singers)
+
         return
-
-
-
-        sng.singers
 
 
 
