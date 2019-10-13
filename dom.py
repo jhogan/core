@@ -282,8 +282,9 @@ class elements(entities.entities):
         return None
 
     def __getitem__(self, sel):
-        if isinstance(sel, int):
+        if isinstance(sel, int) or isinstance(sel, slice):
             return super().__getitem__(sel)
+
         elif not isinstance(sel, str):
             raise ValueError('Invalid type: ' + type(sel).__name__)
 
@@ -295,10 +296,12 @@ class elements(entities.entities):
             rms = elements()
 
             for el in els:
-                for el1 in reversed(sel.elements[:-1]):
+                anix = int()
+                for el1 in sel.elements[:-1].reversed():
                     # Logic for Descendant combinator
-                    for an in el.ancestors:
+                    for i, an in el.ancestors[anix:].enumerate():
                         if el1.match(an):
+                            anix += i + 1
                             break
                     else:
                         rms += el

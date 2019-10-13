@@ -13496,13 +13496,20 @@ class test_selectors(tester):
         html = dom.html(Shakespeare)
 
         sels = [
-          'h2',
-          'div h2', 
+          'html body div div h2',
+          'body div div h2',
           'div div h2',
-          'body h2',
-          'html h2',
+          'div h2',
+          'h2',
+          'html div div h2',
+          'html body div h2',
+          'html div h2',
           'html body h2',
           'html div h2',
+          'html h2',
+          'body h2',
+          'div h2',
+          'div div h2',
         ]
 
         for sel in sels:
@@ -13511,16 +13518,40 @@ class test_selectors(tester):
           self.type(dom.h2, h2s.first)
 
         sels = [
+          'derp body div div h2',
+          'html derp div h2',
+          'html body derp div h2',
+          'html body div derp h2',
+          'derp div h2',
+          'body derp div h2',
+          'body div derp h2',
+          'derp div h2',
+          'div derp h2',
+          'div derp',
+          'html html div div h2',
+          'html body body div h2',
+          'html body div div div h2',
+          'html body div div h2 h2',
+          'body body div h2',
+          'body div div div h2',
+          'body div div h2 h2',
+          'div div div h2',
+          'div div h2 h2',
+          'div h2 h2',
+          'h2 h2',
           'h2 div',
-          'div body h2', 
+          'html div body div h2',
+          'html body div h2 div',
+          'div body div h2',
+          'body div h2 div',
+          'div h2 div',
           'div body h2',
           'body body h2',
           'div html h2',
           'body wbr h2', 
-          'body nonstandardtag h2', 
-          'h3 h2', 
+          'body derp h2', 
           'wbr', 
-          'nonstandardtag'
+          'derp'
         ]
 
         for sel in sels:
@@ -13618,7 +13649,6 @@ class test_selectors(tester):
     def it_parses_class_elements(self):
         sels = 'E.warning'
         sels = dom.selectors(sels)
-        B()
         self.one(sels)
       
 
