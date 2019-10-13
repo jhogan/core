@@ -3544,14 +3544,19 @@ class selectors(entities.entities):
                             ...
                     elif cls:
                         cls.value = tok.value
+
                 else:
                     el = selector.element()
                     el.element = tok.value
                     el.combinator = comb
                     sel.elements += el
+
             elif tok.type == 'STRING':
                 if attr:
                     attr.value = tok.value
+            elif tok.type == 'HASH':
+                el.id = tok.value
+
             elif tok.type == 'S':
                 if el:
                     el = None
@@ -3581,7 +3586,7 @@ class selectors(entities.entities):
                 if tok.value == '.':
                     cls = selector.class_()
                     el.classes += cls
-                
+
     def __repr__(self):
         return ', '.join(str(x) for x in self)
 
@@ -3632,11 +3637,16 @@ class selector(entities.entity):
                 r += self.str_combinator + ' '
 
             r += self.element
+
+            if self.id is not None:
+                r += '#' + self.id
+
             if self.attributes.count:
                 r += str(self.attributes)
 
             if self.classes.count:
                 r += str(self.classes)
+
             return r
 
     @staticmethod

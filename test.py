@@ -13664,7 +13664,7 @@ class test_selectors(tester):
           sels.first.elements.first.classes.first.value
         )
 
-        ''' E.warning f.danger '''
+        ''' E.warning F.danger '''
         sels = 'E.warning F.danger'
         sels = dom.selectors(sels)
         self.one(sels)
@@ -13699,6 +13699,88 @@ class test_selectors(tester):
         self.eq('warning', e.classes.first.value)
         self.eq('danger', e.classes.second.value)
 
+        ''' E.warning.danger.fire '''
+        sels = 'E.warning.danger.fire'
+        sels = dom.selectors(sels)
+        self.one(sels)
+        self.one(sels.first.elements)
+
+        e = sels.first.elements.first
+        self.type(dom.selector.element, e)
+        self.eq('E', e.element)
+        self.three(e.classes)
+        self.type(dom.selector.class_, e.classes.first)
+        self.type(dom.selector.class_, e.classes.second)
+        self.eq('warning', e.classes.first.value)
+        self.eq('danger', e.classes.second.value)
+        self.eq('fire', e.classes.third.value)
+
+        ''' E.warning.danger.fire F.primary.secondary.success'''
+        sels = 'E.warning.danger.fire F.primary.secondary.success'
+        sels = dom.selectors(sels)
+        self.one(sels)
+        self.two(sels.first.elements)
+
+        e = sels.first.elements.first
+        self.type(dom.selector.element, e)
+        self.eq('E', e.element)
+        self.three(e.classes)
+        self.type(dom.selector.class_, e.classes.first)
+        self.type(dom.selector.class_, e.classes.second)
+        self.eq('warning', e.classes.first.value)
+        self.eq('danger', e.classes.second.value)
+        self.eq('fire', e.classes.third.value)
+
+        e = sels.first.elements.second
+        self.type(dom.selector.element, e)
+        self.eq('F', e.element)
+        self.three(e.classes)
+        self.type(dom.selector.class_, e.classes.first)
+        self.type(dom.selector.class_, e.classes.second)
+        self.eq('primary', e.classes.first.value)
+        self.eq('secondary', e.classes.second.value)
+        self.eq('success', e.classes.third.value)
+
+    def it_parses_id_elements(self):
+        eid = uuid4().hex
+        fid = uuid4().hex
+        gid = uuid4().hex
+
+        ''' E#id '''
+        sels = 'E#' + eid
+        sels = dom.selectors(sels)
+        self.one(sels)
+        self.one(sels.first.elements)
+
+        e = sels.first.elements.first
+        self.eq(eid, e.id)
+
+        ''' E#id F#id'''
+        sels = 'E#%s F#%s' % (eid, fid)
+        sels = dom.selectors(sels)
+        self.one(sels)
+        self.two(sels.first.elements)
+
+        e = sels.first.elements.first
+        self.eq(eid, e.id)
+
+        f = sels.first.elements.second
+        self.eq(fid, f.id)
+
+        ''' E#id F#id G#id'''
+        sels = 'E#%s F#%s G#%s' % (eid, fid, gid)
+        sels = dom.selectors(sels)
+        self.one(sels)
+        self.three(sels.first.elements)
+
+        e = sels.first.elements.first
+        self.eq(eid, e.id)
+
+        f = sels.first.elements.second
+        self.eq(fid, f.id)
+
+        g = sels.first.elements.third
+        self.eq(gid, g.id)
 
 ########################################################################
 # Test parties                                                         #
