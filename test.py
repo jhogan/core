@@ -4134,6 +4134,10 @@ class test_orm(tester):
             t.created(fact1)
             t.created(fact2)
 
+            # FIXME The save is reloading art.artist_arifacts for some
+            # reason. See related at d7a42a957d3e491e882d485095e1325f
+            t.retrieved(art.artist_artifacts)
+
 
         with self._chrontest() as t:
             art1 = t.run(lambda: artist(art.id))
@@ -12242,8 +12246,11 @@ class test_orm(tester):
 
         with self._chrontest() as t:
             t.run(art.save)
-            print(t)
             t.created(art, aa, objart)
+
+            # FIXME The save is reloading art.artist_arifacts for some
+            # reason. See related at d7a42a957d3e491e882d485095e1325f
+            t.retrieved(art.artist_artists)
 
         with self._chrontest() as t:
             art1 = t.run(lambda: artist(art.id))

@@ -1353,7 +1353,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             load = True
 
             if self.orm.composite:
-                load &= not self.orm.composite.orm.isnew
+                if self.orm.composite.orm.isnew:
+                    load = False
 
             # Don't load if joining or attr == 'load'
             load &= attr not in ('innerjoin', 'join', 'load')
