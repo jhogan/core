@@ -3634,6 +3634,9 @@ class selector(entities.entity):
             r += self.element
             if self.attributes.count:
                 r += str(self.attributes)
+
+            if self.classes.count:
+                r += str(self.classes)
             return r
 
     @staticmethod
@@ -3676,9 +3679,15 @@ class selector(entities.entity):
 
     class classes(_simples):
         def __repr__(self):
-            return '.'.join(str(x) for x in self)
+            return ''.join(str(x) for x in self)
 
     class class_(simple):
+        def __init__(self):
+            self.value = None
+
+        def __repr__(self):
+            return '.' + self.value
+
         def __str__(self):
             return repr(self)
 

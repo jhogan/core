@@ -13647,10 +13647,58 @@ class test_selectors(tester):
         self.eq('bar', attr.value)
 
     def it_parses_class_elements(self):
+        ''' E.warning '''
         sels = 'E.warning'
         sels = dom.selectors(sels)
         self.one(sels)
-      
+        self.one(sels.first.elements)
+        self.type(dom.selector.element, sels.first.elements.first)
+        self.eq('E', sels.first.elements.first.element)
+        self.one(sels.first.elements.first.classes)
+        self.type(
+          dom.selector.class_,
+          sels.first.elements.first.classes.first
+        )
+        self.eq(
+          'warning', 
+          sels.first.elements.first.classes.first.value
+        )
+
+        ''' E.warning f.danger '''
+        sels = 'E.warning F.danger'
+        sels = dom.selectors(sels)
+        self.one(sels)
+        self.two(sels.first.elements)
+
+        e = sels.first.elements.first
+        self.type(dom.selector.element, e)
+        self.eq('E', e.element)
+        self.one(e.classes)
+        self.type(dom.selector.class_, e.classes.first)
+        self.eq('warning', e.classes.first.value)
+
+        e = sels.first.elements.second
+        self.type(dom.selector.element, e)
+        self.eq('F', e.element)
+        self.one(e.classes)
+        self.type(dom.selector.class_, e.classes.first)
+        self.eq('danger', e.classes.first.value)
+
+        ''' E.warning.danger '''
+        sels = 'E.warning.danger'
+        sels = dom.selectors(sels)
+        self.one(sels)
+        self.one(sels.first.elements)
+
+        e = sels.first.elements.first
+        self.type(dom.selector.element, e)
+        self.eq('E', e.element)
+        self.two(e.classes)
+        self.type(dom.selector.class_, e.classes.first)
+        self.type(dom.selector.class_, e.classes.second)
+        self.eq('warning', e.classes.first.value)
+        self.eq('danger', e.classes.second.value)
+
 
 ########################################################################
 # Test parties                                                         #
