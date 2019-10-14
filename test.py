@@ -13782,6 +13782,17 @@ class test_selectors(tester):
         g = sels.first.elements.third
         self.eq(gid, g.id)
 
+    def it_parses_pseudo_classes(self):
+        sels = 'E:first-child'
+        sels = dom.selectors(sels)
+        self.one(sels)
+        self.one(sels.first.elements)
+
+        e = sels.first.elements.first
+        self.eq('E', e.element)
+        self.eq('first-child', e.psuedoclass.value)
+
+
 ########################################################################
 # Test parties                                                         #
 ########################################################################

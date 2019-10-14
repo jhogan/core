@@ -3530,7 +3530,7 @@ class selectors(entities.entities):
 
         sel = selector()
         self += sel
-        el = comb = attr = None
+        el = comb = attr = cls = pcls = None
         for tok in cssselect.parser.tokenize(self._sel):
             if tok.type == 'IDENT':
                 if el:
@@ -3544,7 +3544,9 @@ class selectors(entities.entities):
                             ...
                     elif cls:
                         cls.value = tok.value
-
+                    elif pcls:
+                        # TODO Raise if tok.value is invalid
+                        pcls.value = tok.value
                 else:
                     el = selector.element()
                     el.element = tok.value
@@ -3586,6 +3588,9 @@ class selectors(entities.entities):
                 if tok.value == '.':
                     cls = selector.class_()
                     el.classes += cls
+                elif tok.value == ':':
+                    pcls = selector.psuedoclass()
+                    el.psuedoclass = pcls
 
     def __repr__(self):
         return ', '.join(str(x) for x in self)
@@ -3614,10 +3619,12 @@ class selector(entities.entity):
 
     class element(entities.entity):
         def __init__(self):
-            self.element = None
-            self.combinator = None
-            self.attributes = selector.attributes()
-            self.classes = selector.classes()
+            self.element      =  None
+            self.combinator   =  None
+            self.attributes   =  selector.attributes()
+            self.classes      =  selector.classes()
+            self.id           =  None
+            self.psuedoclass  =  None
 
         def match(self, el):
             if el.tag != self.element:
@@ -3646,6 +3653,9 @@ class selector(entities.entity):
 
             if self.classes.count:
                 r += str(self.classes)
+
+            if self.psuedoclass:
+                r += str(self.psuedoclass)
 
             return r
 
@@ -3697,6 +3707,16 @@ class selector(entities.entity):
 
         def __repr__(self):
             return '.' + self.value
+
+        def __str__(self):
+            return repr(self)
+
+    class psuedoclass(simple):
+        def __init__(self):
+            self.value = None
+
+        def __repr__(self):
+            return ':' + self.value
 
         def __str__(self):
             return repr(self)
