@@ -340,9 +340,14 @@ class tester(entity):
             if expect is not None:
                 self._failures += failure(actual=None)
 
+    def repr(self, expect, actual, msg=None):
+        if repr(expect) != actual:
+            self._failures += failure()
+
     @property
     def failures(self):
         return self._failures
+
 
     def __str__(self):
         if self.failures.isempty:

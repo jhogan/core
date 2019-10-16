@@ -3530,7 +3530,7 @@ class selectors(entities.entities):
 
         sel = selector()
         self += sel
-        el = comb = attr = cls = pcls = None
+        el = comb = attr = cls = pcls = args = None
         for tok in cssselect.parser.tokenize(self._sel):
             if tok.type == 'IDENT':
                 if el:
@@ -3544,6 +3544,8 @@ class selectors(entities.entities):
                             ...
                     elif cls:
                         cls.value = tok.value
+                    elif args:
+                        args += selector.argument(tok.value)
                     elif pcls:
                         # TODO Raise if tok.value is invalid
                         pcls.value = tok.value
@@ -3556,6 +3558,12 @@ class selectors(entities.entities):
             elif tok.type == 'STRING':
                 if attr:
                     attr.value = tok.value
+            elif tok.type == 'NUMBER':
+                if args:
+                    args += selector.argument(tok.value)
+                else:
+                    # TODO Raise error
+                    ...
             elif tok.type == 'HASH':
                 el.id = tok.value
 
@@ -3589,8 +3597,18 @@ class selectors(entities.entities):
                     cls = selector.class_()
                     el.classes += cls
                 elif tok.value == ':':
-                    pcls = selector.psuedoclass()
-                    el.psuedoclass = pcls
+                    pcls = selector.pseudoclass()
+                    el.pseudoclass = pcls
+                elif tok.value == '(':
+                    args = pcls.arguments
+                elif tok.value in ('+',  '-'):
+                    args += selector.argument(tok.value)
+
+        self.normalize()
+
+    def normalize(self):
+        for sel in self:
+            sel.normalize()
 
     def __repr__(self):
         return ', '.join(str(x) for x in self)
@@ -3624,7 +3642,11 @@ class selector(entities.entity):
             self.attributes   =  selector.attributes()
             self.classes      =  selector.classes()
             self.id           =  None
-            self.psuedoclass  =  None
+            self.pseudoclass  =  None
+
+        def normalize(self):
+            if self.pseudoclass:
+                self.pseudoclass.arguments.normalize()
 
         def match(self, el):
             if el.tag != self.element:
@@ -3654,17 +3676,22 @@ class selector(entities.entity):
             if self.classes.count:
                 r += str(self.classes)
 
-            if self.psuedoclass:
-                r += str(self.psuedoclass)
+            if self.pseudoclass:
+                r += str(self.pseudoclass)
 
             return r
+
+    def __init__(self):
+        self.elements = selector.elements()
+
+    def normalize(self):
+        for e in self.elements:
+            e.normalize()
 
     @staticmethod
     def comb2str(comb):
         return [' ', '>', '+', '~'][comb]
 
-    def __init__(self):
-        self.elements = selector.elements()
 
     def __repr__(self):
         r = str()
@@ -3711,15 +3738,49 @@ class selector(entities.entity):
         def __str__(self):
             return repr(self)
 
-    class psuedoclass(simple):
+    class pseudoclass(simple):
         def __init__(self):
             self.value = None
+            self.arguments = selector.arguments()
 
         def __repr__(self):
-            return ':' + self.value
+            r = ':' + self.value
+            if self.arguments.ispopulated:
+                r += '(%s)' % str(self.arguments)
+            return r
 
         def __str__(self):
             return repr(self)
+
+    class arguments(_simples):
+        def __repr__(self):
+            return ' '.join(str(x) for x in self)
+
+        def normalize(self):
+            if self.count >= 2:
+                i = 0
+                f = self[i].value
+                s = self[i+1].value
+                if f.isnumeric and s == 'n':
+                    self[i].value += 'n'
+                    self.remove(i + 1)
+            elif self.count == 1:
+                try:
+                    v = int(self.first.value)
+                except ValueError as ex:
+                    if self.first.value not in ('odd', 'even'):
+                        raise
+                else:
+                    self << selector.argument('+')
+                    self << selector.argument('0n')
+                    
+
+    class argument(simple):
+        def __init__(self, v):
+            self.value = v
+
+        def __repr__(self):
+            return self.value
 
 class AttributeExistsError(Exception):
     pass

@@ -13366,8 +13366,6 @@ class test_markdown(tester):
         self.one(md)
         self.type(dom.p, md.first)
 
-
-
     def it_parses_paragraph(self):
         ''' Parse a simple, one-line paragraph '''
         md = dom.markdown('''
@@ -13455,6 +13453,7 @@ class test_selectors(tester):
     def it_parses_chain_of_elements(self):
         ''' One '''
         sels = dom.selectors('E')
+        self.repr(sels, 'E')
         self.one(sels)
         els = sels.first.elements
         self.one(els)
@@ -13462,11 +13461,10 @@ class test_selectors(tester):
 
         desc = dom.selector.Descendant
         self.none(els.first.combinator)
-        self.eq('E', repr(sels))
-        self.eq('E', str(sels))
 
         ''' Two '''
         sels = dom.selectors('E F')
+        self.repr(sels, 'E F')
         self.one(sels)
         els = sels.first.elements
         self.two(els)
@@ -13475,11 +13473,11 @@ class test_selectors(tester):
         desc = dom.selector.Descendant
         self.none(els.first.combinator)
         self.eq(desc, els.second.combinator)
-        self.eq('E F', repr(sels))
-        self.eq('E F', str(sels))
+        self.repr(sels, 'E F')
 
         ''' Three '''
         sels = dom.selectors('E F G')
+        self.repr(sels, 'E F G')
         self.one(sels)
         els = sels.first.elements
         self.three(els)
@@ -13489,8 +13487,7 @@ class test_selectors(tester):
         self.none(els.first.combinator)
         self.eq(desc, els.second.combinator)
         self.eq(desc, els.third.combinator)
-        self.eq('E F G', repr(sels))
-        self.eq('E F G', str(sels))
+        self.repr(sels, 'E F G')
 
     def it_selects_with_chain_of_elements(self):
         html = dom.html(Shakespeare)
@@ -13559,7 +13556,9 @@ class test_selectors(tester):
 
     def it_parses_attribute_elements(self):
         sels = 'E[foo=bar] F[qux="quux"] G[garply=waldo]'
+        expect = 'E[foo=bar] F[qux=quux] G[garply=waldo]'
         sels = dom.selectors(sels)
+        self.repr(sels, expect)
         self.one(sels)
         sel = sels.first
 
@@ -13588,7 +13587,9 @@ class test_selectors(tester):
         self.eq('waldo', attr.value)
 
         sels = 'E[foo~=bar] F[qux^="quux"] G[garply$=waldo]'
+        expect = 'E[foo~=bar] F[qux^=quux] G[garply$=waldo]'
         sels = dom.selectors(sels)
+        self.repr(sels, expect)
         self.one(sels)
         sel = sels.first
 
@@ -13617,8 +13618,11 @@ class test_selectors(tester):
         self.eq('waldo', attr.value)
 
         # multiple attribute selectors
+        # TODO Test E[foo='bar baz']
         sels = 'E[foo=bar][qux="quux"] F[garply=waldo][foo=bar]'
+        expect = 'E[foo=bar][qux=quux] F[garply=waldo][foo=bar]'
         sels = dom.selectors(sels)
+        self.repr(sels, expect)
         self.one(sels)
         sel = sels.first
 
@@ -13648,8 +13652,9 @@ class test_selectors(tester):
 
     def it_parses_class_elements(self):
         ''' E.warning '''
-        sels = 'E.warning'
+        sels = expect = 'E.warning'
         sels = dom.selectors(sels)
+        self.repr(sels, expect)
         self.one(sels)
         self.one(sels.first.elements)
         self.type(dom.selector.element, sels.first.elements.first)
@@ -13665,8 +13670,9 @@ class test_selectors(tester):
         )
 
         ''' E.warning F.danger '''
-        sels = 'E.warning F.danger'
+        sels = expect = 'E.warning F.danger'
         sels = dom.selectors(sels)
+        self.repr(sels, expect)
         self.one(sels)
         self.two(sels.first.elements)
 
@@ -13685,8 +13691,9 @@ class test_selectors(tester):
         self.eq('danger', e.classes.first.value)
 
         ''' E.warning.danger '''
-        sels = 'E.warning.danger'
+        sels = expect = 'E.warning.danger'
         sels = dom.selectors(sels)
+        self.repr(sels, expect)
         self.one(sels)
         self.one(sels.first.elements)
 
@@ -13700,8 +13707,9 @@ class test_selectors(tester):
         self.eq('danger', e.classes.second.value)
 
         ''' E.warning.danger.fire '''
-        sels = 'E.warning.danger.fire'
+        sels = expect = 'E.warning.danger.fire'
         sels = dom.selectors(sels)
+        self.repr(sels, expect)
         self.one(sels)
         self.one(sels.first.elements)
 
@@ -13716,8 +13724,9 @@ class test_selectors(tester):
         self.eq('fire', e.classes.third.value)
 
         ''' E.warning.danger.fire F.primary.secondary.success'''
-        sels = 'E.warning.danger.fire F.primary.secondary.success'
+        sels = expect = 'E.warning.danger.fire F.primary.secondary.success'
         sels = dom.selectors(sels)
+        self.repr(sels, expect)
         self.one(sels)
         self.two(sels.first.elements)
 
@@ -13747,8 +13756,9 @@ class test_selectors(tester):
         gid = uuid4().hex
 
         ''' E#id '''
-        sels = 'E#' + eid
+        sels = expect = 'E#' + eid
         sels = dom.selectors(sels)
+        self.repr(sels, expect)
         self.one(sels)
         self.one(sels.first.elements)
 
@@ -13756,8 +13766,9 @@ class test_selectors(tester):
         self.eq(eid, e.id)
 
         ''' E#id F#id'''
-        sels = 'E#%s F#%s' % (eid, fid)
+        sels = expect = 'E#%s F#%s' % (eid, fid)
         sels = dom.selectors(sels)
+        self.repr(sels, expect)
         self.one(sels)
         self.two(sels.first.elements)
 
@@ -13768,8 +13779,9 @@ class test_selectors(tester):
         self.eq(fid, f.id)
 
         ''' E#id F#id G#id'''
-        sels = 'E#%s F#%s G#%s' % (eid, fid, gid)
+        sels = expect = 'E#%s F#%s G#%s' % (eid, fid, gid)
         sels = dom.selectors(sels)
+        self.repr(sels, expect)
         self.one(sels)
         self.three(sels.first.elements)
 
@@ -13783,14 +13795,117 @@ class test_selectors(tester):
         self.eq(gid, g.id)
 
     def it_parses_pseudo_classes(self):
+        ''' E:first-child '''
         sels = 'E:first-child'
         sels = dom.selectors(sels)
+        self.repr(sels, 'E:first-child')
         self.one(sels)
         self.one(sels.first.elements)
 
         e = sels.first.elements.first
         self.eq('E', e.element)
-        self.eq('first-child', e.psuedoclass.value)
+        self.eq('first-child', e.pseudoclass.value)
+
+        '''E:first-child F:last-child'''
+        sels = 'E:first-child F:last-child'
+        sels = dom.selectors(sels)
+        self.repr(sels, 'E:first-child F:last-child')
+        self.one(sels)
+        self.two(sels.first.elements)
+
+        e = sels.first.elements.first
+        self.eq('E', e.element)
+        self.eq('first-child', e.pseudoclass.value)
+
+        f = sels.first.elements.second
+        self.eq('F', f.element)
+        self.eq('last-child', f.pseudoclass.value)
+
+    def it_parses_argumentative_pseudo_classes(self):
+        ''' E:nth-child(odd) '''
+        sels = 'E:nth-child(odd)'
+        sels = dom.selectors(sels)
+        self.one(sels)
+        self.one(sels.first.elements)
+        self.repr(sels, 'E:nth-child(odd)')
+
+        e = sels.first.elements.first
+        self.eq('E', e.element)
+        self.eq('nth-child', e.pseudoclass.value)
+        self.one(e.pseudoclass.arguments)
+        self.eq('odd', e.pseudoclass.arguments.first.value)
+
+        ''' E:nth-child(even) '''
+        sels = 'E:nth-child(even)'
+        sels = dom.selectors(sels)
+        self.one(sels)
+        self.one(sels.first.elements)
+        self.repr(sels, 'E:nth-child(even)')
+
+        e = sels.first.elements.first
+        self.eq('E', e.element)
+        self.eq('nth-child', e.pseudoclass.value)
+        self.one(e.pseudoclass.arguments)
+        self.eq('even', e.pseudoclass.arguments.first.value)
+
+        ''' E:nth-child(2n + 1)'''
+        sels = 'E:nth-child(2n + 1)'
+        sels = dom.selectors(sels)
+        self.repr(sels, 'E:nth-child(2n + 1)')
+        self.one(sels)
+        self.one(sels.first.elements)
+
+        e = sels.first.elements.first
+        self.eq('E', e.element)
+        self.eq('nth-child', e.pseudoclass.value)
+        self.three(e.pseudoclass.arguments)
+        self.eq('2n', e.pseudoclass.arguments.first.value)
+        self.eq('+', e.pseudoclass.arguments.second.value)
+        self.eq('1', e.pseudoclass.arguments.third.value)
+        ''' E:nth-child(odd) '''
+        sels = 'E:nth-child(odd)'
+        sels = dom.selectors(sels)
+
+        '''foo:nth-child(0n + 5)'''
+        sels = [
+          'foo:nth-child(0n + 5)',
+          'foo:nth-child(5)',
+        ]
+
+        for sel in sels:
+          sels = dom.selectors(sel)
+          self.repr(sels, 'foo:nth-child(0n + 5)')
+          self.one(sels)
+          self.one(sels.first.elements)
+
+
+          e = sels.first.elements.first
+          self.eq('foo', e.element)
+          self.eq('nth-child', e.pseudoclass.value)
+          self.three(e.pseudoclass.arguments)
+          self.eq('0n', e.pseudoclass.arguments.first.value)
+          self.eq('+', e.pseudoclass.arguments.second.value)
+          self.eq('5', e.pseudoclass.arguments.third.value)
+          ''' E:nth-child(odd) '''
+          sels = 'E:nth-child(odd)'
+          sels = dom.selectors(sels)
+
+        ''' E:nth-child(10n - 1)'''
+        sels = 'E:nth-child(10n - 1)'
+        sels = dom.selectors(sels)
+        self.repr(sels, 'E:nth-child(10n - 1)')
+        self.one(sels)
+        self.one(sels.first.elements)
+        self.one(sels.first.elements)
+        e = sels.first.elements.first
+
+        self.eq(e.element, 'E')
+        self.eq(e.pseudoclass.value, 'nth-child')
+        self.three(e.pseudoclass.arguments)
+        self.eq('10n', e.pseudoclass.arguments.first.value)
+        self.eq('-', e.pseudoclass.arguments.second.value)
+        self.eq('1', e.pseudoclass.arguments.third.value)
+
 
 
 ########################################################################
