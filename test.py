@@ -36,6 +36,8 @@ import re
 import textwrap
 import gem
 
+# TODO Remove epiphenomenom directory
+
 # Set conditional break points
 def B(x=True):
     if x: 
