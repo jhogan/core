@@ -2509,7 +2509,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         for e in es:
                             if e.orm.entities.__name__ == attr:
                                 if (
-                                    e is type(self) 
+                                    isinstance(self, e)
                                     and not map.entities.orm.isreflexive
                                 ):
                                     continue
@@ -5371,9 +5371,10 @@ class associations(entities):
                         self.orm.constituents[attr] = es
                         break
                 else:
-                    raiseAttributeError()
-
+                    continue
                 break
+            else:
+                raiseAttributeError()
 
             # Get all the entity objects stored in `self` then add them
             # in to the pseudocollection (es).

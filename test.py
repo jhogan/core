@@ -12946,9 +12946,12 @@ class test_orm(tester):
         self.zero(artsb)
         self.type(artists, artsb)
 
-
-
         self.type(singers, sng.singers)
+        self.zero(sng.singers)
+
+        # Ensure association is same after accessing `singers`
+        # pseudocollection.
+        self.is_(aa, sng.artist_artists)
 
         return
 
