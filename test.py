@@ -12946,48 +12946,49 @@ class test_orm(tester):
         self.zero(artsb)
         self.type(artists, artsb)
 
-        self.type(singers, sng.singers)
-        self.zero(sng.singers)
+        # Test loading associated collection
+        with self._chrontest() as t:
+            sngsb = t.run(lambda: sng.singers)
+
+        self.type(singers, sngsb)
+        self.zero(sngsb)
 
         # Ensure association is same after accessing `singers`
         # pseudocollection.
         self.is_(aa, sng.artist_artists)
 
-        return
-
-
-
-
-        # Test loading associated collection
-        with self._chrontest() as t:
-            sngsb = t.run(lambda: sng.singers)
-
-        self.zero(sngsb)
-        self.type(singers, sngsb)
-
-
-        return
-
         # Ensure property caches
-        self.is_(artsb, art.artists)
+        self.is_(artsb, sng.artists)
+        self.is_(sngsb, sng.singers)
 
         # Ensure the association's associated collections is the same as
         # the associated collection of the entity.
 
-        self.is_(art.artists, art.artist_artists.artists)
-        self.is_(art, art.artist_artists.artist)
+        self.is_(sng.artists, sng.artist_artists.artists)
+        self.is_(sng.singers, sng.artist_artists.singers)
+
+        self.is_(sng.orm.super,         sng.artist_artists.artist)
+
+        # Getting the subentity (singer) of artist_artists's composite
+        # (artitst) that is identical to seems to the subentity
+        # composite (sng) seems a bit of a challange. On the other hand,
+        # it should be easy to reload a singer object by the composite's
+        # id (singer(sng.artist_artists.artist.id)) )). Lets see how
+        # this goes down the road to see which is the best solution. 
+        #self.is_(sng,         sng.artist_artists.singer)
 
         # Save and load an association
         aa                    =   artist_artist.getvalid()
         aa.role               =   uuid4().hex
-        objart                =   artist.getvalid()
-        aa.object             =   objart
-        art.artist_artists    +=  aa
+        objsng                =   singer.getvalid()
+        aa.object             =   objsng
+        sng.artist_artists    +=  aa
 
-        self.is_(art,     art.artist_artists.first.subject)
-        self.is_(objart,  art.artist_artists.first.object)
-        self.isnot(art,   art.artist_artists.first.object)
-        self.eq(aa.role,  art.artist_artists.first.role)
+        self.is_    (sng,      sng.artist_artists.first.subject)
+        self.is_    (objsng,   sng.artist_artists.first.object)
+        self.isnot  (sng,      sng.artist_artists.first.object)
+        self.eq     (aa.role,  sng.artist_artists.first.role)
+        return
 
         self.one(art.artist_artists)
         self.one(art.artists)
