@@ -10,15 +10,16 @@
 
 
 from dbg import B
+from func import enumerate
 from html.parser import HTMLParser
-import entities
-import html as htmlmod
 from mistune import Markdown
-import orm
-import sys
 from textwrap import dedent, indent
 import cssselect
-from func import enumerate
+import entities
+import html as htmlmod
+import orm
+import re
+import sys
 
 """
 .. _moz_global_attributes https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes
@@ -3532,6 +3533,7 @@ class selectors(entities.entities):
         self += sel
         el = comb = attr = cls = pcls = args = None
         for tok in cssselect.parser.tokenize(self._sel):
+            print(tok)
             if tok.type == 'IDENT':
                 if el:
                     if attr:
@@ -3545,7 +3547,10 @@ class selectors(entities.entities):
                     elif cls:
                         cls.value = tok.value
                     elif args:
-                        args += selector.argument(tok.value)
+                        if args.hasone and tok.value == 'n':
+                            args.first.value += 'n'
+                        else:
+                            args += selector.argument(tok.value)
                     elif pcls:
                         # TODO Raise if tok.value is invalid
                         pcls.value = tok.value
@@ -3757,6 +3762,9 @@ class selector(entities.entity):
             return ' '.join(str(x) for x in self)
 
         def normalize(self):
+            if self.isempty:
+                return
+
             if self.count >= 2:
                 i = 0
                 f = self[i].value
@@ -3768,11 +3776,45 @@ class selector(entities.entity):
                 try:
                     v = int(self.first.value)
                 except ValueError as ex:
-                    if self.first.value not in ('odd', 'even'):
+                    if not re.match(
+                        '^(odd|even|[0-9]*n)$', 
+                        self.first.value
+                    ):
                         raise
                 else:
                     self << selector.argument('+')
                     self << selector.argument('0n')
+
+            m = re.match('^[0-9]*n$', self.first.value)
+            if m:
+                if self.count not in (1, 3):
+                    return
+
+                if self.count == 3:
+                    if self.second.value not in ('+', '-'):
+                        return
+
+                if self.count == 1:
+                    m = m.group()
+                    if len(m) > 1:
+                        f = m[:-1] + 'n'
+                    else:
+                        f = '1n'
+                    m = '+'
+                    l = '0'
+                else:
+                    f = m.group()
+                    if f == 'n':
+                        f = '1n'
+                    m = self.second.value
+                    l = self.last.value
+
+
+                self.clear()
+                self += selector.argument(f)
+                self += selector.argument(m)
+                self += selector.argument(l)
+                    
                     
 
     class argument(simple):
