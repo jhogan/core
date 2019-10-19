@@ -4862,7 +4862,7 @@ class orm:
         return props
 
     def issuperentity(self, of):
-        return self.entity in of.orm.entity.orm.superclasess
+        return self.entity in of.orm.entity.orm.superclasses
 
     @staticmethod
     def issub(obj1,  obj2):
@@ -4887,7 +4887,7 @@ class orm:
         return False
 
     @property
-    def superclasess(self):
+    def superclasses(self):
         ''' Returns a list of entity classes or entity objects (depending on
         whether or not self.isinstance) of which self is a subentity. '''
 
