@@ -5414,6 +5414,7 @@ class associations(entities):
 class association(entity):
     pass
 
+# TODO These should be made PascalCase
 class invalidcolumn(ValueError):
     pass
 

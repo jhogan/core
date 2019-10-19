@@ -12931,8 +12931,11 @@ class test_orm(tester):
     def it_loads_and_saves_reflexive_associations_of_subentity_objects\
                                                                 (self):
         sng = singer.getvalid()
+
         with self._chrontest() as t:
             aa = t.run(lambda: sng.artist_artists)
+
+        self.is_(sng, sng.artist_artists.orm.composite)
 
         self.zero(aa)
 
@@ -12946,7 +12949,7 @@ class test_orm(tester):
         self.zero(artsb)
         self.type(artists, artsb)
 
-        # Test loading associated collection
+        # Test loading associated subentity collection
         with self._chrontest() as t:
             sngsb = t.run(lambda: sng.singers)
 
@@ -12963,35 +12966,30 @@ class test_orm(tester):
 
         # Ensure the association's associated collections is the same as
         # the associated collection of the entity.
+        self.is_(sng.artists,    sng.artist_artists.artists)
+        self.is_(sng.singers,    sng.artist_artists.singers)
 
-        self.is_(sng.artists, sng.artist_artists.artists)
-        self.is_(sng.singers, sng.artist_artists.singers)
-
-        self.is_(sng.orm.super,         sng.artist_artists.artist)
-
-        # Getting the subentity (singer) of artist_artists's composite
-        # (artitst) that is identical to seems to the subentity
-        # composite (sng) seems a bit of a challange. On the other hand,
-        # it should be easy to reload a singer object by the composite's
-        # id (singer(sng.artist_artists.artist.id)) )). Lets see how
-        # this goes down the road to see which is the best solution. 
-        #self.is_(sng,         sng.artist_artists.singer)
+        self.is_(sng,            sng.artist_artists.singer)
+        self.is_(sng.orm.super,  sng.artist_artists.artist)
 
         # Save and load an association
         aa                    =   artist_artist.getvalid()
         aa.role               =   uuid4().hex
         objsng                =   singer.getvalid()
         aa.object             =   objsng
+
+        B()
         sng.artist_artists    +=  aa
 
         self.is_    (sng,      sng.artist_artists.first.subject)
         self.is_    (objsng,   sng.artist_artists.first.object)
         self.isnot  (sng,      sng.artist_artists.first.object)
         self.eq     (aa.role,  sng.artist_artists.first.role)
-        return
 
-        self.one(art.artist_artists)
-        self.one(art.artists)
+        self.one(sng.artist_artists)
+        self.one(sng.artists)
+        self.one(sng.singers)
+        return
 
         with self._chrontest() as t:
             t.run(art.save)
