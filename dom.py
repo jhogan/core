@@ -8,6 +8,8 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 ########################################################################
 
+# NOTE Page component reference: 
+#     https://webstyleguide.com/wsg3/6-page-structure/3-site-design.html
 
 from dbg import B
 from func import enumerate
