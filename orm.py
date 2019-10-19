@@ -2464,6 +2464,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         es = v
                         for e in (es,) +  tuple(es):
                             setattr(e, self_orm_entity__name__, self)
+
+                    if isinstance(v, associations):
+                        v.orm.composite = self
                     return v
 
                 # NOTE Each time we ascend to the next super, we are
@@ -5336,8 +5339,28 @@ class associations(entities):
         #     art.artist_artifacts.artist
         #
         # Note that `assert art is art.artist_artifacts.artists`.
-        if attr == type(self.orm.composite).__name__:
-            return self.orm.composite
+        #
+        # The ascension loop as added for subentities, e.g.,
+        #
+        #     assert sng.orm.super is sng.artist_artists.artist 
+
+        comp = self.orm.composite
+        sups = None
+        while comp:
+            name = type(comp).__name__
+
+            if attr == name:
+                return comp
+
+            if sups is None:
+                sups = comp.orm.entity.orm.superclasses
+                sups = [x.__name__ for x in sups]
+
+            if attr not in sups:
+                break
+
+            comp = comp.orm.super
+
         try:
             # Returned a memoized constituent. These are created in the
             # `except KeyError` block.
