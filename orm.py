@@ -5130,19 +5130,22 @@ class associations(entities):
                         # composite of None.
                         if self.orm.composite is not None:
                             
-
-                            # TODO LEFTOFF
-                            # The below code overwrites the association
-                            # object's subject property.
+                            # TODO map.name will always be 'subject'
+                            # here. Don't we want it to be
                             #
-                            # UPDATE The self.orm.composite is the 
-
+                            #     `self.orm.composite.__class__.__name__` 
+                            #
+                            # Unfortately, when this is corrected,
+                            # several issues result when running the
+                            # tests.
                             setattr(obj, map.name, self.orm.composite)
                             break
                 elif map.name == type(self.orm.composite).__name__:
                     setattr(obj, map.name, self.orm.composite)
                     break
 
+            # TODO This is the second interation of the entitymappings
+            # collection. We should consolodate these into one loop.
             for map in obj.orm.mappings.entitymappings:
                 if not map.isloaded:
                     continue
@@ -5175,14 +5178,18 @@ class associations(entities):
                         for meth in meths:
                             es.onadd -= meth
 
+                        # Add map's value to pseudocollection
+
                         # NOTE We may want to override __contains__ such
                         # that `map.value no in es` does the same thing.
                         # Currently, identity comparisons will be done.
                         if map.value.id not in [x.id for x in es]:
                             es += map.value
                         else:
+                            # TODO Remove this; it's just an expression.
                             map.value not in es
                     finally:
+                        # Restore entities_onadd handlers
                         for meth in meths:
                             es.onadd += meth
 

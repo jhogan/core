@@ -12978,7 +12978,6 @@ class test_orm(tester):
         objsng                =   singer.getvalid()
         aa.object             =   objsng
 
-        B()
         sng.artist_artists    +=  aa
 
         self.is_    (sng,      sng.artist_artists.first.subject)
