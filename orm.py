@@ -5107,6 +5107,7 @@ class associations(entities):
         # Otherwise, pass `obj` to the `super()`'s `append()` method. In
         # this case, it will likely be an a collection of `association`
         # objects.
+        comp = self.orm.composite
         if isinstance(obj, association):
             for map in obj.orm.mappings.entitymappings:
                 # TODO We probably should be using the association's
@@ -5155,9 +5156,11 @@ class associations(entities):
                 if not self.orm.composite:
                     continue
 
+                compsups = [comp.orm.entity] + comp.orm.entity.orm.superclasses
+
                 if (
                     self.orm.isreflexive and map.isobjective
-                    or (map.entity is not self.orm.composite.orm.entity)
+                    or (map.entity not in compsups)
                 ):
                     # Get pseudocollections
                     es = getattr(self, map.value.orm.entities.__name__)
