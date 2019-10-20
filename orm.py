@@ -5156,7 +5156,16 @@ class associations(entities):
                     self.orm.isreflexive and map.isobjective
                     or (map.entity is not self.orm.composite.orm.entity)
                 ):
-                    es = getattr(self, map.entity.orm.entities.__name__)
+                    # Get pseudocollections
+                    es = getattr(self, map.value.orm.entities.__name__)
+
+                    # Remove the 'entities_onadd' event handlers when
+                    # adding to the pseudocollections so they don't
+                    # recursively call back into this method to add
+                    # association objects. The event handlers are
+                    # restored in the `finally` block.
+
+                    # TODO Tighten up code
                     meths = [
                         x for x in es.onadd 
                         if x.__name__ == 'entities_onadd'
