@@ -13828,44 +13828,39 @@ class test_selectors(tester):
         sels = dom.selectors(sels)
         self.one(sels)
         self.one(sels.first.elements)
-        self.repr('E:nth-child(odd)', sels)
+        self.repr('E:nth-child(2n+1)', sels)
 
         e = sels.first.elements.first
         self.eq('E', e.element)
         self.eq('nth-child', e.pseudoclass.value)
-        self.one(e.pseudoclass.arguments)
-        self.eq('odd', e.pseudoclass.arguments.first.value)
+        self.eq(2, e.pseudoclass.arguments.a)
+        self.eq(1, e.pseudoclass.arguments.b)
 
         ''' E:nth-child(even) '''
         sels = 'E:nth-child(even)'
         sels = dom.selectors(sels)
         self.one(sels)
         self.one(sels.first.elements)
-        self.repr('E:nth-child(even)', sels)
+        self.repr('E:nth-child(2n+0)', sels)
 
         e = sels.first.elements.first
         self.eq('E', e.element)
         self.eq('nth-child', e.pseudoclass.value)
-        self.one(e.pseudoclass.arguments)
-        self.eq('even', e.pseudoclass.arguments.first.value)
+        self.eq(2, e.pseudoclass.arguments.a)
+        self.eq(0, e.pseudoclass.arguments.b)
 
         ''' E:nth-child(2n + 1)'''
         sels = 'E:nth-child(2n + 1)'
         sels = dom.selectors(sels)
-        self.repr('E:nth-child(2n + 1)', sels)
+        self.repr('E:nth-child(2n+1)', sels)
         self.one(sels)
         self.one(sels.first.elements)
 
         e = sels.first.elements.first
         self.eq('E', e.element)
         self.eq('nth-child', e.pseudoclass.value)
-        self.three(e.pseudoclass.arguments)
-        self.eq('2n', e.pseudoclass.arguments.first.value)
-        self.eq('+', e.pseudoclass.arguments.second.value)
-        self.eq('1', e.pseudoclass.arguments.third.value)
-        ''' E:nth-child(odd) '''
-        sels = 'E:nth-child(odd)'
-        sels = dom.selectors(sels)
+        self.eq(2, e.pseudoclass.arguments.a)
+        self.eq(1, e.pseudoclass.arguments.b)
 
         '''foo:nth-child(0n + 5)'''
         sels = [
@@ -13875,7 +13870,7 @@ class test_selectors(tester):
 
         for sel in sels:
             sels = dom.selectors(sel)
-            self.repr('foo:nth-child(0n + 5)', sels)
+            self.repr('foo:nth-child(0n+5)', sels)
             self.one(sels)
             self.one(sels.first.elements)
 
@@ -13883,71 +13878,63 @@ class test_selectors(tester):
             e = sels.first.elements.first
             self.eq('foo', e.element)
             self.eq('nth-child', e.pseudoclass.value)
-            self.three(e.pseudoclass.arguments)
-            self.eq('0n', e.pseudoclass.arguments.first.value)
-            self.eq('+', e.pseudoclass.arguments.second.value)
-            self.eq('5', e.pseudoclass.arguments.third.value)
-            ''' E:nth-child(odd) '''
-            sels = 'E:nth-child(odd)'
-            sels = dom.selectors(sels)
+            self.notnone(e.pseudoclass.arguments)
+            self.eq(0, e.pseudoclass.arguments.a)
+            self.eq(5, e.pseudoclass.arguments.b)
 
         ''' E:nth-child(10n - 1)'''
         sels = 'E:nth-child(10n - 1)'
         sels = dom.selectors(sels)
-        self.repr('E:nth-child(10n - 1)', sels)
+        self.repr('E:nth-child(10n-1)', sels)
         self.one(sels)
-        self.one(sels.first.elements)
         self.one(sels.first.elements)
         e = sels.first.elements.first
 
         self.eq(e.element, 'E')
         self.eq(e.pseudoclass.value, 'nth-child')
-        self.three(e.pseudoclass.arguments)
-        self.eq('10n', e.pseudoclass.arguments.first.value)
-        self.eq('-', e.pseudoclass.arguments.second.value)
-        self.eq('1', e.pseudoclass.arguments.third.value)
+        self.eq(10, e.pseudoclass.arguments.a)
+        self.eq(-1, e.pseudoclass.arguments.b)
 
         sels = [
-            'E:nth-child(n - 0)',
+            'E:nth-child(n)',
             'E:nth-child(1n + 0)',
             'E:nth-child(n + 0)',
-            'E:nth-child(n)',
         ]
 
         for i, sel in enumerate(sels):
             sels = dom.selectors(sel)
-            op = '+' if i else '-'
-            self.repr('E:nth-child(1n %s 0)' % op, sels, 'For: ' + sel)
+            self.repr('E:nth-child(1n+0)', sels, 'For: ' + sel)
             args = sels.first.elements.first.pseudoclass.arguments
-            self.eq('1n', args.first.value)
-            self.eq(op, args.second.value)
-            self.eq('0', args.third.value)
+            self.eq(1, args.a)
+            self.eq(0, args.b)
 
         sels = [
-            'E:nth-child(2n + 0)',
             'E:nth-child(2n)',
+            'E:nth-child(2n + 0)',
         ]
 
-        B()
         for sel in sels:
             sels = dom.selectors(sel)
-            self.repr('E:nth-child(2n + 0)', sels, 'For: ' + sel)
+            self.repr('E:nth-child(2n+0)', sels, 'For: ' + sel)
             args = sels.first.elements.first.pseudoclass.arguments
-            self.eq('2n', args.first.value)
-            self.eq('+', args.second.value)
-            self.eq('0', args.third.value)
+            self.eq(2, args.a)
+            self.eq(0, args.b)
+
 
         sels = [
-            'E:nth-child(2n+0)',
         ]
+        '''
+        'E:nth-child( +3n - 2 )',
+        'E:nth-child( -n+ 6)',
+        'E:nth-child( +6 )',
+        '''
 
-        for sel in sels:
-            sels = dom.selectors(sel)
-            self.repr('E:nth-child(2n + 0)', sels, 'For: ' + sel)
-            args = sels.first.elements.first.pseudoclass.arguments
-            self.eq('2n', args.first.value)
-            self.eq('+', args.second.value)
-            self.eq('0', args.third.value)
+        sel = 'E:nth-child( 3n + 1 )'
+        sels = dom.selectors(sel)
+        self.repr('E:nth-child(3n+1)', sels, 'For: ' + sel)
+        args = sels.first.elements.first.pseudoclass.arguments
+        self.eq(3, args.a)
+        self.eq(1, args.b)
 
 
 ########################################################################

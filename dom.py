@@ -3535,7 +3535,6 @@ class selectors(entities.entities):
         self += sel
         el = comb = attr = cls = pcls = args = None
         for tok in cssselect.parser.tokenize(self._sel):
-            print(tok)
             if tok.type == 'IDENT':
                 if el:
                     if attr:
@@ -3549,10 +3548,7 @@ class selectors(entities.entities):
                     elif cls:
                         cls.value = tok.value
                     elif args:
-                        if args.hasone and tok.value == 'n':
-                            args.first.value += 'n'
-                        else:
-                            args += selector.argument(tok.value)
+                        args += tok.value
                     elif pcls:
                         # TODO Raise if tok.value is invalid
                         pcls.value = tok.value
@@ -3567,7 +3563,7 @@ class selectors(entities.entities):
                     attr.value = tok.value
             elif tok.type == 'NUMBER':
                 if args:
-                    args += selector.argument(tok.value)
+                    args += tok.value
                 else:
                     # TODO Raise error
                     ...
@@ -3576,9 +3572,10 @@ class selectors(entities.entities):
 
             elif tok.type == 'S':
                 if el:
-                    el = None
-                    if comb is None:
-                        comb = selector.Descendant
+                    if not args:
+                        el = None
+                        if comb is None:
+                            comb = selector.Descendant
                     
             elif tok.type == 'DELIM':    
                 if attr:
@@ -3609,13 +3606,7 @@ class selectors(entities.entities):
                 elif tok.value == '(':
                     args = pcls.arguments
                 elif tok.value in ('+',  '-'):
-                    args += selector.argument(tok.value)
-
-        self.normalize()
-
-    def normalize(self):
-        for sel in self:
-            sel.normalize()
+                    args += tok.value
 
     def __repr__(self):
         return ', '.join(str(x) for x in self)
@@ -3650,10 +3641,6 @@ class selector(entities.entity):
             self.classes      =  selector.classes()
             self.id           =  None
             self.pseudoclass  =  None
-
-        def normalize(self):
-            if self.pseudoclass:
-                self.pseudoclass.arguments.normalize()
 
         def match(self, el):
             if el.tag != self.element:
@@ -3691,14 +3678,9 @@ class selector(entities.entity):
     def __init__(self):
         self.elements = selector.elements()
 
-    def normalize(self):
-        for e in self.elements:
-            e.normalize()
-
     @staticmethod
     def comb2str(comb):
         return [' ', '>', '+', '~'][comb]
-
 
     def __repr__(self):
         r = str()
@@ -3746,85 +3728,95 @@ class selector(entities.entity):
             return repr(self)
 
     class pseudoclass(simple):
+
+        class arguments(element):
+            def __init__(self):
+                self.string  =  str()
+                self._a       =  None
+                self._b       =  None
+                self.simple  =  None
+
+            def __iadd__(self, str):
+                self.string += str
+                return self
+
+            @property
+            def a(self):
+                self._parse()
+                return self._a
+
+            @property
+            def b(self):
+                self._parse()
+                return self._b
+
+            def _parse(self):
+                a = b = None
+                s = self.string
+                if s == 'odd':
+                    a, b = 2, 1
+                elif s == 'even':
+                    a, b = 2, 0
+                elif len(s) == 1:
+                    if s == 'n':
+                        a, b = 1, 0
+                    else:
+                        try:
+                            s = int(s)
+                        except ValueError:
+                            pass
+                        else:
+                            a, b = 0, s
+                elif len(s) == 2:
+                    try:
+                        # E:nth-child(2n)
+                        if s[1] != 'n':
+                            raise CssSelectorParseError(
+                                'Invalid pseudoclass argument: "%s"' % s
+                            )
+                        a, b = int(s[0]), 0
+                    except ValueError:
+                        raise CssSelectorParseError(
+                            'Invalid pseudoclass argument: "%s"' % s
+                        )
+                else:
+                    m = re.match('([0-9]+)?n *(\+|-) *([0-9])+', s)
+                    if m:
+                        gs = m.groups()
+
+                        if len(gs) == 3:
+                            a = gs[0]
+
+                            # gs[0] would be None for 'n+0'
+                            if a is None:
+                                a = 1
+                            else:
+                                a = int(gs[0])
+
+                            b = int(gs[1] + gs[2])
+
+                self._a, self._b = a, b
+
+            def __repr__(self):
+                a = str(self.a)
+                b = str(self.b)
+                if self.b >= 0:
+                    b = '+' + b
+                return '(%sn%s)' % (a, b)
+
+                return ''
+
         def __init__(self):
             self.value = None
-            self.arguments = selector.arguments()
+            self.arguments = selector.pseudoclass.arguments()
 
         def __repr__(self):
             r = ':' + self.value
-            if self.arguments.ispopulated:
-                r += '(%s)' % str(self.arguments)
+            r += repr(self.arguments)
             return r
 
         def __str__(self):
             return repr(self)
-
-    class arguments(_simples):
-        def __repr__(self):
-            return ' '.join(str(x) for x in self)
-
-        def normalize(self):
-            if self.isempty:
-                return
-
-            if self.count >= 2:
-                i = 0
-                f = self[i].value
-                s = self[i+1].value
-                if f.isnumeric and s == 'n':
-                    self[i].value += 'n'
-                    self.remove(i + 1)
-            elif self.count == 1:
-                try:
-                    v = int(self.first.value)
-                except ValueError as ex:
-                    if not re.match(
-                        '^(odd|even|[0-9]*n)$', 
-                        self.first.value
-                    ):
-                        raise
-                else:
-                    self << selector.argument('+')
-                    self << selector.argument('0n')
-
-            m = re.match('^[0-9]*n$', self.first.value)
-            if m:
-                if self.count not in (1, 3):
-                    return
-
-                if self.count == 3:
-                    if self.second.value not in ('+', '-'):
-                        return
-
-                if self.count == 1:
-                    m = m.group()
-                    if len(m) > 1:
-                        f = m[:-1] + 'n'
-                    else:
-                        f = '1n'
-                    m = '+'
-                    l = '0'
-                else:
-                    f = m.group()
-                    if f == 'n':
-                        f = '1n'
-                    m = self.second.value
-                    l = self.last.value
-
-
-                self.clear()
-                self += selector.argument(f)
-                self += selector.argument(m)
-                self += selector.argument(l)
-                    
-                    
-
-    class argument(simple):
-        def __init__(self, v):
-            self.value = v
-
-        def __repr__(self):
-            return self.value
 
 class AttributeExistsError(Exception):
     pass
@@ -3875,4 +3867,7 @@ class HtmlParseError(Exception):
         return r
 
 class DomMoveError(ValueError):
+    pass
+
+class CssSelectorParseError(SyntaxError):
     pass
