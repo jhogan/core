@@ -12986,8 +12986,12 @@ class test_orm(tester):
         self.eq     (aa.role,  sng.artist_artists.first.role)
 
         self.one(sng.artist_artists)
-        self.one(sng.artists)
+
+        # TODO Should addinga singer to sng.artist_artists
+        # self.one(sng.artists)
         self.one(sng.singers)
+
+        self.is_(objsng, sng.singers.first)
         return
 
         with self._chrontest() as t:
