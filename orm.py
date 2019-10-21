@@ -5163,8 +5163,26 @@ class associations(entities):
                     self.orm.isreflexive and map.isobjective
                     or (map.entity not in compsups)
                 ):
-                    # Get pseudocollections
-                    es = getattr(self, map.value.orm.entities.__name__)
+                    try:
+                        # Get pseudocollections
+                        es = getattr(
+                            self, 
+                            map.value.orm.entities.__name__
+                        )
+                    except AttributeError:
+                        # If the object stored in map.value is the wrong
+                        # type, use the map.entity reference. This is
+                        # for situations where the user appends the
+                        # wrong type, but we don't want to raise an
+                        # error, instead prefering that the error is
+                        # discovered in the broken rules collection. See
+                        # it_doesnt_raise_exception_on_invalid_attr_values
+                        # where a location object is being appended to
+                        # an artifact's pseudocollection.
+                        es = getattr(
+                            self, 
+                            map.entity.orm.entities.__name__
+                        )
 
                     # Remove the 'entities_onadd' event handlers when
                     # adding to the pseudocollections so they don't
