@@ -5129,7 +5129,7 @@ class associations(entities):
                         #
                         # Or we could make the setattr() call accept a
                         # composite of None.
-                        if self.orm.composite is not None:
+                        if comp is not None:
                             
                             # TODO map.name will always be 'subject'
                             # here. Don't we want it to be
@@ -5139,10 +5139,10 @@ class associations(entities):
                             # Unfortately, when this is corrected,
                             # several issues result when running the
                             # tests.
-                            setattr(obj, map.name, self.orm.composite)
+                            setattr(obj, map.name, comp)
                             break
-                elif map.name == type(self.orm.composite).__name__:
-                    setattr(obj, map.name, self.orm.composite)
+                elif map.name == type(comp).__name__:
+                    setattr(obj, map.name, comp)
                     break
 
             # TODO This is the second interation of the entitymappings
@@ -5153,10 +5153,11 @@ class associations(entities):
 
                 # self.orm.composite will not exist when loading the
                 # association.
-                if not self.orm.composite:
+                if not comp:
                     continue
 
-                compsups = [comp.orm.entity] + comp.orm.entity.orm.superclasses
+                compsups = [comp.orm.entity] \
+                           + comp.orm.entity.orm.superclasses
 
                 if (
                     self.orm.isreflexive and map.isobjective

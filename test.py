@@ -12992,11 +12992,11 @@ class test_orm(tester):
         self.one(sng.singers)
 
         self.is_(objsng, sng.singers.first)
-        return
 
         with self._chrontest() as t:
-            t.run(art.save)
-            t.created(art, aa, objart)
+            t.run(sng.save)
+            t.created(sng, aa, objsng)
+
 
         with self._chrontest() as t:
             art1 = t.run(lambda: artist(art.id))
