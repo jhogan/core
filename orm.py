@@ -2035,10 +2035,15 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # and atomicity.
         exec.execute()
         
-    def _save(self, cur=None, follow                  =True, 
-                              followentitymapping     =True, 
-                              followentitiesmapping   =True, 
-                              followassociationmapping=True):
+    def _save(self, cur=None, guestbook=None):
+
+        if guestbook is None:
+            guestbook = list()
+        
+        if self in guestbook:
+            return
+
+        guestbook.append(self)
 
         if not self.orm.ismarkedfordeletion and not self.isvalid:
             raise db.BrokenRulesError("Can't save invalid object", self)
@@ -2087,9 +2092,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # self, set the foreignkeyfieldmapping to the id of self,
             # i.e., give the child objects the value of the parent id
             # for their foreign keys
-            for map in self.orm.mappings if follow else tuple():
+            for map in self.orm.mappings:
 
-                if followentitymapping and type(map) is entitymapping:
+                if type(map) is entitymapping:
                     # Call the entity constituent's save method. Setting
                     # followentitiesmapping to false here prevents it's
                     # child/entitiesmapping constituents from being
@@ -2097,12 +2102,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     if map.isloaded:
                         map.value._save(
                             cur, 
-                            followentitiesmapping=False,
-                            followassociationmapping=False
+                            guestbook=guestbook
                         )
 
-                if followentitiesmapping \
-                   and type(map) is entitiesmapping:
+                if type(map) is entitiesmapping:
 
                     if map.isloaded:
                         es = map.value
@@ -2168,7 +2171,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                 # so will recreate self in the database.
                                 e._save(
                                     cur, 
-                                    followentitymapping=(crud!='delete')
+                                    guestbook=guestbook
                                 )
                             except Exception:
                                 # Restore states
@@ -2178,7 +2181,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         for e in es.orm.trash:
                             trashst = e.orm.persistencestate
                             try:
-                                e._save(cur)
+                                e._save(cur, guestbook=guestbook)
                             except Exception:
                                 e.orm.persistencestate = trashst
                                 raise
@@ -2189,15 +2192,14 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         # trash (see below) do the same restoration.
                         es.orm.trash.clear()
                             
-                if followassociationmapping \
-                   and type(map) is associationsmapping:
+                if type(map) is associationsmapping:
 
                     if map.isloaded:
                         # For each association then each trashed
                         # association
                         for asses in map.value, map.value.orm.trash:
                             for ass in asses:
-                                ass._save(cur, follow=False)
+                                ass._save(cur, guestbook=guestbook)
                                 for map in \
                                     ass.orm.mappings.entitymappings:
                                     if map.isloaded:
@@ -2206,8 +2208,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                         e = map.value
                                         e._save(
                                             cur, 
-                                            followassociationmapping \
-                                                =False
+                                            guestbook=guestbook
                                         )
 
                         asses.orm.trash.clear()
@@ -2220,7 +2221,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             if super:
                 if crud == 'delete':
                     super.orm.ismarkedfordeletion = True
-                super._save(cur)
+                super._save(cur, guestbook=guestbook)
 
         except Exception:
             self.orm.persistencestate = st
