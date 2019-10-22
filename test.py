@@ -3592,6 +3592,18 @@ class test_orm(tester):
 
     @contextmanager
     def _chrontest(self):
+        # FIXME In .created, and the other methods that test an *es, es
+        # should fail if there are duplicates in it. Also, we should
+        # track what has been tested to prevent incorrect counts. For
+        # example,
+        # 
+        # t.created(e, e)
+        # t.created(e)
+        #
+        # may correctly indicate that three entity objects were created,
+        # however the actual entity objects could be `e` and 2 other
+        # entity objects (e.g., e1 and e2).
+
         test_orm = self
         class tester:
             def __init__(self):
