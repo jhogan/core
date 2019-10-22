@@ -4544,7 +4544,7 @@ class test_orm(tester):
 
         # Break save method
         pres = art.presentations.orm.trash.first
-        save, pres._save = pres._save, lambda cur: 0/0
+        save, pres._save = pres._save, lambda cur, guestbook: 0/0
 
         self.expect(ZeroDivisionError, lambda: art.save())
 
@@ -4586,7 +4586,7 @@ class test_orm(tester):
         self.one(art.artifacts.orm.trash)
 
         # Break save method
-        fn = lambda cur, follow: 0/0
+        fn = lambda cur, guestbook: 0/0
         save = art.artist_artifacts.orm.trash.first._save
         art.artist_artifacts.orm.trash.first._save = fn
 
@@ -6220,25 +6220,23 @@ class test_orm(tester):
         name = uuid4().hex
         loc2.presentation.artist.presentations.first.name = name
 
-        # The presentation objects here aren't the same reference so they will
-        # have different states.
+        # The presentation objects here aren't the same reference so
+        # they will have different states.
         self.ne(loc2.presentation.name, name)
+        self.eq(loc2.presentation.artist.presentations.first.name, name)
 
-        chrons.clear()
-        loc2.save()
-
-        self.zero(chrons)
+        # However, saving does update the presentation object
+        with self._chrontest() as t:
+            t.run(loc2.save)
+            t.updated(loc2.presentation.artist.presentations.first)
 
         loc2 = location(loc2.id)
 
-        self.one(chrons)
-        self.eq(chrons.where('entity',  loc2).first.op,   'retrieve')
-
-        # The above save() didn't save the new artist's presentation collection
-        # so the new name will not be present in the reloaded presentation
-        # object.
-        self.ne(loc2.presentation.name, name)
-        self.ne(loc2.presentation.artist.presentations.first.name, name)
+        # The above save() saved the new artist's presentation
+        # collection so the new name will be present in the reloaded
+        # presentation object.
+        self.eq(loc2.presentation.name, name)
+        self.eq(loc2.presentation.artist.presentations.first.name, name)
 
     def entity_constituents_break_entity(self):
         pres = presentation.getvalid()
@@ -6275,7 +6273,7 @@ class test_orm(tester):
 
         # Cause the last presentation's invocation of save() to raise an
         # Exception to cause a rollback
-        art.presentations.last._save = lambda cur, followentitymapping: 1/0
+        art.presentations.last._save = lambda cur, guestbook: 1/0
 
         # Save expecting the ZeroDivisionError
         self.expect(ZeroDivisionError, lambda: art.save())
@@ -9035,25 +9033,24 @@ class test_orm(tester):
         name = uuid4().hex
         loc2.presentation.artist.presentations.first.name = name
 
-        # The presentation objects here aren't the same reference so they will
-        # have different states.
+        # The presentation objects here aren't the same reference so
+        # they will have different states.
         self.ne(loc2.presentation.name, name)
+        self.eq(loc2.presentation.artist.presentations.first.name, name)
 
-        chrons.clear()
-        loc2.save()
-
-        self.zero(chrons)
+        # However, saving does update the presentation object
+        with self._chrontest() as t:
+            t.run(loc2.save)
+            t.updated(loc2.presentation.artist.presentations.first)
 
         loc2 = location(loc2.id)
 
-        self.one(chrons)
-        self.eq(chrons.where('entity',  loc2).first.op,   'retrieve')
+        # The above save() saved the new artist's presentation
+        # collection so the new name will be present in the reloaded
+        # presentation object.
+        self.eq(loc2.presentation.name, name)
+        self.eq(loc2.presentation.artist.presentations.first.name, name)
 
-        # The above save() didn't save the new artist's presentation collection
-        # so the new name will not be present in the reloaded presentation
-        # object.
-        self.ne(loc2.presentation.name, name)
-        self.ne(loc2.presentation.artist.presentations.first.name, name)
 
     def it_saves_and_loads_subsubentity_constituent(self):
         # Make sure the constituent is None for new composites
@@ -9167,29 +9164,31 @@ class test_orm(tester):
 
         self.ne(rpr.id, loc2.presentation.artist.id)
 
-        # NOTE: Going up the graph, mutating attributes and persisting
+        # NOTE Going up the graph, mutating attributes and persisting
         # lower in the graph won't work because of the problem of
-        # infinite recursion.  The below tests demonstrate this.  Assign
-        # a new name
+        # infinite recursion.  The below tests demonstrate this.
+
+        # Assign a new name
         name = uuid4().hex
         loc2.presentation.artist.presentations.first.name = name
 
         # The presentation objects here aren't the same reference so
         # they will have different states.
         self.ne(loc2.presentation.name, name)
+        self.eq(loc2.presentation.artist.presentations.first.name, name)
 
+        # However, saving does update the presentation object
         with self._chrontest() as t:
             t.run(loc2.save)
+            t.updated(loc2.presentation.artist.presentations.first)
 
-        with self._chrontest() as t:
-            loc2 = t.run(lambda: location(loc2.id))
-            t.retrieved(loc2)
+        loc2 = location(loc2.id)
 
-        # The above save() didn't save the new artist's presentation
-        # collection so the new name will not be present in the reloaded
+        # The above save() saved the new artist's presentation
+        # collection so the new name will be present in the reloaded
         # presentation object.
-        self.ne(loc2.presentation.name, name)
-        self.ne(loc2.presentation.artist.presentations.first.name, name)
+        self.eq(loc2.presentation.name, name)
+        self.eq(loc2.presentation.artist.presentations.first.name, name)
 
     def it_saves_and_loads_subentities_subentity_constituent(self):
         chrons = self.chronicles
@@ -9499,7 +9498,7 @@ class test_orm(tester):
 
         # Cause the last presentation's invocation of save() to raise an
         # Exception to cause a rollback
-        sng.presentations.last._save = lambda cur, followentitymapping: 1/0
+        sng.presentations.last._save = lambda cur, guestbook: 1/0
 
         # Save expecting the ZeroDivisionError
         self.expect(ZeroDivisionError, lambda: sng.save())
@@ -9535,7 +9534,7 @@ class test_orm(tester):
 
         # Cause the last presentation's invocation of save() to raise an
         # Exception to cause a rollback
-        rpr.presentations.last._save = lambda cur, followentitymapping: 1/0
+        rpr.presentations.last._save = lambda cur, guestbook: 1/0
 
         # Save expecting the ZeroDivisionError
         self.expect(ZeroDivisionError, lambda: rpr.save())
