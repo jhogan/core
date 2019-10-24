@@ -13920,21 +13920,33 @@ class test_selectors(tester):
             self.eq(2, args.a)
             self.eq(0, args.b)
 
-
-        sels = [
-        ]
-        '''
-        'E:nth-child( +3n - 2 )',
-        'E:nth-child( -n+ 6)',
-        'E:nth-child( +6 )',
-        '''
-
         sel = 'E:nth-child( 3n + 1 )'
         sels = dom.selectors(sel)
-        self.repr('E:nth-child(3n+1)', sels, 'For: ' + sel)
+        self.repr('E:nth-child(3n+1)', sels)
         args = sels.first.elements.first.pseudoclass.arguments
         self.eq(3, args.a)
         self.eq(1, args.b)
+
+        sel =  'E:nth-child( +3n - 2 )'
+        sels = dom.selectors(sel)
+        self.repr('E:nth-child(3n-2)', sels)
+        args = sels.first.elements.first.pseudoclass.arguments
+        self.eq(3, args.a)
+        self.eq(-2, args.b)
+
+        sel =  'E:nth-child( -n+ 6)'
+        sels = dom.selectors(sel)
+        self.repr('E:nth-child(1n+6)', sels)
+        args = sels.first.elements.first.pseudoclass.arguments
+        self.eq(1, args.a)
+        self.eq(6, args.b)
+
+        sel = 'E:nth-child( +6 )'
+        sels = dom.selectors(sel)
+        self.repr('E:nth-child(0n+6)', sels)
+        args = sels.first.elements.first.pseudoclass.arguments
+        self.eq(0, args.a)
+        self.eq(6, args.b)
 
 
 ########################################################################

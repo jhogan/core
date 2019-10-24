@@ -3762,38 +3762,49 @@ class selector(entities.entity):
                         a, b = 1, 0
                     else:
                         try:
-                            s = int(s)
+                            i = int(s)
                         except ValueError:
                             pass
                         else:
-                            a, b = 0, s
+                            a, b = 0, i
                 elif len(s) == 2:
                     try:
                         # E:nth-child(2n)
-                        if s[1] != 'n':
+                        if s[0] in ('+', '-'):
+                            try:
+                                i = int(s)
+                            except ValueError:
+                                pass
+                            else:
+                                a, b = 0, i
+                        elif s[1] != 'n':
                             raise CssSelectorParseError(
                                 'Invalid pseudoclass argument: "%s"' % s
                             )
-                        a, b = int(s[0]), 0
+                        else:
+                            a, b = int(s[0]), 0
                     except ValueError:
                         raise CssSelectorParseError(
                             'Invalid pseudoclass argument: "%s"' % s
                         )
                 else:
-                    m = re.match('([0-9]+)?n *(\+|-) *([0-9])+', s)
+                    m = re.match('(\+|-)?([0-9]+)?n *(\+|-) *([0-9])+', s)
                     if m:
                         gs = m.groups()
 
-                        if len(gs) == 3:
-                            a = gs[0]
+                        if len(gs) == 4:
+                            if gs[0] is None:
+                                gs = list(gs)
+                                gs[0] = '+'
+
+                            if gs[0] is not None and gs[1] is not None:
+                                a = int(gs[0] + gs[1])
 
                             # gs[0] would be None for 'n+0'
                             if a is None:
                                 a = 1
-                            else:
-                                a = int(gs[0])
 
-                            b = int(gs[1] + gs[2])
+                            b = int(gs[2] + gs[3])
 
                 self._a, self._b = a, b
 
