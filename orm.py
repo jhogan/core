@@ -4887,6 +4887,7 @@ class orm:
 
         return False
 
+    # TODO This should probably be renamed superentities
     @property
     def superclasses(self):
         ''' Returns a list of entity classes or entity objects (depending on
@@ -4958,6 +4959,7 @@ class orm:
     def isinstance(self):
         return self.instance is not None
 
+    # TODO This should probably be renamed to `subentities`
     @property
     def subclasses(self):
         if self._subclasses is None:

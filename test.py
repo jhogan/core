@@ -3697,6 +3697,11 @@ class test_orm(tester):
         self.unique(abbrs)
         self.eq(abbrs, abbrs1)
 
+        # FIXME It was discovered that one of the entities, presumably
+        # battle, was at one point abbreviated as 'ba' then subsequently
+        # abbreviated as 'b'.
+        # - Oct 25 2019
+
         for i in range(10):
             self.eq(abbrs, [e.orm.abbreviation for e in es])
             self.eq(abbrs, [e().orm.abbreviation for e in es])
@@ -13030,7 +13035,6 @@ class test_orm(tester):
             sng1 = t.run(lambda: singer(sng.id))
             t.retrieved(sng1)
 
-        
         self.one(sng1.artist_artists)
         self.one(sng1.singers)
         self.one(sng1.artists)
