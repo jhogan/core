@@ -13794,7 +13794,7 @@ class test_selectors(tester):
         g = sels.first.elements.third
         self.eq(gid, g.id)
 
-    def it_parses_pseudo_classes(self):
+    def it_parses_nth_child(self):
         ''' E:first-child '''
         sels = 'E:first-child'
         sels = dom.selectors(sels)
@@ -13947,6 +13947,10 @@ class test_selectors(tester):
         args = sels.first.elements.first.pseudoclass.arguments
         self.eq(0, args.a)
         self.eq(6, args.b)
+
+    def it_parses_lang_pseudoclass(self):
+        # Helpful explaination:
+        #     https://bitsofco.de/use-the-lang-pseudo-class-over-the-lang-attribute-for-language-specific-styles/
 
 
 ########################################################################
