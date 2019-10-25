@@ -13041,8 +13041,7 @@ class test_orm(tester):
 
         self.type(singer, sng1)
 
-        # TODO The singer is loaded as an artist
-        # self.type(singer, sng1.singers.first)
+        self.type(singer, sng1.singers.first)
         # self.type(singer, sng1.artists.first)
 
 

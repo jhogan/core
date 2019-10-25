@@ -5288,19 +5288,45 @@ class associations(entities):
         """
         ass = None
 
+        # Create a list of the type of eargs.entity as well as its
+        # superclasses
+        sups = eargs.entity.orm.entity.orm.superclasses
+        sups.append(type(eargs.entity))
+
         # Look through the association collection's (self's) entity
-        # mappings for one that matches eargs.entity by type. That
+        # mappings for one that matches eargs.entity. That
         # entity mapping will refer to the association's reference to
         # the entity being added.
         for map in self.orm.mappings.entitymappings:
-            if map.entity is type(eargs.entity):
 
-                # If we are adding entitiy object's to reflexive
+            # Test map.entity against sups. When a non-subentity is
+            # added to the pseudocollection, we would only need to test
+            # against `type(eargs.entity)`. However, when subentity
+            # objects (singer) are added to super-associations
+            # (artist_artists), we will need to check the superclasses.
+            if map.entity in sups:
+
+                # If we are adding entity object's to reflexive
                 # association collection, we add them as the 'object' of
                 # the association.
                 if not (self.orm.isreflexive and not map.isobjective):
                     for ass in self:
-                        if getattr(ass, map.name) is eargs.entity:
+                        # For non-subentity objects, we could just do an
+                        # identity comparison. However, if a subentity
+                        # was added to the pseudocollection, we can and
+                        # must compare the id's since the subentity's id
+                        # will match its superentity's id.
+
+                        # Get the entity object of the association. 
+                        #
+                        # NOTE that it will be None in cases when the
+                        # association does not have the data to find the
+                        # entity (such as a null value for the entity's
+                        # id). In this case, ass.invalid == True so we
+                        # continue to the next association.
+                        e = getattr(ass, map.name)
+
+                        if e and e.id == eargs.entity.id:
                             # eargs.entity already exists as a
                             # constitutent entity in this collection of
                             # associations. There is no need to add it
@@ -5320,20 +5346,21 @@ class associations(entities):
                 compmap = map
         
         if ass is None:
-            # If ass is None, there was an issue. Likely the user attempted to
-            # assign the wrong type of object to a pseudocollection (e.g.,
-            # art.artifacts = locations()). Since we don't want to raise
-            # exceptions in cases like these (preferring to allow the
-            # brokenrules property to flag them as invalid), we will go ahead
-            # and create a new association referencing the invalid composite
+            # If ass is None, there was an issue. Likely the user
+            # attempted to assign the wrong type of object to a
+            # pseudocollection (e.g., art.artifacts = locations()).
+            # Since we don't want to raise exceptions in cases like
+            # these (preferring to allow the brokenrules property to
+            # flag them as invalid), we will go ahead and create a new
+            # association referencing the invalid composite
             # (eargs.entity) instead.
             ass = self.orm.entity()
             for map1 in ass.orm.mappings.entitymappings:
                 if map1.name != compmap.name:
                     setattr(ass, map1.name, eargs.entity)
 
-        # Assign the association collections's `composite` property to the
-        # new association object's composite field; completing the
+        # Assign the association collections's `composite` property to
+        # the new association object's composite field; completing the
         # association
         setattr(ass, compmap.name, self.orm.composite)
         self += ass
@@ -5445,6 +5472,24 @@ class associations(entities):
             for ass in self:
                 e = getattr(ass, map.name) # :=
                 if e:
+                    
+                    # If the type of `e` does not match the `attr` str, a
+                    # subentity that matches the collection type of `es`
+                    # is needed. This is needed for reflexive subentity
+                    # associations, e.g., consider lazy-loading the
+                    # singers pseudocollection from a singer object.
+                    #
+                    #     assert singer is type(sng.singers.first)
+                    #
+                    # Without this downcasting, the following would be
+                    # true:
+                    #
+                    #     assert artist is type(sng.singers.first)
+
+                    if e.orm.entities.__name__ != attr:
+                        e = es.orm.entity(e.id)
+                        if not e:
+                            raise ValueError('Could not find subentity')
                     es += e
 
             # Return pseudocollection.
