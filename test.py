@@ -13055,6 +13055,7 @@ class test_orm(tester):
         # TODO Should adding singer to sng.artist_artists
         # self.one(sng.artists)
         self.one(sng.singers)
+        self.zero(sng.artists)
 
         self.is_(objsng, sng.singers.first)
 
@@ -13070,15 +13071,34 @@ class test_orm(tester):
             sng1 = t.run(lambda: singer(sng.id))
             t.retrieved(sng1)
 
-        self.one(sng1.artist_artists)
-        self.one(sng1.singers)
-        self.one(sng1.artists)
+        with self._chrontest() as t:
+            aa1 = t(lambda: sng1.artist_artists)
+            t.retrieved(sng1.artist_artists)
+            # FIXME We should no be retrieving artist here
+            t.retrieved(sng1.artist_artists.artist)
+
+        self.one(aa1)
+
+        self.chronicles.clear()
+        self.is_(sng1.orm.super, sng1.artist_artists.artist)
+        self.is_(sng1, sng1.artist_artists.singer)
+        self.zero(self.chronicles)
+
+        with self._chrontest() as t:
+            t(lambda: sng1.singers)
+            t.retrieved(sng1.singers.first)
+            t.retrieved(sng1.artists.first)
+
+        with self._chrontest() as t:
+            self.one(t.run(lambda: sng1.singers))
+
+        with self._chrontest() as t:
+            self.one(t.run(lambda: sng1.artists))
 
         self.type(singer, sng1)
 
         self.type(singer, sng1.singers.first)
-        # self.type(singer, sng1.artists.first)
-
+        self.type(artist, sng1.artists.first)
 
         aa1 = sng1.artist_artists.first
 
@@ -13087,23 +13107,28 @@ class test_orm(tester):
         self.eq(aa.role,         aa1.role)
 
         self.eq(aa.subject.id,         aa1.subject.id)
+
+        # TODO Should aa1.subject be artist or downcasted to singer?
         #self.type(singer,              aa1.subject)
 
         self.eq(aa.subject__artistid,  aa1.subject__artistid)
-
         self.eq(aa.object.id,          aa1.object.id)
         self.type(singer,              aa.object)
         self.eq(aa.object__artistid,   aa1.object__artistid)
-        return
 
         # Add as second artist_artist, save, reload and test
         aa2           =  artist_artist.getvalid()
-        aa2.object    =  artist.getvalid()
+        objsng        =  singer.getvalid()
+        aa2.object    =  objsng
 
-        art1.artist_artists += aa2
+        sng1.artist_artists += aa2
 
-        self.is_(art1,    aa2.subject)
-        self.isnot(art1,  aa2.object)
+        self.is_(sng1,    aa2.subject)
+        self.is_(objsng,  aa2.object)
+        self.two(sng1.artist_artists)
+        self.two(sng1.singers)
+        self.zero(sng1.artists)
+        return
 
         with self._chrontest() as t:
             t.run(art1.save)
