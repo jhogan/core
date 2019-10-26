@@ -7650,7 +7650,26 @@ class test_orm(tester):
         for prop in aa.orm.properties:
             self.eq(1, d.count(prop))
 
+    def it_calls_dir_on_entity_pseudocollection(self):
+        # TODO Pseudocollection on reflexive association don't currently
+        # work. See commented-out assertions.
+        art = artist.getvalid()
+        d = dir(art)
+        self.true('artifacts' in d)
+        #self.true('artists' in d)
 
+        sng = singer.getvalid()
+        d = dir(sng)
+        self.true('artifacts' in d)
+        #self.true('singers' in d)
+        #self.true('artists' in d)
+        
+        rpr = rapper.getvalid()
+        d = dir(rpr)
+        self.true('artifacts' in d)
+        #self.true('singers' in d)
+        #self.true('artists' in d)
+        
     def it_reconnects_closed_database_connections(self):
         def art_onafterreconnect(src, eargs):
             drown()
