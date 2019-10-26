@@ -3601,6 +3601,22 @@ class test_orm(tester):
             def run(self, callable):
                 # TODO If `callable` is not a callable, throw an
                 # exception.
+
+                # TODO Remove this method and replace calls to it with
+                # calls to __call__.
+                test_orm.chronicles.clear()
+                r = callable()
+                self.chronicles = test_orm.chronicles.clone()
+                return r
+
+            def __call__(self, callable):
+                # NOTE .run() and __call__ must have the exact same
+                # bodies or the hack to report failures won't work. If
+                # __call__ were to call .run(), for example, the hack
+                # would make incorrect assumptions about the stack.
+
+                # TODO If `callable` is not a callable, throw an
+                # exception.
                 test_orm.chronicles.clear()
                 r = callable()
                 self.chronicles = test_orm.chronicles.clone()
