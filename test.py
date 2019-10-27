@@ -3688,7 +3688,7 @@ class test_orm(tester):
         for chron in t.chronicles:
             cnt += int(chron.op not in ('reconnect',))
             
-        self.eq(cnt, t.count, msg)
+        self.eq(t.count, cnt, msg)
 
     def it_creates_indexes_on_foreign_keys(self):
         # Standard entity
