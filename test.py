@@ -3580,6 +3580,18 @@ class test_orm(tester):
 
         artist.orm.recreate(recursive=True)
         comment.orm.recreate()
+
+        # Inject a reference to the self._chrontest context manager into
+        # each test method as 'ct'. This will make testing chronicles
+        # easier to type.
+
+        # TODO Replace all `with self._chrontest()` with `with ct()`
+        for meth in type(self).__dict__.items():
+            if type(meth[1]) != FunctionType: 
+                continue
+            if meth[0][0] == '_': 
+                continue
+            meth[1].__globals__['ct'] = self._chrontest
     
     def _chrons(self, e, op):
         chrons = self.chronicles.where('entity',  e)
