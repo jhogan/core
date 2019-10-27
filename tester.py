@@ -34,6 +34,10 @@ class testers(entities):
         self.breakonexception = False
 
     def run(self, tu=None):
+        # TODO testclass and testmethod would probably be better as global
+        # variables. That would allow us to have a `testmethods`
+        # property (see the TODO below).
+
         testclass, testmethod, *_ = tu.split('.') + [None] if tu else [None] * 2
 
         cfg = configfile.getinstance()
@@ -47,7 +51,9 @@ class testers(entities):
             inst = subcls()
             inst.testers = self
             self += inst
+
             for meth in subcls.__dict__.items():
+
                 if type(meth[1]) != FunctionType: continue
                 if meth[0][0] == '_': continue
                 if testmethod and testmethod != meth[0]:
