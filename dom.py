@@ -3531,6 +3531,12 @@ class selectors(entities.entities):
         if not self._sel:
             return
 
+        def element(element):
+            el = selector.element()
+            el.element = element
+            el.combinator = comb
+            return el
+
         sel = selector()
         self += sel
         el = comb = attr = cls = pcls = args = None
@@ -3553,9 +3559,7 @@ class selectors(entities.entities):
                         # TODO Raise if tok.value is invalid
                         pcls.value = tok.value
                 else:
-                    el = selector.element()
-                    el.element = tok.value
-                    el.combinator = comb
+                    el = element(tok.value)
                     sel.elements += el
 
             elif tok.type == 'STRING':
@@ -3578,6 +3582,14 @@ class selectors(entities.entities):
                             comb = selector.Descendant
                     
             elif tok.type == 'DELIM':    
+
+                # Universal selector
+                if tok.value == '*':
+                    el = selector.element()
+                    el.element = '*'
+                    el.combinator = comb
+                    sel.elements += el
+
                 if attr:
                     if tok.value == ']':
                         attr = None
@@ -3590,12 +3602,12 @@ class selectors(entities.entities):
                         # Raise if invalid.
                 else:
                     if tok.value == '[':
-                        if el:
-                            attr = selector.attribute()
-                            el.attributes += attr
-                        else:
-                            # Parse Error
-                            ...
+                        if not el:
+                            el = element('*')
+                            sel.elements += el
+
+                        attr = selector.attribute()
+                        el.attributes += attr
 
                 if tok.value == '.':
                     cls = selector.class_()
@@ -3730,11 +3742,12 @@ class selector(entities.entity):
     class pseudoclass(simple):
 
         class arguments(element):
-            def __init__(self):
-                self.string  =  str()
-                self._a       =  None
-                self._b       =  None
-                self.simple  =  None
+            def __init__(self, pcls):
+                self.string       =  str()
+                self._a           =  None
+                self._b           =  None
+                self.simple       =  None
+                self.pseudoclass  =  pcls
 
             def __iadd__(self, str):
                 self.string += str
@@ -3750,7 +3763,19 @@ class selector(entities.entity):
                 self._parse()
                 return self._b
 
+            @property
+            def c(self):
+                if self.pseudoclass.value != 'lang':
+                    raise NotImplementedError(
+                        'Only lang pseudoclass has C argument'
+                    )
+                return self.string
+
+
             def _parse(self):
+                if self.pseudoclass.value == 'lang':
+                    return
+
                 a = b = None
                 s = self.string
                 if s == 'odd':
@@ -3809,17 +3834,23 @@ class selector(entities.entity):
                 self._a, self._b = a, b
 
             def __repr__(self):
+                if self.pseudoclass.value == 'lang':
+                    return '(%s)' % self.string
+
                 a = str(self.a)
                 b = str(self.b)
+
+                if self.a is None and self.b is None:
+                    return ''
+
                 if self.b >= 0:
                     b = '+' + b
-                return '(%sn%s)' % (a, b)
 
-                return ''
+                return '(%sn%s)' % (a, b)
 
         def __init__(self):
             self.value = None
-            self.arguments = selector.pseudoclass.arguments()
+            self.arguments = selector.pseudoclass.arguments(self)
 
         def __repr__(self):
             r = ':' + self.value

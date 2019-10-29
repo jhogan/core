@@ -13952,6 +13952,137 @@ class test_selectors(tester):
         # Helpful explaination:
         #     https://bitsofco.de/use-the-lang-pseudo-class-over-the-lang-attribute-for-language-specific-styles/
 
+        sel =  'E:lang(fr)'
+        sels = dom.selectors(sel)
+        self.repr('E:lang(fr)', sels)
+        args = sels.first.elements.first.pseudoclass.arguments
+        self.none(args.a)
+        self.none(args.b)
+        self.eq('fr', args.c)
+
+        sel =  'E:lang(fr-be)'
+        sels = dom.selectors(sel)
+        self.repr('E:lang(fr-be)', sels)
+        args = sels.first.elements.first.pseudoclass.arguments
+        self.none(args.a)
+        self.none(args.b)
+        self.eq('fr-be', args.c)
+
+    def it_parses_universal_selector(self):
+        sels = dom.selectors('*')
+        self.repr('*', sels)
+        self.eq('*', sels.first.elements.first.element)
+
+        sels = dom.selectors('*[foo=bar]')
+        el = sels.first.elements.first
+        self.eq('*', el.element)
+        self.one(el.attributes)
+        attr = el.attributes.first
+        self.eq('foo', attr.key)
+        self.eq('=', attr.operator)
+        self.eq('bar', attr.value)
+
+        sels = expect = '*.warning'
+        sels = dom.selectors(sels)
+        self.repr(expect, sels)
+        self.one(sels)
+        self.one(sels.first.elements)
+        self.type(dom.selector.element, sels.first.elements.first)
+        self.eq('*', sels.first.elements.first.element)
+        self.one(sels.first.elements.first.classes)
+        self.type(
+          dom.selector.class_,
+          sels.first.elements.first.classes.first
+        )
+        self.eq(
+          'warning', 
+          sels.first.elements.first.classes.first.value
+        )
+
+        # Combine: *#1234 *.warning
+        eid = uuid4().hex
+        sels = expect = '*#' + eid
+        sels = dom.selectors(sels)
+        self.one(sels)
+        self.one(sels.first.elements)
+        self.repr(expect, sels)
+        el = sels.first.elements.first
+        self.eq('*', el.element)
+        self.eq(eid, el.id)
+
+        eid = uuid4().hex
+        expect = '*#' + eid
+        expect += ' *.warning'
+        sels = dom.selectors(expect)
+        self.one(sels)
+        self.two(sels.first.elements)
+        self.repr(expect, sels)
+
+        el = sels.first.elements.first
+        self.eq('*', el.element)
+        self.eq(eid, el.id)
+
+        el = sels.first.elements.second
+        self.eq('*', el.element)
+        self.eq('warning', el.classes.first.value)
+
+    def it_parses_implied_universal_selector(self):
+        sels = dom.selectors('[foo=bar]')
+        el = sels.first.elements.first
+        self.eq('*', el.element)
+        self.one(el.attributes)
+        attr = el.attributes.first
+        self.eq('foo', attr.key)
+        self.eq('=', attr.operator)
+        self.eq('bar', attr.value)
+        return
+
+        sels = expect = '*.warning'
+        sels = dom.selectors(sels)
+        self.repr(expect, sels)
+        self.one(sels)
+        self.one(sels.first.elements)
+        self.type(dom.selector.element, sels.first.elements.first)
+        self.eq('*', sels.first.elements.first.element)
+        self.one(sels.first.elements.first.classes)
+        self.type(
+          dom.selector.class_,
+          sels.first.elements.first.classes.first
+        )
+        self.eq(
+          'warning', 
+          sels.first.elements.first.classes.first.value
+        )
+
+        # Combine: *#1234 *.warning
+        eid = uuid4().hex
+        sels = expect = '*#' + eid
+        sels = dom.selectors(sels)
+        self.one(sels)
+        self.one(sels.first.elements)
+        self.repr(expect, sels)
+        el = sels.first.elements.first
+        self.eq('*', el.element)
+        self.eq(eid, el.id)
+
+        eid = uuid4().hex
+        expect = '*#' + eid
+        expect += ' *.warning'
+        sels = dom.selectors(expect)
+        self.one(sels)
+        self.two(sels.first.elements)
+        self.repr(expect, sels)
+
+        el = sels.first.elements.first
+        self.eq('*', el.element)
+        self.eq(eid, el.id)
+
+        el = sels.first.elements.second
+        self.eq('*', el.element)
+        self.eq('warning', el.classes.first.value)
+
+
+
 
 ########################################################################
 # Test parties                                                         #
