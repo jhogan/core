@@ -39,6 +39,8 @@ import textwrap
 import gem
 from pprint import pprint
 
+# TODO Remove epiphenomenom directory
+
 # Set conditional break points
 def B(x=True):
     if x: 

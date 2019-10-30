@@ -7,6 +7,10 @@ import traceback
 import re
 import os
 
+# TODO Use the following diagram as a guide to determine what status
+# code to respond with:
+# https://www.loggly.com/blog/http-status-code-diagram/
+# (Backup: # https://stackoverflow.com/questions/3297048/403-forbidden-vs-401-unauthorized-http-responses)
 class application:
     def __init__(self):
 
