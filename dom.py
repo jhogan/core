@@ -3572,6 +3572,10 @@ class selectors(entities.entities):
                     # TODO Raise error
                     ...
             elif tok.type == 'HASH':
+                if not el:
+                    # Universal selector was implied (#myid) so create it.
+                    el = element('*')
+                    sel.elements += el
                 el.id = tok.value
 
             elif tok.type == 'S':
@@ -3582,6 +3586,10 @@ class selectors(entities.entities):
                             comb = selector.Descendant
                     
             elif tok.type == 'DELIM':    
+                if tok.value == ',':
+                    sel = selector()
+                    self += sel
+                    el = comb = attr = cls = pcls = args = None
 
                 # Universal selector
                 if tok.value == '*':
@@ -3603,6 +3611,9 @@ class selectors(entities.entities):
                 else:
                     if tok.value == '[':
                         if not el:
+                            # The universal selector was implied
+                            # (.[foo=bar]) so create it.
+
                             el = element('*')
                             sel.elements += el
 
@@ -3610,11 +3621,22 @@ class selectors(entities.entities):
                         el.attributes += attr
 
                 if tok.value == '.':
+                    if not el:
+                        # The universal selector was implied (.my-class)
+                        # so create it.
+                        el = element('*')
+                        sel.elements += el
                     cls = selector.class_()
                     el.classes += cls
                 elif tok.value == ':':
+                    if not el:
+                        # The universal selector was implied (.root)
+                        # so create it.
+                        el = element('*')
+                        sel.elements += el
                     pcls = selector.pseudoclass()
                     el.pseudoclass = pcls
+                    comb = attr = cls = args = None
                 elif tok.value == '(':
                     args = pcls.arguments
                 elif tok.value in ('+',  '-'):

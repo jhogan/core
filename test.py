@@ -13999,7 +13999,6 @@ class test_selectors(tester):
           sels.first.elements.first.classes.first.value
         )
 
-        # Combine: *#1234 *.warning
         eid = uuid4().hex
         sels = expect = '*#' + eid
         sels = dom.selectors(sels)
@@ -14010,13 +14009,23 @@ class test_selectors(tester):
         self.eq('*', el.element)
         self.eq(eid, el.id)
 
+        # Pseudoclasses
+        sels = dom.selectors('*:root')
+        el = sels.first.elements.first
+        self.eq('*', el.element)
+        self.notnone(el.pseudoclass)
+        self.eq('root', el.pseudoclass.value)
+
+        # Combine: *#1234 *.warning *.[foo=bar] *:root
         eid = uuid4().hex
         expect = '*#' + eid
         expect += ' *.warning'
+        expect += ' *[foo=bar]'
+        expect += ' *:root'
         sels = dom.selectors(expect)
-        self.one(sels)
-        self.two(sels.first.elements)
         self.repr(expect, sels)
+        self.one(sels)
+        self.four(sels.first.elements)
 
         el = sels.first.elements.first
         self.eq('*', el.element)
@@ -14026,8 +14035,18 @@ class test_selectors(tester):
         self.eq('*', el.element)
         self.eq('warning', el.classes.first.value)
 
+        el = sels.first.elements.third
+        self.eq('*', el.element)
+        self.eq('foo', el.attributes.first.key)
+        self.eq('bar', el.attributes.first.value)
+
+        el = sels.first.elements.fourth
+        self.eq('*', el.element)
+        self.eq('root', el.pseudoclass.value)
+
     def it_parses_implied_universal_selector(self):
         sels = dom.selectors('[foo=bar]')
+        self.repr('*[foo=bar]', sels)
         el = sels.first.elements.first
         self.eq('*', el.element)
         self.one(el.attributes)
@@ -14035,11 +14054,10 @@ class test_selectors(tester):
         self.eq('foo', attr.key)
         self.eq('=', attr.operator)
         self.eq('bar', attr.value)
-        return
 
-        sels = expect = '*.warning'
+        sels = '.warning'
         sels = dom.selectors(sels)
-        self.repr(expect, sels)
+        self.repr('*.warning', sels)
         self.one(sels)
         self.one(sels.first.elements)
         self.type(dom.selector.element, sels.first.elements.first)
@@ -14054,7 +14072,6 @@ class test_selectors(tester):
           sels.first.elements.first.classes.first.value
         )
 
-        # Combine: *#1234 *.warning
         eid = uuid4().hex
         sels = expect = '*#' + eid
         sels = dom.selectors(sels)
@@ -14065,13 +14082,17 @@ class test_selectors(tester):
         self.eq('*', el.element)
         self.eq(eid, el.id)
 
+        # Combine: #1234 .warning [foo=bar] :root
         eid = uuid4().hex
         expect = '*#' + eid
         expect += ' *.warning'
-        sels = dom.selectors(expect)
-        self.one(sels)
-        self.two(sels.first.elements)
+        expect += ' *[foo=bar]'
+        expect += ' *:root'
+        sels = expect.replace('*', '')
+        sels = dom.selectors(sels)
         self.repr(expect, sels)
+        self.one(sels)
+        self.four(sels.first.elements)
 
         el = sels.first.elements.first
         self.eq('*', el.element)
@@ -14080,6 +14101,28 @@ class test_selectors(tester):
         el = sels.first.elements.second
         self.eq('*', el.element)
         self.eq('warning', el.classes.first.value)
+
+        el = sels.first.elements.third
+        self.eq('*', el.element)
+        self.eq('foo', el.attributes.first.key)
+        self.eq('bar', el.attributes.first.value)
+
+        el = sels.first.elements.fourth
+        self.eq('*', el.element)
+        self.eq('root', el.pseudoclass.value)
+
+    def it_parses_groups(self):
+        sels = dom.selectors('E, F')
+        self.two(sels)
+
+        el = sels.first.elements.first
+        self.type(dom.selector.element, el)
+        self.eq('E', el.element)
+
+        el = sels.second.elements.first
+        self.type(dom.selector.element, el)
+        self.eq('F', el.element)
+
 
 
 
