@@ -344,6 +344,10 @@ class tester(entity):
         if repr(actual) != expect:
             self._failures += failure()
 
+    def str(self, expect, actual, msg=None):
+        if str(actual) != expect:
+            self._failures += failure()
+
     @property
     def failures(self):
         return self._failures

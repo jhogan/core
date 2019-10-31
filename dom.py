@@ -3591,13 +3591,6 @@ class selectors(entities.entities):
                     self += sel
                     el = comb = attr = cls = pcls = args = None
 
-                # Universal selector
-                if tok.value == '*':
-                    el = selector.element()
-                    el.element = '*'
-                    el.combinator = comb
-                    sel.elements += el
-
                 if attr:
                     if tok.value == ']':
                         attr = None
@@ -3619,6 +3612,13 @@ class selectors(entities.entities):
 
                         attr = selector.attribute()
                         el.attributes += attr
+
+                    # Universal selector
+                    elif tok.value == '*':
+                        el = selector.element()
+                        el.element = '*'
+                        el.combinator = comb
+                        sel.elements += el
 
                 if tok.value == '.':
                     if not el:
@@ -3662,7 +3662,8 @@ class selector(entities.entity):
             return ' '.join(str(x) for x in self)
 
     class simple(entities.entity):
-        pass
+        def __str__(self):
+            return repr(self)
 
     class elements(entities.entities):
         pass
@@ -3758,9 +3759,6 @@ class selector(entities.entity):
         def __repr__(self):
             return '.' + self.value
 
-        def __str__(self):
-            return repr(self)
-
     class pseudoclass(simple):
 
         class arguments(element):
@@ -3793,6 +3791,12 @@ class selector(entities.entity):
                     )
                 return self.string
 
+            @property
+            def selectors(self):
+                if self.pseudoclass.value != 'not':
+                    return None
+
+                return selectors(self.string)
 
             def _parse(self):
                 if self.pseudoclass.value == 'lang':
@@ -3856,8 +3860,11 @@ class selector(entities.entity):
                 self._a, self._b = a, b
 
             def __repr__(self):
-                if self.pseudoclass.value == 'lang':
+                pcls = self.pseudoclass.value
+                if pcls == 'lang':
                     return '(%s)' % self.string
+                elif pcls == 'not':
+                    return '(%s)' % repr(self.selectors)
 
                 a = str(self.a)
                 b = str(self.b)
@@ -3878,9 +3885,6 @@ class selector(entities.entity):
             r = ':' + self.value
             r += repr(self.arguments)
             return r
-
-        def __str__(self):
-            return repr(self)
 
 class AttributeExistsError(Exception):
     pass

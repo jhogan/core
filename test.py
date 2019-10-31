@@ -13450,10 +13450,14 @@ class test_site(tester):
         self.eq(name, s.name)
 
 class test_selectors(tester):
+    # TODO Test chaining pseudoclasses:
+    #     p:first-child:first-letter
+    # https://css-tricks.com/pseudo-class-selectors/
     def it_parses_chain_of_elements(self):
         ''' One '''
         sels = dom.selectors('E')
         self.repr('E', sels)
+        self.str('E', sels)
         self.one(sels)
         els = sels.first.elements
         self.one(els)
@@ -13465,6 +13469,7 @@ class test_selectors(tester):
         ''' Two '''
         sels = dom.selectors('E F')
         self.repr('E F', sels)
+        self.str('E F', sels)
         self.one(sels)
         els = sels.first.elements
         self.two(els)
@@ -13474,10 +13479,12 @@ class test_selectors(tester):
         self.none(els.first.combinator)
         self.eq(desc, els.second.combinator)
         self.repr('E F', sels)
+        self.str('E F', sels)
 
         ''' Three '''
         sels = dom.selectors('E F G')
         self.repr('E F G', sels)
+        self.str('E F G', sels)
         self.one(sels)
         els = sels.first.elements
         self.three(els)
@@ -13488,6 +13495,7 @@ class test_selectors(tester):
         self.eq(desc, els.second.combinator)
         self.eq(desc, els.third.combinator)
         self.repr('E F G', sels)
+        self.str('E F G', sels)
 
     def it_selects_with_chain_of_elements(self):
         html = dom.html(Shakespeare)
@@ -13559,6 +13567,7 @@ class test_selectors(tester):
         expect = 'E[foo=bar] F[qux=quux] G[garply=waldo]'
         sels = dom.selectors(sels)
         self.repr(expect, sels)
+        self.str(expect, sels)
         self.one(sels)
         sel = sels.first
 
@@ -13590,6 +13599,7 @@ class test_selectors(tester):
         expect = 'E[foo~=bar] F[qux^=quux] G[garply$=waldo]'
         sels = dom.selectors(sels)
         self.repr(expect, sels)
+        self.str(expect, sels)
         self.one(sels)
         sel = sels.first
 
@@ -13623,6 +13633,7 @@ class test_selectors(tester):
         expect = 'E[foo=bar][qux=quux] F[garply=waldo][foo=bar]'
         sels = dom.selectors(sels)
         self.repr(expect, sels)
+        self.str(expect, sels)
         self.one(sels)
         sel = sels.first
 
@@ -13650,10 +13661,68 @@ class test_selectors(tester):
         self.eq('=', attr.operator)
         self.eq('bar', attr.value)
 
+        sels = 'E[foo*=bar]'
+        expect = 'E[foo*=bar]'
+        sels = dom.selectors(sels)
+        self.repr(expect, sels)
+        self.str(expect, sels)
+        self.one(sels)
+        sel = sels.first
+
+        el = sel.elements.first
+        self.eq('E', el.element)
+        self.one(el.attributes)
+        attr = el.attributes.first
+        self.eq('foo', attr.key)
+        self.eq('*=', attr.operator)
+        self.eq('bar', attr.value)
+
+        sels = 'E[foo*=bar] F[baz|=qux]'
+        expect = 'E[foo*=bar] F[baz|=qux]'
+        sels = dom.selectors(sels)
+        self.repr(expect, sels)
+        self.str(expect, sels)
+        self.one(sels)
+        sel = sels.first
+
+        self.two(sel.elements)
+        el = sel.elements.first
+        self.eq('E', el.element)
+        self.one(el.attributes)
+        attr = el.attributes.first
+        self.eq('foo', attr.key)
+        self.eq('*=', attr.operator)
+        self.eq('bar', attr.value)
+
+        el = sel.elements.second
+        self.eq('F', el.element)
+        self.one(el.attributes)
+        attr = el.attributes.first
+        self.eq('baz', attr.key)
+        self.eq('|=', attr.operator)
+        self.eq('qux', attr.value)
+
+        sels = '[disabled]'
+        sels = dom.selectors(sels)
+        self.repr('*[disabled]', sels)
+        self.str('*[disabled]', sels)
+        self.one(sels)
+        sel = sels.first
+
+        self.one(sel.elements)
+        el = sel.elements.first
+        self.eq('*', el.element)
+        self.one(el.attributes)
+        attr = el.attributes.first
+        self.eq('disabled', attr.key)
+        self.none(attr.operator)
+        self.none(attr.value)
+
     def it_parses_class_elements(self):
         ''' E.warning '''
         sels = expect = 'E.warning'
         sels = dom.selectors(sels)
+        self.str(expect, sels)
         self.repr(expect, sels)
         self.one(sels)
         self.one(sels.first.elements)
@@ -13672,6 +13741,7 @@ class test_selectors(tester):
         ''' E.warning F.danger '''
         sels = expect = 'E.warning F.danger'
         sels = dom.selectors(sels)
+        self.str(expect, sels)
         self.repr(expect, sels)
         self.one(sels)
         self.two(sels.first.elements)
@@ -13693,6 +13763,7 @@ class test_selectors(tester):
         ''' E.warning.danger '''
         sels = expect = 'E.warning.danger'
         sels = dom.selectors(sels)
+        self.str(expect, sels)
         self.repr(expect, sels)
         self.one(sels)
         self.one(sels.first.elements)
@@ -13709,6 +13780,7 @@ class test_selectors(tester):
         ''' E.warning.danger.fire '''
         sels = expect = 'E.warning.danger.fire'
         sels = dom.selectors(sels)
+        self.str(expect, sels)
         self.repr(expect, sels)
         self.one(sels)
         self.one(sels.first.elements)
@@ -13726,6 +13798,7 @@ class test_selectors(tester):
         ''' E.warning.danger.fire F.primary.secondary.success'''
         sels = expect = 'E.warning.danger.fire F.primary.secondary.success'
         sels = dom.selectors(sels)
+        self.str(expect, sels)
         self.repr(expect, sels)
         self.one(sels)
         self.two(sels.first.elements)
@@ -13758,6 +13831,7 @@ class test_selectors(tester):
         ''' E#id '''
         sels = expect = 'E#' + eid
         sels = dom.selectors(sels)
+        self.str(expect, sels)
         self.repr(expect, sels)
         self.one(sels)
         self.one(sels.first.elements)
@@ -13768,6 +13842,7 @@ class test_selectors(tester):
         ''' E#id F#id'''
         sels = expect = 'E#%s F#%s' % (eid, fid)
         sels = dom.selectors(sels)
+        self.str(expect, sels)
         self.repr(expect, sels)
         self.one(sels)
         self.two(sels.first.elements)
@@ -13781,6 +13856,7 @@ class test_selectors(tester):
         ''' E#id F#id G#id'''
         sels = expect = 'E#%s F#%s G#%s' % (eid, fid, gid)
         sels = dom.selectors(sels)
+        self.str(expect, sels)
         self.repr(expect, sels)
         self.one(sels)
         self.three(sels.first.elements)
@@ -13799,6 +13875,7 @@ class test_selectors(tester):
         sels = 'E:first-child'
         sels = dom.selectors(sels)
         expect = 'E:first-child' 
+        self.str(expect, sels)
         self.repr(expect, sels)
         self.one(sels)
         self.one(sels.first.elements)
@@ -13810,6 +13887,7 @@ class test_selectors(tester):
         '''E:first-child F:last-child'''
         sels = 'E:first-child F:last-child'
         sels = dom.selectors(sels)
+        self.str('E:first-child F:last-child', sels)
         self.repr('E:first-child F:last-child', sels)
         self.one(sels)
         self.two(sels.first.elements)
@@ -13828,6 +13906,7 @@ class test_selectors(tester):
         sels = dom.selectors(sels)
         self.one(sels)
         self.one(sels.first.elements)
+        self.str('E:nth-child(2n+1)', sels)
         self.repr('E:nth-child(2n+1)', sels)
 
         e = sels.first.elements.first
@@ -13841,6 +13920,7 @@ class test_selectors(tester):
         sels = dom.selectors(sels)
         self.one(sels)
         self.one(sels.first.elements)
+        self.str('E:nth-child(2n+0)', sels)
         self.repr('E:nth-child(2n+0)', sels)
 
         e = sels.first.elements.first
@@ -13852,6 +13932,7 @@ class test_selectors(tester):
         ''' E:nth-child(2n + 1)'''
         sels = 'E:nth-child(2n + 1)'
         sels = dom.selectors(sels)
+        self.str('E:nth-child(2n+1)', sels)
         self.repr('E:nth-child(2n+1)', sels)
         self.one(sels)
         self.one(sels.first.elements)
@@ -13870,6 +13951,7 @@ class test_selectors(tester):
 
         for sel in sels:
             sels = dom.selectors(sel)
+            self.str('foo:nth-child(0n+5)', sels)
             self.repr('foo:nth-child(0n+5)', sels)
             self.one(sels)
             self.one(sels.first.elements)
@@ -13885,6 +13967,7 @@ class test_selectors(tester):
         ''' E:nth-child(10n - 1)'''
         sels = 'E:nth-child(10n - 1)'
         sels = dom.selectors(sels)
+        self.str('E:nth-child(10n-1)', sels)
         self.repr('E:nth-child(10n-1)', sels)
         self.one(sels)
         self.one(sels.first.elements)
@@ -13903,6 +13986,7 @@ class test_selectors(tester):
 
         for i, sel in enumerate(sels):
             sels = dom.selectors(sel)
+            self.str('E:nth-child(1n+0)', sels, 'For: ' + sel)
             self.repr('E:nth-child(1n+0)', sels, 'For: ' + sel)
             args = sels.first.elements.first.pseudoclass.arguments
             self.eq(1, args.a)
@@ -13915,6 +13999,7 @@ class test_selectors(tester):
 
         for sel in sels:
             sels = dom.selectors(sel)
+            self.str('E:nth-child(2n+0)', sels, 'For: ' + sel)
             self.repr('E:nth-child(2n+0)', sels, 'For: ' + sel)
             args = sels.first.elements.first.pseudoclass.arguments
             self.eq(2, args.a)
@@ -13922,6 +14007,7 @@ class test_selectors(tester):
 
         sel = 'E:nth-child( 3n + 1 )'
         sels = dom.selectors(sel)
+        self.str('E:nth-child(3n+1)', sels)
         self.repr('E:nth-child(3n+1)', sels)
         args = sels.first.elements.first.pseudoclass.arguments
         self.eq(3, args.a)
@@ -13929,6 +14015,7 @@ class test_selectors(tester):
 
         sel =  'E:nth-child( +3n - 2 )'
         sels = dom.selectors(sel)
+        self.str('E:nth-child(3n-2)', sels)
         self.repr('E:nth-child(3n-2)', sels)
         args = sels.first.elements.first.pseudoclass.arguments
         self.eq(3, args.a)
@@ -13936,6 +14023,7 @@ class test_selectors(tester):
 
         sel =  'E:nth-child( -n+ 6)'
         sels = dom.selectors(sel)
+        self.str('E:nth-child(1n+6)', sels)
         self.repr('E:nth-child(1n+6)', sels)
         args = sels.first.elements.first.pseudoclass.arguments
         self.eq(1, args.a)
@@ -13943,6 +14031,7 @@ class test_selectors(tester):
 
         sel = 'E:nth-child( +6 )'
         sels = dom.selectors(sel)
+        self.str('E:nth-child(0n+6)', sels)
         self.repr('E:nth-child(0n+6)', sels)
         args = sels.first.elements.first.pseudoclass.arguments
         self.eq(0, args.a)
@@ -13955,6 +14044,7 @@ class test_selectors(tester):
         sel =  'E:lang(fr)'
         sels = dom.selectors(sel)
         self.repr('E:lang(fr)', sels)
+        self.str('E:lang(fr)', sels)
         args = sels.first.elements.first.pseudoclass.arguments
         self.none(args.a)
         self.none(args.b)
@@ -13963,6 +14053,7 @@ class test_selectors(tester):
         sel =  'E:lang(fr-be)'
         sels = dom.selectors(sel)
         self.repr('E:lang(fr-be)', sels)
+        self.str('E:lang(fr-be)', sels)
         args = sels.first.elements.first.pseudoclass.arguments
         self.none(args.a)
         self.none(args.b)
@@ -13970,6 +14061,7 @@ class test_selectors(tester):
 
     def it_parses_universal_selector(self):
         sels = dom.selectors('*')
+        self.str('*', sels)
         self.repr('*', sels)
         self.eq('*', sels.first.elements.first.element)
 
@@ -13985,6 +14077,7 @@ class test_selectors(tester):
         sels = expect = '*.warning'
         sels = dom.selectors(sels)
         self.repr(expect, sels)
+        self.str(expect, sels)
         self.one(sels)
         self.one(sels.first.elements)
         self.type(dom.selector.element, sels.first.elements.first)
@@ -14005,6 +14098,7 @@ class test_selectors(tester):
         self.one(sels)
         self.one(sels.first.elements)
         self.repr(expect, sels)
+        self.str(expect, sels)
         el = sels.first.elements.first
         self.eq('*', el.element)
         self.eq(eid, el.id)
@@ -14024,6 +14118,7 @@ class test_selectors(tester):
         expect += ' *:root'
         sels = dom.selectors(expect)
         self.repr(expect, sels)
+        self.str(expect, sels)
         self.one(sels)
         self.four(sels.first.elements)
 
@@ -14047,6 +14142,7 @@ class test_selectors(tester):
     def it_parses_implied_universal_selector(self):
         sels = dom.selectors('[foo=bar]')
         self.repr('*[foo=bar]', sels)
+        self.str('*[foo=bar]', sels)
         el = sels.first.elements.first
         self.eq('*', el.element)
         self.one(el.attributes)
@@ -14058,6 +14154,7 @@ class test_selectors(tester):
         sels = '.warning'
         sels = dom.selectors(sels)
         self.repr('*.warning', sels)
+        self.str('*.warning', sels)
         self.one(sels)
         self.one(sels.first.elements)
         self.type(dom.selector.element, sels.first.elements.first)
@@ -14078,6 +14175,7 @@ class test_selectors(tester):
         self.one(sels)
         self.one(sels.first.elements)
         self.repr(expect, sels)
+        self.str(expect, sels)
         el = sels.first.elements.first
         self.eq('*', el.element)
         self.eq(eid, el.id)
@@ -14091,6 +14189,7 @@ class test_selectors(tester):
         sels = expect.replace('*', '')
         sels = dom.selectors(sels)
         self.repr(expect, sels)
+        self.str(expect, sels)
         self.one(sels)
         self.four(sels.first.elements)
 
@@ -14112,7 +14211,11 @@ class test_selectors(tester):
         self.eq('root', el.pseudoclass.value)
 
     def it_parses_groups(self):
+        # E F
         sels = dom.selectors('E, F')
+
+        self.repr('E, F', sels)
+        self.str('E, F', sels)
         self.two(sels)
 
         el = sels.first.elements.first
@@ -14123,9 +14226,56 @@ class test_selectors(tester):
         self.type(dom.selector.element, el)
         self.eq('F', el.element)
 
+        # E[foo=bar], F[baz=qux]
+        sels = dom.selectors('E[foo=bar], F[baz=qux')
+        self.repr('E[foo=bar], F[baz=qux]', sels)
+        self.str('E[foo=bar], F[baz=qux]', sels)
+        self.two(sels)
 
+        el = sels.first.elements.first
+        self.type(dom.selector.element, el)
+        self.eq('E', el.element)
+        self.one(el.attributes)
+        self.eq('foo', el.attributes.first.key)
+        self.eq('bar', el.attributes.first.value)
 
+        el = sels.second.elements.first
+        self.type(dom.selector.element, el)
+        self.eq('F', el.element)
+        self.one(el.attributes)
+        self.eq('baz', el.attributes.first.key)
+        self.eq('qux', el.attributes.first.value)
 
+    def it_parses_not(self):
+        expect = '*:not(F)'
+        sels = ':not(F)'
+        sels = dom.selectors(sels)
+        self.repr(expect, sels)
+        self.one(sels)
+
+        el = sels.first.elements.first
+        self.one(sels.first.elements)
+        self.type(dom.selector.element, el)
+        self.eq('*', el.element)
+
+        self.notnone(el.pseudoclass.arguments.selectors)
+        self.eq('not', el.pseudoclass.value)
+        sels = el.pseudoclass.arguments.selectors
+        self.one(sels)
+
+        els = sels.first.elements
+        self.one(els)
+
+        el = els.first
+
+        self.eq('F', el.element)
+
+        expect = 'E:not([foo=bar])'
+        sels = dom.selectors(expect)
+        self.repr(expect, sels)
+        self.one(sels)
+
+        self.zero(sels.first.elements)
 
 ########################################################################
 # Test parties                                                         #
