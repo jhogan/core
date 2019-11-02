@@ -3541,6 +3541,15 @@ class selectors(entities.entities):
         self += sel
         el = comb = attr = cls = pcls = args = None
         for tok in cssselect.parser.tokenize(self._sel):
+            
+            if isinstance(tok, cssselect.parser.EOFToken):
+                continue
+
+            if args:
+                if tok.value != ')' and tok.type != 'S':
+                    args += tok.value
+                continue
+
             if tok.type == 'IDENT':
                 if el:
                     if attr:
@@ -3553,8 +3562,6 @@ class selectors(entities.entities):
                             ...
                     elif cls:
                         cls.value = tok.value
-                    elif args:
-                        args += tok.value
                     elif pcls:
                         # TODO Raise if tok.value is invalid
                         pcls.value = tok.value
@@ -3565,12 +3572,6 @@ class selectors(entities.entities):
             elif tok.type == 'STRING':
                 if attr:
                     attr.value = tok.value
-            elif tok.type == 'NUMBER':
-                if args:
-                    args += tok.value
-                else:
-                    # TODO Raise error
-                    ...
             elif tok.type == 'HASH':
                 if not el:
                     # Universal selector was implied (#myid) so create it.
@@ -3635,7 +3636,7 @@ class selectors(entities.entities):
                         el = element('*')
                         sel.elements += el
                     pcls = selector.pseudoclass()
-                    el.pseudoclass = pcls
+                    el.pseudoclasses += pcls
                     comb = attr = cls = args = None
                 elif tok.value == '(':
                     args = pcls.arguments
@@ -3670,12 +3671,12 @@ class selector(entities.entity):
 
     class element(entities.entity):
         def __init__(self):
-            self.element      =  None
-            self.combinator   =  None
-            self.attributes   =  selector.attributes()
-            self.classes      =  selector.classes()
-            self.id           =  None
-            self.pseudoclass  =  None
+            self.element        =  None
+            self.combinator     =  None
+            self.attributes     =  selector.attributes()
+            self.classes        =  selector.classes()
+            self.pseudoclasses  =  selector.pseudoclasses()
+            self.id             =  None
 
         def match(self, el):
             if el.tag != self.element:
@@ -3694,7 +3695,8 @@ class selector(entities.entity):
             if self.combinator not in (None, selector.Descendant):
                 r += self.str_combinator + ' '
 
-            r += self.element
+            if self.element is not None:
+                r += self.element
 
             if self.id is not None:
                 r += '#' + self.id
@@ -3705,8 +3707,8 @@ class selector(entities.entity):
             if self.classes.count:
                 r += str(self.classes)
 
-            if self.pseudoclass:
-                r += str(self.pseudoclass)
+            if self.pseudoclasses.count:
+                r += str(self.pseudoclasses)
 
             return r
 
@@ -3759,8 +3761,11 @@ class selector(entities.entity):
         def __repr__(self):
             return '.' + self.value
 
-    class pseudoclass(simple):
+    class pseudoclasses(_simples):
+        def __repr__(self):
+            return ''.join(str(x) for x in self)
 
+    class pseudoclass(simple):
         class arguments(element):
             def __init__(self, pcls):
                 self.string       =  str()
@@ -3796,7 +3801,21 @@ class selector(entities.entity):
                 if self.pseudoclass.value != 'not':
                     return None
 
-                return selectors(self.string)
+                # For :not() pseudoclass, parse the arguments to
+                # :not() like any other selector. 
+                sels = selectors(self.string)
+
+                # The parser will add a universal selector (*) to each
+                # simple selector. Remove it since a universal selector
+                # doesn't make sense in a :not() because the simple
+                # element singularly applies to the element of the
+                # :not() (the E in E:not())
+                for sel in sels:
+                    for el in sel.elements:
+                        if el.element == '*':
+                            el.element = None
+
+                return sels
 
             def _parse(self):
                 if self.pseudoclass.value == 'lang':

@@ -1126,7 +1126,7 @@ class test_entities(tester):
             self.assertEq(ValueError, type(ex))
 
     def it_calls__iand__(self):
-        """ The |= opreator (__iand__) wraps the append() methed setting
+        """ The |= operator (__iand__) wraps the append() methed setting
         the unique flag to True. So |= is like a regular append accept 
         objecs won't be appended if already exist in the collection."""
 
@@ -13882,7 +13882,7 @@ class test_selectors(tester):
 
         e = sels.first.elements.first
         self.eq('E', e.element)
-        self.eq('first-child', e.pseudoclass.value)
+        self.eq('first-child', e.pseudoclasses.first.value)
 
         '''E:first-child F:last-child'''
         sels = 'E:first-child F:last-child'
@@ -13894,11 +13894,61 @@ class test_selectors(tester):
 
         e = sels.first.elements.first
         self.eq('E', e.element)
-        self.eq('first-child', e.pseudoclass.value)
+        self.eq('first-child', e.pseudoclasses.first.value)
 
         f = sels.first.elements.second
         self.eq('F', f.element)
-        self.eq('last-child', f.pseudoclass.value)
+        self.eq('last-child', f.pseudoclasses.first.value)
+
+    def it_parses_pseudoclass(self):
+        ''' E:first-line'''
+        sels = 'E:first-line'
+        sels = dom.selectors(sels)
+        self.one(sels)
+        self.one(sels.first.elements)
+
+        self.str('E:first-line', sels)
+        self.repr('E:first-line', sels)
+
+        pclss = sels.first.elements.first.pseudoclasses
+
+        self.one(pclss)
+        self.type(dom.selector.pseudoclasses, pclss)
+        pcls = pclss.first
+        self.type(dom.selector.pseudoclass, pcls)
+        self.eq('first-line', pcls.value)
+
+    def it_parses_chained_pseudoclass(self):
+        ''' E:first-line:first-letter'''
+        sels = 'E:first-line:first-letter'
+        sels = dom.selectors(sels)
+        self.one(sels)
+        self.one(sels.first.elements)
+
+        self.str('E:first-line:first-letter', sels)
+        self.repr('E:first-line:first-letter', sels)
+
+        pclss = sels.first.elements.first.pseudoclasses
+
+        self.two(pclss)
+        self.type(dom.selector.pseudoclasses, pclss)
+
+        pcls = pclss.first
+        self.type(dom.selector.pseudoclass, pcls)
+        self.eq('first-line', pcls.value)
+
+        pcls = pclss.second
+        self.type(dom.selector.pseudoclass, pcls)
+        self.eq('first-letter', pcls.value)
+        
+    def it_parses_chained_argumentative_pseudo_classes(self):
+        ''' E:nth-child(odd):nth-child(even) '''
+        sels = 'E:nth-child(odd):nth-child(even)'
+        sels = dom.selectors(sels)
+        self.one(sels)
+        self.one(sels.first.elements)
+        self.str('E:nth-child(2n+1):nth-child(2n+1)', sels)
+        self.repr('E:nth-child(2n+1):nth-child(2n+1)', sels)
 
     def it_parses_argumentative_pseudo_classes(self):
         ''' E:nth-child(odd) '''
@@ -13911,9 +13961,9 @@ class test_selectors(tester):
 
         e = sels.first.elements.first
         self.eq('E', e.element)
-        self.eq('nth-child', e.pseudoclass.value)
-        self.eq(2, e.pseudoclass.arguments.a)
-        self.eq(1, e.pseudoclass.arguments.b)
+        self.eq('nth-child', e.pseudoclasses.first.value)
+        self.eq(2, e.pseudoclasses.first.arguments.a)
+        self.eq(1, e.pseudoclasses.first.arguments.b)
 
         ''' E:nth-child(even) '''
         sels = 'E:nth-child(even)'
@@ -13925,9 +13975,9 @@ class test_selectors(tester):
 
         e = sels.first.elements.first
         self.eq('E', e.element)
-        self.eq('nth-child', e.pseudoclass.value)
-        self.eq(2, e.pseudoclass.arguments.a)
-        self.eq(0, e.pseudoclass.arguments.b)
+        self.eq('nth-child', e.pseudoclasses.first.value)
+        self.eq(2, e.pseudoclasses.first.arguments.a)
+        self.eq(0, e.pseudoclasses.first.arguments.b)
 
         ''' E:nth-child(2n + 1)'''
         sels = 'E:nth-child(2n + 1)'
@@ -13939,9 +13989,9 @@ class test_selectors(tester):
 
         e = sels.first.elements.first
         self.eq('E', e.element)
-        self.eq('nth-child', e.pseudoclass.value)
-        self.eq(2, e.pseudoclass.arguments.a)
-        self.eq(1, e.pseudoclass.arguments.b)
+        self.eq('nth-child', e.pseudoclasses.first.value)
+        self.eq(2, e.pseudoclasses.first.arguments.a)
+        self.eq(1, e.pseudoclasses.first.arguments.b)
 
         '''foo:nth-child(0n + 5)'''
         sels = [
@@ -13959,10 +14009,10 @@ class test_selectors(tester):
 
             e = sels.first.elements.first
             self.eq('foo', e.element)
-            self.eq('nth-child', e.pseudoclass.value)
-            self.notnone(e.pseudoclass.arguments)
-            self.eq(0, e.pseudoclass.arguments.a)
-            self.eq(5, e.pseudoclass.arguments.b)
+            self.eq('nth-child', e.pseudoclasses.first.value)
+            self.notnone(e.pseudoclasses.first.arguments)
+            self.eq(0, e.pseudoclasses.first.arguments.a)
+            self.eq(5, e.pseudoclasses.first.arguments.b)
 
         ''' E:nth-child(10n - 1)'''
         sels = 'E:nth-child(10n - 1)'
@@ -13974,9 +14024,9 @@ class test_selectors(tester):
         e = sels.first.elements.first
 
         self.eq(e.element, 'E')
-        self.eq(e.pseudoclass.value, 'nth-child')
-        self.eq(10, e.pseudoclass.arguments.a)
-        self.eq(-1, e.pseudoclass.arguments.b)
+        self.eq(e.pseudoclasses.first.value, 'nth-child')
+        self.eq(10, e.pseudoclasses.first.arguments.a)
+        self.eq(-1, e.pseudoclasses.first.arguments.b)
 
         sels = [
             'E:nth-child(n)',
@@ -13988,7 +14038,7 @@ class test_selectors(tester):
             sels = dom.selectors(sel)
             self.str('E:nth-child(1n+0)', sels, 'For: ' + sel)
             self.repr('E:nth-child(1n+0)', sels, 'For: ' + sel)
-            args = sels.first.elements.first.pseudoclass.arguments
+            args = sels.first.elements.first.pseudoclasses.first.arguments
             self.eq(1, args.a)
             self.eq(0, args.b)
 
@@ -14001,7 +14051,7 @@ class test_selectors(tester):
             sels = dom.selectors(sel)
             self.str('E:nth-child(2n+0)', sels, 'For: ' + sel)
             self.repr('E:nth-child(2n+0)', sels, 'For: ' + sel)
-            args = sels.first.elements.first.pseudoclass.arguments
+            args = sels.first.elements.first.pseudoclasses.first.arguments
             self.eq(2, args.a)
             self.eq(0, args.b)
 
@@ -14009,7 +14059,7 @@ class test_selectors(tester):
         sels = dom.selectors(sel)
         self.str('E:nth-child(3n+1)', sels)
         self.repr('E:nth-child(3n+1)', sels)
-        args = sels.first.elements.first.pseudoclass.arguments
+        args = sels.first.elements.first.pseudoclasses.first.arguments
         self.eq(3, args.a)
         self.eq(1, args.b)
 
@@ -14017,7 +14067,7 @@ class test_selectors(tester):
         sels = dom.selectors(sel)
         self.str('E:nth-child(3n-2)', sels)
         self.repr('E:nth-child(3n-2)', sels)
-        args = sels.first.elements.first.pseudoclass.arguments
+        args = sels.first.elements.first.pseudoclasses.first.arguments
         self.eq(3, args.a)
         self.eq(-2, args.b)
 
@@ -14025,7 +14075,7 @@ class test_selectors(tester):
         sels = dom.selectors(sel)
         self.str('E:nth-child(1n+6)', sels)
         self.repr('E:nth-child(1n+6)', sels)
-        args = sels.first.elements.first.pseudoclass.arguments
+        args = sels.first.elements.first.pseudoclasses.first.arguments
         self.eq(1, args.a)
         self.eq(6, args.b)
 
@@ -14033,7 +14083,7 @@ class test_selectors(tester):
         sels = dom.selectors(sel)
         self.str('E:nth-child(0n+6)', sels)
         self.repr('E:nth-child(0n+6)', sels)
-        args = sels.first.elements.first.pseudoclass.arguments
+        args = sels.first.elements.first.pseudoclasses.first.arguments
         self.eq(0, args.a)
         self.eq(6, args.b)
 
@@ -14045,7 +14095,7 @@ class test_selectors(tester):
         sels = dom.selectors(sel)
         self.repr('E:lang(fr)', sels)
         self.str('E:lang(fr)', sels)
-        args = sels.first.elements.first.pseudoclass.arguments
+        args = sels.first.elements.first.pseudoclasses.first.arguments
         self.none(args.a)
         self.none(args.b)
         self.eq('fr', args.c)
@@ -14054,10 +14104,11 @@ class test_selectors(tester):
         sels = dom.selectors(sel)
         self.repr('E:lang(fr-be)', sels)
         self.str('E:lang(fr-be)', sels)
-        args = sels.first.elements.first.pseudoclass.arguments
+        args = sels.first.elements.first.pseudoclasses.first.arguments
         self.none(args.a)
         self.none(args.b)
         self.eq('fr-be', args.c)
+
 
     def it_parses_universal_selector(self):
         sels = dom.selectors('*')
@@ -14107,8 +14158,8 @@ class test_selectors(tester):
         sels = dom.selectors('*:root')
         el = sels.first.elements.first
         self.eq('*', el.element)
-        self.notnone(el.pseudoclass)
-        self.eq('root', el.pseudoclass.value)
+        self.one(el.pseudoclasses)
+        self.eq('root', el.pseudoclasses.first.value)
 
         # Combine: *#1234 *.warning *.[foo=bar] *:root
         eid = uuid4().hex
@@ -14137,7 +14188,7 @@ class test_selectors(tester):
 
         el = sels.first.elements.fourth
         self.eq('*', el.element)
-        self.eq('root', el.pseudoclass.value)
+        self.eq('root', el.pseudoclasses.first.value)
 
     def it_parses_implied_universal_selector(self):
         sels = dom.selectors('[foo=bar]')
@@ -14208,7 +14259,7 @@ class test_selectors(tester):
 
         el = sels.first.elements.fourth
         self.eq('*', el.element)
-        self.eq('root', el.pseudoclass.value)
+        self.eq('root', el.pseudoclasses.first.value)
 
     def it_parses_groups(self):
         # E F
@@ -14247,6 +14298,8 @@ class test_selectors(tester):
         self.eq('qux', el.attributes.first.value)
 
     def it_parses_not(self):
+        # TODO Raise on a nested :not() (i.e., E:not(F:not(G)))
+        '''*:not(F)'''
         expect = '*:not(F)'
         sels = ':not(F)'
         sels = dom.selectors(sels)
@@ -14258,9 +14311,9 @@ class test_selectors(tester):
         self.type(dom.selector.element, el)
         self.eq('*', el.element)
 
-        self.notnone(el.pseudoclass.arguments.selectors)
-        self.eq('not', el.pseudoclass.value)
-        sels = el.pseudoclass.arguments.selectors
+        self.notnone(el.pseudoclasses.first.arguments.selectors)
+        self.eq('not', el.pseudoclasses.first.value)
+        sels = el.pseudoclasses.first.arguments.selectors
         self.one(sels)
 
         els = sels.first.elements
@@ -14270,12 +14323,156 @@ class test_selectors(tester):
 
         self.eq('F', el.element)
 
+        '''E:not([foo=bar])'''
         expect = 'E:not([foo=bar])'
         sels = dom.selectors(expect)
         self.repr(expect, sels)
         self.one(sels)
 
-        self.zero(sels.first.elements)
+        self.one(sels.first.elements)
+        el = sels.first.elements.first
+        self.type(dom.selector.element, el)
+        self.eq('E', el.element)
+        pcls = el.pseudoclasses.first
+
+        self.type(dom.selector.pseudoclass, pcls)
+        self.eq('not', pcls.value)
+        sels = pcls.arguments.selectors
+        self.type(dom.selectors, sels)
+        self.one(sels.first.elements)
+        el = sels.first.elements.first
+        self.none(el.element)
+        self.one(el.attributes)
+        self.eq('foo', el.attributes.first.key)
+        self.eq('=', el.attributes.first.operator)
+        self.eq('bar', el.attributes.first.value)
+
+        '''E:not(:first-of-type)'''
+        expect = 'E:not(:first-of-type)'
+        sels = dom.selectors(expect)
+        self.repr(expect, sels)
+        self.one(sels)
+
+        self.one(sels.first.elements)
+        el = sels.first.elements.first
+        self.type(dom.selector.element, el)
+        pcls = el.pseudoclasses.first
+
+        self.type(dom.selector.pseudoclass, pcls)
+        self.eq('not', pcls.value)
+
+        sels = pcls.arguments.selectors
+        self.type(dom.selectors, sels)
+        self.one(sels.first.elements)
+        el = sels.first.elements.first
+        self.none(el.element)
+        self.eq('first-of-type', el.pseudoclasses.first.value)
+
+        ''' E:not(:nth-child(2n+1)) '''
+        expect = 'E:not(:nth-child(2n+1))'
+        sels = dom.selectors(expect)
+        self.repr(expect, sels)
+        self.one(sels)
+
+        self.one(sels.first.elements)
+        el = sels.first.elements.first
+        self.type(dom.selector.element, el)
+        pcls = el.pseudoclasses.first
+
+        self.type(dom.selector.pseudoclass, pcls)
+        self.eq('not', pcls.value)
+
+        sels = pcls.arguments.selectors
+        self.type(dom.selectors, sels)
+        self.one(sels.first.elements)
+        el = sels.first.elements.first
+        self.none(el.element)
+        self.eq('nth-child', el.pseudoclasses.first.value)
+        self.eq(2, el.pseudoclasses.first.arguments.a)
+        self.eq(1, el.pseudoclasses.first.arguments.b)
+
+        ''' E:not(.warning) '''
+        expect = 'E:not(.warning)'
+        sels = dom.selectors(expect)
+        self.repr(expect, sels)
+        self.one(sels)
+
+        self.one(sels.first.elements)
+        el = sels.first.elements.first
+        self.type(dom.selector.element, el)
+        pcls = el.pseudoclasses.first
+
+        self.type(dom.selector.pseudoclass, pcls)
+        self.eq('not', pcls.value)
+
+        sels = pcls.arguments.selectors
+        self.type(dom.selectors, sels)
+        self.one(sels.first.elements)
+        el = sels.first.elements.first
+        self.none(el.element)
+        clss = el.classes
+        self.one(clss)
+        self.eq('warning', clss.first.value)
+
+        # TODO Test chaining pseudoclass
+        '''*:not(F[foo=bar]:first-of-type)'''
+        expect = '*:not(F[foo=bar]:first-of-type)'
+        sels = ':not(F[foo=bar]:first-of-type)'
+        sels = dom.selectors(sels)
+        self.repr(expect, sels)
+        self.one(sels)
+
+        el = sels.first.elements.first
+        self.one(sels.first.elements)
+        self.type(dom.selector.element, el)
+        self.eq('*', el.element)
+
+        self.notnone(el.pseudoclasses.first.arguments.selectors)
+        self.eq('not', el.pseudoclasses.first.value)
+        sels = el.pseudoclasses.first.arguments.selectors
+        self.one(sels)
+
+        els = sels.first.elements
+        self.one(els)
+
+        el = els.first
+
+        self.eq('F', el.element)
+
+        self.one(el.attributes)
+        self.eq('foo', el.attributes.first.key)
+        self.eq('=', el.attributes.first.operator)
+        self.eq('bar', el.attributes.first.value)
+
+        pcls = el.pseudoclasses.first
+
+        self.type(dom.selector.pseudoclass, pcls)
+        self.eq('first-of-type', el.pseudoclasses.first.value)
+
+        '''*:not(E, F)'''
+        expect = '*:not(E, F)'
+        sels = ':not(E, F)'
+        sels = dom.selectors(sels)
+        self.repr(expect, sels)
+        self.one(sels)
+
+        el = sels.first.elements.first
+        self.one(sels.first.elements)
+        self.type(dom.selector.element, el)
+        self.eq('*', el.element)
+
+        self.notnone(el.pseudoclasses.first.arguments.selectors)
+        self.eq('not', el.pseudoclasses.first.value)
+        sels = el.pseudoclasses.first.arguments.selectors
+        self.two(sels)
+
+        self.one(sels.first.elements)
+        el = sels.first.elements.first
+        self.eq('E', el.element)
+
+        self.one(sels.second.elements)
+        el = sels.second.elements.first
+        self.eq('F', el.element)
 
 ########################################################################
 # Test parties                                                         #
