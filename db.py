@@ -10,7 +10,6 @@
 from configfile import configfile
 from entities import *
 from MySQLdb.constants.ER import BAD_TABLE_ERROR
-from pdb import set_trace; B=set_trace
 from table import table
 import MySQLdb
 import warnings

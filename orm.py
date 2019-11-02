@@ -34,15 +34,6 @@ import re
 import sys
 import textwrap
 
-# Set conditional break points
-def B(x=True):
-    if type(x) is str:
-        print(x)
-    elif x:
-        #Pdb().set_trace(sys._getframe().f_back)
-        from IPython.core.debugger import Tracer; 
-        Tracer().debugger.set_trace(sys._getframe().f_back)
-
 # TODO Research making these constants the same as their function
 # equivilants.
 # i.e., s/2/str; s/3/int/, etc.

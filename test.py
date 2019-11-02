@@ -11,11 +11,9 @@ from auth import jwt
 from configfile import configfile
 from contextlib import contextmanager
 from datetime import timezone, datetime
-from entities import BrokenRulesError, rgetattr
-from func import enumerate
+from entities import BrokenRulesError
+from func import enumerate, getattr, B
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
-from parties import *
-from pdb import Pdb
 from random import randint, uniform
 from table import *
 from tester import *
@@ -36,14 +34,6 @@ import re
 import textwrap
 import gem
 
-# TODO Remove epiphenomenom directory
-
-# Set conditional break points
-def B(x=True):
-    if x: 
-        #Pdb().set_trace(sys._getframe().f_back)
-        from IPython.core.debugger import Tracer; 
-        Tracer().debugger.set_trace(sys._getframe().f_back)
 
 # We will use basic and supplementary multilingual plane UTF-8 characters when
 # testing str attributes to ensure unicode is being supported.
@@ -57,22 +47,6 @@ V = bytes("\N{ROMAN NUMERAL FIVE}", 'utf-8').decode()
 
 # A four byte character from the Supplementary Multilingual Plane
 Cunei_a = bytes("\N{CUNEIFORM SIGN A}", 'utf-8').decode()
-
-def getattr(obj, attr, *args):
-    # Redefine getattr() to support deep attribututes 
-    # 
-    # For example:
-    #    Instead of this:
-    #        entity.constituents.first.id
-    #    we can do this:
-    #        getattr(entity, 'constituents.first.id')
-
-    def rgetattr(obj, attr):
-        if obj:
-            return builtins.getattr(obj, attr, *args)
-
-        return None
-    return functools.reduce(rgetattr, [obj] + attr.split('.'))
 
 def la2gr(chars):
     map = {

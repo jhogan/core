@@ -12,7 +12,7 @@ from parties import *
 from configfile import configfile
 from entities import BrokenRulesError
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
-from pdb import set_trace; B=set_trace
+from pdb import set_trace
 from tester import *
 from uuid import uuid4
 import MySQLdb

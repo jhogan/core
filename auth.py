@@ -7,7 +7,6 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
 from entities import entities, entity, brokenrules, brokenrule
-from pdb import set_trace; B=set_trace
 from datetime import datetime, timedelta
 from configfile import configfile
 import json

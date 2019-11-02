@@ -7,22 +7,14 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
 from datetime import datetime
-from pdb import set_trace; B=set_trace
 from random import randint, sample
 import re
 import sys
 import builtins
 from pprint import pprint
-from functools import total_ordering, reduce
+from functools import total_ordering
 import decimal
 import string
-
-def rgetattr(obj, attr, *args):
-    def rgetattr(obj, attr):
-        if obj:
-            return builtins.getattr(obj, attr, *args)
-        return None
-    return reduce(rgetattr, [obj] + attr.split('.'))
 
 class entities(object):
     def __init__(self, initial=None):
@@ -269,7 +261,7 @@ class entities(object):
             # against p2
             attr, operand = p1, p2
             def fn(e):
-                return rgetattr(e, attr) == operand
+                return getattr(e, attr) == operand
         else:
             fn = p1
 

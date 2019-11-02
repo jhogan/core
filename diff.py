@@ -8,7 +8,6 @@
 
 from diff_match_patch import diff_match_patch
 from entities import entity
-from pdb import set_trace; B=set_trace
 
 # TODO Write test
 class diff(entity):

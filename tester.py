@@ -15,7 +15,7 @@ from types import FunctionType
 import argparse
 import inspect
 import json
-import pdb; B=pdb.set_trace
+import pdb
 import pprint
 import primative
 import sys
@@ -565,7 +565,6 @@ class cli:
         if self._testers is None:
             self._testers = testers()
         return self._testers
-        
 
     @classmethod
     def run(cls):
