@@ -401,27 +401,6 @@ class tester(entity):
             statuscode0 = int(statuscode[:3])
             return httpresponse(statuscode0, statusmessage, resheads, body)
 
-class stresstesters(testers):
-    @property
-    def testerclasses(self):
-        return stresstester.__subclasses__()
-
-class stresstester(tester):
-    @contextmanager
-    def within(self, ms):
-        sw = stopwatch()
-
-        yield
-
-        msg = "test in %s at %s"
-        msg %= inspect.stack()[2][2:4]
-        self.ge(ms, sw.milliseconds, msg)
-
-    @contextmanager
-    def time(self):
-        sw = stopwatch()
-        yield sw
-
 class eventregistrations(entities):
     def register(self, event, handler):
         er = eventregistration(event, handler)
