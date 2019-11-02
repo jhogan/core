@@ -6,7 +6,6 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
-from articles import *
 from auth import jwt
 from configfile import configfile
 from contextlib import contextmanager
@@ -149,7 +148,7 @@ class philosopher(entity):
     def __init__(self, name):
         self.name = name
 
-class singer(entity):
+class performer(entity):
     def __init__(self, name):
         self.name = name
 
@@ -280,14 +279,14 @@ class test_entities(tester):
 
         n = philosopher('neitzsche')
         s = philosopher('schopenhaurer')
-        sj = singer('salena jones')
-        bb = singer('burt bacharach')
+        sj = performer('salena jones')
+        bb = performer('burt bacharach')
 
         ps1 = philosophers([n, s, sj, bb])
 
         # Results of query should return the one entry in 'ps1' where
-        # the type is 'singer' (not 'philosopher')
-        ps2 = ps1.where(singer)
+        # the type is 'performer' (not 'philosopher')
+        ps2 = ps1.where(performer)
         self.assertEq(2, ps2.count)
         self.assertEq(philosophers, type(ps2))
         self.assertIs(sj, ps2.first)
@@ -3007,12 +3006,12 @@ class test_jwt(tester):
         t = jwt()
 
         # Exp defaults to 24 hours in the future
-        hours = math.ceil((t.exp - datetime.datetime.now()).seconds / 3600)
+        hours = math.ceil((t.exp - datetime.now()).seconds / 3600)
         self.assertEq(24, hours)
 
         # Specify 48 hours to expire
         t = jwt(ttl=48)
-        hours = math.ceil((t.exp - datetime.datetime.now()).seconds / 3600)
+        hours = math.ceil((t.exp - datetime.now()).seconds / 3600)
         self.assertEq(24, hours)
 
     def it_calls_token(self):
@@ -3022,10 +3021,10 @@ class test_jwt(tester):
 
         d = pyjwt.decode(token, secret)
 
-        exp = datetime.datetime.fromtimestamp(d['exp'])
+        exp = datetime.fromtimestamp(d['exp'])
 
         # Ensure exp is about 24 hours into the future
-        hours = math.ceil((exp - datetime.datetime.now()).seconds / 3600)
+        hours = math.ceil((exp - datetime.now()).seconds / 3600)
         self.assertEq(24, hours)
 
     def it_sets_iss(self):
@@ -3071,11 +3070,11 @@ class test_jwt(tester):
 
 class test_datetime(tester):
     def it_calls__init__(self):
-        utc = datetime.timezone.utc
+        utc = timezone.utc
         
         # Test datetime with standard args
         args = (2003, 10, 11, 17, 13, 46)
-        expect = datetime.datetime(*args, tzinfo=utc)
+        expect = datetime(*args, tzinfo=utc)
         actual = primative.datetime(*args, tzinfo=utc)
         self.eq(expect, actual)
 
@@ -3084,13 +3083,13 @@ class test_datetime(tester):
         self.eq(expect, actual)
 
     def it_calls_astimezone(self):
-        utc = datetime.timezone.utc
+        utc = timezone.utc
 
         args = (2003, 10, 11, 17, 13, 46)
         dt = primative.datetime(*args, tzinfo=utc)
         
         aztz = dateutil.tz.gettz('US/Arizona')
-        actual = datetime.datetime(2003, 10, 11, 10, 13, 46, tzinfo=aztz)
+        actual = datetime(2003, 10, 11, 10, 13, 46, tzinfo=aztz)
 
         expect = dt.astimezone(aztz)
         self.eq(expect, actual)
@@ -9825,6 +9824,11 @@ class test_orm(tester):
                 sng.save()
             except Exception as ex:
                 self.type(BrokenRulesError, ex)
+            except MySQLdb.OperationalError as ex:
+                # This happened today (Oct 30 2019)
+                #    OperationalError(2006, 'MySQL server has gone away') 
+                print(ex)
+                B()
             else:
                 self.fail('Exception not thrown')
 
@@ -12015,7 +12019,7 @@ class test_orm(tester):
 class test_gem(tester):
     def __init__(self):
         super().__init__()
-        gem.party.orm.recreate(recursive=True)
+        #gem.party.orm.recreate(recursive=True)
 
     def it_loads_and_saves_organization(self):
         org = gem.organization()
