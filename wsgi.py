@@ -1,45 +1,17 @@
 import json
 import sys
 from functools import reduce
-import pdb; B=pdb.set_trace
 from pprint import pprint
 import traceback
 import re
 import os
 
+# TODO Use the following diagram as a guide to determine what status
+# code to respond with:
+# https://www.loggly.com/blog/http-status-code-diagram/
+# (Backup: # https://stackoverflow.com/questions/3297048/403-forbidden-vs-401-unauthorized-http-responses)
 class application:
     def __init__(self):
-
-        try:
-            epiphanypath = os.environ['epiphanypath']
-        except KeyError:
-            print('WARNING: No Epiphany path found in environment')
-        else:
-            sys.path.append(epiphanypath)
-            from configfile import configfile
-
-            try:
-                epiphany_yaml = os.environ['epiphany.yaml']
-            except KeyError:
-                print('WARNING: No config file found in environment')
-            else:
-                cfg = configfile.getinstance()
-                cfg.file = epiphany_yaml
-
-        try:
-            ctrlpath = os.environ['ctrlpath']
-        except KeyError:
-            print('WARNING: No controller path found in environment')
-        else:
-            sys.path.append(ctrlpath)
-
-        try:
-            epiphenomenonpath = os.environ['epiphenomenonpath']
-        except KeyError:
-            print('WARNING: No Epiphenomenon path found in environment')
-        else:
-            sys.path.append(epiphenomenonpath)
-
         self.clear()
 
     def clear(self):

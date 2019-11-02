@@ -5,11 +5,14 @@
 # prohibited
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
-# Set conditional break points
 
+# Set conditional break points
 from IPython.core.debugger import Tracer; 
 import sys
+
+# Set conditional break points
 def B(x=True):
     if x: 
         #Pdb().set_trace(sys._getframe().f_back)
+        from IPython.core.debugger import Tracer; 
         Tracer().debugger.set_trace(sys._getframe().f_back)

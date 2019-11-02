@@ -6,10 +6,12 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
+from functools import reduce
 from pdb import set_trace; B=set_trace
+import builtins
+import sys
 
 def enumerate(iterable, start=0):
-
     class seqint(int):
         def __new__(cls, *args, **kwargs):
             try:
@@ -61,4 +63,25 @@ def enumerate(iterable, start=0):
         yield i, e
         i += 1
         
+def getattr(obj, attr, *args):
+    # Redefine getattr() to support deep attribututes 
+    # 
+    # For example:
+    #    Instead of this:
+    #        entity.constituents.first.id
+    #    we can do this:
+    #        getattr(entity, 'constituents.first.id')
+    def rgetattr(obj, attr):
+        if obj:
+            return builtins.getattr(obj, attr, *args)
+        return None
+    return reduce(rgetattr, [obj] + attr.split('.'))
 
+# Set conditional break points
+def B(x=True):
+    if type(x) is str:
+        print(x)
+    if x:
+        #Pdb().set_trace(sys._getframe().f_back)
+        from IPython.core.debugger import Tracer;
+        Tracer().debugger.set_trace(sys._getframe().f_back)
