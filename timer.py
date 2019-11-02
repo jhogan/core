@@ -4,7 +4,6 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
-from pdb import set_trace; B=set_trace
 import primative
 
 class stopwatch():
