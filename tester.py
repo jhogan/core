@@ -24,7 +24,8 @@ import uuid
 # TODO Ensure tester.py won't run in non-dev environment
 
 class invoketesteventargs(eventargs):
-    def __init__(self, meth):
+    def __init__(self, cls, meth):
+        self.class_ = cls
         self.method = meth
 
 class testers(entities):
@@ -53,7 +54,7 @@ class testers(entities):
                 if testmethod and testmethod != meth[0]:
                     continue
                 try:
-                    eargs = invoketesteventargs(meth)
+                    eargs = invoketesteventargs(subcls, meth)
                     self.oninvoketest(self, eargs)
                     getattr(inst, meth[0])()
                 except Exception as ex:
@@ -595,14 +596,8 @@ class cli:
     def registertraceevents(self):
         ts = self.testers
         ts.oninvoketest += lambda src, eargs: print('# ', end='', flush=True)
-        ts.oninvoketest += lambda src, eargs: print(eargs.method[0], flush=True)
 
+        def f(src, eargs):
+            print(eargs.class_.__name__ + '.' + eargs.method[0], flush=True)
 
-class stresscli(cli):
-    @property
-    def testers(self):
-        if self._testers is None:
-            self._testers = stresstesters()
-        return self._testers
-        
-    
+        ts.oninvoketest += f
