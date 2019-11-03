@@ -2569,7 +2569,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                 asses = getattr(self, map.name)
                                 return getattr(asses, attr)
 
-                orm = orm.super.orm
+                sup = orm.super
+                if not sup:
+                    break
+
+                orm = sup.orm
 
             return object.__getattribute__(self, attr)
 
