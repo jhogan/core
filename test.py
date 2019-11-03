@@ -13244,8 +13244,8 @@ class test_orm(tester):
             t.created(press3.first)
             t.created(press3.second)
 
-        art4 = artist(art3.id)
-        press4 = art4.artist_artists.first.object.presentations.sorted()
+        sng4 = artist(sng3.id)
+        press4 = sng4.artist_artists.first.object.presentations.sorted()
 
         self.two(press4)
         self.eq(press4.first.id, press3.first.id)
@@ -13255,15 +13255,17 @@ class test_orm(tester):
         # it_loads_and_saves_associations:
         # This fixes an issue that came up in development: When you add valid
         # aa to art, then add a fact to art (thus adding an invalid aa to art),
-        # strange things where happening with the brokenrules. 
-        art = artist.getvalid()
-        art.artist_artists += artist_artist.getvalid()
-        art.artists += artist.getvalid()
+        # strange things were happening with the brokenrules. 
+        sng = singer.getvalid()
+        sng.artist_artists += artist_artist.getvalid()
+        B()
+        sng.singers += singer.getvalid()
 
-        self.zero(art.artist_artists.first.brokenrules)
-        self.zero(art.artist_artists.first.brokenrules)
-        self.three(art.artist_artists.second.brokenrules)
-        self.three(art.brokenrules)
+        self.zero(sng.artist_artists.first.brokenrules)
+        self.zero(sng.artist_artists.first.brokenrules)
+        self.three(sng.artist_artists.second.brokenrules)
+        self.three(sng.brokenrules)
+        return
 
         # Fix broken aa
         art.artist_artists.second.role = uuid4().hex
