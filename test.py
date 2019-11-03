@@ -13203,7 +13203,7 @@ class test_orm(tester):
         sng3.artist_artists.first.object.presentations += press3.first
         sng3.singers.first.presentations += press3.second
 
-        # NOTE In the non-subentity version of this test
+        # NOTE (3cb2a6b5) In the non-subentity version of this test
         # (it_loads_and_saves_reflexive_associations), the following is
         # True:
         # 
@@ -13215,7 +13215,8 @@ class test_orm(tester):
         #
         # That means that the above appends go to two different
         # presentations collections. The commented out assertions below
-        # illustrates the consequences of this.
+        # would fail but are left her to illustrates the consequences of
+        # this issue.
 
         self.one(sng3.artist_artists.first.object.presentations)
         self.one(sng3.singers.first.presentations)
@@ -13228,13 +13229,10 @@ class test_orm(tester):
         self.is_(press3[1], sng3.singers[0].presentations[0])
         # self.is_(press3[1], sng3.singers[0].presentations[1])
 
-        print(press3)
         with ct() as t:
             t(sng3.save)
-            print(t)
             t.created(press3.first)
             t.created(press3.second)
-        return
 
         art4 = artist(art3.id)
         press4 = art4.artist_artists.first.object.presentations.sorted()

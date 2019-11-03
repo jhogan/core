@@ -2202,6 +2202,61 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                             guestbook=guestbook
                                         )
 
+                                # The below code handles certain
+                                # subentity-superassociation-subentity
+                                # saves. E.g., if we have singers in the
+                                # `sng.singers` pseudocollection, and
+                                # the association between `sng` and
+                                # `singers` is via the superassociation
+                                # `artist_artist` then changes made to
+                                # `singers` won't be presisted unless we
+                                # descend down the inheritance tree from
+                                # `artist` to `singer`. See 3cb2a6b5.
+
+                                # Is the association reflexive and has
+                                # an object.
+                                if asses.orm.isreflexive and ass.object:
+                                    # Get the object's class and
+                                    # subclasses.
+
+                                    # TODO Clean up
+                                    clss = [ass.object.orm.entities]
+                                    subs = ass.object.orm.subclasses
+                                    clss += [
+                                        x.orm.entities
+                                        for x in subs
+                                    ]
+
+                                    # Descend the inheritance tree
+                                    for cls in clss:
+                                        name = cls.__name__
+
+                                        # Get the association's
+                                        # constituents here so we can
+                                        # handle the KeyError exception.
+                                        # If we get the pseudocollection
+                                        # the normal way, 
+                                        #
+                                        #   getattr(ass, name)
+                                        #
+                                        # the KeyError would result in
+                                        # the creation of some
+                                        # non-existing subentities.
+                                        const = asses.orm.constituents
+                                        
+                                        try:
+                                            # Get pseudocollection
+                                            es = const[name]
+                                        except KeyError:
+                                            # The subentiy doesn't exist
+                                            pass
+                                        else:
+                                            # Save each entity found in
+                                            # the pseudocollection
+                                            for e in es:
+                                                e._save(cur,
+                                                    guestbook=guestbook)
+
                         asses.orm.trash.clear()
 
                 if type(map) is foreignkeyfieldmapping:
