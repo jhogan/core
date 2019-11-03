@@ -12425,7 +12425,7 @@ class test_orm(tester):
         # it_loads_and_saves_associations:
         # This fixes an issue that came up in development: When you add valid
         # aa to art, then add a fact to art (thus adding an invalid aa to art),
-        # strange things where happening with the brokenrules. 
+        # strange things were happening with the brokenrules. 
         art = artist.getvalid()
         art.artist_artists += artist_artist.getvalid()
         art.artists += artist.getvalid()
@@ -12444,13 +12444,23 @@ class test_orm(tester):
         self.zero(art.brokenrules)
 
     def it_updates_reflexive_association(self):
+        # TODO We should test updateing aa.subject and aa.object
         art = artist.getvalid()
 
         for i in range(2):
             aa = artist_artist.getvalid()
-            aa.artist = artist.getvalid()
             art.artist_artists += aa
 
+        # TODO This should not be possible because no object was
+        # assigned to aa (assert aa.object is None). There should be a
+        # broken rule preventing this. 
+        #
+        # I think this test has a bug in it, though. We should be
+        # assigning 
+        #
+        #   aa.object = artist.getvalid()
+        # 
+        # above.
         art.save()
 
         art1 = artist(art.id)

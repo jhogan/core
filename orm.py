@@ -34,6 +34,7 @@ import primative
 import re
 import sys
 import textwrap
+from dbg import B
 
 # TODO Research making these constants the same as their function
 # equivilants.
@@ -2273,6 +2274,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             self.orm.persistencestate = st
             raise
         
+    # TODO We could probably move these assignments to the top
     # These are the limits of the MySQL datetime type
     mindatetime=primative.datetime('1000-01-01 00:00:00.000000+00:00')
     maxdatetime=primative.datetime('9999-12-31 23:59:59.999999+00:00')
