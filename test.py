@@ -13430,52 +13430,20 @@ class test_site(tester):
         self.eq(name, s.name)
 
 class test_selectors(tester):
-    # TODO Test chaining pseudoclasses:
-    #     p:first-child:first-letter
-    # https://css-tricks.com/pseudo-class-selectors/
-    def it_parses_chain_of_elements(self):
-        ''' One '''
-        sels = dom.selectors('E')
-        self.repr('E', sels)
-        self.str('E', sels)
-        self.one(sels)
-        els = sels.first.elements
-        self.one(els)
-        self.eq(['E'], els.pluck('element'))
+    def it_selects_with_selection_groups(self):
+        html = dom.html(Shakespeare)
 
-        desc = dom.selector.Descendant
-        self.none(els.first.combinator)
+        els = html['h2, h3']
 
-        ''' Two '''
-        sels = dom.selectors('E F')
-        self.repr('E F', sels)
-        self.str('E F', sels)
-        self.one(sels)
-        els = sels.first.elements
         self.two(els)
-        self.eq(['E', 'F'], els.pluck('element'))
-
-        desc = dom.selector.Descendant
-        self.none(els.first.combinator)
-        self.eq(desc, els.second.combinator)
-        self.repr('E F', sels)
-        self.str('E F', sels)
-
-        ''' Three '''
-        sels = dom.selectors('E F G')
-        self.repr('E F G', sels)
-        self.str('E F G', sels)
-        self.one(sels)
-        els = sels.first.elements
-        self.three(els)
-        self.eq(['E', 'F', 'G'], els.pluck('element'))
-
-        desc = dom.selector.Descendant
-        self.none(els.first.combinator)
-        self.eq(desc, els.second.combinator)
-        self.eq(desc, els.third.combinator)
-        self.repr('E F G', sels)
-        self.str('E F G', sels)
+        self.type(dom.elements, els)
+        self.type(dom.h2, els.first)
+        self.type(dom.h3, els.second)
+        self.eq(els.first.elements.first.html, 'As You Like It')
+        self.eq(
+            els.second.elements.first.html, 
+            'ACT I, SCENE III. A room in the palace.'
+        )
 
     def it_selects_with_chain_of_elements(self):
         html = dom.html(Shakespeare)
@@ -13541,6 +13509,50 @@ class test_selectors(tester):
 
         for sel in sels:
           self.zero(html[sel], sel)
+
+    def it_parses_chain_of_elements(self):
+        ''' One '''
+        sels = dom.selectors('E')
+        self.repr('E', sels)
+        self.str('E', sels)
+        self.one(sels)
+        els = sels.first.elements
+        self.one(els)
+        self.eq(['E'], els.pluck('element'))
+
+        desc = dom.selector.Descendant
+        self.none(els.first.combinator)
+
+        ''' Two '''
+        sels = dom.selectors('E F')
+        self.repr('E F', sels)
+        self.str('E F', sels)
+        self.one(sels)
+        els = sels.first.elements
+        self.two(els)
+        self.eq(['E', 'F'], els.pluck('element'))
+
+        desc = dom.selector.Descendant
+        self.none(els.first.combinator)
+        self.eq(desc, els.second.combinator)
+        self.repr('E F', sels)
+        self.str('E F', sels)
+
+        ''' Three '''
+        sels = dom.selectors('E F G')
+        self.repr('E F G', sels)
+        self.str('E F G', sels)
+        self.one(sels)
+        els = sels.first.elements
+        self.three(els)
+        self.eq(['E', 'F', 'G'], els.pluck('element'))
+
+        desc = dom.selector.Descendant
+        self.none(els.first.combinator)
+        self.eq(desc, els.second.combinator)
+        self.eq(desc, els.third.combinator)
+        self.repr('E F G', sels)
+        self.str('E F G', sels)
 
     def it_parses_attribute_elements(self):
         sels = 'E[foo=bar] F[qux="quux"] G[garply=waldo]'
