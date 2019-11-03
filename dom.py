@@ -291,27 +291,8 @@ class elements(entities.entities):
         elif not isinstance(sel, str):
             raise ValueError('Invalid type: ' + type(sel).__name__)
 
-        els = elements()
-        for sel in selectors(sel):
-            el1 = sel.elements.last
-            els += self.getelements(test=el1.match)
-
-            rms = elements()
-
-            for el in els:
-                anix = int()
-                for el1 in sel.elements[:-1].reversed():
-                    # Logic for Descendant combinator
-                    for i, an in el.ancestors[anix:].enumerate():
-                        if el1.match(an):
-                            anix += i + 1
-                            break
-                    else:
-                        rms += el
-            
-            els.remove(rms)
-                    
-        return els
+        sels = selectors(sel)
+        return sels.match(self)
 
     def getelements(self, test=None):
         els = elements()
@@ -3642,6 +3623,31 @@ class selectors(entities.entities):
                     args = pcls.arguments
                 elif tok.value in ('+',  '-'):
                     args += tok.value
+
+    def match(self, els):
+        r = elements()
+        for sel in self:
+            last = sel.elements.last
+            els1 = els.getelements(test=last.match)
+
+            rms = elements()
+
+            for el1 in els1:
+                anix = int()
+                for smp in sel.elements[:-1].reversed():
+                    # Logic for Descendant combinator
+                    for i, an in el1.ancestors[anix:].enumerate():
+                        if smp.match(an):
+                            anix += i + 1
+                            break
+                    else:
+                        rms += el1
+            
+            els1.remove(rms)
+
+            r += els1
+                    
+        return r
 
     def __repr__(self):
         return ', '.join(str(x) for x in self)
