@@ -13430,8 +13430,15 @@ class test_site(tester):
         self.eq(name, s.name)
 
 class test_selectors(tester):
+    @property
+    def _shakespear(self):
+        if not hasattr(self, '_spear'):
+            self._spear = dom.html(Shakespeare)
+        return self._spear
+
+    # TODO Address case-sensitivity
     def it_selects_with_selection_groups(self):
-        html = dom.html(Shakespeare)
+        html = self._shakespear
 
         els = html['h2, h3']
 
@@ -13446,7 +13453,7 @@ class test_selectors(tester):
         )
 
     def it_selects_with_chain_of_elements(self):
-        html = dom.html(Shakespeare)
+        html = self._shakespear
 
         sels = [
           'html body div div h2',
@@ -13509,6 +13516,296 @@ class test_selectors(tester):
 
         for sel in sels:
           self.zero(html[sel], sel)
+
+    def it_selects_with_classes(self):
+        html = self._shakespear
+
+        ''' Non-existing class selector '''
+        sels = [
+            '*.dialogxxx',
+            '.dialogxxx',
+            'div.dialogxxx'
+        ]
+
+        for sel in sels:
+            self.zero(html[sel])
+
+        ''' Single class selector '''
+        sels = [
+            '*.dialog',
+            '.dialog',
+            'div.dialog'
+        ]
+        # TODO Test .xyz and ensure zero are returned
+
+        for sel in sels:
+            els = html[sel]
+            for el in els:
+                self.type(dom.div, el)
+                self.true('dialog' in el.classes)
+            self.count(51, els, 'sel: ' + sel)
+
+        ''' Non-existing chained classes selectors '''
+        sels = [
+            '*.dialog.sceneXXX',
+            '.dialogXXX.scene',
+            'divXXX.dialog.scene',
+        ]
+
+        for sel in sels:
+            self.zero(html[sel])
+
+        ''' Chained classes selectors '''
+        sels = [
+            '*.dialog.scene',
+            '.dialog.scene',
+            'div.dialog.scene',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.type(dom.div, els.first)
+            self.true('dialog' in els.first.classes)
+            self.eq('scene1', els.first.id)
+            self.one(els)
+
+    def it_selects_with_attribute(self):
+        # TODO Test with quoted attribute value:
+        # '[foo="bar baz"]'
+        html = self._shakespear
+        sels = [
+            'div[foo]',
+            '*[bar]',
+            '[foo]',
+        ]
+
+        for sel in sels:
+            self.zero(html[sel])
+
+        sels = [
+            'div[title]',
+            '*[title]',
+            '[title]',
+        ]
+
+        for sel in sels:
+            self.one(html[sel])
+
+    def it_selects_with_attribute_equality(self):
+        ''' Select using the = operator [foo=bar]
+        '''
+        html = self._shakespear
+        # TODO Test all four comparison operators
+        # TODO Test chaining the comparison operators, e.g.,
+        #
+        #   *.[foo=bar][baz$=qux][quux][garply~=waldo]
+        sels = [
+            '[foo=bar]',
+            '[title=bar]',
+            '[foo=wtf]',
+        ]
+
+        for sel in sels:
+            self.zero(html[sel])
+            break
+        else:
+            self.fail('There were no `sels`')
+
+        sels = [
+            '*[title=wtf]',
+            '[title=wtf]',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.one(els)
+            self.type(dom.div, els.first)
+            self.eq('scene1.3.29', els.first.elements.first.id)
+            break
+        else:
+            self.fail('There were no `sels`')
+
+        sels = [
+            'div[id=speech144][class=character]',
+            '*[id=speech14][class=characterxxx]',
+            '[id=speech14][class=character][foo=bar]',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.zero(els)
+            break
+        else:
+            self.fail('There were no `sels`')
+
+        sels = [
+            'div[id=speech14][class=character]',
+            '*[id=speech14][class=character]',
+            '[id=speech14][class=character]',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.one(els)
+            self.type(dom.div, els.first)
+            self.eq('ROSALIND', els.first.elements.first.html)
+            break
+        else:
+            self.fail('There were no `sels`')
+
+    def it_selects_with_attribute_space_seperated(self):
+        ''' Select using the ~= operator [foo~=bar]
+        '''
+        html = self._shakespear
+
+        sels = [
+           '*[class~=thirdClass]',
+           'div[class~=thirdClass]',
+           '[class~=thirdClass]',
+           '[class~=scene]',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.one(els)
+            self.type(dom.div, els.first)
+            self.eq('scene1', els.first.id)
+
+        sels = [
+           '*[class~=third]',
+           'div[class~=third]',
+           '[class~=third]',
+           '[class~="dialog scene thirdClass"]',
+           '[class~="scene thirdClass"]',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.zero(els)
+
+    def it_selects_with_attribute_startswith(self):
+        ''' Select using the startswith operator [foo^=bar] 
+        '''
+
+        html = self._shakespear
+
+        v = str()
+        for c in 'test':
+            v += c
+            sels = [
+                '*[id^=%s]'    %  v,
+                'div[id^=%s]'  %  v,
+                '[id^=%s]'     %  v,
+            ]
+            for sel in sels:
+                els = html[sel]
+                self.one(els)
+                self.type(dom.div, els.first)
+                self.eq('test', els.first.id)
+
+        sels = [
+            '[id^=est]',
+            '[id^=es]',
+        ]
+
+        for sel in sels:
+            sels = [
+                '*%s'    %  sel,
+                'div%s'  %  sel,
+                '%s'     %  sel,
+            ]
+            for sel in sels:
+                els = html[sel]
+                self.zero(els)
+
+    def it_selects_with_attribute_endswith(self):
+        ''' Select using the endswith operator [foo$=bar] 
+        '''
+
+        html = self._shakespear
+
+        v = str()
+        for c in reversed('dialog'):
+            v = c + v
+            sel = '[class$=%s]' % v
+            sels = [
+                '*%s'    %  sel,
+                'div%s'  %  sel,
+                '%s'     %  sel,
+            ]
+            for sel in sels:
+                els = html[sel]
+                self.count(50, els)
+                self.type(dom.div, els.first)
+
+        sels = [
+            '[id$=dialo]',
+            '[id$=ialo]',
+        ]
+
+        for sel in sels:
+            sels = [
+                '*%s'    %  sel,
+                'div%s'  %  sel,
+                '%s'     %  sel,
+            ]
+            for sel in sels:
+                els = html[sel]
+                self.zero(els)
+
+    def it_selects_with_attribute_contains(self):
+        ''' Select using the contains operator [foo*=bar] 
+        '''
+
+        html = self._shakespear
+
+
+        sels = [
+            '*[class*=dialog]',
+            'div[class*=dialog]',
+            '[class*=dialog]',
+            '*[class*=dialo]',
+            'div[class*=dialo]',
+            '[class*=dialo]',
+            '*[class*=ialog]',
+            'div[class*=ialog]',
+            '*[class*=ialog]',
+            '*[class*=ialo]',
+            'div[class*=ialo]',
+            '*[class*=ialo]',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.count(51, els)
+            self.type(dom.div, els.first)
+
+        sels = [
+            '*[class*=idontexist]',
+            'div[class*=idontexist]',
+            '[class*=idontexist]',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.zero(els)
+
+    def it_selects_with_attribute_hyphen_sperated(self):
+        ''' Select using the hyphen-seperated operator [foo|=bar] 
+        '''
+        html = self._shakespear
+
+        sels = [
+            '[http-equiv|=Content]',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.one(els)
+            self.type(dom.meta, els.first)
+
+
+
 
     def it_parses_chain_of_elements(self):
         ''' One '''
@@ -13939,8 +14236,8 @@ class test_selectors(tester):
         sels = dom.selectors(sels)
         self.one(sels)
         self.one(sels.first.elements)
-        self.str('E:nth-child(2n+1):nth-child(2n+1)', sels)
-        self.repr('E:nth-child(2n+1):nth-child(2n+1)', sels)
+        self.str('E:nth-child(2n+1):nth-child(2n+0)', sels)
+        self.repr('E:nth-child(2n+1):nth-child(2n+0)', sels)
 
     def it_parses_argumentative_pseudo_classes(self):
         ''' E:nth-child(odd) '''

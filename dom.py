@@ -301,13 +301,11 @@ class elements(entities.entities):
         sels = selectors(sel)
         return sels.match(self)
 
-    def getelements(self, test=None):
+    def getelements(self):
         els = elements()
         for el in self:
-            if test is None or test(el):
-                els += el
-
-            els += el.getelements(test=test, recursive=True)
+            els += el
+            els += el.getelements(recursive=True)
         return els
 
     @property
@@ -451,14 +449,13 @@ class element(entities.entity):
         return self._elements
 
 
-    def getelements(self, test=None, recursive=False):
+    def getelements(self, recursive=False):
         els = elements()
         for el in self.elements:
-            if test is None or test(el):
-                els += el
+            els += el
 
             if recursive:
-                els += el.getelements(test=test, recursive=True)
+                els += el.getelements(recursive=True)
 
         return els
                 
@@ -3030,7 +3027,8 @@ class _htmlparser(HTMLParser):
             )
         el = el()
         for attr in attrs:
-            el.attributes += attr
+            el.attributes += attribute.create(*attr)
+            #el.attributes += attr
         try:
             cur = self.stack[-1]
         except IndexError:
@@ -3529,14 +3527,15 @@ class selectors(entities.entities):
         self += sel
         el = comb = attr = cls = pcls = args = None
         for tok in cssselect.parser.tokenize(self._sel):
-            
             if isinstance(tok, cssselect.parser.EOFToken):
                 continue
 
             if args:
-                if tok.value != ')' and tok.type != 'S':
+                if tok.value == ')':
+                    args = None
+                elif tok.type != 'S':
                     args += tok.value
-                continue
+                    continue
 
             if tok.type == 'IDENT':
                 if el:
@@ -3635,7 +3634,7 @@ class selectors(entities.entities):
         r = elements()
         for sel in self:
             last = sel.elements.last
-            els1 = els.getelements(test=last.match)
+            els1 = last.match(els.getelements())
 
             rms = elements()
 
@@ -3691,11 +3690,29 @@ class selector(entities.entity):
             self.pseudoclasses  =  selector.pseudoclasses()
             self.id             =  None
 
-        def match(self, el):
+        def match(self, els):
+            if isinstance(els, element):
+                return bool(self.match([els]).count)
+
+            r = elements()
+            for el in els:
+                if self.element not in ('*', el.tag):
+                    continue
+
+                if not self.classes.match(el):
+                    continue
+
+                if not self.attributes.match(el):
+                    continue
+
+                r += el
+
+            return r
+
+            # TODO Remove below
             if el.tag != self.element:
                 return False
 
-            # TODO Test attribtes, classes, etc...
 
             return True
 
@@ -3751,6 +3768,9 @@ class selector(entities.entity):
         def __repr__(self):
             return ''.join(str(x) for x in self)
 
+        def match(self, el):
+            return all(x.match(el) for x in self)
+
     class attribute(simple):
         def __init__(self):
             self.key       =  None
@@ -3763,9 +3783,49 @@ class selector(entities.entity):
             v   =  self.value     or  ''
             return '[%s%s%s]' % (k, op, v)
 
+        def match(self, el):
+            for attr in el.attributes:
+                if attr.name == self.key:
+                    op = self.operator
+                    if op is None:
+                        if not self.value:
+                            return True
+
+                    elif op == '=':
+                        if attr.value == self.value:
+                            return True
+
+                    elif op == '~=':
+                        if self.value in attr.value.split():
+                            return True
+
+                    elif op == '^=':
+                        if attr.value.startswith(self.value):
+                            return True
+
+                    elif op == '$=':
+                        if attr.value.endswith(self.value):
+                            return True
+
+                    elif op == '*=':
+                        if self.value in attr.value:
+                            return True
+
+                    elif op == '|=':
+                        B()
+                        els = attr.value.split('-')
+                        if len(els):
+                            if self.value == els[0]:
+                                return True
+
+            return False
+
     class classes(_simples):
         def __repr__(self):
             return ''.join(str(x) for x in self)
+
+        def match(self, el):
+            return all(x.match(el) for x in self)
 
     class class_(simple):
         def __init__(self):
@@ -3773,6 +3833,9 @@ class selector(entities.entity):
 
         def __repr__(self):
             return '.' + self.value
+
+        def match(self, el):
+            return self.value in el.classes
 
     class pseudoclasses(_simples):
         def __repr__(self):
