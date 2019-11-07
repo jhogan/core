@@ -3287,6 +3287,10 @@ class artist(orm.entity):
     # varchar, so we make it a longtext.
     bio = str, 1, 65535 + 1, orm.fulltext
 
+    bio1 = str, 1, 4001
+    bio2 = str, 1, 4000
+
+
     comments = comments
 
     @staticmethod
@@ -3299,6 +3303,9 @@ class artist(orm.entity):
         art.ssn       = '1' * 11
         art.phone     = '1' * 7
         art.email     = 'username@domain.tld'
+        art.bio1      = '11'
+        art.bio2      = '2'
+
         return art
 
     @orm.attr(int, 1000000, 9999999)
@@ -7023,6 +7030,8 @@ class test_orm(tester):
             art.ssn       = '1' * 11
             art.phone     = '1' * 7
             art.email     = 'username@domain.tld'
+            art.bio1      = 'herp'
+            art.bio2      = 'derp'
             if type(art) is singer:
                 art.voice     = uuid4().hex
                 art.register  = 'laryngealization'
@@ -7073,6 +7082,8 @@ class test_orm(tester):
             art.password  = bytes([randint(0, 255) for _ in range(32)])
             art.phone     = '1' * 7
             art.email     = 'username@domain.tld'
+            art.bio1      = 'herp'
+            art.bio2      = 'derp'
             if type(art) is singer:
                 art.voice     = uuid4().hex
                 art.register  = 'laryngealization'
@@ -7099,6 +7110,21 @@ class test_orm(tester):
             art.ssn = None
             self.true(saveok(art, 'ssn'))
 
+            # Test Varchar
+            art = artist()
+
+            map = art.orm.mappings['bio1']
+            self.false(map.isfixed)
+            self.eq('longtext', map.dbtype)
+            self.eq(4001, map.max)
+            self.eq(1, map.min)
+
+            map = art.orm.mappings['bio2']
+            self.false(map.isfixed)
+            self.eq('varchar(4000)', map.dbtype)
+            self.eq(4000, map.max)
+            self.eq(1, map.min)
+
             # Test longtext
             art = artist()
             art.firstname = uuid4().hex
@@ -7108,6 +7134,8 @@ class test_orm(tester):
             art.phone     = '1' * 7
             art.email     = 'username@domain.tld'
             art.ssn       = V * 11
+            art.bio1      = 'herp'
+            art.bio2      = 'derp'
             if type(art) is singer:
                 art.voice     = uuid4().hex
                 art.register  = 'laryngealization'

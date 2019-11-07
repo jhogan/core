@@ -3653,15 +3653,25 @@ class fieldmapping(mapping):
     @property
     def dbtype(self):
         if self.isstr:
-            # FIXME WIP
-            # When a class declares a map the following map:
+            # However, setting the varchar max to 16,383 can cause
+            # issues for larger strings such as `bio1 = str, 1, 16382`.
+            # The following may be thrown for this string on table
+            # creation:
             #
-            # class myent(orm.entity)
-            #     directions = str, 1, 65536-1
+            #     _mysql_exceptions.OperationalError: (1118, 'Row size
+            #     too large. The maximum row size for the used table
+            #     type, not counting BLOBs, is 65535. This includes
+            #     storage overhead, check the manual. You have to change
+            #     some columns to TEXT or BLOBs')
             #
-            # A MySQL exception is raised. Appearently, 65536-1 is too low
-            # for a TEXT datatype but too high for a VARCHAR datatype.
-            if self.max <= 65535:
+            # For the moment, let's set the maximum varchar to 4000
+            # (which is the same as that of MS SQL Server's nvarchar). 
+            #
+            # In the future, we may want to calculate the row size before
+            # creating the table. We can then use that value to help the
+            # user understand what can be done to correct the size
+            # issue.
+            if self.max <= 4000:
                 if self.isfixed:
                     return 'char(' + str(self.max) + ')'
                 else:
