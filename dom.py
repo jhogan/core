@@ -72,7 +72,7 @@ class attributes(entities.entities):
     def __iadd__(self, *o):
         for o in o:
             if type(o) in (tuple, list):
-                o = attribute(o[0], o[1])
+                o = attribute.create(*o)
             super().__iadd__(o)
         return self
 
@@ -159,6 +159,13 @@ class attribute(entities.entity):
     def __init__(self, name, v=undef):
         self.name = name
         self.value = v
+
+    @staticmethod
+    def create(name, v=undef):
+        if name == 'class':
+            return cssclass(v)
+
+        return attribute(name, v)
 
     def __repr__(self):
         r = "%s(name='%s', value='%s')"
