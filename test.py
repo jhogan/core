@@ -13258,7 +13258,6 @@ class test_orm(tester):
         # strange things were happening with the brokenrules. 
         sng = singer.getvalid()
         sng.artist_artists += artist_artist.getvalid()
-        B()
         sng.singers += singer.getvalid()
 
         self.zero(sng.artist_artists.first.brokenrules)
@@ -13334,7 +13333,8 @@ class test_parties(tester):
 
         per.party_parties += pp
 
-        per.save()
+        # WIP
+        #per.save()
         
 ########################################################################
 # Test parties                                                         #

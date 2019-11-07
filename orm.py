@@ -1805,6 +1805,10 @@ class entitymeta(type):
         return entity
 
 class entity(entitiesmod.entity, metaclass=entitymeta):
+    # These are the limits of the MySQL datetime type
+    mindatetime=primative.datetime('1000-01-01 00:00:00.000000+00:00')
+    maxdatetime=primative.datetime('9999-12-31 23:59:59.999999+00:00')
+
     def __init__(self, o=None, _depth=0):
         # TODO Base64 id's:
         # https://stackoverflow.com/questions/12270852/convert-uuid-32-character-hex-string-into-a-youtube-style-short-id-and-back
@@ -2220,7 +2224,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                     # Get the object's class and
                                     # subclasses.
 
-                                    # TODO Clean up
                                     clss = [ass.object.orm.entities]
                                     subs = ass.object.orm.subclasses
                                     clss += [
@@ -2274,11 +2277,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             self.orm.persistencestate = st
             raise
         
-    # TODO We could probably move these assignments to the top
-    # These are the limits of the MySQL datetime type
-    mindatetime=primative.datetime('1000-01-01 00:00:00.000000+00:00')
-    maxdatetime=primative.datetime('9999-12-31 23:59:59.999999+00:00')
-
     @property
     def brokenrules(self):
         return self._getbrokenrules()
@@ -3655,7 +3653,7 @@ class fieldmapping(mapping):
     @property
     def dbtype(self):
         if self.isstr:
-            # FIXME
+            # FIXME WIP
             # When a class declares a map the following map:
             #
             # class myent(orm.entity)
@@ -3908,7 +3906,7 @@ class ormclasswrapper(entitiesmod.entity):
     attribute.
     """
 
-    # Note: If I remember correctly, I created this wrapper class
+    # NOTE If I remember correctly, I created this wrapper class
     # because I wanted a way to add class references to
     # entities.entities collections since the only objects that can be
     # added to entities.entities are entities.entity objects.
