@@ -13790,22 +13790,80 @@ class test_selectors(tester):
             els = html[sel]
             self.zero(els)
 
-    def it_selects_with_attribute_hyphen_sperated(self):
+    def it_selects_with_attribute_hyphen_seperated(self):
         ''' Select using the hyphen-seperated operator [foo|=bar] 
         '''
         html = self._shakespear
 
         sels = [
-            '[http-equiv|=Content]',
+            '[id|="023338d1"]',
+            '[id|="023338d1-5503"]',
+            '[id|="023338d1-5503-4054"]',
+            '[id|="023338d1-5503-4054-98f7-c1e9c9ad390d"]',
+
         ]
 
         for sel in sels:
             els = html[sel]
             self.one(els)
-            self.type(dom.meta, els.first)
+            self.type(dom.h2, els.first)
 
+        els = html['[id|=test]']
+        self.one(els)
+        self.type(dom.div, els.first)
 
+        sels = [
+            '[id|="023338d"]',
+            '[id|="023338d1-"]',
+            '[id|="023338d1-5503-"]',
+            '[id|="023338d1-5503-4"]',
+            '[id|="023338d1-5503-4054-"]',
+            '[id|="023338d1-5503-4054-9"]',
+            '[id|="023338d1-5503-4054-98f7-"]',
+            '[id|="023338d1-5503-4054-98f7-c"]',
+            '[id|="f6836822"]',
+            '[id|="f6836822-589e"]',
+            '[id|="f6836822-589e-40bf-a3f7-a5c3185af4f7"]',
+        ]
 
+        for sel in sels:
+            self.zero(html[sel], sel)
+
+    def it_select_root(self):
+        html = self._shakespear
+
+        sels = [
+            '*:root',
+            'html:root',
+            ':root',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.one(els)
+            self.type(dom.html, els.first)
+
+        id = uuid4().hex
+        html = dom.html('''
+            <p id="%s">
+                The following is
+                <strong>
+                    strong text
+                </strong>
+            </p>
+        ''' % id)
+
+        sels = [
+            'p:root',
+            ':root',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.one(els)
+            self.type(dom.p, els.first, sel)
+
+                
 
     def it_parses_chain_of_elements(self):
         ''' One '''
@@ -14815,7 +14873,7 @@ Shakespeare = '''
   <body>
     <div id="test">
       <div class="dialog">
-        <h2>
+        <h2 id="023338d1-5503-4054-98f7-c1e9c9ad390d f6836822-589e-40bf-a3f7-a5c3185af4f7">
           As You Like It
         </h2>
         <div id="playwright">

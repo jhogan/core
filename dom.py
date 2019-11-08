@@ -387,6 +387,15 @@ class element(entities.entity):
         self.attributes['title'] = v
 
     @property
+    def root(self):
+        ans = self.ancestors
+        if ans.count:
+            return ans.last
+
+        return self
+
+
+    @property
     def parent(self):
         if not hasattr(self, '_parent'):
             self._parent = None
@@ -438,8 +447,6 @@ class element(entities.entity):
 
         return els
 
-        
-
     @property
     def elements(self):
         if not hasattr(self, '_elements'):
@@ -447,7 +454,6 @@ class element(entities.entity):
             self.elements.onadd += self._elements_onadd
             self._elements._setparent(self)
         return self._elements
-
 
     def getelements(self, recursive=False):
         els = elements()
@@ -3705,6 +3711,9 @@ class selector(entities.entity):
                 if not self.attributes.match(el):
                     continue
 
+                if not self.pseudoclasses.match(el):
+                    continue
+
                 r += el
 
             return r
@@ -3812,11 +3821,15 @@ class selector(entities.entity):
                             return True
 
                     elif op == '|=':
-                        B()
                         els = attr.value.split('-')
-                        if len(els):
-                            if self.value == els[0]:
+                        for i in range(len(els)):
+                            v = '-'.join(els[0:i+1])
+                            if self.value == v:
                                 return True
+
+                        els = attr.value.split()
+                        if len(els) and self.value == els[0]:
+                            return True
 
             return False
 
@@ -3840,6 +3853,9 @@ class selector(entities.entity):
     class pseudoclasses(_simples):
         def __repr__(self):
             return ''.join(str(x) for x in self)
+
+        def match(self, el):
+            return all(x.match(el) for x in self)
 
     class pseudoclass(simple):
         class arguments(element):
@@ -3981,6 +3997,12 @@ class selector(entities.entity):
             r += repr(self.arguments)
             return r
 
+        def _match_root(self, el):
+            return el is el.root
+
+        def match(self, el):
+            return getattr(self, '_match_' + self.value)(el)
+            
 class AttributeExistsError(Exception):
     pass
 
