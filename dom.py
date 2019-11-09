@@ -4000,8 +4000,24 @@ class selector(entities.entity):
         def _match_root(self, el):
             return el is el.root
 
+        def _match_nth_child(self, el):
+            a, b = self.arguments.a, self.arguments.b
+            rent = el.parent
+
+            if not rent:
+                return False
+
+            for i, el1 in rent.elements.enumerate():
+                if el is el1:
+                    if i % a == 0:
+                        return True;
+
+            return False
+
         def match(self, el):
-            return getattr(self, '_match_' + self.value)(el)
+            pcls = self.value.replace('-', '_')
+            
+            return getattr(self, '_match_' + pcls)(el)
             
 class AttributeExistsError(Exception):
     pass

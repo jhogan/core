@@ -13863,7 +13863,25 @@ class test_selectors(tester):
             self.one(els)
             self.type(dom.p, els.first, sel)
 
-                
+        sels = [
+            'html:root',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.zero(els)
+
+    def it_selects_nth_child(self):
+        html = self._shakespear
+
+        sels = [
+            '[id^=speech]:nth-child(even)',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.count(48, els)
+        
 
     def it_parses_chain_of_elements(self):
         ''' One '''
