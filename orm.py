@@ -35,7 +35,7 @@ import re
 import sys
 import textwrap
 from dbg import B
-
+from types import ModuleType
 # TODO Research making these constants the same as their function
 # equivilants.
 # i.e., s/2/str; s/3/int/, etc.
@@ -1667,6 +1667,14 @@ class entitymeta(type):
 
         for k, v in body.items():
 
+            # Is v a reference to a module:
+            if isinstance(v, ModuleType):
+                # If the datetime module was passed in, convert it to
+                # the datetime.datetime class reference. This aliasing
+                # is for convenience purposes.
+                if v.__name__ == 'datetime':
+                    v = datetime
+
             # Ignore the double underscore attributes
             if k.startswith('__'):
                 continue
@@ -1693,12 +1701,6 @@ class entitymeta(type):
 
                 # If the item is a primitive type (str, int, datetime,
                 # etc.), create a fieldmapping.
-
-                # TODO Currently, if v is a reference to the datetime
-                # module, as oppose to the datetime module's `datetime`
-                # property, the field won't map because the datetime
-                # module is not in fieldmapping.types. It may be nice if
-                # a datetime module reference meant the same thing.
 
                 map = fieldmapping(v)
 

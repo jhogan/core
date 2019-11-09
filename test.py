@@ -3272,6 +3272,9 @@ class artist(orm.entity):
     networth       =  int
     style          =  str, 1, 50
     dob            =  datetime
+
+    # Support datetime module as well as datetime.datetime class
+    dob1           =  sys.modules['datetime']
     password       =  bytes, 32, 32
     ssn            =  str, 11, 11, orm.index #  char
     locations      =  locations
@@ -7352,15 +7355,26 @@ class test_orm(tester):
         art = artist.getvalid()
         self.none(art.dob)
         art.dob = '2004-01-10'
+        art.dob1 = '2005-01-10'
         self.type(primative.datetime, art.dob)
-        self.type(primative.datetime, art.dob)
+        self.type(primative.datetime, art.dob1)
+
         expect = datetime(2004, 1, 10, tzinfo=utc)
         self.eq(expect, art.dob)
+
+        expect = datetime(2005, 1, 10, tzinfo=utc)
+        self.eq(expect, art.dob1)
        
         # Save, reload, test
         art.save()
+        expect = datetime(2004, 1, 10, tzinfo=utc)
         self.eq(expect, artist(art.id).dob)
         self.type(primative.datetime, artist(art.id).dob)
+
+        # Ensure dob1 saves and loads like dob
+        expect = datetime(2005, 1, 10, tzinfo=utc)
+        self.eq(expect, artist(art.id).dob1)
+        self.type(primative.datetime, artist(art.id).dob1)
 
         # It converts aware datetime to UTC
         aztz = dateutil.tz.gettz('US/Arizona')
