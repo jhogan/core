@@ -1532,8 +1532,23 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
     def brokenrules(self):
         return self._getbrokenrules()
 
-    def _getbrokenrules(self, es=None, followentitymapping=True):
+    def _getbrokenrules(self, guestbook=None, followentitymapping=True):
         brs = entitiesmod.brokenrules()
+
+        if guestbook is None:
+            guestbook = list()
+        else:
+            # This test corrects a fairly deep issue that has only come
+            # up with subentity-superassociation-subentity
+            # relationships. We use the below logic to return immediatly
+            # when an associations (self) collection has any
+            # constituents that have already been visited. See the
+            # brokenrule collections being tested at the bottom of
+            # it_loads_and_saves_reflexive_associations_of_subentity_objects
+            # for more clarifications.
+            for e in self:
+                if e in guestbook:
+                    return brs
 
         for e in self:
             if not isinstance(e, self.orm.entity):
@@ -1542,7 +1557,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 msg %= (prop, type(e).__name__)
                 brs += entitiesmod.brokenrule(msg, prop, 'valid')
                 
-            brs += e._getbrokenrules(es, followentitymapping=followentitymapping)
+            brs += e._getbrokenrules(guestbook, followentitymapping=followentitymapping)
         return brs
 
     def _self_onremove(self, src, eargs):

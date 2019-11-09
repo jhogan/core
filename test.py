@@ -13321,15 +13321,14 @@ class test_orm(tester):
         self.zero(sng.artist_artists.first.brokenrules)
         self.three(sng.artist_artists.second.brokenrules)
         self.three(sng.brokenrules)
-        return
 
         # Fix broken aa
-        art.artist_artists.second.role = uuid4().hex
-        art.artist_artists.second.slug = uuid4().hex
-        art.artist_artists.second.timespan = uuid4().hex
+        sng.artist_artists.second.role = uuid4().hex
+        sng.artist_artists.second.slug = uuid4().hex
+        sng.artist_artists.second.timespan = uuid4().hex
 
-        self.zero(art.artist_artists.second.brokenrules)
-        self.zero(art.brokenrules)
+        self.zero(sng.artist_artists.second.brokenrules)
+        self.zero(sng.brokenrules)
 
 ########################################################################
 # Test parties                                                         #
