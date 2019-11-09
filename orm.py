@@ -3436,6 +3436,8 @@ class attr:
         return w
 
 class fieldmapping(mapping):
+    """ Represents mapping between Python types and MySQL types.
+    """
     # Permitted types
     types = bool, str, int, float, decimal.Decimal, bytes, datetime
     def __init__(self, type,       # Type of field
@@ -3654,6 +3656,10 @@ class fieldmapping(mapping):
     
     @property
     def dbtype(self):
+        """ Returns a string representing the MySQL data type
+        corresponding to this field mapping e.g., varchar(255),
+        datetime(6) bit, tinyint, etc.
+        """
         if self.isstr:
             # However, setting the varchar max to 16,383 can cause
             # issues for larger strings such as `bio1 = str, 1, 16382`.
