@@ -5880,14 +5880,7 @@ class test_orm(tester):
     def it_doesnt_needlessly_save_entitity(self):
         chrons = self.chronicles
 
-        art = artist()
-
-        art.firstname = uuid4().hex
-        art.lastname = uuid4().hex
-        art.ssn = '1' * 11
-        art.phone = '1' * 7
-        art.password  = bytes([randint(0, 255) for _ in range(32)])
-        art.email = 'username@domain.tld'
+        art = artist.getvalid()
 
         for i in range(2):
             chrons.clear()
@@ -5930,7 +5923,6 @@ class test_orm(tester):
         art.presentations.last.locations += location.getvalid()
 
         for i in range(2):
-
             chrons.clear()
             art.save()
 
@@ -6690,6 +6682,8 @@ class test_orm(tester):
         sng.ssn       = '1' * 11
         sng.register  = 'laryngealization'
         sng.email     = 'username@domain.tld'
+        sng.bio1      = uuid4().hex
+        sng.bio2      = uuid4().hex
         self.eq(int(), sng.phone)
 
         sng.phone = '1' * 7
@@ -6718,6 +6712,8 @@ class test_orm(tester):
         sng.ssn       = '1' * 11
         sng.phone     = '1' * 7
         sng.email     = 'username@domain.tld'
+        sng.bio1      = uuid4().hex
+        sng.bio2      = uuid4().hex
         self.is_(str(), sng.register)
 
         sng.register = 'Vocal Fry'
@@ -6748,6 +6744,8 @@ class test_orm(tester):
         rpr.ssn       = '1' * 11
         rpr.register  = 'laryngealization'
         rpr.email     = 'username@domain.tld'
+        rpr.bio1      = uuid4().hex
+        rpr.bio2      = uuid4().hex
         self.eq(int(), rpr.phone)
 
         rpr.phone = '1' * 7
@@ -6776,6 +6774,8 @@ class test_orm(tester):
         rpr.ssn       = '1' * 11
         rpr.phone     = '1' * 7
         rpr.email     = 'username@domain.tld'
+        rpr.bio1      = uuid4().hex
+        rpr.bio2      = uuid4().hex
         self.is_(str(), rpr.register)
 
         rpr.register = 'Vocal Fry'
@@ -6807,6 +6807,8 @@ class test_orm(tester):
         rpr.email     = 'username@domain.tld'
         rpr.register  = 'laryngealization'
         abilities     = "['endless rhymes', 'delivery', 'money']"
+        rpr.bio1      = uuid4().hex
+        rpr.bio2      = uuid4().hex
         self.eq(abilities, rpr.abilities)
 
         rpr.abilities = abilities = ['being wack']
@@ -6899,6 +6901,8 @@ class test_orm(tester):
         art.ssn = '1' * 11
         art.phone = '1' * 7
         art.email = 'username@domain.tld'
+        art.bio1  = uuid4().hex
+        art.bio2  = uuid4().hex
         map = art.orm.mappings['password']
 
         # Make sure the password field hasn't been tampered with
@@ -7469,9 +7473,12 @@ class test_orm(tester):
         art1.weight     += 1
         art1.networth   =  1
         art1.dob        =  primative.datetime.now().replace(tzinfo=timezone.utc)
+        art1.dob1       =  primative.datetime.now().replace(tzinfo=timezone.utc)
         art1.password   = bytes([randint(0, 255) for _ in range(32)])
         art1.ssn        = '2' * 11
         art1.bio        = uuid4().hex
+        art1.bio1       = uuid4().hex
+        art1.bio2       = uuid4().hex
         art1.email      = 'username1@domain.tld'
         art1.title      = uuid4().hex[0]
         art1.phone2     = uuid4().hex[0]
@@ -9907,9 +9914,13 @@ class test_orm(tester):
         sng1.weight    = 1
         sng1.networth  =- 1
         sng1.dob       = datetime.now()
+        sng1.dob1      = datetime.now()
+        sng1.dob2      = datetime.now()
         sng1.password  = bytes([randint(0, 255) for _ in range(32)])
         sng1.ssn       = '2' * 11
         sng1.bio       = uuid4().hex
+        sng1.bio1      = uuid4().hex
+        sng1.bio2      = uuid4().hex
         sng1.email     = 'username1@domain.tld'
         sng1.title     = uuid4().hex[0]
         sng1.phone2    = uuid4().hex[0]
@@ -9999,9 +10010,13 @@ class test_orm(tester):
         rpr1.weight    = 1
         rpr1.networth  =- 1
         rpr1.dob       = datetime.now()
+        rpr1.dob1      = datetime.now()
+        rpr1.dob2      = datetime.now()
         rpr1.password  = bytes([randint(0, 255) for _ in range(32)])
         rpr1.ssn       = '2' * 11
         rpr1.bio       = uuid4().hex
+        rpr1.bio1      = uuid4().hex
+        rpr1.bio2      = uuid4().hex
         rpr1.email     = 'username1@domain.tld'
         rpr1.title     = uuid4().hex[0]
         rpr1.phone2    = uuid4().hex[0]
