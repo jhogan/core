@@ -5556,9 +5556,10 @@ class associations(entities):
                 e = getattr(ass, map.name) # :=
                 if e:
                     
-                    # If the type of `e` does not match the `attr` str, a
+                    # If the type of `e` does not match the `attr` str,
+                    # but `attr` is a subentity of e, a
                     # subentity that matches the collection type of `es`
-                    # is needed. This is needed for reflexive subentity
+                    # is needed. This is required for reflexive subentity
                     # associations, e.g., consider lazy-loading the
                     # singers pseudocollection from a singer object.
                     #

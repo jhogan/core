@@ -13052,8 +13052,7 @@ class test_orm(tester):
 
         # TODO Test deeply nested associations
 
-    def it_loads_and_saves_reflexive_associations_of_subentity_objects\
-                                                                (self):
+    def it_loads_and_saves_subentity_reflexive_associations(self):
         sng = singer.getvalid()
 
         with self._chrontest() as t:
@@ -13111,7 +13110,8 @@ class test_orm(tester):
 
         self.one(sng.artist_artists)
 
-        # TODO Should adding singer to sng.artist_artists
+        # TODO Should adding singer to sng.artist_artists result in an
+        # addition to sng.artists
         # self.one(sng.artists)
         self.one(sng.singers)
         self.zero(sng.artists)
@@ -13168,7 +13168,19 @@ class test_orm(tester):
 
         self.eq(aa.subject.id,         aa1.subject.id)
 
-        # TODO Should aa1.subject be artist or downcasted to singer?
+        # Q Should aa1.subject be artist or downcasted to singer?  
+        # A No, since aa1 is an artist_artist type, it's `subject`
+        # attribute must reflect that. If we wanted `subject` to be of
+        # type `singer`, we should subclass artist_artist to create a
+        # new association called `singer_singer`. However, we may want
+        # to have an automatic downcasting property call
+        # `as_<subentity>` that will return and downcasted version of
+        # `subject` and that the graph will understand so it can be used
+        # for persistence, e.g., 
+        #
+        #   aa1.subject.as_singer.register = 'laryngealization'
+        #   aa1.save()
+
         #self.type(singer,              aa1.subject)
 
         self.eq(aa.subject__artistid,  aa1.subject__artistid)
