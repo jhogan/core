@@ -13342,6 +13342,97 @@ class test_orm(tester):
         self.zero(sng.artist_artists.second.brokenrules)
         self.zero(sng.brokenrules)
 
+    def it_updates_subentity_reflexive_associations_constituent_entity(self):
+        sng = singer.getvalid()
+
+        for i in range(2):
+            aa = artist_artist.getvalid()
+            aa.object = singer.getvalid()
+            sng.artist_artists += aa
+
+        self.two(sng.artist_artists)
+        self.two(sng.singers)
+        with ct() as t:
+            t(lambda: sng.artists)
+            print(t)
+        self.zero(sng.artists)
+        return
+
+        art.save()
+
+        art1 = artist(art.id)
+
+        for art2 in art1.artists:
+            art2.firstname = uuid4().hex
+
+        with self._chrontest() as t:
+            t.run(art1.save)
+            t.updated(*art1.artists)
+
+        art2 = artist(art1.id)
+
+        self.two(art1.artists)
+        self.two(art2.artists)
+
+        artobjs  = art. artists.sorted('firstname')
+        artobjs1 = art1.artists.sorted('firstname')
+        artobjs2 = art2.artists.sorted('firstname')
+
+        for artb, artb2 in zip(artobjs, artobjs2):
+            self.ne(artb.firstname, artb2.firstname)
+
+        for artb1, artb2 in zip(artobjs1, artobjs2):
+            self.eq(artb1.firstname, artb2.firstname)
+
+        attrs = (
+            'artists.first.presentations',
+            'artist_artists.first.object.presentations'
+        )
+
+        for attr in attrs:
+            press = getattr(art2, attr)
+            press += presentation.getvalid()
+
+        self.two(press)
+
+        art2.save()
+
+        art3 = artist(art2.id)
+
+        for attr in attrs:
+            press = getattr(art3, attr)
+            for pres in press:
+                pres.name = uuid4().hex
+
+        with self._chrontest() as t:
+            t.run(art3.save)
+            t.updated(art3.artists.first.presentations.first)
+            t.updated(art3.artists.first.presentations.second)
+
+        art4 = artist(art3.id)
+
+        for attr in attrs:
+            press2 = getattr(art2, attr)
+            press3 = getattr(art3, attr)
+            press4= getattr(art4, attr)
+
+            self.two(press2)
+            self.two(press3)
+            self.two(press4)
+
+            for pres4 in press4:
+                for pres2 in press2:
+                    self.ne(pres2.name, pres4.name)
+
+            for pres4 in press4:
+                for pres3 in press3:
+                    if pres4.name == pres3.name:
+                        break
+                else:
+                    self.fail('No match within press4 and press3')
+
+        # TODO Test deeply nested associations
+
 ########################################################################
 # Test parties                                                         #
 ########################################################################

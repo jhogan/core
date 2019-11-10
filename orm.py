@@ -5570,7 +5570,12 @@ class associations(entities):
                     #
                     #     assert artist is type(sng.singers.first)
 
-                    if e.orm.entities.__name__ != attr:
+                    #if e.orm.entities.__name__ != attr:
+
+                    # TODO This could use a clean up, e.g.,
+                    #     if attr in e.orm.entities.subclasses:
+                    subs = [x.orm.entities.__name__ for x in e.orm.subclasses]
+                    if attr in subs:
                         e = es.orm.entity(e.id)
                         if not e:
                             raise ValueError('Could not find subentity')
