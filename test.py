@@ -8146,7 +8146,7 @@ class test_orm(tester):
                     self.is_(rpr,            conc.rapper)
                     self.is_(rpr.orm.super,  conc.singer)
 
-                    # TODO Calling cons.artists failes
+                    # TODO Calling cons.artists fails
                     # self.is_(rpr.orm.super.orm.super,  conc.artist)
                     self.type(singer,        rpr.orm.super)
                     self.type(artist,        conc.singer.orm.super)
@@ -10444,6 +10444,48 @@ class test_orm(tester):
         arts.save()
         return arts
 
+    def _create_join_test_subentity_reflexive_data(self):
+        """ Create test data to test inner/outer joins against the
+        subenties joined by reflexive associations.
+        """
+
+        for c in (singers, artist, presentation, artist_artist):
+            c.orm.truncate()
+
+        # The singer entities and constituents will have sequential
+        # indexes to query against.
+        sngs = singers()
+        for i in range(4):
+            sng = singer.getvalid()
+            sng.firstname = 'fn-' + str(i)
+            sng.lastname = 'ln-'  + str(i + 1)
+            sng.lifeform = 'subject'
+            sngs += sng
+
+            for k in range(4):
+                aa = artist_artist.getvalid()
+                aa.role = 'sng-art_art-role-' + str(k)
+                aa.slug = 'sng-art_art-slug-' + str(k + 1)
+                sngobj = singer.getvalid()
+
+                aa.object = sngobj
+                sngobj.firstname = 'sng-art_art-sng-fn-' + str(k)
+                sngobj.lastname = 'sng-art_art-sng-ln' + str(k + 1)
+                sngobj.register = 'sng-art_art-sng-reg'+ str(k)
+                sngobj.lifeform = 'object'
+
+                sng.artist_artists += aa
+
+                for l in range(4):
+                    pres = presentation.getvalid()
+                    name = 'sng-art_art-sng-presentation-name-' + str(l)
+                    pres.name =  name
+                    sngobj.presentations += pres
+
+        sngs.save()
+        return sngs
+
+
     def it_calls_innerjoin_on_entities_with_BETWEEN_clauses(self):
         arts = artists()
         for i in range(8):
@@ -11546,7 +11588,7 @@ class test_orm(tester):
             else:
                 self.fail('Predicate count exceeds 2')
         
-    def it_failes_parsing_malformed_predicates(self):
+    def it_fails_parsing_malformed_predicates(self):
         p = orm.predicate("match ((col) against ('search str')")
         parens = '''
             (col = 1
@@ -13352,77 +13394,146 @@ class test_orm(tester):
 
         self.two(sng.artist_artists)
         self.two(sng.singers)
+        self.two(sng.artists)
+
+        sng.save()
+
+        sng1 = singer(sng.id)
+
+        # Update properties of singe
+        for sng2 in sng1.singers:
+            sng2.register = uuid4().hex
+
         with ct() as t:
-            t(lambda: sng.artists)
-            print(t)
-        self.zero(sng.artists)
-        return
+            t.run(sng1.save)
+            t.updated(*sng1.singers)
 
-        art.save()
+        # Update properties of super (artist)
+        for sng2 in sng1.singers:
+            sng2.firstname = uuid4().hex
 
-        art1 = artist(art.id)
+        with ct() as t:
+            t.run(sng1.save)
+            t.updated(sng1.singers.first.orm.super)
+            t.updated(sng1.singers.second.orm.super)
 
-        for art2 in art1.artists:
-            art2.firstname = uuid4().hex
+        sng2 = singer(sng1.id)
 
-        with self._chrontest() as t:
-            t.run(art1.save)
-            t.updated(*art1.artists)
+        self.two(sng2.singers)
+        self.two(sng2.artists)
 
-        art2 = artist(art1.id)
+        sngobjs  = sng. singers.sorted()
+        sngobjs1 = sng1.singers.sorted()
+        sngobjs2 = sng2.singers.sorted()
 
-        self.two(art1.artists)
-        self.two(art2.artists)
 
-        artobjs  = art. artists.sorted('firstname')
-        artobjs1 = art1.artists.sorted('firstname')
-        artobjs2 = art2.artists.sorted('firstname')
+        for sngb, sngb2 in zip(sngobjs, sngobjs2):
+            self.ne(sngb.firstname, sngb2.firstname)
+            self.ne(sngb.register,  sngb2.register)
 
-        for artb, artb2 in zip(artobjs, artobjs2):
-            self.ne(artb.firstname, artb2.firstname)
-
-        for artb1, artb2 in zip(artobjs1, artobjs2):
-            self.eq(artb1.firstname, artb2.firstname)
+        for sngb1, sngb2 in zip(sngobjs1, sngobjs2):
+            self.eq(sngb1.firstname, sngb2.firstname)
+            self.eq(sngb1.register, sngb2.register)
 
         attrs = (
-            'artists.first.presentations',
+            'singers.first.presentations',
             'artist_artists.first.object.presentations'
         )
 
         for attr in attrs:
-            press = getattr(art2, attr)
+            press = getattr(sng2, attr)
             press += presentation.getvalid()
 
-        self.two(press)
+        # NOTE (3cb2a6b5) In the non-subentity version of this test
+        # (it_loads_and_saves_reflexive_associations), the following is
+        # True:
+        #
+        #   sng2.singers.first.presentations is \
+        #   sng2.artist_artists.first.object.presentations
 
-        art2.save()
+        # However, that can't be the case here because
+        #
+        #     type(sng2.artist_artists.first.object) is artist
+        #
+        # That means that the above appends go to two different
+        # presentations collections. The commented out assertion below
+        # would fail but is left her to illustrates the consequences of
+        # this issue. The following assertions also illustrate that
+        # there are two presentations entities collections that are
+        # different and contain different presentation objects.
 
-        art3 = artist(art2.id)
+        # self.two(press)
+
+        self.one(sng2.singers.first.presentations)
+        self.one(sng2.artist_artists.first.object.presentations)
+        self.isnot(
+            sng2.singers.first.presentations,
+            sng2.artist_artists.first.object.presentations
+        )
+        self.isnot(
+            sng2.singers.first.presentations.first,
+            sng2.artist_artists.first.object.presentations.first
+        )
+
+        with ct() as t:
+            t(sng2.save)
+            t.created(
+                sng2.singers.first.presentations.first,
+                sng2.artist_artists.first.object.presentations.first
+            )
+
+        sng3 = singer(sng2.id)
 
         for attr in attrs:
-            press = getattr(art3, attr)
+            press = getattr(sng3, attr)
             for pres in press:
                 pres.name = uuid4().hex
 
+        # Here, the same presentation entity objects get updated twice.
+        # This would lead to confusion since updates to the database are
+        # immediately getting overwitten. However, it seems unlikely
+        # that, in the real world, the user would update the same
+        # presentation objects from different areas in the graph like
+        # this.  Note, this is the due to the same issue (3cb2a6b5)
+        # mentioned above.
         with self._chrontest() as t:
-            t.run(art3.save)
-            t.updated(art3.artists.first.presentations.first)
-            t.updated(art3.artists.first.presentations.second)
+            t.run(sng3.save)
+            press = sng3.singers[0].presentations
+            t.updated(press.first)
+            t.updated(press.second)
 
-        art4 = artist(art3.id)
+            press = sng3.artist_artists[0].object.presentations
+            t.updated(press.first)
+            t.updated(press.second)
 
-        for attr in attrs:
-            press2 = getattr(art2, attr)
-            press3 = getattr(art3, attr)
-            press4= getattr(art4, attr)
+        sng4 = singer(sng3.id)
 
-            self.two(press2)
+        for i, attr in enumerate(attrs):
+            press2 = getattr(sng2, attr)
+            press3 = getattr(sng3, attr)
+            press4 = getattr(sng4, attr)
+
+            self.one(press2)
             self.two(press3)
             self.two(press4)
 
             for pres4 in press4:
                 for pres2 in press2:
                     self.ne(pres2.name, pres4.name)
+
+            if i:
+                # We have to skip the second iteration because the
+                # updates to the presentation objects in 
+                #
+                #   sng3.artist_artists.first.object.presentations
+                # 
+                # were updated, however, those updates were immediately
+                # overwritten by the updates from 
+                #
+                #   sng3.singers.first.presentations
+                #
+                # This is due to the 3cb2a6b5 issue.
+                continue
 
             for pres4 in press4:
                 for pres3 in press3:
@@ -13432,6 +13543,313 @@ class test_orm(tester):
                     self.fail('No match within press4 and press3')
 
         # TODO Test deeply nested associations
+
+    def it_calls_innerjoin_on_subentity_reflexive_associations(self):
+        sngs = self._create_join_test_subentity_reflexive_data()
+
+        fff = False, False, False
+
+        # Test artists joined with artist_artists with no condititons
+        sngs1 = singers & artist_artists
+
+        self.one(sngs1.orm.joins)
+
+        self.four(sngs1)
+
+        sngs.sort()
+        sngs1.sort()
+        
+        self.chronicles.clear()
+
+        for sng, sng1 in zip(sngs, sngs1):
+            self.eq(sng.id, sng1.id)
+
+            self.eq(fff, sng1.orm.persistencestate)
+
+            self.four(sng1.artist_artists)
+
+            sng.artist_artists.sort()
+            sng1.artist_artists.sort()
+
+            for aa, aa1 in zip(sng.artist_artists, sng1.artist_artists):
+                self.eq(aa.id, aa.id)
+
+                self.eq(fff, aa1.orm.persistencestate)
+
+                self.eq(aa.subject.id, aa1.subject.id)
+                aa1.object
+
+                self.eq(aa.object.id, aa1.object.id)
+
+                # NOTE aa1.subject can't be identical to sng1 because
+                # aa1.subject must be of type `artist`. However, their
+                # id's should match
+                #self.is_(aa1.subject, sng1)
+                self.eq(aa1.subject.id, sng1.id)
+
+        # NOTE The above will lazy-load aa1.object 40 times
+        self.count(40, self.chronicles)
+
+        # Test singers joined with artist_artists where the association
+        # has a conditional
+        sngs1 = singers.join(
+            artist_artists('role = %s', ('sng-art_art-role-0',))
+        )
+        B()
+
+        self.one(sngs1.orm.joins)
+
+        self.four(sngs1)
+
+        self.chronicles.clear()
+
+        sngs1.sort()
+        for sng, sng1 in zip(sngs, sngs1):
+            self.eq(sng.id, sng1.id)
+
+            self.eq(fff, sng1.orm.persistencestate)
+
+            self.one(sng1.artist_artists)
+            B()
+
+            aa1 = sng1.artist_artists.first
+            self.eq(aa1.role, 'sng-art_art-role-0')
+
+            #self.is_(sng1, aa1.subject)
+            self.eq(aa1.subject__artistid, aa1.subject.id)
+            self.eq(aa1.object__artistid, aa1.object.id)
+
+            self.eq(fff, aa1.orm.persistencestate)
+
+            self.eq(fff, aa1.subject.orm.persistencestate)
+            self.eq(fff, aa1.object.orm.persistencestate)
+
+        return
+        # Test unconditionally joining the associated entities
+        # collections (artist_artists) with its composite (artists)
+        for b in False, True:
+            if b:
+                # Implicitly join artist_artists
+                arts1 = artists & artists
+            else:
+                # Explicitly join artist_artists
+                arts1 = artists
+                arts1 &= artist_artists & artists
+
+            self.one(arts1.orm.joins)
+
+            self.type(artist_artists, arts1.orm.joins.first.entities)
+            self.one(arts1.orm.joins.first.entities.orm.joins)
+            objarts = arts1.orm.joins.first.entities.orm.joins.first.entities
+            self.type(artists, objarts)
+
+            arts1.sort()
+
+            self.chronicles.clear()
+
+            self.four(arts1)
+
+            for art, art1 in zip(arts, arts1):
+                self.eq(art.id, art1.id)
+
+                self.eq(fff, art1.orm.persistencestate)
+
+                self.four(art1.artist_artists)
+
+                art.artist_artists.sort()
+                art1.artist_artists.sort()
+
+                aass = zip(art.artist_artists, art1.artist_artists)
+                for aa, aa1 in aass:
+                    self.eq(fff, aa1.orm.persistencestate)
+                    self.eq(aa.id, aa.id)
+                    self.eq(
+                        aa.subject__artistid, 
+                        aa1.subject__artistid
+                    )
+                    self.eq(
+                        aa.object__artistid, 
+                        aa1.object__artistid
+                    )
+                    self.eq(aa.subject.id, aa1.subject.id)
+                    self.eq(aa.object.id, aa1.object.id)
+
+            self.zero(self.chronicles)
+
+        # Test joining the associated entities collections
+        # (artist_artists) with its composite (artists) where the
+        # composite's join is conditional.
+        for b in True, False:
+            if b:
+                # Explicitly join artist_artists
+                arts1 = artists() 
+                arts1 &= artist_artists.join(
+                            artists(
+                                'firstname = %s', 
+                                ('art-art_art-art-fn-1',)
+                            )
+                        )
+            else:
+                # Implicitly join artist_artists
+                arts1 = artists().join(
+                            artists(
+                                'firstname = %s', 
+                                ('art-art_art-art-fn-1',)
+                            )
+                        )
+            self.one(arts1.orm.joins)
+            self.type(artist_artists, arts1.orm.joins.first.entities)
+            self.one(arts1.orm.joins.first.entities.orm.joins)
+            objarts = arts1.orm.joins.first.entities.orm.joins.first.entities
+            self.type(artists, objarts)
+
+            arts1.sort()
+
+            self.four(arts1)
+
+            self.chronicles.clear()
+            for art, art1 in zip(arts, arts1):
+                self.eq(fff, art1.orm.persistencestate)
+                self.eq(art.id, art1.id)
+
+                aas = art1.artist_artists
+                self.one(aas)
+                self.eq(
+                    'art-art_art-art-fn-1', 
+                    aas.first.object.firstname
+                )
+                self.eq(fff, aas.first.orm.persistencestate)
+
+            self.zero(self.chronicles)
+
+        # Test joining the associated entities collections
+        # (artist_artists) with its composite (artists) where the
+        # composite's join is conditional along with the other two.
+        arts1 =  artists('firstname = %s', ('fn-1')).join(
+                    artist_artists(
+                        'role = %s', 
+                        ('art-art_art-role-0',)
+                     ).join(
+                         artists(
+                             'firstname = %s', 
+                             ('art-art_art-art-fn-0',)
+                         )
+                    )
+                 )
+
+        self.one(arts1)
+
+        self.chronicles.clear()
+        self.eq('fn-1', arts1.first.firstname)
+
+        aas1 = arts1.first.artist_artists
+        self.one(aas1)
+        self.eq(fff, aas1.first.orm.persistencestate)
+        self.eq('art-art_art-role-0', aas1.first.role)
+        self.eq('art-art_art-art-fn-0', aas1.first.object.firstname)
+        self.eq(arts1.first.id, aas1.first.subject.id)
+        self.eq(arts1.first.id, aas1.first.subject__artistid)
+        self.ne(
+            aas1.first.subject__artistid,
+            aas1.first.object__artistid
+        )
+        self.eq(
+            aas1.first.object.id,
+            aas1.first.object__artistid
+        )
+        self.zero(self.chronicles)
+
+        # Test joining a constituent (presentations) of the composite
+        # (artists) of the association (artist_artists) without
+        # conditions.
+        for b in True, False:
+            if b:
+                # Explicitly join the associations (artist_artists())
+                arts1 = artists.join(
+                            artist_artists.join(
+                                artists & presentations
+                            )
+                        )
+            else:
+                # Implicitly join the associations (artist_artists())
+                arts1 =  artists.join(
+                            artists & presentations
+                         )
+
+            self.four(arts1)
+
+            arts1.sort()
+
+            self.chronicles.clear()
+
+            for art, art1 in zip(arts, arts1):
+                self.eq(fff, art1.orm.persistencestate)
+                self.eq(art.id, art1.id)
+                aas = art.artist_artists.sorted()
+                aas1 = art1.artist_artists.sorted()
+                self.four(aas1)
+
+                for aa, aa1 in zip(aas, aas1):
+                    self.eq(fff, aa1.orm.persistencestate)
+                    self.eq(aa.id, aa1.id)
+                    artobj = aa.object
+                    artobj1 = aa1.object
+                    self.eq(fff, artobj1.orm.persistencestate)
+
+                    self.eq(artobj.id, artobj1.id)
+
+                    press = artobj.presentations.sorted()
+                    press1 = artobj1.presentations.sorted()
+
+                    self.four(press1)
+
+                    for pres, pres1 in zip(press, press1):
+                        self.eq(fff, pres1.orm.persistencestate)
+                        self.eq(pres.id, pres1.id)
+
+            self.zero(self.chronicles)
+
+        # Test joining a constituent (presentation) of the composite
+        # (artists) of the association (artist_artists) with conditions.
+        aarole = 'art-art_art-role-1'
+        fn = 'art-art_art-art-fn-1'
+        presname = 'art-art_art-art-presentation-name-1'
+        arts1 =  artists().join(
+                    artist_artists(role = aarole).join(
+                        artists(firstname = fn).join(
+                            presentations(name = presname)
+                        )
+                    )
+                 )
+
+
+        arts1.sort()
+
+        self.chronicles.clear()
+
+        for art, art1 in zip(arts, arts1):
+            self.eq(fff, art1.orm.persistencestate)
+
+            self.eq(art.id, art1.id)
+            aas1 = art1.artist_artists
+            self.one(aas1)
+
+            self.eq(aarole, aas1.first.role)
+            self.eq(fff, aas1.first.orm.persistencestate)
+
+            self.eq(fn, aas1.first.object.firstname)
+            self.eq(fff, aas1.first.object.orm.persistencestate)
+
+            self.one(aas1.first.object.presentations)
+
+            self.eq(
+                presname, 
+                aas1.first.object.presentations.first.name
+            )
+
+
+        self.zero(self.chronicles)
+
 
 ########################################################################
 # Test parties                                                         #

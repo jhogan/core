@@ -1540,8 +1540,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         else:
             # This test corrects a fairly deep issue that has only come
             # up with subentity-superassociation-subentity
-            # relationships. We use the below logic to return immediatly
-            # when an associations (self) collection has any
+            # relationships. We use the below logic to return
+            # immediately when an associations (self) collection has any
             # constituents that have already been visited. See the
             # brokenrule collections being tested at the bottom of
             # it_loads_and_saves_reflexive_associations_of_subentity_objects
