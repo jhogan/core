@@ -13436,6 +13436,12 @@ class test_selectors(tester):
             self._spear = dom.html(Shakespeare)
         return self._spear
 
+    @property
+    def _listhtml(self):
+        if not hasattr(self, '_lis'):
+            self._lis = dom.html(Listhtml)
+        return self._lis
+
     # TODO Address case-sensitivity
     def it_selects_with_selection_groups(self):
         html = self._shakespear
@@ -13872,16 +13878,69 @@ class test_selectors(tester):
             self.zero(els)
 
     def it_selects_nth_child(self):
-        html = self._shakespear
+        html = self._listhtml
 
+        ''' even '''
         sels = [
-            '[id^=speech]:nth-child(even)',
+            'li:nth-child(even)',
+            'li:nth-child(2n+0)',
         ]
 
         for sel in sels:
             els = html[sel]
-            self.count(48, els)
+            self.three(els)
         
+            for i, id in enumerate((1, 3, 5)):
+                self.eq(str(id), els[i].id)
+
+        ''' odd '''
+        sels = [
+            'li:nth-child(odd)',
+            'li:nth-child(2n+1)',
+            'li:nth-child(2n-1)',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.three(els)
+        
+            for i, id in enumerate((0, 2, 4)):
+                self.eq(str(id), els[i].id)
+
+        ''' every one '''
+        sels = [
+            'li:nth-child(1n+0)',
+            'li:nth-child(1n+1)',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.six(els)
+        
+            for i, id in enumerate((0, 1, 2, 3, 4, 5)):
+                self.eq(str(id), els[i].id)
+
+        ''' every one starting at the second child'''
+        sels = [
+            'li:nth-child(1n+2)',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.five(els)
+        
+            for i, id in enumerate((1, 2, 3, 4, 5)):
+                self.eq(str(id), els[i].id)
+
+        ''' every one starting at the sixth child'''
+        sels = [
+            'li:nth-child(1n+6)',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.one(els)
+            self.eq('5', els[0].id)
 
     def it_parses_chain_of_elements(self):
         ''' One '''
@@ -14882,6 +14941,49 @@ testhtml = tester.dedent('''
 </html>
 ''')
 
+
+Listhtml = '''
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <body>
+    <article>
+      <section>
+        <ol>
+          <li id="0">
+            <p>
+              This is list item 0.
+            </p>
+          </li>
+          <li id="1">
+            <p>
+              This is list item 1.
+            </p>
+          </li>
+          <li id="2">
+            <p>
+              This is list item 2.
+            </p>
+          </li>
+          <li id="3">
+            <p>
+              This is list item 3.
+            </p>
+          </li>
+          <li id="4">
+            <p>
+              This is list item 4.
+            </p>
+          </li>
+          <li id="5">
+            <p>
+              This is list item 5.
+            </p>
+          </li>
+        </ol>
+      </section>
+    </article>
+  </body>
+</html>
+'''
 
 Shakespeare = '''
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en" debug="true">

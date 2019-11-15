@@ -433,20 +433,36 @@ class element(entities.entity):
             raise DomMoveError('Parent already set')
         self._parent = v
 
-    @property
-    def siblings(self):
+    def getsiblings(self, includeself=False):
         els = elements()
         rent = self.parent
 
         if rent:
             for el in rent.elements:
-                if el is self:
+                if not includeself and el is self:
                     continue
 
                 els += el
 
         return els
 
+    @property
+    def siblings(self):
+        return self.getsiblings()
+
+    @property
+    def previous(self):
+        prev = None
+        for el in self.getsiblings(includeself=True):
+            if self is el:
+                return prev
+            prev = el
+        return None
+
+    @property
+    def next(self):
+        raise NotImplementedError('TODO')
+                
     @property
     def elements(self):
         if not hasattr(self, '_elements'):
@@ -564,6 +580,33 @@ class p(element):
 
             self += body
 paragraph = p
+
+class articles(elements):
+    pass
+
+class article(element):
+    """ The HTML <article> element represents a self-contained
+    composition in a document, page, application, or site, which is
+    intended to be independently distributable or reusable (e.g., in
+    syndication). Examples include: a forum post, a magazine or
+    newspaper article, or a blog entry.  
+    
+    https://developer.mozilla.org/en-US/docs/Web/HTML/Element/article
+    """
+    pass
+
+class sections(elements):
+    pass
+
+class section(element):
+    """ The HTML <section> element represents a standalone section —
+    which doesn't have a more specific semantic element to represent it
+    — contained within an HTML document. Typically, but not always,
+    sections have a heading.
+    
+    https://developer.mozilla.org/en-US/docs/Web/HTML/Element/section
+    """
+    pass
 
 class header(element):
     def __init__(self):
@@ -4002,15 +4045,19 @@ class selector(entities.entity):
 
         def _match_nth_child(self, el):
             a, b = self.arguments.a, self.arguments.b
-            rent = el.parent
 
-            if not rent:
-                return False
+            sibs = el.getsiblings(includeself=True)
 
-            for i, el1 in rent.elements.enumerate():
-                if el is el1:
-                    if i % a == 0:
-                        return True;
+            i = 0
+            while True:
+                ix = a * i + b - 1
+                sib = sibs(ix)
+                if not sib:
+                    break
+                
+                if sib is el:
+                    return True
+                i += 1
 
             return False
 
