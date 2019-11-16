@@ -13921,26 +13921,49 @@ class test_selectors(tester):
                 self.eq(str(id), els[i].id)
 
         ''' every one starting at the second child'''
-        sels = [
-            'li:nth-child(1n+2)',
-        ]
+        els = html['li:nth-child(1n+2)']
+        self.five(els)
+    
+        for i, id in enumerate((1, 2, 3, 4, 5)):
+            self.eq(str(id), els[i].id)
 
-        for sel in sels:
-            els = html[sel]
-            self.five(els)
-        
-            for i, id in enumerate((1, 2, 3, 4, 5)):
-                self.eq(str(id), els[i].id)
+        ''' every one starting at the fifth child'''
+        els = html['li:nth-child(1n+5)']
+        self.two(els)
+        self.eq('4', els.first.id)
+        self.eq('5', els.second.id)
 
         ''' every one starting at the sixth child'''
-        sels = [
-            'li:nth-child(1n+6)',
-        ]
+        els = html['li:nth-child(1n+6)']
+        self.one(els)
+        self.eq('5', els.first.id)
 
+        els = html['li:nth-child(2n+3)']
+        self.two(els)
+        self.eq('2', els.first.id)
+        self.eq('4', els.second.id)
+
+        els = html['li:nth-child(2n-3)']
+        self.three(els)
+        self.eq('0', els.first.id)
+        self.eq('2', els.second.id)
+        self.eq('4', els.third.id)
+
+        sels = [
+            'li:nth-child(5)',
+            'li:nth-child(0n+5)',
+        ]
         for sel in sels:
             els = html[sel]
             self.one(els)
-            self.eq('5', els[0].id)
+            self.eq('4', els.first.id)
+
+        els = html['li.my-class:nth-child(even)']
+        self.one(els)
+        self.eq('3', els.first.id)
+
+        els = html['li.my-class:nth-child(odd)']
+        self.zero(els)
 
     def it_parses_chain_of_elements(self):
         ''' One '''
@@ -14963,7 +14986,7 @@ ListHtml = '''
               This is list item 2.
             </p>
           </li>
-          <li id="3">
+          <li class="my-class" id="3">
             <p>
               This is list item 3.
             </p>
