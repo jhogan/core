@@ -13595,11 +13595,13 @@ class test_orm(tester):
         sngs1 = singers.join(
             artist_artists('role = %s', ('sng-art_art-role-0',))
         )
-        B()
 
         self.one(sngs1.orm.joins)
 
-        self.four(sngs1)
+        with ct() as t:
+            t(lambda: self.four(sngs1))
+            t.retrieved(sngs1)
+
 
         self.chronicles.clear()
 

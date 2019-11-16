@@ -1541,7 +1541,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             # This test corrects a fairly deep issue that has only come
             # up with subentity-superassociation-subentity
             # relationships. We use the below logic to return
-            # immediately when an associations (self) collection has any
+            # immediately when an association's (self) collection has any
             # constituents that have already been visited. See the
             # brokenrule collections being tested at the bottom of
             # it_loads_and_saves_reflexive_associations_of_subentity_objects
@@ -4467,21 +4467,22 @@ class orm:
 
     @staticmethod
     def link(edict):
-        """ For each entity or entities object in <edict>, search <edict> for any
-        composites, constituents and supers then assign them to the entity's
-        appropriate mapping object. 
+        """ For each entity or entities object in <edict>, search
+        <edict> for any composites, constituents and supers then assign
+        them to the entity's appropriate mapping object. 
 
-        :param dict[tuple, entity] edict: A dict of entity or entites objects
+        :param dict[tuple, entity] edict: A dict of entity or entites
+                                          objects
 
         :returns: void
 
-        For example, if <edict> contains an artist entity and a location entity,
-        and the location entity belongs to the artist entity (i.e, the location
-        entity's `artistid` foreign key has the same value as the artist
-        entity's id), the location entity will be assigned to the artist
-        entity's locations collection. So when the method is complete, the
-        location entity can be obtained from the artist entity via its
-        `locations` collection, i.e.:: 
+        For example, if <edict> contains an artist entity and a location
+        entity, and the location entity belongs to the artist entity
+        (i.e., the location entity's `artistid` foreign key has the same
+        value as the artist entity's id), the location entity will be
+        assigned to the artist entity's locations collection. So when
+        the method is complete, the location entity can be obtained from
+        the artist entity via its `locations` collection, i.e.:: 
             
             edict = dict()
             edict[(art.id, type(art)] = art
@@ -4493,14 +4494,14 @@ class orm:
             
             assert loc in art.locations
 
-        Noticed that the keys for <edict> are tuples of the entity's id and type.
-        Usally id is enough to distinguish between two entities. However, a
-        superentity will have the same id as its subentity. In those cases, the
-        class is needed to distinguish between the subentity and the super
-        entity. 
+        Noticed that the keys for <edict> are tuples of the entity's id
+        and type.  Usually, id is enough to distinguish between two
+        entities. However, a superentity will have the same id as its
+        subentity. In those cases, the class is needed to distinguish
+        between the subentity and the super entity. 
         """
 
-        # For each value in edict
+        # For each entity in edict
         for e in edict.values():
             
             # Does `e` have a foreign key that is the id of another entity in
@@ -4518,9 +4519,9 @@ class orm:
                     # corresponds to a composite on one side of an
                     # associations that wasn't loaded, e.g., given
                     # `artists().join(artist_artifacts())`,
-                    # artist_artifacts will have an FK for an artist and
-                    # an artifact, but only artist will have been
-                    # loaded.
+                    # artist_artifacts will have an FK for an
+                    # artist and an artifact, but only artist
+                    # will have been loaded.
                     continue
                     
                 # If we are here, a composite was found
@@ -4535,7 +4536,7 @@ class orm:
                 # For each of the composite mappings, if `e` is the same
                 # type as the map then assign `e` to that mappings's value
                 # property.  This links entity objects to their
-                # constituents (e.g., artist,locations.last)
+                # constituents (e.g., artist.locations.last)
                 for map1 in maps:
                     if isinstance(e, map1.entities.orm.entity):
                         if not map1.isloaded:
@@ -4548,12 +4549,11 @@ class orm:
                 # with their composites (e.g., loc.artist)
                 for map1 in e.orm.mappings.entitymappings:
                     if e.orm.isreflexive:
-                        # If the FK (map) is refers to the subject side
-                        # of the association, and the entitymapping
-                        # (map1) is the subject of the association, then
-                        # then FK's value should be the composite. The
-                        # same logic applies analogously to the object
-                        # side.
+                        # If the FK (map) refers to the subject side of
+                        # the association, and the entitymapping (map1)
+                        # is the subject of the association, then FK's
+                        # value should be the composite. The same logic
+                        # applies analogously to the object side.
                         if ( 
                             (map.issubjective and map1.issubjective)
                             or 
@@ -4970,7 +4970,7 @@ class orm:
 
         return False
 
-    # TODO This should probably be renamed superentities
+    # TODO This should probably be renamed superentities. 
     @property
     def superclasses(self):
         ''' Returns a list of entity classes or entity objects (depending on
@@ -4984,6 +4984,8 @@ class orm:
             e = e.orm.super
 
         return r
+
+        
 
     @property
     def super(self):
