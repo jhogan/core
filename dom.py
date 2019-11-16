@@ -4052,7 +4052,7 @@ class selector(entities.entity):
             while True:
                 ix = a * i + b - 1
                 sib = sibs(ix)
-                if not sib:
+                if not sib or i > sibs.count:
                     break
                 
                 if sib is el:
