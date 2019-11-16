@@ -13439,7 +13439,7 @@ class test_selectors(tester):
     @property
     def _listhtml(self):
         if not hasattr(self, '_lis'):
-            self._lis = dom.html(Listhtml)
+            self._lis = dom.html(ListHtml)
         return self._lis
 
     # TODO Address case-sensitivity
@@ -14942,7 +14942,7 @@ testhtml = tester.dedent('''
 ''')
 
 
-Listhtml = '''
+ListHtml = '''
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
   <body>
     <article>
