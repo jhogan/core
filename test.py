@@ -13587,8 +13587,8 @@ class test_orm(tester):
                 #self.is_(aa1.subject, sng1)
                 self.eq(aa1.subject.id, sng1.id)
 
-        # NOTE The above will lazy-load aa1.object 40 times
-        self.count(40, self.chronicles)
+        # NOTE The above will lazy-load aa1.object 16 times
+        self.count(16, self.chronicles)
 
         # Test singers joined with artist_artists where the association
         # has a conditional
@@ -13601,6 +13601,8 @@ class test_orm(tester):
         with ct() as t:
             t(lambda: self.four(sngs1))
             t.retrieved(sngs1)
+            for sng1 in sngs1:
+                t.retrieved(sng1.orm.super)
 
 
         self.chronicles.clear()
@@ -13612,12 +13614,12 @@ class test_orm(tester):
             self.eq(fff, sng1.orm.persistencestate)
 
             self.one(sng1.artist_artists)
-            B()
 
             aa1 = sng1.artist_artists.first
             self.eq(aa1.role, 'sng-art_art-role-0')
 
-            #self.is_(sng1, aa1.subject)
+            B()
+            self.is_(sng1, aa1.subject)
             self.eq(aa1.subject__artistid, aa1.subject.id)
             self.eq(aa1.object__artistid, aa1.object.id)
 

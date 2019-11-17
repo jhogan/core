@@ -4511,13 +4511,23 @@ class orm:
                 if not map.value:
                     continue
 
-                try:
-                    comp = edict[map.value.bytes, map.entity]
-                except KeyError:
-                    # Composite for the FK can't be found. The object
-                    # for the FK isn't in edict, perhaps because the FK
-                    # corresponds to a composite on one side of an
-                    # associations that wasn't loaded, e.g., given
+                # map.entity.orm.subclasses.first.entity.__class__]
+                clss = [map.entity]
+                clss += [x.entity for x in map.entity.orm.subclasses]
+                comp = None
+                for cls in clss:
+                    try:
+                        comp = edict[map.value.bytes, cls]
+                    except KeyError:
+                        pass
+                    else:
+                        break
+                else:
+                    # Composite for the FK can't be found. The
+                    # object for the FK isn't in edict, perhaps
+                    # because the FK corresponds to a composite
+                    # on one side of an associations that wasn't
+                    # loaded, e.g., given
                     # `artists().join(artist_artifacts())`,
                     # artist_artifacts will have an FK for an
                     # artist and an artifact, but only artist
@@ -4527,15 +4537,35 @@ class orm:
                 # If we are here, a composite was found
 
                 # Chain the composite's entitiesmappings and
-                # associationsmappings collection into `maps`
-                maps = itertools.chain(
-                    comp.orm.mappings.entitiesmappings,
-                    comp.orm.mappings.associationsmappings
-                )
+                # associationsmappings collection into `maps`. 
+                #
+                # Note we need to ascend the inheritence tree to include
+                # all the superentities as well. This for loading
+                # subentity objects join to super entity association:
+                #
+                #   singers.join(
+                #       artist_artists('role = 'sng-art_art-role-0')
+                #   )
+                #
+                # In the above, the `comp` will be `singers`. However,
+                # `singers` has no map to `artist_artists`. Its super
+                # does, though, because the `super` of `singer` is
+                # `artist`.
+
+                sup = comp
+                mapgens = list()
+                while sup:
+                    mapgens.append(sup.orm.mappings.entitiesmappings)
+                    mapgens.append(sup.orm.mappings.associationsmappings)
+                    sup = sup.orm.super
+
+                # Chain the above mapping generators so we can interate
+                # over each of them in the loop below.
+                maps = itertools.chain(*mapgens)
 
                 # For each of the composite mappings, if `e` is the same
-                # type as the map then assign `e` to that mappings's value
-                # property.  This links entity objects to their
+                # type as the map then assign `e` to that mappings's
+                # value property.  This links entity objects to their
                 # constituents (e.g., artist.locations.last)
                 for map1 in maps:
                     if isinstance(e, map1.entities.orm.entity):
