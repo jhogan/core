@@ -13880,17 +13880,24 @@ class test_selectors(tester):
     def it_selects_nth_child(self):
         html = self._listhtml
 
+        ''' single '''
+        els = html['li:nth-child(2)']
+        self.one(els)
+        self.eq('1', els.first.id)
+
         ''' even '''
         sels = [
             'li:nth-child(even)',
             'li:nth-child(2n+0)',
+            'li:nth-child(2n-2)',
+            'li:nth-child(2n-500)',
         ]
 
         for sel in sels:
             els = html[sel]
-            self.three(els)
+            self.six(els)
         
-            for i, id in enumerate((1, 3, 5)):
+            for i, id in enumerate((1, 3, 5, 7, 9, 11)):
                 self.eq(str(id), els[i].id)
 
         ''' odd '''
@@ -13902,9 +13909,9 @@ class test_selectors(tester):
 
         for sel in sels:
             els = html[sel]
-            self.three(els)
+            self.six(els)
         
-            for i, id in enumerate((0, 2, 4)):
+            for i, id in enumerate((0, 2, 4, 6, 8, 10)):
                 self.eq(str(id), els[i].id)
 
         ''' every one '''
@@ -13915,43 +13922,42 @@ class test_selectors(tester):
 
         for sel in sels:
             els = html[sel]
-            self.six(els)
+            self.count(12, els)
         
-            for i, id in enumerate((0, 1, 2, 3, 4, 5)):
-                self.eq(str(id), els[i].id)
+            for i in range(11):
+                self.eq(str(i), els[i].id)
 
         ''' every one starting at the second child'''
         els = html['li:nth-child(1n+2)']
-        self.five(els)
+        self.count(11, els)
     
-        for i, id in enumerate((1, 2, 3, 4, 5)):
-            self.eq(str(id), els[i].id)
+        for i in range(11):
+            self.eq(str(i + 1), els[i].id)
 
         ''' every one starting at the fifth child'''
         els = html['li:nth-child(1n+5)']
-        self.two(els)
-        self.eq('4', els.first.id)
-        self.eq('5', els.second.id)
+        self.eight(els)
+        for i in range(8):
+            self.eq(str(i + 4), els[i].id)
 
         ''' every one starting at the sixth child'''
         els = html['li:nth-child(1n+6)']
-        self.one(els)
-        self.eq('5', els.first.id)
+        self.seven(els)
+        for i in range(7):
+            self.eq(str(i + 5), els[i].id)
 
         els = html['li:nth-child(2n+3)']
-        self.two(els)
-        self.eq('2', els.first.id)
-        self.eq('4', els.second.id)
+        self.five(els)
+        for i, j in enumerate([2, 4, 6, 8, 10]):
+            self.eq(str(j), els[i].id)
 
         els = html['li:nth-child(2n-3)']
-        self.three(els)
-        self.eq('0', els.first.id)
-        self.eq('2', els.second.id)
-        self.eq('4', els.third.id)
+        expect = ['0', '2', '4', '6', '8', '10']
+        self.count(len(expect), els)
+        self.eq(expect, els.pluck('id'))
 
         sels = [
             'li:nth-child(5)',
-            'li:nth-child(0n+5)',
         ]
         for sel in sels:
             els = html[sel]
@@ -13964,6 +13970,216 @@ class test_selectors(tester):
 
         els = html['li.my-class:nth-child(odd)']
         self.zero(els)
+
+        sels = [
+            'li:nth-child(1n+0)',
+            'li:nth-child(n+0)',
+            'li:nth-child(n)',
+        ]
+
+        expect = [str(x) for x in range(12)]
+        for sel in sels:
+            els = html[sel]
+            self.count(len(expect), els)
+            self.eq(expect, els.pluck('id'))
+
+        sels = [
+            'li:nth-child(1n+3)',
+            'li:nth-child(n+3)',
+        ]
+
+        expect = [str(x) for x in range(2,12)]
+        for sel in sels:
+            els = html[sel]
+            self.count(len(expect), els)
+            self.eq(expect, els.pluck('id'))
+
+        sels = [
+            'li:nth-child(-n+3)',
+            'li:nth-child(-1n+3)',
+        ]
+        for sel in sels:
+            sels = dom.selectors(sel)
+            els = html[sel]
+            self.three(els)
+            for i in range(3):
+                self.eq(str(i), els[i].id)
+
+        sels = [
+            'li:nth-child(-2n+3)',
+        ]
+        for sel in sels:
+            sels = dom.selectors(sel)
+            els = html[sel]
+            self.two(els)
+            self.eq('0', els.first.id)
+            self.eq('2', els.second.id)
+
+        sels = [
+            'li:nth-child(-200n+3)',
+        ]
+        for sel in sels:
+            sels = dom.selectors(sel)
+            els = html[sel]
+            self.one(els)
+            self.eq('2', els.first.id)
+
+        sels = [
+            'li:nth-child(n+2):nth-child(-n+5)',
+        ]
+        for sel in sels:
+            sels = dom.selectors(sel)
+            els = html[sel]
+            self.four(els)
+            self.eq('1', els.first.id)
+            self.eq('2', els.second.id)
+            self.eq('3', els.third.id)
+            self.eq('4', els.fourth.id)
+
+        sels = [
+            'li:nth-child(n+2):nth-child(odd):nth-child(-n+9)',
+        ]
+        expect = [str(x) for x in range(2, 10, 2)]
+        for sel in sels:
+            sels = dom.selectors(sel)
+            els = html[sel]
+            self.count(len(expect), els)
+            self.eq(expect, els.pluck('id'))
+
+        sels = [
+            'li:nth-child(3n+1):nth-child(even)',
+        ]
+        expect = ['3', '9']
+        for sel in sels:
+            sels = dom.selectors(sel)
+            els = html[sel]
+            self.count(len(expect), els)
+            self.eq(expect, els.pluck('id'))
+
+    def it_selects_nth_last_child(self):
+        html = self._listhtml
+
+        # Selects every fourth element among any group of siblings,
+        # counting backwards from the last one 
+        sels = [
+            'li:nth-last-child(4n)',
+        ]
+
+        expect = ['0', '4', '8']
+        for sel in sels:
+            els = html[sel]
+            self.count(len(expect), els)
+            self.eq(expect, els.pluck('id'))
+
+        ''' last 2 rows '''
+        sels = [
+            'li:nth-last-child(-n+2)',
+            'li:nth-last-child(-1n+2)'
+        ]
+
+        expect = ['10', '11']
+        for sel in sels:
+            els = html[sel]
+            self.count(len(expect), els)
+            self.eq(expect, els.pluck('id'))
+
+        # Represents the odd rows of an HTML table: 1, 3, 5, etc.,
+        # counting from the end.
+        sels = [
+            'li:nth-last-child(odd)',
+            'li:nth-last-child(2n+1)',
+        ]
+
+        expect = [str(x) for x in range(1, 12, 2)]
+        for sel in sels:
+            els = html[sel]
+            self.count(len(expect), els)
+            self.eq(expect, els.pluck('id'))
+
+        # Represents the even rows of an HTML table: 2, 4, 6, etc.,
+        # counting from the end.
+        sels = [
+            'li:nth-last-child(even)',
+            'li:nth-last-child(2n)',
+        ]
+
+        expect = [str(x) for x in range(0, 11, 2)]
+        for sel in sels:
+            els = html[sel]
+            self.count(len(expect), els)
+            self.eq(expect, els.pluck('id'))
+
+        # Represents the seventh element, counting from the end.
+        sels = [
+            'li:nth-last-child(7)',
+        ]
+
+        expect = ['5']
+        for sel in sels:
+            els = html[sel]
+            self.count(len(expect), els)
+            self.eq(expect, els.pluck('id'))
+
+        # Represents elements 5, 10, 15, etc., counting from the end.
+        sels = [
+            'li:nth-last-child(5n)',
+        ]
+
+        expect = ['2', '7']
+        for sel in sels:
+            els = html[sel]
+            self.count(len(expect), els)
+            self.eq(expect, els.pluck('id'))
+
+        # Represents elements 4, 7, 10, 13, etc., counting from the end.
+        sels = [
+            'li:nth-last-child(3n+4)',
+        ]
+
+        expect = ['2', '5', '8']
+        for sel in sels:
+            els = html[sel]
+            self.count(len(expect), els)
+            self.eq(expect, els.pluck('id'))
+
+        # Represents the last three elements among a group of siblings.
+        sels = [
+            'li:nth-last-child(-n+3)'
+        ]
+
+        expect = ['9', '10', '11']
+        for sel in sels:
+            els = html[sel]
+            self.count(len(expect), els)
+            self.eq(expect, els.pluck('id'))
+
+        # Represents every <li> element among a group of siblings. This
+        # is the same as a simple li selector. (Since n starts at zero,
+        # while the last element begins at one, n and n+1 will both
+        # select the same elements.)
+        sels = [
+            'li:nth-last-child(n)',
+            'li:nth-last-child(n+1)',
+
+        ]
+        expect = [str(x) for x in range(12)]
+        for sel in sels:
+            els = html[sel]
+            self.eq(expect, els.pluck('id'))
+
+        # Represents every <li> that is the first element among a group
+        # of siblings, counting from the end. This is the same as the
+        # :last-child selector.
+        sels = [
+            'li:nth-last-child(1)',
+            'li:nth-last-child(0n+1)',
+
+        ]
+        expect = ['11']
+        for sel in sels:
+            els = html[sel]
+            self.eq(expect, els.pluck('id'))
+
 
     def it_parses_chain_of_elements(self):
         ''' One '''
@@ -14490,6 +14706,23 @@ class test_selectors(tester):
             self.eq(0, args.b)
 
         sels = [
+            'E:nth-child(-n)',
+            'E:nth-child(-1n + 0)',
+        ]
+
+        sels = [
+            'E:nth-child(-n + 0)',
+        ]
+
+        for i, sel in enumerate(sels):
+            sels = dom.selectors(sel)
+            self.str('E:nth-child(-1n+0)', sels, 'For: ' + sel)
+            self.repr('E:nth-child(-1n+0)', sels, 'For: ' + sel)
+            args = sels.first.elements.first.pseudoclasses.first.arguments
+            self.eq(-1, args.a)
+            self.eq(0, args.b)
+
+        sels = [
             'E:nth-child(2n)',
             'E:nth-child(2n + 0)',
         ]
@@ -14520,10 +14753,10 @@ class test_selectors(tester):
 
         sel =  'E:nth-child( -n+ 6)'
         sels = dom.selectors(sel)
-        self.str('E:nth-child(1n+6)', sels)
-        self.repr('E:nth-child(1n+6)', sels)
+        self.str('E:nth-child(-1n+6)', sels)
+        self.repr('E:nth-child(-1n+6)', sels)
         args = sels.first.elements.first.pseudoclasses.first.arguments
-        self.eq(1, args.a)
+        self.eq(-1, args.a)
         self.eq(6, args.b)
 
         sel = 'E:nth-child( +6 )'
@@ -14999,6 +15232,36 @@ ListHtml = '''
           <li id="5">
             <p>
               This is list item 5.
+            </p>
+          </li>
+          <li id="6">
+            <p>
+              This is list item 6.
+            </p>
+          </li>
+          <li id="7">
+            <p>
+              This is list item 7.
+            </p>
+          </li>
+          <li id="8">
+            <p>
+              This is list item 8.
+            </p>
+          </li>
+          <li id="9">
+            <p>
+              This is list item 9.
+            </p>
+          </li>
+          <li id="10">
+            <p>
+              This is list item 10.
+            </p>
+          </li>
+          <li id="11">
+            <p>
+              This is list item 11.
             </p>
           </li>
         </ol>

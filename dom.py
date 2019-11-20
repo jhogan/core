@@ -4007,7 +4007,7 @@ class selector(entities.entity):
 
                             # gs[0] would be None for 'n+0'
                             if a is None:
-                                a = 1
+                                a = int(gs[0] + '1')
 
                             b = int(gs[2] + gs[3])
 
@@ -4043,23 +4043,38 @@ class selector(entities.entity):
         def _match_root(self, el):
             return el is el.root
 
-        def _match_nth_child(self, el):
+        def _match_nth_child_starting_at(self, begining, el):
             a, b = self.arguments.a, self.arguments.b
 
             sibs = el.getsiblings(includeself=True)
 
-            i = 0
+            if not begining:
+                sibs.reverse()
+
+            n = 0
             while True:
-                ix = a * i + b - 1
+                ix = a * n + b - 1
+
                 sib = sibs(ix)
-                if not sib or i > sibs.count:
+                if not sib or n > sibs.count:
                     break
                 
-                if sib is el:
+                if ix >= 0 and sib is el:
                     return True
-                i += 1
+
+                n += 1
 
             return False
+
+        def _match_nth_child(self, el):
+            return self._match_nth_child_starting_at(
+                begining=True, el=el
+            )
+
+        def _match_nth_last_child(self, el):
+            return self._match_nth_child_starting_at(
+                begining=False, el=el
+            )
 
         def match(self, el):
             pcls = self.value.replace('-', '_')
