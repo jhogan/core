@@ -160,6 +160,15 @@ class attribute(entities.entity):
         self.name = name
         self.value = v
 
+    # TODO All attributes should be returned as str values. Some work
+    # needs to done to ensure that 'None' and '<undef>' aren't returned,
+    # however.
+    '''
+    @property
+    def value(self):
+        return str(self._value)
+    '''
+
     @staticmethod
     def create(name, v=undef):
         if name == 'class':
@@ -3465,6 +3474,23 @@ class strongs(elements):
 class strong(element):
     pass
 
+class ss(elements):
+    pass
+
+class s(element):
+    """ The HTML <s> element renders text with a strikethrough, or a
+    line through it. Use the <s> element to represent things that are no
+    longer relevant or no longer accurate. However, <s> is not
+    appropriate when indicating document edits; for that, use the <del>
+    and <ins> elements, as appropriate.
+
+    https://developer.mozilla.org/en-US/docs/Web/HTML/Element/s
+    """
+    pass
+
+strikethroughs = ss
+strikethrough = s
+
 class ems(elements):
     """ A collection of ``emphasis`` elements.
     """
@@ -3500,6 +3526,55 @@ class spans(elements):
 
 class span(element):
     pass
+
+class dls(elements):
+    pass
+
+class dl(element):
+    """ The HTML <dl> element represents a description list. The element
+    encloses a list of groups of terms (specified using the <dt>
+    element) and descriptions (provided by <dd> elements). Common uses
+    for this element are to implement a glossary or to display metadata
+    (a list of key-value pairs).
+
+    https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dl
+    """
+    pass
+
+descriptionlists = dls
+descriptionlist = dl
+
+class dts(elements):
+    pass
+
+class dt(element):
+    """ The HTML <dt> element specifies a term in a description or
+    definition list, and as such must be used inside a <dl> element. It
+    is usually followed by a <dd> element; however, multiple <dt>
+    elements in a row indicate several terms that are all defined by the
+    immediate next <dd> element.
+
+    https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dt
+    """
+    pass
+
+definitionlists = dts
+definitionlist  = dt
+
+class dds(elements):
+    pass
+
+class dd(element):
+    """ The HTML <dd> element provides the description, definition, or
+    value for the preceding term (<dt>) in a description list (<dl>).
+
+    https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dd
+    """
+    pass
+
+descriptiondetails = dds
+descriptiondetail  = dd
+
 
 class codes(elements):
     pass
