@@ -4118,13 +4118,16 @@ class selector(entities.entity):
         def _match_root(self, el):
             return el is el.root
 
-        def _match_nth_child_starting_at(self, begining, el):
+        def _match_nth_child_starting_at(self, begining, el, oftype):
             a, b = self.arguments.a, self.arguments.b
 
             sibs = el.getsiblings(includeself=True)
 
             if not begining:
                 sibs.reverse()
+
+            if oftype:
+                sibs.remove(lambda x: type(x) is not type(el))
 
             n = 0
             while True:
@@ -4143,13 +4146,38 @@ class selector(entities.entity):
 
         def _match_nth_child(self, el):
             return self._match_nth_child_starting_at(
-                begining=True, el=el
+                begining=True, el=el, oftype=False
             )
 
         def _match_nth_last_child(self, el):
             return self._match_nth_child_starting_at(
-                begining=False, el=el
+                begining=False, el=el, oftype=False
             )
+
+        def _match_nth_of_type(self, el):
+            return self._match_nth_child_starting_at(
+                begining=True, el=el, oftype=True
+            )
+
+        def _match_nth_last_of_type(self, el):
+            return self._match_nth_child_starting_at(
+                begining=False, el=el, oftype=True
+            )
+
+        def _match_first_child(self, el):
+            return el.getsiblings(includeself=True).first is el
+
+        def _match_last_child(self, el):
+            return el.getsiblings(includeself=True).last is el
+
+        def _match_first_of_type(self, el):
+            sibs = el.getsiblings(includeself=True)
+
+            for sib in sibs:
+                if type(sib) is type(el):
+                    if sib is el:
+                        return True
+            return False
 
         def match(self, el):
             pcls = self.value.replace('-', '_')

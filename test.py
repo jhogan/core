@@ -14180,6 +14180,243 @@ class test_selectors(tester):
             els = html[sel]
             self.eq(expect, els.pluck('id'))
 
+    def it_selects_nth_of_type(self):
+        html = dom.html('''
+		<section>
+		   <h1>Words</h1>
+		   <p>Little</p>
+		   <p>Piggy</p>
+		</section>
+		''')
+
+        els = html('p:nth-child(2)')
+        self.one(els)
+        self.eq('Little', els.first.elements.first.html)
+
+        els = html('p:nth-of-type(2)')
+        self.one(els)
+        self.eq('Piggy', els.first.elements.first.html)
+
+        html = dom.html('''
+            <section>
+               <h1>Words</h1>
+               <h2>Words</h2>
+               <p>Little</p>
+               <p>Piggy</p>
+            </section>
+		''')
+
+        els = html('p:nth-child(2)')
+        self.zero(els)
+
+        els = html('p:nth-of-type(2)')
+        self.one(els)
+        self.eq('Piggy', els.first.elements.first.html)
+
+        # Take the ListHtml and replacing all the <ol> and its <li>s
+        # with the same number of alternating <span>s and <div>s.
+        html = dom.html(ListHtml)
+        sec = html[0].elements[0].elements[0].elements[0]
+        ol = sec.elements.first
+        cnt = ol.elements.count
+
+        sec.elements.clear()
+
+        for i in range(cnt):
+            el = dom.div if i % 2 else dom.span
+            el = el('This is item ' + str(i))
+            el.id = str(i)
+            sec.elements += el
+
+        sels = [
+            'span:nth-of-type(3)',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.one(els)
+            self.eq('4', els.first.id)
+
+        sels = [
+            'span:nth-of-type(n+3)',
+        ]
+        expect = ['4', '6', '8', '10']
+        for sel in sels:
+            els = html[sel]
+            self.count(len(expect), els)
+            self.eq(expect, els.pluck('id'))
+
+        sels = [
+            'span:nth-of-type(-n+4)',
+        ]
+
+        expect = ['0', '2', '4', '6']
+        for sel in sels:
+            els = html[sel]
+            self.count(len(expect), els)
+            self.eq(expect, els.pluck('id'))
+
+        sels = [
+            'div:nth-of-type(-n+5)',
+        ]
+
+        expect = ['1', '3', '5', '7', '9']
+        for sel in sels:
+            els = html[sel]
+            self.count(len(expect), els)
+            self.eq(expect, els.pluck('id'))
+
+        sels = [
+            'span:nth-of-type(n+3):nth-of-type(-n+6)',
+        ]
+
+        expect = ['4', '6', '8', '10']
+        for sel in sels:
+            els = html[sel]
+            self.count(len(expect), els)
+            self.eq(expect, els.pluck('id'))
+
+        sels = [
+            'div:nth-of-type(n+1):nth-of-type(-n+3)',
+        ]
+
+        expect = ['1', '3', '5']
+        for sel in sels:
+            els = html[sel]
+            self.count(len(expect), els)
+            self.eq(expect, els.pluck('id'))
+
+        sels = [
+            'span:nth-of-type(n+3):nth-of-type(odd):nth-of-type(-n+6)',
+        ]
+
+        expect = ['4', '8']
+        for sel in sels:
+            els = html[sel]
+            self.count(len(expect), els)
+            self.eq(expect, els.pluck('id'))
+
+        sels = [
+            'div:nth-of-type(n+1):nth-of-type(even):nth-of-type(-n+3)',
+        ]
+
+        expect = ['3']
+        for sel in sels:
+            els = html[sel]
+            self.count(len(expect), els)
+            self.eq(expect, els.pluck('id'))
+
+    def it_selects_nth_last_of_type(self):
+        html = dom.html(ListHtml)
+
+        sels = [
+            'li:nth-last-of-type(2)',
+        ]
+
+        expect = ['10']
+        for sel in sels:
+            els = html[sel]
+            self.count(len(expect), els)
+            self.eq(expect, els.pluck('id'))
+
+        html = dom.html('''
+            <div>
+                <span>This is a span.</span>
+                <span>This is another span.</span>
+                <em>This is emphasized.</em>
+                <span>Wow, this span gets limed!!!</span>
+                <s>This is struck through.</s>
+                <span>Here is one last span.</span>
+            </div>
+        ''')
+
+        sels = [
+            'span:nth-last-of-type(2)',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.one(els)
+            expect = 'Wow, this span gets limed!!!'
+            self.eq(expect, els.first.elements.first.html)
+
+    def it_selects_first_child(self):
+        html = dom.html('''
+            <body>
+                <p id="1"> The last P before the note.</p>
+                <div>
+                    <p id="2"> The first P inside the note.</p>
+                </div>
+            </body>
+        ''')
+
+        els = html['p:first-child']
+        self.two(els)
+        self.eq('1', els.first.id)
+        self.eq('2', els.second.id)
+
+        html = dom.html('''
+            <body>
+                <p id="1"> The last P before the note.</p>
+                <div class="note">
+                    <h2> Note </h2>
+                    <p> id="2" The first P inside the note.</p>
+                </div>
+            </body>
+        ''')
+        els = html['p:first-child']
+        self.one(els)
+        self.eq('1', els.first.id)
+    
+    def it_selects_last_child(self):
+        html = dom.html('''
+        <div>
+            <p id="1">This text isn't selected.</p>
+            <p id="2">This text is selected!</p>
+        </div>
+
+        <div>
+            <p> id="3"This text isn't selected.</p>
+            <h2 id="4">This text isn't selected: it's not a `p`.</h2>
+        </div>
+        ''')
+
+        els = html['p:last-child']
+        self.one(els)
+        self.eq('2', els.first.id)
+
+    def it_selects_first_of_type(self):
+        html = dom.html('''
+        <dl>
+            <dt>gigogne</dt>
+            <dd>
+                <dl>
+                    <dt>fusée</dt>
+                    <dd>multistage rocket</dd>
+                    <dt>table</dt>
+                    <dd>nest of tables</dd>
+                </dl>
+            </dd>
+        </dl>
+        ''')
+
+        els = html['dt dt:first-of-type']
+        print(els)
+
+
+        return
+        # https://developer.mozilla.org/en-US/docs/Web/CSS/:first-of-type
+        html = dom.html('''
+            <article>
+            <div>This `div` is first!</div>
+            <div>This <span>nested `span` is first</span>!</div>
+            <div>This <em>nested `em` is first</em>, but this <em>nested `em`
+            is last</em>!</div>
+            <div>This <span>nested `span` gets styled</span>!</div>
+            <b>This `b` qualifies!</b>
+            <div>This is the final `div`.</div>
+            </article>
+        ''')
 
     def it_parses_chain_of_elements(self):
         ''' One '''
