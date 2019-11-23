@@ -13443,6 +13443,10 @@ class test_selectors(tester):
         return self._lis
 
     # TODO Address case-sensitivity
+    # TODO Chained elements with implied universal elements for
+    # pseudoclasses were seen to not work, e.g., 'article :first-of-type' 
+    # TODO Selectors should ignore `dom.text` elements. See
+    # `dom.pseudoclass._match_first_of_type`.
     def it_selects_with_selection_groups(self):
         html = self._shakespear
 

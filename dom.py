@@ -3508,6 +3508,41 @@ class em(element):
 emphases = ems
 emphasis = em
 
+class is_(elements):
+    pass
+
+class i(element):
+    """ The HTML <i> element represents a range of text that is set off
+    from the normal text for some reason. Some examples include
+    technical terms, foreign language phrases, or fictional character
+    thoughts. It is typically displayed in italic type.
+
+    https://developer.mozilla.org/en-US/docs/Web/HTML/Element/i
+    """
+    pass
+
+italics = is_
+italic = i
+
+class bs(elements):
+    pass
+
+class b(element):
+    """ The HTML Bring Attention To element (<b>) is used to draw the
+    reader's attention to the element's contents, which are not
+    otherwise granted special importance. This was formerly known as the
+    Boldface element, and most browsers still draw the text in boldface.
+    However, you should not use <b> for styling text; instead, you
+    should use the CSS font-weight property to create boldface text, or
+    the <strong> element to indicate that text is of special importance.
+
+    https://developer.mozilla.org/en-US/docs/Web/HTML/Element/b
+    """
+    pass
+
+bolds = bs
+bold = b
+
 class divs(elements):
     pass
 
