@@ -14391,11 +14391,68 @@ class test_selectors(tester):
 
     def it_selects_first_of_type(self):
         html = dom.html('''
+        <body>
+            <h2 id="0">Heading</h2>
+            <p id="1">Paragraph 1</p>
+            <p id="2">Paragraph 2</p>
+        </body>
+        ''')
+
+        els = html['p:first-of-type']
+        self.one(els)
+        self.eq('1', els.first.id)
+
+        # https://developer.mozilla.org/en-US/docs/Web/CSS/:first-of-type
+        html = dom.html('''
+            <article>
+                <div id="0">
+                    This `div` is first!
+                </div>
+                <div>
+                    This 
+                    <span id="1">
+                        nested `span` is first
+                    </span>
+                !
+                </div>
+                <div>
+                    This 
+                    <em id="2">
+                        nested `em` is first
+                    </em>
+                    , but this 
+                    <em>
+                        nested `em` is last
+                    </em>!
+                </div>
+                <div>
+                    This 
+                    <span id="3">
+                        nested `span` gets styled
+                    </span>!
+                </div>
+                <b id="4">
+                    This `b` qualifies!
+                </b>
+                <div>
+                    This is the final `div`.
+                </div>
+            </article>
+        ''')
+
+        # FIXME This should work too but doesn't: 
+        #     `article :first-of-type'
+        els = html[':first-of-type']
+        expect = [str(x) for x in range(5)]
+        self.count(len(expect), els)
+        self.eq(expect, els.pluck('id'))
+
+        html = dom.html('''
         <dl>
-            <dt>gigogne</dt>
+            <dt id="0">gigogne</dt>
             <dd>
                 <dl>
-                    <dt>fusée</dt>
+                    <dt id="1">fusée</dt>
                     <dd>multistage rocket</dd>
                     <dt>table</dt>
                     <dd>nest of tables</dd>
@@ -14404,23 +14461,109 @@ class test_selectors(tester):
         </dl>
         ''')
 
-        els = html['dt dt:first-of-type']
-        print(els)
+        els = html['dt:first-of-type']
+        expect = [str(x) for x in range(2)]
+        self.count(len(expect), els)
+        self.eq(expect, els.pluck('id'))
 
-
-        return
-        # https://developer.mozilla.org/en-US/docs/Web/CSS/:first-of-type
+    def it_selects_last_of_type(self):
         html = dom.html('''
-            <article>
-            <div>This `div` is first!</div>
-            <div>This <span>nested `span` is first</span>!</div>
-            <div>This <em>nested `em` is first</em>, but this <em>nested `em`
-            is last</em>!</div>
-            <div>This <span>nested `span` gets styled</span>!</div>
-            <b>This `b` qualifies!</b>
-            <div>This is the final `div`.</div>
-            </article>
+        <body>
+            <h2>Heading</h2>
+            <p>Paragraph 1</p>
+            <p id="0">Paragraph 2</p>
+        </body>
         ''')
+
+        els = html['p:last-of-type']
+        self.one(els)
+        self.eq('0', els.first.id)
+
+        # https://developer.mozilla.org/en-US/docs/Web/CSS/:last-of-type
+        html = dom.html('''
+        <article>
+            <div>This `div` is first.</div>
+            <div>This <span id="0">nested `span` is last</span>!</div>
+            <div>This <em>nested `em` is first</em>, but this
+            <em id="1">nested `em` is last</em>!</div>
+            <b id="2">This `b` qualifies!</b>
+            <div id="3">This is the final `div`!</div>
+        </article>
+        ''')
+
+        # FIXME This should work too but doesn't: 
+        #     `article :last-of-type'
+        els = html[':last-of-type']
+        expect = [str(x) for x in range(4)]
+        self.count(len(expect), els)
+        self.eq(expect, els.pluck('id'))
+
+        html = dom.html('''
+        <body>
+            <div>
+                <span>Corey,</span>
+                <span>Yehuda,</span>
+                <span>Adam,</span>
+                <span id="0">Todd</span>
+            </div>
+            <div>
+                <span>Jörn,</span>
+                <span>Scott,</span>
+                <span id="1">Timo,</span>
+                <b>Nobody</b>
+            </div>
+        </body>
+        ''')
+
+        els = html['span:last-of-type']
+        expect = [str(x) for x in range(2)]
+        self.count(len(expect), els)
+        self.eq(expect, els.pluck('id'))
+
+    def it_selects_only_child(self):
+        html = dom.html('''
+        <div>
+            <div id="0">
+                I am an only child.
+            </div>
+        </div>
+        <div>
+            <div>
+                I am the 1st sibling.
+            </div>
+            <div>
+                I am the 2nd sibling.
+            </div>
+            <div>
+                I am the 3rd sibling, 
+                <div id="1">
+                    but this is an only child.
+                </div>
+            </div>
+        </div>
+        ''')
+
+        els = html[':only-child']
+        expect = [str(x) for x in range(2)]
+        self.count(len(expect), els)
+        self.eq(expect, els.pluck('id'))
+        
+        html = dom.html('''
+        <body>
+
+            <div><p id="0">This is a paragraph.</p></div>
+
+            <div><span>This is a span.</span><p>This is a
+            paragraph.</p></div>
+
+        </body>
+        ''')
+
+        els = html[':only-child']
+        print(els)
+        expect = [str(x) for x in range(1)]
+        self.count(len(expect), els)
+        self.eq(expect, els.pluck('id'))
 
     def it_parses_chain_of_elements(self):
         ''' One '''

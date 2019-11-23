@@ -4157,6 +4157,7 @@ class selector(entities.entity):
             a, b = self.arguments.a, self.arguments.b
 
             sibs = el.getsiblings(includeself=True)
+            sibs.remove(lambda x: type(x) is text)
 
             if not begining:
                 sibs.reverse()
@@ -4200,21 +4201,42 @@ class selector(entities.entity):
             )
 
         def _match_first_child(self, el):
-            return el.getsiblings(includeself=True).first is el
+            sibs = el.getsiblings(includeself=True)
+            sibs.remove(lambda x: type(x) is text)
+            return sibs.first is el
 
         def _match_last_child(self, el):
-            return el.getsiblings(includeself=True).last is el
-
-        def _match_first_of_type(self, el):
             sibs = el.getsiblings(includeself=True)
+            sibs.remove(lambda x: type(x) is text)
+            return sibs.last is el
+
+        def _match_x_of_type(self, el, last=False):
+            sibs = el.getsiblings(includeself=True)
+            sibs.remove(lambda x: type(x) is text)
+
+            if last:
+                sibs = sibs.reversed()
 
             for sib in sibs:
                 if type(sib) is type(el):
-                    if sib is el:
-                        return True
+                    return sib is el
+                        
             return False
 
+        def _match_first_of_type(self, el):
+            return self._match_x_of_type(el=el)
+
+        def _match_last_of_type(self, el):
+            return self._match_x_of_type(el=el, last=True)
+
+        def _match_only_child(self, el):
+            sibs = el.getsiblings(includeself=True)
+            return sibs.where(lambda x: type(x) is not text).hasone
+
         def match(self, el):
+            if type(el) is text:
+                return False
+
             pcls = self.value.replace('-', '_')
             
             return getattr(self, '_match_' + pcls)(el)
