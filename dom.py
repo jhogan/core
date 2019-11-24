@@ -4239,6 +4239,10 @@ class selector(entities.entity):
             sibs = el.getsiblings(includeself=True)
             return sibs.where(lambda x: type(x) is not text).hasone
 
+        def _match_only_of_type(self, el):
+            sibs = el.getsiblings(includeself=True)
+            return sibs.where(lambda x: type(x) is type(el)).hasone
+
         def match(self, el):
             if type(el) is text:
                 return False

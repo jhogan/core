@@ -14521,6 +14521,7 @@ class test_selectors(tester):
         self.eq(expect, els.pluck('id'))
 
     def it_selects_only_child(self):
+
         html = dom.html('''
         <div>
             <div id="0">
@@ -14560,10 +14561,122 @@ class test_selectors(tester):
         ''')
 
         els = html[':only-child']
-        print(els)
         expect = [str(x) for x in range(1)]
         self.count(len(expect), els)
         self.eq(expect, els.pluck('id'))
+
+    def it_selects_only_of_type(self):
+        sels = [
+            ':only-of-type',
+            ':first-of-type:last-of-type'
+            ':nth-of-type(1):nth-last-of-type(1)'
+        ]
+
+        html = dom.html('''
+        <main>
+            <div>I am `div` #1.</div>
+            <p id="0">I am the only `p` among my siblings.</p>
+            <div>I am `div` #2.</div>
+            <div>I am `div` #3.
+                <i id="1">I am the only `i` child.</i>
+                <em>I am `em` #1.</em>
+                <em>I am `em` #2.</em>
+            </div>
+        </main>
+        ''')
+
+        for sel in sels:
+            els = html[sel]
+            expect = [str(x) for x in range(2)]
+            self.count(len(expect), els)
+            self.eq(expect, els.pluck('id'))
+
+        html = dom.html('''
+        <body>
+
+            <div><p id="0">This is a paragraph.</p></div>
+
+            <div><p>This is a paragraph.</p><p>This is a
+            paragraph.</p></div>
+
+        </body>
+        ''')
+
+        for sel in sels:
+            els = html[sel]
+            expect = [str(x) for x in range(1)]
+            self.count(len(expect), els)
+            self.eq(expect, els.pluck('id'))
+
+        html = dom.html('''
+        <ul>
+            <li id="0">I'm all alone!</li>
+        </ul>  
+
+        <ul>
+            <li>We are together.</li>
+            <li>We are together.</li>
+            <li>We are together.</li>
+        </ul>
+        ''')
+
+        for sel in sels:
+            els = html[sel]
+            expect = [str(x) for x in range(1)]
+            self.count(len(expect), els)
+            self.eq(expect, els.pluck('id'))
+
+        html = dom.html('''
+        <div>
+          <p id="0">I'm the only paragraph element in this div.</p>  
+          <ul id="1">
+            <li>List Item</li>
+            <li>List Item</li>
+          </ul>  
+        </div>
+
+        <div>
+          <p>There are multiple paragraphs inside this div.</p>  
+          <p>Yes there are.</p>  
+          <ul id="2">
+            <li>List Item</li>
+            <li>List Item</li>
+          </ul>  
+        </div>        
+        ''')
+
+        for sel in sels:
+            els = html[sel]
+            expect = [str(x) for x in range(3)]
+            self.count(len(expect), els)
+            self.eq(expect, els.pluck('id'))
+
+        html = dom.html('''
+        <main>
+            <div>
+              <p id="0">I'm the only paragraph element in this div.</p>  
+              <ul id="1">
+                <li>List Item</li>
+                <li>List Item</li>
+              </ul>  
+            </div>
+
+            <div>
+              <p>There are multiple paragraphs inside this div.</p>  
+              <p>Yes there are.</p>  
+              <ul id="2">
+                <li>List Item</li>
+                <li>List Item</li>
+              </ul>  
+            </div> 
+        </main>
+        ''')
+
+        for sel in sels:
+            els = html[sel]
+            expect = [str(x) for x in range(3)]
+            self.count(len(expect), els)
+            self.eq(expect, els.pluck('id'))
 
     def it_parses_chain_of_elements(self):
         ''' One '''
