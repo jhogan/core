@@ -3562,6 +3562,12 @@ class spans(elements):
 class span(element):
     pass
 
+class mains(elements):
+    pass
+
+class main(element):
+    pass
+
 class dls(elements):
     pass
 
