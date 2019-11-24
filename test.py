@@ -5368,6 +5368,8 @@ class test_orm(tester):
         # Each firstname will be unique so we should should only get one result
         # from this query and it should be entity-equivalent sngs.first
         self.chronicles.clear()
+
+        # ref: 7adeeffe
         sngs1 = singers("firstname = '%s'" % sngs.first.firstname, ())
         self.zero(self.chronicles) # defered
 
@@ -13633,36 +13635,36 @@ class test_orm(tester):
         for b in False, True:
             if b:
                 # Implicitly join artist_artists
-                arts1 = artists & artists
+                sngs1 = singers & singers
             else:
                 # Explicitly join artist_artists
-                arts1 = artists
-                arts1 &= artist_artists & artists
+                sngs1 = singers
+                sngs1 &= artist_artists & singers
 
-            self.one(arts1.orm.joins)
+            self.one(sngs1.orm.joins)
 
-            self.type(artist_artists, arts1.orm.joins.first.entities)
-            self.one(arts1.orm.joins.first.entities.orm.joins)
-            objarts = arts1.orm.joins.first.entities.orm.joins.first.entities
-            self.type(artists, objarts)
+            self.type(artist_artists, sngs1.orm.joins.first.entities)
+            self.one(sngs1.orm.joins.first.entities.orm.joins)
+            objsngs = sngs1.orm.joins.first.entities.orm.joins.first.entities
+            self.type(singers, objsngs)
 
-            arts1.sort()
+            sngs1.sort()
 
             self.chronicles.clear()
 
-            self.four(arts1)
+            self.four(sngs1)
 
-            for art, art1 in zip(arts, arts1):
-                self.eq(art.id, art1.id)
+            for sng, sng1 in zip(sngs, sngs1):
+                self.eq(sng.id, sng1.id)
 
-                self.eq(fff, art1.orm.persistencestate)
+                self.eq(fff, sng1.orm.persistencestate)
 
-                self.four(art1.artist_artists)
+                self.four(sng1.artist_artists)
 
-                art.artist_artists.sort()
-                art1.artist_artists.sort()
+                sng.artist_artists.sort()
+                sng1.artist_artists.sort()
 
-                aass = zip(art.artist_artists, art1.artist_artists)
+                aass = zip(sng.artist_artists, sng1.artist_artists)
                 for aa, aa1 in aass:
                     self.eq(fff, aa1.orm.persistencestate)
                     self.eq(aa.id, aa.id)
@@ -13678,6 +13680,7 @@ class test_orm(tester):
                     self.eq(aa.object.id, aa1.object.id)
 
             self.zero(self.chronicles)
+        return
 
         # Test joining the associated entities collections
         # (artist_artists) with its composite (artists) where the

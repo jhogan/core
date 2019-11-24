@@ -1181,9 +1181,10 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 # standard join.
                 break
         else:
-            # If es was not in the above `maps` collection, check if it is
-            # mapped to `self` through an `assocation`. This is for join
-            # operations where the `associations1 collection is implied, i.e.:
+            # If es was not in the above `maps` collection, check if it
+            # is mapped to `self` through an `assocation`. This is for
+            # join operations where the `associations` collection is
+            # implied, i.e.:
             #
             #     artist().join(artifacts())
             # 
@@ -1191,41 +1192,62 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             #
             #     artist().join(artist_artifacts().join(artifacts()))
 
-            # For each of self's associations mappings
-            for map in self.orm.mappings.associationsmappings:
+            sup = self.orm.entity
+            while sup:
+                # For each of self's associations mappings and the
+                # associations mappings of it's superentities
+                for map in sup.orm.mappings.associationsmappings:
 
-                # If the association is reflexive, we are only
-                # interested in it if self and es are the same type.
-                # However, if the association is not reflexive, we are
-                # not interested in it if self and es are the same type.
-                if map.associations.orm.isreflexive:
-                    if type(self) is not type(es):
-                        continue
-                else:
-                    if type(self) is type(es):
-                        continue
+                    # If the association is reflexive, we are only
+                    # interested in it if self and es are the same type.
+                    # However, if the association is not reflexive, we
+                    # are not interested in it if self and es are the
+                    # same type.
+                    if map.associations.orm.isreflexive:
+                        if type(self) is not type(es):
+                            continue
+                    else:
+                        if type(self) is type(es):
+                            continue
 
-                # For each entity mapping in this associationsmapping
-                for map1 in map.associations.orm.mappings.entitymappings:
+                        # If the association is not reflexive, 
+                        # we don't care about the associations of the
+                        # supers. Ascending the inheritance is only
+                        # useful when we want to have implicit reflexive
+                        # joins with subentity objects:
+                        #
+                        #   singers.join(singers)
+                        #
+                        # Without this check, joining subentity objects
+                        # to their superentity results in problems. See
+                        # ref: 7adeeffe.
+                        if self.orm.entity is not sup:
+                            continue
 
+                    # For each entity mapping in this
+                    # associationsmapping
+                    for map1 in map.associations.orm.mappings.entitymappings:
 
-                    # If the associationsmapping's entity is the same class as
-                    # the joinee (es)
-                    if map1.entity.orm.entities is type(es):
-                        # Create a new instance of the map's associations
-                        # collection, add it to self's joins collection, and
-                        # add es to ass's joins collection.
+                        # If the associationsmapping's entity is the same class as
+                        # the joinee (es)
 
-                        self &= map.associations & es
+                        if map1.entity.orm.entities is type(es) \
+                            or map1.entity in es.orm.entity.orm.superclasses:
 
-                        # We can return now because the implicit assocation has
-                        # been joined to self, and es has been joined to the
-                        # association.
-                        return self
-                else:
-                    msg = "%s isn't a direct constituent of %s"
-                    msg %= (str(type(es)), str(type(self)))
-                    raise ValueError(msg)
+                            # Create a new instance of the map's associations
+                            # collection, add it to self's joins collection, and
+                            # add es to ass's joins collection.
+                            self &= map.associations & es
+
+                            # We can return now because the implicit assocation has
+                            # been joined to self, and es has been joined to the
+                            # association.
+                            return self
+                    else:
+                        msg = "%s isn't a direct constituent of %s"
+                        msg %= (str(type(es)), str(type(self)))
+                        raise ValueError(msg)
+                sup = sup.orm.super
             
         type = join.Inner if type1 is None else type1
         self.orm.joins += join(es=es, type=type)
