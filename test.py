@@ -7525,19 +7525,20 @@ class test_orm(tester):
 
         try:
             art.save()
-        except Exception as ex:
-            self.type(BrokenRulesError, ex)
         except MySQLdb.OperationalError as ex:
             # TODO Today, 20190815, we got a 
             #     MySQLdb.OperationalError(2006, 'MySQL server has gone away')
             # error instead of a BrokenRulesError. Why would we get this
             # from a simple save.
             # UPDATE Happened again 20190819
+            # UPDATE Happened again 20191124
             print(
                 'An MySQLdb.OperationalError occured. '
                 'See comment above in source code.'
             )
             B()
+        except Exception as ex:
+            self.type(BrokenRulesError, ex)
         else:
             self.fail('Exception not thrown')
 
@@ -13604,7 +13605,6 @@ class test_orm(tester):
             for sng1 in sngs1:
                 t.retrieved(sng1.orm.super)
 
-
         self.chronicles.clear()
 
         sngs1.sort()
@@ -13618,8 +13618,8 @@ class test_orm(tester):
             aa1 = sng1.artist_artists.first
             self.eq(aa1.role, 'sng-art_art-role-0')
 
-            B()
             self.is_(sng1, aa1.subject)
+            self.type(singer, aa1.subject)
             self.eq(aa1.subject__artistid, aa1.subject.id)
             self.eq(aa1.object__artistid, aa1.object.id)
 
@@ -13628,9 +13628,8 @@ class test_orm(tester):
             self.eq(fff, aa1.subject.orm.persistencestate)
             self.eq(fff, aa1.object.orm.persistencestate)
 
-        return
         # Test unconditionally joining the associated entities
-        # collections (artist_artists) with its composite (artists)
+        # collections (artist_artists) with its composite (singer)
         for b in False, True:
             if b:
                 # Implicitly join artist_artists

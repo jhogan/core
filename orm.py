@@ -1161,14 +1161,17 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         if self.orm.isstreaming:
             raise invalidstream('Streaming entities cannot contain joins')
 
-        # Chain self's entitiesmappings and associationsmappings
-        maps = itertools.chain(self.orm.mappings.entitiesmappings, 
-                               self.orm.mappings.associationsmappings)
 
         if type(es) is entitiesmeta:
             es = es()
         elif type(es) is entitymeta:
             es = es.orm.entities()
+
+        # Chain self's entitiesmappings and associationsmappings
+        maps = itertools.chain(
+            self.orm.mappings.entitiesmappings, 
+            self.orm.mappings.associationsmappings
+        )
 
         # Iterate over self's entitymappings and associationsmappings
         for map in maps:
@@ -4539,7 +4542,7 @@ class orm:
                 # Chain the composite's entitiesmappings and
                 # associationsmappings collection into `maps`. 
                 #
-                # Note we need to ascend the inheritence tree to include
+                # Note we need to ascend the inheritance tree to include
                 # all the superentities as well. This for loading
                 # subentity objects join to super entity association:
                 #
@@ -5014,8 +5017,6 @@ class orm:
             e = e.orm.super
 
         return r
-
-        
 
     @property
     def super(self):
