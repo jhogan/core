@@ -4243,6 +4243,16 @@ class selector(entities.entity):
             sibs = el.getsiblings(includeself=True)
             return sibs.where(lambda x: type(x) is type(el)).hasone
 
+        def _match_empty(self, el):
+            sibs = el.getsiblings(includeself=True)
+
+            # `comments` elements don't matter when it comes to
+            # emptiness but `text' elements actually do. This includes
+            # text with just whitespace. Processing instructions matter
+            # too but we don't support them in the DOM.
+            sibs = sibs.where(lambda x: type(x) is not type(comment))
+            return sibs.empty
+
         def match(self, el):
             if type(el) is text:
                 return False

@@ -14678,6 +14678,53 @@ class test_selectors(tester):
             self.count(len(expect), els)
             self.eq(expect, els.pluck('id'))
 
+    def it_selects_empty(self):
+        html = dom.html('''
+        <div id="0">
+            <!-- I am empty. -->
+        </div>
+        <div>
+            I am not empty
+        </div>
+        <div>
+            <!-- I am not empty because of the whitespace around this comment -->
+        </div>
+        ''')
+
+        els = html[':empty']
+        expect = [str(x) for x in range(1)]
+        self.count(len(expect), els)
+        self.eq(expect, els.pluck('id'))
+
+        html = dom.html('''
+        <main>
+            <div id="0"></div>
+            <div id="1"><!-- test --></div>
+        </main>
+        ''')
+
+        els = html[':empty']
+        expect = [str(x) for x in range(2)]
+        self.count(len(expect), els)
+        self.eq(expect, els.pluck('id'))
+
+        html = dom.html('''
+        <div> </div>
+
+        <div>
+            <!-- test -->
+        </div>
+
+        <div>
+        </div>
+        ''')
+
+        els = html[':empty']
+        self.zero(els)
+
+
+
+
     def it_parses_chain_of_elements(self):
         ''' One '''
         sels = dom.selectors('E')
