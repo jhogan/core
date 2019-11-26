@@ -1147,6 +1147,61 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
     @classmethod
     def join(cls, es, type=None):
+        """ This method declares ``es`` to be joined to an instance of
+        ``cls``. Later, when/if a ``SELECT`` statement is rendered, this
+        declaration will be used to construct the ``JOIN`` clause.
+
+        (
+            Note that this is a @classmethod. This ``join`` method is
+            replaced with the `entities._join` method on object
+            construction. This is accomplished with the line::
+                
+                self.join = self._join
+
+            in entities.__init__. This is done so a user can use a class
+            reference or an object reference depending on the need.
+            Joins using class references are convenient when no WHERE
+            clause needs to be provided.
+        )
+
+        Any instance of an ``orm.entities`` collection object may have
+        zero or more references to other ``orm.entities`` collection
+        objects stored in its ``joins`` property. These can be chained
+        together. Together, with the ``where`` proprety of the
+        ``orm.entities`` collection objects, complex SELECT statements
+        can be expessed using the ORMs API. For example::
+
+            arts = artists('weight BETWEEN 0 AND 1', ()).join(
+                        artifacts('weight BETWEEN 10 AND 11, ())
+                    )
+
+        will result in a SELECT statement similar to:
+
+
+            SELECT *
+            FROM artists
+            INNER JOIN artist_artifacts AS aa
+                ON art.id = aa.artistid
+            INNER JOIN artifacts AS fact
+                ON aa.artifactid = fact.id
+            WHERE (art.weight BETWEEN %s AND %s)
+            AND (fact.weight BETWEEN %s AND %s)
+
+        Note that the ORM is able to infere the need for the
+        ``artist_artifacts`` association table to be joined. Also note
+        that the operands have been replaced with placeholder (%s)
+        indicating they have been parameterized.
+
+        :param: cls type: A reference to a class that inherits
+        from ``orm.entities``. ``es`` will be joined to this object.
+
+        :param: es type/entities: A class or object reference that
+        inherits from `orm.entities`. This object will be joined to
+        ``cls``.
+
+        :param: type: The type of join (INNER/OUTER). Currently, only
+        INNER JOINs are implemented. The default is INNER JOINs.
+        """
         es1 = cls()
         es1._join(es, type)
         return es1
