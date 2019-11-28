@@ -3249,13 +3249,12 @@ class associationsmapping(mapping):
             wh = ' OR '.join([x.name + ' = %s' for x in maps])
             args = [self.composite.id] * maps.count
 
-
-            # Create the associations collection
+            # Create the association's collection
             asses = self.associations(wh, args)
 
             # Load the association if the composite is not new. If the
             # composite is new, there would be no existing associations
-            #i for it to load.
+            # for it to load.
             if not self.composite.orm.isnew:
                 # NOTE Currently, we implitly load entities and
                 # association.  However, we will want to continue
@@ -3269,6 +3268,7 @@ class associationsmapping(mapping):
             # Memoize. Using the setter here ensure that self._setvalue
             # gets called.
             self.value = asses
+
         return self._value
 
     @value.setter
