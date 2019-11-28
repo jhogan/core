@@ -3465,6 +3465,12 @@ class singer(artist):
     def transmitting(self, v):
         self._transmitting = v
 
+class painters(artists):
+    pass
+
+class painter(artist):
+    pass
+
 class rappers(singers):
     pass
 
@@ -3585,7 +3591,8 @@ class test_orm(tester):
 
     def _chronicler_onadd(self, src, eargs):
         self.chronicles += eargs.entity
-        #print(eargs.entity)
+        #print(eargs.entity.entity.__class__)
+        #B( eargs.entity.entity.__class__ is artist_artifacts)
 
     @contextmanager
     def _chrontest(self):
@@ -10463,6 +10470,7 @@ class test_orm(tester):
             sng.firstname = 'fn-' + str(i)
             sng.lastname = 'ln-'  + str(i + 1)
             sng.lifeform = 'subject'
+            sng.register = 'reg-' + str(i)
             sngs += sng
 
             for k in range(4):
@@ -10474,16 +10482,16 @@ class test_orm(tester):
                 aa.object = sngobj
                 sngobj.firstname = 'sng-art_art-sng-fn-' + str(k)
                 sngobj.lastname = 'sng-art_art-sng-ln' + str(k + 1)
-                sngobj.register = 'sng-art_art-sng-reg'+ str(k)
+                sngobj.register = 'sng-art_art-sng-reg-'+ str(k)
                 sngobj.lifeform = 'object'
 
                 sng.artist_artists += aa
 
                 for l in range(4):
-                    pres = presentation.getvalid()
-                    name = 'sng-art_art-sng-presentation-name-' + str(l)
-                    pres.name =  name
-                    sngobj.presentations += pres
+                    conc = concert.getvalid()
+                    name = 'sng-art_art-sng-conc-name-' + str(l)
+                    conc.name =  name
+                    sngobj.concerts += conc
 
         sngs.save()
         return sngs
@@ -13120,9 +13128,12 @@ class test_orm(tester):
         # Test loading associated subentity collection
         with self._chrontest() as t:
             sngsb = t.run(lambda: sng.singers)
+            pntsb = t.run(lambda: sng.painters)
 
         self.type(singers, sngsb)
+        #self.type(painters, pntsb)
         self.zero(sngsb)
+        #self.zero(pntsb)
 
         # Ensure association is same after accessing `singers`
         # pseudocollection.
@@ -13131,6 +13142,7 @@ class test_orm(tester):
         # Ensure property caches
         self.is_(artsb, sng.artists)
         self.is_(sngsb, sng.singers)
+        #self.is_(pntsb, sng.painters)
 
         # Ensure the association's associated collections is the same as
         # the associated collection of the entity.
@@ -13170,6 +13182,16 @@ class test_orm(tester):
             t.created(sng, aa, objsng)
             t.created(sng.orm.super, objsng.orm.super)
             t.retrieved(sng.artist_artists)
+            # FIXME Sometimes we are loading artist_artifacts here. When
+            # doing so, the t.chronicles.count ends up being 7. This
+            # began to happens when the line
+            #
+            #   pntsb = t.run(lambda: sng.painters)
+            #
+            # was introduced.
+
+            if(t.chronicles.count > 6):
+                print(t.chronicles)
 
         with self._chrontest() as t:
             sng1 = t.run(lambda: singer(sng.id))
@@ -13680,81 +13702,99 @@ class test_orm(tester):
                     self.eq(aa.object.id, aa1.object.id)
 
             self.zero(self.chronicles)
-        return
 
         # Test joining the associated entities collections
-        # (artist_artists) with its composite (artists) where the
+        # (artist_artists) with its composite (singer) where the
         # composite's join is conditional.
         for b in True, False:
             if b:
                 # Explicitly join artist_artists
-                arts1 = artists() 
-                arts1 &= artist_artists.join(
-                            artists(
-                                'firstname = %s', 
-                                ('art-art_art-art-fn-1',)
+                sngs1 = singers() 
+                sngs1 &= artist_artists.join(
+                            singers(
+                                'firstname = %s and register = %s', 
+                                (
+                                    'sng-art_art-sng-fn-1',
+                                    'sng-art_art-sng-reg-1',
+                                )
                             )
                         )
             else:
                 # Implicitly join artist_artists
-                arts1 = artists().join(
-                            artists(
-                                'firstname = %s', 
-                                ('art-art_art-art-fn-1',)
+                sngs1 = singers().join(
+                            singers(
+                                'firstname = %s and register = %s', 
+                                (
+                                    'sng-art_art-sng-fn-1',
+                                    'sng-art_art-sng-reg-1',
+                                )
                             )
                         )
-            self.one(arts1.orm.joins)
-            self.type(artist_artists, arts1.orm.joins.first.entities)
-            self.one(arts1.orm.joins.first.entities.orm.joins)
-            objarts = arts1.orm.joins.first.entities.orm.joins.first.entities
-            self.type(artists, objarts)
+            self.one(sngs1.orm.joins)
+            self.type(artist_artists, sngs1.orm.joins.first.entities)
+            self.one(sngs1.orm.joins.first.entities.orm.joins)
+            objsngs = sngs1.orm.joins.first.entities.orm.joins.first.entities
+            self.type(singers, objsngs)
 
-            arts1.sort()
+            sngs1.sort()
 
-            self.four(arts1)
+            self.four(sngs1)
 
             self.chronicles.clear()
-            for art, art1 in zip(arts, arts1):
-                self.eq(fff, art1.orm.persistencestate)
-                self.eq(art.id, art1.id)
+            for sng, sng1 in zip(sngs, sngs1):
+                self.eq(fff, sng1.orm.persistencestate)
+                self.eq(sng.id, sng1.id)
 
-                aas = art1.artist_artists
+                aas = sng1.artist_artists
                 self.one(aas)
                 self.eq(
-                    'art-art_art-art-fn-1', 
+                    'sng-art_art-sng-fn-1', 
                     aas.first.object.firstname
+                )
+
+                self.eq(
+                    'sng-art_art-sng-reg-1', 
+                    singer(aas.first.object.id).register # Downcast 46e3dc32
                 )
                 self.eq(fff, aas.first.orm.persistencestate)
 
-            self.zero(self.chronicles)
+            # The downcast above 46e3dc32 will result in four loads of
+            # singer
+            self.four(self.chronicles)
 
         # Test joining the associated entities collections
-        # (artist_artists) with its composite (artists) where the
+        # (artist_artists) with its composite (singers) where the
         # composite's join is conditional along with the other two.
-        arts1 =  artists('firstname = %s', ('fn-1')).join(
-                    artist_artists(
-                        'role = %s', 
-                        ('art-art_art-role-0',)
+        sngs1 =  singers('firstname = %s and register = %s', 
+                        ('fn-1', 'reg-1')).join(
+                    artist_artists('role = %s',
+                        ('sng-art_art-role-0',)
                      ).join(
-                         artists(
-                             'firstname = %s', 
-                             ('art-art_art-art-fn-0',)
+                         singers('firstname = %s and register = %s', (
+                                'sng-art_art-sng-fn-0',
+                                'sng-art_art-sng-reg-0',
+                            )
                          )
                     )
                  )
 
-        self.one(arts1)
+        self.one(sngs1)
 
         self.chronicles.clear()
-        self.eq('fn-1', arts1.first.firstname)
+        self.eq('fn-1', sngs1.first.firstname)
+        self.eq('reg-1', sngs1.first.register)
 
-        aas1 = arts1.first.artist_artists
+        aas1 = sngs1.first.artist_artists
         self.one(aas1)
         self.eq(fff, aas1.first.orm.persistencestate)
-        self.eq('art-art_art-role-0', aas1.first.role)
-        self.eq('art-art_art-art-fn-0', aas1.first.object.firstname)
-        self.eq(arts1.first.id, aas1.first.subject.id)
-        self.eq(arts1.first.id, aas1.first.subject__artistid)
+        self.eq('sng-art_art-role-0', aas1.first.role)
+        self.eq('sng-art_art-sng-fn-0', aas1.first.object.firstname)
+        self.eq(
+            'sng-art_art-sng-reg-0', 
+            singer(aas1.first.object.id).register # downcast c8200aa7
+        )
+        self.eq(sngs1.first.id, aas1.first.subject.id)
+        self.eq(sngs1.first.id, aas1.first.subject__artistid)
         self.ne(
             aas1.first.subject__artistid,
             aas1.first.object__artistid
@@ -13763,81 +13803,83 @@ class test_orm(tester):
             aas1.first.object.id,
             aas1.first.object__artistid
         )
-        self.zero(self.chronicles)
 
-        # Test joining a constituent (presentations) of the composite
-        # (artists) of the association (artist_artists) without
+        # We will have one chronicles from the downcast c8200aa7
+        self.one(self.chronicles)
+
+        # Test joining a constituent (concerts) of the composite
+        # (singers) of the association (artist_artists) without
         # conditions.
         for b in True, False:
             if b:
                 # Explicitly join the associations (artist_artists())
-                arts1 = artists.join(
+                sngs1 = singers.join(
                             artist_artists.join(
-                                artists & presentations
+                                singers & concerts
                             )
                         )
             else:
                 # Implicitly join the associations (artist_artists())
-                arts1 =  artists.join(
-                            artists & presentations
+                sngs1 =  singers.join(
+                            singers & concerts
                          )
 
-            self.four(arts1)
+            self.four(sngs1)
 
-            arts1.sort()
+            sngs1.sort()
 
             self.chronicles.clear()
 
-            for art, art1 in zip(arts, arts1):
-                self.eq(fff, art1.orm.persistencestate)
-                self.eq(art.id, art1.id)
-                aas = art.artist_artists.sorted()
-                aas1 = art1.artist_artists.sorted()
+            for sng, sng1 in zip(sngs, sngs1):
+                self.eq(fff, sng1.orm.persistencestate)
+                self.eq(sng.id, sng1.id)
+                aas = sng.artist_artists.sorted()
+                aas1 = sng1.artist_artists.sorted()
                 self.four(aas1)
 
                 for aa, aa1 in zip(aas, aas1):
                     self.eq(fff, aa1.orm.persistencestate)
                     self.eq(aa.id, aa1.id)
-                    artobj = aa.object
-                    artobj1 = aa1.object
-                    self.eq(fff, artobj1.orm.persistencestate)
+                    sngobj = aa.object
+                    sngobj1 = aa1.object
+                    self.eq(fff, sngobj1.orm.persistencestate)
 
-                    self.eq(artobj.id, artobj1.id)
+                    self.eq(sngobj.id, sngobj1.id)
 
-                    press = artobj.presentations.sorted()
-                    press1 = artobj1.presentations.sorted()
+                    concs = sngobj.concerts.sorted()
+                    concs1 = sngobj1.concerts.sorted()
 
-                    self.four(press1)
+                    self.four(concs1)
 
-                    for pres, pres1 in zip(press, press1):
-                        self.eq(fff, pres1.orm.persistencestate)
-                        self.eq(pres.id, pres1.id)
+                    for conc, conc1 in zip(concs, concs1):
+                        self.eq(fff, conc1.orm.persistencestate)
+                        self.eq(conc.id, conc1.id)
 
             self.zero(self.chronicles)
 
-        # Test joining a constituent (presentation) of the composite
-        # (artists) of the association (artist_artists) with conditions.
-        aarole = 'art-art_art-role-1'
-        fn = 'art-art_art-art-fn-1'
-        presname = 'art-art_art-art-presentation-name-1'
-        arts1 =  artists().join(
+        # Test joining a constituent (concerts) of the composite
+        # (singers) of the association (artist_artists) with conditions.
+        aarole = 'sng-art_art-role-1'
+        fn = 'sng-art_art-sng-fn-0'
+        regname = 'sng-art_art-sng-reg-0'
+        consname = 'sng-art_art-sng-conc-name-1'
+        sngs1 =  singers().join(
                     artist_artists(role = aarole).join(
-                        artists(firstname = fn).join(
-                            presentations(name = presname)
+                        singers(firstname = fn).join(
+                            concerts(name = consname)
                         )
                     )
                  )
 
-
-        arts1.sort()
+        sngs1.sort()
 
         self.chronicles.clear()
 
-        for art, art1 in zip(arts, arts1):
-            self.eq(fff, art1.orm.persistencestate)
+        for sng, sng1 in zip(sngs, sngs1):
+            self.eq(fff, sng1.orm.persistencestate)
 
-            self.eq(art.id, art1.id)
-            aas1 = art1.artist_artists
+            self.eq(sng.id, sng1.id)
+            aas1 = sng1.artist_artists
             self.one(aas1)
 
             self.eq(aarole, aas1.first.role)
@@ -13846,11 +13888,11 @@ class test_orm(tester):
             self.eq(fn, aas1.first.object.firstname)
             self.eq(fff, aas1.first.object.orm.persistencestate)
 
-            self.one(aas1.first.object.presentations)
+            self.one(aas1.first.object.concerts)
 
             self.eq(
-                presname, 
-                aas1.first.object.presentations.first.name
+                consname, 
+                aas1.first.object.concerts.first.name
             )
 
 
