@@ -14722,6 +14722,25 @@ class test_selectors(tester):
         els = html[':empty']
         self.zero(els)
 
+    def it_selects_not(self):
+        ''' Select all elements that don't have the 'dialog' class '''
+        els = self._shakespear[':not(.dialog)']
+        B()
+        #self.six(els)
+        #self.false(dom.div in [type(x) for x in els])
+
+        ''' Select all elements that aren't <div>s '''
+        els = self._shakespear[':not(div)']
+        self.six(els)
+        self.false(dom.div in [type(x) for x in els])
+
+        ''' Select all odd (not even) li's '''
+        els = self._listhtml['li:not(li:nth-child(even))']
+        expect = list(range(0, 11, 2))
+        self.count(len(expect), els)
+        self.eq(expect, [int(x.id) for x in els])
+
+
 
 
 

@@ -4064,7 +4064,8 @@ class selector(entities.entity):
                 for sel in sels:
                     for el in sel.elements:
                         if el.element == '*':
-                            el.element = None
+                            #el.element = None
+                            pass
 
                 return sels
 
@@ -4252,6 +4253,11 @@ class selector(entities.entity):
             # too but we don't support them in the DOM.
             sibs = sibs.where(lambda x: type(x) is not type(comment))
             return sibs.empty
+
+        def _match_not(self, el):
+            m = self.arguments.selectors[0].elements[0].match
+            m = m(el)
+            return not m
 
         def match(self, el):
             if type(el) is text:
