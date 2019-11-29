@@ -3602,27 +3602,19 @@ class test_orm(tester):
                 self.count = int()
                 self.tested = list()
 
-            def run(self, callable):
-                # TODO If `callable` is not a callable, throw an
-                # exception.
+            def run(self, callable=None):
+                return self(callable)
 
-                # TODO Remove this method and replace calls to it with
-                # calls to __call__.
-                test_orm.chronicles.clear()
-                r = callable()
-                self.chronicles = test_orm.chronicles.clone()
-                return r
-
-            def __call__(self, callable):
-                # NOTE .run() and __call__ must have the exact same
-                # bodies or the hack to report failures won't work. If
-                # __call__ were to call .run(), for example, the hack
-                # would make incorrect assumptions about the stack.
-
+            def __call__(self, callable=None):
                 # TODO If `callable` is not a callable, throw an
                 # exception.
                 test_orm.chronicles.clear()
-                r = callable()
+
+                r = None
+
+                if callable:
+                    r = callable()
+
                 self.chronicles = test_orm.chronicles.clone()
                 return r
 
@@ -13108,7 +13100,7 @@ class test_orm(tester):
     def it_loads_and_saves_subentity_reflexive_associations(self):
         sng = singer.getvalid()
 
-        with self._chrontest() as t:
+        with ct() as t:
             aa = t.run(lambda: sng.artist_artists)
 
         self.is_(sng, sng.artist_artists.orm.composite)
@@ -13119,16 +13111,16 @@ class test_orm(tester):
         self.is_(aa, sng.artist_artists)
 
         # Test loading associated collection
-        with self._chrontest() as t:
+        with ct() as t:
             artsb = t.run(lambda: sng.artists)
 
         self.zero(artsb)
         self.type(artists, artsb)
 
         # Test loading associated subentity collection
-        with self._chrontest() as t:
-            sngsb = t.run(lambda: sng.singers)
-            pntsb = t.run(lambda: sng.painters)
+        with ct() as t:
+            sngsb = t(lambda: sng.singers)
+            pntsb = t(lambda: sng.painters)
 
         self.type(singers, sngsb)
         #self.type(painters, pntsb)
@@ -13177,7 +13169,7 @@ class test_orm(tester):
 
         # FIXME The save is reloading sng.artist_arifacts for some
         # reason. See related at d7a42a957d3e491e882d485095e1325f
-        with self._chrontest() as t:
+        with ct() as t:
             t.run(sng.save)
             t.created(sng, aa, objsng)
             t.created(sng.orm.super, objsng.orm.super)
@@ -13191,14 +13183,13 @@ class test_orm(tester):
             # was introduced.
 
             if(t.chronicles.count > 6):
-                print(t.chronicles)
-
-        with self._chrontest() as t:
+                t.retrieved(sng.artist_artifacts)
+                
+        with ct() as t:
             sng1 = t.run(lambda: singer(sng.id))
             t.retrieved(sng1)
 
-
-        with self._chrontest() as t:
+        with ct() as t:
             aa1 = t(lambda: sng1.artist_artists)
             t.retrieved(sng1.artist_artists)
             # FIXME We should not be retrieving artist here
@@ -13206,10 +13197,11 @@ class test_orm(tester):
 
         self.one(aa1)
 
-        self.chronicles.clear()
-        self.is_(sng1.orm.super, sng1.artist_artists.artist)
-        self.is_(sng1, sng1.artist_artists.singer)
-        self.zero(self.chronicles)
+        with ct() as t:
+            t.run()
+            self.is_(sng1.orm.super, sng1.artist_artists.artist)
+            self.is_(sng1, sng1.artist_artists.singer)
+        return
 
         with self._chrontest() as t:
             t(lambda: sng1.singers)
