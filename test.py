@@ -13123,9 +13123,9 @@ class test_orm(tester):
             pntsb = t(lambda: sng.painters)
 
         self.type(singers, sngsb)
-        #self.type(painters, pntsb)
+        self.type(painters, pntsb)
         self.zero(sngsb)
-        #self.zero(pntsb)
+        self.zero(pntsb)
 
         # Ensure association is same after accessing `singers`
         # pseudocollection.
@@ -13134,12 +13134,16 @@ class test_orm(tester):
         # Ensure property caches
         self.is_(artsb, sng.artists)
         self.is_(sngsb, sng.singers)
-        #self.is_(pntsb, sng.painters)
+        self.is_(pntsb, sng.painters)
 
         # Ensure the association's associated collections is the same as
         # the associated collection of the entity.
         self.is_(sng.artists,    sng.artist_artists.artists)
         self.is_(sng.singers,    sng.artist_artists.singers)
+
+        # FIXME:61f9e14c This breaks when the artist_artifacts load
+        # problem (08c5a6f2) below breaks.
+        # self.is_(sng.painters,   sng.artist_artists.painters)
 
         self.is_(sng,            sng.artist_artists.singer)
         self.is_(sng.orm.super,  sng.artist_artists.artist)
@@ -13174,14 +13178,18 @@ class test_orm(tester):
             t.created(sng, aa, objsng)
             t.created(sng.orm.super, objsng.orm.super)
             t.retrieved(sng.artist_artists)
-            # FIXME Sometimes we are loading artist_artifacts here. When
-            # doing so, the t.chronicles.count ends up being 7. This
-            # began to happens when the line
+            # FIXME:08c5a6f2 Sometimes we are loading artist_artifacts
+            # here. When doing so, the t.chronicles.count ends up being
+            # 7. This began to happens when the line
             #
             #   pntsb = t.run(lambda: sng.painters)
             #
             # was introduced.
 
+            # TODO Remove this block when the above FIXME has been
+            # resolved. It is only hear to accomidate for the fact that
+            # `sng.artist_artifacts` is retrieved about half the time
+            # `sng.save()` is invoked.
             if(t.chronicles.count > 6):
                 t.retrieved(sng.artist_artifacts)
                 
