@@ -1429,7 +1429,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                     load = False
 
             # Don't load if joining or attr == 'load'
-            load &= attr not in ('innerjoin', 'join', 'load', '_getbrokenrules')
+            load &= attr not in ('innerjoin', 'join', 'load')
 
             # Don't load if attr = '__class__'. This is typically an attempt
             # to test the instance type using isinstance().
@@ -1453,7 +1453,6 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             load &= self.orm.joins.ispopulated or bool(self.orm.where)
 
             if load:
-                B(self.__class__.__name__ == 'artist_artifacts'  and attr == '_getbrokenrules')
                 self.orm.load()
 
         return object.__getattribute__(self, attr)
