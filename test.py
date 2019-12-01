@@ -14708,14 +14708,16 @@ class test_selectors(tester):
         self.eq(expect, els.pluck('id'))
 
         html = dom.html('''
-        <div> </div>
+        <main>
+            <div> </div>
 
-        <div>
-            <!-- test -->
-        </div>
+            <div>
+                <!-- test -->
+            </div>
 
-        <div>
-        </div>
+            <div>
+            </div>
+        </main>
         ''')
 
         els = html[':empty']
