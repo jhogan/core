@@ -214,6 +214,10 @@ class cssclass(attribute):
 
     def __len__(self):
         return len(self._classes)
+    
+    @property
+    def count(self):
+        return len(self)
 
     def __bool__(self):
         # By default, if __len__ returns 0, the object is falsey. If the
@@ -3056,7 +3060,6 @@ class html(element):
             if prs.stack:
                 raise HtmlParseError('Unclosed tag', frm=prs.stack[-1])
                 
-
             # The parse HTML elements tree becomes this `elements`
             # collection's constituents.
             self += prs.elements
@@ -3117,6 +3120,7 @@ class _htmlparser(HTMLParser):
     def handle_data(self, data):
         data = data.strip()
 
+        # ref: f0197142
         # Ignore data that is just whitespace
         if not data:
             return
@@ -3873,16 +3877,12 @@ class selector(entities.entity):
                 if not self.pseudoclasses.match(el):
                     continue
 
+                if self.id and self.id != el.id:
+                    continue
+
                 r += el
 
             return r
-
-            # TODO Remove below
-            if el.tag != self.element:
-                return False
-
-
-            return True
 
         @property
         def str_combinator(self):
