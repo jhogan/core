@@ -14731,7 +14731,6 @@ class test_selectors(tester):
         # need to alter the parser to add text nodes here. This will
         # likely result in a lot of the unit tests needing to be
         # updated.
-        B()
         #self.zero(els)
 
     def it_selects_not(self):
@@ -15647,7 +15646,7 @@ class test_selectors(tester):
         self.eq('F', el.element)
 
         '''E:not([foo=bar])'''
-        expect = 'E:not([foo=bar])'
+        expect = 'E:not(E[foo=bar])'
         sels = dom.selectors(expect)
         self.repr(expect, sels)
         self.one(sels)
@@ -15664,14 +15663,13 @@ class test_selectors(tester):
         self.type(dom.selectors, sels)
         self.one(sels.first.elements)
         el = sels.first.elements.first
-        self.none(el.element)
         self.one(el.attributes)
         self.eq('foo', el.attributes.first.key)
         self.eq('=', el.attributes.first.operator)
         self.eq('bar', el.attributes.first.value)
 
         '''E:not(:first-of-type)'''
-        expect = 'E:not(:first-of-type)'
+        expect = 'E:not(E:first-of-type)'
         sels = dom.selectors(expect)
         self.repr(expect, sels)
         self.one(sels)
@@ -15688,11 +15686,11 @@ class test_selectors(tester):
         self.type(dom.selectors, sels)
         self.one(sels.first.elements)
         el = sels.first.elements.first
-        self.none(el.element)
+        self.eq('E', el.element)
         self.eq('first-of-type', el.pseudoclasses.first.value)
 
         ''' E:not(:nth-child(2n+1)) '''
-        expect = 'E:not(:nth-child(2n+1))'
+        expect = 'E:not(E:nth-child(2n+1))'
         sels = dom.selectors(expect)
         self.repr(expect, sels)
         self.one(sels)
@@ -15709,13 +15707,13 @@ class test_selectors(tester):
         self.type(dom.selectors, sels)
         self.one(sels.first.elements)
         el = sels.first.elements.first
-        self.none(el.element)
+        self.eq('E', el.element)
         self.eq('nth-child', el.pseudoclasses.first.value)
         self.eq(2, el.pseudoclasses.first.arguments.a)
         self.eq(1, el.pseudoclasses.first.arguments.b)
 
         ''' E:not(.warning) '''
-        expect = 'E:not(.warning)'
+        expect = 'E:not(E.warning)'
         sels = dom.selectors(expect)
         self.repr(expect, sels)
         self.one(sels)
@@ -15732,7 +15730,7 @@ class test_selectors(tester):
         self.type(dom.selectors, sels)
         self.one(sels.first.elements)
         el = sels.first.elements.first
-        self.none(el.element)
+        self.eq('E', el.element)
         clss = el.classes
         self.one(clss)
         self.eq('warning', clss.first.value)
