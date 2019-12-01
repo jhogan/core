@@ -97,6 +97,10 @@ class tester(entity):
     def register(self, event, handler):
         self.eventregistrations.register(event, handler)
 
+    def all(self, actual, msg=None):
+        if not all(actual):
+            self._failures += failure()
+
     def assertFull(self, actual, msg=None):
         if type(actual) != str or actual.strip() == '':
             self._failures += failure()
