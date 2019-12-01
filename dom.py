@@ -3840,13 +3840,25 @@ class selector(entities.entity):
     Subsequentsibling  =  3
 
     class _simples(entities.entities):
+        def __init__(self, *args, **kwargs):
+            self.element = kwargs.pop('el')
+            super().__init__(*args, **kwargs)
+
         def __str__(self):
             return repr(self)
 
         def __repr__(self):
             return ' '.join(str(x) for x in self)
 
+        def __iadd__(self, smp):
+            super().__iadd__(smp)
+            smp.element = self.element
+            return self
+
     class simple(entities.entity):
+        def __init__(self):
+            self.element = None
+
         def __str__(self):
             return repr(self)
 
@@ -3857,9 +3869,9 @@ class selector(entities.entity):
         def __init__(self):
             self.element        =  None
             self.combinator     =  None
-            self.attributes     =  selector.attributes()
-            self.classes        =  selector.classes()
-            self.pseudoclasses  =  selector.pseudoclasses()
+            self.attributes     =  selector.attributes(el=self)
+            self.classes        =  selector.classes(el=self)
+            self.pseudoclasses  =  selector.pseudoclasses(el=self)
             self.id             =  None
 
         def match(self, els):
@@ -4060,15 +4072,12 @@ class selector(entities.entity):
                 sels = selectors(self.string)
 
                 # The parser will add a universal selector (*) to each
-                # simple selector. Remove it since a universal selector
-                # doesn't make sense in a :not() because the simple
-                # element singularly applies to the element of the
-                # :not() (the E in E:not())
-                for sel in sels:
-                    for el in sel.elements:
-                        if el.element == '*':
-                            #el.element = None
-                            pass
+                # simple selector. 
+                el = self.pseudoclass.element.element
+                if el != '*':
+                    for sel in sels:
+                        for el1 in sel.elements:
+                            el1.element = el
 
                 return sels
 
@@ -4152,6 +4161,7 @@ class selector(entities.entity):
                 return '(%sn%s)' % (a, b)
 
         def __init__(self):
+            super().__init__()
             self.value = None
             self.arguments = selector.pseudoclass.arguments(self)
 
