@@ -14802,8 +14802,27 @@ class test_selectors(tester):
             self.count(242, els)
             self.all(el.id != 'speech16' for el in els)
 
+    def it_selects_with_id(self):
+        sels = [
+            '*#speech16',
+            'div#speech16',
+            '#speech16',
+        ]
 
+        for sel in sels:
+            els = self._shakespear[sel]
+            self.one(els)
+            self.eq('speech16', els.first.id)
 
+        sels = [
+            '*#idontexist',
+            'div#idontexist',
+            '#idontexist',
+        ]
+
+        for sel in sels:
+            els = self._shakespear[sel]
+            self.zero(els)
 
     def it_parses_chain_of_elements(self):
         ''' One '''
