@@ -14733,23 +14733,72 @@ class test_selectors(tester):
         #self.zero(els)
 
     def it_selects_not(self):
-        ''' Select all elements that don't have the 'dialog' class '''
-        els = self._shakespear[':not(.dialog)']
-        B()
-        #self.six(els)
-        #self.false(dom.div in [type(x) for x in els])
+        ''' Elements '''
+        # Select all elements that aren't <div>s 
+        sels = [
+            ':not(div)',
+            '*:not(div)',
+        ]
 
-        ''' Select all elements that aren't <div>s '''
-        els = self._shakespear[':not(div)']
-        self.six(els)
-        self.false(dom.div in [type(x) for x in els])
+        for sel in sels:
+            els = self._shakespear[sel]
+            self.six(els)
+            self.false(dom.div in [type(x) for x in els])
 
-        ''' Select all odd (not even) li's '''
+        ''' Classes '''
+        # Select all elements that don't have the 'dialog' class
+        sels = [
+            ':not(.dialog)',
+            '*:not(.dialog)',
+            ':not(*.dialog)',
+        ]
+        for sel in sels:
+            els = self._shakespear[sel]
+            self.count(198, els)
+            for el in els:
+                self.false('dialog' in el.classes)
+
+        sels = [
+            'div:not(.dialog)',
+            'div:not(div.dialog)',
+        ]
+
+        ''' Attributes '''
+        for sel in sels:
+            els = self._shakespear[sel]
+            self.count(192, els)
+            for el in els:
+                self.false('dialog' in el.classes)
+            self.all([type(x) is dom.div for x in els])
+
+        sels = [
+            'div:not([title=wtf])',
+            'div:not(div[title=wtf])',
+        ]
+
+        for sel in sels:
+            els = self._shakespear[sel]
+            self.count(242, els)
+            self.all(el.title != 'wtf' for el in els)
+
+        ''' Pseudoclasses '''
+        # Select all odd (not even) li's
         els = self._listhtml['li:not(li:nth-child(even))']
         expect = list(range(0, 11, 2))
         self.count(len(expect), els)
         self.eq(expect, [int(x.id) for x in els])
 
+        ''' Identity '''
+        sels = [
+            'div:not(#speech16)',
+            'div:not(div#speech16)',
+            'div:not(*#speech16)',
+        ]
+
+        for sel in sels:
+            els = self._shakespear[sel]
+            self.count(242, els)
+            self.all(el.id != 'speech16' for el in els)
 
 
 

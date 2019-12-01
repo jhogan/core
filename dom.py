@@ -3702,6 +3702,9 @@ class selectors(entities.entities):
             if args:
                 if tok.value == ')':
                     args = None
+                elif tok.type == 'HASH':
+                    args += '#' + tok.value
+                    continue
                 elif tok.type != 'S':
                     args += tok.value
                     continue
