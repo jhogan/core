@@ -14789,6 +14789,19 @@ class test_selectors(tester):
         self.count(len(expect), els)
         self.eq(expect, [int(x.id) for x in els])
 
+        ''' Chained '''
+        sels = [
+            ':not(.dialog):not(h2)',
+            '*:not(.dialog):not(h2)',
+            '*:not(*.dialog):not(h2)',
+        ]
+
+        for sel in sels:
+            els = self._shakespear[sel]
+            self.count(197, els)
+            self.all(type(x) is not dom.h2 for x in els)
+            self.all('dialog' not in x.classes for x in els)
+
         ''' Identity '''
         sels = [
             'div:not(#speech16)',
