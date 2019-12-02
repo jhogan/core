@@ -12035,7 +12035,6 @@ class test_page(tester):
     def it_calls__init__(self):
         name = uuid4().hex
         pg = dom.page(name)
-        self.eq(pg.name, name)
         self.zero(pg.pages)
 
 class test_element(tester):
@@ -13422,12 +13421,6 @@ class test_markdown(tester):
         ''')
 
         self.eq(expect, md.html)
-
-class test_site(tester):
-    def it_calls_name(self):
-        name = uuid4().hex
-        s = dom.site(name)
-        self.eq(name, s.name)
 
 class test_selectors(tester):
     @property

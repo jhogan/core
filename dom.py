@@ -56,10 +56,6 @@ class site(entities.entity):
     def __init__(self, name):
         self.name = name
         self.pages = pages()
-        self.headers = headers()
-
-    def header(self):
-        return self.headers.default
 
 class pages(entities.entities):
     pass
@@ -124,7 +120,10 @@ class attributes(entities.entities):
 
         if attr:
             if isinstance(attr, cssclass):
-                attr._classes = item._classes
+                if isinstance(item, str):
+                    attr.value = item
+                else:
+                    attr._classes = item._classes
             else:
                 attr.value = item
         else:
