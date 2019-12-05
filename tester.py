@@ -328,7 +328,7 @@ class tester(entity):
     def unique(self, ls):
         if len(ls) != len(set(ls)): self._failures += failure()
 
-    def expect(self, expect, fn):
+    def expect(self, expect, fn, msg=None):
         try:
             if not callable(fn):
                 raise NotCallableError((
