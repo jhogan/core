@@ -3682,10 +3682,13 @@ class selectors(entities.entities):
         self._parse()
 
     def _parse(self):
-        if not self._sel:
-            return
+        if not self._sel or not self._sel.strip():
+            raise CssSelectorParseError('Empty selector')
 
         def element(element):
+            if not element.isalnum() and element != '*':
+                raise ValueError('Elements must be alphanumeric')
+
             el = selector.element()
             el.element = element
             el.combinator = comb
@@ -3694,9 +3697,26 @@ class selectors(entities.entities):
         sel = selector()
         self += sel
         el = comb = attr = cls = pcls = args = None
-        for tok in cssselect.parser.tokenize(self._sel):
+
+        toks = cssselect.parser.tokenize(self._sel)
+
+        while True:
+            try:
+                tok = next(toks)
+            except cssselect.parser.SelectorError as ex:
+                raise CssSelectorParseError(ex)
+
             if isinstance(tok, cssselect.parser.EOFToken):
-                continue
+                if attr:
+                    raise CssSelectorParseError(
+                        'Attribute not closed', tok
+                    )
+                if not el:
+                    raise CssSelectorParseError(
+                        'Attribute not closed', tok
+                    )
+                    
+                break
 
             if args:
                 if tok.value == ')':
@@ -3724,13 +3744,19 @@ class selectors(entities.entities):
                         # TODO Raise if tok.value is invalid
                         pcls.value = tok.value
                 else:
-                    el = element(tok.value)
+                    try:
+                        el = element(tok.value)
+                    except Exception as ex:
+                        raise CssSelectorParseError(str(ex), tok)
                     sel.elements += el
 
             elif tok.type == 'STRING':
                 if attr:
                     attr.value = tok.value
             elif tok.type == 'HASH':
+                if cls or attr:
+                    raise CssSelectorParseError(tok)
+                    
                 if not el:
                     # Universal selector was implied (#myid) so create it.
                     el = element('*')
@@ -3745,6 +3771,22 @@ class selectors(entities.entities):
                             comb = selector.Descendant
                     
             elif tok.type == 'DELIM':    
+                v = tok.value
+                if el: 
+                    if not (attr or pcls or cls):
+                        if v not in ''.join('*[:.,'):
+                            raise CssSelectorParseError(tok)
+
+                    if cls and cls.value is None:
+                        raise CssSelectorParseError(tok)
+
+                    if pcls and pcls.value is None:
+                        raise CssSelectorParseError(tok)
+                        
+                else:
+                    if v not in ''.join('*[:.'):
+                        raise CssSelectorParseError(tok)
+
                 if tok.value == ',':
                     sel = selector()
                     self += sel
@@ -3752,14 +3794,36 @@ class selectors(entities.entities):
 
                 if attr:
                     if tok.value == ']':
+                        if attr.operator and attr.value is None:
+                            raise CssSelectorParseError(tok)
+
+                        if attr.key is None:
+                            raise CssSelectorParseError(tok)
+
                         attr = None
+                    elif tok.value == '[':
+                        raise CssSelectorParseError(
+                            'Attribute already opened', tok
+                        )
                     else:
                         if attr.operator is None:
                             attr.operator = ''
 
                         attr.operator += tok.value
-                        # TODO Test attr.operator for validity here.
-                        # Raise if invalid.
+
+                        op = attr.operator
+
+                        if len(op) == 1:
+                            if attr.key is None:
+                                raise CssSelectorParseError(tok)
+                                
+                            if op not in ''.join('=~|*^$'):
+                                raise CssSelectorParseError(tok)
+                        elif len(op) == 2:
+                            if op[1] != '=':
+                                raise CssSelectorParseError(tok)
+                        elif len(op) > 2:
+                            raise CssSelectorParseError(tok)
                 else:
                     if tok.value == '[':
                         if not el:
@@ -4330,4 +4394,34 @@ class DomMoveError(ValueError):
     pass
 
 class CssSelectorParseError(SyntaxError):
-    pass
+    def __init__(self, o, tok=None):
+        self._pos = None
+        self.token = tok
+        if isinstance(o, cssselect.parser.Token):
+            super().__init__('Unexpected token')
+            self.token = o
+        elif isinstance(o, cssselect.parser.SelectorError):
+            super().__init__(str(o))
+
+            # The tokenizer in cssselect doesn't store the pos
+            # correctely, as far as I can tell. It has to be extracted
+            # from the exception's string. We can remove all this when
+            # we move the tokenizer code into dom.py and correct these
+            # issues.
+            m = re.match('.*at (\d)+$', ' at 0')
+            if m:
+                self._pos = int(m.groups()[0])
+        elif isinstance(o, str):
+            super().__init__(o)
+        else:
+            raise ValueError('Invalid argument')
+
+    @property
+    def pos(self):
+        if self._pos is not None:
+            return self._pos
+
+        if self.token:
+            return self.token.pos
+
+        return None

@@ -20,6 +20,7 @@ import primative
 import sys
 import textwrap
 import uuid
+from dbg import B
 
 # TODO Ensure tester.py won't run in non-dev environment
 

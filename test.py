@@ -15606,7 +15606,7 @@ class test_selectors(tester):
         self.eq('F', el.element)
 
         # E[foo=bar], F[baz=qux]
-        sels = dom.selectors('E[foo=bar], F[baz=qux')
+        sels = dom.selectors('E[foo=bar], F[baz=qux]')
         self.repr('E[foo=bar], F[baz=qux]', sels)
         self.str('E[foo=bar], F[baz=qux]', sels)
         self.two(sels)
@@ -15776,30 +15776,98 @@ class test_selectors(tester):
         self.type(dom.selector.pseudoclass, pcls)
         self.eq('first-of-type', el.pseudoclasses.first.value)
 
-        '''*:not(E, F)'''
-        expect = '*:not(E, F)'
-        sels = ':not(E, F)'
-        sels = dom.selectors(sels)
-        self.repr(expect, sels)
-        self.one(sels)
+    def it_raises_on_invalid_selectors(self):
+        #dom.selectors('.'); return
+        # Generic test function
+        def test(sel, pos):
+            try:
+                dom.selectors(sel)
+            except dom.CssSelectorParseError as ex:
+                self.eq(pos, ex.pos, 'Selector: "%s"' % sel)
+            except Exception as ex:
+                self.fail(
+                    'Invalid exception: %s "%s"' % (str(ex), sel)
+                )
+            else:
+                self.fail('No exception: "%s"' % sel)
 
-        el = sels.first.elements.first
-        self.one(sels.first.elements)
-        self.type(dom.selector.element, el)
-        self.eq('*', el.element)
+        ''' Classes '''
+        sels = {
+            '.'              :  1,
+            '..my-class'              :  1,
+            '.:my-class'              :  1,
+            './my-class'              :  1,
+            '.#my-class'              :  1,
+            '.#my#class'              :  1,
+            '.my-class..my-other-class'              :  10,
+            '.my-class.'              :  10,
+        }
 
-        self.notnone(el.pseudoclasses.first.arguments.selectors)
-        self.eq('not', el.pseudoclasses.first.value)
-        sels = el.pseudoclasses.first.arguments.selectors
-        self.two(sels)
+        for sel, pos in sels.items():
+            test(sel, pos)
 
-        self.one(sels.first.elements)
-        el = sels.first.elements.first
-        self.eq('E', el.element)
+        ''' Attributes '''
+        sels = {
+            '.[foo=bar]'              :  1,
+            '*.[foo=bar]'             :  2,
+            '.*[foo=bar]'             :  1,
+            '[foo=bar'                :  8,
+            'foo=bar]'                :  3,
+            'div[]'                  :  4,
+            'div[=]'                  :  4,
+            'div[foo=]'               :  8,
+            'div[=bar]'               :  4,
+            'div.[foo=bar]'           :  4,
+            'div:[foo=bar]'           :  4,
+            'div#[foo=bar]'           :  3,
+            'div[[foo=bar]'           :  4,
+            'div[foo=bar]]'           :  12,
+            'div[foo%bar]'            :  7,
+            'div[foo%=bar]'           :  7,
+            'div[foo=%bar]'           :  8,
+            'div[foo===bar]'          :  9,
+            'div[f/o=bar]'            :  5,
+            'div[f#o=bar]'            :  5,
+            'div[bar=]'               :  8,
+            'div[foo=bar][foo=bar'    :  20,
+            'div[foo=bar]foo=bar]'    :  15,
+            'div[foo=bar][[foo=bar]'  :  13,
+            'div[foo=bar][foo%bar]'   :  16,
+            'div[foo=bar][foo=]'      :  17,
+        }
 
-        self.one(sels.second.elements)
-        el = sels.second.elements.first
-        self.eq('F', el.element)
+        for sel, pos in sels.items():
+            test(sel, pos)
+
+        ''' Leading punctuation characters should raise exceptions '''
+
+        # These are acceptable as loading characters - they're the CSS
+        # selector deliminators
+        delims = list('.:[#*')
+
+        # `invalids` are punctuation exculding the above delims
+        invalids = set(string.punctuation) - set(delims)
+
+        # Backslashes and underscores are valid, too
+        invalids -= set(list('\\_'))
+
+        for invalid in invalids:
+            sel = invalid + 'div'
+            test(sel, 0)
+
+        ''' Empty strings and whitespace '''
+        sels = list(string.whitespace)
+        sels.append('')
+
+        for sel in sels: 
+            self.expect(
+                dom.CssSelectorParseError, 
+                lambda: dom.selectors(sel),
+           )
+
+
+
+            
 
 ########################################################################
 # Test parties                                                         #
