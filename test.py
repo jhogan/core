@@ -13161,13 +13161,23 @@ class test_orm(tester):
         self.isnot  (sng,      sng.artist_artists.first.object)
         self.eq     (aa.role,  sng.artist_artists.first.role)
 
-        self.one(sng.artist_artists)
+        aa                    =   artist_artist.getvalid()
+        aa.role               =   uuid4().hex
+        objpnt                =   painter.getvalid()
+        aa.object             =   objpnt
+
+        sng.artist_artists    +=  aa
+
+        self.two(sng.artist_artists)
 
         # TODO Should adding singer to sng.artist_artists result in an
         # addition to sng.artists
         # self.one(sng.artists)
+        B(sng.painters.count == 0)
+        self.one(sng.painters)
         self.one(sng.singers)
         self.zero(sng.artists)
+        return
 
         self.is_(objsng, sng.singers.first)
 
@@ -13209,12 +13219,16 @@ class test_orm(tester):
             t.run()
             self.is_(sng1.orm.super, sng1.artist_artists.artist)
             self.is_(sng1, sng1.artist_artists.singer)
-        return
 
         with self._chrontest() as t:
             t(lambda: sng1.singers)
             t.retrieved(sng1.singers.first)
             t.retrieved(sng1.artists.first)
+
+        with self._chrontest() as t:
+            t(lambda: sng1.painters)
+            print(t)
+
 
         with self._chrontest() as t:
             self.one(t(lambda: sng1.singers))

@@ -1974,6 +1974,36 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         
         map.value = v
 
+    def iscollinear(self, with_):
+        """ Return True if self is colinear with ``with_``.
+
+        Collinearity is when the self entity is an instance ``with_``,
+        or an instance of a superentity of ``with_``, or an instance of
+        a class that inheritance from ``with_``. It's similar to
+        isinstance(), but in addition to ascending the inheritance tree,
+        it also descends it. 
+        
+        Collinearity in this context it is limited to orm.entity object.
+        For example, ``artist`` is colinear with ``painter`` and
+        ``singer`` and vice-versa. However none of these object are
+        colinear with ``orm.entity``, ``entities.entity'' or ``object``
+        and vice-versa. 
+        """
+
+        if type(with_) is not entitymeta:
+            with_ = type(with_)
+
+        if isinstance(self, with_):
+            return True
+
+        for e in with_.__mro__:
+            if e is entity:
+                break
+            if type(self) in e.orm.subclasses:
+                return True
+
+        return False
+
     # Move to orm
     def _load(self, id):
         sql = 'SELECT * FROM {} WHERE id = _binary %s'
@@ -2655,8 +2685,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         )
                         for e in es:
                             if e.orm.entities.__name__ == attr:
+                                # Skip if association (map) is
+                                # non-reflexive and with is e is
+                                # collinear with self.
                                 if (
-                                    isinstance(self, e)
+                                    self.iscollinear(with_=e)
                                     and not map.entities.orm.isreflexive
                                 ):
                                     continue
