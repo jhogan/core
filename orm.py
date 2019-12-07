@@ -2795,7 +2795,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         
                     if type(map) in (primarykeyfieldmapping, foreignkeyfieldmapping):
                         if type(map.value) is UUID:
-                            v = v.hex[:7]
+                            v = v.hex[:8]
                         else:
                             v = str(v)
                     else:
