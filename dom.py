@@ -21,6 +21,7 @@ import entities
 import html as htmlmod
 import orm
 import re
+import string
 import sys
 
 """
@@ -85,6 +86,9 @@ class attributes(entities.entities):
                 raise AttributeExistsError(msg)
 
         return super().append(o, uniq, r)
+
+    def demand(self):
+        pass
 
     def __getitem__(self, key):
         if not isinstance(key, str):
@@ -3682,8 +3686,11 @@ class selectors(entities.entities):
         self._parse()
 
     def _parse(self):
+        err = CssSelectorParseError
+        badtrail = set(string.punctuation) - set(list(')]*'))
+
         if not self._sel or not self._sel.strip():
-            raise CssSelectorParseError('Empty selector')
+            raise err('Empty selector')
 
         def element(element):
             if not element.isalnum() and element != '*':
@@ -3700,21 +3707,28 @@ class selectors(entities.entities):
 
         toks = cssselect.parser.tokenize(self._sel)
 
+        prev = None
         while True:
             try:
                 tok = next(toks)
             except cssselect.parser.SelectorError as ex:
-                raise CssSelectorParseError(ex)
+                raise err(ex)
 
             if isinstance(tok, cssselect.parser.EOFToken):
                 if attr:
-                    raise CssSelectorParseError(
-                        'Attribute not closed', tok
-                    )
+                    raise err('Attribute not closed', tok)
+
                 if not el:
-                    raise CssSelectorParseError(
-                        'Attribute not closed', tok
+                    raise err( 'Attribute not closed', tok)
+
+                if prev.value in badtrail: 
+                    raise err(tok)
+
+                if pcls and not pcls.hasvalidname:
+                    raise err(
+                        'Invalid pseudoclass "%s"' % pcls.value, tok
                     )
+
                     
                 break
 
@@ -3747,7 +3761,7 @@ class selectors(entities.entities):
                     try:
                         el = element(tok.value)
                     except Exception as ex:
-                        raise CssSelectorParseError(str(ex), tok)
+                        raise err(str(ex), tok)
                     sel.elements += el
 
             elif tok.type == 'STRING':
@@ -3755,7 +3769,7 @@ class selectors(entities.entities):
                     attr.value = tok.value
             elif tok.type == 'HASH':
                 if cls or attr:
-                    raise CssSelectorParseError(tok)
+                    raise err(tok)
                     
                 if not el:
                     # Universal selector was implied (#myid) so create it.
@@ -3775,17 +3789,20 @@ class selectors(entities.entities):
                 if el: 
                     if not (attr or pcls or cls):
                         if v not in ''.join('*[:.,'):
-                            raise CssSelectorParseError(tok)
+                            raise err(tok)
 
                     if cls and cls.value is None:
-                        raise CssSelectorParseError(tok)
+                        raise err(tok)
 
                     if pcls and pcls.value is None:
-                        raise CssSelectorParseError(tok)
+                        raise err(tok)
                         
                 else:
                     if v not in ''.join('*[:.'):
-                        raise CssSelectorParseError(tok)
+                        raise err(tok)
+
+                if not attr and v == ']':
+                    raise err(tok)
 
                 if tok.value == ',':
                     sel = selector()
@@ -3795,16 +3812,14 @@ class selectors(entities.entities):
                 if attr:
                     if tok.value == ']':
                         if attr.operator and attr.value is None:
-                            raise CssSelectorParseError(tok)
+                            raise err(tok)
 
                         if attr.key is None:
-                            raise CssSelectorParseError(tok)
+                            raise err(tok)
 
                         attr = None
                     elif tok.value == '[':
-                        raise CssSelectorParseError(
-                            'Attribute already opened', tok
-                        )
+                        raise err('Attribute already opened', tok)
                     else:
                         if attr.operator is None:
                             attr.operator = ''
@@ -3815,15 +3830,15 @@ class selectors(entities.entities):
 
                         if len(op) == 1:
                             if attr.key is None:
-                                raise CssSelectorParseError(tok)
+                                raise err(tok)
                                 
                             if op not in ''.join('=~|*^$'):
-                                raise CssSelectorParseError(tok)
+                                raise err(tok)
                         elif len(op) == 2:
                             if op[1] != '=':
-                                raise CssSelectorParseError(tok)
+                                raise err(tok)
                         elif len(op) > 2:
-                            raise CssSelectorParseError(tok)
+                            raise err(tok)
                 else:
                     if tok.value == '[':
                         if not el:
@@ -3864,6 +3879,17 @@ class selectors(entities.entities):
                     args = pcls.arguments
                 elif tok.value in ('+',  '-'):
                     args += tok.value
+
+            prev = tok
+
+        self.demand()
+
+    def demand(self):
+        """ Raise error if self is invalid
+        """
+        for sel in self:
+            sel.demand()
+                
 
     def match(self, els):
         r = elements()
@@ -3926,7 +3952,11 @@ class selector(entities.entity):
             return repr(self)
 
     class elements(entities.entities):
-        pass
+        def demand(self):
+            """ Raise error if self is invalid
+            """
+            for el in self:
+                el.demand()
 
     class element(entities.entity):
         def __init__(self):
@@ -3962,6 +3992,14 @@ class selector(entities.entity):
 
             return r
 
+        def demand(self):
+            """ Raise error if self is invalid
+            """
+            ess = self.classes, self.attributes, self.pseudoclasses
+
+            for es in ess:
+                es.demand()
+
         @property
         def str_combinator(self):
             return selector.comb2str(self.combinator)
@@ -3991,6 +4029,11 @@ class selector(entities.entity):
     def __init__(self):
         self.elements = selector.elements()
 
+    def demand(self):
+        """ Raise error if self is invalid
+        """
+        self.elements.demand()
+
     @staticmethod
     def comb2str(comb):
         return [' ', '>', '+', '~'][comb]
@@ -4016,6 +4059,9 @@ class selector(entities.entity):
 
         def match(self, el):
             return all(x.match(el) for x in self)
+
+        def demand(self):
+            pass
 
     class attribute(simple):
         def __init__(self):
@@ -4077,6 +4123,9 @@ class selector(entities.entity):
         def match(self, el):
             return all(x.match(el) for x in self)
 
+        def demand(self):
+            pass
+
     class class_(simple):
         def __init__(self):
             self.value = None
@@ -4094,7 +4143,19 @@ class selector(entities.entity):
         def match(self, el):
             return all(x.match(el) for x in self)
 
+        def demand(self):
+            for pcls in self:
+                pcls.demand()
+
     class pseudoclass(simple):
+        validnames = (
+            'root',         'nth-child',         'nth-last-child',
+            'nth-of-type',  'nth-last-of-type',  'first-child',
+            'last-child',   'first-of-type',     'last-of-type',
+            'only-child',   'only-of-type',      'empty',
+            'not',          'lang',
+        )
+
         class arguments(element):
             def __init__(self, pcls):
                 self.string       =  str()
@@ -4145,6 +4206,7 @@ class selector(entities.entity):
                 return sels
 
             def _parse(self):
+                err = CssSelectorParseError
                 if self.pseudoclass.value == 'lang':
                     return
 
@@ -4175,17 +4237,17 @@ class selector(entities.entity):
                             else:
                                 a, b = 0, i
                         elif s[1] != 'n':
-                            raise CssSelectorParseError(
+                            raise err(
                                 'Invalid pseudoclass argument: "%s"' % s
                             )
                         else:
                             a, b = int(s[0]), 0
                     except ValueError:
-                        raise CssSelectorParseError(
+                        raise err(
                             'Invalid pseudoclass argument: "%s"' % s
                         )
                 else:
-                    m = re.match('(\+|-)?([0-9]+)?n *(\+|-) *([0-9])+', s)
+                    m = re.match('(\+|-)?([0-9]+)?n *(\+|-) *([0-9])+$', s)
                     if m:
                         gs = m.groups()
 
@@ -4227,6 +4289,23 @@ class selector(entities.entity):
             super().__init__()
             self.value = None
             self.arguments = selector.pseudoclass.arguments(self)
+
+        def demand(self):
+            err = CssSelectorParseError
+            if self.value.startswith('nth-'):
+                if self.arguments.a is None or self.arguments.b is None:
+                    raise err(
+                        'Error in argument(s) to pseudoclass '
+                        '"%s"' % self.value
+                    )
+            elif self.value == 'not':
+                # If the pseudoclass is 'not', then invoke its
+                # 'arguments.selectors'. That will cause not's arguments
+                # to be parse. If there is a pares error in not's
+                # arguments (stored as a str in self.arguments.string),
+                # invoking this property will raise the
+                # CssSelectorParseError.
+                self.arguments.selectors
 
         def __repr__(self):
             r = ':' + self.value
@@ -4341,6 +4420,10 @@ class selector(entities.entity):
             pcls = self.value.replace('-', '_')
             
             return getattr(self, '_match_' + pcls)(el)
+
+        @property
+        def hasvalidname(self):
+            return self.value in self.validnames
             
 class AttributeExistsError(Exception):
     pass
@@ -4398,8 +4481,11 @@ class CssSelectorParseError(SyntaxError):
         self._pos = None
         self.token = tok
         if isinstance(o, cssselect.parser.Token):
-            super().__init__('Unexpected token')
             self.token = o
+            tok = self.token
+            super().__init__(
+                'Unexpected token "%s" at %s' % (tok.value, tok.pos)
+            )
         elif isinstance(o, cssselect.parser.SelectorError):
             super().__init__(str(o))
 
