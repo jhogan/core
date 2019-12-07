@@ -13181,20 +13181,21 @@ class test_orm(tester):
         # TODO Should adding singer to sng.artist_artists result in an
         # addition to sng.artists
         # self.one(sng.artists)
-        B(sng.painters.count == 0)
         self.one(sng.painters)
         self.one(sng.singers)
         self.zero(sng.artists)
-        return
 
         self.is_(objsng, sng.singers.first)
+        self.is_(objpnt, sng.painters.first)
 
         # FIXME The save is reloading sng.artist_arifacts for some
         # reason. See related at d7a42a957d3e491e882d485095e1325f
         with ct() as t:
             t.run(sng.save)
-            t.created(sng, aa, objsng)
+            t.created(sng, objsng)
+            t.created(*sng.artist_artists)
             t.created(sng.orm.super, objsng.orm.super)
+            t.created(objpnt, objpnt.orm.super)
             t.retrieved(sng.artist_artists)
                 
         with ct() as t:
@@ -13202,15 +13203,16 @@ class test_orm(tester):
             t.retrieved(sng1)
 
         with ct() as t:
-            aa1 = t(lambda: sng1.artist_artists)
+            aas1 = t(lambda: sng1.artist_artists)
             t.retrieved(sng1.artist_artists)
             # FIXME We should not be retrieving artist here
             t.retrieved(sng1.artist_artists.artist)
 
-        self.one(aa1)
+        self.two(aas1)
 
+        # TODO Comment on why ct() is being used here.
         with ct() as t:
-            t.run()
+            t()
             self.is_(sng1.orm.super, sng1.artist_artists.artist)
             self.is_(sng1, sng1.artist_artists.singer)
 
@@ -13218,6 +13220,8 @@ class test_orm(tester):
             t(lambda: sng1.singers)
             t.retrieved(sng1.singers.first)
             t.retrieved(sng1.artists.first)
+
+        return
 
         with self._chrontest() as t:
             t(lambda: sng1.painters)
