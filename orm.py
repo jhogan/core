@@ -1725,7 +1725,7 @@ class entitymeta(type):
                     body['entities'] = sub
                     break
             else:
-                msg =  "Entities class coudn't be found. "
+                msg =  "Entities class couldn't be found. "
                 msg += "Either specify one or define one with a predictable name"
                 raise AttributeError(msg)
 
@@ -2026,7 +2026,33 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         exec.execute()
 
+        # TODO We may want to reconsider raising an exception when a
+        # non-existant ID is given. The expectation the user may have is
+        # that the object returned from the constructor is falsey:
+        #
+        #     e = myentity(bad_id)
+        #     if e:
+        #         return e
+        #     else:
+        #         raise Exception('myentity not found')
+        #
+        # Hacking __new__ to return None may not be a good idea because
+        # of all the event initialition code in __init__. However, we
+        # could set a private boolean to cause the entity's __bool__
+        # method to return False. Then any call to __getattribute__()
+        # could check the private boolean and raise an exception to
+        # indicate that entity is as good as None because the id was
+        # non-existent:
+        #
+        #     def __bool__(self):
+        #         return not self._recordnotfound
+        #
+        #     def __getattribute__(self):
+        #         if self._recordnotfound: raise RecordNotFoundError()
+        #
+
         ress.demandhasone()
+
         res = ress.first
 
         eargs = db.operationeventargs(self, 'retrieve', sql, args)
@@ -5698,7 +5724,6 @@ class associations(entities):
             for ass in self:
                 e = getattr(ass, map.name) # :=
                 if e:
-                    
                     # If the type of `e` does not match the `attr` str,
                     # but `attr` is a subentity of e, a
                     # subentity that matches the collection type of `es`
