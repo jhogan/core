@@ -3728,8 +3728,6 @@ class selectors(entities.entities):
                     raise err(
                         'Invalid pseudoclass "%s"' % pcls.value, tok
                     )
-
-                    
                 break
 
             if args:
@@ -3750,12 +3748,12 @@ class selectors(entities.entities):
                                 setattr(attr, attr1, tok.value)
                                 break
                         else:
-                            # Parse error
-                            ...
+                            # NOTE We probably will never get here, but
+                            # just in case...
+                            CssSelectorParseError(tok)
                     elif cls:
                         cls.value = tok.value
                     elif pcls:
-                        # TODO Raise if tok.value is invalid
                         pcls.value = tok.value
                 else:
                     try:
@@ -3783,6 +3781,8 @@ class selectors(entities.entities):
                         el = None
                         if comb is None:
                             comb = selector.Descendant
+                if cls and not cls.value:
+                    raise err(tok)
                     
             elif tok.type == 'DELIM':    
                 v = tok.value

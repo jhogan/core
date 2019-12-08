@@ -15782,7 +15782,7 @@ class test_selectors(tester):
         self.eq('first-of-type', el.pseudoclasses.first.value)
 
     def it_raises_on_invalid_selectors(self):
-        #dom.selectors(':not(:nth-child(li))'); return
+        #dom.selectors('a . b'); return
 
         # Generic test function
         def test(sel, pos):
@@ -15797,6 +15797,38 @@ class test_selectors(tester):
                 )
             else:
                 self.fail('No exception: "%s"' % sel)
+
+        combs = set(list('>+~'))
+
+        ignore = set(list('[\':.'))
+
+        ''' Invalid combinators '''
+
+        # `invalids` are punctuation exculding the above combs
+        invalids = set(string.punctuation) - combs - ignore
+
+        sels = {
+            'a %s b' : 2
+        }
+
+        for invalid in invalids:
+            for sel, pos in sels.items():
+                sel %= invalid
+                if invalid == '*': continue
+                pos = 0 if invalid == '"' else pos
+                test(sel, pos)
+
+        ''' Selector groups '''
+        sels = {
+            'a,,b'   :  2,
+            'a:,b'   :  2,
+            'a(,b'   :  1,
+            'a,b,,'  :  4,
+            'a,b,'   :  4,
+        }
+
+        for sel, pos in sels.items():
+            test(sel, pos)
 
         # NOTE ':not(:not(li))' fails but for the wrong reason (see
         # dd6a4f93). It should fail because the standard says that :not
@@ -15840,6 +15872,7 @@ class test_selectors(tester):
         ''' Classes '''
         sels = {
             '.'                          :  1,
+            'a . b'                      :  3,
             '..my-class'                 :  1,
             '.:my-class'                 :  1,
             './my-class'                 :  1,
