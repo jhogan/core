@@ -5223,11 +5223,30 @@ class orm:
 
     @staticmethod
     def getsubclasses(of):
+        """ Return all subclasses of ``of`` as a list. 
+
+        Subclasses obviously represent a tree structure, however this
+        method returns a list. The subclasses of a given depth are
+        ordered contigously with one another. The highest subclasses
+        come first.  For example, ``orm.getsubclasses(of=artist)``
+        returns::
+
+            ['singers', 'painters', 'rappers']
+
+        `singers` and `painters` come first because they are direct
+        childern of `artist`. `rappers` comes third because it is a
+        direct child of `singers`.
+
+        :param: entity of The entity for which the subclasses will be
+        returned.
+        """
         r = []
 
         for sub in of.__subclasses__():
             if sub not in (associations, association):
                 r.append(sub)
+
+        for sub in of.__subclasses__():
             r.extend(orm.getsubclasses(sub))
 
         return r
