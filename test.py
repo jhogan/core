@@ -14842,7 +14842,7 @@ class test_selectors(tester):
         self.one(els)
         self.eq(['E'], els.pluck('element'))
 
-        desc = dom.selector.Descendant
+        desc = dom.selector.element.Descendant
         self.none(els.first.combinator)
 
         ''' Two '''
@@ -14854,7 +14854,7 @@ class test_selectors(tester):
         self.two(els)
         self.eq(['E', 'F'], els.pluck('element'))
 
-        desc = dom.selector.Descendant
+        desc = dom.selector.element.Descendant
         self.none(els.first.combinator)
         self.eq(desc, els.second.combinator)
         self.repr('E F', sels)
@@ -14869,7 +14869,7 @@ class test_selectors(tester):
         self.three(els)
         self.eq(['E', 'F', 'G'], els.pluck('element'))
 
-        desc = dom.selector.Descendant
+        desc = dom.selector.element.Descendant
         self.none(els.first.combinator)
         self.eq(desc, els.second.combinator)
         self.eq(desc, els.third.combinator)
@@ -15440,7 +15440,6 @@ class test_selectors(tester):
         self.none(args.b)
         self.eq('fr-be', args.c)
 
-
     def it_parses_universal_selector(self):
         sels = dom.selectors('*')
         self.str('*', sels)
@@ -15798,11 +15797,11 @@ class test_selectors(tester):
             else:
                 self.fail('No exception: "%s"' % sel)
 
+        ''' Invalid combinators '''
+
         combs = set(list('>+~'))
 
         ignore = set(list('[\':.'))
-
-        ''' Invalid combinators '''
 
         # `invalids` are punctuation exculding the above combs
         invalids = set(string.punctuation) - combs - ignore
@@ -15947,10 +15946,6 @@ class test_selectors(tester):
                 lambda: dom.selectors(sel),
            )
 
-
-
-            
-
 ########################################################################
 # Test parties                                                         #
 ########################################################################
@@ -15993,7 +15988,6 @@ testhtml = tester.dedent('''
   </body>
 </html>
 ''')
-
 
 ListHtml = '''
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">

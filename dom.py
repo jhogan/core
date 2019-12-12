@@ -8,9 +8,6 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 ########################################################################
 
-# NOTE Page component reference: 
-#     https://webstyleguide.com/wsg3/6-page-structure/3-site-design.html
-
 from dbg import B
 from func import enumerate
 from html.parser import HTMLParser
@@ -55,8 +52,6 @@ class classproperty(property):
         obj = cls if cls else owner
         return classmethod(self.fget).__get__(None, obj)()
 
-# TODO All html should pass the W3C validation service at:
-# https://validator.w3.org/#validate_by_input
 class site(entities.entity):
     def __init__(self, name):
         self.name = name
@@ -66,11 +61,18 @@ class pages(entities.entities):
     pass
 
 class page(entities.entity):
+    # NOTE Page component reference: 
+    #     https://webstyleguide.com/wsg3/6-page-structure/3-site-design.html
+
     def __init__(self, name):
         self.pages = pages()
 
 class attributes(entities.entities):
+    """ Represents a collection of attributes for HTML5 elements.
+    """
     def __iadd__(self, *o):
+        """ Append an attribute to the collection via the += operator.
+        """
         for o in o:
             if type(o) in (tuple, list):
                 o = attribute.create(*o)
@@ -78,6 +80,8 @@ class attributes(entities.entities):
         return self
 
     def append(self, o, v=None, uniq=False, r=None):
+        """ Append an attribute to the collection. 
+        """
         if type(o) is list:
             return super().append(o, uniq, r)
             
@@ -90,9 +94,6 @@ class attributes(entities.entities):
                 raise AttributeExistsError(msg)
 
         return super().append(o, uniq, r)
-
-    def demand(self):
-        pass
 
     def __getitem__(self, key):
         if not isinstance(key, str):
@@ -304,6 +305,8 @@ class cssclass(attribute):
         return '%s(value=%s)' % (type(self).__name__, self._classes)
 
 class elements(entities.entities):
+    # TODO All html should pass the W3C validation service at:
+    # https://validator.w3.org/#validate_by_input
     @classmethod
     def getby(cls, tag):
         for el in element.__subclasses__():
@@ -312,6 +315,22 @@ class elements(entities.entities):
         return None
 
     def __getitem__(self, sel):
+        ''' Get elements by an ordinal index or a CSS3 selector.
+
+        Examples::
+            
+            # Get the first element of the collection of elememnts
+            el = els[0]
+
+            # Get the first 2 elements from the collection of elememnts
+            els = els[0:2]
+
+            # Get all <span> elements that are immediate children of <p>
+            # where the <p> is a child or grandchild of a <div> with a
+            # class of of 'my-class'.
+            els = els['div.my-class p > span']
+
+        '''
         if isinstance(sel, int) or isinstance(sel, slice):
             return super().__getitem__(sel)
 
@@ -3722,6 +3741,10 @@ class selectors(entities.entities):
 
 
     def __init__(self, sel=None, *args, **kwargs):
+        """ Instantiate and parse the CSS3 selector string (``sel``), i.e., ::
+
+            p#pid, div.my-class
+        """
         super().__init__(*args, **kwargs)
         self._sel = sel
         self._parse()
@@ -3845,6 +3868,9 @@ class selectors(entities.entities):
         yield selectors.eof(pos)
 
     def _parse(self):
+        """ Parse the CSS3 selector string provided by the constructor
+        (``sel``)
+        """
         err = CssSelectorParseError
         badtrail = set(string.punctuation) - set(list(')]*'))
 
@@ -4076,11 +4102,6 @@ class selectors(entities.entities):
         return repr(self)
 
 class selector(entities.entity):
-    Descendant         =  0
-    Child              =  1
-    Nextsibling        =  2
-    Subsequentsibling  =  3
-
     class _simples(entities.entities):
         def __init__(self, *args, **kwargs):
             self.element = kwargs.pop('el')
@@ -4112,6 +4133,11 @@ class selector(entities.entity):
                 el.demand()
 
     class element(entities.entity):
+        Descendant         =  0
+        Child              =  1
+        NextSibling        =  2
+        SubsequentSibling  =  3
+
         def __init__(self):
             self.element        =  None
             self.combinator     =  None
@@ -4155,11 +4181,12 @@ class selector(entities.entity):
 
         @property
         def str_combinator(self):
-            return selector.comb2str(self.combinator)
+            return self.comb2str(self.combinator)
+
 
         def __repr__(self):
             r = str()
-            if self.combinator not in (None, selector.Descendant):
+            if self.combinator not in (None, selector.element.Descendant):
                 r += self.str_combinator + ' '
 
             if self.element is not None:
@@ -4182,21 +4209,50 @@ class selector(entities.entity):
     def __init__(self):
         self.elements = selector.elements()
 
+    def match(self, els):
+        last = self.elements.last
+        els1 = last.match(els.getelements())
+
+        rms = elements()
+
+        for el1 in els1:
+            anix = int()
+            comb = last.combinator
+            for smp in self.elements[:-1].reversed():
+                if comb in (selector.element.Descendant, None):
+                    for i, an in el1.ancestors[anix:].enumerate():
+                        if smp.match(an):
+                            anix += i + 1
+                            break
+                    else:
+                        rms += el1
+                elif comb == selector.element.Child:
+                    an = el1.ancestors[anix]
+                    if smp.match(an):
+                        anix += 1
+                    else:
+                        rms += el1
+                        break
+                else:
+                    raise ValueError('Invalid combinator')
+
+                comb = smp.combinator
+        
+        els1.remove(rms)
+
+        return els1
+
     def demand(self):
         """ Raise error if self is invalid
         """
         self.elements.demand()
-
-    @staticmethod
-    def comb2str(comb):
-        return [' ', '>', '+', '~'][comb]
 
     def __repr__(self):
         r = str()
         for i, el in self.elements.enumerate():
             if i:
                 r += el.str_combinator
-                if el.combinator != selector.Descendant:
+                if el.combinator != selector.element.Descendant:
                     r + ' '
 
             r += str(el)
