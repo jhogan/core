@@ -3873,6 +3873,7 @@ class selectors(entities.entities):
         """
         err = CssSelectorParseError
         badtrail = set(string.punctuation) - set(list(')]*'))
+        badlead = '>+~'
 
         if not self._sel or not self._sel.strip():
             raise err('Empty selector')
@@ -3908,6 +3909,9 @@ class selectors(entities.entities):
                         'Invalid pseudoclass "%s"' % pcls.value, tok
                     )
                 break
+
+            if not prev and tok.value in badlead:
+                raise err(tok)
 
             if args:
                 if tok.value == ')':
@@ -3959,7 +3963,7 @@ class selectors(entities.entities):
                     if not args:
                         el = None
                         if comb is None:
-                            comb = selector.Descendant
+                            comb = selector.element.Descendant
                 if cls and not cls.value:
                     raise err(tok)
                     
@@ -3975,10 +3979,12 @@ class selectors(entities.entities):
 
                     if pcls and pcls.value is None:
                         raise err(tok)
-                        
                 else:
-                    if v not in ''.join('*[:.'):
-                        raise err(tok)
+                    if v in '>+~':
+                        comb = selector.element.str2comb(v)
+                    else:
+                        if v not in '*[:.':
+                            raise err(tok)
 
                 if not attr and v == ']':
                     raise err(tok)
@@ -4057,7 +4063,8 @@ class selectors(entities.entities):
                 elif tok.value == '(':
                     args = pcls.arguments
                 elif tok.value in ('+',  '-'):
-                    args += tok.value
+                    if args:
+                        args += tok.value
 
             prev = tok
 
@@ -4068,31 +4075,12 @@ class selectors(entities.entities):
         """
         for sel in self:
             sel.demand()
-                
 
     def match(self, els):
         r = elements()
         for sel in self:
-            last = sel.elements.last
-            els1 = last.match(els.getelements())
+            r += sel.match(els)
 
-            rms = elements()
-
-            for el1 in els1:
-                anix = int()
-                for smp in sel.elements[:-1].reversed():
-                    # Logic for Descendant combinator
-                    for i, an in el1.ancestors[anix:].enumerate():
-                        if smp.match(an):
-                            anix += i + 1
-                            break
-                    else:
-                        rms += el1
-            
-            els1.remove(rms)
-
-            r += els1
-                    
         return r
 
     def __repr__(self):
@@ -4145,6 +4133,15 @@ class selector(entities.entity):
             self.classes        =  selector.classes(el=self)
             self.pseudoclasses  =  selector.pseudoclasses(el=self)
             self.id             =  None
+
+        @staticmethod
+        def comb2str(comb):
+            return [' ', '>', '+', '~'][comb]
+
+        @staticmethod
+        def str2comb(comb):
+            return [' ', '>', '+', '~'].index(comb)
+                
 
         def match(self, els):
             if isinstance(els, element):

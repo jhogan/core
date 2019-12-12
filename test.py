@@ -13455,6 +13455,74 @@ class test_selectors(tester):
             'ACT I, SCENE III. A room in the palace.'
         )
 
+    def it_selects_with_child_combinator(self):
+        html = dom.html(CombinatorTests)
+
+        ''' Two child combinators '''
+        sel = 'div > p'
+        els = html[sel]
+        self.one(els)
+        self.type(dom.p, els.first)
+        self.eq('child-of-div', els.first.id)
+
+        bads = [
+            'div > xp'
+            'xdiv > p'
+        ]
+
+        self.all(html[bad].isempty for bad in bads)
+
+        ''' Three child combinators '''
+        sel = 'div > p > span'
+        els = html[sel]
+        self.one(els)
+        self.type(dom.span, els.first)
+        self.eq('child-of-p-of-div', els.first.id)
+
+        bads = [
+            'xdiv > p > span'
+            'div > xp > span'
+            'div > p > xspan'
+        ]
+
+        self.all(html[bad].isempty for bad in bads)
+
+        ''' A descendant combinator with two three combinators '''
+        sel = 'html div > p > span'
+        els = html[sel]
+        self.type(dom.span, els.first)
+        self.eq('child-of-p-of-div', els.first.id)
+
+        # Change the above descendant combinator to child combinator and
+        # it should produce zero results. 
+        sel = 'html > div > p > span'
+        els = html[sel]
+        self.zero(els)
+
+        ''' A simple child combinator expression to produce two results
+        '''
+        els = html['p > span']
+        self.two(els)
+        self.type(dom.span, els.first)
+        self.type(dom.span, els.second)
+        self.eq('child-of-p-of-div', els.first.id)
+        self.eq('child-of-p-of-h2', els.second.id)
+
+        # Try out some chained seletors
+        sels = [
+            'p > span#child-of-p-of-h2',
+            'p#child-of-h2 > span#child-of-p-of-h2',
+            'p#child-of-h2 > span',
+            'p.p-header > span',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.one(els)
+            self.type(dom.span, els.first)
+            self.eq('child-of-p-of-h2', els.first.id)
+
+
     def it_selects_with_chain_of_elements(self):
         html = self._shakespear
 
@@ -14832,6 +14900,147 @@ class test_selectors(tester):
             els = self._shakespear[sel]
             self.zero(els)
 
+    def it_parses_combinators(self):
+        # FIXME I noticed expressions like 'p>span' don't work because
+        # there is no whitespace surrounding the combinator.
+
+        sub         =  dom.selector.element.SubsequentSibling
+        next        =  dom.selector.element.NextSibling
+        child       =  dom.selector.element.Child
+        desc        =  dom.selector.element.Descendant
+
+        ''' Subsequent-sibling combinator '''
+        sels = [
+           'body ~ div',
+           'body.my-class ~ div.my-class',
+           'body[foo=bar] ~ div[foo=bar]',
+        ]
+
+        for sel in sels:
+            sels = dom.selectors(sel)
+            self.two(sels.first.elements)
+            self.eq(None, sels.first.elements.first.combinator)
+            self.eq(sub, sels.first.elements.second.combinator)
+
+        sels = [
+           'body div ~ p',
+           'body.my-class div.my-class ~ p.my-class',
+           'body[foo=bar] div[foo=bar] ~ p.my-class',
+        ]
+
+        for sel in sels:
+            sels = dom.selectors(sel)
+            self.three(sels.first.elements)
+            self.eq(None, sels.first.elements.first.combinator)
+            self.eq(desc, sels.first.elements.second.combinator)
+            self.eq(sub, sels.first.elements.third.combinator)
+
+
+        ''' Next-sibling combinator '''
+        sels = [
+           'body + div',
+           'body.my-class + div.my-class',
+           'body[foo=bar] + div[foo=bar]',
+        ]
+
+        for sel in sels:
+            sels = dom.selectors(sel)
+            self.two(sels.first.elements)
+            self.eq(None, sels.first.elements.first.combinator)
+            self.eq(next, sels.first.elements.second.combinator)
+
+        sels = [
+           'body div + p',
+           'body.my-class div.my-class + p.my-class',
+           'body[foo=bar] div[foo=bar] + p.my-class',
+        ]
+
+        for sel in sels:
+            sels = dom.selectors(sel)
+            self.three(sels.first.elements)
+            self.eq(None, sels.first.elements.first.combinator)
+            self.eq(desc, sels.first.elements.second.combinator)
+            self.eq(next, sels.first.elements.third.combinator)
+
+        ''' Child combinator '''
+        sels = [
+           'body > div',
+           'body.my-class > div.my-class',
+           'body[foo=bar] > div[foo=bar]',
+        ]
+
+        for sel in sels:
+            sels = dom.selectors(sel)
+            self.two(sels.first.elements)
+            self.eq(None, sels.first.elements.first.combinator)
+            self.eq(child, sels.first.elements.second.combinator)
+
+        sels = [
+           'body > div > p',
+           'body.my-class > div.my-class > p.my-class',
+           'body[foo=bar] > div[foo=bar] > p.my-class',
+        ]
+
+        for sel in sels:
+            sels = dom.selectors(sel)
+            self.three(sels.first.elements)
+            self.eq(None, sels.first.elements.first.combinator)
+            self.eq(child, sels.first.elements.second.combinator)
+            self.eq(child, sels.first.elements.third.combinator)
+
+        sels = [
+           'body  div > p',
+           'body.my-class div.my-class > p.my-class',
+           'body[foo=bar] div[foo=bar] > p.my-class',
+        ]
+
+        for sel in sels:
+            sels = dom.selectors(sel)
+            self.three(sels.first.elements)
+            self.eq(None, sels.first.elements.first.combinator)
+            self.eq(desc, sels.first.elements.second.combinator)
+            self.eq(child, sels.first.elements.third.combinator)
+
+        sels = [
+           'body > div p',
+           'body.my-class > div.my-class p.my-class',
+           'body[foo=bar] > div[foo=bar] p.my-class',
+        ]
+
+        for sel in sels:
+            sels = dom.selectors(sel)
+            self.three(sels.first.elements)
+            self.eq(None, sels.first.elements.first.combinator)
+            self.eq(child, sels.first.elements.second.combinator)
+            self.eq(child, sels.first.elements.third.combinator)
+
+        ''' Descendant combinator '''
+        sels = [
+           'body div',
+           'body.my-class div.my-class',
+           'body[foo=bar] div[foo=bar]',
+        ]
+
+        for sel in sels:
+            sels = dom.selectors(sel)
+            self.two(sels.first.elements)
+            self.eq(None, sels.first.elements.first.combinator)
+            self.eq(desc, sels.first.elements.second.combinator)
+
+        sels = [
+           'body div p',
+           'body.my-class div.my-class p.my-class',
+           'body[foo=bar] div[foo=bar] p[foo=bar]',
+        ]
+
+        for sel in sels:
+            sels = dom.selectors(sel)
+            self.three(sels.first.elements)
+            self.eq(None, sels.first.elements.first.combinator)
+            self.eq(desc, sels.first.elements.second.combinator)
+            self.eq(desc, sels.first.elements.third.combinator)
+
+
     def it_parses_chain_of_elements(self):
         ''' One '''
         sels = dom.selectors('E')
@@ -16060,6 +16269,30 @@ ListHtml = '''
     </article>
   </body>
 </html>
+'''
+
+CombinatorTests = '''
+  <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en" debug="true">
+    <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    </head>
+    <body>
+      <div>
+        <p id="child-of-div">
+          <span id="child-of-p-of-div">
+          </span>
+        </p>
+      </div>
+      <div>
+        <h2>
+          <p id="child-of-h2" class="p-header">
+            <span id="child-of-p-of-h2" class="span-header">
+            </span>
+          </p>
+        </h2>
+      </div>
+    </body>
+  </html>
 '''
 
 Shakespeare = '''
