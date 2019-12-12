@@ -16,13 +16,17 @@ from func import enumerate
 from html.parser import HTMLParser
 from mistune import Markdown
 from textwrap import dedent, indent
-import cssselect
 import entities
 import html as htmlmod
 import orm
 import re
 import string
 import sys
+import operator
+
+"""
+Represent an implementation of the HTML5 DOM.
+"""
 
 """
 .. _moz_global_attributes https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes
@@ -3678,12 +3682,167 @@ class markdown(elements):
         self += html(Markdown()(dedent(text).strip()))
 
 class selectors(entities.entities):
-    """ Represents a group of selectors.
+    """ Represents a seection group of CSS3 selectors. Selection groups
+    are seperated by commas in CSS3 selector strings. For example, in
+    the string::
+
+        'p, div'
+
+    the p would represent one entry of the selector group (represented
+    by a ``selector`` object) and div would represent an second entry.
     """
+
+    class token(tuple):
+        def __new__(cls, type, value, pos):
+            obj = tuple.__new__(cls, (type, value))
+            obj.pos = pos
+            return obj
+
+        def __repr__(self):
+            return "<%s '%s' at %i>" % (self.type, self.value, self.pos)
+
+        def is_delim(self, *values):
+            return self.type == 'DELIM' and self.value in values
+
+        type = property(operator.itemgetter(0))
+        value = property(operator.itemgetter(1))
+
+        def css(self):
+            if self.type == 'STRING':
+                return repr(self.value)
+            else:
+                return self.value
+
+    class eof(token):
+        def __new__(cls, pos):
+            return selectors.token.__new__(cls, 'EOF', None, pos)
+
+        def __repr__(self):
+            return '<%s at %i>' % (self.type, self.pos)
+
+
     def __init__(self, sel=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._sel = sel
         self._parse()
+    
+    @staticmethod
+    def tokenize(s):
+        """ Tokenize a CSS selection string.
+        """
+        err = CssSelectorParseError
+
+        # Set up regex
+        class macros:
+            unicode_escape = r'\\([0-9a-f]{1,6})(?:\r\n|[ \n\r\t\f])?'
+            escape = unicode_escape + r'|\\[^\n\r\f0-9a-f]'
+            string_escape = r'\\(?:\n|\r\n|\r|\f)|' + escape
+            nonascii = r'[^\0-\177]'
+            nmchar = '[_a-z0-9-]|%s|%s' % (escape, nonascii)
+            nmstart = '[_a-z]|%s|%s' % (escape, nonascii)
+
+        def compile(pattern):
+            return re.compile(pattern % vars(macros), re.IGNORECASE)\
+                    .match
+
+        re_whitespace = compile(r'[ \t\r\n\f]+')
+        re_number     = compile(r'[+-]?(?:[0-9]*\.[0-9]+|[0-9]+)')
+        re_hash       = compile('#(?:%(nmchar)s)+')
+        re_id         = compile('-?(?:%(nmstart)s)(?:%(nmchar)s)*')
+        re_strbyquo = {
+            "'": compile(r"([^\n\r\f\\']|%(string_escape)s)*"),
+            '"': compile(r'([^\n\r\f\\"]|%(string_escape)s)*'),
+        }
+
+        sub_simple_esc = re.compile(r'\\(.)').sub
+        sub_uni_esc = re.compile(macros.unicode_escape, re.I).sub
+        sub_nl_esc =re.compile(r'\\(?:\n|\r\n|\r|\f)').sub
+
+        # Same as r'\1', but faster on CPython
+        replace_simple = operator.methodcaller('group', 1)
+
+        # Define sum functions
+        def replace_unicode(match):
+            codepoint = int(match.group(1), 16)
+            if codepoint > sys.maxunicode:
+                codepoint = 0xFFFD
+            return _unichr(codepoint)
+
+        def unescape_ident(value):
+            value = sub_uni_esc(replace_unicode, value)
+            value = sub_simple_esc(replace_simple, value)
+            return value
+
+        # Begin interation over the selector string, yielding a token
+        # object each time one is encounter
+        pos = 0
+        len_s = len(s)
+        while pos < len_s:
+            match = re_whitespace(s, pos=pos)
+            if match:
+                yield selectors.token('S', ' ', pos)
+                pos = match.end()
+                continue
+
+            match = re_id(s, pos=pos)
+            if match:
+                value = sub_simple_esc(replace_simple,
+                        sub_uni_esc(replace_unicode, match.group()))
+                yield selectors.token('IDENT', value, pos)
+                pos = match.end()
+                continue
+
+            match = re_hash(s, pos=pos)
+            if match:
+                value = sub_simple_esc(replace_simple,
+                        sub_uni_esc(replace_unicode, match.group()[1:]))
+                yield selectors.token('HASH', value, pos)
+                pos = match.end()
+                continue
+
+            quote = s[pos]
+            if quote in re_strbyquo:
+                match = re_strbyquo[quote](s, pos=pos + 1)
+                if not match:
+                    raise err(
+                        'Should have found at least an empty match',
+                        pos=pos
+                    )
+                end_pos = match.end()
+                if end_pos == len_s:
+                    raise err('Unclosed string', pos=pos)
+                if s[end_pos] != quote:
+                    raise err('Invalid string', pos=pos)
+                value = sub_simple_esc(replace_simple,
+                        sub_uni_esc(replace_unicode,
+                        sub_nl_esc('', match.group())))
+                yield selectors.token('STRING', value, pos)
+                pos = end_pos + 1
+                continue
+
+            match = re_number(s, pos=pos)
+            if match:
+                value = match.group()
+                yield selectors.token('NUMBER', value, pos)
+                pos = match.end()
+                continue
+
+            pos2 = pos + 2
+            if s[pos:pos2] == '/*':
+                pos = s.find('*/', pos2)
+                if pos == -1:
+                    pos = len_s
+                else:
+                    pos += 2
+                continue
+
+            yield selectors.token('DELIM', s[pos], pos)
+            pos += 1
+
+        if not pos:
+            raise err('Falsy position')
+
+        yield selectors.eof(pos)
 
     def _parse(self):
         err = CssSelectorParseError
@@ -3705,16 +3864,10 @@ class selectors(entities.entities):
         self += sel
         el = comb = attr = cls = pcls = args = None
 
-        toks = cssselect.parser.tokenize(self._sel)
-
         prev = None
-        while True:
-            try:
-                tok = next(toks)
-            except cssselect.parser.SelectorError as ex:
-                raise err(ex)
+        for tok in self.tokenize(self._sel):
 
-            if isinstance(tok, cssselect.parser.EOFToken):
+            if isinstance(tok, selectors.eof):
                 if attr:
                     raise err('Attribute not closed', tok)
 
@@ -4477,26 +4630,15 @@ class DomMoveError(ValueError):
     pass
 
 class CssSelectorParseError(SyntaxError):
-    def __init__(self, o, tok=None):
-        self._pos = None
+    def __init__(self, o, tok=None, pos=None):
+        self._pos = pos
         self.token = tok
-        if isinstance(o, cssselect.parser.Token):
+        if isinstance(o, selectors.token):
             self.token = o
             tok = self.token
             super().__init__(
                 'Unexpected token "%s" at %s' % (tok.value, tok.pos)
             )
-        elif isinstance(o, cssselect.parser.SelectorError):
-            super().__init__(str(o))
-
-            # The tokenizer in cssselect doesn't store the pos
-            # correctely, as far as I can tell. It has to be extracted
-            # from the exception's string. We can remove all this when
-            # we move the tokenizer code into dom.py and correct these
-            # issues.
-            m = re.match('.*at (\d)+$', ' at 0')
-            if m:
-                self._pos = int(m.groups()[0])
         elif isinstance(o, str):
             super().__init__(o)
         else:

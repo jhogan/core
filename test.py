@@ -15815,7 +15815,6 @@ class test_selectors(tester):
             for sel, pos in sels.items():
                 sel %= invalid
                 if invalid == '*': continue
-                pos = 0 if invalid == '"' else pos
                 test(sel, pos)
 
         ''' Selector groups '''
