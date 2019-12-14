@@ -13533,7 +13533,50 @@ class test_selectors(tester):
             self.one(els)
             self.type(dom.span, els.first)
             self.eq('child-of-p-of-h2', els.first.id)
+    
+    def it_selects_with_subsequent_sibling_combinator(self):
+        html = dom.html(CombinatorTests)
 
+        sels = [
+            'html > body > div#adjacency-anchor ~ p',
+            'html body > div#adjacency-anchor ~ p',
+            'body > div#adjacency-anchor ~ p',
+            'body div#adjacency-anchor ~ p',
+            'div#adjacency-anchor ~ p',
+            '#adjacency-anchor ~ p',
+        ]
+        for sel in sels:
+            els = html[sel]
+            self.two(els)
+            self.eq('immediatly-after-the-adjacency-anchor', els.first.id)
+            self.eq('after-the-adjacency-anchor', els.second.id)
+
+        els = html['div ~ p']
+        self.four(els)
+        self.eq('before-the-adjacency-anchor', els.first.id)
+        self.eq('immediatly-before-the-adjacency-anchor', els.second.id)
+        self.eq('immediatly-after-the-adjacency-anchor', els.third.id)
+        self.eq('after-the-adjacency-anchor', els.fourth.id)
+
+        els = html['div ~ *']
+        self.five(els)
+        self.eq('before-the-adjacency-anchor', els.first.id)
+        self.eq('immediatly-before-the-adjacency-anchor', els.second.id)
+        self.eq('adjacency-anchor', els.third.id)
+        self.eq('immediatly-after-the-adjacency-anchor', els.fourth.id)
+        self.eq('after-the-adjacency-anchor', els.fifth.id)
+
+        els = html['* ~ *']
+        self.all(
+            type(x) not in (dom.html, dom.head, dom.h2) for x in els
+        )
+
+        els = html['head ~ body']
+        self.one(els)
+        self.type(dom.body, els.first)
+
+        els = html['h2 ~ *']
+        self.zero(els)
 
     def it_selects_with_chain_of_elements(self):
         html = self._shakespear
@@ -16295,7 +16338,11 @@ CombinatorTests = '''
           </span>
         </p>
       </div>
-      <div>
+      <p id="before-the-adjacency-anchor">
+      </p>
+      <p id="immediatly-before-the-adjacency-anchor">
+      </p>
+      <div id="adjacency-anchor">
         <h2>
           <p id="child-of-h2" class="p-header">
             <span id="child-of-p-of-h2" class="span-header">
@@ -16303,6 +16350,10 @@ CombinatorTests = '''
           </p>
         </h2>
       </div>
+      <p id="immediatly-after-the-adjacency-anchor">
+      </p>
+      <p id="after-the-adjacency-anchor">
+      </p>
     </body>
   </html>
 '''

@@ -502,6 +502,15 @@ class element(entities.entity):
         return None
 
     @property
+    def preceding(self):
+        els = elements()
+        for el in self.getsiblings(includeself=True):
+            if el is self:
+                break
+            els += el
+        return els
+
+    @property
     def next(self):
         raise NotImplementedError('TODO')
                 
@@ -4233,6 +4242,12 @@ class selector(entities.entity):
                     else:
                         rms += el1
                         break
+                elif comb == selector.element.SubsequentSibling:
+                    for el2 in el1.preceding:
+                        if smp.match(el2):
+                            break
+                    else:
+                        rms += el1
                 else:
                     raise ValueError('Invalid combinator')
 
