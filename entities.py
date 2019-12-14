@@ -16,6 +16,19 @@ from functools import total_ordering
 import decimal
 import string
 
+class classproperty(property):
+    ''' Add this decorator to a method and it becomes a class method
+    that can be used like a property.'''
+
+    def __get__(self, cls, owner):
+        # If cls is not None, it will be the instance. If there is an instance,
+        # we want to pass that in instead of the class (owner). This makes it
+        # possible for classproperties to act like classproperties and regular
+        # properties at the same time. See the conditional at entities.count.
+        obj = cls if cls else owner
+        return classmethod(self.fget).__get__(None, obj)()
+
+
 class entities(object):
     def __init__(self, initial=None):
         self._ls = list()

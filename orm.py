@@ -25,6 +25,7 @@ import dateutil
 import db
 import decimal
 import entities as entitiesmod
+from entities import classproperty
 import func
 import gc
 import itertools
@@ -973,18 +974,6 @@ class predicate(entitiesmod.entity):
 class allstream(stream):
     pass
         
-class classproperty(property):
-    ''' Add this decorator to a method and it becomes a class method
-    that can be used like a property.'''
-
-    def __get__(self, cls, owner):
-        # If cls is not None, it will be the instance. If there is an instance,
-        # we want to pass that in instead of the class (owner). This makes it
-        # possible for classproperties to act like classproperties and regular
-        # properties at the same time. See the conditional at entities.count.
-        obj = cls if cls else owner
-        return classmethod(self.fget).__get__(None, obj)()
-
 class eager:
     def __init__(self, *graphs):
         self._graphs = graphs

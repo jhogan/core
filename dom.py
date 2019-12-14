@@ -14,12 +14,13 @@ from html.parser import HTMLParser
 from mistune import Markdown
 from textwrap import dedent, indent
 import entities
+from entities import classproperty
 import html as htmlmod
+import operator
 import orm
 import re
 import string
 import sys
-import operator
 
 """
 Represent an implementation of the HTML5 DOM.
@@ -35,22 +36,6 @@ class undef:
     # TODO This is used in orm.py so it should probably be centralized
     # somewhere.
     pass
-
-class classproperty(property):
-    ''' Add this decorator to a method and it becomes a class method
-    that can be used like a property.'''
-
-    # TODO This is in orm.py, too. It should be be moved to a central
-    # location.
-
-    def __get__(self, cls, owner):
-        # If cls is not None, it will be the instance. If there is an
-        # instance, we want to pass that in instead of the class
-        # (owner). This makes it possible for classproperties to act
-        # like classproperties and regular properties at the same time.
-        # See the conditional at entities.count.
-        obj = cls if cls else owner
-        return classmethod(self.fget).__get__(None, obj)()
 
 class site(entities.entity):
     def __init__(self, name):
