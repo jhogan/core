@@ -375,15 +375,24 @@ class elements(entities.entities):
 class element(entities.entity):
     # There must be a closing tag on elements by default. In cases,
     # such as the `base` element, there should not be a closing tag so
-    # `noend` is set to True
+    # `isvoid` is set to True
 
-    # TODO Consider renaming this to `void` because 
-    # "Void elements only have a start tag; end tags must not be
-    # specified for void elements."
-
-    # https://www.w3.org/TR/2011/WD-html-markup-20110405/syntax.html
-
-    noend = False
+    # "A void element is an element whose content model never allows it
+    # to have contents under any circumstances. Void elements can have
+    # attributes. [...]
+    # The following is a complete list of the void elements in HTML:
+    #     area, base, br, col, command, embed, hr, img, input, keygen,
+    #     link, meta, param, source, track, wbr [...]
+    # Optionally, a "/" character, which may be present only if the
+    # element is a void element. [...]
+    # Void elements only have a start tag; end tags must not be
+    # specified for void elements. [...]
+    # A non-void element must have an end tag, unless the subsection for
+    # that element in the HTML elements section of this reference
+    # indicates that its end tag can be omitted."
+    # The above is from:
+    #   https://www.w3.org/TR/2011/WD-html-markup-20110405/syntax.html
+    isvoid = False
 
     def __init__(self, o=None):
         if isinstance(o, str):
@@ -575,14 +584,14 @@ class element(entities.entity):
             args.append(self.attributes.html)
 
         r += '>'
-        if not self.noend:
+        if not self.isvoid:
             r += '\n'
 
         if body:
             r += '%s\n'
             args += [body]
 
-        if self.noend:
+        if self.isvoid:
             pass
             #r += '>'
         else:
@@ -721,7 +730,7 @@ class break_(element):
 
     https://developer.mozilla.org/en-US/docs/Web/HTML/Element/br
     """
-    noend=True
+    isvoid=True
     tag = 'br'
 
 class comments(elements):
@@ -1245,7 +1254,7 @@ class base(element):
     relative URLs contained within a document. There can be only one
     <base> element in a document.
     """
-    noend = True
+    isvoid = True
 
     @property
     def target(self):
@@ -1267,7 +1276,7 @@ class imgs(elements):
     pass
 
 class img(element):
-    noend = True
+    isvoid = True
     @property
     def crossorigin(self):
         return self.attributes['crossorigin'].value
@@ -2543,7 +2552,7 @@ class metas(elements):
     pass
 
 class meta(element):
-    noend = True
+    isvoid = True
     @property
     def charset(self):
         return self.attributes['charset'].value
@@ -3117,7 +3126,7 @@ class _htmlparser(HTMLParser):
         else:
             cur[0] += el
         finally:
-            if not el.noend:
+            if not el.isvoid:
                 self.stack.append([el, self.getpos()])
 
     def handle_comment(self, data):
@@ -3234,7 +3243,7 @@ class hrs(elements):
     pass
 
 class hr(element):
-    noend = True
+    isvoid = True
     @property
     def align(self):
         return self.attributes['align'].value

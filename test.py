@@ -12099,12 +12099,12 @@ class test_element(tester):
         p1 = dom.paragraph()
         self.expect(dom.DomMoveError, lambda: p1.__iadd__(txt))
 
-    def it_calls_noend(self):
-        self.false(dom.paragraph.noend)
-        self.false(dom.paragraph().noend)
+    def it_calls_isvoid(self):
+        self.false(dom.paragraph.isvoid)
+        self.false(dom.paragraph().isvoid)
 
-        self.true(dom.base.noend)
-        self.true(dom.base().noend)
+        self.true(dom.base.isvoid)
+        self.true(dom.base().isvoid)
 
     def it_calls_id(self):
         p = dom.paragraph()
