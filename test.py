@@ -12881,7 +12881,9 @@ class test_markdown(tester):
         self.two(md.second.elements)
         self.type(dom.a, md.second.elements.first)
         self.one(md.second.elements.first.attributes)
-        self.is_(dom.undef, md.second.elements.first.title)
+
+        self.is_(None, md.second.elements.first.title)
+        self.false(md.second.elements.first.attributes['title'].isdef)
         self.eq('http://example.net/', md.second.elements.first.href)
 
 

@@ -148,16 +148,23 @@ class attributes(entities.entities):
 class attribute(entities.entity):
     def __init__(self, name, v=undef):
         self.name = name
-        self.value = v
-
-    # TODO All attributes should be returned as str values. Some work
-    # needs to done to ensure that 'None' and '<undef>' aren't returned,
-    # however.
+        self._value = v
 
     @property
     def value(self):
-        return str(self._value)
-    '''
+        if self.isdef:
+            if self._value is None:
+                return None
+            return str(self._value)
+        return None
+
+    @value.setter
+    def value(self, v):
+        self._value = v
+
+    @property
+    def isdef(self):
+        return self._value is not undef
 
     @staticmethod
     def create(name, v=undef):
@@ -268,8 +275,12 @@ class cssclass(attribute):
                 )
 
     @property
+    def isdef(self):
+        return bool(self._classes)
+
+    @property
     def value(self):
-        if not self._classes:
+        if not self.isdef:
             return undef
         return ' '.join(self._classes)
 
