@@ -13217,36 +13217,53 @@ class test_orm(tester):
             self.is_(sng1, sng1.artist_artists.singer)
 
         with self._chrontest() as t:
+            t(lambda: sng1.painters)
+            t.retrieved(sng1.artist_artists.first.object)
+            t.retrieved(sng1.artist_artists.second.object)
+            t.retrieved(sng1.painters.first)
+
+        with self._chrontest() as t:
             t(lambda: sng1.singers)
             t.retrieved(sng1.singers.first)
-            t.retrieved(sng1.artists.first)
 
-        return
-
-        with self._chrontest() as t:
-            t(lambda: sng1.painters)
-            print(t)
-
-
-        with self._chrontest() as t:
+        # Ensure pseudocollections are being memoized and have the
+        # right count
+        with ct() as t:
+            self.two(t(lambda: sng1.artists))
+            self.one(t(lambda: sng1.painters))
             self.one(t(lambda: sng1.singers))
 
-        with ct() as t:
-            self.one(t(lambda: sng1.artists))
+        self.type(singer,   sng1)
+        self.type(singer,   sng1.singers.first)
+        self.type(painter,  sng1.painters.first)
+        self.type(artist,   sng1.artists.first)
+        self.type(artist,   sng1.artists.second)
 
-        self.type(singer, sng1)
+        self.eq(sng.id,         sng1.id)
 
-        self.type(singer, sng1.singers.first)
-        self.type(artist, sng1.artists.first)
-
-        aa1 = sng1.artist_artists.first
-
-        self.eq(sng.id,          sng1.id)
-        self.eq(aa.id,           aa1.id)
-        self.eq(aa.role,         aa1.role)
-
+        aa1 = sng1.artist_artists[sng.artist_artists.first.id]
+        aa = sng.artist_artists.first
+        self.eq(aa.id,                 aa1.id)
+        self.eq(aa.role,               aa1.role)
         self.eq(aa.subject.id,         aa1.subject.id)
+        self.eq(aa.subject__artistid,  aa1.subject__artistid)
+        self.eq(aa.object.id,          aa1.object.id)
+        self.eq(aa.object__artistid,   aa1.object__artistid)
+        self.type(singer,              aa.object)
+        self.type(artist,              aa1.object)
 
+        aa = sng.artist_artists.second
+        aa1 = sng1.artist_artists[aa.id]
+        self.eq(sng.artist_artists.second.id,          aa1.id)
+        self.eq(sng.artist_artists.second.role,        aa1.role)
+        self.eq(sng.artist_artists.second.subject.id,  aa1.subject.id)
+        self.eq(aa.subject__artistid,                  aa1.subject__artistid)
+        self.eq(aa.object.id,                          aa1.object.id)
+        self.eq(aa.object__artistid,                   aa1.object__artistid)
+        self.type(painter,                             aa.object)
+        self.type(artist,                              aa1.object)
+
+        # NOTE
         # Q Should aa1.subject be artist or downcasted to singer?  
         # A No, since aa1 is an artist_artist type, it's `subject`
         # attribute must reflect that. If we wanted `subject` to be of
@@ -13259,42 +13276,58 @@ class test_orm(tester):
         #
         #   aa1.subject.as_singer.register = 'laryngealization'
         #   aa1.save()
+        #
+        # UPDATE After thinking about this more, I don't see an issue
+        # with artist_artist.subject and artist_artist.object
+        # downcasting themselves to their most specialized types. This
+        # would require additional, and prehaps needless database hits,
+        # however, the convenience may be worth it.
 
-        #self.type(singer,              aa1.subject)
-
-        self.eq(aa.subject__artistid,  aa1.subject__artistid)
-        self.eq(aa.object.id,          aa1.object.id)
-        self.type(singer,              aa.object)
-        self.eq(aa.object__artistid,   aa1.object__artistid)
-
-        # Add as second artist_artist, save, reload and test
+        # Add two more (singer and painter) to artist_artist, save,
+        # reload and test
         aa2           =  artist_artist.getvalid()
         objsng        =  singer.getvalid()
         aa2.object    =  objsng
+
 
         sng1.artist_artists += aa2
 
         self.is_(sng1,    aa2.subject)
         self.is_(objsng,  aa2.object)
-        self.two(sng1.artist_artists)
+        self.three(sng1.artist_artists)
         self.two(sng1.singers)
 
-        # TODO The artists collection will still have one `artist`
-        # entity. It is identical to the the singer that was loaded:
+        aa2           =  artist_artist.getvalid()
+        objpnt        =  painter.getvalid()
+        aa2.object    =  objpnt
+
+        sng1.artist_artists += aa2
+
+        self.is_(sng1,    aa2.subject)
+        self.is_(objpnt,  aa2.object)
+        self.four(sng1.artist_artists)
+        self.two(sng1.singers)
+        self.two(sng1.painters)
+
+        # TODO The artists collection will still have two `artist`s
+        # entity objects. They are equal but not identical to the 
+        # singer and painter that were loaded:
         # 
-        #     assert sng1.singers.first is sng1.artists.first
+        #     assert sng1.singers.first.id == sng1.artists.first.id
+        #     assert sng1.painters.first.id == sng1.artists.first.id
         #
-        # However, we would expect the newly added singer
-        # (sng1.singers.second) to be in the `artists` collection as
-        # well. Some work needs to be done to ensure that entity objects
-        # in these collections are downcasted/upcasted correctely and
-        # propogated to the correct entities collection object on load
-        # and on append.
-        self.one(sng1.artists)
+        # However, we would expect the newly added singer and painter to
+        # be in the `artists` collection as well. Some work needs to be
+        # done to ensure that entity objects in these collections are
+        # downcasted/upcasted correctely and propogated to the correct
+        # entities collection object on load and on append.
+        self.two(sng1.artists)
 
         with ct() as t:
             t(sng1.save)
-            t.created(aa2, objsng, objsng.orm.super)
+            t.created(objsng, objsng.orm.super)
+            t.created(objpnt, objpnt.orm.super)
+            t.created(*sng1.artist_artists.tail(2))
 
         sng2 = singer(sng1.id)
         self.eq(sng1.id, sng2.id)
@@ -13302,6 +13335,7 @@ class test_orm(tester):
         aas1=sng1.artist_artists.sorted('role')
         aas2=sng2.artist_artists.sorted('role')
 
+        self.four(aas1); self.four(aas2)
         for aa1, aa2 in zip(aas1, aas2):
             self.eq(aa1.id,                 aa2.id)
             self.eq(aa1.role,               aa2.role)
@@ -13316,18 +13350,27 @@ class test_orm(tester):
         objsng = singer.getvalid()
         sng2.singers += objsng
 
-        self.is_(sng2,    sng2.artist_artists.last.subject)
-        self.is_(objsng,  sng2.artist_artists.last.object)
+        print(sng2.singers.count)
+        print(sng2.painters.count)
+        objpnt = painter.getvalid()
+        sng2.painters += objpnt
 
-        sng2.artist_artists.last.role      =  uuid4().hex
-        sng2.artist_artists.last.slug      =  uuid4().hex
-        sng2.artist_artists.last.timespan  =  uuid4().hex
-        aa2                                =  sng2.artist_artists.last
+        self.is_(sng2,    sng2.artist_artists.penultimate.subject)
+        self.is_(objsng,  sng2.artist_artists.penultimate.object)
 
+        self.is_(sng2,    sng2.artist_artists.ultimate.subject)
+        self.is_(objpnt,  sng2.artist_artists.ultimate.object)
+
+        for aa2 in sng2.artist_artists.tail(2):
+            aa2.role      =  uuid4().hex
+            aa2.slug      =  uuid4().hex
+            aa2.timespan  =  uuid4().hex
+            self.isnot(aa2.subject,  aa2.object)
 
         self.three(sng2.singers)
-        self.three(sng2.artist_artists)
-        self.isnot(aa2.subject,  aa2.object)
+        self.three(sng2.painters)
+        self.six(sng2.artist_artists)
+        return
 
         with ct() as t:
             t(sng2.save)
