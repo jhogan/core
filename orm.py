@@ -5761,11 +5761,13 @@ class associations(entities):
 
                     # TODO This could use a clean up, e.g.,
                     #     if attr in e.orm.entities.subclasses:
+                    
                     subs = [x.orm.entities.__name__ for x in e.orm.subclasses]
                     if attr in subs:
-                        e = es.orm.entity(e.id)
-                        if not e:
-                            raise ValueError('Could not find subentity')
+                        try:
+                            e = es.orm.entity(e.id)
+                        except db.RecordNotFoundError:
+                            continue
                     es += e
 
             # Return pseudocollection.
