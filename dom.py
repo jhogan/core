@@ -23,7 +23,7 @@ import string
 import sys
 
 """
-Represent an implementation of the HTML5 DOM.
+An implementation of the HTML5 DOM.
 """
 
 """
@@ -33,8 +33,6 @@ Represent an implementation of the HTML5 DOM.
 class undef:
     """ Used to indicate that an attribute has not been defined.
     """
-    # TODO This is used in orm.py so it should probably be centralized
-    # somewhere.
     pass
 
 class site(entities.entity):
@@ -128,7 +126,7 @@ class attributes(entities.entities):
 
     @property
     def _defined(self):
-        return [x for x in self._ls if x.value is not undef]
+        return [x for x in self._ls if x.isdef]
 
     def __iter__(self):
         for attr in self._defined:
@@ -145,8 +143,7 @@ class attributes(entities.entities):
 
     @property
     def html(self):
-        # TODO We could probably remove the list() brakets
-        return ' '.join([x.html for x in self if x.isvalid])
+        return ' '.join(x.html for x in self if x.isvalid)
         
 class attribute(entities.entity):
     def __init__(self, name, v=undef):
@@ -156,7 +153,7 @@ class attribute(entities.entity):
     # TODO All attributes should be returned as str values. Some work
     # needs to done to ensure that 'None' and '<undef>' aren't returned,
     # however.
-    '''
+
     @property
     def value(self):
         return str(self._value)
@@ -194,6 +191,7 @@ class attribute(entities.entity):
         return super().brokenrules
 
 class cssclass(attribute):
+    # TODO Change `value` to `v`
     def __init__(self, value=None):
         super().__init__('class')
 
@@ -229,11 +227,11 @@ class cssclass(attribute):
         for cls in clss:
             if isinstance(cls, str):
                 for cls in cls.split():
-
-                    # TODO Remove the brackets to make the argument a generator
                     if any(x.isspace() for x in cls):
                         # TODO Test
-                        raise ValueError("CSS classes can't contain whitespace")
+                        raise ValueError(
+                            "CSS classes can't contain whitespace"
+                        )
 
                     if cls in self._classes:
                         raise ClassExistsError(

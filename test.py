@@ -2201,16 +2201,17 @@ class test_table(tester):
 
         # Test fields property after setting them in the table object.
 
-        # TODO  When setting fields, the old field(s) is removed from the
-        # table.fields collection, but the new field(s) ends up at the end of
-        # the table.fields collection instead of in place of the removed
-        # field(s). This is because the fields.__setitem__ simply calls the
-        # onadd the onremove event, which causes an append to the collection.
-        # Ideally, the new field wouldn't be appended, but would rather be set
-        # in the correct location of the table.fields property. However,
-        # currently there is no use case for this. However, since this should
-        # change, use of table.fields shouldn't make assuptions about where
-        # newly set fields will appear until this behavior is corrected.
+        # TODO  When setting fields, the old field(s) is removed from
+        # the table.fields collection, but the new field(s) ends up at
+        # the end of the table.fields collection instead of in place of
+        # the removed field(s). This is because the fields.__setitem__
+        # simply calls the onadd the onremove event, which causes an
+        # append to the collection.  Ideally, the new field wouldn't be
+        # appended, but would rather be set in the correct location of
+        # the table.fields property. However, currently there is no use
+        # case for this. However, since this should change, use of
+        # table.fields shouldn't make assuptions about where newly set
+        # fields will appear until this behavior is corrected.
 
         tbl[0][0] = rst = field(the4.first)
         tbl[0].fields.second = nd = field(the4.second)
@@ -13423,6 +13424,15 @@ class test_markdown(tester):
         self.eq(expect, md.html)
 
 class test_selectors(tester):
+    # TODO Running all the tests in test_selectors takes around 10
+    # seconds at the time of this writting. We should run the profiler
+    # on the following test:
+    #
+    #     python3 test.py test_selectors
+    #
+    # There may be some hotspots that could be optimized to reduce the
+    # time spent running these tests.
+
     @property
     def _shakespear(self):
         if not hasattr(self, '_spear'):

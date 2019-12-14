@@ -64,13 +64,14 @@ class undef:
         if x is orm.undef:
             x = None
 
-    Indicating a variable or property is undef is useful for situations where
-    ``None`` has a specific meaning. For example, an instance of `fieldmapping`
-    may have a ``value`` property equal to None which would mean its
-    corresponding field in the database is (or will be) ``null``. However,
-    there are still times when its ``value`` property will need to be set to
-    ``undef`` such as to indicate that it has not yet been set by the code -
-    cases which ``None`` is typically used for.
+    Indicating a variable or property is undef is useful for situations
+    where ``None`` has a specific meaning. For example, an instance of
+    `fieldmapping` may have a ``value`` property equal to None which
+    would mean its corresponding field in the database is (or will be)
+    ``null``. However, there are still times when its ``value`` property
+    will need to be set to ``undef`` such as to indicate that it has not
+    yet been set by the code - cases which ``None`` is typically used
+    for.
     """
     pass
 
