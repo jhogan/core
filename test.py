@@ -13376,13 +13376,13 @@ class test_orm(tester):
             t.created(*sng2.artist_artists.tail(2).pluck('object'))
             t.created(sng2.artist_artists.penultimate.object.orm.super)
             t.created(sng2.artist_artists.last.object.orm.super)
-        return
 
 
         sng3 = singer(sng2.id)
 
         self.three(sng3.singers)
-        self.three(sng3.artist_artists)
+        self.three(sng3.painters)
+        self.six(sng3.artist_artists)
 
         aas2 = sng2.artist_artists.sorted('role')
         aas3 = sng3.artist_artists.sorted('role')
@@ -13395,14 +13395,16 @@ class test_orm(tester):
             self.eq(aa2.subject__artistid,  aa3.subject__artistid)
             self.eq(aa2.object__artistid,   aa3.object__artistid)
 
-        # Add two presentations to the singers's presentations collection
+        # Add two presentations to the singers's and painter's
+        # presentations collection
         press3 = presentations()
-        for _ in range(2):
+        for _ in range(3):
             press3 += presentation.getvalid()
 
         press3.sort()
-        sng3.artist_artists.first.object.presentations += press3.first
-        sng3.singers.first.presentations += press3.second
+        sng3.artist_artists.first.object.presentations +=  press3.first
+        sng3.singers.first.presentations               +=  press3.second
+        sng3.painters.first.presentations              +=  press3.third
 
         # NOTE (3cb2a6b5) In the non-subentity version of this test
         # (it_loads_and_saves_reflexive_associations), the following is
@@ -13416,27 +13418,26 @@ class test_orm(tester):
         #
         # That means that the above appends go to two different
         # presentations collections. The commented out assertions below
-        # would fail but are left her to illustrates the consequences of
+        # would fail but are left here to illustrates the consequences of
         # this issue.
 
         self.one(sng3.artist_artists.first.object.presentations)
         self.one(sng3.singers.first.presentations)
-        # self.two(sng3.artist_artists.first.object.presentations)
-        # self.two(sng3.singers.first.presentations)
+        self.one(sng3.painters.first.presentations)
 
         aas3 = sng3.artist_artists
         self.is_(press3[0], aas3[0].object.presentations[0])
-        # self.is_(press3[1], aar3[0].object.presentations[1])
         self.is_(press3[1], sng3.singers[0].presentations[0])
-        # self.is_(press3[1], sng3.singers[0].presentations[1])
+        self.is_(press3[2], sng3.painters[0].presentations[0])
 
         with ct() as t:
             t(sng3.save)
-            t.created(press3.first)
-            t.created(press3.second)
+            t.created(*press3)
 
         sng4 = artist(sng3.id)
         press4 = sng4.artist_artists.first.object.presentations.sorted()
+        print(press4.count)
+        return
 
         self.two(press4)
         self.eq(press4.first.id, press3.first.id)
@@ -13537,7 +13538,7 @@ class test_orm(tester):
         #
         # That means that the above appends go to two different
         # presentations collections. The commented out assertion below
-        # would fail but is left her to illustrates the consequences of
+        # would fail but is left here to illustrates the consequences of
         # this issue. The following assertions also illustrate that
         # there are two presentations entities collections that are
         # different and contain different presentation objects.
