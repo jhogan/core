@@ -211,14 +211,13 @@ class attribute(entities.entity):
         return '%s="%s"' % (self.name, self.value)
 
 class cssclass(attribute):
-    # TODO Change `value` to `v`
-    def __init__(self, value=None):
+    def __init__(self, v=None):
         super().__init__('class')
 
         self._classes = list()
 
-        if value:
-            self += value
+        if v:
+            self += v
 
     def __contains__(self, e):
         return e in self._classes
