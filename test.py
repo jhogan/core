@@ -12293,6 +12293,38 @@ class test_text(tester):
         self.eq(expect, str(txt))
 
 class test_attribute(tester):
+    def it_raises_on_invalid_attributes(self):
+        # Test for valid characters in attribute names. Based on
+        # https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
+        p = dom.paragraph()
+
+        def ass(name):
+            p.attributes[name] = name
+
+        # These punctuation marks are not allowed.
+        invalids = ' "\'/='
+        for invalid in invalids:
+            for i in range(3):
+                name = list('abc')
+                name[i] = invalid
+                self.expect(ValueError, lambda: ass(''.join(name)))
+
+        # Non-characters are not allowed
+        nonchars = range(0xfdd0, 0xfdef)
+        for nonchar in nonchars:
+            for i in range(3):
+                name = list('abc')
+                name[i] = chr(nonchar)
+                self.expect(ValueError, lambda: ass(''.join(name)))
+
+        # Control charcters are not allowed
+        ctrls = range(0x007f, 0x009f)
+        for ctrl in ctrls:
+            for i in range(3):
+                name = list('abc')
+                name[i] = chr(ctrl)
+                self.expect(ValueError, lambda: ass(''.join(name)))
+        
     def it_deals_with_undef_attr(self):
         p = dom.paragraph()
         uuid = uuid4().hex

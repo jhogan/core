@@ -151,6 +151,23 @@ class attribute(entities.entity):
         self._value = v
 
     @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, v):
+        if any(x in ' "\'/=' for x in v):
+            raise ValueError('Invalid character in attribute name')
+
+        if any(ord(x) in range(0xfdd0, 0xfdef) for x in v):
+            raise ValueError('Invalid character in attribute name')
+
+        if any(ord(x) in range(0x007f, 0x009f) for x in v):
+            raise ValueError('Invalid character in attribute name')
+
+        self._name = v
+
+    @property
     def value(self):
         if self.isdef:
             if self._value is None:
@@ -160,6 +177,9 @@ class attribute(entities.entity):
 
     @value.setter
     def value(self, v):
+        # TODO We should raise ValueError if v contains an ambigous
+        # ampersand.
+        # https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
         self._value = v
 
     @property
@@ -189,13 +209,6 @@ class attribute(entities.entity):
             return self.name
 
         return '%s="%s"' % (self.name, self.value)
-
-    @property
-    def brokenrules(self):
-        # TODO: 
-        # * Attribute name should be [a-z-_]+
-        # * Attribute value should be [a-zA-Z-_]+
-        return super().brokenrules
 
 class cssclass(attribute):
     # TODO Change `value` to `v`
