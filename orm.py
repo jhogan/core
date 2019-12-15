@@ -1937,7 +1937,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                 self.orm.populate(res)
 
-
             # Post super().__init__() events
             self.onaftervaluechange  +=  self._self_onaftervaluechange
         finally:

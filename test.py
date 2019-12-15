@@ -3961,6 +3961,7 @@ class test_orm(tester):
         B(chrons.count != 4)
         # NOTE The below line produced a failure today, but it went
         # away.  (Jul 6)
+        # UPDATE Happend again Dec 15 2019
         self.four(chrons)
 
 

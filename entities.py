@@ -176,6 +176,30 @@ class entities(object):
         return type(self)(initial=self[start:cnt])
 
     def pluck(self, *ss):
+        # TODO We may want to return an entities collection here if all
+        # the items that were plucked were entities. This is because,
+        # currently, since we return a `list`, we can't do chained
+        # plucks, e.g., 
+        #
+        # sng.artist_artists.pluck('object').pluck('orm.super')
+        #
+        # However, list()s should continued to be returned if any of the
+        # elements are not entitiy objects. On the other hand, we could
+        # have a `primativeentity` class that can wrap a primative
+        # value. This would make it possible to always return an
+        # entities collection, i.e.:
+        #
+        #     v = str(getattr(e, prop))
+        #     if primativeentity.isprimative(v):
+        #         es += primativeentity(v)
+        #
+        # We may want to write an algorithm to determine the most
+        # generic entity in a collection of entities. This would allow
+        # us to create an entities collection object that is the most
+        # specialized for the given list of entities as possible.
+        #
+        # Also, for the above line to work, I think would should make
+        # sure we are using rgetattr() instead of getattr. 
         class formatter(string.Formatter):
             def convert_field(self, v, conv):
                 if conv:
