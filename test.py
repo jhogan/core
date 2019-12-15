@@ -13345,13 +13345,11 @@ class test_orm(tester):
             self.eq(aa1.object.id,          aa2.object.id)
             self.eq(aa1.object__artistid,   aa2.object__artistid)
 
-        # Add a third singer to the singer's pseudo-collection.
+        # Add a third singer and painter to their pseudo-collections.
         # Save, reload and test.
         objsng = singer.getvalid()
         sng2.singers += objsng
 
-        print(sng2.singers.count)
-        print(sng2.painters.count)
         objpnt = painter.getvalid()
         sng2.painters += objpnt
 
@@ -13370,13 +13368,14 @@ class test_orm(tester):
         self.three(sng2.singers)
         self.three(sng2.painters)
         self.six(sng2.artist_artists)
-        return
 
         with ct() as t:
             t(sng2.save)
-            t.created(sng2.artist_artists.third)
-            t.created(sng2.artist_artists.third.object)
-            t.created(sng2.artist_artists.third.object.orm.super)
+            t.created(*sng2.artist_artists.tail(2))
+            t.created(*sng2.artist_artists.tail(2).pluck('object'))
+            t.created(sng2.artist_artists.penultimate.object.orm.super)
+            t.created(sng2.artist_artists.last.object.orm.super)
+        return
 
 
         sng3 = singer(sng2.id)
@@ -13474,7 +13473,7 @@ class test_orm(tester):
 
         self.two(sng.artist_artists)
         self.two(sng.singers)
-        self.two(sng.artists)
+        self.zero(sng.artists)
 
         sng.save()
 

@@ -5768,6 +5768,20 @@ class associations(entities):
                             e = es.orm.entity(e.id)
                         except db.RecordNotFoundError:
                             continue
+                    elif attr != e.orm.entities.__name__:
+                        # In the line above: 
+                        #
+                        #     e = getattr(ass, map.name) # :=
+                        #
+                        # `e` will already be a subentity so the
+                        # conditional `if attr in subs` will be false.
+                        # However, it could be the wrong subentity
+                        # bucause `attr` dosen`t match `e`.  This block
+                        # prevents `e` from being appended to `es`
+                        # because, if we are here, `getattr(ass,
+
+                        # map.name)` is the wrong subtenity.
+                        continue
                     es += e
 
             # Return pseudocollection.
