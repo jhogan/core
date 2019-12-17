@@ -506,12 +506,13 @@ class element(entities.entity):
 
     @property
     def previous(self):
-        prev = None
-        for el in self.getsiblings(includeself=True):
-            if self is el:
-                return prev
-            prev = el
-        return None
+        sibs = self.getsiblings(includeself=True)
+
+        # If it only has self
+        if sibs.hasone: 
+            return None
+
+        return sibs(sibs.getindex(self) - 1)
 
     @property
     def preceding(self):
@@ -524,7 +525,12 @@ class element(entities.entity):
 
     @property
     def next(self):
-        raise NotImplementedError('TODO')
+        raise NotImplementedError()
+
+        # NOTE The below may work but has not been tested
+        sibs = self.getsiblings(includeself=True)
+        ix = sibs.getindex(self)
+        return sibs(ix + 1)
                 
     @property
     def elements(self):
@@ -4170,8 +4176,12 @@ class selector(entities.entity):
         def match(self, els):
             if isinstance(els, element):
                 return bool(self.match([els]).count)
+            
+            if els is None:
+                return False
 
             r = elements()
+
             for el in els:
                 if self.element not in ('*', el.tag):
                     continue
@@ -4254,6 +4264,10 @@ class selector(entities.entity):
                     else:
                         rms += el1
                         break
+                elif comb == selector.element.NextSibling:
+                    if not smp.match(el1.previous):
+                        rms += el1
+
                 elif comb == selector.element.SubsequentSibling:
                     for el2 in el1.preceding:
                         if smp.match(el2):

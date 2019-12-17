@@ -13566,6 +13566,39 @@ class test_selectors(tester):
             self.type(dom.span, els.first)
             self.eq('child-of-p-of-h2', els.first.id)
     
+    def it_selects_with_next_sibling_combinator(self):
+        html = dom.html(CombinatorTests)
+
+        sels = [
+            'div + p + p',
+        ]
+        for sel in sels:
+            els = html[sel]
+            print(repr(els))
+
+        ''' Select the <p> immediatly after #adjacency-anchor '''
+        sels = [
+            '#adjacency-anchor + p',
+            'div#adjacency-anchor + p',
+            'div#adjacency-anchor + p#immediatly-after-the-adjacency-anchor',
+        ]
+        for sel in sels:
+            els = html[sel]
+            self.one(els)
+            self.eq('immediatly-after-the-adjacency-anchor', els[0].id)
+
+        ''' These should match nothing but are similar to the above'''
+        sels = [
+            '#adjacency-anchor + div',
+            'div#adjacency-anchor + p.id-dont-exist',
+            '#adjacency-anchor + '
+                'p#XXXimmediatly-after-the-adjacency-anchor',
+        ]
+        for sel in sels:
+            els = html[sel]
+            self.zero(els)
+
+
     def it_selects_with_subsequent_sibling_combinator(self):
         html = dom.html(CombinatorTests)
 
