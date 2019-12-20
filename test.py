@@ -15371,6 +15371,28 @@ class test_selectors(tester):
         self.none(attr.operator)
         self.none(attr.value)
 
+        sels = [
+            "E[foo='bar baz']",
+            'E[foo="bar baz"]',
+
+        ]
+
+        for sel in sels:
+            sels = dom.selectors(sel)
+            expect = 'E[foo=bar baz]'
+            self.repr(expect, sels)
+            self.str(expect, sels)
+            self.one(sels)
+            sel = sels.first
+            self.one(sel.elements)
+            self.one(sel.elements.first.attributes)
+            self.eq('foo', sel.elements.first.attributes.first.key)
+            self.eq(
+                'bar baz', 
+                sel.elements.first.attributes.first.value
+            )
+
+
     def it_parses_class_elements(self):
         ''' E.warning '''
         sels = expect = 'E.warning'
