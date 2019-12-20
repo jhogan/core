@@ -246,12 +246,6 @@ class cssclass(attribute):
         for cls in clss:
             if isinstance(cls, str):
                 for cls in cls.split():
-                    if any(x.isspace() for x in cls):
-                        # TODO Test
-                        raise ValueError(
-                            "CSS classes can't contain whitespace"
-                        )
-
                     if cls in self._classes:
                         raise ClassExistsError(
                             'Class already exists: ' + cls
