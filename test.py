@@ -14876,17 +14876,22 @@ class test_selectors(tester):
     def it_selects_empty(self):
         html = dom.html('''
         <main>
-            <div id="0">
-                <!-- I am empty. -->
-            </div>
+            <div id="0"><!-- I am empty. --></div>
+
+            <div>I am not empty.</div>
+
             <div>
-                I am not empty
+                <!-- I am empty despite the whitespace around this comment. -->
+            </div>
+
+            <div>
+                <p id="1"><!-- This <p> is empty though its parent <div> is not.--></p>
             </div>
         </main>
         ''')
 
         els = html[':empty']
-        expect = [str(x) for x in range(1)]
+        expect = [str(x) for x in range(2)]
         self.count(len(expect), els)
         self.eq(expect, els.pluck('id'))
 
@@ -14916,17 +14921,7 @@ class test_selectors(tester):
         ''')
 
         els = html[':empty']
-        # FIXME The <div>s are all not :empty. However, they don't have
-        # dom.text children so they are perceived to be empty by the
-        # :empty pseudoclass. The fact that they don't have dom.text
-        # child elements is a problem with the parser that needs to be
-        # addressed. Currently, the HTML parser does not see these
-        # <div>s as having dom.text nodes (see f0197142). This was
-        # appearenty a mistake. To get :empty to work correctly, we will
-        # need to alter the parser to add text nodes here. This will
-        # likely result in a lot of the unit tests needing to be
-        # updated.
-        #self.zero(els)
+        self.zero(els)
 
     def it_selects_not(self):
         ''' Elements '''
