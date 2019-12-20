@@ -670,6 +670,15 @@ class entities(object):
         self[5] = v
 
     @property
+    def seventh(self): 
+        return self(6)
+
+    @seventh.setter
+    def seventh(self, v): 
+        self[6] = v
+
+
+    @property
     def last(self): 
         return self(-1)
 

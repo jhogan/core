@@ -12073,8 +12073,7 @@ class test_element(tester):
         p += b
         self.one(txt.siblings)
         self.is_(b, txt.siblings.first)
-        self.one(b.siblings)
-        self.is_(txt, b.siblings.first)
+        self.zero(b.siblings)
 
         i = dom.emphasis('some emphasized text')
         p += i
@@ -12082,13 +12081,11 @@ class test_element(tester):
         self.is_(b, txt.siblings.first)
         self.is_(i, txt.siblings.second)
 
-        self.two(b.siblings)
-        self.is_(txt, b.siblings.first)
-        self.is_(i, b.siblings.second)
+        self.one(b.siblings)
+        self.is_(i, b.siblings.first)
 
-        self.two(i.siblings)
-        self.is_(txt, i.siblings.first)
-        self.is_(b, i.siblings.second)
+        self.one(i.siblings)
+        self.is_(b, i.siblings.first)
 
     def it_raises_when_moving_elements(self):
         p = dom.paragraph()
@@ -12727,6 +12724,7 @@ class test_html(tester):
         <html>
         </html>
         '''
+
         self.expect(NotImplementedError, lambda: dom.html(html))
 
     def it_doesnt_parse_unknown_decls(self):
@@ -13032,22 +13030,22 @@ class test_markdown(tester):
         self.three(md)
         self.type(dom.paragraph, md.first)
         self.type(dom.table, md.second)
-        self.one(md.second.elements)
-        self.type(dom.tablerow, md.second.elements.first)
-        self.one(md.second.elements.first.elements)
+        self.one(md.second.children)
+        self.type(dom.tablerow, md.second.children.first)
+        self.one(md.second.children.first.children)
         self.type(
             dom.tabledata, 
-            md.second.elements.first.elements.first
+            md.second.children.first.children.first
         )
-        self.one(md.second.elements.first.elements.first.elements)
+        self.one(md.second.children.first.children.first.elements)
         self.type(
             dom.text, 
-            md.second.elements.first.elements.first.elements.first
+            md.second.children.first.children.first.elements.first
         )
 
         self.eq(
             'Foo',
-            md.second.elements.first.elements.first.elements.first.html
+            md.second.children.first.children.first.elements.first.html
         )
         self.type(dom.paragraph, md.third)
 
@@ -13065,7 +13063,7 @@ class test_markdown(tester):
         # https://daringfireball.net/projects/markdown/syntax#autolink
         # for more information.
         md = dom.markdown('<address@example.com>')
-        a = md.first.elements.first
+        a = md.first.children.first
         self.type(dom.a, a)
         self.eq('mailto:address@example.com', a.href)
         self.eq('address@example.com', a.elements.first.html)
@@ -13173,9 +13171,11 @@ class test_markdown(tester):
         self.one(md)
         self.type(dom.blockquote, md.first)
 
-        self.two(md.first.elements)
+        self.four(md.first.elements)
         self.type(dom.paragraph, md.first.elements.first)
-        self.type(dom.paragraph, md.first.elements.second)
+        self.type(dom.text, md.first.elements.second)
+        self.type(dom.paragraph, md.first.elements.third)
+        self.type(dom.text, md.first.elements.fourth)
 
         md = dom.markdown('''
         > This is a blockquote with two paragraphs. Lorem ipsum dolor sit amet,
@@ -13189,9 +13189,11 @@ class test_markdown(tester):
         self.one(md)
         self.type(dom.blockquote, md.first)
 
-        self.two(md.first.elements)
+        self.four(md.first.elements)
         self.type(dom.paragraph, md.first.elements.first)
-        self.type(dom.paragraph, md.first.elements.second)
+        self.type(dom.text, md.first.elements.second)
+        self.type(dom.paragraph, md.first.elements.third)
+        self.type(dom.text, md.first.elements.fourth)
 
         # Nested
 
@@ -13205,11 +13207,14 @@ class test_markdown(tester):
         self.one(md)
         self.type(dom.blockquote, md.first)
 
-        self.three(md.first.elements)
+        self.six(md.first.elements)
         self.type(dom.paragraph, md.first.elements.first)
-        self.type(dom.blockquote, md.first.elements.second)
-        self.type(dom.paragraph, md.first.elements[1].elements.first)
-        self.type(dom.paragraph, md.first.elements.third)
+        self.type(dom.text, md.first.elements.second)
+        self.type(dom.blockquote, md.first.elements.third)
+        self.type(dom.text, md.first.elements.fourth)
+        self.type(dom.paragraph, md.first.elements[2].elements.first)
+        self.type(dom.paragraph, md.first.elements.fifth)
+        self.type(dom.text, md.first.elements.sixth)
 
         md = dom.markdown('''
         > ## This is a header.
@@ -13226,12 +13231,15 @@ class test_markdown(tester):
         self.one(md)
         self.type(dom.blockquote, md.first)
         self.type(dom.h2, md.first.elements.first)
-        self.type(dom.ol, md.first.elements.second)
-        self.type(dom.li, md.first.elements.second.elements.first)
-        self.type(dom.li, md.first.elements.second.elements.second)
-        self.type(dom.p, md.first.elements.third)
-        self.type(dom.pre, md.first.elements.fourth)
-        self.type(dom.code, md.first.elements.fourth.elements.first)
+        self.type(dom.text, md.first.elements.second)
+        self.type(dom.li, md.first.elements.third.elements.second)
+        self.type(dom.li, md.first.elements.third.elements.fourth)
+        self.type(dom.text, md.first.elements.fourth)
+        self.type(dom.p, md.first.elements.fifth)
+        self.type(dom.text, md.first.elements.fourth)
+        self.type(dom.p, md.first.elements.fifth)
+        self.type(dom.text, md.first.elements.fifth.elements.first)
+        self.type(dom.code, md.first.elements[6].elements.first)
 
     def it_parses_lists(self):
         for bullet in '*', '+', '-':
@@ -13247,10 +13255,14 @@ class test_markdown(tester):
 
           self.one(md)
           self.type(dom.ul, md.first)
-          self.three(md.first.elements)
-          self.type(dom.li, md.first.elements.first)
+          self.seven(md.first.elements)
+          self.type(dom.text, md.first.elements.first)
           self.type(dom.li, md.first.elements.second)
-          self.type(dom.li, md.first.elements.third)
+          self.type(dom.text, md.first.elements.third)
+          self.type(dom.li, md.first.elements.fourth)
+          self.type(dom.text, md.first.elements.fifth)
+          self.type(dom.li, md.first.elements.sixth)
+          self.type(dom.text, md.first.elements.seventh)
 
         # NOTE Ordered list are created by starting the lines with
         # orditals (1., 2., etc). However, "he actual numbers you use to
@@ -13266,10 +13278,13 @@ class test_markdown(tester):
 
         self.one(md)
         self.type(dom.ol, md.first)
-        self.three(md.first.elements)
-        self.type(dom.li, md.first.elements.first)
+        self.seven(md.first.elements)
+        self.type(dom.text, md.first.elements.first)
         self.type(dom.li, md.first.elements.second)
-        self.type(dom.li, md.first.elements.third)
+        self.type(dom.text, md.first.elements.third)
+        self.type(dom.li, md.first.elements.fourth)
+        self.type(dom.text, md.first.elements.fifth)
+        self.type(dom.li, md.first.elements.sixth)
 
         for lazy in True, False:
             if lazy:
@@ -13293,9 +13308,9 @@ class test_markdown(tester):
                 ''')
             self.one(md)
             self.type(dom.ul, md.first)
-            self.two(md.first.elements)
-            self.type(dom.li, md.first.elements.first)
-            self.type(dom.li, md.first.elements.second)
+            self.two(md.first.children)
+            self.type(dom.li, md.first.children.first)
+            self.type(dom.li, md.first.children.second)
 
         md = dom.markdown('''
         *   Bird
@@ -13305,10 +13320,10 @@ class test_markdown(tester):
 
         self.one(md)
         self.type(dom.ul, md.first)
-        self.two(md.first.elements)
-        self.one(md.first.elements.first.elements)
-        self.type(dom.p, md.first.elements.first.elements.first)
-        self.type(dom.p, md.first.elements.second.elements.first)
+        self.two(md.first.children)
+        self.one(md.first.children.first.children)
+        self.type(dom.p, md.first.children.first.children.first)
+        self.type(dom.p, md.first.children.second.children.first)
 
         for lazy in True, False:
             if lazy:
@@ -13337,10 +13352,10 @@ class test_markdown(tester):
               ''')
             self.one(md)
             self.type(dom.ul if lazy else dom.ol, md.first)
-            self.two(md.first.elements)
-            self.two(md.first.elements.first.elements)
-            self.type(dom.p, md.first.elements.first.elements.first)
-            self.type(dom.p, md.first.elements.second.elements.first)
+            self.two(md.first.children)
+            self.two(md.first.children.first.children)
+            self.type(dom.p, md.first.children.first.children.first)
+            self.type(dom.p, md.first.children.second.children.first)
 
         md = dom.markdown('''
         *   A list item with a blockquote:
@@ -13351,10 +13366,10 @@ class test_markdown(tester):
 
         self.one(md)
         self.type(dom.ul, md.first)
-        self.type(dom.li, md.first.elements.first)
-        self.two(md.first.elements.first.elements)
-        self.type(dom.p, md.first.elements.first.elements.first)
-        self.type(dom.blockquote, md[0].elements[0].elements[1])
+        self.type(dom.li, md.first.children.first)
+        self.two(md.first.children.first.children)
+        self.type(dom.p, md.first.children.first.children.first)
+        self.type(dom.blockquote, md[0].children[0].children[1])
 
         md = dom.markdown('''
         *   A list item with a code block:
@@ -13363,14 +13378,14 @@ class test_markdown(tester):
         ''')
         self.one(md)
         self.type(dom.ul, md.first)
-        self.one(md.first.elements)
-        self.two(md.first.elements.first.elements)
-        self.type(dom.p, md.first.elements.first.elements.first)
-        self.type(dom.pre, md.first.elements.first.elements.second)
-        self.one(md.first.elements.first.elements.second.elements)
+        self.one(md.first.children)
+        self.two(md.first.children.first.children)
+        self.type(dom.p, md.first.children.first.children.first)
+        self.type(dom.pre, md.first.children.first.children.second)
+        self.one(md.first.children.first.children.second.children)
         self.type(
             dom.code,
-            md.first.elements.first.elements.second.elements.first
+            md.first.children.first.children.second.children.first
         )
 
         md = dom.markdown('''
@@ -13621,6 +13636,7 @@ class test_selectors(tester):
             'div#adjacency-anchor ~ p',
             '#adjacency-anchor ~ p',
         ]
+
         for sel in sels:
             els = html[sel]
             self.two(els)
@@ -13822,7 +13838,7 @@ class test_selectors(tester):
             els = html[sel]
             self.one(els)
             self.type(dom.div, els.first)
-            self.eq('scene1.3.29', els.first.elements.first.id)
+            self.eq('scene1.3.29', els.first.children.first.id)
             break
         else:
             self.fail('There were no `sels`')
@@ -14412,9 +14428,9 @@ class test_selectors(tester):
         # Take the ListHtml and replacing all the <ol> and its <li>s
         # with the same number of alternating <span>s and <div>s.
         html = dom.html(ListHtml)
-        sec = html[0].elements[0].elements[0].elements[0]
-        ol = sec.elements.first
-        cnt = ol.elements.count
+        sec = html[0].children[0].children[0].children[0]
+        ol = sec.children.first
+        cnt = ol.children.count
 
         sec.elements.clear()
 
@@ -14873,17 +14889,22 @@ class test_selectors(tester):
     def it_selects_empty(self):
         html = dom.html('''
         <main>
-            <div id="0">
-                <!-- I am empty. -->
-            </div>
+            <div id="0"><!-- I am empty. --></div>
+
+            <div>I am not empty.</div>
+
             <div>
-                I am not empty
+                <!-- I am empty despite the whitespace around this comment. -->
+            </div>
+
+            <div>
+                <p id="1"><!-- This <p> is empty though its parent <div> is not.--></p>
             </div>
         </main>
         ''')
 
         els = html[':empty']
-        expect = [str(x) for x in range(1)]
+        expect = [str(x) for x in range(2)]
         self.count(len(expect), els)
         self.eq(expect, els.pluck('id'))
 
@@ -14913,17 +14934,7 @@ class test_selectors(tester):
         ''')
 
         els = html[':empty']
-        # FIXME The <div>s are all not :empty. However, they don't have
-        # dom.text children so they are perceived to be empty by the
-        # :empty pseudoclass. The fact that they don't have dom.text
-        # child elements is a problem with the parser that needs to be
-        # addressed. Currently, the HTML parser does not see these
-        # <div>s as having dom.text nodes (see f0197142). This was
-        # appearenty a mistake. To get :empty to work correctly, we will
-        # need to alter the parser to add text nodes here. This will
-        # likely result in a lot of the unit tests needing to be
-        # updated.
-        #self.zero(els)
+        self.zero(els)
 
     def it_selects_not(self):
         ''' Elements '''
