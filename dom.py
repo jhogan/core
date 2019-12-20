@@ -3205,19 +3205,13 @@ class _htmlparser(HTMLParser):
                 self.stack.pop()
 
     def handle_data(self, data):
-        data = data.strip()
-
-        # ref: f0197142
-        # Ignore data that is just whitespace
-        if not data:
-            return
-
         try:
             cur = self.stack[-1]
         except IndexError:
-            raise HtmlParseError(
-                'No element to add text to', [None, self.getpos()]
-            )
+            if not data.isspace():
+                raise HtmlParseError(
+                    'No element to add text to', [None, self.getpos()]
+                )
         else:
             cur[0] += data
 
