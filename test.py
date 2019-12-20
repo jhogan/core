@@ -13738,7 +13738,6 @@ class test_selectors(tester):
             '.dialog',
             'div.dialog'
         ]
-        # TODO Test .xyz and ensure zero are returned
 
         for sel in sels:
             els = html[sel]
@@ -13775,6 +13774,7 @@ class test_selectors(tester):
         # TODO Test with quoted attribute value:
         # '[foo="bar baz"]'
         html = self._shakespear
+
         sels = [
             'div[foo]',
             '*[bar]',
@@ -15282,7 +15282,6 @@ class test_selectors(tester):
         self.eq('waldo', attr.value)
 
         # multiple attribute selectors
-        # TODO Test E[foo='bar baz']
         sels = 'E[foo=bar][qux="quux"] F[garply=waldo][foo=bar]'
         expect = 'E[foo=bar][qux=quux] F[garply=waldo][foo=bar]'
         sels = dom.selectors(sels)
@@ -15968,7 +15967,6 @@ class test_selectors(tester):
         self.eq('qux', el.attributes.first.value)
 
     def it_parses_not(self):
-        # TODO Raise on a nested :not() (i.e., E:not(F:not(G)))
         '''*:not(F)'''
         expect = '*:not(F)'
         sels = ':not(F)'
