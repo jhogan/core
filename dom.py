@@ -4240,7 +4240,7 @@ class selector(entities.entity):
         rms = elements()
 
         for el1 in els1:
-            anix = int()
+            anix = sibix = int()
             comb = last.combinator
             for smp in self.elements[:-1].reversed():
                 if comb in (selector.element.Descendant, None):
@@ -4258,8 +4258,15 @@ class selector(entities.entity):
                         rms += el1
                         break
                 elif comb == selector.element.NextSibling:
-                    if not smp.match(el1.previous):
+                    try:
+                        prev = list(el1.preceding.reversed())[sibix]
+                    except IndexError:
                         rms += el1
+                    else:
+                        if smp.match(prev):
+                            sibix += 1
+                        else:
+                            rms += el1
 
                 elif comb == selector.element.SubsequentSibling:
                     for el2 in el1.preceding:
