@@ -13566,14 +13566,26 @@ class test_selectors(tester):
             self.eq('child-of-p-of-h2', els.first.id)
     
     def it_selects_with_next_sibling_combinator(self):
-        html = dom.html(CombinatorTests)
+        html = dom.html(AdjacencyHtml)
+
+        sels = [
+            'div#adjacency-anchor + p + p'
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.one(els)
+            self.eq('after-the-adjacency-anchor', els[0].id)
 
         sels = [
             'div + p + p',
+            'p + p',
         ]
         for sel in sels:
             els = html[sel]
-            print(repr(els))
+            self.two(els)
+            self.eq('immediatly-before-the-adjacency-anchor', els[0].id)
+            self.eq('after-the-adjacency-anchor', els[1].id)
 
         ''' Select the <p> immediatly after #adjacency-anchor '''
         sels = [
