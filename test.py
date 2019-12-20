@@ -36,7 +36,6 @@ import textwrap
 import dom
 import gem
 
-
 # We will use basic and supplementary multilingual plane UTF-8
 # characters when testing str attributes to ensure unicode is being
 # supported.
@@ -12097,7 +12096,7 @@ class test_element(tester):
         p += txt
 
         p1 = dom.paragraph()
-        self.expect(dom.DomMoveError, lambda: p1.__iadd__(txt))
+        self.expect(dom.MoveError, lambda: p1.__iadd__(txt))
 
     def it_calls_isvoid(self):
         self.false(dom.paragraph.isvoid)

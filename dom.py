@@ -374,8 +374,7 @@ class elements(entities.entities):
 
     def _setparent(self, v):
         if self.parent:
-            # TODO Write test for this 
-            raise DomMoveError('Parent already set')
+            raise MoveError('Parent already set')
         self._parent = v
         
 class element(entities.entity):
@@ -478,7 +477,7 @@ class element(entities.entity):
 
     def _setparent(self, v):
         if self.parent:
-            raise DomMoveError('Parent already set')
+            raise MoveError('Parent already set')
         self._parent = v
 
     def getsiblings(self, includeself=False):
@@ -4717,7 +4716,7 @@ class HtmlParseError(Exception):
             r += ' at line %s column %s' % (self.line, self.column)
         return r
 
-class DomMoveError(ValueError):
+class MoveError(ValueError):
     pass
 
 class CssSelectorParseError(SyntaxError):
