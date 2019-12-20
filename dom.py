@@ -346,6 +346,20 @@ class elements(entities.entities):
         sels = selectors(sel)
         return sels.match(self)
 
+    @property
+    def children(self):
+        initial = (
+            x for x in self if type(x) not in (comment, text)
+        )
+        return elements(initial=initial)
+
+    def getchildren(self):
+        els = elements()
+        for el in self.children:
+            els += el
+            els += el.getchildren(recursive=True)
+        return els
+
     def getelements(self):
         els = elements()
         for el in self:
@@ -492,7 +506,7 @@ class element(entities.entity):
         rent = self.parent
 
         if rent:
-            for el in rent.elements:
+            for el in rent.children:
                 if not includeself and el is self:
                     continue
 
@@ -533,12 +547,21 @@ class element(entities.entity):
         return sibs(ix + 1)
                 
     @property
-    def elements(self):
-        if not hasattr(self, '_elements'):
-            self._elements = elements()
-            self.elements.onadd += self._elements_onadd
-            self._elements._setparent(self)
-        return self._elements
+    def children(self):
+        initial = (
+            x for x in self.elements if type(x) not in (comment, text)
+        )
+        return elements(initial=initial)
+
+    def getchildren(self, recursive=False):
+        els = elements()
+        for el in self.children:
+            els += el
+
+            if recursive:
+                els += el.getchildren(recursive=True)
+
+        return els
 
     def getelements(self, recursive=False):
         els = elements()
@@ -549,6 +572,14 @@ class element(entities.entity):
                 els += el.getelements(recursive=True)
 
         return els
+
+    @property
+    def elements(self):
+        if not hasattr(self, '_elements'):
+            self._elements = elements()
+            self.elements.onadd += self._elements_onadd
+            self._elements._setparent(self)
+        return self._elements
                 
     @elements.setter
     def elements(self, v):
@@ -4242,7 +4273,7 @@ class selector(entities.entity):
 
     def match(self, els):
         last = self.elements.last
-        els1 = last.match(els.getelements())
+        els1 = last.match(els.getchildren())
 
         rms = elements()
 
