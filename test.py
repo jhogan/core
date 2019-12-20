@@ -13499,7 +13499,7 @@ class test_selectors(tester):
         )
 
     def it_selects_with_child_combinator(self):
-        html = dom.html(CombinatorTests)
+        html = dom.html(AdjacencyHtml)
 
         ''' Two child combinators '''
         sel = 'div > p'
@@ -13599,7 +13599,7 @@ class test_selectors(tester):
 
 
     def it_selects_with_subsequent_sibling_combinator(self):
-        html = dom.html(CombinatorTests)
+        html = dom.html(AdjacencyHtml)
 
         sels = [
             'html > body > div#adjacency-anchor ~ p',
@@ -16390,7 +16390,7 @@ ListHtml = '''
 </html>
 '''
 
-CombinatorTests = '''
+AdjacencyHtml = '''
   <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en" debug="true">
     <head>
       <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
