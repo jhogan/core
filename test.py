@@ -13498,6 +13498,10 @@ class test_selectors(tester):
     # pseudoclasses were seen to not work, e.g., 'article :first-of-type' 
     # TODO Selectors should ignore `dom.text` elements. See
     # `dom.pseudoclass._match_first_of_type`.
+    def it_selects_with_lang(self):
+        # TODO
+        ...
+
     def it_selects_with_selection_groups(self):
         html = self._shakespear
 
@@ -13999,7 +14003,6 @@ class test_selectors(tester):
 
         html = self._shakespear
 
-
         sels = [
             '*[class*=dialog]',
             'div[class*=dialog]',
@@ -14053,7 +14056,6 @@ class test_selectors(tester):
             '[id|="023338d1-5503"]',
             '[id|="023338d1-5503-4054"]',
             '[id|="023338d1-5503-4054-98f7-c1e9c9ad390d"]',
-
         ]
 
         for sel in sels:

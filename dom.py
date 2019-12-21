@@ -4436,7 +4436,6 @@ class selector(entities.entity):
                 self.string       =  str()
                 self._a           =  None
                 self._b           =  None
-                self.simple       =  None
                 self.pseudoclass  =  pcls
 
             def __iadd__(self, str):
