@@ -13580,8 +13580,49 @@ class test_selectors(tester):
             self.type(dom.span, els.first)
             self.eq('child-of-p-of-h2', els.first.id)
     
+    def it_selects_with_next_and_subsequent_sibling_combinator(self):
+        html = dom.html(AdjacencyHtml)
+
+        sels = [
+            'div#first-div ~ p + p',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.two(els)
+            self.eq('immediatly-before-the-adjacency-anchor', els[0].id)
+            self.eq('after-the-adjacency-anchor', els[1].id)
+        
     def it_selects_with_next_sibling_combinator(self):
         html = dom.html(AdjacencyHtml)
+
+        sels = [
+            'p + p + div',
+            'p + p + div#adjacency-anchor',
+
+            'p '
+            ' + p#immediatly-before-the-adjacency-anchor'
+            ' + div#adjacency-anchor',
+
+            'p#before-the-adjacency-anchor'
+            ' + p#immediatly-before-the-adjacency-anchor'
+            ' + div#adjacency-anchor',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.one(els)
+            self.eq('adjacency-anchor', els[0].id)
+
+        sels = [
+            'div + p + p'
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.two(els)
+            self.eq('immediatly-before-the-adjacency-anchor', els[0].id)
+            self.eq('after-the-adjacency-anchor', els[1].id)
 
         sels = [
             'div#adjacency-anchor + p + p'
@@ -16439,7 +16480,7 @@ AdjacencyHtml = '''
       <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     </head>
     <body>
-      <div>
+      <div id="first-div">
         <p id="child-of-div">
           <span id="child-of-p-of-div">
           </span>
