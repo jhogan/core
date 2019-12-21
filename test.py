@@ -13935,6 +13935,7 @@ class test_selectors(tester):
                 '[id^=%s]'     %  v,
             ]
             for sel in sels:
+                self.zero(html[sel.replace(v, v.upper())])
                 els = html[sel]
                 self.one(els)
                 self.type(dom.div, els.first)
@@ -13970,8 +13971,10 @@ class test_selectors(tester):
                 'div%s'  %  sel,
                 '%s'     %  sel,
             ]
-            for sel in sels:
-                els = html[sel]
+            for sel1 in sels:
+                SEL = sel1.replace(sel1, sel.upper())
+                self.zero(html[SEL])
+                els = html[sel1]
                 self.count(50, els)
                 self.type(dom.div, els.first)
 
@@ -14021,6 +14024,19 @@ class test_selectors(tester):
             '*[class*=idontexist]',
             'div[class*=idontexist]',
             '[class*=idontexist]',
+
+            '*[class*=DIALOG]',
+            'div[class*=DIALOG]',
+            '[class*=DIALOG]',
+            '*[class*=DIALO]',
+            'div[class*=DIALO]',
+            '[class*=DIALO]',
+            '*[class*=IALOG]',
+            'div[class*=IALOG]',
+            '*[class*=IALOG]',
+            '*[class*=IALO]',
+            'div[class*=IALO]',
+            '*[class*=IALO]',
         ]
 
         for sel in sels:
@@ -14045,6 +14061,17 @@ class test_selectors(tester):
             self.one(els)
             self.type(dom.h2, els.first)
 
+        sels = [
+            '[id|="023338D1"]',
+            '[id|="023338D1-5503"]',
+            '[id|="023338D1-5503-4054"]',
+            '[id|="023338D1-5503-4054-98F7-C1E9C9AD390D"]',
+        ]
+
+        self.all(html[sel].isempty for sel in sels)
+
+        for sel in sels:
+            els = html[sel]
         els = html['[id|=test]']
         self.one(els)
         self.type(dom.div, els.first)
