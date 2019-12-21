@@ -14153,9 +14153,11 @@ class test_selectors(tester):
         ''' even '''
         sels = [
             'li:nth-child(even)',
+            'li:nth-child(EVEN)',
             'li:nth-child(2n+0)',
             'li:nth-child(2n-2)',
             'li:nth-child(2n-500)',
+            'li:nth-child(2N-500)',
         ]
 
         for sel in sels:
@@ -14168,6 +14170,7 @@ class test_selectors(tester):
         ''' odd '''
         sels = [
             'li:nth-child(odd)',
+            'li:nth-child(ODD)',
             'li:nth-child(2n+1)',
             'li:nth-child(2n-1)',
         ]
@@ -14239,7 +14242,9 @@ class test_selectors(tester):
         sels = [
             'li:nth-child(1n+0)',
             'li:nth-child(n+0)',
+            'li:nth-child(N+0)',
             'li:nth-child(n)',
+            'li:nth-child(N)',
         ]
 
         expect = [str(x) for x in range(12)]
@@ -14329,6 +14334,7 @@ class test_selectors(tester):
         sels = [
             'li:nth-last-child(4n)',
             'li:NTH-LAST-CHILD(4n)',
+            'li:nth-last-child(4N)',
         ]
 
         expect = ['0', '4', '8']
@@ -14400,6 +14406,7 @@ class test_selectors(tester):
         # Represents elements 4, 7, 10, 13, etc., counting from the end.
         sels = [
             'li:nth-last-child(3n+4)',
+            'li:nth-last-child(3N+4)',
         ]
 
         expect = ['2', '5', '8']
@@ -14410,7 +14417,8 @@ class test_selectors(tester):
 
         # Represents the last three elements among a group of siblings.
         sels = [
-            'li:nth-last-child(-n+3)'
+            'li:nth-last-child(-n+3)',
+            'li:nth-last-child(-N+3)'
         ]
 
         expect = ['9', '10', '11']
@@ -14426,6 +14434,7 @@ class test_selectors(tester):
         sels = [
             'li:nth-last-child(n)',
             'li:nth-last-child(n+1)',
+            'li:nth-last-child(N+1)',
 
         ]
         expect = [str(x) for x in range(12)]
@@ -14439,7 +14448,7 @@ class test_selectors(tester):
         sels = [
             'li:nth-last-child(1)',
             'li:nth-last-child(0n+1)',
-
+            'li:nth-last-child(0N+1)',
         ]
         expect = ['11']
         for sel in sels:
@@ -14519,6 +14528,7 @@ class test_selectors(tester):
 
         sels = [
             'span:nth-of-type(-n+4)',
+            'span:nth-of-type(-N+4)',
         ]
 
         expect = ['0', '2', '4', '6']
@@ -14582,6 +14592,7 @@ class test_selectors(tester):
 
         sels = [
             'li:nth-last-of-type(2)',
+            'li:NTH-LAST-OF-TYPE(2)',
         ]
 
         expect = ['10']

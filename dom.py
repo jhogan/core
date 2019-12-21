@@ -4487,12 +4487,12 @@ class selector(entities.entity):
 
                 a = b = None
                 s = self.string
-                if s == 'odd':
+                if s.lower() == 'odd':
                     a, b = 2, 1
-                elif s == 'even':
+                elif s.lower() == 'even':
                     a, b = 2, 0
                 elif len(s) == 1:
-                    if s == 'n':
+                    if s.lower() == 'n':
                         a, b = 1, 0
                     else:
                         try:
@@ -4511,7 +4511,7 @@ class selector(entities.entity):
                                 pass
                             else:
                                 a, b = 0, i
-                        elif s[1] != 'n':
+                        elif s[1].lower() != 'n':
                             raise err(
                                 'Invalid pseudoclass argument: "%s"' % s
                             )
@@ -4522,7 +4522,9 @@ class selector(entities.entity):
                             'Invalid pseudoclass argument: "%s"' % s
                         )
                 else:
-                    m = re.match('(\+|-)?([0-9]+)?n *(\+|-) *([0-9])+$', s)
+                    m = re.match(
+                        '(\+|-)?([0-9]+)?[nN] *(\+|-) *([0-9])+$', s
+                    )
                     if m:
                         gs = m.groups()
 
@@ -4567,7 +4569,7 @@ class selector(entities.entity):
 
         def demand(self):
             err = CssSelectorParseError
-            if self.value.startswith('nth-'):
+            if self.value.lower().startswith('nth-'):
                 if self.arguments.a is None or self.arguments.b is None:
                     raise err(
                         'Error in argument(s) to pseudoclass '
