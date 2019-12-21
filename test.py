@@ -15122,6 +15122,7 @@ class test_selectors(tester):
             self.all(el.id != 'speech16' for el in els)
 
     def it_selects_with_id(self):
+        html = self._shakespear
         sels = [
             '*#speech16',
             'div#speech16',
@@ -15129,6 +15130,7 @@ class test_selectors(tester):
         ]
 
         for sel in sels:
+            self.zero(html[sel.upper()])
             els = self._shakespear[sel]
             self.one(els)
             self.eq('speech16', els.first.id)
@@ -15140,7 +15142,7 @@ class test_selectors(tester):
         ]
 
         for sel in sels:
-            els = self._shakespear[sel]
+            els = html[sel]
             self.zero(els)
 
     def it_parses_combinators(self):
