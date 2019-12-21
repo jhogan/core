@@ -4463,7 +4463,7 @@ class selector(entities.entity):
 
             @property
             def selectors(self):
-                if self.pseudoclass.value != 'not':
+                if self.pseudoclass.value.lower() != 'not':
                     return None
 
                 # For :not() pseudoclass, parse the arguments to
@@ -4573,7 +4573,7 @@ class selector(entities.entity):
                         'Error in argument(s) to pseudoclass '
                         '"%s"' % self.value
                     )
-            elif self.value == 'not':
+            elif self.value.lower() == 'not':
                 # If the pseudoclass is 'not', then invoke its
                 # 'arguments.selectors'. That will cause not's arguments
                 # to be parse. If there is a pares error in not's
@@ -4692,13 +4692,13 @@ class selector(entities.entity):
             if type(el) in (text, comment):
                 return False
 
-            pcls = self.value.replace('-', '_')
+            pcls = self.value.replace('-', '_').lower()
             
             return getattr(self, '_match_' + pcls)(el)
 
         @property
         def hasvalidname(self):
-            return self.value in self.validnames
+            return self.value.lower() in self.validnames
             
 class AttributeExistsError(Exception):
     pass

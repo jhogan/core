@@ -14100,6 +14100,9 @@ class test_selectors(tester):
             '*:root',
             'html:root',
             ':root',
+            '*:ROOT',
+            'html:ROOT',
+            ':ROOT',
         ]
 
         for sel in sels:
@@ -14140,6 +14143,10 @@ class test_selectors(tester):
 
         ''' single '''
         els = html['li:nth-child(2)']
+        self.one(els)
+        self.eq('1', els.first.id)
+
+        els = html['li:NTH-CHILD(2)']
         self.one(els)
         self.eq('1', els.first.id)
 
@@ -14321,6 +14328,7 @@ class test_selectors(tester):
         # counting backwards from the last one 
         sels = [
             'li:nth-last-child(4n)',
+            'li:NTH-LAST-CHILD(4n)',
         ]
 
         expect = ['0', '4', '8']
@@ -14454,6 +14462,11 @@ class test_selectors(tester):
         els = html('p:nth-of-type(2)')
         self.one(els)
         self.eq('Piggy', els.first.elements.first.html)
+
+        els = html('p:NTH-OF-TYPE(2)')
+        self.one(els)
+        self.eq('Piggy', els.first.elements.first.html)
+
 
         html = dom.html('''
             <section>
@@ -14613,6 +14626,11 @@ class test_selectors(tester):
         self.eq('1', els.first.id)
         self.eq('2', els.second.id)
 
+        els = html['p:FIRST-CHILD']
+        self.two(els)
+        self.eq('1', els.first.id)
+        self.eq('2', els.second.id)
+
         html = dom.html('''
             <body>
                 <p id="1"> The last P before the note.</p>
@@ -14643,6 +14661,10 @@ class test_selectors(tester):
         self.one(els)
         self.eq('2', els.first.id)
 
+        els = html['p:LAST-CHILD']
+        self.one(els)
+        self.eq('2', els.first.id)
+
     def it_selects_first_of_type(self):
         html = dom.html('''
         <body>
@@ -14653,6 +14675,10 @@ class test_selectors(tester):
         ''')
 
         els = html['p:first-of-type']
+        self.one(els)
+        self.eq('1', els.first.id)
+
+        els = html['p:FIRST-OF-TYPE']
         self.one(els)
         self.eq('1', els.first.id)
 
@@ -14733,6 +14759,10 @@ class test_selectors(tester):
         self.one(els)
         self.eq('0', els.first.id)
 
+        els = html['p:LAST-OF-TYPE']
+        self.one(els)
+        self.eq('0', els.first.id)
+
         # https://developer.mozilla.org/en-US/docs/Web/CSS/:last-of-type
         html = dom.html('''
         <article>
@@ -14802,6 +14832,11 @@ class test_selectors(tester):
         expect = [str(x) for x in range(2)]
         self.count(len(expect), els)
         self.eq(expect, els.pluck('id'))
+
+        els = html[':ONLY-CHILD']
+        expect = [str(x) for x in range(2)]
+        self.count(len(expect), els)
+        self.eq(expect, els.pluck('id'))
         
         html = dom.html('''
         <body>
@@ -14822,6 +14857,7 @@ class test_selectors(tester):
     def it_selects_only_of_type(self):
         sels = [
             ':only-of-type',
+            ':ONLY-OF-TYPE',
             ':first-of-type:last-of-type'
             ':nth-of-type(1):nth-last-of-type(1)'
         ]
@@ -14954,6 +14990,11 @@ class test_selectors(tester):
         self.count(len(expect), els)
         self.eq(expect, els.pluck('id'))
 
+        els = html[':EMPTY']
+        expect = [str(x) for x in range(2)]
+        self.count(len(expect), els)
+        self.eq(expect, els.pluck('id'))
+
         html = dom.html('''
         <main>
             <div id="0"></div>
@@ -14987,6 +15028,7 @@ class test_selectors(tester):
         # Select all elements that aren't <div>s 
         sels = [
             ':not(div)',
+            ':NOT(div)',
             '*:not(div)',
         ]
 
@@ -15024,6 +15066,7 @@ class test_selectors(tester):
         sels = [
             'div:not([title=wtf])',
             'div:not(div[title=wtf])',
+            'div:not(DIV[TITLE=wtf])',
         ]
 
         for sel in sels:
@@ -15046,6 +15089,7 @@ class test_selectors(tester):
             ':not(.dialog):not(h2)',
             '*:not(.dialog):not(h2)',
             '*:not(*.dialog):not(h2)',
+            '*:not(*.dialog):not(H2)',
         ]
 
         for sel in sels:
