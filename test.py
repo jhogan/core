@@ -13501,17 +13501,23 @@ class test_selectors(tester):
     def it_selects_with_selection_groups(self):
         html = self._shakespear
 
-        els = html['h2, h3']
+        sels = [
+            'h2, h3',
+            'H2, h3',
+        ]
 
-        self.two(els)
-        self.type(dom.elements, els)
-        self.type(dom.h2, els.first)
-        self.type(dom.h3, els.second)
-        self.eq(els.first.elements.first.html, 'As You Like It')
-        self.eq(
-            els.second.elements.first.html, 
-            'ACT I, SCENE III. A room in the palace.'
-        )
+        for sel in sels:
+            els = html[sel]
+
+            self.two(els)
+            self.type(dom.elements, els)
+            self.type(dom.h2, els.first)
+            self.type(dom.h3, els.second)
+            self.eq(els.first.elements.first.html, 'As You Like It')
+            self.eq(
+                els.second.elements.first.html, 
+                'ACT I, SCENE III. A room in the palace.'
+            )
 
     def it_selects_with_child_combinator(self):
         html = dom.html(AdjacencyHtml)
@@ -13691,9 +13697,13 @@ class test_selectors(tester):
         ]
 
         for sel in sels:
-          h2s = html[sel]
-          self.one(h2s)
-          self.type(dom.h2, h2s.first)
+            h2s = html[sel]
+            self.one(h2s)
+            self.type(dom.h2, h2s.first)
+
+            h2s = html[sel.upper()]
+            self.one(h2s)
+            self.type(dom.h2, h2s.first)
 
         sels = [
           'derp body div div h2',
@@ -13734,6 +13744,7 @@ class test_selectors(tester):
 
         for sel in sels:
           self.zero(html[sel], sel)
+          self.zero(html[sel.upper()], sel)
 
     def it_selects_with_classes(self):
         html = self._shakespear
@@ -13756,6 +13767,9 @@ class test_selectors(tester):
         ]
 
         for sel in sels:
+            # Class selectors should be case-sensitive
+            self.zero(html[sel.upper()])
+
             els = html[sel]
             for el in els:
                 self.type(dom.div, el)
@@ -13832,16 +13846,18 @@ class test_selectors(tester):
         sels = [
             '*[title=wtf]',
             '[title=wtf]',
+            '*[TITLE=wtf]',
+            '[TITLE=wtf]',
         ]
 
         for sel in sels:
+            # Attribtue value are case-sensitive
+            self.zero(html[sel.replace('wtf', 'WTF')])
+
             els = html[sel]
             self.one(els)
             self.type(dom.div, els.first)
             self.eq('scene1.3.29', els.first.children.first.id)
-            break
-        else:
-            self.fail('There were no `sels`')
 
         sels = [
             'div[id=speech144][class=character]',
@@ -13884,6 +13900,9 @@ class test_selectors(tester):
         ]
 
         for sel in sels:
+            if 'thirdClass' in sel:
+                self.zero(html[sel.lower()])
+
             els = html[sel]
             self.one(els)
             self.type(dom.div, els.first)

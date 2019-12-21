@@ -4201,7 +4201,7 @@ class selector(entities.entity):
             r = elements()
 
             for el in els:
-                if self.element not in ('*', el.tag):
+                if self.element.lower() not in ('*', el.tag):
                     continue
 
                 if not self.classes.match(el):
@@ -4352,7 +4352,7 @@ class selector(entities.entity):
 
         def match(self, el):
             for attr in el.attributes:
-                if attr.name == self.key:
+                if attr.name.lower() == self.key.lower():
                     op = self.operator
                     if op is None:
                         if not self.value:
