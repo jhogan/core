@@ -13398,13 +13398,16 @@ class test_orm(tester):
         # Add two presentations to the singers's and painter's
         # presentations collection
         press3 = presentations()
-        for _ in range(3):
+        for _ in range(2):
             press3 += presentation.getvalid()
 
         press3.sort()
-        sng3.artist_artists.first.object.presentations +=  press3.first
-        sng3.singers.first.presentations               +=  press3.second
-        sng3.painters.first.presentations              +=  press3.third
+        sng3.singers.first.presentations               +=  press3.first
+        sng3.painters.first.presentations              +=  press3.second
+        # Remove for the moment because we don't know if
+        # sng3.artist_artists.first is a painter or a singer
+        # sng3.artist_artists.first.object.presentations \
+        #     += press3.third
 
         # NOTE (3cb2a6b5) In the non-subentity version of this test
         # (it_loads_and_saves_reflexive_associations), the following is
@@ -13421,27 +13424,33 @@ class test_orm(tester):
         # would fail but are left here to illustrates the consequences of
         # this issue.
 
-        self.one(sng3.artist_artists.first.object.presentations)
+        #self.one(sng3.artist_artists.first.object.presentations)
+
         self.one(sng3.singers.first.presentations)
         self.one(sng3.painters.first.presentations)
 
         aas3 = sng3.artist_artists
-        self.is_(press3[0], aas3[0].object.presentations[0])
-        self.is_(press3[1], sng3.singers[0].presentations[0])
-        self.is_(press3[2], sng3.painters[0].presentations[0])
+        self.is_(press3[0], sng3.singers[0].presentations[0])
+        self.is_(press3[1], sng3.painters[0].presentations[0])
 
         with ct() as t:
             t(sng3.save)
             t.created(*press3)
 
-        sng4 = artist(sng3.id)
-        press4 = sng4.artist_artists.first.object.presentations.sorted()
-        print(press4.count)
-        return
+        sng4 = singer(sng3.id)
 
-        self.two(press4)
-        self.eq(press4.first.id, press3.first.id)
-        self.eq(press4.second.id, press3.second.id)
+        press4 = sng4.singers[sng3.singers.first.id].presentations
+        self.eq(
+            sng3.singers.first.presentations.sorted().pluck('id'),
+            press4.sorted().pluck('id')
+        )
+
+        press4 = sng4.painters[sng3.painters.first.id].presentations
+        self.eq(
+            sng3.painters.first.presentations.sorted().pluck('id'),
+            press4.sorted().pluck('id')
+        )
+
 
         # NOTE The below comment and tests were carried over from
         # it_loads_and_saves_associations:
@@ -13451,18 +13460,23 @@ class test_orm(tester):
         sng = singer.getvalid()
         sng.artist_artists += artist_artist.getvalid()
         sng.singers += singer.getvalid()
+        sng.painters += painter.getvalid()
 
         self.zero(sng.artist_artists.first.brokenrules)
-        self.zero(sng.artist_artists.first.brokenrules)
         self.three(sng.artist_artists.second.brokenrules)
-        self.three(sng.brokenrules)
+        self.six(sng.brokenrules)
 
         # Fix broken aa
         sng.artist_artists.second.role = uuid4().hex
         sng.artist_artists.second.slug = uuid4().hex
         sng.artist_artists.second.timespan = uuid4().hex
 
+        sng.artist_artists.third.role = uuid4().hex
+        sng.artist_artists.third.slug = uuid4().hex
+        sng.artist_artists.third.timespan = uuid4().hex
+
         self.zero(sng.artist_artists.second.brokenrules)
+        self.zero(sng.artist_artists.third.brokenrules)
         self.zero(sng.brokenrules)
 
     def it_updates_subentity_reflexive_associations_constituent_entity(self):
