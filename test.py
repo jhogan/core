@@ -13665,7 +13665,6 @@ class test_selectors(tester):
             els = html[sel]
             self.zero(els)
 
-
     def it_selects_with_subsequent_sibling_combinator(self):
         html = dom.html(AdjacencyHtml)
 
@@ -13828,8 +13827,6 @@ class test_selectors(tester):
             self.one(els)
 
     def it_selects_with_attribute(self):
-        # TODO Test with quoted attribute value:
-        # '[foo="bar baz"]'
         html = self._shakespear
 
         sels = [
@@ -13854,7 +13851,6 @@ class test_selectors(tester):
         ''' Select using the = operator [foo=bar]
         '''
         html = self._shakespear
-        # TODO Test all four comparison operators
         # TODO Test chaining the comparison operators, e.g.,
         #
         #   *.[foo=bar][baz$=qux][quux][garply~=waldo]
@@ -15223,7 +15219,6 @@ class test_selectors(tester):
             self.eq(desc, sels.first.elements.second.combinator)
             self.eq(desc, sels.first.elements.third.combinator)
 
-
     def it_parses_chain_of_elements(self):
         ''' One '''
         sels = dom.selectors('E')
@@ -15426,7 +15421,6 @@ class test_selectors(tester):
         sels = [
             "E[foo='bar baz']",
             'E[foo="bar baz"]',
-
         ]
 
         for sel in sels:
@@ -15443,7 +15437,6 @@ class test_selectors(tester):
                 'bar baz', 
                 sel.elements.first.attributes.first.value
             )
-
 
     def it_parses_class_elements(self):
         ''' E.warning '''
