@@ -3657,6 +3657,12 @@ class test_orm(tester):
                         % (type(e).__name__, e.id)
                     )
 
+                if not(
+                        isinstance(e, orm.entity) \
+                        or isinstance(e, orm.entities)
+                    ):
+                    raise ValueError('e must be an orm.entity')
+
                 if e in self.tested:
                     raise_already_tested()
 
