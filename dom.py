@@ -4201,7 +4201,7 @@ class selector(entities.entity):
             r = elements()
 
             for el in els:
-                if self.element not in ('*', el.tag):
+                if self.element.lower() not in ('*', el.tag):
                     continue
 
                 if not self.classes.match(el):
@@ -4352,7 +4352,7 @@ class selector(entities.entity):
 
         def match(self, el):
             for attr in el.attributes:
-                if attr.name == self.key:
+                if attr.name.lower() == self.key.lower():
                     op = self.operator
                     if op is None:
                         if not self.value:
@@ -4436,7 +4436,6 @@ class selector(entities.entity):
                 self.string       =  str()
                 self._a           =  None
                 self._b           =  None
-                self.simple       =  None
                 self.pseudoclass  =  pcls
 
             def __iadd__(self, str):
@@ -4463,7 +4462,7 @@ class selector(entities.entity):
 
             @property
             def selectors(self):
-                if self.pseudoclass.value != 'not':
+                if self.pseudoclass.value.lower() != 'not':
                     return None
 
                 # For :not() pseudoclass, parse the arguments to
@@ -4487,12 +4486,12 @@ class selector(entities.entity):
 
                 a = b = None
                 s = self.string
-                if s == 'odd':
+                if s.lower() == 'odd':
                     a, b = 2, 1
-                elif s == 'even':
+                elif s.lower() == 'even':
                     a, b = 2, 0
                 elif len(s) == 1:
-                    if s == 'n':
+                    if s.lower() == 'n':
                         a, b = 1, 0
                     else:
                         try:
@@ -4511,7 +4510,7 @@ class selector(entities.entity):
                                 pass
                             else:
                                 a, b = 0, i
-                        elif s[1] != 'n':
+                        elif s[1].lower() != 'n':
                             raise err(
                                 'Invalid pseudoclass argument: "%s"' % s
                             )
@@ -4522,7 +4521,9 @@ class selector(entities.entity):
                             'Invalid pseudoclass argument: "%s"' % s
                         )
                 else:
-                    m = re.match('(\+|-)?([0-9]+)?n *(\+|-) *([0-9])+$', s)
+                    m = re.match(
+                        '(\+|-)?([0-9]+)?[nN] *(\+|-) *([0-9])+$', s
+                    )
                     if m:
                         gs = m.groups()
 
@@ -4567,13 +4568,13 @@ class selector(entities.entity):
 
         def demand(self):
             err = CssSelectorParseError
-            if self.value.startswith('nth-'):
+            if self.value.lower().startswith('nth-'):
                 if self.arguments.a is None or self.arguments.b is None:
                     raise err(
                         'Error in argument(s) to pseudoclass '
                         '"%s"' % self.value
                     )
-            elif self.value == 'not':
+            elif self.value.lower() == 'not':
                 # If the pseudoclass is 'not', then invoke its
                 # 'arguments.selectors'. That will cause not's arguments
                 # to be parse. If there is a pares error in not's
@@ -4692,13 +4693,13 @@ class selector(entities.entity):
             if type(el) in (text, comment):
                 return False
 
-            pcls = self.value.replace('-', '_')
+            pcls = self.value.replace('-', '_').lower()
             
             return getattr(self, '_match_' + pcls)(el)
 
         @property
         def hasvalidname(self):
-            return self.value in self.validnames
+            return self.value.lower() in self.validnames
             
 class AttributeExistsError(Exception):
     pass

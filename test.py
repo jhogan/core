@@ -13498,20 +13498,30 @@ class test_selectors(tester):
     # pseudoclasses were seen to not work, e.g., 'article :first-of-type' 
     # TODO Selectors should ignore `dom.text` elements. See
     # `dom.pseudoclass._match_first_of_type`.
+    def it_selects_with_lang(self):
+        # TODO
+        ...
+
     def it_selects_with_selection_groups(self):
         html = self._shakespear
 
-        els = html['h2, h3']
+        sels = [
+            'h2, h3',
+            'H2, h3',
+        ]
 
-        self.two(els)
-        self.type(dom.elements, els)
-        self.type(dom.h2, els.first)
-        self.type(dom.h3, els.second)
-        self.eq(els.first.elements.first.html, 'As You Like It')
-        self.eq(
-            els.second.elements.first.html, 
-            'ACT I, SCENE III. A room in the palace.'
-        )
+        for sel in sels:
+            els = html[sel]
+
+            self.two(els)
+            self.type(dom.elements, els)
+            self.type(dom.h2, els.first)
+            self.type(dom.h3, els.second)
+            self.eq(els.first.elements.first.html, 'As You Like It')
+            self.eq(
+                els.second.elements.first.html, 
+                'ACT I, SCENE III. A room in the palace.'
+            )
 
     def it_selects_with_child_combinator(self):
         html = dom.html(AdjacencyHtml)
@@ -13731,9 +13741,13 @@ class test_selectors(tester):
         ]
 
         for sel in sels:
-          h2s = html[sel]
-          self.one(h2s)
-          self.type(dom.h2, h2s.first)
+            h2s = html[sel]
+            self.one(h2s)
+            self.type(dom.h2, h2s.first)
+
+            h2s = html[sel.upper()]
+            self.one(h2s)
+            self.type(dom.h2, h2s.first)
 
         sels = [
           'derp body div div h2',
@@ -13774,6 +13788,7 @@ class test_selectors(tester):
 
         for sel in sels:
           self.zero(html[sel], sel)
+          self.zero(html[sel.upper()], sel)
 
     def it_selects_with_classes(self):
         html = self._shakespear
@@ -13796,6 +13811,9 @@ class test_selectors(tester):
         ]
 
         for sel in sels:
+            # Class selectors should be case-sensitive
+            self.zero(html[sel.upper()])
+
             els = html[sel]
             for el in els:
                 self.type(dom.div, el)
@@ -13869,16 +13887,18 @@ class test_selectors(tester):
         sels = [
             '*[title=wtf]',
             '[title=wtf]',
+            '*[TITLE=wtf]',
+            '[TITLE=wtf]',
         ]
 
         for sel in sels:
+            # Attribtue value are case-sensitive
+            self.zero(html[sel.replace('wtf', 'WTF')])
+
             els = html[sel]
             self.one(els)
             self.type(dom.div, els.first)
             self.eq('scene1.3.29', els.first.children.first.id)
-            break
-        else:
-            self.fail('There were no `sels`')
 
         sels = [
             'div[id=speech144][class=character]',
@@ -13921,6 +13941,9 @@ class test_selectors(tester):
         ]
 
         for sel in sels:
+            if 'thirdClass' in sel:
+                self.zero(html[sel.lower()])
+
             els = html[sel]
             self.one(els)
             self.type(dom.div, els.first)
@@ -13953,6 +13976,7 @@ class test_selectors(tester):
                 '[id^=%s]'     %  v,
             ]
             for sel in sels:
+                self.zero(html[sel.replace(v, v.upper())])
                 els = html[sel]
                 self.one(els)
                 self.type(dom.div, els.first)
@@ -13988,8 +14012,10 @@ class test_selectors(tester):
                 'div%s'  %  sel,
                 '%s'     %  sel,
             ]
-            for sel in sels:
-                els = html[sel]
+            for sel1 in sels:
+                SEL = sel1.replace(sel1, sel.upper())
+                self.zero(html[SEL])
+                els = html[sel1]
                 self.count(50, els)
                 self.type(dom.div, els.first)
 
@@ -14013,7 +14039,6 @@ class test_selectors(tester):
         '''
 
         html = self._shakespear
-
 
         sels = [
             '*[class*=dialog]',
@@ -14039,6 +14064,19 @@ class test_selectors(tester):
             '*[class*=idontexist]',
             'div[class*=idontexist]',
             '[class*=idontexist]',
+
+            '*[class*=DIALOG]',
+            'div[class*=DIALOG]',
+            '[class*=DIALOG]',
+            '*[class*=DIALO]',
+            'div[class*=DIALO]',
+            '[class*=DIALO]',
+            '*[class*=IALOG]',
+            'div[class*=IALOG]',
+            '*[class*=IALOG]',
+            '*[class*=IALO]',
+            'div[class*=IALO]',
+            '*[class*=IALO]',
         ]
 
         for sel in sels:
@@ -14055,7 +14093,6 @@ class test_selectors(tester):
             '[id|="023338d1-5503"]',
             '[id|="023338d1-5503-4054"]',
             '[id|="023338d1-5503-4054-98f7-c1e9c9ad390d"]',
-
         ]
 
         for sel in sels:
@@ -14063,6 +14100,17 @@ class test_selectors(tester):
             self.one(els)
             self.type(dom.h2, els.first)
 
+        sels = [
+            '[id|="023338D1"]',
+            '[id|="023338D1-5503"]',
+            '[id|="023338D1-5503-4054"]',
+            '[id|="023338D1-5503-4054-98F7-C1E9C9AD390D"]',
+        ]
+
+        self.all(html[sel].isempty for sel in sels)
+
+        for sel in sels:
+            els = html[sel]
         els = html['[id|=test]']
         self.one(els)
         self.type(dom.div, els.first)
@@ -14091,6 +14139,9 @@ class test_selectors(tester):
             '*:root',
             'html:root',
             ':root',
+            '*:ROOT',
+            'html:ROOT',
+            ':ROOT',
         ]
 
         for sel in sels:
@@ -14134,12 +14185,18 @@ class test_selectors(tester):
         self.one(els)
         self.eq('1', els.first.id)
 
+        els = html['li:NTH-CHILD(2)']
+        self.one(els)
+        self.eq('1', els.first.id)
+
         ''' even '''
         sels = [
             'li:nth-child(even)',
+            'li:nth-child(EVEN)',
             'li:nth-child(2n+0)',
             'li:nth-child(2n-2)',
             'li:nth-child(2n-500)',
+            'li:nth-child(2N-500)',
         ]
 
         for sel in sels:
@@ -14152,6 +14209,7 @@ class test_selectors(tester):
         ''' odd '''
         sels = [
             'li:nth-child(odd)',
+            'li:nth-child(ODD)',
             'li:nth-child(2n+1)',
             'li:nth-child(2n-1)',
         ]
@@ -14223,7 +14281,9 @@ class test_selectors(tester):
         sels = [
             'li:nth-child(1n+0)',
             'li:nth-child(n+0)',
+            'li:nth-child(N+0)',
             'li:nth-child(n)',
+            'li:nth-child(N)',
         ]
 
         expect = [str(x) for x in range(12)]
@@ -14312,6 +14372,8 @@ class test_selectors(tester):
         # counting backwards from the last one 
         sels = [
             'li:nth-last-child(4n)',
+            'li:NTH-LAST-CHILD(4n)',
+            'li:nth-last-child(4N)',
         ]
 
         expect = ['0', '4', '8']
@@ -14383,6 +14445,7 @@ class test_selectors(tester):
         # Represents elements 4, 7, 10, 13, etc., counting from the end.
         sels = [
             'li:nth-last-child(3n+4)',
+            'li:nth-last-child(3N+4)',
         ]
 
         expect = ['2', '5', '8']
@@ -14393,7 +14456,8 @@ class test_selectors(tester):
 
         # Represents the last three elements among a group of siblings.
         sels = [
-            'li:nth-last-child(-n+3)'
+            'li:nth-last-child(-n+3)',
+            'li:nth-last-child(-N+3)'
         ]
 
         expect = ['9', '10', '11']
@@ -14409,6 +14473,7 @@ class test_selectors(tester):
         sels = [
             'li:nth-last-child(n)',
             'li:nth-last-child(n+1)',
+            'li:nth-last-child(N+1)',
 
         ]
         expect = [str(x) for x in range(12)]
@@ -14422,7 +14487,7 @@ class test_selectors(tester):
         sels = [
             'li:nth-last-child(1)',
             'li:nth-last-child(0n+1)',
-
+            'li:nth-last-child(0N+1)',
         ]
         expect = ['11']
         for sel in sels:
@@ -14445,6 +14510,11 @@ class test_selectors(tester):
         els = html('p:nth-of-type(2)')
         self.one(els)
         self.eq('Piggy', els.first.elements.first.html)
+
+        els = html('p:NTH-OF-TYPE(2)')
+        self.one(els)
+        self.eq('Piggy', els.first.elements.first.html)
+
 
         html = dom.html('''
             <section>
@@ -14497,6 +14567,7 @@ class test_selectors(tester):
 
         sels = [
             'span:nth-of-type(-n+4)',
+            'span:nth-of-type(-N+4)',
         ]
 
         expect = ['0', '2', '4', '6']
@@ -14560,6 +14631,7 @@ class test_selectors(tester):
 
         sels = [
             'li:nth-last-of-type(2)',
+            'li:NTH-LAST-OF-TYPE(2)',
         ]
 
         expect = ['10']
@@ -14604,6 +14676,11 @@ class test_selectors(tester):
         self.eq('1', els.first.id)
         self.eq('2', els.second.id)
 
+        els = html['p:FIRST-CHILD']
+        self.two(els)
+        self.eq('1', els.first.id)
+        self.eq('2', els.second.id)
+
         html = dom.html('''
             <body>
                 <p id="1"> The last P before the note.</p>
@@ -14634,6 +14711,10 @@ class test_selectors(tester):
         self.one(els)
         self.eq('2', els.first.id)
 
+        els = html['p:LAST-CHILD']
+        self.one(els)
+        self.eq('2', els.first.id)
+
     def it_selects_first_of_type(self):
         html = dom.html('''
         <body>
@@ -14644,6 +14725,10 @@ class test_selectors(tester):
         ''')
 
         els = html['p:first-of-type']
+        self.one(els)
+        self.eq('1', els.first.id)
+
+        els = html['p:FIRST-OF-TYPE']
         self.one(els)
         self.eq('1', els.first.id)
 
@@ -14724,6 +14809,10 @@ class test_selectors(tester):
         self.one(els)
         self.eq('0', els.first.id)
 
+        els = html['p:LAST-OF-TYPE']
+        self.one(els)
+        self.eq('0', els.first.id)
+
         # https://developer.mozilla.org/en-US/docs/Web/CSS/:last-of-type
         html = dom.html('''
         <article>
@@ -14793,6 +14882,11 @@ class test_selectors(tester):
         expect = [str(x) for x in range(2)]
         self.count(len(expect), els)
         self.eq(expect, els.pluck('id'))
+
+        els = html[':ONLY-CHILD']
+        expect = [str(x) for x in range(2)]
+        self.count(len(expect), els)
+        self.eq(expect, els.pluck('id'))
         
         html = dom.html('''
         <body>
@@ -14813,6 +14907,7 @@ class test_selectors(tester):
     def it_selects_only_of_type(self):
         sels = [
             ':only-of-type',
+            ':ONLY-OF-TYPE',
             ':first-of-type:last-of-type'
             ':nth-of-type(1):nth-last-of-type(1)'
         ]
@@ -14945,6 +15040,11 @@ class test_selectors(tester):
         self.count(len(expect), els)
         self.eq(expect, els.pluck('id'))
 
+        els = html[':EMPTY']
+        expect = [str(x) for x in range(2)]
+        self.count(len(expect), els)
+        self.eq(expect, els.pluck('id'))
+
         html = dom.html('''
         <main>
             <div id="0"></div>
@@ -14978,6 +15078,7 @@ class test_selectors(tester):
         # Select all elements that aren't <div>s 
         sels = [
             ':not(div)',
+            ':NOT(div)',
             '*:not(div)',
         ]
 
@@ -15015,6 +15116,7 @@ class test_selectors(tester):
         sels = [
             'div:not([title=wtf])',
             'div:not(div[title=wtf])',
+            'div:not(DIV[TITLE=wtf])',
         ]
 
         for sel in sels:
@@ -15037,6 +15139,7 @@ class test_selectors(tester):
             ':not(.dialog):not(h2)',
             '*:not(.dialog):not(h2)',
             '*:not(*.dialog):not(h2)',
+            '*:not(*.dialog):not(H2)',
         ]
 
         for sel in sels:
@@ -15058,6 +15161,7 @@ class test_selectors(tester):
             self.all(el.id != 'speech16' for el in els)
 
     def it_selects_with_id(self):
+        html = self._shakespear
         sels = [
             '*#speech16',
             'div#speech16',
@@ -15065,6 +15169,7 @@ class test_selectors(tester):
         ]
 
         for sel in sels:
+            self.zero(html[sel.upper()])
             els = self._shakespear[sel]
             self.one(els)
             self.eq('speech16', els.first.id)
@@ -15076,7 +15181,7 @@ class test_selectors(tester):
         ]
 
         for sel in sels:
-            els = self._shakespear[sel]
+            els = html[sel]
             self.zero(els)
 
     def it_parses_combinators(self):
