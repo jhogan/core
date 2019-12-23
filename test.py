@@ -3469,6 +3469,8 @@ class painters(artists):
     pass
 
 class painter(artist):
+    style = str
+    
     @staticmethod
     def getvalid():
         sup = painter.orm.super.getvalid()
@@ -3478,6 +3480,8 @@ class painter(artist):
         for map in sup.orm.mappings:
             if isinstance(map, orm.fieldmapping) and type(map) not in keymaps:
                 setattr(pnt, map.name, getattr(sup, map.name))
+
+        pnt.style = 'impressionism'
 
         return pnt
 
