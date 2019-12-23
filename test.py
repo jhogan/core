@@ -13492,45 +13492,58 @@ class test_orm(tester):
     def it_updates_subentity_reflexive_associations_constituent_entity(self):
         sng = singer.getvalid()
 
-        for i in range(2):
+        for i in range(4):
             aa = artist_artist.getvalid()
-            aa.object = singer.getvalid()
+            if i % 2:
+                aa.object = singer.getvalid()
+            else:
+                aa.object = painter.getvalid()
             sng.artist_artists += aa
 
-        self.two(sng.artist_artists)
+        self.four(sng.artist_artists)
         self.two(sng.singers)
+        self.two(sng.painters)
         self.zero(sng.artists)
 
         sng.save()
 
         sng1 = singer(sng.id)
 
-        # Update properties of singe
+        # Update properties of singer
         for sng2 in sng1.singers:
             sng2.register = uuid4().hex
+
+        for pnt2 in sng1.painters:
+            pnt2.style = uuid4().hex
 
         with ct() as t:
             t.run(sng1.save)
             t.updated(*sng1.singers)
+            t.updated(*sng1.painters)
 
         # Update properties of super (artist)
         for sng2 in sng1.singers:
             sng2.firstname = uuid4().hex
 
+        for pnt2 in sng1.painters:
+            pnt2.lastname = uuid4().hex
+
         with ct() as t:
             t.run(sng1.save)
             t.updated(sng1.singers.first.orm.super)
             t.updated(sng1.singers.second.orm.super)
+            t.updated(sng1.painters.first.orm.super)
+            t.updated(sng1.painters.second.orm.super)
 
         sng2 = singer(sng1.id)
 
         self.two(sng2.singers)
-        self.two(sng2.artists)
+        self.two(sng2.painters)
+        self.four(sng2.artists)
 
         sngobjs  = sng. singers.sorted()
         sngobjs1 = sng1.singers.sorted()
         sngobjs2 = sng2.singers.sorted()
-
 
         for sngb, sngb2 in zip(sngobjs, sngobjs2):
             self.ne(sngb.firstname, sngb2.firstname)
@@ -13540,18 +13553,36 @@ class test_orm(tester):
             self.eq(sngb1.firstname, sngb2.firstname)
             self.eq(sngb1.register, sngb2.register)
 
-        attrs = (
-            'singers.first.presentations',
-            'artist_artists.first.object.presentations'
-        )
+        pntobjs  = sng. painters.sorted()
+        pntobjs1 = sng1.painters.sorted()
+        pntobjs2 = sng2.painters.sorted()
 
-        for attr in attrs:
-            press = getattr(sng2, attr)
-            press += presentation.getvalid()
+        for pntb, pntb2 in zip(pntobjs, pntobjs2):
+            self.ne(pntb.lastname, pntb2.lastname)
+            self.ne(pntb.style,  pntb2.style)
+
+        for pntb1, pntb2 in zip(pntobjs1, pntobjs2):
+            self.eq(pntb1.lastname, pntb2.lastname)
+            self.eq(pntb1.style, pntb2.style)
+
+        ''' Add presentation to singer objects '''
+        sng2.singers.first.presentations += presentation.getvalid()
+        self.one(sng2.singers.first.presentations)
+
+        # Get the `artist_artist` object for `sng2.singers.first` 
+        aa1 = [ 
+            x 
+            for x in sng2.artist_artists
+            if x.object.id == sng2.singers.first.id
+        ][0]
+
+        aa1.object.presentations += presentation.getvalid()
+        self.one(sng2.singers.first.presentations)
+        self.one(aa1.object.presentations)
 
         # NOTE (3cb2a6b5) In the non-subentity version of this test
-        # (it_loads_and_saves_reflexive_associations), the following is
-        # True:
+        # (it_loads_and_saves_reflexive_associations), the following
+        # is True:
         #
         #   sng2.singers.first.presentations is \
         #   sng2.artist_artists.first.object.presentations
@@ -13561,91 +13592,85 @@ class test_orm(tester):
         #     type(sng2.artist_artists.first.object) is artist
         #
         # That means that the above appends go to two different
-        # presentations collections. The commented out assertion below
-        # would fail but is left here to illustrates the consequences of
-        # this issue. The following assertions also illustrate that
-        # there are two presentations entities collections that are
-        # different and contain different presentation objects.
+        # presentations collections. 
 
-        # self.two(press)
-
-        self.one(sng2.singers.first.presentations)
-        self.one(sng2.artist_artists.first.object.presentations)
         self.isnot(
             sng2.singers.first.presentations,
-            sng2.artist_artists.first.object.presentations
+            aa1.object.presentations
         )
+
         self.isnot(
             sng2.singers.first.presentations.first,
-            sng2.artist_artists.first.object.presentations.first
+            aa1.object.presentations.first
         )
+
+        ''' Add presentation to painter object '''
+        sng2.painters.first.presentations += presentation.getvalid()
+        self.one(sng2.painters.first.presentations)
+
+        # Get the `artist_artist` object for `sng2.painters.first` 
+        aa2 = [ 
+            x 
+            for x in sng2.artist_artists
+            if x.object.id == sng2.painters.first.id
+        ][0]
+
+        aa2.object.presentations += presentation.getvalid()
+        self.one(sng2.painters.first.presentations)
+        self.one(aa2.object.presentations)
+
+        self.isnot(
+            sng2.painters.first.presentations,
+            aa2.object.presentations
+        )
+
+        self.isnot(
+            sng2.painters.first.presentations.first,
+            aa2.object.presentations.first
+        )
+
+        self.one(sng2.singers.first.presentations)
+        self.one(aa1.object.presentations)
+        self.one(sng2.painters.first.presentations)
+        self.one(aa2.object.presentations)
 
         with ct() as t:
             t(sng2.save)
             t.created(
                 sng2.singers.first.presentations.first,
-                sng2.artist_artists.first.object.presentations.first
+                aa1.object.presentations.first,
+                sng2.painters.first.presentations.first,
+                aa2.object.presentations.first,
             )
 
         sng3 = singer(sng2.id)
 
-        for attr in attrs:
-            press = getattr(sng3, attr)
-            for pres in press:
-                pres.name = uuid4().hex
+        sng3obj = sng3.singers[sng2.singers.first.id]
+        sng3obj.presentations.first.name = uuid4().hex
 
-        # Here, the same presentation entity objects get updated twice.
-        # This would lead to confusion since updates to the database are
-        # immediately getting overwitten. However, it seems unlikely
-        # that, in the real world, the user would update the same
-        # presentation objects from different areas in the graph like
-        # this.  Note, this is the due to the same issue (3cb2a6b5)
-        # mentioned above.
+        pnt3obj = sng3.painters[sng2.painters.first.id]
+        pnt3obj.presentations.first.name = uuid4().hex
+
         with self._chrontest() as t:
             t.run(sng3.save)
-            press = sng3.singers[0].presentations
-            t.updated(press.first)
-            t.updated(press.second)
-
-            press = sng3.artist_artists[0].object.presentations
-            t.updated(press.first)
-            t.updated(press.second)
+            t.updated(sng3obj.presentations.first)
+            t.updated(pnt3obj.presentations.first)
 
         sng4 = singer(sng3.id)
 
-        for i, attr in enumerate(attrs):
-            press2 = getattr(sng2, attr)
-            press3 = getattr(sng3, attr)
-            press4 = getattr(sng4, attr)
+        sngid = sng3obj.id
+        presid =sng3obj.presentations.first.id
+        self.eq(
+            sng3obj.presentations.first.name,
+            sng4.singers[sngid].presentations[presid].name
+        )
 
-            self.one(press2)
-            self.two(press3)
-            self.two(press4)
-
-            for pres4 in press4:
-                for pres2 in press2:
-                    self.ne(pres2.name, pres4.name)
-
-            if i:
-                # We have to skip the second iteration because the
-                # updates to the presentation objects in 
-                #
-                #   sng3.artist_artists.first.object.presentations
-                # 
-                # were updated, however, those updates were immediately
-                # overwritten by the updates from 
-                #
-                #   sng3.singers.first.presentations
-                #
-                # This is due to the 3cb2a6b5 issue.
-                continue
-
-            for pres4 in press4:
-                for pres3 in press3:
-                    if pres4.name == pres3.name:
-                        break
-                else:
-                    self.fail('No match within press4 and press3')
+        pntid = pnt3obj.id
+        presid =pnt3obj.presentations.first.id
+        self.eq(
+            pnt3obj.presentations.first.name,
+            sng4.painters[pntid].presentations[presid].name
+        )
 
         # TODO Test deeply nested associations
 
