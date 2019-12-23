@@ -245,7 +245,7 @@ class tester(entity):
     def assertOne(self, actual):
         if len(actual) != 1: self._failures += failure()
 
-    def one(self, actual):
+    def one(self, actual, msg=None):
         if len(actual) != 1: self._failures += failure()
 
     def assertTwo(self, actual):
@@ -260,7 +260,7 @@ class tester(entity):
     def three(self, actual):
         if len(actual) != 3: self._failures += failure()
 
-    def four(self, actual):
+    def four(self, actual, msg=None):
         if len(actual) != 4: self._failures += failure()
 
     def five(self, actual):
