@@ -441,7 +441,12 @@ class element(entities.entity):
         if lang:
             return lang
 
-        return self.parent.language
+        rent = self.parent
+
+        if rent:
+            return rent.language
+
+        return None
 
     @property
     def id(self):
