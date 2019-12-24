@@ -4340,8 +4340,10 @@ class selector(entities.entity):
                         else:
                             rms += el1; break
                 elif comb == selector.element.SubsequentSibling:
-                    for el2 in el1.preceding:
+                    preceding = list(el1.preceding.reversed())[sibix:]
+                    for i, el2 in enumerate(preceding):
                         if smp.match(el2):
+                            sibix += i + 1
                             break
                     else:
                         rms += el1; break

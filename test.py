@@ -13777,6 +13777,15 @@ class test_selectors(tester):
         html = dom.html(AdjacencyHtml)
 
         sels = [
+            'div ~ div ~ p + p',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.one(els)
+            self.eq('after-the-adjacency-anchor', els.first.id)
+
+        sels = [
             'div#first-div ~ p + p',
         ]
 
@@ -13785,6 +13794,7 @@ class test_selectors(tester):
             self.two(els)
             self.eq('immediatly-before-the-adjacency-anchor', els[0].id)
             self.eq('after-the-adjacency-anchor', els[1].id)
+
         
     def it_selects_with_next_sibling_combinator(self):
         html = dom.html(AdjacencyHtml)
