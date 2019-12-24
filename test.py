@@ -12038,6 +12038,76 @@ class test_page(tester):
         self.zero(pg.pages)
 
 class test_element(tester):
+    def it_class_language(self):
+        html = dom.html('''
+        <html lang="en">
+            <head></head>
+            <body>
+                <div>
+                    <p>
+                        My language is 'en' because it was specified in
+                        the root html tag.
+                    </p>
+                </div>
+                <section lang="fr">
+                    <p>Comment dites-vous "Bonjour" en Espanol?</p>
+
+                    <div>
+                        <blockquote lang="es">
+                            <p>
+                                My language will be Spainish.
+                            </p>
+                        </blockquote>
+                    </div>
+                </section>
+            </body>
+        </html>
+        ''')
+
+        p = html[0].children[1].children[0].children[0]
+        self.type(dom.p, p)
+        self.eq('en', p.language)
+
+        self.type(dom.div, p.parent)
+        self.eq('en', p.parent.language)
+
+        p = html[0].children[1].children[1].children[0]
+        self.type(dom.p, p)
+        self.eq('fr', p.language)
+
+        self.type(dom.section, p.parent)
+        self.eq('fr', p.parent.language)
+
+
+        p = html[0] \
+                .children[1] \
+                .children[1] \
+                .children[1] \
+                .children[0] \
+                .children[0] 
+        self.type(dom.p, p)
+        self.eq('es', p.language)
+
+        self.type(dom.blockquote, p.parent)
+        self.eq('es', p.parent.language)
+
+        html = dom.html('''
+        <html>
+            <head></head>
+            <body>
+                <div>
+                    <p>
+                        This document contains no 'lang' attribute so
+                        all of the elements' `language` @property's
+                        should be None.
+                    </p>
+                </div>
+            </body>
+        </html>
+        ''')
+
+        self.all(x.lang is None for x in html.all)
+
     def it_calls_parent(self):
         p = dom.paragraph()
         self.none(p.parent)
@@ -13493,14 +13563,127 @@ class test_selectors(tester):
             self._lis = dom.html(ListHtml)
         return self._lis
 
-    # TODO Address case-sensitivity
     # TODO Chained elements with implied universal elements for
     # pseudoclasses were seen to not work, e.g., 'article :first-of-type' 
     # TODO Selectors should ignore `dom.text` elements. See
     # `dom.pseudoclass._match_first_of_type`.
-    def it_selects_with_lang(self):
-        # TODO
-        ...
+    def it_selects_lang(self):
+        html = dom.html('''
+        <html lang="en">
+            <head></head>
+            <body>
+                <div>
+                    <p id="enp">
+                        My language is 'en' because it was specified in
+                        the root html tag.
+                    </p>
+                </div>
+                <section lang="fr">
+                    <p id="frp">Comment dites-vous "Bonjour" en Espanol?</p>
+
+                    <div>
+                        <blockquote lang="es">
+                            <p id="esp">
+                                My language will be Spainish.
+                            </p>
+                        </blockquote>
+                    </div>
+                </section>
+                <section lang="DE">
+                    <p id="dep">German paragraph</p>
+                </section>
+            </body>
+        </html>
+        ''')
+
+        sels = [
+            'p:lang(fr)',
+            'p:lang(FR)',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.one(els)
+            self.type(dom.p, els.first)
+            self.eq('frp', els.first.id)
+
+        sels = [
+            'p:lang(de)',
+            'p:lang(DE)',
+        ]
+        for sel in sels:
+            els = html[sel]
+            self.one(els)
+            self.type(dom.p, els.first)
+            self.eq('dep', els.first.id)
+            
+        sels = [
+            'p:lang(es)',
+            'p:lang(ES)',
+        ]
+        for sel in sels:
+            els = html[sel]
+            self.one(els)
+            self.type(dom.p, els.first)
+            self.eq('esp', els.first.id)
+            
+        sels = [
+            'p:lang(en)',
+            'p:lang(EN)',
+        ]
+        for sel in sels:
+            els = html[sel]
+            self.one(els)
+            self.type(dom.p, els.first)
+            self.eq('enp', els.first.id)
+
+        html = dom.html('''
+        <html>
+            <head></head>
+            <body>
+                <div lang="en">
+                    <p id="enp">
+                        Regural english
+                    </p>
+                </div>
+                <section lang="en-GB-oed">
+                    <p id="engboed">English, Oxford English Dictionary spelling</p>
+
+                    <div>
+                        <blockquote lang="zh-Hans">
+                            <div>
+                                <p id="zhh">Simplified Chinese</p>
+                            </div>
+                        </blockquote>
+                    </div>
+                </section>
+            </body>
+        </html>
+        ''')
+
+        sels = [
+            'p:lang(en)',
+            'p:lang(EN)',
+        ]
+        for sel in sels:
+            els = html[sel]
+            self.two(els)
+            self.type(dom.p, els.first)
+            self.eq('enp', els.first.id)
+            self.type(dom.p, els.second)
+            self.eq('engboed', els.second.id)
+
+        sels = [
+            'p:lang(en-GB-oed)',
+            'p:lang(EN-GB-OED)',
+            'p:lang(en-gb-oed)',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.one(els)
+            self.type(dom.p, els.first)
+            self.eq('engboed', els.first.id)
 
     def it_selects_with_selection_groups(self):
         html = self._shakespear

@@ -4631,6 +4631,20 @@ class selector(entities.entity):
             r += repr(self.arguments)
             return r
 
+        def _match_lang(self, el):
+            langs = el.language
+            if langs is None:
+                return
+
+            args = self.arguments.c.lower().split('-')
+            langs = langs.lower().split('-')
+
+            for arg, lang in zip(args, langs):
+                if arg != lang:
+                    return False
+            
+            return args[0] == langs[0]
+
         def _match_root(self, el):
             return el is el.root
 
