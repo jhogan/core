@@ -10506,6 +10506,25 @@ class test_orm(tester):
                     conc.name =  name
                     sngobj.concerts += conc
 
+            for k in range(4, 8):
+                aa = artist_artist.getvalid()
+                aa.role = 'sng-art_art-role-' + str(k)
+                aa.slug = 'sng-art_art-slug-' + str(k + 1)
+                pntobj = singer.getvalid()
+
+                aa.object = pntobj
+                pntobj.firstname = 'sng-art_art-pnt-fn-' + str(k)
+                pntobj.lastname = 'sng-art_art-pnt-ln' + str(k + 1)
+                pntobj.style = 'sng-art_art-pnt-sty-'+ str(k)
+
+                sng.artist_artists += aa
+
+                for l in range(4):
+                    conc = concert.getvalid()
+                    name = 'sng-art_art-pnt-conc-name-' + str(l)
+                    conc.name =  name
+                    pntobj.concerts += conc
+
         sngs.save()
         return sngs
 
@@ -13696,7 +13715,7 @@ class test_orm(tester):
 
             self.eq(fff, sng1.orm.persistencestate)
 
-            self.four(sng1.artist_artists)
+            self.eight(sng1.artist_artists)
 
             sng.artist_artists.sort()
             sng1.artist_artists.sort()
@@ -13707,7 +13726,6 @@ class test_orm(tester):
                 self.eq(fff, aa1.orm.persistencestate)
 
                 self.eq(aa.subject.id, aa1.subject.id)
-                aa1.object
 
                 self.eq(aa.object.id, aa1.object.id)
 
@@ -13717,8 +13735,8 @@ class test_orm(tester):
                 #self.is_(aa1.subject, sng1)
                 self.eq(aa1.subject.id, sng1.id)
 
-        # NOTE The above will lazy-load aa1.object 16 times
-        self.count(16, self.chronicles)
+        # NOTE The above will lazy-load aa1.object 32 times
+        self.count(32, self.chronicles)
 
         # Test singers joined with artist_artists where the association
         # has a conditional
@@ -13758,55 +13776,57 @@ class test_orm(tester):
             self.eq(fff, aa1.object.orm.persistencestate)
 
         # Test unconditionally joining the associated entities
-        # collections (artist_artists) with its composite (singer)
+        # collections (artist_artists) with its composites (singer and
+        # painter)
         for b in False, True:
-            if b:
-                # Implicitly join artist_artists
-                sngs1 = singers & singers
-            else:
-                # Explicitly join artist_artists
-                sngs1 = singers
-                sngs1 &= artist_artists & singers
+            for es in (singers, painters):
+                if b:
+                    # Implicitly join artist_artists
+                    sngs1 = singers & es
+                else:
+                    # Explicitly join artist_artists
+                    sngs1 = singers
+                    sngs1 &= artist_artists & es
 
-            self.one(sngs1.orm.joins)
+                self.one(sngs1.orm.joins)
 
-            self.type(artist_artists, sngs1.orm.joins.first.entities)
-            self.one(sngs1.orm.joins.first.entities.orm.joins)
-            objsngs = sngs1.orm.joins.first.entities.orm.joins.first.entities
-            self.type(singers, objsngs)
+                self.type(artist_artists, sngs1.orm.joins.first.entities)
+                self.one(sngs1.orm.joins.first.entities.orm.joins)
+                obj = sngs1.orm.joins.first.entities.orm.joins.first.entities
+                self.type(es, obj)
 
-            sngs1.sort()
+                sngs1.sort()
 
-            self.chronicles.clear()
+                self.chronicles.clear()
 
-            self.four(sngs1)
+                self.four(sngs1)
 
-            for sng, sng1 in zip(sngs, sngs1):
-                self.eq(sng.id, sng1.id)
+                for sng, sng1 in zip(sngs, sngs1):
+                    self.eq(sng.id, sng1.id)
 
-                self.eq(fff, sng1.orm.persistencestate)
+                    self.eq(fff, sng1.orm.persistencestate)
 
-                self.four(sng1.artist_artists)
+                    self.eight(sng1.artist_artists)
 
-                sng.artist_artists.sort()
-                sng1.artist_artists.sort()
+                    sng.artist_artists.sort()
+                    sng1.artist_artists.sort()
 
-                aass = zip(sng.artist_artists, sng1.artist_artists)
-                for aa, aa1 in aass:
-                    self.eq(fff, aa1.orm.persistencestate)
-                    self.eq(aa.id, aa.id)
-                    self.eq(
-                        aa.subject__artistid, 
-                        aa1.subject__artistid
-                    )
-                    self.eq(
-                        aa.object__artistid, 
-                        aa1.object__artistid
-                    )
-                    self.eq(aa.subject.id, aa1.subject.id)
-                    self.eq(aa.object.id, aa1.object.id)
+                    aass = zip(sng.artist_artists, sng1.artist_artists)
+                    for aa, aa1 in aass:
+                        self.eq(fff, aa1.orm.persistencestate)
+                        self.eq(aa.id, aa.id)
+                        self.eq(
+                            aa.subject__artistid, 
+                            aa1.subject__artistid
+                        )
+                        self.eq(
+                            aa.object__artistid, 
+                            aa1.object__artistid
+                        )
+                        self.eq(aa.subject.id, aa1.subject.id)
+                        self.eq(aa.object.id, aa1.object.id)
 
-            self.zero(self.chronicles)
+                self.zero(self.chronicles)
 
         # Test joining the associated entities collections
         # (artist_artists) with its composite (singer) where the
@@ -13940,7 +13960,7 @@ class test_orm(tester):
                 self.eq(sng.id, sng1.id)
                 aas = sng.artist_artists.sorted()
                 aas1 = sng1.artist_artists.sorted()
-                self.four(aas1)
+                self.eight(aas1)
 
                 for aa, aa1 in zip(aas, aas1):
                     self.eq(fff, aa1.orm.persistencestate)

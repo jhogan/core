@@ -1216,7 +1216,6 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         if self.orm.isstreaming:
             raise invalidstream('Streaming entities cannot contain joins')
 
-
         if type(es) is entitiesmeta:
             es = es()
         elif type(es) is entitymeta:
@@ -1259,7 +1258,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                     # are not interested in it if self and es are the
                     # same type.
                     if map.associations.orm.isreflexive:
-                        if type(self) is not type(es):
+                        if not self.orm.entity().iscollinear(with_=es):
+                        #if type(self) is not type(es):
                             continue
                     else:
                         if type(self) is type(es):
@@ -1973,6 +1973,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         
         map.value = v
 
+    # TODO Move to orm
     def iscollinear(self, with_):
         """ Return True if self is colinear with ``with_``.
 
@@ -1996,7 +1997,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             return True
 
         for e in with_.__mro__:
-            if e is entity:
+            if e in (entity, associations):
                 break
             if type(self) in e.orm.subclasses:
                 return True
