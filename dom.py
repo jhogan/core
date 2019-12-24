@@ -354,7 +354,8 @@ class elements(entities.entities):
             els += el.getchildren(recursive=True)
         return els
 
-    def getelements(self):
+    @property
+    def all(self):
         els = elements()
         for el in self:
             els += el
