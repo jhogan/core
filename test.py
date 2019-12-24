@@ -13674,6 +13674,7 @@ class test_selectors(tester):
             self.eq('engboed', els.second.id)
 
         sels = [
+            'p:lang(en-GB)',
             'p:lang(en-GB-oed)',
             'p:lang(EN-GB-OED)',
             'p:lang(en-gb-oed)',
@@ -13684,6 +13685,41 @@ class test_selectors(tester):
             self.one(els)
             self.type(dom.p, els.first)
             self.eq('engboed', els.first.id)
+
+        sels = [
+            'p:lang(zh)',
+            'p:lang(zh-hans)',
+            'p:lang(zh-HANS)',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.one(els)
+            self.type(dom.p, els.first)
+            self.eq('zhh', els.first.id)
+
+        sels = [
+            '*:lang(zh)',
+            ':lang(zh-hans)',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.three(els)
+            self.type(dom.blockquote, els.first)
+            self.type(dom.div, els.second)
+            self.type(dom.p, els.third)
+            self.eq('zhh', els.third.id)
+
+        sels = [
+            'p:lang(EN-GB-)',
+            'p:lang(EN-)',
+            'p:lang(E)',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.zero(els)
 
     def it_selects_with_selection_groups(self):
         html = self._shakespear

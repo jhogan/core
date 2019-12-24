@@ -4644,6 +4644,9 @@ class selector(entities.entity):
             args = self.arguments.c.lower().split('-')
             langs = langs.lower().split('-')
 
+            if len(args) > len(langs):
+                return False
+
             for arg, lang in zip(args, langs):
                 if arg != lang:
                     return False
