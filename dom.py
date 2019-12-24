@@ -492,7 +492,6 @@ class element(entities.entity):
 
         return self
 
-
     @property
     def parent(self):
         if not hasattr(self, '_parent'):
@@ -509,8 +508,15 @@ class element(entities.entity):
 
     @property
     def ancestors(self):
+        return self.getancestors()
+
+    def getancestors(self, includeself=False):
         els = elements()
-        rent = self.parent
+
+        if includeself:
+            rent = self
+        else:
+            rent = self.parent
 
         while rent:
             els += rent
