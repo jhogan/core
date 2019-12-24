@@ -457,6 +457,23 @@ class element(entities.entity):
         self.attributes['id'] = v
 
     @property
+    def lang(self):
+        """ The lang global attribute helps define the language of an
+        element: the language that non-editable elements are written in,
+        or the language that the editable elements should be written in
+        by the user. The attribute contains a single “language tag” in
+        the format defined in Tags for Identifying Languages (BCP47)
+        at https://www.ietf.org/rfc/bcp/bcp47.txt
+
+        https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/lang
+        """
+        return self.attributes['lang'].value
+
+    @lang.setter
+    def lang(self, v):
+        self.attributes['lang'] = v
+
+    @property
     def title(self):
         """ The title global attribute contains text representing
         advisory information related to the element it belongs to.
