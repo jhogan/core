@@ -4322,31 +4322,29 @@ class selector(entities.entity):
                             anix += i + 1
                             break
                     else:
-                        rms += el1
+                        rms += el1; break
                 elif comb == selector.element.Child:
                     an = el1.ancestors[anix]
                     if smp.match(an):
                         anix += 1
                     else:
-                        rms += el1
-                        break
+                        rms += el1; break
                 elif comb == selector.element.NextSibling:
                     try:
                         prev = list(el1.preceding.reversed())[sibix]
                     except IndexError:
-                        rms += el1
+                        rms += el1; break
                     else:
                         if smp.match(prev):
                             sibix += 1
                         else:
-                            rms += el1
-
+                            rms += el1; break
                 elif comb == selector.element.SubsequentSibling:
                     for el2 in el1.preceding:
                         if smp.match(el2):
                             break
                     else:
-                        rms += el1
+                        rms += el1; break
                 else:
                     raise ValueError('Invalid combinator')
 
