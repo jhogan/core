@@ -424,6 +424,25 @@ class element(entities.entity):
         el._setparent(self)
 
     @property
+    def language(self):
+        """ Returns the "content language" of the element. The content
+        language is the language identified by the ``lang`` attribute of
+        the element or the closest ancestor. The content language is
+        the value selected by the :lang() pseudoclass.
+
+        Examples::
+            “en” for English
+            “zh-Hans” for Chinese
+            "en-GB-oxendict" for English, Oxford English Dictionary spelling
+        """
+        lang = self.lang
+
+        if lang:
+            return lang
+
+        return self.parent.language
+
+    @property
     def id(self):
         """ Defines a unique identifier (ID) which must be unique in the
         whole document. Its purpose is to identify the element when
