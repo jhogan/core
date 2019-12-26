@@ -14017,6 +14017,20 @@ class test_selectors(tester):
           self.zero(html[sel], sel)
           self.zero(html[sel.upper()], sel)
 
+    def it_selects_with_chain_of_elements_and_classes(self):
+        html = self._shakespear
+
+        sels = [
+            'div div.dialog'
+            'div .dialog'
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.count(51, els)
+            self.all('dialog' in x.classes for x in els)
+            self.all(type(x.parent) is dom.div for x in els)
+
     def it_selects_with_classes(self):
         html = self._shakespear
 
