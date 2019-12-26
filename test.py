@@ -13565,8 +13565,6 @@ class test_selectors(tester):
 
     # TODO Chained elements with implied universal elements for
     # pseudoclasses were seen to not work, e.g., 'article :first-of-type' 
-    # TODO Selectors should ignore `dom.text` elements. See
-    # `dom.pseudoclass._match_first_of_type`.
     def it_selects_lang(self):
         html = dom.html('''
         <html lang="en">
