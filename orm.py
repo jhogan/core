@@ -1253,10 +1253,10 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 for map in sup.orm.mappings.associationsmappings:
 
                     # If the association is reflexive, we are only
-                    # interested in it if self and es are the same type.
-                    # However, if the association is not reflexive, we
-                    # are not interested in it if self and es are the
-                    # same type.
+                    # interested in it if `self` and `es` are the same
+                    # type.  However, if the association is not
+                    # reflexive, we are not interested in it if `self`
+                    # and `es` are the same type.
                     if map.associations.orm.isreflexive:
                         if not self.orm.entity().iscollinear(with_=es):
                         #if type(self) is not type(es):
@@ -1285,7 +1285,6 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
                         # If the associationsmapping's entity is the same class as
                         # the joinee (es)
-
                         if map1.entity.orm.entities is type(es) \
                             or map1.entity in es.orm.entity.orm.superclasses:
 
