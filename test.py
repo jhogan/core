@@ -3145,6 +3145,9 @@ class presentations(orm.entities):
 class concerts(presentations):
     pass
 
+class exhibitions(presentations):
+    pass
+
 class battles(concerts):
     pass
 
@@ -3217,6 +3220,18 @@ class concert(presentation):
 
     # bigint unsigned
     externalid1  =  orm.fieldmapping(int,  min=0,         max=(2**64)-1)
+
+class exhibition(presentation):
+    @staticmethod
+    def getvalid():
+        pres = presentation.getvalid()
+        exh = exhibition()
+        exh.record = uuid4().hex
+        exh.name = uuid4().hex
+        exh.title = pres.title
+        exh.description = pres.description
+        exh.description1 = pres.description1
+        return exh
 
 class battle(concert):
     views = int
@@ -3470,6 +3485,7 @@ class painters(artists):
 
 class painter(artist):
     style = str
+    exhibitions = exhibitions
     
     @staticmethod
     def getvalid():
@@ -10510,7 +10526,7 @@ class test_orm(tester):
                 aa = artist_artist.getvalid()
                 aa.role = 'sng-art_art-role-' + str(k)
                 aa.slug = 'sng-art_art-slug-' + str(k + 1)
-                pntobj = singer.getvalid()
+                pntobj = painter.getvalid()
 
                 aa.object = pntobj
                 pntobj.firstname = 'sng-art_art-pnt-fn-' + str(k)
@@ -10520,10 +10536,10 @@ class test_orm(tester):
                 sng.artist_artists += aa
 
                 for l in range(4):
-                    conc = concert.getvalid()
-                    name = 'sng-art_art-pnt-conc-name-' + str(l)
-                    conc.name =  name
-                    pntobj.concerts += conc
+                    exh = exhibition.getvalid()
+                    name = 'sng-art_art-pnt-exh-name-' + str(l)
+                    exh.name =  name
+                    pntobj.exhibitions += exh
 
         sngs.save()
         return sngs
@@ -13806,13 +13822,24 @@ class test_orm(tester):
 
                     self.eq(fff, sng1.orm.persistencestate)
 
-                    self.eight(sng1.artist_artists)
+                    self.four(sng1.artist_artists)
 
-                    sng.artist_artists.sort()
-                    sng1.artist_artists.sort()
+                    aas1 = sng1.artist_artists
 
-                    aass = zip(sng.artist_artists, sng1.artist_artists)
-                    for aa, aa1 in aass:
+                    # Create an aa collection where the non-singers
+                    # (painters) from sng.artist_artists have been
+                    # removed
+                    aas = sng \
+                            .artist_artists \
+                            .where(
+                                lambda x: x.id in aas1.pluck('id')
+                            )
+
+                    aas.sort(); aas1.sort()
+                    self.four(aas); self.four(aas1)
+
+                    for aa, aa1 in zip(aas, aas1):
+                        self.expect(None, lambda: es.orm.entity(aa.object.id))
                         self.eq(fff, aa1.orm.persistencestate)
                         self.eq(aa.id, aa.id)
                         self.eq(
@@ -13826,7 +13853,13 @@ class test_orm(tester):
                         self.eq(aa.subject.id, aa1.subject.id)
                         self.eq(aa.object.id, aa1.object.id)
 
-                self.zero(self.chronicles)
+                # The test to determine what subentity aa.object is:
+                #
+                #     self.expect(None, lambda: es.orm.entity(aa.object.id))
+                #
+                # will result in 16 chronicled objects.
+                self.count(16, self.chronicles)
+        return
 
         # Test joining the associated entities collections
         # (artist_artists) with its composite (singer) where the
