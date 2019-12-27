@@ -1276,8 +1276,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                                   .mappings['object'] \
                                   .entity
 
-                            clss = obj.orm.subclasses + obj
-                            if es.orm.entity not in clss:
+                            if not isinstance(es, obj.orm.entities):
                                 continue
                         else:
                             if type(self) is type(es):
