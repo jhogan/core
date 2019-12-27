@@ -3308,7 +3308,6 @@ class artist(orm.entity):
     bio1 = str, 1, 4001
     bio2 = str, 1, 4000
 
-
     comments = comments
 
     @staticmethod
