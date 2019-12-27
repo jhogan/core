@@ -1247,14 +1247,14 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             #
             #     rpr.singers
             #
-            # However, .joinsupers() wants a direct, one-to-one
-            # join between `rapper` and `singer`. Therefore, it will set
+            # However, .joinsupers() wants a direct, one-to-one join
+            # between `rapper` and `singer`. Therefore, it will set
             # inferassociation to False to prevent this.
             if inferassociation:
-                # If es was not in the above `maps` collection, check if it
-                # is mapped to `self` through an `assocation`. This is for
-                # join operations where the `associations` collection is
-                # implied, i.e.:
+                # If es was not in the above `maps` collection, check if
+                # it is mapped to `self` through an `assocation`. This
+                # is for join operations where the `associations`
+                # collection is implied, i.e.:
                 #
                 #     artist().join(artifacts())
                 # 
@@ -1283,17 +1283,17 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                             if type(self) is type(es):
                                 continue
 
-                            # If the association is not reflexive, 
-                            # we don't care about the associations of the
+                            # If the association is not reflexive, we
+                            # don't care about the associations of the
                             # supers. Ascending the inheritance is only
-                            # useful when we want to have implicit reflexive
-                            # joins with subentity objects:
+                            # useful when we want to have implicit
+                            # reflexive joins with subentity objects:
                             #
                             #   singers.join(singers)
                             #
-                            # Without this check, joining subentity objects
-                            # to their superentity results in problems. See
-                            # ref: 7adeeffe.
+                            # Without this check, joining subentity
+                            # objects to their superentity results in
+                            # problems. See ref: 7adeeffe.
                             if self.orm.entity is not sup:
                                 continue
 
@@ -1301,18 +1301,20 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                         # associationsmapping
                         for map1 in map.associations.orm.mappings.entitymappings:
 
-                            # If the associationsmapping's entity is the same class as
-                            # the joinee (es)
+                            # If the associationsmapping's entity is the
+                            # same class as the joinee (es)
                             if map1.entity.orm.entities is type(es) \
                                 or map1.entity in es.orm.entity.orm.superclasses:
 
-                                # Create a new instance of the map's associations
-                                # collection, add it to self's joins collection, and
-                                # add es to ass's joins collection.
+                                # Create a new instance of the map's
+                                # associations collection, add it to
+                                # self's joins collection, and add es to
+                                # ass's joins collection.
                                 self &= map.associations & es
 
-                                # We can return now because the implicit assocation has
-                                # been joined to self, and es has been joined to the
+                                # We can return now because the implicit
+                                # assocation has been joined to self,
+                                # and es has been joined to the
                                 # association.
                                 return self
                         else:
