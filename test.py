@@ -14021,14 +14021,52 @@ class test_selectors(tester):
         html = self._shakespear
 
         sels = [
-            'div div.dialog'
-            'div .dialog'
+            'div div.dialog',
+            'div .dialog',
+            'div *.dialog',
+            '* *.dialog',
         ]
 
         for sel in sels:
             els = html[sel]
             self.count(51, els)
             self.all('dialog' in x.classes for x in els)
+            self.all(type(x.parent) is dom.div for x in els)
+
+        sels = [
+            'div.dialog div.dialog div.dialog',
+            'div.dialog div.dialog *.dialog',
+            'div.dialog div.dialog .dialog',
+            'div.dialog .dialog div.dialog',
+            'div.dialog *.dialog div.dialog',
+            'div.dialog div.dialog div.dialog',
+            '.dialog div.dialog div.dialog',
+            '*.dialog div.dialog div.dialog',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.count(49, els)
+            self.all('dialog' in x.classes for x in els)
+            self.all(type(x.parent) is dom.div for x in els)
+            self.all(type(x.grandparent) is dom.div for x in els)
+
+    def it_selects_with_chain_of_elements_and_pseudoclasses(self):
+        html = self._shakespear
+
+        sels = [
+            'div :not(#playwright)',
+            'div *:not(#playwright)',
+            'div div:not(#playwright)',
+        ]
+
+        for i, sel in enumerate(sels):
+            els = html(sel)
+            if i.last:
+                self.count(241, els)
+            else:
+                self.count(243, els)
+            self.all(x.id != 'playwright' for x in els)
             self.all(type(x.parent) is dom.div for x in els)
 
     def it_selects_with_classes(self):
@@ -15609,6 +15647,165 @@ class test_selectors(tester):
         self.repr('E F G', sels)
         self.str('E F G', sels)
 
+    def it_parses_chain_of_elements_and_classes(self):
+        ''' element to class '''
+        sels = [
+            'div .dialog',
+            'div *.dialog',
+            'div div.dialog',
+        ]
+
+        for i, sel in enumerate(sels):
+            sel = dom.selectors(sel)
+            self.eq('div',  sel.first.elements.first.element)
+            if i.last:
+                self.eq('div',  sel.first.elements.second.element)
+            else:
+                self.eq('*',  sel.first.elements.second.element)
+            self.eq(
+                'dialog', sel.first.elements.second.classes.first.value
+            )
+
+        ''' Class to element '''
+        sels = [
+            '.dialog div',
+            '*.dialog div',
+            'div.dialog div',
+        ]
+
+        for i, sel in enumerate(sels):
+            sel = dom.selectors(sel)
+            self.eq('div',  sel.first.elements.second.element)
+            if i.last:
+                self.eq('div',  sel.first.elements.first.element)
+            else:
+                self.eq('*',  sel.first.elements.first.element)
+
+            self.eq(
+                'dialog', sel.first.elements.first.classes.first.value
+            )
+
+    def it_parses_chain_of_elements_and_pseudoclasses(self):
+        ''' Element to pseudoclasses '''
+        sels = [
+            'div :not(p)',
+            'div *:not(p)',
+            'div div:not(p)',
+        ]
+
+        for i, sel in enumerate(sels):
+            sel = dom.selectors(sel)
+            self.eq('div',  sel.first.elements.first.element)
+            if i.last:
+                self.eq('div',  sel.first.elements.second.element)
+            else:
+                self.eq('*',  sel.first.elements.second.element)
+            self.eq(
+                'not', sel.first.elements.second.pseudoclasses.first.value
+            )
+
+        ''' Element to pseudoclasses '''
+        sels = [
+            ':not(p) div',
+            '*:not(p) div',
+            'div:not(p) div',
+        ]
+
+        for i, sel in enumerate(sels):
+            sel = dom.selectors(sel)
+            self.eq('div',  sel.first.elements.second.element)
+            if i.last:
+                self.eq('div',  sel.first.elements.first.element)
+            else:
+                self.eq('*',  sel.first.elements.first.element)
+            self.eq(
+                'not', sel.first.elements.first.pseudoclasses.first.value
+            )
+
+    def it_parses_chain_of_elements_and_attributes(self):
+        ''' Element to attribute '''
+        sels = [
+            'div [foo=bar]',
+            'div *[foo=bar]',
+            'div p[foo=bar]',
+        ]
+
+        for i, sel in enumerate(sels):
+            sel = dom.selectors(sel)
+            self.eq('div',  sel.first.elements.first.element)
+            if i.last:
+                self.eq('p',  sel.first.elements.second.element)
+            else:
+                self.eq('*',  sel.first.elements.second.element)
+            self.eq(
+                'foo', sel.first.elements.second.attributes.first.key
+            )
+
+            self.eq(
+                'bar', sel.first.elements.second.attributes.first.value
+            )
+
+        sels = [
+            '[foo=bar] div',
+            '*[foo=bar] div',
+            'p[foo=bar] div',
+        ]
+
+        ''' Attribute to element '''
+        for i, sel in enumerate(sels):
+            sel = dom.selectors(sel)
+            self.eq('div',  sel.first.elements.second.element)
+            if i.last:
+                self.eq('p',  sel.first.elements.first.element)
+            else:
+                self.eq('*',  sel.first.elements.first.element)
+            self.eq(
+                'foo', sel.first.elements.first.attributes.first.key
+            )
+
+            self.eq(
+                'bar', sel.first.elements.first.attributes.first.value
+            )
+
+    def it_parses_chain_of_elements_and_identifiers(self):
+        ''' Element to identifier '''
+        sels = [
+            'div #my-id',
+            'div *#my-id',
+            'div p#my-id',
+        ]
+
+        for i, sel in enumerate(sels):
+            sel = dom.selectors(sel)
+            self.eq('div',  sel.first.elements.first.element)
+            if i.last:
+                self.eq('p',  sel.first.elements.second.element)
+            else:
+                self.eq('*',  sel.first.elements.second.element)
+
+            self.eq(
+                'my-id', sel.first.elements.second.id
+            )
+
+        ''' Identitifier to element '''
+        sels = [
+            '#my-id div',
+            '*#my-id div',
+            'p#my-id div',
+        ]
+
+        for i, sel in enumerate(sels):
+            sel = dom.selectors(sel)
+            self.eq('div',  sel.first.elements.second.element)
+            if i.last:
+                self.eq('p',  sel.first.elements.first.element)
+            else:
+                self.eq('*',  sel.first.elements.first.element)
+
+            self.eq(
+                'my-id', sel.first.elements.first.id
+            )
+
     def it_parses_attribute_elements(self):
         sels = 'E[foo=bar] F[qux="quux"] G[garply=waldo]'
         expect = 'E[foo=bar] F[qux=quux] G[garply=waldo]'
@@ -16851,7 +17048,7 @@ Shakespeare = '''
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   </head>
   <body>
-    <div id="test">
+    <div id="test" class="container">
       <div class="dialog">
         <h2 id="023338d1-5503-4054-98f7-c1e9c9ad390d f6836822-589e-40bf-a3f7-a5c3185af4f7">
           As You Like It
