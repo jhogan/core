@@ -3989,7 +3989,6 @@ class selectors(entities.entities):
 
         prev = None
         for tok in self.tokenize(self._sel):
-
             if isinstance(tok, selectors.eof):
                 if attr:
                     raise err('Attribute not closed', tok)
