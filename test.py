@@ -13563,8 +13563,6 @@ class test_selectors(tester):
             self._lis = dom.html(ListHtml)
         return self._lis
 
-    # TODO Chained elements with implied universal elements for
-    # pseudoclasses were seen to not work, e.g., 'article :first-of-type' 
     def it_selects_lang(self):
         html = dom.html('''
         <html lang="en">
@@ -13719,7 +13717,7 @@ class test_selectors(tester):
             els = html[sel]
             self.zero(els)
 
-    def it_selects_with_selection_groups(self):
+    def it_selects_with_groups(self):
         html = self._shakespear
 
         sels = [
@@ -13739,6 +13737,45 @@ class test_selectors(tester):
                 els.second.elements.first.html, 
                 'ACT I, SCENE III. A room in the palace.'
             )
+
+    # TODO Selectors like 
+    #
+    #     h2[id^=023338d1]
+    #
+    # Don't work because the value starts with a number. This appears to
+    # be the correct behavior for attributes, classes and identifiers.
+    #
+    #     .123, #123, etc... 
+    #
+    # The solution appears to be to use attribute selection with quotes:
+    #
+    #     [class="123"], [id="123"], etc...
+    #
+    # The problem is that the parse doesn't raise an exception for
+    # unquoted attribute selectors with values that start with numbere,
+    # i.e., the example above, `h2[id^=023338d1]` works fine, though it
+    # doesn't select anything even though it should for the Shakespeare
+    # html.
+
+    def it_selects_with_groups_element_to_class(self):
+        html = self._shakespear
+        sels = [
+            'h2, .thirdClass',
+            'h2, *.thirdClass',
+            'h2, div.thirdClass',
+            'h2[id^="023338d1"], .thirdClass',
+            '[id^="023338d1"], *.thirdClass',
+            '*[id^="023338d1"], div.thirdClass',
+            '*.header, .thirdClass',
+            '.header, *.thirdClass',
+            'h2.header, div.thirdClass',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.two(els)
+            self.type(dom.h2, els.first)
+            self.eq('scene1', els.second.id)
 
     def it_selects_with_child_combinator(self):
         html = dom.html(AdjacencyHtml)
@@ -15049,8 +15086,6 @@ class test_selectors(tester):
             </article>
         ''')
 
-        # FIXME This should work too but doesn't: 
-        #     `article :first-of-type'
         els = html[':first-of-type']
         expect = [str(x) for x in range(5)]
         self.count(len(expect), els)
@@ -15104,8 +15139,6 @@ class test_selectors(tester):
         </article>
         ''')
 
-        # FIXME This should work too but doesn't: 
-        #     `article :last-of-type'
         els = html[':last-of-type']
         expect = [str(x) for x in range(4)]
         self.count(len(expect), els)
