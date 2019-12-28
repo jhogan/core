@@ -14185,9 +14185,6 @@ class test_selectors(tester):
         ''' Select using the = operator [foo=bar]
         '''
         html = self._shakespear
-        # TODO Test chaining the comparison operators, e.g.,
-        #
-        #   *.[foo=bar][baz$=qux][quux][garply~=waldo]
         sels = [
             '[foo=bar]',
             '[title=bar]',
@@ -14243,6 +14240,26 @@ class test_selectors(tester):
             break
         else:
             self.fail('There were no `sels`')
+
+        sels = [
+            '[id=speech1][class^=char]',
+            '[id$=ech1][class*=aract]'
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.one(els)
+            self.eq('speech1', els.first.id)
+
+        sels = [
+            '[id=scene1][class~=thirdClass]',
+            '[id][class~=thirdClass]'
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.one(els)
+            self.eq('scene1', els.first.id)
 
     def it_selects_with_attribute_space_seperated(self):
         ''' Select using the ~= operator [foo~=bar]
@@ -17083,7 +17100,8 @@ Shakespeare = '''
   <body>
     <div id="test" class="container">
       <div class="dialog">
-        <h2 id="023338d1-5503-4054-98f7-c1e9c9ad390d f6836822-589e-40bf-a3f7-a5c3185af4f7">
+        <h2 id="023338d1-5503-4054-98f7-c1e9c9ad390d f6836822-589e-40bf-a3f7-a5c3185af4f7"
+            class='header'>
           As You Like It
         </h2>
         <div id="playwright">
