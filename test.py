@@ -13763,9 +13763,11 @@ class test_selectors(tester):
             'h2, .thirdClass',
             'h2, *.thirdClass',
             'h2, div.thirdClass',
+
             'h2[id^="023338d1"], .thirdClass',
             '[id^="023338d1"], *.thirdClass',
             '*[id^="023338d1"], div.thirdClass',
+
             '*.header, .thirdClass',
             '.header, *.thirdClass',
             'h2.header, div.thirdClass',

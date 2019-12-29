@@ -4236,7 +4236,6 @@ class selector(entities.entity):
         @staticmethod
         def str2comb(comb):
             return [' ', '>', '+', '~'].index(comb)
-                
 
         def match(self, els):
             if isinstance(els, element):
