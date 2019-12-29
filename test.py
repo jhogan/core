@@ -13777,6 +13777,115 @@ class test_selectors(tester):
             self.type(dom.h2, els.first)
             self.eq('scene1', els.second.id)
 
+        sels = [
+            '.thirdClass, h2',
+            '*.thirdClass, h2',
+            'div.thirdClass, h2',
+
+            '.thirdClass, h2[id^="023338d1"]',
+            '*.thirdClass, [id^="023338d1"]',
+            'div.thirdClass, *[id^="023338d1"]',
+
+            '.thirdClass, *.header',
+            '*.thirdClass, .header',
+            'div.thirdClass, h2.header',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.two(els)
+            self.eq('scene1', els.first.id)
+            self.type(dom.h2, els.second)
+
+    def it_selects_with_groups_element_to_attributes(self):
+        html = self._shakespear
+
+        sels = [
+            'h2, [title=wtf]',
+            'h2, *[title=wtf]',
+            'h2, div[title=wtf]',
+
+            'h2[id^="023338d1"], [title=wtf]',
+            '[id^="023338d1"], *[title=wtf]',
+            '*[id^="023338d1"], div[title=wtf]',
+
+            '*.header, [title=wtf]',
+            '.header, *[title=wtf]',
+            'h2.header, div[title=wtf]',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.two(els)
+            self.type(dom.h2, els.first)
+            self.type(dom.div, els.second)
+            self.eq('wtf', els.second.title)
+
+        sels = [
+            '[title=wtf], h2',
+            '*[title=wtf], h2',
+            'div[title=wtf], h2',
+
+            '[title=wtf], h2[id^="023338d1"]',
+            '*[title=wtf], [id^="023338d1"]',
+            'div[title=wtf], *[id^="023338d1"]',
+
+            '[title=wtf], *.header',
+            '*[title=wtf], .header',
+            'div[title=wtf], h2.header',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+
+            self.two(els)
+            self.type(dom.div, els.first)
+            self.eq('wtf', els.first.title)
+            self.type(dom.h2, els.second)
+
+    def it_selects_with_groups_element_to_identifiers(self):
+        html = self._shakespear
+
+        sels = [
+            '#herp,                  #speech16',
+            '*#herp,                 *#speech16',
+            'div#herp,               div#speech16',
+
+            '[title=wtf],            #speech16',
+            '*[title=wtf],           *#speech16',
+            'div[title=wtf],         div#speech16',
+
+            '[title=wtf].dialog,     #speech16',
+            '*[title=wtf].dialog,    *#speech16',
+            'div[title=wtf].dialog,  div#speech16',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.two(els)
+            self.eq('herp', els.first.id)
+            self.eq('speech16', els.second.id)
+
+        sels = [
+            '#speech16,     #herp                  ',
+            '*#speech16,    *#herp                 ',
+            'div#speech16,  div#herp               ',
+
+            '#speech16,     [title=wtf]            ',
+            '*#speech16,    *[title=wtf]           ',
+            'div#speech16,  div[title=wtf]         ',
+
+            '#speech16,     [title=wtf].dialog     ',
+            '*#speech16,    *[title=wtf].dialog    ',
+            'div#speech16,  div[title=wtf].dialog  ',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.two(els)
+            self.eq('speech16', els.first.id)
+            self.eq('herp', els.second.id)
+
     def it_selects_with_child_combinator(self):
         html = dom.html(AdjacencyHtml)
 
@@ -17278,7 +17387,7 @@ Shakespeare = '''
           <div id="speech16" class="character">
             ROSALIND
           </div>
-          <div title="wtf" class="dialog">
+          <div id="herp" title="wtf" class="dialog">
             <div id="scene1.3.29">
               No, faith, hate him not, for my sake.
             </div>
