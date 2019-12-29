@@ -3842,7 +3842,7 @@ class selectors(entities.entities):
             p#pid, div.my-class
         """
         super().__init__(*args, **kwargs)
-        self._sel = sel
+        self._sel = sel.strip()
         self._parse()
     
     @staticmethod
