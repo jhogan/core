@@ -3500,6 +3500,24 @@ class painter(artist):
 
         return pnt
 
+class muralists(painters):
+    pass
+
+class muralist(painter):
+    @staticmethod
+    def getvalid():
+        sup = muralist.orm.super.getvalid()
+
+        mur = muralist()
+        keymaps = (orm.primarykeyfieldmapping, orm.foreignkeyfieldmapping)
+        for map in artist.orm.mappings:
+            if isinstance(map, orm.fieldmapping) and type(map) not in keymaps:
+                setattr(mur, map.name, getattr(sup, map.name))
+
+        mur.style = 'classical'
+
+        return mur
+
 class rappers(singers):
     pass
 
@@ -4200,7 +4218,7 @@ class test_orm(tester):
             t.created(fact2)
 
             # FIXME The save is reloading art.artist_arifacts for some
-            # reason. See related at d7a42a957d3e491e882d485095e1325f
+            # reason. See related at d7a42a95
             t.retrieved(art.artist_artifacts)
 
 
@@ -12463,7 +12481,7 @@ class test_orm(tester):
             t.created(art, aa, objart)
 
             # FIXME The save is reloading art.artist_arifacts for some
-            # reason. See related at d7a42a957d3e491e882d485095e1325f
+            # reason. See related at d7a42a95
             t.retrieved(art.artist_artists)
 
         with self._chrontest() as t:
@@ -13162,7 +13180,7 @@ class test_orm(tester):
 
         self.zero(aa)
 
-        # Ensure property caches
+        # Ensure property memoizes
         self.is_(aa, sng.artist_artists)
 
         # Test loading associated collection
@@ -13176,37 +13194,42 @@ class test_orm(tester):
         with ct() as t:
             sngsb = t(lambda: sng.singers)
             pntsb = t(lambda: sng.painters)
+            mursb = t(lambda: sng.muralists)
 
         self.type(singers, sngsb)
         self.type(painters, pntsb)
+        self.type(muralists, mursb)
         self.zero(sngsb)
         self.zero(pntsb)
+        self.zero(mursb)
 
         # Ensure association is same after accessing `singers`
         # pseudocollection.
         self.is_(aa, sng.artist_artists)
 
-        # Ensure property caches
+        # Ensure property memoizes
         self.is_(artsb, sng.artists)
         self.is_(sngsb, sng.singers)
         self.is_(pntsb, sng.painters)
+        self.is_(mursb, sng.muralists)
 
         # Ensure the association's associated collections is the same as
         # the associated collection of the entity.
         self.is_(sng.artists,    sng.artist_artists.artists)
         self.is_(sng.singers,    sng.artist_artists.singers)
-
         self.is_(sng.painters,   sng.artist_artists.painters)
+        self.is_(sng.muralists,  sng.artist_artists.muralists)
 
         self.is_(sng,            sng.artist_artists.singer)
         self.is_(sng.orm.super,  sng.artist_artists.artist)
 
-        # Save and load an association
+        ''' Save and load an association '''
+
+        # Singer
         aa                    =   artist_artist.getvalid()
         aa.role               =   uuid4().hex
         objsng                =   singer.getvalid()
         aa.object             =   objsng
-
         sng.artist_artists    +=  aa
 
         self.is_    (sng,      sng.artist_artists.first.subject)
@@ -13214,33 +13237,53 @@ class test_orm(tester):
         self.isnot  (sng,      sng.artist_artists.first.object)
         self.eq     (aa.role,  sng.artist_artists.first.role)
 
+        # Painter
         aa                    =   artist_artist.getvalid()
         aa.role               =   uuid4().hex
         objpnt                =   painter.getvalid()
         aa.object             =   objpnt
+        sng.artist_artists    +=  aa
+
+        # Muralist
+        aa                    =   artist_artist.getvalid()
+        aa.role               =   uuid4().hex
+        objmur                =   muralist.getvalid()
+        aa.object             =   objmur
 
         sng.artist_artists    +=  aa
 
-        self.two(sng.artist_artists)
+
+        self.three(sng.artist_artists)
 
         # TODO Should adding singer to sng.artist_artists result in an
         # addition to sng.artists
         # self.one(sng.artists)
+        self.zero(sng.artists)
+
         self.one(sng.painters)
         self.one(sng.singers)
-        self.zero(sng.artists)
+        self.one(sng.muralists)
 
         self.is_(objsng, sng.singers.first)
         self.is_(objpnt, sng.painters.first)
+        self.is_(objmur, sng.muralists.first)
 
-        # FIXME The save is reloading sng.artist_arifacts for some
-        # reason. See related at d7a42a957d3e491e882d485095e1325f
         with ct() as t:
             t.run(sng.save)
-            t.created(sng, objsng)
+            t.created(sng, sng.orm.super)
             t.created(*sng.artist_artists)
-            t.created(sng.orm.super, objsng.orm.super)
+
+
+            t.created(objsng, objsng.orm.super)
             t.created(objpnt, objpnt.orm.super)
+            t.created(
+                objmur, 
+                objmur.orm.super,
+                objmur.orm.super.orm.super
+            )
+
+            # FIXME The save is reloading sng.artist_arifacts for some
+            # reason. See related at d7a42a95
             t.retrieved(sng.artist_artists)
                 
         with ct() as t:
@@ -13253,19 +13296,20 @@ class test_orm(tester):
             # FIXME We should not be retrieving artist here
             t.retrieved(sng1.artist_artists.artist)
 
-        self.two(aas1)
 
-        # TODO Comment on why ct() is being used here.
-        with ct() as t:
-            t()
-            self.is_(sng1.orm.super, sng1.artist_artists.artist)
-            self.is_(sng1, sng1.artist_artists.singer)
+        self.three(aas1)
 
+        self.is_(sng1.orm.super, sng1.artist_artists.artist)
+        self.is_(sng1, sng1.artist_artists.singer)
+
+        B()
         with self._chrontest() as t:
             t(lambda: sng1.painters)
+            print(t)
             t.retrieved(sng1.artist_artists.first.object)
             t.retrieved(sng1.artist_artists.second.object)
             t.retrieved(sng1.painters.first)
+        return
 
         with self._chrontest() as t:
             t(lambda: sng1.singers)

@@ -1094,7 +1094,6 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                     del args[i]
                 elif isinstance(e, eager):
                     e.join(to=self)
-
                     del args[i]
 
             # The parameters express a conditional (predicate) if the first is
