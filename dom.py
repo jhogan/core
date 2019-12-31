@@ -4057,15 +4057,17 @@ class selectors(entities.entities):
                 if el:
                     if not args:
                         el = None
-                        if comb is None:
-                            comb = selector.element.Descendant
+                        comb = selector.element.Descendant
                 if cls and not cls.value:
                     raise err(tok)
                     
             elif tok.type == 'DELIM':    
                 v = tok.value
                 if el: 
-                    if not (attr or pcls or cls):
+                    if v in '>+~':
+                        el = None
+                        comb = selector.element.str2comb(v)
+                    elif not (attr or pcls or cls):
                         if v not in ''.join('*[:.,'):
                             raise err(tok)
 
@@ -4363,9 +4365,7 @@ class selector(entities.entity):
         r = str()
         for i, el in self.elements.enumerate():
             if i:
-                r += el.str_combinator
-                if el.combinator != selector.element.Descendant:
-                    r + ' '
+                r += ' '
 
             r += str(el)
 

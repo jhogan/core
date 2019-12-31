@@ -15627,60 +15627,101 @@ class test_selectors(tester):
     def it_parses_combinators(self):
         # FIXME I noticed expressions like 'p>span' don't work because
         # there is no whitespace surrounding the combinator.
+        
+        def space(s):
+            return re.sub(r'(\S)([~\+>])(\S)', r'\1 \2 \3', s)
 
         sub         =  dom.selector.element.SubsequentSibling
         next        =  dom.selector.element.NextSibling
         child       =  dom.selector.element.Child
         desc        =  dom.selector.element.Descendant
 
+        ''' sub desc next '''
+        sels = [
+            'div ~ div p + q',
+            'div~div p+q',
+        ]
+        for sel in sels:
+            expect = space(sel)
+            sels = dom.selectors(sel)
+            self.eq(expect, repr(sels))
+            self.eq(expect, str(sels))
+
+            self.four(sels.first.elements)
+            self.eq(None, sels.first.elements.first.combinator)
+            self.eq(sub, sels.first.elements.second.combinator)
+            self.eq(desc, sels.first.elements.third.combinator)
+            self.eq(next, sels.first.elements.fourth.combinator)
+
         ''' Subsequent-sibling combinator '''
         sels = [
            'body ~ div',
+           'body~div',
            'body.my-class ~ div.my-class',
            'body[foo=bar] ~ div[foo=bar]',
         ]
 
         for sel in sels:
+            expect = space(sel)
             sels = dom.selectors(sel)
+            self.eq(expect, repr(sels))
+            self.eq(expect, str(sels))
             self.two(sels.first.elements)
             self.eq(None, sels.first.elements.first.combinator)
             self.eq(sub, sels.first.elements.second.combinator)
 
         sels = [
            'body div ~ p',
+           'body div~p',
            'body.my-class div.my-class ~ p.my-class',
-           'body[foo=bar] div[foo=bar] ~ p.my-class',
+           'body.my-class div.my-class~p.my-class',
+           'body[foo=bar] div[foo=bar]~p.my-class',
         ]
 
         for sel in sels:
             sels = dom.selectors(sel)
+            self.eq(space(sel), repr(sels))
+            self.eq(space(sel), str(sels))
             self.three(sels.first.elements)
             self.eq(None, sels.first.elements.first.combinator)
             self.eq(desc, sels.first.elements.second.combinator)
             self.eq(sub, sels.first.elements.third.combinator)
 
-
         ''' Next-sibling combinator '''
         sels = [
            'body + div',
+           'body+div',
+
            'body.my-class + div.my-class',
+           'body.my-class+div.my-class',
+
            'body[foo=bar] + div[foo=bar]',
+           'body[foo=bar]+div[foo=bar]',
         ]
 
         for sel in sels:
             sels = dom.selectors(sel)
+            self.eq(space(sel), repr(sels))
+            self.eq(space(sel), str(sels))
             self.two(sels.first.elements)
             self.eq(None, sels.first.elements.first.combinator)
             self.eq(next, sels.first.elements.second.combinator)
 
         sels = [
+           'body div+p',
            'body div + p',
+
            'body.my-class div.my-class + p.my-class',
+           'body.my-class div.my-class+p.my-class',
+
            'body[foo=bar] div[foo=bar] + p.my-class',
+           'body[foo=bar] div[foo=bar]+p.my-class',
         ]
 
         for sel in sels:
             sels = dom.selectors(sel)
+            self.eq(space(sel), repr(sels))
+            self.eq(space(sel), str(sels))
             self.three(sels.first.elements)
             self.eq(None, sels.first.elements.first.combinator)
             self.eq(desc, sels.first.elements.second.combinator)
@@ -15689,37 +15730,57 @@ class test_selectors(tester):
         ''' Child combinator '''
         sels = [
            'body > div',
-           'body.my-class > div.my-class',
+           'body>div',
+
+           'body.my-class>div.my-class',
+
            'body[foo=bar] > div[foo=bar]',
+           'body[foo=bar]>div[foo=bar]',
         ]
 
         for sel in sels:
             sels = dom.selectors(sel)
+            self.eq(space(sel), repr(sels))
+            self.eq(space(sel), str(sels))
             self.two(sels.first.elements)
             self.eq(None, sels.first.elements.first.combinator)
             self.eq(child, sels.first.elements.second.combinator)
 
         sels = [
            'body > div > p',
+           'body>div>p',
+
            'body.my-class > div.my-class > p.my-class',
+           'body.my-class>div.my-class>p.my-class',
+
            'body[foo=bar] > div[foo=bar] > p.my-class',
+           'body[foo=bar]>div[foo=bar]>p.my-class',
         ]
 
         for sel in sels:
             sels = dom.selectors(sel)
+            self.eq(space(sel), repr(sels))
+            self.eq(space(sel), str(sels))
             self.three(sels.first.elements)
             self.eq(None, sels.first.elements.first.combinator)
             self.eq(child, sels.first.elements.second.combinator)
             self.eq(child, sels.first.elements.third.combinator)
 
         sels = [
-           'body  div > p',
+           'body div > p',
+           'body div>p',
+
            'body.my-class div.my-class > p.my-class',
+           'body.my-class div.my-class>p.my-class',
+
            'body[foo=bar] div[foo=bar] > p.my-class',
+           'body[foo=bar] div[foo=bar]>p.my-class',
         ]
 
         for sel in sels:
             sels = dom.selectors(sel)
+            self.eq(space(sel), repr(sels))
+            self.eq(space(sel), str(sels))
             self.three(sels.first.elements)
             self.eq(None, sels.first.elements.first.combinator)
             self.eq(desc, sels.first.elements.second.combinator)
@@ -15727,16 +15788,23 @@ class test_selectors(tester):
 
         sels = [
            'body > div p',
+           'body>div p',
+
            'body.my-class > div.my-class p.my-class',
+           'body.my-class>div.my-class p.my-class',
+
            'body[foo=bar] > div[foo=bar] p.my-class',
+           'body[foo=bar]>div[foo=bar] p.my-class',
         ]
 
         for sel in sels:
             sels = dom.selectors(sel)
+            self.eq(space(sel), repr(sels))
+            self.eq(space(sel), str(sels))
             self.three(sels.first.elements)
             self.eq(None, sels.first.elements.first.combinator)
             self.eq(child, sels.first.elements.second.combinator)
-            self.eq(child, sels.first.elements.third.combinator)
+            self.eq(desc, sels.first.elements.third.combinator)
 
         ''' Descendant combinator '''
         sels = [
@@ -15747,18 +15815,22 @@ class test_selectors(tester):
 
         for sel in sels:
             sels = dom.selectors(sel)
+            self.eq(sel, repr(sels))
+            self.eq(sel, str(sels))
             self.two(sels.first.elements)
             self.eq(None, sels.first.elements.first.combinator)
             self.eq(desc, sels.first.elements.second.combinator)
 
         sels = [
-           'body div p',
+           'body  div p',
            'body.my-class div.my-class p.my-class',
            'body[foo=bar] div[foo=bar] p[foo=bar]',
         ]
 
         for sel in sels:
             sels = dom.selectors(sel)
+            self.eq(sel, repr(sels))
+            self.eq(sel, str(sels))
             self.three(sels.first.elements)
             self.eq(None, sels.first.elements.first.combinator)
             self.eq(desc, sels.first.elements.second.combinator)
