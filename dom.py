@@ -4852,7 +4852,7 @@ class CssSelectorParseError(SyntaxError):
         elif isinstance(o, str):
             super().__init__(o)
         else:
-            raise ValueError('Invalid argument')
+            raise TypeError('Invalid argument')
 
     @property
     def pos(self):
