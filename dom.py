@@ -4061,10 +4061,13 @@ class selectors(entities.entities):
                 if cls and not cls.value:
                     raise err(tok)
                     
+            elif tok.type == 'NUMBER':
+                demand_valid_identifiers(tok.value)
+
             elif tok.type == 'DELIM':    
                 v = tok.value
-                if el: 
-                    if v in '>+~':
+                if el:
+                    if not attr and v in '>+~':
                         el = None
                         comb = selector.element.str2comb(v)
                     elif not (attr or pcls or cls):
