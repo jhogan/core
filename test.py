@@ -14163,6 +14163,8 @@ class test_selectors(tester):
         els = html['h2 ~ *']
         self.zero(els)
 
+
+
     def it_selects_with_chain_of_elements(self):
         html = self._shakespear
 
@@ -14364,6 +14366,7 @@ class test_selectors(tester):
         ''' Select using the = operator [foo=bar]
         '''
         html = self._shakespear
+
         sels = [
             '[foo=bar]',
             '[title=bar]',
@@ -15693,9 +15696,6 @@ class test_selectors(tester):
             self.zero(els)
 
     def it_parses_combinators(self):
-        # FIXME I noticed expressions like 'p>span' don't work because
-        # there is no whitespace surrounding the combinator.
-        
         def space(s):
             return re.sub(r'(\S)([~\+>])(\S)', r'\1 \2 \3', s)
 
@@ -15890,7 +15890,7 @@ class test_selectors(tester):
             self.eq(desc, sels.first.elements.second.combinator)
 
         sels = [
-           'body  div p',
+           'body div p',
            'body.my-class div.my-class p.my-class',
            'body[foo=bar] div[foo=bar] p[foo=bar]',
         ]

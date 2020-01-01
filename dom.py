@@ -4185,6 +4185,7 @@ class selectors(entities.entities):
                 elif tok.value in ('+',  '-'):
                     if args:
                         args += tok.value
+                    
 
             prev = tok
 
