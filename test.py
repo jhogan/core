@@ -13296,37 +13296,52 @@ class test_orm(tester):
             # FIXME We should not be retrieving artist here
             t.retrieved(sng1.artist_artists.artist)
 
-
         self.three(aas1)
 
         self.is_(sng1.orm.super, sng1.artist_artists.artist)
         self.is_(sng1, sng1.artist_artists.singer)
 
-        B()
-        with self._chrontest() as t:
+        with ct() as t:
             t(lambda: sng1.painters)
-            print(t)
+
+            # The associations.__getattr__ method will load each of the
+            # thre `artist` entities from the association individually.
             t.retrieved(sng1.artist_artists.first.object)
             t.retrieved(sng1.artist_artists.second.object)
-            t.retrieved(sng1.painters.first)
-        return
+            t.retrieved(sng1.artist_artists.third.object)
 
-        with self._chrontest() as t:
+            # The `associations.__getattr__` method will then load the
+            # `painter` entity. Since the `muralist` entity is a type of
+            # `painter` entity, it will be loaded in the `painters`
+            # pseudocollection as wel.
+            t.retrieved(sng1.painters.first)
+            t.retrieved(sng1.painters.second)
+
+        with ct() as t:
             t(lambda: sng1.singers)
             t.retrieved(sng1.singers.first)
+
+        with ct() as t:
+            t(lambda: sng1.muralists)
+            t.retrieved(sng1.muralists.first)
+
 
         # Ensure pseudocollections are being memoized and have the
         # right count
         with ct() as t:
-            self.two(t(lambda: sng1.artists))
-            self.one(t(lambda: sng1.painters))
+            self.three(t(lambda: sng1.artists))
+            self.two(t(lambda: sng1.painters))
             self.one(t(lambda: sng1.singers))
 
-        self.type(singer,   sng1)
-        self.type(singer,   sng1.singers.first)
-        self.type(painter,  sng1.painters.first)
-        self.type(artist,   sng1.artists.first)
-        self.type(artist,   sng1.artists.second)
+
+        self.type(singer,    sng1)
+        self.type(singer,    sng1.singers.first)
+        self.type(muralist,  sng1.muralists.first)
+        self.type(painter,   sng1.painters.first)
+        self.type(painter,   sng1.painters.second)
+        self.type(artist,    sng1.artists.first)
+        self.type(artist,    sng1.artists.second)
+        self.type(artist,    sng1.artists.third)
 
         self.eq(sng.id,         sng1.id)
 
@@ -13343,14 +13358,26 @@ class test_orm(tester):
 
         aa = sng.artist_artists.second
         aa1 = sng1.artist_artists[aa.id]
-        self.eq(sng.artist_artists.second.id,          aa1.id)
-        self.eq(sng.artist_artists.second.role,        aa1.role)
-        self.eq(sng.artist_artists.second.subject.id,  aa1.subject.id)
-        self.eq(aa.subject__artistid,                  aa1.subject__artistid)
-        self.eq(aa.object.id,                          aa1.object.id)
-        self.eq(aa.object__artistid,                   aa1.object__artistid)
-        self.type(painter,                             aa.object)
-        self.type(artist,                              aa1.object)
+        self.eq(aa.id,                 aa1.id)
+        self.eq(aa.role,               aa1.role)
+        self.eq(aa.subject.id,         aa1.subject.id)
+        self.eq(aa.subject__artistid,  aa1.subject__artistid)
+        self.eq(aa.object.id,          aa1.object.id)
+        self.eq(aa.object__artistid,   aa1.object__artistid)
+        self.type(painter,             aa.object)
+        self.type(artist,              aa1.object)
+
+        aa = sng.artist_artists.third
+        aa1 = sng1.artist_artists[aa.id]
+        self.eq(aa.id,                 aa1.id)
+        self.eq(aa.role,               aa1.role)
+        self.eq(aa.subject.id,         aa1.subject.id)
+        self.eq(aa.subject__artistid,  aa1.subject__artistid)
+        self.eq(aa.object.id,          aa1.object.id)
+        self.eq(aa.object__artistid,   aa1.object__artistid)
+        self.type(muralist,            aa.object)
+        self.type(artist,              aa1.object)
+
 
         # NOTE
         # Q Should aa1.subject be artist or downcasted to singer?  
@@ -13372,51 +13399,70 @@ class test_orm(tester):
         # would require additional, and prehaps needless database hits,
         # however, the convenience may be worth it.
 
-        # Add two more (singer and painter) to artist_artist, save,
-        # reload and test
+        ''' Add three more (singer, painter and muralist) to
+        artist_artist, save, reload and test '''
+
+        # Add singer
         aa2           =  artist_artist.getvalid()
         objsng        =  singer.getvalid()
         aa2.object    =  objsng
-
-
         sng1.artist_artists += aa2
 
         self.is_(sng1,    aa2.subject)
         self.is_(objsng,  aa2.object)
-        self.three(sng1.artist_artists)
+        self.four(sng1.artist_artists)
         self.two(sng1.singers)
 
+        # Add painter
         aa2           =  artist_artist.getvalid()
         objpnt        =  painter.getvalid()
         aa2.object    =  objpnt
-
         sng1.artist_artists += aa2
 
         self.is_(sng1,    aa2.subject)
         self.is_(objpnt,  aa2.object)
-        self.four(sng1.artist_artists)
+        self.five(sng1.artist_artists)
         self.two(sng1.singers)
-        self.two(sng1.painters)
+        self.three(sng1.painters)
 
-        # TODO The artists collection will still have two `artist`s
+        # Add muralist
+        aa2           =  artist_artist.getvalid()
+        objmur        =  muralist.getvalid()
+        aa2.object    =  objmur
+        sng1.artist_artists += aa2
+
+        self.is_(sng1,    aa2.subject)
+        self.is_(objmur,  aa2.object)
+        self.six(sng1.artist_artists)
+        self.two(sng1.singers)
+        self.three(sng1.painters)
+        self.two(sng1.muralists)
+
+        # TODO The artists collection will still have three `artist`s
         # entity objects. They are equal but not identical to the 
-        # singer and painter that were loaded:
+        # singer, muralist and painter that were loaded:
         # 
-        #     assert sng1.singers.first.id == sng1.artists.first.id
-        #     assert sng1.painters.first.id == sng1.artists.first.id
+        #    assert sng1.singers.first.id == sng1.artists.first.id
+        #    assert sng1.painters.first.id == sng1.artists.second.id
+        #    assert sng1.muralists.first.id == sng1.artists.third.id
         #
         # However, we would expect the newly added singer and painter to
         # be in the `artists` collection as well. Some work needs to be
         # done to ensure that entity objects in these collections are
         # downcasted/upcasted correctely and propogated to the correct
         # entities collection object on load and on append.
-        self.two(sng1.artists)
+        self.three(sng1.artists)
 
         with ct() as t:
             t(sng1.save)
-            t.created(objsng, objsng.orm.super)
-            t.created(objpnt, objpnt.orm.super)
-            t.created(*sng1.artist_artists.tail(2))
+            t.created(objsng,  objsng.orm.super)
+            t.created(objpnt,  objpnt.orm.super)
+            t.created(
+                objmur,  
+                objmur.orm.super, 
+                objmur.orm.super.orm.super
+            )
+            t.created(*sng1.artist_artists.tail(3))
 
         sng2 = singer(sng1.id)
         self.eq(sng1.id, sng2.id)
@@ -13424,7 +13470,7 @@ class test_orm(tester):
         aas1=sng1.artist_artists.sorted('role')
         aas2=sng2.artist_artists.sorted('role')
 
-        self.four(aas1); self.four(aas2)
+        self.six(aas1); self.six(aas2)
         for aa1, aa2 in zip(aas1, aas2):
             self.eq(aa1.id,                 aa2.id)
             self.eq(aa1.role,               aa2.role)
@@ -13442,39 +13488,55 @@ class test_orm(tester):
         objpnt = painter.getvalid()
         sng2.painters += objpnt
 
+        objmur = muralist.getvalid()
+        sng2.muralists += objmur
+
+
+        self.is_(sng2,    sng2.artist_artists.antepenultimate.subject)
+        self.is_(objsng,  sng2.artist_artists.antepenultimate.object)
+
         self.is_(sng2,    sng2.artist_artists.penultimate.subject)
-        self.is_(objsng,  sng2.artist_artists.penultimate.object)
+        self.is_(objpnt,  sng2.artist_artists.penultimate.object)
 
         self.is_(sng2,    sng2.artist_artists.ultimate.subject)
-        self.is_(objpnt,  sng2.artist_artists.ultimate.object)
+        self.is_(objmur,  sng2.artist_artists.ultimate.object)
 
-        for aa2 in sng2.artist_artists.tail(2):
+
+        for aa2 in sng2.artist_artists.tail(3):
             aa2.role      =  uuid4().hex
             aa2.slug      =  uuid4().hex
             aa2.timespan  =  uuid4().hex
             self.isnot(aa2.subject,  aa2.object)
 
+
         self.three(sng2.singers)
-        self.three(sng2.painters)
-        self.six(sng2.artist_artists)
+        self.five(sng2.painters)
+        self.three(sng2.muralists)
+        self.nine(sng2.artist_artists)
 
         with ct() as t:
             t(sng2.save)
-            t.created(*sng2.artist_artists.tail(2))
-            t.created(*sng2.artist_artists.tail(2).pluck('object'))
-            t.created(sng2.artist_artists.penultimate.object.orm.super)
-            t.created(sng2.artist_artists.last.object.orm.super)
-
+            t.created(
+                *sng2.artist_artists.tail(3),
+                *sng2.artist_artists.tail(3).pluck('object'),
+                sng2.artist_artists.antepenultimate.object.orm.super,
+                sng2.artist_artists.penultimate.object.orm.super,
+                sng2.artist_artists.last.object.orm.super,
+                sng2.artist_artists.last.object.orm.super.orm.super
+            )
 
         sng3 = singer(sng2.id)
 
         self.three(sng3.singers)
-        self.three(sng3.painters)
-        self.six(sng3.artist_artists)
+        self.six(sng3.painters)
+        self.three(sng3.muralists)
+        self.nine(sng3.artist_artists)
+
 
         aas2 = sng2.artist_artists.sorted('role')
         aas3 = sng3.artist_artists.sorted('role')
 
+        self.nine(aas2); self.nine(aas3)
         for aa2, aa3 in zip(aas2, aas3):
             self.eq(aa2.id,                 aa3.id)
             self.eq(aa2.role,               aa3.role)
@@ -13483,15 +13545,21 @@ class test_orm(tester):
             self.eq(aa2.subject__artistid,  aa3.subject__artistid)
             self.eq(aa2.object__artistid,   aa3.object__artistid)
 
-        # Add two presentations to the singers's and painter's
-        # presentations collection
+        # Add two presentations to the singers's, muralist's and
+        # painter's presentations collection
         press3 = presentations()
-        for _ in range(2):
+        for _ in range(3):
             press3 += presentation.getvalid()
 
         press3.sort()
-        sng3.singers.first.presentations               +=  press3.first
-        sng3.painters.first.presentations              +=  press3.second
+        sng3.singers.first.presentations    +=  press3.first
+
+        # Make sure the first painter is a painter and not a muralist
+        self.type(painter, sng3.painters.first)
+        sng3.painters.first.presentations   +=  press3.second
+
+        sng3.muralists.first.presentations  +=  press3.third
+
         # Remove for the moment because we don't know if
         # sng3.artist_artists.first is a painter or a singer
         # sng3.artist_artists.first.object.presentations \
@@ -13516,10 +13584,22 @@ class test_orm(tester):
 
         self.one(sng3.singers.first.presentations)
         self.one(sng3.painters.first.presentations)
+        self.one(sng3.muralists.first.presentations)
 
         aas3 = sng3.artist_artists
-        self.is_(press3[0], sng3.singers[0].presentations[0])
-        self.is_(press3[1], sng3.painters[0].presentations[0])
+        self.is_(
+            press3.first, 
+            sng3.singers.first.presentations.first
+        )
+        self.is_(
+            press3.second, 
+            sng3.painters.first.presentations.first
+        )
+
+        self.is_(
+            press3.third, 
+            sng3.muralists.first.presentations.first
+        )
 
         with ct() as t:
             t(sng3.save)
@@ -13538,6 +13618,7 @@ class test_orm(tester):
             sng3.painters.first.presentations.sorted().pluck('id'),
             press4.sorted().pluck('id')
         )
+        return
 
 
         # NOTE The below comment and tests were carried over from
