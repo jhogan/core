@@ -3974,6 +3974,22 @@ class selectors(entities.entities):
         if not self._sel or not self._sel.strip():
             raise err('Empty selector')
 
+        valid_identifier = re.compile('^[a-zA-Z\-_][a-zA-Z0-9\-_]')
+        starts_with_hyphen_then_number = re.compile('^\-[0-9]')
+
+        def demand_valid_identifiers(id):
+            def throw():
+                raise err('Invalid identifier', tok)
+
+            if not valid_identifier.match(id):
+                throw()
+
+            if id.startswith('--'):
+                throw()
+                
+            if starts_with_hyphen_then_number.match(id):
+                throw()
+
         def element(element):
             if not element.isalnum() and element != '*':
                 raise ValueError('Elements must be alphanumeric')
@@ -4051,6 +4067,10 @@ class selectors(entities.entities):
                     # Universal selector was implied (#myid) so create it.
                     el = element('*')
                     sel.elements += el
+
+                if not el.id:
+                    demand_valid_identifiers(tok.value)
+
                 el.id = tok.value
 
             elif tok.type == 'S':

@@ -13757,6 +13757,74 @@ class test_selectors(tester):
     # doesn't select anything even though it should for the Shakespeare
     # html.
 
+    def it_raises_on_invalid_identifiers(self):
+        ''' In CSS, identifiers (including element names, classes, and
+        IDs in selectors) can contain only the characters [a-zA-Z0-9]
+        and ISO 10646 characters U+00A0 and higher, plus the hyphen (-)
+        and the underscore (_); they cannot start with a digit, two
+        hyphens, or a hyphen followed by a digit. Identifiers can also
+        contain escaped characters and any ISO 10646 character as a
+        numeric code (see next item). For instance, the identifier
+        “B&W?” may be written as “B\&W\?” or “B\26 W\3F”.
+
+            -- W3C Specification
+        '''
+        
+        ''' Valids '''
+        sels = [
+            'id#foo123',
+            'id#foo-_',
+            'id#-_foo',
+            'id#f-_oo',
+
+            'id[foo123]',
+            'id[foo-_]',
+            'id[-_foo]',
+            'id[f-_oo]',
+
+            'id[foo=foo123]',
+            'id[foo=foo-_]',
+            'id[foo=-_foo]',
+            'id[foo=f-_oo]',
+
+            'id.foo123',
+            'id.foo-_',
+            'id.-_foo',
+            'id.f-_oo',
+        ]
+
+        for sel in sels:
+            self.expect(None, lambda: dom.selectors(sel))
+
+        ''' Invalids '''
+        sels = [
+            'id#--foo',
+            'id#123',
+            'id#123foo',
+            'id#-1foo',
+
+            'id[--foo]',
+            'id[123]',
+            'id[123foo]',
+            'id[-1foo]',
+
+            'id[foo=--foo]',
+            'id[foo=123]',
+            'id[foo=123foo]',
+            'id[foo=-1foo]',
+
+            'id.--foo',
+            'id.123',
+            'id.123foo',
+            'id.-1foo',
+        ]
+
+        for sel in sels:
+            self.expect(
+                dom.CssSelectorParseError, 
+                lambda: dom.selectors(sel)
+            )
+
     def it_selects_with_groups_element_to_class(self):
         html = self._shakespear
         sels = [
@@ -16320,9 +16388,9 @@ class test_selectors(tester):
         self.eq('success', e.classes.third.value)
 
     def it_parses_id_elements(self):
-        eid = uuid4().hex
-        fid = uuid4().hex
-        gid = uuid4().hex
+        eid = 'x' + uuid4().hex
+        fid = 'x' + uuid4().hex
+        gid = 'x' + uuid4().hex
 
         ''' E#id '''
         sels = expect = 'E#' + eid
@@ -16655,7 +16723,7 @@ class test_selectors(tester):
           sels.first.elements.first.classes.first.value
         )
 
-        eid = uuid4().hex
+        eid = 'x' + uuid4().hex
         sels = expect = '*#' + eid
         sels = dom.selectors(sels)
         self.one(sels)
@@ -16674,7 +16742,7 @@ class test_selectors(tester):
         self.eq('root', el.pseudoclasses.first.value)
 
         # Combine: *#1234 *.warning *.[foo=bar] *:root
-        eid = uuid4().hex
+        eid = 'x' + uuid4().hex
         expect = '*#' + eid
         expect += ' *.warning'
         expect += ' *[foo=bar]'
@@ -16732,7 +16800,7 @@ class test_selectors(tester):
           sels.first.elements.first.classes.first.value
         )
 
-        eid = uuid4().hex
+        eid = 'x' + uuid4().hex
         sels = expect = '*#' + eid
         sels = dom.selectors(sels)
         self.one(sels)
@@ -16744,7 +16812,7 @@ class test_selectors(tester):
         self.eq(eid, el.id)
 
         # Combine: #1234 .warning [foo=bar] :root
-        eid = uuid4().hex
+        eid = 'x' + uuid4().hex
         expect = '*#' + eid
         expect += ' *.warning'
         expect += ' *[foo=bar]'
