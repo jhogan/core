@@ -138,6 +138,10 @@ class attributes(entities.entities):
         else:
             return attr in self._defined
 
+    @property
+    def count(self):
+        return len(self)
+
     def __len__(self):
         return len(self._defined)
 
