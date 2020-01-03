@@ -4384,51 +4384,58 @@ class selector(entities.entity):
     def match(self, els):
         last = self.elements.last
         els1 = last.match(els.getchildren())
-
         rms = elements()
 
         for el1 in els1:
-            anix = sibix = int()
             comb = last.combinator
+            orig = el1
             for smp in self.elements[:-1].reversed():
                 if comb in (selector.element.Descendant, None):
-                    for i, an in el1.ancestors[anix:].enumerate():
+                    for i, an in el1.ancestors.enumerate():
                         if smp.match(an):
-                            anix += i + 1
+                            #anix += i + 1
+                            el1 = an
                             break
                     else:
-                        rms += el1; break
+                        # rms += el1
+                        rms += orig
+                        break
                 elif comb == selector.element.Child:
-                    an = el1.ancestors[anix]
+                    #an = el1.ancestors[anix]
+                    an = el1.parent
                     if smp.match(an):
-                        anix += 1
+                        #anix += 1
+                        el1 = an
                     else:
-                        rms += el1; break
+                        # rms += el1
+                        rms += orig
+                        break
                 elif comb == selector.element.NextSibling:
-                    try:
-                        prev = list(el1.preceding.reversed())[sibix]
-                    except IndexError:
-                        rms += el1; break
+                    #prev = list(el1.preceding.reversed())[sibix]
+                    if smp.match(el1.previous):
+                        #sibix += 1
+                        el1 = el1.previous
                     else:
-                        if smp.match(prev):
-                            sibix += 1
-                        else:
-                            rms += el1; break
+                        #rms += el1
+                        rms += orig
+                        break
                 elif comb == selector.element.SubsequentSibling:
-                    preceding = list(el1.preceding.reversed())[sibix:]
-                    for i, el2 in enumerate(preceding):
+                    for i, el2 in enumerate(el1.preceding.reversed()):
                         if smp.match(el2):
-                            sibix += i + 1
+                            #sibix += i + 1
+                            el1 = el2
                             break
                     else:
-                        rms += el1; break
+                        #rms += el1
+                        rms += orig
+                        break
                 else:
                     raise ValueError('Invalid combinator')
 
                 comb = smp.combinator
-        
-        els1.remove(rms)
 
+        els1.remove(rms)
+        
         return els1
 
     def demand(self):
