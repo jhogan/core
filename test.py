@@ -12037,6 +12037,21 @@ class test_page(tester):
         pg = dom.page(name)
         self.zero(pg.pages)
 
+class test_elements(tester):
+    def it_calls_html(self):
+        html = dom.html(TestHtml)
+        self.eq(TestHtmlMin, html.html)
+
+        htmlmin = dom.html(TestHtmlMin)
+        self.eq(html.html, htmlmin.html)
+
+    def it_calls_pretty(self):
+        htmlmin = dom.html(TestHtmlMin)
+        self.eq(TestHtml, htmlmin.pretty)
+
+        html = dom.html(TestHtml)
+        self.eq(TestHtmlMin, html.html)
+
 class test_element(tester):
     def it_class_language(self):
         html = dom.html('''
@@ -12226,7 +12241,7 @@ class test_paragraph(tester):
         </p>
         ''', hex1, hex2)
 
-        self.eq(expect, p.html)
+        self.eq(expect, p.pretty)
 
         ''' With element arg '''
         txt = dom.text('Plain white sauce!')
@@ -12254,7 +12269,7 @@ class test_paragraph(tester):
         ''')
 
         p = dom.paragraph(txt)
-        self.eq(expect, p.html)
+        self.eq(expect, p.pretty)
 
         # Expect a ValueError if *args are given for a non-str first
         # argument
@@ -12295,7 +12310,7 @@ class test_paragraph(tester):
         </p>
         ''')
 
-        self.eq(expect, p.html)
+        self.eq(expect, p.pretty)
 
 class test_text(tester):
     def it_calls_html(self):
@@ -12416,22 +12431,22 @@ class test_attribute(tester):
         inp = dom.input()
         inp.attributes['disabled'] = None
         self.one(inp.attributes)
-        self.eq(expect, inp.html)
+        self.eq(expect, inp.pretty)
 
         inp = dom.input()
         inp.attributes.append('disabled')
         self.one(inp.attributes)
-        self.eq(expect, inp.html)
+        self.eq(expect, inp.pretty)
 
         inp = dom.input()
         inp.attributes += 'disabled'
         self.one(inp.attributes)
-        self.eq(expect, inp.html)
+        self.eq(expect, inp.pretty)
         
         inp = dom.input()
         inp.attributes += 'disabled', None
         self.one(inp.attributes)
-        self.eq(expect, inp.html)
+        self.eq(expect, inp.pretty)
 
     def it_appends_attribute(self):
         # Append attribute object
@@ -12585,10 +12600,7 @@ class test_cssclass(tester):
         self.one(p.classes)
         self.true('my-class-1' in p.attributes['class'])
 
-        expect = self.dedent('''
-        <p class="%s">
-        </p>
-        ''', 'my-class-1')
+        expect = '<p class="my-class-1"></p>'
         self.eq(expect, p.html)
 
         p.classes.append('my-class-2')
@@ -12599,7 +12611,7 @@ class test_cssclass(tester):
         <p class="%s">
         </p>
         ''', 'my-class-1 my-class-2')
-        self.eq(expect, p.html)
+        self.eq(expect, p.pretty)
 
         p.classes += 'my-class-3'
         self.three(p.classes)
@@ -12609,7 +12621,7 @@ class test_cssclass(tester):
         <p class="%s">
         </p>
         ''', 'my-class-1 my-class-2 my-class-3')
-        self.eq(expect, p.html)
+        self.eq(expect, p.pretty)
 
         ''' Re-add the same class and expect an exception '''
         for i in range(1, 4):
@@ -12637,10 +12649,7 @@ class test_cssclass(tester):
         p = dom.paragraph()
         self.eq(p.classes.html, p.attributes['class'].html)
 
-        expect = self.dedent('''
-        <p>
-        </p>
-        ''')
+        expect = '<p></p>'
         self.eq(expect, p.html)
 
         p.classes += dom.cssclass('my-class-1 my-class-a')
@@ -12785,8 +12794,8 @@ class test_html(tester):
             self.eq((1, 0), (ex.line, ex.column))
         
     def it_parses(self):
-        els = dom.html(testhtml)
-        self.eq(testhtml, els.html)
+        els = dom.html(TestHtml)
+        self.eq(TestHtmlMin, els.html)
 
     def it_doesnt_parse_decls(self):
         html = '''
@@ -12946,7 +12955,7 @@ class test_markdown(tester):
         </p>
         ''')
 
-        self.eq(expect, md.html)
+        self.eq(expect, md.pretty)
 
     def it_parses_horizontal_rules(self):
         md = dom.markdown('''
@@ -13156,8 +13165,7 @@ class test_markdown(tester):
         </p>
         ''')
 
-        self.eq(expect, md.html)
-
+        self.eq(expect, md.pretty)
 
         md = dom.markdown('4 < 5')
 
@@ -13166,7 +13174,7 @@ class test_markdown(tester):
           4 &lt; 5
         </p>
         ''')
-        self.eq(expect, md.html)
+        self.eq(expect, md.pretty)
 
     def it_adds_linebreaks_to_paragraphs(self):
         # "When you do want to insert a <br /> break tag using Markdown,
@@ -13479,7 +13487,7 @@ class test_markdown(tester):
         </p>
         ''')
 
-        self.eq(expect, md.first.html)
+        self.eq(expect, md.first.pretty)
 
         ''' Parse two paragraphs '''
         md = dom.markdown('''
@@ -13539,7 +13547,7 @@ class test_markdown(tester):
         </p>
         ''')
 
-        self.eq(expect, md.html)
+        self.eq(expect, md.pretty)
 
 class test_selectors(tester):
     # TODO Running all the tests in test_selectors takes around 10
@@ -17248,6 +17256,9 @@ testhtml = tester.dedent('''
   </body>
 </html>
 ''')
+
+TestHtmlMin = '<html id="myhtml" arbit="trary"><!-- This is an HTML document --><head><!-- This is the head of the HTML document --><base href="www.example.com"></head><body><p>Lorum &amp; Ipsum Δ</p><p>This is some<strong>strong text.</strong></p><p>This too is some<strong>strong text.</strong></p></body></html>'
+
 
 ListHtml = '''
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">

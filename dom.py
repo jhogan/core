@@ -367,7 +367,7 @@ class elements(entities.entities):
         return els
 
     @property
-    def html(self):
+    def pretty(self):
         # TODO This adds a "tab" to the first tag of each element.
 		#     <class 'dom.markdown'> object at 0x7f8b7a8c1ef0 count: 4
 		#         <p>
@@ -382,8 +382,11 @@ class elements(entities.entities):
         #
         # Also, that top line shouldn't be hesince it's not HTML:
 		#     <class 'dom.markdown'> object at 0x7f8b7a8c1ef0 count: 4
-		
-        return '\n'.join(x.html for x in self)
+        return '\n'.join(x.pretty for x in self)
+
+    @property
+    def html(self):
+        return ''.join(x.html for x in self)
 
     @property
     def parent(self):
@@ -665,14 +668,14 @@ class element(entities.entity):
         return type(cls).__name__
 
     @property
-    def html(self):
+    def pretty(self):
         body = str()
         if isinstance(self, text):
             body = self.html
 
         for i, el in enumerate(self.elements):
             if body: body += '\n'
-            body += el.html
+            body += el.pretty
 
         if isinstance(self, text):
             return body
@@ -682,7 +685,7 @@ class element(entities.entity):
         r = '<%s'
         args = [self.tag]
 
-        if any(x for x in self.attributes if x.isvalid):
+        if self.attributes.count:
             r += ' %s'
             args.append(self.attributes.html)
 
@@ -702,6 +705,39 @@ class element(entities.entity):
             args += [self.tag]
 
         return r % tuple(args)
+
+    @property
+    def html(self):
+        body = str()
+
+        if isinstance(self, text):
+            body = self.html
+
+        for i, el in enumerate(self.elements):
+            body += el.html
+
+        if isinstance(self, text):
+            return body
+
+        r = '<%s'
+        args = [self.tag]
+
+        if self.attributes.count:
+            r += ' %s'
+            args.append(self.attributes.html)
+
+        r += '>'
+
+        if body:
+            r += '%s'
+            args += [body]
+
+        if not self.isvoid:
+            r += '</%s>'
+            args += [self.tag]
+
+        return r % tuple(args)
+        
 
     def __str__(self):
         return self.html
@@ -844,12 +880,14 @@ class comment(element):
     def __init__(self, txt):
         self.text = txt
 
-
     @property
     def html(self):
         return '<!--%s-->' % self.text
+
+    @property
+    def pretty(self):
+        return '<!--%s-->' % self.text
     
-        
 class forms(elements):
     pass
 
