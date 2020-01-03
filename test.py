@@ -13193,7 +13193,7 @@ class test_markdown(tester):
         ''')
         
         md = dom.markdown(md)
-        self.eq(expect, md.html)
+        self.eq(expect, md.pretty)
 
     def it_raises_with_nonstandard_inline_html_tags(self):
         # TODO  
