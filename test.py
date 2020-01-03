@@ -12093,7 +12093,6 @@ class test_element(tester):
         self.type(dom.section, p.parent)
         self.eq('fr', p.parent.language)
 
-
         p = html[0] \
                 .children[1] \
                 .children[1] \
@@ -12216,7 +12215,7 @@ class test_element(tester):
             setattr(a, attr, uuid)
             self.eq(uuid, getattr(a, attr))
             self.count(i + 1, a.attributes)
-        
+
 class test_comment(tester):
     def it_calls_html(self):
         txt = 'Who wrote this crap'
@@ -13574,30 +13573,29 @@ class test_selectors(tester):
     def it_selects_lang(self):
         html = dom.html('''
         <html lang="en">
-            <head></head>
-            <body>
-                <div>
-                    <p id="enp">
-                        My language is 'en' because it was specified in
-                        the root html tag.
-                    </p>
-                </div>
-                <section lang="fr">
-                    <p id="frp">Comment dites-vous "Bonjour" en Espanol?</p>
-
-                    <div>
-                        <blockquote lang="es">
-                            <p id="esp">
-                                My language will be Spainish.
-                            </p>
-                        </blockquote>
-                    </div>
-                </section>
-                <section lang="DE">
-                    <p id="dep">German paragraph</p>
-                </section>
-            </body>
-        </html>
+          <head></head>
+          <body>
+            <div>
+              <p id="enp">
+                My language is 'en' because it was specified in
+                the root html tag.
+              </p>
+            </div>
+            <section lang="fr">
+               <p id="frp">Comment dites-vous "Bonjour" en Espanol?</p>
+               <div>
+                   <blockquote lang="es">
+                     <p id="esp">
+                       My language will be Spainish.
+                     </p>
+                   </blockquote>
+               </div>
+            </section>
+            <section lang="DE">
+              <p id="dep">German paragraph</p>
+            </section>
+          </body>
+      </html>
         ''')
 
         sels = [
@@ -13745,25 +13743,6 @@ class test_selectors(tester):
                 els.second.elements.first.html, 
                 'ACT I, SCENE III. A room in the palace.'
             )
-
-    # TODO Selectors like 
-    #
-    #     h2[id^=023338d1]
-    #
-    # Don't work because the value starts with a number. This appears to
-    # be the correct behavior for attributes, classes and identifiers.
-    #
-    #     .123, #123, etc... 
-    #
-    # The solution appears to be to use attribute selection with quotes:
-    #
-    #     [class="123"], [id="123"], etc...
-    #
-    # The problem is that the parse doesn't raise an exception for
-    # unquoted attribute selectors with values that start with numbere,
-    # i.e., the example above, `h2[id^=023338d1]` works fine, though it
-    # doesn't select anything even though it should for the Shakespeare
-    # html.
 
     def it_raises_on_invalid_identifiers(self):
         ''' In CSS, identifiers (including element names, classes, and
@@ -14073,7 +14052,7 @@ class test_selectors(tester):
         for sel in sels:
             els = html[sel]
             self.one(els)
-            self.eq('adjacency-anchor', els[0].id)
+            self.eq('adjacency-anchor', els[0].id, sel)
 
         sels = [
             'div + p + p'
@@ -14127,8 +14106,6 @@ class test_selectors(tester):
             self.zero(els)
 
     def it_selects_with_subsequent_sibling_combinator(self):
-        # TODO
-        return
         html = dom.html(AdjacencyHtml)
 
         sels = [
@@ -17013,7 +16990,6 @@ class test_selectors(tester):
         self.one(clss)
         self.eq('warning', clss.first.value)
 
-        # TODO Test chaining pseudoclass
         '''*:not(F[foo=bar]:first-of-type)'''
         expect = '*:not(F[foo=bar]:first-of-type)'
         sels = ':not(F[foo=bar]:first-of-type)'
@@ -17230,7 +17206,7 @@ class test_gem(tester):
         self.eq(org.id, gem.organization(org.id).id)
 
 
-testhtml = tester.dedent('''
+TestHtml = tester.dedent('''
 <html id="myhtml" arbit="trary">
   <!-- This is an HTML document -->
   <head>

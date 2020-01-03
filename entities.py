@@ -28,7 +28,7 @@ class classproperty(property):
         obj = cls if cls else owner
         return classmethod(self.fget).__get__(None, obj)()
 
-
+# TODO I think we can remove `object` as the `entities`' parent.
 class entities(object):
     def __init__(self, initial=None):
         self._ls = list()
@@ -154,17 +154,16 @@ class entities(object):
 
     @indexes.setter
     def indexes(self, v):
-        """ This setter is intended to permit the += operator to be used to 
-        add indexes to the entities.indexes collection. Normally, you wouldn't
-        want to set the indexes collection this way. """
+        """ This setter is intended to permit the += operator to be used
+        to add indexes to the entities.indexes collection. Normally, you
+        wouldn't want to set the indexes collection this way. 
+        """
         self._indexes = v
 
     def __call__(self, ix):
+        """ Allow collections to be called providing similar
+        functionality to the way they can be indexed. 
         """
-        Allow collections to be called providing similar functionality to the
-        way they can be indexed. 
-        """
-
         try: 
             return self[ix]
         except IndexError: 

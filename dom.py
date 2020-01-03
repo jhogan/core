@@ -53,6 +53,10 @@ class page(entities.entity):
 class attributes(entities.entities):
     """ Represents a collection of attributes for HTML5 elements.
     """
+
+    # FIXME Ordinal properties, like (.first, .second, et al.), will
+    # return "undef" attributes. Some work in __getitem__ needs to be
+    # done to correct this.
     def __iadd__(self, *o):
         """ Append an attribute to the collection via the += operator.
         """
