@@ -578,7 +578,12 @@ class element(entities.entity):
         if sibs.hasone: 
             return None
 
-        return sibs(sibs.getindex(self) - 1)
+        ix = sibs.getindex(self) - 1
+
+        if ix < 0:
+            return None
+
+        return sibs(ix)
 
     @property
     def preceding(self):
