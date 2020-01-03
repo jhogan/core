@@ -13196,8 +13196,15 @@ class test_markdown(tester):
         self.eq(expect, md.pretty)
 
     def it_raises_with_nonstandard_inline_html_tags(self):
-        # TODO  
-        pass
+        md = self.dedent('''
+          Below is some inline HTML with a non-standard tag
+
+          <ngderp>
+            Foo
+          </ngderp>
+
+        ''')
+        self.expect(NotImplementedError, lambda: dom.markdown(md))
 
     def it_parses_headers(self):
         # Setext-style headers 
