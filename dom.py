@@ -382,20 +382,6 @@ class elements(entities.entities):
 
     @property
     def pretty(self):
-        # TODO This adds a "tab" to the first tag of each element.
-		#     <class 'dom.markdown'> object at 0x7f8b7a8c1ef0 count: 4
-		#         <p>
-		#       <em>
-		#         single asterisks
-		#       </em>
-		#     </p>
-		#         <p>
-		#       <em>
-		#         single underscores
-		#       </em>
-        #
-        # Also, that top line shouldn't be hesince it's not HTML:
-		#     <class 'dom.markdown'> object at 0x7f8b7a8c1ef0 count: 4
         return '\n'.join(x.pretty for x in self)
 
     @property
@@ -434,6 +420,10 @@ class element(entities.entity):
     # The above is from:
     #   https://www.w3.org/TR/2011/WD-html-markup-20110405/syntax.html
     isvoid = False
+
+    # TODO Prevent adding nonstandard elements to a given element. For
+    # example, <p> can only have "phrasing content" according to the
+    # HTML5 standard.
 
     def __init__(self, o=None):
         if isinstance(o, str):
@@ -3826,28 +3816,14 @@ class codeblock(code):
 
     """
 
-    # TODO The text in the <code> will have a leading linebreak because
-    # of the way element.html renders. Work will need to be done to
-    # for element.html to remove this white space. I.e.,:
-    # 
-    #     <code>
-    #         Some code
-    #     </code>
-    #
-    #  should be
-    #
-    #     <code>Some code
-    #     </code>
-    #
-    #  A CSS solution is available for this:
-    # 
-    #      code:first-line{
-    #        font-size: 0;
-    #      }
-    # 
-    #  But this is likely a bad idea. Some better ideas may be found
-    #  here: https://stackoverflow.com/questions/17365838/remove-leading-whitespace-from-whitespace-pre-element
-
+    # TODO Now that .html renders ugly the whitespace is no longer an
+    # issue. So the next step is to ensure that <pre> tags is added to
+    # surround the <code> element. Also, `codeblock` should probably no
+    # longer inherit from `code` anymore. If anything, it should inherit
+    # from `pre`, but I don't know if that make much sense; maybe it
+    # should just inherit from `element`. Not sure at this point. Also,
+    # we don't need to add a class called 'block' since 'pre > code'
+    # would probably be equivelent to '.codeblock'.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.classes += 'block'
