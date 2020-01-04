@@ -4393,40 +4393,30 @@ class selector(entities.entity):
                 if comb in (selector.element.Descendant, None):
                     for i, an in el1.ancestors.enumerate():
                         if smp.match(an):
-                            #anix += i + 1
                             el1 = an
                             break
                     else:
-                        # rms += el1
                         rms += orig
                         break
                 elif comb == selector.element.Child:
-                    #an = el1.ancestors[anix]
                     an = el1.parent
                     if smp.match(an):
-                        #anix += 1
                         el1 = an
                     else:
-                        # rms += el1
                         rms += orig
                         break
                 elif comb == selector.element.NextSibling:
-                    #prev = list(el1.preceding.reversed())[sibix]
                     if smp.match(el1.previous):
-                        #sibix += 1
                         el1 = el1.previous
                     else:
-                        #rms += el1
                         rms += orig
                         break
                 elif comb == selector.element.SubsequentSibling:
                     for i, el2 in enumerate(el1.preceding.reversed()):
                         if smp.match(el2):
-                            #sibix += i + 1
                             el1 = el2
                             break
                     else:
-                        #rms += el1
                         rms += orig
                         break
                 else:
