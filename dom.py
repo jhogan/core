@@ -83,6 +83,12 @@ class attributes(entities.entities):
         return super().append(o, uniq, r)
 
     def __getitem__(self, key):
+        if isinstance(key, int):
+            return self._defined[key]
+                
+        if isinstance(key, slice):
+            return type(self)(initial=self._defined[key])
+
         if not isinstance(key, str):
             return super().__getitem__(key)
 
@@ -91,7 +97,7 @@ class attributes(entities.entities):
         except ValueError as ex:
             attr = None
         else:
-            attr = self[ix]
+            attr = self._ls[ix]
 
         if attr:
             return attr
@@ -101,7 +107,7 @@ class attributes(entities.entities):
             else:
                 self += attribute(key)
             
-            return self.last
+            return self._ls[-1]
 
     def __setitem__(self, key, item):
         if not isinstance(key, str):
@@ -127,6 +133,10 @@ class attributes(entities.entities):
                 self += cssclass(item)
             else:
                 self += key, item
+
+    def reversed(self):
+        for e in reversed(self._defined):
+            yield e
 
     @property
     def _defined(self):

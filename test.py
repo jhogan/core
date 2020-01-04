@@ -12410,8 +12410,18 @@ class test_attribute(tester):
         uuid = uuid4().hex
         attr = p.attributes[uuid]
         self.is_(p.attributes[uuid], attr)
-        self.zero(p.classes)
-        self.zero(p.attributes)
+
+        self.true(p.classes.count     ==  0)
+        self.true(p.attributes.count  ==  0)
+        self.true(len(p.classes)      ==  0)
+        self.true(len(p.attributes)   ==  0)
+        self.zero(p.attributes.sorted('name'))
+
+        self.zero(list(p.attributes.reversed()))
+        self.none(p.attributes.first)
+        self.none(p.attributes(0))
+        self.expect(IndexError, lambda: p.attributes[0])
+        self.zero(p.attributes[0:1])
         
         for p in p.attributes:
             self.fail()
@@ -12419,8 +12429,66 @@ class test_attribute(tester):
         attr.value = uuid4().hex
         self.zero(p.classes)
         self.one(p.attributes)
-        self.eq(p.attributes.first.value, attr.value)
+        self.eq(p.attributes.first, attr)
+        self.eq(p.attributes[0], attr)
+        self.eq(p.attributes(0), attr)
+        self.true(p.classes.count     ==  0)
+        self.true(p.attributes.count  ==  1)
+        self.true(len(p.classes)      ==  0)
+        self.true(len(p.attributes)   ==  1)
+        self.one(p.attributes.sorted('name'))
+        self.one(list(p.attributes.reversed()))
+        self.one(p.attributes[0:1])
+        self.is_(p.attributes.first, p.attributes[0:1].first)
+
+        for i, _ in enumerate(p.attributes):
+            i += 1
+
+        self.eq(1, i)
+
+        uuid = uuid4().hex
+        attr = p.attributes[uuid]
+        self.is_(p.attributes[uuid], attr)
+
+        self.true(p.classes.count     ==  0)
+        self.true(p.attributes.count  ==  1)
+        self.true(len(p.classes)      ==  0)
+        self.true(len(p.attributes)   ==  1)
+        self.one(p.attributes.sorted('name'))
+        self.one(list(p.attributes.reversed()))
+        self.notnone(p.attributes.first)
+        self.none(p.attributes.second)
+        self.notnone(p.attributes(0))
+        self.notnone(p.attributes(0))
+        self.none(p.attributes(1))
+        self.none(p.attributes(1))
+        self.expect(None, lambda: p.attributes[0])
+        self.expect(IndexError, lambda: p.attributes[1])
+        self.one(p.attributes[0:1])
+        self.is_(p.attributes.first, p.attributes[0:1].first)
         
+        attr.value = uuid4().hex
+        self.zero(p.classes)
+        self.two(p.attributes)
+        self.eq(p.attributes.second, attr)
+        self.eq(p.attributes[1], attr)
+        self.eq(p.attributes(1), attr)
+        self.true(p.classes.count     ==  0)
+        self.true(p.attributes.count  ==  2)
+        self.true(len(p.classes)      ==  0)
+        self.true(len(p.attributes)   ==  2)
+        self.two(p.attributes.sorted('name'))
+        self.two(list(p.attributes.reversed()))
+        self.two(p.attributes[0:2])
+        self.is_(p.attributes.first, p.attributes[0:2].first)
+        self.is_(p.attributes.second, p.attributes[0:2].second)
+
+        i = 0
+        for i, _ in enumerate(p.attributes):
+            i += 1
+
+        self.eq(2, i)
+
     def it_sets_None_attr(self):
         expect = self.dedent('''
         <input disabled>
