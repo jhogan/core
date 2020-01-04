@@ -14018,6 +14018,29 @@ class test_selectors(tester):
             self.eq('child-of-p-of-h2', els.first.id)
     
     def it_selects_with_next_and_subsequent_sibling_combinator(self):
+        html = dom.html('''
+        <div>
+          <p foo="bar"></p>
+          <p id="1"></p>
+          <p id="2"></p>
+          <p id="3"></p>
+        </div>
+        ''')
+
+        sels = [
+            'p[foo=bar] + p ~ p',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.two(els)
+            self.eq('2', els.first.id)
+            self.eq('3', els.second.id)
+
+            print(repr(els))
+
+
+        return 
         html = dom.html(AdjacencyHtml)
 
         sels = [
