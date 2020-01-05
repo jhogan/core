@@ -3504,6 +3504,7 @@ class muralists(painters):
     pass
 
 class muralist(painter):
+    street = bool
     @staticmethod
     def getvalid():
         sup = muralist.orm.super.getvalid()
@@ -3515,6 +3516,7 @@ class muralist(painter):
                 setattr(mur, map.name, getattr(sup, map.name))
 
         mur.style = 'classical'
+        mur.street = False
 
         return mur
 
