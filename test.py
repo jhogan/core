@@ -10521,6 +10521,7 @@ class test_orm(tester):
             sng.register = 'reg-' + str(i)
             sngs += sng
 
+            ''' Create singers '''
             for k in range(4):
                 aa = artist_artist.getvalid()
                 aa.role = 'sng-art_art-role-' + str(k)
@@ -10541,6 +10542,7 @@ class test_orm(tester):
                     conc.name =  name
                     sngobj.concerts += conc
 
+            ''' Create painters '''
             for k in range(4, 8):
                 aa = artist_artist.getvalid()
                 aa.role = 'sng-art_art-role-' + str(k)
@@ -10559,6 +10561,30 @@ class test_orm(tester):
                     name = 'sng-art_art-pnt-exh-name-' + str(l)
                     exh.name =  name
                     pntobj.exhibitions += exh
+
+            ''' Create muralists '''
+            for k in range(8, 12):
+                aa = artist_artist.getvalid()
+                aa.role = 'sng-art_art-role-' + str(k)
+                aa.slug = 'sng-art_art-slug-' + str(k + 1)
+                murobj = muralist.getvalid()
+
+                aa.object = murobj
+                murobj.firstname = 'sng-art_art-mur-fn-' + str(k)
+                murobj.lastname = 'sng-art_art-mur-ln' + str(k + 1)
+                murobj.style = 'sng-art_art-mur-sty-'+ str(k)
+                murobj.street = True
+
+                sng.artist_artists += aa
+
+                # TODO 
+                '''
+                for l in range(4):
+                    exh = exhibition.getvalid()
+                    name = 'sng-art_art-pnt-exh-name-' + str(l)
+                    exh.name =  name
+                    murobj.exhibitions += exh
+                '''
 
         sngs.save()
         return sngs
@@ -13558,7 +13584,16 @@ class test_orm(tester):
 
         # Make sure the first painter is a painter and not a muralist
         self.type(painter, sng3.painters.first)
-        sng3.painters.first.presentations   +=  press3.second
+
+        for pnt3 in sng3.painters:
+            try:
+                muralist(pnt3.id)
+            except db.RecordNotFoundError:
+                pnt3.presentations   +=  press3.second
+                break
+        else:
+            self.fail("Couldn't find painter type")
+
 
         sng3.muralists.first.presentations  +=  press3.third
 
@@ -13585,7 +13620,7 @@ class test_orm(tester):
         #self.one(sng3.artist_artists.first.object.presentations)
 
         self.one(sng3.singers.first.presentations)
-        self.one(sng3.painters.first.presentations)
+        self.one(pnt3.presentations)
         self.one(sng3.muralists.first.presentations)
 
         aas3 = sng3.artist_artists
@@ -13593,9 +13628,10 @@ class test_orm(tester):
             press3.first, 
             sng3.singers.first.presentations.first
         )
+
         self.is_(
             press3.second, 
-            sng3.painters.first.presentations.first
+            pnt3.presentations.first
         )
 
         self.is_(
@@ -13615,13 +13651,11 @@ class test_orm(tester):
             press4.sorted().pluck('id')
         )
 
-        press4 = sng4.painters[sng3.painters.first.id].presentations
+        press4 = sng4.painters[pnt3.id].presentations
         self.eq(
-            sng3.painters.first.presentations.sorted().pluck('id'),
+            pnt3.presentations.sorted().pluck('id'),
             press4.sorted().pluck('id')
         )
-        return
-
 
         # NOTE The below comment and tests were carried over from
         # it_loads_and_saves_associations:
@@ -13632,10 +13666,11 @@ class test_orm(tester):
         sng.artist_artists += artist_artist.getvalid()
         sng.singers += singer.getvalid()
         sng.painters += painter.getvalid()
+        sng.muralists += muralist.getvalid()
 
         self.zero(sng.artist_artists.first.brokenrules)
         self.three(sng.artist_artists.second.brokenrules)
-        self.six(sng.brokenrules)
+        self.nine(sng.brokenrules)
 
         # Fix broken aa
         sng.artist_artists.second.role = uuid4().hex
@@ -13646,6 +13681,10 @@ class test_orm(tester):
         sng.artist_artists.third.slug = uuid4().hex
         sng.artist_artists.third.timespan = uuid4().hex
 
+        sng.artist_artists.fourth.role = uuid4().hex
+        sng.artist_artists.fourth.slug = uuid4().hex
+        sng.artist_artists.fourth.timespan = uuid4().hex
+
         self.zero(sng.artist_artists.second.brokenrules)
         self.zero(sng.artist_artists.third.brokenrules)
         self.zero(sng.brokenrules)
@@ -13653,34 +13692,41 @@ class test_orm(tester):
     def it_updates_subentity_reflexive_associations_constituent_entity(self):
         sng = singer.getvalid()
 
-        for i in range(4):
+        for i in range(6):
             aa = artist_artist.getvalid()
-            if i % 2:
+            if i in (0, 1):
                 aa.object = singer.getvalid()
-            else:
+            elif i in (2, 3):
                 aa.object = painter.getvalid()
+            elif i in (4, 5):
+                aa.object = muralist.getvalid()
             sng.artist_artists += aa
 
-        self.four(sng.artist_artists)
+        self.six(sng.artist_artists)
         self.two(sng.singers)
         self.two(sng.painters)
+        self.two(sng.muralists)
         self.zero(sng.artists)
 
         sng.save()
 
         sng1 = singer(sng.id)
 
-        # Update properties of singer
+        # Update properties of singer, painter and muralists
         for sng2 in sng1.singers:
             sng2.register = uuid4().hex
 
         for pnt2 in sng1.painters:
             pnt2.style = uuid4().hex
 
+        for mur2 in sng1.muralists:
+            mur2.street = True
+
         with ct() as t:
             t.run(sng1.save)
             t.updated(*sng1.singers)
             t.updated(*sng1.painters)
+            t.updated(*sng1.muralists)
 
         # Update properties of super (artist)
         for sng2 in sng1.singers:
@@ -13688,6 +13734,10 @@ class test_orm(tester):
 
         for pnt2 in sng1.painters:
             pnt2.lastname = uuid4().hex
+
+        for mur2 in sng1.muralists:
+            mur2.lastname = uuid4().hex # artist.lastname
+            mur2.style    = uuid4().hex # painter.style
 
         with ct() as t:
             t.run(sng1.save)
@@ -13699,9 +13749,11 @@ class test_orm(tester):
         sng2 = singer(sng1.id)
 
         self.two(sng2.singers)
-        self.two(sng2.painters)
-        self.four(sng2.artists)
+        self.four(sng2.painters)
+        self.two(sng2.muralists)
+        self.six(sng2.artists)
 
+        ''' Test that singer entitiy objects were updateded '''
         sngobjs  = sng. singers.sorted()
         sngobjs1 = sng1.singers.sorted()
         sngobjs2 = sng2.singers.sorted()
@@ -13714,9 +13766,13 @@ class test_orm(tester):
             self.eq(sngb1.firstname, sngb2.firstname)
             self.eq(sngb1.register, sngb2.register)
 
-        pntobjs  = sng. painters.sorted()
-        pntobjs1 = sng1.painters.sorted()
-        pntobjs2 = sng2.painters.sorted()
+        ''' Test that painter entitiy objects were updateded '''
+        def wh(mur):
+            return not muralist.orm.exists(mur.id)
+
+        pntobjs  = sng. painters.where(wh).sorted()
+        pntobjs1 = sng1.painters.where(wh).sorted()
+        pntobjs2 = sng2.painters.where(wh).sorted()
 
         for pntb, pntb2 in zip(pntobjs, pntobjs2):
             self.ne(pntb.lastname, pntb2.lastname)
@@ -13725,6 +13781,21 @@ class test_orm(tester):
         for pntb1, pntb2 in zip(pntobjs1, pntobjs2):
             self.eq(pntb1.lastname, pntb2.lastname)
             self.eq(pntb1.style, pntb2.style)
+
+        ''' Test that muralist entitiy objects were updated '''
+        murobjs  = sng. muralists.sorted()
+        murobjs1 = sng1.muralists.sorted()
+        murobjs2 = sng2.muralists.sorted()
+
+        for murb, murb2 in zip(murobjs, murobjs2):
+            self.ne(murb.lastname,   murb2.lastname)
+            self.ne(murb.style,      murb2.style)
+            self.ne(murb.street,     murb2.street)
+
+        for murb1, murb2 in zip(murobjs1, murobjs2):
+            self.eq(murb1.lastname,  murb2.lastname)
+            self.eq(murb1.style,     murb2.style)
+            self.eq(murb1.street,    murb2.street)
 
         ''' Add presentation to singer objects '''
         sng2.singers.first.presentations += presentation.getvalid()
@@ -13766,42 +13837,84 @@ class test_orm(tester):
         )
 
         ''' Add presentation to painter object '''
-        sng2.painters.first.presentations += presentation.getvalid()
-        self.one(sng2.painters.first.presentations)
+        for objpnt2 in sng2.painters:
+            if not muralist.orm.exists(objpnt2.id):
+                break
+        else:
+            raise TypeError("Can't find a non-muralist painter")
 
-        # Get the `artist_artist` object for `sng2.painters.first` 
+
+        objpnt2.presentations += presentation.getvalid()
+        self.one(objpnt2.presentations)
+
+        # Get the `artist_artist` object for `objpnt2`. 
         aa2 = [ 
             x 
             for x in sng2.artist_artists
-            if x.object.id == sng2.painters.first.id
+            if x.object.id == objpnt2.id
         ][0]
 
         aa2.object.presentations += presentation.getvalid()
-        self.one(sng2.painters.first.presentations)
+        self.one(objpnt2.presentations)
         self.one(aa2.object.presentations)
 
         self.isnot(
-            sng2.painters.first.presentations,
+            objpnt2.presentations,
             aa2.object.presentations
         )
 
         self.isnot(
-            sng2.painters.first.presentations.first,
+            objpnt2.presentations.first,
             aa2.object.presentations.first
         )
 
         self.one(sng2.singers.first.presentations)
         self.one(aa1.object.presentations)
-        self.one(sng2.painters.first.presentations)
+        self.one(objpnt2.presentations)
         self.one(aa2.object.presentations)
+
+        ''' Add presentation to muralist object '''
+        objmur2 = sng2.muralists.first
+
+        objmur2.presentations += presentation.getvalid()
+        self.one(objmur2.presentations)
+
+        # Get the `artist_artist` object for `objmur2`. 
+        aa3 = [ 
+            x 
+            for x in sng2.artist_artists
+            if x.object.id == objmur2.id
+        ][0]
+
+        aa3.object.presentations += presentation.getvalid()
+        self.one(objmur2.presentations)
+        self.one(aa3.object.presentations)
+
+        self.isnot(
+            objmur2.presentations,
+            aa3.object.presentations
+        )
+
+        self.isnot(
+            objmur2.presentations.first,
+            aa3.object.presentations.first
+        )
+
+        self.one(sng2.singers.first.presentations)
+        self.one(aa1.object.presentations)
+        self.one(objpnt2.presentations)
+        self.one(objmur2.presentations)
+        self.one(aa3.object.presentations)
 
         with ct() as t:
             t(sng2.save)
             t.created(
                 sng2.singers.first.presentations.first,
                 aa1.object.presentations.first,
-                sng2.painters.first.presentations.first,
+                objpnt2.presentations.first,
                 aa2.object.presentations.first,
+                objmur2.presentations.first,
+                aa3.object.presentations.first,
             )
 
         sng3 = singer(sng2.id)
@@ -13809,13 +13922,19 @@ class test_orm(tester):
         sng3obj = sng3.singers[sng2.singers.first.id]
         sng3obj.presentations.first.name = uuid4().hex
 
-        pnt3obj = sng3.painters[sng2.painters.first.id]
+        pnt3obj = sng3.painters[objpnt2.id]
         pnt3obj.presentations.first.name = uuid4().hex
+
+        mur3obj = sng3.muralists[objmur2.id]
+        mur3obj.presentations.first.name = uuid4().hex
 
         with self._chrontest() as t:
             t.run(sng3.save)
-            t.updated(sng3obj.presentations.first)
-            t.updated(pnt3obj.presentations.first)
+            t.updated(
+                sng3obj.presentations.first,
+                pnt3obj.presentations.first,
+                mur3obj.presentations.first
+            )
 
         sng4 = singer(sng3.id)
 
@@ -13831,6 +13950,13 @@ class test_orm(tester):
         self.eq(
             pnt3obj.presentations.first.name,
             sng4.painters[pntid].presentations[presid].name
+        )
+
+        murid = mur3obj.id
+        presid =mur3obj.presentations.first.id
+        self.eq(
+            mur3obj.presentations.first.name,
+            sng4.painters[murid].presentations[presid].name
         )
 
         # TODO Test deeply nested associations
@@ -13857,7 +13983,7 @@ class test_orm(tester):
 
             self.eq(fff, sng1.orm.persistencestate)
 
-            self.eight(sng1.artist_artists)
+            self.twelve(sng1.artist_artists)
 
             sng.artist_artists.sort()
             sng1.artist_artists.sort()
@@ -13877,8 +14003,8 @@ class test_orm(tester):
                 #self.is_(aa1.subject, sng1)
                 self.eq(aa1.subject.id, sng1.id)
 
-        # NOTE The above will lazy-load aa1.object 32 times
-        self.count(32, self.chronicles)
+        # NOTE The above will lazy-load aa1.object 48 times
+        self.count(48, self.chronicles)
 
         # Test singers joined with artist_artists where the association
         # has a conditional
@@ -13921,7 +14047,7 @@ class test_orm(tester):
         # collections (artist_artists) with its composites (singer and
         # painter)
         for b in False, True:
-            for es in (singers, painters):
+            for es in (singers, painters, muralists):
                 if b:
                     # Implicitly join artist_artists
                     sngs1 = singers & es
@@ -13932,9 +14058,15 @@ class test_orm(tester):
 
                 self.one(sngs1.orm.joins)
 
-                self.type(artist_artists, sngs1.orm.joins.first.entities)
+                self.type(
+                    artist_artists, 
+                    sngs1.orm.joins.first.entities
+                )
                 self.one(sngs1.orm.joins.first.entities.orm.joins)
-                obj = sngs1.orm.joins.first.entities.orm.joins.first.entities
+
+                obj = sngs1.orm.joins.first.entities \
+                      .orm.joins.first.entities
+
                 self.type(es, obj)
 
                 sngs1.sort()
@@ -13948,24 +14080,33 @@ class test_orm(tester):
 
                     self.eq(fff, sng1.orm.persistencestate)
 
-                    self.four(sng1.artist_artists)
+                    if es is singers:
+                        self.four(sng1.artist_artists)
+                    elif es is painters:
+                        self.eight(sng1.artist_artists)
 
                     aas1 = sng1.artist_artists
 
                     # Create an aa collection where the non-singers
                     # (painters) from sng.artist_artists have been
                     # removed
-                    aas = sng \
-                            .artist_artists \
-                            .where(
+                    aas = sng.artist_artists.where(
                                 lambda x: x.id in aas1.pluck('id')
-                            )
+                          )
 
                     aas.sort(); aas1.sort()
-                    self.four(aas); self.four(aas1)
+                    if es in (singers, muralists):
+                        self.four(aas)
+                        self.four(aas1)
+                    elif es is painters:
+                        self.eight(aas)
+                        self.eight(aas1)
 
                     for aa, aa1 in zip(aas, aas1):
-                        self.expect(None, lambda: es.orm.entity(aa.object.id))
+                        self.expect(
+                            None, 
+                            lambda: es.orm.entity(aa.object.id)
+                        )
                         self.eq(fff, aa1.orm.persistencestate)
                         self.eq(aa.id, aa.id)
                         self.eq(
@@ -13983,15 +14124,18 @@ class test_orm(tester):
                 #
                 #     self.expect(None, lambda: es.orm.entity(aa.object.id))
                 #
-                # will result in 16 chronicled objects.
-                self.count(16, self.chronicles)
+                # will result in 16 chronicled objects for singer and 32
+                # chronicled objects for painters.
+                if es in (singers, muralists):
+                    self.count(16, self.chronicles)
+                elif es is painters:
+                    self.count(32, self.chronicles)
 
         # Test joining the associated entities collections
         # (artist_artists) with its composite (singer/painter) where the
         # composite's join is conditional.
-
         for b in True, False:
-            for es in (singers, painters):
+            for es in (singers, painters, muralists):
                 if es is singers:
                     wh = 'firstname = %s and register = %s'
                     args = (
@@ -14003,6 +14147,13 @@ class test_orm(tester):
                     args = (
                         'sng-art_art-pnt-fn-4',
                         'sng-art_art-pnt-sty-4',
+                    )
+                elif es is muralists:
+                    wh = 'firstname = %s and style = %s and street = %s'
+                    args = (
+                        'sng-art_art-mur-fn-8',
+                        'sng-art_art-mur-sty-8',
+                        True,
                     )
 
                 if b:
@@ -14016,6 +14167,7 @@ class test_orm(tester):
                     sngs1 = singers().join(
                                     es(wh, args)
                             )
+
                 self.one(sngs1.orm.joins)
                 self.type(
                     artist_artists, 
@@ -14046,14 +14198,14 @@ class test_orm(tester):
 
                     # Downcast 46e3dc32
                     obj = es.orm.entity(aas.first.object.id)
-                    v = args[1]
                     attr = 'register' if es is singers else 'style'
-                    self.eq(v, getattr(obj, attr))
+                    self.eq(args[1], getattr(obj, attr))
                     self.eq(fff, aas.first.orm.persistencestate)
 
                 # The downcast above 46e3dc32 will result in four loads of
                 # singer/painter
                 self.four(self.chronicles)
+        return
 
         ''' Test joining the associated entities collections
         (artist_artists) with its composite (singers) where the
