@@ -572,7 +572,27 @@ class cli:
         sys.exit(int(not ts.ok))
 
     def parseargs(self):
-        # Parse args
+        # TODO Consider adding a -t to run whichever test has been
+        # selected a certain number of times. Currently, to run a test
+        # an infinate amount of times, we do this:
+        #
+        #     while true; do python3 test.py test_orm.it_runs; done
+        #
+        # It would be better to run write this as:
+        #
+        #     python3 test.py test_orm.it_runs -t0
+        #
+        # or mayby:
+        #
+        #     python3 test.py test_orm.it_runs --inf
+        #
+        # Or if we wanted to run the test 10 times, we could do this:
+        #
+        #     python3 test.py test_orm.it_runs -t10
+        #
+        # Running test multiple times is important for capturing
+        # problems that happen sporadically.
+
         ts = self.testers
         p = argparse.ArgumentParser()
         p.add_argument('testunit',  help='The test class or method to run',  nargs='?')
