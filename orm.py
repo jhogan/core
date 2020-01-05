@@ -4175,6 +4175,14 @@ class orm:
         self._abbreviation        =  str()
         self.initing              =  False
 
+    def exists(self, id):
+        try:
+            self.entity(id)
+        except db.RecordNotFoundError:
+            return False
+
+        return True
+            
     def clone(self):
         r = orm()
 
