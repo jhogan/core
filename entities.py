@@ -15,6 +15,7 @@ from pprint import pprint
 from functools import total_ordering
 import decimal
 import string
+from func import getattr
 
 class entities(object):
     def __init__(self, initial=None):

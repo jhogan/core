@@ -13689,10 +13689,10 @@ class test_orm(tester):
 
         with ct() as t:
             t.run(sng1.save)
-            t.updated(sng1.singers.first.orm.super)
-            t.updated(sng1.singers.second.orm.super)
-            t.updated(sng1.painters.first.orm.super)
-            t.updated(sng1.painters.second.orm.super)
+            t.updated(*sng1.singers.pluck('orm.super'))
+            t.updated(*sng1.painters.pluck('orm.super'))
+            t.updated(*sng1.muralists.pluck('orm.super'))
+            t.updated(*sng1.muralists.pluck('orm.super.orm.super'))
 
         sng2 = singer(sng1.id)
 
