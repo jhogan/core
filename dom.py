@@ -36,19 +36,44 @@ class undef:
     pass
 
 class site(entities.entity):
-    def __init__(self, name):
-        self.name = name
+    def __init__(self):
         self.pages = pages()
+        self.index = None
+
+    def __getitem__(self, path):
+        return self.pages[path]
 
 class pages(entities.entities):
-    pass
+    def __getitem__(self, path):
+
+        if isinstance(path, str):
+            segs = [x for x in path.split('/') if x]
+        elif isinstance(path, list):
+            segs = path
+        else:
+            # TODO Test
+            raise TypeError('Path must be a string or list')
+           
+        seg = segs[0]
+        for pg in self:
+            if pg.name == seg:
+                if len(segs) > 1:
+                    return pg.pages[segs[1:]]
+                return pg
+                
+        raise IndexError('Path not found')
+
 
 class page(entities.entity):
     # NOTE Page component reference: 
     #     https://webstyleguide.com/wsg3/6-page-structure/3-site-design.html
 
-    def __init__(self, name):
+    def __init__(self):
         self.pages = pages()
+
+    @property
+    def name(self):
+        return type(self).__name__.replace('_', '-')
 
 class attributes(entities.entities):
     """ Represents a collection of attributes for HTML5 elements.

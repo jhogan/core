@@ -12024,12 +12024,48 @@ class test_orm(tester):
 # Test dom                                                             #
 ########################################################################
 
+class foonet(dom.site):
+    def __init__(self):
+        super().__init__()
+        # TODO Implement __setattr__
+        #self.index = index()
+        self.pages += index()
+
+class index(dom.page):
+    def __init__(self):
+        super().__init__()
+        self.pages += about()
+        self.pages += contact_us()
+
+class about(dom.page):
+    def __init__(self):
+        super().__init__()
+        self.pages += team()
+
+class contact_us(dom.page):
+    def __init__(self):
+        super().__init__()
+
+class team(dom.page):
+    pass
+    
 class test_site(tester):
     def it_calls__init__(self):
-        name = uuid4().hex
-        ws = dom.site(name)
-        self.eq(ws.name, name)
-        self.zero(ws.pages)
+        ws = foonet()
+        self.one(ws.pages)
+
+    def it_calls__getitem__(self):
+        ws = foonet()
+        #self.type(index, ws['/'])
+        self.type(index, ws['/index'])
+        self.type(about, ws['/index/about'])
+        self.type(team, ws['/index/about/team'])
+
+    def it_raise_on_invalid_path(self):
+        ws = foonet()
+        self.expect(IndexError, lambda: ws['/index/about/teamxxx'])
+        self.expect(IndexError, lambda: ws['/xxx'])
+        self.expect(IndexError, lambda: ws['derp'])
 
 class test_page(tester):
     def it_calls__init__(self):
