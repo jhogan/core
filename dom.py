@@ -885,9 +885,14 @@ class element(entities.entity):
 
     @classproperty
     def tag(cls):
-        if type(cls) is type:
-            return cls.__name__
-        return type(cls).__name__
+        if type(cls) is not type:
+            cls = type(cls)
+
+        for typ in cls.__mro__:
+            if typ is element:
+                return prev.__name__
+            prev = typ
+
 
     @property
     def pretty(self):
