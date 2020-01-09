@@ -829,6 +829,10 @@ class element(entities.entity):
 
         return els
 
+    @property
+    def all(self):
+        return self.getelements(recursive=True)
+
     def getelements(self, recursive=False):
         els = elements()
         for el in self.elements:
