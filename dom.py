@@ -656,6 +656,32 @@ class element(entities.entity):
         self.attributes['id'] = v
 
     @property
+    def dir(self):
+        """ The dir global attribute is an enumerated attribute that
+        indicates the directionality of the element's text.
+
+        It can have the following values:
+
+            * ltr, which means left to right and is to be used for
+            languages that are written from the left to the right (like
+            English);
+
+            * rtl, which means right to left and is to be used for
+            languages that are written from the right to the left (like
+            Arabic);
+
+            * auto, which lets the user agent decide. It uses a basic
+            algorithm as it parses the characters inside the element
+            until it finds a character with a strong directionality,
+            then applies that directionality to the whole element.
+        """
+        return self.attributes['dir'].value
+
+    @dir.setter
+    def dir(self, v):
+        self.attributes['dir'] = v
+
+    @property
     def lang(self):
         """ The lang global attribute helps define the language of an
         element: the language that non-editable elements are written in,
