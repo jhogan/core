@@ -228,6 +228,11 @@ class attributes(entities.entities):
         if type(o) is str:
             o = attribute(o, v)
 
+        if type(o) is dict:
+            for k, v in o.items():
+                self += k, v
+            return
+
         for attr in self:
             if o.name == attr.name:
                 msg = 'Attribute already exists: ' + o.name
