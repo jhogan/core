@@ -30,6 +30,19 @@ An implementation of the HTML5 DOM.
 .. _moz_global_attributes https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes
 """
 
+# References:
+#
+#     Google: Managing multi-regional and multilingual sites
+#     https://support.google.com/webmasters/answer/182192?hl=en
+#
+#     List of ISO 639-1 codes
+#     https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
+#
+#     Page component reference: 
+#     https://webstyleguide.com/wsg3/6-page-structure/3-site-design.html
+
+# TODO If this is only used by attributes, mayby it should be nested in
+# the `attribute` class
 class undef:
     """ Used to indicate that an attribute has not been defined.
     """
@@ -51,7 +64,6 @@ class pages(entities.entities):
         elif isinstance(path, list):
             segs = path
         else:
-            # TODO Test
             raise TypeError('Path must be a string or list')
            
         seg = segs[0]
@@ -63,25 +75,41 @@ class pages(entities.entities):
                 
         raise IndexError('Path not found')
 
+    def append(self, obj, uniq=False, r=None):
+        obj.parent = self.parent
+        r = super().append(obj, uniq, r)
+
 
 class page(entities.entity):
-    # NOTE Page component reference: 
-    #     https://webstyleguide.com/wsg3/6-page-structure/3-site-design.html
-
-    def __init__(self):
-        self.pages = pages()
+    def __init__(self, name=None):
+        self.pages = pages(self)
+        self.parent = None
+        self._name = name
 
     @property
     def name(self):
+        if self._name:
+            return self._name
         return type(self).__name__.replace('_', '-')
+
+    @property
+    def path(self):
+        r = str()
+        rent = self
+
+        while rent:
+            if r:
+                r = '%s/%s' % (rent.name, r)
+            else:
+                r = rent.name
+            rent = rent.parent
+
+        return '/' + r
 
 class attributes(entities.entities):
     """ Represents a collection of attributes for HTML5 elements.
     """
 
-    # FIXME Ordinal properties, like (.first, .second, et al.), will
-    # return "undef" attributes. Some work in __getitem__ needs to be
-    # done to correct this.
     def __iadd__(self, *o):
         """ Append an attribute to the collection via the += operator.
         """
@@ -3823,6 +3851,7 @@ class codes(elements):
     pass
 
 class code(element):
+    # TODO Remove this line
     tag = 'code'
 
 class codeblocks(codes):
