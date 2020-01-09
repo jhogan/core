@@ -596,6 +596,29 @@ class element(entities.entity):
         el._setparent(self)
 
     @property
+    def text(self):
+        """ Get the combined text contents of each element recursively.
+        """
+        # NOTE This should match the functionality of jQuery's `.text()`
+        # as closely as possible - except for the `.text(function)`
+        # overload.
+
+        # TODO Write tests. 
+
+        r = ''
+        for el in self.all:
+            if isinstance(el, text):
+                if r:
+                    r += ' '
+                r += el.html
+        return r
+
+    @text.setter
+    def text(self, v):
+        # TODO Implement and write tests
+        raise NotImplementedError()
+
+    @property
     def language(self):
         """ Returns the "content language" of the element. The content
         language is the language identified by the ``lang`` attribute of
