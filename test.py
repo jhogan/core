@@ -12029,48 +12029,180 @@ class foonet(dom.site):
         super().__init__()
         # TODO Implement __setattr__
         #self.index = index()
-        self.pages += index()
-
-class index(dom.page):
-    def __init__(self):
-        super().__init__()
+        self.pages += home()
         self.pages += about()
         self.pages += contact_us()
+        self.pages += blogs()
+        self.lang = 'es'
+        self.charset = 'iso-8859-1'
+        self.stylesheets.append(
+            'https://maxcdn.bootstrapcdn.com/'
+                'bootstrap/4.0.0/css/bootstrap.min.css'
+        )
+
+class home(dom.page):
+    def __init__(self):
+        super().__init__()
+
+    @property
+    def name(self):
+        return 'index'
+
+class blogs(dom.page):
+    def __init__(self):
+        super().__init__()
+        self.pages += blog_categories('categories')
+        self.pages += blog_posts('posts')
+        self.pages += blog_comments('comments')
+
+class blog_categories(dom.page):
+    pass
+
+class blog_posts(dom.page):
+    pass
+
+class blog_comments(dom.page):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.pages += blog_approved_comments('approved')
+        self.pages += blog_rejected_comments('rejected')
+
+class blog_approved_comments(dom.page):
+    pass
+
+class blog_rejected_comments(dom.page):
+    pass
 
 class about(dom.page):
     def __init__(self):
         super().__init__()
-        self.pages += team()
+        self.pages += about_team()
+
+class about_team(dom.page):
+    @property
+    def name(self):
+        return 'team'
 
 class contact_us(dom.page):
-    def __init__(self):
-        super().__init__()
-
-class team(dom.page):
     pass
     
 class test_site(tester):
     def it_calls__init__(self):
         ws = foonet()
-        self.one(ws.pages)
+        self.four(ws.pages)
 
     def it_calls__getitem__(self):
         ws = foonet()
-        #self.type(index, ws['/'])
-        self.type(index, ws['/index'])
-        self.type(about, ws['/index/about'])
-        self.type(team, ws['/index/about/team'])
+        for path in ('/', '', '/en/index'):
+            self.type(home, ws[path])
+
+        self.type(about, ws['/en/about'])
+        self.type(about_team, ws['/en/about/team'])
 
     def it_raise_on_invalid_path(self):
         ws = foonet()
-        self.expect(IndexError, lambda: ws['/index/about/teamxxx'])
-        self.expect(IndexError, lambda: ws['/xxx'])
-        self.expect(IndexError, lambda: ws['derp'])
+        self.expect(IndexError, lambda: ws['/en/index/about/teamxxx'])
+        self.expect(IndexError, lambda: ws['/en/xxx'])
+        self.expect(IndexError, lambda: ws['/en/derp'])
+
+        self.expect(TypeError, lambda: ws[int()])
+        self.expect(TypeError, lambda: ws[dom.p()])
+
+    def it_calls_html(self):
+        ws = dom.site()
+        self.type(dom.html, ws.html)
+        self.eq('en', ws.html.lang)
+
+        ws = foonet()
+        self.type(dom.html, ws.html)
+        self.eq('es', ws.html.lang)
+
+    def it_calls_head(self):
+        ''' Foonet's head '''
+        vp = 'width=device-width, initial-scale=1, shrink-to-fit=no'
+
+        ws = foonet()
+        hd = ws.head
+        self.one(hd.children['meta[charset=iso-8859-1]'])
+        self.one(hd.children['meta[name=viewport][content="%s"]' % vp])
+
+        titles = hd.children['title']
+        self.one(titles)
+        self.eq('foonet', titles.first.text)
+
+        # Mutate ws properties to ensure they show up in .head 
+        charset = uuid4().hex
+        vp = uuid4().hex
+        title = uuid4().hex
+
+        ws.charset = charset
+        ws.viewport = vp
+        ws.title = title
+
+        hd = ws.head
+        self.one(hd.children['meta[charset="%s"]' % charset])
+        self.one(hd.children['meta[name=viewport][content="%s"]' % vp])
+
+        titles = hd.children['title']
+        self.one(titles)
+        self.eq(title, titles.first.text)
+
+        ws = dom.site()
+        hd = ws.head
+        self.one(hd.children['meta[charset=utf-8]'])
+
+        titles = hd.children['title']
+        self.one(titles)
+        self.eq('site', titles.first.text)
+
+    def it_calls_header(self):
+        ws = foonet()
+        hdr = ws.header
+        hdr.tag
+
+    def it_calls_default_menu(self):
+        ws = dom.site()
+        mnu = ws.header.menu
+        self.zero(mnu.items)
+
+        ws = foonet()
+        mnu = ws.header.menu
+        self.four(mnu.items)
+
+        self.eq(
+            ['/index', '/about', '/contact-us', '/blogs'],
+            mnu.items.pluck('page.path')
+        )
+
+        self.eq(
+            [home, about, contact_us, blogs],
+            [type(x) for x in  mnu.items.pluck('page')]
+        )
+
+        self.eq(
+            ['/blogs/categories', '/blogs/posts', '/blogs/comments'],
+            mnu.items.last.items.pluck('page.path')
+        )
+
+        self.eq(
+            [blog_categories, blog_posts, blog_comments],
+            [type(x) for x in  mnu.items.last.items.pluck('page')]
+        )
+
+        self.eq(
+            ['/blogs/comments/approved', '/blogs/comments/rejected'],
+            mnu.items.last.items.last.items.pluck('page.path')
+        )
+
+        self.eq(
+            [blog_approved_comments, blog_rejected_comments],
+            [type(x) for x in  mnu.items.last.items.last.items.pluck('page')]
+        )
 
 class test_page(tester):
     def it_calls__init__(self):
         name = uuid4().hex
-        pg = dom.page(name)
+        pg = dom.page()
         self.zero(pg.pages)
 
 class test_elements(tester):
