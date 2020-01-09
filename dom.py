@@ -583,11 +583,13 @@ class element(entities.entity):
     # example, <p> can only have "phrasing content" according to the
     # HTML5 standard.
 
-    def __init__(self, o=None):
+    def __init__(self, o=None, **kwargs):
         if isinstance(o, str):
             self.elements += text(o)
         elif isinstance(o, element) or isinstance(o, elements):
             self.elements += o
+
+        self.attributes += kwargs
 
     def _elements_onadd(self, src, eargs):
         el = eargs.entity
