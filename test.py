@@ -22,7 +22,9 @@ from uuid import uuid4
 import dateutil
 import db
 import decimal; dec=decimal.Decimal
+import dom
 import functools
+import gem
 import io
 import jwt as pyjwt
 import math
@@ -30,11 +32,12 @@ import MySQLdb
 import _mysql_exceptions
 import orm
 import pathlib
+import pom
 import primative
 import re
 import textwrap
-import dom
-import gem
+
+# TODO Update copyright years
 
 # We will use basic and supplementary multilingual plane UTF-8
 # characters when testing str attributes to ensure unicode is being
@@ -12024,7 +12027,7 @@ class test_orm(tester):
 # Test dom                                                             #
 ########################################################################
 
-class foonet(dom.site):
+class foonet(pom.site):
     def __init__(self):
         super().__init__()
         # TODO Implement __setattr__
@@ -12040,7 +12043,7 @@ class foonet(dom.site):
                 'bootstrap/4.0.0/css/bootstrap.min.css'
         )
 
-class home(dom.page):
+class home(pom.page):
     def __init__(self):
         super().__init__()
 
@@ -12048,42 +12051,42 @@ class home(dom.page):
     def name(self):
         return 'index'
 
-class blogs(dom.page):
+class blogs(pom.page):
     def __init__(self):
         super().__init__()
         self.pages += blog_categories('categories')
         self.pages += blog_posts('posts')
         self.pages += blog_comments('comments')
 
-class blog_categories(dom.page):
+class blog_categories(pom.page):
     pass
 
-class blog_posts(dom.page):
+class blog_posts(pom.page):
     pass
 
-class blog_comments(dom.page):
+class blog_comments(pom.page):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.pages += blog_approved_comments('approved')
         self.pages += blog_rejected_comments('rejected')
 
-class blog_approved_comments(dom.page):
+class blog_approved_comments(pom.page):
     pass
 
-class blog_rejected_comments(dom.page):
+class blog_rejected_comments(pom.page):
     pass
 
-class about(dom.page):
+class about(pom.page):
     def __init__(self):
         super().__init__()
         self.pages += about_team()
 
-class about_team(dom.page):
+class about_team(pom.page):
     @property
     def name(self):
         return 'team'
 
-class contact_us(dom.page):
+class contact_us(pom.page):
     pass
     
 class test_site(tester):
@@ -12109,7 +12112,7 @@ class test_site(tester):
         self.expect(TypeError, lambda: ws[dom.p()])
 
     def it_calls_html(self):
-        ws = dom.site()
+        ws = pom.site()
         self.type(dom.html, ws.html)
         self.eq('en', ws.html.lang)
 
@@ -12147,7 +12150,7 @@ class test_site(tester):
         self.one(titles)
         self.eq(title, titles.first.text)
 
-        ws = dom.site()
+        ws = pom.site()
         hd = ws.head
         self.one(hd.children['meta[charset=utf-8]'])
 
@@ -12161,7 +12164,7 @@ class test_site(tester):
         hdr.tag
 
     def it_calls_default_menu(self):
-        ws = dom.site()
+        ws = pom.site()
         mnu = ws.header.menu
         self.zero(mnu.items)
 
@@ -12199,10 +12202,12 @@ class test_site(tester):
             [type(x) for x in  mnu.items.last.items.last.items.pluck('page')]
         )
 
+
+
 class test_page(tester):
     def it_calls__init__(self):
         name = uuid4().hex
-        pg = dom.page()
+        pg = pom.page()
         self.zero(pg.pages)
 
 class test_elements(tester):
