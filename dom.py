@@ -730,7 +730,7 @@ class element(entities.entity):
         if type(el) is str:
             el = text(el)
 
-        if not isinstance(el, element):
+        if not isinstance(el, element) and not isinstance(el, elements):
             raise ValueError('Invalid element type: ' + str(type(el)))
 
         self.elements += el
