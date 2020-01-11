@@ -64,6 +64,11 @@ class attributes(entities.entities):
     def append(self, o, v=None, uniq=False, r=None):
         """ Append an attribute to the collection. 
         """
+
+        # TODO Some elements like <meta>, <br/>, etc., should not be
+        # allowed to have content appended to them. An exception should
+        # be raised when that happens, or maybe the document's `invaild`
+        # proprety should be True.
         if type(o) is list:
             return super().append(o, uniq, r)
             
@@ -807,7 +812,6 @@ class element(entities.entity):
 
         return r % tuple(args)
         
-
     def __str__(self):
         return self.pretty
 
@@ -1896,19 +1900,7 @@ class time(element):
     def datetime(self, v):
         self.attributes['datetime'].value = v
 
-class menus(elements):
-    pass
-
-class menu(element):
-    @property
-    def type(self):
-        return self.attributes['type'].value
-
-    @type.setter
-    def type(self, v):
-        self.attributes['type'].value = v
-
-class bodyies(elements):
+class bodies(elements):
     pass
 
 class body(element):
@@ -4967,3 +4959,5 @@ class CssSelectorParseError(SyntaxError):
             return self.token.pos
 
         return None
+
+
