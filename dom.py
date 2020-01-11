@@ -30,33 +30,27 @@ An implementation of the HTML5 DOM.
 .. _moz_global_attributes https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes
 """
 
+# References:
+#
+#     Google: Managing multi-regional and multilingual sites
+#     https://support.google.com/webmasters/answer/182192?hl=en
+#
+#     List of ISO 639-1 codes
+#     https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
+#
+#     Page component reference: 
+#     https://webstyleguide.com/wsg3/6-page-structure/3-site-design.html
+
+# TODO If this is only used by attributes, mayby it should be nested in
+# the `attribute` class
 class undef:
     """ Used to indicate that an attribute has not been defined.
     """
     pass
 
-class site(entities.entity):
-    def __init__(self, name):
-        self.name = name
-        self.pages = pages()
-
-class pages(entities.entities):
-    pass
-
-class page(entities.entity):
-    # NOTE Page component reference: 
-    #     https://webstyleguide.com/wsg3/6-page-structure/3-site-design.html
-
-    def __init__(self, name):
-        self.pages = pages()
-
 class attributes(entities.entities):
     """ Represents a collection of attributes for HTML5 elements.
     """
-
-    # FIXME Ordinal properties, like (.first, .second, et al.), will
-    # return "undef" attributes. Some work in __getitem__ needs to be
-    # done to correct this.
     def __iadd__(self, *o):
         """ Append an attribute to the collection via the += operator.
         """
@@ -69,11 +63,21 @@ class attributes(entities.entities):
     def append(self, o, v=None, uniq=False, r=None):
         """ Append an attribute to the collection. 
         """
+
+        # TODO Some elements like <meta>, <br/>, etc., should not be
+        # allowed to have content appended to them. An exception should
+        # be raised when that happens, or maybe the document's `invaild`
+        # proprety should be True.
         if type(o) is list:
             return super().append(o, uniq, r)
             
         if type(o) is str:
             o = attribute(o, v)
+
+        if type(o) is dict:
+            for k, v in o.items():
+                self += k, v
+            return
 
         for attr in self:
             if o.name == attr.name:
@@ -83,6 +87,12 @@ class attributes(entities.entities):
         return super().append(o, uniq, r)
 
     def __getitem__(self, key):
+        if isinstance(key, int):
+            return self._defined[key]
+                
+        if isinstance(key, slice):
+            return type(self)(initial=self._defined[key])
+
         if not isinstance(key, str):
             return super().__getitem__(key)
 
@@ -91,7 +101,7 @@ class attributes(entities.entities):
         except ValueError as ex:
             attr = None
         else:
-            attr = self[ix]
+            attr = self._ls[ix]
 
         if attr:
             return attr
@@ -101,7 +111,7 @@ class attributes(entities.entities):
             else:
                 self += attribute(key)
             
-            return self.last
+            return self._ls[-1]
 
     def __setitem__(self, key, item):
         if not isinstance(key, str):
@@ -127,6 +137,10 @@ class attributes(entities.entities):
                 self += cssclass(item)
             else:
                 self += key, item
+
+    def reversed(self):
+        for e in reversed(self._defined):
+            yield e
 
     @property
     def _defined(self):
@@ -372,20 +386,6 @@ class elements(entities.entities):
 
     @property
     def pretty(self):
-        # TODO This adds a "tab" to the first tag of each element.
-		#     <class 'dom.markdown'> object at 0x7f8b7a8c1ef0 count: 4
-		#         <p>
-		#       <em>
-		#         single asterisks
-		#       </em>
-		#     </p>
-		#         <p>
-		#       <em>
-		#         single underscores
-		#       </em>
-        #
-        # Also, that top line shouldn't be hesince it's not HTML:
-		#     <class 'dom.markdown'> object at 0x7f8b7a8c1ef0 count: 4
         return '\n'.join(x.pretty for x in self)
 
     @property
@@ -425,15 +425,50 @@ class element(entities.entity):
     #   https://www.w3.org/TR/2011/WD-html-markup-20110405/syntax.html
     isvoid = False
 
-    def __init__(self, o=None):
-        if isinstance(o, str):
-            self.elements += text(o)
-        elif isinstance(o, element) or isinstance(o, elements):
-            self.elements += o
+    # TODO Prevent adding nonstandard elements to a given element. For
+    # example, <p> can only have "phrasing content" according to the
+    # HTML5 standard.
+
+    def __init__(self, body=None, *args, **kwargs):
+        
+        if body is not None:
+            if type(body) is str:
+                body %= args
+            elif args:
+                raise ValueError('No args allowed')
+
+            self += body
+
+        self.attributes += kwargs
 
     def _elements_onadd(self, src, eargs):
         el = eargs.entity
         el._setparent(self)
+
+    @property
+    def text(self):
+        """ Get the combined text contents of each element recursively.
+        """
+        # NOTE This should match the functionality of jQuery's `.text()`
+        # as closely as possible - except for the `.text(function)`
+        # overload.
+
+        # TODO Write tests. 
+
+        r = ''
+        for el in self.all:
+            if isinstance(el, text):
+                if r:
+                    r += ' '
+                r += el.html
+        return r
+
+    @text.setter
+    def text(self, v):
+        # TODO: Remove elements before assigning text to the element
+        # rev: 844bf86d
+        #self.elements.remove()
+        self += text(v)
 
     @property
     def language(self):
@@ -471,6 +506,32 @@ class element(entities.entity):
     @id.setter
     def id(self, v):
         self.attributes['id'] = v
+
+    @property
+    def dir(self):
+        """ The dir global attribute is an enumerated attribute that
+        indicates the directionality of the element's text.
+
+        It can have the following values:
+
+            * ltr, which means left to right and is to be used for
+            languages that are written from the left to the right (like
+            English);
+
+            * rtl, which means right to left and is to be used for
+            languages that are written from the right to the left (like
+            Arabic);
+
+            * auto, which lets the user agent decide. It uses a basic
+            algorithm as it parses the characters inside the element
+            until it finds a character with a strong directionality,
+            then applies that directionality to the whole element.
+        """
+        return self.attributes['dir'].value
+
+    @dir.setter
+    def dir(self, v):
+        self.attributes['dir'] = v
 
     @property
     def lang(self):
@@ -620,6 +681,10 @@ class element(entities.entity):
 
         return els
 
+    @property
+    def all(self):
+        return self.getelements(recursive=True)
+
     def getelements(self, recursive=False):
         els = elements()
         for el in self.elements:
@@ -664,7 +729,7 @@ class element(entities.entity):
         if type(el) is str:
             el = text(el)
 
-        if not isinstance(el, element):
+        if not isinstance(el, element) and not isinstance(el, elements):
             raise ValueError('Invalid element type: ' + str(type(el)))
 
         self.elements += el
@@ -672,9 +737,14 @@ class element(entities.entity):
 
     @classproperty
     def tag(cls):
-        if type(cls) is type:
-            return cls.__name__
-        return type(cls).__name__
+        if type(cls) is not type:
+            cls = type(cls)
+
+        for typ in cls.__mro__:
+            if typ is element:
+                return prev.__name__
+            prev = typ
+
 
     @property
     def pretty(self):
@@ -747,9 +817,8 @@ class element(entities.entity):
 
         return r % tuple(args)
         
-
     def __str__(self):
-        return self.html
+        return self.pretty
 
     def __repr__(self):
         r = '%s(%s)'
@@ -757,18 +826,24 @@ class element(entities.entity):
         r %= type(self).__name__, attrs
         return r
 
+class headers(elements):
+    pass
+
+class header(element):
+    pass
+
+class titles(elements):
+    pass
+
+class title(element):
+    pass
+
 class ps(elements):
     pass
 
 class p(element):
-    def __init__(self, body=None, *args):
-        if body is not None:
-            if type(body) is str:
-                body %= args
-            elif args:
-                raise ValueError('No args allowed')
+    pass
 
-            self += body
 paragraph = p
 
 class articles(elements):
@@ -797,12 +872,6 @@ class section(element):
     https://developer.mozilla.org/en-US/docs/Web/HTML/Element/section
     """
     pass
-
-class header(element):
-    def __init__(self):
-        self.logo = None
-        self.searchbox = None
-        self.notifications = None
 
 class footers(elements):
     pass
@@ -887,15 +956,15 @@ class comments(elements):
 class comment(element):
     tag = '<!---->'
     def __init__(self, txt):
-        self.text = txt
+        self._text = txt
 
     @property
     def html(self):
-        return '<!--%s-->' % self.text
+        return '<!--%s-->' % self._text
 
     @property
     def pretty(self):
-        return '<!--%s-->' % self.text
+        return '<!--%s-->' % self._text
     
 class forms(elements):
     pass
@@ -977,6 +1046,7 @@ class links(elements):
     pass
 
 class link(element):
+    isvoid = True
     @property
     def crossorigin(self):
         return self.attributes['crossorigin'].value
@@ -1141,6 +1211,12 @@ class button(element):
     def formmethod(self, v):
         self.attributes['formmethod'].value = v
 
+class navs(elements):
+    pass
+
+class nav(element):
+    pass
+
 class lis(elements):
     pass
 
@@ -1152,6 +1228,9 @@ class li(element):
     @value.setter
     def value(self, v):
         self.attributes['value'].value = v
+
+listitems = lis
+listitem = li
 
 class outputs(elements):
     pass
@@ -1830,19 +1909,7 @@ class time(element):
     def datetime(self, v):
         self.attributes['datetime'].value = v
 
-class menus(elements):
-    pass
-
-class menu(element):
-    @property
-    def type(self):
-        return self.attributes['type'].value
-
-    @type.setter
-    def type(self, v):
-        self.attributes['type'].value = v
-
-class bodyies(elements):
+class bodies(elements):
     pass
 
 class body(element):
@@ -3798,6 +3865,7 @@ class codes(elements):
     pass
 
 class code(element):
+    # TODO Remove this line
     tag = 'code'
 
 class codeblocks(codes):
@@ -3816,28 +3884,14 @@ class codeblock(code):
 
     """
 
-    # TODO The text in the <code> will have a leading linebreak because
-    # of the way element.html renders. Work will need to be done to
-    # for element.html to remove this white space. I.e.,:
-    # 
-    #     <code>
-    #         Some code
-    #     </code>
-    #
-    #  should be
-    #
-    #     <code>Some code
-    #     </code>
-    #
-    #  A CSS solution is available for this:
-    # 
-    #      code:first-line{
-    #        font-size: 0;
-    #      }
-    # 
-    #  But this is likely a bad idea. Some better ideas may be found
-    #  here: https://stackoverflow.com/questions/17365838/remove-leading-whitespace-from-whitespace-pre-element
-
+    # TODO Now that .html renders ugly the whitespace is no longer an
+    # issue. So the next step is to ensure that <pre> tags is added to
+    # surround the <code> element. Also, `codeblock` should probably no
+    # longer inherit from `code` anymore. If anything, it should inherit
+    # from `pre`, but I don't know if that make much sense; maybe it
+    # should just inherit from `element`. Not sure at this point. Also,
+    # we don't need to add a class called 'block' since 'pre > code'
+    # would probably be equivelent to '.codeblock'.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.classes += 'block'
@@ -4381,7 +4435,7 @@ class selector(entities.entity):
     def __init__(self):
         self.elements = selector.elements()
 
-    def match(self, els):
+    def match(self, els, el=None, smps=None):
         last = self.elements.last
         els1 = last.match(els.getchildren())
         rms = elements()
@@ -4412,8 +4466,9 @@ class selector(entities.entity):
                         rms += orig
                         break
                 elif comb == selector.element.SubsequentSibling:
-                    for i, el2 in enumerate(el1.preceding.reversed()):
-                        if smp.match(el2):
+                    precs = el1.preceding
+                    for i, el2 in precs:
+                        if self.match(el2, self.elements[:-1]):
                             el1 = el2
                             break
                     else:
@@ -4911,3 +4966,5 @@ class CssSelectorParseError(SyntaxError):
             return self.token.pos
 
         return None
+
+

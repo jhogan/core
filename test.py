@@ -22,7 +22,9 @@ from uuid import uuid4
 import dateutil
 import db
 import decimal; dec=decimal.Decimal
+import dom
 import functools
+import gem
 import io
 import jwt as pyjwt
 import math
@@ -30,11 +32,12 @@ import MySQLdb
 import _mysql_exceptions
 import orm
 import pathlib
+import pom
 import primative
 import re
 import textwrap
-import dom
-import gem
+
+# TODO Update copyright years
 
 # We will use basic and supplementary multilingual plane UTF-8
 # characters when testing str attributes to ensure unicode is being
@@ -12024,17 +12027,195 @@ class test_orm(tester):
 # Test dom                                                             #
 ########################################################################
 
+class foonet(pom.site):
+    def __init__(self):
+        super().__init__()
+        # TODO Implement __setattr__
+        #self.index = index()
+        self.pages += home()
+        self.pages += about()
+        self.pages += contact_us()
+        self.pages += blogs()
+        self.lang = 'es'
+        self.charset = 'iso-8859-1'
+        self.stylesheets.append(
+            'https://maxcdn.bootstrapcdn.com/'
+                'bootstrap/4.0.0/css/bootstrap.min.css'
+        )
+
+class home(pom.page):
+    def __init__(self):
+        super().__init__()
+
+    @property
+    def name(self):
+        return 'index'
+
+class blogs(pom.page):
+    def __init__(self):
+        super().__init__()
+        self.pages += blog_categories('categories')
+        self.pages += blog_posts('posts')
+        self.pages += blog_comments('comments')
+
+class blog_categories(pom.page):
+    pass
+
+class blog_posts(pom.page):
+    pass
+
+class blog_comments(pom.page):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.pages += blog_approved_comments('approved')
+        self.pages += blog_rejected_comments('rejected')
+
+class blog_approved_comments(pom.page):
+    pass
+
+class blog_rejected_comments(pom.page):
+    pass
+
+class about(pom.page):
+    def __init__(self):
+        super().__init__()
+        self.pages += about_team()
+
+class about_team(pom.page):
+    @property
+    def name(self):
+        return 'team'
+
+class contact_us(pom.page):
+    pass
+    
 class test_site(tester):
     def it_calls__init__(self):
-        name = uuid4().hex
-        ws = dom.site(name)
-        self.eq(ws.name, name)
-        self.zero(ws.pages)
+        ws = foonet()
+        self.four(ws.pages)
+
+    def it_calls__getitem__(self):
+        ws = foonet()
+        for path in ('/', '', '/en/index'):
+            self.type(home, ws[path])
+
+        self.type(about, ws['/en/about'])
+        self.type(about_team, ws['/en/about/team'])
+
+    def it_raise_on_invalid_path(self):
+        ws = foonet()
+        self.expect(IndexError, lambda: ws['/en/index/about/teamxxx'])
+        self.expect(IndexError, lambda: ws['/en/xxx'])
+        self.expect(IndexError, lambda: ws['/en/derp'])
+
+        self.expect(TypeError, lambda: ws[int()])
+        self.expect(TypeError, lambda: ws[dom.p()])
+
+    def it_calls_html(self):
+        ws = pom.site()
+        self.type(dom.html, ws.html)
+        self.eq('en', ws.html.lang)
+
+        ws = foonet()
+        self.type(dom.html, ws.html)
+        self.eq('es', ws.html.lang)
+
+    def it_calls_head(self):
+        ''' Foonet's head '''
+        vp = 'width=device-width, initial-scale=1, shrink-to-fit=no'
+
+        ws = foonet()
+        hd = ws.head
+        self.one(hd.children['meta[charset=iso-8859-1]'])
+        self.one(hd.children['meta[name=viewport][content="%s"]' % vp])
+
+        titles = hd.children['title']
+        self.one(titles)
+        self.eq('foonet', titles.first.text)
+
+        # Mutate ws properties to ensure they show up in .head 
+        charset = uuid4().hex
+        vp = uuid4().hex
+        title = uuid4().hex
+
+        ws.charset = charset
+        ws.viewport = vp
+        ws.title = title
+
+        hd = ws.head
+        self.one(hd.children['meta[charset="%s"]' % charset])
+        self.one(hd.children['meta[name=viewport][content="%s"]' % vp])
+
+        titles = hd.children['title']
+        self.one(titles)
+        self.eq(title, titles.first.text)
+
+        ws = pom.site()
+        hd = ws.head
+        self.one(hd.children['meta[charset=utf-8]'])
+
+        titles = hd.children['title']
+        self.one(titles)
+        self.eq('site', titles.first.text)
+
+    def it_calls_header(self):
+        ws = foonet()
+        hdr = ws.header
+        hdr.tag
+
+    def it_calls_default_menu(self):
+        ws = pom.site()
+        mnu = ws.header.menu
+        self.zero(mnu.items)
+
+        ws = foonet()
+        mnu = ws.header.menu
+        self.four(mnu.items)
+
+        print(ws.header)
+
+        # The header's html will contain one <nav>
+        self.one(dom.html(ws.header.html)['nav'])
+
+        # ... and one <ol>'s under the <nav>
+        self.one(dom.html(ws.header.html)['nav>ol'])
+
+        self.eq(
+            ['/index', '/about', '/contact-us', '/blogs'],
+            mnu.items.pluck('page.path')
+        )
+
+        self.eq(
+            [home, about, contact_us, blogs],
+            [type(x) for x in  mnu.items.pluck('page')]
+        )
+
+        self.eq(
+            ['/blogs/categories', '/blogs/posts', '/blogs/comments'],
+            mnu.items.last.items.pluck('page.path')
+        )
+
+        self.eq(
+            [blog_categories, blog_posts, blog_comments],
+            [type(x) for x in  mnu.items.last.items.pluck('page')]
+        )
+
+        self.eq(
+            ['/blogs/comments/approved', '/blogs/comments/rejected'],
+            mnu.items.last.items.last.items.pluck('page.path')
+        )
+
+        self.eq(
+            [blog_approved_comments, blog_rejected_comments],
+            [type(x) for x in  mnu.items.last.items.last.items.pluck('page')]
+        )
+
+
 
 class test_page(tester):
     def it_calls__init__(self):
         name = uuid4().hex
-        pg = dom.page(name)
+        pg = pom.page()
         self.zero(pg.pages)
 
 class test_elements(tester):
@@ -12410,8 +12591,18 @@ class test_attribute(tester):
         uuid = uuid4().hex
         attr = p.attributes[uuid]
         self.is_(p.attributes[uuid], attr)
-        self.zero(p.classes)
-        self.zero(p.attributes)
+
+        self.true(p.classes.count     ==  0)
+        self.true(p.attributes.count  ==  0)
+        self.true(len(p.classes)      ==  0)
+        self.true(len(p.attributes)   ==  0)
+        self.zero(p.attributes.sorted('name'))
+
+        self.zero(list(p.attributes.reversed()))
+        self.none(p.attributes.first)
+        self.none(p.attributes(0))
+        self.expect(IndexError, lambda: p.attributes[0])
+        self.zero(p.attributes[0:1])
         
         for p in p.attributes:
             self.fail()
@@ -12419,8 +12610,66 @@ class test_attribute(tester):
         attr.value = uuid4().hex
         self.zero(p.classes)
         self.one(p.attributes)
-        self.eq(p.attributes.first.value, attr.value)
+        self.eq(p.attributes.first, attr)
+        self.eq(p.attributes[0], attr)
+        self.eq(p.attributes(0), attr)
+        self.true(p.classes.count     ==  0)
+        self.true(p.attributes.count  ==  1)
+        self.true(len(p.classes)      ==  0)
+        self.true(len(p.attributes)   ==  1)
+        self.one(p.attributes.sorted('name'))
+        self.one(list(p.attributes.reversed()))
+        self.one(p.attributes[0:1])
+        self.is_(p.attributes.first, p.attributes[0:1].first)
+
+        for i, _ in enumerate(p.attributes):
+            i += 1
+
+        self.eq(1, i)
+
+        uuid = uuid4().hex
+        attr = p.attributes[uuid]
+        self.is_(p.attributes[uuid], attr)
+
+        self.true(p.classes.count     ==  0)
+        self.true(p.attributes.count  ==  1)
+        self.true(len(p.classes)      ==  0)
+        self.true(len(p.attributes)   ==  1)
+        self.one(p.attributes.sorted('name'))
+        self.one(list(p.attributes.reversed()))
+        self.notnone(p.attributes.first)
+        self.none(p.attributes.second)
+        self.notnone(p.attributes(0))
+        self.notnone(p.attributes(0))
+        self.none(p.attributes(1))
+        self.none(p.attributes(1))
+        self.expect(None, lambda: p.attributes[0])
+        self.expect(IndexError, lambda: p.attributes[1])
+        self.one(p.attributes[0:1])
+        self.is_(p.attributes.first, p.attributes[0:1].first)
         
+        attr.value = uuid4().hex
+        self.zero(p.classes)
+        self.two(p.attributes)
+        self.eq(p.attributes.second, attr)
+        self.eq(p.attributes[1], attr)
+        self.eq(p.attributes(1), attr)
+        self.true(p.classes.count     ==  0)
+        self.true(p.attributes.count  ==  2)
+        self.true(len(p.classes)      ==  0)
+        self.true(len(p.attributes)   ==  2)
+        self.two(p.attributes.sorted('name'))
+        self.two(list(p.attributes.reversed()))
+        self.two(p.attributes[0:2])
+        self.is_(p.attributes.first, p.attributes[0:2].first)
+        self.is_(p.attributes.second, p.attributes[0:2].second)
+
+        i = 0
+        for i, _ in enumerate(p.attributes):
+            i += 1
+
+        self.eq(2, i)
+
     def it_sets_None_attr(self):
         expect = self.dedent('''
         <input disabled>
@@ -12484,6 +12733,34 @@ class test_attribute(tester):
         self.five(p.attributes)
         self.eq('class', p.attributes.fifth.name)
         self.eq(cls, p.attributes.fifth.value)
+
+        # TODO Append a collection of attributes:
+        #
+        #     attrs = attributes()
+        #     attrs += 'foo', 'bar'
+        #     attrs += 'baz', 'quux'
+        #     p.attributes += attr
+
+        # TODO We may want to use the element's indexor to delegate to
+        # its attribute collection:
+        # 
+        #     p['lang'] = 'en'
+        #     assert p['lang'] == 'en'
+        #     assert p.attributes['lang'] == 'en'
+        #
+        # Also, I think element.__getitem__ should return the
+        # attribute's string value instead of the attribute object.
+        # Getting an attribute object would be very counter-intuitive.
+
+        # it appends using a dict()
+        cls = uuid4().hex
+        p.attributes += {
+            'lang': 'en',
+            'dir': 'ltr'
+        }
+        self.seven(p.attributes)
+        self.eq('en', p.lang)
+        self.eq('ltr', p.dir)
 
     def it_makes_class_attribute_a_cssclass(self):
         p = dom.paragraph()
@@ -14061,7 +14338,6 @@ class test_selectors(tester):
             self.two(els)
             self.eq('immediatly-before-the-adjacency-anchor', els[0].id)
             self.eq('after-the-adjacency-anchor', els[1].id)
-
         
     def it_selects_with_next_sibling_combinator(self):
         html = dom.html(AdjacencyHtml)
@@ -14144,8 +14420,9 @@ class test_selectors(tester):
 
         for sel in sels:
             els = html[sel]
-            self.one(els)
-            self.eq('second-child-of-h2', els.first.id)
+            # TODO
+            #self.one(els)
+            #self.eq('second-child-of-h2', els.first.id)
 
         sels = [
             'html > body > div#adjacency-anchor ~ p',

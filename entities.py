@@ -15,6 +15,7 @@ from pprint import pprint
 from functools import total_ordering
 import decimal
 import string
+from func import getattr
 
 class classproperty(property):
     ''' Add this decorator to a method and it becomes a class method
