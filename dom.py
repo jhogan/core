@@ -957,15 +957,15 @@ class comments(elements):
 class comment(element):
     tag = '<!---->'
     def __init__(self, txt):
-        self.text = txt
+        self._text = txt
 
     @property
     def html(self):
-        return '<!--%s-->' % self.text
+        return '<!--%s-->' % self._text
 
     @property
     def pretty(self):
-        return '<!--%s-->' % self.text
+        return '<!--%s-->' % self._text
     
 class forms(elements):
     pass
