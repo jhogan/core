@@ -14301,23 +14301,159 @@ class test_selectors(tester):
           <p id="1"></p>
           <p id="2"></p>
           <p id="3"></p>
+          <p id="4"></p>
+          <p baz=baz></p>
+          <p id="5"></p>
+          <p id="6"></p>
+          <p id="7"></p>
+          <p id="8"></p>
         </div>
         ''')
 
         sels = [
-            'p[foo=bar] + p ~ p',
+            'div p[foo=bar] + p ~ p[baz=baz] + p ~ p',
         ]
 
         for sel in sels:
             els = html[sel]
-            self.two(els)
+            self.three(els)
+            self.eq([6, 7, 8], [int(x) for x in els.pluck('id')])
+
+        html = dom.html('''
+        <div>
+          <p foo="bar">
+            <div>
+              <p foo="baz"></p>
+              <p id="1"></p>
+              <p id="2"></p>
+              <p id="3"></p>
+              <p id="4"></p>
+            </div>
+            <div>
+              <p foo="baz"></p>
+              <p id="5"></p>
+              <p id="6"></p>
+              <p id="7"></p>
+              <p id="8"></p>
+            </div>
+          </p>
+          <p foo="quux">
+            <div>
+              <p foo="baz"></p>
+              <p id="9"></p>
+              <p id="10"></p>
+              <p id="11"></p>
+              <p id="12"></p>
+            </div>
+            <div>
+              <p foo="baz"></p>
+              <p id="13"></p>
+              <p id="14"></p>
+              <p id="15"></p>
+              <p id="16"></p>
+            </div>
+          </p>
+        </div>
+        ''')
+
+        sels = [
+            'p[foo=bar] p[foo=baz] ~ p',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.eight(els)
+            self.eq(
+                [str(x) for x in list(range(1, 9))], 
+                els.pluck('id')
+            )
+
+        html = dom.html('''
+        <div>
+          <p foo="bar"></p>
+          <p id="1"></p>
+          <p id="2"></p>
+          <p id="3"></p>
+          <p id="4"></p>
+        </div>
+        ''')
+
+        sels = [
+            '*   p[foo=bar] ~ p ~ p',
+            'div p[foo=bar] ~ p ~ p',
+            '    p[foo=bar] ~ p ~ p',
+            '*   p[foo=bar] + p ~ p',
+            'div p[foo=bar] + p ~ p',
+            '    p[foo=bar] + p ~ p',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.three(els)
             self.eq('2', els.first.id)
             self.eq('3', els.second.id)
+            self.eq('4', els.third.id)
 
-            print(repr(els))
+        html = dom.html('''
+        <div>
+          <p foo="bar"></p>
+          <p id="1"></p>
+          <p id="2"></p>
+          <p id="3"></p>
+          <p id="4"></p>
+          <p foo="baz"></p>
+          <p id="5"></p>
+          <p id="6"></p>
+          <p id="7"></p>
+          <p id="8"></p>
+        </div>
+        ''')
 
+        sels = [
+            '*   p[foo=baz] ~ p ~ p',
+            'div p[foo=baz] ~ p ~ p',
+            '    p[foo=baz] ~ p ~ p',
+            '*   p[foo=baz] + p ~ p',
+            'div p[foo=baz] + p ~ p',
+            '    p[foo=baz] + p ~ p',
+        ]
 
-        return 
+        for sel in sels:
+            els = html[sel]
+            self.three(els)
+            self.eq('6', els.first.id)
+            self.eq('7', els.second.id)
+            self.eq('8', els.third.id)
+
+        html = dom.html('''
+        <div>
+          <p foo="bar"></p>
+          <p id="1"></p>
+          <q id="2"></q>
+          <p id="3"></p>
+          <q id="4"></q>
+          <p id="5"></p>
+          <q id="6"></q>
+          <p id="7"></p>
+        </div>
+        ''')
+
+        sels = [
+            '*   p[foo=bar] ~ p ~ q',
+            'div p[foo=bar] ~ p ~ q',
+            '    p[foo=bar] ~ p ~ q',
+            '*   p[foo=bar] + p ~ q',
+            'div p[foo=bar] + p ~ q',
+            '    p[foo=bar] + p ~ q',
+        ]
+
+        for sel in sels:
+            els = html[sel]
+            self.three(els)
+            self.eq('2', els.first.id)
+            self.eq('4', els.second.id)
+            self.eq('6', els.third.id)
+
         html = dom.html(AdjacencyHtml)
 
         sels = [
@@ -14330,6 +14466,8 @@ class test_selectors(tester):
             self.eq('after-the-adjacency-anchor', els.first.id)
 
         sels = [
+            '*#first-div   ~ p + p',
+            '#first-div    ~ p + p',
             'div#first-div ~ p + p',
         ]
 

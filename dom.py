@@ -4346,6 +4346,14 @@ class selector(entities.entity):
             for el in self:
                 el.demand()
 
+        def __repr__(self):
+            r = str()
+            for i, el in self.enumerate():
+                if i:
+                    r += ' '
+                r += str(el)
+            return r
+
     class element(entities.entity):
         Descendant         =  0
         Child              =  1
@@ -4443,7 +4451,7 @@ class selector(entities.entity):
         for el1 in els1:
             comb = last.combinator
             orig = el1
-            for smp in self.elements[:-1].reversed():
+            for i, smp in enumerate(self.elements[:-1].reversed()):
                 if comb in (selector.element.Descendant, None):
                     for i, an in el1.ancestors.enumerate():
                         if smp.match(an):
@@ -4467,8 +4475,10 @@ class selector(entities.entity):
                         break
                 elif comb == selector.element.SubsequentSibling:
                     precs = el1.preceding
-                    for i, el2 in precs:
-                        if self.match(el2, self.elements[:-1]):
+
+                    els2 = selectors(repr(self.elements[:-1 - i])).match(els)
+                    for el2 in precs:
+                        if el2 in els2:
                             el1 = el2
                             break
                     else:
@@ -4489,14 +4499,7 @@ class selector(entities.entity):
         self.elements.demand()
 
     def __repr__(self):
-        r = str()
-        for i, el in self.elements.enumerate():
-            if i:
-                r += ' '
-
-            r += str(el)
-
-        return r
+        return repr(self.elements)
 
     def __str__(self):
         return repr(self)
