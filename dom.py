@@ -466,8 +466,10 @@ class element(entities.entity):
 
     @text.setter
     def text(self, v):
-        # TODO Implement and write tests
-        raise NotImplementedError()
+        # TODO: Remove elements before assigning text to the element
+        # rev: 844bf86d
+        #self.elements.remove()
+        self += text(v)
 
     @property
     def language(self):
