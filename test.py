@@ -12172,6 +12172,14 @@ class test_site(tester):
         mnu = ws.header.menu
         self.four(mnu.items)
 
+        print(ws.header)
+
+        # The header's html will contain one <nav>
+        self.one(dom.html(ws.header.html)['nav'])
+
+        # ... and one <ol>'s under the <nav>
+        self.one(dom.html(ws.header.html)['nav>ol'])
+
         self.eq(
             ['/index', '/about', '/contact-us', '/blogs'],
             mnu.items.pluck('page.path')
