@@ -1212,6 +1212,12 @@ class button(element):
     def formmethod(self, v):
         self.attributes['formmethod'].value = v
 
+class navs(elements):
+    pass
+
+class nav(element):
+    pass
+
 class lis(elements):
     pass
 
@@ -1223,6 +1229,9 @@ class li(element):
     @value.setter
     def value(self, v):
         self.attributes['value'].value = v
+
+listitems = lis
+listitem = li
 
 class outputs(elements):
     pass
