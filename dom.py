@@ -430,11 +430,15 @@ class element(entities.entity):
     # example, <p> can only have "phrasing content" according to the
     # HTML5 standard.
 
-    def __init__(self, o=None, **kwargs):
-        if isinstance(o, str):
-            self.elements += text(o)
-        elif isinstance(o, element) or isinstance(o, elements):
-            self.elements += o
+    def __init__(self, body=None, *args, **kwargs):
+        
+        if body is not None:
+            if type(body) is str:
+                body %= args
+            elif args:
+                raise ValueError('No args allowed')
+
+            self += body
 
         self.attributes += kwargs
 
@@ -837,14 +841,8 @@ class ps(elements):
     pass
 
 class p(element):
-    def __init__(self, body=None, *args):
-        if body is not None:
-            if type(body) is str:
-                body %= args
-            elif args:
-                raise ValueError('No args allowed')
+    pass
 
-            self += body
 paragraph = p
 
 class articles(elements):
