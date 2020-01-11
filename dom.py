@@ -1047,6 +1047,7 @@ class links(elements):
     pass
 
 class link(element):
+    isvoid = True
     @property
     def crossorigin(self):
         return self.attributes['crossorigin'].value
