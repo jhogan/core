@@ -40,6 +40,9 @@ An implementation of the HTML5 DOM.
 #
 #     Page component reference: 
 #     https://webstyleguide.com/wsg3/6-page-structure/3-site-design.html
+#
+#     The PO Format
+#     http://pology.nedohodnik.net/doc/user/en_US/ch-poformat.html?
 
 # TODO If this is only used by attributes, mayby it should be nested in
 # the `attribute` class
