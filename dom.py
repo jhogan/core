@@ -41,7 +41,7 @@ An implementation of the HTML5 DOM.
 #     Page component reference: 
 #     https://webstyleguide.com/wsg3/6-page-structure/3-site-design.html
 
-# TODO If this is only used by attributes, mayby it should be nested in
+# TODO If this is only used by attributes, maybe it should be nested in
 # the `attribute` class
 class undef:
     """ Used to indicate that an attribute has not been defined.
