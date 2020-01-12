@@ -4474,12 +4474,10 @@ class selector(entities.entity):
                         rms += orig
                         break
                 elif comb == selector.element.SubsequentSibling:
-                    precs = el1.preceding
-
                     els2 = selectors(repr(self.elements[:-1 - i])).match(els)
-                    for el2 in precs:
-                        if el2 in els2:
-                            el1 = el2
+                    for precs in el1.preceding:
+                        if precs in els2:
+                            el1 = precs
                             break
                     else:
                         rms += orig
