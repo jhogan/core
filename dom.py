@@ -44,7 +44,7 @@ An implementation of the HTML5 DOM.
 #     The PO Format
 #     http://pology.nedohodnik.net/doc/user/en_US/ch-poformat.html?
 
-# TODO If this is only used by attributes, mayby it should be nested in
+# TODO If this is only used by attributes, maybe it should be nested in
 # the `attribute` class
 class undef:
     """ Used to indicate that an attribute has not been defined.
@@ -54,7 +54,6 @@ class undef:
 class attributes(entities.entities):
     """ Represents a collection of attributes for HTML5 elements.
     """
-
     def __iadd__(self, *o):
         """ Append an attribute to the collection via the += operator.
         """
@@ -4350,6 +4349,14 @@ class selector(entities.entity):
             for el in self:
                 el.demand()
 
+        def __repr__(self):
+            r = str()
+            for i, el in self.enumerate():
+                if i:
+                    r += ' '
+                r += str(el)
+            return r
+
     class element(entities.entity):
         Descendant         =  0
         Child              =  1
@@ -4439,54 +4446,52 @@ class selector(entities.entity):
     def __init__(self):
         self.elements = selector.elements()
 
-    def match(self, els):
+    def match(self, els, el=None, smps=None):
         last = self.elements.last
         els1 = last.match(els.getchildren())
-
         rms = elements()
 
         for el1 in els1:
-            anix = sibix = int()
             comb = last.combinator
-            for smp in self.elements[:-1].reversed():
+            orig = el1
+            for i, smp in enumerate(self.elements[:-1].reversed()):
                 if comb in (selector.element.Descendant, None):
-                    for i, an in el1.ancestors[anix:].enumerate():
+                    for i, an in el1.ancestors.enumerate():
                         if smp.match(an):
-                            anix += i + 1
+                            el1 = an
                             break
                     else:
-                        rms += el1; break
+                        rms += orig
+                        break
                 elif comb == selector.element.Child:
-                    an = el1.ancestors[anix]
+                    an = el1.parent
                     if smp.match(an):
-                        anix += 1
+                        el1 = an
                     else:
-                        rms += el1; break
+                        rms += orig
+                        break
                 elif comb == selector.element.NextSibling:
-                    try:
-                        prev = list(el1.preceding.reversed())[sibix]
-                    except IndexError:
-                        rms += el1; break
+                    if smp.match(el1.previous):
+                        el1 = el1.previous
                     else:
-                        if smp.match(prev):
-                            sibix += 1
-                        else:
-                            rms += el1; break
+                        rms += orig
+                        break
                 elif comb == selector.element.SubsequentSibling:
-                    preceding = list(el1.preceding.reversed())[sibix:]
-                    for i, el2 in enumerate(preceding):
-                        if smp.match(el2):
-                            sibix += i + 1
+                    els2 = selectors(repr(self.elements[:-1 - i])).match(els)
+                    for precs in el1.preceding:
+                        if precs in els2:
+                            el1 = precs
                             break
                     else:
-                        rms += el1; break
+                        rms += orig
+                        break
                 else:
                     raise ValueError('Invalid combinator')
 
                 comb = smp.combinator
-        
-        els1.remove(rms)
 
+        els1.remove(rms)
+        
         return els1
 
     def demand(self):
@@ -4495,14 +4500,7 @@ class selector(entities.entity):
         self.elements.demand()
 
     def __repr__(self):
-        r = str()
-        for i, el in self.elements.enumerate():
-            if i:
-                r += ' '
-
-            r += str(el)
-
-        return r
+        return repr(self.elements)
 
     def __str__(self):
         return repr(self)
