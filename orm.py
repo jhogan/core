@@ -4788,7 +4788,7 @@ class orm:
 
         def alias(whs):
             """ Takes a ``where`` object or collection of ``where``
-            objects and replaces their predicate's column's names with
+            objects and replaces their predicate's column's names with a
             fully-qualified verision that contain the table alias. 
             """
             # Convert to a collection if needed
@@ -4843,7 +4843,7 @@ class orm:
         # If a `join` object was passed in
         if join:
             
-            # Prepend columns in where clause with aliase
+            # Prepend columns in where clause with alias
             alias(whstack)
 
             if join.entities.orm.issuperentity(of=joiner.entities):
