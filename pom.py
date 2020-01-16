@@ -155,11 +155,17 @@ class menu(entities.entity):
             for itm in self:
                 ol += itm.html
             return ol
+
+        def seperate(self):
+            self += menu.separator()
             
     class item(entities.entity):
         def __init__(self, pg):
             self.page = pg
             self.items = menu.items()
+
+        def seperate(self):
+            self.items.seperate()
 
         @property
         def text(self):
