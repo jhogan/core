@@ -12171,8 +12171,7 @@ class test_site(tester):
         self.expect(IndexError, lambda: ws['/en/xxx'])
         self.expect(IndexError, lambda: ws['/en/derp'])
 
-        self.expect(TypeError, lambda: ws[int()])
-        self.expect(TypeError, lambda: ws[dom.p()])
+        self.expect(IndexError, lambda: ws[dom.p()])
 
     def it_calls_html(self):
         ws = pom.site()
