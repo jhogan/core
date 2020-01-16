@@ -11,6 +11,13 @@
 from dbg import B
 import entities
 import dom
+import textwrap
+
+# References:
+#
+# WAI-ARIA Authoring Practices 1.1
+# https://www.w3.org/TR/wai-aria-practices/
+
 class site(entities.entity):
     def __init__(self):
         self.pages = pages(rent=None)
@@ -96,9 +103,33 @@ class site(entities.entity):
 
     @property
     def header(self):
-        return header(site=self)
+        if not self._header:
+            self._header = header(site=self)
+        return self._header
 
-class menus(entities.entities):
+class logo(dom.section):
+    def __init__(self, o):
+        if isinstance(o, str):
+            self._text = o
+        elif isinstance(o, file):
+            # TODO Implement image-based logos when the file API is
+            # available.
+            raise NotImplementedError()
+            self.image = file
+        else:
+            raise TypeError('Invalid logo type')
+
+    @property
+    def elements(self):
+        els = dom.elements()
+        els += dom.span(self._text)
+        return els
+
+
+# TODO Maybe these should inherit from dom.nav(s) and menu.item(s)
+# should inherit from li(s)
+class menus(dom.navs):
+    '''
     @property
     def html(self):
         return dom.elements(x.html for x in self)
@@ -142,7 +173,7 @@ class menu(entities.entity):
         nav = dom.nav()
         nav += self.items.html
         return nav
-            
+
     @property
     def pretty(self):
         ...
@@ -240,6 +271,7 @@ class header(dom.header):
             self._menus += self.menu
 
         return self._menus
+
     @property
     def menu(self):
         if not self._menu:

@@ -3789,6 +3789,9 @@ class test_orm(tester):
 
         chrons.clear()
         art.save()
+
+        # FIXME `chrons`'s count did not equal two during a standard
+        # test 2020-01-15
         self.two(chrons)
         self._chrons(art, 'create')
         self._chrons(pres, 'create')

@@ -445,7 +445,6 @@ class element(entities.entity):
     # HTML5 standard.
 
     def __init__(self, body=None, *args, **kwargs):
-        
         if body is not None:
             if type(body) is str:
                 body %= args
@@ -480,8 +479,9 @@ class element(entities.entity):
 
     @text.setter
     def text(self, v):
-        # TODO: Remove elements before assigning text to the element
-        # rev: 844bf86d
+        # TODO: Remove elements before assigning text to the element.
+        # UPDATE: This should already work but should be
+        # reviewed and tested.
         #self.elements.remove()
         self += text(v)
 

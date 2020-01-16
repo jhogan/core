@@ -63,6 +63,16 @@ def enumerate(iterable, start=0):
         yield i, e
         i += 1
         
+# TODO It would be nice if getattr() could also handle indexors, i.e.,
+#
+#     getattr(els, "attributes['id']")
+# 
+# The second argument above could probably be converted to:
+#
+#     getattr(els, "attributes.__getitem__")('id')
+#
+# with a precompiled regex
+
 def getattr(obj, attr, *args):
     # Redefine getattr() to support deep attribututes 
     # 
