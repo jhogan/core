@@ -256,7 +256,7 @@ class pages(entities.entities):
         elif isinstance(path, list):
             segs = path
         else:
-            raise TypeError('Path must be a string or list')
+            return super().__getitem__(path)
            
         seg = segs[0] if len(segs) else 'index'
 
@@ -308,17 +308,26 @@ class page(entities.entity):
 
         return '/' + r
 
+    def __repr__(self):
+        return self.path
+
 class header(dom.header):
     def __init__(self, site, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.site = site
         self._menus = menus()
         self._menu = None
+        self._logo = None
 
+    '''
     def pull(self):
         self.elements['nav'].remove()
         self += self.logo
         self += self.menus.html
+
+    def __getitem__(self, *args, **kwags):
+        self.pull()
+        return super().__getitem__(*args, **kwags)
 
     @property
     def html(self):
