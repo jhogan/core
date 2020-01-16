@@ -339,6 +339,18 @@ class elements(entities.entities):
                 return el
         return None
 
+    def remove(self, e=None):
+        if e is not None:
+            return super().remove(e)
+
+        rms = elements()
+        for e in self:
+            rent = e.parent
+            if rent:
+                e._parent = None
+                rms += rent.elements.remove(e)
+        return rms
+
     def __getitem__(self, sel):
         ''' Get elements by an ordinal index or a CSS3 selector.
 

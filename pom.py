@@ -220,9 +220,8 @@ class header(dom.header):
         self._menu = None
 
     def pull(self):
-        # TODO Implement elements.remove()
-        # ref: 844bf86d
-        # self['nav'].remove()
+        self.elements['nav'].remove()
+        self += self.logo
         self += self.menus.html
 
     @property

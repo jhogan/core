@@ -12233,6 +12233,22 @@ class test_elements(tester):
         html = dom.html(TestHtml)
         self.eq(TestHtmlMin, html.html)
 
+    def it_removes_elements(self):
+        html = dom.html(TestHtml)
+
+        bs = html['strong']
+        self.two(bs)
+
+        bs = bs.remove()
+        self.two(bs)
+
+        self.eq([None, None], bs.pluck('parent'))
+
+        bs = html['strong']
+        self.zero(bs)
+
+
+
 class test_element(tester):
     def it_class_language(self):
         html = dom.html('''
