@@ -739,7 +739,7 @@ class element(entities.entity):
     def elements(self):
         if not hasattr(self, '_elements'):
             self._elements = elements()
-            self.elements.onadd += self._elements_onadd
+            self._elements.onadd += self._elements_onadd
             self._elements._setparent(self)
         return self._elements
                 
