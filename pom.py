@@ -338,6 +338,13 @@ class header(dom.header):
     def pretty(self):
         self.pull()
         return super().pretty
+    @property
+    def logo(self):
+        return self._logo
+
+    @logo.setter
+    def logo(self, v):
+        self._logo = v
 
     @property
     def menus(self):
