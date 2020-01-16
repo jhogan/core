@@ -161,7 +161,14 @@ class menu(entities.entity):
             
     class item(entities.entity):
         def __init__(self, pg):
-            self.page = pg
+            self._text = self.page = None
+            if isinstance(pg, str):
+                self._text = pg
+            elif isinstance(pg, page):
+                self.page = pg
+            else:
+                raise TypeError('Item requires text or page object')
+
             self.items = menu.items()
 
         def seperate(self):
@@ -175,12 +182,47 @@ class menu(entities.entity):
         def html(self):
             li = dom.li()
             pg = self.page
-            li += dom.a(pg.name, href=pg.path)
+            if pg:
+                li += dom.a(pg.name, href=pg.path)
+            else:
+                li += self.text
+
             if self.items.count:
                 li += self.items.html
             return li
 
-    def __init__(self):
+        def __repr__(self):
+            pg = self.page
+            if pg:
+                return '%s (%s)' % (pg.name, pg.path)
+            else:
+                return self.text
+
+    class separator(item):
+        def __init__(self):
+            # Using the super()'s __init__ won't work because it
+            # requires a page or str object. 
+            pass
+
+        @property
+        def items(self):
+            raise NotImplementedError(
+                "Seperator items don't have `items` collection"
+            )
+
+        def __repr__(self):
+            return '---'
+
+        @property
+        def html(self):
+            li = dom.li()
+            li += dom.hr()
+            return li
+
+            
+    def __init__(self, name, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.name = name
         self.items = menu.items()
 
     @property
