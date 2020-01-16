@@ -459,6 +459,13 @@ class element(entities.entity):
         el = eargs.entity
         el._setparent(self)
 
+    def __getitem__(self, ix):
+        if isinstance(ix, str):
+            # Pass CSS selector to elements collection
+            return self.elements[ix]
+
+        return super().__getitem__(ix)
+
     @property
     def text(self):
         """ Get the combined text contents of each element recursively.
