@@ -4198,7 +4198,12 @@ class selectors(entities.entities):
                     try:
                         el = element(tok.value)
                     except Exception as ex:
-                        raise err(str(ex), tok)
+                        msg = (
+                           str(ex) +
+                           '\nYou may have forgotten brackets around '
+                           'an attribute selector.'
+                        )
+                        raise err(msg, tok)
                     sel.elements += el
 
             elif tok.type == 'STRING':
