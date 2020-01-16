@@ -176,6 +176,8 @@ class menu(entities.entity):
 
         @property
         def text(self):
+            if self._text:
+                return self._text
             return self.page.name
 
         @property
