@@ -230,6 +230,7 @@ class menu(entities.entity):
     @property
     def html(self):
         nav = dom.nav()
+        nav.aria_label = self.name.capitalize()
         nav += self.items.html
         return nav
 
