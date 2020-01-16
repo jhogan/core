@@ -12039,12 +12039,72 @@ class foonet(pom.site):
         self.pages += about()
         self.pages += contact_us()
         self.pages += blogs()
+        self.pages += admin()
+
         self.lang = 'es'
         self.charset = 'iso-8859-1'
         self.stylesheets.append(
             'https://maxcdn.bootstrapcdn.com/'
                 'bootstrap/4.0.0/css/bootstrap.min.css'
         )
+
+        self.header.logo = pom.logo('FooNet')
+
+        mnus = self.header.menus
+        mnu = self._adminmenu
+        mnus += mnu
+
+
+    @property
+    def _adminmenu(self):
+        mnu = pom.menu('admin')
+        mnu.items += pom.menu.item('Users')
+
+        mnu.items.last.items \
+            += pom.menu.item(self['/en/admin/users/statistics'])
+
+        mnu.items += pom.menu.item('Reports')
+
+        rpt = mnu.items.last
+
+        pg = self['/en/admin/reports/netsales']
+
+        rpt.items += pom.menu.item(pg)
+
+        rpt.seperate()
+
+        pg = self['/en/admin/reports/accountsummary']
+        rpt.items += pom.menu.item(pg)
+
+        return mnu
+
+class admin(pom.page):
+    def __init__(self):
+        super().__init__()
+        self.pages += users()
+        self.pages += reports()
+
+class users(pom.page):
+    def __init__(self):
+        super().__init__()
+        self.pages += statistics()
+
+class statistics(pom.page):
+    def __init__(self):
+        super().__init__()
+
+class reports(pom.page):
+    def __init__(self):
+        super().__init__()
+        self.pages += netsales()
+        self.pages += accountsummary()
+
+class netsales(pom.page):
+    def __init__(self):
+        super().__init__()
+
+class accountsummary(pom.page):
+    pass
 
 class home(pom.page):
     def __init__(self):
@@ -12095,7 +12155,7 @@ class contact_us(pom.page):
 class test_site(tester):
     def it_calls__init__(self):
         ws = foonet()
-        self.four(ws.pages)
+        self.five(ws.pages)
 
     def it_calls__getitem__(self):
         ws = foonet()
@@ -12164,56 +12224,134 @@ class test_site(tester):
     def it_calls_header(self):
         ws = foonet()
         hdr = ws.header
-        hdr.tag
+        self.type(pom.header, hdr)
 
-    def it_calls_default_menu(self):
+    def it_calls_admin_menu(self):
+        ws = foonet()
+
+        mnus = ws.header.menus
+        mnu = mnus['admin']
+        self.two(mnu.items)
+
+        rpt = mnu.items.second
+        self.type(pom.menu.item, rpt.items.first)
+        self.type(pom.menu.separator, rpt.items.second)
+        self.type(pom.menu.item, rpt.items.third)
+
+    def it_menu_has_aria_attributes(self):
+        ws = foonet()
+
+        navs = ws.header['nav']
+        self.two(navs)
+
+        self.one(navs['[aria-label=Admin]'])
+        self.one(navs['[aria-label=Main]'])
+
+
+    def it_calls_main_menu(self):
         ws = pom.site()
         mnu = ws.header.menu
         self.zero(mnu.items)
 
         ws = foonet()
         mnu = ws.header.menu
-        self.four(mnu.items)
-
-        print(ws.header)
-
-        # The header's html will contain one <nav>
-        self.one(dom.html(ws.header.html)['nav'])
-
-        # ... and one <ol>'s under the <nav>
-        self.one(dom.html(ws.header.html)['nav>ol'])
+        B()
+        self.five(mnu.items)
 
         self.eq(
-            ['/index', '/about', '/contact-us', '/blogs'],
+            ['/index', '/about', '/contact-us', '/blogs', '/admin'],
             mnu.items.pluck('page.path')
         )
 
         self.eq(
-            [home, about, contact_us, blogs],
+            [home, about, contact_us, blogs, admin],
             [type(x) for x in  mnu.items.pluck('page')]
         )
 
+        blg = mnu.items.penultimate
         self.eq(
             ['/blogs/categories', '/blogs/posts', '/blogs/comments'],
-            mnu.items.last.items.pluck('page.path')
+            blg.items.pluck('page.path')
         )
 
         self.eq(
             [blog_categories, blog_posts, blog_comments],
-            [type(x) for x in  mnu.items.last.items.pluck('page')]
+            [
+                type(x) 
+                for x in blg.items.pluck('page')
+            ]
         )
 
         self.eq(
             ['/blogs/comments/approved', '/blogs/comments/rejected'],
-            mnu.items.last.items.last.items.pluck('page.path')
+            blg.items.last.items.pluck('page.path')
         )
 
         self.eq(
             [blog_approved_comments, blog_rejected_comments],
-            [type(x) for x in  mnu.items.last.items.last.items.pluck('page')]
+            [type(x) for x in blg.items.last.items.pluck('page')]
         )
 
+        for _ in range(2): # Ensure indempotence
+            # The header's html will contain two <nav>s: one for the
+            # main and one for the admin
+            B()
+            self.two(dom.html(ws.header.html)['nav'])
+            self.two(ws.header['nav'])
 
+            # ... and one <ul>'s under the <nav>
+            self.two(dom.html(ws.header.html)['nav>ul'])
+            self.two(ws.header['nav>ul'])
+
+        # Removing a menu removes a <nav> from the header's html.
+        ws.header.menus.pop()
+        self.one(dom.html(ws.header.html)['nav'])
+        self.one(ws.header['nav'])
+
+    def it_mutates_main_menu(self):
+        ws = foonet()
+        mnu = ws.header.menu
+        self.five(mnu.items)
+
+        # blogs item
+        itm = mnu.items.fourth
+
+        ''' It updates a menu item '''
+        self.one(ws.header['li > a[href="%s"]' % '/blogs/categories'])
+        self.one(mnu.html['li > a[href="%s"]' % '/blogs/categories'])
+
+        # Get /blogs/categories
+        blgcat = itm.items.first
+
+        class tags(pom.page):
+            pass
+
+        blgcat.page = tags()
+
+        self.one(ws.header['li > a[href="%s"]' % blgcat.page.path])
+        self.one(mnu.html['li > a[href="%s"]' % blgcat.page.path])
+
+        self.zero(ws.header['li > a[href="%s"]' % '/blogs/categories'])
+        self.zero(mnu.html['li > a[href="%s"]' % '/blogs/categories'])
+
+        ''' It adds a menu item '''
+        mnu.items += pom.menu.item('My Profile')
+        self.six(mnu.items)
+        self.true('My Profile' in (x.text for x in mnu.html['li']))
+        self.true('My Profile' in (x.text for x in ws.header['li']))
+
+        ''' Delete the blogs munu '''
+        self.one(ws.header['li > a[href="%s"]' % itm.page.path])
+        self.one(mnu.html['li > a[href="%s"]' % itm.page.path])
+
+        # Remove the blog menu
+        itms = mnu.items.remove(mnu.items.fourth)
+        self.one(itms)
+        self.type(pom.menu.item, itms.first)
+        self.eq('blogs', itms.first.text)
+
+        self.zero(ws.header['li > a[href="%s"]' % itm.page.path])
+        self.zero(mnu.html['li > a[href="%s"]' % itm.page.path])
 
 class test_page(tester):
     def it_calls__init__(self):

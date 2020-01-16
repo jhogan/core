@@ -40,6 +40,7 @@ class site(entities.entity):
         #           integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"/>
 
         self.stylesheets = list()
+        self._header = None
 
     def __getitem__(self, path):
         return self.pages[path]
@@ -288,7 +289,7 @@ class header(dom.header):
                 item.items += getitems(pg.pages)
             return r
 
-        mnu = menu()
+        mnu = menu('main')
         mnu.items += getitems(self.site.pages)
 
         return mnu
