@@ -584,6 +584,24 @@ class element(entities.entity):
         self.attributes['title'] = v
 
     @property
+    def aria_label(self):
+        """ The aria-label attribute is used to define a string that
+        labels the current element. Use it in cases where a text label
+        is not visible on the screen. If there is visible text labeling
+        the element, use aria-labelledby instead.
+
+        This attribute can be used with any typical HTML element; it is
+        not limited to elements that have an ARIA role assigned.
+
+        https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/ARIA_Techniques/Using_the_aria-label_attribute
+        """
+        return self.attributes['aria-label'].value
+
+    @aria_label.setter
+    def aria_label(self, v):
+        self.attributes['aria-label'] = v
+
+    @property
     def root(self):
         ans = self.ancestors
         if ans.count:
