@@ -138,6 +138,14 @@ class menus(dom.navs):
     @property
     def pretty(self):
         return dom.elements(x.pretty for x in self)
+    '''
+
+    def __repr__(self):
+        r = str()
+        for mnu in self:
+            r += '[%s]\n' % mnu.name
+            r += repr(mnu) + '\n'
+        return r
 
 class menu(entities.entity):
     class items(entities.entities):
@@ -177,7 +185,12 @@ class menu(entities.entity):
 
     @property
     def pretty(self):
-        ...
+        return self.html.pretty
+
+    def __repr__(self):
+        itms = '\n'.join(repr(x) for x in self.items)
+        itms = textwrap.indent(itms, ' ' * 2)
+        return itms
 
 class pages(entities.entities):
     def __init__(self, rent, *args, **kwargs):
