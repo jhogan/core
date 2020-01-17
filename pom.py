@@ -126,20 +126,7 @@ class logo(dom.section):
         els += dom.span(self._text)
         return els
 
-
-# TODO Maybe these should inherit from dom.nav(s) and menu.item(s)
-# should inherit from li(s)
-class menus(dom.navs):
-    '''
-    @property
-    def html(self):
-        return dom.elements(x.html for x in self)
-
-    @property
-    def pretty(self):
-        return dom.elements(x.pretty for x in self)
-    '''
-
+class menus(entities.entities, dom.section):
     def __repr__(self):
         r = str()
         for mnu in self:
@@ -147,19 +134,41 @@ class menus(dom.navs):
             r += repr(mnu) + '\n'
         return r
 
-class menu(entities.entity):
-    class items(entities.entities):
-        @property
-        def html(self):
-            ol = dom.ol()
-            for itm in self:
-                ol += itm.html
-            return ol
+    def __getitem__(self, ix):
+        if isinstance(ix, str):
+            for mnu in self:
+                if mnu.name == ix:
+                    return mnu
+        else:
+            return super().__getitem__(ix)
 
+    @property
+    def elements(self):
+        els = super().elements
+        els.clear()
+
+        for mnu in self:
+            els += mnu
+
+        return els
+
+class menu(dom.nav):
+
+    class items(entities.entities, dom.ul):
         def seperate(self):
             self += menu.separator()
+
+        @property
+        def elements(self):
+            els = super().elements
+            els.clear()
+
+            for itm in self:
+                els += itm
+
+            return els
             
-    class item(entities.entity):
+    class item(dom.li):
         def __init__(self, pg):
             self._text = self.page = None
             if isinstance(pg, str):
@@ -181,17 +190,19 @@ class menu(entities.entity):
             return self.page.name
 
         @property
-        def html(self):
-            li = dom.li()
+        def elements(self):
+            els = super().elements
+            els.clear()
             pg = self.page
             if pg:
-                li += dom.a(pg.name, href=pg.path)
+                els += dom.a(pg.name, href=pg.path)
             else:
-                li += self.text
+                els += dom.text(self.text)
 
             if self.items.count:
-                li += self.items.html
-            return li
+                els += self.items
+
+            return els
 
         def __repr__(self):
             pg = self.page
@@ -216,27 +227,24 @@ class menu(entities.entity):
             return '---'
 
         @property
-        def html(self):
-            li = dom.li()
-            li += dom.hr()
-            return li
+        def elements(self):
+            els = dom.elements()
+            els += dom.li()
+            els += dom.hr()
+            return els
 
-            
     def __init__(self, name, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.name = name
+        self.aria_label = self.name.capitalize()
         self.items = menu.items()
 
     @property
-    def html(self):
-        nav = dom.nav()
-        nav.aria_label = self.name.capitalize()
-        nav += self.items.html
-        return nav
-
-    @property
-    def pretty(self):
-        return self.html.pretty
+    def elements(self):
+        els = super().elements
+        els.clear()
+        els += self.items
+        return els
 
     def __repr__(self):
         itms = '\n'.join(repr(x) for x in self.items)
@@ -319,25 +327,14 @@ class header(dom.header):
         self._menu = None
         self._logo = None
 
-    '''
-    def pull(self):
-        self.elements['nav'].remove()
-        self += self.logo
-        self += self.menus.html
-
-    def __getitem__(self, *args, **kwags):
-        self.pull()
-        return super().__getitem__(*args, **kwags)
-
     @property
-    def html(self):
-        self.pull()
-        return super().html
+    def elements(self):
+        els = super().elements
+        els.clear()
+        els += self.logo
+        els += self.menus
+        return els
 
-    @property
-    def pretty(self):
-        self.pull()
-        return super().pretty
     @property
     def logo(self):
         return self._logo
@@ -366,11 +363,30 @@ class header(dom.header):
             for pg in pgs:
                 item = menu.item(pg=pg)
                 r += item
-                item.items += getitems(pg.pages)
+
+                for itm in getitems(pg.pages):
+                    item.items += itm
+
+                # FIXME This should work, however entities.append will
+                # test if the object being append is an entity first. If
+                # it is an entity, it will assume it doesn't need to
+                # iterate over the entity.
+                # 
+                # The return of `getitems(pg.pages)` is a pom.menu.items
+                # collection. Since `items` inherits from both
+                # `entities.entities` and `dom.ul`, it is an `entity`
+                # object and an `entities` object. `entitites.append()`
+                # should be corrected to handle this situation.
+
+                '''
+                itms = getitems(pg.pages)
+                item.items += itms
+                '''
             return r
 
         mnu = menu('main')
-        mnu.items += getitems(self.site.pages)
+        for itm in getitems(self.site.pages):
+            mnu.items += itm
 
         return mnu
 

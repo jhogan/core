@@ -367,14 +367,23 @@ class elements(entities.entities):
             # class of of 'my-class'.
             els = els['div.my-class p > span']
 
+            # Same as above except pass a selectors object instead of a
+            # selector string.
+            sels = selectors('div.my-class p > span')
+            els = els[sels]
         '''
+
         if isinstance(sel, int) or isinstance(sel, slice):
             return super().__getitem__(sel)
 
-        elif not isinstance(sel, str):
-            raise ValueError('Invalid type: ' + type(sel).__name__)
+        elif isinstance(sel, str):
+            sels = selectors(sel)
 
-        sels = selectors(sel)
+        elif isinstance(sel, selectors):
+            sels = sel
+        else:
+            raise TypeError('Invalid type: ' + type(sel).__name__)
+
         return sels.match(self)
 
     @property
@@ -460,11 +469,8 @@ class element(entities.entity):
         el._setparent(self)
 
     def __getitem__(self, ix):
-        if isinstance(ix, str):
-            # Pass CSS selector to elements collection
-            return self.elements[ix]
-
-        return super().__getitem__(ix)
+        # Pass CSS selector to elements collection
+        return self.elements[ix]
 
     @property
     def text(self):

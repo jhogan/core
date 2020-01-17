@@ -12254,7 +12254,6 @@ class test_site(tester):
 
         ws = foonet()
         mnu = ws.header.menu
-        B()
         self.five(mnu.items)
 
         self.eq(
@@ -12294,7 +12293,6 @@ class test_site(tester):
         for _ in range(2): # Ensure indempotence
             # The header's html will contain two <nav>s: one for the
             # main and one for the admin
-            B()
             self.two(dom.html(ws.header.html)['nav'])
             self.two(ws.header['nav'])
 
@@ -12316,8 +12314,9 @@ class test_site(tester):
         itm = mnu.items.fourth
 
         ''' It updates a menu item '''
-        self.one(ws.header['li > a[href="%s"]' % '/blogs/categories'])
-        self.one(mnu.html['li > a[href="%s"]' % '/blogs/categories'])
+        sels = dom.selectors('li > a[href="%s"]' % '/blogs/categories')
+        self.one(ws.header[sels])
+        self.one(mnu[sels])
 
         # Get /blogs/categories
         blgcat = itm.items.first
@@ -12327,21 +12326,26 @@ class test_site(tester):
 
         blgcat.page = tags()
 
-        self.one(ws.header['li > a[href="%s"]' % blgcat.page.path])
-        self.one(mnu.html['li > a[href="%s"]' % blgcat.page.path])
+        sels = dom.selectors('li > a[href="%s"]' % blgcat.page.path)
+        self.one(ws.header[sels])
+        self.one(mnu[sels])
 
-        self.zero(ws.header['li > a[href="%s"]' % '/blogs/categories'])
-        self.zero(mnu.html['li > a[href="%s"]' % '/blogs/categories'])
+        sels = dom.selectors('li > a[href="%s"]' % '/blogs/categories')
+        self.zero(ws.header[sels])
+        self.zero(mnu[sels])
 
         ''' It adds a menu item '''
         mnu.items += pom.menu.item('My Profile')
         self.six(mnu.items)
-        self.true('My Profile' in (x.text for x in mnu.html['li']))
-        self.true('My Profile' in (x.text for x in ws.header['li']))
+
+        sels = dom.selectors('li')
+        self.true('My Profile' in (x.text for x in mnu[sels]))
+        self.true('My Profile' in (x.text for x in ws.header[sels]))
 
         ''' Delete the blogs munu '''
-        self.one(ws.header['li > a[href="%s"]' % itm.page.path])
-        self.one(mnu.html['li > a[href="%s"]' % itm.page.path])
+        sels = dom.selectors('li > a[href="%s"]' % itm.page.path)
+        self.one(ws.header[sels])
+        self.one(mnu[sels])
 
         # Remove the blog menu
         itms = mnu.items.remove(mnu.items.fourth)
@@ -12349,8 +12353,9 @@ class test_site(tester):
         self.type(pom.menu.item, itms.first)
         self.eq('blogs', itms.first.text)
 
-        self.zero(ws.header['li > a[href="%s"]' % itm.page.path])
-        self.zero(mnu.html['li > a[href="%s"]' % itm.page.path])
+        sels = dom.selectors('li > a[href="%s"]' % itm.page.path)
+        self.zero(ws.header[sels])
+        self.zero(mnu[sels])
 
 class test_page(tester):
     def it_calls__init__(self):
