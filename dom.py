@@ -43,6 +43,9 @@ An implementation of the HTML5 DOM.
 #
 #     The PO Format
 #     http://pology.nedohodnik.net/doc/user/en_US/ch-poformat.html?
+#
+#     Syncing files with lsyncd
+#     https://www.digitalocean.com/community/tutorials/how-to-mirror-local-and-remote-directories-on-a-vps-with-lsyncd
 
 # TODO If this is only used by attributes, maybe it should be nested in
 # the `attribute` class

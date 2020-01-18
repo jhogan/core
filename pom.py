@@ -246,6 +246,7 @@ class menu(dom.nav):
         els += self.items
         return els
 
+
     def __repr__(self):
         itms = '\n'.join(repr(x) for x in self.items)
         itms = textwrap.indent(itms, ' ' * 2)
