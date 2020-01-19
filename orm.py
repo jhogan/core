@@ -4251,7 +4251,7 @@ class orm:
             pred = pred.match or pred
             col = pred.columns[0]
 
-            e = self.entity.orm.super
+            e = top or self.entity.orm.super
 
             while e: # :=
                 map = e.orm.mappings(col) 
