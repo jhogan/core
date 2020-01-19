@@ -8,6 +8,8 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 ########################################################################
 
+"Simplicity is complexity resolved." 
+    # Constantin Brancusi, Romanian Sculptor
 
 """ This file contains all classes related to object-relational mapping.
 """
@@ -488,7 +490,7 @@ class predicate(entitiesmod.entity):
         yield self
         if self.match and self.match.junction:
             for pred in self.match.junction:
-                yield  pred 
+                yield pred 
 
         if self.junction:
             for pred in self.junction:
@@ -1294,6 +1296,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                             # problems. See ref: 7adeeffe.
                             if self.orm.entity is not sup:
                                 continue
+
+                        # TODO These lines exceed 72 chars
 
                         # For each entity mapping in this
                         # associationsmapping
@@ -4222,6 +4226,24 @@ class orm:
         return map is not None and map.entities is self.entities
 
     def joinsupers(self):
+        ''' Create joins between `self` and the superentity that the
+        predicate requires be joined based on predicate columns being
+        used. 
+        
+        For example, is `muralists` is being queried, and `firstname` is
+        in the predicate, then we will need to join `self` to `artist`
+        since `artist` has the `firstname` property. Since `muralists`
+        is a subentity of `painter`, `painter` will also be included in
+        the join::
+
+            muralists.join(
+                painters.join(
+                    artists
+                )
+            )
+        
+        '''
+        
         top = None
         for pred in self.where.predicate:
 
