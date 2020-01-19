@@ -3148,6 +3148,9 @@ class concerts(presentations):
 class exhibitions(presentations):
     pass
 
+class unveilings(exhibitions):
+    pass
+
 class battles(concerts):
     pass
 
@@ -3232,6 +3235,18 @@ class exhibition(presentation):
         exh.description = pres.description
         exh.description1 = pres.description1
         return exh
+
+class unveiling(exhibition):
+    @staticmethod
+    def getvalid():
+        exh = exhibition.getvalid()
+        unv = unveiling()
+        unv.record        =  exh.record
+        unv.name          =  exh.name
+        unv.title         =  exh.title
+        unv.description   =  exh.description
+        unv.description1  =  exh.description1
+        return unv
 
 class battle(concert):
     views = int
@@ -3505,6 +3520,7 @@ class muralists(painters):
 
 class muralist(painter):
     street = bool
+    unveilings = unveilings
     @staticmethod
     def getvalid():
         sup = muralist.orm.super.getvalid()
@@ -10577,14 +10593,11 @@ class test_orm(tester):
 
                 sng.artist_artists += aa
 
-                # TODO 
-                '''
                 for l in range(4):
-                    exh = exhibition.getvalid()
-                    name = 'sng-art_art-pnt-exh-name-' + str(l)
-                    exh.name =  name
-                    murobj.exhibitions += exh
-                '''
+                    unv = unveiling.getvalid()
+                    name = 'sng-art_art-mur-unv-name-' + str(l)
+                    unv.name =  name
+                    murobj.unveilings += unv
 
         sngs.save()
         return sngs
