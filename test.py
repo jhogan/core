@@ -14198,8 +14198,17 @@ class test_orm(tester):
 
                     # Downcast 46e3dc32
                     obj = es.orm.entity(aas.first.object.id)
-                    attr = 'register' if es is singers else 'style'
-                    self.eq(args[1], getattr(obj, attr))
+
+                    if es is singers:
+                        attr, v = 'register', args[1]
+                    elif es is painters:
+                        attr, v = 'style', args[1]
+                    elif es is muralists:
+                        attr, v = 'street', args[2]
+
+                    # This will cause painter to be loaded if attr ==
+                    # style
+                    self.eq(v, getattr(obj, attr))
                     self.eq(fff, aas.first.orm.persistencestate)
 
                 # The downcast above 46e3dc32 will result in four loads of
