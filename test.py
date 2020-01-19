@@ -14316,6 +14316,53 @@ class test_orm(tester):
             aas1.first.object__artistid
         )
 
+        ''' Test joining the associated entities collections
+        (artist_artists) with its subsubentity composite (muralists)
+        where the composite's join is conditional along with the other
+        two. '''
+        sngs1 =  singers('firstname = %s and register = %s', 
+                        ('fn-1', 'reg-1')).join(
+                    artist_artists('role = %s',
+                        ('sng-art_art-role-8',)
+                    ).join(
+                         muralists(
+                             'firstname = %s and '
+                             'style = %s and '
+                             'street = %s', (
+                                'sng-art_art-mur-fn-8',
+                                'sng-art_art-mur-sty-8',
+                                True
+                            )
+                         )
+                    )
+                 )
+
+        self.one(sngs1)
+
+        self.chronicles.clear()
+        self.eq('fn-1', sngs1.first.firstname)
+        self.eq('reg-1', sngs1.first.register)
+
+        aas1 = sngs1.first.artist_artists
+        self.one(aas1)
+        self.eq(fff, aas1.first.orm.persistencestate)
+        self.eq('sng-art_art-role-8', aas1.first.role)
+        self.eq('sng-art_art-mur-fn-8', aas1.first.object.firstname)
+        self.eq(
+            'sng-art_art-mur-sty-8', 
+            painter(aas1.first.object.id).style # downcast c8200aa7
+        )
+        self.eq(sngs1.first.id, aas1.first.subject.id)
+        self.eq(sngs1.first.id, aas1.first.subject__artistid)
+        self.ne(
+            aas1.first.subject__artistid,
+            aas1.first.object__artistid
+        )
+        self.eq(
+            aas1.first.object.id,
+            aas1.first.object__artistid
+        )
+
         # We will have one chronicles from the downcast c8200aa7
         self.one(self.chronicles)
 
@@ -14323,8 +14370,14 @@ class test_orm(tester):
         (singers) of the association (artist_artists) without
         conditions.
         '''
-        for es in (singers, painters):
-            const = concerts if es is singers else exhibitions
+        for es in (singers, painters, muralists):
+            if es is singers:
+                const = concerts
+            elif es is painters:
+                const = exhibitions
+            elif es is muralists:
+                const = unveilings
+
             for b in True, False:
                 if b:
                     # Explicitly join the associations (artist_artists())
