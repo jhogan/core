@@ -4218,6 +4218,8 @@ class orm:
     def isreflexive(self):
         maps = self.mappings.entitymappings
         types = [x.entity.__name__ for x in maps]
+
+        # TODO Do we need to pass this to bool()
         return bool(len(types)) and len(types) > len(set(types))
         
     @property

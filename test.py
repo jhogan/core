@@ -14214,7 +14214,6 @@ class test_orm(tester):
                 # The downcast above 46e3dc32 will result in four loads of
                 # singer/painter
                 self.four(self.chronicles)
-        return
 
         ''' Test joining the associated entities collections
         (artist_artists) with its composite (singers) where the
@@ -14262,8 +14261,9 @@ class test_orm(tester):
         self.one(self.chronicles)
 
         ''' Test joining the associated entities collections
-        (artist_artists) with its composite (pantiers) where the
-        composite's join is conditional along with the other two. '''
+        (artist_artists) with its subentity composite (painters) where
+        the composite's join is conditional along with the other two.
+        '''
         sngs1 =  singers('firstname = %s and register = %s', 
                         ('fn-1', 'reg-1')).join(
                     artist_artists('role = %s',
@@ -14342,6 +14342,8 @@ class test_orm(tester):
                             ) \
                             .sorted()
 
+                    if aas1.count != 4:
+                        print(es, b)
                     self.four(aas); self.four(aas1)
                     for aa, aa1 in zip(aas, aas1):
                         self.eq(fff, aa1.orm.persistencestate)
@@ -14363,6 +14365,7 @@ class test_orm(tester):
                             self.eq(conc.id, conc1.id)
 
                 self.zero(self.chronicles)
+        return
 
         ''' Test joining a constituent (concerts) of the composite
         (singers) of the association (artist_artists) with conditions.
