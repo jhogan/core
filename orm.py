@@ -4137,6 +4137,9 @@ class ormclasswrapper(entitiesmod.entity):
         """ A proxy to the wrapped entity's name attribute.
         """
         return self.entity.__name__
+    
+    def __call__(self, *args, **kwargs):
+        return self.entity(*args, **kwargs)
 
 class composites(ormclasseswrapper):
     pass
