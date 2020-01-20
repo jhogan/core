@@ -20,6 +20,12 @@ class parties(orm.entities):
 class organizations(parties):
     pass
 
+class legalorganizations(organizations):
+    pass
+
+class corporations(legalorganizations):
+    pass
+
 class party_parties(orm.associations):
     pass
 
@@ -71,12 +77,27 @@ class party(orm.entity):
     isicv4 = str, 1, 1
 
 class organization(party):
-    """ Represents a group of people with a common purpose. Examples
-    include schools, NGOs, clubs, corporations, departments, divisions,
-    government agency and nonprofit organizanitions. More informal
-    organizations may include teams, families, etc.
+    """ An abstract class representing a group of people with a common
+    purpose. Subtypes may include schools, NGOs, clubs, corporations,
+    departments, divisions, government agency and nonprofit
+    organizanitions. More informal organizations may include teams,
+    families, etc.
     """
     name = str
+
+class legalorganization(organization):
+    # The Employer Identification Number (EIN), also known as the
+    # Federal Employer Identification Number (FEIN) or the Federal Tax
+    # Identification Number, is a unique nine-digit number assigned by
+    # the Internal Revenue Service (IRS) to business entities operating
+    # in the United States for the purposes of identification. 
+
+    # NOTE This will need to be it's own entity object since EINs are
+    # specific to the USA.
+    ein = chr, 9
+    
+class corporation(legalorganization):
+    pass
 
 class person(party):
     firstname      =  str

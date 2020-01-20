@@ -14619,9 +14619,9 @@ class test_orm(tester):
         self.zero(self.chronicles)
 
 ########################################################################
-# Test parties                                                         #
+# Test gem.persons                                                     #
 ########################################################################
-class test_parties(tester):
+class gem_person(tester):
     def __init__(self):
         super().__init__()
 
@@ -14643,43 +14643,13 @@ class test_parties(tester):
         per.dun            =  None
         return per
 
-    def _getvalidorganization(self):
-        org = gem.organization()
+class gem_corporation(tester):
+    def _getvalidcorporation(self):
+        org = gem.corporations()
         org.name = uuid4().hex
+        org.ein = str(uuid4().int)[:9]
         return org
 
-    def _getvalidparty_party(self):
-        pp = gem.party_party()
-        pp.role = uuid4().hex
-        return pp
-
-    def it_loads_and_saves_organization(self):
-        org = gem.organization()
-        org.name = uuid4().hex
-        org.save()
-
-        self.eq(org.id, gem.organization(org.id).id)
-
-    def it_loads_and_saves_preson(self):
-        per = self._getvalidperson()
-        per.save()
-
-        self.eq(per.id, gem.person(per.id).id)
-
-    def it_associates_person_with_organization(self):
-        org = self._getvalidorganization()
-        per = self._getvalidperson()
-
-        pp = gem.party_party()
-        pp.role = 'employed-to'
-        pp.subject = per
-        pp.object = org
-
-        per.party_parties += pp
-
-        # WIP
-        #per.save()
-        
 ########################################################################
 # Test parties                                                         #
 ########################################################################
