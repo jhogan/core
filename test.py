@@ -14408,9 +14408,51 @@ class test_orm(tester):
                             ) \
                             .sorted()
 
-                    if aas1.count != 4:
-                        print(es, b)
-                    self.four(aas); self.four(aas1)
+                    self.zero(self.chronicles)
+
+                    if es is painters:
+                        # If es is painters, then we will have 4
+                        # painters and 4 muralists as the `object`
+                        # property of each aa object in aas1. Use the
+                        # orm.leaf property to determine the type. 
+                        #
+                        # If es in (muralists, singers), we will only
+                        # have 4 in the aas1 collection.
+                        for e in (painter, muralist):
+                            self.eq(
+                                [e] * 4,
+                                [
+                                    type(x) 
+                                    for x in aas1.pluck('object.orm.leaf')
+                                    if type(x) is e
+                                ]
+                            )
+                        self.eight(aas); self.eight(aas1)
+                    elif es is muralists:
+                        self.eq(
+                            [muralist] * 4,
+                            [
+                                type(x) 
+                                for x in aas1.pluck('object.orm.leaf')
+                            ]
+                        )
+                        self.four(aas); self.four(aas1)
+                    elif es is singers:
+                        self.eq(
+                            [singer] * 4,
+                            [
+                                type(x) 
+                                for x in aas1.pluck('object.orm.leaf')
+                            ]
+                        )
+                        self.four(aas); self.four(aas1)
+                    else:
+                        raise ValueError()
+
+                    # Plucking leafs will result in db hits, so clear
+                    # self.chronicles again.
+                    self.chronicles.clear()
+
                     for aa, aa1 in zip(aas, aas1):
                         self.eq(fff, aa1.orm.persistencestate)
                         self.eq(aa.id, aa1.id)
@@ -14526,6 +14568,55 @@ class test_orm(tester):
         # The downcast to painter wil load for objects
         self.zero(self.chronicles)
 
+        ''' Test joining a constituent (unveilings) of the composite
+        (muralists) of the association (artist_artists) with conditions.
+        '''
+        aarole = 'sng-art_art-role-8'
+        fn = 'sng-art_art-mur-fn-8'
+        unvname = 'sng-art_art-mur-unv-name-0'
+        sngs1 =  singers().join(
+                    artist_artists(role = aarole).join(
+                        muralists(firstname = fn).join(
+                            unveilings(name = unvname)
+                        )
+                    )
+                 )
+
+        sngs1.sort()
+
+        self.four(sngs); self.four(sngs1)
+        self.chronicles.clear()
+
+        for sng, sng1 in zip(sngs, sngs1):
+            self.eq(fff, sng1.orm.persistencestate)
+
+            self.eq(sng.id, sng1.id)
+            aas1 = sng1.artist_artists
+            self.one(aas1)
+
+            self.eq(aarole, aas1.first.role)
+            self.eq(fff, aas1.first.orm.persistencestate)
+
+            self.eq(fn, aas1.first.object.firstname)
+            self.eq(fff, aas1.first.object.orm.persistencestate)
+
+            # FIXME:9cad10a9 This test can't work because
+            # `aas1.first.object` is an <artist> and <artist>s don't
+            # have exhibitions; <painter>s do. We could downcast to
+            # <painter> but that doesn't allow for the INNER JOIN of
+            # exhibitions to be tested. Perhaps the solution is to
+            # downcast `aas1.first.object` in orm.link() and link the
+            # <exhibition> objects there.
+            #self.one(aas1.first.object.exhibitions)
+
+            #self.eq(
+            #    consname, 
+            #    aas1.first.object.exhibitions.first.name
+            #)
+
+
+        # The downcast to painter wil load for objects
+        self.zero(self.chronicles)
 
 ########################################################################
 # Test parties                                                         #
