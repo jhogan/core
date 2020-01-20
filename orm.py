@@ -4189,7 +4189,29 @@ class orm:
             return False
 
         return True
-            
+
+    @property
+    def leaf(self):
+        """ Return the lowest subentity in the inheritance tree of the
+        `orm`'s `instance` property. The database is queried for each
+        subclass, the database is queried. If there are no subclasess,
+        `self.instance` is returned.
+        """
+
+        leaf = self.instance
+        id = leaf.id
+
+        # Itereate over subclasses. `self.subclasses` is assumed to
+        # iterate in a way tha yields the top-most subclass first
+        # progressing toward the lowest subclass.
+        for cls in self.subclasses:
+            try:
+                leaf = cls(id)
+            except db.RecordNotFoundError:
+                return leaf
+
+        return leaf
+                
     def clone(self):
         r = orm()
 
