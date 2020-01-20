@@ -14431,7 +14431,6 @@ class test_orm(tester):
                             self.eq(conc.id, conc1.id)
 
                 self.zero(self.chronicles)
-        return
 
         ''' Test joining a constituent (concerts) of the composite
         (singers) of the association (artist_artists) with conditions.
@@ -14474,7 +14473,6 @@ class test_orm(tester):
             #     consname, 
             #     aas1.first.object.concerts.first.name
             # )
-
 
         self.zero(self.chronicles)
 

@@ -2128,7 +2128,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # Call entity._setvalue to take advantage of its event raising
             # code. Pass in a custom setattr function for it to call. Use
             # underscores for the paramenters since we already have the values
-            # it would pass in in this method's scope - execpt for the v
+            # it would pass in in this method's scope - except for the v
             # which, may have been processed (i.e, if it is a str, it will
             # have been strip()ed. 
             def setattr0(_, __, v):
@@ -4094,7 +4094,7 @@ class ormclasseswrapper(entitiesmod.entities):
 
 class ormclasswrapper(entitiesmod.entity):
     """ Creates a wrapper class around an entity class. The wrapped
-    class is stored in the `entity` attribute. Most of the classe's
+    class is stored in the `entity` attribute. Most of the class's
     attributes are proxies for the wrapped entity class's corresponding
     attribute.
     """
