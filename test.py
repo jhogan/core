@@ -5,7 +5,7 @@
 # Unauthorized copying of this file, via any medium is strictly        #
 # prohibited                                                           #
 # Proprietary and confidential                                         #
-# Written by Jesse Hogan <jessehogan0@gmail.com>, 2019                 #
+# Written by Jesse Hogan <jessehogan0@gmail.com>, 2020                 #
 ########################################################################
 
 from auth import jwt
@@ -3622,6 +3622,10 @@ class test_orm(tester):
 
         abbrs = [e.orm.abbreviation for e in es]
         abbrs1 = [e().orm.abbreviation for e in es]
+
+        # FIXME This failed today:
+        # Jan 21, 2020
+
         self.unique(abbrs)
         self.eq(abbrs, abbrs1)
 
@@ -3844,8 +3848,9 @@ class test_orm(tester):
 
 
         B(chrons.count != 4)
-        # NOTE The below line produced a failure today, but it went
-        # away.  (Jul 6)
+        # FIXME The below line produced a failure today, but it went
+        # away.  Jul 6, 2019
+        # AGAIN Jan 21, 2020
         self.four(chrons)
 
 
@@ -9837,6 +9842,8 @@ class test_orm(tester):
             except MySQLdb.OperationalError as ex:
                 # This happened today (Oct 30 2019)
                 #    OperationalError(2006, 'MySQL server has gone away') 
+                # AGAIN Jan 23, 2020
+
                 print(ex)
                 B()
             else:

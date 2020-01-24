@@ -20,6 +20,7 @@ import textwrap
 # https://www.w3.org/TR/wai-aria-practices/
 
 class site(entities.entity):
+    # TODO Implement __repr__ and __str__
     def __init__(self):
         self.pages = pages(rent=self)
         self.index = None
@@ -436,13 +437,13 @@ class page(dom.html):
 
         # TODO Path currently only ascend to the root to concatenate
         # the pages path. However, the actual path must also contain the
-        # language segment as wel ('/en/'). When the Http.Request
+        # language segment as wel ('/en/'). When the `http.request`
         # singleton is created, we can use it to get that language
         # segment and return something like:
         # 
-        #     return Http.Request.language + '/' + r
+        #     return http.request.language + '/' + r
         # or
-        #     return Http.Request.regioun + '/' + r
+        #     return http.request.region + '/' + r
 
         return '/' + r
 
@@ -450,6 +451,8 @@ class page(dom.html):
         return self.path
 
 class header(dom.header):
+    # TODO Need to add an h2 and subheading parameter to constructor.
+    # For semantic help, see http://html5doctor.com/howto-subheadings/
     def __init__(self, site, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.site = site
