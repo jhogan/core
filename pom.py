@@ -8,9 +8,10 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2020
 ########################################################################
 
+from contextlib import suppress
 from dbg import B
-import entities
 import dom
+import entities
 import textwrap
 
 # References:
@@ -20,7 +21,7 @@ import textwrap
 
 class site(entities.entity):
     def __init__(self):
-        self.pages = pages(rent=None)
+        self.pages = pages(rent=self)
         self.index = None
         self._html = None
         self._head = None
@@ -255,6 +256,8 @@ class menu(dom.nav):
 class pages(entities.entities):
     def __init__(self, rent, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # The site or parent page
         self.parent = rent
 
     def __getitem__(self, path):
@@ -278,14 +281,136 @@ class pages(entities.entities):
         raise IndexError('Path not found')
 
     def append(self, obj, uniq=False, r=None):
-        obj.parent = self.parent
+        obj._parentpages = self
         r = super().append(obj, uniq, r)
 
-class page(entities.entity):
-    def __init__(self, name=None):
-        self.pages = pages(self)
-        self.parent = None
+class page(dom.html):
+    def __init__(self, name=None, pgs=None):
+        self.pages = pages(rent=self)
+        self._parentpages = pgs
         self._name = name
+        self._callingmain = False
+        self._calledmain = False
+        self._body = None
+        self._title = None
+        self._lang = None
+        self._head = None
+
+        try:
+            self._mainfunc = self.main
+        except AttributeError:
+            pass
+
+        self.main = dom.main()
+
+    @property
+    def title(self):
+        if self._title is None:
+            if self.site:
+                self.title = '%s | %s' % self.site.title, self.Name
+            self.title = self.Name
+
+        return self._title
+
+    @title.setter
+    def title(self, v):
+        self._title = v
+        self.head['head>title'].remove()
+        self.head += dom.title(v)
+
+    @property
+    def header(self):
+        if self.site:
+            return self.site.header
+        return None
+
+    @property
+    def head(self):
+        if self._head is None:
+            if self.site:
+                self._head = self.site.head
+            
+            self._head = dom.head()
+
+        return self._head
+    
+    @head.setter
+    def head(self, v):
+        self._head = v
+
+    @property
+    def body(self):
+        if not self._body:
+            self._body = dom.body()
+        return self._body
+
+    @body.setter
+    def body(self, v):
+        self._body = v
+
+    @property
+    def elements(self):
+        els = super().elements
+        els.clear()
+        ws = self.site
+
+        if self.head:
+            els += self.head
+
+        if self.header and self.header.parent is not self.body:
+            self.body += self.header
+
+        els += self.body
+
+        try:
+            self._mainfunc
+        except AttributeError:
+            pass
+        else:
+            if not self._calledmain:
+                try:
+                    if not self._callingmain:
+                        self._callingmain = True
+                        self._mainfunc()
+                finally:
+                    self._callingmain = False
+                    self._calledmain = True
+
+        self.main._setparent(None)
+
+        self.body += self.main
+        return els
+
+    @property
+    def page(self):
+        rent = self._parentpages
+
+        if rent is None:
+            return None
+
+        rent = rent.parent
+
+        if isinstance(rent, page):
+            return rent
+
+        return None
+
+    @property
+    def site(self):
+        rents = self._parentpages
+
+        if rents is None:
+            return None
+
+        rent = self._parentpages.parent
+
+        if isinstance(rent, site):
+            return rent
+        elif isinstance(rent, page):
+            return rent.site
+        else:
+            # We should never get here
+            raise ValueError()
 
     @property
     def name(self):
@@ -303,7 +428,7 @@ class page(entities.entity):
                 r = '%s/%s' % (rent.name, r)
             else:
                 r = rent.name
-            rent = rent.parent
+            rent = rent.page
 
         # TODO Path currently only ascend to the root to concatenate
         # the pages path. However, the actual path must also contain the

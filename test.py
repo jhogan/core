@@ -12357,11 +12357,141 @@ class test_site(tester):
         self.zero(ws.header[sels])
         self.zero(mnu[sels])
 
-class test_page(tester):
+class pom_page(tester):
     def it_calls__init__(self):
         name = uuid4().hex
         pg = pom.page()
         self.zero(pg.pages)
+
+    def it_implements_main(self):
+        class stats(pom.page):
+            def main(self):
+                m = self.main
+                m += dom.h2('Statistics')
+                m += dom.p('''
+                    These are the company's sales statistics:
+                ''')
+                self._main_snapshot = dom.html(m.html)
+                self._html_snapshot = dom.html(self.html)
+
+        pg = stats()
+
+        self.eq('Stats', pg.title)
+        self.eq('Stats', pg['html>head>title'].text)
+
+        # Upon instantiation, the page's `main` attribute will be
+        # replace with a dom.main object. A reference to the  `main`
+        # method with be held in a private variable.
+        self.type(dom.main, pg.main)
+
+        # Invoking `elements` forces main to be called
+        pg.elements
+
+        # Snapshop of main tag should only include a few elements
+        self.five(pg._main_snapshot.all)
+
+        # The snapshop of the page's html will be a full document (i.e.,
+        # it starts with <html>). However, since the page object hasn't
+        # been attached to a site object (it will be below), the site
+        # specific HTML (the <head> tag and the page <header> can not be
+        # included.
+        self.one(pg._html_snapshot['head'])
+        self.zero(pg._html_snapshot['header'])
+        self.one(pg._html_snapshot['html'])
+        self.one(pg._html_snapshot['html>body'])
+        self.one(pg._html_snapshot['html>body>main'])
+        self.one(pg._html_snapshot['html>body>main>h2'])
+        self.one(pg._html_snapshot['html>body>main>p'])
+        
+        ''' Test page after being associated to a site object '''
+        pg = stats()
+        ws = foonet()
+        ws.pages += pg
+
+        # Invoking `elements` forces main to be called
+        pg.elements
+
+        # Now the _html_snapshot will have a <head> and a <header>
+        # derived from the site object it was associated with.
+        self.five(pg._main_snapshot.all)
+        self.one(pg._html_snapshot['head'])
+        self.one(pg._html_snapshot['header'])
+        self.one(pg._html_snapshot['html'])
+        self.one(pg._html_snapshot['html>body'])
+        self.one(pg._html_snapshot['html>body>main'])
+        self.one(pg._html_snapshot['html>body>main>h2'])
+        self.one(pg._html_snapshot['html>body>main>p'])
+
+    def it_changes_lang_from_main(self):
+        lang = uuid4().hex
+        class stats(pom.page):
+            def main(self):
+                m = self.main
+                m += dom.h2('Statistics')
+                m += dom.p('''
+                    These are the company's sales statistics:
+                ''')
+
+                self.lang = lang
+
+        pg = stats()
+
+        # Invoking elements invokes stats.main()
+        pg.elements
+
+        self.eq(lang, pg.lang)
+        self.eq(lang, pg.attributes['lang'].value)
+
+        ''' Test page after being associated to a site object '''
+        pg = stats()
+        ws = foonet()
+        ws.pages += pg
+
+        # Invoking `elements` forces main to be called
+        pg.elements
+
+        self.eq(lang, pg.lang)
+        self.eq(lang, pg.attributes['lang'].value)
+
+    def it_changes_title_from_main(self):
+        id = uuid4().hex
+        class stats(pom.page):
+            def main(self):
+                m = self.main
+                nonlocal id
+                m += dom.h2('Statistics')
+                m += dom.p('''
+                    These are the company's sales statistics:
+                ''')
+
+                self.title = id
+
+        pg = stats()
+
+        # Invoking elements invokes stats.main()
+        pg.elements
+
+        self.eq(id, pg.title)
+        self.eq(id, pg['head>title'].text)
+
+        ''' Test page after being associated to a site object '''
+        pg = stats()
+        ws = foonet()
+        ws_title = ws.title
+        ws.pages += pg
+
+        # Invoking `elements` forces main to be called
+        pg.elements
+
+        self.eq(id, pg.title)
+        self.eq(id, pg['html>head>title'].text)
+        self.eq(ws_title, ws.title)
+
+    def it_calls_site(self):
+        ws = foonet()
+        self.is_(ws, ws['/en/blogs'].site)
+        self.is_(ws, ws['/en/blogs/comments'].site)
+        self.is_(ws, ws['/en/blogs/comments/rejected'].site)
 
 class test_elements(tester):
     def it_calls_html(self):
