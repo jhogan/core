@@ -676,7 +676,7 @@ class element(entities.entity):
         return rent
 
     def _setparent(self, v):
-        if self.parent and self.parent is not v:
+        if v and self.parent and self.parent is not v:
             raise MoveError('Parent already set')
         self._parent = v
 
