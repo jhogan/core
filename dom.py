@@ -342,6 +342,23 @@ class elements(entities.entities):
                 return el
         return None
 
+    @property
+    def text(self):
+        """ Get the combined text contents of each element.
+        """
+        # NOTE This should match the functionality of jQuery's `.text()`
+        # as closely as possible - except for the `.text(function)`
+        # overload.
+
+        # TODO Write tests. 
+
+        return '\n'.join(x.text for x in self)
+
+    @text.setter
+    def text(self, v):
+        for x in self:
+            x.text = v
+
     def remove(self, e=None):
         if e is not None:
             return super().remove(e)
