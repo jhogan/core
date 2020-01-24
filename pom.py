@@ -419,6 +419,10 @@ class page(dom.html):
         return type(self).__name__.replace('_', '-')
 
     @property
+    def Name(self):
+        return self.name.capitalize()
+
+    @property
     def path(self):
         r = str()
         rent = self
