@@ -345,6 +345,7 @@ class page(dom.html):
         self._title = None
         self._lang = None
         self._head = None
+        self._header = None
 
         try:
             self._mainfunc = self.main
@@ -370,17 +371,20 @@ class page(dom.html):
 
     @property
     def header(self):
-        if self.site:
-            return self.site.header
-        return None
+        if self._header is None:
+            if self.site:
+                self._header = self.site.header.clone()
+            else:
+                self._header = dom.header()
+        return self._header
 
     @property
     def head(self):
         if self._head is None:
             if self.site:
                 self._head = self.site.head
-            
-            self._head = dom.head()
+            else:
+                self._head = dom.head()
 
         return self._head
     

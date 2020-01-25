@@ -12403,7 +12403,7 @@ class pom_page(tester):
         # specific HTML (the <head> tag and the page <header> can not be
         # included.
         self.one(pg._html_snapshot['head'])
-        self.zero(pg._html_snapshot['header'])
+        self.one(pg._html_snapshot['header'])
         self.one(pg._html_snapshot['html'])
         self.one(pg._html_snapshot['html>body'])
         self.one(pg._html_snapshot['html>body>main'])
