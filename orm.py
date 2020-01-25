@@ -2851,7 +2851,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                 es = v
                                 if es:
                                     brs = es._getbrokenrules(
-                                        es=None, 
+                                        guestbook=None, 
                                         followentitymapping=False
                                     )
                                     args = es.count, brs.count
