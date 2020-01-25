@@ -12467,6 +12467,47 @@ class pom_page(tester):
         self.eq(lang, pg.lang)
         self.eq(lang, pg.attributes['lang'].value)
 
+    def it_changes_main_menu_from_main(self):
+        class stats(pom.page):
+            def main(self):
+                m = self.main
+                m += dom.h2('Statistics')
+                m += dom.p('''
+                    These are the company's sales statistics:
+                ''')
+
+                self.header.menu.items += pom.menu.item(
+                    'Statistics',
+                    href='http://www.statistics.com'
+                )
+
+
+        pg = stats()
+        ws = foonet()
+        ws.pages += pg
+
+        # Invoking elements invokes stats.main()
+        pg.elements
+
+        self.eq('Statistics', pg.header.menu.items.last.text)
+        self.ne('Statistics', ws.header.menu.items.last.text)
+
+        self.eq(
+            'http://www.statistics.com',
+            pg.header.menu.items.last.href
+        )
+
+        sels = dom.selectors(
+            'nav[aria-label=Main]>ul>li>a[href="http://www.statistics.com"]'
+        )
+
+        self.one(pg[sels])
+
+        self.eq(
+            'http://www.statistics.com',
+            pg.header.menu.items.last.href
+        )
+
     def it_changes_title_from_main(self):
         id = uuid4().hex
         class stats(pom.page):
