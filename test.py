@@ -12429,6 +12429,13 @@ class pom_page(tester):
         self.one(pg._html_snapshot['html>body>main>h2'])
         self.one(pg._html_snapshot['html>body>main>p'])
 
+        # pg will have a header and a head that is cloned from ws's
+        # header and head. Ensure that they are not identical.
+        self.isnot(ws.header, pg.header)
+        self.isnot(ws.head, pg.head)
+        self.isnot(ws.header.menus, pg.header.menus)
+        self.isnot(ws.header.menu, pg.header.menu)
+
     def it_changes_lang_from_main(self):
         lang = uuid4().hex
         class stats(pom.page):

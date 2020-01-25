@@ -112,6 +112,8 @@ class site(entities.entity):
 
 class logo(dom.section):
     def __init__(self, o):
+        super().__init__()
+
         if isinstance(o, str):
             self._text = o
         elif isinstance(o, file):
@@ -122,13 +124,31 @@ class logo(dom.section):
         else:
             raise TypeError('Invalid logo type')
 
+    def clone(self):
+        el = type(self)(self.text)
+        el += self.elements.clone()
+        el.attributes = self.attributes.clone()
+        return el
+
     @property
     def elements(self):
+        els = super().elements
         els = dom.elements()
         els += dom.span(self._text)
         return els
 
+    @elements.setter
+    def elements(self, v):
+        dom.element.elements.fset(self, v)
+
 class menus(entities.entities, dom.section):
+    def clone(self):
+        mnus = type(self)()
+        for mnu in self:
+            mnus += mnu.clone()
+
+        return mnus
+
     def __repr__(self):
         r = str()
         for mnu in self:
@@ -155,8 +175,15 @@ class menus(entities.entities, dom.section):
         return els
 
 class menu(dom.nav):
-
     class items(entities.entities, dom.ul):
+        def clone(self):
+            itms = type(self)()
+
+            for itm in self:
+                itms += itm.clone()
+
+            return itms
+
         def seperate(self):
             self += menu.separator()
 
@@ -181,6 +208,15 @@ class menu(dom.nav):
                 raise TypeError('Item requires text or page object')
 
             self.items = menu.items()
+
+        def clone(self):
+            # NOTE Don't clone self.page. The new item will point to the
+            # existing page.
+            o = self.page if self.page else self.text
+            itm = type(self)(o)
+            itm.items += self.items.clone()
+            itm.attributes = self.attributes.clone()
+            return itm
 
         def seperate(self):
             self.items.seperate()
@@ -219,6 +255,9 @@ class menu(dom.nav):
             # requires a page or str object. 
             pass
 
+        def clone(self):
+            return type(self)()
+
         @property
         def items(self):
             raise NotImplementedError(
@@ -240,6 +279,12 @@ class menu(dom.nav):
         self.name = name
         self.aria_label = self.name.capitalize()
         self.items = menu.items()
+
+    def clone(self):
+        mnu = type(self)(self.name)
+        mnu.items = self.items.clone()
+        mnu.attributes = self.attributes.clone()
+        return mnu
 
     @property
     def elements(self):
@@ -460,6 +505,13 @@ class header(dom.header):
         self._menu = None
         self._logo = None
 
+    def clone(self):
+        hdr = type(self)(self.site)
+        hdr.menus = self.menus.clone()
+        hdr.menu = self.menu.clone()
+        hdr.logo = self.menu.clone()
+        return hdr
+
     @property
     def elements(self):
         els = super().elements
@@ -482,6 +534,10 @@ class header(dom.header):
             self._menus += self.menu
 
         return self._menus
+
+    @menus.setter
+    def menus(self, v):
+        self._menus = v
 
     @property
     def menu(self):

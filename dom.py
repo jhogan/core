@@ -66,6 +66,12 @@ class attributes(entities.entities):
             super().__iadd__(o)
         return self
 
+    def clone(self):
+        attrs = type(self)()
+        for attr in self:
+            attrs += attr.clone()
+        return attrs
+            
     def append(self, o, v=None, uniq=False, r=None):
         """ Append an attribute to the collection. 
         """
@@ -177,6 +183,9 @@ class attribute(entities.entity):
     def __init__(self, name, v=undef):
         self.name = name
         self._value = v
+
+    def clone(self):
+        return type(self)(self.name, self.value)
 
     @property
     def name(self):
@@ -342,6 +351,12 @@ class elements(entities.entities):
                 return el
         return None
 
+    def clone(self):
+        els = type(self)()
+        for e in self:
+            els += e.clone()
+
+        return els
     @property
     def text(self):
         """ Get the combined text contents of each element.
@@ -483,6 +498,12 @@ class element(entities.entity):
             self += body
 
         self.attributes += kwargs
+
+    def clone(self):
+        el = type(self)()
+        el += self.elements.clone()
+        el.attributes = self.attributes.clone()
+        return el
 
     def _elements_onadd(self, src, eargs):
         el = eargs.entity
@@ -977,6 +998,12 @@ class footer(element):
 class text(element):
     def __init__(self, str):
         self._str = str
+
+    def clone(self):
+        el = type(self)(self._str)
+        el += self.elements.clone()
+        el.attributes = self.attributes.clone()
+        return el
 
     def __str__(self):
         return dedent(self._str).strip()
