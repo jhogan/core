@@ -524,7 +524,8 @@ class header(dom.header):
     def elements(self):
         els = super().elements
         els.clear()
-        els += self.logo
+        if self.logo:
+            els += self.logo
         els += self.menus
         return els
 
