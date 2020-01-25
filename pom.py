@@ -198,14 +198,16 @@ class menu(dom.nav):
             return els
             
     class item(dom.li):
-        def __init__(self, pg):
+        def __init__(self, o, href=None):
             self._text = self.page = None
-            if isinstance(pg, str):
-                self._text = pg
-            elif isinstance(pg, page):
-                self.page = pg
+            if isinstance(o, str):
+                self._text = o
+            elif isinstance(o, page):
+                self.page = o
             else:
                 raise TypeError('Item requires text or page object')
+
+            self.href = href
 
             self.items = menu.items()
 
@@ -234,6 +236,8 @@ class menu(dom.nav):
             pg = self.page
             if pg:
                 els += dom.a(pg.name, href=pg.path)
+            elif self.href:
+                els += dom.a(self.text, href=self.href)
             else:
                 els += dom.text(self.text)
 
@@ -546,11 +550,15 @@ class header(dom.header):
 
         return self._menu
 
+    @menu.setter
+    def menu(self, v):
+        self._menu = v
+
     def _getmenu(self):
         def getitems(pgs):
             r = menu.items()
             for pg in pgs:
-                item = menu.item(pg=pg)
+                item = menu.item(o=pg)
                 r += item
 
                 for itm in getitems(pg.pages):
