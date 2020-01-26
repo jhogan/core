@@ -514,6 +514,18 @@ class chronicler(entity):
             chronicler._instance = chronicler()
         return chronicler._instance
 
+    @contextmanager
+    def snapshot():
+        def chr_onadd(src, eargs):
+            nonlocal chrs
+            chrs += eargs.entity
+
+        chr = chronicler.getinstance()
+        chrs = chronicles()
+        chr.chronicles.onadd += chr_onadd
+
+        yield chrs
+
     def append(self, obj):
         self.chronicles += obj
 
