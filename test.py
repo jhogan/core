@@ -14643,12 +14643,92 @@ class gem_person(tester):
         per.dun            =  None
         return per
 
-class gem_corporation(tester):
-    def _getvalidcorporation(self):
-        org = gem.corporations()
-        org.name = uuid4().hex
-        org.ein = str(uuid4().int)[:9]
-        return org
+    def it_creates(self):
+        per = self._getvalidperson()
+        per.save()
+
+        per1 = gem.person(per.id)
+
+        for map in per.orm.mappings.fieldmappings:
+            self.eq(
+                getattr(per, map.name),
+                getattr(per1, map.name)
+            )
+
+    def it_updates(self):
+        # Create
+        per = self._getvalidperson()
+        per.save()
+
+        # Load
+        per = gem.person(per.id)
+
+        # Update
+        oldfirstname = per.firstname
+        newfirstname = uuid4().hex
+
+        per.firstname = newfirstname
+        per.save()
+
+        # Reload
+        per1 = gem.person(per.id)
+
+        # Test
+        self.eq(newfirstname, per1.firstname)
+        self.ne(oldfirstname, per1.firstname)
+
+    def it_creates_association_to_person(self):
+        bro = self._getvalidperson()
+        sis = self._getvalidperson()
+
+        # TODO Figure out a way to do this:
+        #
+        #     bro.siblings += sis
+        bro.party_parties += gem.party_party.sibling(sis)
+
+        self.is_(bro, bro.party_parties.last.subject)
+        self.is_(sis, bro.party_parties.last.object)
+
+        bro.save()
+
+        bro1 = gem.person(bro.id)
+
+        self.eq(bro.id, bro1.party_parties.last.subject.id)
+        self.eq(sis.id, bro1.party_parties.last.object.id)
+        
+    def it_creates_association_to_company(self):
+        per = self._getvalidperson()
+        com = gem_company.getvalid()
+
+        pp = gem.party_party()
+        pp.object = com
+        pp.role = 'patronize'
+
+        per.party_parties += pp
+
+        self.is_(per, per.party_parties.last.subject)
+        self.is_(com, per.party_parties.last.object)
+
+        with db.chronicler.snapshot() as s:
+            per.save()
+            print(s)
+
+        per1 = gem.person(per.id)
+
+        self.eq(per.id, per1.party_parties.last.subject.id)
+        self.eq(com.id, per1.party_parties.last.object.id)
+        
+class gem_company(tester):
+
+    @staticmethod
+    def getvalid():
+        com = gem.company()
+        com.name = uuid4().hex
+        com.ein = str(uuid4().int)[:9]
+        com.nationalids    =  uuid4().hex
+        com.isicv4         =  None
+        com.dun            =  None
+        return com
 
 ########################################################################
 # Test parties                                                         #
