@@ -23,7 +23,7 @@ class organizations(parties):
 class legalorganizations(organizations):
     pass
 
-class corporations(legalorganizations):
+class companies(legalorganizations):
     pass
 
 class party_parties(orm.associations):
@@ -94,10 +94,10 @@ class legalorganization(organization):
 
     # NOTE This will need to be it's own entity object since EINs are
     # specific to the USA.
-    ein = chr, 9
+    ein = str, 9, 9
     
-class corporation(legalorganization):
-    pass
+class company(legalorganization):
+    entities = companies
 
 class person(party):
     firstname      =  str

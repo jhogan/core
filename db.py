@@ -16,6 +16,7 @@ import warnings
 import uuid
 import func
 from contextlib import contextmanager
+from dbg import B
 
 # Some errors in MySQL are classified as "warnings" (such as 'SELECT 0/0').
 # This means that no exception is raised; just an error message is printed to

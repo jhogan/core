@@ -2426,7 +2426,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                             # Get pseudocollection
                                             es = const[name]
                                         except KeyError:
-                                            # The subentiy doesn't exist
+                                            # Subentity doesn't exist
                                             pass
                                         else:
                                             # Save each entity found in

@@ -5112,7 +5112,7 @@ class test_orm(tester):
 
     def it_adds_subsubentity_to_superentities_collection(self):
         # Add concert to concerts property and ensure it exists in
-        # presentations propreties
+        # presentations properties
         rpr = rapper.getvalid()
 
         btl = battle.getvalid()
@@ -14624,11 +14624,11 @@ class test_orm(tester):
 class gem_person(tester):
     def __init__(self):
         super().__init__()
-
         gem.party.orm.recreate(recursive=True)
         gem.address.orm.recreate()
 
-    def _getvalidperson(self):
+    @staticmethod
+    def _getvalidperson():
         per = gem.person()
         per.firstname      =  uuid4().hex
         per.middlename     =  uuid4().hex
