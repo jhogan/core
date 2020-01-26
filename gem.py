@@ -255,3 +255,14 @@ class party_party(orm.association):
     subject  =  party
     object   =  party
     role     =  str
+    begin    =  datetime
+    end      =  datetime
+
+    @classmethod
+    def sibling(cls, per):
+        pp = cls()
+        pp.object = per
+        pp.role = 'sibling'
+        pp.begin = datetime.now()
+        pp.end = None
+        return pp
