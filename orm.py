@@ -2441,11 +2441,35 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     if map.value is undef:
                         map.value = None
 
-            super = self.orm._super
-            if super:
+            # If the super has not been previous set and self.orm.isnew
+            # (st[0])...
+            if not self.orm._super and st[0]:
+                # In order for `self.orm._super` to have previously been
+                # set when `self.orm.isnew` was True, an attribute of the
+                # super would have to have been set in the client code
+                # (this is when ._super gets its value). However,
+                # sometimes the attribute won't get set thus leaving
+                # ._super as None. If we are saving a new graph, we want
+                # the `._super` whether or not it has been previously
+                # set. Therefore, we will instantiate one here.
+
+                # Get the superentity
+                sup = self.orm.entity.orm.super
+
+                # If there is a super entity (we may be at the top of
+                # the graph)...
+                if sup:
+                    self.orm._super = sup()
+
+            # Get the private superentity. We don't want to use the
+            # public accessor to get it because the accessor will load
+            # the superentity which isn't something we want to do when
+            # saving the graph.
+            sup = self.orm._super
+            if sup:
                 if crud == 'delete':
-                    super.orm.ismarkedfordeletion = True
-                super._save(cur, guestbook=guestbook)
+                    sup.orm.ismarkedfordeletion = True
+                sup._save(cur, guestbook=guestbook)
 
         except Exception:
             self.orm.persistencestate = st
