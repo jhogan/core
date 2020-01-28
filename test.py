@@ -12061,6 +12061,18 @@ class foonet(pom.site):
         mnu = self._adminmenu
         mnus += mnu
 
+        ''' Sidebar and sidebar menu '''
+        mnus = pom.menus()
+        mnu = pom.menu('left-sidebar-nav')
+        mnus += mnu
+
+        mnu.items += pom.menu.item('Main page', '/')
+
+        sb = pom.sidebar('left')
+        self.sidebars += sb
+        sb += mnus
+
+        ''' Footer 
 
     @property
     def _adminmenu(self):
@@ -12548,6 +12560,38 @@ class pom_page(tester):
         self.is_(ws, ws['/en/blogs/comments'].site)
         self.is_(ws, ws['/en/blogs/comments/rejected'].site)
 
+    def it_changes_sidebars_from_main(self):
+
+        class stats(pom.page):
+            def main(self):
+                m = self.main
+                m += dom.h2('Statistics')
+                m += dom.p('''
+                    These are the company's sales statistics:
+                ''')
+
+                sb = self.sidebars['left']
+                mnu = sb['nav'].first
+                mnu.items += pom.menu.item('About stats')
+
+        ws = foonet()
+
+        pg = stats()
+        ws.pages += pg
+
+        # Invoke stats.main
+        pg.elements
+
+        wsmnu = ws.sidebars['left']['nav'].first
+        pgmnu = pg.sidebars['left']['nav'].first
+
+
+        # Make sure the site's menu was not changed
+        self.eq(wsmnu.items.count + 1, pgmnu.items.count)
+
+        self.eq('Main page', pgmnu.items.first.text)
+        self.eq('About stats', pgmnu.items.second.text)
+        
 class test_elements(tester):
     def it_calls_html(self):
         html = dom.html(TestHtml)

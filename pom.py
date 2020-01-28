@@ -31,6 +31,8 @@ class site(entities.entity):
         self._viewport = \
             'width=device-width, initial-scale=1, shrink-to-fit=no'
 
+        self.sidebars = sidebars()
+
         self._title = type(self).__name__.replace('_', '-')
 
         # TODO Replace with `file` object when it is created. NOTE that
@@ -109,6 +111,30 @@ class site(entities.entity):
         if not self._header:
             self._header = header(site=self)
         return self._header
+
+
+class sidebars(dom.sections):
+    def __getitem__(self, ix):
+        if isinstance(ix, str):
+            for sb in self:
+                if sb.name == ix:
+                    return sb
+        else:
+            return super().__getitem__(ix)
+    
+class sidebar(dom.section):
+    def __init__(self, name):
+        self._name = name
+        self.classes += name + '-sidebar'
+
+    @property
+    def name(self):
+        return self._name
+
+    def clone(self):
+        r = type(self)(self.name)
+        r += self.elements.clone()
+        return r
 
 class logo(dom.section):
     def __init__(self, o):
@@ -346,6 +372,7 @@ class page(dom.html):
         self._lang = None
         self._head = None
         self._header = None
+        self._sidebars = None
 
         try:
             self._mainfunc = self.main
@@ -403,6 +430,15 @@ class page(dom.html):
         self._body = v
 
     @property
+    def sidebars(self):
+        if self._sidebars is None:
+            if self.site:
+                self._sidebars = self.site.sidebars.clone()
+            else:
+                self._sidebars = sidebars()
+        return self._sidebars
+
+    @property
     def elements(self):
         els = super().elements
         els.clear()
@@ -415,6 +451,7 @@ class page(dom.html):
             self.body += self.header
 
         els += self.body
+
 
         try:
             self._mainfunc
@@ -433,6 +470,7 @@ class page(dom.html):
         self.main._setparent(None)
 
         self.body += self.main
+        self.body += self.sidebars
         return els
 
     @property
@@ -591,4 +629,7 @@ class header(dom.header):
             mnu.items += itm
 
         return mnu
+
+class footer(dom.footer):
+    pass
 
