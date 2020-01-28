@@ -36,6 +36,10 @@ class testers(entities):
         self.breakonexception = False
 
     def run(self, tu=None):
+        # TODO testclass and testmethod would probably be better as global
+        # variables. That would allow us to have a `testmethods`
+        # property (see the TODO below).
+
         testclass, testmethod, *_ = tu.split('.') + [None] if tu else [None] * 2
 
         cfg = configfile.getinstance()
@@ -49,7 +53,9 @@ class testers(entities):
             inst = subcls()
             inst.testers = self
             self += inst
+
             for meth in subcls.__dict__.items():
+
                 if type(meth[1]) != FunctionType: continue
                 if meth[0][0] == '_': continue
                 if testmethod and testmethod != meth[0]:
@@ -251,7 +257,7 @@ class tester(entity):
     def assertOne(self, actual):
         if len(actual) != 1: self._failures += failure()
 
-    def one(self, actual):
+    def one(self, actual, msg=None):
         if len(actual) != 1: self._failures += failure()
 
     def assertTwo(self, actual):
@@ -266,7 +272,7 @@ class tester(entity):
     def three(self, actual):
         if len(actual) != 3: self._failures += failure()
 
-    def four(self, actual):
+    def four(self, actual, msg=None):
         if len(actual) != 4: self._failures += failure()
 
     def five(self, actual):
@@ -289,6 +295,9 @@ class tester(entity):
 
     def eleven(self, actual):
         if len(actual) != 11: self._failures += failure()
+
+    def twelve(self, actual):
+        if len(actual) != 12: self._failures += failure()
 
     def assertCount(self, expect, actual, msg=None):
         if expect != len(actual): self._failures += failure()
@@ -592,7 +601,27 @@ class cli:
         sys.exit(int(not ts.ok))
 
     def parseargs(self):
-        # Parse args
+        # TODO Consider adding a -t to run whichever test has been
+        # selected a certain number of times. Currently, to run a test
+        # an infinate amount of times, we do this:
+        #
+        #     while true; do python3 test.py test_orm.it_runs; done
+        #
+        # It would be better to run write this as:
+        #
+        #     python3 test.py test_orm.it_runs -t0
+        #
+        # or mayby:
+        #
+        #     python3 test.py test_orm.it_runs --inf
+        #
+        # Or if we wanted to run the test 10 times, we could do this:
+        #
+        #     python3 test.py test_orm.it_runs -t10
+        #
+        # Running test multiple times is important for capturing
+        # problems that happen sporadically.
+
         ts = self.testers
         p = argparse.ArgumentParser()
         p.add_argument('testunit',  help='The test class or method to run',  nargs='?')

@@ -16,6 +16,7 @@ import warnings
 import uuid
 import func
 from contextlib import contextmanager
+from dbg import B
 
 # Some errors in MySQL are classified as "warnings" (such as 'SELECT 0/0').
 # This means that no exception is raised; just an error message is printed to
@@ -513,6 +514,18 @@ class chronicler(entity):
         if not chronicler._instance:
             chronicler._instance = chronicler()
         return chronicler._instance
+
+    @contextmanager
+    def snapshot():
+        def chr_onadd(src, eargs):
+            nonlocal chrs
+            chrs += eargs.entity
+
+        chr = chronicler.getinstance()
+        chrs = chronicles()
+        chr.chronicles.onadd += chr_onadd
+
+        yield chrs
 
     def append(self, obj):
         self.chronicles += obj

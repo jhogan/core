@@ -20,6 +20,12 @@ class parties(orm.entities):
 class organizations(parties):
     pass
 
+class legalorganizations(organizations):
+    pass
+
+class companies(legalorganizations):
+    pass
+
 class party_parties(orm.associations):
     pass
 
@@ -73,12 +79,27 @@ class organizations(parties):
     isicv4 = str, 1, 1
 
 class organization(party):
-    """ Represents a group of people with a common purpose. Examples
-    include schools, NGOs, clubs, corporations, departments, divisions,
-    government agency and nonprofit organizanitions. More informal
-    organizations may include teams, families, etc.
+    """ An abstract class representing a group of people with a common
+    purpose. Subtypes may include schools, NGOs, clubs, corporations,
+    departments, divisions, government agency and nonprofit
+    organizanitions. More informal organizations may include teams,
+    families, etc.
     """
     name = str
+
+class legalorganization(organization):
+    # The Employer Identification Number (EIN), also known as the
+    # Federal Employer Identification Number (FEIN) or the Federal Tax
+    # Identification Number, is a unique nine-digit number assigned by
+    # the Internal Revenue Service (IRS) to business entities operating
+    # in the United States for the purposes of identification. 
+
+    # NOTE This will need to be it's own entity object since EINs are
+    # specific to the USA.
+    ein = str, 9, 9
+    
+class company(legalorganization):
+    entities = companies
 
 class person(party):
     firstname      =  str
@@ -236,3 +257,17 @@ class party_party(orm.association):
     subject  =  party
     object   =  party
     role     =  str
+    begin    =  datetime
+    end      =  datetime
+
+    @classmethod
+    def sibling(cls, per):
+        pp = cls()
+        pp.object = per
+        pp.role = 'sibling'
+        pp.begin = None
+        pp.end = None
+        return pp
+
+    # TODO Write brokenrules @property that ensures valid roles are
+    # selected (among other things)
