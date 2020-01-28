@@ -12040,14 +12040,25 @@ class test_orm(tester):
 class foonet(pom.site):
     def __init__(self):
         super().__init__()
-        # TODO Implement __setattr__
-        #self.index = index()
+
+        # TODO This init logic probably should mostly put in overridden
+        # properties:
+        #
+        #   foonet.pages
+        #   foonet.lang
+        #   foonet.charset
+        #   foonet.stylesheets
+        #   foonet.header
+        #   foonet.footer
+
+        ''' Pages '''
         self.pages += home()
         self.pages += about()
         self.pages += contact_us()
         self.pages += blogs()
         self.pages += admin()
 
+        ''' Metadata '''
         self.lang = 'es'
         self.charset = 'iso-8859-1'
         self.stylesheets.append(
@@ -12055,8 +12066,10 @@ class foonet(pom.site):
                 'bootstrap/4.0.0/css/bootstrap.min.css'
         )
 
+        ''' Header '''
         self.header.logo = pom.logo('FooNet')
 
+        ''' Header Menus '''
         mnus = self.header.menus
         mnu = self._adminmenu
         mnus += mnu
@@ -12492,7 +12505,6 @@ class pom_page(tester):
                     'Statistics',
                     href='http://www.statistics.com'
                 )
-
 
         pg = stats()
         ws = foonet()
