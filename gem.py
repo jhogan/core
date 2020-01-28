@@ -263,6 +263,9 @@ class party_party(orm.association):
         pp = cls()
         pp.object = per
         pp.role = 'sibling'
-        pp.begin = datetime.now()
+        pp.begin = None
         pp.end = None
         return pp
+
+    # TODO Write brokenrules @property that ensures valid roles are
+    # selected (among other things)

@@ -14628,7 +14628,7 @@ class gem_person(tester):
         gem.address.orm.recreate()
 
     @staticmethod
-    def _getvalidperson():
+    def getvalid():
         per = gem.person()
         per.firstname      =  uuid4().hex
         per.middlename     =  uuid4().hex
@@ -14644,7 +14644,7 @@ class gem_person(tester):
         return per
 
     def it_creates(self):
-        per = self._getvalidperson()
+        per = self.getvalid()
         per.save()
 
         per1 = gem.person(per.id)
@@ -14657,7 +14657,7 @@ class gem_person(tester):
 
     def it_updates(self):
         # Create
-        per = self._getvalidperson()
+        per = self.getvalid()
         per.save()
 
         # Load
@@ -14678,8 +14678,8 @@ class gem_person(tester):
         self.ne(oldfirstname, per1.firstname)
 
     def it_creates_association_to_person(self):
-        bro = self._getvalidperson()
-        sis = self._getvalidperson()
+        bro = self.getvalid()
+        sis = self.getvalid()
 
         # TODO Figure out a way to do this:
         #
@@ -14697,7 +14697,7 @@ class gem_person(tester):
         self.eq(sis.id, bro1.party_parties.last.object.id)
         
     def it_creates_association_to_company(self):
-        per = self._getvalidperson()
+        per = self.getvalid()
         com = gem_company.getvalid()
 
         pp = gem.party_party()
@@ -14709,16 +14709,37 @@ class gem_person(tester):
         self.is_(per, per.party_parties.last.subject)
         self.is_(com, per.party_parties.last.object)
 
-        with db.chronicler.snapshot() as s:
-            per.save()
-            print(s)
+        per.save()
 
         per1 = gem.person(per.id)
 
         self.eq(per.id, per1.party_parties.last.subject.id)
         self.eq(com.id, per1.party_parties.last.object.id)
+
+    def it_creates_association_to_person(self):
+        bro = self.getvalid()
+        sis = self.getvalid()
+
+        # TODO Figure out a way to do this:
+        #
+        #     bro.siblings += sis
+        bro.party_parties += gem.party_party.sibling(sis)
+
+        self.is_(bro, bro.party_parties.last.subject)
+        self.is_(sis, bro.party_parties.last.object)
+
+        bro.save()
+
+        bro1 = gem.person(bro.id)
+
+        self.eq(bro.id, bro1.party_parties.last.subject.id)
+        self.eq(sis.id, bro1.party_parties.last.object.id)
         
 class gem_company(tester):
+    def __init__(self):
+        super().__init__()
+        gem.party.orm.recreate(recursive=True)
+        gem.address.orm.recreate()
 
     @staticmethod
     def getvalid():
@@ -14726,17 +14747,75 @@ class gem_company(tester):
         com.name = uuid4().hex
         com.ein = str(uuid4().int)[:9]
         com.nationalids    =  uuid4().hex
-        com.isicv4         =  None
+        com.isicv4         =  'A'
         com.dun            =  None
         return com
 
-########################################################################
-# Test parties                                                         #
-########################################################################
-class test_gem(tester):
-    def __init__(self):
-        super().__init__()
-        gem.party.orm.recreate(recursive=True)
+    def it_creates(self):
+        com = self.getvalid()
+        com.save()
+
+        com1 = gem.company(com.id)
+
+        sup = com
+
+        while sup:
+            for map in sup.orm.mappings.fieldmappings:
+                self.eq(
+                    getattr(com, map.name),
+                    getattr(com1, map.name),
+                )
+
+            sup = sup.orm.super
+
+    def it_updates(self):
+        # Create
+        com = self.getvalid()
+        com.save()
+
+        # Load
+        com = gem.company(com.id)
+
+        # Update
+        old, new = com.name, uuid4().hex
+        com.name = new
+        com.save()
+
+        # Reload
+        com1 = gem.company(com.id)
+
+        # Test
+        self.eq(new, com1.name)
+        self.ne(old, com1.name)
+
+    def it_creates_association_to_person(self):
+        per = gem_person.getvalid()
+        com = self.getvalid()
+
+        pp = gem.party_party()
+        pp.object = per
+        pp.role = 'employ'
+        pp.begin = datetime.now()
+
+        com.party_parties += pp
+
+        self.is_(com, com.party_parties.last.subject)
+        self.is_(per, com.party_parties.last.object)
+
+        com.save()
+
+        com1 = gem.company(com.id)
+
+        self.eq(com.id, com1.party_parties.last.subject.id)
+        self.eq(per.id, com1.party_parties.last.object.id)
+
+        self.one(com1.party_parties)
+        pp1 = com1.party_parties.first
+        for map in pp.orm.mappings.fieldmappings:
+            self.eq(
+                getattr(pp, map.name),
+                getattr(pp1, map.name),
+            )
 
 cli().run()
 
