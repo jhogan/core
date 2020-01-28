@@ -241,7 +241,11 @@ class menu(dom.nav):
             # NOTE Don't clone self.page. The new item will point to the
             # existing page.
             o = self.page if self.page else self.text
-            itm = type(self)(o)
+            itm = type(self)(o, href=self.href)
+
+            # FIXME:31b3fb5d This does not clone correctly due to the
+            # problem with entities.append's inability to distinguish
+            # between iterables and entity objects.  
             itm.items += self.items.clone()
             itm.attributes = self.attributes.clone()
             return itm
