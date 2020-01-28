@@ -10095,7 +10095,7 @@ class test_orm(tester):
         rpr1.title     = uuid4().hex[0]
         rpr1.phone2    = uuid4().hex[0]
         rpr1.email_1   = uuid4().hex[0]
-        rpr1.nice      = randint(0, 255)
+        rpr1.nice      = rpr.nice + 1
         rpr1.stagename = uuid4().hex
         rpr1.abilities = list('wackness')
 
