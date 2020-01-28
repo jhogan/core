@@ -12085,7 +12085,7 @@ class foonet(pom.site):
         self.sidebars += sb
         sb += mnus
 
-        ''' Footer 
+        ''' Footer  '''
 
     @property
     def _adminmenu(self):
