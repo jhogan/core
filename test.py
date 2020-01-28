@@ -12566,6 +12566,16 @@ class pom_page(tester):
         self.eq(id, pg['html>head>title'].text)
         self.eq(ws_title, ws.title)
 
+    def it_clones_site_objects(self):
+        ws = foonet()
+        pg = ws['/en/blogs']
+        self.notnone(pg.site)
+
+        self.isnot(pg.header,        ws.header)
+        self.isnot(pg.header.menu,   ws.header.menu)
+        self.isnot(pg.header.menus,  ws.header.menus)
+        self.isnot(pg.head,          ws.head)
+
     def it_calls_site(self):
         ws = foonet()
         self.is_(ws, ws['/en/blogs'].site)
