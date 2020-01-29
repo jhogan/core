@@ -14785,11 +14785,18 @@ class about_team(pom.page):
 class contact_us(pom.page):
     pass
     
-class test_site(tester):
+class pom_site(tester):
     def it_calls__init__(self):
         ws = foonet()
         self.five(ws.pages)
 
+    def it_calls__repr__(self):
+        self.eq('site()', repr(pom.site()))
+        self.eq('site()', str(pom.site()))
+
+        self.eq('foonet()', repr(foonet()))
+        self.eq('foonet()', str(foonet()))
+        
     def it_calls__getitem__(self):
         ws = foonet()
         for path in ('/', '', '/en/index'):

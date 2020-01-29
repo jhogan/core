@@ -45,6 +45,12 @@ class site(entities.entity):
         self.stylesheets = list()
         self._header = None
 
+    def __repr__(self):
+        return '%s()' % type(self).__name__
+
+    def __str__(self):
+        return repr(self)
+
     def __getitem__(self, path):
         return self.pages[path]
 
