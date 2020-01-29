@@ -487,6 +487,18 @@ class element(entities.entity):
     # example, <p> can only have "phrasing content" according to the
     # HTML5 standard.
 
+    @staticmethod
+    def _getblocklevelelements():
+        return (
+            address,   article,     aside,   blockquote,  dd,
+            details,   dialog,      div,     dl,          dt,
+            fieldset,  figcaption,  figure,  footer,      form,
+            h1,        h2,          h3,      h4,          h5,
+            h6,        header,      hgroup,  hr,          li,
+            main,      nav,         ol,      p,           pre,
+            sections,  table,       ul,
+        )
+
     def __init__(self, body=None, *args, **kwargs):
         if body is not None:
             if type(body) is str:
@@ -497,6 +509,10 @@ class element(entities.entity):
             self += body
 
         self.attributes += kwargs
+
+    @property
+    def isblocklevel(self):
+        return type(self) in self._getblocklevelelements()
 
     def clone(self):
         el = type(self)()
@@ -523,10 +539,12 @@ class element(entities.entity):
         # TODO Write tests. 
 
         r = ''
+        blk = False
         for el in self.all:
-            if isinstance(el, text):
+            blk = blk or el.isblocklevel
+            if isinstance(el, text) and el.html.strip():
                 if r:
-                    r += ' '
+                    r += '\n\n' if blk else ' '
                 r += el.html
         return r
 

@@ -15214,7 +15214,22 @@ class pom_page(tester):
         self.eq('Main page', pgmnu.items.first.text)
         self.eq('About stats', pgmnu.items.second.text)
         
-class test_elements(tester):
+class dom_elements(tester):
+    def it_calls_text(self):
+        html = dom.html(Shakespeare)
+        expect = self.dedent('''
+        No, thy words are too precious to be cast away upon
+
+        curs; throw some of them at me; come, lame me with reasons.
+        ''')
+        actual = html['#speech3+div'].text
+
+        self.eq(expect, actual)
+
+        html = dom.html('<p>%s</p>' % actual)
+        self.eq(expect, html.text)
+
+
     def it_calls_html(self):
         html = dom.html(TestHtml)
         self.eq(TestHtmlMin, html.html)
