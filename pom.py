@@ -20,7 +20,6 @@ import textwrap
 # https://www.w3.org/TR/wai-aria-practices/
 
 class site(entities.entity):
-    # TODO Implement __repr__ and __str__
     def __init__(self):
         self.pages = pages(rent=self)
         self.index = None
@@ -611,10 +610,10 @@ class header(dom.header):
                 for itm in getitems(pg.pages):
                     item.items += itm
 
-                # FIXME This should work, however entities.append will
-                # test if the object being append is an entity first. If
-                # it is an entity, it will assume it doesn't need to
-                # iterate over the entity.
+                # FIXME:31b3fb5d This should work, however
+                # entities.append will test if the object being append
+                # is an entity first. If it is an entity, it will assume
+                # it doesn't need to iterate over the entity.
                 # 
                 # The return of `getitems(pg.pages)` is a pom.menu.items
                 # collection. Since `items` inherits from both
@@ -623,8 +622,7 @@ class header(dom.header):
                 # should be corrected to handle this situation.
 
                 '''
-                itms = getitems(pg.pages)
-                item.items += itms
+                item.items += getitems(pg.pages)
                 '''
             return r
 

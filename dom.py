@@ -355,6 +355,7 @@ class elements(entities.entities):
             els += e.clone()
 
         return els
+
     @property
     def text(self):
         """ Get the combined text contents of each element.
@@ -930,6 +931,42 @@ class p(element):
     pass
 
 paragraph = p
+
+class addresses(elements):
+    pass
+
+class address(element):
+    pass
+
+class asides(elements):
+    pass
+
+class aside(element):
+    pass
+
+class dialogs(elements):
+    pass
+
+class dialog(element):
+    pass
+
+class figcaptions(elements):
+    pass
+
+class figcaption(element):
+    pass
+
+class figures(elements):
+    pass
+
+class figure(element):
+    pass
+
+class hgroups(elements):
+    pass
+
+class hgroup(element):
+    pass
 
 class articles(elements):
     pass

@@ -14879,7 +14879,6 @@ class test_site(tester):
         self.one(navs['[aria-label=Admin]'])
         self.one(navs['[aria-label=Main]'])
 
-
     def it_calls_main_menu(self):
         ws = pom.site()
         mnu = ws.header.menu
@@ -15246,7 +15245,8 @@ class test_elements(tester):
 
 
 
-class test_element(tester):
+class dom_element(tester):
+
     def it_class_language(self):
         html = dom.html('''
         <html lang="en">
@@ -15856,7 +15856,7 @@ class test_attribute(tester):
         self.expect(ex, lambda: attrs.append('name', name))
         self.expect(ex, lambda: attrs.append('style', style))
 
-class test_cssclass(tester):
+class dom_cssclass(tester):
     def it_deals_with_undef_attr(self):
         p = dom.paragraph()
         attr = p.attributes['class']
