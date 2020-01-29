@@ -47,13 +47,6 @@ An implementation of the HTML5 DOM.
 #     Syncing files with lsyncd
 #     https://www.digitalocean.com/community/tutorials/how-to-mirror-local-and-remote-directories-on-a-vps-with-lsyncd
 
-# TODO If this is only used by attributes, maybe it should be nested in
-# the `attribute` class
-class undef:
-    """ Used to indicate that an attribute has not been defined.
-    """
-    pass
-
 class attributes(entities.entities):
     """ Represents a collection of attributes for HTML5 elements.
     """
@@ -180,6 +173,11 @@ class attributes(entities.entities):
         return ' '.join(x.html for x in self if x.isvalid)
         
 class attribute(entities.entity):
+    class undef:
+        """ Used to indicate that an attribute has not been defined.
+        """
+        pass
+
     def __init__(self, name, v=undef):
         self.name = name
         self._value = v
@@ -221,7 +219,7 @@ class attribute(entities.entity):
 
     @property
     def isdef(self):
-        return self._value is not undef
+        return self._value is not attribute.undef
 
     @staticmethod
     def create(name, v=undef):
@@ -324,14 +322,14 @@ class cssclass(attribute):
     @property
     def value(self):
         if not self.isdef:
-            return undef
+            return attribute.undef
         return ' '.join(self._classes)
 
     @value.setter
     def value(self, v):
         if v is None:
             self._classes = list()
-        elif v is not undef:
+        elif v is not attribute.undef:
             self._classes = v.split()
 
     @property
