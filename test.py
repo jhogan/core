@@ -15588,7 +15588,7 @@ class test_text(tester):
         txt = dom.text(txt)
         self.eq(expect, str(txt))
 
-class test_attribute(tester):
+class dom_attribute(tester):
     def it_raises_on_invalid_attributes(self):
         # Test for valid characters in attribute names. Based on
         # https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
@@ -15769,12 +15769,11 @@ class test_attribute(tester):
         self.eq('class', p.attributes.fifth.name)
         self.eq(cls, p.attributes.fifth.value)
 
-        # TODO Append a collection of attributes:
-        #
-        #     attrs = attributes()
-        #     attrs += 'foo', 'bar'
-        #     attrs += 'baz', 'quux'
-        #     p.attributes += attr
+        # Append a collection of attributes:
+        attrs = dom.attributes()
+        attrs += 'foo', 'bar'
+        attrs += 'baz', 'quux'
+        p.attributes += attrs
 
         # TODO We may want to use the element's indexor to delegate to
         # its attribute collection:
@@ -15793,7 +15792,8 @@ class test_attribute(tester):
             'lang': 'en',
             'dir': 'ltr'
         }
-        self.seven(p.attributes)
+
+        self.nine(p.attributes)
         self.eq('en', p.lang)
         self.eq('ltr', p.dir)
 
@@ -15874,9 +15874,46 @@ class test_attribute(tester):
 
         attrs = p.attributes
         ex = dom.AttributeExistsError
+
+        # Append using `append` method
         self.expect(ex, lambda: attrs.append('id', id))
         self.expect(ex, lambda: attrs.append('name', name))
         self.expect(ex, lambda: attrs.append('style', style))
+
+        attrs = {
+            'id': id,
+            'name': name,
+        }
+
+        for k, v in attrs.items():
+            # Append using list
+            def f():
+                p.attributes += [k, v]
+            self.expect(ex, f)
+
+            # Append using attribute object
+            def f():
+                p.attributes += dom.attribute(k, v)
+            self.expect(ex, f)
+
+            # Append using tuple
+            def f():
+                p.attributes += k, v
+            self.expect(ex, f)
+
+            # Append using attributes collection
+            def f():
+                attrs = dom.attributes()
+                attrs += k, v
+                p.attributes += attrs
+            self.expect(ex, f)
+
+            # Append using dict
+            def f():
+                p.attributes += {
+                    k: v
+                }
+            self.expect(ex, f)
 
 class dom_cssclass(tester):
     def it_deals_with_undef_attr(self):

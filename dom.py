@@ -73,8 +73,6 @@ class attributes(entities.entities):
         # allowed to have content appended to them. An exception should
         # be raised when that happens, or maybe the document's `invaild`
         # proprety should be True.
-        if type(o) is list:
-            return super().append(o, uniq, r)
             
         if type(o) is str:
             o = attribute(o, v)
@@ -83,6 +81,9 @@ class attributes(entities.entities):
             for k, v in o.items():
                 self += k, v
             return
+
+        if hasattr(o, '__iter__'):
+            return super().append(o, uniq, r)
 
         for attr in self:
             if o.name == attr.name:
