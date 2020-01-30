@@ -4016,8 +4016,7 @@ class codes(elements):
     pass
 
 class code(element):
-    # TODO Remove this line
-    tag = 'code'
+    pass
 
 class codeblocks(codes):
     pass
@@ -4041,7 +4040,7 @@ class codeblock(code):
     # longer inherit from `code` anymore. If anything, it should inherit
     # from `pre`, but I don't know if that make much sense; maybe it
     # should just inherit from `element`. Not sure at this point. Also,
-    # we don't need to add a class called 'block' since 'pre > code'
+    # we don't need to add a CSS class called 'block' since 'pre > code'
     # would probably be equivelent to '.codeblock'.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
