@@ -537,24 +537,24 @@ class element(entities.entity):
         # as closely as possible - except for the `.text(function)`
         # overload.
 
-        # TODO Write tests. 
+        # FIXME:fa4e6674 This is a non-trivial problem
 
         r = ''
         blk = False
         for el in self.all:
             blk = blk or el.isblocklevel
-            if isinstance(el, text) and el.html.strip():
+            if isinstance(el, text):
                 if r:
-                    r += '\n\n' if blk else ' '
-                r += el.html
-        return r
+                    r += '\n' if blk else ''
+
+                r += ' ' + el.value
+
+                blk = False
+        return re.sub('\s+', ' ', r).strip()
 
     @text.setter
     def text(self, v):
-        # TODO: Remove elements before assigning text to the element.
-        # UPDATE: This should already work but should be
-        # reviewed and tested.
-        #self.elements.remove()
+        self.elements.clear()
         self += text(v)
 
     @property
@@ -1050,23 +1050,27 @@ class footer(element):
         pass
 
 class text(element):
-    def __init__(self, str):
-        self._str = str
+    def __init__(self, v):
+        self._value = v
 
     def clone(self):
-        el = type(self)(self._str)
+        el = type(self)(self._value)
         el += self.elements.clone()
         el.attributes = self.attributes.clone()
         return el
 
     def __str__(self):
-        return dedent(self._str).strip()
+        return dedent(self._value).strip()
 
     @property
     def html(self):
         return htmlmod.escape(
-            dedent(self._str)
-        ).strip()
+            dedent(self._value)
+        ).strip('\n')
+
+    @property
+    def value(self):
+        return htmlmod.escape(self._value)
 
 class wbrs(elements):
     pass

@@ -15222,20 +15222,52 @@ class pom_page(tester):
         self.eq('About stats', pgmnu.items.second.text)
         
 class dom_elements(tester):
-    def it_calls_text(self):
+    def it_gets_text(self):
+        # FIXME:fa4e6674 This is a non-trivial problem
+        return
+        html = dom.html('''
+        <div>
+            <p>
+                This is a paragraph with 
+                <em>
+                    emphasized text
+                </em>.
+            </p>
+            <p>
+                This is a paragraph with 
+                <strong>
+                    strong text
+                </strong>.
+            </p>
+        </div>
+        ''')
+
+        expect = self.dedent('''
+        This is a paragraph with emphasized text.
+        This is a paragraph with strong text.
+        ''')
+
+        self.eq(expect, html.text)
+
+        html = dom.html('''
+        <p>This is a paragraph with <em>emphasized text</em>.</p>
+        <p>This is a paragraph with <strong>strong text</strong>.</p>
+        ''')
+
+        self.eq(expect, html.text)
+
         html = dom.html(Shakespeare)
         expect = self.dedent('''
         No, thy words are too precious to be cast away upon
-
         curs; throw some of them at me; come, lame me with reasons.
         ''')
+
         actual = html['#speech3+div'].text
 
         self.eq(expect, actual)
 
         html = dom.html('<p>%s</p>' % actual)
         self.eq(expect, html.text)
-
 
     def it_calls_html(self):
         html = dom.html(TestHtml)
@@ -15268,6 +15300,55 @@ class dom_elements(tester):
 
 
 class dom_element(tester):
+    def it_gets_text(self):
+        # FIXME:fa4e6674 This is a non-trivial problem
+        return
+
+        html = dom.html('''
+        <div>
+          <p>
+            This is a paragraph with <em>emphasized</em> text.
+          </p>
+        </div>
+        ''')
+        p = html['p'].first
+
+        expect = 'This is a paragraph with emphasized text.'
+        self.eq(expect, p.text)
+        print(p.pretty)
+
+    def it_sets_text(self):
+        html = dom.html('''
+        <div>
+            <p>
+                This is a paragraph with 
+                <em>
+                    emphasized text
+                </em>.
+            </p>
+            <p>
+                This is a paragraph with 
+                <strong>
+                    strong text
+                </strong>.
+            </p>
+        </div>
+        ''')
+
+        self.two(html['div'].first.children)
+
+        html['div'].text = 'Some text'
+
+        self.zero(html['div'].first.children)
+
+        self.eq('Some text', html['div'].first.elements.first.value)
+
+        expect = self.dedent('''
+        <div>
+          Some text
+        </div>''')
+
+        self.eq(expect, html.pretty)
 
     def it_class_language(self):
         html = dom.html('''
