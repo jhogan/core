@@ -15297,8 +15297,6 @@ class dom_elements(tester):
         bs = html['strong']
         self.zero(bs)
 
-
-
 class dom_element(tester):
     def it_gets_text(self):
         # FIXME:fa4e6674 This is a non-trivial problem
@@ -15521,7 +15519,7 @@ class test_comment(tester):
         expect = '<!--%s-->' % txt
         self.eq(expect, com.html)
 
-class test_paragraph(tester):
+class dom_paragraph(tester):
     def it_calls__init___with_str_and_args(self):
         ''' With str arg '''
         hex1, hex2 = [x.hex for x in (uuid4(), uuid4())]
@@ -15593,6 +15591,7 @@ class test_paragraph(tester):
         p += '''
             Doesn't matter, just throw it away!
         '''
+
         expect = self.dedent('''
         <p>
           Plain white sauce!
@@ -15608,7 +15607,7 @@ class test_paragraph(tester):
 
         self.eq(expect, p.pretty)
 
-class test_text(tester):
+class dom_text(tester):
     def it_calls_html(self):
         txt = self.dedent('''
         <p>
@@ -15855,17 +15854,6 @@ class dom_attribute(tester):
         attrs += 'foo', 'bar'
         attrs += 'baz', 'quux'
         p.attributes += attrs
-
-        # TODO We may want to use the element's indexor to delegate to
-        # its attribute collection:
-        # 
-        #     p['lang'] = 'en'
-        #     assert p['lang'] == 'en'
-        #     assert p.attributes['lang'] == 'en'
-        #
-        # Also, I think element.__getitem__ should return the
-        # attribute's string value instead of the attribute object.
-        # Getting an attribute object would be very counter-intuitive.
 
         # it appends using a dict()
         cls = uuid4().hex
@@ -16180,7 +16168,7 @@ class dom_cssclass(tester):
 class test_header(tester):
     pass
 
-class test_html(tester):
+class dom_html(tester):
     def it_morphs(self):
         # When dom.html is given a string, it morphs into a subtype of
         # `elements`. When single str argument is given, it remains a
@@ -16258,7 +16246,7 @@ class test_html(tester):
         '''
         self.expect(NotImplementedError, lambda: dom.html(html))
 
-class test_markdown(tester):
+class dom_markdown(tester):
     def it_parses_code(self):
         md = dom.markdown('''
         Use the `printf()` function.
@@ -17183,7 +17171,7 @@ class test_selectors(tester):
             )
 
     def it_raises_on_invalid_identifiers(self):
-        ''' In CSS, identifiers (including element names, classes, and
+        """ In CSS, identifiers (including element names, classes, and
         IDs in selectors) can contain only the characters [a-zA-Z0-9]
         and ISO 10646 characters U+00A0 and higher, plus the hyphen (-)
         and the underscore (_); they cannot start with a digit, two
@@ -17193,7 +17181,7 @@ class test_selectors(tester):
         “B&W?” may be written as “B\&W\?” or “B\26 W\3F”.
 
             -- W3C Specification
-        '''
+        """
         
         ''' Valids '''
         sels = [
@@ -17712,9 +17700,8 @@ class test_selectors(tester):
 
         for sel in sels:
             els = html[sel]
-            # TODO
-            #self.one(els)
-            #self.eq('second-child-of-h2', els.first.id)
+            self.one(els)
+            self.eq('second-child-of-h2', els.first.id)
 
         sels = [
             'html > body > div#adjacency-anchor ~ p',
