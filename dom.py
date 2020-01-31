@@ -1050,8 +1050,11 @@ class footer(element):
         pass
 
 class text(element):
-    def __init__(self, v):
+    def __init__(self, v, esc=True):
         self._value = v
+        self._html = v
+        if esc:
+            self._html = htmlmod.escape(self._value)
 
     def clone(self):
         el = type(self)(self._value)
@@ -1060,17 +1063,21 @@ class text(element):
         return el
 
     def __str__(self):
-        return dedent(self._value).strip()
+        return self.value
 
     @property
     def html(self):
-        return htmlmod.escape(
-            dedent(self._value)
-        ).strip('\n')
+        return dedent(self._html).strip('\n')
+
+    @html.setter
+    def html(self, v):
+        self._html = v
 
     @property
     def value(self):
-        return htmlmod.escape(self._value)
+        return self._value
+
+
 
 class wbrs(elements):
     pass
@@ -3452,7 +3459,7 @@ class html(element):
 
             # Assume the input st is HTML and convert the elements in
             # the HTML sting into a collection of `elements` objects.
-            prs = _htmlparser()
+            prs = _htmlparser(convert_charrefs=False)
             prs.feed(html)
             if prs.stack:
                 raise HtmlParseError('Unclosed tag', frm=prs.stack[-1])
@@ -3523,7 +3530,26 @@ class _htmlparser(HTMLParser):
                     'No element to add text to', [None, self.getpos()]
                 )
         else:
-            cur[0] += data
+            last = cur[0].elements.last
+            if type(last) is text:
+                last._html += data
+            else:
+                cur[0] += data
+
+    def handle_entityref(self, name):
+        try:
+            cur = self.stack[-1]
+        except IndexError:
+            raise HtmlParseError(
+                'No element to add text to', [None, self.getpos()]
+            )
+        else:
+            txt = text('&%s;' % name, esc=False)
+            last = cur[0].elements.last
+            if type(last) is text:
+                last.html += txt.value
+            else:
+                cur[0] += txt
 
     def handle_decl(self, decl):
         raise NotImplementedError(
