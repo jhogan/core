@@ -387,6 +387,46 @@ class tester(entity):
     def preserve(str):
         return dedent(str)[1:-1]
 
+    def get(self, pg, *args, **kwargs):
+        import wsgi
+
+        st, hdrs = None, None
+
+        def sres(st0, hdrs0):
+            global st
+            global hdrs
+            st, hdrs = st0, hdrs0
+
+        env= {
+			'content_length': '',
+			'content_type': 'application/x-www-form-urlencoded',
+			'http_accept': '*/*',
+			'http_host': '127.0.0.0:8000',
+			'http_user_agent': 'tester/1.0',
+			'path_info': '/',
+			'query_string': '',
+			'raw_uri': '/',
+			'remote_addr': '52.52.249.177',
+			'remote_port': '43130',
+			'request_method': 'get',
+			'script_name': '',
+			'server_name': '172.31.9.64',
+			'server_port': '8000',
+			'server_protocol': 'http/1.1',
+			'server_software': 'gunicorn/19.4.5',
+			'gunicorn.socket': None,
+			'wsgi.errors': None,
+			'wsgi.file_wrapper': None,
+			'wsgi.input': '',
+			'wsgi.multiprocess': False,
+			'wsgi.multithread': False,
+			'wsgi.run_once': False,
+			'wsgi.url_scheme': 'http',
+			'wsgi.version': (1, 0)
+		}
+        B()
+        iter = wsgi.app(env, sres)
+
     def post(self, cls, meth, args):
         import app
 

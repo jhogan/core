@@ -15,90 +15,32 @@ class application:
         self.clear()
 
     def clear(self):
-        self._requestbody = None
-        self._requestsize = None
-        self._requestdata = None
-        self._class = None
-        self._method = None
+        self._request = None
 
     @property
     def environment(self):
         return self._env 
 
-    def demandvalid(self):
-        if len(self.requestbody) == 0:
-            raise http400('No data in body of request message.')
+    @environment.setter
+    def environment(self, v):
+        self._env = v
 
-        try:
-            reqdata = self.requestdata
-        except json.JSONDecodeError as ex:
-            raise http400(str(ex))
-
-        try:
-            cls = reqdata['_class']
-        except KeyError:
-            msg = 'The class value was not supplied.'
-            raise http404(msg)
-
-        try:
-            meth = self.method
-        except KeyError:
-            msg = 'The method value was not supplied.'
-            raise ValueError(msg)
-
-        if meth[0] == '_':
-            raise http403('Invalid method.')
-
-        try:
-            import ctrl
-        except ImportError as ex:
-            raise ImportError('Error importing controller: ' + str(ex))
-        
     @property
-    def requestsize(self):
-        if self._requestsize == None:
-            try:
-                self._requestsize = int(self.environment.get('CONTENT_LENGTH', 0))
-            except(ValueError):
-                self._requestsize = 0
-        return self._requestsize
+    def request(self):
+        if not self._request:
+            self._request = request(self)
+        return self._request
+
+    def demand(self):
+        self.request.demand()
            
-    @property
-    def requestbody(self):
-        if self._requestbody == None:
-            reqsize = self.requestsize
-            self._requestbody = self.environment['wsgi.input'].read(reqsize).decode('utf-8')
-        return self._requestbody
-
-    @property
-    def requestdata(self):
-        if self._requestdata == None:
-            reqbody = self.requestbody
-            self._requestdata = json.loads(reqbody)
-        return self._requestdata
-
-    @property
-    def class_(self):
-        if self._class == None:
-            reqdata = self.requestdata
-            cls = reqdata['_class'] 
-            self._class = reduce(getattr, cls.split('.'), sys.modules['ctrl'])
-        return self._class
-
-    @property
-    def method(self):
-        if self._method == None:
-            reqdata = self.requestdata
-            self._method = reqdata['_method']
-        return self._method
-
     def __call__(self, env, sres):
         try:
             self.clear()
 
-            self._env = env
+            self.environment = env
 
-            self.demandvalid()
+            self.demand()
 
             reqdata = self.requestdata
 
@@ -141,6 +83,74 @@ class application:
 
             sres(statuscode, resheads)
             return iter([data])
+
+class request:
+    def __init__(self, app):
+        self.app = app
+
+
+    @property
+    def body(self):
+        sz = self.size
+        inp = app.environment['wsgi.input']
+        return inp.read(sz).decode('utf-8')
+
+    @property
+    def size(self):
+        try:
+            return int(self.environment.get('CONTENT_LENGTH', 0))
+        except ValueError:
+            return 0
+
+    @property
+    def post(self):
+        return json.loads(self.body)
+
+    @property
+    def class_(self):
+        cls = self.data['_class'] 
+        return reduce(getattr, cls.split('.'), sys.modules['ctrl'])
+
+    @property
+    def postmethod(self):
+        # NOTE This is the "method" used in POSTs. It's not the request
+        # method (post, get, head, etc). The request method is found at
+        # `request.method`
+        return post['_method']
+
+    @property
+    def method(self):
+        return self.environment['request_method']
+
+    def demand(self):
+        if len(self.body) == 0:
+            raise http400('No data in body of request message.')
+
+        if self.method == 'get':
+            return
+
+        try:
+            post = self.post
+        except json.JSONDecodeError as ex:
+            raise http400(str(ex))
+
+        try:
+            cls = post['_class']
+        except KeyError:
+            raise http404('The class value was not supplied')
+
+        try:
+            meth = self.postmethod
+        except KeyError:
+            raise ValueError('The method value was not supplied')
+
+        if meth[0] == '_':
+            raise http403('Invalid method.')
+
+        try:
+            import ctrl
+        except ImportError as ex:
+            raise ImportError('Error importing controller: ' + str(ex))
 
 class httperror(Exception):
     def __init__(self, statuscode, msg):
