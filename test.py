@@ -16573,7 +16573,6 @@ class dom_markdown(tester):
         ''')
 
         self.eq(expect, md.pretty)
-        return 
 
         md = dom.markdown('&copy;')
         expect = self.dedent('''
@@ -16584,7 +16583,6 @@ class dom_markdown(tester):
 
         self.eq(expect, md.pretty)
 
-
         md = dom.markdown('4 < 5')
 
         expect = self.dedent('''
@@ -16592,6 +16590,7 @@ class dom_markdown(tester):
           4 &lt; 5
         </p>
         ''')
+
         self.eq(expect, md.pretty)
 
     def it_adds_linebreaks_to_paragraphs(self):
