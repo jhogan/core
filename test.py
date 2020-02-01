@@ -15659,8 +15659,9 @@ class dom_text(tester):
         &lt;/p&gt;
         ''')
 
-        txt = dom.text(txt)
-        self.eq(expect, txt.html)
+        self.eq(expect, dom.text(txt).html)
+
+        self.eq(txt, dom.text(txt, esc=False).html)
 
     def it_calls__str__(self):
         txt = self.dedent('''
