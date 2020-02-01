@@ -15220,6 +15220,25 @@ class pom_page(tester):
 
         self.eq('Main page', pgmnu.items.first.text)
         self.eq('About stats', pgmnu.items.second.text)
+
+    def it_calls_page(self):
+        class time(pom.page):
+            def main(self, tz='utc'):
+                m = self.main
+
+                m += dom.h2('Time')
+                m += dom.i('Timezone: ' + tz)
+
+                m += dom.time(datetime.now)
+                self._main_snapshot = dom.html(m.html)
+                self._html_snapshot = dom.html(self.html)
+
+        ws = foonet()
+        pg = time()
+        ws.pages += pg
+
+        res = self.get(pg, tz='America/Phoenix')
+
         
 class dom_elements(tester):
     def it_gets_text(self):
