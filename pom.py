@@ -20,7 +20,7 @@ import textwrap
 # https://www.w3.org/TR/wai-aria-practices/
 
 class site(entities.entity):
-    def __init__(self):
+    def __init__(self, host):
         self.pages = pages(rent=self)
         self.index = None
         self._html = None
@@ -33,6 +33,7 @@ class site(entities.entity):
         self.sidebars = sidebars()
 
         self._title = type(self).__name__.replace('_', '-')
+        self._host = host
 
         # TODO Replace with `file` object when it is created. NOTE that
         # the file object will need to have an integrity property to
@@ -45,6 +46,14 @@ class site(entities.entity):
         self.stylesheets = list()
         self._header = None
 
+    @classmethod
+    def getinstance(cls):
+        """ Get the single site instance for this session.
+        """
+        # TODO The site's host will be derived from a configuration file
+        # setting.
+        return cls('foo.net')
+
     def __repr__(self):
         return '%s()' % type(self).__name__
 
@@ -53,6 +62,10 @@ class site(entities.entity):
 
     def __getitem__(self, path):
         return self.pages[path]
+
+    @property
+    def host(self):
+        return self._host
 
     @property
     def lang(self):

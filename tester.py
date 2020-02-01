@@ -21,6 +21,7 @@ import sys
 import textwrap
 import uuid
 from dbg import B
+import wsgi
 
 # TODO Ensure tester.py won't run in non-dev environment
 
@@ -388,8 +389,6 @@ class tester(entity):
         return dedent(str)[1:-1]
 
     def get(self, pg, *args, **kwargs):
-        import wsgi
-
         st, hdrs = None, None
 
         def sres(st0, hdrs0):
@@ -403,14 +402,15 @@ class tester(entity):
 			'http_accept': '*/*',
 			'http_host': '127.0.0.0:8000',
 			'http_user_agent': 'tester/1.0',
-			'path_info': '/',
+			'path_info': pg.path,
 			'query_string': '',
 			'raw_uri': '/',
 			'remote_addr': '52.52.249.177',
 			'remote_port': '43130',
 			'request_method': 'get',
 			'script_name': '',
-			'server_name': '172.31.9.64',
+			'server_name': pg.site.host,
+			'server_site': pg.site,
 			'server_port': '8000',
 			'server_protocol': 'http/1.1',
 			'server_software': 'gunicorn/19.4.5',
@@ -424,7 +424,6 @@ class tester(entity):
 			'wsgi.url_scheme': 'http',
 			'wsgi.version': (1, 0)
 		}
-        B()
         iter = wsgi.app(env, sres)
 
     def post(self, cls, meth, args):

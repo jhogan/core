@@ -5,6 +5,8 @@ from pprint import pprint
 import traceback
 import re
 import os
+from dbg import B
+import pom
 
 # TODO Use the following diagram as a guide to determine what status
 # code to respond with:
@@ -42,15 +44,28 @@ class application:
 
             self.demand()
 
-            reqdata = self.requestdata
+            req = self.request
 
-            cls, meth = self.class_, self.method
+            if req.isget:
+                B()
+                pg = req.page
+                
+            elif req.ispost:
+                reqdata = self.request.post
 
-            obj = cls(self)
+                cls, meth = self.class_, self.method
 
-            data = getattr(obj, meth)()
+                obj = cls(self)
 
-            data = [] if data == None else data
+                data = getattr(obj, meth)()
+
+                data = [] if data == None else data
+
+            else:
+                # TODO Change to Bad Method exception> NOTE this block
+                # should be superfluous since the `self.demand` call
+                # should capture this problem
+                raise ValueError('Bad metho')
 
         except Exception as ex:
             if isinstance(ex, httperror):
@@ -88,12 +103,59 @@ class request:
     def __init__(self, app):
         self.app = app
 
+    @property
+    def environment(self):
+        return self.app.environment
+
+    @property
+    def servername(self):
+        return self.environment['server_name']
+
+    @property
+    def site(self):
+        """ Get the single site for this instance.
+        """
+        try:
+            # NOTE 'server_site' is a contrived, non-HTTP environment
+            # variable used by test scripts to pass in instances of site
+            # objects to use.
+
+            # TODO When the config logic is complete (eb7e5ad0) Ensure
+            # that we are in a test environment before accepting this
+            # variable to prevent against tampering.
+            ws = self.environment['server_site']
+            if isinstance(ws, pom.site):
+                return ws
+        except KeyError:
+            pass
+
+        # Return the site object as set in the config logic
+        return pom.site.getinstance()
+
+    @property
+    def page(self):
+        B()
+        ws = self.site
+        return ws[self.path]
 
     @property
     def body(self):
         sz = self.size
-        inp = app.environment['wsgi.input']
+        inp = self.environment['wsgi.input']
         return inp.read(sz).decode('utf-8')
+
+    @property
+    def path(self):
+        """ Corresponds to the WSGI PATH_INFO environment variable:
+
+        PATH_INFO
+            The remainder of the request URL's "path", designating the
+            virtual "location" of the request's target within the
+            application. This may be an empty string, if the request URL
+            targets the application root and does not have a trailing
+            slash.
+        """
+        return self.environment['path_info']
 
     @property
     def size(self):
@@ -122,35 +184,48 @@ class request:
     def method(self):
         return self.environment['request_method']
 
+    @property
+    def isget(self):
+        return self.method.casefold() == 'get'
+
+    @property
+    def ispost(self):
+        return self.method.casefold() == 'post'
+
     def demand(self):
-        if len(self.body) == 0:
-            raise http400('No data in body of request message.')
+        if self.isget:
+            if not len(self.path):
+                raise http400('No path was given.')
+            
+        elif self.ispost:
+            if len(self.body) == 0:
+                raise http400('No data in body of request message.')
 
-        if self.method == 'get':
-            return
+            if self.method == 'get':
+                return
 
-        try:
-            post = self.post
-        except json.JSONDecodeError as ex:
-            raise http400(str(ex))
+            try:
+                post = self.post
+            except json.JSONDecodeError as ex:
+                raise http400(str(ex))
 
-        try:
-            cls = post['_class']
-        except KeyError:
-            raise http404('The class value was not supplied')
+            try:
+                cls = post['_class']
+            except KeyError:
+                raise http404('The class value was not supplied')
 
-        try:
-            meth = self.postmethod
-        except KeyError:
-            raise ValueError('The method value was not supplied')
+            try:
+                meth = self.postmethod
+            except KeyError:
+                raise ValueError('The method value was not supplied')
 
-        if meth[0] == '_':
-            raise http403('Invalid method.')
+            if meth[0] == '_':
+                raise http403('Invalid method.')
 
-        try:
-            import ctrl
-        except ImportError as ex:
-            raise ImportError('Error importing controller: ' + str(ex))
+            try:
+                import ctrl
+            except ImportError as ex:
+                raise ImportError('Error importing controller: ' + str(ex))
 
 class httperror(Exception):
     def __init__(self, statuscode, msg):

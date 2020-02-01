@@ -14639,8 +14639,8 @@ class test_orm(tester):
 ########################################################################
 
 class foonet(pom.site):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, host='foo.net'):
+        super().__init__(host)
 
         # TODO This init logic probably should mostly put in overridden
         # properties:
@@ -15184,7 +15184,7 @@ class pom_page(tester):
         self.isnot(pg.head,          ws.head)
 
     def it_calls_site(self):
-        ws = foonet()
+        ws = foonet(host='foo.net')
         self.is_(ws, ws['/en/blogs'].site)
         self.is_(ws, ws['/en/blogs/comments'].site)
         self.is_(ws, ws['/en/blogs/comments/rejected'].site)
