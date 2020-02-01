@@ -15607,6 +15607,30 @@ class dom_paragraph(tester):
 
         self.eq(expect, p.pretty)
 
+    def it_works_with_html_entities(self):
+        p = dom.paragraph()
+
+        p += '''
+            &copy; 2020, All Rights Reserved
+        '''
+
+        expect = self.dedent('''
+        <p>
+          &amp;copy; 2020, All Rights Reserved
+        </p>
+        ''')
+
+        self.eq(expect, p.pretty)
+
+        expect = '<p>&amp;copy; 2020, All Rights Reserved</p>'
+        self.eq(expect, p.html)
+
+        expect = self.dedent('''
+            &copy; 2020, All Rights Reserved
+        ''')
+
+        self.eq(expect, p.text)
+
 class dom_text(tester):
     def it_calls_html(self):
         txt = self.dedent('''
