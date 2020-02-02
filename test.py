@@ -2448,7 +2448,7 @@ class test_table(tester):
 
         self.assertEq(s, str(tbl))
 
-class test_columns(tester):
+class table_columns(tester):
     def it_gets_widths(self):
         tbl = table()
         for i in range(5):
@@ -2460,7 +2460,7 @@ class test_columns(tester):
         self.assertEq(5, cs.count)
         self.assertEq([6] * 5, cs.widths)
 
-class test_column(tester):
+class table_column(tester):
     def it_calls__init(self):
         tbl = createtable(5, 5)
 

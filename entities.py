@@ -16,6 +16,7 @@ from functools import total_ordering
 import decimal
 import string
 from func import getattr
+from dbg import B
 
 class classproperty(property):
     ''' Add this decorator to a method and it becomes a class method
