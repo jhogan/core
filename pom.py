@@ -224,9 +224,18 @@ class menu(dom.nav):
             els.clear()
 
             for itm in self:
-                els += itm
+                els += itm.clone()
 
             return els
+
+        def __str__(self):
+            # The default is to call entities.entities.__str__, but we
+            # want to call dom.ul.__str__ since it contains logic for
+            # specifically formatting prettified HTML.
+            return dom.ul.__str__(self)
+
+        def __repr__(self):
+            return dom.ul.__repr__(self)
             
     class item(dom.li):
         def __init__(self, o, href=None):
