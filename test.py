@@ -14790,6 +14790,13 @@ class pom_site(tester):
         ws = foonet()
         self.five(ws.pages)
 
+    def it_appends_menu_items(self):
+        ws = foonet()
+        mnu = pom.menu('main')
+        main = ws.header.menus['main']
+        mnu.items += main.items
+        self.eq(main.items.html, mnu.items.html)
+        
     def it_calls__repr__(self):
         self.eq('site()', repr(pom.site()))
         self.eq('site()', str(pom.site()))
