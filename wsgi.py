@@ -37,6 +37,8 @@ class application:
         self.request.demand()
            
     def __call__(self, env, sres):
+        res = response()
+
         try:
             self.clear()
 
@@ -46,9 +48,9 @@ class application:
 
             req = self.request
 
+
             if req.isget:
-                B()
-                pg = req.page
+                res.body = req.page()
                 
             elif req.ispost:
                 reqdata = self.request.post
@@ -65,13 +67,13 @@ class application:
                 # TODO Change to Bad Method exception> NOTE this block
                 # should be superfluous since the `self.demand` call
                 # should capture this problem
-                raise ValueError('Bad metho')
+                raise ValueError('Bad method')
 
         except Exception as ex:
             if isinstance(ex, httperror):
-                statuscode = ex.statuscode
+                res.statuscode = ex.statuscode
             else:
-                statuscode = '500 Internal Server Error'
+                res.statuscode = '500 Internal Server Error'
 
             # Get the stack trace
             tb = traceback.format_exception(etype=None, value=None, tb=ex.__traceback__)
@@ -83,21 +85,10 @@ class application:
 
             data = {'_exception': repr(ex), '_traceback': tb}
 
-        else:
-            statuscode = '200 OK'
-
         finally:
-            data = json.dumps(data)
-            data = bytes(data, 'utf-8')
+            sres(res.statuscode, res.headers)
+            return iter([res.data])
 
-            resheads=[
-                ('Content-Length', str(len(data))),
-                ('Content-Type', 'application/json'),
-                ('Access-Control-Allow-Origin', '*'),
-            ]
-
-            sres(statuscode, resheads)
-            return iter([data])
 
 class request:
     def __init__(self, app):
@@ -134,7 +125,6 @@ class request:
 
     @property
     def page(self):
-        B()
         ws = self.site
         return ws[self.path]
 
@@ -226,6 +216,31 @@ class request:
                 import ctrl
             except ImportError as ex:
                 raise ImportError('Error importing controller: ' + str(ex))
+
+class response(self):
+    def __init__(self, pg):
+        self._page = pg
+
+    @property
+    def data(self):
+        # These lines are for XHR responses
+        # data = json.dumps(data)
+        # data = bytes(data, 'utf-8')
+
+    @property
+    def headers(self):
+        hdrs = [
+            ('Content-Length', str(len(self.data))),
+        ]
+
+        # if XHR
+        '''
+        hdrs.append(
+            ('Content-Type', 'application/json'),
+            ('Access-Control-Allow-Origin', '*')
+        )
+        '''
+
 
 class httperror(Exception):
     def __init__(self, statuscode, msg):
