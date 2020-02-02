@@ -286,7 +286,20 @@ class menu(dom.nav):
                 els += dom.text(self.text)
 
             if self.items.count:
-                els += self.items
+                #els += self.items
+                # NOTE:78053602 Append naturally wants to flatten collection that are
+                # passed to it, so set flatten to false so
+                # `self.items`'s hierarchy can be preserved when
+                # appending to `els`.
+                #
+                # <aside>
+                #     `menu.items` collections inherit from `entities`
+                #     and `ul` so they lead double lives as collections
+                #     and as singular entity objects. So effort has to
+                #     be exerted to ensure they are treated as entity
+                #     objects when necessary.
+                # </aside>
+                els.append(self.items, flatten=False)
 
             return els
 
@@ -338,7 +351,10 @@ class menu(dom.nav):
     def elements(self):
         els = super().elements
         els.clear()
-        els += self.items
+
+        # Append flat. See ref:78053602
+        # <s>els += self.items</s>
+        els.append(self.items, flatten=False)
         return els
 
     def __repr__(self):

@@ -468,7 +468,7 @@ class entities(object):
     def __lshift__(self, a):
         self.unshift(a)
     
-    def append(self, obj, uniq=False, r=None):
+    def append(self, obj, uniq=False, r=None, flatten=True):
         # Create the return object if it hasn't been passed in
         if r == None:
             # We use a generic entities class here because to use the subclass
@@ -476,9 +476,9 @@ class entities(object):
             # positional arguments be supplied.
             r = entities()
 
-        if isinstance(obj, entity):
+        #B(obj.__class__.__name__ == 'items')
+        if not flatten or isinstance(obj, entity) and not isinstance(obj, entities):
             t = obj
-
         elif hasattr(obj, '__iter__'):
             for t in obj:
                 if uniq:
