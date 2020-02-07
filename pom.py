@@ -387,14 +387,15 @@ class page(dom.html):
         self.pages = pages(rent=self)
         self._parentpages = pgs
         self._name = name
-        self._callingmain = False
-        self._calledmain = False
+        self._calling = False
+        self._called = False
         self._body = None
         self._title = None
         self._lang = None
         self._head = None
         self._header = None
         self._sidebars = None
+        self._args = dict()
 
         try:
             self._mainfunc = self.main
@@ -461,6 +462,30 @@ class page(dom.html):
         return self._sidebars
 
     @property
+    def _arguments(self):
+        return self._args
+
+    @_arguments.setter
+    def _arguments(self, v):
+        self._args = v
+
+    def clear(self):
+        self.main = dom.main()
+        self._called = False
+
+    def __call__(self, **qsargs):
+        self._arguments = qsargs
+        self.clear()
+        if not self._called:
+            try:
+                if not self._calling:
+                    self._calling = True
+                    f = self._mainfunc
+                    self._mainfunc(**self._arguments)
+            finally:
+                self._calling = False
+                self._called = True
+    @property
     def elements(self):
         els = super().elements
         els.clear()
@@ -469,25 +494,15 @@ class page(dom.html):
         if self.head:
             els += self.head
 
+        self.body.elements.remove()
+
         if self.header and self.header.parent is not self.body:
             self.body += self.header
 
         els += self.body
 
-
-        try:
-            self._mainfunc
-        except AttributeError:
-            pass
-        else:
-            if not self._calledmain:
-                try:
-                    if not self._callingmain:
-                        self._callingmain = True
-                        self._mainfunc()
-                finally:
-                    self._callingmain = False
-                    self._calledmain = True
+        # TODO Removing this call for now. Not sure why it was needed.
+        #self(**self._arguments)
 
         self.main._setparent(None)
 
@@ -548,15 +563,16 @@ class page(dom.html):
                 r = rent.name
             rent = rent.page
 
-        # TODO Path currently only ascend to the root to concatenate
-        # the pages path. However, the actual path must also contain the
-        # language segment as wel ('/en/'). When the `http.request`
-        # singleton is created, we can use it to get that language
-        # segment and return something like:
+        # TODO:159bf0df Path currently only ascend to the root to
+        # concatenate the pages path. However, the actual path must also
+        # contain the language segment as wel ('/en/'). When the
+        # `http.request` singleton is created, we can use it to get that
+        # language segment and return something like:
         # 
         #     return http.request.language + '/' + r
         # or
         #     return http.request.region + '/' + r
+
 
         return '/' + r
 

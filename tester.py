@@ -22,6 +22,7 @@ import textwrap
 import uuid
 from dbg import B
 import wsgi
+from urllib.parse import urlencode
 
 # TODO Ensure tester.py won't run in non-dev environment
 
@@ -368,7 +369,6 @@ class tester(entity):
     def failures(self):
         return self._failures
 
-
     def __str__(self):
         if self.failures.isempty:
             r = ''
@@ -388,12 +388,12 @@ class tester(entity):
     def preserve(str):
         return dedent(str)[1:-1]
 
-    def get(self, pg, *args, **kwargs):
+    def get(self, pg, **kwargs):
         st, hdrs = None, None
 
-        def sres(st0, hdrs0):
-            global st
-            global hdrs
+        def start_response(st0, hdrs0):
+            nonlocal st
+            nonlocal hdrs
             st, hdrs = st0, hdrs0
 
         env= {
@@ -403,7 +403,7 @@ class tester(entity):
 			'http_host': '127.0.0.0:8000',
 			'http_user_agent': 'tester/1.0',
 			'path_info': pg.path,
-			'query_string': '',
+			'query_string': urlencode(kwargs),
 			'raw_uri': '/',
 			'remote_addr': '52.52.249.177',
 			'remote_port': '43130',
@@ -424,7 +424,39 @@ class tester(entity):
 			'wsgi.url_scheme': 'http',
 			'wsgi.version': (1, 0)
 		}
-        iter = wsgi.app(env, sres)
+
+        # The WSGI interface must accept (env, start_response) and
+        # return an iter of zero or more strings. But instead of a
+        # simple string, status code and headers, the testing codes
+        # wants a wsgi.respones object for convenient testing. So we
+        # will create the request and reconstruct the response object
+        # here.
+
+        # Create WSGI app
+        app = wsgi.application()
+        app.environment = env
+
+        # Create request. Associate with app.
+        req = wsgi.request(app)
+
+        app.breakonexception = self.testers.breakonexception
+
+        # Make WSGI call
+        iter = app(env, start_response)
+
+        # Use the return data to reconstruct the response. 
+        #
+        # Note: We could give the app object a response property, since
+        # it creates its own response object internally. However, we
+        # want to ensure that the WSGI interface works correctly which
+        # requires us to capture the output and reconstruct the response
+        # object.
+        res = wsgi.response(req) 
+        res._status = st
+        res._headers = hdrs
+        res.data = next(iter)
+
+        return res
 
     def post(self, cls, meth, args):
         import app

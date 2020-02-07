@@ -6,7 +6,11 @@ import traceback
 import re
 import os
 from dbg import B
+import dom
 import pom
+import textwrap
+import urllib
+import pdb
 
 # TODO Use the following diagram as a guide to determine what status
 # code to respond with:
@@ -14,6 +18,7 @@ import pom
 # (Backup: # https://stackoverflow.com/questions/3297048/403-forbidden-vs-401-unauthorized-http-responses)
 class application:
     def __init__(self):
+        self.breakonexception = False
         self.clear()
 
     def clear(self):
@@ -36,8 +41,8 @@ class application:
     def demand(self):
         self.request.demand()
            
-    def __call__(self, env, sres):
-        res = response()
+    def __call__(self, env, start_response):
+        res = response(self.request)
 
         try:
             self.clear()
@@ -48,10 +53,8 @@ class application:
 
             req = self.request
 
-
             if req.isget:
-                res.body = req.page()
-                
+                res.data = req()
             elif req.ispost:
                 reqdata = self.request.post
 
@@ -70,10 +73,14 @@ class application:
                 raise ValueError('Bad method')
 
         except Exception as ex:
+            if self.breakonexception:
+                print(ex)
+                pdb.post_mortem(ex.__traceback__)
+
             if isinstance(ex, httperror):
-                res.statuscode = ex.statuscode
+                res.status = ex.statuscode
             else:
-                res.statuscode = '500 Internal Server Error'
+                res.status = 500
 
             # Get the stack trace
             tb = traceback.format_exception(etype=None, value=None, tb=ex.__traceback__)
@@ -86,13 +93,13 @@ class application:
             data = {'_exception': repr(ex), '_traceback': tb}
 
         finally:
-            sres(res.statuscode, res.headers)
+            start_response(res.message, res.headers)
             return iter([res.data])
-
 
 class request:
     def __init__(self, app):
         self.app = app
+        self.app._request = self
 
     @property
     def environment(self):
@@ -101,6 +108,14 @@ class request:
     @property
     def servername(self):
         return self.environment['server_name']
+
+    @property
+    def arguments(self):
+        return dict(urllib.parse.parse_qsl(self.qs))
+
+    @property
+    def qs(self):
+        return self.environment['query_string']
 
     @property
     def site(self):
@@ -126,7 +141,15 @@ class request:
     @property
     def page(self):
         ws = self.site
-        return ws[self.path]
+
+        # TODO:159bf0df self.path will know it's language segment when
+        # the request object is made into a singleton.
+        path = '/en' + self.path
+        return ws[path]
+
+    def __call__(self):
+        self.page(**self.arguments)
+        return self.page.html
 
     @property
     def body(self):
@@ -217,21 +240,168 @@ class request:
             except ImportError as ex:
                 raise ImportError('Error importing controller: ' + str(ex))
 
-class response(self):
-    def __init__(self, pg):
-        self._page = pg
+class response():
+    Messages = {
+        200: 'OK',
+		201: 'Created',
+		202: 'Accepted',
+		203: 'Non-Authoritative Information',
+		204: 'No Content',
+		205: 'Reset Content',
+		206: 'Partial Content',
+		207: 'Multi-Status',
+		208: 'Already Reported',
+		226: 'IM Used',
+
+		300: 'Multiple Choices',
+		301: 'Moved Permanently',
+		302: 'Found',
+		303: 'See Other',
+		304: 'Not Modified',
+		305: 'Use Proxy',
+		306: 'Switch Proxy',
+		307: 'Temporary Redirect',
+		308: 'Permanent Redirect',
+
+		400: 'Bad Request',
+		401: 'Unauthorized',
+		402: 'Payment Required',
+		403: 'Forbidden',
+		404: 'Not Found',
+		405: 'Method Not Allowed',
+		406: 'Not Acceptable',
+		407: 'Proxy Authentication Required',
+		408: 'Request Timeout',
+		409: 'Conflict',
+		410: 'Gone',
+		411: 'Length Required',
+		412: 'Precondition Failed',
+		413: 'Payload Too Large',
+		414: 'URI Too Long',
+		415: 'Unsupported Media Type',
+		416: 'Range Not Satisfiable',
+		417: 'Expectation Failed',
+		418: 'I\'m a teapot',
+		421: 'Misdirected Request',
+		422: 'Unprocessable Entity',
+		423: 'Locked',
+		424: 'Failed Dependency',
+		425: 'Too Early',
+		426: 'Upgrade Required',
+		428: 'Precondition Required',
+		429: 'Too Many Requests',
+		431: 'Request Header Fields Too Large',
+		451: 'Unavailable For Legal Reasons',
+
+		500: 'Internal Server Error',
+		501: 'Not Implemented',
+		502: 'Bad Gateway',
+		503: 'Service Unavailable',
+		504: 'Gateway Timeout',
+		505: 'HTTP Version Not Supported',
+		506: 'Variant Also Negotiates',
+		507: 'Insufficient Storage',
+		508: 'Loop Detected',
+		510: 'Not Extended',
+		511: 'Network Authentication Required',
+
+		# The following codes are not specified by any standard. 
+		103: 'Checkpoint',
+		218: 'This is fine',
+		419: 'Page Expired',
+		420: 'Method Failure',
+		420: 'Enhance Your Calm',
+		430: 'Request Header Fields Too Large',
+		450: 'Blocked by Windows Parental Controls',
+		498: 'Invalid Token',
+		499: 'Token Required',
+		509: 'Bandwidth Limit Exceeded',
+		529: 'Site is overloaded',
+		530: 'Site is frozen',
+		598: 'Network read timeout error',
+
+        # Microsoft's Internet Information Services web server expands
+        # the 4xx error space to signal errors with the client's
+        # request. 
+		440: 'Login Time-out',
+		449: 'Retry With',
+
+        # The nginx web server software expands the 4xx error space to
+        # signal issues with the client's request.
+		444: 'No Response',
+		494: 'Request header too large',
+		495: 'SSL Certificate Error',
+		496: 'SSL Certificate Required',
+		497: 'HTTP Request Sent to HTTPS Port',
+
+        # Cloudflare's reverse proxy service expands the 5xx series of
+        # errors space to signal issues with the origin server.[90] 
+		520: 'Web Server Returned an Unknown Error',
+		521: 'Web Server Is Down',
+		522: 'Connection Timed Out',
+		523: 'Origin Is Unreachable',
+		524: 'A Timeout Occurred',
+		525: 'SSL Handshake Failed',
+		526: 'Invalid SSL Certificate',
+		527: 'Railgun Error',
+
+        # Amazon's Elastic Load Balancing adds a few custom 4xx return
+        # codes 
+		460: '',
+		463: ''
+    }
+
+    def __init__(self, req):
+        self._data = None
+        self._status = 200
+        self.request = req
+        self._headers = None
+
+    @property
+    def status(self):
+        return self._status
+
+    @status.setter
+    def status(self, v):
+        self._status = v
+
+    @property
+    def message(self):
+        try:
+            return '%i %s' % (self.status, self.Messages[self.status])
+        except KeyError:
+            return str(self.status)
 
     @property
     def data(self):
         # These lines are for XHR responses
         # data = json.dumps(data)
         # data = bytes(data, 'utf-8')
+        return self._data
+
+    @data.setter
+    def data(self, v):
+        self._data = v
+
+    def __getitem__(self, sels):
+        return self.html[sels]
+
+    @property
+    def html(self):
+        return dom.html(self.data)
 
     @property
     def headers(self):
+        if self._headers is not None:
+            return self._headers
+
         hdrs = [
-            ('Content-Length', str(len(self.data))),
         ]
+
+        if self.data is not None:
+            hdrs.append(
+                ('Content-Length', str(len(self.data)))
+            )
 
         # if XHR
         '''
@@ -241,6 +411,26 @@ class response(self):
         )
         '''
 
+        return hdrs
+
+    def __repr__(self, pretty=False):
+        r = textwrap.dedent('''
+        URL:    %s
+        Method: %s
+        Status: %s
+
+        %s
+        ''')
+
+        return r % (
+            self.request.page.path,
+            self.request.method,
+            self.message,
+            dom.html(self.data).pretty if pretty else self.data,
+        )
+
+    def __str__(self):
+        return self.__repr__(pretty=True)
 
 class httperror(Exception):
     def __init__(self, statuscode, msg):

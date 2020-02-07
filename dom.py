@@ -21,6 +21,7 @@ import orm
 import re
 import string
 import sys
+import primative
 
 """
 An implementation of the HTML5 DOM.
@@ -521,6 +522,9 @@ class element(entities.entity):
         el.attributes = self.attributes.clone()
         return el
 
+    def clear(self):
+        self.elements.clear()
+
     def _elements_onadd(self, src, eargs):
         el = eargs.entity
         el._setparent(self)
@@ -727,9 +731,7 @@ class element(entities.entity):
             for el in rent.children:
                 if not includeself and el is self:
                     continue
-
                 els += el
-
         return els
 
     @property
@@ -783,7 +785,6 @@ class element(entities.entity):
 
             if recursive:
                 els += el.getchildren(recursive=True)
-
         return els
 
     @property
@@ -849,7 +850,6 @@ class element(entities.entity):
             if typ is element:
                 return prev.__name__
             prev = typ
-
 
     @property
     def pretty(self):
@@ -921,6 +921,10 @@ class element(entities.entity):
             args += [self.tag]
 
         return r % tuple(args)
+
+    @property
+    def last(self):
+        return self.elements.last
         
     def __str__(self):
         return self.pretty
@@ -2059,6 +2063,18 @@ class times(elements):
     pass
 
 class time(element):
+    def __init__(self, dt=None):
+        if dt is None:
+            return
+        if not isinstance(dt, primative.datetime):
+            raise TypeError(
+                'Use primative.datettime to ensure timezone '
+                'information is provided'
+            )
+
+        self.datetime = dt.isoformat()
+        self.text = dt.replace(microsecond=0, tzinfo=None).isoformat(' ')
+
     @property
     def datetime(self):
         return self.attributes['datetime'].value

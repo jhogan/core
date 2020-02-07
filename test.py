@@ -15222,14 +15222,28 @@ class pom_page(tester):
         self.eq('About stats', pgmnu.items.second.text)
 
     def it_calls_page(self):
+        # With params and kwargs
         class time(pom.page):
-            def main(self, tz='utc'):
+            def main(self, greet, tz='utc', **kwargs):
                 m = self.main
+
+                if greet:
+                    m += dom.p('Greetings')
+                    m.last.classes += 'greeting'
 
                 m += dom.h2('Time')
                 m += dom.i('Timezone: ' + tz)
 
-                m += dom.time(datetime.now)
+                m += dom.dl()
+
+                dl = m.last
+
+                for k in sorted(kwargs.keys()):
+                    v = kwargs[k]
+                    dl +=  dom.dt(k)
+                    dl +=  dom.dd(v)
+
+                m += dom.time(primative.datetime.utcnow())
                 self._main_snapshot = dom.html(m.html)
                 self._html_snapshot = dom.html(self.html)
 
@@ -15237,8 +15251,28 @@ class pom_page(tester):
         pg = time()
         ws.pages += pg
 
-        res = self.get(pg, tz='America/Phoenix')
+        # Test passing in th boolean (greet), str (tz) and kwargs(a, b)
+        res = self.get(pg, greet=True, tz='America/Phoenix', a=1, b=2)
 
+        ps = res['p.greeting']
+        self.one(ps)
+
+        ems = res['main>i']
+        self.one(ems)
+
+        self.eq('Timezone: America/Phoenix', ems.first.text)
+
+        dls = res['main>dl']
+        self.one(dls)
+
+        self.eq('a', dls['dt:nth-of-type(1)'].text)
+        self.eq('b', dls['dt:nth-of-type(2)'].text)
+
+        # Test passing in th boolean (greet), default second paraam (tZ)
+        # and kwargs(a, b)
+        B()
+        res = self.get(pg, greet=True, a=1, b=2)
+        print(res)
         
 class dom_elements(tester):
     def it_gets_text(self):
