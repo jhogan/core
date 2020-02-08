@@ -396,6 +396,8 @@ class tester(entity):
             nonlocal hdrs
             st, hdrs = st0, hdrs0
 
+        pg.clear()
+
         env= {
 			'content_length': '',
 			'content_type': 'application/x-www-form-urlencoded',
