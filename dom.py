@@ -380,7 +380,7 @@ class elements(entities.entities):
             return super().remove(e)
 
         rms = elements()
-        for e in self:
+        for e in self.reversed():
             rent = e.parent
             if rent:
                 e._parent = None
