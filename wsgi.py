@@ -43,6 +43,7 @@ class application:
            
     def __call__(self, env, start_response):
         res = response(self.request)
+        break_ = False
 
         try:
             self.clear()
@@ -74,8 +75,9 @@ class application:
 
         except Exception as ex:
             if self.breakonexception:
-                print(ex)
-                pdb.post_mortem(ex.__traceback__)
+                # Immediatly raise to tester's exception handler
+                break_ = True
+                raise
 
             if isinstance(ex, httperror):
                 res.status = ex.statuscode
@@ -93,8 +95,9 @@ class application:
             data = {'_exception': repr(ex), '_traceback': tb}
 
         finally:
-            start_response(res.message, res.headers)
-            return iter([res.data])
+            if not break_:
+                start_response(res.message, res.headers)
+                return iter([res.data])
 
 class request:
     def __init__(self, app):
