@@ -14791,8 +14791,8 @@ class pom_site(tester):
         self.five(ws.pages)
 
     def it_calls__repr__(self):
-        self.eq('site()', repr(pom.site()))
-        self.eq('site()', str(pom.site()))
+        self.eq('site()', repr(pom.site('foo.bar')))
+        self.eq('site()', str(pom.site('foo.bar')))
 
         self.eq('foonet()', repr(foonet()))
         self.eq('foonet()', str(foonet()))
@@ -14814,7 +14814,7 @@ class pom_site(tester):
         self.expect(IndexError, lambda: ws[dom.p()])
 
     def it_calls_html(self):
-        ws = pom.site()
+        ws = pom.site('foo.bar')
         self.type(dom.html, ws.html)
         self.eq('en', ws.html.lang)
 
@@ -14852,7 +14852,7 @@ class pom_site(tester):
         self.one(titles)
         self.eq(title, titles.first.text)
 
-        ws = pom.site()
+        ws = pom.site('foo.bar')
         hd = ws.head
         self.one(hd.children['meta[charset=utf-8]'])
 
@@ -14887,7 +14887,7 @@ class pom_site(tester):
         self.one(navs['[aria-label=Main]'])
 
     def it_calls_main_menu(self):
-        ws = pom.site()
+        ws = pom.site('foo.bar')
         mnu = ws.header.menu
         self.zero(mnu.items)
 
