@@ -474,17 +474,25 @@ class page(dom.html):
         self._called = False
 
     def __call__(self, **qsargs):
-        self._arguments = qsargs
-        self.clear()
-        if not self._called:
+        if self._called:
+            raise ValueError(
+                'Double execution. Call "page.clear" method before '
+                'second call.'
+            )
+
+        if not self._calling:
+            self._arguments = qsargs
+            f = self._mainfunc
             try:
-                if not self._calling:
-                    self._calling = True
-                    f = self._mainfunc
+                self._calling = True
+                try:
                     self._mainfunc(**self._arguments)
+                except TypeError as ex:
+                    B()
+                    raise
+                self._called = True
             finally:
                 self._calling = False
-                self._called = True
     @property
     def elements(self):
         els = super().elements
@@ -502,7 +510,7 @@ class page(dom.html):
         els += self.body
 
         # TODO Removing this call for now. Not sure why it was needed.
-        #self(**self._arguments)
+        self._called or self(**self._arguments)
 
         self.main._setparent(None)
 
