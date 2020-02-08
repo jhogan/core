@@ -13,6 +13,7 @@ from dbg import B
 import dom
 import entities
 import textwrap
+import inspect
 
 # References:
 #
@@ -463,6 +464,22 @@ class page(dom.html):
 
     @property
     def _arguments(self):
+        # If a parameter is required by the page (its in `params`) but
+        # was not given by the client in the query string, ensure that
+        # the parameter is in the args and set to None. If this is not
+        # done, a TypeError would be thrown by pages that require
+        # argument due to them being specified in its parameter list
+        # without a default.
+        params = inspect.signature(self._mainfunc).parameters.items()
+        for k, v in params:
+            if k == 'kwargs':
+                continue 
+            if v.default is not inspect.Parameter.empty:
+                continue
+
+            if k not in self._args:
+                self._args[k] = None
+
         return self._args
 
     @_arguments.setter
@@ -485,11 +502,7 @@ class page(dom.html):
             f = self._mainfunc
             try:
                 self._calling = True
-                try:
-                    self._mainfunc(**self._arguments)
-                except TypeError as ex:
-                    B()
-                    raise
+                self._mainfunc(**self._arguments)
                 self._called = True
             finally:
                 self._calling = False
