@@ -15224,7 +15224,7 @@ class pom_page(tester):
     def it_calls_page(self):
         # With params and kwargs
         class time(pom.page):
-            def main(self, greet, tz='utc', **kwargs):
+            def main(self, greet, tz='UTC', **kwargs):
                 m = self.main
 
                 if greet:
@@ -15234,14 +15234,15 @@ class pom_page(tester):
                 m += dom.h2('Time')
                 m += dom.i('Timezone: ' + tz)
 
-                m += dom.dl()
 
-                dl = m.last
+                if len(kwargs):
+                    m += dom.dl()
+                    dl = m.last
 
-                for k in sorted(kwargs.keys()):
-                    v = kwargs[k]
-                    dl +=  dom.dt(k)
-                    dl +=  dom.dd(v)
+                    for k in sorted(kwargs.keys()):
+                        v = kwargs[k]
+                        dl +=  dom.dt(k)
+                        dl +=  dom.dd(v)
 
                 m += dom.time(primative.datetime.utcnow())
                 self._main_snapshot = dom.html(m.html)
@@ -15268,12 +15269,42 @@ class pom_page(tester):
         self.eq('a', dls['dt:nth-of-type(1)'].text)
         self.eq('b', dls['dt:nth-of-type(2)'].text)
 
-        # Test passing in th boolean (greet), default second paraam (tZ)
-        # and kwargs(a, b)
-        B()
+        # Test passing in th boolean (greet), let the second parameter
+        # defalut to UTC and but setting some kwargs(a, b)
         res = self.get(pg, greet=True, a=1, b=2)
-        print(res)
+
+        ps = res['p.greeting']
+        self.one(ps)
+
+        ems = res['main>i']
+        self.one(ems)
+
+        self.eq('Timezone: UTC', ems.first.text)
+
+        dls = res['main>dl']
+        self.one(dls)
+
+        self.eq('a', dls['dt:nth-of-type(1)'].text)
+        self.eq('b', dls['dt:nth-of-type(2)'].text)
         
+        # Test passing in th boolean (greet), let the second parameter
+        # defalut to UTC and zero kwargs
+        res = self.get(pg, greet=True)
+
+        ps = res['p.greeting']
+        self.one(ps)
+
+        ems = res['main>i']
+        self.one(ems)
+
+        self.eq('Timezone: UTC', ems.first.text)
+
+        dls = res['main>dl']
+        self.zero(dls)
+
+        # Test passing in no arguments
+        res = self.get(pg)
+
 class dom_elements(tester):
     def it_gets_text(self):
         # FIXME:fa4e6674 This is a non-trivial problem
