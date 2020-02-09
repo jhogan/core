@@ -15253,7 +15253,7 @@ class pom_page(tester):
         ws.pages += pg
 
         # Test passing in th boolean (greet), str (tz) and kwargs(a, b)
-        res = self.get(pg, greet=True, tz='America/Phoenix', a=1, b=2)
+        res = self.get(ws, '/en/time?greet=1&tz=America/Phoenix&a=1&b=2')
 
         ps = res['p.greeting']
         self.one(ps)
@@ -15271,7 +15271,7 @@ class pom_page(tester):
 
         # Test passing in th boolean (greet), let the second parameter
         # defalut to UTC and but setting some kwargs(a, b)
-        res = self.get(pg, greet=True, a=1, b=2)
+        res = self.get(ws, '/en/time?greet=1&a=1&b=2')
 
         ps = res['p.greeting']
         self.one(ps)
@@ -15289,7 +15289,7 @@ class pom_page(tester):
         
         # Test passing in th boolean (greet), let the second parameter
         # defalut to UTC and zero kwargs
-        res = self.get(pg, greet=True)
+        res = self.get(ws, '/en/time?greet=1')
 
         ps = res['p.greeting']
         self.one(ps)
