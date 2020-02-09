@@ -206,7 +206,7 @@ class menus(entities.entities, dom.section):
         return els
 
 class menu(dom.nav):
-    class items(entities.entities, dom.ul):
+    class items(dom.lis):
         def clone(self):
             itms = type(self)()
 
@@ -220,13 +220,22 @@ class menu(dom.nav):
 
         @property
         def elements(self):
-            els = super().elements
-            els.clear()
+            els = dom.elements()
+            ul = dom.ul()
+            els += ul
 
             for itm in self:
-                els += itm.clone()
+                ul += itm.clone()
 
             return els
+
+        @property
+        def html(self):
+            return ''.join(x.html for x in self.elements)
+
+        @property
+        def pretty(self):
+            return '\n'.join(x.pretty for x in self.elements)
 
         def __str__(self):
             # The default is to call entities.entities.__str__, but we
@@ -236,7 +245,7 @@ class menu(dom.nav):
 
         def __repr__(self):
             return dom.ul.__repr__(self)
-            
+
     class item(dom.li):
         def __init__(self, o, href=None):
             self._text = self.page = None
@@ -286,20 +295,7 @@ class menu(dom.nav):
                 els += dom.text(self.text)
 
             if self.items.count:
-                #els += self.items
-                # NOTE:78053602 Append naturally wants to flatten collection that are
-                # passed to it, so set flatten to false so
-                # `self.items`'s hierarchy can be preserved when
-                # appending to `els`.
-                #
-                # <aside>
-                #     `menu.items` collections inherit from `entities`
-                #     and `ul` so they lead double lives as collections
-                #     and as singular entity objects. So effort has to
-                #     be exerted to ensure they are treated as entity
-                #     objects when necessary.
-                # </aside>
-                els.append(self.items, flatten=False)
+                els += self.items.elements
 
             return els
 
@@ -352,9 +348,7 @@ class menu(dom.nav):
         els = super().elements
         els.clear()
 
-        # Append flat. See ref:78053602
-        # <s>els += self.items</s>
-        els.append(self.items, flatten=False)
+        els += self.items.elements
         return els
 
     def __repr__(self):
@@ -637,26 +631,12 @@ class header(dom.header):
                 item = menu.item(o=pg)
                 r += item
 
-                for itm in getitems(pg.pages):
-                    item.items += itm
-
-                # FIXME:31b3fb5d This should work, however
-                # entities.append will test if the object being append
-                # is an entity first. If it is an entity, it will assume
-                # it doesn't need to iterate over the entity.
-                # 
-                # The return of `getitems(pg.pages)` is a pom.menu.items
-                # collection. Since `items` inherits from both
-                # `entities.entities` and `dom.ul`, it is an `entity`
-                # object and an `entities` object. `entitites.append()`
-                # should be corrected to handle this situation.
-
-                '''
                 item.items += getitems(pg.pages)
-                '''
+
             return r
 
         mnu = menu('main')
+
         for itm in getitems(self.site.pages):
             mnu.items += itm
 

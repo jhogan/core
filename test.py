@@ -14785,6 +14785,95 @@ class about_team(pom.page):
 class contact_us(pom.page):
     pass
     
+class pom_menu_item(tester):
+    def it_calls__init__(self):
+        itm = pom.menu.item('A text item')
+        expect = self.dedent('''
+        <li>
+          A text item
+        </li>
+        ''')
+        self.eq(expect, itm.pretty)
+        self.eq(expect, str(itm))
+
+        expect = '<li>A text item</li>'
+        self.eq(expect, itm.html)
+		
+
+class pom_menu_items(tester):
+    def it_calls_append(self):
+        itms = pom.menu.items()
+        itms += pom.menu.item('A text item')
+        itms += pom.menu.item('Another text item')
+
+        expect = self.dedent('''
+        <ul>
+          <li>
+            A text item
+          </li>
+          <li>
+            Another text item
+          </li>
+        </ul>
+        ''')
+
+        self.eq(expect, itms.pretty)
+        self.eq(expect, str(itms))
+
+        expect = self.dedent('''
+        <ul><li>A text item</li><li>Another text item</li></ul>
+        ''')
+
+        self.eq(expect, itms.html)
+
+    def it_calls_append_on_nested_items(self):
+        itms = pom.menu.items()
+        itms += pom.menu.item('A')
+        itms += pom.menu.item('B')
+
+        itms.first.items += pom.menu.item('A/A')
+        itms.first.items += pom.menu.item('A/B')
+
+        itms.second.items += pom.menu.item('B/A')
+        itms.second.items += pom.menu.item('B/B')
+
+        expect = self.dedent('''
+        <ul>
+          <li>
+            A
+            <ul>
+              <li>
+                A/A
+              </li>
+              <li>
+                A/B
+              </li>
+            </ul>
+          </li>
+          <li>
+            B
+            <ul>
+              <li>
+                B/A
+              </li>
+              <li>
+                B/B
+              </li>
+            </ul>
+          </li>
+        </ul>
+        ''')
+
+        self.eq(expect, itms.pretty)
+        self.eq(expect, str(itms))
+
+        expect = (
+            '<ul><li>A<ul><li>A/A</li><li>A/B</li></ul>'
+            '</li><li>B<ul><li>B/A</li><li>B/B</li></ul>'
+            '</li></ul>'
+        )
+        self.eq(expect, itms.html)
+
 class pom_site(tester):
     def it_calls__init__(self):
         ws = foonet()
@@ -14795,7 +14884,12 @@ class pom_site(tester):
         mnu = pom.menu('main')
         main = ws.header.menus['main']
         mnu.items += main.items
+
+        uls = dom.html(mnu.items.html)['ul>li']
+        self.count(16, uls)
+
         self.eq(main.items.html, mnu.items.html)
+        self.eq(main.items.pretty, mnu.items.pretty)
         
     def it_calls__repr__(self):
         self.eq('site()', repr(pom.site()))
