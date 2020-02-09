@@ -474,11 +474,18 @@ class page(dom.html):
         for k, v in params:
             if k == 'kwargs':
                 continue 
+
             if v.default is not inspect.Parameter.empty:
                 continue
 
             if k not in self._args:
                 self._args[k] = None
+
+            if v.annotation:
+                if v.annotation is bool:
+                    arg = self._args[k]
+                    if isinstance(arg, str):
+                        self._args[k] = arg.casefold() in ('1', 'true')
 
         return self._args
 

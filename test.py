@@ -15224,8 +15224,12 @@ class pom_page(tester):
     def it_calls_page(self):
         # With params and kwargs
         class time(pom.page):
-            def main(self, greet, tz='UTC', **kwargs):
+            def main(self, greet: bool, tz='UTC', **kwargs):
                 m = self.main
+
+                if greet is None:
+                    m += dom.p('Greeting was set to None')
+                    m.last.classes += 'greeting'
 
                 if greet:
                     m += dom.p('Greetings')
