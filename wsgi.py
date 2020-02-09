@@ -144,10 +144,7 @@ class request:
     @property
     def page(self):
         ws = self.site
-
-        # TODO:159bf0df self.path will know it's language segment when
-        # the request object is made into a singleton.
-        path = '/en' + self.path
+        path = self.path
         return ws[path]
 
     def __call__(self):

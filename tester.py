@@ -22,7 +22,7 @@ import textwrap
 import uuid
 from dbg import B
 import wsgi
-from urllib.parse import urlencode
+import urllib
 
 # TODO Ensure tester.py won't run in non-dev environment
 
@@ -388,14 +388,17 @@ class tester(entity):
     def preserve(str):
         return dedent(str)[1:-1]
 
-    def get(self, pg, **kwargs):
+    def get(self, ws, pg):
         st, hdrs = None, None
-
+        
         def start_response(st0, hdrs0):
             nonlocal st
             nonlocal hdrs
             st, hdrs = st0, hdrs0
 
+        url = urllib.parse.urlparse(pg)
+
+        pg = ws[url.path]
         pg.clear()
 
         env= {
@@ -404,12 +407,13 @@ class tester(entity):
 			'http_accept': '*/*',
 			'http_host': '127.0.0.0:8000',
 			'http_user_agent': 'tester/1.0',
-			'path_info': pg.path,
-			'query_string': urlencode(kwargs),
+			'path_info': url.path,
+			'query_string': url.query,
 			'raw_uri': '/',
 			'remote_addr': '52.52.249.177',
 			'remote_port': '43130',
 			'request_method': 'get',
+
 			'script_name': '',
 			'server_name': pg.site.host,
 			'server_site': pg.site,
