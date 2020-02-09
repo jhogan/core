@@ -15307,7 +15307,17 @@ class pom_page(tester):
         self.zero(dls)
 
         # Test passing in no arguments
-        res = self.get(pg)
+        res = self.get(ws, '/en/time')
+
+        self.eq('Greeting was set to None', res['p.greeting'].text)
+
+        ems = res['main>i']
+        self.one(ems)
+        self.eq('Timezone: UTC', ems.first.text)
+
+        dls = res['main>dl']
+        self.zero(dls)
+
 
 class dom_elements(tester):
     def it_gets_text(self):
