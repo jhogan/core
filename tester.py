@@ -389,35 +389,18 @@ class tester(entity):
     def preserve(str):
         return dedent(str)[1:-1]
 
-    def get(self, ws, pg):
-        st, hdrs = None, None
-        
-        def start_response(st0, hdrs0):
-            nonlocal st
-            nonlocal hdrs
-            st, hdrs = st0, hdrs0
-
-        url = urllib.parse.urlparse(pg)
-
-        pg = ws[url.path]
-        pg.clear()
-
-        env= {
+    @staticmethod
+    def _createenv(env=None):
+        r = {
 			'content_length': '',
 			'content_type': 'application/x-www-form-urlencoded',
 			'http_accept': '*/*',
 			'http_host': '127.0.0.0:8000',
 			'http_user_agent': 'tester/1.0',
-			'path_info': url.path,
-			'query_string': url.query,
 			'raw_uri': '/',
 			'remote_addr': '52.52.249.177',
 			'remote_port': '43130',
-			'request_method': 'get',
-
 			'script_name': '',
-			'server_name': pg.site.host,
-			'server_site': pg.site,
 			'server_port': '8000',
 			'server_protocol': 'http/1.1',
 			'server_software': 'gunicorn/19.4.5',
@@ -431,6 +414,38 @@ class tester(entity):
 			'wsgi.url_scheme': 'http',
 			'wsgi.version': (1, 0)
 		}
+
+        for k, v in env.items():
+            r[k] = v
+        
+        return r
+
+    def get(self, pg, ws):
+        if not isinstance(pg, str):
+            raise TypeError('pg parameter must be a str')
+
+        if not isinstance(ws, pom.site):
+            raise TypeError('ws parameter must be a pom.site')
+
+        st, hdrs = None, None
+        
+        def start_response(st0, hdrs0):
+            nonlocal st
+            nonlocal hdrs
+            st, hdrs = st0, hdrs0
+
+        url = urllib.parse.urlparse(pg)
+
+        pg = ws[url.path]
+        pg.clear()
+
+        env = self._createenv({
+            'path_info':       url.path,
+            'query_string':    url.query,
+            'server_name':     pg.site.host,
+            'server_site':     pg.site,
+            'request_method':  'get',
+        })
 
         # The WSGI interface must accept (env, start_response) and
         # return an iter of zero or more strings. But instead of a
