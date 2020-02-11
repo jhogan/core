@@ -472,22 +472,64 @@ class page(dom.html):
         # done, a TypeError would be thrown by pages that require
         # argument due to them being specified in its parameter list
         # without a default.
+
+        # Get parameters for self._mainfunc
         params = inspect.signature(self._mainfunc).parameters.items()
+
+        # If there are no params to _mainfunc, then clear _args because
+        # _mainfunc can accept no args
+        if not len(params):
+            self._args = dict()
+
+        kwargs = False
         for k, v in params:
-            if k == 'kwargs':
+            if v.kind == v.VAR_KEYWORD:
+                # A kwargs (VAR_KEYWORD) parameter was found
+                kwargs = True
                 continue 
 
             if v.default is not inspect.Parameter.empty:
                 continue
 
             if k not in self._args:
+                # If no argument was given for the parameter, create it
+                # and set it to None. This way, None gets passed as an
+                # argument to the parameter instead of nothing which
+                # would cause a TypeError.
                 self._args[k] = None
 
             if v.annotation:
+                arg = self._args[k]
+
+                # TODO Raise 422 if an exception occurs on coersion
+
+                # If the parameter has an annotation (a type hint) use
+                # the type hint to coerce the string to the hinted type.
+                # TODO We will need logic for datetime's, int's, etc. as
+                # well as bool's.
                 if v.annotation is bool:
-                    arg = self._args[k]
+                    # Interpret '1' and 'true' (case insensitive) as
+                    # True, otherwise the value will be interpreted as
+                    # False.
                     if isinstance(arg, str):
                         self._args[k] = arg.casefold() in ('1', 'true')
+                elif datetime.datetime in v.annotation.mro():
+                    self._args[k] = primative.datetime(arg)
+                else:
+                    # Use the constructor of the class (v.annotation) to
+                    # coerce the data. This works well for types like
+                    # int, float, etc. This should also works with UUID
+                    # if the uuid is a simple hex representation
+                    # (uuid4().hex).
+                    self._args[k] = v.annotation(arg)
+
+        # If a **kwargs parameter (VAR_KEYWORD) was not found:
+        if not kwargs:
+            # Delete any of the _args that don't have a corresponding
+            # parameter
+            for k in list(self._args):
+                if k not in dict(params):
+                    del self._args[k]
 
         return self._args
 

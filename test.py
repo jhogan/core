@@ -15316,6 +15316,79 @@ class pom_page(tester):
         dls = res['main>dl']
         self.zero(dls)
 
+    def it_calls_page_coerses_datatypes(self):
+        class time(pom.page):
+            def main(
+                self, 
+                greet: bool, 
+                dt: datetime, 
+                i: int, 
+                pdt: primative.datetime):
+
+                assert type(greet) is bool
+                assert type(pdt) is primative.datetime
+                assert type(dt) is primative.datetime
+                assert type(i) is int
+
+                self.main += dom.h2('''
+                Arguments:
+                ''')
+
+                ul = dom.ul()
+                ul += dom.li('Greet: ' + str(greet))
+                ul += dom.li('Datetime: ' + dt.isoformat())
+                ul += dom.li('Primative Datetime: ' + pdt.isoformat())
+                ul += dom.li('Integer: ' + str(i))
+
+                self.main += ul
+
+        ws = foonet()
+        pg = time()
+        ws.pages += pg
+
+        res = self.get(
+            '/en/time?greet=1&dt=2020-02-10&pdt=2020-02-11&i=1234', 
+            ws
+        )
+
+        self.eq(
+            'Greet: True', 
+            res['main ul>li:nth-of-type(1)'].text
+        )
+
+        self.eq(
+            'Datetime: 2020-02-10T00:00:00',
+            res['main ul>li:nth-of-type(2)'].text
+        )
+
+        self.eq(
+            'Primative Datetime: 2020-02-11T00:00:00',
+            res['main ul>li:nth-of-type(3)'].text
+        )
+
+        self.eq(
+            'Integer: 1234',
+            res['main ul>li:nth-of-type(4)'].text
+        )
+
+    def it_calls_page_and_uses_request_object(self):
+        class time(pom.page):
+            def main(self):
+                # Ensure we have access to the request object from page.
+                self.main +=  dom.p('''
+                    Query string from request: %s
+                    ''', wsgi.request.qs
+                )
+
+        ws = foonet()
+        pg = time()
+        ws.pages += pg
+        
+        res = self.get('/en/time?herp=derp', ws)
+
+        ps = res['p']
+        self.one(ps)
+        self.eq('Query string from request: herp=derp', ps.first.text)
 
 class dom_elements(tester):
     def it_gets_text(self):
