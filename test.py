@@ -15255,7 +15255,7 @@ class pom_page(tester):
         ws.pages += pg
 
         # Test passing in th boolean (greet), str (tz) and kwargs(a, b)
-        res = self.get(ws, '/en/time?greet=1&tz=America/Phoenix&a=1&b=2')
+        res = self.get('/en/time?greet=1&tz=America/Phoenix&a=1&b=2', ws)
 
         ps = res['p.greeting']
         self.one(ps)
@@ -15273,7 +15273,7 @@ class pom_page(tester):
 
         # Test passing in th boolean (greet), let the second parameter
         # defalut to UTC and but setting some kwargs(a, b)
-        res = self.get(ws, '/en/time?greet=1&a=1&b=2')
+        res = self.get('/en/time?greet=1&a=1&b=2', ws)
 
         ps = res['p.greeting']
         self.one(ps)
@@ -15291,7 +15291,7 @@ class pom_page(tester):
         
         # Test passing in th boolean (greet), let the second parameter
         # defalut to UTC and zero kwargs
-        res = self.get(ws, '/en/time?greet=1')
+        res = self.get('/en/time?greet=1', ws)
 
         ps = res['p.greeting']
         self.one(ps)
@@ -15305,7 +15305,7 @@ class pom_page(tester):
         self.zero(dls)
 
         # Test passing in no arguments
-        res = self.get(ws, '/en/time')
+        res = self.get('/en/time', ws)
 
         self.eq('Greeting was set to None', res['p.greeting'].text)
 
