@@ -15221,7 +15221,7 @@ class pom_page(tester):
         self.eq('Main page', pgmnu.items.first.text)
         self.eq('About stats', pgmnu.items.second.text)
 
-    def it_calls_page(self):
+    def it_calls_page_with_arguments(self):
         # With params and kwargs
         class time(pom.page):
             def main(self, greet: bool, tz='UTC', **kwargs):
@@ -15249,8 +15249,6 @@ class pom_page(tester):
                         dl +=  dom.dd(v)
 
                 m += dom.time(primative.datetime.utcnow())
-                self._main_snapshot = dom.html(m.html)
-                self._html_snapshot = dom.html(self.html)
 
         ws = foonet()
         pg = time()

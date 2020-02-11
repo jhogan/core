@@ -16,6 +16,8 @@ import pdb
 # code to respond with:
 # https://www.loggly.com/blog/http-status-code-diagram/
 # (Backup: # https://stackoverflow.com/questions/3297048/403-forbidden-vs-401-unauthorized-http-responses)
+
+# TODO:16dcc94a Change wsgi.py to http.py
 class application:
     def __init__(self):
         self.breakonexception = False
@@ -374,6 +376,8 @@ class response():
 
     @property
     def data(self):
+        # TODO Call this property "payload"
+
         # These lines are for XHR responses
         # data = json.dumps(data)
         # data = bytes(data, 'utf-8')

@@ -23,6 +23,7 @@ import uuid
 from dbg import B
 import wsgi
 import urllib
+import pom
 
 # TODO Ensure tester.py won't run in non-dev environment
 
@@ -478,6 +479,8 @@ class tester(entity):
             global resheads
             statuscode, resheads = statuscode0, resheads0
 
+        # TODO Use the self._createenv() method to build the env
+        # variable.
         env= {
 			'content_length': len(body),
 			'content_type': 'application/x-www-form-urlencoded',
