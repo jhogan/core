@@ -37,13 +37,14 @@ class application:
     @property
     def request(self):
         if not self._request:
-            self._request = request(self)
+            self._request = _request(self)
         return self._request
 
     def demand(self):
         self.request.demand()
            
     def __call__(self, env, start_response):
+        global request
         res = response(self.request)
         break_ = False
 
@@ -55,6 +56,8 @@ class application:
             self.demand()
 
             req = self.request
+
+            request = self.request
 
             if req.isget:
                 res.data = req()
@@ -101,7 +104,10 @@ class application:
                 start_response(res.message, res.headers)
                 return iter([res.data])
 
-class request:
+            request = None
+
+request = None
+class _request:
     def __init__(self, app):
         self.app = app
         self.app._request = self

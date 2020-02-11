@@ -459,7 +459,7 @@ class tester(entity):
         app.environment = env
 
         # Create request. Associate with app.
-        req = wsgi.request(app)
+        req = wsgi._request(app)
 
         app.breakonexception = self.testers.breakonexception
 
