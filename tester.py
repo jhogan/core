@@ -25,7 +25,7 @@ import sys
 import textwrap
 import urllib
 import uuid
-import wsgi
+import http
 
 # TODO Ensure tester.py won't run in non-dev environment
 
@@ -452,19 +452,19 @@ class tester(entity):
         # The WSGI interface must accept (env, start_response) and
         # return an iter of zero or more strings. But instead of a
         # simple string, status code and headers, the testing codes
-        # wants a wsgi.respones object for convenient testing. So we
+        # wants a http.respones object for convenient testing. So we
         # will create the request and reconstruct the response object
         # here.
 
         # Create WSGI app
-        app = wsgi.application()
+        app = http.application()
 
         # TODO:292a6b5a Should we be assigning env to app.envirement here when
         # env is the first argument to app.__call__ (see below)
         app.environment = env
 
         # Create request. Associate with app.
-        req = wsgi._request(app)
+        req = http._request(app)
 
         app.breakonexception = self.testers.breakonexception
 
@@ -478,7 +478,7 @@ class tester(entity):
         # want to ensure that the WSGI interface works correctly which
         # requires us to capture the output and reconstruct the response
         # object.
-        res = wsgi.response(req) 
+        res = http.response(req) 
         res._status = st
         res._headers = hdrs
         res.data = next(iter)
@@ -520,21 +520,21 @@ class tester(entity):
         })
 
         # Create WSGI app
-        app = wsgi.application()
+        app = http.application()
 
         # TODO:292a6b5a Should we be assigning env to app.envirement here when
         # env is the first argument to app.__call__ (see below)
         app.environment = env
 
         # Create request. Associate with app.
-        req = wsgi._request(app)
+        req = http._request(app)
 
         app.breakonexception = self.testers.breakonexception
 
         # Make WSGI call
         iter = app(env, start_response)
 
-        res = wsgi.response(req) 
+        res = http.response(req) 
         res._status = st
         res._headers = hdrs
         res.data = next(iter)

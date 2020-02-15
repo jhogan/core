@@ -15480,7 +15480,7 @@ class pom_page(tester):
                 # Ensure we have access to the request object from page.
                 self.main +=  dom.p('''
                     Query string from request: %s
-                    ''', wsgi.request.qs
+                    ''', http.request.qs
                 )
 
         ws = foonet()
@@ -15530,8 +15530,8 @@ class pom_page(tester):
                     options = [(x, x) for x in tzs],
                     selected = ['US/Arizona']
                 )
-                if wsgi.request.ispost:
-                    frm.post = wsgi.request.payload
+                if http.request.ispost:
+                    frm.post = http.request.payload
 
         ws = foonet()
         pg = time()
