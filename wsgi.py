@@ -236,7 +236,8 @@ class _request:
             if len(self.payload) == 0:
                 raise http400('No data in body of request message.')
 
-            if self.method == 'get':
+            # The remaining demands will be for XHR requests only
+            if not self.isxhr:
                 return
 
             try:
