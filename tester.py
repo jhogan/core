@@ -456,6 +456,9 @@ class tester(entity):
 
         # Create WSGI app
         app = wsgi.application()
+
+        # TODO:292a6b5a Should we be assigning env to app.envirement here when
+        # env is the first argument to app.__call__ (see below)
         app.environment = env
 
         # Create request. Associate with app.

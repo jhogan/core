@@ -502,6 +502,9 @@ class element(entities.entity):
         )
 
     def __init__(self, body=None, *args, **kwargs):
+        # TODO If self.isvoid, the `body` parameter would be
+        # meaningless. In this case, if body is not None, we should
+        # throw a TypeError.
         if body is not None:
             if type(body) is str:
                 body %= args
@@ -945,6 +948,12 @@ class titles(elements):
     pass
 
 class title(element):
+    pass
+
+class smalls(elements):
+    pass
+
+class small(element):
     pass
 
 class ps(elements):

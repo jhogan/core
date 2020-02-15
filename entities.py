@@ -553,10 +553,12 @@ class entities(object):
 
     @property
     def hasone(self):
+        # TODO I think this should be renamed to 'issinguar'
         return self.count == 1
 
     @property
     def hasplurality(self):
+        # TODO I thikn is should be renamed to 'isplural'
         return self.count > 1
 
     @property

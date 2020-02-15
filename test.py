@@ -9895,6 +9895,7 @@ class test_orm(tester):
                         '''
                         # SPORADIC The following came up in one test
                         # run: Aug 6 2019
+                        # AGAIN Feb 11, 2020
                         eq in _chrontest at 523
                         expect: 4
                         actual: 3
