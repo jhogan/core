@@ -164,16 +164,20 @@ class phone(contactmechanism):
     # 999 range are currently considered invalid. The should probably
     # result in `brokenrules` if given. See
     # https://en.wikipedia.org/wiki/List_of_North_American_Numbering_Plan_area_codes
-    areacode = int, 200, 999
+    area = int, 200, 999
 
     # The phone number excluding the country code, area code and
     # extension. (See `party_contactmechanism` for `extension`.)
-    number = str
+    line = str
 
 class email(contactmechanism):
     pass
 
 class party_contactmechanism(orm.association):
+    class roles:
+        main = 0
+
+
     # The date range through which this contactmechanism applied to the
     # given ``party``.
     begin          =  datetime
@@ -204,7 +208,7 @@ class party_contactmechanism(orm.association):
     # internet address', 'service address', 'main office number', 'main
     # home number', 'secondary office number', 'work email address',
     # 'personal email address', 'main home address')
-    purpose = str
+    role = int
 
 class address(orm.entity):
     """ A postal address.
