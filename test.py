@@ -15,6 +15,7 @@ from datetime import timezone, datetime
 from entities import BrokenRulesError
 from func import enumerate, getattr, B
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
+from pprint import pprint
 from random import randint, uniform
 from table import *
 from tester import *
@@ -25,6 +26,7 @@ import decimal; dec=decimal.Decimal
 import dom
 import functools
 import gem
+import gem
 import io
 import jwt as pyjwt
 import math
@@ -34,10 +36,9 @@ import orm
 import pathlib
 import pom
 import primative
+import pytz
 import re
 import textwrap
-import gem
-from pprint import pprint
 
 # TODO Update copyright years
 
@@ -15390,6 +15391,79 @@ class pom_page(tester):
         ps = res['p']
         self.one(ps)
         self.eq('Query string from request: herp=derp', ps.first.text)
+
+    def it_posts(self):
+        class time(pom.page):
+            def main(self):
+                frm = dom.form()
+                frm += dom.h2('Change time')
+
+                self.main += frm
+
+                frm += pom.input(
+                    name = 'time',
+                    type = 'text',
+                    label = 'New time', 
+                    placeholder = 'Enter time here',
+                    help = 'Enter time and submit'
+                )
+
+                frm += pom.input(
+                    name = 'comment',
+                    type = 'textarea',
+                    label = 'Comment', 
+                    placeholder = 'Enter comment here',
+                    help = (
+                        'Enter comment to indicate '
+                        'why you changed the time.'
+                    )
+                )
+
+                tzs = pytz.all_timezones
+
+                frm += pom.input(
+                    name = 'timezone',
+                    type = 'select',
+                    label = 'Time Zone', 
+                    help = 'Select timezone',
+                    options = [(x, x) for x in tzs],
+                    selected = ['US/Arizona']
+                )
+                if wsgi.request.ispost:
+                    frm.post = wsgi.request.payload
+
+        ws = foonet()
+        pg = time()
+        ws.pages += pg
+
+        res = self.get('/en/time', ws)
+
+        frms = res['main>form']
+        self.one(frms)
+        frm = frms.first
+
+        time = '2020-02-11 20:44:14'
+        comment = 'My Comment'
+        tzs = ['US/Hawaii', 'America/Detroit']
+
+        frm['input[name=time]'].first.value = time
+        frm['textarea[name=comment]'].first.text = comment
+        frm['select[name=timezone]'].first.selected = tzs
+
+        res = self.post('/en/time', ws, frm)
+
+        inps = res['main>form input[name=time]']
+        self.one(inps)
+        self.eq(time, inps.first.value)
+
+        textarea = res['main>form textarea[name=comment]']
+        self.one(textarea)
+        self.eq(comment, textarea.first.text)
+
+        selected = res['main>form select option[selected]']
+
+        for tz in tzs:
+            self.true(tz in (x.value for x in selected))
 
 class dom_elements(tester):
     def it_gets_text(self):
