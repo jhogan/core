@@ -2624,6 +2624,7 @@ class inputs(elements):
     pass
 
 class input(element):
+    isvoid = True
     @property
     def min(self):
         return self.attributes['min'].value

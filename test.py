@@ -15958,7 +15958,6 @@ class dom_attribute(tester):
     def it_sets_None_attr(self):
         expect = self.dedent('''
         <input disabled>
-        </input>
         ''')
 
         inp = dom.input()
