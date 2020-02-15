@@ -62,15 +62,18 @@ class application:
             if req.isget:
                 res.data = req()
             elif req.ispost:
-                reqdata = self.request.post
+                if req.isxhr:
+                    reqdata = self.request.post
 
-                cls, meth = self.class_, self.method
+                    cls, meth = self.class_, self.method
 
-                obj = cls(self)
+                    obj = cls(self)
 
-                data = getattr(obj, meth)()
+                    data = getattr(obj, meth)()
 
-                data = [] if data == None else data
+                    data = [] if data == None else data
+                else:
+                    res.data = req()
 
             else:
                 # TODO Change to Bad Method exception> NOTE this block
