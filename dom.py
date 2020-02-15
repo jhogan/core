@@ -9,19 +9,20 @@
 ########################################################################
 
 from dbg import B
+from entities import classproperty
 from func import enumerate
 from html.parser import HTMLParser
 from mistune import Markdown
 from textwrap import dedent, indent
 import entities
-from entities import classproperty
 import html as htmlmod
 import operator
 import orm
+import primative
 import re
 import string
 import sys
-import primative
+import urllib.parse
 
 """
 An implementation of the HTML5 DOM.
@@ -1141,6 +1142,41 @@ class forms(elements):
     pass
 
 class form(element):
+    @property
+    def post(self):
+        els = self['input, select, textarea']
+
+        d = dict()
+        for el in els:
+            if isinstance(el, input):
+                d[el.name] = el.value
+            elif isinstance(el, select):
+                opts = el['[selected]']
+                for opt in opts:
+                    try:
+                        d[el.name].append(opt.value)
+                    except Exception as ex:
+                        d[el.name] = list([opt.value])
+
+            elif isinstance(el, textarea):
+                d[el.name] = el.text
+
+        # See https://docs.python.org/3/library/urllib.request.html#urllib-examples
+        return urllib.parse.urlencode(d, doseq=True).encode('ascii')
+
+    @post.setter
+    def post(self, v):
+        d = urllib.parse.parse_qs(v)
+
+        for k, v in d.items():
+            el = self['[name=%s]' % k].first
+            if isinstance(el, input):
+                el.value = v[0]
+            elif isinstance(el, select):
+                el.selected = v
+            elif isinstance(el, textarea):
+                el.text = v[0]
+
     @property
     def method(self):
         return self.attributes['method'].value
