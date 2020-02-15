@@ -185,15 +185,15 @@ class _request:
         return self.environment['path_info']
 
     @property
-    def size(self):
-        try:
-            return int(self.environment.get('CONTENT_LENGTH', 0))
-        except ValueError:
-            return 0
-
-    @property
     def post(self):
         return json.loads(self.body)
+
+    @property
+    def size(self):
+        try:
+            return int(self.environment.get('content_length', 0))
+        except ValueError:
+            return 0
 
     @property
     def class_(self):
@@ -218,6 +218,14 @@ class _request:
     @property
     def ispost(self):
         return self.method.casefold() == 'post'
+
+    @property
+    def isxhr(self):
+        return self.content_type == 'application/json'
+
+    @property
+    def content_type(self):
+        return self.environment['content_type']
 
     def demand(self):
         if self.isget:
