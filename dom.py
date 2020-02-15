@@ -2258,7 +2258,10 @@ class option(element):
 
     @selected.setter
     def selected(self, v):
-        self.attributes['selected'].value = v
+        if v:
+            self.attributes['selected'].value = None
+        else:
+            del self.attributes['selected']
 
     @property
     def value(self):
