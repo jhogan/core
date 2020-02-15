@@ -1857,6 +1857,11 @@ class entitymeta(type):
                     # create an entitymapping. This is for the the
                     # composites of an association.
                     map = entitymapping(k, v)
+                elif isinstance(v, type):
+                    # If v is not an entities or entity type, but is
+                    # still a type, ignore it. This condition will be
+                    # True of inner classes.
+                    continue
                 else:
                     # TODO This can happen if we pass an incorrect type.
                     #
