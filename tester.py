@@ -6,24 +6,26 @@
 
 from configfile import configfile
 from contextlib import contextmanager
+from dbg import B
 from entities import *
 from pprint import pprint
 from textwrap import dedent
 from timer import stopwatch
 from types import FunctionType
 import argparse
+import dom
 import inspect
 import json
 import pdb
+import pom
 import pprint
 import primative
+import io
 import sys
 import textwrap
-import uuid
-from dbg import B
-import wsgi
 import urllib
-import pom
+import uuid
+import wsgi
 
 # TODO Ensure tester.py won't run in non-dev environment
 
@@ -483,7 +485,68 @@ class tester(entity):
 
         return res
 
-    def post(self, cls, meth, args):
+    def post(self, pg, ws, frm):
+        if not isinstance(pg, str):
+            raise TypeError('pg parameter must be a str')
+
+        if not isinstance(ws, pom.site):
+            raise TypeError('ws parameter must be a pom.site')
+
+        if not isinstance(frm, dom.form):
+            raise TypeError('frm parameter must be a dom.form')
+
+        st, hdrs = None, None
+        
+        def start_response(st0, hdrs0):
+            nonlocal st
+            nonlocal hdrs
+            st, hdrs = st0, hdrs0
+
+        url = urllib.parse.urlparse(pg)
+
+        pg = ws[url.path]
+        pg.clear()
+
+        inp = io.BytesIO(frm.post)
+
+        env = self._createenv({
+            'path_info':       url.path,
+            'query_string':    url.query,
+            'server_name':     pg.site.host,
+            'server_site':     pg.site,
+            'request_method':  'post',
+            'content_length':  len(frm.post),
+            'wsgi.input':      inp,
+        })
+
+        # Create WSGI app
+        app = wsgi.application()
+
+        # TODO:292a6b5a Should we be assigning env to app.envirement here when
+        # env is the first argument to app.__call__ (see below)
+        app.environment = env
+
+        # Create request. Associate with app.
+        req = wsgi._request(app)
+
+        app.breakonexception = self.testers.breakonexception
+
+        # Make WSGI call
+        iter = app(env, start_response)
+
+        res = wsgi.response(req) 
+        res._status = st
+        res._headers = hdrs
+        res.data = next(iter)
+
+        return res
+
+    def xhrpost(self, cls, meth, args):
+        # NOTE This is currently unused and is left here for now for
+        # reference purposese. It was used as a generic XHR endpoint. It
+        # was originally called 'post' but post is now used for
+        # traditional HTTP POSTs. This will all likely change in the
+        # future.
         import app
 
         body = {
