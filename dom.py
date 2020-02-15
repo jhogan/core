@@ -3153,6 +3153,29 @@ class selects(elements):
 
 class select(element):
     @property
+    def selected(self):
+        r = list()
+        for el in self:
+            if not isinstance(el, option):
+                continue
+
+            if el.selected is not undef:
+                el.append(el.value)
+
+        return r
+
+    @selected.setter
+    def selected(self, v):
+        for el in self:
+            if not isinstance(el, option):
+                continue
+
+            el.selected = False
+
+            if el.value in v:
+                el.selected = True
+            
+    @property
     def required(self):
         return self.attributes['required'].value
 
