@@ -114,6 +114,7 @@ class _request:
     def __init__(self, app):
         self.app = app
         self.app._request = self
+        self._payload = None
 
     @property
     def environment(self):
@@ -163,10 +164,12 @@ class _request:
         return self.page.html
 
     @property
-    def body(self):
-        sz = self.size
-        inp = self.environment['wsgi.input']
-        return inp.read(sz).decode('utf-8')
+    def payload(self):
+        if self._payload is None:
+            sz = self.size
+            inp = self.environment['wsgi.input']
+            self._payload = inp.read(sz).decode('utf-8')
+        return self._payload
 
     @property
     def path(self):
@@ -222,7 +225,7 @@ class _request:
                 raise http400('No path was given.')
             
         elif self.ispost:
-            if len(self.body) == 0:
+            if len(self.payload) == 0:
                 raise http400('No data in body of request message.')
 
             if self.method == 'get':
