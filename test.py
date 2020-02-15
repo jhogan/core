@@ -14716,6 +14716,12 @@ class gem_person(tester):
         self.eq(per.id, per1.party_parties.last.subject.id)
         self.eq(com.id, per1.party_parties.last.object.id)
 
+        self.one(per1.parties)
+        self.eq(com.id, per1.parties.first.id)
+
+        self.one(per1.companies)
+        self.eq(com.id, per1.companies.first.id)
+
     def it_creates_association_to_person(self):
         bro = self.getvalid()
         sis = self.getvalid()
@@ -14723,6 +14729,7 @@ class gem_person(tester):
         # TODO Figure out a way to do this:
         #
         #     bro.siblings += sis
+
         bro.party_parties += gem.party_party.sibling(sis)
 
         self.is_(bro, bro.party_parties.last.subject)
@@ -14734,7 +14741,48 @@ class gem_person(tester):
 
         self.eq(bro.id, bro1.party_parties.last.subject.id)
         self.eq(sis.id, bro1.party_parties.last.object.id)
+
+        self.one(bro1.parties)
+        self.eq(sis.id, bro1.parties.first.id)
+
+        self.one(bro1.persons)
+        self.eq(sis.id, bro1.persons.first.id)
+
+    def it_associates_phone_numbers(self):
+        per = self.getvalid()
+
+        ph = gem.phone()
+        ph.area = 555
+        ph.line = '555 5555'
         
+        pcm = gem.party_contactmechanism()
+        pcm.begin             =  primative.datetime('1976-01-01')
+        pcm.end               =  None
+        pcm.solicitations     =  False
+        pcm.extension         =  None
+        pcm.purpose           =  gem.party_contactmechanism.roles.main
+        pcm.contactmechanism  =  ph
+        pcm.party             =  per
+        print(repr(pcm))
+
+        per.party_contactmechanisms += pcm
+
+        with db.chronicler.snapshot() as s:
+            per.save()
+            print(s)
+
+        per1 = gem.person(per.id)
+
+        self.one(per1.party_contactmechanisms)
+
+        self.eq(per1.id, per1.party_contactmechanisms.first.party.id)
+
+        self.eq(
+            ph.id, 
+            per1.party_contactmechanisms.first.contactmechanism.id
+        )
+
+
 class gem_company(tester):
     def __init__(self):
         super().__init__()
