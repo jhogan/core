@@ -222,7 +222,7 @@ class menus(entities.entities, dom.section):
         return els
 
 class menu(dom.nav):
-    class items(entities.entities, dom.ul):
+    class items(dom.lis):
         def clone(self):
             itms = type(self)()
 
@@ -236,14 +236,32 @@ class menu(dom.nav):
 
         @property
         def elements(self):
-            els = super().elements
-            els.clear()
+            els = dom.elements()
+            ul = dom.ul()
+            els += ul
 
             for itm in self:
-                els += itm
+                ul += itm.clone()
 
             return els
-            
+
+        @property
+        def html(self):
+            return ''.join(x.html for x in self.elements)
+
+        @property
+        def pretty(self):
+            return '\n'.join(x.pretty for x in self.elements)
+
+        def __str__(self):
+            # The default is to call entities.entities.__str__, but we
+            # want to call dom.ul.__str__ since it contains logic for
+            # specifically formatting prettified HTML.
+            return dom.ul.__str__(self)
+
+        def __repr__(self):
+            return dom.ul.__repr__(self)
+
     class item(dom.li):
         def __init__(self, o, href=None):
             self._text = self.page = None
@@ -293,7 +311,7 @@ class menu(dom.nav):
                 els += dom.text(self.text)
 
             if self.items.count:
-                els += self.items
+                els += self.items.elements
 
             return els
 
@@ -345,9 +363,9 @@ class menu(dom.nav):
     def elements(self):
         els = super().elements
         els.clear()
-        els += self.items
-        return els
 
+        els += self.items.elements
+        return els
 
     def __repr__(self):
         itms = '\n'.join(repr(x) for x in self.items)
@@ -714,26 +732,12 @@ class header(dom.header):
                 item = menu.item(o=pg)
                 r += item
 
-                for itm in getitems(pg.pages):
-                    item.items += itm
-
-                # FIXME:31b3fb5d This should work, however
-                # entities.append will test if the object being append
-                # is an entity first. If it is an entity, it will assume
-                # it doesn't need to iterate over the entity.
-                # 
-                # The return of `getitems(pg.pages)` is a pom.menu.items
-                # collection. Since `items` inherits from both
-                # `entities.entities` and `dom.ul`, it is an `entity`
-                # object and an `entities` object. `entitites.append()`
-                # should be corrected to handle this situation.
-
-                '''
                 item.items += getitems(pg.pages)
-                '''
+
             return r
 
         mnu = menu('main')
+
         for itm in getitems(self.site.pages):
             mnu.items += itm
 

@@ -367,8 +367,6 @@ class elements(entities.entities):
         # as closely as possible - except for the `.text(function)`
         # overload.
 
-        # TODO Write tests. 
-
         return '\n'.join(x.text for x in self)
 
     @text.setter
@@ -1067,6 +1065,7 @@ class text(element):
     def __init__(self, v, esc=True):
         self._value = v
         self._html = v
+
         if esc:
             self._html = htmlmod.escape(self._value)
 
@@ -1090,8 +1089,6 @@ class text(element):
     @property
     def value(self):
         return self._value
-
-
 
 class wbrs(elements):
     pass
@@ -3582,6 +3579,7 @@ class _htmlparser(HTMLParser):
         for attr in attrs:
             el.attributes += attribute.create(*attr)
             #el.attributes += attr
+
         try:
             cur = self.stack[-1]
         except IndexError:
@@ -3620,7 +3618,7 @@ class _htmlparser(HTMLParser):
         else:
             last = cur[0].elements.last
             if type(last) is text:
-                last._html += data
+                last.html += data
             else:
                 cur[0] += data
 
