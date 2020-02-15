@@ -742,3 +742,44 @@ class header(dom.header):
 class footer(dom.footer):
     pass
 
+class input(dom.div):
+    def __init__(self,              
+                 name,              type,       label=None,
+                 placeholder=None,  help=None,  options=None,
+                 selected=None
+        ):
+        self.name         =  name
+        self.label        =  label
+        self.placeholder  =  placeholder
+        self.help         =  help
+        self.type         =  type
+
+        # TODO Ensure that 'type' is valid. In addition to text and
+        # email, type can also be textarea.
+        self.classes += 'form-group'
+
+        els = super().elements
+
+        if self.label:
+            els += dom.label(self.label)
+
+        if type == 'textarea':
+            inp = dom.textarea(name=self.name)
+        elif type == 'select':
+            inp = dom.select(name=self.name)
+            for opt in options:
+                inp += dom.option(opt[1], value=opt[0])
+                if opt[0] in selected:
+                    inp.last.selected = True
+        else:
+            inp = dom.input(name=self.name)
+
+
+        els += inp
+
+        if self.placeholder:
+            inp.placeholder = self.placeholder
+
+        if self.help:
+            els += dom.small(self.help)
+
