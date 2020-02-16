@@ -5290,7 +5290,16 @@ class orm:
 
             elif self.isinstance:
                 if self.isnew:
+                    # Preserve subentity's id. When ._super is set,
+                    # `self.instance.id` will change to the value of
+                    # `self._super.id`.
+                    id = self.instance.id
                     self._super = base()
+
+                    # Set the super's id to self's id. Despite the
+                    # fact that self.isnew, its existing is in some
+                    # cases meaningful and should be preserved.
+                    self._super.id = id
                 else:
                     e = self.instance
                     if not isinstance(e, entity):
