@@ -4075,12 +4075,13 @@ class primarykeyfieldmapping(fieldmapping):
 
     @property
     def value(self):
-        # If a super instance exists, use that because we want a subclass and
-        # its super class to share the same id. Here we use ._super instead of
-        # .super because we don't want the invoke the super accessor because it
-        # calls the id accessor (which calls this accessor) - leading to
-        # infinite recursion. This, of course, assumes that the .super accessor
-        # has previously been called.
+        # If a super instance exists, use that because we want a
+        # subclass and its super class to share the same id. Here we use
+        # ._super instead of .super because we don't want to invoke the
+        # super accessor because it calls the id accessor (which calls
+        # this accessor) - leading to infinite recursion. This, of
+        # course, assumes that the .super accessor has previously been
+        # called.
 
         super = self.orm._super
         if super:
