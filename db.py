@@ -516,7 +516,7 @@ class chronicler(entity):
         return chronicler._instance
 
     @contextmanager
-    def snapshot():
+    def snapshot(dev=True):
         def chr_onadd(src, eargs):
             nonlocal chrs
             chrs += eargs.entity
@@ -526,6 +526,14 @@ class chronicler(entity):
         chr.chronicles.onadd += chr_onadd
 
         yield chrs
+
+        if dev == True:
+            print(chrs)
+        elif not dev:
+            pass
+        else:
+            # TODO Write to device 'dev'
+            pass
 
     def append(self, obj):
         self.chronicles += obj
