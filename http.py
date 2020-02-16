@@ -229,11 +229,11 @@ class _request:
     def demand(self):
         if self.isget:
             if not len(self.path):
-                raise http400('No path was given.')
+                raise http.BadRequestError('No path was given.')
             
         elif self.ispost:
             if len(self.payload) == 0:
-                raise http400('No data in body of request message.')
+                raise http.BadRequestError('No data in body of request message.')
 
             # The remaining demands will be for XHR requests only
             if not self.isxhr:
@@ -242,12 +242,12 @@ class _request:
             try:
                 post = self.post
             except json.JSONDecodeError as ex:
-                raise http400(str(ex))
+                raise http.BadRequestError(str(ex))
 
             try:
                 cls = post['_class']
             except KeyError:
-                raise http404('The class value was not supplied')
+                raise htt.NotFoundError('The class value was not supplied')
 
             try:
                 meth = self.postmethod
@@ -255,7 +255,7 @@ class _request:
                 raise ValueError('The method value was not supplied')
 
             if meth[0] == '_':
-                raise http403('Invalid method.')
+                raise http.ForbiddenError('Invalid method.')
 
             try:
                 import ctrl
@@ -456,36 +456,6 @@ class response():
     def __str__(self):
         return self.__repr__(pretty=True)
 
-class httperror(Exception):
-    def __init__(self, statuscode, msg):
-        self.statuscode = statuscode
-        self.message = msg
-
-    def __repr__(self):
-        return self.message
-
-class http422(httperror):
-    def __init__(self, msg):
-        super().__init__('422 Unprocessable Entity', msg)
-
-
-class http404(httperror):
-    def __init__(self, msg):
-        super().__init__('404 Not Found', msg)
-
-class http403(httperror):
-    def __init__(self, msg):
-        super().__init__('403 Forbidden', msg)
-
-
-class http401(httperror):
-    def __init__(self, msg):
-        super().__init__('401 Unauthorized', msg)
-
-class http400(httperror):
-    def __init__(self, msg):
-        super().__init__('400 Bad Request', msg)
-
 class controller:
     def __init__(self, app):
         self._app = app
@@ -507,6 +477,249 @@ class controller:
         try:
             return args[arg]
         except KeyError:
-            raise http422('Argument not supplied: ' + arg)
+            raise http.UnprocessableEntityError(
+                'Argument not supplied: ' + arg
+            )
 
+class HttpError(Exception):
+    def __init__(self, msg=None):
+        msg0 = self.message
+        if msg:
+            msg0 += ' - ' + msg
+
+        super().__init__(msg0)
+
+    @property
+    def message(self):
+        return '%s %s' % (
+            str(self.status), response.Messages[self.status]
+        )
+
+class MultipleChoicesException(HttpError):
+    status = 300
+
+class MovedPermanentlyException(HttpError):
+    status = 301
+
+class FoundException(HttpError):
+    status = 302
+
+class SeeOtherException(HttpError):
+    status = 303
+
+class NotModifiedException(HttpError):
+    status = 304
+
+class UseProxyException(HttpError):
+    status = 305
+
+class SwitchProxyException(HttpError):
+    status = 306
+
+class TemporaryRedirectException(HttpError):
+    status = 307
+
+class PermanentRedirectException(HttpError):
+    status = 308
+
+class BadRequestError(HttpError):
+    status = 400
+
+class UnauthorizedError(HttpError):
+    status = 401
+
+class PaymentRequiredError(HttpError):
+    status = 402
+
+class ForbiddenError(HttpError):
+    status = 403
+
+class NotFoundError(HttpError):
+    status = 404
+
+class MethodNotAllowedError(HttpError):
+    status = 405
+
+class NotAcceptableError(HttpError):
+    status = 406
+
+class ProxyAuthenticationRequiredError(HttpError):
+    status = 407
+
+class RequestTimeoutError(HttpError):
+    status = 408
+
+class ConflictError(HttpError):
+    status = 409
+
+class GoneError(HttpError):
+    status = 410
+
+class LengthRequiredError(HttpError):
+    status = 411
+
+class PreconditionFailedError(HttpError):
+    status = 412
+
+class PayloadTooLargeError(HttpError):
+    status = 413
+
+class URITooLongError(HttpError):
+    status = 414
+
+class UnsupportedMediaTypeError(HttpError):
+    status = 415
+
+class RangeNotSatisfiableError(HttpError):
+    status = 416
+
+class ExpectationFailedError(HttpError):
+    status = 417
+
+class ImATeapotError(HttpError):
+    status = 418
+
+class PageExpiredError(HttpError):
+    status = 419
+
+class EnhanceYourCalmError(HttpError):
+    status = 420
+
+class MisdirectedRequestError(HttpError):
+    status = 421
+
+class UnprocessableEntityError(HttpError):
+    status = 422
+
+class LockedError(HttpError):
+    status = 423
+
+class FailedDependencyError(HttpError):
+    status = 424
+
+class TooEarlyError(HttpError):
+    status = 425
+
+class UpgradeRequiredError(HttpError):
+    status = 426
+
+class PreconditionRequiredError(HttpError):
+    status = 428
+
+class TooManyRequestsError(HttpError):
+    status = 429
+
+class RequestHeaderFieldsTooLargeError(HttpError):
+    status = 430
+
+class RequestHeaderFieldsTooLargeError(HttpError):
+    status = 431
+
+class LoginTimeoutError(HttpError):
+    status = 440
+
+class NoResponseError(HttpError):
+    status = 444
+
+class RetryWithError(HttpError):
+    status = 449
+
+class BlockedByWindowsParentalControlsError(HttpError):
+    status = 450
+
+class UnavailableForLegalReasonsError(HttpError):
+    status = 451
+
+class Error(HttpError):
+    status = 460
+
+class Error(HttpError):
+    status = 463
+
+class RequestHeaderTooLargeError(HttpError):
+    status = 494
+
+class SSLCertificateError(HttpError):
+    status = 495
+
+class SSLCertificateRequiredError(HttpError):
+    status = 496
+
+class HTTPRequestSentToHTTPSPortError(HttpError):
+    status = 497
+
+class InvalidTokenError(HttpError):
+    status = 498
+
+class TokenRequiredError(HttpError):
+    status = 499
+
+class InternalServerError(HttpError):
+    status = 500
+
+class NotImplementedError(HttpError):
+    status = 501
+
+class BadGatewayError(HttpError):
+    status = 502
+
+class ServiceUnavailableError(HttpError):
+    status = 503
+
+class GatewayTimeoutError(HttpError):
+    status = 504
+
+class HTTPVersionNotSupportedError(HttpError):
+    status = 505
+
+class VariantAlsoNegotiatesError(HttpError):
+    status = 506
+
+class InsufficientStorageError(HttpError):
+    status = 507
+
+class LoopDetectedError(HttpError):
+    status = 508
+
+class BandwidthLimitExceededError(HttpError):
+    status = 509
+
+class NotExtendedError(HttpError):
+    status = 510
+
+class NetworkAuthenticationRequiredError(HttpError):
+    status = 511
+
+class WebServerReturnedanUnknownError(HttpError):
+    status = 520
+
+class WebServerIsDownError(HttpError):
+    status = 521
+
+class ConnectionTimedOutError(HttpError):
+    status = 522
+
+class OriginIsUnreachableError(HttpError):
+    status = 523
+
+class ATimeoutOccurredError(HttpError):
+    status = 524
+
+class SSLHandshakeFailedError(HttpError):
+    status = 525
+
+class InvalidSSLCertificateError(HttpError):
+    status = 526
+
+class RailgunError(HttpError):
+    status = 527
+
+class SiteIsOverloadedError(HttpError):
+    status = 529
+
+class SiteIsFrozenError(HttpError):
+    status = 530
+
+class NetworkReadTimeoutError(HttpError):
+    status = 598
 app = application()
