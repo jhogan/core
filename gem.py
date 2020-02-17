@@ -38,9 +38,6 @@ class persons(parties):
 class address_regions(orm.associations):
     pass
 
-class addresses(orm.entities):
-    pass
-
 class regions(orm.entities):
     pass
 
@@ -54,6 +51,9 @@ class phones(contactmechanisms):
     pass
 
 class emails(contactmechanisms):
+    pass
+
+class addresses(contactmechanisms):
     pass
 
 class party(orm.entity):
@@ -113,7 +113,7 @@ class person(party):
     # passport = passport
 
 class region(orm.entity):
-    Postalcode  =  0
+    PostalCode  =  0
     County      =  1
     City        =  2
     State       =  3
@@ -171,11 +171,13 @@ class phone(contactmechanism):
     line = str
 
 class email(contactmechanism):
-    pass
+    address = str
 
 class party_contactmechanism(orm.association):
     class roles:
         main = 0
+        home = 1
+        private = 2
 
 
     # The date range through which this contactmechanism applied to the
@@ -210,7 +212,7 @@ class party_contactmechanism(orm.association):
     # 'personal email address', 'main home address')
     role = int
 
-class address(orm.entity):
+class address(contactmechanism):
     """ A postal address.
     """
 

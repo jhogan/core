@@ -354,8 +354,13 @@ class tester(entity):
             return r
         return r + "\n" + self.failures._tostr(includeHeader=False) + "\n"
 
+    # TODO Remove preserve. It should be called dedent.
     @staticmethod
     def preserve(str):
+        return dedent(str)[1:-1]
+
+    @staticmethod
+    def dedent(str):
         return dedent(str)[1:-1]
 
     def post(self, cls, meth, args):
