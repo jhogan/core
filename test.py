@@ -14644,22 +14644,21 @@ class foonet(pom.site):
     def __init__(self, host='foo.net'):
         super().__init__(host)
 
-        # TODO This init logic probably should mostly put in overridden
-        # properties:
-        #
-        #   foonet.pages
-        #   foonet.lang
-        #   foonet.charset
-        #   foonet.stylesheets
-        #   foonet.header
-        #   foonet.footer
-
         ''' Pages '''
         self.pages += home()
         self.pages += about()
         self.pages += contact_us()
         self.pages += blogs()
         self.pages += admin()
+
+        # TODO This init logic probably should mostly put in overridden
+        # properties:
+        #
+        #   foonet.lang
+        #   foonet.charset
+        #   foonet.stylesheets
+        #   foonet.header
+        #   foonet.footer
 
         ''' Metadata '''
         self.lang = 'es'
@@ -15565,6 +15564,36 @@ class pom_page(tester):
 
         for tz in tzs:
             self.true(tz in (x.value for x in selected))
+
+    def it_raises_im_a_teapot(self):
+        ws = foonet()
+
+        class pour(pom.page):
+            def main(self):
+                def get_pot():
+                    class pot:
+                        iscoffee = False
+                        istea    = not iscoffee
+                    return pot()
+
+                pot = get_pot()
+                if not pot.iscoffee:
+                    raise http.ImATeapotError(
+                        'Appearently, I am a tea pot'
+                    )
+
+        pg = pour()
+        ws.pages += pg
+        res = self.get('/en/' + pg.path, ws)
+        self.eq(418, res.status)
+        mains = res['body>main.error']
+
+        self.one(mains)
+
+        main = mains.first
+        self.eq('418', main['.status'].first.text)
+        
+
 
 class dom_elements(tester):
     def it_gets_text(self):

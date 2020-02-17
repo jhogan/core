@@ -24,8 +24,8 @@ import primative
 
 class site(entities.entity):
     def __init__(self, host):
-        self.pages = pages(rent=self)
         self.index = None
+        self._pages = None
         self._html = None
         self._head = None
         self._lang = 'en'
@@ -49,6 +49,17 @@ class site(entities.entity):
         self.stylesheets = list()
         self._header = None
 
+    @property
+    def pages(self):
+        if not self._pages:
+            self._pages = pages(rent=self)
+            self._pages += error()
+        return self._pages
+
+    @pages.setter
+    def pages(self, v):
+        self._pages = v
+
     @classmethod
     def getinstance(cls):
         """ Get the single site instance for this session.
@@ -65,6 +76,12 @@ class site(entities.entity):
 
     def __getitem__(self, path):
         return self.pages[path]
+
+    def __call__(self, path):
+        try:
+            return self.pages[path]
+        except IndexError:
+            return None
 
     @property
     def host(self):
@@ -516,7 +533,9 @@ class page(dom.html):
                 # would cause a TypeError.
                 self._args[k] = None
 
-            if v.annotation:
+            # TODO I think this test can just be:
+            #     if v.annotation is not inspect._empty:
+            if v.annotation and v.annotation is not inspect._empty:
                 arg = self._args[k]
 
                 # TODO Raise 422 if an exception occurs on coersion
@@ -787,3 +806,32 @@ class input(dom.div):
         if self.help:
             els += dom.small(self.help)
 
+class error(page):
+    def __init__(self):
+        super().__init__()
+
+    def main(self, ex):
+        args = (
+            ex.phrase,
+            ex.status,
+            ex.message
+        )
+
+        # TODO The <main> should have a CSS class that is descriptive of
+        # the page it represents by default so style sheet developers
+        # can identify the page being styled. 
+        #
+        # This line should be removed and code should be put in place to
+        # ensure that the <main> element gets the same class.
+        self.main.classes += 'error'
+        self.title = ex.phrase
+
+        self.main += dom.h1('''
+            An unexpected error was encountered.
+        ''')
+
+        self.main += dom.span(ex.status, class_='status')
+        self.main += dom.span(ex.message, class_='message')
+
+
+        

@@ -86,8 +86,8 @@ class application:
                 break_ = True
                 raise
 
-            if isinstance(ex, httperror):
-                res.status = ex.statuscode
+            if isinstance(ex, HttpError):
+                res.status = ex.status
             else:
                 res.status = 500
 
@@ -99,11 +99,26 @@ class application:
 
             tb = [re.split('\n +', f.strip()) for f in tb]
 
-            data = {'_exception': repr(ex), '_traceback': tb}
+            if self.request.isxhr:
+                data = {'_exception': repr(ex), '_traceback': tb}
+            else:
+                if isinstance(ex, HttpError):
+                    # TODO Don't hard code language code (/en)
+                    pg = req.site('/en/err/%s' % ex.status)
+
+                    if pg:
+                        # TODO
+                        ...
+                    else:
+                        pg = req.site['/en/error']
+                        pg(ex=ex)
+
+                    res.status = ex.status
+                    res.data = pg.html
 
         finally:
             if not break_:
-                start_response(res.message, res.headers)
+                start_response(res.status, res.headers)
                 return iter([res.data])
 
             request = None
@@ -483,17 +498,21 @@ class controller:
 
 class HttpError(Exception):
     def __init__(self, msg=None):
-        msg0 = self.message
+        msg0 = self.phrase
         if msg:
             msg0 += ' - ' + msg
 
         super().__init__(msg0)
 
     @property
-    def message(self):
+    def phrase(self):
         return '%s %s' % (
             str(self.status), response.Messages[self.status]
         )
+
+    @property
+    def message(self):
+        return str(self)
 
 class MultipleChoicesException(HttpError):
     status = 300
