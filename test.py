@@ -14751,37 +14751,148 @@ class gem_person(tester):
     def it_associates_phone_numbers(self):
         per = self.getvalid()
 
-        ph = gem.phone()
-        ph.area = 555
-        ph.line = '555 5555'
-        
-        pcm = gem.party_contactmechanism()
-        pcm.begin             =  primative.datetime('1976-01-01')
-        pcm.end               =  None
-        pcm.solicitations     =  False
-        pcm.extension         =  None
-        pcm.purpose           =  gem.party_contactmechanism.roles.main
-        pcm.contactmechanism  =  ph
-        pcm.party             =  per
-        print(repr(pcm))
+        # Create two phone numbers
+        for i in range(2):
 
-        per.party_contactmechanisms += pcm
+            # Create phone number
+            ph = gem.phone()
+            ph.area = int('20' + str(i))
+            ph.line = '555 5555'
+            
+            # Create party to contact mechanism association
+            pcm                   =  gem.party_contactmechanism()
+            pcm.begin             =  primative.datetime('1976-01-01')
+            pcm.end               =  None
+            pcm.solicitations     =  False
+            pcm.extension         =  None
+            pcm.purpose           =  gem.party_contactmechanism.roles.main
+            pcm.contactmechanism  =  ph
+            pcm.party             =  per
 
-        with db.chronicler.snapshot() as s:
-            per.save()
-            print(s)
+            # Add association to the person object
+            per.party_contactmechanisms += pcm
+
+        # Save, reload and test
+        per.save()
 
         per1 = gem.person(per.id)
 
-        self.one(per1.party_contactmechanisms)
+        per.party_contactmechanisms.sort()
+        per1.party_contactmechanisms.sort()
 
-        self.eq(per1.id, per1.party_contactmechanisms.first.party.id)
+        self.two(per1.party_contactmechanisms)
 
-        self.eq(
-            ph.id, 
-            per1.party_contactmechanisms.first.contactmechanism.id
-        )
+        for i in range(2):
+            self.eq(per.id, per1.party_contactmechanisms[i].party.id)
 
+            self.eq(
+                per.party_contactmechanisms[i].contactmechanism.id,
+                per1.party_contactmechanisms[i].contactmechanism.id
+            )
+            ph = gem.phone(
+                per1.party_contactmechanisms[i].contactmechanism.id
+            )
+
+    def it_associates_email_addresses(self):
+        per = self.getvalid()
+
+        # Create two email addressess
+        for i in range(2):
+
+            # Create email addres
+            em = gem.email()
+            em.address = 'jimbo%s@foonet.com' % i
+            
+            # Create party to contact mechanism association
+            priv = gem.party_contactmechanism.roles.private
+
+            pcm                   =  gem.party_contactmechanism()
+            pcm.begin             =  primative.datetime('1993-09-01')
+            pcm.end               =  None
+            pcm.solicitations     =  False
+            pcm.extension         =  None
+            pcm.purpose           =  priv # Private email address
+            pcm.contactmechanism  =  em
+            pcm.party             =  per
+
+            # Add association to the person object
+            per.party_contactmechanisms += pcm
+
+        # Save, reload and test
+        per.save()
+
+        per1 = gem.person(per.id)
+
+        per.party_contactmechanisms.sort()
+        per1.party_contactmechanisms.sort()
+
+        self.two(per1.party_contactmechanisms)
+
+        for i in range(2):
+            self.eq(per.id, per1.party_contactmechanisms[i].party.id)
+
+            self.eq(
+                per.party_contactmechanisms[i].contactmechanism.id,
+                per1.party_contactmechanisms[i].contactmechanism.id
+            )
+
+            em = gem.email(
+                per1.party_contactmechanisms[i].contactmechanism.id
+            )
+
+    def it_associates_postal_addresses(self):
+        per = self.getvalid()
+
+        # Create two postal addressess
+        for i in range(2):
+
+            # Create postal addres
+            addr = gem.address()
+            addr.address1 = '742 Evergreen Terrace'
+            addr.address2 = None
+            addr.directions = self.dedent('''
+			Take on I-40 E. 
+            Take I-44 E to Glenstone Ave in Springfield. 
+            Take exit 80 from I-44 E
+			Drive to E Evergreen St
+            ''')
+            
+            hm = gem.party_contactmechanism.roles.home
+
+            # Create party-to-contact-mechanism association
+            pcm                   =  gem.party_contactmechanism()
+            pcm.begin             =  primative.datetime('1993-09-01')
+            pcm.end               =  None
+            pcm.solicitations     =  False
+            pcm.extension         =  None
+            pcm.purpose           =  hm
+            pcm.contactmechanism  =  addr
+            pcm.party             =  per
+
+            # Add association to the person object
+            per.party_contactmechanisms += pcm
+
+        # Save, reload and test
+        per.save()
+
+        per1 = gem.person(per.id)
+
+        per.party_contactmechanisms.sort()
+        per1.party_contactmechanisms.sort()
+
+        self.two(per1.party_contactmechanisms)
+
+        for i in range(2):
+            self.eq(per.id, per1.party_contactmechanisms[i].party.id)
+
+            self.eq(
+                per.party_contactmechanisms[i].contactmechanism.id,
+                per1.party_contactmechanisms[i].contactmechanism.id
+            )
+
+            addr = gem.address(
+                per1.party_contactmechanisms[i].contactmechanism.id
+            )
 
 class gem_company(tester):
     def __init__(self):
