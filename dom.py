@@ -5240,5 +5240,3 @@ class CssSelectorParseError(SyntaxError):
             return self.token.pos
 
         return None
-
-

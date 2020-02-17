@@ -587,6 +587,8 @@ class page(dom.html):
 
         if not self._calling:
             self._arguments = qsargs
+
+            # TODO Remove this assignment
             f = self._mainfunc
             try:
                 self._calling = True
