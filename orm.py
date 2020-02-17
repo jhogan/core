@@ -1536,6 +1536,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             e.orm.isdirty = True
 
     def append(self, obj, uniq=False, r=None):
+        if r is None:
+            r = self.orm.entities()
+
         if isinstance(obj, entities):
             for e in obj:
                 self.append(e, r=r)
