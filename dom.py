@@ -506,6 +506,9 @@ class element(entities.entity):
         # meaningless. In this case, if body is not None, we should
         # throw a TypeError.
         if body is not None:
+            if isinstance(body, int):
+                body = str(body)
+
             if type(body) is str:
                 body %= args
             elif args:
