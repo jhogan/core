@@ -8,6 +8,7 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 ########################################################################
 
+from contextlib import suppress
 from dbg import B
 from entities import classproperty
 from func import enumerate
@@ -512,6 +513,8 @@ class element(entities.entity):
 
             self += body
 
+        with suppress(KeyError):
+            kwargs['class'] = kwargs.pop('class_')
         self.attributes += kwargs
 
     @property
