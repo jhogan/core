@@ -14976,6 +14976,42 @@ class gem_company(tester):
                 getattr(pp1, map.name),
             )
 
+class gem_region(tester):
+    
+    def it_creates(self):
+        return
+        usa = gem.region()
+        usa.name='United States of America'
+        usa.type=gem.region.Country
+        usa.abbreviation = 'USA'
+        usa.save()
+
+
+        az = gem.region(
+            name = 'Arizona',
+            type = gem.region.State,
+            abbreviation = 'AZ'
+        )
+
+        scottsdale = gem.region(
+            name = 'Scottsdale',
+            type = gem.region.City
+        )
+
+        postal = gem.region(
+            name = '85255',
+            type = gem.region.PostalCode
+        )
+
+        usa.regions += az
+        az.regions += az
+        scottsdale.regions += postal
+
+        usa.save()
+
+        usa1 = gem.region(usa.id)
+        self.one(usa1.regions)
+
 cli().run()
 
 

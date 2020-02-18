@@ -130,6 +130,12 @@ class region(orm.entity):
     geographically within their parent. The inverse is also true: that
     all child regions are geographically within a given region.
     """
+
+    # The direct child regions. Country regions will have state or
+    # province regions.  City regions will have postal code regions, and
+    # so on.
+    regions = regions
+
     # TODO Automatically pluralize
     entities = regions
 
@@ -138,15 +144,12 @@ class region(orm.entity):
     # name will be the name of the country, e.g., "United States".
     name = str
 
-    # The direct child regions. Country regions will have state or
-    # province regions.  City regions will have postal code regions, and
-    # so on.
-    regions = regions
 
     # A numeric code to indicate the region type 
     type = int
 
     abbreviation = str
+
 
 class contactmechanism(orm.entity):
     """ An abstract class representing a mechanism through which a party
