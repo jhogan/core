@@ -5,7 +5,7 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
 from configfile import configfile
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from dbg import B
 from entities import *
 from pprint import pprint
@@ -438,14 +438,15 @@ class tester(entity):
 
         url = urllib.parse.urlparse(pg)
 
-        pg = ws[url.path]
-        pg.clear()
+        with suppress(IndexError):
+            pg = ws[url.path]
+            pg.clear()
 
         env = self._createenv({
             'path_info':       url.path,
             'query_string':    url.query,
-            'server_name':     pg.site.host,
-            'server_site':     pg.site,
+            'server_name':     ws.host,
+            'server_site':     ws,
             'request_method':  'get',
         })
 

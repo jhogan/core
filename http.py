@@ -52,11 +52,11 @@ class application:
 
             self.environment = env
 
-            self.demand()
-
             req = self.request
 
             request = self.request
+
+            self.demand()
 
             if req.isget:
                 res.data = req()
@@ -104,11 +104,10 @@ class application:
             else:
                 if isinstance(ex, HttpError):
                     # TODO Don't hard code language code (/en)
-                    pg = req.site('/en/err/%s' % ex.status)
+                    pg = req.site('/en/error/%s' % ex.status)
 
                     if pg:
-                        # TODO
-                        ...
+                        pg(ex=ex)
                     else:
                         pg = req.site['/en/error']
                         pg(ex=ex)
@@ -171,7 +170,10 @@ class _request:
     def page(self):
         ws = self.site
         path = self.path
-        return ws[path]
+        try:
+            return ws[path]
+        except IndexError:
+            return None
 
     def __call__(self):
         self.page(**self.arguments)
@@ -242,6 +244,8 @@ class _request:
         return self.environment['content_type']
 
     def demand(self):
+        if not request.page:
+            raise NotFoundError(self.path)
         if self.isget:
             if not len(self.path):
                 raise http.BadRequestError('No path was given.')
@@ -391,6 +395,7 @@ class response():
     def __init__(self, req):
         self._data = None
         self._status = 200
+        self._page = None
         self.request = req
         self._headers = None
 
@@ -462,7 +467,7 @@ class response():
         ''')
 
         return r % (
-            self.request.page.path,
+            self.request.path,
             self.request.method,
             self.message,
             dom.html(self.data).pretty if pretty else self.data,
@@ -554,7 +559,15 @@ class ForbiddenError(HttpError):
     status = 403
 
 class NotFoundError(HttpError):
+    def __init__(self, resource, msg=None):
+        self.resource = resource
+        super().__init__(msg)
+
     status = 404
+
+    @property
+    def message(self):
+        return str(self) + '"%s"' % str(self.resource)
 
 class MethodNotAllowedError(HttpError):
     status = 405

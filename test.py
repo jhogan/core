@@ -14651,6 +14651,10 @@ class foonet(pom.site):
         self.pages += blogs()
         self.pages += admin()
 
+        ''' Error pages '''
+        pgs = self.pages['/en/error'].pages
+        pgs += _404()
+
         # TODO This init logic probably should mostly put in overridden
         # properties:
         #
@@ -14799,6 +14803,21 @@ class pom_menu_item(tester):
 
         expect = '<li>A text item</li>'
         self.eq(expect, itm.html)
+
+class _404(pom.page):
+    def main(self, ex: http.NotFoundError):
+        self.title = 'Page Not Found'
+        self.main += dom.h1('Page Not Found')
+        self.main += dom.h2('Foobar apologizes')
+
+        self.main += dom.paragraph('''
+        Could not find <span class="resource">%s</span>
+        ''', ex.resource)
+
+    @property
+    def name(self):
+        return type(self).__name__.replace('_', '')
+
 		
 
 class pom_menu_items(tester):
@@ -15592,7 +15611,13 @@ class pom_page(tester):
 
         main = mains.first
         self.eq('418', main['.status'].first.text)
-        
+
+    def it_raises_im_a_404(self):
+        ws = foonet()
+
+        res = self.get('/en/' + 'intheix.html', ws)
+        self.eq(404, res.status)
+        print(res)
 
 
 class dom_elements(tester):

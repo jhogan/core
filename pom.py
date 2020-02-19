@@ -16,6 +16,7 @@ import textwrap
 import inspect
 import datetime
 import primative
+import http
 
 # References:
 #
@@ -418,11 +419,16 @@ class pages(entities.entities):
 
     def append(self, obj, uniq=False, r=None):
         obj._parentpages = self
+        obj.name in [x.name for x in self]
+        for pg in self:
+            if pg.name == obj.name:
+                del self[pg.path]
+                break
         r = super().append(obj, uniq, r)
 
 class page(dom.html):
     def __init__(self, name=None, pgs=None):
-        self.pages = pages(rent=self)
+        self._pages = None
         self._parentpages = pgs
         self._name = name
         self._calling = False
@@ -450,6 +456,17 @@ class page(dom.html):
             self.title = self.Name
 
         return self._title
+
+    @property
+    def pages(self):
+        if self._pages is None:
+            self._pages = pages(rent=self)
+        return self._pages
+
+    @pages.setter
+    def pages(self, v):
+        self._pages = v
+
 
     @title.setter
     def title(self, v):
@@ -812,6 +829,13 @@ class error(page):
     def __init__(self):
         super().__init__()
 
+    @property
+    def pages(self):
+        if not self._pages:
+            self._pages = super().pages
+            self._pages += _404()
+        return self._pages
+        
     def main(self, ex):
         args = (
             ex.phrase,
@@ -835,5 +859,16 @@ class error(page):
         self.main += dom.span(ex.status, class_='status')
         self.main += dom.span(ex.message, class_='message')
 
+class _404(page):
+    def main(self, ex: http.NotFoundError):
+        self.title = 'Page Not Found'
+        self.main += dom.h1('Page Not Found')
 
-        
+        self.main += dom.paragraph('''
+        Could not find <span class="resource">%s</span>
+        ''', ex.resource)
+
+    @property
+    def name(self):
+        return type(self).__name__.replace('_', '')
+
