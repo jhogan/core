@@ -701,7 +701,6 @@ class page(dom.html):
         # or
         #     return http.request.region + '/' + r
 
-
         return '/' + r
 
     def __repr__(self):
@@ -826,6 +825,7 @@ class input(dom.div):
             els += dom.small(self.help)
 
 class error(page):
+    # TODO Remove this constructor
     def __init__(self):
         super().__init__()
 
@@ -843,7 +843,7 @@ class error(page):
             ex.message
         )
 
-        # TODO The <main> should have a CSS class that is descriptive of
+        # TODO:c126eba3 The <main> should have a CSS class that is descriptive of
         # the page it represents by default so style sheet developers
         # can identify the page being styled. 
         #

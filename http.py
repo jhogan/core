@@ -92,9 +92,12 @@ class application:
                 res.status = 500
 
             # Get the stack trace
-            tb = traceback.format_exception(etype=None, value=None, tb=ex.__traceback__)
+            tb = traceback.format_exception(
+                etype=None, value=None, tb=ex.__traceback__
+            )
 
-            # The top and bottom of the stack trace don't correspond to frames, so remove them
+            # The top and bottom of the stack trace don't correspond to
+            # frames, so remove them
             tb.pop(); tb.pop(0)
 
             tb = [re.split('\n +', f.strip()) for f in tb]
