@@ -595,7 +595,10 @@ class page(dom.html):
         self.main = dom.main()
         self._called = False
 
-    def __call__(self, **qsargs):
+    def __call__(self, *args, **qsargs):
+        if len(args):
+            raise ValueError('Use kwargs when calling page object')
+
         if self._called:
             raise ValueError(
                 'Double execution. Call "page.clear" method before '
