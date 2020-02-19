@@ -14897,7 +14897,7 @@ class pom_menu_items(tester):
 class pom_site(tester):
     def it_calls__init__(self):
         ws = foonet()
-        self.five(ws.pages)
+        self.six(ws.pages)
 
     def it_appends_menu_items(self):
         ws = foonet()

@@ -769,6 +769,11 @@ class header(dom.header):
         def getitems(pgs):
             r = menu.items()
             for pg in pgs:
+
+                # Don't add error pages to the menu
+                if pg.name == 'error':
+                    continue
+
                 item = menu.item(o=pg)
                 r += item
 
