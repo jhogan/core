@@ -867,6 +867,26 @@ class error(page):
 
         self.main += dom.span(ex.status, class_='status')
         self.main += dom.span(ex.message, class_='message')
+        self.main += traceback(ex)
+
+class traceback(dom.article):
+    def __init__(self, ex):
+        # TODO When we can determine if we are in production or not, we
+        # can return immediately if we are in production since the
+        # end-user will not need the stack trace and it will reveal
+        # details about the code we don't necessarily want revealed. A
+        # bool argument can be used to force the trace back to be
+        # created, however.
+        self.classes += 'traceback'
+        for tb in exc.traces(ex):
+            div = dom.div()
+            self+= div
+            div  +=  dom.text('File ')
+            div  +=  dom.span(tb.file,    class_='file')
+            div  +=  dom.text(', at ')
+            div  +=  dom.span(tb.lineno,  class_='lineno')
+            div  +=  dom.text(', in ')
+            div  +=  dom.span(tb.name,    class_='name')
 
 class _404(page):
     def main(self, ex: http.NotFoundError):
