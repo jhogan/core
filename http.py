@@ -485,17 +485,9 @@ class response():
 
     @property
     def headers(self):
-        if self._headers is not None:
-            return self._headers
-
-        hdrs = [
-        ]
-
-        if self.data is not None:
-            hdrs.append(
-                ('Content-Length', str(len(self.data)))
-            )
-
+        clen = len(self.data) if self.data else 0
+        self._headers['Content-Length'] = clen
+        
         # if XHR
         '''
         hdrs.append(
