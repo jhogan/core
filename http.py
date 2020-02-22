@@ -542,14 +542,7 @@ class controller:
                 'Argument not supplied: ' + arg
             )
 
-class HttpError(Exception):
-    def __init__(self, msg=None):
-        msg0 = self.phrase
-        if msg:
-            msg0 += ' - ' + msg
-
-        super().__init__(msg0)
-
+class HttpException(Exception):
     @property
     def phrase(self):
         return '%s %s' % (
@@ -560,31 +553,47 @@ class HttpError(Exception):
     def message(self):
         return str(self)
 
-class MultipleChoicesException(HttpError):
+class HttpError(HttpException):
+    def __init__(self, msg=None):
+        msg0 = self.phrase
+        if msg:
+            msg0 += ' - ' + msg
+
+        super().__init__(msg0)
+
+
+class MultipleChoicesException(HttpException):
     status = 300
 
-class MovedPermanentlyException(HttpError):
+class MovedPermanentlyException(HttpException):
     status = 301
 
-class FoundException(HttpError):
+class FoundException(HttpException):
+    def __init__(self, location):
+        self.location = location
+    
     status = 302
 
-class SeeOtherException(HttpError):
+    def __call__(self, res):
+        res.headers['Location'] = self.location
+        res.status = 302
+
+class SeeOtherException(HttpException):
     status = 303
 
-class NotModifiedException(HttpError):
+class NotModifiedException(HttpException):
     status = 304
 
-class UseProxyException(HttpError):
+class UseProxyException(HttpException):
     status = 305
 
-class SwitchProxyException(HttpError):
+class SwitchProxyException(HttpException):
     status = 306
 
-class TemporaryRedirectException(HttpError):
+class TemporaryRedirectException(HttpException):
     status = 307
 
-class PermanentRedirectException(HttpError):
+class PermanentRedirectException(HttpException):
     status = 308
 
 class BadRequestError(HttpError):
