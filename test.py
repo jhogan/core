@@ -14815,7 +14815,7 @@ class _404(pom.page):
     def main(self, ex: http.NotFoundError):
         self.title = 'Page Not Found'
         self.main += dom.h1('Page Not Found')
-        self.main += dom.h2('Foobar apologizes')
+        self.main += dom.h2('Foobar apologizes', class_="apology")
 
         self.main += dom.paragraph('''
         Could not find <span class="resource">%s</span>
@@ -15653,7 +15653,22 @@ class pom_page(tester):
         main = mains.first
         self.eq('418', main['.status'].first.text)
 
+        self.four(main['article.traceback>div'])
+
     def it_raises_im_a_404(self):
+        class derpnet(pom.site):
+            def __init__(self, host='derp.net'):
+                super().__init__(host)
+
+        ws = derpnet()
+        res = self.get('/en' + '/index', ws)
+        self.eq(404, res.status)
+
+        # A site will by defalut use the generic 404 page (at the
+        # pom.site level). It happens to not have an h2.apology element
+        # (unlike foonet; see below).
+        self.zero(res['h2.apology'])
+
         ws = foonet()
 
         res = self.get('/en/' + 'intheix.html', ws)
