@@ -15434,6 +15434,43 @@ class pom_page(tester):
         dls = res['main>dl']
         self.zero(dls)
 
+    def it_calls_page_using_HEAD_request_method(self):
+        # With params and kwargs
+        class time(pom.page):
+            def main(self, greet: bool, tz='UTC', **kwargs):
+                m = self.main
+
+                if greet is None:
+                    m += dom.p('Greeting was set to None')
+                    m.last.classes += 'greeting'
+
+                if greet:
+                    m += dom.p('Greetings')
+                    m.last.classes += 'greeting'
+
+                m += dom.h2('Time')
+                m += dom.i('Timezone: ' + tz)
+
+
+                if len(kwargs):
+                    m += dom.dl()
+                    dl = m.last
+
+                    for k in sorted(kwargs.keys()):
+                        v = kwargs[k]
+                        dl +=  dom.dt(k)
+                        dl +=  dom.dd(v)
+
+                m += dom.time(primative.datetime.utcnow())
+
+        # Test passing in no arguments
+        ws = foonet()
+        pg = time()
+        ws.pages += pg
+        res = self.head('/en/time', ws)
+        self.none(res.data)
+        self.eq(200, res.status)
+
     def it_calls_page_coerses_datatypes(self):
         class time(pom.page):
             def main(

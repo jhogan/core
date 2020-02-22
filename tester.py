@@ -422,6 +422,9 @@ class tester(entity):
         
         return r
 
+    def head(self, pg, ws):
+        return self._request(pg=pg, ws=ws, meth='HEAD')
+
     def get(self, pg, ws):
         if not isinstance(pg, str):
             raise TypeError('pg parameter must be a str')
@@ -542,6 +545,72 @@ class tester(entity):
         res.data = next(iter)
 
         return res
+
+    def _request(self, pg, ws, frm=None, meth='GET'):
+        if not isinstance(pg, str):
+            raise TypeError('pg parameter must be a str')
+
+        if not isinstance(ws, pom.site):
+            raise TypeError('ws parameter must be a pom.site')
+
+        if frm and not isinstance(frm, dom.form):
+            raise TypeError('frm parameter must be a dom.form')
+
+        st, hdrs = None, None
+        
+        def start_response(st0, hdrs0):
+            nonlocal st
+            nonlocal hdrs
+            st, hdrs = st0, hdrs0
+
+        url = urllib.parse.urlparse(pg)
+
+        pg = ws[url.path]
+        pg.clear()
+
+        if meth == 'POST':
+            inp = io.BytesIO(frm.post)
+
+            env = self._createenv({
+                'server_site':     pg.site,
+                'content_length':  len(frm.post),
+                'wsgi.input':      inp,
+            })
+        elif meth in ('GET', 'HEAD'):
+            env = self._createenv({
+                'server_site':     ws,
+            })
+
+        env['path_info']       =  url.path
+        env['query_string']    =  url.query
+        env['server_name']     =  pg.site.host
+        env['server_site']     =  ws
+        env['request_method']  =  meth
+
+        # Create WSGI app
+        app = http.application()
+
+        # TODO:292a6b5a Should we be assigning env to app.envirement
+        # here when env is the first argument to app.__call__ (see
+        # below)
+        app.environment = env
+
+        # Create request. Associate with app.
+        req = http._request(app)
+
+        app.breakonexception = self.testers.breakonexception
+
+        # Make WSGI call
+        iter = app(env, start_response)
+
+        res = http.response(req) 
+        res._status = st
+        res._headers = hdrs
+        res.data = next(iter)
+
+        return res
+
+
 
     def xhrpost(self, cls, meth, args):
         # NOTE This is currently unused and is left here for now for

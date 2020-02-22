@@ -21,6 +21,8 @@ import pom
 import textwrap
 import urllib
 import pdb
+import entities
+import exc
 
 # TODO Use the following diagram as a guide to determine what status
 # code to respond with:
@@ -68,8 +70,10 @@ class application:
 
             self.demand()
 
-            if req.isget:
-                res.data = req()
+            if req.isget or req.ishead:
+                data = req()
+                if req.isget:
+                    res.data = data
             elif req.ispost:
                 if req.isxhr:
                     reqdata = self.request.post
@@ -256,6 +260,10 @@ class _request:
         return self.method.casefold() == 'get'
 
     @property
+    def ishead(self):
+        return self.method == 'HEAD'
+
+    @property
     def ispost(self):
         # TODO self.method will always be uppercase, so there's no need
         # to casefold()
@@ -272,7 +280,8 @@ class _request:
     def demand(self):
         if not request.page:
             raise NotFoundError(self.path)
-        if self.isget:
+
+        if self.isget or self.ishead:
             if not len(self.path):
                 raise http.BadRequestError('No path was given.')
             
