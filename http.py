@@ -100,37 +100,44 @@ class application:
                 break_ = True
                 raise
 
-            if isinstance(ex, HttpError):
-                res.status = ex.status
-            else:
+            try:
+                if self.request.isxhr:
+                    # TODO When we start supporting XHR requests, the
+                    # `tb` being passed here can be built with the
+                    # exc.tracebacks class. See the git-log for how `tb`
+                    # was originally created. Aso NOTE We will only want
+                    # the traceback if we are in a non-production
+                    # environment, so ensure it dosen't get returned to
+                    # the client if we are.
+                    data = {'_exception': repr(ex), '_traceback': tb}
+                else:
+                    if isinstance(ex, HttpError):
+                        # HttpError are 400s and 500s
+
+                        # TODO Don't hard code language code (/en)
+                        pg = req.site('/en/error/%s' % ex.status)
+
+                        if pg:
+                            pg(ex=ex)
+                        else:
+                            pg = req.site['/en/error']
+                            pg(ex=ex)
+
+                        res.status = ex.status
+                        res.data = pg.html
+                    elif isinstance(ex, HttpException):
+                        # HttpException are HTTP 300s. Allow the
+                        # exception to make modifications to the
+                        # response.
+                        ex(res)
+            except Exception as ex:
+                # In case there is an exception processing the
+                # exception, ensure the response is 500 with a simple
+                # error message.
                 res.status = 500
-
-            # Get the stack trace
-            tb = traceback.format_exception(
-                etype=None, value=None, tb=ex.__traceback__
-            )
-
-            # The top and bottom of the stack trace don't correspond to
-            # frames, so remove them
-            tb.pop(); tb.pop(0)
-
-            tb = [re.split('\n +', f.strip()) for f in tb]
-
-            if self.request.isxhr:
-                data = {'_exception': repr(ex), '_traceback': tb}
-            else:
-                if isinstance(ex, HttpError):
-                    # TODO Don't hard code language code (/en)
-                    pg = req.site('/en/error/%s' % ex.status)
-
-                    if pg:
-                        pg(ex=ex)
-                    else:
-                        pg = req.site['/en/error']
-                        pg(ex=ex)
-
-                    res.status = ex.status
-                    res.data = pg.html
+                res.data = textwrap.dedent('''
+                <p>Error processing exception: %s</p>
+                ''' % str(ex))
 
         finally:
             if not break_:
