@@ -254,7 +254,7 @@ class _request:
 
     @property
     def method(self):
-        return self.environment['request_method']
+        return self.environment['request_method'].upper()
 
     @property
     def isget(self):
