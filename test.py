@@ -14818,8 +14818,6 @@ class _404(pom.page):
     def name(self):
         return type(self).__name__.replace('_', '')
 
-		
-
 class pom_menu_items(tester):
     def it_calls_append(self):
         itms = pom.menu.items()
@@ -14906,7 +14904,7 @@ class pom_site(tester):
         mnu.items += main.items
 
         uls = dom.html(mnu.items.html)['ul>li']
-        self.count(16, uls)
+        self.count(17, uls)
 
         self.eq(main.items.html, mnu.items.html)
         self.eq(main.items.pretty, mnu.items.pretty)
@@ -15311,7 +15309,6 @@ class pom_page(tester):
         self.is_(ws, ws['/en/blogs/comments/rejected'].site)
 
     def it_changes_sidebars_from_main(self):
-
         class stats(pom.page):
             def main(self):
                 m = self.main

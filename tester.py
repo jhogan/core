@@ -487,6 +487,7 @@ class tester(entity):
         return res
 
     def post(self, pg, ws, frm):
+        # TODO:f824d92b Consolidate code from the post and get methods. 
         if not isinstance(pg, str):
             raise TypeError('pg parameter must be a str')
 

@@ -3584,6 +3584,7 @@ class _htmlparser(HTMLParser):
         el = el()
         for attr in attrs:
             el.attributes += attribute.create(*attr)
+            # TODO Dose this work now?
             #el.attributes += attr
 
         try:

@@ -1,3 +1,13 @@
+# vim: set et ts=4 sw=4 fdm=marker
+
+#######################################################################
+# Copyright (C) Jesse Hogan - All Rights Reserved
+# Unauthorized copying of this file, via any medium is strictly
+# prohibited
+# Proprietary and confidential
+# Written by Jesse Hogan <jessehogan0@gmail.com>, 2020
+########################################################################
+
 import json
 import sys
 from functools import reduce
@@ -186,6 +196,15 @@ class _request:
     def payload(self):
         if self._payload is None:
             sz = self.size
+            # TODO We should probably convert the self.environment dict
+            # to something that can supports case-insensitive indexing
+            # since case will probably cause problems in the future.
+            # The http.headers class may be good for this, though I'm
+            # not sure if WSGI environmen variables are technically HTTP
+            # headers. Note that the WSGI protocals has it that the
+            # environ variable should be a dict so we shoud still
+            # support environs as a dict, we just don't need to preserve
+            # it as a simple dict internally.
             inp = self.environment['wsgi.input']
             self._payload = inp.read(sz).decode('utf-8')
         return self._payload
@@ -232,10 +251,14 @@ class _request:
 
     @property
     def isget(self):
+        # TODO self.method will always be uppercase, so there's no need
+        # to casefold()
         return self.method.casefold() == 'get'
 
     @property
     def ispost(self):
+        # TODO self.method will always be uppercase, so there's no need
+        # to casefold()
         return self.method.casefold() == 'post'
 
     @property
@@ -283,6 +306,17 @@ class _request:
                 import ctrl
             except ImportError as ex:
                 raise ImportError('Error importing controller: ' + str(ex))
+
+        else:
+            # TODO:f824d92b It's currently hard to test this. When we
+            # consolidate code from the different request methods in
+            # tester.py (post(), get(), head(), etc) we may be able to
+            # use the resulting private request method to alter the
+            # request_method to something arbitrary.
+
+            raise MethodNotAllowedError(
+                'Method "%s" is never allowed' % self.method
+            )
 
 class response():
     Messages = {
