@@ -290,7 +290,7 @@ class _request:
             
         elif self.ispost:
             if len(self.payload) == 0:
-                raise http.BadRequestError('No data in body of request message.')
+                raise BadRequestError('No data in body of request message.')
 
             # The remaining demands will be for XHR requests only
             if not self.isxhr:
