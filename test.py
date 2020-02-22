@@ -24,6 +24,7 @@ import dateutil
 import db
 import decimal; dec=decimal.Decimal
 import dom
+import exc
 import functools
 import gem
 import gem
@@ -14747,10 +14748,16 @@ class accountsummary(pom.page):
 class home(pom.page):
     def __init__(self):
         super().__init__()
+        self.pages += google('google')
 
     @property
     def name(self):
         return 'index'
+
+class google(pom.page):
+    def main(self, **kwargs):
+        # HTTP 302 Found (i.e., redirect)
+        raise http.FoundException(location="https://www.google.com")
 
 class blogs(pom.page):
     def __init__(self):
@@ -15651,8 +15658,18 @@ class pom_page(tester):
 
         res = self.get('/en/' + 'intheix.html', ws)
         self.eq(404, res.status)
-        print(res)
+        
+        # foonet has its own 404 page has an h2.apology element
+        # distinguishing it from the generic 404 page at the pom.site
+        # level.
+        self.one(res['h2.apology'])
 
+    def it_raises_im_a_302(self):
+        ws = foonet()
+
+        res = self.get('/en/index/google', ws)
+        self.eq(302, res.status)
+        self.eq('https://www.google.com', res.headers['location'].value)
 
 class dom_elements(tester):
     def it_gets_text(self):
