@@ -10,13 +10,14 @@
 
 from contextlib import suppress
 from dbg import B
+import datetime
 import dom
 import entities
-import textwrap
-import inspect
-import datetime
-import primative
+import exc
 import http
+import inspect
+import primative
+import textwrap
 
 # References:
 #
@@ -569,7 +570,7 @@ class page(dom.html):
                         self._args[k] = arg.casefold() in ('1', 'true')
                 elif datetime.datetime in v.annotation.mro():
                     self._args[k] = primative.datetime(arg)
-                else:
+                elif v.annotation in (int, float):
                     # Use the constructor of the class (v.annotation) to
                     # coerce the data. This works well for types like
                     # int, float, etc. This should also works with UUID
