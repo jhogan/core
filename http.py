@@ -234,10 +234,6 @@ class _request:
         return self.environment['path_info']
 
     @property
-    def post(self):
-        return json.loads(self.body)
-
-    @property
     def size(self):
         try:
             return int(self.environment.get('content_length', 0))
