@@ -446,7 +446,7 @@ class response():
         self._status = 200
         self._page = None
         self.request = req
-        self._headers = None
+        self._headers = headers()
 
     @property
     def status(self):
@@ -504,7 +504,7 @@ class response():
         )
         '''
 
-        return hdrs
+        return self._headers
 
     def __repr__(self, pretty=False):
         r = textwrap.dedent('''
@@ -803,4 +803,44 @@ class SiteIsFrozenError(HttpError):
 
 class NetworkReadTimeoutError(HttpError):
     status = 598
+
+class headers(entities.entities):
+    def __setitem__(self, ix, v):
+        if not isinstance(ix, str):
+            return super().__setitem__(ix)
+
+        for hdr in self:
+            if hdr.name.casefold() == ix.casefold():
+                break
+        else:
+            self += header(ix, v)
+
+    def __getitem__(self, ix):
+        if not isinstance(ix, str):
+            return super().__getitem__(ix)
+
+        for hdr in self:
+            if hdr.name.casefold() == ix.casefold():
+                return hdr
+        return None
+
+    @property
+    def list(self):
+        r = list()
+        for hdr in self:
+            r.append(hdr.tuple)
+        return r
+
+class header(entities.entity):
+    def __init__(self, name, v):
+        self.name = name
+        self.value = v
+
+    def __str__(self):
+        return '%s: %s' % self.tuple
+
+    @property
+    def tuple(self):
+        return (self.name, self.value)
+
 app = application()
