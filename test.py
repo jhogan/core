@@ -14861,6 +14861,10 @@ class gem_person(tester):
             Take exit 80 from I-44 E
 			Drive to E Evergreen St
             ''')
+
+            ar = gem.address_region()
+            ar.region = gem_region.getvalid()
+            addr.address_regions += ar
             
             hm = gem.party_contactmechanism.roles.home
 
@@ -14895,9 +14899,27 @@ class gem_person(tester):
                 per1.party_contactmechanisms[i].contactmechanism.id
             )
 
-            addr = gem.address(
+            addr = per.party_contactmechanisms[i].contactmechanism
+
+            # Downcast
+            addr1 = gem.address(
                 per1.party_contactmechanisms[i].contactmechanism.id
             )
+
+            self.eq(addr.address1, addr1.address1)
+
+            reg = addr.address_regions.first.region
+            reg1 = addr1.address_regions.first.region
+
+            expect = self.dedent('''
+			Scottsdale, Arizona 85281
+			United States of America
+            ''')
+            self.eq(expect, str(reg1))
+
+            self.eq(str(reg), str(reg1))
+
+
 
 class gem_company(tester):
     def __init__(self):
