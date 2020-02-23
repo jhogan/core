@@ -15003,41 +15003,257 @@ class gem_company(tester):
                 getattr(pp1, map.name),
             )
 
+    def it_associates_phone_numbers(self):
+        com = self.getvalid()
+
+        # Create two phone numbers
+        for i in range(2):
+
+            # Create phone number
+            ph = gem.phone()
+            ph.area = int('20' + str(i))
+            ph.line = '555 5555'
+            
+            # Create party to contact mechanism association
+            pcm                   =  gem.party_contactmechanism()
+            pcm.begin             =  primative.datetime('1976-01-01')
+            pcm.end               =  None
+            pcm.solicitations     =  False
+            pcm.extension         =  None
+            pcm.purpose           =  gem.party_contactmechanism.roles.main
+            pcm.contactmechanism  =  ph
+            pcm.party             =  com
+
+            # Add association to the company object
+            com.party_contactmechanisms += pcm
+
+        # Save, reload and test
+        com.save()
+
+        com1 = gem.company(com.id)
+
+        com.party_contactmechanisms.sort()
+        com1.party_contactmechanisms.sort()
+
+        self.two(com1.party_contactmechanisms)
+
+        for i in range(2):
+            self.eq(com.id, com1.party_contactmechanisms[i].party.id)
+
+            self.eq(
+                com.party_contactmechanisms[i].contactmechanism.id,
+                com1.party_contactmechanisms[i].contactmechanism.id
+            )
+            ph = gem.phone(
+                com1.party_contactmechanisms[i].contactmechanism.id
+            )
+
+    def it_associates_email_addresses(self):
+        com = self.getvalid()
+
+        # Create two email addressess
+        for i in range(2):
+
+            # Create email addres
+            em = gem.email()
+            em.address = 'jimbo%s@foonet.com' % i
+            
+            # Create party to contact mechanism association
+            priv = gem.party_contactmechanism.roles.private
+
+            pcm                   =  gem.party_contactmechanism()
+            pcm.begin             =  primative.datetime('1993-09-01')
+            pcm.end               =  None
+            pcm.solicitations     =  False
+            pcm.extension         =  None
+            pcm.purpose           =  priv # Private email address
+            pcm.contactmechanism  =  em
+            pcm.party             =  com
+
+            # Add association to the company object
+            com.party_contactmechanisms += pcm
+
+        # Save, reload and test
+        com.save()
+
+        com1 = gem.company(com.id)
+
+        com.party_contactmechanisms.sort()
+        com1.party_contactmechanisms.sort()
+
+        self.two(com1.party_contactmechanisms)
+
+        for i in range(2):
+            self.eq(com.id, com1.party_contactmechanisms[i].party.id)
+
+            self.eq(
+                com.party_contactmechanisms[i].contactmechanism.id,
+                com1.party_contactmechanisms[i].contactmechanism.id
+            )
+
+            em = gem.email(
+                com1.party_contactmechanisms[i].contactmechanism.id
+            )
+
+    def it_associates_postal_addresses(self):
+        com = self.getvalid()
+
+        # Create two postal addressess
+        for i in range(2):
+
+            # Create postal addres
+            addr = gem.address()
+            addr.address1 = '742 Evergreen Terrace'
+            addr.address2 = None
+            addr.directions = self.dedent('''
+			Take on I-40 E. 
+            Take I-44 E to Glenstone Ave in Springfield. 
+            Take exit 80 from I-44 E
+			Drive to E Evergreen St
+            ''')
+
+            ar = gem.address_region()
+            ar.region = gem_region.getvalid()
+            addr.address_regions += ar
+            
+            hm = gem.party_contactmechanism.roles.home
+
+            # Create party-to-contact-mechanism association
+            pcm                   =  gem.party_contactmechanism()
+            pcm.begin             =  primative.datetime('1993-09-01')
+            pcm.end               =  None
+            pcm.solicitations     =  False
+            pcm.extension         =  None
+            pcm.purpose           =  hm
+            pcm.contactmechanism  =  addr
+            pcm.party             =  com
+
+            # Add association to the company object
+            com.party_contactmechanisms += pcm
+
+        # Save, reload and test
+        com.save()
+
+        com1 = gem.company(com.id)
+
+        com.party_contactmechanisms.sort()
+        com1.party_contactmechanisms.sort()
+
+        self.two(com1.party_contactmechanisms)
+
+        for i in range(2):
+            self.eq(com.id, com1.party_contactmechanisms[i].party.id)
+
+            self.eq(
+                com.party_contactmechanisms[i].contactmechanism.id,
+                com1.party_contactmechanisms[i].contactmechanism.id
+            )
+
+            addr = com.party_contactmechanisms[i].contactmechanism
+
+            # Downcast
+            addr1 = gem.address(
+                com1.party_contactmechanisms[i].contactmechanism.id
+            )
+
+            self.eq(addr.address1, addr1.address1)
+
+            reg = addr.address_regions.first.region
+            reg1 = addr1.address_regions.first.region
+
+            expect = self.dedent('''
+			Scottsdale, Arizona 85281
+			United States of America
+            ''')
+            self.eq(expect, str(reg1))
+
+            self.eq(str(reg), str(reg1))
+
+
+class gem_address(tester):
+    @staticmethod
+    def getvalid():
+        addr = gem.address()
+        addr.address1 = '742 Evergreen Terrace'
+        addr.address2 = None
+        addr.directions = tester.dedent('''
+        Take on I-40 E. 
+        Take I-44 E to Glenstone Ave in Springfield. 
+        Take exit 80 from I-44 E
+        Drive to E Evergreen St
+        ''')
+        return addr
+
 class gem_region(tester):
-    
+    def __init__(self):
+        super().__init__()
+        gem.party.orm.recreate(recursive=True)
+        gem.address.orm.recreate()
+
+    @staticmethod
+    def getvalid():
+        return gem.region.create(
+            ('United States of America',  gem.region.Country,    'USA'),
+            ('Arizona',                   gem.region.State,      'AZ'),
+            ('Scottsdale',                gem.region.City),
+            ('85281',                     gem.region.PostalCode)
+        )
+
     def it_creates(self):
-        return
-        usa = gem.region()
-        usa.name='United States of America'
-        usa.type=gem.region.Country
-        usa.abbreviation = 'USA'
-        usa.save()
-
-
-        az = gem.region(
-            name = 'Arizona',
-            type = gem.region.State,
-            abbreviation = 'AZ'
+        reg = gem.region.create(
+            ('United States of America',  gem.region.Country,    'USA'),
+            ('Arizona',                   gem.region.State,      'AZ'),
+            ('Scottsdale',                gem.region.City),
+            ('85224',                     gem.region.PostalCode)
         )
 
-        scottsdale = gem.region(
-            name = 'Scottsdale',
-            type = gem.region.City
+        self.eq('85224', reg.name)
+        self.zero(reg.regions)
+
+        reg = reg.region
+        self.eq('Scottsdale', reg.name)
+        self.one(reg.regions)
+
+        reg = reg.region
+        self.eq('Arizona', reg.name)
+        self.one(reg.regions)
+
+        reg = reg.region
+        self.eq('United States of America', reg.name)
+        self.one(reg.regions)
+        self.none(reg.region)
+
+        reg = gem.region.create(
+            ('United States of America',  gem.region.Country,    'USA'),
+            ('Arizona',                   gem.region.State,      'AZ'),
+            ('Scottsdale',                gem.region.City),
+            ('85254',                     gem.region.PostalCode)
         )
 
-        postal = gem.region(
-            name = '85255',
-            type = gem.region.PostalCode
-        )
+    def it_associates_address_with_region(self):
+        # Create address and region
+        addr = gem_address.getvalid()
+        reg = self.getvalid()
 
-        usa.regions += az
-        az.regions += az
-        scottsdale.regions += postal
+        # Create association
+        ar = gem.address_region()
+        ar.region = reg
 
-        usa.save()
+        # Associate
+        addr.address_regions += ar
 
-        usa1 = gem.region(usa.id)
-        self.one(usa1.regions)
+        # Save
+        addr.save()
+
+        # Reload
+        addr1 = gem.address(addr.id)
+
+        # Test
+        self.one(addr1.address_regions)
+
+        reg1 = addr1.address_regions.first.region
+
+        self.eq(reg.name, reg1.name)
 
 cli().run()
 
