@@ -201,6 +201,47 @@ class region(orm.entity):
 
     abbreviation = str
 
+    @property
+    def country(self):
+        if self.type == self.Country:
+            return self
+
+        for an in self.ancestors:
+            if an.type == self.Country:
+                return an
+
+        return None
+
+    @property
+    def ancestors(self):
+        rent = self.region
+        while rent:
+            yield rent
+            rent = rent.region
+
+    def __str__(self):
+        # NOTE The following may be a good reference to format regions
+        # as well as addresses: https://en.wikipedia.org/wiki/Address
+
+        args = dict()
+        for an in self.ancestors:
+            if an.type == self.City:
+                args['city'] = an.name
+            elif an.type == self.State:
+                args['state'] = an.name
+            elif an.type == self.Country:
+                args['country'] = an.name
+
+        if self.type == self.PostalCode:
+            args['zip'] = self.name
+            if args['country'] == 'United States of America':
+                fmt = '{city}, {state} {zip}\n{country}'
+            else:
+                raise NotImplementedError()
+        else:
+            raise NotImplementedError()
+
+        return fmt.format(**args)
 
 class contactmechanism(orm.entity):
     """ An abstract class representing a mechanism through which a party
@@ -291,6 +332,35 @@ class address(contactmechanism):
     #     instead")
     #directions = str, 1, 65535
     directions = str, 1, 65536
+
+    def __str__(self):
+        ars = self.address_regions
+        reg = ars.first.region if ars.count else None
+
+        if reg and reg.country:
+            if reg.country.name == 'United States of America':
+                fmt = '{line1}{line2}{region}'
+            else:
+                raise NotImplementedError()
+        else:
+            raise NotImplementedError()
+
+        args = dict()
+        args['line1'] = self.address1
+        if self.address2:
+            args['line2'] = '\n' + self.address2
+        else:
+            args['line2'] = str()
+
+        if reg:
+            args['region'] = '\n' + str(reg)
+        else:
+            args['region'] = str()
+
+        return fmt.format(**args)
+
+    # TODO Enfore rule that an address can be associated with only one
+    # address.
 
 class address_region(orm.association):
     """ An association between a postal address (``address``) and a
