@@ -1033,6 +1033,7 @@ class entitiesmeta(type):
         return cls.all.count
 
 class entities(entitiesmod.entities, metaclass=entitiesmeta):
+    # TODO Move to orm class
     @classproperty
     def all(cls):
         return cls(allstream)

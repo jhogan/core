@@ -9892,7 +9892,6 @@ class test_orm(tester):
                     )
                     B()
 
-
         # Dirty rpr and save. Ensure the object was actually saved
         rpr.firstname  =  uuid4().hex
         rpr.voice      =  uuid4().hex

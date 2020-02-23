@@ -196,7 +196,6 @@ class region(orm.entity):
     # name will be the name of the country, e.g., "United States".
     name = str
 
-
     # A numeric code to indicate the region type 
     type = int
 
@@ -233,7 +232,6 @@ class party_contactmechanism(orm.association):
         main = 0
         home = 1
         private = 2
-
 
     # The date range through which this contactmechanism applied to the
     # given ``party``.
