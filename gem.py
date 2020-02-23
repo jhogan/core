@@ -121,6 +121,58 @@ class region(orm.entity):
     Territory   =  5
     Country     =  6
 
+    def __init__(self, *args, **kwargs):
+        # TODO abbreviation is a standard string but we want to default
+        # it to None. This should be done in the constructor, however,
+        # the advent of the kwargs parameter for entities makes this
+        # expression "default 'abbreviation' to None" a bit crytic and
+        # hard to remember. We need to devise an easier way to default
+        # attributes.
+
+        super().__init__(*args, **kwargs)
+
+    @staticmethod
+    def create(*args):
+        regs = root = None
+        for tup in args:
+            name = tup[0]
+            type = tup[1]
+            abbr = tup[2] if len(tup) > 2 else None
+
+            found = False
+            if regs:
+                for reg in regs:
+                    if reg.name == name and reg.type == type:
+                        found = True
+                        break
+
+            if not found:
+                regs1 = regions(name=name, type=type)
+                if regs1.hasone:
+                    reg = regs1.last
+                    if regs:
+                        regs += reg
+                    found = True
+                    if not root:
+                        root = reg
+
+            if not found:
+                reg = region()
+                reg.name = name
+                reg.type = type
+                reg.abbreviation = abbr
+                if regs:
+                    regs += reg
+
+                if not root:
+                    root = reg
+
+            regs = reg.regions
+
+        root and root.save()
+        return reg
+        
+
     """ An instance of a geographical region. Geographical regions
     include postal codes, cities, counties, states, provinces,
     territories and countries. 
