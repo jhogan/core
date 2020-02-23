@@ -12316,6 +12316,7 @@ class test_orm(tester):
         com.save()
 
         recurse(com, comment(com.id), expecteddepth=0)
+        self.none(com.comment)
 
         ' Test recursive shallow recursion (1 level) '
         com = comment.getvalid()
@@ -12325,6 +12326,8 @@ class test_orm(tester):
             com.comments += comment.getvalid()
             com.comments.last.title = uuid4().hex
             com.comments.last.body = uuid4().hex
+            self.is_(com, com.comments.last.comment)
+
 
         with self._chrontest() as t:
             t.run(com.save)
@@ -12333,6 +12336,9 @@ class test_orm(tester):
             t.created(com.comments.second)
 
         recurse(com, comment(com.id), expecteddepth=1)
+
+        sub = comment(com.comments.last.id)
+        self.eq(com.id, sub.comment.id)
 
         ''' Test deep recursion '''
         com = comment.getvalid()
