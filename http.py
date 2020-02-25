@@ -92,7 +92,7 @@ class application:
 
                     data = [] if data == None else data
                 else:
-                    res.data = req()
+                    res.payload = req()
 
             else:
                 # TODO Change to Bad Method exception> NOTE this block
