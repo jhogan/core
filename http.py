@@ -254,19 +254,15 @@ class _request:
 
     @property
     def isget(self):
-        # TODO self.method will always be uppercase, so there's no need
-        # to casefold()
-        return self.method.casefold() == 'get'
+        return self.method == 'GET'
+
+    @property
+    def ispost(self):
+        return self.method == 'POST'
 
     @property
     def ishead(self):
         return self.method == 'HEAD'
-
-    @property
-    def ispost(self):
-        # TODO self.method will always be uppercase, so there's no need
-        # to casefold()
-        return self.method.casefold() == 'post'
 
     @property
     def isxhr(self):
