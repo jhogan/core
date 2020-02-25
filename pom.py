@@ -548,9 +548,7 @@ class page(dom.html):
                 # would cause a TypeError.
                 self._args[k] = None
 
-            # TODO I think this test can just be:
-            #     if v.annotation is not inspect._empty:
-            if v.annotation and v.annotation is not inspect._empty:
+            if v.annotation is not inspect._empty:
                 arg = self._args[k]
 
                 # TODO Raise 422 if an exception occurs on coersion
