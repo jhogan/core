@@ -4,7 +4,7 @@
 # Unauthorized copying of this file, via any medium is strictly
 # prohibited
 # Proprietary and confidential
-# Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
+# Written by Jesse Hogan <jessehogan0@gmail.com>, 2020
 
 # TODO Add Tests
 from entities import *

@@ -2,7 +2,7 @@
 # Unauthorized copying of this file, via any medium is strictly
 # prohibited
 # Proprietary and confidential
-# Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
+# Written by Jesse Hogan <jessehogan0@gmail.com>, 2020
 
 from configfile import configfile
 from contextlib import contextmanager, suppress
@@ -41,8 +41,8 @@ class testers(entities):
         self.breakonexception = False
 
     def run(self, tu=None):
-        # TODO testclass and testmethod would probably be better as global
-        # variables. That would allow us to have a `testmethods`
+        # TODO testclass and testmethod would probably be better as
+        # global variables. That would allow us to have a `testmethods`
         # property (see the TODO below).
 
         testclass, testmethod, *_ = tu.split('.') + [None] if tu else [None] * 2
@@ -565,35 +565,28 @@ class tester(entity):
 
         url = urllib.parse.urlparse(pg)
 
-        pg = ws[url.path]
-        pg.clear()
+        pg = ws(url.path)
+
+        pg and pg.clear()
 
         if meth == 'POST':
             inp = io.BytesIO(frm.post)
 
             env = self._createenv({
-                'server_site':     pg.site,
                 'content_length':  len(frm.post),
                 'wsgi.input':      inp,
             })
-        elif meth in ('GET', 'HEAD'):
-            env = self._createenv({
-                'server_site':     ws,
-            })
+        else: 
+            env = self._createenv()
 
         env['path_info']       =  url.path
         env['query_string']    =  url.query
-        env['server_name']     =  pg.site.host
+        env['server_name']     =  ws.host
         env['server_site']     =  ws
         env['request_method']  =  meth
 
         # Create WSGI app
         app = http.application()
-
-        # TODO:292a6b5a Should we be assigning env to app.envirement
-        # here when env is the first argument to app.__call__ (see
-        # below)
-        app.environment = env
 
         # Create request. Associate with app.
         req = http._request(app)
@@ -601,16 +594,17 @@ class tester(entity):
         app.breakonexception = self.testers.breakonexception
 
         # Make WSGI call
-        iter = app(env, start_response)
+        # NOTE PEP 0333 insist that the environment variables passed in
+        # must be a dict so we convert `env` which is an http.headers
+        # object.
+        iter = app(dict(env.list), start_response)
 
         res = http.response(req) 
         res._status = st
         res._headers = hdrs
-        res.data = next(iter)
+        res.payload = next(iter)
 
         return res
-
-
 
     def xhrpost(self, cls, meth, args):
         # NOTE This is currently unused and is left here for now for
@@ -618,6 +612,8 @@ class tester(entity):
         # was originally called 'post' but post is now used for
         # traditional HTTP POSTs. This will all likely change in the
         # future.
+
+        # TODO Consider using the _request() method
         import app
 
         body = {

@@ -15475,7 +15475,7 @@ class pom_page(tester):
         pg = time()
         ws.pages += pg
         res = self.head('/en/time', ws)
-        self.none(res.data)
+        self.none(res.payload)
         self.eq(200, res.status)
 
     def it_calls_page_coerses_datatypes(self):
@@ -15655,7 +15655,7 @@ class pom_page(tester):
 
         self.four(main['article.traceback>div'])
 
-    def it_raises_im_a_404(self):
+    def it_raises_404(self):
         class derpnet(pom.site):
             def __init__(self, host='derp.net'):
                 super().__init__(host)
@@ -21388,6 +21388,8 @@ class gem_person(tester):
 
         self.eq(bro.id, bro1.party_parties.last.subject.id)
         self.eq(sis.id, bro1.party_parties.last.object.id)
+
+        
         
 class gem_company(tester):
     def __init__(self):

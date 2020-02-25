@@ -301,9 +301,6 @@ class menu(dom.nav):
             o = self.page if self.page else self.text
             itm = type(self)(o, href=self.href)
 
-            # FIXME:31b3fb5d This does not clone correctly due to the
-            # problem with entities.append's inability to distinguish
-            # between iterables and entity objects.  
             itm.items += self.items.clone()
             itm.attributes = self.attributes.clone()
             return itm
@@ -609,8 +606,6 @@ class page(dom.html):
         if not self._calling:
             self._arguments = qsargs
 
-            # TODO Remove this assignment
-            f = self._mainfunc
             try:
                 self._calling = True
                 self._mainfunc(**self._arguments)
@@ -633,7 +628,6 @@ class page(dom.html):
 
         els += self.body
 
-        # TODO Removing this call for now. Not sure why it was needed.
         self._called or self(**self._arguments)
 
         self.main._setparent(None)
@@ -793,6 +787,8 @@ class footer(dom.footer):
     pass
 
 class input(dom.div):
+    # TODO Add functionality to create a <datalist>
+    # TODO Add bootstrap classes
     def __init__(self,              
                  name,              type,       label=None,
                  placeholder=None,  help=None,  options=None,
@@ -834,10 +830,6 @@ class input(dom.div):
             els += dom.small(self.help)
 
 class error(page):
-    # TODO Remove this constructor
-    def __init__(self):
-        super().__init__()
-
     @property
     def pages(self):
         if not self._pages:
@@ -852,9 +844,9 @@ class error(page):
             ex.message
         )
 
-        # TODO:c126eba3 The <main> should have a CSS class that is descriptive of
-        # the page it represents by default so style sheet developers
-        # can identify the page being styled. 
+        # TODO:c126eba3 The <main> should have a CSS class that is
+        # descriptive of the page it represents by default so style
+        # sheet developers can identify the page being styled. 
         #
         # This line should be removed and code should be put in place to
         # ensure that the <main> element gets the same class.

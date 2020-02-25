@@ -24,7 +24,7 @@ import pdb
 import entities
 import exc
 
-# TODO Use the following diagram as a guide to determine what status
+# NOTE Use the following diagram as a guide to determine what status
 # code to respond with:
 # https://www.loggly.com/blog/http-status-code-diagram/
 # (Backup: # https://stackoverflow.com/questions/3297048/403-forbidden-vs-401-unauthorized-http-responses)
@@ -73,7 +73,7 @@ class application:
             if req.isget or req.ishead:
                 data = req()
                 if req.isget:
-                    res.data = data
+                    res.payload = data
             elif req.ispost:
                 if req.isxhr:
                     reqdata = self.request.post
@@ -124,7 +124,7 @@ class application:
                             pg(ex=ex)
 
                         res.status = ex.status
-                        res.data = pg.html
+                        res.payload = pg.html
                     elif isinstance(ex, HttpException):
                         # HttpException are HTTP 300s. Allow the
                         # exception to make modifications to the
@@ -135,14 +135,14 @@ class application:
                 # exception, ensure the response is 500 with a simple
                 # error message.
                 res.status = 500
-                res.data = textwrap.dedent('''
+                res.payload = textwrap.dedent('''
                 <p>Error processing exception: %s</p>
                 ''' % str(ex))
 
         finally:
             if not break_:
-                start_response(res.status, res.headers)
-                return iter([res.data])
+                start_response(res.status, dict(res.headers.list))
+                return iter([res.payload])
 
             request = None
 
@@ -207,15 +207,6 @@ class _request:
     def payload(self):
         if self._payload is None:
             sz = self.size
-            # TODO We should probably convert the self.environment dict
-            # to something that can supports case-insensitive indexing
-            # since case will probably cause problems in the future.
-            # The http.headers class may be good for this, though I'm
-            # not sure if WSGI environmen variables are technically HTTP
-            # headers. Note that the WSGI protocals has it that the
-            # environ variable should be a dict so we shoud still
-            # support environs as a dict, we just don't need to preserve
-            # it as a simple dict internally.
             inp = self.environment['wsgi.input']
             self._payload = inp.read(sz).decode('utf-8')
         return self._payload
@@ -320,12 +311,6 @@ class _request:
                 raise ImportError('Error importing controller: ' + str(ex))
 
         else:
-            # TODO:f824d92b It's currently hard to test this. When we
-            # consolidate code from the different request methods in
-            # tester.py (post(), get(), head(), etc) we may be able to
-            # use the resulting private request method to alter the
-            # request_method to something arbitrary.
-
             raise MethodNotAllowedError(
                 'Method "%s" is never allowed' % self.method
             )
@@ -442,7 +427,7 @@ class response():
     }
 
     def __init__(self, req):
-        self._data = None
+        self._payload = None
         self._status = 200
         self._page = None
         self.request = req
@@ -464,28 +449,26 @@ class response():
             return str(self.status)
 
     @property
-    def data(self):
-        # TODO Call this property "payload"
-
+    def payload(self):
         # These lines are for XHR responses
-        # data = json.dumps(data)
-        # data = bytes(data, 'utf-8')
-        return self._data
+        # payload = json.dumps(payload)
+        # payload = bytes(payload, 'utf-8')
+        return self._payload
 
-    @data.setter
-    def data(self, v):
-        self._data = v
+    @payload.setter
+    def payload(self, v):
+        self._payload = v
 
     def __getitem__(self, sels):
         return self.html[sels]
 
     @property
     def html(self):
-        return dom.html(self.data)
+        return dom.html(self.payload)
 
     @property
     def headers(self):
-        clen = len(self.data) if self.data else 0
+        clen = len(self.payload) if self.payload else 0
         self._headers['Content-Length'] = clen
         
         # if XHR
@@ -511,7 +494,7 @@ class response():
             self.request.path,
             self.request.method,
             self.message,
-            dom.html(self.data).pretty if pretty else self.data,
+            dom.html(self.payload).pretty if pretty else self.payload,
         )
 
     def __str__(self):
