@@ -393,7 +393,10 @@ class tester(entity):
 
     @staticmethod
     def _createenv(env=None):
-        r = {
+        # TODO Should content_length be an empty str. Maybe it should be
+        # 0 by default, or more likely, it should be removed from this
+        # dict.
+        d = {
 			'content_length': '',
 			'content_type': 'application/x-www-form-urlencoded',
 			'http_accept': '*/*',
@@ -417,10 +420,11 @@ class tester(entity):
 			'wsgi.version': (1, 0)
 		}
 
-        for k, v in env.items():
-            r[k] = v
+        if env:
+            for k, v in env.items():
+                d[k] = v
         
-        return r
+        return http.headers(d)
 
     def head(self, pg, ws):
         return self._request(pg=pg, ws=ws, meth='HEAD')

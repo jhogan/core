@@ -52,6 +52,12 @@ class application:
         return self._request
 
     def demand(self):
+        if type(self.environment) is not dict:
+            # PEP 333 insists that the environs must be a dict. The WSGI
+            # server will almost certainly send a dict, but tester.py
+            # likes to use its own data structure for this, so make sure
+            # it always gives us a dict.
+            raise TypeError('Environment must be of type "dict"')
         self.request.demand()
            
     def __call__(self, env, start_response):
@@ -789,6 +795,12 @@ class NetworkReadTimeoutError(HttpError):
     status = 598
 
 class headers(entities.entities):
+    def __init__(self, d=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if d:
+            for k, v in d.items():
+                self += header(k, v)
+            
     def __setitem__(self, ix, v):
         if not isinstance(ix, str):
             return super().__setitem__(ix)
@@ -805,7 +817,7 @@ class headers(entities.entities):
 
         for hdr in self:
             if hdr.name.casefold() == ix.casefold():
-                return hdr
+                return hdr.value
         return None
 
     @property
@@ -822,6 +834,15 @@ class header(entities.entity):
 
     def __str__(self):
         return '%s: %s' % self.tuple
+
+    def __repr__(self):
+        args = (
+            type(self).__name__,
+            self.name,
+            str(self.value)
+            
+        )
+        return '%s (%s: %s)"' % args
 
     @property
     def tuple(self):
