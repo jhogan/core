@@ -337,7 +337,7 @@ class entities(object):
         elif callable(str):
             key1 = key
 
-        return type(self)(sorted(self._ls, key=key1, reverse=reverse))
+        return type(self)(initial=sorted(self._ls, key=key1, reverse=reverse))
 
     def enumerate(self):
         for i, e in enumerate(self):
