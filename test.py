@@ -15684,7 +15684,16 @@ class pom_page(tester):
 
         res = self.get('/en/index/google', ws)
         self.eq(302, res.status)
-        self.eq('https://www.google.com', res.headers['location'].value)
+        self.eq('https://www.google.com', res.headers['Location'])
+
+    def it_raises_405(self):
+        ws = foonet()
+        res = self._request(
+            pg='/en/index/google', ws=ws, frm=None, meth='DERP'
+        )
+        self.eq(405, res.status)
+        self.eq('405', res['main .status'].first.text)
+
 
 class dom_elements(tester):
     def it_gets_text(self):
