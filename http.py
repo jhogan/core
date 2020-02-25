@@ -95,10 +95,9 @@ class application:
                     res.payload = req()
 
             else:
-                # TODO Change to Bad Method exception> NOTE this block
-                # should be superfluous since the `self.demand` call
-                # should capture this problem
-                raise ValueError('Bad method')
+                raise MethodNotAllowedError(
+                    'Method "%s" is never allowed' % req.method
+                )
 
         except Exception as ex:
             if self.breakonexception:
