@@ -687,16 +687,6 @@ class page(dom.html):
                 r = rent.name
             rent = rent.page
 
-        # TODO:159bf0df Path currently only ascend to the root to
-        # concatenate the pages path. However, the actual path must also
-        # contain the language segment as wel ('/en/'). When the
-        # `http.request` singleton is created, we can use it to get that
-        # language segment and return something like:
-        # 
-        #     return http.request.language + '/' + r
-        # or
-        #     return http.request.region + '/' + r
-
         return '/' + r
 
     def __repr__(self):

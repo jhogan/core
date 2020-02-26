@@ -120,12 +120,16 @@ class application:
                         # HttpError are 400s and 500s
 
                         # TODO Don't hard code language code (/en)
-                        pg = req.site('/en/error/%s' % ex.status)
+                        lang = req.language
+                        path = '/%s/error/%s' % (lang, ex.status)
+                        pg = req.site(path)
 
                         if pg:
+                            pg.clear()
                             pg(ex=ex)
                         else:
-                            pg = req.site['/en/error']
+                            pg = req.site['/%s/error' % lang]
+                            pg.clear()
                             pg(ex=ex)
 
                         res.status = ex.status
@@ -203,6 +207,24 @@ class _request:
             return ws[path]
         except IndexError:
             return None
+
+    @property
+    def language(self):
+        ''' Return the language code. This is usually the first segment
+        of the URL path. 
+        '''
+
+        try:
+            # TODO When the language code is not given, Accept-Language can
+            # be used to work out the best language.
+            segs = [x for x in self.path.split('/') if x]
+            if len(segs):
+                return segs[0]
+        except:
+            return 'en'
+
+        # Default to English
+        return 'en'
 
     def __call__(self):
         self.page(**self.arguments)

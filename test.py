@@ -15693,6 +15693,29 @@ class pom_page(tester):
         )
         self.eq(405, res.status)
         self.eq('405', res['main .status'].first.text)
+        self.one(res['main[data-path="/error"]'])
+
+    def it_calls_language(self):
+        class lang(pom.page):
+            def main(self):
+                lang = http.request.language
+                self.main += dom.p('''
+                Lang: %s
+                ''' % lang)
+
+        ws = foonet()
+        pg = lang()
+        ws.pages += pg
+
+        res = self.get('/en/lang', ws)
+        self.one(res['main[data-path="/lang"]'])
+
+        self.eq('Lang: en', (res['main p'].first.text))
+
+        res = self.get('/es/lang', ws)
+        self.one(res['main[data-path="/lang"]'])
+
+        self.eq('Lang: es', (res['main p'].first.text))
 
 
 class dom_elements(tester):
