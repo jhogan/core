@@ -15482,10 +15482,10 @@ class pom_page(tester):
         class time(pom.page):
             def main(
                 self, 
-                greet: bool, 
-                dt: datetime, 
-                i: int, 
-                pdt: primative.datetime):
+                greet:  bool,
+                dt:     datetime,
+                i:      int,
+                pdt:    primative.datetime):
 
                 assert type(greet) is bool
                 assert type(pdt) is primative.datetime
@@ -15532,6 +15532,23 @@ class pom_page(tester):
             'Integer: 1234',
             res['main ul>li:nth-of-type(4)'].text
         )
+
+        for v in 'derp', 2, '1010':
+            path \
+            = '/en/time?greet=%s&dt=2020-02-10&pdt=2020-02-11&i=1234'  
+
+            res = self.get(path % v, ws)
+
+            self.status(422, res)
+
+        path = '/en/time?greet=1&dt=2020-02-10&pdt=DERP&i=1234' 
+        res = self.get(path, ws)
+        self.status(422, res)
+
+        path = '/en/time?greet=1&dt=2020-02-10&pdt=2020-02-11&i=DERP'
+        res = self.get(path, ws)
+        self.status(422, res)
+        self.one(res['main[data-path="/error"]'])
 
     def it_calls_page_and_uses_request_object(self):
         class time(pom.page):

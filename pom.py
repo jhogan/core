@@ -18,6 +18,7 @@ import http
 import inspect
 import primative
 import textwrap
+import itertools
 
 # References:
 #
@@ -425,6 +426,11 @@ class pages(entities.entities):
         r = super().append(obj, uniq, r)
 
 class page(dom.html):
+    ExceptedBooleansStrings = (
+        ('false', '0', 'no', 'n'),
+        ('true', '1', 'yes', 'y')
+    )
+
     def __init__(self, name=None, pgs=None):
         self._pages = None
         self._parentpages = pgs
@@ -551,27 +557,54 @@ class page(dom.html):
             if v.annotation is not inspect._empty:
                 arg = self._args[k]
 
-                # TODO Raise 422 if an exception occurs on coersion
-
                 # If the parameter has an annotation (a type hint) use
                 # the type hint to coerce the string to the hinted type.
-                # TODO We will need logic for datetime's, int's, etc. as
-                # well as bool's.
                 if v.annotation is bool:
                     # Interpret '1' and 'true' (case insensitive) as
                     # True, otherwise the value will be interpreted as
                     # False.
                     if isinstance(arg, str):
-                        self._args[k] = arg.casefold() in ('1', 'true')
+                        arg = arg.casefold()
+                        expected = self.ExceptedBooleansStrings
+
+                        flattened = list(itertools.chain(*expected))
+                        str_flattened = ', '.join(flattened)
+
+                        if arg not in flattened:
+                            raise http.UnprocessableEntityError(
+                                'Query string parameter '
+                                '"%s" must be one of the '
+                                'following: %s' % (k, str_flattened)
+                            )
+                        self._args[k] = arg in expected[1]
                 elif datetime.datetime in v.annotation.mro():
-                    self._args[k] = primative.datetime(arg)
+                    try:
+                        v = primative.datetime(arg)
+                    except Exception as ex:
+                        raise http.UnprocessableEntityError(
+                            'Query string parameter '
+                            '"%s" must be a datetime.' % (k,)
+                        )
+                        
+                    else:
+                        self._args[k] = v
+
                 elif v.annotation in (int, float):
                     # Use the constructor of the class (v.annotation) to
                     # coerce the data. This works well for types like
                     # int, float, etc. This should also works with UUID
                     # if the uuid is a simple hex representation
                     # (uuid4().hex).
-                    self._args[k] = v.annotation(arg)
+                    try:
+                        v = v.annotation(arg)
+                    except Exception as ex:
+                        t = v.annotation.__name__
+                        raise http.UnprocessableEntityError(
+                            'Query string parameter '
+                            '"%s" must be of type "%s".' % (k, t)
+                        )
+                    else:
+                        self._args[k] = v
 
         # If a **kwargs parameter (VAR_KEYWORD) was not found:
         if not kwargs:
