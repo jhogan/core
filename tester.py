@@ -426,6 +426,9 @@ class tester(entity):
         
         return http.headers(d)
 
+    def status(self, st, res):
+        if st != res.status: self._failures += failure()
+
     def head(self, pg, ws):
         return self._request(pg=pg, ws=ws, meth='HEAD')
 
