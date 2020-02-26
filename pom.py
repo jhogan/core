@@ -450,7 +450,7 @@ class page(dom.html):
         except AttributeError:
             pass
 
-        self.main = dom.main()
+        self.clear()
 
     @property
     def title(self):
@@ -622,6 +622,7 @@ class page(dom.html):
 
     def clear(self):
         self.main = dom.main()
+        self.main.attributes['data-path'] = self.path
         self._called = False
 
     def __call__(self, *args, **qsargs):
@@ -865,13 +866,6 @@ class error(page):
             ex.message
         )
 
-        # TODO:c126eba3 The <main> should have a CSS class that is
-        # descriptive of the page it represents by default so style
-        # sheet developers can identify the page being styled. 
-        #
-        # This line should be removed and code should be put in place to
-        # ensure that the <main> element gets the same class.
-        self.main.classes += 'error'
         self.title = ex.phrase
 
         self.main += dom.h1('''

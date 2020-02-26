@@ -15381,6 +15381,7 @@ class pom_page(tester):
 
         # Test passing in th boolean (greet), str (tz) and kwargs(a, b)
         res = self.get('/en/time?greet=1&tz=America/Phoenix&a=1&b=2', ws)
+        self.one(res['main[data-path="/time"]'])
 
         ps = res['p.greeting']
         self.one(ps)
@@ -15626,6 +15627,7 @@ class pom_page(tester):
         frm['input[name=time]'].first.value = time
         frm['textarea[name=comment]'].first.text = comment
         frm['select[name=timezone]'].first.selected = tzs
+        self.one(res['main[data-path="/time"]'])
 
         res = self.post('/en/time', ws, frm)
 
@@ -15663,7 +15665,7 @@ class pom_page(tester):
         ws.pages += pg
         res = self.get('/en/' + pg.path, ws)
         self.eq(418, res.status)
-        mains = res['body>main.error']
+        mains = res['body>main[data-path="/error"]']
 
         self.one(mains)
 
@@ -15671,6 +15673,7 @@ class pom_page(tester):
         self.eq('418', main['.status'].first.text)
 
         self.four(main['article.traceback>div'])
+        self.one(res['main[data-path="/error"]'])
 
     def it_raises_404(self):
         class derpnet(pom.site):
@@ -15695,6 +15698,7 @@ class pom_page(tester):
         # distinguishing it from the generic 404 page at the pom.site
         # level.
         self.one(res['h2.apology'])
+        self.one(res['main[data-path="/error/404"]'])
 
     def it_raises_im_a_302(self):
         ws = foonet()
