@@ -471,7 +471,6 @@ class page(dom.html):
     def pages(self, v):
         self._pages = v
 
-
     @title.setter
     def title(self, v):
         self._title = v
@@ -823,7 +822,7 @@ class input(dom.div):
         self.type         =  type
 
         # TODO Ensure that 'type' is valid. In addition to text and
-        # email, type can also be textarea.
+        # email, type can also be textarea and datalist.
         self.classes += 'form-group'
 
         els = super().elements
