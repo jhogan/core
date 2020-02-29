@@ -26,6 +26,9 @@ class legalorganizations(organizations):
 class companies(legalorganizations):
     pass
 
+class departments(organizations):
+    pass
+
 class party_parties(orm.associations):
     pass
 
@@ -85,6 +88,10 @@ class organization(party):
     """
     name = str
 
+
+class department(organization):
+    pass
+
 class legalorganization(organization):
     # The Employer Identification Number (EIN), also known as the
     # Federal Employer Identification Number (FEIN) or the Federal Tax
@@ -98,6 +105,7 @@ class legalorganization(organization):
     
 class company(legalorganization):
     entities = companies
+    departments = departments
 
 class person(party):
     firstname      =  str

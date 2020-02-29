@@ -14727,6 +14727,9 @@ class gem_person(tester):
         self.one(per1.companies)
         self.eq(com.id, per1.companies.first.id)
 
+    def it_places_person_in_a_corporate_hierarchy(self):
+        ... # TODO
+
     def it_creates_association_to_person(self):
         bro = self.getvalid()
         sis = self.getvalid()
@@ -14918,8 +14921,6 @@ class gem_person(tester):
             self.eq(expect, str(reg1))
 
             self.eq(str(reg), str(reg1))
-
-
 
 class gem_company(tester):
     def __init__(self):
@@ -15169,7 +15170,12 @@ class gem_company(tester):
 
             self.eq(str(reg), str(reg1))
 
-
+    def it_adds_department(self):
+        com = self.getvalid()
+        self.zero(com.departments)
+        dep = gem.department(name='web')
+        com.departments += dep
+       
 class gem_address(tester):
     @staticmethod
     def getvalid():
