@@ -15738,6 +15738,80 @@ class pom_page(tester):
 
         self.eq('Lang: es', (res['main p'].first.text))
 
+    def it_authenticates(self):
+        class auth(pom.page):
+            def main(self):
+                def authenticate(uid, pwd):
+                    return uid == 'jhogan' and pwd == 'password123'
+
+                frm = pom.forms.login()
+                self.main += frm
+
+                if http.request.ispost:
+                    frm.post = http.request.payload
+
+                uid = frm['input[name=username]'].first.value
+                pwd = frm['input[name=password]'].first.value
+
+                # TODO athenticate can be replaced by the actual
+                # gem.user object once that is created.
+
+                if authenticate(uid, pwd):
+                    # TODO hours should come from the config file at the
+                    # site "level" of the config file. Given that,
+                    # the site object would have the ability to issue
+                    # jwts instead of using the auth.jwt class itself:
+                    #
+                    #     t = self.site.jwt()
+
+                    hours = 48
+                    t = jwt(ttl=hours)
+                    hdrs = http.response.headers
+                    hdrs += http.header('Set-Cookie', str(t))
+                else:
+                    # TODO This works but we are setting the static
+                    # response.status field which the actual response
+                    # object will defer to. Unlike `http.request`, We
+                    # don't have access to `http.response` object here. 
+                    # Ideally we should be able to also have access to
+                    # the response object via an injected global `res`
+                    # but that feature hasn't been as of the time of
+                    # this writting.
+                    #http.response.status = 400
+
+                    # TODO This should be a flash message. When flash
+                    # messages are implemented, pass in a flash
+                    # argument:
+                    #
+                    #     raise http.UnauthorizedError(
+                    #         flash="Sorry, Charlie"
+                    #     )
+                    # raise http.UnauthorizedError()
+                    ...
+                    
+        ws = foonet()
+        pg = auth()
+        ws.pages += pg
+
+        res = self.get('/en/auth', ws)
+        frm = res['form'].first
+
+        # Log in with incorrect password
+        frm['input[name=username]'].first.value = 'jhogan'
+        frm['input[name=password]'].first.value = 'wrong-password'
+
+        tab = self.browser().tab()
+        res = tab.post('/en/auth', ws, frm)
+
+        # TODO See 'auth' page above.
+        #self.status(400, res)
+
+        # Log in with correct password
+        frm['input[name=username]'].first.value = 'jhogan'
+        frm['input[name=password]'].first.value = 'password123'
+
+        res = tab.post('/en/auth', ws, frm)
+        self.status(200, res)
 
 class dom_elements(tester):
     def it_gets_text(self):
