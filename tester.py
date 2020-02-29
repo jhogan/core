@@ -550,9 +550,9 @@ class tester(entity):
         # object.
         iter = app(dict(env.list), start_response)
 
-        res = http.response(req) 
+        res = http._response(req) 
         res._status = st
-        res._headers = hdrs
+        res._headers = http.headers(hdrs)
         res.payload = next(iter)
 
         return res

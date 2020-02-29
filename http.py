@@ -61,8 +61,11 @@ class application:
         self.request.demand()
            
     def __call__(self, env, start_response):
-        global request
-        res = response(self.request)
+        global request, response
+        res = _response(self.request)
+
+        response = res
+
         break_ = False
 
         try:
@@ -343,7 +346,8 @@ class _request:
                 'Method "%s" is never allowed' % self.method
             )
 
-class response():
+response = None
+class _response():
     Messages = {
         200: 'OK',
 		201: 'Created',
