@@ -153,6 +153,34 @@ class site(entities.entity):
             self._header = header(site=self)
         return self._header
 
+class forms:
+    class login(dom.form):
+        def __init__(self):
+            # TODO:GETTEXT
+
+            self += dom.h1('Please sign in')
+
+            # TODO Add 'for' attribute to <label>
+            self += dom.label('Username')
+
+            # Username
+            self += dom.input(
+                name='username',   type='text',
+                label='Username',  placeholder='Username',
+                required=True,     autofocus=True,
+                class_ = 'form-control'
+            )
+
+            # TODO Add 'for' attribute to <label>
+            self += dom.label('Password')
+
+            self += dom.input(
+                name='password',  type='password',
+                label='Password', placeholder='Password',
+                required=True,    class_='form-control'
+            )
+
+            self += dom.button('Sign in', class_='btn', type="Submit")
 
 class sidebars(dom.sections):
     def __getitem__(self, ix):
