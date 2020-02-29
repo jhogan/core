@@ -184,7 +184,7 @@ class attribute(entities.entity):
 
     def __init__(self, name, v=undef):
         self.name = name
-        self._value = v
+        self.value = v
 
     def clone(self):
         return type(self)(self.name, self.value)
@@ -219,6 +219,34 @@ class attribute(entities.entity):
         # TODO We should raise ValueError if v contains an ambigous
         # ampersand.
         # https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
+
+        # TODO Setting attributes to boolean values has not been tested.
+        # See the comment below to understand the intention of boolean
+        # values in this context and write tests to ensure that
+        # everytihng works as expected.
+
+        # If v is a True, set it to None. This has the effect of
+        # including the attribute but with no value, e.g.,
+        # 
+        #     inp = input(required=True)
+        #
+        # The above produces
+        #
+        #     <input required>
+        #
+        # Inversely, if v is False, set it to undef to remove the
+        # attribute. So the following code
+        #
+        #     inp.required = False
+        #
+        # will remove the required attribute.
+        #
+        #     <input>
+        if v is True:
+            v = None
+        elif v is False:
+            v = attribute.undef
+
         self._value = v
 
     @property
