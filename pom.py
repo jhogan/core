@@ -99,6 +99,20 @@ class site(entities.entity):
         self._lang = v
 
     @property
+    def languages(self):
+        ''' A list of accepted languages for the site. For example::`
+            
+            ['en', 'es', 'fr', 'de']
+
+            Sites that wish to accept a different set of languages can
+            override this property. The default is to always execpt
+            English.
+        '''
+
+        # Always except English
+        return ['en']
+
+    @property
     def charset(self):
         return self._charset
 
@@ -396,11 +410,21 @@ class pages(entities.entities):
         # The site or parent page
         self.parent = rent
 
+    @property
+    def site(self):
+        rent = self.parent
+        while rent:
+            if isinstance(rent, site):
+                return rent
+            rent = rent.parent
+
+        return None
+
     def __getitem__(self, path):
         if isinstance(path, str):
             segs = [x for x in path.split('/') if x]
             if len(segs):
-                del segs[0] # Remove langage code
+                del segs[0] #
         elif isinstance(path, list):
             segs = path
         else:

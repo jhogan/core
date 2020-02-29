@@ -15733,10 +15733,16 @@ class pom_page(tester):
 
         self.eq('Lang: en', (res['main p'].first.text))
 
+        # Use Spainish (es)
         res = self.get('/es/lang', ws)
         self.one(res['main[data-path="/lang"]'])
-
         self.eq('Lang: es', (res['main p'].first.text))
+
+        # Ensure it defauls to engilsh
+        return
+        res = self.get('/lang', ws)
+        self.one(res['main[data-path="/lang"]'])
+        self.eq('Lang: en', (res['main p'].first.text))
 
 
 class dom_elements(tester):
