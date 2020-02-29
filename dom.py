@@ -63,6 +63,8 @@ class attributes(entities.entities):
         return self
 
     def clone(self):
+        """ Return a cloned version of the attributes collection.
+        """
         attrs = type(self)()
         for attr in self:
             attrs += attr.clone()
@@ -96,6 +98,34 @@ class attributes(entities.entities):
         return super().append(o, uniq, r)
 
     def __getitem__(self, key):
+        """ Returns an `attribute` object based on the given `key`.
+
+        If the `key` is an `int`, return the attribute based on its
+        position in the collection. (Note that in these examples,
+        `attrs` represents an attribute's collection)::
+
+            assert attrs[0] is attrs.first
+
+        If the `key` is a slice, return a slice of the attributes::
+
+            assert attrs[0:2] == (attrs.first, attrs.second)
+
+        If the `key` is a str, return the attribute object by name::
+            
+            attr = attribute(name='checked', value=True)
+            attrs += attr
+
+            attr is attrs['checked']
+
+        Note that __getitem__ can also be used to set create new
+        attributes::
+            
+            attr = attrs['newattr']
+            attr.value = 'newvalue'
+
+            assert 'newvalue' == attrs['newattr']
+        """
+
         if isinstance(key, int):
             return self._defined[key]
                 
@@ -123,6 +153,11 @@ class attributes(entities.entities):
             return self._ls[-1]
 
     def __setitem__(self, key, item):
+        """ Sets an `attribute` object based on the given `key`::
+
+            attrs['checked'] = True
+        """
+
         if not isinstance(key, str):
             super().__setitem__(key, item)
             
@@ -148,18 +183,30 @@ class attributes(entities.entities):
                 self += key, item
 
     def reversed(self):
+        """ Returns a generator of (defined) attributes
+        in reversed order. (See `attribute.isdef`)
+        """
         for e in reversed(self._defined):
             yield e
 
     @property
     def _defined(self):
+        ''' Return a list of attributes that have values. (See
+        `attribute.isdef`)
+        '''
         return [x for x in self._ls if x.isdef]
 
     def __iter__(self):
+        ''' A standard iterator that only returns defined attributes.
+        (See `attribute.isdef`)
+        '''
         for attr in self._defined:
             yield attr
 
     def __contains__(self, attr):
+        """ A __contains__ override that only considers defined
+        attributes. (See `attribute.isdef`)
+        """
         if isinstance(attr, str):
             return attr in [x.name for x in self._defined]
         else:
@@ -167,34 +214,69 @@ class attributes(entities.entities):
 
     @property
     def count(self):
+        """ Returns the number of (defined) attributes. 
+        """
         return len(self)
 
     def __len__(self):
+        """ Returns the number of (defined) attributes. (See
+        `attribute.isdef`)
+        """
         return len(self._defined)
 
     @property
     def html(self):
+        """ Returns an HTML representation of the attributes. This is
+        appropriate for concatenating to other DOM representations.
+        """
         return ' '.join(x.html for x in self if x.isvalid)
         
 class attribute(entities.entity):
+    """ A object that represents an HTML5 attribute. An attribute will
+    have a name and usually a value::
+
+        <element name="value">
+
+    Boolean attributes can have a value of None to indicate they are
+    present. For example, the following represents the subsequent HTML::
+
+        inp = dom.input()
+        inp.attributes['type'] = checkbox
+        inp.attributes['checked'] = None
+        
+        ---
+
+        <input type="checkbox" checked>
+
+    """
+
     class undef:
         """ Used to indicate that an attribute has not been defined.
         """
         pass
 
     def __init__(self, name, v=undef):
+        """ Create an `attribute` with an optional value.
+        """
         self.name = name
         self._value = v
 
     def clone(self):
+        """ Returns a new `attribute` object with the name and value of
+        this `attribute` object.
+        """
         return type(self)(self.name, self.value)
 
     @property
     def name(self):
+        """ Returns name of the attribute.
+        """
         return self._name
 
     @name.setter
     def name(self, v):
+        """ Sets the name of the attribute.
+        """
         if any(x in ' "\'/=' for x in v):
             raise ValueError('Invalid character in attribute name')
 
@@ -208,6 +290,8 @@ class attribute(entities.entity):
 
     @property
     def value(self):
+        """ Returns the value of the attribute.
+        """
         if self.isdef:
             if self._value is None:
                 return None
@@ -216,6 +300,8 @@ class attribute(entities.entity):
 
     @value.setter
     def value(self, v):
+        """ Sets the value of the attribute.
+        """
         # TODO We should raise ValueError if v contains an ambigous
         # ampersand.
         # https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
@@ -223,10 +309,36 @@ class attribute(entities.entity):
 
     @property
     def isdef(self):
+        """ Determines whther an attribute is defined. An undefined
+        attribute can be created by the indexing the `attributes`
+        collection without setting a the `value`::
+
+            id = attrs['id']
+
+        Here, the `attrs` now has an attribute called 'id' that has no
+        value. Since it has no value, it presense within `attrs` is
+        concealed from the user:
+
+            assert attrs.count == 0
+
+        If the use decides later to give `id` a value, the `attrs`
+        collection will reveal the attribute to the user::
+            
+            assert attrs.count == 0
+            id.value = 'myvalue'
+            assert attrs.count == 1
+
+        The `isdef` property is used by the logic that conceals the
+        undefined attributes from the use.
+        """
         return self._value is not attribute.undef
 
     @staticmethod
     def create(name, v=undef):
+        """ A staticmethod to creates a attribute or cssclass given a
+        name and an optional value. Unline `attribute`'s constructor, a
+        cssclass will be returned if name = 'class'.
+        """
         if name == 'class':
             return cssclass(v)
 
@@ -244,13 +356,23 @@ class attribute(entities.entity):
 
     @property
     def html(self):
+        """ Returns a string of HTML representing the attribute.
+        Example::
+            
+            attributename="attribute-value"
+        """
+
         if self.value is None:
             return self.name
 
         return '%s="%s"' % (self.name, self.value)
 
 class cssclass(attribute):
+    """ An subtype of `attribute` specificaly for the "class" attribute.
+    """
     def __init__(self, v=None):
+        """ Create a "class" attribute object.
+        """
         super().__init__('class')
 
         self._classes = list()
