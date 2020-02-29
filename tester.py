@@ -90,10 +90,69 @@ class testers(entities):
         return self._tostr(str, includeHeader=False)
 
 class tester(entity):
+    class _browsers(http.browsers):
+        pass
+
+    class _browser(http.browser):
+        class _tabs(http.browser._tabs):
+            def __init__(self, brw, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.browser = brw
+
+            def tab(self):
+                t = tester._browser._tab(self)
+                self += t
+                return t
+
+        class _tab(http.browser._tab):
+            def __init__(self, tabs):
+                self.tabs = tabs
+
+            @property
+            def browser(self):
+                return self.tabs.browser
+
+            def get(self, url):
+                self._request(url)
+
+            def post(self, pg, ws, frm):
+                return self._request(pg=pg, ws=ws, frm=frm, meth='POST')
+
+            def head(self, url):
+                self._request(url)
+
+            def _request(self, pg, ws, frm=None, meth='GET'):
+                # TODO Move tester._request implementation to here and
+                # update tests in test.py.
+                res = self.browser.tester._request(
+                    pg, ws, frm=None, meth='GET'
+                )
+                B()
+
+                hdr = res.headers('set-cookie')
+                if hdr:
+                    cookie = tester._browser._cookie(
+                        name=hdr.name,
+                        value=hdr.value
+                    )
+                    self.browser.cookies += cookie 
+                return res
+
+        def __init__(self, tester):
+            self.tester = tester
+            self.tabs = tester._browser._tabs(self)
+
+        def tab(self):
+            return self.tabs.tab()
+
+
     def __init__(self):
         self._failures = failures()
         self.testers = None
         self.eventregistrations = eventregistrations()
+
+    def browser(self):
+        return tester._browser(self)
 
     def print(self, *args, **kwargs):
         print(*args, **kwargs)

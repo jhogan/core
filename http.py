@@ -865,4 +865,44 @@ class header(entities.entity):
     def tuple(self):
         return (self.name, self.value)
 
+class browsers(entities.entities):
+    pass
+
+class browser(entities.entity):
+    class _tabs(entities.entities):
+        pass
+
+    class _tab(entities.entity):
+        # TODO These methods will eventually be implemented to perform
+        # actual HTTP requests. At the time of this writting, however,
+        # these will be implemented in the testers.browser subclass
+        def get(self, url):
+            self._request(url)
+
+        def post(self, url):
+            self._request(url)
+
+        def head(self, url):
+            self._request(url)
+
+        def _request(self, url):
+            raise NotImplementedError('TODO')
+
+    class _cookies(entities.entities):
+        pass
+
+    class _cookie(entities.entity):
+        def __init__(self, name, value, domain, 
+            path       =  '/',    expires   =  'session',
+            http_only  =  False,  same_site =  None,
+        ):
+
+            self.name     =  name;     self.value      =  value
+            self.domain   =  domain;   self.path       =  path
+            self.expires  =  expires;  self.http_only  =  http_only
+            self.same_site = same_site
+
+    def __init__(self):
+        self.cookies = self._cookies()
+
 app = application()
