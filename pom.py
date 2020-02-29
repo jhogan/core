@@ -828,6 +828,7 @@ class input(dom.div):
         els = super().elements
 
         if self.label:
+            # TODO Add the 'for' attribute to <label>
             els += dom.label(self.label)
 
         if type == 'textarea':
@@ -840,7 +841,6 @@ class input(dom.div):
                     inp.last.selected = True
         else:
             inp = dom.input(name=self.name)
-
 
         els += inp
 

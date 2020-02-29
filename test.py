@@ -3066,7 +3066,7 @@ class test_jwt(tester):
             self.assertFail('Exception not thrown')
             print(ex)
 
-    def it_makes_tokes_eq_to__str__(self):
+    def it_makes_token_eq_to__str__(self):
         t = jwt()
         self.assertEq(t.token, str(t))
 

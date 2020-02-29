@@ -117,6 +117,11 @@ class application:
                     data = {'_exception': repr(ex), '_traceback': tb}
                 else:
                     if isinstance(ex, HttpError):
+                        # TODO If ex.flash, unshift a an <article
+                        # class="flash"> tag with the contents of
+                        # ex.flash. ex.flash can be an str, element, or
+                        # elements.
+
                         # HttpError are 400s and 500s
 
                         # TODO Don't hard code language code (/en)
@@ -606,6 +611,20 @@ class BadRequestError(HttpError):
     status = 400
 
 class UnauthorizedError(HttpError):
+    """ The HTTP 401 Unauthorized client error status response code
+    indicates that the request has not been applied because it lacks
+    valid authentication credentials for the target resource.
+
+    This status is sent with a WWW-Authenticate header that contains
+    information on how to authorize correctly.
+
+    https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+    """
+
+    # TODO As the documentation above states, we may want to set the
+    # WWW-Authenticate header.
+    # (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/WWW-Authenticate)
+
     status = 401
 
 class PaymentRequiredError(HttpError):

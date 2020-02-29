@@ -546,6 +546,16 @@ class element(entities.entity):
 
         with suppress(KeyError):
             kwargs['class'] = kwargs.pop('class_')
+
+        # TODO If a key in kwargs is not an attribute of the given
+        # element, it should throw an AttributeError::
+        #
+        #     for k, v in kwargs.items():
+        #         if not hasattr(self, k):
+        #             raise AttributeError()
+        #         else:
+        #             setattr(self, k, v)
+
         self.attributes += kwargs
 
     @property
