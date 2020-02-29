@@ -119,7 +119,6 @@ class application:
                     if isinstance(ex, HttpError):
                         # HttpError are 400s and 500s
 
-                        # TODO Don't hard code language code (/en)
                         lang = req.language
                         path = '/%s/error/%s' % (lang, ex.status)
                         pg = req.site(path)
