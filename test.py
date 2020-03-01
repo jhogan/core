@@ -15170,12 +15170,72 @@ class gem_company(tester):
 
             self.eq(str(reg), str(reg1))
 
-    def it_adds_department(self):
+    def it_appends_department(self):
         com = self.getvalid()
         self.zero(com.departments)
         dep = gem.department(name='web')
         com.departments += dep
-       
+        self.is_(com, dep.company)
+        com.save()
+
+        com1 = gem.company(com.id)
+        self.eq(com.id, com1.id)
+
+        self.one(com1.departments)
+
+        self.eq(com.departments.first.id, com1.departments.first.id)
+        self.eq('web', com1.departments.first.name)
+
+    def it_updates_department(self):
+        com = self.getvalid()
+        self.zero(com.departments)
+        com.departments += gem.department(name='web')
+        com.save()
+
+        com1 = gem.company(com.id)
+
+        dep1 = com1.departments.first
+
+        # Update departement
+        dep1.name = 'web1'
+
+        # Save
+        com1.save()
+
+        # Load and test deparment
+        com1 = gem.company(com.id)
+
+        dep1 = com1.departments.first
+
+        self.eq('web1', dep1.name)
+
+    def it_appends_divisions_to_departments(self):
+        com = self.getvalid()
+
+        dep = gem.department(name='web')
+        com.departments += dep
+
+        div = gem.division(name='core')
+        dep.divisions += div
+        com.save()
+
+        com1 = gem.company(com)
+
+        self.one(com1.departments)
+        self.one(com1.departments.first.divisions)
+
+        self.eq('web', com1.departments.first.name)
+        self.eq('core', com1.departments.first.divisions.first.name)
+
+        self.eq(
+            com.departments.first.id,
+            com1.departments.first.id
+        )
+
+        self.eq(
+            com.departments.first.divisions.first.id,
+            com1.departments.first.divisions.first.id
+        )
 class gem_address(tester):
     @staticmethod
     def getvalid():
