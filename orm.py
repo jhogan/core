@@ -1961,6 +1961,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 self.orm.isdirty = False
                 self.id = uuid4()
             else:
+                if isinstance(o, entity):
+                    o = o.id
+
                 if type(o) is UUID:
                     res = self._load(o)
                 else:
