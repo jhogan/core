@@ -2122,9 +2122,22 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         return list(set(ls))
 
     def __setattr__(self, attr, v, cmp=True):
+        """ Set the value of `v` to the attribute (`attr`) of the
+        `entity`. Attribute usually refer to the ORM mapping attributes
+        (those defined in the header of a class). However, standard
+        Python class attributes can also be set her..
+
+        :param: str attr: The name of the attribute to be set
+
+        :param: object v: The value to which the attribute will be set.
+
+        :param: bool cmp: Determines whether `entities._setvalue` should
+        compare the old value of the attribute to the new value. See the
+        `cmp` variable in that method for more.
+        """
+        
         # Need to handle 'orm' first, otherwise the code below that
         # calls self.orm won't work.
-        
         if attr == 'orm':
             return object.__setattr__(self, attr, v)
 
