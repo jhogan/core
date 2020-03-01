@@ -84,6 +84,9 @@ class testers(entities):
 
     @property
     def ok(self):
+        # TODO Remove brackets. Also, shouldn't any be replaced with
+        # all... not really sure.
+
         return any([x.ok for x in self])
 
     def __str__(self):
