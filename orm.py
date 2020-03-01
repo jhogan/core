@@ -2202,8 +2202,14 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                 if selfsuper and attrsuper:
                     maps = selfsuper.orm.mappings
-                    attr = maps(attrsuper.__class__.__name__).name
-                    setattr(selfsuper, attr, attrsuper)
+                    attr = maps(attrsuper.__class__.__name__)
+
+                    # NOTE attr could be None for various reasons. It's
+                    # unclear at the moment if this is correct logic. We
+                    # will let experience using the ORM determine if we
+                    # need to revisit this.
+                    if attr:
+                        setattr(selfsuper, attr.name, attrsuper)
 
     def delete(self):
         self.orm.ismarkedfordeletion = True
