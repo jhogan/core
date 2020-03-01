@@ -3014,19 +3014,19 @@ class test_jwt(tester):
         super().__init__()
     
     def it_calls_exp(self):
-        t = jwt()
+        t = auth.jwt()
 
         # Exp defaults to 24 hours in the future
         hours = math.ceil((t.exp - datetime.now()).seconds / 3600)
         self.assertEq(24, hours)
 
         # Specify 48 hours to expire
-        t = jwt(ttl=48)
+        t = auth.jwt(ttl=48)
         hours = math.ceil((t.exp - datetime.now()).seconds / 3600)
         self.assertEq(24, hours)
 
     def it_calls_token(self):
-        t = jwt()
+        t = auth.jwt()
         token = t.token
         secret = configfile.getinstance()['jwt-secret']
 
@@ -3040,13 +3040,13 @@ class test_jwt(tester):
 
     def it_sets_iss(self):
         iss = str(uuid4())
-        t = jwt()
+        t = auth.jwt()
         t.iss = iss
         token = t.token
 
         self.assertEq(iss, t.iss)
 
-        t1 = jwt(token)
+        t1 = auth.jwt(token)
         self.assertEq(iss, t1.iss)
 
         token = t1.token
@@ -3054,7 +3054,7 @@ class test_jwt(tester):
         self.assertNe(token, t1.token)
 
     def it_fails_decoding_with_wrong_secret(self):
-        t = jwt()
+        t = auth.jwt()
 
         try:
             d = pyjwt.decode(t.token, 'wrong-secret')
@@ -3067,7 +3067,7 @@ class test_jwt(tester):
             print(ex)
 
     def it_makes_token_eq_to__str__(self):
-        t = jwt()
+        t = auth.jwt()
         self.assertEq(t.token, str(t))
 
     def it_validates(self):
@@ -15766,7 +15766,7 @@ class pom_page(tester):
                     #     t = self.site.jwt()
 
                     hours = 48
-                    t = jwt(ttl=hours)
+                    t = auth.jwt(ttl=hours)
                     hdrs = http.response.headers
                     hdrs += http.header('Set-Cookie', str(t))
                 else:
