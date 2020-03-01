@@ -484,6 +484,13 @@ class tester(entity):
         if v:
             self._failures += failure(ent=ent)
 
+    def invalid(self, ent):
+        v = ent.isvalid
+        if type(v) != bool:
+            raise Exception('invalid property must be a boolean')
+        if v:
+            self._failures += failure(ent=ent)
+
     def assertBroken(self, ent, prop, rule):
         if not ent.brokenrules.contains(prop, rule):
             self._failures += failure()
