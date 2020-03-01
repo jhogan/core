@@ -15740,7 +15740,8 @@ class pom_page(tester):
         self.eq('Lang: es', (res['main p'].first.text))
 
     def it_authenticates(self):
-        class auth(pom.page):
+        jwt = None
+        class authenticate(pom.page):
             def main(self):
                 def authenticate(uid, pwd):
                     return uid == 'jhogan' and pwd == 'password123'
@@ -15789,12 +15790,18 @@ class pom_page(tester):
                     #     )
                     # raise http.UnauthorizedError()
                     ...
+
+        class whoami(pom.page):
+            def main(self):
+                B()
+                jwt = http.request.cookies['jwt'].value
+                self.main += dom.p(jwt, class_='jwt')
                     
         ws = foonet()
-        pg = auth()
-        ws.pages += pg
+        ws.pages += authenticate()
+        ws.pages += whoami()
 
-        res = self.get('/en/auth', ws)
+        res = self.get('/en/authenticate', ws)
         frm = res['form'].first
 
         # Log in with incorrect password
@@ -15802,17 +15809,22 @@ class pom_page(tester):
         frm['input[name=password]'].first.value = 'wrong-password'
 
         tab = self.browser().tab()
-        res = tab.post('/en/auth', ws, frm)
+        res = tab.post('/en/authenticate', ws, frm)
 
-        # TODO See 'auth' page above.
+        # TODO See 'authenticate' page above.
         #self.status(400, res)
 
         # Log in with correct password
         frm['input[name=username]'].first.value = 'jhogan'
         frm['input[name=password]'].first.value = 'password123'
 
-        res = tab.post('/en/auth', ws, frm)
+        res = tab.post('/en/authenticate', ws, frm)
+        jwt = tab.browser.cookies['jwt'].value
+        jwt = auth.jwt(jwt)
+        self.valid(jwt)
         self.status(200, res)
+
+        res = tab.get('/en/whoami', ws)
 
 class dom_elements(tester):
     def it_gets_text(self):
