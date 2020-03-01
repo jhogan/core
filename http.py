@@ -169,6 +169,7 @@ class _request:
         self.app = app
         self.app._request = self
         self._payload = None
+        self.cookies = browser._cookies()
 
     @property
     def environment(self):

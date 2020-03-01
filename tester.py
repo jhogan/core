@@ -94,6 +94,9 @@ class tester(entity):
         pass
 
     class _browser(http.browser):
+        def __init__(self, t, *args, **kwargs):
+            self.tester = t
+
         class _tabs(http.browser._tabs):
             def __init__(self, brw, *args, **kwargs):
                 super().__init__(*args, **kwargs)
@@ -112,33 +115,121 @@ class tester(entity):
             def browser(self):
                 return self.tabs.browser
 
-            def get(self, url):
-                self._request(url)
+            def get(self, pg, ws):
+                return self._request(pg=pg, ws=ws, meth='GET')
 
             def post(self, pg, ws, frm):
                 return self._request(pg=pg, ws=ws, frm=frm, meth='POST')
 
             def head(self, url):
-                self._request(url)
+                raise NotImplementedError()
 
             def _request(self, pg, ws, frm=None, meth='GET'):
-                # TODO Move tester._request implementation to here and
-                # update tests in test.py.
-                res = self.browser.tester._request(
-                    pg, ws, frm=None, meth='GET'
-                )
-                B()
+                if not isinstance(pg, str):
+                    raise TypeError('pg parameter must be a str')
 
-                hdr = res.headers('set-cookie')
-                if hdr:
-                    cookie = tester._browser._cookie(
-                        name=hdr.name,
-                        value=hdr.value
-                    )
+                if not isinstance(ws, pom.site):
+                    raise TypeError('ws parameter must be a pom.site')
+
+                if frm and not isinstance(frm, dom.form):
+                    raise TypeError('frm parameter must be a dom.form')
+
+                def create_environ(env=None):
+                    # TODO Should content_length be an empty str. Maybe it should be
+                    # 0 by default, or more likely, it should be removed from this
+                    # dict.
+                    d = {
+                        'content_length': '',
+                        'content_type': 'application/x-www-form-urlencoded',
+                        'http_accept': '*/*',
+                        'http_host': '127.0.0.0:8000',
+                        'http_user_agent': 'tester/1.0',
+                        'raw_uri': '/',
+                        'remote_addr': '52.52.249.177',
+                        'remote_port': '43130',
+                        'script_name': '',
+                        'server_port': '8000',
+                        'server_protocol': 'http/1.1',
+                        'server_software': 'gunicorn/19.4.5',
+                        'gunicorn.socket': None,
+                        'wsgi.errors': None,
+                        'wsgi.file_wrapper': None,
+                        'wsgi.input': '',
+                        'wsgi.multiprocess': False,
+                        'wsgi.multithread': False,
+                        'wsgi.run_once': False,
+                        'wsgi.url_scheme': 'http',
+                        'wsgi.version': (1, 0)
+                    }
+
+                    if env:
+                        for k, v in env.items():
+                            d[k] = v
+                    
+                    return http.headers(d)
+
+
+                st, hdrs = None, None
+                
+                def start_response(st0, hdrs0):
+                    nonlocal st
+                    nonlocal hdrs
+                    st, hdrs = st0, hdrs0
+
+                url = urllib.parse.urlparse(pg)
+
+                pg = ws(url.path)
+
+                pg and pg.clear()
+
+                if meth == 'POST':
+                    inp = io.BytesIO(frm.post)
+
+                    env = create_environ({
+                        'content_length':  len(frm.post),
+                        'wsgi.input':      inp,
+                    })
+                else: 
+                    env = create_environ()
+
+                env['path_info']       =  url.path
+                env['query_string']    =  url.query
+                env['server_name']     =  ws.host
+                env['server_site']     =  ws
+                env['request_method']  =  meth
+
+                # Create WSGI app
+                app = http.application()
+
+                # Create request. Associate with app.
+                req = http._request(app)
+
+                app.breakonexception = \
+                    self.browser.tester.testers.breakonexception
+                
+                # Make WSGI call
+
+                # NOTE PEP 0333 insist that the environment variables
+                # passed in must be a dict so we convert `env` which is
+                # an http.headers object.
+                iter = app(dict(env.list), start_response)
+
+                res = http._response(req) 
+                res._status = st
+                res._headers = http.headers(hdrs)
+                res.payload = next(iter)
+
+                jwt = res.headers('set-cookie')
+
+                if jwt:
+                    domain = ws.title
+                    cookie = tester._browser._cookie('jwt', jwt, domain)
                     self.browser.cookies += cookie 
+
                 return res
 
-        def __init__(self, tester):
+        def __init__(self, tester, *args, **kwargs):
+            super().__init__(*args, **kwargs)
             self.tester = tester
             self.tabs = tester._browser._tabs(self)
 

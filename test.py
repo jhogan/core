@@ -8,7 +8,6 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2020                 #
 ########################################################################
 
-from auth import jwt
 from configfile import configfile
 from contextlib import contextmanager
 from datetime import timezone, datetime
@@ -20,6 +19,7 @@ from random import randint, uniform
 from table import *
 from tester import *
 from uuid import uuid4
+import auth
 import dateutil
 import db
 import decimal; dec=decimal.Decimal
