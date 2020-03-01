@@ -26,7 +26,13 @@ class legalorganizations(organizations):
 class companies(legalorganizations):
     pass
 
-class departments(organizations):
+class units(organizations):
+    pass
+
+class departments(units):
+    pass
+
+class divisions(units):
     pass
 
 class party_parties(orm.associations):
@@ -88,9 +94,25 @@ class organization(party):
     """
     name = str
 
+class unit(organization):
+    """ This abstract class represents business unit of a
+    legalorganization. Concrete subclass include `division` and
+    `department`
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-class department(organization):
+        # Units wouldn't have these so nullify them to prevent
+        # brokenrules.
+        self.dun          =  None
+        self.nationalids  =  None
+        self.isicv4       =  None
+
+class division(unit):
     pass
+
+class department(unit):
+    divisions = divisions
 
 class legalorganization(organization):
     # The Employer Identification Number (EIN), also known as the
