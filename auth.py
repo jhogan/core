@@ -6,12 +6,12 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2020
 
-from entities import entities, entity, brokenrules, brokenrule
-from datetime import datetime, timedelta
 from configfile import configfile
+from datetime import datetime, timedelta
+from dbg import B
+from entities import entities, entity, brokenrules, brokenrule
 import json
 import jwt as pyjwt
-
 
 class jwt(entity):
     def __init__(self, tok=None, ttl=24):
@@ -72,7 +72,8 @@ class jwt(entity):
         brs = brokenrules()
 
         try:
-            pyjwt.decode(self.token)
+            secret = configfile.getinstance()['jwt-secret']
+            pyjwt.decode(self.token, secret)
         except pyjwt.exceptions.DecodeError as ex:
             brs += brokenrule('Invaild token.', 'token', 'valid')
 

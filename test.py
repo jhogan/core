@@ -3072,12 +3072,13 @@ class test_jwt(tester):
 
     def it_validates(self):
         # Valid
-        t = jwt()
-        t1 = jwt(t.token)
+        t = auth.jwt()
+        t1 = auth.jwt(t.token)
+        self.valid(t)
 
         # Invalid
-        t = jwt('an invalid token')
-        self.assertFalse(t.isvalid)
+        t = auth.jwt('an invalid token')
+        self.invalid(t)
 
 class test_datetime(tester):
     def it_calls__init__(self):
