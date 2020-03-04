@@ -961,7 +961,21 @@ class element(entities.entity):
     def attributes(self, v):
         self._attributes = v
 
+    def __lshift__(self, el):
+        if type(el) is str:
+            el = text(el)
+
+        if not isinstance(el, element) and not isinstance(el, elements):
+            raise ValueError('Invalid element type: ' + str(type(el)))
+
+        self.elements << el
+        return self
+
     def __iadd__(self, el):
+        # TODO There is some redunancy between this and __lshift__.
+        # Also, shouldn't this redundent logic be put in the overrides
+        # element.append and element.insertbefore (which don't actually
+        # exist at the time of this writing).
         if type(el) is str:
             el = text(el)
 
