@@ -456,19 +456,19 @@ class page(dom.html):
     )
 
     def __init__(self, name=None, pgs=None):
-        self._pages = None
-        self._parentpages = pgs
-        self._name = name
-        self._calling = False
-        self._called = False
-        self._body = None
-        self._title = None
-        self._lang = None
-        self._head = None
-        self._header = None
-        self._sidebars = None
-        self._args = dict()
-
+        self._pages        =  None
+        self._parentpages  =  pgs
+        self._name         =  name
+        self._calling      =  False
+        self._called       =  False
+        self._attemped     =  False  # A call was attemped
+        self._body         =  None
+        self._title        =  None
+        self._lang         =  None
+        self._head         =  None
+        self._header       =  None
+        self._sidebars     =  None
+        self._args         =  dict()
         try:
             self._mainfunc = self.main
         except AttributeError:
@@ -476,6 +476,14 @@ class page(dom.html):
 
         self.clear()
 
+    def flash(self, msg):
+        if isinstance(msg, str):
+            msg = dom.paragraph(msg)
+
+        art = dom.article(msg, class_="flash")
+
+        self.main << art
+        
     @property
     def title(self):
         if self._title is None:
@@ -647,8 +655,11 @@ class page(dom.html):
         self.main = dom.main()
         self.main.attributes['data-path'] = self.path
         self._called = False
+        self._attemped = False
 
     def __call__(self, *args, **qsargs):
+        self._attemped = True  # A call was attemped
+
         if len(args):
             raise ValueError('Use kwargs when calling page object')
 
@@ -683,7 +694,8 @@ class page(dom.html):
 
         els += self.body
 
-        self._called or self(**self._arguments)
+        # If a call has not been attemped, call here
+        self._attemped or self(**self._arguments)
 
         self.main._setparent(None)
 

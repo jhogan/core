@@ -15744,6 +15744,136 @@ class pom_page(tester):
         self.one(res['main[data-path="/lang"]'])
         self.eq('Lang: en', (res['main p'].first.text))
 
+    def it_can_accesses_injected_variables(self):
+        class lang(pom.page):
+            def main(self):
+                assert req is http.request
+                assert res is http.response
+
+                # Use req instead of http.request
+                lang = req.language
+                self.main += dom.span(lang, lang="lang")
+
+                # Use res instead of http.response
+                res.status = 418
+
+        ws = foonet()
+        pg = lang()
+        ws.pages += pg
+
+        res1 = self.get('/en/lang', ws)
+        self.one(res1['span[lang=lang]'])
+        self.status(418, res)
+
+    def it_raises_on_reserved_parameters(self):
+        def flashes_ValueError(res):
+            spans = res['main article.flash:nth-child(1) span.type']
+            self.one(spans)
+            self.eq('ValueError', spans.first.text)
+            self.status(500, res)
+
+        ''' Can't use `req` '''
+        class help(pom.page):
+            def main(self, req):
+                pass
+
+        ws = foonet()
+        ws.pages += help()
+
+        res = self.get('/en/help', ws)
+        flashes_ValueError(res)
+
+        ''' Can't use `res` '''
+        class help(pom.page):
+            def main(self, res):
+                pass
+
+        ws = foonet()
+        ws.pages += help()
+
+        res = self.get('/en/help', ws)
+        flashes_ValueError(res)
+
+        ''' Can't use `usr` '''
+        class help(pom.page):
+            def main(self, usr):
+                pass
+
+        ws = foonet()
+        ws.pages += help()
+
+        res = self.get('/en/help', ws)
+        flashes_ValueError(res)
+
+        ''' Can use `derp`.  '''
+        # This is here just to ensure that the above tests would return
+        # 200 if the parameter used was not one of the reserved
+        # parameter. Above, we only test if the response is 500 so it's
+        # possible that another issue is causing the problem. The below
+        # test should be an exact copy of the above test except,
+        # obviously for the parameter name.
+        class help(pom.page):
+            def main(self, derp):
+                pass
+
+        ws = foonet()
+        ws.pages += help()
+
+        res = self.get('/en/help', ws)
+        self.status(200, res)
+
+    def it_flashes_message(self):
+        ''' Test a str flash message '''
+        class murphy(pom.page):
+            def main(self):
+                self.flash('Something went wrong')
+
+        ws = foonet()
+        ws.pages += murphy()
+
+        res = self.get('/en/murphy', ws)
+        arts = res['main article.flash']
+        self.one(arts)
+
+        art = arts.first
+
+        self.eq('Something went wrong', art.text)
+
+        ''' Test an HTML flash message by passing in a dom.element '''
+        class murphy(pom.page):
+            def main(self):
+                ul = dom.ul()
+                ul += dom.li('This went wrong')
+                ul += dom.li('That went wrong')
+                self.flash(ul)
+
+        ws = foonet()
+        ws.pages += murphy()
+
+        res = self.get('/en/murphy', ws)
+        lis = res['main article.flash>ul>li']
+        self.two(lis)
+        
+        self.eq('This went wrong', lis.first.text)
+        self.eq('That went wrong', lis.second.text)
+
+    def it_raises_flash_errors(self):
+        ''' Test an HTML flash message by raising an HttpError '''
+        class murphy(pom.page):
+            def main(self):
+                self.main += dom.h1('Checking brew type...')
+                raise http.ImATeapotError(flash='Invalid brew type')
+
+        ws = foonet()
+        ws.pages += murphy()
+
+        res = self.get('/en/murphy', ws)
+        self.status(418, res)
+
+        arts = res['main article.flash:nth-child(1)']
+        self.one(arts)
+
+        self.eq('Invalid brew type', arts.first.text)
 
 class dom_elements(tester):
     def it_gets_text(self):

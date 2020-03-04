@@ -135,19 +135,29 @@ class application:
                             pg.clear()
                             pg(ex=ex)
 
-                        res.status = ex.status
                         res.payload = pg.html
+                        res.status = ex.status
                     elif isinstance(ex, HttpException):
                         # HttpException are HTTP 300s. Allow the
                         # exception to make modifications to the
                         # response.
                         ex(res)
+                    else:
+                        res.status = 500
+                        p = dom.p()
+                        p += dom.text('Error: ')
+                        p += dom.span(type(ex).__name__, class_='type')
+                        p += dom.text(' ')
+                        p += dom.span(str(ex), class_='message')
+                        req.page.flash(p)
+                        res.payload = req.page.html
+
             except Exception as ex:
                 # In case there is an exception processing the
                 # exception, ensure the response is 500 with a simple
                 # error message.
                 res.status = 500
-                res.payload = textwrap.dedent('''
+                res.payload = dom.dedent('''
                 <p>Error processing exception: %s</p>
                 ''' % str(ex))
 
@@ -230,7 +240,14 @@ class _request:
         return 'en'
 
     def __call__(self):
-        self.page(**self.arguments)
+        try:
+            self.page(**self.arguments)
+        except HttpError as ex:
+            if ex.flash:
+                self.page.flash(ex.flash)
+                response.status = ex.status
+            else:
+                raise
         return self.page.html
 
     @property
@@ -563,8 +580,14 @@ class HttpException(Exception):
     def message(self):
         return str(self)
 
+    def __call__(self, res):
+        raise NotImplementedError(
+            'Processing for HTTP %s not implemented' % self.status
+        )
+
 class HttpError(HttpException):
-    def __init__(self, msg=None):
+    def __init__(self, msg=None, flash=None):
+        self.flash = flash
         msg0 = self.phrase
         if msg:
             msg0 += ' - ' + msg
