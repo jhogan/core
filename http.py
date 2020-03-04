@@ -8,21 +8,22 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2020
 ########################################################################
 
-import json
-import sys
+from dbg import B
 from functools import reduce
 from pprint import pprint
-import traceback
-import re
-import os
-from dbg import B
 import dom
-import pom
-import textwrap
-import urllib
-import pdb
 import entities
 import exc
+import html as htmlmod
+import json
+import os
+import pdb
+import pom
+import re
+import sys
+import textwrap
+import traceback
+import urllib
 
 # NOTE Use the following diagram as a guide to determine what status
 # code to respond with:

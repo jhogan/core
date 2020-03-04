@@ -4287,7 +4287,7 @@ class codeblock(code):
 
     """
 
-    # TODO Now that .html renders ugly the whitespace is no longer an
+    # TODO Now that .html renders ugly, the whitespace is no longer an
     # issue. So the next step is to ensure that <pre> tags is added to
     # surround the <code> element. Also, `codeblock` should probably no
     # longer inherit from `code` anymore. If anything, it should inherit
