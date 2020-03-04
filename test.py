@@ -15738,7 +15738,8 @@ class pom_page(tester):
         self.one(res['main[data-path="/lang"]'])
         self.eq('Lang: es', (res['main p'].first.text))
 
-        # Ensure it defauls to engilsh
+        # Ensure it defauls to Engilsh
+        # TODO Remove return
         return
         res = self.get('/lang', ws)
         self.one(res['main[data-path="/lang"]'])
