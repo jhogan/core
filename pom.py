@@ -569,7 +569,14 @@ class page(dom.html):
             self._args = dict()
 
         kwargs = False
+        reserved = 'req res usr'.split()
         for k, v in params:
+            if k in reserved:
+                raise ValueError(
+                    '"%s" cannot be used as a parameter to the main '
+                    'method in page "%s".' % (k, type(self))
+                )
+                
             if v.kind == v.VAR_KEYWORD:
                 # A kwargs (VAR_KEYWORD) parameter was found
                 kwargs = True
@@ -674,6 +681,16 @@ class page(dom.html):
 
             try:
                 self._calling = True
+
+                # Inject global variables into main()
+
+                # TODO Inject the user object of the http request as
+                # "usr"
+                globs = self._mainfunc.__func__.__globals__
+                globs['req'] = http.request
+                globs['res'] = http.response
+
+                # Call pages main function
                 self._mainfunc(**self._arguments)
                 self._called = True
             finally:
