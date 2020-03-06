@@ -36,4 +36,7 @@ class datetime(stddatetime.datetime):
 
         return r
 
+    def add(self, **kwargs):
+        return self + stddatetime.timedelta(**kwargs)
+        
 
