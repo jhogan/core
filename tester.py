@@ -29,6 +29,9 @@ import http
 
 # TODO Ensure tester.py won't run in non-dev environment
 
+# TODO When creating the file API, consider
+# wsgiref.util.FileWrapper(filelike, blksize)
+
 class invoketesteventargs(eventargs):
     def __init__(self, cls, meth):
         self.class_ = cls
@@ -138,6 +141,9 @@ class tester(entity):
                     raise TypeError('frm parameter must be a dom.form')
 
                 def create_environ(env=None):
+                    # TODO We may want to leverage
+                    # `wsgiref.util.setup_testing_defaults(environ)`# here
+
                     # TODO Should content_length be an empty str. Maybe it should be
                     # 0 by default, or more likely, it should be removed from this
                     # dict.
@@ -573,6 +579,9 @@ class tester(entity):
         # TODO Should content_length be an empty str. Maybe it should be
         # 0 by default, or more likely, it should be removed from this
         # dict.
+
+        # TODO We may want to leverage
+        # `wsgiref.util.setup_testing_defaults(environ)` here
         d = {
 			'content_length': '',
 			'content_type': 'application/x-www-form-urlencoded',

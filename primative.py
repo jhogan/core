@@ -1,3 +1,5 @@
+# vim: set et ts=4 sw=4 fdm=marker
+
 # Copyright (C) Jesse Hogan - All Rights Reserved
 # Unauthorized copying of this file, via any medium is strictly
 # prohibited

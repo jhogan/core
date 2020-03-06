@@ -10188,6 +10188,7 @@ class test_orm(tester):
                 # This happened today (Oct 30 2019)
                 #    OperationalError(2006, 'MySQL server has gone away') 
                 # AGAIN Jan 23, 2020
+                # AGAIN Mar 04, 2020
 
                 print(ex)
                 B()
