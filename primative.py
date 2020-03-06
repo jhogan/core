@@ -33,3 +33,6 @@ class datetime(stddatetime.datetime):
         r = r.replace(tzinfo=stddatetime.timezone.utc)
 
         return r
+
+    def add(self, **kwargs):
+        return self + stddatetime.timedelta(**kwargs)
