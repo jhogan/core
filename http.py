@@ -169,7 +169,38 @@ class _request:
         self.app = app
         self.app._request = self
         self._payload = None
-        self.cookies = browser._cookies()
+
+    @property
+    def headers(self):
+        """ Return a collection HTTP headers associated with this
+        request. 
+        
+        Note that WSGI gives us the HTTP headers in its `environ` dict
+        where the keys start with 'http_'.
+        """
+
+        hdrs = headers()
+        for k, v in self.environment.items():
+            if not k.lower().startswith('http_'):
+                continue
+
+            hdrs += header(k[5:], v)
+
+        return hdrs
+
+    @property
+    def cookies(self):
+        r = browser._cookies()
+        for hdr in self.headers:
+            if hdr.name != 'cookie':
+                continue
+
+            for cookie in hdr.value.split('; '):
+                k, v = cookie.split('=')
+                r += browser._cookie(k, v, domain=None)
+                break
+        return r
+                
 
     @property
     def environment(self):
@@ -870,8 +901,12 @@ class headers(entities.entities):
 
 class header(entities.entity):
     def __init__(self, name, v):
-        self.name = name
+        self._name = name
         self.value = v
+
+    @property
+    def name(self):
+        return self._name.lower()
 
     def __str__(self):
         return '%s: %s' % self.tuple
@@ -913,7 +948,20 @@ class browser(entities.entity):
             raise NotImplementedError('TODO')
 
     class _cookies(entities.entities):
-        pass
+        @property
+        def header(self):
+            """ A header object with a key of "Cookie" and a value of
+            all the browser's (self) cookies safely encoded.
+            """
+
+            v = str()
+            for cookie in self:
+                v += '%s=%s' % (
+                    cookie.name,
+                    urllib.parse.quote(cookie.value)
+                )
+
+            return header(name="Cookie", v=v)
 
     class _cookie(entities.entity):
         def __init__(self, name, value, domain, 

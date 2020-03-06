@@ -20,6 +20,7 @@ from table import *
 from tester import *
 from uuid import uuid4
 import auth
+import codecs
 import dateutil
 import db
 import decimal; dec=decimal.Decimal
@@ -15124,6 +15125,10 @@ class pom_site(tester):
         self.zero(mnu[sels])
 
 class pom_page(tester):
+    def __init__(self):
+        super().__init__()
+        gem.user.orm.recreate(recursive=True)
+
     def it_calls__init__(self):
         name = uuid4().hex
         pg = pom.page()
@@ -15743,22 +15748,20 @@ class pom_page(tester):
         jwt = None
         class authenticate(pom.page):
             def main(self):
-                def authenticate(uid, pwd):
-                    return uid == 'jhogan' and pwd == 'password123'
-
                 frm = pom.forms.login()
                 self.main += frm
 
-                if http.request.ispost:
-                    frm.post = http.request.payload
+                if http.request.isget:
+                    return
+
+                frm.post = http.request.payload
 
                 uid = frm['input[name=username]'].first.value
                 pwd = frm['input[name=password]'].first.value
 
-                # TODO athenticate can be replaced by the actual
-                # gem.user object once that is created.
+                usr = gem.user.authenticate(uid, pwd)
 
-                if authenticate(uid, pwd):
+                if usr:
                     # TODO hours should come from the config file at the
                     # site "level" of the config file. Given that,
                     # the site object would have the ability to issue
@@ -15768,18 +15771,17 @@ class pom_page(tester):
 
                     hours = 48
                     t = auth.jwt(ttl=hours)
+                    t.sub = usr.id.hex
+                    exp = primative.datetime.utcnow().add(days=1)
+                    exp = exp.strftime('%a, %d %b %Y %H:%M:%I GMT')
                     hdrs = http.response.headers
-                    hdrs += http.header('Set-Cookie', str(t))
+                    hdrs += http.header('Set-Cookie', (
+                        'token=%s; path=/; '
+                        'expires=%s'
+                        ) % (str(t), exp)
+                    )
                 else:
-                    # TODO This works but we are setting the static
-                    # response.status field which the actual response
-                    # object will defer to. Unlike `http.request`, We
-                    # don't have access to `http.response` object here. 
-                    # Ideally we should be able to also have access to
-                    # the response object via an injected global `res`
-                    # but that feature hasn't been as of the time of
-                    # this writting.
-                    #http.response.status = 400
+                    http.response.status = 400
 
                     # TODO This should be a flash message. When flash
                     # messages are implemented, pass in a flash
@@ -15789,42 +15791,76 @@ class pom_page(tester):
                     #         flash="Sorry, Charlie"
                     #     )
                     # raise http.UnauthorizedError()
-                    ...
 
         class whoami(pom.page):
             def main(self):
-                B()
-                jwt = http.request.cookies['jwt'].value
-                self.main += dom.p(jwt, class_='jwt')
-                    
+                jwt = http.request.cookies('jwt')
+                if jwt:
+                    jwt = jwt.value
+                    jwt = auth.jwt(jwt)
+                    usr = gem.user(jwt.sub)
+                    self.main += dom.p(jwt, class_='jwt')
+                else:
+                    http.response.status = 400
+
+        class logout(pom.page):
+            def main(self):
+                # Delete the cookie:
+                # https://stackoverflow.com/questions/5285940/correct-way-to-delete-cookies-server-side
+
+                hdrs = http.response.headers
+                hdrs += http.header('Set-Cookie', (
+                    'token=deleted; path=/; '
+                    'expires=Thu, 01 Jan 1970 00:00:00 GMT'
+                    )
+                )
+
         ws = foonet()
         ws.pages += authenticate()
         ws.pages += whoami()
+        ws.pages += logout()
 
-        res = self.get('/en/authenticate', ws)
-        frm = res['form'].first
-
-        # Log in with incorrect password
-        frm['input[name=username]'].first.value = 'jhogan'
-        frm['input[name=password]'].first.value = 'wrong-password'
+        usrs = gem.users()
+        for i in range(10):
+            usrs += gem.user()
+            usrs.last.name     = uuid4().hex
+            usrs.last.password = uuid4().hex
+            if i > 5:
+                usrs.last.save()
 
         tab = self.browser().tab()
-        res = tab.post('/en/authenticate', ws, frm)
-
-        # TODO See 'authenticate' page above.
-        #self.status(400, res)
-
-        # Log in with correct password
-        frm['input[name=username]'].first.value = 'jhogan'
-        frm['input[name=password]'].first.value = 'password123'
-
-        res = tab.post('/en/authenticate', ws, frm)
-        jwt = tab.browser.cookies['jwt'].value
-        jwt = auth.jwt(jwt)
-        self.valid(jwt)
+        res = tab.get('/en/authenticate', ws)
         self.status(200, res)
+        frm = res['form'].first
 
-        res = tab.get('/en/whoami', ws)
+        for i, usr in usrs.enumerate():
+            isauthentic =  not usr.orm.isnew
+
+            frm['input[name=username]'].first.value = usr.name
+            frm['input[name=password]'].first.value = usr.password
+
+            res = tab.post('/en/authenticate', ws, frm)
+
+            if isauthentic:
+                self.status(200, res)
+                jwt = tab.browser.cookies['jwt'].value
+                jwt = auth.jwt(jwt)
+                self.valid(jwt)
+
+                res = tab.get('/en/whoami', ws)
+                self.status(200, res)
+                self.eq(str(jwt), res['.jwt'].first.text)
+
+                res = tab.get('/en/logout', ws)
+
+                res = tab.get('/en/whoami', ws)
+                self.zero(res['.jwt'])
+                self.status(400, res)
+            else:
+                self.status(400, res)
+
+                res = tab.get('/en/whoami', ws)
+                self.status(400, res)
 
 class dom_elements(tester):
     def it_gets_text(self):
@@ -21411,6 +21447,64 @@ class test_gem(tester):
     def __init__(self):
         super().__init__()
         #gem.party.orm.recreate(recursive=True)
+
+class gem_user(tester):
+    def __init__(self):
+        super().__init__()
+        gem.user.orm.recreate(recursive=True)
+
+    @staticmethod
+    def getvalid():
+        usr = gem.user()
+        usr.name = 'luser@mail.com'
+        usr.password = 'password1'
+        return usr
+
+    def it_calls__init__(self):
+        usr = gem.user()
+        self.empty(usr.name)
+
+        for prop in ('hash', 'salt', 'password'):
+            self.none(getattr(usr, prop))
+
+    def it_creates(self):
+        usr = self.getvalid()
+        usr.save()
+
+        usr1 = gem.user(usr.id)
+        self.eq(usr.hash, usr1.hash)
+        self.eq(usr.salt, usr1.salt)
+
+        ''' Validate with good password '''
+        self.true(usr1.ispassword(usr.password))
+
+        ''' Validate with bad password '''
+        pwd = codecs.encode(usr.password, 'rot13')  # scramble
+        self.false(usr1.ispassword(pwd))
+
+    def it_updates(self):
+        usr = self.getvalid()
+        self.true(usr.ispassword(usr.password))
+
+        pwd = uuid4().hex
+        usr.password = pwd
+        self.true(usr.ispassword(pwd))
+
+        usr.save()
+
+        usr = gem.user(usr.id)
+        self.true(usr.ispassword(pwd))
+
+        pwd = codecs.encode(pwd, 'rot13')  # scramble
+        self.false(usr.ispassword(pwd))
+
+        pwd = uuid4().hex
+        usr.password = pwd
+        self.true(usr.ispassword(pwd))
+        usr.save()
+
+        usr = gem.user(usr.id)
+        self.true(usr.ispassword(pwd))
 
 ########################################################################
 # Test gem.persons                                                     #

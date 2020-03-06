@@ -165,6 +165,10 @@ class tester(entity):
                         'wsgi.version': (1, 0)
                     }
 
+                    cookies = self.browser.cookies
+                    if cookies.count:
+                        d['http_cookie'] = cookies.header.value
+
                     if env:
                         for k, v in env.items():
                             d[k] = v
@@ -222,12 +226,25 @@ class tester(entity):
                 res._headers = http.headers(hdrs)
                 res.payload = next(iter)
 
-                jwt = res.headers('set-cookie')
+                hdr = res.headers('set-cookie')
 
-                if jwt:
+                if hdr:
+                    cookie = dict(x.split('=') for x in hdr.split('; '))
+                    jwt = cookie['token']
+                    exp = cookie['expires']
+                    path = cookie['path']
                     domain = ws.title
-                    cookie = tester._browser._cookie('jwt', jwt, domain)
-                    self.browser.cookies += cookie 
+                    exp = primative.datetime(exp)
+                    delete = exp < primative.datetime.utcnow()
+
+                    if delete:
+                        self.browser.cookies.remove('jwt')
+                    else:
+                        cookie = tester._browser._cookie(
+                            name='jwt',     value=jwt,
+                            domain=domain,  path=path,
+                        )
+                        self.browser.cookies += cookie 
 
                 return res
 
