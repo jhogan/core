@@ -127,8 +127,8 @@ class tester(entity):
             def post(self, pg, ws, frm):
                 return self._request(pg=pg, ws=ws, frm=frm, meth='POST')
 
-            def head(self, url):
-                raise NotImplementedError()
+            def head(self, pg, ws):
+                return self._request(pg=pg, ws=ws, meth='HEAD')
 
             def _request(self, pg, ws, frm=None, meth='GET'):
                 if not isinstance(pg, str):
