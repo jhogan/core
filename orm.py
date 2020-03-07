@@ -1946,6 +1946,15 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 self.orm.isdirty = False
                 self.id = uuid4()
             else:
+                if isinstance(o, str):
+                    # See if we can convert str identifier to UUID. 
+                    # TODO Currently this works with a hex string that
+                    # has no dash. We may want to do more work to
+                    # determine what we need to do if `o` has dashes,
+                    # if the UUID is expressed as an int, or if the UUID
+                    # has been base64 encoded.
+                    o = UUID(hex=o)
+
                 if type(o) is UUID:
                     res = self._load(o)
                 else:
