@@ -232,6 +232,7 @@ class tester(entity):
                 res._headers = http.headers(hdrs)
                 res.payload = next(iter)
 
+                # Deal with the set-cookie header
                 hdr = res.headers('set-cookie')
 
                 if hdr:
