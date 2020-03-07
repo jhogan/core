@@ -15386,8 +15386,9 @@ class pom_page(tester):
         pg = time()
         ws.pages += pg
 
+        tab = self.browser().tab()
         # Test passing in th boolean (greet), str (tz) and kwargs(a, b)
-        res = self.get('/en/time?greet=1&tz=America/Phoenix&a=1&b=2', ws)
+        res = tab.get('/en/time?greet=1&tz=America/Phoenix&a=1&b=2', ws)
         self.one(res['main[data-path="/time"]'])
 
         ps = res['p.greeting']
@@ -15406,7 +15407,7 @@ class pom_page(tester):
 
         # Test passing in th boolean (greet), let the second parameter
         # defalut to UTC and but setting some kwargs(a, b)
-        res = self.get('/en/time?greet=1&a=1&b=2', ws)
+        res = tab.get('/en/time?greet=1&a=1&b=2', ws)
 
         ps = res['p.greeting']
         self.one(ps)
@@ -15424,7 +15425,7 @@ class pom_page(tester):
         
         # Test passing in th boolean (greet), let the second parameter
         # defalut to UTC and zero kwargs
-        res = self.get('/en/time?greet=1', ws)
+        res = tab.get('/en/time?greet=1', ws)
 
         ps = res['p.greeting']
         self.one(ps)
@@ -15438,7 +15439,7 @@ class pom_page(tester):
         self.zero(dls)
 
         # Test passing in no arguments
-        res = self.get('/en/time', ws)
+        res = tab.get('/en/time', ws)
 
         self.eq('Greeting was set to None', res['p.greeting'].text)
 
@@ -15482,7 +15483,8 @@ class pom_page(tester):
         ws = foonet()
         pg = time()
         ws.pages += pg
-        res = self.head('/en/time', ws)
+        tab = self.browser().tab()
+        res = tab.head('/en/time', ws)
         self.none(res.payload)
         self.eq(200, res.status)
 
@@ -15516,7 +15518,8 @@ class pom_page(tester):
         pg = time()
         ws.pages += pg
 
-        res = self.get(
+        tab = self.browser().tab()
+        res = tab.get(
             '/en/time?greet=1&dt=2020-02-10&pdt=2020-02-11&i=1234', 
             ws
         )
@@ -15545,16 +15548,16 @@ class pom_page(tester):
             path \
             = '/en/time?greet=%s&dt=2020-02-10&pdt=2020-02-11&i=1234'  
 
-            res = self.get(path % v, ws)
+            res = tab.get(path % v, ws)
 
             self.status(422, res)
 
         path = '/en/time?greet=1&dt=2020-02-10&pdt=DERP&i=1234' 
-        res = self.get(path, ws)
+        res = tab.get(path, ws)
         self.status(422, res)
 
         path = '/en/time?greet=1&dt=2020-02-10&pdt=2020-02-11&i=DERP'
-        res = self.get(path, ws)
+        res = tab.get(path, ws)
         self.status(422, res)
         self.one(res['main[data-path="/error"]'])
 
@@ -15571,7 +15574,8 @@ class pom_page(tester):
         pg = time()
         ws.pages += pg
         
-        res = self.get('/en/time?herp=derp', ws)
+        tab = self.browser().tab()
+        res = tab.get('/en/time?herp=derp', ws)
 
         ps = res['p']
         self.one(ps)
@@ -15621,7 +15625,8 @@ class pom_page(tester):
         pg = time()
         ws.pages += pg
 
-        res = self.get('/en/time', ws)
+        tab = self.browser().tab()
+        res = tab.get('/en/time', ws)
 
         frms = res['main>form']
         self.one(frms)
@@ -15636,7 +15641,7 @@ class pom_page(tester):
         frm['select[name=timezone]'].first.selected = tzs
         self.one(res['main[data-path="/time"]'])
 
-        res = self.post('/en/time', ws, frm)
+        res = tab.post('/en/time', ws, frm)
 
         inps = res['main>form input[name=time]']
         self.one(inps)
@@ -15670,7 +15675,8 @@ class pom_page(tester):
 
         pg = pour()
         ws.pages += pg
-        res = self.get('/en/' + pg.path, ws)
+        tab = self.browser().tab()
+        res = tab.get('/en/' + pg.path, ws)
         self.eq(418, res.status)
         mains = res['body>main[data-path="/error"]']
 
@@ -15688,7 +15694,8 @@ class pom_page(tester):
                 super().__init__(host)
 
         ws = derpnet()
-        res = self.get('/en' + '/index', ws)
+        tab = self.browser().tab()
+        res = tab.get('/en' + '/index', ws)
         self.eq(404, res.status)
 
         # A site will by defalut use the generic 404 page (at the
@@ -15698,7 +15705,8 @@ class pom_page(tester):
 
         ws = foonet()
 
-        res = self.get('/en/' + 'intheix.html', ws)
+        tab = self.browser().tab()
+        res = tab.get('/en/' + 'intheix.html', ws)
         self.eq(404, res.status)
         
         # foonet has its own 404 page has an h2.apology element
@@ -15710,13 +15718,14 @@ class pom_page(tester):
     def it_raises_im_a_302(self):
         ws = foonet()
 
-        res = self.get('/en/index/google', ws)
+        tab = self.browser().tab()
+        res = tab.get('/en/index/google', ws)
         self.eq(302, res.status)
         self.eq('https://www.google.com', res.headers['Location'])
 
     def it_raises_405(self):
         ws = foonet()
-        res = self._request(
+        res = self.browser().tab()._request(
             pg='/en/index/google', ws=ws, frm=None, meth='DERP'
         )
         self.eq(405, res.status)
@@ -15735,92 +15744,117 @@ class pom_page(tester):
         pg = lang()
         ws.pages += pg
 
-        res = self.get('/en/lang', ws)
+        tab = self.browser().tab()
+        res = tab.get('/en/lang', ws)
         self.one(res['main[data-path="/lang"]'])
 
         self.eq('Lang: en', (res['main p'].first.text))
 
-        res = self.get('/es/lang', ws)
+        # Use Spainish (es)
+        res = tab.get('/es/lang', ws)
         self.one(res['main[data-path="/lang"]'])
-
         self.eq('Lang: es', (res['main p'].first.text))
+        return
+
+        # Ensure it defauls to Engilsh
+        # TODO Remove return
+        res = tab.get('/lang', ws)
+        print(res)
+
+        self.one(res['main[data-path="/lang"]'])
+        self.eq('Lang: en', (res['main p'].first.text))
 
     def it_authenticates(self):
         jwt = None
         class authenticate(pom.page):
             def main(self):
+                global res
+                # Create the login form
                 frm = pom.forms.login()
                 self.main += frm
 
-                if http.request.isget:
+                # If GET, then return; the rest is for POST
+                if req.isget:
                     return
 
-                frm.post = http.request.payload
+                # Populate the form with data from the request's payload
+                frm.post = req.payload
 
                 uid = frm['input[name=username]'].first.value
                 pwd = frm['input[name=password]'].first.value
 
+                # Load an authenticated user
                 usr = gem.user.authenticate(uid, pwd)
 
+                # If credentials were authenticated
                 if usr:
-                    # TODO hours should come from the config file at the
+                    # TODO Hours should come from the config file at the
                     # site "level" of the config file. Given that,
                     # the site object would have the ability to issue
                     # jwts instead of using the auth.jwt class itself:
                     #
                     #     t = self.site.jwt()
 
+                    # Create a JWT and store it as a cookie
                     hours = 48
                     t = auth.jwt(ttl=hours)
                     t.sub = usr.id.hex
+
+                    # Increment the expiration date. If the expiration
+                    # date is prior to the browser receiving the
+                    # set-cookie header, the cookie will be deleted:
+                    # https://stackoverflow.com/questions/5285940/correct-way-to-delete-cookies-server-side
                     exp = primative.datetime.utcnow().add(days=1)
                     exp = exp.strftime('%a, %d %b %Y %H:%M:%I GMT')
-                    hdrs = http.response.headers
+                    hdrs = res.headers
                     hdrs += http.header('Set-Cookie', (
                         'token=%s; path=/; '
                         'expires=%s'
                         ) % (str(t), exp)
                     )
                 else:
-                    http.response.status = 400
-
-                    # TODO This should be a flash message. When flash
-                    # messages are implemented, pass in a flash
-                    # argument:
-                    #
-                    #     raise http.UnauthorizedError(
-                    #         flash="Sorry, Charlie"
-                    #     )
-                    # raise http.UnauthorizedError()
+                    raise http.UnauthorizedError(flash='Try again')
 
         class whoami(pom.page):
+            """ A page to report on authenticated users.
+            """
             def main(self):
-                jwt = http.request.cookies('jwt')
-                if jwt:
-                    jwt = jwt.value
-                    jwt = auth.jwt(jwt)
-                    usr = gem.user(jwt.sub)
-                    self.main += dom.p(jwt, class_='jwt')
+                global usr
+                # TODO The authenticated user should appear a the `usr`
+                # variable in the main() method.
+
+                jwt = req.cookies('jwt')
+
+                if usr:
+                    self.main += dom.p(jwt.value, class_='jwt')
+
+                    self.main += dom.span(usr.name, class_='username')
                 else:
-                    http.response.status = 400
+                    raise http.UnauthorizedError(flash='Unauthorized')
 
         class logout(pom.page):
             def main(self):
-                # Delete the cookie:
+                global res
+                # Delete the cookie by setting the expiration date in
+                # the past.: 
                 # https://stackoverflow.com/questions/5285940/correct-way-to-delete-cookies-server-side
 
-                hdrs = http.response.headers
+                hdrs = res.headers
                 hdrs += http.header('Set-Cookie', (
-                    'token=deleted; path=/; '
+                    'token=; path=/; '
                     'expires=Thu, 01 Jan 1970 00:00:00 GMT'
                     )
                 )
 
+        # Set up site
         ws = foonet()
         ws.pages += authenticate()
         ws.pages += whoami()
         ws.pages += logout()
 
+        # Create 10 users, but only save half. Since only half will be
+        # in the database, the authenication logic will see them as
+        # valid user. This rest won't be able to log in.
         usrs = gem.users()
         for i in range(10):
             usrs += gem.user()
@@ -15829,39 +15863,200 @@ class pom_page(tester):
             if i > 5:
                 usrs.last.save()
 
+        # GET the /en/authenticate page
         tab = self.browser().tab()
         res = tab.get('/en/authenticate', ws)
         self.status(200, res)
         frm = res['form'].first
 
         for i, usr in usrs.enumerate():
-            isauthentic =  not usr.orm.isnew
 
+            # Populate the login form from the /en/authenticate with
+            # credentials of the current user.
             frm['input[name=username]'].first.value = usr.name
             frm['input[name=password]'].first.value = usr.password
 
+            # Post the credentials to /en/authenticate
             res = tab.post('/en/authenticate', ws, frm)
 
+            # If the user is authentic (if the user was previously saved
+            # to the database...
+            isauthentic =  not usr.orm.isnew
             if isauthentic:
+                
+                # We should get a JWT form /en/authenticate
                 self.status(200, res)
                 jwt = tab.browser.cookies['jwt'].value
                 jwt = auth.jwt(jwt)
                 self.valid(jwt)
 
+                # Given tab.browser has a jwt, it is considered "logged
+                # in" to the site. Call the /en/whoami page to get data
+                # on the logged in user.
                 res = tab.get('/en/whoami', ws)
                 self.status(200, res)
-                self.eq(str(jwt), res['.jwt'].first.text)
 
+                # We should get back a page with the JWT in the HTML as
+                # well as the user name.
+                self.eq(str(jwt), res['.jwt'].first.text)
+                self.eq(usr.name, res['.username'].first.text)
+                
+                # Calling this page logs us out, i.e., it deletes the
+                # JWT cookie.
                 res = tab.get('/en/logout', ws)
 
+                # Calling /en/whoami requires that we are logged in, so
+                # we will ge a 401.
                 res = tab.get('/en/whoami', ws)
                 self.zero(res['.jwt'])
-                self.status(400, res)
+                self.status(401, res)
             else:
-                self.status(400, res)
+                # The current user was not saved to the database so
+                # logging in will fail.
+                self.status(401, res)
+                self.eq('Try again', res['.flash'].text)
 
+                # Use /en/whoami to further confirm that we are not
+                # logged in.
                 res = tab.get('/en/whoami', ws)
-                self.status(400, res)
+                self.eq('Unauthorized', res['.flash'].text)
+                self.status(401, res)
+
+    def it_can_accesses_injected_variables(self):
+        class lang(pom.page):
+            def main(self):
+                assert req is http.request
+                assert res is http.response
+                assert usr is None
+
+                # Use req instead of http.request
+                lang = req.language
+                self.main += dom.span(lang, lang="lang")
+
+                # Use res instead of http.response
+                res.status = 418
+
+        ws = foonet()
+        pg = lang()
+        ws.pages += pg
+
+        tab = self.browser().tab()
+        res1 = tab.get('/en/lang', ws)
+        self.one(res1['span[lang=lang]'])
+        self.status(418, res)
+
+    def it_raises_on_reserved_parameters(self):
+        def flashes_ValueError(res):
+            spans = res['main article.flash:nth-child(1) span.type']
+            self.one(spans)
+            self.eq('ValueError', spans.first.text)
+            self.status(500, res)
+
+        ''' Can't use `req` '''
+        class help(pom.page):
+            def main(self, req):
+                pass
+
+        ws = foonet()
+        ws.pages += help()
+
+        tab = self.browser().tab()
+        res = tab.get('/en/help', ws)
+        flashes_ValueError(res)
+
+        ''' Can't use `res` '''
+        class help(pom.page):
+            def main(self, res):
+                pass
+
+        ws = foonet()
+        ws.pages += help()
+
+        res = tab.get('/en/help', ws)
+        flashes_ValueError(res)
+
+        ''' Can't use `usr` '''
+        class help(pom.page):
+            def main(self, usr):
+                pass
+
+        ws = foonet()
+        ws.pages += help()
+
+        res = tab.get('/en/help', ws)
+        flashes_ValueError(res)
+
+        ''' Can use `derp`.  '''
+        # This is here just to ensure that the above tests would return
+        # 200 if the parameter used was not one of the reserved
+        # parameter. Above, we only test if the response is 500 so it's
+        # possible that another issue is causing the problem. The below
+        # test should be an exact copy of the above test except,
+        # obviously for the parameter name.
+        class help(pom.page):
+            def main(self, derp):
+                pass
+
+        ws = foonet()
+        ws.pages += help()
+
+        res = tab.get('/en/help', ws)
+        self.status(200, res)
+
+    def it_flashes_message(self):
+        ''' Test a str flash message '''
+        class murphy(pom.page):
+            def main(self):
+                self.flash('Something went wrong')
+
+        ws = foonet()
+        ws.pages += murphy()
+
+        tab = self.browser().tab()
+        res = tab.get('/en/murphy', ws)
+        arts = res['main article.flash']
+        self.one(arts)
+
+        art = arts.first
+
+        self.eq('Something went wrong', art.text)
+
+        ''' Test an HTML flash message by passing in a dom.element '''
+        class murphy(pom.page):
+            def main(self):
+                ul = dom.ul()
+                ul += dom.li('This went wrong')
+                ul += dom.li('That went wrong')
+                self.flash(ul)
+
+        ws = foonet()
+        ws.pages += murphy()
+
+        res = tab.get('/en/murphy', ws)
+        lis = res['main article.flash>ul>li']
+        self.two(lis)
+        
+        self.eq('This went wrong', lis.first.text)
+        self.eq('That went wrong', lis.second.text)
+
+    def it_raises_flash_errors(self):
+        ''' Test an HTML flash message by raising an HttpError '''
+        class murphy(pom.page):
+            def main(self):
+                self.main += dom.h1('Checking brew type...')
+                raise http.ImATeapotError(flash='Invalid brew type')
+
+        ws = foonet()
+        ws.pages += murphy()
+
+        tab = self.browser().tab()
+        res = tab.get('/en/murphy', ws)
+        self.status(418, res)
+
+        arts = res['main article.flash:nth-child(1)']
+        self.one(arts)
+
+        self.eq('Invalid brew type', arts.first.text)
 
 class dom_elements(tester):
     def it_gets_text(self):

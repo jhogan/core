@@ -99,6 +99,20 @@ class site(entities.entity):
         self._lang = v
 
     @property
+    def languages(self):
+        ''' A list of accepted languages for the site. For example::`
+            
+            ['en', 'es', 'fr', 'de']
+
+            Sites that wish to accept a different set of languages can
+            override this property. The default is to always execpt
+            English.
+        '''
+
+        # Always except English
+        return ['en']
+
+    @property
     def charset(self):
         return self._charset
 
@@ -424,11 +438,21 @@ class pages(entities.entities):
         # The site or parent page
         self.parent = rent
 
+    @property
+    def site(self):
+        rent = self.parent
+        while rent:
+            if isinstance(rent, site):
+                return rent
+            rent = rent.parent
+
+        return None
+
     def __getitem__(self, path):
         if isinstance(path, str):
             segs = [x for x in path.split('/') if x]
             if len(segs):
-                del segs[0] # Remove langage code
+                del segs[0] #
         elif isinstance(path, list):
             segs = path
         else:
@@ -460,19 +484,19 @@ class page(dom.html):
     )
 
     def __init__(self, name=None, pgs=None):
-        self._pages = None
-        self._parentpages = pgs
-        self._name = name
-        self._calling = False
-        self._called = False
-        self._body = None
-        self._title = None
-        self._lang = None
-        self._head = None
-        self._header = None
-        self._sidebars = None
-        self._args = dict()
-
+        self._pages        =  None
+        self._parentpages  =  pgs
+        self._name         =  name
+        self._calling      =  False
+        self._called       =  False
+        self._attemped     =  False  # A call was attemped
+        self._body         =  None
+        self._title        =  None
+        self._lang         =  None
+        self._head         =  None
+        self._header       =  None
+        self._sidebars     =  None
+        self._args         =  dict()
         try:
             self._mainfunc = self.main
         except AttributeError:
@@ -480,6 +504,14 @@ class page(dom.html):
 
         self.clear()
 
+    def flash(self, msg):
+        if isinstance(msg, str):
+            msg = dom.paragraph(msg)
+
+        art = dom.article(msg, class_="flash")
+
+        self.main << art
+        
     @property
     def title(self):
         if self._title is None:
@@ -565,7 +597,14 @@ class page(dom.html):
             self._args = dict()
 
         kwargs = False
+        reserved = 'req res usr'.split()
         for k, v in params:
+            if k in reserved:
+                raise ValueError(
+                    '"%s" cannot be used as a parameter to the main '
+                    'method in page "%s".' % (k, type(self))
+                )
+                
             if v.kind == v.VAR_KEYWORD:
                 # A kwargs (VAR_KEYWORD) parameter was found
                 kwargs = True
@@ -651,8 +690,11 @@ class page(dom.html):
         self.main = dom.main()
         self.main.attributes['data-path'] = self.path
         self._called = False
+        self._attemped = False
 
     def __call__(self, *args, **qsargs):
+        self._attemped = True  # A call was attemped
+
         if len(args):
             raise ValueError('Use kwargs when calling page object')
 
@@ -667,6 +709,16 @@ class page(dom.html):
 
             try:
                 self._calling = True
+
+                # Inject global variables into main()
+
+                # TODO Inject the user object of the http request as
+                # "usr"
+                globs = self._mainfunc.__func__.__globals__
+                globs['req'] = http.request
+                globs['res'] = http.response
+
+                # Call pages main function
                 self._mainfunc(**self._arguments)
                 self._called = True
             finally:
@@ -687,7 +739,8 @@ class page(dom.html):
 
         els += self.body
 
-        self._called or self(**self._arguments)
+        # If a call has not been attemped, call here
+        self._attemped or self(**self._arguments)
 
         self.main._setparent(None)
 

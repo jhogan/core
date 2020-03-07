@@ -8,21 +8,22 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2020
 ########################################################################
 
-import json
-import sys
+from dbg import B
 from functools import reduce
 from pprint import pprint
-import traceback
-import re
-import os
-from dbg import B
 import dom
-import pom
-import textwrap
-import urllib
-import pdb
 import entities
 import exc
+import html as htmlmod
+import json
+import os
+import pdb
+import pom
+import re
+import sys
+import textwrap
+import traceback
+import urllib
 
 # NOTE Use the following diagram as a guide to determine what status
 # code to respond with:
@@ -127,7 +128,6 @@ class application:
 
                         # HttpError are 400s and 500s
 
-                        # TODO Don't hard code language code (/en)
                         lang = req.language
                         path = '/%s/error/%s' % (lang, ex.status)
                         pg = req.site(path)
@@ -140,19 +140,29 @@ class application:
                             pg.clear()
                             pg(ex=ex)
 
-                        res.status = ex.status
                         res.payload = pg.html
+                        res.status = ex.status
                     elif isinstance(ex, HttpException):
                         # HttpException are HTTP 300s. Allow the
                         # exception to make modifications to the
                         # response.
                         ex(res)
+                    else:
+                        res.status = 500
+                        p = dom.p()
+                        p += dom.text('Error: ')
+                        p += dom.span(type(ex).__name__, class_='type')
+                        p += dom.text(' ')
+                        p += dom.span(str(ex), class_='message')
+                        req.page.flash(p)
+                        res.payload = req.page.html
+
             except Exception as ex:
                 # In case there is an exception processing the
                 # exception, ensure the response is 500 with a simple
                 # error message.
                 res.status = 500
-                res.payload = textwrap.dedent('''
+                res.payload = dom.dedent('''
                 <p>Error processing exception: %s</p>
                 ''' % str(ex))
 
@@ -267,7 +277,14 @@ class _request:
         return 'en'
 
     def __call__(self):
-        self.page(**self.arguments)
+        try:
+            self.page(**self.arguments)
+        except HttpError as ex:
+            if ex.flash:
+                self.page.flash(ex.flash)
+                response.status = ex.status
+            else:
+                raise
         return self.page.html
 
     @property
@@ -600,8 +617,14 @@ class HttpException(Exception):
     def message(self):
         return str(self)
 
+    def __call__(self, res):
+        raise NotImplementedError(
+            'Processing for HTTP %s not implemented' % self.status
+        )
+
 class HttpError(HttpException):
-    def __init__(self, msg=None):
+    def __init__(self, msg=None, flash=None):
+        self.flash = flash
         msg0 = self.phrase
         if msg:
             msg0 += ' - ' + msg
