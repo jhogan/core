@@ -15759,7 +15759,6 @@ class pom_page(tester):
         # Ensure it defauls to Engilsh
         # TODO Remove return
         res = tab.get('/lang', ws)
-        print(res)
 
         self.one(res['main[data-path="/lang"]'])
         self.eq('Lang: en', (res['main p'].first.text))
@@ -15820,9 +15819,6 @@ class pom_page(tester):
             """
             def main(self):
                 global usr
-                # TODO The authenticated user should appear a the `usr`
-                # variable in the main() method.
-
                 jwt = req.cookies('jwt')
 
                 if usr:

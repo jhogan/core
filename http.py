@@ -123,11 +123,6 @@ class application:
                     data = {'_exception': repr(ex), '_traceback': tb}
                 else:
                     if isinstance(ex, HttpError):
-                        # TODO If ex.flash, unshift a an <article
-                        # class="flash"> tag with the contents of
-                        # ex.flash. ex.flash can be an str, element, or
-                        # elements.
-
                         # HttpError are 400s and 500s
 
                         lang = req.language

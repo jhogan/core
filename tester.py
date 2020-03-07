@@ -18,6 +18,7 @@ import inspect
 import json
 import pdb
 import pom
+import http
 import pprint
 import primative
 import io
@@ -25,7 +26,6 @@ import sys
 import textwrap
 import urllib
 import uuid
-import http
 
 # TODO Ensure tester.py won't run in non-dev environment
 
@@ -141,14 +141,7 @@ class tester(entity):
                     raise TypeError('frm parameter must be a dom.form')
 
                 def create_environ(env=None):
-                    # TODO We may want to leverage
-                    # `wsgiref.util.setup_testing_defaults(environ)`# here
-
-                    # TODO Should content_length be an empty str. Maybe it should be
-                    # 0 by default, or more likely, it should be removed from this
-                    # dict.
                     d = {
-                        'content_length': '',
                         'content_type': 'application/x-www-form-urlencoded',
                         'http_accept': '*/*',
                         'http_host': '127.0.0.0:8000',
@@ -181,7 +174,6 @@ class tester(entity):
                     
                     return http.headers(d)
 
-
                 st, hdrs = None, None
                 
                 def start_response(st0, hdrs0):
@@ -202,6 +194,8 @@ class tester(entity):
                         'content_length':  len(frm.post),
                         'wsgi.input':      inp,
                     })
+
+
                 else: 
                     env = create_environ()
 
@@ -575,48 +569,12 @@ class tester(entity):
     def preserve(str):
         return dedent(str)[1:-1]
 
-    @staticmethod
-    def _createenv(env=None):
-        # TODO Should content_length be an empty str. Maybe it should be
-        # 0 by default, or more likely, it should be removed from this
-        # dict.
-
-        # TODO We may want to leverage
-        # `wsgiref.util.setup_testing_defaults(environ)` here
-        d = {
-			'content_length': '',
-			'content_type': 'application/x-www-form-urlencoded',
-			'http_accept': '*/*',
-			'http_host': '127.0.0.0:8000',
-			'http_user_agent': 'tester/1.0',
-			'raw_uri': '/',
-			'remote_addr': '52.52.249.177',
-			'remote_port': '43130',
-			'script_name': '',
-			'server_port': '8000',
-			'server_protocol': 'http/1.1',
-			'server_software': 'gunicorn/19.4.5',
-			'gunicorn.socket': None,
-			'wsgi.errors': None,
-			'wsgi.file_wrapper': None,
-			'wsgi.input': '',
-			'wsgi.multiprocess': False,
-			'wsgi.multithread': False,
-			'wsgi.run_once': False,
-			'wsgi.url_scheme': 'http',
-			'wsgi.version': (1, 0)
-		}
-
-        if env:
-            for k, v in env.items():
-                d[k] = v
-        
-        return http.headers(d)
-
     def status(self, st, res):
         if st != res.status: self._failures += failure()
 
     def xhrpost(self, cls, meth, args):
+        # TODO When we need this again, move to tester.browser.tab.
+
         # NOTE This is currently unused and is left here for now for
         # reference purposese. It was used as a generic XHR endpoint. It
         # was originally called 'post' but post is now used for

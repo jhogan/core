@@ -711,9 +711,6 @@ class page(dom.html):
                 self._calling = True
 
                 # Inject global variables into main()
-
-                # TODO Inject the user object of the http request as
-                # "usr"
                 globs = self._mainfunc.__func__.__globals__
                 globs['req'] = http.request
                 globs['res'] = http.response
