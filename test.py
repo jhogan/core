@@ -15,7 +15,7 @@ from datetime import timezone, datetime
 from entities import BrokenRulesError
 from func import enumerate, getattr, B
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
-from random import randint, uniform
+from random import randint, uniform, random
 from table import *
 from tester import *
 from uuid import uuid4
@@ -14622,6 +14622,66 @@ class test_orm(tester):
 
         # The downcast to painter wil load for objects
         self.zero(self.chronicles)
+
+    def it_maintains_ordinal_parity(self):
+        """ This ensures that the fields in the table of an entity and
+        the mapped fields of the entity are in the same order (ordinal
+        parity) after the entity has been recreated (the entity's class
+        statement is re-run). 
+
+        The test creates the entity multiple times but only creates the
+        table once. Each time the entity is created, it's possible that
+        the fields are not in the same order as the table. So 9 more
+        tests are run to perform CRUD operations on the entity's table
+        via the entitiy's persistence interface. If the proceeding
+        entity class statements produce the fields in a different order,
+        the disparity should be detected by one or more of the
+        assertions.
+
+        This test was written because of a problem I was having with
+        another part of the code. I suspected disparity from multiple
+        invocations was the problem. However, when I wrote this test, I
+        was not able to reproduce the disparity. 
+        """
+        
+        for i in range(10):
+            
+            class amplifiers(orm.entities):
+                pass
+
+            B()
+            class amplifier(orm.entity):
+                tube = bool
+                watts = float
+                cost = dec
+                name = str
+
+            if i == 0:
+                amplifier.orm.recreate()
+
+            amp = amplifier(
+                tube  = [False, True][randint(1, 5) % 2],
+                watts = random() * 10,
+                cost  = dec(random() * 100),
+                name  = uuid4().hex
+            )
+
+            amp.save()
+
+            amp1 = amplifier(amp.id)
+            for prop in ('tube', 'watts', 'cost', 'name'):
+                self.eq(getattr(amp, prop), getattr(amp1, prop))
+
+            amp1.tube  = [False, True][randint(1, 5) % 2]
+            amp1.watts = random() * 10
+            amp1.cost  = dec(random() * 100)
+            amp1.name  = uuid4().hex
+
+            amp1.save()
+
+            amp2 = amplifier(amp1.id)
+            for prop in ('tube', 'watts', 'cost', 'name'):
+                self.eq(getattr(amp1, prop), getattr(amp2, prop))
 
 ########################################################################
 # Test gem.persons                                                     #
