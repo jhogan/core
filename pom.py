@@ -717,6 +717,8 @@ class page(dom.html):
                 globs = self._mainfunc.__func__.__globals__
                 globs['req'] = http.request
                 globs['res'] = http.response
+                if http.request:
+                    globs['usr'] = http.request.user
 
                 # Call pages main function
                 self._mainfunc(**self._arguments)

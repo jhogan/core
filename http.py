@@ -11,6 +11,7 @@
 from dbg import B
 from functools import reduce
 from pprint import pprint
+import auth
 import dom
 import entities
 import exc
@@ -24,6 +25,7 @@ import sys
 import textwrap
 import traceback
 import urllib
+import gem
 
 # NOTE Use the following diagram as a guide to determine what status
 # code to respond with:
@@ -176,9 +178,10 @@ class application:
 request = None
 class _request:
     def __init__(self, app):
-        self.app = app
-        self.app._request = self
-        self._payload = None
+        self.app           =  app
+        self.app._request  =  self
+        self._payload      =  None
+        self._user         =  None
 
     @property
     def headers(self):
@@ -210,8 +213,25 @@ class _request:
                 r += browser._cookie(k, v, domain=None)
                 break
         return r
-                
 
+    @property
+    def user(self):
+        """ Return the authenicated user making the request. If there is
+        no authenicate user, return None.
+        """
+
+        # Get the JWT and convert it to a user 
+        jwt = self.cookies('jwt')
+        if jwt:
+            jwt = jwt.value
+            jwt = auth.jwt(jwt)
+
+            # NOTE The JWT's sub property has a hex str
+            # represetation of the user's id.
+            self._user = gem.user(jwt.sub)
+
+        return self._user
+                
     @property
     def environment(self):
         return self.app.environment
