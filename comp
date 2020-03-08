@@ -1,5 +1,9 @@
-http
-authentication
+# http
+# authentication
+events
+file
+cfg
+robot
 general optimization
 selector optimization
 aria
@@ -9,8 +13,4 @@ proxy generator
 migrations
 cli
 gatekeeper
-events
-cfg
-file
-robot
 replication (relational, file)
