@@ -552,11 +552,9 @@ class elements(entities.entities):
 
     def _self_onremove(self, src, eargs):
         super()._self_onadd(src, eargs)
-        return
 
-        # TODO
         revs = self.root._revisions
-        revs.revision(revision.Remove, eargs.entity)
+        revs.revision(revision.Remove, self.parent, eargs.entity)
 
     def apply(self, revs):
         # TODO

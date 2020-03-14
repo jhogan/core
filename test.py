@@ -16407,12 +16407,13 @@ class dom_element(tester):
         self.one(revs)
         rev = revs.first
         self.eq(dom.revision.Append, rev.type)
-        self.is_(span.elements.first, rev.element)
+        self.is_(span, rev.subject)
+        self.is_(span.elements.first, rev.object)
 
     def it_logs_remove(self):
         span = dom.span()
         span += dom.text('Appended')
-        span.elements.pop()
+        txt = span.elements.pop()
 
         revs = span._revisions
         self.two(revs)
@@ -16420,12 +16421,14 @@ class dom_element(tester):
         # This revsion is from the append
         rev = revs.first
         self.eq(dom.revision.Append, rev.type)
-        self.is_(span.elements.first, rev.element)
+        self.is_(span, rev.subject)
+        self.is_(txt, rev.object)
 
         # This revsion is from the actual removal
         rev = revs.second
         self.eq(dom.revision.Remove, rev.type)
-        self.is_(span.elements.first, rev.element)
+        self.is_(span, rev.subject)
+        self.is_(txt, rev.object)
 
     def it_crowns_revisions_collection(self):
         """ Ensure that appending element to a graph causes the
