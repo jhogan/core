@@ -24,6 +24,7 @@ import re
 import string
 import sys
 import urllib.parse
+import uuid
 
 """
 An implementation of the HTML5 DOM.
@@ -51,6 +52,10 @@ An implementation of the HTML5 DOM.
 #     https://www.digitalocean.com/community/tutorials/how-to-mirror-local-and-remote-directories-on-a-vps-with-lsyncd
 
 class attributes(entities.entities):
+    def __init__(self, el=None, *arg, **kwargs):
+        super().__init__(*arg, **kwargs)
+        self.element = el
+        
     """ Represents a collection of attributes for HTML5 elements.
     """
     def __iadd__(self, *o):
@@ -65,7 +70,7 @@ class attributes(entities.entities):
     def clone(self):
         """ Return a cloned version of the attributes collection.
         """
-        attrs = type(self)()
+        attrs = type(self)(self.element)
         for attr in self:
             attrs += attr.clone()
         return attrs
@@ -130,7 +135,7 @@ class attributes(entities.entities):
             return self._defined[key]
                 
         if isinstance(key, slice):
-            return type(self)(initial=self._defined[key])
+            return type(self)(self.element, initial=self._defined[key])
 
         if not isinstance(key, str):
             return super().__getitem__(key)
@@ -138,7 +143,15 @@ class attributes(entities.entities):
         try:
             ix = self.getindex(key)
         except ValueError as ex:
-            attr = None
+            if key == 'class':
+                # Look for undefined classes
+                for attr in self._ls:
+                    if attr.name == 'class':
+                        break
+                else:
+                    attr = None
+            else:
+                attr = None
         else:
             attr = self._ls[ix]
 
@@ -166,7 +179,7 @@ class attributes(entities.entities):
         except ValueError as ex:
             attr = None
         else:
-            attr = self[ix]
+            attr = self._ls[ix]
 
         if attr:
             if isinstance(attr, cssclass):
@@ -994,7 +1007,7 @@ class element(entities.entity):
     @property
     def attributes(self):
         if not hasattr(self, '_attributes'):
-            self._attributes = attributes()
+            self._attributes = attributes(self)
         return self._attributes
 
     @attributes.setter
@@ -1244,7 +1257,9 @@ class footer(element):
         pass
 
 class text(element):
-    def __init__(self, v, esc=True):
+    def __init__(self, v, esc=True, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
         self._value = v
         self._html = v
 
@@ -1306,7 +1321,8 @@ class comments(elements):
 
 class comment(element):
     tag = '<!---->'
-    def __init__(self, txt):
+    def __init__(self, txt, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._text = txt
 
     @property
@@ -2287,7 +2303,8 @@ class times(elements):
     pass
 
 class time(element):
-    def __init__(self, dt=None):
+    def __init__(self, dt=None, *args, **kwargs):
+        super().__init__(*args, *kwargs)
         if dt is None:
             return
         if not isinstance(dt, primative.datetime):
@@ -3718,7 +3735,7 @@ class htmls(elements):
     pass
 
 class html(element):
-    def __init__(self, html=None, *args, **kwargs):
+    def __init__(self, html=None, ids=True, *args, **kwargs):
         if isinstance(html, str):
             # Morph the object into an `elements` object
             self.__class__ = elements
@@ -3726,7 +3743,7 @@ class html(element):
 
             # Assume the input st is HTML and convert the elements in
             # the HTML sting into a collection of `elements` objects.
-            prs = _htmlparser(convert_charrefs=False)
+            prs = _htmlparser(convert_charrefs=False, ids=ids)
             prs.feed(html)
             if prs.stack:
                 raise HtmlParseError('Unclosed tag', frm=prs.stack[-1])
@@ -3746,8 +3763,9 @@ class html(element):
         self.attributes['manifest'].value = v
 
 class _htmlparser(HTMLParser):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, ids=True, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.ids = ids
         self.elements = elements()
         self.stack = list()
 
@@ -3757,9 +3775,9 @@ class _htmlparser(HTMLParser):
             raise NotImplementedError(
                 'The <%s> tag has no DOM implementation' % tag
             )
-        el = el()
+        el = el(id=self.ids)
         for attr in attrs:
-            el.attributes += attr
+            el.attributes[attr[0]] = attr[1]
 
         try:
             cur = self.stack[-1]
@@ -5415,3 +5433,4 @@ class CssSelectorParseError(SyntaxError):
             return self.token.pos
 
         return None
+

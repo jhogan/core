@@ -14804,14 +14804,14 @@ class pom_menu_item(tester):
     def it_calls__init__(self):
         itm = pom.menu.item('A text item')
         expect = self.dedent('''
-        <li>
+        <li id="%s">
           A text item
         </li>
-        ''')
+        ''', itm.id)
         self.eq(expect, itm.pretty)
         self.eq(expect, str(itm))
 
-        expect = '<li>A text item</li>'
+        expect = '<li id="%s">A text item</li>' % itm.id
         self.eq(expect, itm.html)
 
 class _404(pom.page):
@@ -14829,28 +14829,52 @@ class _404(pom.page):
         return type(self).__name__.replace('_', '')
 
 class pom_menu_items(tester):
+    def it_preserves_serialized_representation(self):
+        """ It was noticed that subsequent calls to menu.pretty,
+        mnu.items.pretty, etc. were returning the same HTML but with
+        different id's. This was because of the menus and their items
+        were being cloned. Since the objects were being reinstantiated
+        during cloning, the original id was lost only to be replaced by
+        the new id of the new object. Some work was done to ensure that
+        the ids are preserved.
+        """
+        ws = foonet()
+        mnu = pom.menu('main')
+        main = ws.header.menus['main']
+        mnu.items += main.items
+
+        self.eq(main.pretty,        main.pretty)
+        self.eq(mnu.pretty,         mnu.pretty)
+        self.eq(main.html,          main.html)
+        self.eq(mnu.html,           mnu.html)
+        self.eq(main.items.pretty,  main.items.pretty)
+        self.eq(mnu.items.pretty,   mnu.items.pretty)
+        self.eq(main.items.html,    main.items.html)
+        self.eq(mnu.items.html,     mnu.items.html)
+
     def it_calls_append(self):
         itms = pom.menu.items()
         itms += pom.menu.item('A text item')
         itms += pom.menu.item('Another text item')
 
         expect = self.dedent('''
-        <ul>
-          <li>
+        <ul id="%s">
+          <li id="%s">
             A text item
           </li>
-          <li>
+          <li id="%s">
             Another text item
           </li>
         </ul>
-        ''')
+        ''' % (itms._ul.id, itms.first.id, itms.second.id))
 
         self.eq(expect, itms.pretty)
         self.eq(expect, str(itms))
 
         expect = self.dedent('''
-        <ul><li>A text item</li><li>Another text item</li></ul>
-        ''')
+        <ul id="%s"><li id="%s">A text item</li><li id="%s">Another text item</li></ul>
+        '''% (itms._ul.id, itms.first.id, itms.second.id))
+
 
         self.eq(expect, itms.html)
 
@@ -14865,42 +14889,58 @@ class pom_menu_items(tester):
         itms.second.items += pom.menu.item('B/A')
         itms.second.items += pom.menu.item('B/B')
 
+        ids = (
+            itms._ul.id,
+            itms.first.id,
+            itms.first.items._ul.id,
+            itms.first.items.first.id,
+            itms.first.items.second.id,
+            itms.second.id,
+            itms.second.items._ul.id,
+            itms.second.items.first.id,
+            itms.second.items.second.id,
+        )
+        ids = tuple(
+            [itms._ul.id] + \
+            [x.id for x in itms.all if type(x) is not dom.text]
+        )
+        
         expect = self.dedent('''
-        <ul>
-          <li>
+        <ul id="%s">
+          <li id="%s">
             A
-            <ul>
-              <li>
+            <ul id="%s">
+              <li id="%s">
                 A/A
               </li>
-              <li>
+              <li id="%s">
                 A/B
               </li>
             </ul>
           </li>
-          <li>
+          <li id="%s">
             B
-            <ul>
-              <li>
+            <ul id="%s">
+              <li id="%s">
                 B/A
               </li>
-              <li>
+              <li id="%s">
                 B/B
               </li>
             </ul>
           </li>
         </ul>
-        ''')
+        ''' % ids)
 
         self.eq(expect, itms.pretty)
         self.eq(expect, str(itms))
 
         expect = (
-            '<ul><li>A<ul><li>A/A</li><li>A/B</li></ul>'
-            '</li><li>B<ul><li>B/A</li><li>B/B</li></ul>'
-            '</li></ul>'
+            '<ul id="%s"><li id="%s">A<ul id="%s"><li id="%s">A/A</li>'
+            '<li id="%s">A/B</li></ul></li><li id="%s">B<ul id="%s">'
+            '<li id="%s">B/A</li><li id="%s">B/B</li></ul></li></ul>'
         )
-        self.eq(expect, itms.html)
+        self.eq(expect % ids, itms.html)
 
 class pom_site(tester):
     def it_calls__init__(self):
@@ -14916,6 +14956,10 @@ class pom_site(tester):
         uls = dom.html(mnu.items.html)['ul>li']
         self.count(17, uls)
 
+        # Copy the first ul's id of mnu.items to that of main.items.
+        # This is done just to make the equality test below work. The
+        # rest of the id attributes in the graph will be equal.
+        main.items._ul.id = mnu.items._ul.id
         self.eq(main.items.html, mnu.items.html)
         self.eq(main.items.pretty, mnu.items.pretty)
         
@@ -16103,17 +16147,29 @@ class dom_elements(tester):
         self.eq(expect, html.text)
 
     def it_calls_html(self):
-        html = dom.html(TestHtml)
+        html = dom.html(TestHtml, ids=False)
         self.eq(TestHtmlMin, html.html)
 
-        htmlmin = dom.html(TestHtmlMin)
+        htmlmin = dom.html(TestHtmlMin, ids=False)
         self.eq(html.html, htmlmin.html)
 
     def it_calls_pretty(self):
+        def rm_uuids(els):
+            for x in els.all:
+                # Remove computer generated UUID ids
+                try:
+                    primative.uuid(base64=x.id)
+                except:
+                    pass
+                else:
+                    del x.attributes['id']
         htmlmin = dom.html(TestHtmlMin)
+        rm_uuids(htmlmin)
+
         self.eq(TestHtml, htmlmin.pretty)
 
         html = dom.html(TestHtml)
+        rm_uuids(html)
         self.eq(TestHtmlMin, html.html)
 
     def it_removes_elements(self):
@@ -16166,18 +16222,19 @@ class dom_element(tester):
         </div>
         ''')
 
-        self.two(html['div'].first.children)
+        div = html['div'].first
+        self.two(div.children)
 
-        html['div'].text = 'Some text'
+        div.text = 'Some text'
 
-        self.zero(html['div'].first.children)
+        self.zero(div.children)
 
-        self.eq('Some text', html['div'].first.elements.first.value)
+        self.eq('Some text', div.elements.first.value)
 
         expect = self.dedent('''
-        <div>
+        <div id="%s">
           Some text
-        </div>''')
+        </div>''' % div.id)
 
         self.eq(expect, html.pretty)
 
@@ -16342,7 +16399,108 @@ class dom_element(tester):
             uuid = uuid4().hex
             setattr(a, attr, uuid)
             self.eq(uuid, getattr(a, attr))
-            self.count(i + 1, a.attributes)
+            self.count(i + 2, a.attributes)
+
+    def it_logs_appends(self):
+        span = dom.span()
+        span += dom.text('Appended')
+
+        revs = span._revisions
+        self.one(revs)
+        rev = revs.first
+        self.eq(dom.revision.Append, rev.type)
+        self.is_(span.elements.first, rev.element)
+
+    def it_logs_remove(self):
+        span = dom.span()
+        span += dom.text('Appended')
+        span.elements.pop()
+
+        revs = span._revisions
+        self.two(revs)
+
+        # This revsion is from the append
+        rev = revs.first
+        self.eq(dom.revision.Append, rev.type)
+        self.is_(span.elements.first, rev.element)
+
+        # This revsion is from the actual removal
+        rev = revs.second
+        self.eq(dom.revision.Remove, rev.type)
+        self.is_(span.elements.first, rev.element)
+
+    def it_crowns_revisions_collection(self):
+        """ Ensure that appending element to a graph causes the
+        revisions at the element to appended to the revisions collection
+        at the new root of the graph (crowning). The revision collection
+        at the now, non-root element should not exist.
+        """
+        # Create a tree
+        span = dom.span('test')
+
+        # Test tree
+        self.one(span._revisions)
+        # The span will start of with one revision because the string
+        # 'test' was passed to its ctor and added as a dom.text element.
+        self.is_(span.elements.last, span._revisions.first.object)
+
+        # Create another tree
+        p = dom.paragraph()
+        
+        # Revise the second tree with one revison
+        em = dom.em()
+        p += em
+
+        # Test second tree
+        self.notnone(p._revisions)
+        self.one(p._revisions)
+        self.is_(em, p._revisions.first.object)
+
+        # Append the first tree to the second tree
+        p += span
+
+        # `span` is no longer the root element of the tree; `p` is the
+        # root. Calling `_revision` on a non-root element causes a
+        # ValueError to be raised.
+        self.expect(ValueError, lambda: span._revisions)
+
+        self.is_(p, p._revisions.first.subject)
+        self.is_(em, p._revisions.first.object)
+
+        self.is_(p, p._revisions.second.subject)
+        self.is_(span, p._revisions.second.object)
+
+        self.is_(span, p._revisions.third.subject)
+        self.is_(span.elements.first, p._revisions.third.object)
+
+    def it_patches_appends(self):
+        p = dom.paragraph()
+        span = dom.span()
+        p += span
+
+        p1 = dom.paragraph()
+        p1.id = p.id
+
+        p1.apply(p._revisions)
+
+    def it_calls_id(self):
+        p = dom.paragraph()
+        id = primative.uuid(base64=p.id)
+        self.isinstance(id, uuid.UUID)
+
+class primative_uuid(tester):
+    def it_creates_uuid(self):
+        id = primative.uuid()
+        self.true(isinstance(id, uuid.UUID))
+
+    def it_calls_base64(self):
+        id = primative.uuid()
+        self.count(22, id.base64)
+
+    def it_calls__init__with_base64(self):
+        id = primative.uuid()
+        id1 = primative.uuid(id.base64)
+        self.eq(id, id1)
 
 class test_comment(tester):
     def it_calls_html(self):
@@ -16362,11 +16520,11 @@ class dom_paragraph(tester):
         ''', hex1, hex2)
         
         expect = self.dedent('''
-        <p>
+        <p id="%s">
           hex1: %s
           hex2: %s
         </p>
-        ''', hex1, hex2)
+        ''', p.id, hex1, hex2)
 
         self.eq(expect, p.pretty)
 
@@ -16378,24 +16536,26 @@ class dom_paragraph(tester):
         ''')
 
         # Nest <span> into <strong>
-        strong += dom.span('go grey.');
+        span = dom.span('go grey.');
+        strong += span
         txt += strong
 
         # NOTE The spacing is botched. This should be corrected when we
         # write tests for dom.text.
+        p = dom.paragraph(txt)
+
         expect = self.dedent('''
-        <p>
+        <p id="%s">
           Plain white sauce!
-          <strong>
+          <strong id="%s">
             Plain white sauce will make your teeth
-            <span>
+            <span id="%s">
               go grey.
             </span>
           </strong>
         </p>
-        ''')
+        ''' % (p.id, strong.id, span.id))
 
-        p = dom.paragraph(txt)
         self.eq(expect, p.pretty)
 
         # Expect a ValueError if *args are given for a non-str first
@@ -16417,7 +16577,8 @@ class dom_paragraph(tester):
         ''')
 
         # Nest <span> into <strong>
-        strong += dom.span('go grey.');
+        span = dom.span('go grey.');
+        strong += span
 
         p += strong
 
@@ -16426,17 +16587,17 @@ class dom_paragraph(tester):
         '''
 
         expect = self.dedent('''
-        <p>
+        <p id="%s">
           Plain white sauce!
-          <strong>
+          <strong id="%s">
             Plain white sauce will make your teeth
-            <span>
+            <span id="%s">
               go grey.
             </span>
           </strong>
           Doesn&#x27;t matter, just throw it away!
         </p>
-        ''')
+        ''' % (p.id, strong.id, span.id))
 
         self.eq(expect, p.pretty)
 
@@ -16448,14 +16609,15 @@ class dom_paragraph(tester):
         '''
 
         expect = self.dedent('''
-        <p>
+        <p id="%s">
           &amp;copy; 2020, All Rights Reserved
         </p>
-        ''')
+        ''' % p.id)
 
         self.eq(expect, p.pretty)
 
-        expect = '<p>&amp;copy; 2020, All Rights Reserved</p>'
+        expect = '<p id="%s">&amp;copy; 2020, All Rights Reserved</p>' \
+                 % p.id
         self.eq(expect, p.html)
 
         expect = self.dedent('''
@@ -16566,19 +16728,20 @@ class dom_attribute(tester):
         self.is_(p.attributes[uuid], attr)
 
         self.true(p.classes.count     ==  0)
-        self.true(p.attributes.count  ==  0)
+        self.true(p.attributes.count  ==  1)
         self.true(len(p.classes)      ==  0)
-        self.true(len(p.attributes)   ==  0)
-        self.zero(p.attributes.sorted('name'))
+        self.true(len(p.attributes)   ==  1)
+        self.one(p.attributes.sorted('name'))
 
-        self.zero(list(p.attributes.reversed()))
-        self.none(p.attributes.first)
-        self.none(p.attributes(0))
-        self.expect(IndexError, lambda: p.attributes[0])
-        self.zero(p.attributes[0:1])
+        self.one(list(p.attributes.reversed()))
+        self.none(p.attributes.second)
+        self.none(p.attributes(1))
+        self.expect(IndexError, lambda: p.attributes[1])
+        self.zero(p.attributes[1:1])
         
-        for p in p.attributes:
-            self.fail()
+        for i, attr in p.attributes.enumerate():
+            if i: # id
+                self.fail()
 
         attr.value = uuid4().hex
         self.zero(p.classes)
@@ -16644,67 +16807,77 @@ class dom_attribute(tester):
         self.eq(2, i)
 
     def it_sets_None_attr(self):
-        expect = self.dedent('''
-        <input disabled>
-        ''')
-
         inp = dom.input()
         inp.attributes['disabled'] = None
-        self.one(inp.attributes)
+        self.two(inp.attributes)
+
+        expect = self.dedent('''
+        <input id="%s" disabled>
+        ''' % inp.id)
+
         self.eq(expect, inp.pretty)
 
         inp = dom.input()
         inp.attributes.append('disabled')
-        self.one(inp.attributes)
+        self.two(inp.attributes)
+        expect = self.dedent('''
+        <input id="%s" disabled>
+        ''' % inp.id)
         self.eq(expect, inp.pretty)
 
         inp = dom.input()
         inp.attributes += 'disabled'
-        self.one(inp.attributes)
+        self.two(inp.attributes)
+        expect = self.dedent('''
+        <input id="%s" disabled>
+        ''' % inp.id)
         self.eq(expect, inp.pretty)
         
         inp = dom.input()
         inp.attributes += 'disabled', None
-        self.one(inp.attributes)
+        self.two(inp.attributes)
+        expect = self.dedent('''
+        <input id="%s" disabled>
+        ''' % inp.id)
         self.eq(expect, inp.pretty)
 
     def it_appends_attribute(self):
         # Append attribute object
         p = dom.paragraph()
-        self.zero(p.attributes)
-        id = uuid4().hex
-        p.attributes += dom.attribute('id', id)
         self.one(p.attributes)
-        self.eq('id', p.attributes.first.name)
-        self.eq(id, p.attributes.first.value)
+        id = uuid4().hex
+        p.attributes += dom.attribute('data-id', id)
+        self.two(p.attributes)
+        self.eq('data-id', p.attributes.second.name)
+        self.eq(id, p.attributes.second.value)
 
         # Append a tuple
         name = uuid4().hex
         p.attributes += 'name', name
-        self.two(p.attributes)
-        self.eq('name', p.attributes.second.name)
-        self.eq(name, p.attributes.second.value)
+        self.three(p.attributes)
+        self.eq('name', p.attributes.third.name)
+        self.eq(name, p.attributes.third.value)
 
         # Append a list
         style = 'color: 8ec298'
         p.attributes += ['style', style]
-        self.three(p.attributes)
-        self.eq('style', p.attributes.third.name)
-        self.eq(style, p.attributes.third.value)
+        self.four(p.attributes)
+        self.eq('style', p.attributes.fourth.name)
+        self.eq(style, p.attributes.fourth.value)
 
         # It appends using kvp as argument
         title = uuid4().hex
         p.attributes.append('title', title)
-        self.four(p.attributes)
-        self.eq('title', p.attributes.fourth.name)
-        self.eq(title, p.attributes.fourth.value)
+        self.five(p.attributes)
+        self.eq('title', p.attributes.fifth.name)
+        self.eq(title, p.attributes.fifth.value)
 
         # It appends using indexer
         cls = uuid4().hex
         p.attributes['class'] = cls
-        self.five(p.attributes)
-        self.eq('class', p.attributes.fifth.name)
-        self.eq(cls, p.attributes.fifth.value)
+        self.six(p.attributes)
+        self.eq('class', p.attributes.sixth.name)
+        self.eq(cls, p.attributes.sixth.value)
 
         # Append a collection of attributes:
         attrs = dom.attributes()
@@ -16719,7 +16892,7 @@ class dom_attribute(tester):
             'dir': 'ltr'
         }
 
-        self.nine(p.attributes)
+        self.ten(p.attributes)
         self.eq('en', p.lang)
         self.eq('ltr', p.dir)
 
@@ -16734,7 +16907,6 @@ class dom_attribute(tester):
         p = dom.paragraph()
         id, name, cls = [uuid4().hex for _ in range(3)]
         style = dom.attribute('style', 'color: 8ec298')
-        p.attributes += 'id', id
         p.attributes += 'name', name
         p.attributes += style
         p.attributes += 'class', cls
@@ -16770,11 +16942,11 @@ class dom_attribute(tester):
         id, name = uuid4().hex, uuid4().hex, 
         style = dom.attribute('style', 'color: 8ec298')
         cls = uuid4().hex
-        p.attributes += 'id', id
+        p.attributes += 'data-id', id
         p.attributes += 'name', name
         p.attributes += style
         p.attributes += 'class', cls
-        self.true('id'    in  p.attributes)
+        self.true('data-id'    in  p.attributes)
         self.true('name'  in  p.attributes)
         self.true(style   in  p.attributes)
         self.true('class' in  p.attributes)
@@ -16782,19 +16954,19 @@ class dom_attribute(tester):
         id, name = uuid4().hex, uuid4().hex, 
         style = dom.attribute('style', 'color: 8ec298')
 
-        p.attributes['id'].value = id
-        self.eq(id, p.attributes.first.value)
+        p.attributes['data-id'].value = id
+        self.eq(id, p.attributes.second.value)
 
         cls = uuid4().hex
         p.attributes['class'] = cls
-        self.eq(cls, p.attributes.fourth.value)
+        self.eq(cls, p.attributes.fifth.value)
 
     def it_doesnt_append_nonunique(self):
         # Add three attributes
         p = dom.paragraph()
         id, name = uuid4().hex, uuid4().hex, 
         style = dom.attribute('style', 'color: 8ec298')
-        p.attributes += 'id', id
+        p.attributes += 'data-id', id
         p.attributes += 'name', name
         p.attributes += style
 
@@ -16802,12 +16974,12 @@ class dom_attribute(tester):
         ex = dom.AttributeExistsError
 
         # Append using `append` method
-        self.expect(ex, lambda: attrs.append('id', id))
+        self.expect(ex, lambda: attrs.append('data-id', id))
         self.expect(ex, lambda: attrs.append('name', name))
         self.expect(ex, lambda: attrs.append('style', style))
 
         attrs = {
-            'id': id,
+            'data-id': id,
             'name': name,
         }
 
@@ -16847,15 +17019,15 @@ class dom_cssclass(tester):
         attr = p.attributes['class']
         self.is_(p.attributes['class'], attr)
         self.zero(p.classes)
-        self.zero(p.attributes)
+        self.one(p.attributes)
         
-        for p in p.attributes:
+        for p in p.attributes[1:]:
             self.fail()
 
         attr.value = uuid4().hex
         self.one(p.classes)
-        self.one(p.attributes)
-        self.eq(p.attributes.first.value, attr.value)
+        self.two(p.attributes)
+        self.eq(p.attributes.second.value, attr.value)
 
     def it_calls_class_twice(self):
         # Calling p.classes raised an error in development. This is a
@@ -16874,7 +17046,7 @@ class dom_cssclass(tester):
         self.one(p.classes)
         self.true('my-class-1' in p.attributes['class'])
 
-        expect = '<p class="my-class-1"></p>'
+        expect = '<p id="%s" class="my-class-1"></p>' % p.id
         self.eq(expect, p.html)
 
         p.classes.append('my-class-2')
@@ -16882,9 +17054,9 @@ class dom_cssclass(tester):
         self.true('my-class-2' in p.classes)
 
         expect = self.dedent('''
-        <p class="%s">
+        <p id="%s" class="%s">
         </p>
-        ''', 'my-class-1 my-class-2')
+        ''' % (p.id, 'my-class-1 my-class-2'))
         self.eq(expect, p.pretty)
 
         p.classes += 'my-class-3'
@@ -16892,9 +17064,9 @@ class dom_cssclass(tester):
         self.eq(p.classes[2], 'my-class-3')
 
         expect = self.dedent('''
-        <p class="%s">
+        <p id="%s" class="%s">
         </p>
-        ''', 'my-class-1 my-class-2 my-class-3')
+        ''', p.id, 'my-class-1 my-class-2 my-class-3')
         self.eq(expect, p.pretty)
 
         ''' Re-add the same class and expect an exception '''
@@ -16923,7 +17095,7 @@ class dom_cssclass(tester):
         p = dom.paragraph()
         self.eq(p.classes.html, p.attributes['class'].html)
 
-        expect = '<p></p>'
+        expect = '<p id="%s"></p>' % p.id
         self.eq(expect, p.html)
 
         p.classes += dom.cssclass('my-class-1 my-class-a')
@@ -17068,7 +17240,7 @@ class dom_html(tester):
             self.eq((1, 0), (ex.line, ex.column))
         
     def it_parses(self):
-        els = dom.html(TestHtml)
+        els = dom.html(TestHtml, ids=False)
         self.eq(TestHtmlMin, els.html)
 
     def it_doesnt_parse_decls(self):
@@ -17213,21 +17385,25 @@ class dom_markdown(tester):
             md.third.elements.first.html
         )
 
+        p1, p2 = md['p']
+        pre, code = md['pre, code']
+
         expect = self.dedent('''
-        <p>
+        <p id="%s">
           This is a normal paragraph:
         </p>
-        <pre>
-          <code>
+        <pre id="%s">
+          <code id="%s">
             # This is a code block.
             print(&#x27;Hello, World&#x27;)
             sys.exit(0)
           </code>
         </pre>
-        <p>
+        <p id="%s">
           This is another paragraph.
         </p>
-        ''')
+        ''' % (p1.id, pre.id, code.id, p2.id)
+        )
 
         self.eq(expect, md.pretty)
 
@@ -17257,12 +17433,12 @@ class dom_markdown(tester):
         self.two(md)
         self.three(md.first.elements)
         self.type(dom.a, md.first.elements.second)
-        self.two(md.first.elements.second.attributes)
+        self.three(md.first.elements.second.attributes)
         self.eq('Title', md.first.elements.second.title)
         self.eq('http://example.com/', md.first.elements.second.href)
         self.two(md.second.elements)
         self.type(dom.a, md.second.elements.first)
-        self.one(md.second.elements.first.attributes)
+        self.two(md.second.elements.first.attributes)
 
         self.is_(None, md.second.elements.first.title)
         self.false(md.second.elements.first.attributes['title'].isdef)
@@ -17423,30 +17599,35 @@ class dom_markdown(tester):
 
     def it_parses_html_entities(self):
         md = dom.markdown('AT&T')
+
+        p = md['p'].first
+
         expect = self.dedent('''
-        <p>
+        <p id="%s">
           AT&amp;T
         </p>
-        ''')
+        ''' % p.id)
 
         self.eq(expect, md.pretty)
 
         md = dom.markdown('&copy;')
+        p = md['p'].first
         expect = self.dedent('''
-        <p>
+        <p id="%s">
           &copy;
         </p>
-        ''')
+        ''' % p.id)
 
         self.eq(expect, md.pretty)
 
         md = dom.markdown('4 < 5')
+        p = md['p'].first
 
         expect = self.dedent('''
-        <p>
+        <p id="%s">
           4 &lt; 5
         </p>
-        ''')
+        ''' % p.id)
 
         self.eq(expect, md.pretty)
 
@@ -17459,15 +17640,17 @@ class dom_markdown(tester):
         hard line break.
         ''')
 
+        md = dom.markdown(md)
+        p, br = md['p, br']
+
         expect = self.dedent('''
-        <p>
+        <p id="%s">
           This is a paragraph with a
-          <br>
+          <br id="%s">
           hard line break.
         </p>
-        ''')
+        ''' % (p.id, br.id))
         
-        md = dom.markdown(md)
         self.eq(expect, md.pretty)
 
     def it_raises_with_nonstandard_inline_html_tags(self):
@@ -17761,12 +17944,13 @@ class dom_markdown(tester):
 
         self.one(md)
         self.type(dom.paragraph, md.first)
+        p = md['p'].first
 
         expect = self.dedent('''
-        <p>
+        <p id="%s">
           This is a paragraph.
         </p>
-        ''')
+        ''' % p.id)
 
         self.eq(expect, md.first.pretty)
 
@@ -17801,7 +17985,7 @@ class dom_markdown(tester):
         self.type(dom.paragraph, md.second)
 
         expect = self.dedent('''
-        <p>
+        <p id="%s">
           Parcite, mortales, dapibus temerare nefandis
           corpora! Sunt fruges, sunt deducentia ramos
           pondere poma suo tumidaeque in vitibus uvae,
@@ -17811,7 +17995,7 @@ class dom_markdown(tester):
           prodiga divitias alimentaque mitia tellus
           suggerit atque epulas sine caede et sanguine praebet.
         </p>
-        <p>
+        <p id="%s">
           Carne ferae sedant ieiunia, nec tamen omnes:
           quippe equus et pecudes armentaque gramine vivunt.
           At quibus ingenium est inmansuetumque ferumque,
@@ -17826,7 +18010,7 @@ class dom_markdown(tester):
           nec, nisi perdideris alium, placare voracis
           et male morati poteris ieiunia ventris?
         </p>
-        ''')
+        ''' % tuple(md['p'].pluck('id')))
 
         self.eq(expect, md.pretty)
 
@@ -17843,7 +18027,7 @@ class test_selectors(tester):
     @property
     def _shakespear(self):
         if not hasattr(self, '_spear'):
-            self._spear = dom.html(Shakespeare)
+            self._spear = dom.html(Shakespeare, ids=False)
         return self._spear
 
     @property
@@ -18931,6 +19115,8 @@ class test_selectors(tester):
             for sel in sels:
                 self.zero(html[sel.replace(v, v.upper())])
                 els = html[sel]
+                if els.count != 1:
+                    B()
                 self.one(els)
                 self.type(dom.div, els.first)
                 self.eq('test', els.first.id)

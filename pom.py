@@ -169,7 +169,8 @@ class site(entities.entity):
 
 class forms:
     class login(dom.form):
-        def __init__(self):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
             # TODO:GETTEXT
 
             self += dom.h1('Please sign in')
@@ -206,7 +207,8 @@ class sidebars(dom.sections):
             return super().__getitem__(ix)
     
 class sidebar(dom.section):
-    def __init__(self, name):
+    def __init__(self, name, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._name = name
         self.classes += name + '-sidebar'
 
@@ -251,6 +253,10 @@ class logo(dom.section):
         dom.element.elements.fset(self, v)
 
 class menus(entities.entities, dom.section):
+    def __init__(self, *args, **kwargs):
+        entities.entities.__init__(self, *args, **kwargs)
+        dom.section.__init__(self)
+
     def clone(self):
         mnus = type(self)()
         for mnu in self:
@@ -285,8 +291,20 @@ class menus(entities.entities, dom.section):
 
 class menu(dom.nav):
     class items(dom.lis):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+
+            self._els = dom.elements()
+            self._ul = dom.ul()
+            self._els += self._ul
+
         def clone(self):
             itms = type(self)()
+
+            # Preserve ID's
+            # TODO Should all attributes of the ul be preserved?
+            # Probably.
+            itms._ul.id = self._ul.id
 
             for itm in self:
                 itms += itm.clone()
@@ -298,14 +316,12 @@ class menu(dom.nav):
 
         @property
         def elements(self):
-            els = dom.elements()
-            ul = dom.ul()
-            els += ul
-
+            ul = self._els.first
+            ul.elements.clear()
             for itm in self:
-                ul += itm.clone()
+                self._ul += itm.clone()
 
-            return els
+            return self._els
 
         @property
         def html(self):
@@ -325,16 +341,22 @@ class menu(dom.nav):
             return dom.ul.__repr__(self)
 
     class item(dom.li):
-        def __init__(self, o, href=None):
+        def __init__(self, o, href=None, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+
+            self.href = href
             self._text = self.page = None
             if isinstance(o, str):
                 self._text = o
+                if href:
+                    self.body = dom.a(self.text, href=self.href)
+                else:
+                    self.body = dom.text(self.text)
             elif isinstance(o, page):
                 self.page = o
+                self.body = dom.a(self.page.name, href=self.page.path)
             else:
                 raise TypeError('Item requires text or page object')
-
-            self.href = href
 
             self.items = menu.items()
 
@@ -343,8 +365,14 @@ class menu(dom.nav):
             # existing page.
             o = self.page if self.page else self.text
             itm = type(self)(o, href=self.href)
+            itm.body.id = self.body.id
 
             itm.items += self.items.clone()
+
+            # Preserve ID's
+            # TODO Should all attributes of the ul be preserved?
+            # Probably.
+            itm.items._ul.id = self.items._ul.id
             itm.attributes = self.attributes.clone()
             return itm
 
@@ -362,12 +390,8 @@ class menu(dom.nav):
             els = super().elements
             els.clear()
             pg = self.page
-            if pg:
-                els += dom.a(pg.name, href=pg.path)
-            elif self.href:
-                els += dom.a(self.text, href=self.href)
-            else:
-                els += dom.text(self.text)
+            if self.body:
+                els += self.body
 
             if self.items.count:
                 els += self.items.elements
@@ -382,9 +406,11 @@ class menu(dom.nav):
                 return self.text
 
     class separator(item):
-        def __init__(self):
-            # Using the super()'s __init__ won't work because it
-            # requires a page or str object. 
+        def __init__(self, *args, **kwargs):
+            # Using the super()'s __init__ won't work because
+            # item.__init__ requires a page or str object. We call
+            # item's super's (li) constructor instead.
+            dom.li.__init__(self, *args, **kwargs)
             pass
 
         def clone(self):
@@ -483,7 +509,9 @@ class page(dom.html):
         ('true', '1', 'yes', 'y')
     )
 
-    def __init__(self, name=None, pgs=None):
+    def __init__(self, name=None, pgs=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
         self._pages        =  None
         self._parentpages  =  pgs
         self._name         =  name
@@ -893,8 +921,9 @@ class input(dom.div):
     def __init__(self,              
                  name,              type,       label=None,
                  placeholder=None,  help=None,  options=None,
-                 selected=None
+                 selected=None, *args, **kwargs
         ):
+        super().__init__(*args, **kwargs)
         self.name         =  name
         self.label        =  label
         self.placeholder  =  placeholder
@@ -956,13 +985,15 @@ class error(page):
         self.main += traceback(ex)
 
 class traceback(dom.article):
-    def __init__(self, ex):
+    def __init__(self, ex, *args, **kwargs):
         # TODO When we can determine if we are in production or not, we
         # can return immediately if we are in production since the
         # end-user will not need the stack trace and it will reveal
         # details about the code we don't necessarily want revealed. A
         # bool argument can be used to force the trace back to be
         # created, however.
+
+        super().__init__(*args, **kwargs)
         self.classes += 'traceback'
         for tb in exc.traces(ex):
             div = dom.div()
