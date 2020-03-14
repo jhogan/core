@@ -42,8 +42,6 @@ import pytz
 import re
 import textwrap
 
-# TODO Update copyright years
-
 # We will use basic and supplementary multilingual plane UTF-8
 # characters when testing str attributes to ensure unicode is being
 # supported.

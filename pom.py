@@ -290,6 +290,28 @@ class menus(entities.entities, dom.section):
         return els
 
 class menu(dom.nav):
+    # TODO:c0336221 Currently, there issues altering attributes en masse
+    # with menu and its subsidiaries:
+    #
+    #   for itm in menu_items.all:
+    #       itm.id = False
+    # 
+    # Part of this is an issue with the way attributes aren't properly
+    # set or deleted. These issue (12c29ef9) will be addressed
+    # eventually in pom.attributen code. When thes are, tests should be
+    # written to ensure that mass assignments of attributes work for
+    # menus because there are issues with the way menu and its
+    # subsidiaries clone and memoizes elements.
+    #
+    # A good test would be to change and remove the id attribute from
+    # all elements of a menu:
+    #       
+    #     main_menus.id = 'derp' # Currently dosen't work
+    #     
+    #     # and 
+    #
+    #     del main_menus.id # Currently dosen't work
+
     class items(dom.lis):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)

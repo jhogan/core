@@ -18,6 +18,8 @@ import string
 from func import getattr
 from dbg import B
 
+# TODO Rename entities.py to ent.py
+
 class classproperty(property):
     ''' Add this decorator to a method and it becomes a class method
     that can be used like a property.'''

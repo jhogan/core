@@ -82,7 +82,7 @@ class attributes(entities.entities):
         # TODO Some elements like <meta>, <br/>, etc., should not be
         # allowed to have content appended to them. An exception should
         # be raised when that happens, or maybe the document's `invaild`
-        # proprety should be True.
+        # property should be True.
             
         if type(o) is str:
             o = attribute(o, v)
@@ -507,6 +507,14 @@ class cssclass(attribute):
         return '%s(value=%s)' % (type(self).__name__, self._classes)
 
 class elements(entities.entities):
+    # TODO:12c29ef9 Write and test mass attribute assignment logic:
+    #
+    #     chks.checked = True  # Check all checked attributes
+    # 
+    #     del htmls.id # Remove all attribute in els collection
+    #
+    # When this is complete, c0336221 can be attended to.
+
     # TODO All html should pass the W3C validation service at:
     # https://validator.w3.org/#validate_by_input
     @classmethod
