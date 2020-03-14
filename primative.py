@@ -8,6 +8,8 @@
 import datetime as stddatetime
 import dateutil.parser
 import dateutil
+from uuid import UUID, uuid4
+from base64 import urlsafe_b64decode, urlsafe_b64encode
 
 class datetime(stddatetime.datetime):
     def __new__(cls, *args, **kwargs):
@@ -38,5 +40,21 @@ class datetime(stddatetime.datetime):
 
     def add(self, **kwargs):
         return self + stddatetime.timedelta(**kwargs)
+
+class uuid(UUID):
+    def __init__(self, base64=None, *args, **kwargs):
+        if len(args) or len(kwargs) or base64:
+            if base64:
+                kwargs['bytes']= urlsafe_b64decode(base64 + '==')
+            super().__init__(*args, **kwargs)
+        else:
+            int = uuid4().int
+            super().__init__(int=int, version=4)
+
+    @property
+    def base64(self):
+        return urlsafe_b64encode(self.bytes).rstrip(b'=').decode('ascii')
+
+        
         
 
