@@ -517,6 +517,57 @@ class elements(entities.entities):
 
     # TODO All html should pass the W3C validation service at:
     # https://validator.w3.org/#validate_by_input
+
+    def _self_onadd(self, src, eargs):
+        super()._self_onadd(src, eargs)
+
+        # If `self` has no root
+        # then `self` is just being used to collect
+        # elements for non-tree purposes such as collecting the
+        # ancestors of an element. In this case, there is no need to
+        # note the revision.
+        if not self.root:
+            return 
+
+        # If the element being appended has a parent, then we don't want
+        # to create a revision entry for it. If this is the case, the
+        # element is being collected for non-tree purposes, such as when
+        # when an `element.elements` method creates a collection of
+        # elements to return to its caller
+        if not eargs.entity.isroot:
+            return
+
+
+        # Add an `Append` revision entry to the root's revision
+        # collection.
+        revs = self.root._revisions
+        revs.revision(revision.Append, self.parent, eargs.entity)
+
+        # Nullify the revision collection of the element being appended.
+        # But before doing that, add it to the self's root's
+        # revisions collection.
+        revs = eargs.entity._revisions
+        eargs.entity._revisions = None
+        self.root._revisions += revs
+
+    def _self_onremove(self, src, eargs):
+        super()._self_onadd(src, eargs)
+        return
+
+        # TODO
+        revs = self.root._revisions
+        revs.revision(revision.Remove, eargs.entity)
+
+    def apply(self, revs):
+        # TODO
+        ...
+
+    @property
+    def root(self):
+        if self.parent:
+            return self.parent.root
+        return None
+
     @classmethod
     def getby(cls, tag):
         for el in element.__subclasses__():
@@ -703,6 +754,11 @@ class element(entities.entity):
 
         self.attributes += kwargs
 
+    def apply(self, revs):
+        for rev in revs:
+            if rev.type == revision.Append:
+                e = self['#%s' % rev.subject.id]
+
     @property
     def isblocklevel(self):
         return type(self) in self._getblocklevelelements()
@@ -868,6 +924,25 @@ class element(entities.entity):
             return ans.last
 
         return self
+    
+    @property
+    def isroot(self):
+        return self is self.root
+
+    @property
+    def _revisions(self):
+        if not self.isroot:
+            raise ValueError(
+                'Only root elements have revisions. '
+                'Use element.root.revisions instead'
+            )
+        if self._revs is None:
+            self._revs = revisions(self)
+        return self._revs
+
+    @_revisions.setter
+    def _revisions(self, v):
+        self._revs = v
 
     @property
     def parent(self):
@@ -5365,6 +5440,38 @@ class selector(entities.entity):
         @property
         def hasvalidname(self):
             return self.value.lower() in self.validnames
+
+class revisions(entities.entities):
+    def __init__(self, el, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.element = el
+
+    def revision(self, type, sub, obj):
+        self += revision(type, sub, obj)
+
+class revision(entities.entity):
+    Append = 0
+    Remove = 1
+    def __init__(self, type, sub, obj):
+        self.id = uuid.uuid4()
+        self.type = type
+        self.subject = sub
+        self.object = obj
+
+    def __repr__(self):
+        return '%s(type=%s, subject=<%s>, object=<%s>)' % (
+            type(self).__name__,
+            self.str_type,
+            type(self.subject).__name__,
+            type(self.object).__name__
+        )
+
+    @property
+    def str_type(self):
+        return (
+            'Append',
+            'Remove',
+        )[self.type]
             
 class AttributeExistsError(Exception):
     pass
