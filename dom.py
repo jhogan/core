@@ -727,6 +727,16 @@ class element(entities.entity):
         # TODO If self.isvoid, the `body` parameter would be
         # meaningless. In this case, if body is not None, we should
         # throw a TypeError.
+
+        try:
+            id = kwargs['id']
+        except KeyError:
+            self.id = primative.uuid().base64
+        else:
+            if id is not False:
+                self.id = primative.uuid().base64
+                del kwargs['id']
+        self._revs = None
         if body is not None:
             if     not isinstance(body, element) \
                and not isinstance(body, elements):
