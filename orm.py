@@ -3207,14 +3207,14 @@ class mappings(entitiesmod.entities):
     def getinsert(self):
         tbl = self.orm.table
 
-        placeholder = ''
-        for map in self:
-            if isinstance(map, fieldmapping):
-                placeholder += '%s, '
+        maps = [x for x in self if isinstance(x, fieldmapping)]
 
-        placeholder = placeholder.rstrip(', ')
+        flds = ', '.join(x.name for x in maps)
 
-        sql = 'INSERT INTO {} VALUES ({});'.format(tbl, placeholder)
+        placeholders = ', '.join(['%s'] * len(maps))
+
+        sql = 'INSERT INTO %s (%s) VALUES (%s);'
+        sql %= (tbl, flds, placeholders)
 
         args = self._getargs()
 
