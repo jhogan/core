@@ -537,11 +537,18 @@ class elements(entities.entities):
         if not eargs.entity.isroot:
             return
 
-
         # Add an `Append` revision entry to the root's revision
         # collection.
         revs = self.root._revisions
-        revs.revision(revision.Append, self.parent, eargs.entity)
+        sub = self.parent
+        obj = eargs.entity
+        if isinstance(sub, text):
+            obj = sub.parent
+            sub = sub.grandparent
+            revs.revision(revision.Remove, sub=sub, obj=obj)
+            B()
+            
+        revs.revision(revision.Append, sub=sub, obj=obj)
 
         # Nullify the revision collection of the element being appended.
         # But before doing that, add it to the self's root's
