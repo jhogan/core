@@ -15295,6 +15295,225 @@ class gem_company(tester):
             com.departments.first.divisions.first.id,
             com1.departments.first.divisions.first.id
         )
+
+    def it_creates_positions_within_company(self):
+        # TODO We should be able to create a position in any
+        # gem.legalorganization such as a non-profit.
+        jb = gem_job.getvalid()
+        com = gem_company.getvalid()
+
+        # Create positions based on the job
+        poss = gem.positions()
+        poss += gem_position.getvalid()
+        poss += gem_position.getvalid()
+
+        com.departments += gem.department(name='it')
+        div = gem.division(name='ml')
+        com.departments.last.divisions += div
+
+        div.positions += poss
+
+        jb.positions += poss
+
+        com.positions += poss
+
+        # INSERT company (it's supers), its department and division, the
+        # two positions and jb (jb is a composite of the positions so it
+        # gets saved as well).
+        com.save()
+
+        ''' Test that rather large save '''
+        com1 = gem.company(com.id)
+        self.eq(com.id, com1.id)
+        self.two(com1.positions)
+
+        ids = com1.positions.pluck('id')
+        self.true(com.positions.first.id in ids)
+        self.true(com.positions.second.id in ids)
+
+        self.eq(com1.positions.first.job.id, jb.id)
+        self.eq(com1.positions.second.job.id, jb.id)
+
+        self.true(com1.positions.first.job.positions.first.id in ids)
+        self.true(com1.positions.first.job.positions.second.id in ids)
+        self.ne(
+            com1.positions.first.job.positions.first.id,
+            com1.positions.first.job.positions.second.id
+        )
+
+        self.one(com1.departments)
+        self.one(com1.departments.first.divisions)
+        self.two(com1.departments.first.divisions.first.positions)
+
+    def it_fulfills_postition_within_company(self):
+        jb = gem_job.getvalid()
+        com = gem_company.getvalid()
+        pers = gem_person.getvalid() + gem_person.getvalid()
+
+        # Create positions based on the job
+        pos = gem_position.getvalid()
+
+        dep = gem.department(name='it')
+        com.departments += dep
+        div = gem.division(name='ml')
+        com.departments.last.divisions += div
+
+        div.positions += pos
+        jb.positions += pos
+        com.positions += pos
+
+        #self.true(pos.isfulfilled)
+
+        for per in pers:
+            ful = gem.position_fulfillment(
+                person = per,
+                begin  = datetime.now(),
+                end    = None,
+            )
+
+            pos.position_fulfillments += ful
+
+            self.is_(per, pos.position_fulfillments.last.person)
+
+            self.is_(ful, pos.position_fulfillments.last)
+
+            self.is_(
+                div,
+                pos.position_fulfillments.last.position.division
+            )
+
+            self.is_(
+                dep,
+                pos.position_fulfillments.last
+                    .position.division.department
+            )
+
+            self.is_(
+                com,
+                pos.position_fulfillments.last
+                    .position.division.department.company
+            )
+
+        self.two(pos.position_fulfillments)
+        self.two(pos.persons)
+
+        com.save()
+
+        com1 = gem.company(com.id)
+
+        self.one(com1.positions)
+
+        ids = com.positions.first.position_fulfillments.pluck('id')
+        self.two(ids)
+
+        for ful1 in com1.positions.first.position_fulfillments:
+            self.true(ful1.id in ids)
+            ful = com.positions.first.position_fulfillments[ful1.id]
+            self.eq(ful.person.id, ful1.person.id)
+            self.eq(ful.position.id, ful1.position.id)
+            self.eq(ful.begin, ful1.begin)
+            self.none(ful1.end)
+
+        for per in pers:
+            per1 = gem.person(per.id)
+            self.one(per1.positions)
+            self.one(per1.position_fulfillments)
+            self.eq(div.id, per1.positions.first.division.id)
+            self.eq(dep.id, per1.positions.first.division.department.id)
+            self.eq(
+                com.id,
+                per1.positions.first.division.department.company.id
+            )
+
+            
+class gem_position(tester):
+    def __init__(self):
+        super().__init__()
+        gem.position.orm.recreate(recursive=True)
+
+    @staticmethod
+    def getvalid():
+        pos = gem.position()
+        pos.estimatedbegan = primative.datetime.utcnow()
+
+        pos.estimatedend = pos.estimatedbegan.add(days=365)
+
+        pos.begin = primative.datetime.utcnow()
+        pos.end = pos.begin.add(days=365)
+        return pos
+
+    def it_creates(self):
+        pos = self.getvalid()
+        pos.save()
+
+        pos1 = gem.position(pos.id)
+        for map in pos.orm.mappings.fieldmappings:
+            prop = map.name
+            self.eq(getattr(pos, prop), getattr(pos1, prop), prop)
+
+    def it_updates(self):
+        pos = self.getvalid()
+        pos.save()
+
+        pos1 = gem.position(pos.id)
+        pos1.estimatedbegan  =  pos1.estimatedbegan.add(days=1)
+        pos1.estimatedend    =  pos1.estimatedend.add(days=1)
+        pos1.begin           =  pos1.begin.add(days=1)
+        pos1.end             =  pos1.end.add(days=1)
+        pos1.save()
+
+        pos2 = gem.position(pos.id)
+        for map in pos.orm.mappings.fieldmappings:
+            prop = map.name
+            self.eq(getattr(pos1, prop), getattr(pos2, prop))
+
+class gem_job(tester):
+    def __init__(self):
+        super().__init__()
+        gem.jobs.orm.recreate(recursive=True)
+
+    @staticmethod
+    def getvalid():
+        jb = gem.job()
+        jb.description = tester.dedent('''
+        As Machine Learning and Signal Processing Engineer you are going
+        to lead the effort to bring signal processing algorithms into
+        production which condition and extract rich morphological
+        features from our unique respiratory sensor. In addition, you
+        will bring machine learning models, which predict changes in a
+        patient's disease state, into production for both streaming and
+        batch mode use cases. You will collaborate closely with the
+        research and data science teams and become the expert on
+        tweaking, optimizing, deploying, and monitoring these algorithms
+        in a commercial environment.
+        ''')
+        jb.title = "Machine Learning and Signal Processing Engineer"
+        jb.description = jb.description.replace('\n', '')
+        return jb
+
+    def it_creates(self):
+        jb = self.getvalid()
+        jb.save()
+
+        jb1 = gem.job(jb.id)
+        self.eq(jb.title, jb1.title)
+        self.eq(jb.description, jb1.description)
+        self.eq(jb.id, jb1.id)
+
+    def it_updates(self):
+        jb = self.getvalid()
+        jb.save()
+
+        jb1 = gem.job(jb.id)
+        jb1.description += '. This is a fast pace work environment.'
+        jb1.title = 'NEEDED FAST!!! ' + jb1.title
+        jb1.save()
+
+        jb2 = gem.job(jb.id)
+        self.eq(jb1.title, jb2.title)
+        self.eq(jb1.description, jb2.description)
+        self.eq(jb1.id, jb2.id)
+
 class gem_address(tester):
     @staticmethod
     def getvalid():
