@@ -14649,7 +14649,6 @@ class test_orm(tester):
             class amplifiers(orm.entities):
                 pass
 
-            B()
             class amplifier(orm.entity):
                 tube = bool
                 watts = float

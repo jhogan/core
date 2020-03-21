@@ -9,6 +9,14 @@
 # TODO Checkout http://wiki.goodrelations-vocabulary.org/Quickstart for
 # an standard for ecommerce markup when marking up parties, places, etc.
 
+# References:
+#   
+#   HR Glossary
+#   This can be useful for discovering nouns that could become ORM
+#   entity objects. It can also help refine current HR related GEM
+#   objects.
+#   https://www.hr360.com/Resource-Center/HR-Terms.aspx
+
 import orm
 import primative
 from datetime import datetime

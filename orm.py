@@ -41,6 +41,16 @@ from types import ModuleType
 # TODO Research making these constants the same as their function
 # equivilants.
 # i.e., s/2/str; s/3/int/, etc.
+
+# TODO Add text datatype. Having to type `str, 1, 65535` is not fun.
+
+# TODO Add bytes(n) as datatype. Having to type `bytes, 16, 16` is not
+# fun.
+
+# TODO Add chr(n) as datatype. Having to type `str, 1, 1` is not fun.
+
+# TODO Add date as datatype. Having to deal with time data is not fun.
+    
 @unique
 class types(Enum):
     """
