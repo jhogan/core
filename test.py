@@ -16503,7 +16503,48 @@ class dom_element(tester):
         p1 = dom.paragraph()
         p1.id = p.id
 
+        self.ne(p.html, p1.html)
         p1.apply(p._revisions)
+
+        self.eq(p.html, p1.html)
+
+        ''' It appends to a a text node '''
+        body = dom.body()
+        p = dom.paragraph("I'm the text node.")
+        body += p
+        txt = p.elements.first
+        txt += dom.em("I'm being appended")
+
+        # TODO Ensure that setting the text using this alternative to
+        # appending the text works with this test as well (see
+        # 10012875).
+        # p.elements.first += dom.em("I'm being appended")
+
+        ''' A simple patch on a complicated document '''
+        html = dom.html(Shakespeare)
+        html1 = dom.html(html.html)
+
+        # Get the index of the last revision of <html> (the document's
+        # root) before appending. Note that appending a <title> will
+        # result in the the <title> and the text node within the <title>
+        # being appended so there will be two Append revisions.
+        ix = html.first._revisions.ubound + 1
+
+        # Make sure we are getting the <head> and not a text node
+        head = html.first.elements.second
+        assert type(head) is dom.head
+
+        # Give it a <title>
+        head += dom.title('As You Like It')
+
+        # Get a delta
+        Δ = html.first._revisions[ix:]
+
+        self.ne(html.html, html1.html)
+        html1.first.apply(𝝙)
+
+        print(html1.html)
+        self.eq(html.html, html1.html)
 
     def it_calls_id(self):
         p = dom.paragraph()
