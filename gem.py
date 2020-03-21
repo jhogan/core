@@ -43,6 +43,15 @@ class departments(units):
 class divisions(units):
     pass
 
+class jobs(orm.entities):
+    pass
+
+class positions(orm.entities):
+    pass
+
+class position_fulfillments(orm.associations):
+    pass
+
 class party_parties(orm.associations):
     pass
 
@@ -117,7 +126,45 @@ class unit(organization):
         self.isicv4       =  None
 
 class division(unit):
-    pass
+    positions = positions
+
+class job(orm.entity):
+    """ Maintains information associated the actual `positions` an
+    employee may take. 
+    
+    Note that in the "The Data Model Resource Book", this entity is
+    refered to as the POSTITION_TYPE entity. "job" was chosen for its
+    name since "job" is only one word and "POSTITION_TYPE" is obviously
+    two words.
+    """
+    title = str
+    description = str, 1, 65535
+    
+    # The below was noted in the book but is currently not implemented.
+    # benefit_percentage = dec
+
+    # A collection of positions generated from this job
+    positions = positions
+
+class position(orm.entity):
+    """ A position is a job slot in an enterprise. 
+    """
+
+    # The datetime an organization expects the job to begin
+    estimatedbegan = datetime
+
+    # The datetime an organization expects the job to end
+    estimatedend = datetime
+
+    # The actual datetime the position slot is filled by an employee
+    begin = datetime
+
+    # The actual datetime the position slot is terminated
+    end = datetime
+
+    salary = bool
+
+    fulltime = bool
 
 class department(unit):
     divisions = divisions
@@ -132,6 +179,9 @@ class legalorganization(organization):
     # NOTE This will need to be it's own entity object since EINs are
     # specific to the USA.
     ein = str, 9, 9
+
+    # A collection of job positions the legalorganization has.
+    positions = positions
     
 class company(legalorganization):
     entities = companies
@@ -149,6 +199,31 @@ class person(party):
 
     # TODO
     # passport = passport
+
+class position_fulfillment(orm.association):
+    """
+    The `position_fulfilments` association links a position to a person.
+    When a postion is associatied with a person, the position is said to
+    be "fulfilled', i.e., the person has been employed by the
+    organization (i.e., company) to fulfill the job duties of the
+    position.
+
+    Since this is an `orm.association`, multiple person entities can be
+    associated with a given position. Different person entities may be
+    associated to the same position over time. This allows for the
+    tracking persons who occupied a given position in an organization
+    over various timespans.  The begin and end dates record the
+    occupation's timespan.
+    
+    Additionally, multiple persons can be associated to the same
+    `position` within the same timespan implying that the persons
+    occupy the position as part-time or half-time employees.
+    """
+
+    person    =  person
+    position  =  position
+    begin     =  datetime
+    end       =  datetime
 
 class region(orm.entity):
     PostalCode  =  0
