@@ -768,7 +768,31 @@ class element(entities.entity):
     def apply(self, revs):
         for rev in revs:
             if rev.type == revision.Append:
-                e = self['#%s' % rev.subject.id]
+                # NOTE We can't use # as a selector. The ids are base64
+                # encoding so sometimes they will start with a number.
+                # This is fine in HTML5 but the # selector token won't
+                # permit id selections that start with a number. (See
+                # https://benfrain.com/when-and-where-you-can-use-numbers-in-id-and-class-names/)
+                # The proper way to do this is to just use attribute
+                # selection
+                # 
+                # Bad: #3QuaWRdCg
+                # Good: [id="3QuaWRdCg"]
+
+                id = rev.subject.id
+                el = self['[id="%s"]' % id]
+                if el.isempty:
+                    raise ValueError("Can't find [id=\"%s\"]" % id) 
+                elif el.hasplurality:
+                    raise ValueError(
+                        "Multiple elements for [id=\"%s\"]" % id
+                    ) 
+
+                sub = el.first
+                obj = rev.object.clone()
+                obj.elements.clear()
+
+                sub += obj
 
     @property
     def isblocklevel(self):
