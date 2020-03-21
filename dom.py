@@ -5487,7 +5487,7 @@ class selector(entities.entity):
             return self.value.lower() in self.validnames
 
 class revisions(entities.entities):
-    def __init__(self, el, *args, **kwargs):
+    def __init__(self, el=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.element = el
 
