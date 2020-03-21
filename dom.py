@@ -521,11 +521,11 @@ class elements(entities.entities):
     def _self_onadd(self, src, eargs):
         super()._self_onadd(src, eargs)
 
-        # If `self` has no root
-        # then `self` is just being used to collect
-        # elements for non-tree purposes such as collecting the
-        # ancestors of an element. In this case, there is no need to
-        # note the revision.
+        # If `self` has no root then `self` is likely being used to
+        # collect elements for non-tree purposes such as collecting the
+        # ancestors of an element or the matches of a CSS selector
+        # selection.. In this case, there is no need to note the
+        # revision.
         if not self.root:
             return 
 
@@ -553,12 +553,13 @@ class elements(entities.entities):
     def _self_onremove(self, src, eargs):
         super()._self_onadd(src, eargs)
 
+        # This code is also in _self_add. See the comment there for why
+        # we exculde logging on this condition.
+        if not self.root:
+            return
+
         revs = self.root._revisions
         revs.revision(revision.Remove, self.parent, eargs.entity)
-
-    def apply(self, revs):
-        # TODO
-        ...
 
     @property
     def root(self):
@@ -729,6 +730,8 @@ class element(entities.entity):
         try:
             id = kwargs['id']
         except KeyError:
+            # TODO If isinstance(self, text) or isinstance(self,
+            # comment), should probably shouldn't be assigning an id.
             self.id = primative.uuid().base64
         else:
             if id is not False:

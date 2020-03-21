@@ -16475,6 +16475,27 @@ class dom_element(tester):
         self.is_(span.elements.first, p._revisions.third.object)
 
     def it_patches_appends(self):
+        # TODO Test situations where elements are appended to text
+        # nodes. Since text nodes (and comments) don't have id's, normal
+        # patching won't work here. We will need to devise a solution to
+        # this.
+
+        # TODO:10012875 Setting an ordinal property causes both the
+        # onadd and onremove event to be raised.
+        #
+        #     p.elements.first += dom.em("I'm being appended")
+        #     p.elements.first = dom.em("I'm being set")
+        #
+        # Both of the above statements result in an onadd and an
+        # onremove to be called. So four revisions will be logged,
+        # though it seems like only three should be made.
+        #
+        # Note: A workaround to the above would be to do this:
+        #
+        #     el = p.elements.first
+        #     el += dom.em("I'm being appended")
+
+        ''' A simple append patch '''
         p = dom.paragraph()
         span = dom.span()
         p += span
@@ -17199,6 +17220,16 @@ class test_header(tester):
     pass
 
 class dom_html(tester):
+    def it_calls_html_with_text_nodes(self):
+        return 
+        # TODO The first html prints .pretty with line feeds
+        # (incorrectly). However, html1.pretty is free of those line
+        # feeds.
+        html = dom.html(Shakespeare)
+
+        html1 = dom.html(html.html)
+        self.eq(html.pretty, html1.pretty)
+
     def it_morphs(self):
         # When dom.html is given a string, it morphs into a subtype of
         # `elements`. When single str argument is given, it remains a
