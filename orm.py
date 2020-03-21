@@ -1052,6 +1052,13 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
     def __init__(self, initial=None, _p2=None, *args, **kwargs):
         try:
+
+            if not hasattr(type(self), 'orm'):
+                raise NotImplementedError(
+                    '"orm" attribute not found for "%s". '
+                    'Check that the entity is inherting from the '
+                    'correct base class.' % type(self).__name__
+                )
             try:
                 self.orm = self.orm.clone()
             except AttributeError:
@@ -1134,8 +1141,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             super().__init__(initial=initial)
 
         finally:
-            if hasattr(self, 'orm'):
-                self.orm.initing = False
+            if hasattr(type(self), 'orm'):
+                if hasattr(self, 'orm'):
+                    self.orm.initing = False
 
     def clone(self, to=None):
         if not to:
