@@ -820,6 +820,9 @@ class element(entities.entity):
 
     def __getitem__(self, ix):
         # Pass CSS selector to elements collection
+        els = elements()
+        els += self
+        return els[ix]
         return self.elements[ix]
 
     @property
