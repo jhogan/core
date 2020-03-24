@@ -9898,6 +9898,7 @@ class test_orm(tester):
                         # SPORADIC The following came up in one test
                         # run: Aug 6 2019
                         # AGAIN Feb 11, 2020
+                        # AGAIN Mar 23, 2020
                         eq in _chrontest at 523
                         expect: 4
                         actual: 3
@@ -16512,8 +16513,15 @@ class dom_element(tester):
         body = dom.body()
         p = dom.paragraph("I'm the text node.")
         body += p
+
+        # Snapshot the <body> to apply the patch later
+        body1 = dom.html(body.html).first
+
         txt = p.elements.first
         txt += dom.em("I'm being appended")
+
+        patch = body._revisions[2:]
+        body1.apply(patch)
 
         # TODO Ensure that setting the text using this alternative to
         # appending the text works with this test as well (see
@@ -16543,7 +16551,6 @@ class dom_element(tester):
         self.ne(html.html, html1.html)
         html1.first.apply(𝝙)
 
-        print(html1.html)
         self.eq(html.html, html1.html)
 
     def it_calls_id(self):
@@ -19188,8 +19195,6 @@ class test_selectors(tester):
             for sel in sels:
                 self.zero(html[sel.replace(v, v.upper())])
                 els = html[sel]
-                if els.count != 1:
-                    B()
                 self.one(els)
                 self.type(dom.div, els.first)
                 self.eq('test', els.first.id)

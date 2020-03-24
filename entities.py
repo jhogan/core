@@ -504,7 +504,8 @@ class entities(object):
                 and not isinstance(self, indexes):
 
                 self.onadd(self, entityaddeventargs(t))
-        except AttributeError as ex:
+        #except AttributeError as ex:
+        except SyntaxError as ex:
             msg = str(ex)
             msg += '\n' + 'Ensure the superclass\'s __init__ is called.'
             raise AttributeError(msg)

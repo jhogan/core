@@ -541,14 +541,28 @@ class elements(entities.entities):
         # collection.
         revs = self.root._revisions
         sub = self.parent
-        obj = eargs.entity
         if isinstance(sub, text):
+            # If we are appending an element to a text node, we need to
+            # replace (Remove then Append) the text node's parent. This
+            # is because text nodes don't have id attributes that can be
+            # expressed in HTML.
             obj = sub.parent
             sub = sub.grandparent
-            revs.revision(revision.Remove, sub=sub, obj=obj)
-            B()
-            
-        revs.revision(revision.Append, sub=sub, obj=obj)
+
+            if obj:
+                B()
+                revs.revision(revision.Remove, sub=sub, obj=obj)
+                revs.revision(revision.Append, sub=sub, obj=obj)
+            else:
+                pass
+                # Sometimes self.parent won't have a parent. Because the
+                # DOM is small.
+
+        else:
+            # If we are appending an element to a non-text element,
+            # simply log the append.
+            obj = eargs.entity
+            revs.revision(revision.Append, sub=sub, obj=obj)
 
         # Nullify the revision collection of the element being appended.
         # But before doing that, add it to the self's root's
@@ -1025,7 +1039,10 @@ class element(entities.entity):
         rent = self.parent
 
         for _ in range(num):
-            rent = rent.parent
+            try:
+                rent = rent.parent
+            except AttributeError:
+                return None
 
         return rent
 
