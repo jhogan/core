@@ -15600,6 +15600,78 @@ class gem_region(tester):
 
         self.eq(reg.name, reg1.name)
 
+class gem_product(tester):
+    def __init__(self):
+        super().__init__()
+        product.products.orm.recreate(recursive=True)
+        product.categories.orm.recreate(recursive=True)
+    
+    def it_creates(self):
+        for str_prod in ['good', 'service']:
+            prod = getattr(product, str_prod)()
+
+            prod.name = uuid4().hex
+            prod.introducedat = primative.datetime.utcnow(days=-100)
+            prod.comment = uuid4().hex * 1000
+
+            prod.save()
+
+            prod1 = getattr(product, str_prod)(prod.id)
+
+            props = (
+                'id', 
+                'name', 
+                'introducedat', 
+                'discontinuedat', 
+                'unsupportedat', 
+                'comment'
+            )
+
+            for prop in props:
+                self.eq(getattr(prod, prop), getattr(prod1, prop))
+
+    def it_updates(self):
+        for str_prod in ['good', 'service']:
+            prod = getattr(product, str_prod)()
+
+            prod.name = uuid4().hex
+            prod.introducedat = primative.datetime.utcnow(days=-100)
+            prod.comment = uuid4().hex * 1000
+
+            prod.save()
+
+            prod1 = getattr(product, str_prod)(prod.id)
+
+            prod1.name = uuid4().hex
+            prod1.introducedat = primative.datetime.utcnow(days=-100)
+            prod1.discontinuedat = primative.datetime.utcnow(days=+100)
+            prod1.unsupportedat = primative.datetime.utcnow(days=+200)
+            prod1.comment = uuid4().hex * 1000
+
+            prod1.save()
+
+            prod2 = getattr(product, str_prod)(prod1.id)
+
+            props = (
+                'name', 
+                'introducedat', 
+                'discontinuedat', 
+                'unsupportedat', 
+                'comment'
+            )
+
+            for prop in props:
+                self.ne(getattr(prod, prop), getattr(prod2, prop))
+                self.eq(getattr(prod1, prop), getattr(prod2, prop))
+
+class gem_product_categories(tester):
+    def it_creates(self):
+        cat = product.category()
+        # TODO
+        return
+        cat.save()
+
+
 cli().run()
 
 
