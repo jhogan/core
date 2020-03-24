@@ -22,6 +22,7 @@ import primative
 from datetime import datetime
 from dbg import B
 
+''' Parties '''
 class parties(orm.entities):
     pass
 
@@ -82,6 +83,7 @@ class emails(contactmechanisms):
 class addresses(contactmechanisms):
     pass
 
+''' Parties '''
 class party(orm.entity):
     entities = parties
     
@@ -226,6 +228,9 @@ class position_fulfillment(orm.association):
     end       =  datetime
 
 class region(orm.entity):
+    # NOTE These values are fixed numeric codes that are saved to the
+    # database. They should never be changed for an existing production
+    # environment.
     PostalCode  =  0
     County      =  1
     City        =  2
@@ -238,7 +243,7 @@ class region(orm.entity):
         # TODO abbreviation is a standard string but we want to default
         # it to None. This should be done in the constructor, however,
         # the advent of the kwargs parameter for entities makes this
-        # expression "default 'abbreviation' to None" a bit crytic and
+        # expression "default 'abbreviation' to None" a bit cryptic and
         # hard to remember. We need to devise an easier way to default
         # attributes.
 
@@ -511,3 +516,4 @@ class party_party(orm.association):
 
     # TODO Write brokenrules @property that ensures valid roles are
     # selected (among other things)
+

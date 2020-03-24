@@ -34,6 +34,7 @@ import primative
 import re
 import textwrap
 import gem
+import product
 from pprint import pprint
 
 
