@@ -7546,8 +7546,8 @@ class test_orm(tester):
         art1.style      =  uuid4().hex
         art1.weight     += 1
         art1.networth   =  1
-        art1.dob        =  primative.datetime.now().replace(tzinfo=timezone.utc)
-        art1.dob1       =  primative.datetime.now().replace(tzinfo=timezone.utc)
+        art1.dob        =  primative.datetime.utcnow()
+        art1.dob1       =  primative.datetime.utcnow()
         art1.password   = bytes([randint(0, 255) for _ in range(32)])
         art1.ssn        = '2' * 11
         art1.bio        = uuid4().hex

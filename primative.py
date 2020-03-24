@@ -27,13 +27,26 @@ class datetime(stddatetime.datetime):
         return datetime(super().astimezone(tz))
 
     @staticmethod
-    def utcnow():
+    def utcnow(**kwargs):
         r = datetime(stddatetime.datetime.utcnow())
 
         # Make aware
         r = r.replace(tzinfo=stddatetime.timezone.utc)
 
+        r = r.add(**kwargs)
         return r
+
+    @staticmethod
+    def now(tz=False):
+        # Demand that tz is not False. 
+        if tz is False:
+            raise ValueError(
+                'Use `.utcnow` or pass in a timezone'
+            )
+
+        # TODO Return a datetime for the given local. If tz is None, we
+        # can defalut to the systems timezone.
+        raise NotImplementedError()
 
     def add(self, **kwargs):
         return self + stddatetime.timedelta(**kwargs)
