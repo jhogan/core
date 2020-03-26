@@ -15601,6 +15601,17 @@ class gem_region(tester):
         self.eq(reg.name, reg1.name)
 
 class gem_product(tester):
+    @staticmethod
+    def getvalid(type=None):
+        if type is None:
+            type = product.good
+
+        prod = type()
+        prod.name = uuid4().hex
+        prod.introducedat = primative.datetime.utcnow(days=-100)
+        prod.comment = uuid4().hex * 1000
+        return prod
+
     def __init__(self):
         super().__init__()
         product.products.orm.recreate(recursive=True)
@@ -15665,12 +15676,226 @@ class gem_product(tester):
                 self.eq(getattr(prod1, prop), getattr(prod2, prop))
 
 class gem_product_categories(tester):
+    def __init__(self):
+        super().__init__()
+        product.products.orm.recreate(recursive=True)
+        product.categories.orm.recreate(recursive=True)
+
     def it_creates(self):
+        ''' Simple, non-recursive test '''
         cat = product.category()
-        # TODO
-        return
+        cat.name = uuid4().hex
         cat.save()
 
+        cat1 = product.category(cat.id)
+        self.eq(cat.id, cat1.id)
+        self.eq(cat.name, cat1.name)
+
+        ''' A one-level recursive test with two child categories'''
+        cat_0 = product.category()
+        cat_0.name = uuid4().hex
+
+        cat_1_0 = product.category()
+        cat_1_0.name = uuid4().hex
+
+        cat_1_1 = product.category()
+        cat_1_1.name = uuid4().hex
+
+        cat_0.categories += cat_1_0
+        cat_0.categories += cat_1_1
+
+        cat_0.save()
+
+        cat1 = product.category(cat_0.id)
+        self.eq(cat_0.id, cat1.id)
+        self.eq(cat_0.name, cat1.name)
+
+        cats0 = cat_0.categories.sorted()
+
+        cats1 = cat1.categories.sorted()
+
+        self.two(cats1)
+       
+        self.eq(cats0.first.id, cats1.first.id)
+        self.eq(cats0.first.name, cats1.first.name)
+
+        self.eq(cats0.second.id, cats1.second.id)
+        self.eq(cats0.second.name, cats1.second.name)
+
+        ''' A two-level recursive test with one child categories each'''
+        cat = product.category()
+        cat.name = uuid4().hex
+
+        cat_1 = product.category()
+        cat_1.name = uuid4().hex
+
+        cat_2 = product.category()
+        cat_2.name = uuid4().hex
+
+        cat.categories += cat_1
+        cat_1.categories += cat_2
+
+        cat.save()
+
+        cat1 = product.category(cat.id)
+
+        self.one(cat1.categories)
+        self.one(cat1.categories.first.categories)
+
+        self.eq(
+            cat.categories.first.id, 
+            cat1.categories.first.id, 
+        )
+
+        self.eq(
+            cat.categories.first.name, 
+            cat1.categories.first.name, 
+        )
+
+        self.eq(
+            cat.categories.first.categories.first.id, 
+            cat1.categories.first.categories.first.id, 
+        )
+
+        self.eq(
+            cat.categories.first.categories.first.name, 
+            cat1.categories.first.categories.first.name, 
+        )
+
+    def it_updates_non_recursive(self):
+        ''' Simple, non-recursive test '''
+        cat = product.category()
+        cat.name = uuid4().hex
+        cat.save()
+
+        cat1 = product.category(cat.id)
+        cat1.name = uuid4().hex
+        cat1.save()
+
+        cat2 = product.category(cat.id)
+
+        self.ne(cat.name, cat2.name)
+        self.eq(cat1.id, cat2.id)
+        self.eq(cat1.name, cat2.name)
+
+    def it_updates_recursive(self):
+        ''' A two-level, recursive test '''
+        # Create
+        cat = product.category()
+        cat.name = uuid4().hex
+
+        cat_1 = product.category()
+        cat_1.name = uuid4().hex
+
+        cat_2 = product.category()
+        cat_2.name = uuid4().hex
+
+        cat.categories += cat_1
+        cat_1.categories += cat_2
+
+        cat.save()
+
+        # Update
+        cat1 = product.category(cat.id)
+        cat1.name = uuid4().hex
+        cat1.categories.first.name = uuid4().hex
+        cat1.categories.first.categories.first.name = uuid4().hex
+        cat1.save()
+
+        # Test
+        cat2 = product.category(cat.id)
+        self.ne(cat.name, cat2.name)
+        self.eq(cat1.id, cat2.id)
+        self.eq(cat1.name, cat2.name)
+
+        self.ne(cat.categories.first.name, cat2.categories.first.name)
+        self.eq(cat1.categories.first.id, cat2.categories.first.id)
+        self.eq(cat1.categories.first.name, cat2.categories.first.name)
+
+        self.ne(
+            cat.categories.first.categories.first.name, 
+            cat2.categories.first.categories.first.name
+        )
+
+        self.eq(
+            cat1.categories.first.categories.first.id, 
+            cat2.categories.first.categories.first.id
+        )
+
+        self.eq(
+            cat1.categories.first.categories.first.name, 
+            cat2.categories.first.categories.first.name
+       )
+
+    def it_creates_association_between_product_and_category(self):
+        cat = product.category()
+        cat.name = uuid4().hex
+
+        prod = product.good()
+        prod.name = uuid4().hex
+        prod.introducedat = primative.datetime.utcnow(days=-100)
+        prod.comment = uuid4().hex * 1000
+        cc = product.category_classification()
+        cc.begin = primative.datetime.utcnow(days=-50)
+        cc.product = prod
+        cat.category_classifications += cc
+
+        prod = product.service()
+        prod.name = uuid4().hex
+        prod.introducedat = primative.datetime.utcnow(days=-100)
+        prod.comment = uuid4().hex * 1000
+        cc = product.category_classification()
+        cc.begin = primative.datetime.utcnow(days=-25)
+        cc.comment = uuid4().hex * 1000
+        cc.product = prod
+        cat.category_classifications += cc
+
+        cat.save()
+
+        cat1 = product.category(cat.id)
+
+        self.two(cat1.category_classifications)
+        self.two(cat1.products)
+
+        for ass in ('category_classifications', 'products'):
+            ccs = getattr(cat, ass).sorted()
+            ccs1 = getattr(cat1, ass).sorted()
+            
+            ccs = cat.category_classifications.sorted()
+            ccs1 = cat1.category_classifications.sorted()
+
+            self.eq(ccs.first.begin, ccs1.first.begin)
+            self.eq(ccs.second.begin, ccs1.second.begin)
+
+            self.eq(ccs.first.product.name, ccs1.first.product.name)
+            self.eq(ccs.second.product.name, ccs1.second.product.name)
+
+            self.eq(ccs.first.category.name, ccs1.first.category.name)
+            self.eq(ccs.second.category.name, ccs1.second.category.name)
+
+    def it_breaks_with_two_primary_associations(self):
+        cat = product.category()
+        cat.name = uuid4().hex
+
+        prod = gem_product.getvalid()
+        cc = product.category_classification()
+        cc.product = prod
+        cc.begin = primative.datetime.utcnow(days=-50)
+        cc.product = prod
+        cc.primary_ = True
+        cat.category_classifications += cc
+
+        cc = product.category_classification()
+        cc.product = prod
+        cc.begin = primative.datetime.utcnow(days=-25)
+        cc.comment = uuid4().hex * 1000
+        cc.product = prod
+        cc.primary_ = True
+        cat.category_classifications += cc
+
+
+
+        cat.save()
 
 cli().run()
 

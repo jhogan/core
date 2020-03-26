@@ -1681,6 +1681,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 brs += entitiesmod.brokenrule(msg, prop, 'valid')
                 
             brs += e._getbrokenrules(guestbook, followentitymapping=followentitymapping)
+
         return brs
 
     def _self_onremove(self, src, eargs):
