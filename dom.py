@@ -5543,11 +5543,14 @@ class revision(entities.entity):
         self.object = obj
 
     def __repr__(self):
-        return '%s(type=%s, subject=<%s>, object=<%s>)' % (
+        r = '%s(type=%s, subject=<%s id="%s">, object=<%s id="%s">)' 
+        return r % (
             type(self).__name__,
             self.str_type,
             type(self.subject).__name__,
-            type(self.object).__name__
+            self.subject.id,
+            type(self.object).__name__,
+            self.object.id,
         )
 
     @property
