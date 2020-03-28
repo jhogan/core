@@ -541,27 +541,33 @@ class elements(entities.entities):
         # collection.
         revs = self.root._revisions
         sub = self.parent
+        obj = eargs.entity
         if isinstance(sub, text):
             # If we are appending an element to a text node, we need to
             # replace (Remove then Append) the text node's parent. This
             # is because text nodes don't have id attributes that can be
             # expressed in HTML.
-            obj = sub.parent
-            sub = sub.grandparent
+            rent = sub.parent
+            grent = sub.grandparent
 
-            if obj:
+            if rent:
+                revs.revision(revision.Remove, sub=grent, obj=rent)
+
+                rent = rent.clone()
+                rent.reidentify()
+
+                revs.revision(revision.Append, sub=grent, obj=rent)
+                revs += rent._revisions
                 B()
-                revs.revision(revision.Remove, sub=sub, obj=obj)
-                revs.revision(revision.Append, sub=sub, obj=obj)
+
             else:
-                pass
                 # Sometimes self.parent won't have a parent. Because the
                 # DOM is small.
+                pass
 
         else:
             # If we are appending an element to a non-text element,
             # simply log the append.
-            obj = eargs.entity
             revs.revision(revision.Append, sub=sub, obj=obj)
 
         # Nullify the revision collection of the element being appended.
