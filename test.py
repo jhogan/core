@@ -14690,7 +14690,6 @@ class gem_person(tester):
     def __init__(self):
         super().__init__()
         gem.party.orm.recreate(recursive=True)
-        gem.address.orm.recreate()
 
     @staticmethod
     def getvalid():
@@ -15874,6 +15873,10 @@ class gem_product_categories(tester):
             self.eq(ccs.second.category.name, ccs1.second.category.name)
 
     def it_breaks_with_two_primary_associations(self):
+        """ Test to ensure that `category_classification.brokenrules`
+        checks the database to ensure a product is associated with only
+        one category as primary. 
+        """
         cat = product.category()
         cat.name = uuid4().hex
 

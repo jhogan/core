@@ -9,6 +9,17 @@
 # TODO Checkout http://wiki.goodrelations-vocabulary.org/Quickstart for
 # an standard for ecommerce markup when marking up parties, places, etc.
 
+# TODO Rename this to 'party.py'
+
+# TODO Put GEM entities in /gem folder. 
+
+# TODO Prefix table names with name of module:
+#
+#     party__party
+#     party__organization
+#     product__product
+#     product__category
+
 # References:
 #   
 #   HR Glossary

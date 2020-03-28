@@ -16,9 +16,18 @@ class products(orm.entities):
     pass
 
 class category_classifications(orm.associations):
+    # TODO:1c409d9d The ORM does not call orm.entities.brokenrules when
+    # saving.
+
+    # TODO:a082d2a9 Some work needs to be done to ensure that entity and
+    # entities objects can override brokenrules correctely.
+    '''
     @property
     def brokenrules(self):
         brs = entities.brokenrules()
+
+        # Ensure that no product can be put two different categories
+        # with a primary flag.
         for cc in self:
             primary = None
             for cc1 in self:
@@ -98,13 +107,16 @@ class category_classification(orm.association):
     begin    =  datetime
     end      =  datetime
 
-    # TODO It would be nice if we didn't have to end `primary_` with
+    # TODO It would be nice if we didn't have to end `isprimary` with
     # an underscore but if we don't, MySQL sees it as an syntax
     # error. It would be cool if the ORM could detect MySQL's
     # keywords being used as column names and append the underscore
     # automatically sparing the ORM user the inconvenience of
     # remembering to add the underscore (assuming and underscore is
     # the proper solution to this problem).
+    # UPDATE I changed 'primary_' to 'isprimary'. The TODO is still
+    # valid but prepending the 'is' might to booleans may deprioritize
+    # it.
 
     # If True, the category is will be considered the primary category of
     # the product. For instance, if a product is associated with
