@@ -803,6 +803,19 @@ class element(entities.entity):
         
     def apply(self, revs):
         for rev in revs:
+
+            # Get the subject element of the revision from the DOM
+            id = rev.subject.id
+            els = self['[id="%s"]' % id]
+            if els.isempty:
+                raise ValueError("Can't find [id=\"%s\"]" % id) 
+            elif els.hasplurality:
+                raise ValueError(
+                    "Multiple elements for [id=\"%s\"]" % id
+                ) 
+
+            sub = els.first
+
             if rev.type == revision.Append:
                 # NOTE We can't use # as a selector. The ids are base64
                 # encoding so sometimes they will start with a number.
@@ -815,20 +828,14 @@ class element(entities.entity):
                 # Bad: #3QuaWRdCg
                 # Good: [id="3QuaWRdCg"]
 
-                id = rev.subject.id
-                el = self['[id="%s"]' % id]
-                if el.isempty:
-                    raise ValueError("Can't find [id=\"%s\"]" % id) 
-                elif el.hasplurality:
-                    raise ValueError(
-                        "Multiple elements for [id=\"%s\"]" % id
-                    ) 
-
-                sub = el.first
                 obj = rev.object.clone()
                 obj.elements.clear()
 
                 sub += obj
+            elif rev.type == revision.Remove:
+                sels = '[id="%s"]' % rev.object.id
+                obj = self[sels]
+                sub.remove(obj)
 
     @property
     def isblocklevel(self):
