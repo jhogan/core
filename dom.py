@@ -792,6 +792,15 @@ class element(entities.entity):
 
         self.attributes += kwargs
 
+    def remove(self, el):
+        return self.elements.remove(el)
+
+    def reidentify(self):
+        self.id = primative.uuid().base64
+
+        for el in self.all:
+            self.id = primative.uuid().base64
+        
     def apply(self, revs):
         for rev in revs:
             if rev.type == revision.Append:
