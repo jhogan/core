@@ -33,7 +33,7 @@ class category_classifications(orm.associations):
             primary = None
             for cc1 in self:
                 if cc.product.id == cc1.product.id:
-                    if cc1.primary_:
+                    if cc1.isprimary:
                         if primary:
                             brs += entities.brokenrule(
                                 'The product "%s" already is set to '
@@ -47,6 +47,7 @@ class category_classifications(orm.associations):
                             primary = cc.category
                 
         return brs
+    '''
 
 
 class categories(orm.entities):
@@ -126,7 +127,7 @@ class category_classification(orm.association):
     # the product. For instance, if a product is associated with
     # multiple categories, a sales report that groups products by
     # category may take this flag into consideration.
-    primary_  =  bool
+    isprimary  =  bool
 
     comment  =  str, 1, 65535
 
@@ -139,11 +140,11 @@ class category_classification(orm.association):
         brs = super().brokenrules
 
         # TODO Only one "primary" association can exist between a given
-        # product and a category. See the "primary_" column.
+        # product and a category. See the "isprimary" column.
         pid = self.product.id
         cc = category_classifications(
             product__productid=pid,
-            primary_=True
+            isprimary=True
         )
         if cc.ispopulated:
             brs += entities.brokenrule(
