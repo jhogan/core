@@ -37,6 +37,12 @@ from dbg import B
 class parties(orm.entities):
     pass
 
+class types(orm.entities):
+    pass
+
+class party_types(orm.associations):
+    pass
+
 class organizations(parties):
     pass
 
@@ -61,7 +67,7 @@ class jobs(orm.entities):
 class positions(orm.entities):
     pass
 
-class position_fulfillments(orm.associations):
+class position_fulfillments(orm.associations): 
     pass
 
 class party_parties(orm.associations):
@@ -528,3 +534,42 @@ class party_party(orm.association):
     # TODO Write brokenrules @property that ensures valid roles are
     # selected (among other things)
 
+class type(orm.entity):
+    """ A type of party. Examples of party types include:
+            Minority-owned business
+            Manufacturer
+            Woman-owned business
+            Mail order firm
+            Small organization
+            Medium-sized organization
+            Large organization
+            Janitorial service organization
+            8a organizations
+            Service organization
+            Marketing service prodived
+            Hispanic
+            African American
+            Income classification
+        
+        A party can be classified by more than one type so the
+        party_type association is used.
+
+        Note that this is modeled after the PARTY_TYPE entity in "The
+        Data Modeling Resource Book".
+    """
+    description = str
+
+class party_type(orm.association):
+    """ An association between `party` and `type`. 
+
+    Note that this is modeled after the PARTY_CLASSIFCATION entity in
+    "The Data Modeling Resource Book".
+    """
+
+    # `begin` and `end` are used to track the history of the
+    # classifaction over time. For example, a business may "graduate"
+    # from 8A (minority startup) program.
+    begin  =  datetime
+    end    =  datetime
+    party  =  party
+    type   =  type

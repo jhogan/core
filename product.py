@@ -11,6 +11,7 @@ import entities
 import primative
 from datetime import datetime
 from dbg import B
+import gem
 
 class products(orm.entities):
     pass
@@ -55,6 +56,9 @@ class goods(products):
     pass
 
 class services(products):
+    pass
+
+class category_types(orm.associations):
     pass
 
 class product(orm.entity):
@@ -156,3 +160,26 @@ class good(product):
 
 class service(product):
     pass
+
+class category_type(orm.association):
+    """ An association between product.category and party.type. The
+    association represents the interest that a type of party is declared
+    to have in a certain product. 
+
+    For example, a party.type called "Insurance companies" may have an
+    interest in the product.category called "Insurance. A "Small
+    organization" party.types may have an interest in the "Wordpress
+    services" product.category.
+
+    Interest in a product category can change over time so a `begin` and
+    `end` date are included.
+
+    Note that this class is based off the MARKET_INTEREST entity in "The
+    Data Modeling Resource Book". The name "category_type" is used
+    instead because it adhers to the ORM's convention on naming
+    associations - consequently resulting in an unfortunate misnomer.
+    """
+    begin     =  datetime
+    end       =  datetime
+    type      =  gem.type
+    category  =  category
