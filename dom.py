@@ -558,7 +558,6 @@ class elements(entities.entities):
 
                 revs.revision(revision.Append, sub=grent, obj=rent)
                 revs += rent._revisions
-                B()
 
             else:
                 # Sometimes self.parent won't have a parent. Because the

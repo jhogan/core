@@ -1680,7 +1680,6 @@ class test_entities(tester):
         self.assertIs(rth, snare.first)
 
     def it_raises_onremove_and_onadd_when_calling__setitem__(self):
-        
         """ Setting an entity to a position in a collection will cause the
         onremove event to be raised, indicating the removal of the original
         entity, and the onadd event to be raised, indicating the addition of
@@ -16486,13 +16485,17 @@ class dom_element(tester):
         #     p.elements.first = dom.em("I'm being set")
         #
         # Both of the above statements result in an onadd and an
-        # onremove to be called. So four revisions will be logged,
-        # though it seems like only three should be made.
+        # onremove being called so four revisions will be logged, though
+        # it seems like only three should be made.
         #
         # Note: A workaround to the above would be to do this:
         #
         #     el = p.elements.first
         #     el += dom.em("I'm being appended")
+        
+        # TODO Test inserting elements in the middle of an elements
+        # collection. Currently this would result in an Append but that
+        # would put it in the wrong order when applyinga.
 
         ''' A simple append patch '''
         p = dom.paragraph()
