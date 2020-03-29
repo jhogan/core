@@ -710,6 +710,13 @@ class elements(entities.entities):
         if self.parent:
             raise MoveError('Parent already set')
         self._parent = v
+
+    def append(self, *args, **kwargs):
+        if isinstance(self.parent, text):
+            raise NotImplementedError(
+                "Can't append to a text node"
+            )
+        super().append(*args, **kwargs)
         
 class element(entities.entity):
     # There must be a closing tag on elements by default. In cases,
@@ -1435,8 +1442,12 @@ class text(element):
 
     def clone(self):
         el = type(self)(self._value)
-        el += self.elements.clone()
+
+        # We can't append elements to a text node
+        if not isinstance(self, text):
+            el += self.elements.clone()
         el.attributes = self.attributes.clone()
+
         return el
 
     def __str__(self):

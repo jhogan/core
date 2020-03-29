@@ -1894,8 +1894,10 @@ class test_entities(tester):
         preantepenultimate = the4.preantepenultimate
         the4.preantepenultimate = the4.first
         self.assertCount(1, addsnare)
-        self.assertEq(rmsnare.count, addsnare.count)
-        self.assertIs(preantepenultimate, rmsnare.first)
+
+        # Nothing will have been removed because the4.preantepenultimate
+        # was identical to the4.first.
+        self.zero(rmsnare)
         self.assertIs(the4.preantepenultimate, addsnare.first)
 
     def it_uses_identityindex(self):
@@ -16310,25 +16312,26 @@ class dom_element(tester):
         p = dom.paragraph()
         self.none(p.parent)
 
-        txt = dom.text('some text')
-        p += txt
+        span = dom.span('some text')
+        p += span
         self.none(p.parent)
-        self.is_(p, txt.parent)
+        self.is_(p, span.parent)
 
         b = dom.strong('strong text')
-        txt += b
+        span += b
+
         self.none(p.parent)
-        self.is_(p, txt.parent)
-        self.is_(txt, b.parent)
-        self.is_(txt, b.getparent())
-        self.is_(txt, b.getparent(0))
-        self.is_(p, b.parent.parent)
-        self.is_(p, b.grandparent)
-        self.is_(p, b.getparent(1))
-        self.is_(b, b.elements.first.parent)
-        self.is_(txt, b.elements.first.grandparent)
-        self.is_(p, b.elements.first.greatgrandparent)
-        self.is_(p, b.elements.first.getparent(2))
+        self.is_(p,          span.parent)
+        self.is_(span,       b.parent)
+        self.is_(span,       b.getparent())
+        self.is_(span,       b.getparent(0))
+        self.is_(p,          b.parent.parent)
+        self.is_(p,          b.grandparent)
+        self.is_(p,          b.getparent(1))
+        self.is_(b,          b.elements.first.parent)
+        self.is_(span,       b.elements.first.grandparent)
+        self.is_(p,          b.elements.first.greatgrandparent)
+        self.is_(p,          b.elements.first.getparent(2))
 
     def it_calls_siblings(self):
         p = dom.paragraph()
@@ -16476,11 +16479,6 @@ class dom_element(tester):
         self.is_(span.elements.first, p._revisions.third.object)
 
     def it_patches_appends(self):
-        # TODO Test situations where elements are appended to text
-        # nodes. Since text nodes (and comments) don't have id's, normal
-        # patching won't work here. We will need to devise a solution to
-        # this.
-
         # TODO:10012875 Setting an ordinal property causes both the
         # onadd and onremove event to be raised.
         #
@@ -16608,11 +16606,11 @@ class dom_paragraph(tester):
         # Nest <span> into <strong>
         span = dom.span('go grey.');
         strong += span
-        txt += strong
 
         # NOTE The spacing is botched. This should be corrected when we
         # write tests for dom.text.
         p = dom.paragraph(txt)
+        p += strong
 
         expect = self.dedent('''
         <p id="%s">
