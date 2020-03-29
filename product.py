@@ -70,6 +70,14 @@ class product(orm.entity):
     implementations.
     """
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.manufacturerno = None
+        self.sku = None
+        self.upca = None
+        self.upce = None
+        self.isbn = None
+
     # A description of a product.
     name = str
 
@@ -85,6 +93,27 @@ class product(orm.entity):
     unsupportedat = datetime
 
     comment = str, 1, 65535 # TODO Make text type
+
+    ''' Various type of identifiers'''
+
+    # A good's id designated by the manufacture
+    manufacturerno = str
+
+    # Stock-keeping unit (SKU) is a standard product id that distinctly
+    # identifies various products.
+    sku = str, 10, 10
+
+    # Universal Product Code--American (UPCA) identifies products within
+    # America.
+    upca = str, 12, 12
+
+    # Universal Product Code--Europe (UPCE) identifies products within
+    # Europe.
+    upce = str, 6, 6
+
+    # International Standard Book Number is a mechanism to identify
+    # specific books throughout the world
+    isbn = str, 10, 10
 
 class category(orm.entity):
     entities = categories
@@ -184,3 +213,6 @@ class category_type(orm.association):
     end       =  datetime
     type      =  gem.type
     category  =  category
+
+
+

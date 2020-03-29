@@ -15643,7 +15643,7 @@ class gem_region(tester):
 
         self.eq(reg.name, reg1.name)
 
-class gem_product(tester):
+class gem_product_product(tester):
     @staticmethod
     def getvalid(type=None):
         if type is None:
