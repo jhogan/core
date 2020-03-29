@@ -16510,19 +16510,53 @@ class dom_element(tester):
 
         self.eq(p.html, p1.html)
 
-        ''' It appends to a a text node '''
-        body = dom.body()
-        p = dom.paragraph("I'm the text node.")
-        body += p
+        ''' Setting ordinal properties'''
+        p = dom.paragraph()
+        span = dom.span("I'm a span")
+        p += span
 
-        # Snapshot the <body> to apply the patch later
-        body1 = dom.html(body.html).first
+        # Save current revision position
+        ix = p._revisions.ubound + 1
 
-        txt = p.elements.first
-        txt += dom.em("I'm being appended")
+        # Create new p from exisitng p
+        p1 = dom.html(p.html).first
 
-        patch = body._revisions[2:]
-        body1.apply(patch)
+        # Replace <span> with <em>
+        p.elements.first = dom.em("I can't emphasize this enough")
+
+        # The the revisions from the above assignment
+        revs = p._revisions[ix:]
+
+        # Apply revisions to p1
+        p1.apply(revs)
+
+        # p1 should now match p
+        self.eq(p.html, p1.html)
+
+        ''' Appending an ordinal properties'''
+        # TODO:10012875 Complete
+        p = dom.paragraph()
+        span = dom.span("I'm a span")
+        p += span
+
+        # Save current revision position
+        ix = p._revisions.ubound + 1
+
+        # Create new p from exisitng p
+        p1 = dom.html(p.html).first
+
+        # Append <em> to <span>
+        p.elements.first += dom.em("I can't emphasize this enough")
+
+        # The the revisions from the above assignment
+        revs = p._revisions[ix:]
+
+        # Apply revisions to p1
+        p1.apply(revs)
+        # Apply revisions to p1
+
+        # p1 should now match p
+        self.eq(p.html, p1.html)
 
         # TODO Ensure that setting the text using this alternative to
         # appending the text works with this test as well (see
