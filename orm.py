@@ -4261,8 +4261,15 @@ class orm:
         self._abbreviation        =  str()
         self.initing              =  False
 
-    def exists(self, id):
+    def exists(self, o):
         try:
+            if isinstance(o, entity):
+                id = o.id
+            elif isinstance(o, UUID):
+                id = o
+            else:
+                raise ValueError("Can't determine id")
+
             self.entity(id)
         except db.RecordNotFoundError:
             return False
