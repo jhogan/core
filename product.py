@@ -66,12 +66,18 @@ class product(orm.entity):
     """
 
     def __init__(self, *args, **kwargs):
+        # TODO Do not allow the GEM user to instantiate this class;
+        # product.__init__ should only be called by product.good and
+        # product.services. Those subclasses can pass in an override
+        # flags to bypass the NotImplementedError.
         super().__init__(*args, **kwargs)
-        self.manufacturerno = None
-        self.sku = None
-        self.upca = None
-        self.upce = None
-        self.isbn = None
+        if self.orm.isnew:
+            self.manufacturerno  =  None
+            self.sku             =  None
+            self.upca            =  None
+            self.upce            =  None
+            self.isbn            =  None
+            self.comment         =  None
 
     # A description of a product.
     name = str
