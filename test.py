@@ -15718,6 +15718,104 @@ class gem_product_product(tester):
                 self.ne(getattr(prod, prop), getattr(prod2, prop))
                 self.eq(getattr(prod1, prop), getattr(prod2, prop))
 
+    def it_associates_to_features(self):
+        tup_colors = (
+            'white',  'red',     'orange',  'blue',
+            'green',  'purple',  'gray',    'cream',
+        )
+
+        tup_prods = (
+            'Johnson fine grade 8½ by 11 paper',
+        )
+
+        # Create features
+        feats = product.features()
+        selectables = product.colors()
+
+        for color in tup_colors:
+            feats += product.color(name=color)
+            
+            if color in ('blue', 'gray', 'cream', 'white'):
+                selectables += feats.last
+
+        # Create products
+        prods = product.products()
+        for prod in tup_prods:
+            prods += product.good(name=prod)
+
+
+        paper, = prods[:]
+
+        ''' Create "Johnson fine grade 8½ by 11 paper" and associate the
+        selectable color features of blue, gray, cream, white. '''
+
+        # Assign qualities
+
+        # Fine grade
+        paper.product_features += product.product_feature(
+            type=product.product_feature.Required,
+            feature=product.quality(name='Fine grade'),
+            product=paper  # TODO d3bd0e6d
+        )
+
+        # Extra glossy finish
+        paper.product_features += product.product_feature(
+            type=product.product_feature.Optional,
+            feature=product.quality(name='Extra glossy finish'),
+            product=paper  # TODO d3bd0e6d
+        )
+            
+        # Create product_feature associations
+        for sel in selectables:
+            pf = product.product_feature(
+                type=product.product_feature.Selectable,
+                feature=sel,
+                product=paper
+            )
+
+            # TODO:d3bd0e6d The following line should replace the above
+            # line:
+            #
+            #     pf = product.product_feature(
+            #         type=product.product_feature.Selectable,
+            #         feature=sel,
+            #     )
+            #
+            # Notice that `product=paper is absent from the commented
+            # out line. This is because appending `pf` to
+            # `paper.product_features` should automatically assign
+            # `paper` to `paper.product_features.last.product`. However,
+            # since the `product` attribute is of type `product.product`
+            # and the `paper` attribute is of type `product.good` (a
+            # subentity of `product.product` the assignment is not made.
+            # There is more commentary in orm.py (see d3bd0e6d).
+
+            paper.product_features += pf
+
+        paper.save()
+
+        paper1 = product.good(paper)
+
+        pfs = paper.product_features.sorted()
+        pfs1 = paper1.product_features.sorted()
+
+        self.six(pfs1)
+        self.eq(pfs.count, pfs1.count)
+
+        for pf, pf1 in zip(pfs, pfs1):
+            self.eq(pf.type, pf1.type)
+            self.eq(pf.feature.name, pf1.feature.name)
+            self.eq(pf.product.name, pf1.product.name)
+            self.true(product.good.orm.exists(pf.product))
+
+        req = product.product_feature.Required
+        self.eq(
+            sorted(['white', 'cream', 'gray', 'blue']),
+            sorted(pfs1.pluck('feature.name'))
+            sorted(x.name for x in pfs1 if x.type == req
+        )
+
+
 class gem_product_categories(tester):
     def __init__(self):
         super().__init__()
@@ -15924,7 +16022,7 @@ class gem_product_categories(tester):
         cat = product.category()
         cat.name = uuid4().hex
 
-        prod = gem_product.getvalid()
+        prod = gem_product_product.getvalid()
         cc = product.category_classification()
         cc.product = prod
         cc.begin = primative.datetime.utcnow(days=-50)
@@ -15962,7 +16060,7 @@ class gem_product_categories(tester):
         cat = product.category()
         cat.name = uuid4().hex
 
-        prod = gem_product_product.getvalid()
+        prod = gem_product.getvalid()
         cc = product.category_classification()
         cc.product = prod
         cc.begin = primative.datetime.utcnow(days=-50)

@@ -215,5 +215,51 @@ class category_type(orm.association):
     type      =  gem.type
     category  =  category
 
+class feature(orm.entity):
+    """ Used to define the ways a product may be modified or tweaked.
+    `feature` entities are associate with `product` entities via
+    `product_feature` associations.
+    """
+    name = str
 
+class color(feature):
+    pass
 
+class quality(feature):
+    entities=qualities
+
+class product_feature(orm.association):
+    """ Associates a product with a feature. The association will
+    indicate whether the feature is required, standard, optional or
+    selectable with the product.
+    """
+
+    ''' Types '''
+    # Specifies that the feature is mandatory with the product.
+    Required    =  0
+
+    # Indicates that the feature comes as part of the standard
+    # configuration of the product.
+    Standard    =  1
+
+    # Indicates the feature is an optional component.
+    Optional    =  2
+
+    # Indicates that the feature must be selected by the purchaser.
+    Selectable  =  3
+
+    ''' ORM Attributes '''
+    # A timespan to indicate when this association is valid
+    begin  =  datetime
+    end    =  datetime
+
+    # Use a numeric code (see the Types section above) to indicate
+    # whether the associated feature is required, standard, optional or
+    # selectable with the product.
+    type   =  int
+
+    # The product portion of the association
+    product = product
+
+    # The feature portion of the association
+    feature = feature
