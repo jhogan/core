@@ -48,19 +48,14 @@ class category_classifications(orm.associations):
                 
         return brs
     '''
-
-
-class categories(orm.entities):
-    pass
-
-class goods(products):
-    pass
-
-class services(products):
-    pass
-
-class category_types(orm.associations):
-    pass
+class  categories(orm.entities):            pass
+class  goods(products):                     pass
+class  services(products):                  pass
+class  category_types(orm.associations):    pass
+class  features(orm.entities):              pass
+class  colors(features):                    pass
+class  qualities(features):                 pass
+class  product_features(orm.associations):  pass
 
 class product(orm.entity):
     """ An abstact class that models all products including products

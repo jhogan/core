@@ -15682,7 +15682,7 @@ class gem_product_product(tester):
             )
 
             for prop in props:
-                self.eq(getattr(prod, prop), getattr(prod1, prop))
+                self.eq(getattr(prod, prop), getattr(prod1, prop), prop)
 
     def it_updates(self):
         for str_prod in ['good', 'service']:
@@ -15962,7 +15962,7 @@ class gem_product_categories(tester):
         cat = product.category()
         cat.name = uuid4().hex
 
-        prod = gem_product.getvalid()
+        prod = gem_product_product.getvalid()
         cc = product.category_classification()
         cc.product = prod
         cc.begin = primative.datetime.utcnow(days=-50)
