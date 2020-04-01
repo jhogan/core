@@ -12,6 +12,17 @@ import primative
 from datetime import datetime
 from dbg import B
 import gem
+import decimal
+
+#TODO The `decimal` module should be usable as type:
+#
+#   class dimension:
+#       number = decimal
+#
+# However, we currently have to do this:
+#
+#   class dimension:
+#       number = decimal.Decimal
 
 class products(orm.entities):
     pass
@@ -48,14 +59,16 @@ class category_classifications(orm.associations):
                 
         return brs
     '''
-class  categories(orm.entities):            pass
-class  goods(products):                     pass
-class  services(products):                  pass
-class  category_types(orm.associations):    pass
-class  features(orm.entities):              pass
-class  colors(features):                    pass
-class  qualities(features):                 pass
-class  product_features(orm.associations):  pass
+class categories(orm.entities):            pass
+class goods(products):                     pass
+class services(products):                  pass
+class category_types(orm.associations):    pass
+class features(orm.entities):              pass
+class colors(features):                    pass
+class qualities(features):                 pass
+class dimensions(features):                pass
+class measures(orm.entities):              pass
+class product_features(orm.associations):  pass
 
 class product(orm.entity):
     """ An abstact class that models all products including products
