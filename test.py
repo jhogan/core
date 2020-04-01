@@ -15644,6 +15644,12 @@ class gem_region(tester):
         self.eq(reg.name, reg1.name)
 
 class gem_product_product(tester):
+    def __init__(self):
+        super().__init__()
+        product.products.orm.recreate(recursive=True)
+        product.categories.orm.recreate(recursive=True)
+        product.measure.orm.recreate(recursive=True)
+    
     @staticmethod
     def getvalid(type=None):
         if type is None:
@@ -15655,11 +15661,6 @@ class gem_product_product(tester):
         prod.comment = uuid4().hex * 1000
         return prod
 
-    def __init__(self):
-        super().__init__()
-        product.products.orm.recreate(recursive=True)
-        product.categories.orm.recreate(recursive=True)
-    
     def it_creates(self):
         for str_prod in ['good', 'service']:
             prod = getattr(product, str_prod)()
@@ -15792,6 +15793,16 @@ class gem_product_product(tester):
 
             paper.product_features += pf
 
+        dim = product.dimension(number=8.5)
+        dim.measure = product.measure(name='width')
+
+        # Add dimension of 8½
+        paper.product_features += product.product_feature(
+            type=product.product_feature.Required,
+            feature=dim,
+            product=paper  # TODO d3bd0e6d
+        )
+
         paper.save()
 
         paper1 = product.good(paper)
@@ -15799,7 +15810,7 @@ class gem_product_product(tester):
         pfs = paper.product_features.sorted()
         pfs1 = paper1.product_features.sorted()
 
-        self.six(pfs1)
+        self.seven(pfs1)
         self.eq(pfs.count, pfs1.count)
 
         for pf, pf1 in zip(pfs, pfs1):
@@ -15808,13 +15819,43 @@ class gem_product_product(tester):
             self.eq(pf.product.name, pf1.product.name)
             self.true(product.good.orm.exists(pf.product))
 
-        req = product.product_feature.Required
+        # Ensure all the Selectable features were added
+        sel = product.product_feature.Selectable
         self.eq(
             sorted(['white', 'cream', 'gray', 'blue']),
-            sorted(pfs1.pluck('feature.name'))
-            sorted(x.name for x in pfs1 if x.type == req
+            sorted(x.feature.name for x in pfs1 if x.type == sel)
         )
 
+        # Ensure all the Required features were added
+        req = product.product_feature.Required
+        self.eq(
+            ['Fine grade'],
+            [
+                x.feature.name 
+                for x in pfs1 
+                if x.type == req and x.feature.name is not None
+            ]
+        )
+
+        for x in pfs1:
+            try:
+                dim1 = product.dimension(x.feature)
+            except db.RecordNotFoundError:
+                pass
+            else:
+                self.none(dim1.name)
+                self.eq(8.5, dim1.number)
+                self.eq('width', dim1.measure.name)
+                break
+        else:
+            self.fail("Couldn't find dimension feature")
+
+        # Ensure all the Optional features were added
+        opt = product.product_feature.Optional
+        self.eq(
+            ['Extra glossy finish'],
+            [x.feature.name for x in pfs1 if x.type == opt]
+        )
 
 class gem_product_categories(tester):
     def __init__(self):

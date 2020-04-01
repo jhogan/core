@@ -239,7 +239,41 @@ class color(feature):
     pass
 
 class quality(feature):
-    entities=qualities
+    entities = qualities
+
+class dimension(feature):
+    """ A dimension is a numeric extent representing a feature of a
+    product. `dimensions` are coupled with `measures`. For example, a
+    product may have a `dimension.number` equal to 11 coupled with a
+    `measure` entity of with a `name` of 'width'.
+    """
+
+    def __init__(self, *args, **kwargs):
+        # TODO Do not allow the GEM user to instantiate this class;
+        # product.__init__ should only be called by product.good and
+        # product.services. Those subclasses can pass in an override
+        # flags to bypass the NotImplementedError.
+        super().__init__(*args, **kwargs)
+        if self.orm.isnew:
+            self.name = None
+
+    number = decimal.Decimal
+
+class measure(orm.entity):
+    """ A `measure` defines the product in turms of the type of
+    measurement for the product. See `dimension` for more.
+
+    Note, this class is called UNIT_OF_MEASURE in the "The Data Modeling
+    Resource Book".
+    """
+    abbr        =  str
+    name        =  str
+    dimensions  =  dimensions
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.orm.isnew:
+            self.abbr = None
 
 class product_feature(orm.association):
     """ Associates a product with a feature. The association will
