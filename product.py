@@ -59,16 +59,22 @@ class category_classifications(orm.associations):
                 
         return brs
     '''
-class categories(orm.entities):            pass
-class goods(products):                     pass
-class services(products):                  pass
-class category_types(orm.associations):    pass
-class features(orm.entities):              pass
-class colors(features):                    pass
-class qualities(features):                 pass
-class dimensions(features):                pass
-class measures(orm.entities):              pass
-class product_features(orm.associations):  pass
+class  categories(orm.entities):            pass
+class  goods(products):                     pass
+class  services(products):                  pass
+class  category_types(orm.associations):    pass
+class  features(orm.entities):              pass
+class  qualities(features):                 pass
+class  colors(features):                    pass
+class  dimensions(features):                pass
+class  sizes(features):                     pass
+class  brands(features):                    pass
+class  softwares(features):                 pass
+class  hardwares(features):                 pass
+class  billings(orm.entities):              pass
+class  measures(orm.entities):              pass
+class  measure_measures(orm.associations):  pass
+class  product_features(orm.associations):  pass
 
 class product(orm.entity):
     """ An abstact class that models all products including products
@@ -267,6 +273,44 @@ class dimension(feature):
 
     number = decimal.Decimal
 
+class size(feature):
+    """ A feature to specify how large or small a product is in more
+    general terms than `dimension`. Examples include: "extra large",
+    "large", "medium" or "small".
+    """
+    pass
+
+class brand(feature):
+    """ A feature that describes the marketing name tied to the `good`,
+    such as "Buick" for a General Motors vehicle. Note that the brand
+    name may be different from the manufacturer's name.
+    """
+    pass
+
+class software(feature):
+    """ A feature that allows additional software to be added to
+    products or allows certain software setting to be specified for a
+    product. For instance, software dollor limits could be set for
+    products that are based on usage, such as meters. Another example
+    could be the setting of software preferences for a software package
+    or hardware purchase.
+    """
+    pass
+
+class hardware(feature):
+    """ A feature that allows for the specification of certain
+    components that are included or that may be added to a product --
+    for example, a cover for a printer.
+    """
+    pass
+    
+class billing(feature):
+    """ A feature that specifies the standard types of terms that may be
+    associated with a product, such as recording that an Internet access
+    service may be available with either monthly or quarterly billing.
+    """
+    pass
+
 class measure(orm.entity):
     """ A `measure` defines the product in turms of the type of
     measurement for the product. See `dimension` for more.
@@ -277,11 +321,17 @@ class measure(orm.entity):
     abbr        =  str
     name        =  str
     dimensions  =  dimensions
+    products    =  products
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.orm.isnew:
             self.abbr = None
+
+class measure_measure(orm.association):
+    subject  =  measure
+    object   =  measure
+    factor   =  decimal.Decimal
 
 class product_feature(orm.association):
     """ Associates a product with a feature. The association will
