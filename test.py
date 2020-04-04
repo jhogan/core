@@ -4517,8 +4517,8 @@ class test_orm(tester):
         # TODO Test deeply nested associations
 
     def it_removes_associations(self):
-        # FIXME Removing associations is broken at the moment because it
-        # cascades any deletion of an association. 
+        # FIXME:32d39bee Removing associations is broken at the moment
+        # because it cascades any deletion of an association. 
         #
         # The following code
         #     
@@ -15793,10 +15793,21 @@ class gem_product_product(tester):
 
             paper.product_features += pf
 
+        # This product is sold in reams
+        paper.measure = product.measure(name='ream')
+
+        # TODO:018aca88 The composite `measure` for paper doesn't get
+        # set probably because `paper` is a `good` which is a subentity
+        # of `product` which holds has has a reference to `measure (see
+        # `measure.products`). Strangely, the `measure` is saved anyway,
+        # though paper has to be loaded as a `product` instead of a
+        # `good`. See the TODO below with the same ID (018aca88).
+        # self.eq('ream', paper.measure.name)
+
+        # Add dimension of 8½
         dim = product.dimension(number=8.5)
         dim.measure = product.measure(name='width')
 
-        # Add dimension of 8½
         paper.product_features += product.product_feature(
             type=product.product_feature.Required,
             feature=dim,
@@ -15806,6 +15817,13 @@ class gem_product_product(tester):
         paper.save()
 
         paper1 = product.good(paper)
+
+        # TODO:018aca88 The composite `measure` for `paper` nor `paper1`
+        # gets set. However, when loading paper as a product (see
+        # below), we are able to verify the `measure` got saved.
+        # self.eq('ream', paper1.measure.name)
+        # self.eq('ream', product.good(paper).measure.name)
+        self.eq('ream', product.product(paper).measure.name)
 
         pfs = paper.product_features.sorted()
         pfs1 = paper1.product_features.sorted()

@@ -1769,9 +1769,11 @@ class entitymeta(type):
                     body['entities'] = sub
                     break
             else:
-                msg =  "Entities class couldn't be found. "
-                msg += "Either specify one or define one with a predictable name"
-                raise AttributeError(msg)
+                raise AttributeError(
+                    'Entities class for "%s" couldn\'t be found. '
+                    'Either specify one or define one with a '
+                    'predictable name' % name
+                )
 
         # Make sure the `orm` has a reference to the entities collection
         # class and that the entities collection class has a refernce to
@@ -2288,7 +2290,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             sql, args = (None,) * 2
 
         try:
-            # Take snapshop of before state
+            # Take snapshot of before state
             st = self.orm.persistencestate
 
             if sql:

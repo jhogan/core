@@ -235,11 +235,19 @@ class feature(orm.entity):
     """
     name = str
 
-class color(feature):
-    pass
-
 class quality(feature):
+    """ A feature to classify a product by value such as "grade A" or
+    "grade B".  For service products, such as a consutant, this may
+    represent "expert" or "junior". 
+    """
     entities = qualities
+
+class color(feature):
+    """ A feature that describes the color of a good. A good may have
+    more than one color option, but a different color may also denote
+    that it is a seperate good.
+    """
+    pass
 
 class dimension(feature):
     """ A dimension is a numeric extent representing a feature of a
