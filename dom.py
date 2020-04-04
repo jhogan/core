@@ -767,10 +767,24 @@ class element(entities.entity):
             # comment), should probably shouldn't be assigning an id.
             self.id = primative.uuid().base64
         else:
-            if id is not False:
+            # If the 'id' from kwargs is a boolean True, we are
+            # saying "assign a random id". If it is a boolean False, we
+            # are saying "don't assign a random id". If the id is
+            # neither boolean True or False, but still exists, we will
+            # allow it to be treatd it just like any other attribute
+            # being assigned in the constructor:
+            #
+            #   el = element(id=123, class="order-data")
+            #   assert el.id == 123
+
+            if id is True:
                 self.id = primative.uuid().base64
                 del kwargs['id']
+            elif id is False:
+                del kwargs['id']
+
         self._revs = None
+
         if body is not None:
             if     not isinstance(body, element) \
                and not isinstance(body, elements):
