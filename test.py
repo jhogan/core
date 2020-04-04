@@ -16510,29 +16510,6 @@ class dom_element(tester):
 
         self.eq(p.html, p1.html)
 
-        ''' Setting ordinal properties'''
-        p = dom.paragraph()
-        span = dom.span("I'm a span")
-        p += span
-
-        # Save current revision position
-        ix = p._revisions.ubound + 1
-
-        # Create new p from exisitng p
-        p1 = dom.html(p.html).first
-
-        # Replace <span> with <em>
-        p.elements.first = dom.em("I can't emphasize this enough")
-
-        # The the revisions from the above assignment
-        revs = p._revisions[ix:]
-
-        # Apply revisions to p1
-        p1.apply(revs)
-
-        # p1 should now match p
-        self.eq(p.html, p1.html)
-
         ''' Appending an ordinal properties'''
         # TODO:10012875 Complete
         p = dom.paragraph()
@@ -16563,6 +16540,29 @@ class dom_element(tester):
         # 10012875).
         # p.elements.first += dom.em("I'm being appended")
 
+        ''' Setting ordinal properties'''
+        p = dom.paragraph()
+        span = dom.span("I'm a span")
+        p += span
+
+        # Save current revision position
+        ix = p._revisions.ubound + 1
+
+        # Create new p from exisitng p
+        p1 = dom.html(p.html).first
+
+        # Replace <span> with <em>
+        p.elements.first = dom.em("I can't emphasize this enough")
+
+        # The the revisions from the above assignment
+        revs = p._revisions[ix:]
+
+        # Apply revisions to p1
+        p1.apply(revs)
+
+        # p1 should now match p
+        self.eq(p.html, p1.html)
+
         ''' A simple patch on a complicated document '''
         html = dom.html(Shakespeare)
         html1 = dom.html(html.html)
@@ -16579,6 +16579,31 @@ class dom_element(tester):
 
         # Give it a <title>
         head += dom.title('As You Like It')
+
+        # Replace by ordinal
+
+        # TODO When revising an element that was selected from a DOM
+        # with a CSS selector, the revisions do not get logged (at least
+        # not to the original DOM root's _revisions collection). We will
+        # want this feature, otherwise revising DOMs will be confusing
+        # and unintuitive.
+        #     dia = html['body > div > div.dialog'].first
+
+        # TODO When revising an element that was selected the `children`
+        # property, the revisions do not get logged to the original DOM
+        # root's _revisions collection). We will want this feature,
+        # otherwise revising DOMs will be confusing and unintuitive.
+        #    div = \
+        #        html.first.children.second.children.first.children.first 
+
+        # TODO Currently, setting an ordinal property results in a
+        # Remove and an Append. This works when their is only one child
+        # in the elements collecion being set. However, whene there are
+        # multiple children, the append will always come at the end
+        # instead of the original position. We will need to record
+        # Insert revisions before this feature can be implemented.
+        #     div = html.first.elements.fourth.elements.second.elements.second
+        #     div.elements.fourth = dom.div('by Francis Bacon', id="playwright")
 
         # Get a delta
         Δ = html.first._revisions[ix:]

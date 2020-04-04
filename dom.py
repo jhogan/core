@@ -3966,7 +3966,9 @@ class _htmlparser(HTMLParser):
             raise NotImplementedError(
                 'The <%s> tag has no DOM implementation' % tag
             )
+
         el = el(id=self.ids)
+
         for attr in attrs:
             el.attributes[attr[0]] = attr[1]
 
