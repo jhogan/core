@@ -15875,6 +15875,148 @@ class gem_product_product(tester):
             [x.feature.name for x in pfs1 if x.type == opt]
         )
 
+    def it_adds_a_feature_association(self):
+        tup_colors = (
+            'white',  'red',     'orange',  'blue',
+            'green',  'purple',  'gray',    'cream',
+        )
+
+        # Create features
+        feats = product.features()
+
+        selectables = product.colors()
+
+        for color in tup_colors:
+            feats += product.color(name=color)
+            
+            # Capture 4 colors and associate them to `good` below
+            # Selectable features.
+            if color in ('blue', 'gray', 'cream', 'white'):
+                selectables += feats.last
+
+        feats.save()
+
+        # Create products
+        good = product.good(name='Johnson fine grade 8½ by 11 paper')
+
+        # Associate `good` with the colors as Selectables.
+        for sel in selectables:
+            pf = product.product_feature(
+                type=product.product_feature.Selectable,
+                feature=sel,
+                product=good
+            )
+
+            good.product_features += pf
+
+        good.save()
+
+        good1 = product.good(good)
+
+        pfs1 = good1.product_features
+
+        self.eq(
+            sorted(['white', 'cream', 'gray', 'blue']),
+            sorted(x.feature.name for x in pfs1)
+        )
+
+
+        # Associate `good1` to purple
+        good1.product_features += product.product_feature(
+            type=product.product_feature.Required,
+            feature=product.colors(name='purple').first,
+            product=good
+        )
+
+        good1.save()
+
+        good2 = product.good(good1)
+
+        sel = product.product_feature.Selectable
+        req = product.product_feature.Required
+
+        self.eq(
+            sorted(['white', 'cream', 'gray', 'blue']),
+            sorted(x.feature.name for x in pfs1 if x.type == sel)
+        )
+
+        self.eq(
+            ['purple'],
+            [x.feature.name for x in pfs1 if x.type == req]
+        )
+
+    def it_removes_feature_association(self):
+        tup_colors = (
+            'white',  'red',     'orange',  'blue',
+            'green',  'purple',  'gray',    'cream',
+        )
+
+        # Create features
+        feats = product.features()
+
+        selectables = product.colors()
+
+        for color in tup_colors:
+            feats += product.color(name=color)
+            
+            # Capture 4 colors and associate them to `good` below
+            # Selectable features.
+            if color in ('blue', 'gray', 'cream', 'white'):
+                selectables += feats.last
+
+        feats.save()
+
+        # Create products
+        good = product.good(name='Johnson fine grade 8½ by 11 paper')
+
+        # Associate `good` with the colors as Selectables.
+        for sel in selectables:
+            pf = product.product_feature(
+                type=product.product_feature.Selectable,
+                feature=sel,
+                product=good
+            )
+
+            good.product_features += pf
+
+        good.save()
+
+        good1 = product.good(good)
+
+        pfs1 = good1.product_features
+
+        self.eq(
+            sorted(['white', 'cream', 'gray', 'blue']),
+            sorted(x.feature.name for x in pfs1)
+        )
+
+        # TODO:32d39bee I thought this was broken, but it actual removes
+        # the association without removing any of the entities. We
+        # should look into why this works and doesn't cascade the
+        # deletes to the feature (color) entity.
+        white = [
+            x for x in good1.product_features 
+            if x.feature.name == 'white'
+        ][0]
+
+        good1.product_features -= white
+
+        pfs1 = good1.product_features
+        self.eq(
+            sorted(['cream', 'gray', 'blue']),
+            sorted(x.feature.name for x in pfs1)
+        )
+
+        good1.save()
+
+        good2 = product.good(good1)
+
+        pfs1 = good2.product_features
+        self.eq(
+            sorted(['cream', 'gray', 'blue']),
+            sorted(x.feature.name for x in pfs1)
+        )
+
 class gem_product_categories(tester):
     def __init__(self):
         super().__init__()
@@ -16191,7 +16333,17 @@ class gem_product_category_types(tester):
                 sm1.category_types[i].type.id
             )
 
-        print(repr(sm1.category_types.second.category))
+class gem_product_measure(tester):
+    def __init__(self):
+        product.products.orm.recreate(recursive=True)
+
+    def it_converts(self):
+        _10 = product.dimension(number=10)
+        inches = product.measure(name='inches')
+        inches.features += _10
+
+        with db.chronicler.snapshot():
+            inches.save()
 
 
 cli().run()
