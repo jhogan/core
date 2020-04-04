@@ -610,15 +610,16 @@ class entities(object):
         items  =  item  if  hasattr(item,  '__iter__')  else  [item]
         es     =  e     if  hasattr(e,     '__iter__')  else  [e]
             
+        for e, item in zip(es, items):
+            if item is e:
+                continue
+            self.onremove(self, entityremoveeventargs(e))
+
         # TODO: Don't raise onadd unless `item is in es`. See the
         # onremove logic below.
         for item in items:
             self.onadd(self, entityaddeventargs(item))
 
-        for e, item in zip(es, items):
-            if item is e:
-                continue
-            self.onremove(self, entityremoveeventargs(e))
 
     def __getitem__(self, key):
         if isinstance(key, int):
