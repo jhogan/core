@@ -4029,6 +4029,28 @@ class _htmlparser(HTMLParser):
             else:
                 cur[0] += txt
 
+    def handle_charref(self, name):
+        # TODO: This was added after the main html tests were written
+        # (not sure why it was left behind). We should write tests that
+        # target it specifically.
+
+        # TODO: There is a lot of shared logic between this handler and
+        # handle_entityref, handle_data, etc. We can start thinking
+        # about consolidating this logic.
+        try:
+            cur = self.stack[-1]
+        except IndexError:
+            raise HtmlParseError(
+                'No element to add text to', [None, self.getpos()]
+            )
+        else:
+            txt = text('&#%s;' % name, esc=False)
+            last = cur[0].elements.last
+            if type(last) is text:
+                last.html += txt.value
+            else:
+                cur[0] += txt
+
     def handle_decl(self, decl):
         raise NotImplementedError(
             'HTML doctype declaration are not implemented'
