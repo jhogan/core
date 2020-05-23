@@ -15649,6 +15649,8 @@ class gem_product_product(tester):
         product.products.orm.recreate(recursive=True)
         product.categories.orm.recreate(recursive=True)
         product.measure.orm.recreate(recursive=True)
+        gem.facility.orm.recreate(recursive=True)
+        gem.priorities.orm.recreate(recursive=True)
     
     @staticmethod
     def getvalid(type=None):
@@ -15992,7 +15994,7 @@ class gem_product_product(tester):
 
         # TODO:32d39bee I thought this was broken, but it actual removes
         # the association without removing any of the entities. We
-        # should look into why this works and doesn't cascade the
+        # should look into why this works instead of cascading the
         # deletes to the feature (color) entity.
         white = [
             x for x in good1.product_features 
@@ -16016,6 +16018,550 @@ class gem_product_product(tester):
             sorted(['cream', 'gray', 'blue']),
             sorted(x.feature.name for x in pfs1)
         )
+
+    def it_associates_product_to_suppliers(self):
+        # Create products
+        paper = product.good(
+            name='Johnson fine grade 8½ by 11 bond paper'
+        )
+
+        pallet = product.good(
+            name = "6' by 6' warehouse pallets"
+        )
+
+        abc = gem_company.getvalid(
+            name = 'ABC Corporation'
+        )
+
+        joes = gem_company.getvalid(
+            name = "Joe's Stationery"
+        )
+
+        mikes = gem_company.getvalid(
+            name = "Mike's Office Supply"
+        )
+
+        greggs = gem_company.getvalid(
+            name = "Gregg's Pallet Shop"
+        )
+
+        palletinc = gem_company.getvalid(
+            name = 'Pallets Incorporated'
+        )
+
+        warehousecomp = gem_company.getvalid(
+            name = 'The Warehouse Company'
+        )
+
+        # Create priorities
+        first = product.priority(ordinal=0)
+        second = product.priority(ordinal=1)
+        third = product.priority(ordinal=2)
+
+        sps = product.supplier_products()
+        sps += product.supplier_product(
+            supplier  =  abc,
+            product   =  paper,
+            lead      =  2
+        )
+
+        # TODO:28a4a305 There is a one-to-many relationship between priority and
+        # supplier_product. However, the supplier_product.priority
+        # composite is not available. I believe this would work for
+        # orm.entity, but this is an orm.association so I guess that
+        # feature was not added.
+        #sps.last.priority.ordinal = 0
+
+        first.supplier_products += sps.last
+
+        sps += product.supplier_product(
+            supplier  =  joes,
+            product   =  paper,
+            lead      =  3
+        )
+        second.supplier_products += sps.last
+
+        sps += product.supplier_product(
+            supplier  =  mikes,
+            product   =  paper,
+            lead      =  4
+        )
+        third.supplier_products += sps.last
+
+        sps += product.supplier_product(
+            supplier  =  greggs,
+            product   =  pallet,
+            lead      =  2
+        )
+        first.supplier_products += sps.last
+
+        sps += product.supplier_product(
+            supplier  =  palletinc,
+            product   =  pallet,
+            lead      =  3
+        )
+        second.supplier_products += sps.last
+
+        sps += product.supplier_product(
+            supplier  =  warehousecomp,
+            product   =  pallet,
+            lead      =  5
+        )
+        third.supplier_products += sps.last
+
+        paper.save(pallet, sps, first, second, third)
+
+        paper1 = paper.orm.reloaded()
+        pallet1 = pallet.orm.reloaded()
+        first = first.orm.reloaded()
+        second = second.orm.reloaded()
+        third = third.orm.reloaded()
+
+        sps = paper1.supplier_products.sorted('supplier.name')
+        self.eq('ABC Corporation',      sps.first.supplier.name)
+        self.eq("Joe's Stationery",     sps.second.supplier.name)
+        self.eq("Mike's Office Supply", sps.third.supplier.name)
+
+        sps = pallet1.supplier_products.sorted('supplier.name')
+        self.eq("Gregg's Pallet Shop",      sps.first.supplier.name)
+        self.eq('Pallets Incorporated',     sps.second.supplier.name)
+        self.eq('The Warehouse Company',    sps.third.supplier.name)
+
+        # TODO:167d775b We get an issue with calling the supplier_products
+        # constituent of priority. This is likely due to the fact that
+        # a one-to-many relationship between an entity and an
+        # association has not been implement. 
+        #
+        # sps = first.supplier_products.sorted()
+        # self.eq('ABC Corporation',      sps.first.supplier.name)
+        # self.eq("Gregg's Pallet Shop",  sps.first.supplier.name)
+        #
+        # sps = second.supplier_products.sorted()
+        # self.eq("Joe's Stationery",     sps.second.supplier.name)
+        # self.eq('Pallets Incorporated', sps.second.supplier.name)
+        #
+        # sps = second.supplier_products.sorted()
+        # self.eq("Mike's Office Supply", sps.third.supplier.name)
+        # self.eq('The Warehouse Company', sps.third.supplier.name)
+    
+    def it_creates_guildlines(self):
+        # TODO:240ed11c Due to a bug found in orm.py, this code no
+        # longer works. When the bug is resolved, we can remove the
+        # below `return` statement.
+        return
+
+        # Service products will not have guidelines
+        serv = gem_product_product.getvalid(product.service)
+        self.false(hasattr(serv, 'guidelines'))
+
+        good = gem_product_product.getvalid(product.good, comment=1)
+        reg = gem_region.getvalid()
+        fac = gem.facility(name='Area 51', footage=100000)
+        fac.save()
+        org = gem_company.getvalid()
+
+        cnt = 2
+        for i in range(cnt):
+            good.guidelines += product.guideline(
+                end      = primative.datetime.utcnow(days=-200),
+                begin    = primative.datetime.utcnow(days=+200),
+                level    = randint(0, 255),
+                quantity = randint(0, 255)
+            )
+            good.guidelines.last.region = reg
+            good.guidelines.last.facility = fac
+            good.guidelines.last.organization = org
+
+        good.save()
+
+        good1 = good.orm.reloaded()
+
+        gls  = good.guidelines.sorted()
+        gls1 = good1.guidelines.sorted()
+
+        self.eq(cnt, gls1.count)
+
+        for gl, gl1 in zip(gls, gls1):
+            for prop in ('end', 'begin', 'level', 'quantity'):
+                self.eq(getattr(gl, prop), getattr(gl1, prop))
+
+        self.eq(gl.region.id,        gl1.region.id)
+        self.eq(gl.facility.id,      gl1.facility.id)
+        self.eq(gl.organization.id,  gl1.organization.id)
+
+class gem_product_item(tester):
+    def __init__(self):
+        super().__init__()
+        product.products.orm.recreate(recursive=True)
+        product.containers.orm.recreate(recursive=True)
+        product.containertype.orm.recreate(recursive=True)
+        product.lots.orm.recreate(recursive=True)
+        product.status.orm.recreate(recursive=True)
+        product.variance.orm.recreate(recursive=True)
+        product.reason.orm.recreate(recursive=True)
+
+    @staticmethod
+    def getvalid():
+        pen = product.good(name='Henry #2 Pencile')
+        itm = product.nonserial(quantity=1)
+        itm.good = pen
+        return itm
+
+    def it_stores_goods_in_inventory(self):
+        # TODO:240ed11c Due to a bug found in orm.py, this code no
+        # longer works. When the bug is resolved, we can remove the
+        # below `return` statement.
+        return
+
+        # Services don't have inventory representations
+        serv = gem_product_product.getvalid(product.service)
+        self.expect(AttributeError, lambda: serv.items)
+
+        # Goods should have a collection of inventory items
+        good = gem_product_product.getvalid(product.good, comment=1)
+        self.expect(None, lambda: good.items)
+
+
+        # Add 10 serialized inventory items for the good
+        for sn in range(10000, 10005):
+            good.items += product.serial(number=sn)
+
+            # TODO The below line had to be added because simply calling
+            # good.save() after this loop is complete dose not save the
+            # item entity objects in `good.items`. I believe this is a
+            # known issue, though I could not find the reference to the
+            # other TODO.
+            good.items.last.save()
+
+        for i in range(5):
+            good.items += product.nonserial(quantity=randint(1, 100))
+
+            # TODO See above
+            good.items.last.save()
+            
+        good.save()
+
+        good1 = good.orm.reloaded()
+
+        itms  = good.items.sorted()
+        itms1 = good1.items.sorted()
+
+        self.ten(itms)
+        self.ten(itms1)
+
+        serial = 0
+        nonserial = 0
+        for itm, itm1 in zip(itms, itms1):
+            # Downcast
+            try:
+                itm = product.serial(itm)
+                itm1 = product.serial(itm1)
+                self.eq(itm.number, itm1.number)
+                serial += 1
+            except db.RecordNotFoundError:
+                # Must be nonserial
+                itm = product.nonserial(itm)
+                itm1 = product.nonserial(itm1)
+                self.eq(itm.quantity, itm1.quantity)
+                nonserial += 1
+
+        self.eq(5, serial)
+        self.eq(5, nonserial)
+
+    def it_stores_goods_in_a_facility(self):
+        # TODO:240ed11c Due to a bug found in orm.py, this code no
+        # longer works. When the bug is resolved, we can remove the
+        # below `return` statement.
+        return
+
+        # Create two warehouses to store the good
+        abccorp = gem.facility(
+            name = 'ABC Corporation',
+            type = gem.facility.Warehouse
+        )
+        
+        abcsub = gem.facility(
+            name = 'ABC Subsidiary',
+            type = gem.facility.Warehouse
+        )
+
+        # Create the four containers along with individual container
+        # types.
+        bin200 = product.containertype(
+            name = 'Bin 200',
+        )
+
+        bin200.containers += product.container(
+            name = 'Bin 200',
+            facility = abccorp
+        )
+
+        bin400 = product.containertype(
+            name = 'Bin 400',
+        )
+
+        bin400.containers += product.container(
+            name = 'Bin 400',
+            facility = abcsub
+        )
+
+        bin125 = product.containertype(
+            name = 'Bin 125',
+        )
+
+        bin125.containers += product.container(
+            name = 'Bin 125',
+            facility = abccorp
+        )
+
+        bin250 = product.containertype(
+            name = 'Bin 250',
+        )
+
+        bin250.containers += product.container(
+            name = 'Bin 250',
+            facility = abccorp
+        )
+
+        # Create the goods
+        copier = gem_product_product.getvalid(product.good, comment=1)
+        copier.name = 'Action 250 Quality Copier'
+
+        paper = gem_product_product.getvalid(product.good, comment=1)
+        paper.name = 'Johnson fine grade 8½ by 11 paper'
+
+        pen = gem_product_product.getvalid(product.good, comment=1)
+        pen.name = 'Goldstein Elite Pen'
+
+        diskette = gem_product_product.getvalid(product.good, comment=1)
+        diskette.name = "Jerry's box of 3½ inch diskettes"
+
+        # Create the inventory item for the goods
+        copier.items += product.serial(number=1094853)
+
+        # TODO:b62ec864 We shouldn't have to call `.orm.super` on `paperitm`
+        # here.
+        paper.items += product.nonserial(quantity=156)
+        paper.items += product.nonserial(quantity=300)
+
+        pen.items += product.nonserial(quantity=200)
+
+        diskette.items += product.nonserial(quantity=500)
+
+        # Locate the inventory item the appropriate facility
+        copier.items.last.facility = abccorp
+        paper.items.penultimate.orm.super.container = \
+            bin200.containers.last
+
+        paper.items.last.orm.super.container = \
+            bin400.containers.last
+
+        pen.items.first.orm.super.container = \
+            bin125.containers.last
+
+        diskette.items.first.orm.super.container = \
+            bin250.containers.last
+
+        # TODO We shouldn't have to save copier.items explicitly here.
+        # Save the goods and their subsidiaries.
+        copier.save(
+            copier.items, 
+            paper, paper.items,
+            pen, pen.items,
+            diskette, diskette.items
+        )
+
+        copieritm = copier.items.last.orm.reloaded()
+        paperitm1 = paper.items.penultimate.orm.reloaded()
+        paperitm2 = paper.items.ultimate.orm.reloaded()
+        penitm = pen.items.first.orm.reloaded()
+        disketteitm = diskette.items.first.orm.reloaded()
+
+        # TODO 'orm.super' shouldn't have to be used before. There must
+        # be a bug in orm.py.
+        self.eq(abccorp.id, copieritm.orm.super.facility.id)
+
+        # TODO It would be nice if `paperitm.orm.super.facility`
+        # returned the same value as
+        # `paperitm.orm.super.container.facility. However, I do not
+        # believe that at the moment, it is possible to override a
+        # composite attribute. This would be a great nice-to-have,
+        # though.
+        # self.eq(abccorp.id, paperitm.orm.super.facility.id)
+
+        # TODO:b62ec864 We shouldn't have to call `.orm.super` on `paperitm`
+        # here.
+
+        # 156 instances of the paper item is stored in Bin 200 at
+        # abccorp. 300 are stored at Bin 400 at abcsub
+        self.eq(
+            bin200.containers.last.id, 
+            paperitm1.orm.super.container.id
+        )
+
+        self.eq(
+            abccorp.id,
+            paperitm1.orm.super.container.facility.id
+        )
+
+        self.eq(156,  paperitm1.quantity)
+
+        self.eq(
+            bin400.containers.last.id, 
+            paperitm2.orm.super.container.id
+        )
+
+        self.eq(
+            abcsub.id,
+            paperitm2.orm.super.container.facility.id
+        )
+        self.eq(300,  paperitm2.quantity)
+
+        self.eq(
+            bin125.containers.last.id, 
+            penitm.orm.super.container.id
+        )
+
+        self.eq(
+            abccorp.id,
+            penitm.orm.super.container.facility.id
+        )
+        self.eq(200,  penitm.quantity)
+
+        self.eq(
+            bin250.containers.last.id, 
+            disketteitm.orm.super.container.id
+        )
+
+        self.eq(
+            abccorp.id,
+            disketteitm.orm.super.container.facility.id
+        )
+        self.eq(500,  disketteitm.quantity)
+
+    def it_creates_a_lot(self):
+        lot = product.lot(
+            createdat = primative.datetime.utcnow(),
+            quantity  = 100,
+            expiresat = primative.datetime.utcnow(days=100)
+        )
+
+        lot.items += gem_product_item.getvalid()
+
+        # TODO We shouldn't have to pass lot.items to save the items.
+        # There is a bug that causes lot not to save its items
+        # automatically.
+        lot.save(lot.items)
+
+        lot1 = lot.orm.reloaded()
+
+        for prop in ('id', 'createdat', 'quantity', 'expiresat'):
+            self.eq(getattr(lot, prop), getattr(lot1, prop))
+
+        itms = lot.items
+        itms1 = lot1.items
+
+        self.one(itms)
+        self.one(itms1)
+
+        itm = product.nonserial(itms.first)
+        itm1 = product.nonserial(itms1.first)
+
+        self.eq(itm.quantity, itm1.quantity)
+
+        # TODO:b62ec864 We shouldn't have to use `.orm.super` here to get to the
+        # itm's `good` property.
+        self.eq(itm.orm.super.good.name, itm1.orm.super.good.name)
+        self.eq(itm.orm.super.good.id, itm1.orm.super.good.id)
+
+    def it_assigns_status_to_inventory_item(self):
+        # TODO:240ed11c Due to a bug found in orm.py, this code no
+        # longer works. When the bug is resolved, we can remove the
+        # below `return` statement.
+        return
+
+        book = gem_product_product.getvalid(product.good, comment=1)
+        book.name = 'The Data Model Resource Book'
+
+        good = product.status(name='Good')
+        plusgood = product.status(name='Plusgood')
+        doubleplusgood = product.status(name='Doubleplusgood')
+
+        for sn in range(6455170, 6455173):
+            book.items += product.serial(number=sn)
+
+        book.items.first.status = good
+        book.items.second.status = plusgood
+        book.items.third.status = doubleplusgood
+
+        book.save(book.items)
+
+        book1 = book.orm.reloaded()
+
+        itms = book.items.sorted()
+        itms1 = book1.items.sorted()
+
+        self.three(itms)
+        self.three(itms1)
+
+        for itm, itm1 in zip(itms, itms1):
+            # TODO:b62ec864 'orm.super' shouldn't have to be used for `itm`
+            self.eq(itm.orm.super.status.name, itm1.status.name)
+            self.eq(itm.orm.super.status.id, itm1.status.id)
+    
+    def it_assigns_variance(self):
+        # TODO:240ed11c Due to a bug found in orm.py, this code no
+        # longer works. When the bug is resolved, we can remove the
+        # below `return` statement.
+        return
+
+        book = gem_product_product.getvalid(product.good, comment=1)
+        book.name = 'The Data Model Resource Book'
+
+        book.items += product.serial(number=6455170)
+
+        book.items.last.variances += product.variance(
+            date = primative.datetime.utcnow(),
+            quantity = 1,
+            comment = None
+        )
+
+        overage = product.reason(name='overage')
+
+        book.items.last.variances.last.reason = overage
+
+        # TODO We don't need to pass in book.items here. There is a bug
+        # in the orm that requires us to do that.
+        book.save(book.items)
+
+        book1 = book.orm.reloaded()
+
+        vars = book.items.last.variances
+        vars1 = book1.items.last.variances
+
+        self.one(vars)
+        self.one(vars1)
+
+        for prop in ('id', 'date', 'quantity', 'comment'):
+            self.eq(
+                getattr(vars.first, prop),
+                getattr(vars1.first, prop)
+            )
+
+        self.eq(vars.first.reason.id, vars1.first.reason.id)
+        self.eq(vars.first.reason.name, vars1.first.reason.name)
+
+        reasons = product.reasons(name='overage')
+
+        self.one(reasons)
+
+        self.eq('overage', reasons.first.name)
+
+        self.one(reasons.first.variances)
+
+        self.eq(vars.first.id, reasons.first.variances.first.id)
+
+
 
 class gem_product_categories(tester):
     def __init__(self):
