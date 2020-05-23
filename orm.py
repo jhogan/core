@@ -3044,7 +3044,7 @@ class mappings(entitiesmod.entities):
                     )
                 )
 
-            ''' Add composite and constiuent mappings '''
+            ''' Add composite and constituent mappings '''
             # For each class that inherits from `orm.entity`
             for e in orm.getentitys():
 
@@ -3060,7 +3060,7 @@ class mappings(entitiesmod.entities):
                     # If `e` is a constituent of `self`
                     if map.entities is self.orm.entities:
 
-                        # Add a entity mapping for the composite
+                        # Add an entity mapping for the composite
                         maps.append(
                             entitymapping(e.__name__, e, isderived=True)
                         )
@@ -3072,6 +3072,7 @@ class mappings(entitiesmod.entities):
 
             ''' Add associations mappings to self '''
             # For each class that inherits form `orm.association`
+
             for ass in orm.getassociations():
 
                 # For each of the `association`'s entity mappings
@@ -4507,6 +4508,9 @@ class orm:
 
     @property
     def createtable(self):
+        # TODO:0a8ee7fb Use backticks for column names so reserved words
+        # can be used. We should write tests to ensure that orm.entity
+        # object have no issues using reserved words for column names.
         r = 'CREATE TABLE ' + self.table + '(\n'
 
         for i, map in enumerate(self.mappings):

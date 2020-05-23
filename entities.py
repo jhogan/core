@@ -534,6 +534,11 @@ class entities(object):
 
                 self.onadd(self, entityaddeventargs(t))
         except AttributeError as ex:
+            # NOTE You can use the below line to get pdb.py to the place
+            # the original exception was raised:
+            #
+            # import pdb
+            # pdb.post_mortem(ex.__traceback__)
             msg = str(ex)
             msg += '\n' + 'Ensure the superclass\'s __init__ is called.'
             raise AttributeError(msg)
