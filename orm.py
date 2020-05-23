@@ -1584,7 +1584,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             msg = '''
                 Missing arguments collection.  Be sure to add arguments in the
                 *args portion of the constructor.  If no args are needed for
-                the query, just pass an empty tuple to indicate you none are
+                the query, just pass an empty tuple to indicate that none are
                 needed.  Note that this is an opportunity to evaluate whether
                 or not you are opening up an SQL injection attact vector.
             '''
