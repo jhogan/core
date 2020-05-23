@@ -1040,14 +1040,9 @@ class entitiesmeta(type):
 
     @property
     def count(cls):
-        return cls.all.count
+        return cls.orm.all.count
 
 class entities(entitiesmod.entities, metaclass=entitiesmeta):
-    # TODO Move to orm class
-    @classproperty
-    def all(cls):
-        return cls(allstream)
-
     re_alphanum_ = re.compile('^[a-z_][0-9a-z_]+$', flags=re.IGNORECASE)
 
     def __init__(self, initial=None, _p2=None, *args, **kwargs):
@@ -1807,7 +1802,6 @@ class entitymeta(type):
         body['updatedat'] = fieldmapping(datetime)
 
         for k, v in body.items():
-
             # Is v a reference to a module:
             if isinstance(v, ModuleType):
                 # If the datetime module was passed in, convert it to
@@ -2289,6 +2283,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             crud = None
             sql, args = (None,) * 2
 
+
         try:
             # Take snapshot of before state
             st = self.orm.persistencestate
@@ -2359,6 +2354,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             # collection because it causes infinine
                             # recursion. The below line will prevent
                             # this.
+
+                            # NOTE This line seems to be the source of a
+                            # lot of saving problems.
                             if e.orm.entities is not type(es):
                                 continue
 
@@ -4262,6 +4260,10 @@ class orm:
         self.joins                =  None
         self._abbreviation        =  str()
         self.initing              =  False
+
+    @classproperty
+    def all(cls):
+        return cls.entities(allstream)
 
     def exists(self, o):
         try:
