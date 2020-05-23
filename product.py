@@ -24,8 +24,35 @@ from decimal import Decimal as dec
 #   class dimension:
 #       number = decimal.Decimal
 
-class products(orm.entities):
-    pass
+# TODO We should have a timespan type: 
+#
+# Instead of:
+#
+# class doorbell(entity):
+#     begin = datetime
+#     end   = datetime
+#
+# We should be able to type:
+#
+# class doorbell(entity):
+#     datespan = True
+#
+# There should only be one span per class. The span should be availble
+# as an object of the class that exposes certain helper methods.
+#
+#    
+#     db = doorbell()
+#     db.span.iscurrent
+#     db.span.getiscurrent(somedate)
+# 
+# This method and property should regard the None value for `begin` as
+# infinite into the past and a None value for `end` as infinite into the
+# future.
+
+# TODO We should have a date data type and a time data type
+
+
+class products(orm.entities): pass
 
 class category_classifications(orm.associations):
     # TODO:1c409d9d The ORM does not call orm.entities.brokenrules when
@@ -59,22 +86,30 @@ class category_classifications(orm.associations):
                 
         return brs
     '''
-class  categories(orm.entities):            pass
-class  goods(products):                     pass
-class  services(products):                  pass
-class  category_types(orm.associations):    pass
-class  features(orm.entities):              pass
-class  qualities(features):                 pass
-class  colors(features):                    pass
-class  dimensions(features):                pass
-class  sizes(features):                     pass
-class  brands(features):                    pass
-class  softwares(features):                 pass
-class  hardwares(features):                 pass
-class  billings(orm.entities):              pass
-class  measures(orm.entities):              pass
-class  measure_measures(orm.associations):  pass
-class  product_features(orm.associations):  pass
+
+class categories(orm.entities):            pass
+class goods(products):                     pass
+class services(products):                  pass
+class category_types(orm.associations):    pass
+class features(orm.entities):              pass
+class qualities(features):                 pass
+class colors(features):                    pass
+class dimensions(features):                pass
+class sizes(features):                     pass
+class brands(features):                    pass
+class softwares(features):                 pass
+class hardwares(features):                 pass
+class billings(orm.entities):              pass
+class measures(orm.entities):              pass
+class measure_measures(orm.associations):  pass
+class feature_features(orm.associations):  pass
+class product_features(orm.associations):  pass
+class supplier_products(orm.associations): pass
+class priorities(orm.entities):            pass
+class ratings(orm.entities):               pass
+class guidelines(orm.entities):            pass
+class items(orm.entities):                 pass
+class serials(items):                      pass
 
 class product(orm.entity):
     """ An abstact class that models all products including products
@@ -82,6 +117,43 @@ class product(orm.entity):
     suppliers, the products of an enterprise's competitors, etc. See
     the `good` and `service` subentity classes for the concrete
     implementations.
+
+    Unit of Measures
+    ----------------
+    Products have a composite called ``measure``.
+
+        henrys_2_pencile.measure
+    
+    This is an instance of the ``product.measure`` class. ``measure`` is
+    short for unit of measure. The composite unit of measure is the
+    quantity the product is sold in. For example, the product
+    henrys_2_pencile are sold individually so we can assign a unit of
+    measure call each::
+
+        henrys_2_pencile.measure = product.measure(name="each")
+
+    Quantities can be converted into each other. Say we have another
+    product called "Small Box of Henry's #2 penciles" and we wanted to
+    see how many pencils that actually is. We can do this
+
+        assert
+            12,
+            smallbox_of_henrys_2_penciles.measure.convert(henrys_2_pencile.measure)
+
+    Here we see that there are 12 individual pencils in a small box of
+    Henry's #2 pencile. This can be useful for inventory reporting.
+
+    Note: The unit of measure class `measure` comes into play in the
+    `dimension(feature)` as well. In this case, the product is
+    associated with the `dimension(feature)` as a constituent instead of
+    a composite.
+
+    Inventory
+    ---------
+
+    The `good` subentity of `product` has concrete inventory item
+    representations in product.serial an product.nonserial classes. See
+    those entity objects for more information.
     """
 
     def __init__(self, *args, **kwargs):
@@ -135,7 +207,55 @@ class product(orm.entity):
     # specific books throughout the world
     isbn = str, 10, 10
 
+    # A collection of feature interactions to which this product
+    # provides context.
+
+    # TODO:An error occurs when we uncomment this line. This is probably
+    # due to the fact that one-to-many relationships are not supported
+    # currently between entity objects and association objects. (See
+    # 167d775b and 28a4a305). When this relationship is supported, we can
+    # uncomment this line and the
+    # PRODUCT FEATURE INTERACTION/feature_features association can be
+    # tested in gem_product_product.
+    # feature_features = feature_features
+
+    # The pricing components for this product.
+    prices = prices
+
+    # The many estimated costs of a product.
+    estimates = estimates
+
+    def getprice(self, org, regs=None, pts=None, qty=None):
+        """ Return the least expensive price of a product for an
+        organization (`org`) selling the product given the regions
+        (`regs`) and quantity (`qty`) and party type (`pts).
+
+        :param: regs regions: A collection (list, tuple, regions) of
+        gem.region object that will be used to find the lowest base
+        price and highest discounts for the total price.
+
+        :param: qty int: The quantity of the product used to find the
+        lowest base prices and highest discounts the product has by
+        querying its quantity break entity.
+
+        :param: pts gem.types: A collection (list, tuple,
+        gem.party_types) of gem.type entities that will be used to find
+        the lowes base price and highest discount prices for the total
+        price.
+        """
+        return self.prices.getprice(
+            org  = org,
+            regs = regs, 
+            pts  = pts,
+            qty  = qty,
+        )
+
 class category(orm.entity):
+    """ A recursive entity to categories products.
+
+    Note that this entity was originally called PRODUCT CATEGORY in "The
+    Data Modeling Resource Book".
+    """
     entities = categories
 
     # The category's name
@@ -147,6 +267,54 @@ class category(orm.entity):
     # subcategory of "office supplies", which may be a subcategory of
     # "computer supplies"
     categories = categories
+
+    # These price components (`prices`) are associated with and
+    # dependent on this category.
+    prices = prices
+
+    def __contains__(self, other):
+        """ If `other` is in the category, True is returned; False
+        otherwise. Note that since category is recursive, other is "in"
+        self if it has the same id as self or if it has the id of a
+        member of self's ancestry.
+
+        For example, give a hierarchy of product categories that looks
+        like this:
+
+            Category: electronics / computers /laptops
+
+        We could assert the following for the above categories::
+
+            assert laptop in laptop 
+            assert laptop in computer 
+            assert laptop in electronics 
+        """
+        # TODO:d45c34a0 These methods should be automatically available
+        # for any recursive entity.
+        if not other:
+            return False
+
+        return other.id in (x.id for x in (self + self.ancestry))
+        
+    @property
+    def ancestry(self):
+        """ Return a collection of category entities that are the
+        lineage of `self` starting with `self`'s parent, then
+        grandparent, and so on.
+        """
+
+        # TODO:d45c34a0 These methods should be automatically available
+        # for any recursive entity.
+        cats = categories()
+        
+        cat = self.category
+
+        while cat:
+            cats += cat
+            cat = cat.category
+
+        return cats
+
 
 class category_classification(orm.association):
     """ An association linking a product witha a category.
@@ -206,9 +374,23 @@ class category_classification(orm.association):
         return brs
 
 class good(product):
-    pass
+    """ Goods are items that are usually (but not always) tangible, such
+    as pens, salt, apples, and hats. Instance of a good as concrete
+    inventory item are represented by the product.serial an
+    product.nonserial classes.
+    """
+
+    # A collection of guidelines for the repurchase of a good
+    guidelines = guidelines
+
+    # The concrete inventory items located in a warehouse or the like.
+    items = items
 
 class service(product):
+    """ Services are activities provided by other people, who include
+    doctors, lawn care workers, dentists, barbers, waiters, or online
+    servers, a book, a digital videogame or a digital movie.
+    """
     pass
 
 class category_type(orm.association):
@@ -224,7 +406,7 @@ class category_type(orm.association):
     Interest in a product category can change over time so a `begin` and
     `end` date are included.
 
-    Note that this class is based off the MARKET_INTEREST entity in "The
+    Note that this class is based off the MARKET INTEREST entity in "The
     Data Modeling Resource Book". The name "category_type" is used
     instead because it adhers to the ORM's convention on naming
     associations - consequently resulting in an unfortunate misnomer.
@@ -238,8 +420,14 @@ class feature(orm.entity):
     """ Used to define the ways a product may be modified or tweaked.
     `feature` entities are associate with `product` entities via
     `product_feature` associations.
+
+    Note that this entity was originally called PRODUCT FEATURE in "The
+    Data Modeling Resource Book".
     """
     name = str
+
+    # The many estimated costs of a product feature.
+    estimates = estimates
 
 class quality(feature):
     """ A feature to classify a product by value such as "grade A" or
@@ -259,7 +447,7 @@ class dimension(feature):
     """ A dimension is a numeric extent representing a feature of a
     product. `dimensions` are coupled with `measures`. For example, a
     product may have a `dimension.number` equal to 11 coupled with a
-    `measure` entity of with a `name` of 'width'.
+    `measure` entity with a `name` of 'width', for example.
     """
 
     def __init__(self, *args, **kwargs):
@@ -271,7 +459,22 @@ class dimension(feature):
         if self.orm.isnew:
             self.name = None
 
-    number = decimal.Decimal
+    number = dec
+
+    def convert(self, meas):
+        """ Returns the value of the `dimension` converted to the unit
+        of measure `meas`. Note that the conversion factor must be
+        discoverable within the `measure_measures` association.
+
+        :param: meas product.measure: The unit of measure that the
+        dimension.number will be converted to.
+        """
+        f, dir = self.measure.convert(meas, dir=True)
+
+        if dir:
+            return f * self.number
+        else:
+            return self.number / f
 
 class size(feature):
     """ A feature to specify how large or small a product is in more
@@ -312,14 +515,17 @@ class billing(feature):
     pass
 
 class measure(orm.entity):
-    """ A `measure` defines the product in turms of the type of
+    """ A `measure` defines the product in terms of the type of
     measurement for the product. See `dimension` for more.
 
-    Note, this class is called UNIT_OF_MEASURE in the "The Data Modeling
+    Note, this class is called UNIT OF MEASURE in the "The Data Modeling
     Resource Book".
     """
     abbr        =  str
     name        =  str
+
+    # A unit of measure can have zero or more dimension(feature) entity
+    # objects as constituents
     dimensions  =  dimensions
     products    =  products
 
@@ -327,6 +533,143 @@ class measure(orm.entity):
         super().__init__(*args, **kwargs)
         if self.orm.isnew:
             self.abbr = None
+
+    def convert(self, meas, dir=False, _selfonly=None, _measonly=None):
+        """ Convert from the current unit of measure (``self``) to the
+        ``product.measure`` paramater ``meas``. If data is found to
+        calculate the conversion (the conversion data is stored in the
+        ``measure_measure`` association) a ``Decimal`` value is
+        returned. Otherwise, a ValueError is raised. Note that this
+        algorithm will resolve transitive conversion associations (see
+        comments).
+
+        :param: meas product.measure: The unit of measure that the
+        the current unit of measure will be converted to.
+
+        :param: dir bool: If True, a tuple be returned instead of a
+        Decimal. The tuple's first element will be the Decimal that
+        would have been returned if dir was False. The second element
+        will be the a bool.  The bool will be True if the factor was
+        discovered going from subject to object in measure_measures;
+        False otherwise. The direction is import for some calling code
+        so the decision to multiply or divide the factor can be made
+        (see `dimension.convert()`).
+        """
+
+        # NOTE This algorithm was relatively difficult to get to work
+        # with three entries in measure_measures. There may be more bugs
+        # discovered when more edge cases are tested.
+
+        # When recursing, we won't want to enter into a different loop.
+        if _selfonly in (True, None) and _measonly in (False, None):
+
+            # Look to see if there is a match found between ``meas`` and
+            # mm.object.
+            for mm in self.measure_measures:
+                if mm.object.id == meas.id:
+                    
+                    # Immediately return the Decmial `factor`
+                    if dir:
+                        return mm.factor, True
+                    else:
+                        return mm.factor
+                else:
+                    # No match was found so `try` recursing. This is for
+                    # transitive logic. For example, say you have the
+                    # following measure associations in measure_measures
+                    # 
+                    #  subject   object    factor
+                    #  -------   ------    ------
+                    #  each      smallbox  12
+                    #  smallbox  largebox  2
+                    #
+                    # Above we can see that "each" is associated with
+                    # "smallbox", and "smallbox" is associated with
+                    # "largebox". Thus, there is a transitive and
+                    # implicit association between "each" and "largebox"
+                    # with a factor of 12 * 2. The recursive call below
+                    # resolves this and calculates the factor.
+
+                    try:
+                        f = mm.object.convert(meas, _selfonly=True)
+                    except ValueError:
+                        pass
+                    else:
+                        return f * mm.factor
+
+        # When recursing, we won't want to enter into a different loop.
+        if _selfonly in (False, None) and _measonly in (True, None):
+            # We weren't able to find an association with
+            # self.measure_measures, so we can try going backwards with
+            # `meas.measure_measures`. This is the logic tha gets used
+            # when we convert the opposite way from the above loop.
+            #
+            # For example:
+            #
+            #     smallbox.convert(largebox) 
+            #
+            #     vs.
+            #
+            #     largebox.convert(smallbox) 
+
+            for mm in meas.measure_measures:
+                subid, objid = mm.subject.id, mm.object.id
+                if subid == meas.id and (
+                        objid == self.id or _measonly
+                    ):
+                    if dir:
+                        return mm.factor, False
+                    else:
+                        return mm.factor
+                else:
+                    # TODO Consolidate this with above logic
+                    try:
+                        f = mm.object.convert(mm.object, _measonly=True)
+                    except ValueError:
+                        pass
+                    else:
+                        return f * mm.factor
+
+        raise ValueError(
+            'Data could not be found to make the conversion.'
+        )
+
+class feature_feature(orm.association):
+    """ This reflexive associations store references to two
+    different `features`. The `type` property values `Incompatibility` and
+    `Dependency` will determine whether or not the features are
+    incompatible or dependent on one another respectively within the
+    context of the implicit `product` composite. (Note that the product
+    entity has a collection of `feature_features` which automatically
+    gives `feature_feature` a `product` composite.)
+
+    Note that this entity was originally called
+    PRODUCT FEATURE INTERACTION in "The Data Modeling Resource Book".
+    """
+
+    # Constants for the `type` property. Do not change the values for
+    # they are used in database entries.
+
+    # Declares that the `subject` feature is incompatable with the
+    # `object` feature.
+    Incompatibility = 0
+
+    # Declares that the `subject` feature is incompatable with the
+    # `object` feature.
+    Dependency = 1
+
+    # The type property. Valid value are
+    # feature_feature.Incompatibility and feature_feature.Dependency.
+    # TODO Write validation rules to ensure a valid type is selected.
+    type = int
+
+    # The first feature. The meaning of the order is determined by the
+    # `type` property.
+    subject = feature
+
+    # The second feature. The meaning of the order is determined by the
+    # `type` property.
+    object = feature
 
 class measure_measure(orm.association):
     subject  =  measure
