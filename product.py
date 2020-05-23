@@ -12,7 +12,7 @@ import primative
 from datetime import datetime
 from dbg import B
 import gem
-import decimal
+from decimal import Decimal as dec
 
 #TODO The `decimal` module should be usable as type:
 #
