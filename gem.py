@@ -145,6 +145,8 @@ class unit(organization):
         self.isicv4       =  None
 
 class division(unit):
+    # TODO:afa4ffc9 Is this how divisions are related to position in the
+    # book.
     positions = positions
 
 class job(orm.entity):
