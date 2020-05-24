@@ -110,6 +110,119 @@ class ratings(orm.entities):               pass
 class guidelines(orm.entities):            pass
 class items(orm.entities):                 pass
 class serials(items):                      pass
+class prices(orm.entities):
+    def getprice(self, org, regs=None, pts=None, qty=None):
+        # FIXME This algorithm is not complete and has multiple issues.
+        # For example, ordervalues, saletype and product features
+        # constraints have not been implemented. However, more
+        # problematic is that there conditional logic between these
+        # constraints has not been implemeted. 
+        #
+        # For example, the algorithm should test price entries that
+        # match a region and a price break, but that is not currently
+        # done. Also, whether this should be a conjunctive test in the
+        # first place may need to be parameterized. For example, a
+        # product manager may want to define custom conditional logic
+        # for finding the right price. Also, if no match is found it's
+        # unclear at the momemnt how a fallback price could work.
+        #
+        # I think the best way to solve these problems is to wait for a
+        # real world problem to present itself, then use that problem to
+        # create a simple solution with the long term goal in mind of
+        # being able to provide a complete implementation of the
+        # algorithm.
+
+
+        regs = None if regs is None else gem.regions(initial=regs) 
+        pts  = list() if pts  is None else gem.types(initial=pts) 
+            
+        bases = prices()
+        discounts = prices()
+        surcharges = prices()
+
+        for pr in self:
+            # TODO We have to check the database to see what subtype pr
+            # is. It would be better if the price collection had its 
+            # subtypes loaded already. Alternatively, subtypes may be
+            # over kill for prices. It would seem a `type` property
+            # would be better, but I haven't decided on that.
+
+            # TODO:b62ec864 We should not have to put `.orm.super`
+            # here
+
+            # Go up a level so for all pr, `type(pr) is product.price`
+            if pr.orm.super:
+                pr = pr.orm.super
+
+            if base.orm.exists(pr):
+                prs = bases
+            elif discount.orm.exists(pr):
+                prs = discounts
+            elif surcharge.orm.exists(pr):
+                prs = surcharges
+            else:
+                raise TypeError(
+                    'Type could not be determined '
+                    'for price "%s": %s' % (pr.id, type(pr).__name__)
+                )
+
+            for cat in self.product.categories:
+                if pr.category in cat:
+                    prs += pr
+
+            if pr.organization.id != org.id:
+                continue
+
+            if regs is None:
+                prs += pr
+            else:
+                for reg in regs:
+                    if pr.region and reg in pr.region:
+                       prs += pr
+
+            if qty is not None and pr.quantitybreak and \
+                    qty in pr.quantitybreak:
+                prs += pr
+
+            # TODO:b62ec864 We should not have to put `.orm.super`
+            # here
+            pt = pr.type
+            if pt and pt.id in (x.id for x in pts):
+                prs += pr
+            
+        if not bases.count:
+            raise ValueError('Could not find a base price')
+
+        def f(x):
+            if x.percent is None:
+                return x.price
+            else:
+                return x.percent
+
+        basepr = bases.min(f)
+
+        pr = basepr.price
+
+        def apply(prs, additive):
+            nonlocal pr
+            for pr1 in prs:
+                if additive:
+                    if pr1.percent is None:
+                        pr += pr1.price
+                    else:
+                        pr += (pr * (pr1.percent * dec('.01')))
+                else:
+                    if pr1.percent is None:
+                        pr -= pr1.price
+                    else:
+                        pr -= (pr * (pr1.percent * dec('.01')))
+
+        apply(discounts, additive=False)
+        apply(surcharges, additive=True)
+
+        return pr, basepr + discounts + surcharges
+                
+    
 
 class product(orm.entity):
     """ An abstact class that models all products including products
