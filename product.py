@@ -785,14 +785,34 @@ class feature_feature(orm.association):
     object = feature
 
 class measure_measure(orm.association):
+    """ An associative entity that privides the capability to use a
+    common unit of measure (i.e., `subject`) to calculate how much inventory
+    an enterprise has in another unit of measure (i.e., `object`). The
+    attribute `factor` is the conversion factor is the number to
+    multiply `subject` by to get the `object`.
+
+    For example, there may be several products for Henry #2 penciles
+    that have different units of measure such as "each", "small box",
+    and "large box". In many cases, organizations need to show total
+    inventories, costs, and sales for all of a product regardless of its
+    unit of measure (`product.measure`). By defining a common unit of
+    measure, (such as "each", and including a conversion `factor`, e.g.,
+    12 for "small box" and 24 for "large box"), it is possible to
+    determine the total amount of Henry #2 penciles there are in
+    inventory and how many have been sold.
+    """
+
     subject  =  measure
     object   =  measure
-    factor   =  decimal.Decimal
+    factor   =  dec
 
 class product_feature(orm.association):
     """ Associates a product with a feature. The association will
     indicate whether the feature is required, standard, optional or
     selectable with the product.
+
+    Note that this entity was originally called
+    PRODUCT FEATURE APPLICABILITY in "The Data Modeling Resource Book".
     """
 
     ''' Types '''
@@ -824,3 +844,702 @@ class product_feature(orm.association):
 
     # The feature portion of the association
     feature = feature
+
+class supplier_product(orm.association):
+    """ Since products can be sold by one or more suppliers and a
+    supplier can sell more than one product, the ``supplier_product``
+    association is used to store this many-to-many relationship.
+    """
+
+    # The participating entity objects of the associations. Note that
+    # the supplier will usually be a gem.company subtype of
+    # `gem.organization`. We will make it simply an `organization` to
+    # prodive the greatest flexability.
+    supplier  =  gem.organization
+    product   =  product
+
+    # The begin and end datetimes indicate the timespan that the
+    # supplier offered by the `supplier`
+    begin     =  datetime
+    end       =  datetime
+
+    # The `lead` is the average amount of time in days it takes a
+    # supplier to ship an order to a customer location from the time of
+    # order. Note that the actual average can be calculated by analysing
+    # the order an shipping data, however, the `lead` time is still
+    # provided here because some suppliers quote a standard amout of
+    # delivery for each product.
+    lead      =  int
+
+class priority(orm.entity):
+    """ This class privides information to track the priority of which
+    supplier to order a given product from first, second third and so
+    on. There is a one-to-many relationship between the
+    ``supplier_products`` association and this class.
+
+    Note that the original name for this class from "The Data Model
+    Resource Book was called PREFERENCE TYPE.
+    """
+    entities = priorities
+
+    # TODO Since there is a finite number of priorities, we should
+    # fallowing the model of the `product.rating` type which autosaves
+    # the the record to the database in the construct if it needs too.
+    # See product.rating.__init__ and product.rating.brokenrules. This
+    # pattern may become so redundant that it could be encapsulated in a
+    # method like orm.ensure()
+
+    # The ordinal indicating the priority. A priority of 0 indicates the
+    # highest prioritity. 1 would be the second highest, and so one.
+    ordinal = int
+
+    supplier_products = supplier_products
+
+class rating(orm.entity):
+    """ This class is used to rate the overall performance for each
+    product by its supplier. 
+
+    Note you will never need to save() the rating object. If the rating
+    is in the database already, it will be discovered by the constructor
+    and returned. If it is not in the database, it will be created
+    automatically within the constructor.
+
+    Note that the original name for this class from "The Data Model
+    Resource Book was called RATING TYPE.
+    """
+
+    # TODO When 167d775b and 28a4a305 are resolved, we can begin
+    # writing tests in it_associates_product_to_suppliers to add
+    # ratings to supplier_products. As of now, that feature shouldn't
+    # work.
+
+    # Possible values for the `score`
+    Outstanding  =  0
+    Good         =  1
+    Fair         =  2
+    Poor         =  3
+    Bad          =  4
+    Terrible     =  5
+
+    # The score given to a supplier_products record. The "constants"
+    # above can be used as values for the score.
+    score = int
+
+    # A given rating can have zero or more supplier_products records.
+    supplier_products = supplier_products
+
+    def __init__(self, *args, **kwargs):
+        """ Create record if it doesnt exist. Return record if or if it
+        doesn not exist.
+        """
+        super().__init__(*args, **kwargs)
+
+        try:
+            # We are expecting score to be given by the user
+            score = kwargs['score']
+        except KeyError:
+            # When loading via the orm.populate() method, score won't be
+            # passed in. Just return.
+            return
+
+        # See if the rating is in the db
+        rs = ratings(score=score)
+
+        if rs.count:
+            # If it is, we it's value to self
+            self.id = rs.first.id
+            self.score = rs.first.score
+
+            # The record isn't new or dirty so set all peristance state
+            # variables to false.
+            self.orm.persistencestate = (False,) * 3
+        else:
+            # Save immediately. There is no need for the user to save
+            # manually because there are only several rating objects
+            # that will ever exist. We just pretend like they always
+            # exist and are accessable via the construct with no fuss.
+            self.save()
+
+        
+    @property
+    def brokenrules(self):
+        # TODO I think this needs to be changed to
+        # _getbrokenrules(guestbook) so the guestbook can be pased to
+        # the super object.
+        brs = super().brokenrules
+        valid = (
+            rating.Outstanding,
+            rating.Good,
+            rating.Fair,
+            rating.Poor,
+            rating.Bad,
+            rating.Terrible,
+        )
+
+        if self.score not in valid:
+            brs += 'Invalid score: %s' % str(self.score)
+
+        return brs
+
+class guideline(orm.entity):
+    """ This entity provides information on how to best repurchase
+    products. A `product.good` will have zero-or-more guideline entries.
+    `product.services` generally do not get repurchase based on this
+    type of guildline.
+
+    The reorder guildlines may vary based on whether the product need is
+    for a particular `party.region`, such as for a certain state,
+    facility, such as for a specific plant, and/or for a particular
+    internal organization, such as a `party.division`.
+
+    Note that this class is based off the REORDER GUILDLINE entity in "The
+    Data Modeling Resource Book".
+    """
+
+    # A timespan to indicate when the guildelines are valid
+    begin = datetime
+    end   = datetime
+
+    # The quantity at which the good needs to be reordered or
+    # reproduced.
+    level = int
+
+    # The recommended amount of the good to order. This may have been
+    # derived by analysis to determine the moset efficient quantity. The
+    # `level` and the `quantity` may be for goods the enterprise is
+    # buying or for goods that the enterprise is selling because some
+    # firms let the vendor monitor the stock levels of inventory and do
+    # the appropriate ordering.
+    quantity = int
+
+    # The geographical region (postal code, state, etc) that the
+    # guildline is for.
+    region = gem.region
+
+    # The facility the guildline is for
+    facility = gem.facility
+
+    # TODO This should be interalorganization, but that does not exist
+    # yet in the party module.
+    # The internal organization the guideline is for
+    organization = gem.organization
+
+class item(orm.entity):
+    """ The `item` is the abstract base class for `serial` and
+    `nonserial`. Both `serial` and `nonserial` are inventory items
+    meaning they are the physical occurance of a `good` at a location.
+
+    Note that this is based of the INVENTORY ITEM entity in "The Data
+    Model Resource Book".
+    """
+    
+    # The facility this inventory item is located in. Alternatively, the
+    # item could be located in a ``container`` which itself is located
+    # within a facility.
+    facility = gem.facility
+
+    # A collection of variances, i.e., a history of shrinkage and
+    # overages that were noticed during physical inspection of the
+    # inventory item.
+    variances = variances
+
+class serial(item):
+    """ An inventory item that tracks a serial number. 
+
+    Note that this is based on the SERIALIZED INVENTORY ITEM entity in
+    "The Data Model Resource Book".
+    """
+
+    # The serial number for this inventory item
+    number = str
+
+class nonserial(item):
+    """ An inventory item that has no serial number. Rather, the items
+    are grouped together and the `quantity` on hand attribute is
+    maintained by their location.
+
+    Note that this is based on the SERIALIZED INVENTORY ITEM entity in
+    "The Data Model Resource Book".
+    """
+
+    # The quantity on head for this nonserialized inventory item.
+    quantity = int
+
+class lot(orm.entity):
+    """ Represents a lot. A lot is a grouping of `items` of the same
+    type generally used to track inventory items back to their source.
+    """
+
+    # TODO The user should be allowed to create the createdat field
+    # because that will get created by the metaclass anyway. This should
+    # throw an error. Same for `updatedat`.
+
+    # The date the lot was created
+    createdat = datetime
+
+    # The quantity of items represented by the lot
+    quantity = int
+
+    # The date the lot expires
+    expiresat = datetime
+
+    # The inventory items the lot represents
+    items = items
+
+class container(orm.entity):
+    """ Containers contain inventory items (``items``). Containers are
+    located within a facility. (Alternatively, an inventory item can
+    simply be located within a facility with no container if that makes
+    more sense). `containers` are further defined by they their
+    container type property.
+    """
+
+    # The name or description of the container
+    name = str
+
+    # The inventory items stored in this container
+    items = items
+
+    # The facility in which the container is currently located. 
+    facility = gem.facility
+
+class containertype(orm.entity):
+    """ This class allows for the definition of containers.
+    """
+
+    # The name of the container type
+    name = str
+
+    # Instances of containers matching this type.
+    containers = containers
+
+class status(orm.entity):
+    """ Status maintains the current condition of an inventory item
+    (`item`). It allows for the item to be marken as "good", "being
+    repaired", "slighly damaged", "defective", "scrap" and so on.
+
+    Note that this entity was originally called
+    INVENTORY ITEM STATUS TYPE in "The Data Modeling Resource Book".
+    """
+
+    entities = statuses
+
+    # The name of the status, i.e., "good", "being
+    # repaired", "slighly damaged", "defective", "scrap"
+    name = str
+
+    # The items declared to have this status
+    items = items
+
+class variance(orm.entity):
+    """ This entity keeps a history of inventory item (``item``)
+    shrinkage or overages that were noticed during physical inventories
+    or inspections of the item.
+
+    Note that this entity was originally called ITEM VARIANCE in "The
+    Data Modeling Resource Book".
+    """
+
+    # The physical inventory date, i.e., the date that the item variance
+    # was discovered.
+    date = datetime
+
+    # The difference between quantity of items within inventory
+    # items (which is 1 for serialized items and the quantity on hand for
+    # non-serialized items) and the physical inventory at the time of
+    # the physical inventory date (variance.date).
+    quantity = int
+
+    # Variance entries can be assigend a standard reason (see the
+    # ``reason`` entity). However, when the standard reasons don't
+    # suffice to explain the variance, this comment field can be used.
+    # For example, if the enterprise discovered that there was a loss of
+    # inventory items due to theft, this field can record the date the
+    # theft was discovered, the amount of the product that was stolen,
+    # and the specific details behind the theft. 
+    comment = str, 1, 65535 # TODO Make text type
+
+class reason(orm.entity):
+    """ The ``reason`` entity provides standard explanations of the
+    ``variance`` to the inventory ``item``'s on-hand amount. Possible
+    values may include "theft", "shrinkage", "unknown variance" and
+    "ruined goods". The ``variance.comment`` allowl for additional
+    non-standard explanations.
+    """
+
+    # The name or description of the reason such as "theft",
+    # "shrinkage", "unknown variance," "ruined goods", etc.
+    name = str
+
+    # The collection of inventory item variances that have this
+    # standard reason.
+    variances = variances
+
+class price(orm.entity):
+    """ The price of a product. See `price`'s subtypes for more.
+
+    Note that this entity was originally called PRICE COMPONENT in "The
+    Data Modeling Resource Book".
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # TODO:a95ef3d8
+        if self.orm.isnew:
+            for prop in ('comment', 'percent', 'price'):
+                try:
+                    kwargs[prop]
+                except KeyError:
+                    setattr(self, prop, None)
+
+
+    # NOTE "The Data Modeling Resource Book" specifies each of the
+    # subentity objects. However, it also says, "These represents the
+    # common variables for pricing; however, the enterprise needs to
+    # determine if these variables are applicable or if there are other
+    # pricing variables for the enterprise." This makes me wonder if
+    # there should be a `pricetypes` entity such that users can enter
+    # their own types of prices.
+
+    # This timespan indicate the starting an ending dates for which the
+    # price component is valid.
+    begin = datetime
+    end   = datetime
+
+    # The `price` maintains a dollar amount. It, along with the
+    # `percent` attribute can be used to record discounts or quantity
+    # breaks.  Each of the subentity objects of `price` record a value
+    # in either the price attribute or the percent attribute but not
+    # both. TODO Write a rule that one of these has to be None and the
+    # other has too be non-None.
+    price =  dec
+    percent = dec
+
+    # Allows each price component to be annotated, for example, "special
+    # discount provided to increase sales".
+    comment = str, 1, 65535 # TODO Make text type
+
+    # Each `price` can be based on many variables or combinations of
+    # thes varibables. These variables include a geographic `region`,
+    # `party.type`, `product.category`, `break`, `ordervalue` and
+    # `salestype`.
+
+    # The geographic region composite allows pricing to be dependent on
+    # geographic region. 
+    region = gem.region
+
+    # The party.type composite allows the price to be dependent of the
+    # classification of the party buying the goods such as special
+    # pricing for minority parties or governmental organizations.
+    type = gem.type
+
+    # NOTE The above `region` and `type` properties are defined here
+    # because they are from the party module. If it weren't for the
+    # circulular reference proplem that would happen, these composite
+    # references would have come implitily as a result of creating a
+    # constituent entities collection on those classes (i.e.,
+    # gem.region.prices, gem.type.prices). For entities where this "use-
+    # to-define" relationship won't cause a circular reference,
+    # constituent collections have been created. See
+    # product.category.prices, product.break.prices,
+    # product.ordervalue.prices and product.salestype.prices.
+
+    # A price component can be specified for different organizations
+    # because it is possible for multiple organizations to supply the
+    # same product.
+    organization = gem.organization
+
+class base(price):
+    """ The starting price for a product.
+
+    Note that this entity was originally called BASE PRICE in "The
+    Data Modeling Resource Book".
+    """
+    pass
+
+class discount(price):
+    """ This entity stores a valid reduction to the base price.
+
+    Note that this entity was originally called DISCOUNT COMPONENT in
+    "The Data Modeling Resource Book".
+    """
+
+class surcharge(price):
+    """ This entity adds on possible charges to the price of a product.
+
+    Note that this entity was originally called SURCHARGE COMPONENT in
+    "The Data Modeling Resource Book".
+    """
+    pass
+
+class suggested(price):
+    """ This entity adds on possible charges to the price of a product.
+
+    Note that this entity was originally called
+    MANUFACTURER SUGGESTED PRICE in "The Data Modeling Resource Book".
+    """
+    pass
+
+class onetime(price):
+    """ This price component indicates that the charge is applied one
+    time.
+
+    Note that this entity was originally called ONE TIME CHARGE in "The
+    Data Modeling Resource Book".
+    """
+    pass
+
+class recurring(price):
+    """ This price component indicates that the charge is based on a per
+    time frequencey measure (per hour, per day, per month).
+
+    Note that this entity was originally called RECURRING CHARGE in "The
+    Data Modeling Resource Book".
+    """
+    pass
+  
+class utilization(price):
+    """ This price component indicates that the charge is based on a
+    unit of measure (`measure`) such as per a certain quantity of
+    "internet hits" to describe the charge for Web hosting services.
+
+    Note that this entity was originally called UTILIZATION CHARGE in
+    "The Data Modeling Resource Book".
+    """
+    quantity = int
+
+class quantitybreak(orm.entity):
+    """ The quantitybreak entity stores various ranges of quantity
+    breaks in the begin and end attributes. This allows a price
+    component (`price`) to be dependent on a range of quantities being
+    purchased for the given product.
+
+    Note that this entity was originally called QUANTITY BREAK in
+    "The Data Modeling Resource Book".
+    """
+
+    begin = int
+    end   = int
+
+    # These price components (`prices`) are associated with and
+    # dependent on this quantity break.
+    prices = prices
+
+    def __contains__(self, qty):
+        return (self.begin is None or qty >= self.begin) and \
+               (self.end   is None or qty <= self.end)
+
+class value(orm.entity):
+    """ This class represent an order's value. It allows different
+    pricing levels based on total amounts of orders.
+
+    Note that this entity was originally called ORDER VALUE in "The Data
+    Modeling Resource Book".
+    """
+
+    # The span an order's total amount can fall in to be applicable for
+    # this order `value`.
+    begin = dec
+    end   = dec
+
+    # These price components (`prices`) are associated with and
+    # dependent on this order value.
+    prices = prices
+
+class salestype(orm.entity):
+    """ This classs allows different pricing based on different methods
+    of selling; for instance, Internet-based sales may have a different
+    price than retail-based salse or catalog-based sales.
+
+    Note that this entity was originally called SALES TYPE in "The Data
+    Modeling Resource Book".
+    """
+
+    # The name or description for this sales type
+    name = str
+
+    # These price components (`prices`) are associated with and
+    # dependent on this sales type.
+    prices = prices
+
+class estimate(orm.entity):
+    """ This class maintains information on each product and its many
+    estimated costs.
+
+    Note that this entity was originally called ESTIMATED PRODUCT COST
+    in "The Data Modeling Resource Book".
+    """
+
+    # NOTE There is a one-to-many relationship between
+    # `product.product` and `product.estimate` (see
+    # `product.product.estimates`) There is also a one-to-many
+    # relationship between `product.feature` and `product.estimate`
+    # (see `product.feature.estimates`).
+
+    # Product costs can vary by season or over time, so a timespan
+    # is included to show the time period for which the cost is valid.
+    begin = datetime
+    end   = datetime
+
+    # The estimated cost
+    cost  = dec
+
+    # A cost component may vary based on where the costs are incurred and
+    # hence a cost component can have a region composite. For instance,
+    # manufacturing costs may be less expensive in a plant located in
+    # one country versus another.
+    region = gem.region
+
+    # The estimated costs may, in some cases, vary by organization. If
+    # the organization is trackting and comparing tho costs for multiple
+    # suppliers, then the enterprise may want to be able to record
+    # seperate costs for each organization; hence the optional
+    # relationship to an organization composite.
+    organization = gem.organization
+
+class estimatetype(orm.entity):
+    """ This entity specifies what tpo of cost an ``estimate`` is.
+
+    Note that this entity was originally called COST COMPONENT TYPE
+    in "The Data Modeling Resource Book".
+    """
+
+    # The name or description of the estimate type
+    name = str
+
+    # The collection of estimates declared to be of this entity object's
+    # type.
+    estimates = estimates
+
+class product_product(orm.association):
+    """ A reflexive association between a product and another product.
+    The ``type`` attribute defines the type of association. See the
+    comments for the ``type`` constants below for an explainaion of each
+    relationship type.
+
+    Note that this entity was originally called PRODUCT ASSOCIATION
+    in "The Data Modeling Resource Book".
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.orm.isnew:
+            props = 'comment', 'instruction', 'reason', 'quantity'
+            for prop in props:
+                try:
+                    kwargs[prop]
+                except KeyError:
+                    setattr(self, prop, None)
+
+    # TODO When subassociations are supported, it will be more elegant
+    # to use subtypes instead of a ``type`` property attribute since the
+    # subassociations have different properties from each other. As it
+    # stands, some entries will always have None values for some
+    # attributes if the type does not support a given attribute.
+    # TODO Validation rules will have to be writen to support these
+    # constraints. See the type constants below for more information.
+
+    ''' Type constants. Please do not change values as they are stored in
+    the database.
+    '''
+
+    # Indicates that the `subject` is a marketing package and the
+    # `object` is part of that package. 
+    #
+    # The `begin`, `end`, `reason`, `quantity` and `instruction`
+    # attributes can be used with Marketing associations.
+    Marketing        =  0
+
+    # Indicates that the `object` can serve as a substitute for the
+    # `subject`. A product may be substituted by many other products.
+    # For example, perhaps a certain pen within an office desk set may
+    # be used as a substitue in many circumstances. The `begin` and
+    # `end` dates can be used to specify the time frames that products
+    # may be substituted for each other. The `quantity` attribute allows
+    # a product to be substituted for a certain quantity of another
+    # product. (See PRODUCT SUBSTITUTE in "The Data Modeling Resource
+    # Book" for examples). The `comment` attribute provides additional
+    # information regarding the substution of a product; for example,
+    # "try not to substitute with this product if it can be avoided as
+    # the product is of a lower quality than the standard product".
+    #
+    # The `quantity`, `begin`, `end`, `reason`, `quantity` and `comment`
+    # attributes can be used for Substitute associations.
+    Substitute       =  1
+
+    # An Obsolesence association indicates that the `subject` is about
+    # to be, or has already been superseeded by the `object`. 
+    #
+    # The `superceededat` and `reason` attributes can be non-None values
+    # for this type.
+    Obsolesence      =  2
+
+    # A Complement association indicates that the `subject` product is
+    # complemented by the `object` product. This may be used by a
+    # recommendation engine to make suggestions on a given order.
+    #
+    # The `begin`, `end`, `reason` attributes can be used with
+    # Complement associations.
+    Complement       =  3
+
+    # An Incompatibility association indicates that the `object` product
+    # may not be used with the `subject` product. For instance, a
+    # "Barry's pen refill" may not be compatible with the product
+    # "Goldstein Elite Pen"; it would be good to let customers know
+    # this by maintaining this information and using it at the time of
+    # an order.
+    #
+    # The `begin`, `end` and `reason` attributes can be used for
+    # Incompatibility associations.
+    Incompatibility  =  4
+
+    # The Component property indicates that the `subject` product is
+    # made up the product in the `object` field. A product can be made up
+    # of more than one other product; alternatively, a product may be
+    # used in several other products. For example, an office dek set may
+    # consist of a pen, pencil, calendar, clock, and wood base. Any one
+    # of these components may be used in the assembly of another
+    # product. Service organizations may also assemble one or more of
+    # their services into a product and, alternateviely, use the same
+    # service in may product offerings.
+    #
+    # The `begin`, `end`, `quantity`, `instruction` and `comment`
+    # attributes can be used for Component associations.
+    Component        =  5
+
+    # A timespan whose meaning is determined by the value of the `type`
+    # attribute.
+    begin = datetime
+    end   = datetime
+
+    # Used when the `type` attribute is set to Obsolesence. Indicates
+    # the date the `subject` will be, or has already been, superceeded
+    # by the `object`.
+    superceededat = datetime
+
+    reason = str, 1, 65535 # TODO Make text type
+
+    # When the `type` is Component, the `instruction` attribute explains
+    # how to assemble the products.
+    instruction = str, 1, 65535 # TODO Make text type
+
+    # Used when the `type` attribute is set to Substitute. The `comment`
+    # attribute provides additional information regarding the
+    # substitution of a product; for example, "try not to substitute
+    # with this product if it can be avoided as the product is of a
+    # lower quality than the standard product".
+    comment = str, 1, 65535 # TODO Make text type
+
+    # When `type` is Component, the `quantity` attribute indicates how
+    # many of a certain product are used in the assembly of another
+    # product. When the `type` is Substitute, the `quantity` attribute
+    # allows a product to be substituted for a certain quanity of
+    # another product.
+    quantity = int
+
+    # Indicates the `type` of association. See the constants above for
+    # more information.
+    type = int
+
+    subject = product
+    object  = product
