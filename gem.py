@@ -32,76 +32,111 @@ import orm
 import primative
 from datetime import datetime
 from dbg import B
+import builtins
+from decimal import Decimal as dec
 
 ''' Parties '''
-class parties(orm.entities):
-    pass
 
-class types(orm.entities):
-    pass
-
-class party_types(orm.associations):
-    pass
-
-class organizations(parties):
-    pass
-
-class legalorganizations(organizations):
-    pass
-
-class companies(legalorganizations):
-    pass
-
-class units(organizations):
-    pass
-
-class departments(units):
-    pass
-
-class divisions(units):
-    pass
-
-class jobs(orm.entities):
-    pass
-
-class positions(orm.entities):
-    pass
-
-class position_fulfillments(orm.associations): 
-    pass
-
-class party_parties(orm.associations):
-    pass
-
-class party_addresses(orm.associations):
-    pass
-
-class persons(parties):
-    pass
-
-class address_regions(orm.associations):
-    pass
-
-class regions(orm.entities):
-    pass
-
-class party_contactmechanisms(orm.associations):
-    pass
-
-class contactmechanisms(orm.entities):
-    pass
-
-class phones(contactmechanisms):
-    pass
-
-class emails(contactmechanisms):
-    pass
-
-class addresses(contactmechanisms):
-    pass
+''' orm.entities classes '''
+class parties(orm.entities):                             pass
+class types(orm.entities):                               pass
+class roles(orm.entities):                               pass
+class role_role_types(orm.entities):                     pass
+class statuses(orm.entities):                            pass
+class role_role_statuses(statuses):                      pass
+class priorities(orm.entities):                          pass
+class role_roles(orm.entities):                          pass
+class personals(roles):                                  pass
+class organizationals(roles):                            pass
+class suppliers(organizationals):                        pass
+class organizationalunits(organizationals):              pass
+class subsidiaries(organizationalunits):                 pass
+class parents(organizationalunits):                      pass
+class roletypes(orm.entities):                           pass
+class partyroletypes(roletypes):                         pass
+class employees(personals):                              pass
+class customers(personals):                              pass
+class billtos(customers):                                pass
+class party_types(orm.associations):                     pass
+class organizations(parties):                            pass
+class legalorganizations(organizations):                 pass
+class companies(legalorganizations):                     pass
+class units(organizations):                              pass
+class departments(units):                                pass
+class divisions(units):                                  pass
+class jobs(orm.entities):                                pass
+class positions(orm.entities):                           pass
+class position_fulfillments(orm.associations):           pass
+class party_parties(orm.associations):                   pass
+class party_addresses(orm.associations):                 pass
+class maritals(parties):                                 pass
+class names(parties):                                    pass
+class genders(parties):                                  pass
+class gendertypes(parties):                              pass
+class characteristics(parties):                          pass
+class characteristictypes(parties):                      pass
+class nametypes(parties):                                pass
+class persons(parties):                                  pass
+class address_regions(orm.associations):                 pass
+class regions(orm.entities):                             pass
+class passports(orm.entities):                           pass
+class citizenships(orm.entities):                        pass
+class contactmechanism_contactmechanisms(orm.entities):  pass
+class contactmechanisms(orm.entities):                   pass
+class phones(contactmechanisms):                         pass
+class emails(contactmechanisms):                         pass
+class websites(contactmechanisms):                       pass
+class party_contactmechanisms(orm.associations):         pass
+class purposes(orm.entities):                            pass
+class purposetypes(orm.entities):                        pass
+class addresses(contactmechanisms):                      pass
+class facilities(orm.entities):                          pass
+class facilityroletypes(orm.entities):                   pass
+class facility_contactmechanisms(orm.associations):      pass
+class party_facilities(orm.entities):                    pass
+class objectives(orm.entities):                          pass
+class objectivetypes(orm.entities):                      pass
+class communications(orm.entities):                      pass
+class party_communications(orm.associations):            pass
+class inpersons(communications):                         pass
+class webinars(communications):                          pass
+class phonecalls(communications):                        pass
+class communicationroletypes(roletypes):                 pass
+class communicationstatuses(statuses):                   pass
+class efforts(orm.entities):                             pass
+class cases(orm.entities):                               pass
+class case_parties(orm.associations):                    pass
+class caseroletypes(roletypes):                          pass
+class casestatuses(statuses):                            pass
+class communication_efforts(orm.associations):           pass
 
 ''' Parties '''
 class party(orm.entity):
+    """ ``party`` is the abstract class under which two important classes
+    exists: ``organization`` and ``person``. 
+    
+    This class contains the common data types between organizations and
+    persons. These include such data as credit ratings, addresses, phone
+    numbers, fax numbers, email addresses etc. 
+    
+    Organization and people can also be parties to contracts, buyers,
+    sellers, responsible parties, or members of other organizations. For
+    example, membership organizations (like a computer users group) may
+    keep similar information on their corporate members and their
+    individual members.  Contracts can usually specify an organization
+    or a person as a contracted party. The customer for a sales order
+    may be either an organization or a person.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # TODO:a95ef3d8
+        if self.orm.isnew:
+            for prop in ('nationalids', 'isicv4', 'dun'):
+                try:
+                    kwargs[prop]
+                except KeyError:
+                    setattr(self, prop, None)
     entities = parties
     
     # A party may have 0 or more national id numbers. For example, an
@@ -120,6 +155,11 @@ class party(orm.entity):
     # Economic Activities (ISIC), Revision 4 code for a particular
     # organization, business person, or place.
     isicv4 = str, 1, 1
+
+    # Removing this constituent declaration. For some reason it causes
+    # 297f8176 to happen. TODO:297f8176 Uncomment when 297f8176 is
+    # fixed.
+    # roles = roles
 
 class organization(party):
     """ An abstract class representing a group of people with a common
@@ -154,8 +194,8 @@ class job(orm.entity):
     employee may take. 
     
     Note that in the "The Data Model Resource Book", this entity is
-    refered to as the POSTITION_TYPE entity. "job" was chosen for its
-    name since "job" is only one word and "POSTITION_TYPE" is obviously
+    refered to as the POSTITION TYPE entity. "job" was chosen for its
+    name since "job" is only one word and "POSTITION TYPE" is obviously
     two words.
     """
     title = str
@@ -188,6 +228,10 @@ class position(orm.entity):
     fulltime = bool
 
 class department(unit):
+    # TODO:afa4ffc9 Now that we are using role_role to associates
+    # parties with each other, the entity objects `divisions` will no
+    # longer have a many-to-one relationship with `department`;
+    # `departments` will have a relationships with `divisions`.
     divisions = divisions
 
 class legalorganization(organization):
@@ -205,6 +249,18 @@ class legalorganization(organization):
     positions = positions
     
 class company(legalorganization):
+    """ A business entity that conducts a value of exchange of goods or
+    services with customers. The end goal of a company is to produce a
+    profit.
+    """
+
+    # NOTE that in "The Data Modeling Resource Book", this entity is
+    # called CORPORATION. However, a corporation may actually be a
+    # subtype of company since all corporations are companies but not
+    # all companies are corporations. See the following link for the
+    # differences between companies and corporations:
+    # https://www.upcounsel.com/difference-between-corporation-and-company
+
     entities = companies
     departments = departments
 
