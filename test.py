@@ -14690,22 +14690,261 @@ class gem_person(tester):
     def __init__(self):
         super().__init__()
         gem.party.orm.recreate(recursive=True)
+        gem.nametypes.orm.recreate(recursive=True)
+        gem.characteristictypes.orm.recreate(recursive=True)
+        gem.gendertypes.orm.recreate(recursive=True)
 
     @staticmethod
     def getvalid():
         per = gem.person()
-        per.firstname      =  uuid4().hex
-        per.middlename     =  uuid4().hex
-        per.lastname       =  uuid4().hex
+
+        per.first          =  uuid4().hex
+        per.middle         =  uuid4().hex
+        per.last           =  uuid4().hex
+
         per.title          =  uuid4().hex
         per.suffix         =  uuid4().hex
-        per.gender         =  False
         per.mothersmaiden  =  uuid4().hex
         per.maritalstatus  =  True
         per.nationalids    =  uuid4().hex
         per.isicv4         =  None
         per.dun            =  None
         return per
+
+    def it_saves_physical_characteristics(self):
+        hr = gem.characteristictype(name='Heart rate')
+        sys = gem.characteristictype(name='Systolic blood preasure')
+        dia = gem.characteristictype(name='Diastolic blood preasure')
+
+        per = gem_person.getvalid()
+
+        per.characteristics += gem.characteristic(
+            begin = primative.datetime('2021-03-07 08:00:00'),
+            value = 118,
+            characteristictype = sys,
+        )
+
+        per.characteristics += gem.characteristic(
+            begin = primative.datetime('2021-03-07 08:00:00'),
+            value = 77,
+            characteristictype = dia,
+        )
+
+        per.characteristics += gem.characteristic(
+            begin = primative.datetime('2021-03-07 08:00:00'),
+            value = 76,
+            characteristictype = hr,
+        )
+        
+        per.save()
+        per1 = per.orm.reloaded()
+
+        chrs = per.characteristics.sorted()
+        chrs1 = per1.characteristics.sorted()
+
+        self.three(chrs)
+        self.three(chrs1)
+
+        dt = primative.datetime('2021-03-07 08:00:00')
+        for chr, chr1 in zip(chrs, chrs1):
+            self.eq(dt, chr1.begin)
+            self.none(chr1.end)
+            self.eq(chr.value, chr1.value)
+            self.eq(
+                chr.characteristictype.id,
+                chr1.characteristictype.id
+            )
+            self.type(str, chr1.value)
+
+    def it_appends_marital_status(self):
+        per = gem_person.getvalid()
+
+        per.maritals += gem.marital(
+            begin = primative.datetime('19760415'),
+            end   = primative.datetime('20041008'),
+            type = gem.marital.Single,
+        )
+
+        per.maritals += gem.marital(
+            begin = primative.datetime('20041009'),
+            type = gem.marital.Married,
+        )
+
+        per.save()
+
+        per1 = per.orm.reloaded()
+
+        mars = per.maritals.sorted()
+        mars1 = per1.maritals.sorted()
+
+        self.two(mars)
+        self.two(mars1)
+
+        for mar, mar1 in zip(mars, mars1):
+            self.eq(mar.begin,  mar1.begin)
+            self.eq(mar.end,    mar1.end)
+            self.eq(mar.type,   mar1.type)
+
+    def it_calls_gender(self):
+        per = gem_person.getvalid()
+        self.none(per.gender)
+
+        # Gender must have already been registered
+        def f(per):
+            per.gender = 'Male'
+
+        self.expect(ValueError, lambda: f(per))
+
+        gem.gendertype(name='Male').save()
+        gem.gendertype(name='Female').save()
+        gem.gendertype(name='Nonbinary').save()
+
+        per.gender = 'Male'
+        self.one(per.genders)
+
+        self.eq('Male', per.gender)
+
+        per.save()
+
+        per = per.orm.reloaded()
+
+        self.one(per.genders)
+        self.eq('Male', per.gender)
+
+        per.gender = 'Female'
+        self.eq('Female', per.gender)
+        self.one(per.genders)
+
+        per = per.orm.reloaded()
+
+        # NOTE:7f6906fc The mutator per.gender will save the gender
+        # object, so there is no need to call save here
+        # per.save()
+
+        self.eq('Female', per.gender)
+        self.one(per.genders)
+
+        ''' Make the Female gender a past gender and make per's current
+        gender nonbinary. '''
+
+        gen = per.genders.first
+        gen.begin = primative.datetime('1980-01-01')
+        gen.end   = primative.datetime('1990-01-01')
+
+        per.genders += gem.gender(
+            begin       =  primative.datetime('1990-01-02'),
+            end         =  None,
+            gendertype  =  gem.gendertypes(name='nonbinary').first,
+        )
+
+        self.eq('Nonbinary', per.gender)
+
+        per.save()
+
+        per1 = per.orm.reloaded()
+
+        gens = per.genders.sorted()
+        gens1 = per1.genders.sorted()
+
+        self.two(gens)
+        self.two(gens1)
+        self.eq('Nonbinary', per1.gender)
+
+        for gen, gen1 in zip(gens, gens1):
+            self.eq(gen.begin, gen1.begin)
+            self.eq(gen.end, gen1.end)
+            self.eq(gen.gendertype.id, gen1.gendertype.id)
+
+    def it_calls_name_properties(self):
+        per = gem.person()
+        per.dun = None
+        per.isicv4 = None
+        per.nationalids = None
+
+        per.first = 'Joey'
+        self.eq('Joey', per.first)
+
+        per.middle = 'Middle'
+        self.eq('Middle', per.middle)
+
+        per.last = 'Armstrong'
+        self.eq('Armstrong', per.last)
+
+        per.save()
+
+        per1 = per.orm.reloaded()
+
+        for prop in ('first', 'middle', 'last'):
+            self.eq(getattr(per, prop), getattr(per1, prop))
+
+        names = gem.nametypes.orm.all.pluck('name')
+
+        self.three(names)
+        self.true('first' in names)
+        self.true('middle' in names)
+        self.true('last' in names)
+
+    def it_adds_citizenships(self):
+        per = gem.person()
+
+        au = gem.region(
+            name = 'Austria',
+            type = gem.region.Country
+        )
+
+        en = gem.region(
+            name = 'England',
+            type = gem.region.Country
+        )
+
+        per.citizenships += gem.citizenship(
+            begin   = primative.datetime('1854-05-06'),
+            end     = primative.datetime('1938-05-01'),
+            country = au,
+        )
+
+        per.citizenships.last.passports += gem.passport(
+            number = str(randint(1111111111, 99999999999)),
+            issuedat = primative.datetime('2010-05-06'),
+            expiresat = primative.datetime('2019-05-06'),
+        )
+
+        per.citizenships += gem.citizenship(
+            begin   = primative.datetime('1938-05-01'),
+            end     = primative.datetime('1939-09-23'),
+            country = en,
+        )
+
+        per.citizenships.last.passports += gem.passport(
+            number = str(randint(1111111111, 99999999999)),
+            issuedat = primative.datetime('2010-05-06'),
+            expiresat = primative.datetime('2019-05-06'),
+        )
+
+        per.save()
+
+        per1 = per.orm.reloaded()
+
+        cits = per.citizenships.sorted()
+        cits1 = per1.citizenships.sorted()
+
+        self.two(cits)
+        self.two(cits1)
+
+        for cit, cit1 in zip(cits, cits1):
+            self.eq(cit.begin, cit1.begin)
+            self.eq(cit.end, cit1.end)
+            self.eq(cit.country.id, cit1.country.id)
+
+            pps = cit.passports.sorted()
+            pps1 = cit1.passports.sorted()
+
+            self.one(pps)
+            self.one(pps1)
+
+            for pp, pp1 in zip(pps, pps1):
+                for prop in ('number', 'issuedat', 'expiresat'):
+                    self.eq( getattr(pp, prop), getattr(pp1, prop))
 
     def it_creates(self):
         per = self.getvalid()
@@ -14728,18 +14967,18 @@ class gem_person(tester):
         per = gem.person(per.id)
 
         # Update
-        oldfirstname = per.firstname
+        oldfirstname = per.first
         newfirstname = uuid4().hex
 
-        per.firstname = newfirstname
+        per.first = newfirstname
         per.save()
 
         # Reload
         per1 = gem.person(per.id)
 
         # Test
-        self.eq(newfirstname, per1.firstname)
-        self.ne(oldfirstname, per1.firstname)
+        self.eq(newfirstname, per1.first)
+        self.ne(oldfirstname, per1.first)
 
     def it_creates_association_to_person(self):
         bro = self.getvalid()
@@ -14815,171 +15054,6 @@ class gem_person(tester):
         self.one(bro1.persons)
         self.eq(sis.id, bro1.persons.first.id)
 
-    def it_associates_phone_numbers(self):
-        per = self.getvalid()
-
-        # Create two phone numbers
-        for i in range(2):
-
-            # Create phone number
-            ph = gem.phone()
-            ph.area = int('20' + str(i))
-            ph.line = '555 5555'
-            
-            # Create party to contact mechanism association
-            pcm                   =  gem.party_contactmechanism()
-            pcm.begin             =  primative.datetime('1976-01-01')
-            pcm.end               =  None
-            pcm.solicitations     =  False
-            pcm.extension         =  None
-            pcm.purpose           =  gem.party_contactmechanism.roles.main
-            pcm.contactmechanism  =  ph
-            pcm.party             =  per
-
-            # Add association to the person object
-            per.party_contactmechanisms += pcm
-
-        # Save, reload and test
-        per.save()
-
-        per1 = gem.person(per.id)
-
-        per.party_contactmechanisms.sort()
-        per1.party_contactmechanisms.sort()
-
-        self.two(per1.party_contactmechanisms)
-
-        for i in range(2):
-            self.eq(per.id, per1.party_contactmechanisms[i].party.id)
-
-            self.eq(
-                per.party_contactmechanisms[i].contactmechanism.id,
-                per1.party_contactmechanisms[i].contactmechanism.id
-            )
-            ph = gem.phone(
-                per1.party_contactmechanisms[i].contactmechanism.id
-            )
-
-    def it_associates_email_addresses(self):
-        per = self.getvalid()
-
-        # Create two email addressess
-        for i in range(2):
-
-            # Create email addres
-            em = gem.email()
-            em.address = 'jimbo%s@foonet.com' % i
-            
-            # Create party to contact mechanism association
-            priv = gem.party_contactmechanism.roles.private
-
-            pcm                   =  gem.party_contactmechanism()
-            pcm.begin             =  primative.datetime('1993-09-01')
-            pcm.end               =  None
-            pcm.solicitations     =  False
-            pcm.extension         =  None
-            pcm.purpose           =  priv # Private email address
-            pcm.contactmechanism  =  em
-            pcm.party             =  per
-
-            # Add association to the person object
-            per.party_contactmechanisms += pcm
-
-        # Save, reload and test
-        per.save()
-
-        per1 = gem.person(per.id)
-
-        per.party_contactmechanisms.sort()
-        per1.party_contactmechanisms.sort()
-
-        self.two(per1.party_contactmechanisms)
-
-        for i in range(2):
-            self.eq(per.id, per1.party_contactmechanisms[i].party.id)
-
-            self.eq(
-                per.party_contactmechanisms[i].contactmechanism.id,
-                per1.party_contactmechanisms[i].contactmechanism.id
-            )
-
-            em = gem.email(
-                per1.party_contactmechanisms[i].contactmechanism.id
-            )
-
-    def it_associates_postal_addresses(self):
-        per = self.getvalid()
-
-        # Create two postal addressess
-        for i in range(2):
-
-            # Create postal addres
-            addr = gem.address()
-            addr.address1 = '742 Evergreen Terrace'
-            addr.address2 = None
-            addr.directions = self.dedent('''
-			Take on I-40 E. 
-            Take I-44 E to Glenstone Ave in Springfield. 
-            Take exit 80 from I-44 E
-			Drive to E Evergreen St
-            ''')
-
-            ar = gem.address_region()
-            ar.region = gem_region.getvalid()
-            addr.address_regions += ar
-            
-            hm = gem.party_contactmechanism.roles.home
-
-            # Create party-to-contact-mechanism association
-            pcm                   =  gem.party_contactmechanism()
-            pcm.begin             =  primative.datetime('1993-09-01')
-            pcm.end               =  None
-            pcm.solicitations     =  False
-            pcm.extension         =  None
-            pcm.purpose           =  hm
-            pcm.contactmechanism  =  addr
-            pcm.party             =  per
-
-            # Add association to the person object
-            per.party_contactmechanisms += pcm
-
-        # Save, reload and test
-        per.save()
-
-        per1 = gem.person(per.id)
-
-        per.party_contactmechanisms.sort()
-        per1.party_contactmechanisms.sort()
-
-        self.two(per1.party_contactmechanisms)
-
-        for i in range(2):
-            self.eq(per.id, per1.party_contactmechanisms[i].party.id)
-
-            self.eq(
-                per.party_contactmechanisms[i].contactmechanism.id,
-                per1.party_contactmechanisms[i].contactmechanism.id
-            )
-
-            addr = per.party_contactmechanisms[i].contactmechanism
-
-            # Downcast
-            addr1 = gem.address(
-                per1.party_contactmechanisms[i].contactmechanism.id
-            )
-
-            self.eq(addr.address1, addr1.address1)
-
-            reg = addr.address_regions.first.region
-            reg1 = addr1.address_regions.first.region
-
-            expect = self.dedent('''
-			Scottsdale, Arizona 85281
-			United States of America
-            ''')
-            self.eq(expect, str(reg1))
-
-            self.eq(str(reg), str(reg1))
 
 class gem_party_type(tester):
     def __init__(self):
@@ -15025,6 +15099,196 @@ class gem_party_type(tester):
         # TODO
         pass
 
+class gem_party_role(tester):
+    def __init__(self):
+        super().__init__()
+        gem.party.orm.recreate(recursive=True)
+        gem.roletypes.orm.recreate(recursive=True)
+
+    def it_creates(self):
+        # TODO Remove the below `return` when 297f8176 is fixed.
+        return
+        acme = gem.company(name='ACME Corporation')
+
+        acme.roles += gem.customer(
+            begin  =  primative.datetime('2006-01-01'),
+            end    =  primative.datetime('2008-04-14')
+        )
+
+        acme.roles += gem.supplier()
+
+        # TODO We shouldn't have to put `acme.roles` in the argument
+        # list. This is a problem with the way subentity (`company`)
+        # objects save the constituents (`roles`) of the supers
+        # (`party`).
+        acme.save(
+            acme.roles
+        )
+
+        acme1 = acme.orm.reloaded()
+
+        rls = acme.roles.sorted()
+        rls1 = acme1.roles.sorted()
+
+        self.two(rls)
+        self.two(rls1)
+
+        for rl, rl1 in zip(rls, rls1):
+            rl1 = rl.orm.entity(rl1)
+            self.eq(rl.begin, rl1.begin)
+            self.eq(rl.end, rl1.end)
+
+            rl1.partyroletype
+
+            self.eq(rl.partyroletype.id, rl1.partyroletype.id)
+
+class gem_party_role_role(tester):
+    def __init__(self):
+        super().__init__()
+        gem.party.orm.recreate(recursive=True)
+        gem.roletypes.orm.recreate(recursive=True)
+        gem.status.orm.recreate(recursive=True)
+
+    def it_creates(self):
+        # TODO Remove the below `return` when 297f8176 is fixed.
+        return
+        # Create parties
+        rent = gem.company(name='ACME Corporation')
+        sub  = gem.company(name='ACME Subsidiary')
+
+        # Create priority
+        high = gem.priority(name='high')
+
+        # Create status
+        act = gem.role_role_status(name='active')
+
+        # Create roles
+        rent.roles += gem.parent(
+            begin     =  primative.datetime('2006-01-01'),
+            end       =  None,
+        )
+
+        sub.roles += gem.subsidiary(
+            begin  =  primative.datetime('2006-01-01'),
+            end    =  None,
+        )
+
+        # Associate the two roles created above
+        sub.roles.last.role_roles += gem.role_role(
+            begin  =  primative.datetime('2006-01-01'),
+            end    =  None,
+            role_role_type = gem.role_role_type(
+                name = 'Organizational rollup',
+                description = 'Shows that each organizational '
+                              'unit may be within one or more '
+                              'organization units, over time.',
+            ),
+
+            # FIXME `subject` need not be set here
+            subject = sub.roles.last, 
+
+            object = rent.roles.last,
+
+            # This is a "high" priority relationship.
+            priority = high,
+
+            # This is an active relationship.
+            status = act,
+
+        )
+
+        sub.roles.last.role_roles.last.communications += \
+            gem.communication(
+                begin = primative.datetime('2010-02-18 12:01:23'),
+                end   = primative.datetime('2010-02-18 12:49:32'),
+                note  = 'Good phone call. I think we got him.',
+            )
+
+        # FIXME We should not have to pass in `sub.roles` or
+        # `rent.roles` to save.
+        rent.save(
+            sub,
+            sub.roles,
+            rent.roles,
+        )
+
+        # Reload and test
+        sub1 = sub.orm.reloaded()
+
+        rls = sub.roles
+        rls1 = sub1.roles
+
+        self.one(rls)
+        self.one(rls1)
+
+        rrs = rls.first.role_roles
+        rrs1 = rls1.first.role_roles
+
+        self.one(rrs)
+        self.one(rrs1)
+
+        self.eq(
+            rrs.first.begin,
+            rrs1.first.begin,
+        )
+
+        self.eq(
+            rrs.first.end,
+            rrs1.first.end,
+        )
+
+        self.eq(
+            rrs.first.object.id,
+            rrs1.first.object.id,
+        )
+
+        self.eq(
+            rrs.first.priority.id,
+            rrs1.first.priority.id,
+        )
+
+        self.eq(
+            'high',
+            rrs1.first.priority.name,
+        )
+
+        self.eq(
+            rrs.first.status.id,
+            rrs1.first.status.id,
+        )
+
+        self.eq(
+            'active',
+            rrs1.first.status.name,
+        )
+
+        self.eq(
+            rrs.first.role_role_type.id,
+            rrs1.first.role_role_type.id,
+        )
+
+        self.eq(
+            rrs.first.role_role_type.name,
+            rrs1.first.role_role_type.name,
+        )
+
+        self.eq(
+            rrs.first.role_role_type.description,
+            rrs1.first.role_role_type.description,
+        )
+
+        coms = rrs.first.communications.sorted()
+        coms1 = rrs.first.communications.sorted()
+
+        self.one(coms)
+        self.one(coms1)
+
+        for com, com1 in zip(coms, coms1):
+            self.eq(com.id, com1.id)
+            self.eq(com.begin, com1.begin)
+            self.eq(com.end, com1.end)
+            self.eq(com.note, com1.note)
+
 class gem_company(tester):
     def __init__(self):
         super().__init__()
@@ -15032,13 +15296,16 @@ class gem_company(tester):
         gem.address.orm.recreate()
 
     @staticmethod
-    def getvalid():
+    def getvalid(**kwargs):
         com = gem.company()
         com.name = uuid4().hex
         com.ein = str(uuid4().int)[:9]
         com.nationalids    =  uuid4().hex
         com.isicv4         =  'A'
         com.dun            =  None
+
+        for k, v in kwargs.items():
+            setattr(com, k, v)
         return com
 
     def it_creates(self):
@@ -15274,6 +15541,8 @@ class gem_company(tester):
             self.eq(str(reg), str(reg1))
 
     def it_appends_department(self):
+        # TODO:afa4ffc9 Rewrite the below to use the role_role
+        # association to associate persons to departments and divisions.
         com = self.getvalid()
         self.zero(com.departments)
         dep = gem.department(name='web')
@@ -15290,6 +15559,8 @@ class gem_company(tester):
         self.eq('web', com1.departments.first.name)
 
     def it_updates_department(self):
+        # TODO:afa4ffc9 Rewrite the below to use the role_role
+        # association to associate persons to departments and divisions.
         com = self.getvalid()
         self.zero(com.departments)
         com.departments += gem.department(name='web')
@@ -15313,6 +15584,8 @@ class gem_company(tester):
         self.eq('web1', dep1.name)
 
     def it_appends_divisions_to_departments(self):
+        # TODO:afa4ffc9 Rewrite the below to use the role_role
+        # association to associate persons to departments and divisions.
         com = self.getvalid()
 
         dep = gem.department(name='web')
@@ -15341,6 +15614,9 @@ class gem_company(tester):
         )
 
     def it_creates_positions_within_company(self):
+        # TODO:afa4ffc9 Rewrite the below to use the role_role
+        # association to associate persons to departments and divisions.
+
         # TODO We should be able to create a position in any
         # gem.legalorganization such as a non-profit.
         jb = gem_job.getvalid()
@@ -15390,6 +15666,10 @@ class gem_company(tester):
         self.two(com1.departments.first.divisions.first.positions)
 
     def it_fulfills_postition_within_company(self):
+        # TODO:afa4ffc9 Rewrite the below to use the role_role
+        # association to associate persons to departments and divisions.
+
+
         jb = gem_job.getvalid()
         com = gem_company.getvalid()
         pers = gem_person.getvalid() + gem_person.getvalid()
