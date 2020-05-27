@@ -4281,6 +4281,61 @@ class orm:
 
         return True
 
+    def cast(self, o):
+        """ Given an entity or a UUID as `o`, a new orm.entity of the
+        given type is loaded from the database and returned. If no
+        such entity is in the database, None is returned.
+            
+            # Load human given an existing UUID
+            hum = human.orm.cast(id)
+            assert type(hum) is human
+
+            # Upcast to mammal super type of human by passing in the
+            # entity instead of the UUID. Note for this, we could also
+            # just do `hum.super`.
+            mam = mammal.orm.cast(hum)
+            assert type(mam) is mammal
+
+            # Downcast back to human from mammal
+            hum = human.orm.cast(mam)
+            assert type(hum) is human
+
+            # Loading non-existing entities return None
+            emp = employee.orm.cast(UUID())
+            assert emp is None
+
+        The method is particularly useful when you have an entity but
+        you want to downcast it into a particular entity.
+
+        :param: o orm.entity/UUID: The id to be used for loading. If
+        ``o`` is an orm.entity, its ``id`` attribute will be used.
+        """
+
+        # TODO It might be nice to also suppert an interface like the
+        # below:
+        # 
+        # Instead of:
+        #
+        #     hum = human.orm.cast(mam)
+        # do:
+        #
+        #     hum = mam.cast(human)
+
+        # TODO This code is very simaly to the `exists` method. We could
+        # consolidate these two.
+
+        try:
+            if isinstance(o, entity):
+                id = o.id
+            elif isinstance(o, UUID):
+                id = o
+            else:
+                raise ValueError("Can't determine id")
+
+            return self.entity(id)
+        except db.RecordNotFoundError:
+            return None
+
     @property
     def leaf(self):
         """ Return the lowest subentity in the inheritance tree of the
