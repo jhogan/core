@@ -15749,7 +15749,430 @@ class gem_company(tester):
                 per1.positions.first.division.department.company.id
             )
 
+class gem_contactmechanism(tester):
+    def __init__(self):
+        super().__init__()
+        gem.party.orm.recreate(recursive=True)
+        gem.purposetypes.orm.recreate(recursive=True)
+
+    @staticmethod
+    def getvalid(type='phone'):
+        if type == 'phone':
+            # Create phone number
+            cm = gem.phone()
+
+            cm.area =  randint(200, 999)
+            cm.line =  randint(100, 999)
+            cm.line += ' '
+            cm.line += str(randint(1000, 9999))
+
+        elif type == 'email':
+            cm = gem.email(address='bgates@microsoft.com')
+        else:
+            raise TypeError('Type not supported')
+
+        return cm
+
+    def it_links_contactmechanisms(self):
+        # Create contact mechanisms
+        ph1 = gem_contactmechanism.getvalid(type='phone')
+        ph2 = gem_contactmechanism.getvalid(type='phone')
+        em  = gem_contactmechanism.getvalid(type='email')
+
+
+        # Make cm_cm reference the association class
+        cm_cm = gem.contactmechanism_contactmechanism
+
+        # When ph1 is busy, the number will be forwarded to ph2
+        ph1.contactmechanism_contactmechanisms += cm_cm(
+            event   =  cm_cm.Busy,
+            do      =  cm_cm.Forward,
+            subject =  ph1, # FIXME We don't need to specify subject
+            object  =  ph2,
+        )
+
+        # When no one answers ph2, forward the call will be forwarded
+        # to a voice recognition email.
+        ph2.contactmechanism_contactmechanisms += cm_cm(
+            event    =  cm_cm.Unanswered,
+            do       =  cm_cm.Forward,
+            subject  =  ph2, # FIXME We don't need to specify subject
+            object   =  em,
+        )
+
+        # This saves the cm's and the associations
+        ph1.save()
+
+        # Reload everyting
+        ph1_1 = ph1.orm.reloaded()
+
+        # Test that the first association (the first link in the chain)
+        # saved properly.
+        cm_cms1 = ph1.contactmechanism_contactmechanisms.sorted()
+        cm_cms1_1 = ph1_1.contactmechanism_contactmechanisms.sorted()
+
+        self.one(cm_cms1)
+        self.one(cm_cms1_1)
+
+        self.eq(cm_cms1.first.id,          cm_cms1_1.first.id)
+        self.eq(cm_cms1.first.event,       cm_cms1_1.first.event)
+        self.eq(cm_cms1.first.do,          cm_cms1_1.first.do)
+        self.eq(cm_cms1.first.object.id,   cm_cms1_1.first.object.id)
+        self.eq(cm_cms1.first.subject.id,  cm_cms1_1.first.subject.id)
+
+        # Test that the second association (the second link in the chain)
+        # saved properly.
+        cm_cms1 = cm_cms1.first.object \
+                    .contactmechanism_contactmechanisms \
+                    .sorted()
+
+        cm_cms1_1 = cm_cms1_1.first.object \
+                        .contactmechanism_contactmechanisms \
+                        .sorted()
+
+        self.one(cm_cms1)
+        self.one(cm_cms1_1)
+
+        self.eq(cm_cms1.first.id,          cm_cms1_1.first.id)
+        self.eq(cm_cms1.first.event,       cm_cms1_1.first.event)
+        self.eq(cm_cms1.first.do,          cm_cms1_1.first.do)
+        self.eq(cm_cms1.first.object.id,   cm_cms1_1.first.object.id)
+        self.eq(cm_cms1.first.subject.id,  cm_cms1_1.first.subject.id)
+
+    def it_associates_phone_numbers(self):
+        per = gem_person.getvalid()
+
+        # Create two phone numbers
+        for i in range(2):
+
+            # Create phone number
+            ph = gem.phone()
+            ph.area = int('20' + str(i))
+            ph.line = '555 5555'
             
+            # Create party to contact mechanism association
+            pcm                   =  gem.party_contactmechanism()
+            pcm.begin             =  primative.datetime('1976-01-01')
+            pcm.end               =  None
+            pcm.solicitations     =  False
+            pcm.extension         =  None
+            pcm.purpose           =  gem.party_contactmechanism.roles.main
+            pcm.contactmechanism  =  ph
+            pcm.party             =  per
+
+            # Add association to the person object
+            per.party_contactmechanisms += pcm
+
+        # Save, reload and test
+        per.save()
+
+        per1 = gem.person(per.id)
+
+        per.party_contactmechanisms.sort()
+        per1.party_contactmechanisms.sort()
+
+        self.two(per1.party_contactmechanisms)
+
+        for i in range(2):
+            self.eq(per.id, per1.party_contactmechanisms[i].party.id)
+
+            self.eq(
+                per.party_contactmechanisms[i].contactmechanism.id,
+                per1.party_contactmechanisms[i].contactmechanism.id
+            )
+            ph = gem.phone(
+                per1.party_contactmechanisms[i].contactmechanism.id
+            )
+
+    def it_associates_email_addresses(self):
+        per = gem_person.getvalid()
+
+        # Create two email addressess
+        for i in range(2):
+
+            # Create email addres
+            em = gem.email()
+            em.address = 'jimbo%s@foonet.com' % i
+            
+            # Create party to contact mechanism association
+            priv = gem.party_contactmechanism.roles.private
+
+            pcm                   =  gem.party_contactmechanism()
+            pcm.begin             =  primative.datetime('1993-09-01')
+            pcm.end               =  None
+            pcm.solicitations     =  False
+            pcm.extension         =  None
+            pcm.purpose           =  priv # Private email address
+            pcm.contactmechanism  =  em
+            pcm.party             =  per
+
+            # Add association to the person object
+            per.party_contactmechanisms += pcm
+
+        # Save, reload and test
+        per.save()
+
+        per1 = gem.person(per.id)
+
+        per.party_contactmechanisms.sort()
+        per1.party_contactmechanisms.sort()
+
+        self.two(per1.party_contactmechanisms)
+
+        for i in range(2):
+            self.eq(per.id, per1.party_contactmechanisms[i].party.id)
+
+            self.eq(
+                per.party_contactmechanisms[i].contactmechanism.id,
+                per1.party_contactmechanisms[i].contactmechanism.id
+            )
+
+            em = gem.email(
+                per1.party_contactmechanisms[i].contactmechanism.id
+            )
+
+    def it_associates_postal_addresses(self):
+        per = gem_person.getvalid()
+
+        # Create two postal addressess
+        for i in range(2):
+
+            # Create postal addres
+            addr = gem.address()
+            addr.address1 = '742 Evergreen Terrace'
+            addr.address2 = None
+            addr.directions = self.dedent('''
+			Take on I-40 E. 
+            Take I-44 E to Glenstone Ave in Springfield. 
+            Take exit 80 from I-44 E
+			Drive to E Evergreen St
+            ''')
+
+            ar = gem.address_region()
+            ar.region = gem_region.getvalid()
+            addr.address_regions += ar
+            
+            hm = gem.party_contactmechanism.roles.home
+
+            # Create party-to-contact-mechanism association
+            pcm                   =  gem.party_contactmechanism()
+            pcm.begin             =  primative.datetime('1993-09-01')
+            pcm.end               =  None
+            pcm.solicitations     =  False
+            pcm.extension         =  None
+            pcm.purpose           =  hm
+            pcm.contactmechanism  =  addr
+            pcm.party             =  per
+
+            # Add association to the person object
+            per.party_contactmechanisms += pcm
+
+        # Save, reload and test
+        per.save()
+
+        per1 = gem.person(per.id)
+
+        per.party_contactmechanisms.sort()
+        per1.party_contactmechanisms.sort()
+
+        self.two(per1.party_contactmechanisms)
+
+        for i in range(2):
+            self.eq(per.id, per1.party_contactmechanisms[i].party.id)
+
+            self.eq(
+                per.party_contactmechanisms[i].contactmechanism.id,
+                per1.party_contactmechanisms[i].contactmechanism.id
+            )
+
+            addr = per.party_contactmechanisms[i].contactmechanism
+
+            # Downcast
+            addr1 = gem.address(
+                per1.party_contactmechanisms[i].contactmechanism.id
+            )
+
+            self.eq(addr.address1, addr1.address1)
+
+            reg = addr.address_regions.first.region
+            reg1 = addr1.address_regions.first.region
+
+            expect = self.dedent('''
+			Scottsdale, Arizona 85281
+			United States of America
+            ''')
+            self.eq(expect, str(reg1))
+
+            self.eq(str(reg), str(reg1))
+
+    def it_adds_purposes_to_contact_mechanisms(self):
+        tbl = (
+            ('ABC Corporation', 'company', '212 234 0958',    'phone',   'General phone number'),
+            ('ABC Corporation', 'company', '212 334 5896',    'phone',   'Main fax number'),
+            ('ABC Corporation', 'company', '212 356 4898',    'phone',   'Secondary fax number'),
+            ('ABC Corporation', 'company', '100 Main Street', 'address', 'Headquarters'),
+            ('ABC Corporation', 'company', '100 Main Street', 'address', 'Billing Inquires'),
+            ('ABC Corporation', 'company', '500 Jerry Street','address', 'Sales Office'),
+            ('ABC Corporation', 'company', 'http://abc.com',  'website', 'Central Internet Address'),
+
+            ('ABC Subsidiary',  'company', '100 Main Street', 'address', 'Service Address'),
+            ('ABC Subsidiary',  'company', '255 Fetch Street','address', 'Sales Office'),
+
+            ('John Smith',      'person',  '212 234 9856',     'phone',   'Main office number'),
+            ('John Smith',      'person',  '212 784 5893',     'phone',   'Main home number'),
+            ('John Smith',      'person',  '212 384 4387',     'phone',    None),
+            ('John Smith',      'person',  '345 Hamlet Place', 'address', 'Main home address'),
+            ('John Smith',      'person',  '245 Main Street',  'address', 'Main work address'),
+
+            ('Barry Goldstein',  'person',  '212 234 0045',            'phone',   'Main office number'),
+            ('Barry Goldstein',  'person',  '212 234 0046',            'phone',   'Secondary office number'),
+            ('Barry Goldstein',  'person',  'Bgoldstein@abc.com',      'email',   'Work email address'),
+            ('Barry Goldstein',  'person',  'barry@barrypersonal.com', 'email',   'Personal email address'),
+            ('Barry Goldstein',  'person',  '2985 Cordova Road',       'address', 'Main home address'),
+        )
+
+        parts = gem.parties()
+        cms   = gem.contactmechanisms()
+        for r in tbl:
+            # Objectify party
+            part, cls = r[0:2]
+            cls = getattr(gem, cls)
+
+            for part1 in parts:
+                if part == part1.name:
+                    part = part1
+                    break
+            else:
+                part, name = cls(), part
+                if cls is gem.person:
+                    # FIXME:1e4db655 person.name does not exist yet and
+                    # I was having a hard time getting it to work so I
+                    # used person.maiden instead.
+                    part.maiden = name
+                part.name = name
+                parts += part
+
+            # Objectify contact mechanisms
+            cm, cls= r[2:4]
+            cls = getattr(gem, cls)
+
+            def test(cm, cm1, attr):
+                return getattr(cm1, attr) == cm
+
+            if  cls  is  gem.phone:    attr  =  'line'
+            if  cls  is  gem.email:    attr  =  'address'
+            if  cls  is  gem.address:  attr  =  'address1'
+            if  cls  is  gem.website:  attr  =  'url'
+
+            for cm1 in cms:
+                if type(cm1) is not cls:
+                    continue
+
+                if test(cm, cm1, attr):
+                    cm = cm1
+                    break
+            else:
+                cm = cls(**{attr: cm})
+                if cls is gem.phone:
+                    cm.area = None
+                elif cls is gem.address:
+                    cm.address2 = None
+                cms += cm
+
+
+            # Associate party with contact mechanism
+            part.party_contactmechanisms += \
+                gem.party_contactmechanism(
+                    party = part,
+                    contactmechanism = cm
+                )
+
+            pcm = part.party_contactmechanisms.last
+
+            now = primative.datetime.utcnow
+            pcm.purposes += gem.purpose(
+                begin       = now(days=-randint(1, 1000)),
+                end         = now(days= randint(1, 1000)),
+                purposetype = gem.purposetype(name=r[4])
+            )
+
+        parts.save()
+
+        parts1 = gem.parties()
+        for part in parts:
+            parts1 += part.orm.reloaded()
+
+        parts.sorted()
+        parts1.sorted()
+
+        self.eq(parts.count, parts1.count)
+
+        for part, part1 in zip(parts, parts1):
+            cms = part.party_contactmechanisms.sorted()
+            cms1 = part1.party_contactmechanisms.sorted()
+
+            self.eq(cms.count, cms1.count)
+
+            for cm, cm1 in zip(cms, cms1):
+                self.eq(cm.id, cm1.id)
+                self.eq(cm.party.id, cm1.party.id)
+                self.eq(part.id, cm1.party.id)
+                self.eq(cm.contactmechanism.id, cm1.contactmechanism.id)
+
+                self.eq(
+                    cm.contactmechanism.id, 
+                    cm1.contactmechanism.id
+                )
+
+                purs = cm.purposes.sorted()
+                purs1 = cm1.purposes.sorted()
+                self.eq(purs.count, purs1.count)
+
+                for pur, pur1 in zip(purs, purs1):
+                    self.eq(pur.id,              pur1.id)
+                    self.eq(pur.begin,           pur1.begin)
+                    self.eq(pur.end,             pur1.end)
+                    self.eq(pur.purposetype.id,  pur1.purposetype.id)
+                    self.eq(
+                        pur.purposetype.name,  
+                        pur1.purposetype.name
+                    )
+        return
+
+        # The above `return` can be removed to print a tabularized
+        # version of the nested tuple from above. This comes from the
+        # reloaded party entities collection so it is a good way to
+        # visually verify what the test is saving/reloading.
+        tbl1 = table()
+        for part in parts1:
+            for pcm in part.party_contactmechanisms:
+                for pur in pcm.purposes:
+                    r = tbl1.newrow()
+                    try:
+                        r.newfield(part.name)
+                    except AttributeError:
+                        r.newfield(part.maiden)
+                        
+                    if gem.phone.orm.exists(pcm.contactmechanism):
+                        cm = gem.phone(pcm.contactmechanism)
+                        r.newfield(cm.line)
+                    elif gem.address.orm.exists(pcm.contactmechanism):
+                        cm = gem.address(pcm.contactmechanism)
+                        r.newfield(cm.address1)
+                    elif gem.website.orm.exists(pcm.contactmechanism):
+                        cm = gem.website(pcm.contactmechanism)
+                        r.newfield(cm.url)
+                    elif gem.email.orm.exists(pcm.contactmechanism):
+                        cm = gem.email(pcm.contactmechanism)
+                        r.newfield(cm.address)
+                    else:
+                        raise TypeError()
+
+                    r.newfield(pur.purposetype.name)
+
+        print(tbl1)
+
+
 class gem_position(tester):
     def __init__(self):
         super().__init__()
@@ -15852,6 +16275,429 @@ class gem_address(tester):
         ''')
         return addr
 
+class gem_facility(tester):
+    def __init__(self):
+        super().__init__()
+        gem.party.orm.recreate(recursive=True)
+        gem.facility.orm.recreate(recursive=True)
+
+    def it_creates(self):
+        # Building
+        miniluv = gem.facility(
+            name = 'Miniluv', 
+            type = gem.facility.Building
+        )
+
+        # Floor
+        miniluv.facilities += gem.facility(
+            name = '0',
+            type = gem.facility.Floor
+        )
+
+        # Room
+        miniluv.facilities.last.facilities += gem.facility(
+            name = '101',
+            type = gem.facility.Room
+        )
+
+        # Footage defaults to None and we never set it above
+        self.none(miniluv.footage, None)
+
+        miniluv.save()
+
+        miniluv1 = miniluv.orm.reloaded()
+
+        fac = miniluv1
+        self.eq(gem.facility.Building, fac.type)
+        self.none(fac.footage, None)
+        self.eq('Miniluv', fac.name)
+        self.one(fac.facilities)
+
+        fac = fac.facilities.first
+        self.eq(gem.facility.Floor, fac.type)
+        self.none(fac.footage, None)
+        self.eq('0', fac.name)
+        self.one(fac.facilities)
+
+        fac = fac.facilities.first
+        self.eq(gem.facility.Room, fac.type)
+        self.none(fac.footage, None)
+        self.eq('101', fac.name)
+        self.zero(fac.facilities)
+
+    def it_associates_with_parties(self):
+
+        # Create a facility
+        giga = gem.facility(
+            name = 'Giga Navada', 
+            type = gem.facility.Factory
+        )
+
+        # Create party
+        tsla = gem.company(name='Tesla')
+
+        # Create association
+        tsla.party_facilities += gem.party_facility(
+            party             =  tsla,
+            facility          =  giga,
+            facilityroletype  =  gem.facilityroletype(name='owner'),
+        )
+
+        # Save and reload
+        tsla.save()
+
+        tsla1 = tsla.orm.reloaded()
+
+        # Test
+        pfs = tsla.party_facilities.sorted()
+        pfs1 = tsla1.party_facilities.sorted()
+
+        self.one(pfs)
+        self.one(pfs1)
+
+        for pf, pf1 in zip(pfs, pfs1):
+            self.eq(pf.id,                   pf1.id)
+            self.eq(pf.party.id,             pf1.party.id)
+            self.eq(pf.facility.id,          pf1.facility.id)
+            self.eq(pf.facilityroletype.id,  pf1.facilityroletype.id)
+
+    def it_associates_with_contactmechanisms(self):
+        # Create a facility
+        giga = gem.facility(
+            name = 'Giga Shanghai', 
+            type = gem.facility.Factory,
+            footage = 9300000,
+        )
+
+        # Associate a postal address with the facility
+        addr = gem.address(
+            address1 = '浦东新区南汇新城镇同汇路168号',
+            address2 = 'D203A',
+        )
+
+        addr.address_regions += gem.address_region(
+            region = gem.region.create(
+                ('China',     gem.region.Country,       'CH'),
+                ('Shanghai',  gem.region.Municipality,  None),
+                ('Pudong',    gem.region.District,      None),
+            )
+        )
+
+        giga.facility_contactmechanisms += gem.facility_contactmechanism(
+            contactmechanism = addr,
+        )
+
+        # Associate a phone number with the facility.
+        giga.facility_contactmechanisms += gem.facility_contactmechanism(
+            contactmechanism = gem.phone(area=510, line='602-3960')
+        )
+
+        giga.save()
+
+        giga1 = giga.orm.reloaded()
+
+        fcms = giga.facility_contactmechanisms.sorted()
+        fcms1 = giga1.facility_contactmechanisms.sorted()
+
+        self.two(fcms)
+        self.two(fcms1)
+
+        for fcm, fcm1 in zip(fcms, fcms1):
+            self.eq(fcm.id, fcm1.id)
+            self.eq(fcm.facility.id, fcm1.facility.id)
+            
+            # Downcast
+            id = fcm1.contactmechanism.id
+            cm = gem.phone.orm.cast(id)
+            if cm:
+                self.eq(fcm.contactmechanism.area, cm.area)
+                self.eq(fcm.contactmechanism.line, cm.line)
+            else:
+                cm = gem.address.orm.cast(id)
+                assert cm is not None
+                self.eq(fcm.contactmechanism.address1, cm.address1)
+                self.eq(fcm.contactmechanism.address2, cm.address2)
+
+class gem_communication(tester):
+    def __init__(self):
+        super().__init__()
+        gem.communications.orm.recreate(recursive=True)
+        gem.parties.orm.recreate(recursive=True)
+        gem.objectivetypes.orm.recreate(recursive=True)
+        gem.communicationstatuses.orm.recreate(recursive=True)
+
+    def it_associates_party_to_communication(self):
+        # This is for a simple association between party entity objects
+        # and `communication` event objects. However, the book says that
+        # ``communication`` events will usually be within the context of
+        # a "party relationship" (``role_role``) because it is within a
+        # relationship that communications usually make sense (see
+        # it_associates_relationship_to_communication).
+        will  =  gem.person(first='William',  last='Jones')
+        marc  =  gem.person(first='Marc',     last='Martinez')
+        john  =  gem.person(first='John',     last='Smith')
+
+        comm = gem.communication(
+            begin = primative.datetime('2019-03-23 13:00:00'),
+            end   = primative.datetime('2019-03-23 14:00:00'),
+            note  = 'A meeting between William, Marc and John',
+        )
+
+        participant = gem.communicationroletype(name='participant')
+        for per in (will, marc, john):
+            pcs = getattr(per, 'party_communications')
+
+            pcs += gem.party_communication(
+                # FIXME We shouldn't have to specify party here
+                party                  =  per,
+                communication          =  comm,
+                communicationroletype  =  participant,
+            )
+
+        will.save(marc, john)
+
+        will1 = will.orm.reloaded()
+        marc1 = marc.orm.reloaded()
+        john1 = john.orm.reloaded()
+
+        for per1 in (will1, marc1, john1): 
+            pcs1 = getattr(per1, 'party_communications')
+            self.one(pcs)
+            self.one(pcs1)
+
+            self.eq(
+                pcs.first.communicationroletype.id,
+                pcs1.first.communicationroletype.id,
+            )
+
+            pc1 = pcs1.first
+
+            self.eq(per1.id,      pc1.party.id)
+            self.eq(comm.id,     pc1.communication.id)
+            self.eq(comm.begin,  pc1.communication.begin)
+            self.eq(comm.end,    pc1.communication.end)
+
+    def it_associates_relationship_to_communication(self):
+        # TODO Remove return when 297f8176 is fixed
+        return
+        # Create parties
+        
+        ## Persons
+        will  =  gem.person()
+        marc  =  gem.person()
+        john  =  gem.person()
+
+        ## Companies
+        abc   =  gem.company(name='ABC Corporation')
+        acme  =  gem.company(name='ACME Corporation')
+
+
+        # Will Jones has an Account Management role
+        will.roles += gem.role(
+            begin          =  primative.datetime('2016-02-12'),
+            end            =  None,
+            partyroletype  =  gem.partyroletype(name='Account Manager'),
+        )
+
+        # Marc Martinez hase a Customer Contact role
+        marc.roles += gem.role(
+            begin          =  primative.datetime('2014-03-23'),
+            end            =  None,
+            partyroletype  =  gem.partyroletype(name='Customer Contact'),
+        )
+
+        # As an account manager, Will Jones is associated with Marc
+        # Martinez's role as Customer Contact.
+        will.roles.first.role_roles += gem.role_role(
+            begin   =  primative.datetime('2017-11-12'),
+            subject =  will.roles.last, # FIXME We shouldn't have to do this
+            object  =  marc.roles.last,
+        )
+
+        # Create objectivetypes
+        isc = gem.objectivetype(name='Initial sales call')
+        ipd = gem.objectivetype(name='Initial product demonstration')
+        dop = gem.objectivetype(name='Demo of product')
+        sc  = gem.objectivetype(name='Sales close')
+        god = gem.objectivetype(name='Gather order details')
+        cs  = gem.objectivetype(name='Customer service')
+        fu  = gem.objectivetype(name='Follow-up')
+        css = gem.objectivetype(name='Customer satisfacton survey')
+
+        # The role_role association between Will Jones and Marc Martinez
+        # has four ``communication`` events.
+        comms = will.roles.first.role_roles.last.communications
+
+        comms += gem.inperson(
+            begin = primative.datetime('Jan 12, 2001, 3PM'),
+
+            # FIXME This assignment fails. The ``objective`` object
+            # retain an fk of <undef>. It should point to the
+            # `communication`'s ID
+            # objectives += \
+            #             gem.objective(name='Initial sales call') + \
+            #             gem.objective(
+            #                 name='Initial product demontration'
+            #             )
+
+        )
+
+        # FIXME I noticed that before the below line is executed,
+        # calling
+        #
+        #     comms.last.communicationstatus
+        #
+        # Results in an AttributeError. It would appear that composites
+        # defined at super class level raise this error when called by
+        # subclasses, i.e., :
+        #
+        #     try:
+        #          gem.communication().communicationstatus
+        #     except Exception:
+        #         assert False
+        #     else:
+        #         assert True
+        #
+        # The above works as expected. But if we use a subclass of
+        # ``communication`` (``inperson``), we get an AttributeError.
+        #
+        #     try:
+        #          gem.inperson().communicationstatus
+        #     except AttributeError:
+        #         assert True
+        #     else:
+        #         assert False
+        #
+        # This should be fixed because it leads to unexpected behavior
+        # by developers using the ORM.
+
+        comms.last.communicationstatus = \
+                gem.communicationstatus(name='Completed')
+
+        comms.last.objectives += gem.objective(
+            objectivetype = isc
+        )
+
+        comms.last.objectives += gem.objective(
+            objectivetype = ipd
+        )
+
+        comms += gem.webinar(
+            begin = primative.datetime('Jan 30, 2001, 2PM'),
+            communicationstatus = \
+                gem.communicationstatus(name='Completed'),
+        )
+
+        comms.last.objectives += gem.objective(
+            objectivetype = dop
+        )
+
+        comms += gem.inperson(
+            begin = primative.datetime('Feb 12, 2002, 10PM'),
+            communicationstatus = \
+                gem.communicationstatus(name='Completed'),
+        )
+
+        comms.last.objectives += gem.objective(
+            objectivetype = sc
+        )
+
+        comms.last.objectives += gem.objective(
+            objectivetype = god
+        )
+
+        comms += gem.phonecall(
+            begin = primative.datetime('Feb 12, 2002, 1PM'),
+            communicationstatus = \
+                gem.communicationstatus(name='Scheduled'),
+        )
+
+        comms.last.objectives += gem.objective(
+            objectivetype = cs
+        )
+
+        comms.last.objectives += gem.objective(
+            objectivetype = fu
+        )
+
+        comms.last.objectives += gem.objective(
+            objectivetype = css
+        )
+
+        # FIXME We shouldn't have to save
+        # `will.roles.first.role_roles.last.communications`. Note that
+        # adding this only became necessary when we appended suptypes of
+        # ``communication`` above. If we append instance of
+        # ``communication`` itself, it worked correctly.
+        will.save(
+            marc, 
+            john,
+            will.roles.first.role_roles.last.communications,
+        )
+
+        will1 = will.orm.reloaded()
+        marc1 = marc.orm.reloaded()
+        john1 = john.orm.reloaded()
+
+        comms = will.roles.first.role_roles.first.communications
+        comms1 = will1.roles.first.role_roles.first.communications
+
+        comms.sort()
+        comms1.sort()
+
+        self.four(comms)
+        self.four(comms1)
+
+        for comm, comm1 in zip(comms, comms1):
+            self.eq(comm.id, comm1.id)
+
+            # FIXME We shouldn't have to call ``orm.super`` below.
+            self.eq(
+                comm.orm.super.communicationstatus.id, 
+                comm1.communicationstatus.id
+            )
+
+            self.eq(
+                comm.orm.super.communicationstatus.name, 
+                comm1.communicationstatus.name
+            )
+
+            # FIXME comm1 is a ``communication``
+            #
+            #     assert type(comm1) is gem.communication
+            #
+            # However, it has no `objectives` attributes. If I downcast
+            # it, (see the lines immediaetly below) I am able to see the
+            # ``objectives`` attribute. This is very strange because the
+            # ``objectives`` attribute is defined in the
+            # ``communication`` class. We shouldn't be able to remove
+            # the downcast logic when this is fixed. (Also, comm1 should
+            # be loaded as it's most downcasted version, but that is a
+            # seperate issue.)
+            cast = gem.inperson.orm.cast(comm1)
+
+            if not cast:
+                cast = gem.webinar.orm.cast(comm1)
+
+            if not cast:
+                cast = gem.phonecall.orm.cast(comm1)
+
+            assert cast is not None
+
+            comm1 = cast
+
+            objs  = comm.objectives.sorted()
+            objs1 = comm1.objectives.sorted()
+
+            self.eq(objs.count,  objs1.count)
+            self.gt(objs.count,  0)
+
+            for obj, obj1 in zip(objs, objs1):
+                self.eq(obj.id, obj1.id)
+                self.eq(None, obj1.name)
+                self.eq(obj.objectivetype.id, obj1.objectivetype.id)
+                self.eq(obj.objectivetype.name, obj1.objectivetype.name)
+
 class gem_region(tester):
     def __init__(self):
         super().__init__()
@@ -15864,7 +16710,7 @@ class gem_region(tester):
             ('United States of America',  gem.region.Country,    'USA'),
             ('Arizona',                   gem.region.State,      'AZ'),
             ('Scottsdale',                gem.region.City),
-            ('85281',                     gem.region.PostalCode)
+            ('85281',                     gem.region.Postal)
         )
 
     def it_creates(self):
@@ -15872,7 +16718,7 @@ class gem_region(tester):
             ('United States of America',  gem.region.Country,    'USA'),
             ('Arizona',                   gem.region.State,      'AZ'),
             ('Scottsdale',                gem.region.City),
-            ('85224',                     gem.region.PostalCode)
+            ('85224',                     gem.region.Postal)
         )
 
         self.eq('85224', reg.name)
@@ -15880,6 +16726,7 @@ class gem_region(tester):
 
         reg = reg.region
         self.eq('Scottsdale', reg.name)
+        # FIXME `reg.regions` fails to contain one entity
         self.one(reg.regions)
 
         reg = reg.region
@@ -15895,7 +16742,7 @@ class gem_region(tester):
             ('United States of America',  gem.region.Country,    'USA'),
             ('Arizona',                   gem.region.State,      'AZ'),
             ('Scottsdale',                gem.region.City),
-            ('85254',                     gem.region.PostalCode)
+            ('85254',                     gem.region.Postal)
         )
 
     def it_associates_address_with_region(self):
@@ -15933,14 +16780,14 @@ class gem_product_product(tester):
         gem.priorities.orm.recreate(recursive=True)
     
     @staticmethod
-    def getvalid(type=None):
+    def getvalid(type=None, comment=1000):
         if type is None:
             type = product.good
 
         prod = type()
         prod.name = uuid4().hex
         prod.introducedat = primative.datetime.utcnow(days=-100)
-        prod.comment = uuid4().hex * 1000
+        prod.comment = uuid4().hex * comment
         return prod
 
     def it_creates(self):
@@ -17160,18 +18007,785 @@ class gem_product_category_types(tester):
             )
 
 class gem_product_measure(tester):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         product.products.orm.recreate(recursive=True)
+        product.measure_measure.orm.recreate(recursive=True)
 
     def it_converts(self):
-        _10 = product.dimension(number=10)
-        inches = product.measure(name='inches')
-        inches.features += _10
 
-        with db.chronicler.snapshot():
-            inches.save()
+        # Create three pencil products
+        pen = product.product(name='Henry #2 Pencile')
+        small = product.product(name='Henry #2 Pencile Small Box')
+        large = product.product(name='Henry #2 Pencile Large Box')
+
+        # Create the unit of measures for the pencile products
+        each = product.measure(name='each')
+        smallbox = product.measure(name='smallbox')
+        largebox = product.measure(name='largebox')
+
+        # The `pen` product's UOM will be "each"
+        pen.measure = each
+
+
+        # The product `small` will have a unit of measure called
+        # `smallbox`
+        small.measure = smallbox
+
+        # The product `large` will have a unit of measure called
+        # `largebox`
+        large.measure = largebox
+
+        # Create associations between the above unit of measures so
+        # conversions between them can be done.
+
+        # A small box is `12` pencils
+        mm = product.measure_measure(
+            object   =  smallbox,
+            factor   =  12
+        )
+
+        # Associate each with smallbox
+        each.measure_measures += mm
+
+        # A large box is equivelent to 2 small boxes. Note the
+        # association beteen `each` and `largebox` is not created. We
+        # will rely on product.measure_measure to work issues like this
+        # out automatically via transitive logic.
+        mm = product.measure_measure(
+            # TODO We can remove the subject assignment here. This is
+            # covered by another TODO.
+            subject  =  smallbox,
+            object   =  largebox,
+            factor   =  2
+        )
+
+        smallbox.measure_measures += mm
+
+        self.eq(
+            dec(2),
+            smallbox.convert(largebox)
+        )
+
+        '''
+        # This can't work because we haven't yet saved the unit of
+        # measure association that associates largebox with smallbox.
+        # This should work once this association has been saved,
+        # however.
+        self.eq(
+            dec(2),
+            largebox.convert(smallbox)
+        )
+        '''
+
+        # Save the `pen` product along with `small` and `large` in the
+        # same tx
+        pen.save(small, large)
+
+        # Reload products
+        pen1    =  pen.orm.reloaded()
+        small1  =  small.orm.reloaded()
+        large1  =  large.orm.reloaded()
+
+        smallbox1 = smallbox.orm.reloaded()
+        largebox1 = largebox.orm.reloaded()
+
+        self.eq(
+            dec(12),
+            pen1.measure.convert(smallbox1)
+        )
+
+        self.eq(
+            dec(24),
+            pen1.measure.convert(largebox1)
+        )
+
+        self.eq(
+            dec(2),
+            small1.measure.convert(largebox1)
+        )
+
+        # Convert the other way. This will require .convert() to load
+        # the `measure_measure` records for the `measure` passed in to
+        # convert.
+        self.eq(
+            dec(12),
+            smallbox1.convert(pen1.measure)
+        )
+
+        self.eq(
+            dec(2),
+            largebox1.convert(small1.measure)
+        )
+
+        self.eq(
+            dec(24),
+            largebox1.convert(pen1.measure)
+        )
+
+        ''' Leaving the above conversion factors declared in
+        measure_measure, let's create dimension(feature) that have
+        their own unit of measures and conversion factor declarations in
+        measure_measures. Then we can test their conversions.'''
+
+        paper = product.product(
+            name = "Johnson fine grade 8½ by 11 paper"
+        )
+
+        dim_width = product.dimension(name='width', number=dec(8.5))
+        dim_length = product.dimension(name='length', number=dec(11))
+
+        # Create units of measure 'inches and 'centimeters' and
+        # associate them with each other along with the factor number
+        # that can be used to convert between them.
+        inches = product.measure(name='inches')
+        cent   = product.measure(name='centimeters')
+
+        # Make the width dimention in inches
+        inches.dimensions += dim_width
+
+        # Make the length dimension in centimeters (this would be a very
+        # string thing to do in real life).
+        cent.dimensions += dim_length
+
+        mm = product.measure_measure(
+            subject = inches,
+            object  = cent,
+            factor  = dec(2.54)
+        )
+
+        paper.features += dim_width
+
+        # Save everything associated with the paper product. The
+        # save doesn't discover the measure_measure association, so
+        # throw that in as well so it gets saved.
+        paper.save(mm)
+
+        self.one(paper.features)
+        dim_width = paper.features.first
+
+        # The paper's dimension(feature) knows it is measured in inches
+        # via its unit of measure (`measure`) property
+        self.eq(inches.id, dim_width.measure.id)
+
+        # 8.5 inches is 21.59 centimeters.
+        self.eq(dec('21.59'), dim_width.convert(cent))
+
+        # 11 centimenters is 4.33071 inches
+        d = dec('4.330708661417322834645669291')
+        self.eq(d, dim_length.convert(inches))
+
+class gem_product_rating(tester):
+    def __init__(self):
+        super().__init__()
+        product.ratings.orm.recreate(recursive=True)
+
+    def it_calls_make(self):
+        r = product.rating(score=product.rating.Outstanding)
+        r1 = product.rating(score=product.rating.Outstanding)
+        self.eq(r.id, r1.id)
+
+class gem_product_pricing(tester):
+    def __init__(self):
+        super().__init__()
+        product.product.orm.recreate(recursive=True)
+        product.quantitybreak.orm.recreate(recursive=True)
+
+    def it_creates_prices(self):
+        # Create organizations
+        abc = gem_company.getvalid(
+            name = 'ABC Corporation'
+        )
+
+        joes = gem_company.getvalid(
+            name = "Joe's Stationary"
+        )
+
+        # Create product
+        paper = product.good(
+            name='Johnson fine grade 8½ by 11 bond paper'
+        )
+
+        # Create government party type
+        gov = gem.type(
+            description = 'Government'
+        )
+
+        # Create product category
+        cat_paper = product.category(
+            name = 'Paper',
+            begin = '2001-09-01',
+            end   = '2001-09-30'
+        )
+
+        # Associate product category to produt
+        cc = product.category_classification(
+            begin   = primative.datetime.utcnow(days=-50),
+            product = paper
+        )
+
+        cat_paper.category_classifications += cc
+
+        # Create geographic regions
+        east = gem.region(
+            name = 'Eastern region',
+            type = None
+        )
+
+        west = gem.region(
+            name = 'Western region',
+            type = None,
+        )
+
+        hi = gem.region(
+            name = 'Hawaii',
+            type = gem.region.State,
+            abbreviation = 'HI',
+            region = west,
+        )
+
+        al = gem.region(
+            name = 'Alabama',
+            type = gem.region.State,
+            abbreviation = 'AL',
+            region = east,
+        )
+
+        # Create features
+        cream = product.color(name='Cream')
+        fin   = product.quality(name='Extra glossy finish')
+
+        # Create prices
+
+        # Base prices
+        price1 = product.base(
+            region        =  east,
+            price         =  9.75,
+            organization  =  abc,
+            product       =  paper,
+            quantitybreak = product.quantitybreak(
+                begin = 0, 
+                end   = 100
+            )
+        )
+
+        price2 = product.base(
+            region        =  east,
+            price         =  9.00,
+            organization  =  abc,
+            product       =  paper,
+            quantitybreak = product.quantitybreak(
+                begin = 101, 
+                end   = None
+            )
+        )
+
+        price3 = product.base(
+            region        =  west,
+            price         =  8.75,
+            organization  =  abc,
+            product       =  paper,
+            quantitybreak = product.quantitybreak(
+                begin = 0, 
+                end   = 100
+            )
+        )
+
+        price4 = product.base(
+            region        =  west,
+            price         =  8.50,
+            organization  =  abc,
+            product       =  paper,
+            quantitybreak = product.quantitybreak(
+                begin = 101, 
+                end   = None
+            )
+        )
+
+        # Discount prices
+        price5 = product.discount(
+            percent       =  2,
+            type          =  gov,
+            product       =  paper,
+            organization  =  abc
+        )
+
+        price6 = product.discount(
+            percent       =  5,
+            organization  =  abc,
+            product       =  paper,
+            category      =  cat_paper
+        )
+
+        # Surchages
+        price7 = product.surcharge(
+            region        =  hi,
+            organization  =  abc,
+            product       =  paper,
+            price         =  2
+        )
+
+        price8 = product.base(
+            organization  =  joes,
+            product       =  paper,
+            price         =  11
+        )
+
+        paper.prices += price1
+        paper.prices += price2
+        paper.prices += price3
+        paper.prices += price4
+        paper.prices += price5
+        paper.prices += price6
+        paper.prices += price7
+        paper.prices += price8
+
+        paper.save(
+            paper.prices,        # prices
+            abc, joes,           # organizations
+            gov,                 # party types
+            cat_paper,           # product categories
+            east, west, hi, al,  # regions
+            cream, fin,          # features
+        )
+
+        paper1 = paper.orm.reloaded()
+
+        # Get first price
+        pr, prs = paper.getprice(
+            org  = abc,
+            regs = [al],
+            qty  = 20
+        )
+
+        # Despite AL being in the east, the algorith was able to find a
+        # cheaper base price of $8.75 based on the quantity break. A 5%
+        # discount was applied because all products in the "paper"
+        # category are 5% off.
+        self.eq(dec('8.3125'), pr)
+        self.eq(dec('8.75'), prs.first.price)
+        self.eq(dec('5'), prs.second.percent)
+
+        # Get second price
+        pr, prs = paper.getprice(
+            org = abc,
+            regs = [east],
+        )
+
+        # Since we didn't specify a quantity, we got the cheapest
+        # eastern price of $9. 5% was taken off since this was a paper
+        # product.
+        self.eq(dec('8.55'), pr)
+        self.eq(dec('9.00'), prs.first.price)
+        self.eq(dec('5'), prs.second.percent)
+
+        # Get third price
+        pr, prs = paper.getprice(
+            org  = abc,
+            regs = [west],
+        )
+
+        # Without specifying the qty, we get the cheapest eastern price
+        # with a 5% paper discount.
+        self.eq(dec('8.075'), pr)
+        self.eq(dec('8.50'), prs.first.price)
+        self.eq(dec('5'), prs.second.percent)
+
+        # Get fifth price
+        pr, prs = paper.getprice(
+            org  = abc,
+            pts  = [gov],
+            regs = [west],
+        )
+
+        # The cheapest western price was found and a paper product
+        # discount was applied as well as a 2% gov discount.
+        self.eq(dec('7.9135'), pr)
+        self.eq(dec('8.50'), prs.first.price)
+        self.eq(dec('2'), prs.second.percent)
+        self.eq(dec('5'), prs.third.percent)
+
+        # Get seventh price
+        pr, prs = paper.getprice(
+            org  = abc,
+            regs = [hi]
+        )
+
+        # HI is in the west, so we were able to get the $8.75 base
+        # price. The 5% off for all paper products was applied. A
+        # surcharge of $5 was also applied since we are shipping to HI.
+        self.eq(dec('10.075'), pr)
+        self.eq(dec('8.50'), prs.first.price)
+        self.eq(dec('5'), prs.second.percent)
+        self.eq(dec('2'), prs.third.price)
+
+        # Get eigth price
+        pr, prs = paper.getprice(
+            org  = joes,
+        )
+
+        # HI is in the west, so we were able to get the $8.75 base
+        # price. The 5% off for all paper products was applied. A
+        # surcharge of $5 was also applied since we are shipping to HI.
+        self.eq(dec('10.45'), pr)
+        self.eq(dec('11'), prs.first.price)
+        self.eq(dec('5'), prs.second.percent)
+        self.two(prs)
+
+class gem_product_estimate(tester):
+    def __init__(self):
+        super().__init__()
+        product.product.orm.recreate(recursive=True)
+
+        # TODO Though `estimatetype` is a composite of `estimates`, its
+        # table is not created by the below line.
+        product.estimates.orm.recreate(recursive=True)
+
+        # So we have to create it explicitly
+        product.estimatetypes.orm.recreate(recursive=True)
+
+    def it_creates(self):
+        good = product.good(name='Johnson fine grade 8½ by 11 paper')
+
+        # Create regions
+        ny = gem.region(
+            name          =  'New York',
+            abbreviation  =  'N.Y.',
+            type          =  gem.region.State,
+        )
+
+        id = gem.region(
+            name          =  'Idaho',
+            abbreviation  =  'I.D.',
+            type          =  gem.region.State,
+        )
+
+        # Create estimatetypes
+        apc = product.estimatetype(
+            name = 'Anticipated purchase cost'
+        )
+
+        ao = product.estimatetype(
+            name = 'Administrative overhead'
+        )
+
+        fr = product.estimatetype(
+            name = 'Frieght'
+        )
+
+        good.estimates += product.estimate(
+            region        =  ny,
+            cost          =  2,
+            begin         =  primative.datetime('Jan  9,  2001'),
+            estimatetype  =  apc,
+        )
+
+        good.estimates += product.estimate(
+            region        =  ny,
+            cost          =  dec('1.9'),
+            begin         =  primative.datetime('Jan  9,  2001'),
+            estimatetype  =  ao,
+        )
+
+        good.estimates += product.estimate(
+            region        =  ny,
+            cost          =  dec('1.5'),
+            begin         =  primative.datetime('Jan  9,  2001'),
+            estimatetype  =  fr,
+        )
+
+        good.estimates += product.estimate(
+            region        =  ny,
+            cost          =  dec('2'),
+            begin         =  primative.datetime('Jan  9,  2001'),
+            estimatetype  =  apc,
+        )
+
+        good.estimates += product.estimate(
+            region        =  ny,
+            cost          =  dec('1.1'),
+            begin         =  primative.datetime('Jan  9,  2001'),
+            estimatetype  =  ao,
+        )
+
+        good.estimates += product.estimate(
+            region        =  ny,
+            cost          =  dec('1.1'),
+            begin         =  primative.datetime('Jan  9,  2001'),
+            estimatetype  =  fr,
+        )
+
+        good.save()
+
+        good1 = good.orm.reloaded()
+
+        ests  = good.estimates.sorted()
+        ests1 = good.estimates.sorted()
+
+        self.six(ests)
+        self.six(ests1)
+
+        for est, est1 in zip(ests, ests1):
+            self.eq(est.product.id, est1.product.id)
+            self.eq(est.estimatetype.id, est1.estimatetype.id)
+            self.eq(est.region.id, est1.region.id)
+            self.eq(est.cost, est1.cost)
+            self.eq(primative.datetime('Jan 9, 2001'), est1.begin)
+            self.eq(None, est1.end)
+
+class gem_product_product_product(tester):
+    """ Test the product_product association in the `product.py` module.
+    """
+    def __init__(self):
+        super().__init__()
+        product.product.orm.recreate(recursive=True)
+
+    def it_creates(self):
+        ''' Test the Component association. Create a parent product
+        called 'Office supply kit', and add child components. '''
+        rent     = product.good(name='Office supply kit')
+
+        rent.product_products += product.product_product(
+            object = product.good(
+                name='Johnson fine grade 8½ by 11 paper'
+            ),
+            quantity = 5,
+        )
+
+        rent.product_products += product.product_product(
+            object  = product.good(name="Pennie's 8½ by 11 binders"),
+            quantity = 5,
+        )
+
+        rent.product_products += product.product_product(
+            object = product.good(name="Shwinger black ball point pen"),
+            quantity = 6,
+        )
+
+        rent.save()
+
+        rent1 = rent.orm.reloaded()
+
+        pps = rent.product_products.sorted()
+        pps1 = rent1.product_products.sorted()
+
+        self.three(pps)
+        self.three(pps1)
+
+        for pp, pp1 in zip(pps, pps1):
+            self.eq(pp.quantity, pp1.quantity)
+            self.eq(rent.id, pp1.subject.id)
+            self.eq(pp.object.id, pp1.object.id)
+            self.eq(pp.id, pp1.id)
+        
+        ''' Test the Substitution association. '''
+        pps = product.product_products()
+
+        pps += product.product_product(
+            subject = product.good(
+                name='Small box of Henry #2 pencils'
+            ),
+            object = product.good(
+                name='Individual Henry #2 pencil'
+            ),
+            quantity = 12,
+        )
+
+        pps += product.product_product(
+            subject = product.good(
+                name='Goldstein Elite pen'
+            ),
+            object = product.good(
+                name="George's Elite pen"
+            ),
+        )
+
+        pps.save()
+
+        pps1 = product.product_products(
+            subject__productid = pps.first.subject.id
+        )
+
+        self.one(pps1)
+        self.eq(pps.first.subject.id, pps1.first.subject.id)
+        self.eq(pps.first.object.id, pps1.first.object.id)
+        self.eq(12, pps1.first.quantity)
+
+        pps1 = product.product_products(
+            subject__productid = pps.second.subject.id
+        )
+
+        self.one(pps1)
+        self.eq(pps.second.subject.id, pps1.first.subject.id)
+        self.eq(pps.second.object.id, pps1.first.object.id)
+        self.eq(None, pps1.first.quantity)
+
+class gem_case(tester):
+    def __init__(self):
+        super().__init__()
+        gem.communications.orm.recreate(recursive=True)
+        gem.parties.orm.recreate(recursive=True)
+        gem.case_party.orm.recreate(recursive=True)
+        gem.caseroletype.orm.recreate(recursive=True)
+        gem.casestatuses.orm.recreate(recursive=True)
+
+    def it_associates_case_to_party(self):
+        # NOTE Names don't work if party.roles exist. This is due to
+        # 297f8176. If `party.roles` needs to be restored, remove the
+        # kwargs.
+        jerry = gem.person(first="Jerry", last="Red")
+
+        # Create case
+        cs = gem.case(
+            description = 'Techinal support issue with customer: '
+                          'software keeps crashing',
+            casestatus = gem.casestatus(name='Active')
+        )
+
+        # Associate case with party
+        jerry.case_parties += gem.case_party(
+            party = jerry, # FIXME This shouldn't be needed
+            case = cs,
+        )
+
+        # FIXME:566e96a9 The caseroletype is not a real attribute
+        # because there is no caseroletype composite map in case_party.
+        # We can save or test caseroletype at the moment.
+        #
+        # jerry.case_parties.last.caseroletype = gem.caseroletype(
+        #    name = 'Resolution lead'
+        #)
+
+        jerry.save()
+
+        jerry1 = jerry.orm.reloaded()
+
+        cps = jerry.case_parties
+        cps1 = jerry1.case_parties
+
+        self.one(cps)
+        self.one(cps1)
+
+        self.eq(cps.first.id,       cps1.first.id)
+        self.eq(jerry.id,           cps1.first.party.id)
+        self.eq(cps.first.case.id,  cps1.first.case.id)
+
+        self.eq(
+            cps.first.case.casestatus.id,
+            cps1.first.case.casestatus.id
+        )
+
+        # FIXME:566e96a9
+        # self.eq(cps.first.caseroletype.id,  cps1.first.caseroletype.id)
+        # self.eq(
+        #     cps.first.caseroletype.name,
+        #     cps1.first.caseroletype.name
+        # )
+
+    def it_appends_communications(self):
+        # Create work effort
+        eff = gem.effort(
+            name = 'Software patch',
+            description = 'Send software patch out to customer '
+                          'to correct problem'
+        )
+
+        # Create case
+        cs = gem.case(
+            description = 'Techinal support issue with customer: '
+                          'software keeps crashing',
+            casestatus = gem.casestatus(name='Active')
+        )
+
+        # Add `commuication` events to `case` along with communication
+        # objectives, work effort associations, etc.
+        cs.communications += gem.communication(
+            begin = primative.datetime('Sept 18 2001, 3PM'),
+        )
+
+        comm = cs.communications.last
+        comm.objectives += \
+            gem.objective(
+                objectivetype = \
+                    gem.objectivetype(
+                        name='Technical support call'
+                    )
+            ) \
+            + gem.objective(
+                objectivetype = \
+                    gem.objectivetype(
+                        name='Technical support call'
+                    )
+            )
+
+        comm.communication_efforts += gem.communication_effort(
+            effort = eff
+        )
+
+        cs.communications += gem.communication(
+            begin = primative.datetime('Sept 20 2001, 2PM'),
+        )
+        comm = cs.communications.last
+
+        comm.objectives += \
+            gem.objective(
+                objectivetype = \
+                    gem.objectivetype(
+                        name='Send software patch'
+                    )
+            )
+
+        comm.communication_efforts += gem.communication_effort(
+            effort = eff
+        )
+
+        cs.communications += gem.communication(
+            begin = primative.datetime('Sept 19 2001, 3PM'),
+        )
+        comm = cs.communications.last
+
+        comm.objectives += \
+            gem.objective(
+                objectivetype = \
+                    gem.objectivetype(
+                        name='Techinal support follow-up'
+                    )
+            ) \
+            + gem.objective(
+                objectivetype = \
+                    gem.objectivetype(
+                        name='Call resolution'
+                    )
+            )
+
+        cs.save()
+
+        cs1 = cs.orm.reloaded()
+
+        comms = cs.communications.sorted()
+        comms1 = cs1.communications.sorted()
+
+        self.three(comms)
+        self.three(comms1)
+
+        for comm, comm1 in zip(comms, comms1):
+            self.eq(comm.id, comm1.id)
+            self.eq(comm.begin, comm1.begin)
+
+            # FIXME When associations can be constituents,
+            # `comm1.communication_efforts` should be available and we
+            # can remove the ``continue`` below.
+            continue
+            ces = comm.communication_efforts
+            ces1 = comm1.communication_efforts
+
+            self.eq(ces.count, ces1.count)
+
+            for ce, ce1 in zip(ces, ces1):
+                self.eq(ce.id, ce1.id)
+                self.eq(ce.description, ce1.description)
+                self.eq(ce.effort.id, ce1.effort.id)
+                self.eq(ce.communication.id, ce1.communication.id)
 
 
 cli().run()
-
-
