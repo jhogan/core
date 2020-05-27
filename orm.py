@@ -16,7 +16,7 @@
 
 from collections.abc import Iterable
 from contextlib import suppress
-from datetime import datetime
+from datetime import datetime, date
 from enum import Enum, unique
 from MySQLdb.constants.ER import BAD_TABLE_ERROR
 from pprint import pprint
@@ -38,8 +38,9 @@ import sys
 import textwrap
 from dbg import B
 from types import ModuleType
+
 # TODO Research making these constants the same as their function
-# equivilants.
+# equivalent.
 # i.e., s/2/str; s/3/int/, etc.
 
 # TODO Add text datatype. Having to type `str, 1, 65535` is not fun.
@@ -49,7 +50,7 @@ from types import ModuleType
 
 # TODO Add chr(n) as datatype. Having to type `str, 1, 1` is not fun.
 
-# TODO Add date as datatype. Having to deal with time data is not fun.
+# TODO Add timespan and datespan
     
 @unique
 class types(Enum):
@@ -67,6 +68,213 @@ class types(Enum):
     float     =  6
     decimal   =  7
     bytes     =  8
+    date      =  9
+    timespan  =  10
+
+class alias:
+    type = None
+    min = None
+    max = None
+
+class text(alias):
+    """ An alias for:
+
+            str, 1, 65535
+
+        Many entity objects in the GEM simply want what would be
+        equivalent to a MySQL ``text`` date type. This alias allows a
+        GEM author to say::
+
+            class person(orm.entity):
+                name = str
+                bio = orm.text
+
+        instead of::
+
+            class person(orm.entity):
+                name = str
+                bio = str, 1, 65535
+
+    """
+    type = str
+    min = 1
+    max = 65535
+
+    def __iter__(self):
+        yield self.type
+        yield self.min
+        yield self.max
+
+class span:
+    """ An abstract class for spans of time. 
+    
+    Many entities in the GEM require date(time) fields with names like
+    ``begin`` and ``end`` to record the time an entity has been in a
+    certain state. For example::
+
+        class user(orm.entity):
+            # The date the user became active
+            beginactive = date
+
+            # The date the user became inactive
+            endactive   = date
+
+    The span classes allow us to write the above with only two lines::
+
+        class user(orm.entity):
+            active = datespan(suffix='active')
+
+    The user class will now expose three attributes:
+
+        u = user()
+        assert type(u.beginactive) is primative date
+        assert type(u.endactive) is primative date
+        assert type(u.active) is datespan
+
+    The `active` atttribute is a ``datespan`` object that exposes the
+    `begin` and `end` attribute as well as doing other nice things like
+    telling you whether a given date is within the datespan.
+
+        assert type(u.active.begin) is primative date
+        assert type(u.active.end) is primative date
+
+        if '2020-02-02' in u.active:
+            # 2020-02-02 must come after u.active.begin and before
+            # u.active.end if we are here.
+            ...
+
+    Note that activebegin and endactive will still be date fields in the
+    the table and these attributes will act just like any other date
+    field on the entity.
+
+    The above used the ``datespan`` subclass. A ``timespan`` subclass is
+    similar but uses a datetime datatype instead of a date datatype to
+    include the time.
+    """
+    
+    def __init__(self, prefix=None, suffix=None, e=None):
+        self.entity = e
+        self._prefix = prefix
+        self._suffix = suffix
+
+    @property
+    def isstatic(self):
+        """``span``'s are static if they have no entity. The entity would
+        be provide by the clone method when an instance is available to
+        associate with the ``span``.
+        """
+        return not bool(self.entity)
+
+    @classmethod
+    def expand(cls, body):
+        """ A class method to scan the ``body`` ``dict`` for spans. If
+        found, `begin`, `end` and a `span` object are added to the
+        ``body`` ``dict``.  
+        """
+        mods = list()
+        for k, v in body.items():
+            if hasattr(v, 'mro'):
+                if timespan in v.mro():
+                    v = timespan()
+                elif datespan in v.mro():
+                    v = datespan()
+
+            if isinstance(v, cls):
+                mods.append((k, v))
+
+        for k, v in mods:
+            # TODO Raise error if keys already exist
+            if builtins.type(v) is timespan:
+                type = types.datetime
+            elif builtins.type(v) is datespan:
+                type = types.date
+            else:
+                raise TypeError('Invalid span type')
+
+            body[v.str_begin] = fieldmapping(type, span=v)
+            body[v.str_end]   = fieldmapping(type, span=v)
+            body[k]     = v
+
+    def clone(self, e):
+        return type(self)(
+            prefix=self.prefix, 
+            suffix=self.suffix, 
+            e=e
+        )
+
+    @property
+    def suffix(self):
+        return self._suffix
+
+    @property
+    def str_begin(self):
+        begin = 'begin'
+        if self.prefix:
+            begin = self.prefix + begin
+
+        if self.suffix:
+            begin += self.suffix
+
+        return begin
+
+    @property
+    def str_end(self):
+        end = 'end'
+        if self.prefix:
+            end = self.prefix + end
+
+        if self.suffix:
+            end += self.suffix
+
+        return end 
+
+    @property
+    def prefix(self):
+        return self._prefix
+
+    def __getattr__(self, attr):
+        if attr in ('begin', 'end'):
+            try:
+                if attr == 'begin':
+                    attr = self.str_begin
+                elif attr == 'end':
+                    attr = self.str_end
+
+                return getattr(self.entity, attr)
+            # TODO s/SyntaxError/Exception
+            except SyntaxError as ex:
+                raise AttributeError(
+                    "type object '%s' has no attribute '%s'. "  
+                    "Original message: %s"
+                        % (type(self).__name__, attr, ex)
+                )
+
+        return object.__getattribute__(self, attr)
+
+    def __contains__(self, dt):
+        if type(self) is timespan:
+            dt = primative.datetime(dt)
+        elif type(self) is datespan:
+            dt = primative.date(dt)
+        else:
+            raise TypeError('Invalid span')
+
+        return (self.begin is None or dt >= self.begin) and \
+               (self.end   is None or dt <= self.end)
+
+    def iscurrent(self):
+        return primative.utcnow in self
+
+    def __repr__(self):
+        name = type(self).__name__
+        begin, end = self.str_begin, self.str_end
+        return '%s(begin=%s, end=%s)' % (name, begin, end)
+
+class datespan(span):
+    pass
+
+class timespan(span):
+    pass
 
 class undef:
     """ 
@@ -1801,6 +2009,11 @@ class entitymeta(type):
         body['createdat'] = fieldmapping(datetime)
         body['updatedat'] = fieldmapping(datetime)
 
+        # Use the span base class `span` to add a `begin` and `end`
+        # date(time) entry to body along with an instance of the span
+        # (datespan or timespan).
+        span.expand(body)
+
         for k, v in body.items():
             # Is v a reference to a module:
             if isinstance(v, ModuleType):
@@ -1818,7 +2031,9 @@ class entitymeta(type):
                 # If the item is already a mapping, we don't need to do
                 # anything; just assign it to the map variable.
                 map = v
-            elif v in fieldmapping.types:
+
+            elif v in fieldmapping.types or \
+                (hasattr(v, 'mro') and alias in v.mro()):
                 # TODO I'm begining to thing we should have alias types.
                 # For example, instead of writing::
                 #
@@ -1988,6 +2203,25 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
             for k, v in kwargs.items():
                 setattr(self, k, v)
+
+
+            # TODO Remove below
+            # # Clone timespans and datespans from the original, static
+            # # entity.
+            # for attr in self.orm.mappings.fieldmappings
+            #     try:
+            #         # Get the span
+            #         v = getattr(self, attr)
+            #     except:
+            #         # Sometime a explicit attribute would be called here
+            #         # but is not ready to be processed (perhaps because
+            #         # of an uninitialized variable. Just ignore.
+            #         pass
+            #     else:
+            #         # Clone the span and set it to self's span
+            #         # attribute.
+            #         if isinstance(v, timespan):
+            #             setattr(self, attr, v.clone(self))
 
             # Post super().__init__() events
             self.onaftervaluechange  +=  self._self_onaftervaluechange
@@ -2593,6 +2827,13 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         min=map.min
                     )
 
+                elif t == types.date:
+                    brs.demand(self, 
+                        map.name, 
+                        instanceof=date,
+                        min=type(self).mindatetime,
+                        max=type(self).maxdatetime,
+                    )
                 elif t == types.datetime:
                     brs.demand(self, 
                         map.name, 
@@ -3693,7 +3934,7 @@ class fieldmapping(mapping):
     """ Represents mapping between Python types and MySQL types.
     """
     # Permitted types
-    types = bool, str, int, float, decimal.Decimal, bytes, datetime
+    types = bool, str, int, float, decimal.Decimal, bytes, datetime, date
     def __init__(self, type,       # Type of field
                        min=None,   # Max length or size of field
                        max=None,   # Min length or size of field
@@ -3702,7 +3943,11 @@ class fieldmapping(mapping):
                        name=None,  # Name of the field
                        ix=None,    # Database index
                        isderived=False,
-                       isexplicit=False):
+                       isexplicit=False,
+                       span=None):
+
+        if hasattr(type, 'mro') and alias in type.mro():
+            type, min, max = type()
 
         if type in (float, decimal.Decimal):
             if min is not None:
@@ -3717,6 +3962,7 @@ class fieldmapping(mapping):
         self._precision  =  m
         self._scale      =  d
         self.isexplicit  =  isexplicit
+        self._span       =  span
 
         # TODO Currently, a field is limited to being part of only one
         # composite or fulltext index. This code could be improved to
@@ -3748,7 +3994,8 @@ class fieldmapping(mapping):
             self.name,
             ix,
             self.isderived,
-            self.isexplicit
+            self.isexplicit,
+            self.span,
         )
 
         if ix:
@@ -3757,6 +4004,14 @@ class fieldmapping(mapping):
         map._value = self._value
 
         return map
+
+    @property
+    def span(self):
+        """ Returns the datespan or timespan object associated with this
+        field. The self.type property would have to be a date or
+        datetime respectively.
+        """
+        return self._span
 
     @property
     def _reprargs(self):
@@ -3777,6 +4032,10 @@ class fieldmapping(mapping):
     @property
     def isdatetime(self):
         return self.type == types.datetime
+
+    @property
+    def isdate(self):
+        return self.type == types.date
 
     @property
     def isbool(self):
@@ -3893,6 +4152,8 @@ class fieldmapping(mapping):
             return types.bool
         elif hasattr(t, '__name__') and t.__name__ == 'datetime':
             return types.datetime
+        elif hasattr(t, '__name__') and t.__name__ == 'date':
+            return types.date
         elif t in (float,):
             return types.float
         elif hasattr(t, '__name__') and t.__name__.lower() == 'decimal':
@@ -3970,6 +4231,8 @@ class fieldmapping(mapping):
                     raise ValueError()
         elif self.isdatetime:
             return 'datetime(6)'
+        elif self.isdate:
+            return 'date'
         elif self.isbool:
             return 'bit'
         elif self.isfloat:
@@ -4023,6 +4286,16 @@ class fieldmapping(mapping):
                         self._value = self._value.astimezone(utc)
                     else:
                         self._value = self._value.replace(tzinfo=utc)
+ 
+            elif self.isdate:
+                try:
+                    if type(self._value) is str:
+                        self._value = primative.date(self._value) 
+                    elif not isinstance(self._value, primative.date):
+                        self._value = primative.date(self._value)
+                except:
+                    pass
+
             elif self.isbool:
                 if type(self._value) is bytes:
                     # Convert the bytes string fromm MySQL's bit type to a

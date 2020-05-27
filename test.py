@@ -11,7 +11,7 @@
 from auth import jwt
 from configfile import configfile
 from contextlib import contextmanager
-from datetime import timezone, datetime
+from datetime import timezone, datetime, date
 from entities import BrokenRulesError
 from func import enumerate, getattr, B
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
@@ -3112,6 +3112,14 @@ class test_datetime(tester):
         expect = dt.astimezone('US/Arizona')
         self.eq(expect, actual)
 
+class test_date(tester):
+    def it_calls__init__(self):
+        # Test date with standard args
+        args = (2003, 10, 11)
+        expect = date(*args)
+        actual = primative.date(*args)
+        self.eq(expect, actual)
+
 class mycli(cli):
     def registertraceevents(self):
         ts = self.testers
@@ -3294,6 +3302,8 @@ class artifact(orm.entity):
     abstract     =  bool
     price        =  dec
     components   =  components
+    lifespan     =  orm.datespan(suffix='life')
+    comments     =  orm.text
 
 class artist(orm.entity):
     firstname      =  str, orm.index('fullname', 1)
@@ -3306,6 +3316,7 @@ class artist(orm.entity):
 
     # Support datetime module as well as datetime.datetime class
     dob1           =  sys.modules['datetime']
+    dob2           =  date
     password       =  bytes, 32, 32
     ssn            =  str, 11, 11, orm.index #  char
     locations      =  locations
@@ -3419,11 +3430,13 @@ class artist_artifact(orm.association):
     artifact  =  artifact
     role      =  str
     planet    =  str
+    span      =  orm.timespan
+    active    =  orm.timespan(prefix='active')
 
-    def __init__(self, o=None):
+    def __init__(self, *args, **kwargs):
         self['planet'] = 'Earth'
         self._processing = False
-        super().__init__(o)
+        super().__init__(*args, **kwargs)
 
     @staticmethod
     def getvalid():
@@ -6674,6 +6687,13 @@ class test_orm(tester):
         self.one(art.brokenrules)
         self.broken(art, 'dob', 'valid')
 
+        # date
+        art = artist.getvalid()
+        art.dob2 = uuid4().hex       
+        self.expect(None, lambda: art.dob2) 
+        self.one(art.brokenrules)
+        self.broken(art, 'dob2', 'valid')
+
         # int
         art = artist.getvalid()
         art.weight = uuid4().hex       
@@ -7426,6 +7446,432 @@ class test_orm(tester):
             self.zero(obj.brokenrules)
             self.true(saveok(obj, attr))
 
+    def it_calls_datespan_attr_on_entity(self):
+        # TODO Ensure the datespan and timespan objects return 'end' and
+        # 'begin' from dir()
+        maps = artifacts.orm.mappings
+        self.true('beginlife' in maps)
+        self.true('endlife' in maps)
+
+        self.true(maps['beginlife'].isdate)
+        self.true(maps['endlife'].isdate)
+
+        fact = artifact.getvalid()
+        fact.beginlife = '2010-01-11'
+        fact.endlife = '2010-01-30'
+
+        self.true(hasattr(fact, 'beginlife'))
+        self.true(hasattr(fact, 'endlife'))
+        self.true(hasattr(fact, 'lifespan'))
+
+        fact.save()
+
+        fact1 = fact.orm.reloaded()
+
+        self.eq(fact.beginlife, fact1.beginlife)
+        self.eq(fact.endlife, fact1.endlife)
+        self.eq(primative.date('2010-01-11'), fact1.beginlife)
+        self.eq(primative.date('2010-01-30'), fact1.endlife)
+        self.type(primative.date, fact1.beginlife)
+        self.type(primative.date, fact1.endlife)
+
+        self.eq(primative.date('2010-01-11'), fact1.lifespan.begin)
+        self.eq(primative.date('2010-01-30'), fact1.lifespan.end)
+        self.type(primative.date, fact1.lifespan.begin)
+        self.type(primative.date, fact1.lifespan.end)
+
+        # Test the __contains__ method of the datespan object. `in`
+        # inplies that the given date falls within the datespan.
+        self.false  ('2010-1-10'  in  fact1.lifespan)
+        self.true   ('2010-1-11'  in  fact1.lifespan)
+        self.true   ('2010-1-30'  in  fact1.lifespan)
+        self.false  ('2010-1-31'  in  fact1.lifespan)
+
+        # Test the __contains__ method again using the date
+        # from the primative module.
+        self.false  (primative.date('2010-1-10') in  fact1.lifespan)
+        self.true   (primative.date('2010-1-11') in  fact1.lifespan)
+        self.true   (primative.date('2010-1-30') in  fact1.lifespan)
+        self.false  (primative.date('2010-1-31') in  fact1.lifespan)
+
+        # Test the __contains__ method again using standard date
+        # objects
+        self.false  (date(2010, 1, 10) in  fact1.lifespan)
+        self.true   (date(2010, 1, 11) in  fact1.lifespan)
+        self.true   (date(2010, 1, 30) in  fact1.lifespan)
+        self.false  (date(2010, 1, 31) in  fact1.lifespan)
+
+        # If beginlife is None then no date is too early. 
+        min = date.min
+        max = date.max
+        fact1.beginlife = None
+        self.true(min in fact1.lifespan)
+        self.true('2010-1-15'  in  fact1.lifespan)
+        self.false(max in fact1.lifespan)
+
+        # If beginlife and endlife are None, then no date is too early or late
+        fact1.endlife = None
+        self.true(min in fact1.lifespan)
+        self.true('2010-1-15' in fact1.lifespan)
+        self.true(max in fact1.lifespan)
+
+        # If end is None then no date is too late. 
+        fact1.beginlife  =  '2010-01-11'
+        fact1.endlife    =  None
+        self.false(min in  fact1.lifespan)
+        self.false('2010-01-10'  in  fact1.lifespan)
+        self.true('2020-02-02'  in  fact1.lifespan)
+        self.true(max in  fact1.lifespan)
+
+    def it_calls_timespan_attr_on_association(self):
+        # NOTE artist_artifact hase a timespan str already. Here we are
+        # testing the `span` proprety which is an orm.timespan and its
+        # corresponding `begin` and `end' maps.
+        maps = artist_artifacts.orm.mappings
+        self.true('begin' in maps)
+        self.true('end' in maps)
+
+        self.true(maps['begin'].isdatetime)
+        self.true(maps['end'].isdatetime)
+
+        # Set up an instance of artist_artifact with a `begin` and an
+        # `end that correspond to the `span`.:w
+        art = artist.getvalid()
+        fact = artifact.getvalid()
+
+        aa = artist_artifact(
+            begin     =  '2010-2-11 13:00:00',
+            end       =  '2010-2-11 14:00:00',
+            artist    =  art,
+            artifact  =  fact,
+            role      =  None,
+            timespan  = uuid4().hex
+        )
+
+        # The `span` timespan will introduce these three attributes
+        self.true(hasattr(aa, 'begin'))
+        self.true(hasattr(aa, 'end'))
+        self.true(hasattr(aa, 'span'))
+
+        # Save, reload and test `begin`, `end` and `span`
+        aa.save()
+
+        aa1 = aa.orm.reloaded()
+        
+        self.eq(aa.begin, aa1.begin)
+        self.eq(aa.end, aa1.end)
+        self.eq(primative.datetime('2010-2-11 13:00:00'), aa1.begin)
+        self.eq(primative.datetime('2010-2-11 14:00:00'), aa1.end)
+        self.type(primative.datetime, aa1.begin)
+        self.type(primative.datetime, aa1.end)
+
+        self.eq(primative.datetime('2010-2-11 13:00:00'), aa1.span.begin)
+        self.eq(primative.datetime('2010-2-11 14:00:00'), aa1.span.end)
+        self.type(primative.datetime, aa1.span.begin)
+        self.type(primative.datetime, aa1.span.end)
+
+        # Test the __contains__ method of the timespan object. `in`
+        # inplies that the given datetime falls within the timespan.
+        self.false('2010-2-10  13:30:00'  in  aa1.span)
+        self.false('2010-2-11  12:59:59'  in  aa1.span)
+        self.true('2010-2-11   13:00:00'  in  aa1.span)
+        self.true('2010-2-11   13:30:00'  in  aa1.span)
+        self.true('2010-2-11   14:00:00'  in  aa1.span)
+        self.false('2010-2-12  13:30:00'  in  aa1.span)
+
+        # Test the __contains__ method again using the datetime
+        # from the primative module.
+        self.false(
+            primative.datetime('2010-2-10  13:30:00')  in  aa1.span
+        )
+        self.false(
+            primative.datetime('2010-2-11  12:59:59')  in  aa1.span
+        )
+        self.true(
+            primative.datetime('2010-2-11   13:00:00')  in  aa1.span
+        )
+        self.true(
+            primative.datetime('2010-2-11   13:30:00')  in  aa1.span
+        )
+        self.true(
+            primative.datetime('2010-2-11   14:00:00')  in  aa1.span
+        )
+        self.false(
+            primative.datetime('2010-2-12  13:30:00')  in  aa1.span
+        )
+
+        # Test the __contains__ method again using standard datetime
+        # objects
+        utc = dateutil.tz.gettz('UTC')
+        self.false(
+            datetime(2010, 2, 10, 13, 30, 00)
+                .replace(tzinfo=utc)  in  aa1.span
+        )
+        self.false(
+            datetime(2010, 2, 11, 12, 59, 59)
+                .replace(tzinfo=utc)  in  aa1.span
+        )
+        self.true(
+            datetime(2010, 2, 11, 13, 00, 00)
+                .replace(tzinfo=utc)  in  aa1.span
+        )
+        self.true(
+            datetime(2010, 2, 11, 13, 30, 00)
+                .replace(tzinfo=utc)  in  aa1.span
+        )
+        self.true(
+            datetime(2010, 2, 11, 14, 00, 00)
+                .replace(tzinfo=utc)  in  aa1.span
+        )
+        self.false(
+            datetime(2010, 2, 12, 13, 30, 00)
+                .replace(tzinfo=utc)  in  aa1.span
+        )
+
+        # If begin is None then no date is too early. 
+        min = datetime.min.replace(tzinfo=utc)
+        max = datetime.max.replace(tzinfo=utc)
+        aa1.begin = None
+        self.true(min in  aa1.span)
+        self.true('2010-2-11 14:00:00'  in  aa1.span)
+        self.false(max  in  aa1.span)
+
+        # If begin and end are None, then no date is too early or late
+        aa1.end = None
+        self.true(min  in  aa1.span)
+        self.true('2010-2-11 14:00:00'  in  aa1.span)
+        self.true(max  in  aa1.span)
+
+        # If end is None then no date is too late. 
+        aa1.begin  =  '2010-2-11  13:00:00'
+        aa1.end    =  None
+        self.false(min in  aa1.span)
+        self.false('2010-2-11 12:30:00'  in  aa1.span)
+        self.true('2010-2-11 13:00:00'  in  aa1.span)
+        self.true('2010-2-11 14:00:00'  in  aa1.span)
+        self.true(max in  aa1.span)
+
+        maps = artist_artifacts.orm.mappings
+        self.true('begin' in maps)
+        self.true('end' in maps)
+
+    def it_calls_named_timespan_attr_on_association(self):
+        """ Test "named" timespans. Normally a timespan will default to
+        a begin and end datetime attribute. "Named" timespans have
+        prefix and suffix parameters that surround the "begin" and
+        "end". In this instance artist_artifact has a timespan called
+        `active` with a prefix of `active`. The datetime values can be
+        access like this
+
+            aa = artist_active()
+
+            # Directly
+            assert type(aa.activebegin) is datetime 
+            assert type(aa.activeend) is datetime 
+
+            # Via the timespan object
+            assert type(aa.active.begin) is datetime 
+            assert type(aa.active.end) is datetime 
+
+        TODO: Currently the suffix parameter should work but no tests have
+        been written for it.
+        """
+
+        # Set up an instance of artist_artifact with a `begin` and an
+        # `end that correspond to the `span`.:w
+        art = artist.getvalid()
+        fact = artifact.getvalid()
+
+        aa = artist_artifact(
+            activebegin     =  '2020-2-11 13:00:00',
+            activeend       =  '2020-2-11 14:00:00',
+            artist    =  art,
+            artifact  =  fact,
+            role      =  None,
+            timespan  = uuid4().hex
+        )
+
+        # The `span` timespan will introduce these three nameed attributes
+        self.true(hasattr(aa, 'activebegin'))
+        self.true(hasattr(aa, 'activeend'))
+        self.true(hasattr(aa, 'active'))
+
+        # Save, reload and test `begin`, `end` and `span`
+        aa.save()
+
+        aa1 = aa.orm.reloaded()
+        
+        self.eq(aa.activebegin, aa1.activebegin)
+        self.eq(aa.activeend, aa1.activeend)
+        self.eq(
+            primative.datetime('2020-2-11 13:00:00'),
+            aa1.activebegin
+        )
+        self.eq(
+            primative.datetime('2020-2-11 14:00:00'), 
+            aa1.activeend
+        )
+        self.type(primative.datetime, aa1.activebegin)
+        self.type(primative.datetime, aa1.activeend)
+
+        self.eq(
+            primative.datetime('2020-2-11 13:00:00'),
+            aa1.active.begin
+        )
+        self.eq(
+            primative.datetime('2020-2-11 14:00:00'),
+            aa1.active.end
+        )
+        self.type(primative.datetime, aa1.active.begin)
+        self.type(primative.datetime, aa1.active.end)
+
+        # Test the __contains__ method of the timespan object. `in`
+        # inplies that the given datetime falls within the timespan.
+        self.false('2020-2-10  13:30:00'  in  aa1.active)
+        self.false('2020-2-11  12:59:59'  in  aa1.active)
+        self.true('2020-2-11   13:00:00'  in  aa1.active)
+        self.true('2020-2-11   13:30:00'  in  aa1.active)
+        self.true('2020-2-11   14:00:00'  in  aa1.active)
+        self.false('2020-2-12  13:30:00'  in  aa1.active)
+
+        # Test the __contains__ method again using the datetime
+        # from the primative module.
+        self.false(
+            primative.datetime('2020-2-10  13:30:00')  in  aa1.active
+        )
+        self.false(
+            primative.datetime('2020-2-11  12:59:59')  in  aa1.active
+        )
+        self.true(
+            primative.datetime('2020-2-11   13:00:00')  in  aa1.active
+        )
+        self.true(
+            primative.datetime('2020-2-11   13:30:00')  in  aa1.active
+        )
+        self.true(
+            primative.datetime('2020-2-11   14:00:00')  in  aa1.active
+        )
+        self.false(
+            primative.datetime('2020-2-12  13:30:00')  in  aa1.active
+        )
+
+        # Test the __contains__ method again using standard datetime
+        # objects
+        utc = dateutil.tz.gettz('UTC')
+        self.false(
+            datetime(2020, 2, 10, 13, 30, 00)
+                .replace(tzinfo=utc)  in  aa1.active
+        )
+        self.false(
+            datetime(2020, 2, 11, 12, 59, 59)
+                .replace(tzinfo=utc)  in  aa1.active
+        )
+        self.true(
+            datetime(2020, 2, 11, 13, 00, 00)
+                .replace(tzinfo=utc)  in  aa1.active
+        )
+        self.true(
+            datetime(2020, 2, 11, 13, 30, 00)
+                .replace(tzinfo=utc)  in  aa1.active
+        )
+        self.true(
+            datetime(2020, 2, 11, 14, 00, 00)
+                .replace(tzinfo=utc)  in  aa1.active
+        )
+        self.false(
+            datetime(2020, 2, 12, 13, 30, 00)
+                .replace(tzinfo=utc)  in  aa1.active
+        )
+
+        # If activebegin is None then no date is too early. 
+        min = datetime.min.replace(tzinfo=utc)
+        max = datetime.max.replace(tzinfo=utc)
+        aa1.activebegin = None
+        self.true(min in  aa1.active)
+        self.true('2020-2-11 14:00:00'  in  aa1.active)
+        self.false(max  in  aa1.active)
+
+        # If activebegin and activeend are None, then no date is too early or late
+        aa1.activeend = None
+        self.true(min  in  aa1.active)
+        self.true('2020-2-11 14:00:00'  in  aa1.active)
+        self.true(max  in  aa1.active)
+
+        # If activeend is None then no date is too late. 
+        aa1.activebegin  =  '2020-2-11  13:00:00'
+        aa1.activeend    =  None
+        self.false(min in  aa1.active)
+        self.false('2020-2-11 12:30:00'  in  aa1.active)
+        self.true('2020-2-11 13:00:00'  in  aa1.active)
+        self.true('2020-2-11 14:00:00'  in  aa1.active)
+        self.true(max in  aa1.span)
+
+        maps = artist_artifacts.orm.mappings
+        self.true('activebegin' in maps)
+        self.true('activeend' in maps)
+
+
+    def it_calls_date_attr_on_entity(self):
+        art = artist.getvalid()
+        self.none(art.dob)
+        expect =  '2005-01-10'
+        art.dob2 = expect
+        self.type(primative.date, art.dob2)
+
+        expect = primative.date(2005, 1, 10)
+        self.eq(expect, art.dob2)
+        self.eq(date(2005, 1, 10), art.dob2)
+
+        # Save, reload, test
+        art.save()
+        self.eq(date(2005, 1, 10), art.dob2)
+
+        art = art.orm.reloaded()
+        self.type(primative.date, art.dob2)
+        self.eq(expect, art.dob2)
+        self.eq(date(2005, 1, 10), art.dob2)
+
+        # Update
+        art.dob2 = '2006-01-01'
+        expect = primative.date(2006, 1, 1)
+        self.type(primative.date, art.dob2)
+        self.eq(expect, art.dob2)
+        self.eq(date(2006, 1, 1), art.dob2)
+
+        art.save()
+
+        art = art.orm.reloaded()
+        self.type(primative.date, art.dob2)
+        self.eq(expect, art.dob2)
+        self.eq(date(2006, 1, 1), art.dob2)
+
+        # Earliest
+        art.dob2 = date(1, 1, 1)
+        art.save()
+
+        self.type(primative.date, art.dob2)
+        self.eq(primative.date(1, 1, 1), art.orm.reloaded().dob2)
+
+        # Earliest
+        art.dob2 = date.min
+        self.type(primative.date, art.dob2)
+        self.eq(primative.date(1, 1, 1), art.dob2)
+        art.save()
+
+        art = art.orm.reloaded()
+        self.type(primative.date, art.dob2)
+        self.eq(primative.date(1, 1, 1), art.dob2)
+
+        # Latest
+        art.dob2 = date.max
+        self.type(primative.date, art.dob2)
+        self.eq(primative.date(9999, 12, 31), art.dob2)
+        art.save()
+
+        art = art.orm.reloaded()
+        self.type(primative.date, art.dob2)
+        self.eq(primative.date(9999, 12, 31), art.dob2)
+
     def it_calls_datetime_attr_on_entity(self):
         utc = timezone.utc
 
@@ -7548,6 +7994,7 @@ class test_orm(tester):
         art1.networth   =  1
         art1.dob        =  primative.datetime.utcnow()
         art1.dob1       =  primative.datetime.utcnow()
+        art1.dob2       =  primative.date.today()
         art1.password   = bytes([randint(0, 255) for _ in range(32)])
         art1.ssn        = '2' * 11
         art1.bio        = uuid4().hex
@@ -9989,7 +10436,7 @@ class test_orm(tester):
         sng1.networth  =- 1
         sng1.dob       = datetime.now()
         sng1.dob1      = datetime.now()
-        sng1.dob2      = datetime.now()
+        sng1.dob2      = date.today()
         sng1.password  = bytes([randint(0, 255) for _ in range(32)])
         sng1.ssn       = '2' * 11
         sng1.bio       = uuid4().hex
@@ -10085,7 +10532,7 @@ class test_orm(tester):
         rpr1.networth  =- 1
         rpr1.dob       = datetime.now()
         rpr1.dob1      = datetime.now()
-        rpr1.dob2      = datetime.now()
+        rpr1.dob2      = date.today()
         rpr1.password  = bytes([randint(0, 255) for _ in range(32)])
         rpr1.ssn       = '2' * 11
         rpr1.bio       = uuid4().hex
