@@ -4266,6 +4266,36 @@ class orm:
     def all(cls):
         return cls.entities(allstream)
 
+    def ensure(self, expects, **kwargs):
+        rs = self.entities(**kwargs)
+
+        expects = set(expects)
+
+        keys = set(kwargs.keys())
+
+        if len(expects & keys) != len(expects):
+            # When loading via the orm.populate() method, the expected
+            # properties won't be passed in. Just return.
+            return
+
+        if rs.count:
+            self.instance.id = rs.first.id
+            for k, v in kwargs.items():
+                setattr(self.instance, k, getattr(rs.first, k))
+
+            # The record isn't new or dirty so set all peristance state
+            # variables to false.
+            self.persistencestate = (False,) * 3
+        else:
+            # Save immediately. There is no need for the user to save
+            # manually because there are only several rating objects
+            # that will ever exist. We just pretend like they always
+            # exist and are accessable via the construct with no fuss.
+            self.instance.save()
+            
+    def reloaded(self):
+        return self.entity(self.instance.id)
+
     def exists(self, o):
         try:
             if isinstance(o, entity):
