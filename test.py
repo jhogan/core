@@ -19232,6 +19232,10 @@ class gem_case(tester):
         gem.caseroletype.orm.recreate(recursive=True)
         gem.casestatuses.orm.recreate(recursive=True)
 
+    def it_raises_on_invalid_call_of_casesstatus(self):
+        self.expect(ValueError, lambda: gem.casestatus('Active'))
+        self.expect(None, lambda: gem.casestatus(name='Active'))
+
     def it_associates_case_to_party(self):
         # NOTE Names don't work if party.roles exist. This is due to
         # 297f8176. If `party.roles` needs to be restored, remove the
