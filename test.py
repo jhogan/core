@@ -3294,6 +3294,9 @@ class artifact(orm.entity):
         fact = artifact()
         fact.title = uuid4().hex
         fact.description = uuid4().hex
+        fact.type = 'A'
+        fact.serial = 'A' * 255
+        fact.comments = uuid4().hex
         return fact
 
     title        =  str,        orm.fulltext('title_desc',0)
@@ -3304,6 +3307,8 @@ class artifact(orm.entity):
     components   =  components
     lifespan     =  orm.datespan(suffix='life')
     comments     =  orm.text
+    type         =  chr(1)
+    serial       =  chr(255)
 
 class artist(orm.entity):
     firstname      =  str, orm.index('fullname', 1)
@@ -7110,6 +7115,83 @@ class test_orm(tester):
             art.email = (Δ * (min - 1))
             self.one(art.brokenrules)
             self.broken(art, 'email', 'fits')
+
+    def it_calls_chr_attr_on_entity(self):
+        map = artifact.orm.mappings['type']
+
+        self.true(map.isstr)
+        self.eq(1, map.min)
+        self.eq(1, map.max)
+
+        fact = artifact.getvalid()
+        fact.type = ''
+        self.broken(fact, 'type', 'fits')
+
+        fact.type = Δ * 2
+        self.one(fact.brokenrules)
+        self.broken(fact, 'type', 'fits')
+
+        fact.type = Δ
+        self.zero(fact.brokenrules)
+
+        fact.save()
+
+        fact = fact.orm.reloaded()
+
+        self.eq(Δ * 1, fact.type)
+
+        map = artifact.orm.mappings['serial']
+
+        self.true(map.isstr)
+        self.eq(255, map.min)
+        self.eq(255, map.max)
+
+        fact = artifact.getvalid()
+        fact.serial = ''
+        self.broken(fact, 'serial', 'fits')
+
+        fact.serial = Δ * 254
+        self.one(fact.brokenrules)
+        self.broken(fact, 'serial', 'fits')
+
+        fact.serial = Δ * 256
+        self.one(fact.brokenrules)
+        self.broken(fact, 'serial', 'fits')
+
+        fact.serial = Δ * 255
+        self.zero(fact.brokenrules)
+
+        fact.save()
+
+        fact = fact.orm.reloaded()
+
+        self.eq(Δ * 255, fact.serial)
+
+
+
+    def it_calls_text_attr_on_entity(self):
+        map = artifact.orm.mappings['comments']
+
+        self.true(map.isstr)
+        self.eq(1, map.min)
+        self.eq(65535, map.max)
+
+        fact = artifact.getvalid()
+        fact.comments = ''
+        self.broken(fact, 'comments', 'fits')
+
+        fact.comments = Δ * (65535 + 1)
+        self.one(fact.brokenrules)
+        self.broken(fact, 'comments', 'fits')
+
+        fact.comments = Δ * 65535
+        self.zero(fact.brokenrules)
+
+        fact.save()
+
+        fact = fact.orm.reloaded()
+
+        self.eq(Δ * 65535, fact.comments)
 
     def it_calls_str_attr_on_entity(self):
         def saveok(e, attr):

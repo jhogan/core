@@ -43,15 +43,9 @@ from types import ModuleType
 # equivalent.
 # i.e., s/2/str; s/3/int/, etc.
 
-# TODO Add text datatype. Having to type `str, 1, 65535` is not fun.
-
 # TODO Add bytes(n) as datatype. Having to type `bytes, 16, 16` is not
 # fun.
 
-# TODO Add chr(n) as datatype. Having to type `str, 1, 1` is not fun.
-
-# TODO Add timespan and datespan
-    
 @unique
 class types(Enum):
     """
@@ -104,6 +98,18 @@ class text(alias):
         yield self.type
         yield self.min
         yield self.max
+
+class char():
+    @staticmethod
+    def expand(body):
+        for k, v in body.items():
+            if isinstance(v, str) and \
+               len(v) == 1        and \
+               ord(v) in range(0, 256):
+
+                len1 = ord(v)
+                body[k] = str, len1, len1
+
 
 class span:
     """ An abstract class for spans of time. 
@@ -2013,6 +2019,8 @@ class entitymeta(type):
         # date(time) entry to body along with an instance of the span
         # (datespan or timespan).
         span.expand(body)
+
+        char.expand(body)
 
         for k, v in body.items():
             # Is v a reference to a module:
