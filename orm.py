@@ -255,8 +255,7 @@ class span:
                     attr = self.str_end
 
                 return getattr(self.entity, attr)
-            # TODO s/SyntaxError/Exception
-            except SyntaxError as ex:
+            except Exception as ex:
                 raise AttributeError(
                     "type object '%s' has no attribute '%s'. "  
                     "Original message: %s"
@@ -407,8 +406,7 @@ class stream(entitiesmod.entity):
 
         def __iter__(self):
             # TODO To make this object a proper iterable, shouldn't we
-            # override
-            # the __next__()?
+            # override the __next__()?
             slc= slice(0, self.stream.chunksize)
             self.advance(slc)
             yield self.chunk
@@ -1404,7 +1402,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         Any instance of an ``orm.entities`` collection object may have
         zero or more references to other ``orm.entities`` collection
         objects stored in its ``joins`` property. These can be chained
-        together. Together, with the ``where`` proprety of the
+        together. Together, with the ``where`` property of the
         ``orm.entities`` collection objects, complex SELECT statements
         can be expessed using the ORMs API. For example::
 
@@ -1533,16 +1531,18 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                             if self.orm.entity is not sup:
                                 continue
 
-                        # TODO These lines exceed 72 chars
-
                         # For each entity mapping in this
                         # associationsmapping
-                        for map1 in map.associations.orm.mappings.entitymappings:
+                        maps = map.associations.orm \
+                                   .mappings.entitymappings
+
+                        for map1 in maps:
 
                             # If the associationsmapping's entity is the
                             # same class as the joinee (es)
+                            sups = es.orm.entity.orm.superclasses
                             if map1.entity.orm.entities is type(es) \
-                                or map1.entity in es.orm.entity.orm.superclasses:
+                                or map1.entity in sups:
 
                                 # Create a new instance of the map's
                                 # associations collection, add it to
@@ -1580,7 +1580,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         #
         #   artists.count
         #
-        # In this case, we get the all stream and use its count proprety
+        # In this case, we get the all stream and use its count property
         # because the request is interpreted as "give me the the number of rows
         # in the artists table.
         #
@@ -2050,23 +2050,6 @@ class entitymeta(type):
 
             elif v in fieldmapping.types or \
                 (hasattr(v, 'mro') and alias in v.mro()):
-                # TODO I'm begining to thing we should have alias types.
-                # For example, instead of writing::
-                #
-                # class myent(entity):
-                #     directions = str, 1, 65535
-                #     isicv4     = str, 1, 1
-                #     type       = int, 0, 255
-                #
-                # We should instead be able to just write:
-                #
-                # class myent(entity):
-                #     directions = text
-                #     isicv4     = char
-                #     type       = tinyint
-
-                # If the item is a primitive type (str, int, datetime,
-                # etc.), create a fieldmapping.
 
                 map = fieldmapping(v)
 
@@ -2123,6 +2106,10 @@ class entitymeta(type):
                     # It would be nice to have more information
                     # presented to the ORM user as to what they did
                     # wrong.
+                    #
+                    # NOTE I wasn't able to reproduce the above. The
+                    # elif above catches any actual type. If problem
+                    # persists, please write test that actually fails.
                     raise ValueError() # Shouldn't happen
             else:
                 if type(v) is ormmod.attr.wrap:
@@ -2220,25 +2207,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             for k, v in kwargs.items():
                 setattr(self, k, v)
 
-
-            # TODO Remove below
-            # # Clone timespans and datespans from the original, static
-            # # entity.
-            # for attr in self.orm.mappings.fieldmappings
-            #     try:
-            #         # Get the span
-            #         v = getattr(self, attr)
-            #     except:
-            #         # Sometime a explicit attribute would be called here
-            #         # but is not ready to be processed (perhaps because
-            #         # of an uninitialized variable. Just ignore.
-            #         pass
-            #     else:
-            #         # Clone the span and set it to self's span
-            #         # attribute.
-            #         if isinstance(v, timespan):
-            #             setattr(self, attr, v.clone(self))
-
             # Post super().__init__() events
             self.onaftervaluechange  +=  self._self_onaftervaluechange
         finally:
@@ -2275,38 +2243,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         
         map.value = v
 
-    # TODO Move to orm
-    def iscollinear(self, with_):
-        """ Return True if self is colinear with ``with_``.
-
-        Collinearity is when the self entity is an instance ``with_``,
-        or an instance of a superentity of ``with_``, or an instance of
-        a class that inheritance from ``with_``. It's similar to
-        isinstance(), but in addition to ascending the inheritance tree,
-        it also descends it. 
-        
-        Collinearity in this context it is limited to orm.entity object.
-        For example, ``artist`` is colinear with ``painter`` and
-        ``singer`` and vice-versa. However none of these object are
-        colinear with ``orm.entity``, ``entities.entity'' or ``object``
-        and vice-versa. 
-        """
-
-        if type(with_) is not entitymeta:
-            with_ = type(with_)
-
-        if isinstance(self, with_):
-            return True
-
-        for e in with_.__mro__:
-            if e in (entity, associations):
-                break
-            if type(self) in e.orm.subclasses:
-                return True
-
-        return False
-
-    # Move to orm
+    # TODO Move to orm. We should probably remove the '_' prefix at that
+    # point, however, there already is an orm.load() method. It is used
+    # for loading entities objects as opposed to entity objects like
+    # this one. We may want to have logic that determines whether
+    # orm.instance is an entity or an entities and pick a private load
+    # method based on that.
     def _load(self, id):
         sql = 'SELECT * FROM {} WHERE id = _binary %s'
         sql = sql.format(self.orm.table)
@@ -3030,7 +2972,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 # could ascend using class names. However, this may be
                 # less efficient because we would have to load the super
                 # each time a request for its attribute value came in
-                # where as the `super` proprety memoizes the super
+                # where as the `super` property memoizes the super
                 # object.
                 sup = sup_orm.super
 
@@ -3128,6 +3070,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             for map in sup.orm.mappings.entitiesmappings:
 
                 # Get e's superentities class
+
+                # FIXME:297f8176 The `super` attribute can be None
+                # sometimes which causes a null reference AttributeError
+                # to be thrown.
                 sup = src.orm.entities.orm.super.orm.entities
 
                 # If the map's entities matches sup
@@ -4286,6 +4232,9 @@ class fieldmapping(mapping):
                 try:
                     self._value = str(self._value)
                 except:
+                    # If coersion fails, self._value will be a reference
+                    # to the `undef` class and will be considered
+                    # invalid by by brokenrules.
                     pass
 
             elif self.isdatetime:
@@ -4422,6 +4371,7 @@ class primarykeyfieldmapping(fieldmapping):
         # course, assumes that the .super accessor has previously been
         # called.
 
+        # TODO s/super/sup/
         super = self.orm._super
         if super:
             return super.id
@@ -4923,6 +4873,12 @@ class orm:
         :param: int offset:  An integer value to pass to the ``OFFSET``
                              keyword.  Used only in streaming mode.
         """
+
+        # TODO To complement orm.reloaded(), we should have an override of
+        # orm.load() that reloads/refreshed an entity object. (Note that
+        # the current implementation only works with `self.instance`'s that
+        # are entities objects.)
+
 
         try:
             # Remove all elements from collection.
@@ -5912,6 +5868,14 @@ class associations(entities):
         # NOTE, in entities collections, the orm._constituents is of
         # type `constituents` which is an `ormclasseswrapper`.  However,
         # here we simply want it to be a dict.
+
+        # Also:ce6ea883 NOTE that making _constituents either a dict or
+        # an entities collection has already caused a problem because
+        # dict.__getitem__ throws a KeyError when there is no element
+        # found and an entities collection would through an IndexError
+        # because it wants to conform to the interface of a list()
+        # whenever possible. (See ce6ea883). We may want _constituents
+        # to always be a `constituents(ormclasseswrapper)` class.
         self.orm._constituents = dict()
 
     def append(self, obj, uniq=False, r=None):

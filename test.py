@@ -37,7 +37,6 @@ import gem
 import product
 from pprint import pprint
 
-
 # We will use basic and supplementary multilingual plane UTF-8
 # characters when testing str attributes to ensure unicode is being
 # supported.
@@ -8070,7 +8069,7 @@ class test_orm(tester):
         self.eq(expect, artist(art.id).dob)
         self.type(primative.datetime, artist(art.id).dob)
 
-        # It converts backt to AZ time using string tz
+        # It converts back to AZ time using string tz
         self.eq(azdt, art.dob.astimezone('US/Arizona'))
 
         # Test invalid date times
@@ -8092,7 +8091,7 @@ class test_orm(tester):
         art.save()
         self.eq(art.dob, artist(art.id).dob)
         
-    def it_calls_str_propertys_setter_on_entity(self):
+    def it_calls_str_properties_setter_on_entity(self):
         class persons(orm.entities):
             pass
 
@@ -17531,7 +17530,7 @@ class gem_product_product(tester):
 
         # TODO:018aca88 The composite `measure` for paper doesn't get
         # set probably because `paper` is a `good` which is a subentity
-        # of `product` which holds has has a reference to `measure (see
+        # of `product` which has a reference to `measure (see
         # `measure.products`). Strangely, the `measure` is saved anyway,
         # though paper has to be loaded as a `product` instead of a
         # `good`. See the TODO below with the same ID (018aca88).
