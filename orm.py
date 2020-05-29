@@ -189,7 +189,6 @@ class span:
                 mods.append((k, v))
 
         for k, v in mods:
-            # TODO Raise error if keys already exist
             if builtins.type(v) is timespan:
                 type = types.datetime
             elif builtins.type(v) is datespan:
@@ -197,8 +196,17 @@ class span:
             else:
                 raise TypeError('Invalid span type')
 
-            body[v.str_begin] = fieldmapping(type, span=v)
-            body[v.str_end]   = fieldmapping(type, span=v)
+            begin = v.str_begin
+            end   = v.str_end
+
+            for fld in (begin, end):
+                if fld in body:
+                    raise ValueError(
+                        'Span wants to create existing field "%s"' % fld
+                    )
+
+            body[begin] = fieldmapping(type, span=v)
+            body[end]   = fieldmapping(type, span=v)
             body[k]     = v
 
     def clone(self, e):

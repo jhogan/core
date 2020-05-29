@@ -7528,6 +7528,81 @@ class test_orm(tester):
             self.zero(obj.brokenrules)
             self.true(saveok(obj, attr))
 
+    def it_datespan_raises_error_if_begin_or_end_exist(self):
+        """ Ensure datespan and timespan can't create the begin or end
+        field if one already exists. We should get a ValueError.
+        """
+
+        ''' datespan '''
+        def f():
+            class myentities(orm.entities):
+                pass
+
+            class myentity(orm.entity):
+                entities = myentities
+                begin = datetime
+                span = orm.datespan
+
+        self.expect(ValueError, lambda: f())
+
+        def f():
+            class myentities(orm.entities):
+                pass
+
+            class myentity(orm.entity):
+                entities = myentities
+                end = datetime
+                span = orm.datespan
+
+        self.expect(ValueError, lambda: f())
+
+        ''' timespan '''
+        def f():
+            class myentities(orm.entities):
+                pass
+
+            class myentity(orm.entity):
+                entities = myentities
+                begin = datetime
+                end = datetime
+                span = orm.timespan
+
+        self.expect(ValueError, lambda: f())
+
+        def f():
+            class myentities(orm.entities):
+                pass
+
+            class myentity(orm.entity):
+                entities = myentities
+                begin = datetime
+                span = orm.timespan
+
+        self.expect(ValueError, lambda: f())
+
+        def f():
+            class myentities(orm.entities):
+                pass
+
+            class myentity(orm.entity):
+                entities = myentities
+                end = datetime
+                span = orm.timespan
+
+        self.expect(ValueError, lambda: f())
+
+        def f():
+            class myentities(orm.entities):
+                pass
+
+            class myentity(orm.entity):
+                entities = myentities
+                begin = datetime
+                end = datetime
+                span = orm.timespan
+
+        self.expect(ValueError, lambda: f())
+
     def it_calls_datespan_attr_on_entity(self):
         # TODO Ensure the datespan and timespan objects return 'end' and
         # 'begin' from dir()
