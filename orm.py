@@ -2169,8 +2169,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
     mindatetime=primative.datetime('1000-01-01 00:00:00.000000+00:00')
     maxdatetime=primative.datetime('9999-12-31 23:59:59.999999+00:00')
 
-    # TODO What is _depth for? Anything?
-    def __init__(self, o=None, _depth=0, **kwargs):
+    def __init__(self, o=None, **kwargs):
         # TODO Base64 id's:
         # https://stackoverflow.com/questions/12270852/convert-uuid-32-character-hex-string-into-a-youtube-style-short-id-and-back
         try:
