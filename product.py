@@ -110,6 +110,14 @@ class ratings(orm.entities):               pass
 class guidelines(orm.entities):            pass
 class items(orm.entities):                 pass
 class serials(items):                      pass
+class nonserials(items):                   pass
+class lots(items):                         pass
+class containers(orm.entities):            pass
+class containertypes(orm.entities):        pass
+class statuses(orm.entities):              pass
+class variances(orm.entities):             pass
+class reasons(orm.entities):               pass
+
 class prices(orm.entities):
     def getprice(self, org, regs=None, pts=None, qty=None):
         # FIXME This algorithm is not complete and has multiple issues.
@@ -223,6 +231,19 @@ class prices(orm.entities):
         return pr, basepr + discounts + surcharges
                 
     
+class bases(prices):                       pass
+class discounts(prices):                   pass
+class surcharges(prices):                  pass
+class suggesteds(prices):                  pass
+class onetimes(prices):                    pass
+class recurrings(prices):                  pass
+class utilizations(prices):                pass
+class quantitybreaks(prices):              pass
+class values(prices):                      pass
+class salestypes(prices):                  pass
+class estimates(prices):                   pass
+class estimatetypes(prices):               pass
+class product_products(orm.associations):  pass
 
 class product(orm.entity):
     """ An abstact class that models all products including products
