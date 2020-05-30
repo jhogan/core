@@ -3250,6 +3250,32 @@ class mappings(entitiesmod.entities):
                         maps.append(map)
                         break
 
+                # The need arose to ensure that orm.association objects
+                # could have one-to-many relationships with orm.entities
+                # object. The following block ensures that a FK to the
+                # association is created along with a composite mapping
+                # to the same association. This is similar to the above
+                # `for e in orm.getentitys()` block. TODO The two pieces
+                # of code may be consolidated into one nested function.
+
+                # TODO One-to-many relationships between association
+                # objects have not received their own place in the
+                # test.py script. This code was added to correct an
+                # issue with the party module. Full testing for this
+                # relationship type may prove necessary or desirable.
+                for map in ass.orm.mappings.entitiesmappings:
+                    if map.entities is self.orm.entities:
+
+                        # Add an entity mapping for the composite
+                        maps.append(
+                            entitymapping(ass.__name__, ass, isderived=True)
+                        )
+
+                        # Add an FK for the association
+                        maps.append(
+                            foreignkeyfieldmapping(ass, isderived=True)
+                        )
+
             # Add the list of mapping object collected above to `self`
             for map in maps:
                 self += map
