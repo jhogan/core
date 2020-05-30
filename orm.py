@@ -2657,7 +2657,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 # If there is a super entity (we may be at the top of
                 # the graph)...
                 if sup:
-                    self.orm._super = sup()
+                    sup = sup()
+                    sup.id = self.id
+                    self.orm._super = sup
 
             # Get the private superentity. We don't want to use the
             # public accessor to get it because the accessor will load
