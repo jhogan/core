@@ -2617,8 +2617,14 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                         try:
                                             # Get pseudocollection
                                             es = const[name]
-                                        except KeyError:
+                                        except (KeyError, IndexError):
                                             # Subentity doesn't exist
+
+                                            # NOTE:ce6ea883 Except both
+                                            # KeyError and IndexError
+                                            # because `const` can be a
+                                            # dict or an entities
+                                            # collection
                                             pass
                                         else:
                                             # Save each entity found in
