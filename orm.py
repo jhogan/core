@@ -4370,6 +4370,10 @@ class primarykeyfieldmapping(fieldmapping):
     def value(self, v):
         self._value = v
 
+        sup = self.orm._super
+        if sup:
+            sup.id = v
+
 class ormclasseswrapper(entitiesmod.entities):
     """ A collection of ormclasswrapper objects.
     """
