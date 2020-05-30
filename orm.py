@@ -2806,7 +2806,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
     def __getattribute__(self, attr):
         try:
-            return object.__getattribute__(self, attr)
+            v = object.__getattribute__(self, attr)
+            if isinstance(v, span):
+                if v.isstatic:
+                    v = v.clone(e=self)
+                    setattr(self, attr, v)
+            return v
         except sys.modules['orm'].attr.AttributeErrorWrapper as ex:
             raise ex.inner
         except AttributeError as ex:
