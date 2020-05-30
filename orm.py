@@ -1710,7 +1710,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             load &= self.orm.joins.ispopulated or bool(self.orm.where)
 
             if load:
-                self.orm.load()
+                self.orm.collect()
 
         return object.__getattribute__(self, attr)
 
@@ -2197,12 +2197,20 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     o = o.id
 
                 if type(o) is UUID:
-                    res = self._load(o)
+                    res = self.orm.load(o)
                 else:
-                    res = o
+                    raise ValueError(
+                        'Can only load by UUID. '
+                        'If you are setting attributes via the '
+                        'constructor, ensure that you are including'
+                        'the keys as well.'
+                    )
+                    
 
                 self.orm.populate(res)
 
+            # Set attributes via keyword arguments:
+            #     per = person(first='Jesse', last='Hogan')
             for k, v in kwargs.items():
                 setattr(self, k, v)
 
@@ -2242,67 +2250,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         
         map.value = v
 
-    # TODO Move to orm. We should probably remove the '_' prefix at that
-    # point, however, there already is an orm.load() method. It is used
-    # for loading entities objects as opposed to entity objects like
-    # this one. We may want to have logic that determines whether
-    # orm.instance is an entity or an entities and pick a private load
-    # method based on that.
-    def _load(self, id):
-        sql = 'SELECT * FROM {} WHERE id = _binary %s'
-        sql = sql.format(self.orm.table)
-
-        args = id.bytes,
-
-        ress = None
-        def exec(cur):
-            nonlocal ress
-            cur.execute(sql, args)
-            ress = db.dbresultset(cur)
-
-        exec = db.executioner(exec)
-
-        exec.onbeforereconnect += \
-            lambda src, eargs: self.onbeforereconnect(src, eargs)
-        exec.onafterreconnect  += \
-            lambda src, eargs: self.onafterreconnect(src, eargs)
-
-        exec.execute()
-
-        # TODO We may want to reconsider raising an exception when a
-        # non-existant ID is given. The expectation the user may have is
-        # that the object returned from the constructor is falsey:
-        #
-        #     e = myentity(bad_id)
-        #     if e:
-        #         return e
-        #     else:
-        #         raise Exception('myentity not found')
-        #
-        # Hacking __new__ to return None may not be a good idea because
-        # of all the event initialition code in __init__. However, we
-        # could set a private boolean to cause the entity's __bool__
-        # method to return False. Then any call to __getattribute__()
-        # could check the private boolean and raise an exception to
-        # indicate that entity is as good as None because the id was
-        # non-existent:
-        #
-        #     def __bool__(self):
-        #         return not self._recordnotfound
-        #
-        #     def __getattribute__(self):
-        #         if self._recordnotfound: raise RecordNotFoundError()
-        #
-
-        ress.demandhasone()
-
-        res = ress.first
-
-        eargs = db.operationeventargs(self, 'retrieve', sql, args)
-        self.onafterload(self, eargs)
-
-        return res
-    
     def _self_onafterload(self, src, eargs):
         self._add2chronicler(eargs)
 
@@ -2903,7 +2850,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     # explicitly load here for the sake of
                     # predictability.
                     es = map_entities(map1.name, self.id)
-                    es.orm.load()
+                    es.orm.collect()
 
                     # Assign the composite reference to the
                     # constituent's elements
@@ -3012,7 +2959,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                 # non-reflexive and with is e is
                                 # collinear with self.
                                 if (
-                                    self.iscollinear(with_=e)
+                                    self.orm.iscollinear(with_=e)
                                     and not map.entities.orm.isreflexive
                                 ):
                                     continue
@@ -3621,7 +3568,7 @@ class associationsmapping(mapping):
                 # association.  However, we will want to continue
                 # explitly loading this association here for the sake of
                 # predictablity.
-                asses.orm.load()
+                asses.orm.collect()
 
             # Make sure the associations collection knows it's composite
             asses.orm.composite = self.composite
@@ -4500,6 +4447,36 @@ class orm:
         self._abbreviation        =  str()
         self.initing              =  False
 
+    def iscollinear(self, with_):
+        """ Return True if self is colinear with ``with_``.
+
+        Collinearity is when the self entity is an instance ``with_``,
+        or an instance of a superentity of ``with_``, or an instance of
+        a class that inheritance from ``with_``. It's similar to
+        isinstance(), but in addition to ascending the inheritance tree,
+        it also descends it. 
+        
+        Collinearity in this context it is limited to orm.entity object.
+        For example, ``artist`` is colinear with ``painter`` and
+        ``singer`` and vice-versa. However none of these object are
+        colinear with ``orm.entity``, ``entities.entity'' or ``object``
+        and vice-versa. 
+        """
+
+        if type(with_) is not entitymeta:
+            with_ = type(with_)
+
+        if isinstance(self.instance, with_):
+            return True
+
+        for e in with_.__mro__:
+            if e in (entity, associations):
+                break
+            if type(self.instance) in e.orm.subclasses:
+                return True
+
+        return False
+
     @classproperty
     def all(cls):
         return cls.entities(allstream)
@@ -4874,11 +4851,7 @@ class orm:
         """
 
         # TODO To complement orm.reloaded(), we should have an override of
-        # orm.load() that reloads/refreshed an entity object. (Note that
-        # the current implementation only works with `self.instance`'s that
-        # are entities objects.)
-
-
+        # orm.load() that reloads/refreshed an entity object. 
         try:
             # Remove all elements from collection.
             self.instance.clear()
@@ -4888,9 +4861,64 @@ class orm:
             # Flag the entities collection as unloaded so the load() method
             # will proceed with an attempt to load.
             self.isloaded = False
-            self.load(orderby, limit, offset)
+            self.collect(orderby, limit, offset)
 
-    def load(self, orderby=None, limit=None, offset=None):
+    def load(self, id):
+        sql = 'SELECT * FROM {} WHERE id = _binary %s'
+        sql = sql.format(self.table)
+
+        args = id.bytes,
+
+        ress = None
+        def exec(cur):
+            nonlocal ress
+            cur.execute(sql, args)
+            ress = db.dbresultset(cur)
+
+        exec = db.executioner(exec)
+
+        exec.onbeforereconnect += \
+            lambda src, eargs: self.instance.onbeforereconnect(src, eargs)
+        exec.onafterreconnect  += \
+            lambda src, eargs: self.instance.onafterreconnect(src, eargs)
+
+        exec.execute()
+
+        # TODO We may want to reconsider raising an exception when a
+        # non-existant ID is given. The expectation the user may have is
+        # that the object returned from the constructor is falsey:
+        #
+        #     e = myentity(bad_id)
+        #     if e:
+        #         return e
+        #     else:
+        #         raise Exception('myentity not found')
+        #
+        # Hacking __new__ to return None may not be a good idea because
+        # of all the event initialition code in __init__. However, we
+        # could set a private boolean to cause the entity's __bool__
+        # method to return False. Then any call to __getattribute__()
+        # could check the private boolean and raise an exception to
+        # indicate that entity is as good as None because the id was
+        # non-existent:
+        #
+        #     def __bool__(self):
+        #         return not self._recordnotfound
+        #
+        #     def __getattribute__(self):
+        #         if self._recordnotfound: raise RecordNotFoundError()
+        #
+
+        ress.demandhasone()
+
+        res = ress.first
+
+        eargs = db.operationeventargs(self.instance, 'retrieve', sql, args)
+        self.instance.onafterload(self.instance, eargs)
+
+        return res
+    
+    def collect(self, orderby=None, limit=None, offset=None):
         """
         Loads data from the database into the collection. The SQL used 
         to load the data is generated mostly from arguments passed to
@@ -5447,7 +5475,7 @@ class orm:
             # Finally, we are done. Return the sql and the args
             # seperately because the sql will have placeholders and the
             # args will be executed in a parameterized fashion (see
-            # `orm.load()`)
+            # `orm.collect()`)
             return sql, args
 
         return select, joins, whs, args

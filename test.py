@@ -5233,7 +5233,7 @@ class test_orm(tester):
             arts.last.firstname = firstname
             arts.last.save()
 
-        arts1 = artists.all
+        arts1 = artists.orm.all
         self.true(arts1.orm.isstreaming)
         self.ge(arts1.count, cnt)
 
@@ -8414,19 +8414,19 @@ class test_orm(tester):
 
         self.expect(None, lambda: art.save())
 
-        # Ensure e._load recovers correctly from a disconnect like we did with
+        # Ensure e.load recovers correctly from a disconnect like we did with
         # e.save() above.  (Normally, __init__(id) for an entity calls
-        # self._load(id) internally.  Here we call art._load directly so we
+        # self.load(id) internally.  Here we call art.load directly so we
         # have time to subscribe to art's onafterreconnect event.)
         drown()
         id, art = art.id, artist.getvalid()
         art.onafterreconnect += art_onafterreconnect
 
-        self.expect(MySQLdb.OperationalError, lambda: art._load(id))
+        self.expect(MySQLdb.OperationalError, lambda: art.orm.load(id))
 
         art.onafterreconnect -= art_onafterreconnect
 
-        self.expect(None, lambda: art._load(id))
+        self.expect(None, lambda: art.orm.load(id))
 
         # Ensure that es.orm.load() recovers correctly from a reconnect
         arts = artists(id=id)
@@ -11774,7 +11774,7 @@ class test_orm(tester):
         return
         arts1 &= artifacts()
 
-        arts1.orm.load()
+        arts1.orm.collect()
 
     def it_calls_innerjoin_on_entities_and_writes_new_records(self):
         arts = self._create_join_test_data()
@@ -11784,7 +11784,7 @@ class test_orm(tester):
 
         # Explicitly load artists->artifacts->components. Add an entry to
         # `arts1` and make sure that the new record persists.
-        arts1.orm.load()
+        arts1.orm.collect()
 
         art1 = artist.getvalid()
         arts1 += art1
@@ -11820,7 +11820,7 @@ class test_orm(tester):
         # Reload using the explicit loading, join method and update the record
         # added above. Ensure that the new data presists.
         arts3 = artists() & (artifacts() & components())
-        arts3.orm.load()
+        arts3.orm.collect()
         art3 = arts3[art2.id]
         newval = uuid4().hex
 
