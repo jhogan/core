@@ -102,6 +102,28 @@ class text(alias):
 class char():
     @staticmethod
     def expand(body):
+        """ A staticmethod to find chr fields in the body of a class and
+        convert them to str fields. For example, the ``isbn`` field in
+        the book class::
+
+            class book(orm.entity):
+                isbn = chr(1)
+
+        will be translated into a str map with a minimum length and
+        maximum length of 10. 
+        
+        Note that the ORM sees str maps with equal minimun and maximun
+        lengths as ``char`` database datatypes, so using the ``chr``
+        function above for the isbn amounts to declaring a database char
+        type with a length of 10. The lower-level alternative
+
+            class book(orm.entity):
+                isbn = str, 10, 10
+
+        does the same thing, but is less straightforward in its
+        intention.
+        """
+
         for k, v in body.items():
             if isinstance(v, str) and \
                len(v) == 1        and \
@@ -109,7 +131,6 @@ class char():
 
                 len1 = ord(v)
                 body[k] = str, len1, len1
-
 
 class span:
     """ An abstract class for spans of time. 
@@ -2155,9 +2176,9 @@ class entitymeta(type):
         orm_.entity = entity
 
         # Since a new entity has been created, invalidate the derived
-        # cache of each mappings collection's object.  They must be
-        # recomputed since they are based on the existing entity object
-        # available.
+        # cache of each entity's mappings collection's object.  They
+        # must be recomputed since they are based on the existing entity
+        # object available.
         for e in orm.getentitys():
             e.orm.mappings._populated = False
 
