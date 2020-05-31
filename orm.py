@@ -2051,6 +2051,7 @@ class entitymeta(type):
 
         char.expand(body)
 
+        maps = list()
         for k, v in body.items():
             # Is v a reference to a module:
             if isinstance(v, ModuleType):
@@ -2147,12 +2148,16 @@ class entitymeta(type):
             # Name the map and append the map to the orm's mapping
             # collections.
             map._name = k
+            maps.append(map)
             orm_.mappings += map
 
-        # Iterate of orm's mapping collection. NOTE that iterating over
-        # mappings invokes it's _populating method which updates the
-        # composition of the collection. (See mappings._populated.)
-        for map in orm_.mappings:
+        # Iterate over the maps list. NOTE that iterating over the
+        # `orm_.mappings` collection would invokes it's _populating
+        # method which updates the composition of the collection. (See
+        # mappings._populated.) That needlessly added about 5 seconds to
+        # the start up time, so now we iterate over a simple `list` of
+        # maps.
+        for map in maps:
             try:
                 # Now that we have all the approprite attributes from
                 # this class in orm.mappings, we can delete them.
