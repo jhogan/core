@@ -4516,6 +4516,8 @@ class orm:
         self._abbreviation        =  str()
         self.initing              =  False
 
+        self.recreate = self._recreate
+
     def iscollinear(self, with_):
         """ Return True if self is colinear with ``with_``.
 
@@ -4767,7 +4769,22 @@ class orm:
             with pool.take() as conn:
                 conn.query(sql)
 
-    def recreate(self, cur=None, recursive=False, guestbook=None):
+    @staticmethod
+    def recreate(*args):
+        """ Drop and recreate the table each of the entity class
+        references in *args.
+
+        Note that when ``orm`` is an instance (as opposed to mearly a
+        class reference), this method is replace with ``orm._recreate'
+        on initialization. 
+        """
+
+        # For each entity class reference in *args
+        for e in args:
+            # Delegate to the instance version of ``recreate``
+            e.orm.recreate()
+            
+    def _recreate(self, cur=None, recursive=False, guestbook=None):
         """ Drop and recreate the table for the orm ``self``. 
 
         :param: cur:       The MySQLdb cursor used by this and all
