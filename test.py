@@ -19226,11 +19226,13 @@ class gem_product_product_product(tester):
 class gem_case(tester):
     def __init__(self):
         super().__init__()
-        gem.communications.orm.recreate(recursive=True)
-        gem.parties.orm.recreate(recursive=True)
-        gem.case_party.orm.recreate(recursive=True)
-        gem.caseroletype.orm.recreate(recursive=True)
-        gem.casestatuses.orm.recreate(recursive=True)
+        orm.orm.recreate(
+            gem.communications,
+            gem.parties,
+            gem.case_party,
+            gem.casestatuses,
+            gem.statuses,
+        )
 
     def it_raises_on_invalid_call_of_casesstatus(self):
         self.expect(ValueError, lambda: gem.casestatus('Active'))
