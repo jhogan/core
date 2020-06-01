@@ -4799,6 +4799,7 @@ class orm:
                            infinite recursion.
         """
 
+        # TODO Remove or address commented out code below.
         # if association:
         '''
         @classmethod
