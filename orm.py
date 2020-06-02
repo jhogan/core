@@ -2196,8 +2196,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
     maxdatetime=primative.datetime('9999-12-31 23:59:59.999999+00:00')
 
     def __init__(self, o=None, **kwargs):
-        # TODO Base64 id's:
-        # https://stackoverflow.com/questions/12270852/convert-uuid-32-character-hex-string-into-a-youtube-style-short-id-and-back
         try:
             self.orm = self.orm.clone()
             self.orm.initing = True # change to `isiniting`
@@ -4706,7 +4704,6 @@ class orm:
         maps = self.mappings.entitymappings
         types = [x.entity.__name__ for x in maps]
 
-        # TODO Do we need to pass this to bool()
         return bool(len(types)) and len(types) > len(set(types))
         
     @property
@@ -4799,16 +4796,6 @@ class orm:
                            infinite recursion.
         """
 
-        # TODO Remove or address commented out code below.
-        # if association:
-        '''
-        @classmethod
-        def reCREATE(cls, cur, recursive=False, clss=None):
-            for map in cls.orm.mappings.entitymappings:
-                map.entity.reCREATE(cur, recursive, clss)
-
-            super().reCREATE(cur, recursive, clss)
-        '''
         # Prevent infinite recursion
         if guestbook is None:
             guestbook = list()
@@ -4982,7 +4969,7 @@ class orm:
         #         raise Exception('myentity not found')
         #
         # Hacking __new__ to return None may not be a good idea because
-        # of all the event initialition code in __init__. However, we
+        # of all the event initialition code is in __init__. However, we
         # could set a private boolean to cause the entity's __bool__
         # method to return False. Then any call to __getattribute__()
         # could check the private boolean and raise an exception to
