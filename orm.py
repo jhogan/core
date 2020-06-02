@@ -4610,6 +4610,10 @@ class orm:
             emp = employee.orm.cast(UUID())
             assert emp is None
 
+            # You can also cast to a class
+            hum = mam.orm.cast(human)
+            assert type(hum) is humman
+
         The method is particularly useful when you have an entity but
         you want to downcast it into a particular entity.
 
@@ -4617,28 +4621,19 @@ class orm:
         ``o`` is an orm.entity, its ``id`` attribute will be used.
         """
 
-        # TODO It might be nice to also suppert an interface like the
-        # below:
-        # 
-        # Instead of:
-        #
-        #     hum = human.orm.cast(mam)
-        # do:
-        #
-        #     hum = mam.cast(human)
-
-        # TODO This code is very simaly to the `exists` method. We could
-        # consolidate these two.
-
         try:
+            e = self.entity
             if isinstance(o, entity):
                 id = o.id
             elif isinstance(o, UUID):
                 id = o
+            elif hasattr(o, 'mro') and entity in o.mro():
+                e = o
+                id = self.instance.id
             else:
                 raise ValueError("Can't determine id")
 
-            return self.entity(id)
+            return e(id)
         except db.RecordNotFoundError:
             return None
 

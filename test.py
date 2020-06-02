@@ -17011,12 +17011,14 @@ class gem_facility(tester):
             
             # Downcast
             id = fcm1.contactmechanism.id
-            cm = gem.phone.orm.cast(id)
+            cm = fcm1.contactmechanism.orm.cast(gem.phone)
+
             if cm:
                 self.eq(fcm.contactmechanism.area, cm.area)
                 self.eq(fcm.contactmechanism.line, cm.line)
             else:
                 cm = gem.address.orm.cast(id)
+                cm = fcm1.contactmechanism.orm.cast(gem.address)
                 assert cm is not None
                 self.eq(fcm.contactmechanism.address1, cm.address1)
                 self.eq(fcm.contactmechanism.address2, cm.address2)
