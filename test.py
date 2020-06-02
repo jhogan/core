@@ -3763,6 +3763,55 @@ class test_orm(tester):
             
         self.eq(t.count, cnt, msg)
 
+    def it_uses_reserved_mysql_words_for_fields(self):
+        """ Ensure that the CREATE TABLE statement uses backticks to
+        quote column names so we can use MySQL reserved words, such as
+        `interval`. If backticks aren't used, the MySQL libray raises an
+        error.
+        """
+        
+        class myreserveds(orm.entities):
+            pass
+
+        class myreserved(orm.entity):
+            interval = int
+
+        self.expect(None, lambda: myreserveds.orm.recreate())
+
+        res = myreserved()
+        res.interval = randint(1, 11)
+
+        # Test with INSERT
+        res.save()
+
+        # Test with SELECT. NOTE This type of SELECT currently uses a
+        # wildcard so its not much of a test. Either way, we still need
+        # to reload the entity.
+        res1 = res.orm.reloaded()
+
+        self.eq(res.id, res1.id)
+        self.eq(res.interval, res1.interval)
+
+        res1.interval += 1
+
+        # Test with UPDATE
+        res1.save()
+
+        res2 = res1.orm.reloaded()
+
+        self.eq(res1.id, res2.id)
+        self.eq(res.interval + 1, res2.interval)
+        self.eq(res1.interval, res2.interval)
+
+        # Test with SELECT. Unlike the `res.orm.relodaed` SELECTs which
+        # doesn't specify column names, this SELECT does specify column
+        # names and would fail if backticks weren't used.
+        ress = myreserveds(interval=res2.interval)
+        self.one(ress)
+
+        self.eq(ress.first.id, res2.id)
+        self.eq(ress.first.interval, res2.interval)
+
     def it_creates_indexes_on_foreign_keys(self):
         # Standard entity
         self.notnone(presentation.orm.mappings['artistid'].index)

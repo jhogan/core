@@ -3416,7 +3416,7 @@ class mappings(entitiesmod.entities):
 
         maps = [x for x in self if isinstance(x, fieldmapping)]
 
-        flds = ', '.join(x.name for x in maps)
+        flds = ', '.join('`%s`' % x.name for x in maps)
 
         placeholders = ', '.join(['%s'] * len(maps))
 
@@ -3436,7 +3436,7 @@ class mappings(entitiesmod.entities):
                 if isinstance(map, primarykeyfieldmapping):
                     id = map.value.bytes
                 else:
-                    set += '%s = %%s, ' % (map.name,)
+                    set += '`%s` = %%s, ' % (map.name,)
 
         set = set[:-2]
 
@@ -4859,9 +4859,6 @@ class orm:
 
     @property
     def createtable(self):
-        # TODO:0a8ee7fb Use backticks for column names so reserved words
-        # can be used. We should write tests to ensure that orm.entity
-        # object have no issues using reserved words for column names.
         r = 'CREATE TABLE ' + self.table + '(\n'
 
         for i, map in enumerate(self.mappings):
@@ -4871,7 +4868,7 @@ class orm:
             if i:
                 r += ',\n'
 
-            r += '    ' + map.name
+            r += '    `%s`' % map.name
 
             if isinstance(map, fieldmapping):
                 r += ' ' + map.dbtype
