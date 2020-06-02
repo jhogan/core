@@ -4573,19 +4573,9 @@ class orm:
         return self.entity(self.instance.id)
 
     def exists(self, o):
-        try:
-            if isinstance(o, entity):
-                id = o.id
-            elif isinstance(o, UUID):
-                id = o
-            else:
-                raise ValueError("Can't determine id")
-
-            self.entity(id)
-        except db.RecordNotFoundError:
-            return False
-
-        return True
+        """ Returns true if ``o`` exists in the database.
+        """
+        return self.cast(o) is not None
 
     def cast(self, o):
         """ Given an entity or a UUID as `o`, a new orm.entity of the
