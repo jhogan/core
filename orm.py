@@ -3217,6 +3217,18 @@ class mappings(entitiesmod.entities):
             # `self` later.
             maps = list()
 
+            def add_fk_and_entity_map(e):
+                # Add an entity mapping for the composite
+                maps.append(
+                    entitymapping(e.__name__, e, isderived=True)
+                )
+
+                # Add an FK for the constituents
+                maps.append(
+                    foreignkeyfieldmapping(e, isderived=True)
+                )
+
+
             ''' Add FK mapings to association objects '''
             # For association objects, look for entity mappings and add
             # a foreign key mapping (e.g., For artist_artifact, add an
@@ -3245,16 +3257,7 @@ class mappings(entitiesmod.entities):
 
                     # If `e` is a constituent of `self`
                     if map.entities is self.orm.entities:
-
-                        # Add an entity mapping for the composite
-                        maps.append(
-                            entitymapping(e.__name__, e, isderived=True)
-                        )
-
-                        # Add an FK for the constituents
-                        maps.append(
-                            foreignkeyfieldmapping(e, isderived=True)
-                        )
+                        add_fk_and_entity_map(e)
 
             ''' Add associations mappings to self '''
             # For each class that inherits form `orm.association`
@@ -3279,8 +3282,7 @@ class mappings(entitiesmod.entities):
                 # object. The following block ensures that a FK to the
                 # association is created along with a composite mapping
                 # to the same association. This is similar to the above
-                # `for e in orm.getentitys()` block. TODO The two pieces
-                # of code may be consolidated into one nested function.
+                # `for e in orm.getentitys()` block.
 
                 # TODO One-to-many relationships between association
                 # objects have not received their own place in the
@@ -3289,16 +3291,7 @@ class mappings(entitiesmod.entities):
                 # relationship type may prove necessary or desirable.
                 for map in ass.orm.mappings.entitiesmappings:
                     if map.entities is self.orm.entities:
-
-                        # Add an entity mapping for the composite
-                        maps.append(
-                            entitymapping(ass.__name__, ass, isderived=True)
-                        )
-
-                        # Add an FK for the association
-                        maps.append(
-                            foreignkeyfieldmapping(ass, isderived=True)
-                        )
+                        add_fk_and_entity_map(ass)
 
             # Add the list of mapping object collected above to `self`
             for map in maps:
