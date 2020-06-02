@@ -16881,8 +16881,7 @@ class gem_address(tester):
 class gem_facility(tester):
     def __init__(self):
         super().__init__()
-        gem.party.orm.recreate(recursive=True)
-        gem.facility.orm.recreate(recursive=True)
+        orm.orm.recreate(gem.party, gem.facility)
 
     def it_creates(self):
         # Building
