@@ -10820,7 +10820,7 @@ class test_orm(tester):
 
         self.eq((True, False, False), rpr.orm.persistencestate)
 
-        es = [rpr.orm.entity] + rpr.orm.entity.orm.superclasses
+        es = [rpr.orm.entity] + rpr.orm.entity.orm.superentities
         for e in es:
             self.expect(db.RecordNotFoundError, lambda: e(rpr.id))
 

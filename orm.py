@@ -1561,7 +1561,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
                             # If the associationsmapping's entity is the
                             # same class as the joinee (es)
-                            sups = es.orm.entity.orm.superclasses
+                            sups = es.orm.entity.orm.superentities
                             if map1.entity.orm.entities is type(es) \
                                 or map1.entity in sups:
 
@@ -5727,7 +5727,7 @@ class orm:
         return props
 
     def issuperentity(self, of):
-        return self.entity in of.orm.entity.orm.superclasses
+        return self.entity in of.orm.entity.orm.superentities
 
     @staticmethod
     def issub(obj1,  obj2):
@@ -5753,7 +5753,7 @@ class orm:
 
     # TODO This should probably be renamed superentities. 
     @property
-    def superclasses(self):
+    def superentities(self):
         ''' Returns a list of entity classes or entity objects (depending on
         whether or not self.isinstance) of which self is a subentity. '''
 
@@ -6068,7 +6068,7 @@ class associations(entities):
                     continue
 
                 compsups = [comp.orm.entity] \
-                           + comp.orm.entity.orm.superclasses
+                           + comp.orm.entity.orm.superentities
 
                 if (
                     self.orm.isreflexive and map.isobjective
@@ -6197,8 +6197,8 @@ class associations(entities):
         ass = None
 
         # Create a list of the type of eargs.entity as well as its
-        # superclasses
-        sups = eargs.entity.orm.entity.orm.superclasses
+        # superentities
+        sups = eargs.entity.orm.entity.orm.superentities
         sups.append(type(eargs.entity))
 
         # Look through the association collection's (self's) entity
@@ -6211,7 +6211,7 @@ class associations(entities):
             # added to the pseudocollection, we would only need to test
             # against `type(eargs.entity)`. However, when subentity
             # objects (singer) are added to super-associations
-            # (artist_artists), we will need to check the superclasses.
+            # (artist_artists), we will need to check the superentities.
             if map.entity in sups:
 
                 # If we are adding entity object's to reflexive
@@ -6329,7 +6329,7 @@ class associations(entities):
                 return comp
 
             if sups is None:
-                sups = comp.orm.entity.orm.superclasses
+                sups = comp.orm.entity.orm.superentities
                 sups = [x.__name__ for x in sups]
 
             if attr not in sups:
