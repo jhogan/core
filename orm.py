@@ -4373,10 +4373,9 @@ class primarykeyfieldmapping(fieldmapping):
         # course, assumes that the .super accessor has previously been
         # called.
 
-        # TODO s/super/sup/
-        super = self.orm._super
-        if super:
-            return super.id
+        sup = self.orm._super
+        if sup:
+            return sup.id
 
         if type(self._value) is bytes:
             self._value = UUID(bytes=self._value)
