@@ -3129,6 +3129,12 @@ class mycli(cli):
 ''' ORM Tests '''
 ##################################################################################
 
+class myreserveds(orm.entities):
+    pass
+
+class myreserved(orm.entity):
+    interval = int
+
 class comments(orm.entities):
     pass
 
@@ -3772,13 +3778,6 @@ class test_orm(tester):
         `interval`. If backticks aren't used, the MySQL libray raises an
         error.
         """
-        
-        class myreserveds(orm.entities):
-            pass
-
-        class myreserved(orm.entity):
-            interval = int
-
         self.expect(None, lambda: myreserveds.orm.recreate())
 
         res = myreserved()
