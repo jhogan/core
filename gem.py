@@ -406,7 +406,7 @@ class person(party):
     
     Persons are usually considered individuals of the homo sapien
     species, but the more general definition of "person" may be more
-    appropriate for this entity:
+    appropriate for this entity::
     
         A being that has certain capacities or attributes such as
         reason, morality, consciousness or self-consciousness, and being

@@ -46,6 +46,17 @@ from types import ModuleType
 # TODO Add bytes(n) as datatype. Having to type `bytes, 16, 16` is not
 # fun.
 
+# TODO Prefix each table name with the name of the module.
+
+# TODO:d7f877ef  A need was found to create mutators for explicit
+# fields. A person's name property should be able to parse a name
+# before saving to its `names` collection.
+#
+#     per = party.person()
+#     per.name = 'Jesse Hogan'
+#     assert per.first == 'Jesse'
+#     assert per.last  == 'Hogan'
+
 @unique
 class types(Enum):
     """
@@ -3828,7 +3839,6 @@ class fulltext(index):
         return name
 
 class attr:
-
     class AttributeErrorWrapper(Exception):
         """ An AttributeError wrapper. """
         def __init__(self, ex):
@@ -5712,21 +5722,6 @@ class orm:
 
         return False
 
-    # TODO This should probably be renamed superentities. 
-    @property
-    def superentities(self):
-        ''' Returns a list of entity classes or entity objects (depending on
-        whether or not self.isinstance) of which self is a subentity. '''
-
-        r = list()
-        e = self.super
-
-        while e:
-            r.append(e)
-            e = e.orm.super
-
-        return r
-
     @property
     def super(self):
         """ For orms that have no instance, return the super class of
@@ -5792,6 +5787,20 @@ class orm:
     @property
     def isinstance(self):
         return self.instance is not None
+
+    @property
+    def superentities(self):
+        ''' Returns a list of entity classes or entity objects (depending on
+        whether or not self.isinstance) of which self is a subentity. '''
+
+        r = list()
+        e = self.super
+
+        while e:
+            r.append(e)
+            e = e.orm.super
+
+        return r
 
     # TODO This should probably be renamed to `subentities`
     @property
@@ -6079,9 +6088,6 @@ class associations(entities):
                         # Currently, identity comparisons will be done.
                         if map.value.id not in [x.id for x in es]:
                             es += map.value
-                        else:
-                            # TODO Remove this; it's just an expression.
-                            map.value not in es
                     finally:
                         # Restore entities_onadd handlers
                         for meth in meths:

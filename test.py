@@ -3392,6 +3392,9 @@ class artist(orm.entity):
     # 'setter' method in the 'Property' class here
     # https://docs.python.org/3/howto/descriptor.html#properties hints
     # at how this may be implemented in orm.attr.
+
+    # Update to the above comment. See d7f877ef
+
     """
     @phone.setter(str)
     def phone(self,)
@@ -5677,6 +5680,11 @@ class test_orm(tester):
 
         with self._chrontest() as t:
             t.run(lambda: self.two(rprs1))
+            if rprs1.count != 2:
+                # This happened today:
+                # HAPPENED Jun 2, 2020
+                print('This bug has happened befor')
+                B()
             t.retrieved(rprs1)
 
         self.true(rprs1.isvalid)
@@ -5691,6 +5699,10 @@ class test_orm(tester):
 
         with self._chrontest() as t:
             t.run(lambda: self.one(rprs1))
+            if rprs1.count != 1:
+                print('This bug has happened befor')
+                # HAPPENED Jun 2, 2020
+                B()
             t.retrieved(rprs1)
 
         self.true(rprs1.isvalid)
@@ -16697,10 +16709,11 @@ class gem_contactmechanism(tester):
             else:
                 part, name = cls(), part
                 if cls is gem.person:
-                    # FIXME:1e4db655 person.name does not exist yet and
-                    # I was having a hard time getting it to work so I
-                    # used person.maiden instead.
-                    part.maiden = name
+                    # FIXMEd7f877ef person.name does not exist yet and I
+                    # was having a hard time getting it to work so I
+                    # used person.first instead. NOTE that this will
+                    # break if party.roles is uncommented. See 297f8176.
+                    part.first = name
                 part.name = name
                 parts += part
 
@@ -17845,11 +17858,11 @@ class gem_product_product(tester):
             lead      =  2
         )
 
-        # TODO:28a4a305 There is a one-to-many relationship between priority and
-        # supplier_product. However, the supplier_product.priority
-        # composite is not available. I believe this would work for
-        # orm.entity, but this is an orm.association so I guess that
-        # feature was not added.
+        # TODO:28a4a305 There is a one-to-many relationship between
+        # priority and supplier_product. However, the
+        # supplier_product.priority composite is not available. I
+        # believe this would work for orm.entity, but this is an
+        # orm.association so I guess that feature was not added.
         #sps.last.priority.ordinal = 0
 
         first.supplier_products += sps.last
