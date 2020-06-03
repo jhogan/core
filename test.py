@@ -17386,6 +17386,8 @@ class gem_region(tester):
         )
 
     def it_creates(self):
+        gem.region.orm.recreate()
+
         reg = gem.region.create(
             ('United States of America',  gem.region.Country,    'USA'),
             ('Arizona',                   gem.region.State,      'AZ'),
