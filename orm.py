@@ -2623,10 +2623,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                 # an object.
                                 if asses.orm.isreflexive and ass.object:
                                     # Get the object's class and
-                                    # subclasses.
+                                    # subentities.
 
                                     clss = [ass.object.orm.entities]
-                                    subs = ass.object.orm.subclasses
+                                    subs = ass.object.orm.subentities
                                     clss += [
                                         x.orm.entities
                                         for x in subs
@@ -2998,9 +2998,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     for map1 in maps:
 
                         es = [map1.entity]
-                        es.extend(
-                            [x.entity for x in map1.entity.orm.subclasses]
-                        )
+                        es.extend([
+                            x.entity 
+                            for x in map1.entity.orm.subentities
+                        ])
                         for e in es:
                             if e.orm.entities.__name__ == attr:
                                 # Skip if association (map) is
@@ -4543,7 +4544,7 @@ class orm:
         for e in with_.__mro__:
             if e in (entity, associations):
                 break
-            if type(self.instance) in e.orm.subclasses:
+            if type(self.instance) in e.orm.subentities:
                 return True
 
         return False
@@ -4648,10 +4649,10 @@ class orm:
         leaf = self.instance
         id = leaf.id
 
-        # Itereate over subclasses. `self.subclasses` is assumed to
+        # Itereate over subentities. `self.subentities` is assumed to
         # iterate in a way tha yields the top-most subclass first
         # progressing toward the lowest subclass.
-        for cls in self.subclasses:
+        for cls in self.subentities:
             try:
                 leaf = cls(id)
             except db.RecordNotFoundError:
@@ -4774,7 +4775,7 @@ class orm:
         :param: cur:       The MySQLdb cursor used by this and all
                            subsequent CREATE and DROPs
 
-        :param: recursive: If True, the constituents and subclasses of
+        :param: recursive: If True, the constituents and subentities of
                            ``self`` will be recursively discovered and
                            their tables recreated. Used internally.
 
@@ -4827,7 +4828,7 @@ class orm:
                             cur, recursive, guestbook
                         )
 
-                for sub in self.subclasses:
+                for sub in self.subentities:
                     sub.orm.recreate(cur, True, guestbook)
                             
         except Exception as ex:
@@ -5233,9 +5234,9 @@ class orm:
                 if not map.value:
                     continue
 
-                # map.entity.orm.subclasses.first.entity.__class__]
+                # map.entity.orm.subentities.first.entity.__class__]
                 clss = [map.entity]
-                clss += [x.entity for x in map.entity.orm.subclasses]
+                clss += [x.entity for x in map.entity.orm.subentities]
                 comp = None
                 for cls in clss:
                     try:
@@ -5804,7 +5805,7 @@ class orm:
 
     # TODO This should probably be renamed to `subentities`
     @property
-    def subclasses(self):
+    def subentities(self):
         if self._subclasses is None:
             clss = ormclasseswrapper()
             for sub in orm.getsubclasses(of=self.entity):
@@ -6020,8 +6021,8 @@ class associations(entities):
                 # expecting, the below test won't be True because the
                 # below test is based on name; not types. The below test
                 # should descend the inheritence hierarchy looking for
-                # matches (maybe using `map.entity.orm.subclasses`). For
-                # more, se d3bd0e6d in test.py.
+                # matches (maybe using `map.entity.orm.subentities`). For
+                # more, see d3bd0e6d in test.py.
                 elif map.name == type(comp).__name__:
                     setattr(obj, map.name, comp)
                     break
@@ -6317,7 +6318,10 @@ class associations(entities):
                 # it with its subentities.
                 # TODO Clean this up a little
                 ess = [map.entity.orm.entities]
-                ess.extend(x.entity.orm.entities for x in map.entity.orm.subclasses)
+                ess.extend(
+                    x.entity.orm.entities 
+                    for x in map.entity.orm.subentities
+                )
 
                 # Iterate down the inheritance tree until we find an
                 # entity/subentity with the name of the attr.
@@ -6364,9 +6368,12 @@ class associations(entities):
                     #if e.orm.entities.__name__ != attr:
 
                     # TODO This could use a clean up, e.g.,
-                    #     if attr in e.orm.entities.subclasses:
+                    #     if attr in e.orm.subentities:
                     
-                    subs = [x.orm.entities.__name__ for x in e.orm.subclasses]
+                    subs = [
+                        x.orm.entities.__name__ 
+                        for x in e.orm.subentities
+                    ]
                     if attr in subs:
                         try:
                             e = es.orm.entity(e.id)
