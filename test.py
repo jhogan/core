@@ -4949,7 +4949,7 @@ class test_orm(tester):
         )
 
         for fn in fns:
-            self.expect(orm.invalidstream, fn)
+            self.expect(orm.InvalidStream, fn)
 
     def it_calls__iter__on_streamed_entities(self):
         # Create a variant number of artists to test. This will help
@@ -5833,7 +5833,7 @@ class test_orm(tester):
         self.eq(sngs.first.id, sngs1.first.id)
 
         l = lambda: concerts("match(title, xxx) against(%s)", 'zero')
-        self.expect(orm.invalidcolumn, l)
+        self.expect(orm.InvalidColumn, l)
 
         # Test "composite" full-text search
 
@@ -5925,7 +5925,7 @@ class test_orm(tester):
         self.eq(rprs.first.id, rprs1.first.id)
 
         l = lambda: battles("match(title, xxx) against(%s)", 'zero')
-        self.expect(orm.invalidcolumn, l)
+        self.expect(orm.InvalidColumn, l)
 
         # Test "composite" full-text search
 
@@ -11750,7 +11750,7 @@ class test_orm(tester):
         )
 
         for expr in exprs:
-            self.expect(orm.invalidcolumn, lambda: artists(expr, ()))
+            self.expect(orm.InvalidColumn, lambda: artists(expr, ()))
 
         exprs = (
             "match (bio) against ('keyword') and firstname = 1",
@@ -11772,7 +11772,7 @@ class test_orm(tester):
         )
 
         for expr in exprs:
-            self.expect(orm.invalidcolumn, lambda: artists(expr, ()))
+            self.expect(orm.InvalidColumn, lambda: artists(expr, ()))
 
     def it_parameterizes_predicate(self):
         ''' Ensure that the literals in predicates get replaced with
@@ -11827,7 +11827,7 @@ class test_orm(tester):
             self.lt(i, 2)
 
     def it_raises_exception_when_a_non_existing_column_is_referenced(self):
-        self.expect(orm.invalidcolumn, lambda: artists(notacolumn = 1234))
+        self.expect(orm.InvalidColumn, lambda: artists(notacolumn = 1234))
 
     def it_raises_exception_when_bytes_type_is_compared_to_nonbinary(self):
         # TODO This should raise an exception

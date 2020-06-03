@@ -568,7 +568,7 @@ class join(entitiesmod.entity):
 
         if es.orm.isstreaming:
             msg = 'Entities cannot be joined to streaming entities'
-            raise invalidstream(msg)
+            raise InvalidStream(msg)
             
         self.entities = es
         self.type = type # inner, outer, etc.
@@ -659,13 +659,13 @@ class where(entitiesmod.entity):
                     if ft and type(map.index) is not fulltext:
                         msg = 'MATCH column "%s" must be have a fulltext index'
                         msg %= col
-                        raise invalidcolumn(msg)
+                        raise InvalidColumn(msg)
                     break
             else:
                 e = self.entities.orm.entity.__name__
                 msg = 'Field "%s" does not exist in entity "%s": "%s"'
                 msg %= (col, e, str(pred))
-                raise invalidcolumn(msg)
+                raise InvalidColumn(msg)
 
         for pred in self.predicate:
             if pred.match:
@@ -1481,7 +1481,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
         # Streaming entities can't contain joins
         if self.orm.isstreaming:
-            raise invalidstream('Streaming entities cannot contain joins')
+            raise InvalidStream('Streaming entities cannot contain joins')
 
         if type(es) is entitiesmeta:
             es = es()
@@ -6396,10 +6396,7 @@ class associations(entities):
 class association(entity):
     pass
 
-# TODO These should be made PascalCase
-class invalidcolumn(ValueError):
-    pass
-
-class invalidstream(ValueError):
-    pass
+# ORM Exceptions
+class InvalidColumn(ValueError): pass
+class InvalidStream(ValueError): pass
 
