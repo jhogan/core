@@ -17398,7 +17398,6 @@ class gem_region(tester):
 
         reg = reg.region
         self.eq('Scottsdale', reg.name)
-        # FIXME `reg.regions` fails to contain one entity
         self.one(reg.regions)
 
         reg = reg.region
