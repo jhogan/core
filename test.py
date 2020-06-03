@@ -16819,7 +16819,7 @@ class gem_contactmechanism(tester):
                     try:
                         r.newfield(part.name)
                     except AttributeError:
-                        r.newfield(part.maiden)
+                        r.newfield(part.first)
                         
                     if gem.phone.orm.exists(pcm.contactmechanism):
                         cm = gem.phone(pcm.contactmechanism)
