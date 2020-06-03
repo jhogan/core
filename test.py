@@ -15352,10 +15352,12 @@ class test_orm(tester):
 class gem_person(tester):
     def __init__(self):
         super().__init__()
-        gem.party.orm.recreate(recursive=True)
-        gem.nametypes.orm.recreate(recursive=True)
-        gem.characteristictypes.orm.recreate(recursive=True)
-        gem.gendertypes.orm.recreate(recursive=True)
+        orm.orm.recreate(
+            gem.party,
+            gem.nametypes,
+            gem.characteristictypes,
+            gem.gendertypes,
+        )
 
     @staticmethod
     def getvalid():
@@ -16415,8 +16417,10 @@ class gem_company(tester):
 class gem_contactmechanism(tester):
     def __init__(self):
         super().__init__()
-        gem.party.orm.recreate(recursive=True)
-        gem.purposetypes.orm.recreate(recursive=True)
+        orm.orm.recreate(
+            gem.party,
+            gem.purposetypes,
+        )
 
     @staticmethod
     def getvalid(type='phone'):
@@ -17366,8 +17370,11 @@ class gem_communication(tester):
 class gem_region(tester):
     def __init__(self):
         super().__init__()
-        gem.party.orm.recreate(recursive=True)
-        gem.address.orm.recreate()
+        orm.orm.recreate(
+            gem.party,
+            gem.address,
+            gem.region,
+        )
 
     @staticmethod
     def getvalid():
