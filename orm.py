@@ -17,11 +17,13 @@
 from collections.abc import Iterable
 from contextlib import suppress
 from datetime import datetime, date
+from dbg import B
 from enum import Enum, unique
 from MySQLdb.constants.ER import BAD_TABLE_ERROR
 from pprint import pprint
 from shlex import shlex
 from table import table
+from types import ModuleType
 from uuid import uuid4, UUID
 import builtins
 import dateutil
@@ -30,14 +32,14 @@ import decimal
 import entities as entitiesmod
 import func
 import gc
+import inspect
 import itertools
 import MySQLdb
+import os
 import primative
 import re
 import sys
 import textwrap
-from dbg import B
-from types import ModuleType
 
 # TODO Research making these constants the same as their function
 # equivalent.
@@ -4499,7 +4501,7 @@ class orm:
         self.ismarkedfordeletion  =  False
         self.entities             =  None
         self.entity               =  None
-        self.table                =  None
+        self._table               =  None
         self.composite            =  None  # For association
         self._composits           =  None
         self._constituents        =  None
@@ -4519,6 +4521,26 @@ class orm:
 
         self.recreate = self._recreate
 
+    @property
+    def table(self):
+        mod = inspect.getmodule(self.entities)
+        if mod.__name__ == '__main__':
+            if hasattr(mod, '__file__'):
+                mod = os.path.splitext(
+                    os.path.basename(mod.__file__)
+                )[0]
+            else:
+                mod = 'main'
+        else:
+            mod = mod.__name__
+
+        return '%s_%s' % (mod, self._table)
+
+    @table.setter
+    def table(self, v):
+        B(v == 'gem_partyroletypes');
+        self._table = v
+        
     def iscollinear(self, with_):
         """ Return True if self is colinear with ``with_``.
 
@@ -4665,7 +4687,7 @@ class orm:
 
         props = (
             'isnew',       '_isdirty',     'ismarkedfordeletion',
-            'entity',      'entities',     'table'
+            'entity',      'entities',     '_table'
         )
 
         for prop in props: 
@@ -4848,7 +4870,7 @@ class orm:
 
     def drop(self, cur=None):
         # TODO Use executioner
-        sql = 'drop table ' + self.table + ';'
+        sql = 'drop table `%s`;' % self.table
 
         if cur:
             cur.execute(sql)
@@ -4870,7 +4892,7 @@ class orm:
 
     @property
     def createtable(self):
-        r = 'CREATE TABLE ' + self.table + '(\n'
+        r = 'CREATE TABLE `%s`(\n' % self.table 
 
         for i, map in enumerate(self.mappings):
             if not isinstance(map, fieldmapping):
