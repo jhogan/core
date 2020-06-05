@@ -7,11 +7,12 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
 import orm
+from orm import text
 import entities
 import primative
 from datetime import datetime
 from dbg import B
-import gem
+import party
 from decimal import Decimal as dec
 
 #TODO The `decimal` module should be usable as type:
@@ -141,8 +142,8 @@ class prices(orm.entities):
         # algorithm.
 
 
-        regs = None if regs is None else gem.regions(initial=regs) 
-        pts  = list() if pts  is None else gem.types(initial=pts) 
+        regs = None if regs is None else party.regions(initial=regs) 
+        pts  = list() if pts  is None else party.types(initial=pts) 
             
         bases = prices()
         discounts = prices()
@@ -350,7 +351,7 @@ class product(orm.entity):
     # 167d775b and 28a4a305). When this relationship is supported, we can
     # uncomment this line and the
     # PRODUCT FEATURE INTERACTION/feature_features association can be
-    # tested in gem_product_product.
+    # tested in party_product_product.
     # feature_features = feature_features
 
     # The pricing components for this product.
@@ -365,15 +366,15 @@ class product(orm.entity):
         (`regs`) and quantity (`qty`) and party type (`pts).
 
         :param: regs regions: A collection (list, tuple, regions) of
-        gem.region object that will be used to find the lowest base
+        party.region object that will be used to find the lowest base
         price and highest discounts for the total price.
 
         :param: qty int: The quantity of the product used to find the
         lowest base prices and highest discounts the product has by
         querying its quantity break entity.
 
-        :param: pts gem.types: A collection (list, tuple,
-        gem.party_types) of gem.type entities that will be used to find
+        :param: pts party.types: A collection (list, tuple,
+        party.party_types) of party.type entities that will be used to find
         the lowes base price and highest discount prices for the total
         price.
         """
@@ -547,7 +548,7 @@ class category_type(orm.association):
     """
     begin     =  datetime
     end       =  datetime
-    type      =  gem.type
+    type      =  party.type
     category  =  category
 
 class feature(orm.entity):
@@ -873,10 +874,10 @@ class supplier_product(orm.association):
     """
 
     # The participating entity objects of the associations. Note that
-    # the supplier will usually be a gem.company subtype of
-    # `gem.organization`. We will make it simply an `organization` to
+    # the supplier will usually be a party.company subtype of
+    # `party.organization`. We will make it simply an `organization` to
     # prodive the greatest flexability.
-    supplier  =  gem.organization
+    supplier  =  party.organization
     product   =  product
 
     # The begin and end datetimes indicate the timespan that the
@@ -1035,15 +1036,15 @@ class guideline(orm.entity):
 
     # The geographical region (postal code, state, etc) that the
     # guildline is for.
-    region = gem.region
+    region = party.region
 
     # The facility the guildline is for
-    facility = gem.facility
+    facility = party.facility
 
     # TODO This should be interalorganization, but that does not exist
     # yet in the party module.
     # The internal organization the guideline is for
-    organization = gem.organization
+    organization = party.organization
 
 class item(orm.entity):
     """ The `item` is the abstract base class for `serial` and
@@ -1057,7 +1058,7 @@ class item(orm.entity):
     # The facility this inventory item is located in. Alternatively, the
     # item could be located in a ``container`` which itself is located
     # within a facility.
-    facility = gem.facility
+    facility = party.facility
 
     # A collection of variances, i.e., a history of shrinkage and
     # overages that were noticed during physical inspection of the
@@ -1122,7 +1123,7 @@ class container(orm.entity):
     items = items
 
     # The facility in which the container is currently located. 
-    facility = gem.facility
+    facility = party.facility
 
 class containertype(orm.entity):
     """ This class allows for the definition of containers.
@@ -1247,19 +1248,19 @@ class price(orm.entity):
 
     # The geographic region composite allows pricing to be dependent on
     # geographic region. 
-    region = gem.region
+    region = party.region
 
     # The party.type composite allows the price to be dependent of the
     # classification of the party buying the goods such as special
     # pricing for minority parties or governmental organizations.
-    type = gem.type
+    type = party.type
 
     # NOTE The above `region` and `type` properties are defined here
     # because they are from the party module. If it weren't for the
     # circulular reference proplem that would happen, these composite
     # references would have come implitily as a result of creating a
     # constituent entities collection on those classes (i.e.,
-    # gem.region.prices, gem.type.prices). For entities where this "use-
+    # party.region.prices, party.type.prices). For entities where this "use-
     # to-define" relationship won't cause a circular reference,
     # constituent collections have been created. See
     # product.category.prices, product.break.prices,
@@ -1268,7 +1269,7 @@ class price(orm.entity):
     # A price component can be specified for different organizations
     # because it is possible for multiple organizations to supply the
     # same product.
-    organization = gem.organization
+    organization = party.organization
 
 class base(price):
     """ The starting price for a product.
@@ -1409,14 +1410,14 @@ class estimate(orm.entity):
     # hence a cost component can have a region composite. For instance,
     # manufacturing costs may be less expensive in a plant located in
     # one country versus another.
-    region = gem.region
+    region = party.region
 
     # The estimated costs may, in some cases, vary by organization. If
     # the organization is trackting and comparing tho costs for multiple
     # suppliers, then the enterprise may want to be able to record
     # seperate costs for each organization; hence the optional
     # relationship to an organization composite.
-    organization = gem.organization
+    organization = party.organization
 
 class estimatetype(orm.entity):
     """ This entity specifies what tpo of cost an ``estimate`` is.

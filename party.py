@@ -1223,7 +1223,7 @@ class status(orm.entity):
     """ Throughout the GEM, there are many statuses for many
     entity objects (e.g., orders status, shipment status, work effort
     status, and so on.). Each of these will be have their on subentity
-    classes, e.g., ``gem.role_role_status``.
+    classes, e.g., ``party.role_role_status``.
 
     Note that this is modeled after the STATUS TYPE entity in "The Data
     Modeling Resource Book".
@@ -1398,7 +1398,7 @@ class roletype(orm.entity):
     name = str
 
 class partyroletype(roletype):
-    """ Each party role (the classes that inherit from ``gem.role``)
+    """ Each party role (the classes that inherit from ``party.role``)
     may be described by one and only one ``partyroletype``.  The
     ``partyroletype`` inherits from ``roletype`` and has an ``name``
     that stores available values of role types.
@@ -1452,7 +1452,7 @@ class party_type(orm.association):
     # A reference to the party
     party  =  party
 
-    # A reference to the party type (`gem.type`)
+    # A reference to the party type (`party.type`)
     type   =  type
 
 class facility(orm.entity):
@@ -1736,7 +1736,7 @@ class effort(orm.entity):
     Modeling Resource Book".
     """
     # TODO This will need to be moved into the work effor module. This
-    # may create a circular dependency issue with the gem/party module
+    # may create a circular dependency issue with the party/party module
     # that will need to be resolved.
     name = str
     description = text

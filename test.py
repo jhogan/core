@@ -33,7 +33,7 @@ import pathlib
 import primative
 import re
 import textwrap
-import gem
+import party
 import product
 from pprint import pprint
 
@@ -15347,21 +15347,21 @@ class test_orm(tester):
                 self.eq(getattr(amp1, prop), getattr(amp2, prop))
 
 ########################################################################
-# Test gem.persons                                                     #
+# Test party.persons                                                     #
 ########################################################################
-class gem_person(tester):
+class gem_party_person(tester):
     def __init__(self):
         super().__init__()
         orm.orm.recreate(
-            gem.party,
-            gem.nametypes,
-            gem.characteristictypes,
-            gem.gendertypes,
+            party.party,
+            party.nametypes,
+            party.characteristictypes,
+            party.gendertypes,
         )
 
     @staticmethod
     def getvalid():
-        per = gem.person()
+        per = party.person()
 
         per.first          =  uuid4().hex
         per.middle         =  uuid4().hex
@@ -15377,25 +15377,25 @@ class gem_person(tester):
         return per
 
     def it_saves_physical_characteristics(self):
-        hr = gem.characteristictype(name='Heart rate')
-        sys = gem.characteristictype(name='Systolic blood preasure')
-        dia = gem.characteristictype(name='Diastolic blood preasure')
+        hr = party.characteristictype(name='Heart rate')
+        sys = party.characteristictype(name='Systolic blood preasure')
+        dia = party.characteristictype(name='Diastolic blood preasure')
 
-        per = gem_person.getvalid()
+        per = gem_party_person.getvalid()
 
-        per.characteristics += gem.characteristic(
+        per.characteristics += party.characteristic(
             begin = primative.datetime('2021-03-07 08:00:00'),
             value = 118,
             characteristictype = sys,
         )
 
-        per.characteristics += gem.characteristic(
+        per.characteristics += party.characteristic(
             begin = primative.datetime('2021-03-07 08:00:00'),
             value = 77,
             characteristictype = dia,
         )
 
-        per.characteristics += gem.characteristic(
+        per.characteristics += party.characteristic(
             begin = primative.datetime('2021-03-07 08:00:00'),
             value = 76,
             characteristictype = hr,
@@ -15422,17 +15422,17 @@ class gem_person(tester):
             self.type(str, chr1.value)
 
     def it_appends_marital_status(self):
-        per = gem_person.getvalid()
+        per = gem_party_person.getvalid()
 
-        per.maritals += gem.marital(
+        per.maritals += party.marital(
             begin = primative.datetime('19760415'),
             end   = primative.datetime('20041008'),
-            type = gem.marital.Single,
+            type = party.marital.Single,
         )
 
-        per.maritals += gem.marital(
+        per.maritals += party.marital(
             begin = primative.datetime('20041009'),
-            type = gem.marital.Married,
+            type = party.marital.Married,
         )
 
         per.save()
@@ -15451,7 +15451,7 @@ class gem_person(tester):
             self.eq(mar.type,   mar1.type)
 
     def it_calls_gender(self):
-        per = gem_person.getvalid()
+        per = gem_party_person.getvalid()
         self.none(per.gender)
 
         # Gender must have already been registered
@@ -15460,9 +15460,9 @@ class gem_person(tester):
 
         self.expect(ValueError, lambda: f(per))
 
-        gem.gendertype(name='Male').save()
-        gem.gendertype(name='Female').save()
-        gem.gendertype(name='Nonbinary').save()
+        party.gendertype(name='Male').save()
+        party.gendertype(name='Female').save()
+        party.gendertype(name='Nonbinary').save()
 
         per.gender = 'Male'
         self.one(per.genders)
@@ -15496,10 +15496,10 @@ class gem_person(tester):
         gen.begin = primative.datetime('1980-01-01')
         gen.end   = primative.datetime('1990-01-01')
 
-        per.genders += gem.gender(
+        per.genders += party.gender(
             begin       =  primative.datetime('1990-01-02'),
             end         =  None,
-            gendertype  =  gem.gendertypes(name='nonbinary').first,
+            gendertype  =  party.gendertypes(name='nonbinary').first,
         )
 
         self.eq('Nonbinary', per.gender)
@@ -15521,7 +15521,7 @@ class gem_person(tester):
             self.eq(gen.gendertype.id, gen1.gendertype.id)
 
     def it_calls_name_properties(self):
-        per = gem.person()
+        per = party.person()
         per.dun = None
         per.isicv4 = None
         per.nationalids = None
@@ -15542,7 +15542,7 @@ class gem_person(tester):
         for prop in ('first', 'middle', 'last'):
             self.eq(getattr(per, prop), getattr(per1, prop))
 
-        names = gem.nametypes.orm.all.pluck('name')
+        names = party.nametypes.orm.all.pluck('name')
 
         self.three(names)
         self.true('first' in names)
@@ -15550,37 +15550,37 @@ class gem_person(tester):
         self.true('last' in names)
 
     def it_adds_citizenships(self):
-        per = gem.person()
+        per = party.person()
 
-        au = gem.region(
+        au = party.region(
             name = 'Austria',
-            type = gem.region.Country
+            type = party.region.Country
         )
 
-        en = gem.region(
+        en = party.region(
             name = 'England',
-            type = gem.region.Country
+            type = party.region.Country
         )
 
-        per.citizenships += gem.citizenship(
+        per.citizenships += party.citizenship(
             begin   = primative.datetime('1854-05-06'),
             end     = primative.datetime('1938-05-01'),
             country = au,
         )
 
-        per.citizenships.last.passports += gem.passport(
+        per.citizenships.last.passports += party.passport(
             number = str(randint(1111111111, 99999999999)),
             issuedat = primative.datetime('2010-05-06'),
             expiresat = primative.datetime('2019-05-06'),
         )
 
-        per.citizenships += gem.citizenship(
+        per.citizenships += party.citizenship(
             begin   = primative.datetime('1938-05-01'),
             end     = primative.datetime('1939-09-23'),
             country = en,
         )
 
-        per.citizenships.last.passports += gem.passport(
+        per.citizenships.last.passports += party.passport(
             number = str(randint(1111111111, 99999999999)),
             issuedat = primative.datetime('2010-05-06'),
             expiresat = primative.datetime('2019-05-06'),
@@ -15615,7 +15615,7 @@ class gem_person(tester):
         per = self.getvalid()
         per.save()
 
-        per1 = gem.person(per.id)
+        per1 = party.person(per.id)
 
         for map in per.orm.mappings.fieldmappings:
             self.eq(
@@ -15629,7 +15629,7 @@ class gem_person(tester):
         per.save()
 
         # Load
-        per = gem.person(per.id)
+        per = party.person(per.id)
 
         # Update
         oldfirstname = per.first
@@ -15639,7 +15639,7 @@ class gem_person(tester):
         per.save()
 
         # Reload
-        per1 = gem.person(per.id)
+        per1 = party.person(per.id)
 
         # Test
         self.eq(newfirstname, per1.first)
@@ -15652,23 +15652,23 @@ class gem_person(tester):
         # TODO Figure out a way to do this:
         #
         #     bro.siblings += sis
-        bro.party_parties += gem.party_party.sibling(sis)
+        bro.party_parties += party.party_party.sibling(sis)
 
         self.is_(bro, bro.party_parties.last.subject)
         self.is_(sis, bro.party_parties.last.object)
 
         bro.save()
 
-        bro1 = gem.person(bro.id)
+        bro1 = party.person(bro.id)
 
         self.eq(bro.id, bro1.party_parties.last.subject.id)
         self.eq(sis.id, bro1.party_parties.last.object.id)
         
     def it_creates_association_to_company(self):
         per = self.getvalid()
-        com = gem_company.getvalid()
+        com = gem_party_company.getvalid()
 
-        pp = gem.party_party()
+        pp = party.party_party()
         pp.object = com
         pp.role = 'patronize'
 
@@ -15679,7 +15679,7 @@ class gem_person(tester):
 
         per.save()
 
-        per1 = gem.person(per.id)
+        per1 = party.person(per.id)
 
         self.eq(per.id, per1.party_parties.last.subject.id)
         self.eq(com.id, per1.party_parties.last.object.id)
@@ -15701,14 +15701,14 @@ class gem_person(tester):
         #
         #     bro.siblings += sis
 
-        bro.party_parties += gem.party_party.sibling(sis)
+        bro.party_parties += party.party_party.sibling(sis)
 
         self.is_(bro, bro.party_parties.last.subject)
         self.is_(sis, bro.party_parties.last.object)
 
         bro.save()
 
-        bro1 = gem.person(bro.id)
+        bro1 = party.person(bro.id)
 
         self.eq(bro.id, bro1.party_parties.last.subject.id)
         self.eq(sis.id, bro1.party_parties.last.object.id)
@@ -15720,24 +15720,24 @@ class gem_person(tester):
         self.eq(sis.id, bro1.persons.first.id)
 
 
-class gem_party_type(tester):
+class gem_party_party_type(tester):
     def __init__(self):
         super().__init__()
-        gem.party.orm.recreate(recursive=True)
+        party.party.orm.recreate(recursive=True)
 
     def it_creates(self):
-        typ = gem.type()
+        typ = party.type()
         typ.description = uuid4().hex
 
         for i in range(2):
-            pt = gem.party_type()
+            pt = party.party_type()
             pt.begin = primative.datetime.utcnow(days=-100)
-            pt.party = gem_person.getvalid()
+            pt.party = gem_party_person.getvalid()
             typ.party_types += pt
 
         typ.save()
 
-        typ1 = gem.type(typ.id)
+        typ1 = party.type(typ.id)
         self.eq(typ.description, typ1.description)
 
         typ.party_types.sort() 
@@ -15764,23 +15764,23 @@ class gem_party_type(tester):
         # TODO
         pass
 
-class gem_party_role(tester):
+class party_party_role(tester):
     def __init__(self):
         super().__init__()
-        gem.party.orm.recreate(recursive=True)
-        gem.roletypes.orm.recreate(recursive=True)
+        party.party.orm.recreate(recursive=True)
+        party.roletypes.orm.recreate(recursive=True)
 
     def it_creates(self):
         # TODO Remove the below `return` when 297f8176 is fixed.
         return
-        acme = gem.company(name='ACME Corporation')
+        acme = party.company(name='ACME Corporation')
 
-        acme.roles += gem.customer(
+        acme.roles += party.customer(
             begin  =  primative.datetime('2006-01-01'),
             end    =  primative.datetime('2008-04-14')
         )
 
-        acme.roles += gem.supplier()
+        acme.roles += party.supplier()
 
         # TODO We shouldn't have to put `acme.roles` in the argument
         # list. This is a problem with the way subentity (`company`)
@@ -15810,39 +15810,39 @@ class gem_party_role(tester):
 class gem_party_role_role(tester):
     def __init__(self):
         super().__init__()
-        gem.party.orm.recreate(recursive=True)
-        gem.roletypes.orm.recreate(recursive=True)
-        gem.status.orm.recreate(recursive=True)
+        party.party.orm.recreate(recursive=True)
+        party.roletypes.orm.recreate(recursive=True)
+        party.status.orm.recreate(recursive=True)
 
     def it_creates(self):
         # TODO Remove the below `return` when 297f8176 is fixed.
         return
         # Create parties
-        rent = gem.company(name='ACME Corporation')
-        sub  = gem.company(name='ACME Subsidiary')
+        rent = party.company(name='ACME Corporation')
+        sub  = party.company(name='ACME Subsidiary')
 
         # Create priority
-        high = gem.priority(name='high')
+        high = party.priority(name='high')
 
         # Create status
-        act = gem.role_role_status(name='active')
+        act = party.role_role_status(name='active')
 
         # Create roles
-        rent.roles += gem.parent(
+        rent.roles += party.parent(
             begin     =  primative.datetime('2006-01-01'),
             end       =  None,
         )
 
-        sub.roles += gem.subsidiary(
+        sub.roles += party.subsidiary(
             begin  =  primative.datetime('2006-01-01'),
             end    =  None,
         )
 
         # Associate the two roles created above
-        sub.roles.last.role_roles += gem.role_role(
+        sub.roles.last.role_roles += party.role_role(
             begin  =  primative.datetime('2006-01-01'),
             end    =  None,
-            role_role_type = gem.role_role_type(
+            role_role_type = party.role_role_type(
                 name = 'Organizational rollup',
                 description = 'Shows that each organizational '
                               'unit may be within one or more '
@@ -15863,7 +15863,7 @@ class gem_party_role_role(tester):
         )
 
         sub.roles.last.role_roles.last.communications += \
-            gem.communication(
+            party.communication(
                 begin = primative.datetime('2010-02-18 12:01:23'),
                 end   = primative.datetime('2010-02-18 12:49:32'),
                 note  = 'Good phone call. I think we got him.',
@@ -15954,15 +15954,15 @@ class gem_party_role_role(tester):
             self.eq(com.end, com1.end)
             self.eq(com.note, com1.note)
 
-class gem_company(tester):
+class gem_party_company(tester):
     def __init__(self):
         super().__init__()
-        gem.party.orm.recreate(recursive=True)
-        gem.address.orm.recreate()
+        party.party.orm.recreate(recursive=True)
+        party.address.orm.recreate()
 
     @staticmethod
     def getvalid(**kwargs):
-        com = gem.company()
+        com = party.company()
         com.name = uuid4().hex
         com.ein = str(uuid4().int)[:9]
         com.nationalids    =  uuid4().hex
@@ -15977,7 +15977,7 @@ class gem_company(tester):
         com = self.getvalid()
         com.save()
 
-        com1 = gem.company(com.id)
+        com1 = party.company(com.id)
 
         sup = com
 
@@ -15996,7 +15996,7 @@ class gem_company(tester):
         com.save()
 
         # Load
-        com = gem.company(com.id)
+        com = party.company(com.id)
 
         # Update
         old, new = com.name, uuid4().hex
@@ -16004,17 +16004,17 @@ class gem_company(tester):
         com.save()
 
         # Reload
-        com1 = gem.company(com.id)
+        com1 = party.company(com.id)
 
         # Test
         self.eq(new, com1.name)
         self.ne(old, com1.name)
 
     def it_creates_association_to_person(self):
-        per = gem_person.getvalid()
+        per = gem_party_person.getvalid()
         com = self.getvalid()
 
-        pp = gem.party_party()
+        pp = party.party_party()
         pp.object = per
         pp.role = 'employ'
         pp.begin = datetime.now()
@@ -16026,7 +16026,7 @@ class gem_company(tester):
 
         com.save()
 
-        com1 = gem.company(com.id)
+        com1 = party.company(com.id)
 
         self.eq(com.id, com1.party_parties.last.subject.id)
         self.eq(per.id, com1.party_parties.last.object.id)
@@ -16046,17 +16046,17 @@ class gem_company(tester):
         for i in range(2):
 
             # Create phone number
-            ph = gem.phone()
+            ph = party.phone()
             ph.area = int('20' + str(i))
             ph.line = '555 5555'
             
             # Create party to contact mechanism association
-            pcm                   =  gem.party_contactmechanism()
+            pcm                   =  party.party_contactmechanism()
             pcm.begin             =  primative.datetime('1976-01-01')
             pcm.end               =  None
             pcm.solicitations     =  False
             pcm.extension         =  None
-            pcm.purpose           =  gem.party_contactmechanism.roles.main
+            pcm.purpose           =  party.party_contactmechanism.roles.main
             pcm.contactmechanism  =  ph
             pcm.party             =  com
 
@@ -16066,7 +16066,7 @@ class gem_company(tester):
         # Save, reload and test
         com.save()
 
-        com1 = gem.company(com.id)
+        com1 = party.company(com.id)
 
         com.party_contactmechanisms.sort()
         com1.party_contactmechanisms.sort()
@@ -16080,7 +16080,7 @@ class gem_company(tester):
                 com.party_contactmechanisms[i].contactmechanism.id,
                 com1.party_contactmechanisms[i].contactmechanism.id
             )
-            ph = gem.phone(
+            ph = party.phone(
                 com1.party_contactmechanisms[i].contactmechanism.id
             )
 
@@ -16091,13 +16091,13 @@ class gem_company(tester):
         for i in range(2):
 
             # Create email addres
-            em = gem.email()
+            em = party.email()
             em.address = 'jimbo%s@foonet.com' % i
             
             # Create party to contact mechanism association
-            priv = gem.party_contactmechanism.roles.private
+            priv = party.party_contactmechanism.roles.private
 
-            pcm                   =  gem.party_contactmechanism()
+            pcm                   =  party.party_contactmechanism()
             pcm.begin             =  primative.datetime('1993-09-01')
             pcm.end               =  None
             pcm.solicitations     =  False
@@ -16112,7 +16112,7 @@ class gem_company(tester):
         # Save, reload and test
         com.save()
 
-        com1 = gem.company(com.id)
+        com1 = party.company(com.id)
 
         com.party_contactmechanisms.sort()
         com1.party_contactmechanisms.sort()
@@ -16127,7 +16127,7 @@ class gem_company(tester):
                 com1.party_contactmechanisms[i].contactmechanism.id
             )
 
-            em = gem.email(
+            em = party.email(
                 com1.party_contactmechanisms[i].contactmechanism.id
             )
 
@@ -16138,7 +16138,7 @@ class gem_company(tester):
         for i in range(2):
 
             # Create postal addres
-            addr = gem.address()
+            addr = party.address()
             addr.address1 = '742 Evergreen Terrace'
             addr.address2 = None
             addr.directions = self.dedent('''
@@ -16148,14 +16148,14 @@ class gem_company(tester):
 			Drive to E Evergreen St
             ''')
 
-            ar = gem.address_region()
-            ar.region = gem_region.getvalid()
+            ar = party.address_region()
+            ar.region = gem_party_region.getvalid()
             addr.address_regions += ar
             
-            hm = gem.party_contactmechanism.roles.home
+            hm = party.party_contactmechanism.roles.home
 
             # Create party-to-contact-mechanism association
-            pcm                   =  gem.party_contactmechanism()
+            pcm                   =  party.party_contactmechanism()
             pcm.begin             =  primative.datetime('1993-09-01')
             pcm.end               =  None
             pcm.solicitations     =  False
@@ -16170,7 +16170,7 @@ class gem_company(tester):
         # Save, reload and test
         com.save()
 
-        com1 = gem.company(com.id)
+        com1 = party.company(com.id)
 
         com.party_contactmechanisms.sort()
         com1.party_contactmechanisms.sort()
@@ -16188,7 +16188,7 @@ class gem_company(tester):
             addr = com.party_contactmechanisms[i].contactmechanism
 
             # Downcast
-            addr1 = gem.address(
+            addr1 = party.address(
                 com1.party_contactmechanisms[i].contactmechanism.id
             )
 
@@ -16210,12 +16210,12 @@ class gem_company(tester):
         # association to associate persons to departments and divisions.
         com = self.getvalid()
         self.zero(com.departments)
-        dep = gem.department(name='web')
+        dep = party.department(name='web')
         com.departments += dep
         self.is_(com, dep.company)
         com.save()
 
-        com1 = gem.company(com.id)
+        com1 = party.company(com.id)
         self.eq(com.id, com1.id)
 
         self.one(com1.departments)
@@ -16228,10 +16228,10 @@ class gem_company(tester):
         # association to associate persons to departments and divisions.
         com = self.getvalid()
         self.zero(com.departments)
-        com.departments += gem.department(name='web')
+        com.departments += party.department(name='web')
         com.save()
 
-        com1 = gem.company(com.id)
+        com1 = party.company(com.id)
 
         dep1 = com1.departments.first
 
@@ -16242,7 +16242,7 @@ class gem_company(tester):
         com1.save()
 
         # Load and test deparment
-        com1 = gem.company(com.id)
+        com1 = party.company(com.id)
 
         dep1 = com1.departments.first
 
@@ -16253,14 +16253,14 @@ class gem_company(tester):
         # association to associate persons to departments and divisions.
         com = self.getvalid()
 
-        dep = gem.department(name='web')
+        dep = party.department(name='web')
         com.departments += dep
 
-        div = gem.division(name='core')
+        div = party.division(name='core')
         dep.divisions += div
         com.save()
 
-        com1 = gem.company(com)
+        com1 = party.company(com)
 
         self.one(com1.departments)
         self.one(com1.departments.first.divisions)
@@ -16283,17 +16283,17 @@ class gem_company(tester):
         # association to associate persons to departments and divisions.
 
         # TODO We should be able to create a position in any
-        # gem.legalorganization such as a non-profit.
-        jb = gem_job.getvalid()
-        com = gem_company.getvalid()
+        # party.legalorganization such as a non-profit.
+        jb = gem_party_job.getvalid()
+        com = gem_party_company.getvalid()
 
         # Create positions based on the job
-        poss = gem.positions()
-        poss += gem_position.getvalid()
-        poss += gem_position.getvalid()
+        poss = party.positions()
+        poss += gem_party_position.getvalid()
+        poss += gem_party_position.getvalid()
 
-        com.departments += gem.department(name='it')
-        div = gem.division(name='ml')
+        com.departments += party.department(name='it')
+        div = party.division(name='ml')
         com.departments.last.divisions += div
 
         div.positions += poss
@@ -16308,7 +16308,7 @@ class gem_company(tester):
         com.save()
 
         ''' Test that rather large save '''
-        com1 = gem.company(com.id)
+        com1 = party.company(com.id)
         self.eq(com.id, com1.id)
         self.two(com1.positions)
 
@@ -16335,16 +16335,16 @@ class gem_company(tester):
         # association to associate persons to departments and divisions.
 
 
-        jb = gem_job.getvalid()
-        com = gem_company.getvalid()
-        pers = gem_person.getvalid() + gem_person.getvalid()
+        jb = gem_party_job.getvalid()
+        com = gem_party_company.getvalid()
+        pers = gem_party_person.getvalid() + gem_party_person.getvalid()
 
         # Create positions based on the job
-        pos = gem_position.getvalid()
+        pos = gem_party_position.getvalid()
 
-        dep = gem.department(name='it')
+        dep = party.department(name='it')
         com.departments += dep
-        div = gem.division(name='ml')
+        div = party.division(name='ml')
         com.departments.last.divisions += div
 
         div.positions += pos
@@ -16354,7 +16354,7 @@ class gem_company(tester):
         #self.true(pos.isfulfilled)
 
         for per in pers:
-            ful = gem.position_fulfillment(
+            ful = party.position_fulfillment(
                 person = per,
                 begin  = datetime.now(),
                 end    = None,
@@ -16388,7 +16388,7 @@ class gem_company(tester):
 
         com.save()
 
-        com1 = gem.company(com.id)
+        com1 = party.company(com.id)
 
         self.one(com1.positions)
 
@@ -16404,7 +16404,7 @@ class gem_company(tester):
             self.none(ful1.end)
 
         for per in pers:
-            per1 = gem.person(per.id)
+            per1 = party.person(per.id)
             self.one(per1.positions)
             self.one(per1.position_fulfillments)
             self.eq(div.id, per1.positions.first.division.id)
@@ -16414,19 +16414,19 @@ class gem_company(tester):
                 per1.positions.first.division.department.company.id
             )
 
-class gem_contactmechanism(tester):
+class gem_party_contactmechanism(tester):
     def __init__(self):
         super().__init__()
         orm.orm.recreate(
-            gem.party,
-            gem.purposetypes,
+            party.party,
+            party.purposetypes,
         )
 
     @staticmethod
     def getvalid(type='phone'):
         if type == 'phone':
             # Create phone number
-            cm = gem.phone()
+            cm = party.phone()
 
             cm.area =  randint(200, 999)
             cm.line =  randint(100, 999)
@@ -16434,7 +16434,7 @@ class gem_contactmechanism(tester):
             cm.line += str(randint(1000, 9999))
 
         elif type == 'email':
-            cm = gem.email(address='bgates@microsoft.com')
+            cm = party.email(address='bgates@microsoft.com')
         else:
             raise TypeError('Type not supported')
 
@@ -16442,13 +16442,13 @@ class gem_contactmechanism(tester):
 
     def it_links_contactmechanisms(self):
         # Create contact mechanisms
-        ph1 = gem_contactmechanism.getvalid(type='phone')
-        ph2 = gem_contactmechanism.getvalid(type='phone')
-        em  = gem_contactmechanism.getvalid(type='email')
+        ph1 = gem_party_contactmechanism.getvalid(type='phone')
+        ph2 = gem_party_contactmechanism.getvalid(type='phone')
+        em  = gem_party_contactmechanism.getvalid(type='email')
 
 
         # Make cm_cm reference the association class
-        cm_cm = gem.contactmechanism_contactmechanism
+        cm_cm = party.contactmechanism_contactmechanism
 
         # When ph1 is busy, the number will be forwarded to ph2
         ph1.contactmechanism_contactmechanisms += cm_cm(
@@ -16507,23 +16507,23 @@ class gem_contactmechanism(tester):
         self.eq(cm_cms1.first.subject.id,  cm_cms1_1.first.subject.id)
 
     def it_associates_phone_numbers(self):
-        per = gem_person.getvalid()
+        per = gem_party_person.getvalid()
 
         # Create two phone numbers
         for i in range(2):
 
             # Create phone number
-            ph = gem.phone()
+            ph = party.phone()
             ph.area = int('20' + str(i))
             ph.line = '555 5555'
             
             # Create party to contact mechanism association
-            pcm                   =  gem.party_contactmechanism()
+            pcm                   =  party.party_contactmechanism()
             pcm.begin             =  primative.datetime('1976-01-01')
             pcm.end               =  None
             pcm.solicitations     =  False
             pcm.extension         =  None
-            pcm.purpose           =  gem.party_contactmechanism.roles.main
+            pcm.purpose           =  party.party_contactmechanism.roles.main
             pcm.contactmechanism  =  ph
             pcm.party             =  per
 
@@ -16533,7 +16533,7 @@ class gem_contactmechanism(tester):
         # Save, reload and test
         per.save()
 
-        per1 = gem.person(per.id)
+        per1 = party.person(per.id)
 
         per.party_contactmechanisms.sort()
         per1.party_contactmechanisms.sort()
@@ -16547,24 +16547,24 @@ class gem_contactmechanism(tester):
                 per.party_contactmechanisms[i].contactmechanism.id,
                 per1.party_contactmechanisms[i].contactmechanism.id
             )
-            ph = gem.phone(
+            ph = party.phone(
                 per1.party_contactmechanisms[i].contactmechanism.id
             )
 
     def it_associates_email_addresses(self):
-        per = gem_person.getvalid()
+        per = gem_party_person.getvalid()
 
         # Create two email addressess
         for i in range(2):
 
             # Create email addres
-            em = gem.email()
+            em = party.email()
             em.address = 'jimbo%s@foonet.com' % i
             
             # Create party to contact mechanism association
-            priv = gem.party_contactmechanism.roles.private
+            priv = party.party_contactmechanism.roles.private
 
-            pcm                   =  gem.party_contactmechanism()
+            pcm                   =  party.party_contactmechanism()
             pcm.begin             =  primative.datetime('1993-09-01')
             pcm.end               =  None
             pcm.solicitations     =  False
@@ -16579,7 +16579,7 @@ class gem_contactmechanism(tester):
         # Save, reload and test
         per.save()
 
-        per1 = gem.person(per.id)
+        per1 = party.person(per.id)
 
         per.party_contactmechanisms.sort()
         per1.party_contactmechanisms.sort()
@@ -16594,18 +16594,18 @@ class gem_contactmechanism(tester):
                 per1.party_contactmechanisms[i].contactmechanism.id
             )
 
-            em = gem.email(
+            em = party.email(
                 per1.party_contactmechanisms[i].contactmechanism.id
             )
 
     def it_associates_postal_addresses(self):
-        per = gem_person.getvalid()
+        per = gem_party_person.getvalid()
 
         # Create two postal addressess
         for i in range(2):
 
             # Create postal addres
-            addr = gem.address()
+            addr = party.address()
             addr.address1 = '742 Evergreen Terrace'
             addr.address2 = None
             addr.directions = self.dedent('''
@@ -16615,14 +16615,14 @@ class gem_contactmechanism(tester):
 			Drive to E Evergreen St
             ''')
 
-            ar = gem.address_region()
-            ar.region = gem_region.getvalid()
+            ar = party.address_region()
+            ar.region = gem_party_region.getvalid()
             addr.address_regions += ar
             
-            hm = gem.party_contactmechanism.roles.home
+            hm = party.party_contactmechanism.roles.home
 
             # Create party-to-contact-mechanism association
-            pcm                   =  gem.party_contactmechanism()
+            pcm                   =  party.party_contactmechanism()
             pcm.begin             =  primative.datetime('1993-09-01')
             pcm.end               =  None
             pcm.solicitations     =  False
@@ -16637,7 +16637,7 @@ class gem_contactmechanism(tester):
         # Save, reload and test
         per.save()
 
-        per1 = gem.person(per.id)
+        per1 = party.person(per.id)
 
         per.party_contactmechanisms.sort()
         per1.party_contactmechanisms.sort()
@@ -16655,7 +16655,7 @@ class gem_contactmechanism(tester):
             addr = per.party_contactmechanisms[i].contactmechanism
 
             # Downcast
-            addr1 = gem.address(
+            addr1 = party.address(
                 per1.party_contactmechanisms[i].contactmechanism.id
             )
 
@@ -16698,12 +16698,12 @@ class gem_contactmechanism(tester):
             ('Barry Goldstein',  'person',  '2985 Cordova Road',       'address', 'Main home address'),
         )
 
-        parts = gem.parties()
-        cms   = gem.contactmechanisms()
+        parts = party.parties()
+        cms   = party.contactmechanisms()
         for r in tbl:
             # Objectify party
             part, cls = r[0:2]
-            cls = getattr(gem, cls)
+            cls = getattr(party, cls)
 
             for part1 in parts:
                 if part == part1.name:
@@ -16711,7 +16711,7 @@ class gem_contactmechanism(tester):
                     break
             else:
                 part, name = cls(), part
-                if cls is gem.person:
+                if cls is party.person:
                     # FIXMEd7f877ef person.name does not exist yet and I
                     # was having a hard time getting it to work so I
                     # used person.first instead. NOTE that this will
@@ -16722,15 +16722,15 @@ class gem_contactmechanism(tester):
 
             # Objectify contact mechanisms
             cm, cls= r[2:4]
-            cls = getattr(gem, cls)
+            cls = getattr(party, cls)
 
             def test(cm, cm1, attr):
                 return getattr(cm1, attr) == cm
 
-            if  cls  is  gem.phone:    attr  =  'line'
-            if  cls  is  gem.email:    attr  =  'address'
-            if  cls  is  gem.address:  attr  =  'address1'
-            if  cls  is  gem.website:  attr  =  'url'
+            if  cls  is  party.phone:    attr  =  'line'
+            if  cls  is  party.email:    attr  =  'address'
+            if  cls  is  party.address:  attr  =  'address1'
+            if  cls  is  party.website:  attr  =  'url'
 
             for cm1 in cms:
                 if type(cm1) is not cls:
@@ -16741,16 +16741,16 @@ class gem_contactmechanism(tester):
                     break
             else:
                 cm = cls(**{attr: cm})
-                if cls is gem.phone:
+                if cls is party.phone:
                     cm.area = None
-                elif cls is gem.address:
+                elif cls is party.address:
                     cm.address2 = None
                 cms += cm
 
 
             # Associate party with contact mechanism
             part.party_contactmechanisms += \
-                gem.party_contactmechanism(
+                party.party_contactmechanism(
                     party = part,
                     contactmechanism = cm
                 )
@@ -16758,15 +16758,15 @@ class gem_contactmechanism(tester):
             pcm = part.party_contactmechanisms.last
 
             now = primative.datetime.utcnow
-            pcm.purposes += gem.purpose(
+            pcm.purposes += party.purpose(
                 begin       = now(days=-randint(1, 1000)),
                 end         = now(days= randint(1, 1000)),
-                purposetype = gem.purposetype(name=r[4])
+                purposetype = party.purposetype(name=r[4])
             )
 
         parts.save()
 
-        parts1 = gem.parties()
+        parts1 = party.parties()
         for part in parts:
             parts1 += part.orm.reloaded()
 
@@ -16821,17 +16821,17 @@ class gem_contactmechanism(tester):
                     except AttributeError:
                         r.newfield(part.first)
                         
-                    if gem.phone.orm.exists(pcm.contactmechanism):
-                        cm = gem.phone(pcm.contactmechanism)
+                    if party.phone.orm.exists(pcm.contactmechanism):
+                        cm = party.phone(pcm.contactmechanism)
                         r.newfield(cm.line)
-                    elif gem.address.orm.exists(pcm.contactmechanism):
-                        cm = gem.address(pcm.contactmechanism)
+                    elif party.address.orm.exists(pcm.contactmechanism):
+                        cm = party.address(pcm.contactmechanism)
                         r.newfield(cm.address1)
-                    elif gem.website.orm.exists(pcm.contactmechanism):
-                        cm = gem.website(pcm.contactmechanism)
+                    elif party.website.orm.exists(pcm.contactmechanism):
+                        cm = party.website(pcm.contactmechanism)
                         r.newfield(cm.url)
-                    elif gem.email.orm.exists(pcm.contactmechanism):
-                        cm = gem.email(pcm.contactmechanism)
+                    elif party.email.orm.exists(pcm.contactmechanism):
+                        cm = party.email(pcm.contactmechanism)
                         r.newfield(cm.address)
                     else:
                         raise TypeError()
@@ -16840,15 +16840,14 @@ class gem_contactmechanism(tester):
 
         print(tbl1)
 
-
-class gem_position(tester):
+class gem_party_position(tester):
     def __init__(self):
         super().__init__()
-        gem.position.orm.recreate(recursive=True)
+        party.position.orm.recreate(recursive=True)
 
     @staticmethod
     def getvalid():
-        pos = gem.position()
+        pos = party.position()
         pos.estimatedbegan = primative.datetime.utcnow()
 
         pos.estimatedend = pos.estimatedbegan.add(days=365)
@@ -16861,7 +16860,7 @@ class gem_position(tester):
         pos = self.getvalid()
         pos.save()
 
-        pos1 = gem.position(pos.id)
+        pos1 = party.position(pos.id)
         for map in pos.orm.mappings.fieldmappings:
             prop = map.name
             self.eq(getattr(pos, prop), getattr(pos1, prop), prop)
@@ -16870,26 +16869,26 @@ class gem_position(tester):
         pos = self.getvalid()
         pos.save()
 
-        pos1 = gem.position(pos.id)
+        pos1 = party.position(pos.id)
         pos1.estimatedbegan  =  pos1.estimatedbegan.add(days=1)
         pos1.estimatedend    =  pos1.estimatedend.add(days=1)
         pos1.begin           =  pos1.begin.add(days=1)
         pos1.end             =  pos1.end.add(days=1)
         pos1.save()
 
-        pos2 = gem.position(pos.id)
+        pos2 = party.position(pos.id)
         for map in pos.orm.mappings.fieldmappings:
             prop = map.name
             self.eq(getattr(pos1, prop), getattr(pos2, prop))
 
-class gem_job(tester):
+class gem_party_job(tester):
     def __init__(self):
         super().__init__()
-        gem.jobs.orm.recreate(recursive=True)
+        party.jobs.orm.recreate(recursive=True)
 
     @staticmethod
     def getvalid():
-        jb = gem.job()
+        jb = party.job()
         jb.description = tester.dedent('''
         As Machine Learning and Signal Processing Engineer you are going
         to lead the effort to bring signal processing algorithms into
@@ -16910,7 +16909,7 @@ class gem_job(tester):
         jb = self.getvalid()
         jb.save()
 
-        jb1 = gem.job(jb.id)
+        jb1 = party.job(jb.id)
         self.eq(jb.title, jb1.title)
         self.eq(jb.description, jb1.description)
         self.eq(jb.id, jb1.id)
@@ -16919,20 +16918,20 @@ class gem_job(tester):
         jb = self.getvalid()
         jb.save()
 
-        jb1 = gem.job(jb.id)
+        jb1 = party.job(jb.id)
         jb1.description += '. This is a fast pace work environment.'
         jb1.title = 'NEEDED FAST!!! ' + jb1.title
         jb1.save()
 
-        jb2 = gem.job(jb.id)
+        jb2 = party.job(jb.id)
         self.eq(jb1.title, jb2.title)
         self.eq(jb1.description, jb2.description)
         self.eq(jb1.id, jb2.id)
 
-class gem_address(tester):
+class gem_party_address(tester):
     @staticmethod
     def getvalid():
-        addr = gem.address()
+        addr = party.address()
         addr.address1 = '742 Evergreen Terrace'
         addr.address2 = None
         addr.directions = tester.dedent('''
@@ -16943,28 +16942,28 @@ class gem_address(tester):
         ''')
         return addr
 
-class gem_facility(tester):
+class gem_party_facility(tester):
     def __init__(self):
         super().__init__()
-        orm.orm.recreate(gem.party, gem.facility)
+        orm.orm.recreate(party.party, party.facility)
 
     def it_creates(self):
         # Building
-        miniluv = gem.facility(
+        miniluv = party.facility(
             name = 'Miniluv', 
-            type = gem.facility.Building
+            type = party.facility.Building
         )
 
         # Floor
-        miniluv.facilities += gem.facility(
+        miniluv.facilities += party.facility(
             name = '0',
-            type = gem.facility.Floor
+            type = party.facility.Floor
         )
 
         # Room
-        miniluv.facilities.last.facilities += gem.facility(
+        miniluv.facilities.last.facilities += party.facility(
             name = '101',
-            type = gem.facility.Room
+            type = party.facility.Room
         )
 
         # Footage defaults to None and we never set it above
@@ -16975,19 +16974,19 @@ class gem_facility(tester):
         miniluv1 = miniluv.orm.reloaded()
 
         fac = miniluv1
-        self.eq(gem.facility.Building, fac.type)
+        self.eq(party.facility.Building, fac.type)
         self.none(fac.footage, None)
         self.eq('Miniluv', fac.name)
         self.one(fac.facilities)
 
         fac = fac.facilities.first
-        self.eq(gem.facility.Floor, fac.type)
+        self.eq(party.facility.Floor, fac.type)
         self.none(fac.footage, None)
         self.eq('0', fac.name)
         self.one(fac.facilities)
 
         fac = fac.facilities.first
-        self.eq(gem.facility.Room, fac.type)
+        self.eq(party.facility.Room, fac.type)
         self.none(fac.footage, None)
         self.eq('101', fac.name)
         self.zero(fac.facilities)
@@ -16995,19 +16994,19 @@ class gem_facility(tester):
     def it_associates_with_parties(self):
 
         # Create a facility
-        giga = gem.facility(
+        giga = party.facility(
             name = 'Giga Navada', 
-            type = gem.facility.Factory
+            type = party.facility.Factory
         )
 
         # Create party
-        tsla = gem.company(name='Tesla')
+        tsla = party.company(name='Tesla')
 
         # Create association
-        tsla.party_facilities += gem.party_facility(
+        tsla.party_facilities += party.party_facility(
             party             =  tsla,
             facility          =  giga,
-            facilityroletype  =  gem.facilityroletype(name='owner'),
+            facilityroletype  =  party.facilityroletype(name='owner'),
         )
 
         # Save and reload
@@ -17030,33 +17029,33 @@ class gem_facility(tester):
 
     def it_associates_with_contactmechanisms(self):
         # Create a facility
-        giga = gem.facility(
+        giga = party.facility(
             name = 'Giga Shanghai', 
-            type = gem.facility.Factory,
+            type = party.facility.Factory,
             footage = 9300000,
         )
 
         # Associate a postal address with the facility
-        addr = gem.address(
+        addr = party.address(
             address1 = '浦东新区南汇新城镇同汇路168号',
             address2 = 'D203A',
         )
 
-        addr.address_regions += gem.address_region(
-            region = gem.region.create(
-                ('China',     gem.region.Country,       'CH'),
-                ('Shanghai',  gem.region.Municipality,  None),
-                ('Pudong',    gem.region.District,      None),
+        addr.address_regions += party.address_region(
+            region = party.region.create(
+                ('China',     party.region.Country,       'CH'),
+                ('Shanghai',  party.region.Municipality,  None),
+                ('Pudong',    party.region.District,      None),
             )
         )
 
-        giga.facility_contactmechanisms += gem.facility_contactmechanism(
+        giga.facility_contactmechanisms += party.facility_contactmechanism(
             contactmechanism = addr,
         )
 
         # Associate a phone number with the facility.
-        giga.facility_contactmechanisms += gem.facility_contactmechanism(
-            contactmechanism = gem.phone(area=510, line='602-3960')
+        giga.facility_contactmechanisms += party.facility_contactmechanism(
+            contactmechanism = party.phone(area=510, line='602-3960')
         )
 
         giga.save()
@@ -17075,25 +17074,28 @@ class gem_facility(tester):
             
             # Downcast
             id = fcm1.contactmechanism.id
-            cm = fcm1.contactmechanism.orm.cast(gem.phone)
+            cm = fcm1.contactmechanism.orm.cast(party.phone)
 
             if cm:
                 self.eq(fcm.contactmechanism.area, cm.area)
                 self.eq(fcm.contactmechanism.line, cm.line)
             else:
-                cm = gem.address.orm.cast(id)
-                cm = fcm1.contactmechanism.orm.cast(gem.address)
+                cm = party.address.orm.cast(id)
+                cm = fcm1.contactmechanism.orm.cast(party.address)
                 assert cm is not None
                 self.eq(fcm.contactmechanism.address1, cm.address1)
                 self.eq(fcm.contactmechanism.address2, cm.address2)
 
-class gem_communication(tester):
+class gem_party_communication(tester):
     def __init__(self):
         super().__init__()
-        gem.communications.orm.recreate(recursive=True)
-        gem.parties.orm.recreate(recursive=True)
-        gem.objectivetypes.orm.recreate(recursive=True)
-        gem.communicationstatuses.orm.recreate(recursive=True)
+        orm.orm.recreate(
+            party.communications,
+            party.parties,
+            party.objectivetypes,
+            party.communicationstatuses,
+            party.roletypes,
+        )
 
     def it_associates_party_to_communication(self):
         # This is for a simple association between party entity objects
@@ -17102,21 +17104,21 @@ class gem_communication(tester):
         # a "party relationship" (``role_role``) because it is within a
         # relationship that communications usually make sense (see
         # it_associates_relationship_to_communication).
-        will  =  gem.person(first='William',  last='Jones')
-        marc  =  gem.person(first='Marc',     last='Martinez')
-        john  =  gem.person(first='John',     last='Smith')
+        will  =  party.person(first='William',  last='Jones')
+        marc  =  party.person(first='Marc',     last='Martinez')
+        john  =  party.person(first='John',     last='Smith')
 
-        comm = gem.communication(
+        comm = party.communication(
             begin = primative.datetime('2019-03-23 13:00:00'),
             end   = primative.datetime('2019-03-23 14:00:00'),
             note  = 'A meeting between William, Marc and John',
         )
 
-        participant = gem.communicationroletype(name='participant')
+        participant = party.communicationroletype(name='participant')
         for per in (will, marc, john):
             pcs = getattr(per, 'party_communications')
 
-            pcs += gem.party_communication(
+            pcs += party.party_communication(
                 # FIXME We shouldn't have to specify party here
                 party                  =  per,
                 communication          =  comm,
@@ -17152,60 +17154,60 @@ class gem_communication(tester):
         # Create parties
         
         ## Persons
-        will  =  gem.person()
-        marc  =  gem.person()
-        john  =  gem.person()
+        will  =  party.person()
+        marc  =  party.person()
+        john  =  party.person()
 
         ## Companies
-        abc   =  gem.company(name='ABC Corporation')
-        acme  =  gem.company(name='ACME Corporation')
+        abc   =  party.company(name='ABC Corporation')
+        acme  =  party.company(name='ACME Corporation')
 
 
         # Will Jones has an Account Management role
-        will.roles += gem.role(
+        will.roles += party.role(
             begin          =  primative.datetime('2016-02-12'),
             end            =  None,
-            partyroletype  =  gem.partyroletype(name='Account Manager'),
+            partyroletype  =  party.partyroletype(name='Account Manager'),
         )
 
         # Marc Martinez hase a Customer Contact role
-        marc.roles += gem.role(
+        marc.roles += party.role(
             begin          =  primative.datetime('2014-03-23'),
             end            =  None,
-            partyroletype  =  gem.partyroletype(name='Customer Contact'),
+            partyroletype  =  party.partyroletype(name='Customer Contact'),
         )
 
         # As an account manager, Will Jones is associated with Marc
         # Martinez's role as Customer Contact.
-        will.roles.first.role_roles += gem.role_role(
+        will.roles.first.role_roles += party.role_role(
             begin   =  primative.datetime('2017-11-12'),
             subject =  will.roles.last, # FIXME We shouldn't have to do this
             object  =  marc.roles.last,
         )
 
         # Create objectivetypes
-        isc = gem.objectivetype(name='Initial sales call')
-        ipd = gem.objectivetype(name='Initial product demonstration')
-        dop = gem.objectivetype(name='Demo of product')
-        sc  = gem.objectivetype(name='Sales close')
-        god = gem.objectivetype(name='Gather order details')
-        cs  = gem.objectivetype(name='Customer service')
-        fu  = gem.objectivetype(name='Follow-up')
-        css = gem.objectivetype(name='Customer satisfacton survey')
+        isc = party.objectivetype(name='Initial sales call')
+        ipd = party.objectivetype(name='Initial product demonstration')
+        dop = party.objectivetype(name='Demo of product')
+        sc  = party.objectivetype(name='Sales close')
+        god = party.objectivetype(name='Gather order details')
+        cs  = party.objectivetype(name='Customer service')
+        fu  = party.objectivetype(name='Follow-up')
+        css = party.objectivetype(name='Customer satisfacton survey')
 
         # The role_role association between Will Jones and Marc Martinez
         # has four ``communication`` events.
         comms = will.roles.first.role_roles.last.communications
 
-        comms += gem.inperson(
+        comms += party.inperson(
             begin = primative.datetime('Jan 12, 2001, 3PM'),
 
             # FIXME This assignment fails. The ``objective`` object
             # retain an fk of <undef>. It should point to the
             # `communication`'s ID
             # objectives += \
-            #             gem.objective(name='Initial sales call') + \
-            #             gem.objective(
+            #             party.objective(name='Initial sales call') + \
+            #             party.objective(
             #                 name='Initial product demontration'
             #             )
 
@@ -17221,7 +17223,7 @@ class gem_communication(tester):
         # subclasses, i.e., :
         #
         #     try:
-        #          gem.communication().communicationstatus
+        #          party.communication().communicationstatus
         #     except Exception:
         #         assert False
         #     else:
@@ -17231,7 +17233,7 @@ class gem_communication(tester):
         # ``communication`` (``inperson``), we get an AttributeError.
         #
         #     try:
-        #          gem.inperson().communicationstatus
+        #          party.inperson().communicationstatus
         #     except AttributeError:
         #         assert True
         #     else:
@@ -17241,55 +17243,55 @@ class gem_communication(tester):
         # by developers using the ORM.
 
         comms.last.communicationstatus = \
-                gem.communicationstatus(name='Completed')
+                party.communicationstatus(name='Completed')
 
-        comms.last.objectives += gem.objective(
+        comms.last.objectives += party.objective(
             objectivetype = isc
         )
 
-        comms.last.objectives += gem.objective(
+        comms.last.objectives += party.objective(
             objectivetype = ipd
         )
 
-        comms += gem.webinar(
+        comms += party.webinar(
             begin = primative.datetime('Jan 30, 2001, 2PM'),
             communicationstatus = \
-                gem.communicationstatus(name='Completed'),
+                party.communicationstatus(name='Completed'),
         )
 
-        comms.last.objectives += gem.objective(
+        comms.last.objectives += party.objective(
             objectivetype = dop
         )
 
-        comms += gem.inperson(
+        comms += party.inperson(
             begin = primative.datetime('Feb 12, 2002, 10PM'),
             communicationstatus = \
-                gem.communicationstatus(name='Completed'),
+                party.communicationstatus(name='Completed'),
         )
 
-        comms.last.objectives += gem.objective(
+        comms.last.objectives += party.objective(
             objectivetype = sc
         )
 
-        comms.last.objectives += gem.objective(
+        comms.last.objectives += party.objective(
             objectivetype = god
         )
 
-        comms += gem.phonecall(
+        comms += party.phonecall(
             begin = primative.datetime('Feb 12, 2002, 1PM'),
             communicationstatus = \
-                gem.communicationstatus(name='Scheduled'),
+                party.communicationstatus(name='Scheduled'),
         )
 
-        comms.last.objectives += gem.objective(
+        comms.last.objectives += party.objective(
             objectivetype = cs
         )
 
-        comms.last.objectives += gem.objective(
+        comms.last.objectives += party.objective(
             objectivetype = fu
         )
 
-        comms.last.objectives += gem.objective(
+        comms.last.objectives += party.objective(
             objectivetype = css
         )
 
@@ -17333,7 +17335,7 @@ class gem_communication(tester):
 
             # FIXME comm1 is a ``communication``
             #
-            #     assert type(comm1) is gem.communication
+            #     assert type(comm1) is party.communication
             #
             # However, it has no `objectives` attributes. If I downcast
             # it, (see the lines immediaetly below) I am able to see the
@@ -17343,13 +17345,13 @@ class gem_communication(tester):
             # the downcast logic when this is fixed. (Also, comm1 should
             # be loaded as it's most downcasted version, but that is a
             # seperate issue.)
-            cast = gem.inperson.orm.cast(comm1)
+            cast = party.inperson.orm.cast(comm1)
 
             if not cast:
-                cast = gem.webinar.orm.cast(comm1)
+                cast = party.webinar.orm.cast(comm1)
 
             if not cast:
-                cast = gem.phonecall.orm.cast(comm1)
+                cast = party.phonecall.orm.cast(comm1)
 
             assert cast is not None
 
@@ -17367,32 +17369,32 @@ class gem_communication(tester):
                 self.eq(obj.objectivetype.id, obj1.objectivetype.id)
                 self.eq(obj.objectivetype.name, obj1.objectivetype.name)
 
-class gem_region(tester):
+class gem_party_region(tester):
     def __init__(self):
         super().__init__()
         orm.orm.recreate(
-            gem.party,
-            gem.address,
-            gem.region,
+            party.party,
+            party.address,
+            party.region,
         )
 
     @staticmethod
     def getvalid():
-        return gem.region.create(
-            ('United States of America',  gem.region.Country,    'USA'),
-            ('Arizona',                   gem.region.State,      'AZ'),
-            ('Scottsdale',                gem.region.City),
-            ('85281',                     gem.region.Postal)
+        return party.region.create(
+            ('United States of America',  party.region.Country,    'USA'),
+            ('Arizona',                   party.region.State,      'AZ'),
+            ('Scottsdale',                party.region.City),
+            ('85281',                     party.region.Postal)
         )
 
     def it_creates(self):
-        gem.region.orm.recreate()
+        party.region.orm.recreate()
 
-        reg = gem.region.create(
-            ('United States of America',  gem.region.Country,    'USA'),
-            ('Arizona',                   gem.region.State,      'AZ'),
-            ('Scottsdale',                gem.region.City),
-            ('85224',                     gem.region.Postal)
+        reg = party.region.create(
+            ('United States of America',  party.region.Country,    'USA'),
+            ('Arizona',                   party.region.State,      'AZ'),
+            ('Scottsdale',                party.region.City),
+            ('85224',                     party.region.Postal)
         )
 
         self.eq('85224', reg.name)
@@ -17411,20 +17413,20 @@ class gem_region(tester):
         self.one(reg.regions)
         self.none(reg.region)
 
-        reg = gem.region.create(
-            ('United States of America',  gem.region.Country,    'USA'),
-            ('Arizona',                   gem.region.State,      'AZ'),
-            ('Scottsdale',                gem.region.City),
-            ('85254',                     gem.region.Postal)
+        reg = party.region.create(
+            ('United States of America',  party.region.Country,    'USA'),
+            ('Arizona',                   party.region.State,      'AZ'),
+            ('Scottsdale',                party.region.City),
+            ('85254',                     party.region.Postal)
         )
 
     def it_associates_address_with_region(self):
         # Create address and region
-        addr = gem_address.getvalid()
+        addr = gem_party_address.getvalid()
         reg = self.getvalid()
 
         # Create association
-        ar = gem.address_region()
+        ar = party.address_region()
         ar.region = reg
 
         # Associate
@@ -17434,7 +17436,7 @@ class gem_region(tester):
         addr.save()
 
         # Reload
-        addr1 = gem.address(addr.id)
+        addr1 = party.address(addr.id)
 
         # Test
         self.one(addr1.address_regions)
@@ -17446,12 +17448,14 @@ class gem_region(tester):
 class gem_product_product(tester):
     def __init__(self):
         super().__init__()
-        product.products.orm.recreate(recursive=True)
-        product.categories.orm.recreate(recursive=True)
-        product.measure.orm.recreate(recursive=True)
-        gem.facility.orm.recreate(recursive=True)
-        gem.priorities.orm.recreate(recursive=True)
-    
+        orm.orm.recreate(
+            product.products,
+            product.categories,
+            product.measure,
+            party.facility,
+            party.priorities,
+        )
+
     @staticmethod
     def getvalid(type=None, comment=1000):
         if type is None:
@@ -17829,27 +17833,27 @@ class gem_product_product(tester):
             name = "6' by 6' warehouse pallets"
         )
 
-        abc = gem_company.getvalid(
+        abc = gem_party_company.getvalid(
             name = 'ABC Corporation'
         )
 
-        joes = gem_company.getvalid(
+        joes = gem_party_company.getvalid(
             name = "Joe's Stationery"
         )
 
-        mikes = gem_company.getvalid(
+        mikes = gem_party_company.getvalid(
             name = "Mike's Office Supply"
         )
 
-        greggs = gem_company.getvalid(
+        greggs = gem_party_company.getvalid(
             name = "Gregg's Pallet Shop"
         )
 
-        palletinc = gem_company.getvalid(
+        palletinc = gem_party_company.getvalid(
             name = 'Pallets Incorporated'
         )
 
-        warehousecomp = gem_company.getvalid(
+        warehousecomp = gem_party_company.getvalid(
             name = 'The Warehouse Company'
         )
 
@@ -17955,10 +17959,10 @@ class gem_product_product(tester):
         self.false(hasattr(serv, 'guidelines'))
 
         good = gem_product_product.getvalid(product.good, comment=1)
-        reg = gem_region.getvalid()
-        fac = gem.facility(name='Area 51', footage=100000)
+        reg = gem_party_region.getvalid()
+        fac = party.facility(name='Area 51', footage=100000)
         fac.save()
-        org = gem_company.getvalid()
+        org = gem_party_company.getvalid()
 
         cnt = 2
         for i in range(cnt):
@@ -18075,14 +18079,14 @@ class gem_product_item(tester):
         return
 
         # Create two warehouses to store the good
-        abccorp = gem.facility(
+        abccorp = party.facility(
             name = 'ABC Corporation',
-            type = gem.facility.Warehouse
+            type = party.facility.Warehouse
         )
         
-        abcsub = gem.facility(
+        abcsub = party.facility(
             name = 'ABC Subsidiary',
-            type = gem.facility.Warehouse
+            type = party.facility.Warehouse
         )
 
         # Create the four containers along with individual container
@@ -18630,7 +18634,7 @@ class gem_product_category_types(tester):
         product.products.orm.recreate(recursive=True)
 
     def it_creates(self):
-        sm = gem.type(description='Small organizations')
+        sm = party.type(description='Small organizations')
 
         # Small organizations have an interest in Wordpress services
         sm.category_types += product.category_type(
@@ -18648,7 +18652,7 @@ class gem_product_category_types(tester):
 
         sm.save()
 
-        sm1 = gem.type(sm.id)
+        sm1 = party.type(sm.id)
 
         self.two(sm1.category_types)
         self.two(sm1.categories)
@@ -18866,11 +18870,11 @@ class gem_product_pricing(tester):
 
     def it_creates_prices(self):
         # Create organizations
-        abc = gem_company.getvalid(
+        abc = gem_party_company.getvalid(
             name = 'ABC Corporation'
         )
 
-        joes = gem_company.getvalid(
+        joes = gem_party_company.getvalid(
             name = "Joe's Stationary"
         )
 
@@ -18880,7 +18884,7 @@ class gem_product_pricing(tester):
         )
 
         # Create government party type
-        gov = gem.type(
+        gov = party.type(
             description = 'Government'
         )
 
@@ -18900,26 +18904,26 @@ class gem_product_pricing(tester):
         cat_paper.category_classifications += cc
 
         # Create geographic regions
-        east = gem.region(
+        east = party.region(
             name = 'Eastern region',
             type = None
         )
 
-        west = gem.region(
+        west = party.region(
             name = 'Western region',
             type = None,
         )
 
-        hi = gem.region(
+        hi = party.region(
             name = 'Hawaii',
-            type = gem.region.State,
+            type = party.region.State,
             abbreviation = 'HI',
             region = west,
         )
 
-        al = gem.region(
+        al = party.region(
             name = 'Alabama',
-            type = gem.region.State,
+            type = party.region.State,
             abbreviation = 'AL',
             region = east,
         )
@@ -19121,16 +19125,16 @@ class gem_product_estimate(tester):
         good = product.good(name='Johnson fine grade 8½ by 11 paper')
 
         # Create regions
-        ny = gem.region(
+        ny = party.region(
             name          =  'New York',
             abbreviation  =  'N.Y.',
-            type          =  gem.region.State,
+            type          =  party.region.State,
         )
 
-        id = gem.region(
+        id = party.region(
             name          =  'Idaho',
             abbreviation  =  'I.D.',
-            type          =  gem.region.State,
+            type          =  party.region.State,
         )
 
         # Create estimatetypes
@@ -19297,32 +19301,32 @@ class gem_case(tester):
     def __init__(self):
         super().__init__()
         orm.orm.recreate(
-            gem.communications,
-            gem.parties,
-            gem.case_party,
-            gem.casestatuses,
-            gem.statuses,
+            party.communications,
+            party.parties,
+            party.case_party,
+            party.casestatuses,
+            party.statuses,
         )
 
     def it_raises_on_invalid_call_of_casesstatus(self):
-        self.expect(ValueError, lambda: gem.casestatus('Active'))
-        self.expect(None, lambda: gem.casestatus(name='Active'))
+        self.expect(ValueError, lambda: party.casestatus('Active'))
+        self.expect(None, lambda: party.casestatus(name='Active'))
 
     def it_associates_case_to_party(self):
         # NOTE Names don't work if party.roles exist. This is due to
         # 297f8176. If `party.roles` needs to be restored, remove the
         # kwargs.
-        jerry = gem.person(first="Jerry", last="Red")
+        jerry = party.person(first="Jerry", last="Red")
 
         # Create case
-        cs = gem.case(
+        cs = party.case(
             description = 'Techinal support issue with customer: '
                           'software keeps crashing',
-            casestatus = gem.casestatus(name='Active')
+            casestatus = party.casestatus(name='Active')
         )
 
         # Associate case with party
-        jerry.case_parties += gem.case_party(
+        jerry.case_parties += party.case_party(
             party = jerry, # FIXME This shouldn't be needed
             case = cs,
         )
@@ -19331,7 +19335,7 @@ class gem_case(tester):
         # because there is no caseroletype composite map in case_party.
         # We can save or test caseroletype at the moment.
         #
-        # jerry.case_parties.last.caseroletype = gem.caseroletype(
+        # jerry.case_parties.last.caseroletype = party.caseroletype(
         #    name = 'Resolution lead'
         #)
 
@@ -19363,76 +19367,76 @@ class gem_case(tester):
 
     def it_appends_communications(self):
         # Create work effort
-        eff = gem.effort(
+        eff = party.effort(
             name = 'Software patch',
             description = 'Send software patch out to customer '
                           'to correct problem'
         )
 
         # Create case
-        cs = gem.case(
+        cs = party.case(
             description = 'Techinal support issue with customer: '
                           'software keeps crashing',
-            casestatus = gem.casestatus(name='Active')
+            casestatus = party.casestatus(name='Active')
         )
 
         # Add `commuication` events to `case` along with communication
         # objectives, work effort associations, etc.
-        cs.communications += gem.communication(
+        cs.communications += party.communication(
             begin = primative.datetime('Sept 18 2001, 3PM'),
         )
 
         comm = cs.communications.last
         comm.objectives += \
-            gem.objective(
+            party.objective(
                 objectivetype = \
-                    gem.objectivetype(
+                    party.objectivetype(
                         name='Technical support call'
                     )
             ) \
-            + gem.objective(
+            + party.objective(
                 objectivetype = \
-                    gem.objectivetype(
+                    party.objectivetype(
                         name='Technical support call'
                     )
             )
 
-        comm.communication_efforts += gem.communication_effort(
+        comm.communication_efforts += party.communication_effort(
             effort = eff
         )
 
-        cs.communications += gem.communication(
+        cs.communications += party.communication(
             begin = primative.datetime('Sept 20 2001, 2PM'),
         )
         comm = cs.communications.last
 
         comm.objectives += \
-            gem.objective(
+            party.objective(
                 objectivetype = \
-                    gem.objectivetype(
+                    party.objectivetype(
                         name='Send software patch'
                     )
             )
 
-        comm.communication_efforts += gem.communication_effort(
+        comm.communication_efforts += party.communication_effort(
             effort = eff
         )
 
-        cs.communications += gem.communication(
+        cs.communications += party.communication(
             begin = primative.datetime('Sept 19 2001, 3PM'),
         )
         comm = cs.communications.last
 
         comm.objectives += \
-            gem.objective(
+            party.objective(
                 objectivetype = \
-                    gem.objectivetype(
+                    party.objectivetype(
                         name='Techinal support follow-up'
                     )
             ) \
-            + gem.objective(
+            + party.objective(
                 objectivetype = \
-                    gem.objectivetype(
+                    party.objectivetype(
                         name='Call resolution'
                     )
             )
