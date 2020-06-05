@@ -6468,7 +6468,6 @@ class test_orm(tester):
             self.expect(db.RecordNotFoundError, lambda: presentation(pres.id))
 
     def it_calls_entities(self):
-        
         # Creating a single orm.entity with no collection should produce an
         # AttributeError
         def fn():
@@ -18364,8 +18363,6 @@ class gem_product_item(tester):
         self.one(reasons.first.variances)
 
         self.eq(vars.first.id, reasons.first.variances.first.id)
-
-
 
 class gem_product_categories(tester):
     def __init__(self):
