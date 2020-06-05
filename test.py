@@ -3844,6 +3844,15 @@ class test_orm(tester):
     def it_computes_abbreviation(self):
         es = orm.orm.getentitys() + orm.orm.getassociations()
 
+        # Create the tables if they don't already exist. This is needed
+        # because in the list comprehension that that instatiates `e`,
+        # we will eventually get to an entity's constructor that uses
+        # the orm.ensure method. This method queries the table. We
+        # create all the tables so that there is no MySQL exception when
+        # orm.ensure tries to query it.
+        for e in es:
+            e.orm.create(ignore=True)
+
         abbrs = [e.orm.abbreviation for e in es]
         abbrs1 = [e().orm.abbreviation for e in es]
         self.unique(abbrs)
