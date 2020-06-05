@@ -318,7 +318,7 @@ class product(orm.entity):
     # manufacturer.
     unsupportedat = datetime
 
-    comment = str, 1, 65535 # TODO Make text type
+    comment = text
 
     ''' Various type of identifiers'''
 
@@ -1178,7 +1178,7 @@ class variance(orm.entity):
     # inventory items due to theft, this field can record the date the
     # theft was discovered, the amount of the product that was stolen,
     # and the specific details behind the theft. 
-    comment = str, 1, 65535 # TODO Make text type
+    comment = text
 
 class reason(orm.entity):
     """ The ``reason`` entity provides standard explanations of the
@@ -1238,7 +1238,7 @@ class price(orm.entity):
 
     # Allows each price component to be annotated, for example, "special
     # discount provided to increase sales".
-    comment = str, 1, 65535 # TODO Make text type
+    comment = text
 
     # Each `price` can be based on many variables or combinations of
     # thes varibables. These variables include a geographic `region`,
@@ -1538,18 +1538,18 @@ class product_product(orm.association):
     # by the `object`.
     superceededat = datetime
 
-    reason = str, 1, 65535 # TODO Make text type
+    reason = text
 
     # When the `type` is Component, the `instruction` attribute explains
     # how to assemble the products.
-    instruction = str, 1, 65535 # TODO Make text type
+    instruction = text
 
     # Used when the `type` attribute is set to Substitute. The `comment`
     # attribute provides additional information regarding the
     # substitution of a product; for example, "try not to substitute
     # with this product if it can be avoided as the product is of a
     # lower quality than the standard product".
-    comment = str, 1, 65535 # TODO Make text type
+    comment = text
 
     # When `type` is Component, the `quantity` attribute indicates how
     # many of a certain product are used in the assembly of another

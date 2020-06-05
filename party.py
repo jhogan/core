@@ -29,6 +29,7 @@
 #   https://www.hr360.com/Resource-Center/HR-Terms.aspx
 
 import orm
+from orm import text, datespan
 import primative
 from datetime import datetime
 from dbg import B
@@ -441,7 +442,7 @@ class person(party):
     social = str
 
     # A comment on the person.
-    comment = str, 1, 65535 # TODO Make text type
+    comment = text
 
     # A collection of names associate with this person.
     names = names
@@ -935,7 +936,7 @@ class communication(orm.entity):
     end   = datetime
 
     # Notes about the communication event
-    note  = str, 1, 65535 # TODO Make text type
+    note  = text
 
 class party_contactmechanism(orm.association):
     """ This class associates a party with a contact mechanism. It shows
@@ -1216,7 +1217,7 @@ class role_role_type(orm.entity):
     # "customer relationship", the `description` might be "where the
     # customer has purchased or used purchasing products fro an internal
     # organization".
-    description = str, 1, 65535 # TODO Make text type
+    description = text
 
 class status(orm.entity):
     """ Throughout the GEM, there are many statuses for many
@@ -1643,7 +1644,7 @@ class communication(orm.entity):
     # "initial sales call went well and customer seemed interested in
     # moving forward quickly with a demonstration of the Thingamajig
     # product."
-    note = str, 1, 65535 # TODO Make text type
+    note = text
 
     objectives = objectives
 
@@ -1738,7 +1739,7 @@ class effort(orm.entity):
     # may create a circular dependency issue with the gem/party module
     # that will need to be resolved.
     name = str
-    description = str, 1, 65535 # TODO Make text type
+    description = text
 
     # Scheduled start date
     begin = datetime
@@ -1763,10 +1764,10 @@ class case(orm.entity):
     # NOTE ``case`` and its subsideries may need to be moved into
     # the work effor module. Although, maybe not if it is mearly a
     # collection of ``communication`` events -- ``communication`` events
-    # happy to be in the gem/party module.
+    # happy to be in the party module.
     
     # The description of the case
-    description = str, 1, 65535 # TODO Make text type
+    description = text
 
     # The start datetime of the case
     # TODO Write a test to ensure that this remains a datetime and
@@ -1854,7 +1855,7 @@ class communication_effort(orm.association):
             self.description = None
 
     # A note or description for the association 
-    description = str, 1, 65535 # TODO Make text type
+    description = text
 
     # The effort being associated to the ``communication`` event
     effort = effort
