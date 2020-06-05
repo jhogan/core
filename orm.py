@@ -19,7 +19,7 @@ from contextlib import suppress
 from datetime import datetime, date
 from dbg import B
 from enum import Enum, unique
-from MySQLdb.constants.ER import BAD_TABLE_ERROR
+from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
 from pprint import pprint
 from shlex import shlex
 from table import table
@@ -35,6 +35,7 @@ import gc
 import inspect
 import itertools
 import MySQLdb
+import _mysql_exceptions
 import os
 import primative
 import re
@@ -4879,16 +4880,21 @@ class orm:
             with pool.take() as conn:
                 conn.query(sql)
     
-    def create(self, cur=None):
+    def create(self, cur=None, ignore=False):
         # TODO Use executioner
         sql = self.createtable
 
-        if cur:
-            cur.execute(sql)
-        else:
-            pool = db.pool.getdefault()
-            with pool.take() as conn:
-                conn.query(sql)
+        try:
+            if cur:
+                cur.execute(sql)
+            else:
+                pool = db.pool.getdefault()
+                with pool.take() as conn:
+                    conn.query(sql)
+        except _mysql_exceptions.OperationalError as ex:
+            if ex.args[0] == TABLE_EXISTS_ERROR:
+                if not ignore:
+                    raise
 
     @property
     def createtable(self):
