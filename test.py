@@ -7749,7 +7749,7 @@ class test_orm(tester):
 
     def it_calls_timespan_attr_on_association(self):
         # NOTE artist_artifact hase a timespan str already. Here we are
-        # testing the `span` proprety which is an orm.timespan and its
+        # testing the `span` property which is an orm.timespan and its
         # corresponding `begin` and `end' maps.
         maps = artist_artifacts.orm.mappings
         self.true('begin' in maps)
@@ -15365,6 +15365,10 @@ class gem_party_person(tester):
             party.nametypes,
             party.characteristictypes,
             party.gendertypes,
+            party.position,
+            party.marital,
+            party.name,
+            party.citizenships,
         )
 
     @staticmethod
@@ -15818,9 +15822,13 @@ class party_party_role(tester):
 class gem_party_role_role(tester):
     def __init__(self):
         super().__init__()
-        party.party.orm.recreate(recursive=True)
-        party.roletypes.orm.recreate(recursive=True)
-        party.status.orm.recreate(recursive=True)
+        orm.orm.recreate(
+            party.party,
+            party.roletypes,
+            party.status,
+            party.communications,
+            
+        )
 
     def it_creates(self):
         # TODO Remove the below `return` when 297f8176 is fixed.
@@ -15965,8 +15973,11 @@ class gem_party_role_role(tester):
 class gem_party_company(tester):
     def __init__(self):
         super().__init__()
-        party.party.orm.recreate(recursive=True)
-        party.address.orm.recreate()
+        orm.orm.recreate(
+            party.party,
+            party.address,
+            party.party_contactmechanism,
+        )
 
     @staticmethod
     def getvalid(**kwargs):
@@ -16025,7 +16036,7 @@ class gem_party_company(tester):
         pp = party.party_party()
         pp.object = per
         pp.role = 'employ'
-        pp.begin = datetime.now()
+        pp.begin = date.today()
 
         com.party_parties += pp
 
@@ -16364,7 +16375,7 @@ class gem_party_company(tester):
         for per in pers:
             ful = party.position_fulfillment(
                 person = per,
-                begin  = datetime.now(),
+                begin  = date.today(),
                 end    = None,
             )
 
@@ -16856,11 +16867,11 @@ class gem_party_position(tester):
     @staticmethod
     def getvalid():
         pos = party.position()
-        pos.estimatedbegan = primative.datetime.utcnow()
+        pos.estimated.begin = primative.datetime.utcnow()
 
-        pos.estimatedend = pos.estimatedbegan.add(days=365)
+        pos.estimated.end = pos.estimated.begin.add(days=365)
 
-        pos.begin = primative.datetime.utcnow()
+        pos.begin = primative.date.today()
         pos.end = pos.begin.add(days=365)
         return pos
 
@@ -16878,10 +16889,10 @@ class gem_party_position(tester):
         pos.save()
 
         pos1 = party.position(pos.id)
-        pos1.estimatedbegan  =  pos1.estimatedbegan.add(days=1)
-        pos1.estimatedend    =  pos1.estimatedend.add(days=1)
-        pos1.begin           =  pos1.begin.add(days=1)
-        pos1.end             =  pos1.end.add(days=1)
+        pos1.estimated.begin  =  pos1.estimated.begin.add(days=1)
+        pos1.estimated.end    =  pos1.estimated.end.add(days=1)
+        pos1.begin            =  pos1.begin.add(days=1)
+        pos1.end              =  pos1.end.add(days=1)
         pos1.save()
 
         pos2 = party.position(pos.id)

@@ -9,8 +9,6 @@
 # TODO Checkout http://wiki.goodrelations-vocabulary.org/Quickstart for
 # an standard for ecommerce markup when marking up parties, places, etc.
 
-# TODO Change the begin and end attributes to span objects
-
 # References:
 #   
 #   HR Glossary
@@ -20,7 +18,7 @@
 #   https://www.hr360.com/Resource-Center/HR-Terms.aspx
 
 import orm
-from orm import text, datespan
+from orm import text, datespan, timespan
 import primative
 from datetime import datetime
 from dbg import B
@@ -203,17 +201,12 @@ class position(orm.entity):
     """ A position is a job slot in an enterprise. 
     """
 
-    # The datetime an organization expects the job to begin
-    estimatedbegan = datetime
+    # The datespan an organization expects the job to begin and end
+    estimated = datespan(prefix='estimated')
 
-    # The datetime an organization expects the job to end
-    estimatedend = datetime
-
-    # The actual datetime the position slot is filled by an employee
-    begin = datetime
-
-    # The actual datetime the position slot is terminated
-    end = datetime
+    # The actual datespan the position slot is filled, as opposed to the
+    # `estimated` datespan.
+    filled = datespan
 
     salary = bool
 
@@ -283,9 +276,8 @@ class marital(orm.entity):
     Seperated  =  3
     Widowed    =  4
 
-    # A timespan for when the marital status is valid.
-    begin = datetime
-    end   = datetime
+    # A datespan for when the marital status is valid.
+    vaild = datespan
 
     # The type of marital status. See constants above.
     type = int
@@ -298,9 +290,8 @@ class name(orm.entity):
     Modeling Resource Book".
     """
 
-    # The timespan during which the person's name is vaild
-    begin = datetime
-    end   = datetime
+    # The datespan during which the person's name is vaild
+    valid = datespan
 
     # A portion (first, middle, last) of the person's name. Which
     # portion of the name will be determined by the nametype composite.
@@ -326,9 +317,8 @@ class gender(orm.entity):
     chosen.
     """
 
-    # The span of time this gende was assigend to a person
-    begin = datetime
-    end   = datetime
+    # The span of time this gender was assigend to a person
+    assigned = datespan
 
 class gendertype(orm.entity):
     def __init__(self, *args, **kwargs):
@@ -342,19 +332,19 @@ class gendertype(orm.entity):
     genders = genders
 
 class characteristic(orm.entity):
-    """ Provides a means to store the histroy of a person's physical
-    charcteristics such as height and weight. This history is also usefu
-    i the health-related fields. The details of each characteristic are
-    stored in the ``characteristictype`` composite which could have
-    `name`s such as "height", "weight", "blood preasure" and so on.
+    """ Provides a means to store the history of a person's physical
+    charcteristics such as height and weight. This history is also
+    useful in the health-related fields. The details of each
+    characteristic are stored in the ``characteristictype`` composite
+    which could have `name`s such as "height", "weight", "blood
+    preasure" and so on.
 
-    Note that this entity is based on the PHYSICAL CHARACTERISTIC entity in
-    "The Data Model Resource Book".
+    Note that this entity is based on the PHYSICAL CHARACTERISTIC entity
+    in "The Data Model Resource Book".
     """
 
-    # I timespan indicating when the characteristic is valid
-    begin = datetime
-    end   = datetime
+    # A timespan indicating when the characteristic is valid
+    valid = timespan
 
     # Maintains the characteristic's measurement such as a height of
     # 6'1.
@@ -602,8 +592,9 @@ class position_fulfillment(orm.association):
 
     person    =  person
     position  =  position
-    begin     =  datetime
-    end       =  datetime
+
+    # The timespan of the occumation
+    span = datespan
 
 class region(orm.entity):
     """ This class represents geographical regions such as a postal code,
@@ -837,9 +828,8 @@ class citizenship(orm.entity):
     """ Indicates citizenship to a particular country. 
     """
 
-    # The timespan for when this citizenship is valid
-    begin = datetime
-    end   = datetime
+    # The datespan for when this citizenship is valid
+    vaild = datespan
 
     # TODO Add validaton logic to ensure the region is a country.
     # The country the citizenship is for. Note this is a region which
@@ -923,8 +913,7 @@ class communication(orm.entity):
     # day a communication should happen.
 
     # The timespan that the communication event took place
-    begin = datetime
-    end   = datetime
+    span = timespan
 
     # Notes about the communication event
     note  = text
@@ -950,8 +939,7 @@ class party_contactmechanism(orm.association):
 
     # The date range through which this contactmechanism applied to the
     # given ``party``.
-    begin  =  datetime
-    end    =  datetime
+    span = datespan
 
     # If True, indicates that the mechanism may be called for
     # solicitation purposes. If False, the mechanism may not be called
@@ -1007,8 +995,7 @@ class purpose(orm.entity):
     Note that this is modeled after the PARTY CONTACT MECHANISM PURPOSE
     entity in "The Data Modeling Resource Book".
     """
-    begin = datetime
-    end   = datetime
+    span = datespan
 
 class purposetype(orm.entity):
     """ ``purposetype`` has a one-to-many relationship with ``purpose``.
@@ -1110,16 +1097,15 @@ class party_address(orm.association):
     entities  =  party_addresses
     party     =  party
     address   =  address
-    begin     =  datetime
-    end       =  datetime
+    span      =  datespan
 
 class party_party(orm.association):
     entities = party_parties
     subject  =  party
     object   =  party
     role     =  str
-    begin    =  datetime
-    end      =  datetime
+
+    span = datespan
 
     @classmethod
     def sibling(cls, per):
@@ -1187,11 +1173,10 @@ class role(orm.entity):
         name = builtins.type(self).__name__
         self.partyroletype = partyroletype(name=name)
 
-    # The timespan through which this role is valid. This timespan may
-    # be optional because many of the time frames for the rolse will be
+    # The datespan through which this role is valid. This timespan may
+    # be optional because many of the timeframes for the roles will be
     # dependent on (and can be derived from) the (party) relationship. 
-    begin = datetime
-    end   = datetime
+    span = datespan
 
 class role_role_type(orm.entity):
     """ Describe the type of relationship a role_role association
@@ -1297,8 +1282,7 @@ class role_role(orm.association):
 
     # A timespan to indicate when the relationship between roles are
     # valid.
-    begin = datetime
-    end   = datetime
+    vaild = datespan
 
     # The subjective role. 
     subject = role
@@ -1437,8 +1421,7 @@ class party_type(orm.association):
     # `begin` and `end` are used to track the history of the
     # classifaction over time. For example, a business may "graduate"
     # from 8A (minority startup) program.
-    begin  =  datetime
-    end    =  datetime
+    span = datespan
 
     # A reference to the party
     party  =  party
@@ -1625,11 +1608,7 @@ class communication(orm.entity):
             self.note = None
 
     # A timespan to indicate the duration of the communication. 
-    
-    # NOTE, when the *span classes are introduced, this should be a
-    # timespan, not a datespan.
-    begin = datetime
-    end   = datetime
+    duration = timespan
 
     # The `note` describes the contact. An example a note may be
     # "initial sales call went well and customer seemed interested in
@@ -1732,11 +1711,8 @@ class effort(orm.entity):
     name = str
     description = text
 
-    # Scheduled start date
-    begin = datetime
-
-    # Scheduled end date
-    end = datetime
+    # Scheduled begin and end date
+    scheduled = datespan
 
     # Total dollars allowed
     dollars = int
