@@ -281,23 +281,21 @@ class span:
     def prefix(self):
         return self._prefix
 
-    def __getattr__(self, attr):
-        if attr in ('begin', 'end'):
-            try:
-                if attr == 'begin':
-                    attr = self.str_begin
-                elif attr == 'end':
-                    attr = self.str_end
+    @property
+    def begin(self):
+        return getattr(self.entity, self.str_begin)
 
-                return getattr(self.entity, attr)
-            except Exception as ex:
-                raise AttributeError(
-                    "type object '%s' has no attribute '%s'. "  
-                    "Original message: %s"
-                        % (type(self).__name__, attr, ex)
-                )
+    @begin.setter
+    def begin(self, v):
+        setattr(self.entity, self.str_begin, v)
 
-        return object.__getattribute__(self, attr)
+    @property
+    def end(self):
+        return getattr(self.entity, self.str_end)
+
+    @end.setter
+    def end(self, v):
+        setattr(self.entity, self.str_end, v)
 
     def __contains__(self, dt):
         if type(self) is timespan:
