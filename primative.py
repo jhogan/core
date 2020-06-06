@@ -100,3 +100,10 @@ class date(stddatetime.date):
 
         dt = stddatetime.date.__new__(cls, *args, **kwargs)
         return dt
+
+    def add(self, **kwargs):
+        return self + stddatetime.timedelta(**kwargs)
+
+    def __add__(self, dt):
+        dt = super().__add__(dt)
+        return date(dt)
