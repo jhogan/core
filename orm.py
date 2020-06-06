@@ -1805,6 +1805,31 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             e.orm.isdirty = True
 
     def append(self, obj, uniq=False, r=None):
+        """ Append the `orm.entity` `obj` to this entities collection.
+        This is analogous to a Python lists `append` method. Typically,
+        the += operator is used to achieve the append:
+
+            myents = myentities()
+            assert myents.count == 0
+            myents.append(myentitiy())
+
+            # Note that the above is cononically written as:
+            # myents += myentitiy()
+
+            assert myents.count == 1
+
+        :param: orm.entity obj: The entity being appended. If obj is an
+        orm.entities collection, each entity in that collection will be
+        appended one-at-a-time.
+
+        :param: bool uniq: Do not append is `obj` is already in the
+        collection.
+
+        :param: orm.entities r: The collection of entities that were
+        successfully appended.
+        """
+
+        # TODO Rename `obj` to `e` in this method and the base method.
         if r is None:
             r = self.orm.entities()
 
