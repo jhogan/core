@@ -19227,7 +19227,7 @@ class gem_product_estimate(tester):
             self.eq(est.estimatetype.id, est1.estimatetype.id)
             self.eq(est.region.id, est1.region.id)
             self.eq(est.cost, est1.cost)
-            self.eq(primative.datetime('Jan 9, 2001'), est1.begin)
+            self.eq(primative.date('Jan 9, 2001'), est1.begin)
             self.eq(None, est1.end)
 
 class gem_product_product_product(tester):

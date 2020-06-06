@@ -7,13 +7,15 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
 import orm
-from orm import text
+from orm import text, timespan, datespan
 import entities
 import primative
 from datetime import datetime
 from dbg import B
 import party
 from decimal import Decimal as dec
+
+from orm import text, datespan, timespan
 
 #TODO The `decimal` module should be usable as type:
 #
@@ -24,34 +26,6 @@ from decimal import Decimal as dec
 #
 #   class dimension:
 #       number = decimal.Decimal
-
-# TODO We should have a timespan type: 
-#
-# Instead of:
-#
-# class doorbell(entity):
-#     begin = datetime
-#     end   = datetime
-#
-# We should be able to type:
-#
-# class doorbell(entity):
-#     datespan = True
-#
-# There should only be one span per class. The span should be availble
-# as an object of the class that exposes certain helper methods.
-#
-#    
-#     db = doorbell()
-#     db.span.iscurrent
-#     db.span.getiscurrent(somedate)
-# 
-# This method and property should regard the None value for `begin` as
-# infinite into the past and a None value for `end` as infinite into the
-# future.
-
-# TODO We should have a date data type and a time data type
-
 
 class products(orm.entities): pass
 
@@ -461,8 +435,7 @@ class category_classification(orm.association):
     # Indicates the timespan a product is classified under a certain
     # category. An `end` of None indicates that the product is currently
     # classified under the given category.
-    begin    =  datetime
-    end      =  datetime
+    span = datespan
 
     # TODO It would be nice if we didn't have to end `isprimary` with
     # an underscore but if we don't, MySQL sees it as an syntax
@@ -546,8 +519,7 @@ class category_type(orm.association):
     instead because it adhers to the ORM's convention on naming
     associations - consequently resulting in an unfortunate misnomer.
     """
-    begin     =  datetime
-    end       =  datetime
+    span      =  datespan
     type      =  party.type
     category  =  category
 
@@ -852,9 +824,8 @@ class product_feature(orm.association):
     Selectable  =  3
 
     ''' ORM Attributes '''
-    # A timespan to indicate when this association is valid
-    begin  =  datetime
-    end    =  datetime
+    # A datespan to indicate when this association is valid
+    valid = datespan
 
     # Use a numeric code (see the Types section above) to indicate
     # whether the associated feature is required, standard, optional or
@@ -880,10 +851,9 @@ class supplier_product(orm.association):
     supplier  =  party.organization
     product   =  product
 
-    # The begin and end datetimes indicate the timespan that the
-    # supplier offered by the `supplier`
-    begin     =  datetime
-    end       =  datetime
+    # The datespan to indicate the when the product was offered by the
+    # `supplier`
+    span = datespan
 
     # The `lead` is the average amount of time in days it takes a
     # supplier to ship an order to a customer location from the time of
@@ -1018,9 +988,8 @@ class guideline(orm.entity):
     Data Modeling Resource Book".
     """
 
-    # A timespan to indicate when the guildelines are valid
-    begin = datetime
-    end   = datetime
+    # A datespan to indicate when the guildelines are valid
+    valid = datespan
 
     # The quantity at which the good needs to be reordered or
     # reproduced.
@@ -1223,10 +1192,9 @@ class price(orm.entity):
     # there should be a `pricetypes` entity such that users can enter
     # their own types of prices.
 
-    # This timespan indicate the starting an ending dates for which the
+    # This datespan indicate the starting an ending dates for which the
     # price component is valid.
-    begin = datetime
-    end   = datetime
+    valid = datespan
 
     # The `price` maintains a dollar amount. It, along with the
     # `percent` attribute can be used to record discounts or quantity
@@ -1398,10 +1366,9 @@ class estimate(orm.entity):
     # relationship between `product.feature` and `product.estimate`
     # (see `product.feature.estimates`).
 
-    # Product costs can vary by season or over time, so a timespan
+    # Product costs can vary by season or over time, so a datespan
     # is included to show the time period for which the cost is valid.
-    begin = datetime
-    end   = datetime
+    valid = datespan
 
     # The estimated cost
     cost  = dec
@@ -1529,10 +1496,9 @@ class product_product(orm.association):
     # attributes can be used for Component associations.
     Component        =  5
 
-    # A timespan whose meaning is determined by the value of the `type`
+    # A datespan whose meaning is determined by the value of the `type`
     # attribute.
-    begin = datetime
-    end   = datetime
+    span = datespan
 
     # Used when the `type` attribute is set to Obsolesence. Indicates
     # the date the `subject` will be, or has already been, superceeded
