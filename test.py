@@ -15357,9 +15357,10 @@ class test_orm(tester):
             for prop in ('tube', 'watts', 'cost', 'name'):
                 self.eq(getattr(amp1, prop), getattr(amp2, prop))
 
-########################################################################
-# Test party.persons                                                     #
-########################################################################
+'''
+Test General Entities Model (GEM)
+'''
+
 class gem_party_person(tester):
     def __init__(self):
         super().__init__()
@@ -19129,11 +19130,8 @@ class gem_product_estimate(tester):
         super().__init__()
         product.product.orm.recreate(recursive=True)
 
-        # TODO Though `estimatetype` is a composite of `estimates`, its
-        # table is not created by the below line.
         product.estimates.orm.recreate(recursive=True)
 
-        # So we have to create it explicitly
         product.estimatetypes.orm.recreate(recursive=True)
 
     def it_creates(self):
