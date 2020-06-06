@@ -10483,6 +10483,9 @@ class test_orm(tester):
             
             if i == 0:
                 self.two(chrons)
+
+                # This was noticed today: Jun 5, 2020
+                B(chrons.count != 2)
                 self.eq(chrons.where('entity', sng).first.op,           'create')
                 self.eq(chrons.where('entity', sng.orm.super).first.op, 'create')
             elif i == 1:
