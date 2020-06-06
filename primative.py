@@ -72,6 +72,10 @@ class datetime(stddatetime.datetime):
     def add(self, **kwargs):
         return self + stddatetime.timedelta(**kwargs)
 
+    def __add__(self, dt):
+        dt = super().__add__(dt)
+        return datetime(dt)
+
     @property
     def date(self):
         return date(self)
