@@ -1183,7 +1183,6 @@ class price(orm.entity):
                 except KeyError:
                     setattr(self, prop, None)
 
-
     # NOTE "The Data Modeling Resource Book" specifies each of the
     # subentity objects. However, it also says, "These represents the
     # common variables for pricing; however, the enterprise needs to
@@ -1202,7 +1201,7 @@ class price(orm.entity):
     # in either the price attribute or the percent attribute but not
     # both. TODO Write a rule that one of these has to be None and the
     # other has too be non-None.
-    price =  dec
+    price   = dec
     percent = dec
 
     # Allows each price component to be annotated, for example, "special
