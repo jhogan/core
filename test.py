@@ -16476,7 +16476,6 @@ class gem_party_contactmechanism(tester):
         ph1.contactmechanism_contactmechanisms += cm_cm(
             event   =  cm_cm.Busy,
             do      =  cm_cm.Forward,
-            subject =  ph1, # FIXME We don't need to specify subject
             object  =  ph2,
         )
 
@@ -16485,7 +16484,6 @@ class gem_party_contactmechanism(tester):
         ph2.contactmechanism_contactmechanisms += cm_cm(
             event    =  cm_cm.Unanswered,
             do       =  cm_cm.Forward,
-            subject  =  ph2, # FIXME We don't need to specify subject
             object   =  em,
         )
 
@@ -18750,9 +18748,6 @@ class gem_product_measure(tester):
         # will rely on product.measure_measure to work issues like this
         # out automatically via transitive logic.
         mm = product.measure_measure(
-            # TODO We can remove the subject assignment here. This is
-            # covered by another TODO.
-            subject  =  smallbox,
             object   =  largebox,
             factor   =  2
         )
