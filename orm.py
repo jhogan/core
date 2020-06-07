@@ -2552,9 +2552,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             # recursion. The below line will prevent
                             # this.
 
-                            # NOTE This line seems to be the source of a
-                            # lot of saving problems.
-                            if e.orm.entities is not type(es):
+                            if type(es) not in e.orm.entities.mro():
                                 continue
 
                             # Set the entity's FK to self.id value

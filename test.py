@@ -15805,9 +15805,7 @@ class party_party_role(tester):
         # list. This is a problem with the way subentity (`company`)
         # objects save the constituents (`roles`) of the supers
         # (`party`).
-        acme.save(
-            acme.roles
-        )
+        acme.save()
 
         acme1 = acme.orm.reloaded()
 
@@ -18255,10 +18253,7 @@ class gem_product_item(tester):
 
         lot.items += gem_product_item.getvalid()
 
-        # TODO We shouldn't have to pass lot.items to save the items.
-        # There is a bug that causes lot not to save its items
-        # automatically.
-        lot.save(lot.items)
+        lot.save()
 
         lot1 = lot.orm.reloaded()
 
