@@ -86,7 +86,7 @@ class guidelines(orm.entities):            pass
 class items(orm.entities):                 pass
 class serials(items):                      pass
 class nonserials(items):                   pass
-class lots(items):                         pass
+class lots(orm.entities):                  pass
 class containers(orm.entities):            pass
 class containertypes(orm.entities):        pass
 class statuses(orm.entities):              pass

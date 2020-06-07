@@ -4047,6 +4047,9 @@ class test_orm(tester):
         chrons.clear()
         art.save()
         self.two(chrons)
+
+        # FIXME This happend today: Jun 7, 2020
+        B(chrons.count != 2)
         self._chrons(art, 'create')
         self._chrons(pres, 'create')
 
@@ -18031,7 +18034,7 @@ class gem_product_item(tester):
             good.items += product.serial(number=sn)
 
             # TODO The below line had to be added because simply calling
-            # good.save() after this loop is complete dose not save the
+            # good.save() after this loop is complete does not save the
             # item entity objects in `good.items`. I believe this is a
             # known issue, though I could not find the reference to the
             # other TODO.
@@ -18595,7 +18598,7 @@ class gem_product_categories(tester):
         cc.isprimary = True  # Ensure isprimary is True
         cat.category_classifications += cc
 
-        # TODO:a082d2a9 `cat.brokenrules` dosen't recurse into
+        # TODO:a082d2a9 `cat.brokenrules` doesn't recurse into
         # `category_classification.brokenrules'
         # self.one(cat.brokenrules);
 

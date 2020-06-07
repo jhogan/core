@@ -2482,7 +2482,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             crud = None
             sql, args = (None,) * 2
 
-
         try:
             # Take snapshot of before state
             st = self.orm.persistencestate
