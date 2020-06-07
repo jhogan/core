@@ -15820,10 +15820,6 @@ class party_party_role(tester):
 
         acme.roles += party.supplier()
 
-        # TODO We shouldn't have to put `acme.roles` in the argument
-        # list. This is a problem with the way subentity (`company`)
-        # objects save the constituents (`roles`) of the supers
-        # (`party`).
         acme.save()
 
         acme1 = acme.orm.reloaded()
@@ -15851,7 +15847,8 @@ class gem_party_role_role(tester):
             party.roletypes,
             party.status,
             party.communications,
-            
+            party.priority,
+            party.role_role_status,
         )
 
     def it_creates(self):
