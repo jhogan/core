@@ -149,7 +149,7 @@ class party(orm.entity):
     # Removing this constituent declaration. For some reason it causes
     # 297f8176 to happen. TODO:297f8176 Uncomment when 297f8176 is
     # fixed.
-    # roles = roles
+    roles = roles
 
 class organization(party):
     """ An abstract class representing a group of people with a common
@@ -1105,6 +1105,11 @@ class party_party(orm.association):
     object   =  party
     role     =  str
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.orm.isnew:
+            self.role = None
+
     span = datespan
 
     @classmethod
@@ -1247,6 +1252,8 @@ class priority(orm.entity):
         self.orm.ensure(expects=('name',), **kwargs)
 
     entities = priorities
+
+    name = str
 
     # FIXME:167d775b:28a4a305. The class wants to have a one-to-many
     # relationship on the role_role association, however that

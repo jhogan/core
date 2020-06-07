@@ -15790,8 +15790,6 @@ class party_party_role(tester):
         party.roletypes.orm.recreate(recursive=True)
 
     def it_creates(self):
-        # TODO Remove the below `return` when 297f8176 is fixed.
-        return
         acme = party.company(name='ACME Corporation')
 
         acme.roles += party.customer(
@@ -15832,12 +15830,10 @@ class gem_party_role_role(tester):
             party.roletypes,
             party.status,
             party.communications,
-            
+            party.priority,
         )
 
     def it_creates(self):
-        # TODO Remove the below `return` when 297f8176 is fixed.
-        return
         # Create parties
         rent = party.company(name='ACME Corporation')
         sub  = party.company(name='ACME Subsidiary')
@@ -17169,8 +17165,6 @@ class gem_party_communication(tester):
             self.eq(comm.end,    pc1.communication.end)
 
     def it_associates_relationship_to_communication(self):
-        # TODO Remove return when 297f8176 is fixed
-        return
         # Create parties
         
         ## Persons
@@ -17948,11 +17942,6 @@ class gem_product_product(tester):
         # self.eq('The Warehouse Company', sps.third.supplier.name)
     
     def it_creates_guildlines(self):
-        # TODO:240ed11c Due to a bug found in orm.py, this code no
-        # longer works. When the bug is resolved, we can remove the
-        # below `return` statement.
-        return
-
         # Service products will not have guidelines
         serv = gem_product_product.getvalid(product.service)
         self.false(hasattr(serv, 'guidelines'))
@@ -18013,11 +18002,6 @@ class gem_product_item(tester):
         return itm
 
     def it_stores_goods_in_inventory(self):
-        # TODO:240ed11c Due to a bug found in orm.py, this code no
-        # longer works. When the bug is resolved, we can remove the
-        # below `return` statement.
-        return
-
         # Services don't have inventory representations
         serv = gem_product_product.getvalid(product.service)
         self.expect(AttributeError, lambda: serv.items)
@@ -18074,11 +18058,6 @@ class gem_product_item(tester):
         self.eq(5, nonserial)
 
     def it_stores_goods_in_a_facility(self):
-        # TODO:240ed11c Due to a bug found in orm.py, this code no
-        # longer works. When the bug is resolved, we can remove the
-        # below `return` statement.
-        return
-
         # Create two warehouses to store the good
         abccorp = party.facility(
             name = 'ABC Corporation',
@@ -18277,11 +18256,6 @@ class gem_product_item(tester):
         self.eq(itm.orm.super.good.id, itm1.orm.super.good.id)
 
     def it_assigns_status_to_inventory_item(self):
-        # TODO:240ed11c Due to a bug found in orm.py, this code no
-        # longer works. When the bug is resolved, we can remove the
-        # below `return` statement.
-        return
-
         book = gem_product_product.getvalid(product.good, comment=1)
         book.name = 'The Data Model Resource Book'
 
@@ -18312,11 +18286,6 @@ class gem_product_item(tester):
             self.eq(itm.orm.super.status.id, itm1.status.id)
     
     def it_assigns_variance(self):
-        # TODO:240ed11c Due to a bug found in orm.py, this code no
-        # longer works. When the bug is resolved, we can remove the
-        # below `return` statement.
-        return
-
         book = gem_product_product.getvalid(product.good, comment=1)
         book.name = 'The Data Model Resource Book'
 

@@ -3067,48 +3067,43 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         ``rapper``'s ``battles`` property. But since ``battle`` is a
         subentity of ``concert``, and ``concert`` is a subentity of
         ``presentation``, the ``battle`` entity will, by the logic in
-        this handler,  be made present in ``rpr.concerts`` as well as
+        this handler,  made present in ``rpr.concerts`` as well as
         ``rpr.presentations``.
 
-        :param: src entities:    The entities collection that the 
-                                 ``eargs.entity`` is being appended to.
+        :param: src entities: The entities collection that the
+        ``eargs.entity`` is being appended to.
+
         :param: eargs eventargs: The event arguments. Its ``entity``
-                                 property is the entity object that will
-                                 be appended to the superentities.
+        property is the entity object that will be appended to the
+        superentities.
         """
+
+        # Get the superentities collection of the collection `e` was
+        # appened to.
+        sup = src.orm.entities.orm.super
+
+        # If there is no superentity, there is nothing for us to do.
+        if not sup:
+            return
+
+        # TODO For some reason, the above line:
+        #
+        #    sup = src.orm.entities.orm.super
+        #
+        # only gets us the entity class instead of the entities class,
+        # so we need the below line to get the entities class. `super`
+        # should be fixed such that we get the entities class instead.
+        # Then this line can be remove.
+        sup = sup.orm.entities
+
+        # Get the entity being appended
         e = eargs.entity
-        
-        # Get the superentity of self
-        sup = self.orm.entities.orm.super #(self: rapper)
 
-        # If self has a superentity
-        if sup:
-            # For each of the entities mappings of the superentity
-            for map in sup.orm.mappings.entitiesmappings:
+        # Get the superenities collection
+        es = getattr(self, sup.__name__)
 
-                # Get e's superentities class
-
-                # FIXME:297f8176 The `super` attribute can be None
-                # sometimes which causes a null reference AttributeError
-                # to be thrown.
-                sup = src.orm.entities.orm.super.orm.entities
-
-                # If the map's entities matches sup
-                if map.entities is sup:
-
-                    # (map.entitiesmapping: <class>: concert)
-
-                    # Get the collection property of self that is super
-                    # for e that is super to e (i.e., battles ->
-                    # concerts)
-                    es = getattr(self, map.name)
-
-                    # Add `e` to the collection. NOTE that this
-                    # operation will result in a recursive call back
-                    # into this handler until the final superentity for
-                    # self has been reached.
-                    es += e
-                    break
+        # Append the entity to that entities collection
+        es += e
 
     def __repr__(self):
         """ Return a tabularized list of ``self``'s properties and their
