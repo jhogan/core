@@ -2525,7 +2525,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         )
 
                 if type(map) is entitiesmapping:
-
                     if map.isloaded:
                         es = map.value
                         # Take snapshot of states
