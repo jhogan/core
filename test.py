@@ -4104,6 +4104,25 @@ class test_orm(tester):
         # NOTE The below line produced a failure today, but it went
         # away.  (Jul 6)
         # UPDATE Happend again Dec 15 2019
+        # UPDATE Happend again Jun 7, 2020
+        # This was found when `chrons` was printed:
+        '''
+		DB: RECONNECT
+		INSERT INTO test_singers (`id`, `createdat`, `updatedat`, `register`, `voice`) VALUES (_binary %s, %s, %s, %s, %s);
+		(UUID('a18737c1-882b-4407-a6c0-610856e62e9c'), datetime(2020, 6, 7, 19, 52, 58, 842050), datetime(2020, 6, 7, 19, 52, 58, 842050), 'laryngealization', '248f3e4d0c6946d48ef800deb7297585')
+
+		INSERT INTO test_concerts (`id`, `singerid`, `createdat`, `record`, `ticketprice`, `attendees`, `duration`, `capacity`, `externalid`, `externalid1`, `updatedat`) VALUES (_binary %s, _binary %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+		(UUID('63c88856-98e7-4380-99ac-af102c43a37b'), UUID('a18737c1-882b-4407-a6c0-610856e62e9c'), datetime(2020, 6, 7, 19, 52, 58, 844279), '3bdd2a7831c44c25b55a611124ea6e01', 0, 0, 0, 0, 0, 0, datetime(2020, 6, 7, 19, 52, 58, 844279))
+
+		INSERT INTO test_presentations (`id`, `artistid`, `createdat`, `name`, `updatedat`, `date`, `description`, `description1`, `title`) VALUES (_binary %s, _binary %s, %s, %s, %s, %s, %s, %s, %s);
+		(UUID('63c88856-98e7-4380-99ac-af102c43a37b'), UUID('a18737c1-882b-4407-a6c0-610856e62e9c'), datetime(2020, 6, 7, 19, 52, 58, 846927), 'bb73eb4983b549a89c7b320f3f8fc582', datetime(2020, 6, 7, 19, 52, 58, 846927), None, '2ef05799e9c04cecbefce257046d0a3e', '5b5bf3f46db64226a081a5e9cdfd6da8', '649e519fbe964c27897ce7e7d69a1c53')
+
+		INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, `lastname`, `dob1`, `bio2`, `bio`, `email_1`, `bio1`, `lifeform`, `firstname`, `password`, `email`, `style`, `phone2`, `ssn`, `dob2`, `dob`, `title`, `phone`) VALUES (_binary %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, _binary %s, %s, %s, %s, %s, %s, %s, %s, %s);
+		(UUID('a18737c1-882b-4407-a6c0-610856e62e9c'), datetime(2020, 6, 7, 19, 52, 58, 850580), datetime(2020, 6, 7, 19, 52, 58, 850580), 0, 0, 'Yourofsky', None, '2', None, '', '11', '04e601539d1b4ff197f092b435a13f5b', 'Gary', b'B{\te\x9e\xe2\x84\xfaH\x88\x17}\x0cY6\xf9\xbb\xe1:\t\xe2NP\xeb\x1aP\x12\xfc\xe5\xe2\xef0', 'username@domain.tld', 'classicism', '', '11111111111', None, None, '', 1111111)
+        '''
+        # So it seems that this is caused by an occasional reconnect. We
+        # should probably filter DB Reconnects out somehow.
+
         self.four(chrons)
 
 
@@ -16734,7 +16753,7 @@ class gem_party_contactmechanism(tester):
             else:
                 part, name = cls(), part
                 if cls is party.person:
-                    # FIXMEd7f877ef person.name does not exist yet and I
+                    # FIXME:d7f877ef person.name does not exist yet and I
                     # was having a hard time getting it to work so I
                     # used person.first instead. NOTE that this will
                     # break if party.roles is uncommented. See 297f8176.

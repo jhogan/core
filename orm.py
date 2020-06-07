@@ -3059,7 +3059,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # Add a new battel to the rapper's battles property
             rpr.battles += battle() 
 
-        This handler ensures that entity objects added to thes
+        This handler ensures that entity objects added to these
         collections are also appended to the superentities collections
         of the entities collection they are being appended to. 
 
