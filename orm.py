@@ -6066,15 +6066,7 @@ class associations(entities):
                             # tests.
                             setattr(obj, map.name, comp)
                             break
-                # TODO;d3bd0e6d When the association (`obj`) being
-                # appended (to `self`) has an entitymapping (`map`) that
-                # is a subentity of the entity that the association is
-                # expecting, the below test won't be True because the
-                # below test is based on name; not types. The below test
-                # should descend the inheritence hierarchy looking for
-                # matches (maybe using `map.entity.orm.subentities`). For
-                # more, see d3bd0e6d in test.py.
-                elif map.name == type(comp).__name__:
+                elif isinstance(comp, map.entity):
                     setattr(obj, map.name, comp)
                     break
 

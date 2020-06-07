@@ -17140,8 +17140,6 @@ class gem_party_communication(tester):
             pcs = getattr(per, 'party_communications')
 
             pcs += party.party_communication(
-                # FIXME We shouldn't have to specify party here
-                party                  =  per,
                 communication          =  comm,
                 communicationroletype  =  participant,
             )
@@ -17583,14 +17581,12 @@ class gem_product_product(tester):
         paper.product_features += product.product_feature(
             type=product.product_feature.Required,
             feature=product.quality(name='Fine grade'),
-            product=paper  # TODO d3bd0e6d
         )
 
         # Extra glossy finish
         paper.product_features += product.product_feature(
             type=product.product_feature.Optional,
             feature=product.quality(name='Extra glossy finish'),
-            product=paper  # TODO d3bd0e6d
         )
             
         # Create product_feature associations
@@ -17598,25 +17594,7 @@ class gem_product_product(tester):
             pf = product.product_feature(
                 type=product.product_feature.Selectable,
                 feature=sel,
-                product=paper
             )
-
-            # TODO:d3bd0e6d The following line should replace the above
-            # line:
-            #
-            #     pf = product.product_feature(
-            #         type=product.product_feature.Selectable,
-            #         feature=sel,
-            #     )
-            #
-            # Notice that `product=paper is absent from the commented
-            # out line. This is because appending `pf` to
-            # `paper.product_features` should automatically assign
-            # `paper` to `paper.product_features.last.product`. However,
-            # since the `product` attribute is of type `product.product`
-            # and the `paper` attribute is of type `product.good` (a
-            # subentity of `product.product` the assignment is not made.
-            # There is more commentary in orm.py (see d3bd0e6d).
 
             paper.product_features += pf
 
@@ -17638,7 +17616,6 @@ class gem_product_product(tester):
         paper.product_features += product.product_feature(
             type=product.product_feature.Required,
             feature=dim,
-            product=paper  # TODO d3bd0e6d
         )
 
         paper.save()
@@ -18017,13 +17994,15 @@ class gem_product_product(tester):
 class gem_product_item(tester):
     def __init__(self):
         super().__init__()
-        product.products.orm.recreate(recursive=True)
-        product.containers.orm.recreate(recursive=True)
-        product.containertype.orm.recreate(recursive=True)
-        product.lots.orm.recreate(recursive=True)
-        product.status.orm.recreate(recursive=True)
-        product.variance.orm.recreate(recursive=True)
-        product.reason.orm.recreate(recursive=True)
+        orm.orm.recreate(
+            product.products,
+            product.containers,
+            product.containertype,
+            product.lots,
+            product.status,
+            product.variance,
+            product.reason,
+        )
 
     @staticmethod
     def getvalid():
@@ -19340,7 +19319,6 @@ class gem_case(tester):
 
         # Associate case with party
         jerry.case_parties += party.case_party(
-            party = jerry, # FIXME This shouldn't be needed
             case = cs,
         )
 
