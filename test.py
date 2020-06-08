@@ -15799,10 +15799,6 @@ class party_party_role(tester):
 
         acme.roles += party.supplier()
 
-        # TODO We shouldn't have to put `acme.roles` in the argument
-        # list. This is a problem with the way subentity (`company`)
-        # objects save the constituents (`roles`) of the supers
-        # (`party`).
         acme.save()
 
         acme1 = acme.orm.reloaded()
@@ -15831,6 +15827,7 @@ class gem_party_role_role(tester):
             party.status,
             party.communications,
             party.priority,
+            party.role_role_status,
         )
 
     def it_creates(self):
@@ -15886,13 +15883,7 @@ class gem_party_role_role(tester):
                 note  = 'Good phone call. I think we got him.',
             )
 
-        # FIXME We should not have to pass in `sub.roles` or
-        # `rent.roles` to save.
-        rent.save(
-            sub,
-            sub.roles,
-            rent.roles,
-        )
+        rent.save(sub, sub.roles)
 
         # Reload and test
         sub1 = sub.orm.reloaded()
@@ -18015,19 +18006,11 @@ class gem_product_item(tester):
         for sn in range(10000, 10005):
             good.items += product.serial(number=sn)
 
-            # TODO The below line had to be added because simply calling
-            # good.save() after this loop is complete does not save the
-            # item entity objects in `good.items`. I believe this is a
-            # known issue, though I could not find the reference to the
-            # other TODO.
-            good.items.last.save()
+        good.save()
 
         for i in range(5):
             good.items += product.nonserial(quantity=randint(1, 100))
 
-            # TODO See above
-            good.items.last.save()
-            
         good.save()
 
         good1 = good.orm.reloaded()
@@ -18146,10 +18129,7 @@ class gem_product_item(tester):
         diskette.items.first.orm.super.container = \
             bin250.containers.last
 
-        # TODO We shouldn't have to save copier.items explicitly here.
-        # Save the goods and their subsidiaries.
         copier.save(
-            copier.items, 
             paper, paper.items,
             pen, pen.items,
             diskette, diskette.items
@@ -18301,9 +18281,7 @@ class gem_product_item(tester):
 
         book.items.last.variances.last.reason = overage
 
-        # TODO We don't need to pass in book.items here. There is a bug
-        # in the orm that requires us to do that.
-        book.save(book.items)
+        book.save()
 
         book1 = book.orm.reloaded()
 
