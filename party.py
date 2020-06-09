@@ -832,8 +832,8 @@ class citizenship(orm.entity):
     vaild = datespan
 
     # TODO Add validaton logic to ensure the region is a country.
-    # The country the citizenship is for. Note this is a region which
-    # must have a type of country.
+    # The country that the citizenship is for. Note this is a `region`
+    # which must have a `type` of Country.
     country = region
 
     # A collection of passports issued for this citizenship
@@ -1454,9 +1454,6 @@ class facility(orm.entity):
     Office     =  5
     Room       =  6
 
-    # TODO This class was created as a stub to test a class in
-    # product.py. It nor its subsidiary classes were never created for
-    # some reason. 
     entities = facilities
 
     # The name of the facility

@@ -15761,7 +15761,10 @@ class gem_party_person(tester):
 class gem_party_party_type(tester):
     def __init__(self):
         super().__init__()
-        party.party.orm.recreate(recursive=True)
+        orm.orm.recreate(
+            party.party,
+            party.type,
+        )
 
     def it_creates(self):
         typ = party.type()
@@ -16460,6 +16463,7 @@ class gem_party_contactmechanism(tester):
         orm.orm.recreate(
             party.party,
             party.purposetypes,
+            party.contactmechanism_contactmechanism,
         )
 
     @staticmethod
@@ -17558,8 +17562,16 @@ class gem_product_product(tester):
             )
 
             for prop in props:
-                self.ne(getattr(prod, prop), getattr(prod2, prop))
-                self.eq(getattr(prod1, prop), getattr(prod2, prop))
+                self.ne(
+                    getattr(prod, prop), 
+                    getattr(prod2, prop), 
+                    prop
+                )
+                self.eq(
+                    getattr(prod1, prop), 
+                    getattr(prod2, prop), 
+                    prop
+                )
 
     def it_associates_to_features(self):
         tup_colors = (
@@ -18643,7 +18655,10 @@ class gem_product_categories(tester):
 class gem_product_category_types(tester):
     def __init__(self):
         super().__init__()
-        product.products.orm.recreate(recursive=True)
+        orm.orm.recreate(
+            product.products,
+            party.type,
+        )
 
     def it_creates(self):
         sm = party.type(description='Small organizations')
