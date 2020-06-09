@@ -1140,8 +1140,7 @@ class type(orm.entity):
         Data Modeling Resource Book".
     """
 
-    # TODO Change this to `name`
-    description = str
+    name = str
 
 class classification:
     """ ``party`` entity objects are classifiend into various categories

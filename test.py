@@ -15768,7 +15768,7 @@ class gem_party_party_type(tester):
 
     def it_creates(self):
         typ = party.type()
-        typ.description = uuid4().hex
+        typ.name = uuid4().hex
 
         for i in range(2):
             pt = party.party_type()
@@ -15779,7 +15779,7 @@ class gem_party_party_type(tester):
         typ.save()
 
         typ1 = party.type(typ.id)
-        self.eq(typ.description, typ1.description)
+        self.eq(typ.name, typ1.name)
 
         typ.party_types.sort() 
         typ1.party_types.sort()
@@ -18661,7 +18661,7 @@ class gem_product_category_types(tester):
         )
 
     def it_creates(self):
-        sm = party.type(description='Small organizations')
+        sm = party.type(name='Small organizations')
 
         # Small organizations have an interest in Wordpress services
         sm.category_types += product.category_type(
@@ -18909,7 +18909,7 @@ class gem_product_pricing(tester):
 
         # Create government party type
         gov = party.type(
-            description = 'Government'
+            name = 'Government'
         )
 
         # Create product category
