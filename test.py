@@ -16520,7 +16520,7 @@ class gem_party_contactmechanism(tester):
         self.one(cm_cms1_1)
 
         self.eq(cm_cms1.first.id,          cm_cms1_1.first.id)
-        self.eq(cm_cms1.first.event,       cm_cms1_1.first.event)
+        self.eq(cm_cms1.first.on,       cm_cms1_1.first.on)
         self.eq(cm_cms1.first.do,          cm_cms1_1.first.do)
         self.eq(cm_cms1.first.object.id,   cm_cms1_1.first.object.id)
         self.eq(cm_cms1.first.subject.id,  cm_cms1_1.first.subject.id)
@@ -16539,7 +16539,7 @@ class gem_party_contactmechanism(tester):
         self.one(cm_cms1_1)
 
         self.eq(cm_cms1.first.id,          cm_cms1_1.first.id)
-        self.eq(cm_cms1.first.event,       cm_cms1_1.first.event)
+        self.eq(cm_cms1.first.on,       cm_cms1_1.first.on)
         self.eq(cm_cms1.first.do,          cm_cms1_1.first.do)
         self.eq(cm_cms1.first.object.id,   cm_cms1_1.first.object.id)
         self.eq(cm_cms1.first.subject.id,  cm_cms1_1.first.subject.id)

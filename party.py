@@ -858,10 +858,7 @@ class contactmechanism_contactmechanism(orm.association):
     # Constants for `do`
     Forward = 0
 
-    # FIXME:0a8ee7fb I would prefer `event` to be replaced by `on` but
-    # `on` is a reserved word in MySQL. There is a TODO to allow for
-    # reserved words (see 0a8ee7fb).
-    event    =  int
+    on       =  int
     do       =  int
     subject  =  contactmechanism
     object   =  contactmechanism
