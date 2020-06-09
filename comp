@@ -1,16 +1,20 @@
 # http
 # authentication
-events
-file
-cfg
-robot
-general optimization
-selector optimization
-aria
-ads
-gettext
-proxy generator
-migrations
-cli
-gatekeeper
-replication (relational, file)
+
+Stage 1
+    events
+    file
+    cfg
+    general optimization
+    selector optimization
+    cli
+    migrations
+    gatekeeper
+
+Stage 2
+    robot
+    aria
+    ads
+    gettext
+    proxy generator
+    replication (relational, file)
