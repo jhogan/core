@@ -10,7 +10,7 @@ import orm
 from orm import text, timespan, datespan
 import entities
 import primative
-from datetime import datetime
+from datetime import datetime, date
 from dbg import B
 import party
 from decimal import Decimal as dec
@@ -271,20 +271,19 @@ class product(orm.entity):
     name = str
 
     # The date the product was first available to be sold.
-    introducedat = datetime  # TODO Make date type
+    introducedat = date
 
     # The date that the product will not be sold any more by the
     # manufacturer.
-    discontinuedat = datetime  # TODO Make date type
+    discontinuedat = date
 
     # The date the product will no longer be supported by the
     # manufacturer.
-    unsupportedat = datetime
+    unsupportedat = date
 
     comment = text
 
     ''' Various type of identifiers'''
-
     # A good's id designated by the manufacture
     manufacturerno = str
 

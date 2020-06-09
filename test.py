@@ -17503,7 +17503,7 @@ class gem_product_product(tester):
 
         prod = type()
         prod.name = uuid4().hex
-        prod.introducedat = primative.datetime.utcnow(days=-100)
+        prod.introducedat = primative.date.today(days=-100)
         prod.comment = uuid4().hex * comment
         return prod
 
@@ -17512,7 +17512,7 @@ class gem_product_product(tester):
             prod = getattr(product, str_prod)()
 
             prod.name = uuid4().hex
-            prod.introducedat = primative.datetime.utcnow(days=-100)
+            prod.introducedat = primative.date.today(days=-100)
             prod.comment = uuid4().hex * 1000
 
             prod.save()
@@ -17536,7 +17536,7 @@ class gem_product_product(tester):
             prod = getattr(product, str_prod)()
 
             prod.name = uuid4().hex
-            prod.introducedat = primative.datetime.utcnow(days=-100)
+            prod.introducedat = primative.date.today(days=-100)
             prod.comment = uuid4().hex * 1000
 
             prod.save()
@@ -17544,9 +17544,9 @@ class gem_product_product(tester):
             prod1 = getattr(product, str_prod)(prod.id)
 
             prod1.name = uuid4().hex
-            prod1.introducedat = primative.datetime.utcnow(days=-100)
-            prod1.discontinuedat = primative.datetime.utcnow(days=+100)
-            prod1.unsupportedat = primative.datetime.utcnow(days=+200)
+            prod1.introducedat = primative.date.today(days=-200)
+            prod1.discontinuedat = primative.date.today(days=+100)
+            prod1.unsupportedat = primative.date.today(days=+200)
             prod1.comment = uuid4().hex * 1000
 
             prod1.save()
