@@ -35,6 +35,7 @@ import re
 import textwrap
 import party
 import product
+import order
 from pprint import pprint
 
 # We will use basic and supplementary multilingual plane UTF-8
@@ -19489,6 +19490,112 @@ class gem_case(tester):
                 self.eq(ce.description, ce1.description)
                 self.eq(ce.effort.id, ce1.effort.id)
                 self.eq(ce.communication.id, ce1.communication.id)
+
+class gem_order_order(tester):
+    def __init__(self):
+        super().__init__()
+        orm.orm.recreate(
+            order.order,
+            order.items,
+            order.salesitems,
+            order.purchaseitems,
+            order.purchaseorders,
+            order.salesorders,
+        )
+
+    def it_creates(self):
+        ''' Create products '''
+        # Goods
+        paper = gem_product_product.getvalid(product.good, comment=1)
+        paper.name='Johnson fine grade 8½ by 11 bond paper'
+
+        pen = gem_product_product.getvalid(product.good, comment=1)
+        pen.name = 'Goldstein Elite Pen'
+
+        diskette = gem_product_product.getvalid(product.good, comment=1)
+        diskette.name = "Jerry's box of 3½ inch diskettes"
+
+        georges = gem_product_product.getvalid(product.good, comment=1)
+        georges.name = "George's Elite pen"
+
+        kit = gem_product_product.getvalid(product.good, comment=1)
+        kit.name = 'Basic cleaning supplies kit'
+
+        # Service
+        cleaning = gem_product_product.getvalid(product.service, comment=1)
+        cleaning.name = 'Hourly office cleaning service'
+
+        ''' Create orders '''
+        so_1 = order.salesorder()
+
+        so_2 = order.salesorder()
+
+        po = order.purchaseorder()
+
+        ''' Add items to orders '''
+        so_1.items += order.salesitem(
+            product = paper,
+            quantity = 10,
+            price = dec('8.00')
+        )
+
+        so_1.items += order.salesitem(
+            product = pen,
+            quantity = 4,
+            price = dec('12.00')
+        )
+
+        so_1.items += order.salesitem(
+            product = diskette,
+            quantity = 6,
+            price = dec('7.00')
+        )
+
+        so_2.items += order.salesitem(
+            product = georges,
+            quantity = 10,
+            price = dec('10.00')
+        )
+
+        po.items += order.purchaseitem(
+            product = cleaning,
+            quantity = 12,
+            price = dec('15.00')
+        )
+
+        po.items += order.purchaseitem(
+            product = kit,
+            quantity = 1,
+            price = dec('10.00')
+        )
+
+        so_1.save(so_2, po)
+
+        so_1_1 = so_1.orm.reloaded()
+        so_2_1 = so_2.orm.reloaded()
+        po1    = po.orm.reloaded()
+
+        self.three(so_1.items)
+        self.three(so_1_1.items)
+
+        self.one(so_2.items)
+        self.one(so_2_1.items)
+
+        self.two(po.items)
+        self.two(po1.items)
+
+        gen = zip(so_1.items.sorted(), so_1_1.items.sorted())
+        for itm, itm1 in gen:
+            self.eq(itm.id, itm1.id)
+
+        gen = zip(so_1.items.sorted(), so_1_1.items.sorted())
+        for itm, itm1 in gen:
+            self.eq(itm.id, itm1.id)
+
+        gen = zip(po.items.sorted(), po1.items.sorted())
+        for itm, itm1 in gen:
+            self.eq(itm.id, itm1.id)
+    
 
 
 cli().run()
