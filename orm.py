@@ -60,6 +60,14 @@ import textwrap
 #     assert per.first == 'Jesse'
 #     assert per.last  == 'Hogan'
 
+# TODO I think text attributes should be None by default and this should
+# not be a validation error. We can create a fieldmapping.istextalias to
+# determine if the attribute field would be created as a longtext in
+# the database. If so, allow None to be be a value. This is just a hunch
+# at the moment. It just seems like a lot of fields that are of type
+# text (field names like description, comment, instructions, etc. should
+# by default be optional.)
+
 @unique
 class types(Enum):
     """
@@ -317,10 +325,14 @@ class span:
         return '%s(begin=%s, end=%s)' % (name, begin, end)
 
 class datespan(span):
-    pass
+    """ A time span where that begins with a date datatype and ends with
+    a date datatype. See the super class ``span`` for more.
+    """
 
 class timespan(span):
-    pass
+    """ A time span where that begins with a datetime datatype and ends
+    with a datetime datatype. See the super class ``span`` for more.
+    """
 
 class undef:
     """ 
@@ -2078,6 +2090,13 @@ class entitymeta(type):
         # `orm`'s `mappings` collection and removed from the `body`
         # list, i.e., this entity class's namespace.
         body['id'] = primarykeyfieldmapping()
+
+        # TODO When an ORM user assigns a value to the createdat or
+        # updatedat fields, either an exception should be raised or the
+        # user should be able to override the default createdat or
+        # updatedat value. Currently, the user cannot override these
+        # fields but is presented with no error when attempting to do
+        # so.
         body['createdat'] = fieldmapping(datetime)
         body['updatedat'] = fieldmapping(datetime)
 
