@@ -19525,12 +19525,16 @@ class gem_order_order(tester):
         cleaning = gem_product_product.getvalid(product.service, comment=1)
         cleaning.name = 'Hourly office cleaning service'
 
+        ''' Create features '''
+        gray    =  product.color(name='gray')
+        blue    =  product.color(name='blue')
+        glossy  =  product.quality(name='Extra glossy finish')
+        autobill = product.billing(name='Automatically charge to CC')
+
         ''' Create orders '''
-        so_1 = order.salesorder()
-
-        so_2 = order.salesorder()
-
-        po = order.purchaseorder()
+        so_1  =  order.salesorder()
+        so_2  =  order.salesorder()
+        po    =  order.purchaseorder()
 
         ''' Add items to orders '''
         so_1.items += order.salesitem(
@@ -19539,11 +19543,20 @@ class gem_order_order(tester):
             price = dec('8.00')
         )
 
+        # Add a feature item for the paper. We want the paper to be
+        # `gray` and `glossy`.
+        so_1.items.last.items += order.salesitem(feature=gray)
+        so_1.items.last.items += order.salesitem(
+            feature = glossy, 
+            price   = 2.00
+        )
+
         so_1.items += order.salesitem(
             product = pen,
             quantity = 4,
             price = dec('12.00')
         )
+        so_1.items.last.items += order.salesitem(feature=blue)
 
         so_1.items += order.salesitem(
             product = diskette,
@@ -19562,6 +19575,7 @@ class gem_order_order(tester):
             quantity = 12,
             price = dec('15.00')
         )
+        po.items.last.items += order.salesitem(feature=autobill)
 
         po.items += order.purchaseitem(
             product = kit,
@@ -19588,14 +19602,32 @@ class gem_order_order(tester):
         for itm, itm1 in gen:
             self.eq(itm.id, itm1.id)
 
-        gen = zip(so_1.items.sorted(), so_1_1.items.sorted())
+            # The paper product had a gray and glossy feature added
+            if itm1.product.id == paper.id:
+                feats1 = itm1.items
+                names = feats1.pluck('feature.name')
+                self.two(feats1)
+                self.true('gray' in names)
+                self.true('Extra glossy finish' in names)
+            # The pen product had a blue feature added
+            elif itm1.product.id == pen.id:
+                feats1 = itm1.items
+                names = feats1.pluck('feature.name')
+                self.one(feats1)
+                self.true('blue' in names)
+
+        gen = zip(so_2.items.sorted(), so_2_1.items.sorted())
         for itm, itm1 in gen:
             self.eq(itm.id, itm1.id)
 
         gen = zip(po.items.sorted(), po1.items.sorted())
         for itm, itm1 in gen:
             self.eq(itm.id, itm1.id)
-    
-
+            # The cleaning service billing feature added to it
+            if itm1.product.id == cleaning.id:
+                feats1 = itm1.items
+                names = feats1.pluck('feature.name')
+                self.one(feats1)
+                self.true('Automatically charge to CC' in names)
 
 cli().run()

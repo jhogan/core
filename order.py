@@ -107,6 +107,11 @@ class item(orm.entity):
     # same could be said of the `feature` attribute above).
     product = product.product
 
+    # An item can have a collection of items. When an item has a
+    # constiuent item, the implication is the constient items are
+    # features of the composite item.
+    items = items
+
 class salesitem(item):
     """ Represents an items for a sales order.
 
