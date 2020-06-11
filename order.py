@@ -6,14 +6,14 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2020
 
-import orm
-from orm import text, timespan, datespan
-import entities
-import primative
 from datetime import datetime, date
 from dbg import B
-import party
 from decimal import Decimal as dec
+from orm import text, timespan, datespan
+import entities
+import orm
+import party
+import primative
 import product
 
 class orders(orm.entities):  pass
@@ -46,12 +46,12 @@ class item(orm.entity):
     good or service. Each line item references exactly one product
     (``product.product``) or exactly one feature (``product.feature``).
 
-    The phrase "order line item" should not be used to describe an
-    ``item``. This phrase connotes a physical line on an order form
-    which may encompass many other things aside from the items that have
-    been ordered such as records adjustments, taxes, estimated
-    freightcosts, explanations, etc. ``item`` simply represents the
-    products that have been ordered.
+    Terminological note: The phrase "order line item" should not be used
+    to describe an ``item``. This phrase connotes a physical line on an
+    order form which may encompass many other things aside from the
+    items that have been ordered such as records adjustments, taxes,
+    estimated freightcosts, explanations, etc. ``item`` simply
+    represents the products that have been ordered.
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -59,7 +59,6 @@ class item(orm.entity):
             self.description = None
             self.comment = None
             self.instructions = None
-
 
     # For goods (product.goods), `quantity` represents the number of
     # goods ordered. For services (product.services), this represents

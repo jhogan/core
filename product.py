@@ -6,14 +6,14 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
-import orm
-from orm import text, timespan, datespan
-import entities
-import primative
 from datetime import datetime, date
 from dbg import B
-import party
 from decimal import Decimal as dec
+from orm import text, timespan, datespan
+import entities
+import orm
+import party
+import primative
 
 class products(orm.entities): pass
 
@@ -62,7 +62,7 @@ class sizes(features):                     pass
 class brands(features):                    pass
 class softwares(features):                 pass
 class hardwares(features):                 pass
-class billings(orm.entities):              pass
+class billings(features):                  pass
 class measures(orm.entities):              pass
 class measure_measures(orm.associations):  pass
 class feature_features(orm.associations):  pass
