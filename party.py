@@ -40,6 +40,7 @@ class personals(roles):                                      pass
 class organizationals(roles):                                pass
 class suppliers(organizationals):                            pass
 class organizationalunits(organizationals):                  pass
+class internals(organizationals):                            pass
 class subsidiaries(organizationalunits):                     pass
 class parents(organizationalunits):                          pass
 class roletypes(orm.entities):                               pass
@@ -47,6 +48,7 @@ class partyroletypes(roletypes):                             pass
 class employees(personals):                                  pass
 class customers(personals):                                  pass
 class billtos(customers):                                    pass
+class placings(customers):                                   pass
 class party_types(orm.associations):                         pass
 class organizations(parties):                                pass
 class legalorganizations(organizations):                     pass
@@ -1342,6 +1344,13 @@ class organizationalunit(organizational):
     organizations as well as maintenance of organizational structure..
     """
 
+class internal(organizational):
+    """ The internal organizational role.
+
+    Note that this entity was originally called INTERNAL ORGANIZATION in "The
+    Data Modeling Resource Book".
+    """
+
 class subsidiary(organizationalunit):
     """ An organizational unit role a company plays to indicate that
     they are owned by a parent organization.
@@ -1405,6 +1414,17 @@ class customer(role):
 class billto(customer):
     """ A role indicating a party that has purchased a product from
     another party.
+
+    Note that this entity was originally called BILL TO CUSTOMER in "The
+    Data Modeling Resource Book".
+    """ 
+
+class placing(customer):
+    """ A role indicating a party that has places an order to another
+    party.
+
+    Note that this entity was originally called PLACING CUSTOMER in "The
+    Data Modeling Resource Book".
     """
 
 class party_type(orm.association):

@@ -19638,4 +19638,87 @@ class gem_order_order(tester):
                 self.one(feats1)
                 self.true('Automatically charge to CC' in names)
 
+    def it_uses_roles(self):
+        """ A company called ACME will play a `placing` role (they act as
+        th placing customer) to a sales order.
+        """
+        ''' Create parties involved in order '''
+        acme = party.company(name='ACME Company')
+        sub  = party.company(name='ACME Subsidiary')
+
+        ''' Create contact mechanisms '''
+        acmeaddr = party.address(
+            address1='234 Stretch Street',
+            address2='New York, New York',
+        )
+
+        acmesubaddr = party.address(
+            address1='100 Main Street',
+            address2='New York, New York',
+        )
+
+        acmeshipto = party.address(
+            address1='Drident Avenue',
+            address2='New York, New York',
+        )
+
+        # Create order
+        so  =  order.salesorder()
+
+        ''' Create roles involved in order '''
+        placing = party.placing()
+        internal = party.internal()
+        billto = party.billto()
+
+        ''' Associate roles to the order '''
+        so.placing  =  placing
+        so.taking   =  internal
+        so.billto   =  billto
+
+        ''' Associate contact mechanism to the order '''
+        so.placedusing  =  acmeaddr
+        so.takenusing   =  acmesubaddr
+        so.billtousing  =  acmeaddr
+
+        ''' Associate roles to the parties '''
+
+        # Acme is places the order and Acme Subsidiary takes the order.
+        acme.roles  +=  placing
+        sub.roles   +=  internal
+        acme.roles  +=  billto
+
+        so.save()
+
+        so1 = so.orm.reloaded()
+
+        placing1 = so1.placing
+        self.eq(placing.id, placing1.id)
+
+        # FIXME We shouldn't have to use orm.super here
+        acme1 = placing1.orm.super.orm.super.party
+        self.eq(acme.id, acme1.id)
+
+        internal1 = so1.taking
+        self.eq(internal.id, internal1.id)
+
+        sub1 = internal1.party
+        self.eq(sub.id, sub1.id)
+
+        billto1 = so1.billto
+        self.eq(billto.id, billto1.id)
+
+        # FIXME We shouldn't have to use orm.super here
+        acme1 = billto1.orm.super.orm.super.party
+        self.eq(acme.id, acme1.id)
+
+        acmeaddr1     =  so1.placedusing
+        acmesubaddr1  =  so1.takenusing
+        acmeaddr2     =  so1.billtousing
+
+        self.eq(acmeaddr.id,     acmeaddr1.id)
+        self.eq(acmesubaddr.id,  acmesubaddr1.id)
+        self.eq(acmeaddr.id,     acmeaddr2.id)
+
+
+
 cli().run()

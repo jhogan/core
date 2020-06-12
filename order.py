@@ -133,6 +133,29 @@ class salesorder(order):
     Data Modeling Resource Book".
     """
 
+    # The role that placed the order. To get the actual party that
+    # placed the order, we would use something like `so.placing.party`.
+    placing = party.placing
+
+    # The party role that is taken the order. An order may be taken by a
+    # particular subsidiary, division or department.
+    taking = party.role
+
+    # Tho party role that is responsible for the bill.
+    billto = party.billto
+
+    # The contact mechanism the order was placed using, such as a phone
+    # number or address.
+    placedusing = party.contactmechanism
+
+    # The contact mechanism the order was the order was taken from, such
+    # as a phone number or address.
+    takenusing = party.contactmechanism
+
+    # The contact mechanism for the orders billto - probably a
+    # party.address.
+    billtousing = party.contactmechanism
+
 class purchaseorder(order):
     """ A class representing a purchase order
 
