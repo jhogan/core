@@ -1261,15 +1261,15 @@ class role_role(orm.association):
     The grammer of this association can be understood with the following
     example:
     
-        The ``company`` "ABC Subsidary" has a ``role`` called
+        The ``company`` "ABC Subsidiary" has a ``role`` called
         "Subsidiary".  That role is the ``subject`` of a ``role_role``
         association. In that association, the ``object`` attribute
         references a ``role`` called "Parent Corporation" which belongs
         to "ABC Corporation". 
 
-        To put it in plainer English: ABC Subsidary has a subsidiary
+        To put it in plainer English: ABC Subsidiary has a subsidiary
         role that is associated with ABC Corporation's Parent
-        Corporation role, i.e., ABC Subsidary is the subsidiary of ABC
+        Corporation role, i.e., ABC Subsidiary is the subsidiary of ABC
         Corporation.
 
     Note that this is modeled after the PARTY RELATIONSHIP entity in

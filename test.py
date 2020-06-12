@@ -19501,6 +19501,14 @@ class gem_order_order(tester):
             order.purchaseitems,
             order.purchaseorders,
             order.salesorders,
+            party.role,
+            party.partyroletype,
+            party.party,
+            party.company,
+            party.customer,
+            party.placing,
+            party.internal,
+            party.billto,
         )
 
     def it_creates(self):
