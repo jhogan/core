@@ -562,6 +562,7 @@ class tester(entity):
             return r
         return r + "\n" + self.failures._tostr(includeHeader=False) + "\n"
 
+    # TODO Remove preserve. It should be called dedent.
     @staticmethod
     def preserve(str):
         return dedent(str)[1:-1]
@@ -579,6 +580,7 @@ class tester(entity):
         # future.
 
         # TODO Consider using the _request() method
+
         import app
 
         body = {

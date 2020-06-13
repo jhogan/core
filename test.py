@@ -10,12 +10,13 @@
 
 from configfile import configfile
 from contextlib import contextmanager
-from datetime import timezone, datetime
+from datetime import timezone, datetime, date
 from entities import BrokenRulesError
 from func import enumerate, getattr, B
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
 from pprint import pprint
 from random import randint, uniform
+from random import randint, uniform, random
 from table import *
 from tester import *
 from uuid import uuid4
@@ -28,16 +29,18 @@ import dom
 import exc
 import functools
 import gem
-import gem
 import io
 import jwt as pyjwt
 import math
 import MySQLdb
 import _mysql_exceptions
+import order
 import orm
+import party
 import pathlib
 import pom
 import primative
+import product
 import pytz
 import re
 import textwrap
@@ -3119,6 +3122,14 @@ class test_datetime(tester):
         expect = dt.astimezone('US/Arizona')
         self.eq(expect, actual)
 
+class test_date(tester):
+    def it_calls__init__(self):
+        # Test date with standard args
+        args = (2003, 10, 11)
+        expect = date(*args)
+        actual = primative.date(*args)
+        self.eq(expect, actual)
+
 class mycli(cli):
     def registertraceevents(self):
         ts = self.testers
@@ -3128,6 +3139,12 @@ class mycli(cli):
 ##################################################################################
 ''' ORM Tests '''
 ##################################################################################
+
+class myreserveds(orm.entities):
+    pass
+
+class myreserved(orm.entity):
+    interval = int
 
 class comments(orm.entities):
     pass
@@ -3293,6 +3310,9 @@ class artifact(orm.entity):
         fact = artifact()
         fact.title = uuid4().hex
         fact.description = uuid4().hex
+        fact.type = 'A'
+        fact.serial = 'A' * 255
+        fact.comments = uuid4().hex
         return fact
 
     title        =  str,        orm.fulltext('title_desc',0)
@@ -3301,6 +3321,10 @@ class artifact(orm.entity):
     abstract     =  bool
     price        =  dec
     components   =  components
+    lifespan     =  orm.datespan(suffix='life')
+    comments     =  orm.text
+    type         =  chr(1)
+    serial       =  chr(255)
 
 class artist(orm.entity):
     firstname      =  str, orm.index('fullname', 1)
@@ -3313,6 +3337,7 @@ class artist(orm.entity):
 
     # Support datetime module as well as datetime.datetime class
     dob1           =  sys.modules['datetime']
+    dob2           =  date
     password       =  bytes, 32, 32
     ssn            =  str, 11, 11, orm.index #  char
     locations      =  locations
@@ -3384,6 +3409,9 @@ class artist(orm.entity):
     # 'setter' method in the 'Property' class here
     # https://docs.python.org/3/howto/descriptor.html#properties hints
     # at how this may be implemented in orm.attr.
+
+    # Update to the above comment. See d7f877ef
+
     """
     @phone.setter(str)
     def phone(self,)
@@ -3426,11 +3454,13 @@ class artist_artifact(orm.association):
     artifact  =  artifact
     role      =  str
     planet    =  str
+    span      =  orm.timespan
+    active    =  orm.timespan(prefix='active')
 
-    def __init__(self, o=None):
+    def __init__(self, *args, **kwargs):
         self['planet'] = 'Earth'
         self._processing = False
-        super().__init__(o)
+        super().__init__(*args, **kwargs)
 
     @staticmethod
     def getvalid():
@@ -3753,6 +3783,48 @@ class test_orm(tester):
             
         self.eq(t.count, cnt, msg)
 
+    def it_uses_reserved_mysql_words_for_fields(self):
+        """ Ensure that the CREATE TABLE statement uses backticks to
+        quote column names so we can use MySQL reserved words, such as
+        `interval`. If backticks aren't used, the MySQL libray raises an
+        error.
+        """
+        self.expect(None, lambda: myreserveds.orm.recreate())
+
+        res = myreserved()
+        res.interval = randint(1, 11)
+
+        # Test with INSERT
+        res.save()
+
+        # Test with SELECT. NOTE This type of SELECT currently uses a
+        # wildcard so its not much of a test. Either way, we still need
+        # to reload the entity.
+        res1 = res.orm.reloaded()
+
+        self.eq(res.id, res1.id)
+        self.eq(res.interval, res1.interval)
+
+        res1.interval += 1
+
+        # Test with UPDATE
+        res1.save()
+
+        res2 = res1.orm.reloaded()
+
+        self.eq(res1.id, res2.id)
+        self.eq(res.interval + 1, res2.interval)
+        self.eq(res1.interval, res2.interval)
+
+        # Test with SELECT. Unlike the `res.orm.relodaed` SELECTs which
+        # doesn't specify column names, this SELECT does specify column
+        # names and would fail if backticks weren't used.
+        ress = myreserveds(interval=res2.interval)
+        self.one(ress)
+
+        self.eq(ress.first.id, res2.id)
+        self.eq(ress.first.interval, res2.interval)
+
     def it_creates_indexes_on_foreign_keys(self):
         # Standard entity
         self.notnone(presentation.orm.mappings['artistid'].index)
@@ -3782,6 +3854,15 @@ class test_orm(tester):
 
     def it_computes_abbreviation(self):
         es = orm.orm.getentitys() + orm.orm.getassociations()
+
+        # Create the tables if they don't already exist. This is needed
+        # because in the list comprehension that that instatiates `e`,
+        # we will eventually get to an entity's constructor that uses
+        # the orm.ensure method. This method queries the table. We
+        # create all the tables so that there is no MySQL exception when
+        # orm.ensure tries to query it.
+        for e in es:
+            e.orm.create(ignore=True)
 
         abbrs = [e.orm.abbreviation for e in es]
         abbrs1 = [e().orm.abbreviation for e in es]
@@ -3984,6 +4065,9 @@ class test_orm(tester):
         # FIXME `chrons`'s count did not equal two during a standard
         # test 2020-01-15
         self.two(chrons)
+
+        # FIXME This happend today: Jun 7, 2020
+        B(chrons.count != 2)
         self._chrons(art, 'create')
         self._chrons(pres, 'create')
 
@@ -4037,8 +4121,30 @@ class test_orm(tester):
         B(chrons.count != 4)
         # FIXME The below line produced a failure today, but it went
         # away.  Jul 6, 2019
-        # AGAIN Dec 15, 2019
-        # AGAIN Jan 21, 2020
+
+        # NOTE The below line produced a failure today, but it went
+        # away.  (Jul 6)
+        # UPDATE Happend again Dec 15 2019
+        # UPDATE Happend again Jun 7, 2020
+        # UPDATE Jan 21, 2020
+        # This was found when `chrons` was printed:
+        '''
+		DB: RECONNECT
+		INSERT INTO test_singers (`id`, `createdat`, `updatedat`, `register`, `voice`) VALUES (_binary %s, %s, %s, %s, %s);
+		(UUID('a18737c1-882b-4407-a6c0-610856e62e9c'), datetime(2020, 6, 7, 19, 52, 58, 842050), datetime(2020, 6, 7, 19, 52, 58, 842050), 'laryngealization', '248f3e4d0c6946d48ef800deb7297585')
+
+		INSERT INTO test_concerts (`id`, `singerid`, `createdat`, `record`, `ticketprice`, `attendees`, `duration`, `capacity`, `externalid`, `externalid1`, `updatedat`) VALUES (_binary %s, _binary %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+		(UUID('63c88856-98e7-4380-99ac-af102c43a37b'), UUID('a18737c1-882b-4407-a6c0-610856e62e9c'), datetime(2020, 6, 7, 19, 52, 58, 844279), '3bdd2a7831c44c25b55a611124ea6e01', 0, 0, 0, 0, 0, 0, datetime(2020, 6, 7, 19, 52, 58, 844279))
+
+		INSERT INTO test_presentations (`id`, `artistid`, `createdat`, `name`, `updatedat`, `date`, `description`, `description1`, `title`) VALUES (_binary %s, _binary %s, %s, %s, %s, %s, %s, %s, %s);
+		(UUID('63c88856-98e7-4380-99ac-af102c43a37b'), UUID('a18737c1-882b-4407-a6c0-610856e62e9c'), datetime(2020, 6, 7, 19, 52, 58, 846927), 'bb73eb4983b549a89c7b320f3f8fc582', datetime(2020, 6, 7, 19, 52, 58, 846927), None, '2ef05799e9c04cecbefce257046d0a3e', '5b5bf3f46db64226a081a5e9cdfd6da8', '649e519fbe964c27897ce7e7d69a1c53')
+
+		INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, `lastname`, `dob1`, `bio2`, `bio`, `email_1`, `bio1`, `lifeform`, `firstname`, `password`, `email`, `style`, `phone2`, `ssn`, `dob2`, `dob`, `title`, `phone`) VALUES (_binary %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, _binary %s, %s, %s, %s, %s, %s, %s, %s, %s);
+		(UUID('a18737c1-882b-4407-a6c0-610856e62e9c'), datetime(2020, 6, 7, 19, 52, 58, 850580), datetime(2020, 6, 7, 19, 52, 58, 850580), 0, 0, 'Yourofsky', None, '2', None, '', '11', '04e601539d1b4ff197f092b435a13f5b', 'Gary', b'B{\te\x9e\xe2\x84\xfaH\x88\x17}\x0cY6\xf9\xbb\xe1:\t\xe2NP\xeb\x1aP\x12\xfc\xe5\xe2\xef0', 'username@domain.tld', 'classicism', '', '11111111111', None, None, '', 1111111)
+        '''
+        # So it seems that this is caused by an occasional reconnect. We
+        # should probably filter DB Reconnects out somehow.
+
         self.four(chrons)
 
 
@@ -4532,8 +4638,8 @@ class test_orm(tester):
         # TODO Test deeply nested associations
 
     def it_removes_associations(self):
-        # FIXME Removing associations is broken at the moment because it
-        # cascades any deletion of an association. 
+        # FIXME:32d39bee Removing associations is broken at the moment
+        # because it cascades any deletion of an association. 
         #
         # The following code
         #     
@@ -4895,7 +5001,7 @@ class test_orm(tester):
         )
 
         for fn in fns:
-            self.expect(orm.invalidstream, fn)
+            self.expect(orm.InvalidStream, fn)
 
     def it_calls__iter__on_streamed_entities(self):
         # Create a variant number of artists to test. This will help
@@ -5231,7 +5337,7 @@ class test_orm(tester):
             arts.last.firstname = firstname
             arts.last.save()
 
-        arts1 = artists.all
+        arts1 = artists.orm.all
         self.true(arts1.orm.isstreaming)
         self.ge(arts1.count, cnt)
 
@@ -5626,6 +5732,11 @@ class test_orm(tester):
 
         with self._chrontest() as t:
             t.run(lambda: self.two(rprs1))
+            if rprs1.count != 2:
+                # This happened today:
+                # HAPPENED Jun 2, 2020
+                print('This bug has happened befor')
+                B()
             t.retrieved(rprs1)
 
         self.true(rprs1.isvalid)
@@ -5640,6 +5751,10 @@ class test_orm(tester):
 
         with self._chrontest() as t:
             t.run(lambda: self.one(rprs1))
+            if rprs1.count != 1:
+                print('This bug has happened befor')
+                # HAPPENED Jun 2, 2020
+                B()
             t.retrieved(rprs1)
 
         self.true(rprs1.isvalid)
@@ -5770,7 +5885,7 @@ class test_orm(tester):
         self.eq(sngs.first.id, sngs1.first.id)
 
         l = lambda: concerts("match(title, xxx) against(%s)", 'zero')
-        self.expect(orm.invalidcolumn, l)
+        self.expect(orm.InvalidColumn, l)
 
         # Test "composite" full-text search
 
@@ -5862,7 +5977,7 @@ class test_orm(tester):
         self.eq(rprs.first.id, rprs1.first.id)
 
         l = lambda: battles("match(title, xxx) against(%s)", 'zero')
-        self.expect(orm.invalidcolumn, l)
+        self.expect(orm.InvalidColumn, l)
 
         # Test "composite" full-text search
 
@@ -6406,7 +6521,6 @@ class test_orm(tester):
             self.expect(db.RecordNotFoundError, lambda: presentation(pres.id))
 
     def it_calls_entities(self):
-        
         # Creating a single orm.entity with no collection should produce an
         # AttributeError
         def fn():
@@ -6425,18 +6539,18 @@ class test_orm(tester):
 
         b = bacterium()
         self.is_(b.orm.entities, bacteria)
-        self.eq(b.orm.table, 'bacteria')
+        self.eq(b.orm.table, 'test_bacteria')
 
         # Test implicit entities detection based on naive pluralisation
         art = artist()
         self.is_(art.orm.entities, artists)
-        self.eq(art.orm.table, 'artists')
+        self.eq(art.orm.table, 'test_artists')
 
         # Test implicit entities detection of entities subclass based on naive
         # pluralisation
         s = singer()
         self.is_(s.orm.entities, singers)
-        self.eq(s.orm.table, 'singers')
+        self.eq(s.orm.table, 'test_singers')
 
     def it_calls_id_on_entity(self):
         art = artist.getvalid()
@@ -6688,6 +6802,13 @@ class test_orm(tester):
         self.expect(None, lambda: art.dob) 
         self.one(art.brokenrules)
         self.broken(art, 'dob', 'valid')
+
+        # date
+        art = artist.getvalid()
+        art.dob2 = uuid4().hex       
+        self.expect(None, lambda: art.dob2) 
+        self.one(art.brokenrules)
+        self.broken(art, 'dob2', 'valid')
 
         # int
         art = artist.getvalid()
@@ -7106,6 +7227,83 @@ class test_orm(tester):
             self.one(art.brokenrules)
             self.broken(art, 'email', 'fits')
 
+    def it_calls_chr_attr_on_entity(self):
+        map = artifact.orm.mappings['type']
+
+        self.true(map.isstr)
+        self.eq(1, map.min)
+        self.eq(1, map.max)
+
+        fact = artifact.getvalid()
+        fact.type = ''
+        self.broken(fact, 'type', 'fits')
+
+        fact.type = Δ * 2
+        self.one(fact.brokenrules)
+        self.broken(fact, 'type', 'fits')
+
+        fact.type = Δ
+        self.zero(fact.brokenrules)
+
+        fact.save()
+
+        fact = fact.orm.reloaded()
+
+        self.eq(Δ * 1, fact.type)
+
+        map = artifact.orm.mappings['serial']
+
+        self.true(map.isstr)
+        self.eq(255, map.min)
+        self.eq(255, map.max)
+
+        fact = artifact.getvalid()
+        fact.serial = ''
+        self.broken(fact, 'serial', 'fits')
+
+        fact.serial = Δ * 254
+        self.one(fact.brokenrules)
+        self.broken(fact, 'serial', 'fits')
+
+        fact.serial = Δ * 256
+        self.one(fact.brokenrules)
+        self.broken(fact, 'serial', 'fits')
+
+        fact.serial = Δ * 255
+        self.zero(fact.brokenrules)
+
+        fact.save()
+
+        fact = fact.orm.reloaded()
+
+        self.eq(Δ * 255, fact.serial)
+
+
+
+    def it_calls_text_attr_on_entity(self):
+        map = artifact.orm.mappings['comments']
+
+        self.true(map.isstr)
+        self.eq(1, map.min)
+        self.eq(65535, map.max)
+
+        fact = artifact.getvalid()
+        fact.comments = ''
+        self.broken(fact, 'comments', 'fits')
+
+        fact.comments = Δ * (65535 + 1)
+        self.one(fact.brokenrules)
+        self.broken(fact, 'comments', 'fits')
+
+        fact.comments = Δ * 65535
+        self.zero(fact.brokenrules)
+
+        fact.save()
+
+        fact = fact.orm.reloaded()
+
+        self.eq(Δ * 65535, fact.comments)
+
     def it_calls_str_attr_on_entity(self):
         def saveok(e, attr):
             getattr(e, 'save')()
@@ -7441,6 +7639,507 @@ class test_orm(tester):
             self.zero(obj.brokenrules)
             self.true(saveok(obj, attr))
 
+    def it_datespan_raises_error_if_begin_or_end_exist(self):
+        """ Ensure datespan and timespan can't create the begin or end
+        field if one already exists. We should get a ValueError.
+        """
+
+        ''' datespan '''
+        def f():
+            class myentities(orm.entities):
+                pass
+
+            class myentity(orm.entity):
+                entities = myentities
+                begin = datetime
+                span = orm.datespan
+
+        self.expect(ValueError, lambda: f())
+
+        def f():
+            class myentities(orm.entities):
+                pass
+
+            class myentity(orm.entity):
+                entities = myentities
+                end = datetime
+                span = orm.datespan
+
+        self.expect(ValueError, lambda: f())
+
+        ''' timespan '''
+        def f():
+            class myentities(orm.entities):
+                pass
+
+            class myentity(orm.entity):
+                entities = myentities
+                begin = datetime
+                end = datetime
+                span = orm.timespan
+
+        self.expect(ValueError, lambda: f())
+
+        def f():
+            class myentities(orm.entities):
+                pass
+
+            class myentity(orm.entity):
+                entities = myentities
+                begin = datetime
+                span = orm.timespan
+
+        self.expect(ValueError, lambda: f())
+
+        def f():
+            class myentities(orm.entities):
+                pass
+
+            class myentity(orm.entity):
+                entities = myentities
+                end = datetime
+                span = orm.timespan
+
+        self.expect(ValueError, lambda: f())
+
+        def f():
+            class myentities(orm.entities):
+                pass
+
+            class myentity(orm.entity):
+                entities = myentities
+                begin = datetime
+                end = datetime
+                span = orm.timespan
+
+        self.expect(ValueError, lambda: f())
+
+    def it_calls_datespan_attr_on_entity(self):
+        # TODO Ensure the datespan and timespan objects return 'end' and
+        # 'begin' from dir()
+        maps = artifacts.orm.mappings
+        self.true('beginlife' in maps)
+        self.true('endlife' in maps)
+
+        self.true(maps['beginlife'].isdate)
+        self.true(maps['endlife'].isdate)
+
+        fact = artifact.getvalid()
+        fact.beginlife = '2010-01-11'
+        fact.endlife = '2010-01-30'
+
+        self.true(hasattr(fact, 'beginlife'))
+        self.true(hasattr(fact, 'endlife'))
+        self.true(hasattr(fact, 'lifespan'))
+
+        fact.save()
+
+        fact1 = fact.orm.reloaded()
+
+        self.eq(fact.beginlife, fact1.beginlife)
+        self.eq(fact.endlife, fact1.endlife)
+        self.eq(primative.date('2010-01-11'), fact1.beginlife)
+        self.eq(primative.date('2010-01-30'), fact1.endlife)
+        self.type(primative.date, fact1.beginlife)
+        self.type(primative.date, fact1.endlife)
+
+        self.eq(primative.date('2010-01-11'), fact1.lifespan.begin)
+        self.eq(primative.date('2010-01-30'), fact1.lifespan.end)
+        self.type(primative.date, fact1.lifespan.begin)
+        self.type(primative.date, fact1.lifespan.end)
+
+        # Test the __contains__ method of the datespan object. `in`
+        # inplies that the given date falls within the datespan.
+        self.false  ('2010-1-10'  in  fact1.lifespan)
+        self.true   ('2010-1-11'  in  fact1.lifespan)
+        self.true   ('2010-1-30'  in  fact1.lifespan)
+        self.false  ('2010-1-31'  in  fact1.lifespan)
+
+        # Test the __contains__ method again using the date
+        # from the primative module.
+        self.false  (primative.date('2010-1-10') in  fact1.lifespan)
+        self.true   (primative.date('2010-1-11') in  fact1.lifespan)
+        self.true   (primative.date('2010-1-30') in  fact1.lifespan)
+        self.false  (primative.date('2010-1-31') in  fact1.lifespan)
+
+        # Test the __contains__ method again using standard date
+        # objects
+        self.false  (date(2010, 1, 10) in  fact1.lifespan)
+        self.true   (date(2010, 1, 11) in  fact1.lifespan)
+        self.true   (date(2010, 1, 30) in  fact1.lifespan)
+        self.false  (date(2010, 1, 31) in  fact1.lifespan)
+
+        # If beginlife is None then no date is too early. 
+        min = date.min
+        max = date.max
+        fact1.beginlife = None
+        self.true(min in fact1.lifespan)
+        self.true('2010-1-15'  in  fact1.lifespan)
+        self.false(max in fact1.lifespan)
+
+        # If beginlife and endlife are None, then no date is too early or late
+        fact1.endlife = None
+        self.true(min in fact1.lifespan)
+        self.true('2010-1-15' in fact1.lifespan)
+        self.true(max in fact1.lifespan)
+
+        # If end is None then no date is too late. 
+        fact1.beginlife  =  '2010-01-11'
+        fact1.endlife    =  None
+        self.false(min in  fact1.lifespan)
+        self.false('2010-01-10'  in  fact1.lifespan)
+        self.true('2020-02-02'  in  fact1.lifespan)
+        self.true(max in  fact1.lifespan)
+
+    def it_calls_timespan_attr_on_association(self):
+        # NOTE artist_artifact hase a timespan str already. Here we are
+        # testing the `span` property which is an orm.timespan and its
+        # corresponding `begin` and `end' maps.
+        maps = artist_artifacts.orm.mappings
+        self.true('begin' in maps)
+        self.true('end' in maps)
+
+        self.true(maps['begin'].isdatetime)
+        self.true(maps['end'].isdatetime)
+
+        # Set up an instance of artist_artifact with a `begin` and an
+        # `end that correspond to the `span`.:w
+        art = artist.getvalid()
+        fact = artifact.getvalid()
+
+        aa = artist_artifact(
+            begin     =  '2010-2-11 13:00:00',
+            end       =  '2010-2-11 14:00:00',
+            artist    =  art,
+            artifact  =  fact,
+            role      =  None,
+            timespan  = uuid4().hex
+        )
+
+        # The `span` timespan will introduce these three attributes
+        self.true(hasattr(aa, 'begin'))
+        self.true(hasattr(aa, 'end'))
+        self.true(hasattr(aa, 'span'))
+
+        # Save, reload and test `begin`, `end` and `span`
+        aa.save()
+
+        aa1 = aa.orm.reloaded()
+        
+        self.eq(aa.begin, aa1.begin)
+        self.eq(aa.end, aa1.end)
+        self.eq(primative.datetime('2010-2-11 13:00:00'), aa1.begin)
+        self.eq(primative.datetime('2010-2-11 14:00:00'), aa1.end)
+        self.type(primative.datetime, aa1.begin)
+        self.type(primative.datetime, aa1.end)
+
+        self.eq(primative.datetime('2010-2-11 13:00:00'), aa1.span.begin)
+        self.eq(primative.datetime('2010-2-11 14:00:00'), aa1.span.end)
+        self.type(primative.datetime, aa1.span.begin)
+        self.type(primative.datetime, aa1.span.end)
+
+        # Test the __contains__ method of the timespan object. `in`
+        # inplies that the given datetime falls within the timespan.
+        self.false('2010-2-10  13:30:00'  in  aa1.span)
+        self.false('2010-2-11  12:59:59'  in  aa1.span)
+        self.true('2010-2-11   13:00:00'  in  aa1.span)
+        self.true('2010-2-11   13:30:00'  in  aa1.span)
+        self.true('2010-2-11   14:00:00'  in  aa1.span)
+        self.false('2010-2-12  13:30:00'  in  aa1.span)
+
+        # Test the __contains__ method again using the datetime
+        # from the primative module.
+        self.false(
+            primative.datetime('2010-2-10  13:30:00')  in  aa1.span
+        )
+        self.false(
+            primative.datetime('2010-2-11  12:59:59')  in  aa1.span
+        )
+        self.true(
+            primative.datetime('2010-2-11   13:00:00')  in  aa1.span
+        )
+        self.true(
+            primative.datetime('2010-2-11   13:30:00')  in  aa1.span
+        )
+        self.true(
+            primative.datetime('2010-2-11   14:00:00')  in  aa1.span
+        )
+        self.false(
+            primative.datetime('2010-2-12  13:30:00')  in  aa1.span
+        )
+
+        # Test the __contains__ method again using standard datetime
+        # objects
+        utc = dateutil.tz.gettz('UTC')
+        self.false(
+            datetime(2010, 2, 10, 13, 30, 00)
+                .replace(tzinfo=utc)  in  aa1.span
+        )
+        self.false(
+            datetime(2010, 2, 11, 12, 59, 59)
+                .replace(tzinfo=utc)  in  aa1.span
+        )
+        self.true(
+            datetime(2010, 2, 11, 13, 00, 00)
+                .replace(tzinfo=utc)  in  aa1.span
+        )
+        self.true(
+            datetime(2010, 2, 11, 13, 30, 00)
+                .replace(tzinfo=utc)  in  aa1.span
+        )
+        self.true(
+            datetime(2010, 2, 11, 14, 00, 00)
+                .replace(tzinfo=utc)  in  aa1.span
+        )
+        self.false(
+            datetime(2010, 2, 12, 13, 30, 00)
+                .replace(tzinfo=utc)  in  aa1.span
+        )
+
+        # If begin is None then no date is too early. 
+        min = datetime.min.replace(tzinfo=utc)
+        max = datetime.max.replace(tzinfo=utc)
+        aa1.begin = None
+        self.true(min in  aa1.span)
+        self.true('2010-2-11 14:00:00'  in  aa1.span)
+        self.false(max  in  aa1.span)
+
+        # If begin and end are None, then no date is too early or late
+        aa1.end = None
+        self.true(min  in  aa1.span)
+        self.true('2010-2-11 14:00:00'  in  aa1.span)
+        self.true(max  in  aa1.span)
+
+        # If end is None then no date is too late. 
+        aa1.begin  =  '2010-2-11  13:00:00'
+        aa1.end    =  None
+        self.false(min in  aa1.span)
+        self.false('2010-2-11 12:30:00'  in  aa1.span)
+        self.true('2010-2-11 13:00:00'  in  aa1.span)
+        self.true('2010-2-11 14:00:00'  in  aa1.span)
+        self.true(max in  aa1.span)
+
+        maps = artist_artifacts.orm.mappings
+        self.true('begin' in maps)
+        self.true('end' in maps)
+
+    def it_calls_named_timespan_attr_on_association(self):
+        """ Test "named" timespans. Normally a timespan will default to
+        a begin and end datetime attribute. "Named" timespans have
+        prefix and suffix parameters that surround the "begin" and
+        "end". In this instance artist_artifact has a timespan called
+        `active` with a prefix of `active`. The datetime values can be
+        access like this
+
+            aa = artist_active()
+
+            # Directly
+            assert type(aa.activebegin) is datetime 
+            assert type(aa.activeend) is datetime 
+
+            # Via the timespan object
+            assert type(aa.active.begin) is datetime 
+            assert type(aa.active.end) is datetime 
+
+        TODO: Currently the suffix parameter should work but no tests have
+        been written for it.
+        """
+
+        # Set up an instance of artist_artifact with a `begin` and an
+        # `end that correspond to the `span`.:w
+        art = artist.getvalid()
+        fact = artifact.getvalid()
+
+        aa = artist_artifact(
+            activebegin     =  '2020-2-11 13:00:00',
+            activeend       =  '2020-2-11 14:00:00',
+            artist    =  art,
+            artifact  =  fact,
+            role      =  None,
+            timespan  = uuid4().hex
+        )
+
+        # The `span` timespan will introduce these three nameed attributes
+        self.true(hasattr(aa, 'activebegin'))
+        self.true(hasattr(aa, 'activeend'))
+        self.true(hasattr(aa, 'active'))
+
+        # Save, reload and test `begin`, `end` and `span`
+        aa.save()
+
+        aa1 = aa.orm.reloaded()
+        
+        self.eq(aa.activebegin, aa1.activebegin)
+        self.eq(aa.activeend, aa1.activeend)
+        self.eq(
+            primative.datetime('2020-2-11 13:00:00'),
+            aa1.activebegin
+        )
+        self.eq(
+            primative.datetime('2020-2-11 14:00:00'), 
+            aa1.activeend
+        )
+        self.type(primative.datetime, aa1.activebegin)
+        self.type(primative.datetime, aa1.activeend)
+
+        self.eq(
+            primative.datetime('2020-2-11 13:00:00'),
+            aa1.active.begin
+        )
+        self.eq(
+            primative.datetime('2020-2-11 14:00:00'),
+            aa1.active.end
+        )
+        self.type(primative.datetime, aa1.active.begin)
+        self.type(primative.datetime, aa1.active.end)
+
+        # Test the __contains__ method of the timespan object. `in`
+        # inplies that the given datetime falls within the timespan.
+        self.false('2020-2-10  13:30:00'  in  aa1.active)
+        self.false('2020-2-11  12:59:59'  in  aa1.active)
+        self.true('2020-2-11   13:00:00'  in  aa1.active)
+        self.true('2020-2-11   13:30:00'  in  aa1.active)
+        self.true('2020-2-11   14:00:00'  in  aa1.active)
+        self.false('2020-2-12  13:30:00'  in  aa1.active)
+
+        # Test the __contains__ method again using the datetime
+        # from the primative module.
+        self.false(
+            primative.datetime('2020-2-10  13:30:00')  in  aa1.active
+        )
+        self.false(
+            primative.datetime('2020-2-11  12:59:59')  in  aa1.active
+        )
+        self.true(
+            primative.datetime('2020-2-11   13:00:00')  in  aa1.active
+        )
+        self.true(
+            primative.datetime('2020-2-11   13:30:00')  in  aa1.active
+        )
+        self.true(
+            primative.datetime('2020-2-11   14:00:00')  in  aa1.active
+        )
+        self.false(
+            primative.datetime('2020-2-12  13:30:00')  in  aa1.active
+        )
+
+        # Test the __contains__ method again using standard datetime
+        # objects
+        utc = dateutil.tz.gettz('UTC')
+        self.false(
+            datetime(2020, 2, 10, 13, 30, 00)
+                .replace(tzinfo=utc)  in  aa1.active
+        )
+        self.false(
+            datetime(2020, 2, 11, 12, 59, 59)
+                .replace(tzinfo=utc)  in  aa1.active
+        )
+        self.true(
+            datetime(2020, 2, 11, 13, 00, 00)
+                .replace(tzinfo=utc)  in  aa1.active
+        )
+        self.true(
+            datetime(2020, 2, 11, 13, 30, 00)
+                .replace(tzinfo=utc)  in  aa1.active
+        )
+        self.true(
+            datetime(2020, 2, 11, 14, 00, 00)
+                .replace(tzinfo=utc)  in  aa1.active
+        )
+        self.false(
+            datetime(2020, 2, 12, 13, 30, 00)
+                .replace(tzinfo=utc)  in  aa1.active
+        )
+
+        # If activebegin is None then no date is too early. 
+        min = datetime.min.replace(tzinfo=utc)
+        max = datetime.max.replace(tzinfo=utc)
+        aa1.activebegin = None
+        self.true(min in  aa1.active)
+        self.true('2020-2-11 14:00:00'  in  aa1.active)
+        self.false(max  in  aa1.active)
+
+        # If activebegin and activeend are None, then no date is too early or late
+        aa1.activeend = None
+        self.true(min  in  aa1.active)
+        self.true('2020-2-11 14:00:00'  in  aa1.active)
+        self.true(max  in  aa1.active)
+
+        # If activeend is None then no date is too late. 
+        aa1.activebegin  =  '2020-2-11  13:00:00'
+        aa1.activeend    =  None
+        self.false(min in  aa1.active)
+        self.false('2020-2-11 12:30:00'  in  aa1.active)
+        self.true('2020-2-11 13:00:00'  in  aa1.active)
+        self.true('2020-2-11 14:00:00'  in  aa1.active)
+        self.true(max in  aa1.span)
+
+        maps = artist_artifacts.orm.mappings
+        self.true('activebegin' in maps)
+        self.true('activeend' in maps)
+
+
+    def it_calls_date_attr_on_entity(self):
+        art = artist.getvalid()
+        self.none(art.dob)
+        expect =  '2005-01-10'
+        art.dob2 = expect
+        self.type(primative.date, art.dob2)
+
+        expect = primative.date(2005, 1, 10)
+        self.eq(expect, art.dob2)
+        self.eq(date(2005, 1, 10), art.dob2)
+
+        # Save, reload, test
+        art.save()
+        self.eq(date(2005, 1, 10), art.dob2)
+
+        art = art.orm.reloaded()
+        self.type(primative.date, art.dob2)
+        self.eq(expect, art.dob2)
+        self.eq(date(2005, 1, 10), art.dob2)
+
+        # Update
+        art.dob2 = '2006-01-01'
+        expect = primative.date(2006, 1, 1)
+        self.type(primative.date, art.dob2)
+        self.eq(expect, art.dob2)
+        self.eq(date(2006, 1, 1), art.dob2)
+
+        art.save()
+
+        art = art.orm.reloaded()
+        self.type(primative.date, art.dob2)
+        self.eq(expect, art.dob2)
+        self.eq(date(2006, 1, 1), art.dob2)
+
+        # Earliest
+        art.dob2 = date(1, 1, 1)
+        art.save()
+
+        self.type(primative.date, art.dob2)
+        self.eq(primative.date(1, 1, 1), art.orm.reloaded().dob2)
+
+        # Earliest
+        art.dob2 = date.min
+        self.type(primative.date, art.dob2)
+        self.eq(primative.date(1, 1, 1), art.dob2)
+        art.save()
+
+        art = art.orm.reloaded()
+        self.type(primative.date, art.dob2)
+        self.eq(primative.date(1, 1, 1), art.dob2)
+
+        # Latest
+        art.dob2 = date.max
+        self.type(primative.date, art.dob2)
+        self.eq(primative.date(9999, 12, 31), art.dob2)
+        art.save()
+
+        art = art.orm.reloaded()
+        self.type(primative.date, art.dob2)
+        self.eq(primative.date(9999, 12, 31), art.dob2)
+
     def it_calls_datetime_attr_on_entity(self):
         utc = timezone.utc
 
@@ -7482,7 +8181,7 @@ class test_orm(tester):
         self.eq(expect, artist(art.id).dob)
         self.type(primative.datetime, artist(art.id).dob)
 
-        # It converts backt to AZ time using string tz
+        # It converts back to AZ time using string tz
         self.eq(azdt, art.dob.astimezone('US/Arizona'))
 
         # Test invalid date times
@@ -7504,7 +8203,7 @@ class test_orm(tester):
         art.save()
         self.eq(art.dob, artist(art.id).dob)
         
-    def it_calls_str_propertys_setter_on_entity(self):
+    def it_calls_str_properties_setter_on_entity(self):
         class persons(orm.entities):
             pass
 
@@ -7561,8 +8260,9 @@ class test_orm(tester):
         art1.style      =  uuid4().hex
         art1.weight     += 1
         art1.networth   =  1
-        art1.dob        =  primative.datetime.now().replace(tzinfo=timezone.utc)
-        art1.dob1       =  primative.datetime.now().replace(tzinfo=timezone.utc)
+        art1.dob        =  primative.datetime.utcnow()
+        art1.dob1       =  primative.datetime.utcnow()
+        art1.dob2       =  primative.date.today()
         art1.password   = bytes([randint(0, 255) for _ in range(32)])
         art1.ssn        = '2' * 11
         art1.bio        = uuid4().hex
@@ -7826,19 +8526,19 @@ class test_orm(tester):
 
         self.expect(None, lambda: art.save())
 
-        # Ensure e._load recovers correctly from a disconnect like we did with
+        # Ensure e.load recovers correctly from a disconnect like we did with
         # e.save() above.  (Normally, __init__(id) for an entity calls
-        # self._load(id) internally.  Here we call art._load directly so we
+        # self.load(id) internally.  Here we call art.load directly so we
         # have time to subscribe to art's onafterreconnect event.)
         drown()
         id, art = art.id, artist.getvalid()
         art.onafterreconnect += art_onafterreconnect
 
-        self.expect(MySQLdb.OperationalError, lambda: art._load(id))
+        self.expect(MySQLdb.OperationalError, lambda: art.orm.load(id))
 
         art.onafterreconnect -= art_onafterreconnect
 
-        self.expect(None, lambda: art._load(id))
+        self.expect(None, lambda: art.orm.load(id))
 
         # Ensure that es.orm.load() recovers correctly from a reconnect
         arts = artists(id=id)
@@ -9827,6 +10527,9 @@ class test_orm(tester):
             
             if i == 0:
                 self.two(chrons)
+
+                # This was noticed today: Jun 5, 2020
+                B(chrons.count != 2)
                 self.eq(chrons.where('entity', sng).first.op,           'create')
                 self.eq(chrons.where('entity', sng.orm.super).first.op, 'create')
             elif i == 1:
@@ -9909,7 +10612,6 @@ class test_orm(tester):
                         '''
                     )
                     B()
-
 
         # Dirty rpr and save. Ensure the object was actually saved
         rpr.firstname  =  uuid4().hex
@@ -10007,7 +10709,7 @@ class test_orm(tester):
         sng1.networth  =- 1
         sng1.dob       = datetime.now()
         sng1.dob1      = datetime.now()
-        sng1.dob2      = datetime.now()
+        sng1.dob2      = date.today()
         sng1.password  = bytes([randint(0, 255) for _ in range(32)])
         sng1.ssn       = '2' * 11
         sng1.bio       = uuid4().hex
@@ -10103,7 +10805,7 @@ class test_orm(tester):
         rpr1.networth  =- 1
         rpr1.dob       = datetime.now()
         rpr1.dob1      = datetime.now()
-        rpr1.dob2      = datetime.now()
+        rpr1.dob2      = date.today()
         rpr1.password  = bytes([randint(0, 255) for _ in range(32)])
         rpr1.ssn       = '2' * 11
         rpr1.bio       = uuid4().hex
@@ -10238,7 +10940,7 @@ class test_orm(tester):
 
         self.eq((True, False, False), rpr.orm.persistencestate)
 
-        es = [rpr.orm.entity] + rpr.orm.entity.orm.superclasses
+        es = [rpr.orm.entity] + rpr.orm.entity.orm.superentities
         for e in es:
             self.expect(db.RecordNotFoundError, lambda: e(rpr.id))
 
@@ -11106,7 +11808,7 @@ class test_orm(tester):
         )
 
         for expr in exprs:
-            self.expect(orm.invalidcolumn, lambda: artists(expr, ()))
+            self.expect(orm.InvalidColumn, lambda: artists(expr, ()))
 
         exprs = (
             "match (bio) against ('keyword') and firstname = 1",
@@ -11128,7 +11830,7 @@ class test_orm(tester):
         )
 
         for expr in exprs:
-            self.expect(orm.invalidcolumn, lambda: artists(expr, ()))
+            self.expect(orm.InvalidColumn, lambda: artists(expr, ()))
 
     def it_parameterizes_predicate(self):
         ''' Ensure that the literals in predicates get replaced with
@@ -11183,7 +11885,7 @@ class test_orm(tester):
             self.lt(i, 2)
 
     def it_raises_exception_when_a_non_existing_column_is_referenced(self):
-        self.expect(orm.invalidcolumn, lambda: artists(notacolumn = 1234))
+        self.expect(orm.InvalidColumn, lambda: artists(notacolumn = 1234))
 
     def it_raises_exception_when_bytes_type_is_compared_to_nonbinary(
         self):
@@ -11193,7 +11895,7 @@ class test_orm(tester):
         return
         arts1 &= artifacts()
 
-        arts1.orm.load()
+        arts1.orm.collect()
 
     def it_calls_innerjoin_on_entities_and_writes_new_records(self):
         arts = self._create_join_test_data()
@@ -11203,7 +11905,7 @@ class test_orm(tester):
 
         # Explicitly load artists->artifacts->components. Add an entry to
         # `arts1` and make sure that the new record persists.
-        arts1.orm.load()
+        arts1.orm.collect()
 
         art1 = artist.getvalid()
         arts1 += art1
@@ -11239,7 +11941,7 @@ class test_orm(tester):
         # Reload using the explicit loading, join method and update the record
         # added above. Ensure that the new data presists.
         arts3 = artists() & (artifacts() & components())
-        arts3.orm.load()
+        arts3.orm.collect()
         art3 = arts3[art2.id]
         newval = uuid4().hex
 
@@ -12339,6 +13041,7 @@ class test_orm(tester):
         com.save()
 
         recurse(com, comment(com.id), expecteddepth=0)
+        self.none(com.comment)
 
         ' Test recursive shallow recursion (1 level) '
         com = comment.getvalid()
@@ -12348,6 +13051,8 @@ class test_orm(tester):
             com.comments += comment.getvalid()
             com.comments.last.title = uuid4().hex
             com.comments.last.body = uuid4().hex
+            self.is_(com, com.comments.last.comment)
+
 
         with self._chrontest() as t:
             t.run(com.save)
@@ -12356,6 +13061,9 @@ class test_orm(tester):
             t.created(com.comments.second)
 
         recurse(com, comment(com.id), expecteddepth=1)
+
+        sub = comment(com.comments.last.id)
+        self.eq(com.id, sub.comment.id)
 
         ''' Test deep recursion '''
         com = comment.getvalid()
@@ -14980,6 +15688,7 @@ class gem_party_person(tester):
                 getattr(per, map.name),
                 getattr(per1, map.name)
             )
+
 
     def it_updates(self):
         # Create
@@ -19001,7 +19710,6 @@ class gem_order_order(tester):
 ########################################################################
 # Test dom                                                             #
 ########################################################################
-
 class foonet(pom.site):
     def __init__(self, host='foo.net'):
         super().__init__(host)
@@ -22166,7 +22874,7 @@ class dom_markdown(tester):
         # Setext-style headers 
         md = dom.markdown('''
         This is an H1
-        =============
+        ============
 
         This is an H2
         -------------

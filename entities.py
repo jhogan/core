@@ -286,6 +286,59 @@ class entities(object):
         """ Return a randomized version of self."""
         return type(self)(initial=sample(self._ls, self.count))
 
+    def max(self, key):
+        """ Return the entity with the maximum value defined in the key
+        lambda. If no entities are in the collection, None is returned.
+        If two entities tie as the max, the first in the collection will
+        be returned.
+        
+        Note that this is modeled on the builtin `max()` function in
+        Python.
+
+        For example, given an entities collection of houses each with a
+        proprety called ``price``, we can get the priciest house in the
+        collection by doing the following::
+
+            priciest = houses.max(key=lambda x: x.price)
+        """
+
+        # TODO Add the `default` argument like the builtin `max()`
+
+        return self._minmax(min=False, key=key)
+
+    def min(self, key):
+        """ Return the entity with the minimum value defined in the key
+        lambda. If no entities are in the collection, None is returned.
+        If two entities tie as for min, the first entity in the
+        collection will be returned.
+        
+        Note that this is modeled on the builtin `min()` function in
+        Python.
+
+        For example, given an entities collection of houses each with a
+        proprety called ``price``, we can get the cheapest house in the
+        collection by doing the following::
+
+            cheapest = houses.min(key=lambda x: x.price)
+        """
+
+        # TODO Add the `default` argument like the builtin `min()`
+        return self._minmax(min=True, key=key)
+
+    def _minmax(self, min, key):
+        extreme = None
+        for e in self:
+            if extreme:
+                if min:
+                    if key(e) < key(extreme):
+                        extreme = e
+                else:
+                    if key(e) > key(extreme):
+                        extreme = e
+            else:
+                extreme = e
+        return extreme
+
     def where(self, p1, p2=None):
         if type(p1) == type:
             cls = self.__class__
@@ -504,8 +557,12 @@ class entities(object):
                 and not isinstance(self, indexes):
 
                 self.onadd(self, entityaddeventargs(t))
-        #except AttributeError as ex:
-        except SyntaxError as ex:
+        except AttributeError as ex:
+            # NOTE You can use the below line to get pdb.py to the place
+            # the original exception was raised:
+            #
+            # import pdb
+            # pdb.post_mortem(ex.__traceback__)
             msg = str(ex)
             msg += '\n' + 'Ensure the superclass\'s __init__ is called.'
             raise AttributeError(msg)

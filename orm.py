@@ -16,12 +16,14 @@
 
 from collections.abc import Iterable
 from contextlib import suppress
-from datetime import datetime
+from datetime import datetime, date
+from dbg import B
 from enum import Enum, unique
-from MySQLdb.constants.ER import BAD_TABLE_ERROR
+from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
 from pprint import pprint
 from shlex import shlex
 from table import table
+from types import ModuleType
 from uuid import uuid4, UUID
 import builtins
 import dateutil
@@ -31,17 +33,63 @@ import entities as entitiesmod
 from entities import classproperty
 import func
 import gc
+import inspect
 import itertools
 import MySQLdb
+import _mysql_exceptions
+import os
 import primative
 import re
 import sys
 import textwrap
-from dbg import B
-from types import ModuleType
+
 # TODO Research making these constants the same as their function
-# equivilants.
+# equivalent.
 # i.e., s/2/str; s/3/int/, etc.
+
+# TODO Add bytes(n) as datatype. Having to type `bytes, 16, 16` is not
+# fun.
+
+# TODO Prefix each table name with the name of the module.
+
+# TODO:d7f877ef  A need was found to create mutators for explicit
+# fields. A person's name property should be able to parse a name
+# before saving to its `names` collection.
+#
+#     per = party.person()
+#     per.name = 'Jesse Hogan'
+#     assert per.first == 'Jesse'
+#     assert per.last  == 'Hogan'
+
+# FIXME:1de11dc0 There is an issue with the way superentities
+# collections are accessed as attributes of orm.entity object. 
+#
+# The issue can be seen in the differente ways `rapper` (from test.py)
+# and `product.measuer` access their superentities attributes. For
+# example: `rapper` is able to access the `concerts` attribute because
+# `rapper`'s superentity is `singer` and `singer` has a `concerts`
+# attribute. 
+#
+# So far so good, but in the case of `product.measure`, which has a
+# constituents collection `dimensions`, we would expect to be able to
+# access a `features` attribute of `product.measure` because
+# `dimensions` is a subentity of `features`. However, since
+# `product.measure` has no superentity, we can not arrive at the
+# `feature` attribute because of the way the ORM code is written. We
+# instead get an AttributeError.
+#
+# This may or may not be important. So far, the need to access
+# superentities attributes has not come up. However, if the need arises,
+# we may want to correct this.
+
+# TODO I think text attributes should be None by default and this should
+# not be a validation error. We can create a fieldmapping.istextalias to
+# determine if the attribute field would be created as a longtext in
+# the database. If so, allow None to be be a value. This is just a hunch
+# at the moment. It just seems like a lot of fields that are of type
+# text (field names like description, comment, instructions, etc. should
+# by default be optional.)
+
 @unique
 class types(Enum):
     """
@@ -58,6 +106,255 @@ class types(Enum):
     float     =  6
     decimal   =  7
     bytes     =  8
+    date      =  9
+    timespan  =  10
+
+class alias:
+    type = None
+    min = None
+    max = None
+
+class text(alias):
+    """ An alias for:
+
+            str, 1, 65535
+
+        Many entity objects in the GEM simply want what would be
+        equivalent to a MySQL ``text`` date type. This alias allows a
+        GEM author to say::
+
+            class person(orm.entity):
+                name = str
+                bio = orm.text
+
+        instead of::
+
+            class person(orm.entity):
+                name = str
+                bio = str, 1, 65535
+
+    """
+    type = str
+    min = 1
+    max = 65535
+
+    def __iter__(self):
+        yield self.type
+        yield self.min
+        yield self.max
+
+class char():
+    @staticmethod
+    def expand(body):
+        """ A staticmethod to find chr fields in the body of a class and
+        convert them to str fields. For example, the ``isbn`` field in
+        the book class::
+
+            class book(orm.entity):
+                isbn = chr(1)
+
+        will be translated into a str map with a minimum length and
+        maximum length of 10. 
+        
+        Note that the ORM sees str maps with equal minimun and maximun
+        lengths as ``char`` database datatypes, so using the ``chr``
+        function above for the isbn amounts to declaring a database char
+        type with a length of 10. The lower-level alternative
+
+            class book(orm.entity):
+                isbn = str, 10, 10
+
+        does the same thing, but is less straightforward in its
+        intention.
+        """
+
+        for k, v in body.items():
+            if isinstance(v, str) and \
+               len(v) == 1        and \
+               ord(v) in range(0, 256):
+
+                len1 = ord(v)
+                body[k] = str, len1, len1
+
+class span:
+    """ An abstract class for spans of time. 
+    
+    Many entities in the GEM require date(time) fields with names like
+    ``begin`` and ``end`` to record the time an entity has been in a
+    certain state. For example::
+
+        class user(orm.entity):
+            # The date the user became active
+            beginactive = date
+
+            # The date the user became inactive
+            endactive   = date
+
+    The span classes allow us to write the above with only two lines::
+
+        class user(orm.entity):
+            active = datespan(suffix='active')
+
+    The user class will now expose three attributes:
+
+        u = user()
+        assert type(u.beginactive) is primative date
+        assert type(u.endactive) is primative date
+        assert type(u.active) is datespan
+
+    The `active` atttribute is a ``datespan`` object that exposes the
+    `begin` and `end` attribute as well as doing other nice things like
+    telling you whether a given date is within the datespan.
+
+        assert type(u.active.begin) is primative date
+        assert type(u.active.end) is primative date
+
+        if '2020-02-02' in u.active:
+            # 2020-02-02 must come after u.active.begin and before
+            # u.active.end if we are here.
+            ...
+
+    Note that activebegin and endactive will still be date fields in the
+    the table and these attributes will act just like any other date
+    field on the entity.
+
+    The above used the ``datespan`` subclass. A ``timespan`` subclass is
+    similar but uses a datetime datatype instead of a date datatype to
+    include the time.
+    """
+    
+    def __init__(self, prefix=None, suffix=None, e=None):
+        self.entity = e
+        self._prefix = prefix
+        self._suffix = suffix
+
+    @property
+    def isstatic(self):
+        """``span``'s are static if they have no entity. The entity would
+        be provide by the clone method when an instance is available to
+        associate with the ``span``.
+        """
+        return not bool(self.entity)
+
+    @classmethod
+    def expand(cls, body):
+        """ A class method to scan the ``body`` ``dict`` for spans. If
+        found, `begin`, `end` and a `span` object are added to the
+        ``body`` ``dict``.  
+        """
+        mods = list()
+        for k, v in body.items():
+            if hasattr(v, 'mro'):
+                if timespan in v.mro():
+                    v = timespan()
+                elif datespan in v.mro():
+                    v = datespan()
+
+            if isinstance(v, cls):
+                mods.append((k, v))
+
+        for k, v in mods:
+            if builtins.type(v) is timespan:
+                type = types.datetime
+            elif builtins.type(v) is datespan:
+                type = types.date
+            else:
+                raise TypeError('Invalid span type')
+
+            begin = v.str_begin
+            end   = v.str_end
+
+            for fld in (begin, end):
+                if fld in body:
+                    raise ValueError(
+                        'Span wants to create existing field "%s"' % fld
+                    )
+
+            body[begin] = fieldmapping(type, span=v)
+            body[end]   = fieldmapping(type, span=v)
+            body[k]     = v
+
+    def clone(self, e):
+        return type(self)(
+            prefix=self.prefix, 
+            suffix=self.suffix, 
+            e=e
+        )
+
+    @property
+    def suffix(self):
+        return self._suffix
+
+    @property
+    def str_begin(self):
+        begin = 'begin'
+        if self.prefix:
+            begin = self.prefix + begin
+
+        if self.suffix:
+            begin += self.suffix
+
+        return begin
+
+    @property
+    def str_end(self):
+        end = 'end'
+        if self.prefix:
+            end = self.prefix + end
+
+        if self.suffix:
+            end += self.suffix
+
+        return end 
+
+    @property
+    def prefix(self):
+        return self._prefix
+
+    @property
+    def begin(self):
+        return getattr(self.entity, self.str_begin)
+
+    @begin.setter
+    def begin(self, v):
+        setattr(self.entity, self.str_begin, v)
+
+    @property
+    def end(self):
+        return getattr(self.entity, self.str_end)
+
+    @end.setter
+    def end(self, v):
+        setattr(self.entity, self.str_end, v)
+
+    def __contains__(self, dt):
+        if type(self) is timespan:
+            dt = primative.datetime(dt)
+        elif type(self) is datespan:
+            dt = primative.date(dt)
+        else:
+            raise TypeError('Invalid span')
+
+        return (self.begin is None or dt >= self.begin) and \
+               (self.end   is None or dt <= self.end)
+
+    def iscurrent(self):
+        return primative.utcnow in self
+
+    def __repr__(self):
+        name = type(self).__name__
+        begin, end = self.str_begin, self.str_end
+        return '%s(begin=%s, end=%s)' % (name, begin, end)
+
+class datespan(span):
+    """ A time span where that begins with a date datatype and ends with
+    a date datatype. See the super class ``span`` for more.
+    """
+
+class timespan(span):
+    """ A time span where that begins with a datetime datatype and ends
+    with a datetime datatype. See the super class ``span`` for more.
+    """
 
 class undef:
     """ 
@@ -177,8 +474,7 @@ class stream(entitiesmod.entity):
 
         def __iter__(self):
             # TODO To make this object a proper iterable, shouldn't we
-            # override
-            # the __next__()?
+            # override the __next__()?
             slc= slice(0, self.stream.chunksize)
             self.advance(slc)
             yield self.chunk
@@ -308,7 +604,7 @@ class join(entitiesmod.entity):
 
         if es.orm.isstreaming:
             msg = 'Entities cannot be joined to streaming entities'
-            raise invalidstream(msg)
+            raise InvalidStream(msg)
             
         self.entities = es
         self.type = type # inner, outer, etc.
@@ -399,13 +695,13 @@ class where(entitiesmod.entity):
                     if ft and type(map.index) is not fulltext:
                         msg = 'MATCH column "%s" must be have a fulltext index'
                         msg %= col
-                        raise invalidcolumn(msg)
+                        raise InvalidColumn(msg)
                     break
             else:
                 e = self.entities.orm.entity.__name__
                 msg = 'Field "%s" does not exist in entity "%s": "%s"'
                 msg %= (col, e, str(pred))
-                raise invalidcolumn(msg)
+                raise InvalidColumn(msg)
 
         for pred in self.predicate:
             if pred.match:
@@ -1020,17 +1316,20 @@ class entitiesmeta(type):
 
     @property
     def count(cls):
-        return cls.all.count
+        return cls.orm.all.count
 
 class entities(entitiesmod.entities, metaclass=entitiesmeta):
-    @classproperty
-    def all(cls):
-        return cls(allstream)
-
     re_alphanum_ = re.compile('^[a-z_][0-9a-z_]+$', flags=re.IGNORECASE)
 
     def __init__(self, initial=None, _p2=None, *args, **kwargs):
         try:
+
+            if not hasattr(type(self), 'orm'):
+                raise NotImplementedError(
+                    '"orm" attribute not found for "%s". '
+                    'Check that the entity is inherting from the '
+                    'correct base class.' % type(self).__name__
+                )
             try:
                 self.orm = self.orm.clone()
             except AttributeError:
@@ -1113,8 +1412,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             super().__init__(initial=initial)
 
         finally:
-            if hasattr(self, 'orm'):
-                self.orm.initing = False
+            if hasattr(type(self), 'orm'):
+                if hasattr(self, 'orm'):
+                    self.orm.initing = False
 
     def clone(self, to=None):
         if not to:
@@ -1158,7 +1458,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         Any instance of an ``orm.entities`` collection object may have
         zero or more references to other ``orm.entities`` collection
         objects stored in its ``joins`` property. These can be chained
-        together. Together, with the ``where`` proprety of the
+        together. Together, with the ``where`` property of the
         ``orm.entities`` collection objects, complex SELECT statements
         can be expessed using the ORMs API. For example::
 
@@ -1205,7 +1505,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
         # Streaming entities can't contain joins
         if self.orm.isstreaming:
-            raise invalidstream('Streaming entities cannot contain joins')
+            raise InvalidStream('Streaming entities cannot contain joins')
 
         if type(es) is entitiesmeta:
             es = es()
@@ -1287,16 +1587,18 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                             if self.orm.entity is not sup:
                                 continue
 
-                        # TODO These lines exceed 72 chars
-
                         # For each entity mapping in this
                         # associationsmapping
-                        for map1 in map.associations.orm.mappings.entitymappings:
+                        maps = map.associations.orm \
+                                   .mappings.entitymappings
+
+                        for map1 in maps:
 
                             # If the associationsmapping's entity is the
                             # same class as the joinee (es)
+                            sups = es.orm.entity.orm.superentities
                             if map1.entity.orm.entities is type(es) \
-                                or map1.entity in es.orm.entity.orm.superclasses:
+                                or map1.entity in sups:
 
                                 # Create a new instance of the map's
                                 # associations collection, add it to
@@ -1334,7 +1636,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         #
         #   artists.count
         #
-        # In this case, we get the all stream and use its count proprety
+        # In this case, we get the all stream and use its count property
         # because the request is interpreted as "give me the the number of rows
         # in the artists table.
         #
@@ -1469,7 +1771,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             load &= self.orm.joins.ispopulated or bool(self.orm.where)
 
             if load:
-                self.orm.load()
+                self.orm.collect()
 
         return object.__getattribute__(self, attr)
 
@@ -1531,6 +1833,34 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             e.orm.isdirty = True
 
     def append(self, obj, uniq=False, r=None):
+        """ Append the `orm.entity` `obj` to this entities collection.
+        This is analogous to a Python lists `append` method. Typically,
+        the += operator is used to achieve the append:
+
+            myents = myentities()
+            assert myents.count == 0
+            myents.append(myentitiy())
+
+            # Note that the above is cononically written as:
+            # myents += myentitiy()
+
+            assert myents.count == 1
+
+        :param: orm.entity obj: The entity being appended. If obj is an
+        orm.entities collection, each entity in that collection will be
+        appended one-at-a-time.
+
+        :param: bool uniq: Do not append is `obj` is already in the
+        collection.
+
+        :param: orm.entities r: The collection of entities that were
+        successfully appended.
+        """
+
+        # TODO Rename `obj` to `e` in this method and the base method.
+        if r is None:
+            r = self.orm.entities()
+
         if isinstance(obj, entities):
             for e in obj:
                 self.append(e, r=r)
@@ -1562,7 +1892,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             msg = '''
                 Missing arguments collection.  Be sure to add arguments in the
                 *args portion of the constructor.  If no args are needed for
-                the query, just pass an empty tuple to indicate you none are
+                the query, just pass an empty tuple to indicate that none are
                 needed.  Note that this is an opportunity to evaluate whether
                 or not you are opening up an SQL injection attact vector.
             '''
@@ -1654,6 +1984,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 brs += entitiesmod.brokenrule(msg, prop, 'valid')
                 
             brs += e._getbrokenrules(guestbook, followentitymapping=followentitymapping)
+
         return brs
 
     def _self_onremove(self, src, eargs):
@@ -1741,9 +2072,11 @@ class entitymeta(type):
                     body['entities'] = sub
                     break
             else:
-                msg =  "Entities class couldn't be found. "
-                msg += "Either specify one or define one with a predictable name"
-                raise AttributeError(msg)
+                raise AttributeError(
+                    'Entities class for "%s" couldn\'t be found. '
+                    'Either specify one or define one with a '
+                    'predictable name' % name
+                )
 
         # Make sure the `orm` has a reference to the entities collection
         # class and that the entities collection class has a refernce to
@@ -1773,11 +2106,25 @@ class entitymeta(type):
         # `orm`'s `mappings` collection and removed from the `body`
         # list, i.e., this entity class's namespace.
         body['id'] = primarykeyfieldmapping()
+
+        # TODO When an ORM user assigns a value to the createdat or
+        # updatedat fields, either an exception should be raised or the
+        # user should be able to override the default createdat or
+        # updatedat value. Currently, the user cannot override these
+        # fields but is presented with no error when attempting to do
+        # so.
         body['createdat'] = fieldmapping(datetime)
         body['updatedat'] = fieldmapping(datetime)
 
-        for k, v in body.items():
+        # Use the span base class `span` to add a `begin` and `end`
+        # date(time) entry to body along with an instance of the span
+        # (datespan or timespan).
+        span.expand(body)
 
+        char.expand(body)
+
+        maps = list()
+        for k, v in body.items():
             # Is v a reference to a module:
             if isinstance(v, ModuleType):
                 # If the datetime module was passed in, convert it to
@@ -1794,24 +2141,9 @@ class entitymeta(type):
                 # If the item is already a mapping, we don't need to do
                 # anything; just assign it to the map variable.
                 map = v
-            elif v in fieldmapping.types:
-                # TODO I'm begining to thing we should have alias types.
-                # For example, instead of writing::
-                #
-                # class myent(entity):
-                #     directions = str, 1, 65535
-                #     isicv4     = str, 1, 1
-                #     type       = int, 0, 255
-                #
-                # We should instead be able to just write:
-                #
-                # class myent(entity):
-                #     directions = text
-                #     isicv4     = char
-                #     type       = tinyint
 
-                # If the item is a primitive type (str, int, datetime,
-                # etc.), create a fieldmapping.
+            elif v in fieldmapping.types or \
+                (hasattr(v, 'mro') and alias in v.mro()):
 
                 map = fieldmapping(v)
 
@@ -1852,6 +2184,11 @@ class entitymeta(type):
                     # create an entitymapping. This is for the the
                     # composites of an association.
                     map = entitymapping(k, v)
+                elif isinstance(v, type):
+                    # If v is not an entities or entity type, but is
+                    # still a type, ignore it. This condition will be
+                    # True of inner classes.
+                    continue
                 else:
                     # TODO This can happen if we pass an incorrect type.
                     #
@@ -1863,6 +2200,10 @@ class entitymeta(type):
                     # It would be nice to have more information
                     # presented to the ORM user as to what they did
                     # wrong.
+                    #
+                    # NOTE I wasn't able to reproduce the above. The
+                    # elif above catches any actual type. If problem
+                    # persists, please write test that actually fails.
                     raise ValueError() # Shouldn't happen
             else:
                 if type(v) is ormmod.attr.wrap:
@@ -1879,12 +2220,16 @@ class entitymeta(type):
             # Name the map and append the map to the orm's mapping
             # collections.
             map._name = k
+            maps.append(map)
             orm_.mappings += map
 
-        # Iterate of orm's mapping collection. NOTE that iterating over
-        # mappings invokes it's _populating method which updates the
-        # composition of the collection. (See mappings._populated.)
-        for map in orm_.mappings:
+        # Iterate over the maps list. NOTE that iterating over the
+        # `orm_.mappings` collection would invokes it's _populating
+        # method which updates the composition of the collection. (See
+        # mappings._populated.) That needlessly added about 5 seconds to
+        # the start up time, so now we iterate over a simple `list` of
+        # maps.
+        for map in maps:
             try:
                 # Now that we have all the approprite attributes from
                 # this class in orm.mappings, we can delete them.
@@ -1908,9 +2253,9 @@ class entitymeta(type):
         orm_.entity = entity
 
         # Since a new entity has been created, invalidate the derived
-        # cache of each mappings collection's object.  They must be
-        # recomputed since they are based on the existing entity object
-        # available.
+        # cache of each entity's mappings collection's object.  They
+        # must be recomputed since they are based on the existing entity
+        # object available.
         for e in orm.getentitys():
             e.orm.mappings._populated = False
 
@@ -1922,9 +2267,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
     mindatetime=primative.datetime('1000-01-01 00:00:00.000000+00:00')
     maxdatetime=primative.datetime('9999-12-31 23:59:59.999999+00:00')
 
-    def __init__(self, o=None, _depth=0):
-        # TODO Base64 id's:
-        # https://stackoverflow.com/questions/12270852/convert-uuid-32-character-hex-string-into-a-youtube-style-short-id-and-back
+    def __init__(self, o=None, **kwargs):
         try:
             self.orm = self.orm.clone()
             self.orm.initing = True # change to `isiniting`
@@ -1954,13 +2297,26 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     # if the UUID is expressed as an int, or if the UUID
                     # has been base64 encoded.
                     o = UUID(hex=o)
+                elif isinstance(o, entity):
+                    o = o.id
 
                 if type(o) is UUID:
-                    res = self._load(o)
+                    res = self.orm.load(o)
                 else:
-                    res = o
+                    raise ValueError(
+                        'Can only load by UUID. '
+                        'If you are setting attributes via the '
+                        'constructor, ensure that you are including'
+                        'the keys as well.'
+                    )
+                    
 
                 self.orm.populate(res)
+
+            # Set attributes via keyword arguments:
+            #     per = person(first='Jesse', last='Hogan')
+            for k, v in kwargs.items():
+                setattr(self, k, v)
 
             # Post super().__init__() events
             self.onaftervaluechange  +=  self._self_onaftervaluechange
@@ -1998,93 +2354,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         
         map.value = v
 
-    # TODO Move to orm
-    def iscollinear(self, with_):
-        """ Return True if self is colinear with ``with_``.
-
-        Collinearity is when the self entity is an instance ``with_``,
-        or an instance of a superentity of ``with_``, or an instance of
-        a class that inheritance from ``with_``. It's similar to
-        isinstance(), but in addition to ascending the inheritance tree,
-        it also descends it. 
-        
-        Collinearity in this context it is limited to orm.entity object.
-        For example, ``artist`` is colinear with ``painter`` and
-        ``singer`` and vice-versa. However none of these object are
-        colinear with ``orm.entity``, ``entities.entity'' or ``object``
-        and vice-versa. 
-        """
-
-        if type(with_) is not entitymeta:
-            with_ = type(with_)
-
-        if isinstance(self, with_):
-            return True
-
-        for e in with_.__mro__:
-            if e in (entity, associations):
-                break
-            if type(self) in e.orm.subclasses:
-                return True
-
-        return False
-
-    # Move to orm
-    def _load(self, id):
-        sql = 'SELECT * FROM {} WHERE id = _binary %s'
-        sql = sql.format(self.orm.table)
-
-        args = id.bytes,
-
-        ress = None
-        def exec(cur):
-            nonlocal ress
-            cur.execute(sql, args)
-            ress = db.dbresultset(cur)
-
-        exec = db.executioner(exec)
-
-        exec.onbeforereconnect += \
-            lambda src, eargs: self.onbeforereconnect(src, eargs)
-        exec.onafterreconnect  += \
-            lambda src, eargs: self.onafterreconnect(src, eargs)
-
-        exec.execute()
-
-        # TODO We may want to reconsider raising an exception when a
-        # non-existant ID is given. The expectation the user may have is
-        # that the object returned from the constructor is falsey:
-        #
-        #     e = myentity(bad_id)
-        #     if e:
-        #         return e
-        #     else:
-        #         raise Exception('myentity not found')
-        #
-        # Hacking __new__ to return None may not be a good idea because
-        # of all the event initialition code in __init__. However, we
-        # could set a private boolean to cause the entity's __bool__
-        # method to return False. Then any call to __getattribute__()
-        # could check the private boolean and raise an exception to
-        # indicate that entity is as good as None because the id was
-        # non-existent:
-        #
-        #     def __bool__(self):
-        #         return not self._recordnotfound
-        #
-        #     def __getattribute__(self):
-        #         if self._recordnotfound: raise RecordNotFoundError()
-        #
-
-        ress.demandhasone()
-
-        res = ress.first
-
-        eargs = db.operationeventargs(self, 'retrieve', sql, args)
-        self.onafterload(self, eargs)
-
-        return res
-    
     def _self_onafterload(self, src, eargs):
         self._add2chronicler(eargs)
 
@@ -2113,9 +2382,22 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         return list(set(ls))
 
     def __setattr__(self, attr, v, cmp=True):
+        """ Set the value of `v` to the attribute (`attr`) of the
+        `entity`. Attribute usually refer to the ORM mapping attributes
+        (those defined in the header of a class). However, standard
+        Python class attributes can also be set her..
+
+        :param: str attr: The name of the attribute to be set
+
+        :param: object v: The value to which the attribute will be set.
+
+        :param: bool cmp: Determines whether `entities._setvalue` should
+        compare the old value of the attribute to the new value. See the
+        `cmp` variable in that method for more.
+        """
+        
         # Need to handle 'orm' first, otherwise the code below that
         # calls self.orm won't work.
-        
         if attr == 'orm':
             return object.__setattr__(self, attr, v)
 
@@ -2180,8 +2462,14 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                 if selfsuper and attrsuper:
                     maps = selfsuper.orm.mappings
-                    attr = maps(attrsuper.__class__.__name__).name
-                    setattr(selfsuper, attr, attrsuper)
+                    attr = maps(attrsuper.__class__.__name__)
+
+                    # NOTE attr could be None for various reasons. It's
+                    # unclear at the moment if this is correct logic. We
+                    # will let experience using the ORM determine if we
+                    # need to revisit this.
+                    if attr:
+                        setattr(selfsuper, attr.name, attrsuper)
 
     def delete(self):
         self.orm.ismarkedfordeletion = True
@@ -2238,7 +2526,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             sql, args = (None,) * 2
 
         try:
-            # Take snapshop of before state
+            # Take snapshot of before state
             st = self.orm.persistencestate
 
             if sql:
@@ -2280,7 +2568,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         )
 
                 if type(map) is entitiesmapping:
-
                     if map.isloaded:
                         es = map.value
                         # Take snapshot of states
@@ -2307,7 +2594,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             # collection because it causes infinine
                             # recursion. The below line will prevent
                             # this.
-                            if e.orm.entities is not type(es):
+
+                            if type(es) not in e.orm.entities.mro():
                                 continue
 
                             # Set the entity's FK to self.id value
@@ -2400,10 +2688,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                 # an object.
                                 if asses.orm.isreflexive and ass.object:
                                     # Get the object's class and
-                                    # subclasses.
+                                    # subentities.
 
                                     clss = [ass.object.orm.entities]
-                                    subs = ass.object.orm.subclasses
+                                    subs = ass.object.orm.subentities
                                     clss += [
                                         x.orm.entities
                                         for x in subs
@@ -2429,8 +2717,14 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                         try:
                                             # Get pseudocollection
                                             es = const[name]
-                                        except KeyError:
+                                        except (KeyError, IndexError):
                                             # Subentity doesn't exist
+
+                                            # NOTE:ce6ea883 Except both
+                                            # KeyError and IndexError
+                                            # because `const` can be a
+                                            # dict or an entities
+                                            # collection
                                             pass
                                         else:
                                             # Save each entity found in
@@ -2463,7 +2757,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 # If there is a super entity (we may be at the top of
                 # the graph)...
                 if sup:
-                    self.orm._super = sup()
+                    sup = sup()
+                    sup.id = self.id
+                    self.orm._super = sup
 
             # Get the private superentity. We don't want to use the
             # public accessor to get it because the accessor will load
@@ -2543,6 +2839,13 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         min=map.min
                     )
 
+                elif t == types.date:
+                    brs.demand(self, 
+                        map.name, 
+                        instanceof=date,
+                        min=type(self).mindatetime,
+                        max=type(self).maxdatetime,
+                    )
                 elif t == types.datetime:
                     brs.demand(self, 
                         map.name, 
@@ -2603,7 +2906,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
     def __getattribute__(self, attr):
         try:
-            return object.__getattribute__(self, attr)
+            v = object.__getattribute__(self, attr)
+            if isinstance(v, span):
+                if v.isstatic:
+                    v = v.clone(e=self)
+                    setattr(self, attr, v)
+            return v
         except sys.modules['orm'].attr.AttributeErrorWrapper as ex:
             raise ex.inner
         except AttributeError as ex:
@@ -2651,11 +2959,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         raise ValueError('FK map not found for entity')
 
                     # NOTE Though we've switch to implicit loading for
-                    # entities and associations, we shoud still
+                    # entities and associations, we should still
                     # explicitly load here for the sake of
                     # predictability.
                     es = map_entities(map1.name, self.id)
-                    es.orm.load()
+                    es.orm.collect()
 
                     # Assign the composite reference to the
                     # constituent's elements
@@ -2723,7 +3031,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 # could ascend using class names. However, this may be
                 # less efficient because we would have to load the super
                 # each time a request for its attribute value came in
-                # where as the `super` proprety memoizes the super
+                # where as the `super` property memoizes the super
                 # object.
                 sup = sup_orm.super
 
@@ -2755,16 +3063,17 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     for map1 in maps:
 
                         es = [map1.entity]
-                        es.extend(
-                            [x.entity for x in map1.entity.orm.subclasses]
-                        )
+                        es.extend([
+                            x.entity 
+                            for x in map1.entity.orm.subentities
+                        ])
                         for e in es:
                             if e.orm.entities.__name__ == attr:
                                 # Skip if association (map) is
                                 # non-reflexive and with is e is
                                 # collinear with self.
                                 if (
-                                    self.iscollinear(with_=e)
+                                    self.orm.iscollinear(with_=e)
                                     and not map.entities.orm.isreflexive
                                 ):
                                     continue
@@ -2793,7 +3102,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # Add a new battel to the rapper's battles property
             rpr.battles += battle() 
 
-        This handler ensures that entity objects added to thes
+        This handler ensures that entity objects added to these
         collections are also appended to the superentities collections
         of the entities collection they are being appended to. 
 
@@ -2801,44 +3110,50 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         ``rapper``'s ``battles`` property. But since ``battle`` is a
         subentity of ``concert``, and ``concert`` is a subentity of
         ``presentation``, the ``battle`` entity will, by the logic in
-        this handler,  be made present in ``rpr.concerts`` as well as
+        this handler,  made present in ``rpr.concerts`` as well as
         ``rpr.presentations``.
 
-        :param: src entities:    The entities collection that the 
-                                 ``eargs.entity`` is being appended to.
+        :param: src entities: The entities collection that the
+        ``eargs.entity`` is being appended to.
+
         :param: eargs eventargs: The event arguments. Its ``entity``
-                                 property is the entity object that will
-                                 be appended to the superentities.
+        property is the entity object that will be appended to the
+        superentities.
         """
+
+        # Get the superentities collection that the `e` was
+        # appended to.
+        sup = src.orm.entities.orm.super
+
+        # If there is no superentity, there is nothing for us to do.
+        if not sup:
+            return
+
+        # TODO For some reason, the above line:
+        #
+        #    sup = src.orm.entities.orm.super
+        #
+        # only gets us the entity class instead of the entities class,
+        # so we need the below line to get the entities class. `super`
+        # should be fixed such that we get the entities class instead.
+        # Then this line can be remove.
+        sup = sup.orm.entities
+
+        # Get the entity being appended
         e = eargs.entity
-        
-        # Get the superentity of self
-        sup = self.orm.entities.orm.super #(self: rapper)
 
-        # If self has a superentity
-        if sup:
-            # For each of the entities mappings of the superentity
-            for map in sup.orm.mappings.entitiesmappings:
-
-                # Get e's superentities class
-                sup = src.orm.entities.orm.super.orm.entities
-
-                # If the map's entities matches sup
-                if map.entities is sup:
-
-                    # (map.entitiesmapping: <class>: concert)
-
-                    # Get the collection property of self that is super
-                    # for e that is super to e (i.e., battles ->
-                    # concerts)
-                    es = getattr(self, map.name)
-
-                    # Add `e` to the collection. NOTE that this
-                    # operation will result in a recursive call back
-                    # into this handler until the final superentity for
-                    # self has been reached.
-                    es += e
-                    break
+        # Get the superentities collection
+        try:
+            es = getattr(self, sup.__name__)
+        except AttributeError:
+            # `self` won't have the attribute `sup.__name__` if the
+            # constituent class is a superentity.
+            #
+            # We should be able to remove this if 1de11dc0 is fixed.
+            pass
+        else:
+            # Append the entity to that entities collection
+            es += e
 
     def __repr__(self):
         """ Return a tabularized list of ``self``'s properties and their
@@ -2981,6 +3296,18 @@ class mappings(entitiesmod.entities):
             # `self` later.
             maps = list()
 
+            def add_fk_and_entity_map(e):
+                # Add an entity mapping for the composite
+                maps.append(
+                    entitymapping(e.__name__, e, isderived=True)
+                )
+
+                # Add an FK for the constituents
+                maps.append(
+                    foreignkeyfieldmapping(e, isderived=True)
+                )
+
+
             ''' Add FK mapings to association objects '''
             # For association objects, look for entity mappings and add
             # a foreign key mapping (e.g., For artist_artifact, add an
@@ -2994,7 +3321,7 @@ class mappings(entitiesmod.entities):
                     )
                 )
 
-            ''' Add composite and constiuent mappings '''
+            ''' Add composite and constituent mappings '''
             # For each class that inherits from `orm.entity`
             for e in orm.getentitys():
 
@@ -3009,19 +3336,11 @@ class mappings(entitiesmod.entities):
 
                     # If `e` is a constituent of `self`
                     if map.entities is self.orm.entities:
-
-                        # Add a entity mapping for the composite
-                        maps.append(
-                            entitymapping(e.__name__, e, isderived=True)
-                        )
-
-                        # Add an FK for the constituents
-                        maps.append(
-                            foreignkeyfieldmapping(e, isderived=True)
-                        )
+                        add_fk_and_entity_map(e)
 
             ''' Add associations mappings to self '''
             # For each class that inherits form `orm.association`
+
             for ass in orm.getassociations():
 
                 # For each of the `association`'s entity mappings
@@ -3036,6 +3355,22 @@ class mappings(entitiesmod.entities):
                         )
                         maps.append(map)
                         break
+
+                # The need arose to ensure that orm.association objects
+                # could have one-to-many relationships with orm.entities
+                # object. The following block ensures that a FK to the
+                # association is created along with a composite mapping
+                # to the same association. This is similar to the above
+                # `for e in orm.getentitys()` block.
+
+                # TODO One-to-many relationships between association
+                # objects have not received their own place in the
+                # test.py script. This code was added to correct an
+                # issue with the party module. Full testing for this
+                # relationship type may prove necessary or desirable.
+                for map in ass.orm.mappings.entitiesmappings:
+                    if map.entities is self.orm.entities:
+                        add_fk_and_entity_map(ass)
 
             # Add the list of mapping object collected above to `self`
             for map in maps:
@@ -3158,14 +3493,14 @@ class mappings(entitiesmod.entities):
     def getinsert(self):
         tbl = self.orm.table
 
-        placeholder = ''
-        for map in self:
-            if isinstance(map, fieldmapping):
-                placeholder += '%s, '
+        maps = [x for x in self if isinstance(x, fieldmapping)]
 
-        placeholder = placeholder.rstrip(', ')
+        flds = ', '.join('`%s`' % x.name for x in maps)
 
-        sql = 'INSERT INTO {} VALUES ({});'.format(tbl, placeholder)
+        placeholders = ', '.join(['%s'] * len(maps))
+
+        sql = 'INSERT INTO %s (%s) VALUES (%s);'
+        sql %= (tbl, flds, placeholders)
 
         args = self._getargs()
 
@@ -3180,7 +3515,7 @@ class mappings(entitiesmod.entities):
                 if isinstance(map, primarykeyfieldmapping):
                     id = map.value.bytes
                 else:
-                    set += '%s = %%s, ' % (map.name,)
+                    set += '`%s` = %%s, ' % (map.name,)
 
         set = set[:-2]
 
@@ -3368,7 +3703,7 @@ class associationsmapping(mapping):
                 # association.  However, we will want to continue
                 # explitly loading this association here for the sake of
                 # predictablity.
-                asses.orm.load()
+                asses.orm.collect()
 
             # Make sure the associations collection knows it's composite
             asses.orm.composite = self.composite
@@ -3572,7 +3907,6 @@ class fulltext(index):
         return name
 
 class attr:
-
     class AttributeErrorWrapper(Exception):
         """ An AttributeError wrapper. """
         def __init__(self, ex):
@@ -3642,7 +3976,7 @@ class fieldmapping(mapping):
     """ Represents mapping between Python types and MySQL types.
     """
     # Permitted types
-    types = bool, str, int, float, decimal.Decimal, bytes, datetime
+    types = bool, str, int, float, decimal.Decimal, bytes, datetime, date
     def __init__(self, type,       # Type of field
                        min=None,   # Max length or size of field
                        max=None,   # Min length or size of field
@@ -3651,7 +3985,11 @@ class fieldmapping(mapping):
                        name=None,  # Name of the field
                        ix=None,    # Database index
                        isderived=False,
-                       isexplicit=False):
+                       isexplicit=False,
+                       span=None):
+
+        if hasattr(type, 'mro') and alias in type.mro():
+            type, min, max = type()
 
         if type in (float, decimal.Decimal):
             if min is not None:
@@ -3666,6 +4004,7 @@ class fieldmapping(mapping):
         self._precision  =  m
         self._scale      =  d
         self.isexplicit  =  isexplicit
+        self._span       =  span
 
         # TODO Currently, a field is limited to being part of only one
         # composite or fulltext index. This code could be improved to
@@ -3697,7 +4036,8 @@ class fieldmapping(mapping):
             self.name,
             ix,
             self.isderived,
-            self.isexplicit
+            self.isexplicit,
+            self.span,
         )
 
         if ix:
@@ -3706,6 +4046,14 @@ class fieldmapping(mapping):
         map._value = self._value
 
         return map
+
+    @property
+    def span(self):
+        """ Returns the datespan or timespan object associated with this
+        field. The self.type property would have to be a date or
+        datetime respectively.
+        """
+        return self._span
 
     @property
     def _reprargs(self):
@@ -3726,6 +4074,10 @@ class fieldmapping(mapping):
     @property
     def isdatetime(self):
         return self.type == types.datetime
+
+    @property
+    def isdate(self):
+        return self.type == types.date
 
     @property
     def isbool(self):
@@ -3842,6 +4194,8 @@ class fieldmapping(mapping):
             return types.bool
         elif hasattr(t, '__name__') and t.__name__ == 'datetime':
             return types.datetime
+        elif hasattr(t, '__name__') and t.__name__ == 'date':
+            return types.date
         elif t in (float,):
             return types.float
         elif hasattr(t, '__name__') and t.__name__.lower() == 'decimal':
@@ -3919,6 +4273,8 @@ class fieldmapping(mapping):
                     raise ValueError()
         elif self.isdatetime:
             return 'datetime(6)'
+        elif self.isdate:
+            return 'date'
         elif self.isbool:
             return 'bit'
         elif self.isfloat:
@@ -3956,6 +4312,9 @@ class fieldmapping(mapping):
                 try:
                     self._value = str(self._value)
                 except:
+                    # If coersion fails, self._value will be a reference
+                    # to the `undef` class and will be considered
+                    # invalid by by brokenrules.
                     pass
 
             elif self.isdatetime:
@@ -3972,6 +4331,16 @@ class fieldmapping(mapping):
                         self._value = self._value.astimezone(utc)
                     else:
                         self._value = self._value.replace(tzinfo=utc)
+ 
+            elif self.isdate:
+                try:
+                    if type(self._value) is str:
+                        self._value = primative.date(self._value) 
+                    elif not isinstance(self._value, primative.date):
+                        self._value = primative.date(self._value)
+                except:
+                    pass
+
             elif self.isbool:
                 if type(self._value) is bytes:
                     # Convert the bytes string fromm MySQL's bit type to a
@@ -4074,16 +4443,17 @@ class primarykeyfieldmapping(fieldmapping):
 
     @property
     def value(self):
-        # If a super instance exists, use that because we want a subclass and
-        # its super class to share the same id. Here we use ._super instead of
-        # .super because we don't want the invoke the super accessor because it
-        # calls the id accessor (which calls this accessor) - leading to
-        # infinite recursion. This, of course, assumes that the .super accessor
-        # has previously been called.
+        # If a super instance exists, use that because we want a
+        # subclass and its super class to share the same id. Here we use
+        # ._super instead of .super because we don't want to invoke the
+        # super accessor because it calls the id accessor (which calls
+        # this accessor) - leading to infinite recursion. This, of
+        # course, assumes that the .super accessor has previously been
+        # called.
 
-        super = self.orm._super
-        if super:
-            return super.id
+        sup = self.orm._super
+        if sup:
+            return sup.id
 
         if type(self._value) is bytes:
             self._value = UUID(bytes=self._value)
@@ -4093,6 +4463,10 @@ class primarykeyfieldmapping(fieldmapping):
     @value.setter
     def value(self, v):
         self._value = v
+
+        sup = self.orm._super
+        if sup:
+            sup.id = v
 
 class ormclasseswrapper(entitiesmod.entities):
     """ A collection of ormclasswrapper objects.
@@ -4192,7 +4566,7 @@ class orm:
         self.ismarkedfordeletion  =  False
         self.entities             =  None
         self.entity               =  None
-        self.table                =  None
+        self._table               =  None
         self.composite            =  None  # For association
         self._composits           =  None
         self._constituents        =  None
@@ -4210,13 +4584,146 @@ class orm:
         self._abbreviation        =  str()
         self.initing              =  False
 
-    def exists(self, id):
-        try:
-            self.entity(id)
-        except db.RecordNotFoundError:
-            return False
+        self.recreate = self._recreate
 
-        return True
+    @property
+    def table(self):
+        mod = inspect.getmodule(self.entities)
+        if mod.__name__ == '__main__':
+            if hasattr(mod, '__file__'):
+                mod = os.path.splitext(
+                    os.path.basename(mod.__file__)
+                )[0]
+            else:
+                mod = 'main'
+        else:
+            mod = mod.__name__
+
+        return '%s_%s' % (mod, self._table)
+
+    @table.setter
+    def table(self, v):
+        B(v == 'gem_partyroletypes');
+        self._table = v
+        
+    def iscollinear(self, with_):
+        """ Return True if self is colinear with ``with_``.
+
+        Collinearity is when the self entity is an instance ``with_``,
+        or an instance of a superentity of ``with_``, or an instance of
+        a class that inheritance from ``with_``. It's similar to
+        isinstance(), but in addition to ascending the inheritance tree,
+        it also descends it. 
+        
+        Collinearity in this context it is limited to orm.entity object.
+        For example, ``artist`` is colinear with ``painter`` and
+        ``singer`` and vice-versa. However none of these object are
+        colinear with ``orm.entity``, ``entities.entity'' or ``object``
+        and vice-versa. 
+        """
+
+        if type(with_) is not entitymeta:
+            with_ = type(with_)
+
+        if isinstance(self.instance, with_):
+            return True
+
+        for e in with_.__mro__:
+            if e in (entity, associations):
+                break
+            if type(self.instance) in e.orm.subentities:
+                return True
+
+        return False
+
+    @classproperty
+    def all(cls):
+        return cls.entities(allstream)
+
+    def ensure(self, expects, **kwargs):
+        rs = self.entities(**kwargs)
+
+        expects = set(expects)
+
+        keys = set(kwargs.keys())
+
+        if len(expects & keys) != len(expects):
+            # When loading via the orm.populate() method, the expected
+            # properties won't be passed in. Just return.
+            return
+
+        if rs.count:
+            self.instance.id = rs.first.id
+            for k, v in kwargs.items():
+                setattr(self.instance, k, getattr(rs.first, k))
+
+            # The record isn't new or dirty so set all peristance state
+            # variables to false.
+            self.persistencestate = (False,) * 3
+        else:
+            # Save immediately. There is no need for the user to save
+            # manually because there are only several rating objects
+            # that will ever exist. We just pretend like they always
+            # exist and are accessable via the construct with no fuss.
+            self.instance.save()
+            
+    def reloaded(self):
+        return self.entity(self.instance.id)
+
+    def exists(self, o):
+        """ Returns true if ``o`` exists in the database.
+        """
+        return self.cast(o) is not None
+
+    def cast(self, o):
+        """ Given an entity or a UUID as `o`, a new orm.entity of the
+        given type is loaded from the database and returned. If no
+        such entity is in the database, None is returned.
+            
+            # Load human given an existing UUID
+            hum = human.orm.cast(id)
+            assert type(hum) is human
+
+            # Upcast to mammal super type of human by passing in the
+            # entity instead of the UUID. Note for this, we could also
+            # just do `hum.super`.
+            mam = mammal.orm.cast(hum)
+            assert type(mam) is mammal
+
+            # Downcast back to human from mammal
+            hum = human.orm.cast(mam)
+            assert type(hum) is human
+
+            # Loading non-existing entities return None
+            emp = employee.orm.cast(UUID())
+            assert emp is None
+
+            # You can also cast to a class
+            hum = mam.orm.cast(human)
+            assert type(hum) is humman
+
+        The method is particularly useful when you have an entity but
+        you want to downcast it into a particular entity.
+
+        :param: o orm.entity/UUID: The id to be used for loading. If
+        ``o`` is an orm.entity, its ``id`` attribute will be used.
+        """
+
+        try:
+            e = self.entity
+            if isinstance(o, entity):
+                id = o.id
+            elif isinstance(o, UUID):
+                id = o
+            elif hasattr(o, 'mro') and entity in o.mro():
+                e = o
+                id = self.instance.id
+            else:
+                raise ValueError("Can't determine id")
+
+            return e(id)
+        except db.RecordNotFoundError:
+            return None
 
     @property
     def leaf(self):
@@ -4229,10 +4736,10 @@ class orm:
         leaf = self.instance
         id = leaf.id
 
-        # Itereate over subclasses. `self.subclasses` is assumed to
+        # Itereate over subentities. `self.subentities` is assumed to
         # iterate in a way tha yields the top-most subclass first
         # progressing toward the lowest subclass.
-        for cls in self.subclasses:
+        for cls in self.subentities:
             try:
                 leaf = cls(id)
             except db.RecordNotFoundError:
@@ -4245,7 +4752,7 @@ class orm:
 
         props = (
             'isnew',       '_isdirty',     'ismarkedfordeletion',
-            'entity',      'entities',     'table'
+            'entity',      'entities',     '_table'
         )
 
         for prop in props: 
@@ -4272,7 +4779,6 @@ class orm:
         maps = self.mappings.entitymappings
         types = [x.entity.__name__ for x in maps]
 
-        # TODO Do we need to pass this to bool()
         return bool(len(types)) and len(types) > len(set(types))
         
     @property
@@ -4335,13 +4841,28 @@ class orm:
             with pool.take() as conn:
                 conn.query(sql)
 
-    def recreate(self, cur=None, recursive=False, guestbook=None):
+    @staticmethod
+    def recreate(*args):
+        """ Drop and recreate the table each of the entity class
+        references in *args.
+
+        Note that when ``orm`` is an instance (as opposed to mearly a
+        class reference), this method is replace with ``orm._recreate'
+        on initialization. 
+        """
+
+        # For each entity class reference in *args
+        for e in args:
+            # Delegate to the instance version of ``recreate``
+            e.orm.recreate()
+            
+    def _recreate(self, cur=None, recursive=False, guestbook=None):
         """ Drop and recreate the table for the orm ``self``. 
 
         :param: cur:       The MySQLdb cursor used by this and all
                            subsequent CREATE and DROPs
 
-        :param: recursive: If True, the constituents and subclasses of
+        :param: recursive: If True, the constituents and subentities of
                            ``self`` will be recursively discovered and
                            their tables recreated. Used internally.
 
@@ -4350,15 +4871,6 @@ class orm:
                            infinite recursion.
         """
 
-        # if association:
-        '''
-        @classmethod
-        def reCREATE(cls, cur, recursive=False, clss=None):
-            for map in cls.orm.mappings.entitymappings:
-                map.entity.reCREATE(cur, recursive, clss)
-
-            super().reCREATE(cur, recursive, clss)
-        '''
         # Prevent infinite recursion
         if guestbook is None:
             guestbook = list()
@@ -4403,7 +4915,7 @@ class orm:
                             cur, recursive, guestbook
                         )
 
-                for sub in self.subclasses:
+                for sub in self.subentities:
                     sub.orm.recreate(cur, True, guestbook)
                             
         except Exception as ex:
@@ -4423,7 +4935,7 @@ class orm:
 
     def drop(self, cur=None):
         # TODO Use executioner
-        sql = 'drop table ' + self.table + ';'
+        sql = 'drop table `%s`;' % self.table
 
         if cur:
             cur.execute(sql)
@@ -4432,20 +4944,25 @@ class orm:
             with pool.take() as conn:
                 conn.query(sql)
     
-    def create(self, cur=None):
+    def create(self, cur=None, ignore=False):
         # TODO Use executioner
         sql = self.createtable
 
-        if cur:
-            cur.execute(sql)
-        else:
-            pool = db.pool.getdefault()
-            with pool.take() as conn:
-                conn.query(sql)
+        try:
+            if cur:
+                cur.execute(sql)
+            else:
+                pool = db.pool.getdefault()
+                with pool.take() as conn:
+                    conn.query(sql)
+        except _mysql_exceptions.OperationalError as ex:
+            if ex.args[0] == TABLE_EXISTS_ERROR:
+                if not ignore:
+                    raise
 
     @property
     def createtable(self):
-        r = 'CREATE TABLE ' + self.table + '(\n'
+        r = 'CREATE TABLE `%s`(\n' % self.table 
 
         for i, map in enumerate(self.mappings):
             if not isinstance(map, fieldmapping):
@@ -4454,7 +4971,7 @@ class orm:
             if i:
                 r += ',\n'
 
-            r += '    ' + map.name
+            r += '    `%s`' % map.name
 
             if isinstance(map, fieldmapping):
                 r += ' ' + map.dbtype
@@ -4484,6 +5001,8 @@ class orm:
                              keyword.  Used only in streaming mode.
         """
 
+        # TODO To complement orm.reloaded(), we should have an override of
+        # orm.load() that reloads/refreshed an entity object. 
         try:
             # Remove all elements from collection.
             self.instance.clear()
@@ -4493,9 +5012,64 @@ class orm:
             # Flag the entities collection as unloaded so the load() method
             # will proceed with an attempt to load.
             self.isloaded = False
-            self.load(orderby, limit, offset)
+            self.collect(orderby, limit, offset)
 
-    def load(self, orderby=None, limit=None, offset=None):
+    def load(self, id):
+        sql = 'SELECT * FROM {} WHERE id = _binary %s'
+        sql = sql.format(self.table)
+
+        args = id.bytes,
+
+        ress = None
+        def exec(cur):
+            nonlocal ress
+            cur.execute(sql, args)
+            ress = db.dbresultset(cur)
+
+        exec = db.executioner(exec)
+
+        exec.onbeforereconnect += \
+            lambda src, eargs: self.instance.onbeforereconnect(src, eargs)
+        exec.onafterreconnect  += \
+            lambda src, eargs: self.instance.onafterreconnect(src, eargs)
+
+        exec.execute()
+
+        # TODO We may want to reconsider raising an exception when a
+        # non-existant ID is given. The expectation the user may have is
+        # that the object returned from the constructor is falsey:
+        #
+        #     e = myentity(bad_id)
+        #     if e:
+        #         return e
+        #     else:
+        #         raise Exception('myentity not found')
+        #
+        # Hacking __new__ to return None may not be a good idea because
+        # of all the event initialition code is in __init__. However, we
+        # could set a private boolean to cause the entity's __bool__
+        # method to return False. Then any call to __getattribute__()
+        # could check the private boolean and raise an exception to
+        # indicate that entity is as good as None because the id was
+        # non-existent:
+        #
+        #     def __bool__(self):
+        #         return not self._recordnotfound
+        #
+        #     def __getattribute__(self):
+        #         if self._recordnotfound: raise RecordNotFoundError()
+        #
+
+        ress.demandhasone()
+
+        res = ress.first
+
+        eargs = db.operationeventargs(self.instance, 'retrieve', sql, args)
+        self.instance.onafterload(self.instance, eargs)
+
+        return res
+    
+    def collect(self, orderby=None, limit=None, offset=None):
         """
         Loads data from the database into the collection. The SQL used 
         to load the data is generated mostly from arguments passed to
@@ -4752,9 +5326,9 @@ class orm:
                 if not map.value:
                     continue
 
-                # map.entity.orm.subclasses.first.entity.__class__]
+                # map.entity.orm.subentities.first.entity.__class__]
                 clss = [map.entity]
-                clss += [x.entity for x in map.entity.orm.subclasses]
+                clss += [x.entity for x in map.entity.orm.subentities]
                 comp = None
                 for cls in clss:
                     try:
@@ -5052,7 +5626,7 @@ class orm:
             # Finally, we are done. Return the sql and the args
             # seperately because the sql will have placeholders and the
             # args will be executed in a parameterized fashion (see
-            # `orm.load()`)
+            # `orm.collect()`)
             return sql, args
 
         return select, joins, whs, args
@@ -5217,7 +5791,7 @@ class orm:
         return props
 
     def issuperentity(self, of):
-        return self.entity in of.orm.entity.orm.superclasses
+        return self.entity in of.orm.entity.orm.superentities
 
     @staticmethod
     def issub(obj1,  obj2):
@@ -5240,21 +5814,6 @@ class orm:
             super = super.orm.super
 
         return False
-
-    # TODO This should probably be renamed superentities. 
-    @property
-    def superclasses(self):
-        ''' Returns a list of entity classes or entity objects (depending on
-        whether or not self.isinstance) of which self is a subentity. '''
-
-        r = list()
-        e = self.super
-
-        while e:
-            r.append(e)
-            e = e.orm.super
-
-        return r
 
     @property
     def super(self):
@@ -5288,7 +5847,16 @@ class orm:
 
             elif self.isinstance:
                 if self.isnew:
+                    # Preserve subentity's id. When ._super is set,
+                    # `self.instance.id` will change to the value of
+                    # `self._super.id`.
+                    id = self.instance.id
                     self._super = base()
+
+                    # Set the super's id to self's id. Despite the
+                    # fact that self.isnew, its existing is in some
+                    # cases meaningful and should be preserved.
+                    self._super.id = id
                 else:
                     e = self.instance
                     if not isinstance(e, entity):
@@ -5313,9 +5881,23 @@ class orm:
     def isinstance(self):
         return self.instance is not None
 
+    @property
+    def superentities(self):
+        ''' Returns a list of entity classes or entity objects (depending on
+        whether or not self.isinstance) of which self is a subentity. '''
+
+        r = list()
+        e = self.super
+
+        while e:
+            r.append(e)
+            e = e.orm.super
+
+        return r
+
     # TODO This should probably be renamed to `subentities`
     @property
-    def subclasses(self):
+    def subentities(self):
         if self._subclasses is None:
             clss = ormclasseswrapper()
             for sub in orm.getsubclasses(of=self.entity):
@@ -5463,6 +6045,14 @@ class associations(entities):
         # NOTE, in entities collections, the orm._constituents is of
         # type `constituents` which is an `ormclasseswrapper`.  However,
         # here we simply want it to be a dict.
+
+        # Also:ce6ea883 NOTE that making _constituents either a dict or
+        # an entities collection has already caused a problem because
+        # dict.__getitem__ throws a KeyError when there is no element
+        # found and an entities collection would through an IndexError
+        # because it wants to conform to the interface of a list()
+        # whenever possible. (See ce6ea883). We may want _constituents
+        # to always be a `constituents(ormclasseswrapper)` class.
         self.orm._constituents = dict()
 
     def append(self, obj, uniq=False, r=None):
@@ -5517,7 +6107,7 @@ class associations(entities):
                             # tests.
                             setattr(obj, map.name, comp)
                             break
-                elif map.name == type(comp).__name__:
+                elif isinstance(comp, map.entity):
                     setattr(obj, map.name, comp)
                     break
 
@@ -5533,7 +6123,7 @@ class associations(entities):
                     continue
 
                 compsups = [comp.orm.entity] \
-                           + comp.orm.entity.orm.superclasses
+                           + comp.orm.entity.orm.superentities
 
                 if (
                     self.orm.isreflexive and map.isobjective
@@ -5583,9 +6173,6 @@ class associations(entities):
                         # Currently, identity comparisons will be done.
                         if map.value.id not in [x.id for x in es]:
                             es += map.value
-                        else:
-                            # TODO Remove this; it's just an expression.
-                            map.value not in es
                     finally:
                         # Restore entities_onadd handlers
                         for meth in meths:
@@ -5662,8 +6249,8 @@ class associations(entities):
         ass = None
 
         # Create a list of the type of eargs.entity as well as its
-        # superclasses
-        sups = eargs.entity.orm.entity.orm.superclasses
+        # superentities
+        sups = eargs.entity.orm.entity.orm.superentities
         sups.append(type(eargs.entity))
 
         # Look through the association collection's (self's) entity
@@ -5676,7 +6263,7 @@ class associations(entities):
             # added to the pseudocollection, we would only need to test
             # against `type(eargs.entity)`. However, when subentity
             # objects (singer) are added to super-associations
-            # (artist_artists), we will need to check the superclasses.
+            # (artist_artists), we will need to check the superentities.
             if map.entity in sups:
 
                 # If we are adding entity object's to reflexive
@@ -5794,7 +6381,7 @@ class associations(entities):
                 return comp
 
             if sups is None:
-                sups = comp.orm.entity.orm.superclasses
+                sups = comp.orm.entity.orm.superentities
                 sups = [x.__name__ for x in sups]
 
             if attr not in sups:
@@ -5815,7 +6402,10 @@ class associations(entities):
                 # it with its subentities.
                 # TODO Clean this up a little
                 ess = [map.entity.orm.entities]
-                ess.extend(x.entity.orm.entities for x in map.entity.orm.subclasses)
+                ess.extend(
+                    x.entity.orm.entities 
+                    for x in map.entity.orm.subentities
+                )
 
                 # Iterate down the inheritance tree until we find an
                 # entity/subentity with the name of the attr.
@@ -5862,9 +6452,12 @@ class associations(entities):
                     #if e.orm.entities.__name__ != attr:
 
                     # TODO This could use a clean up, e.g.,
-                    #     if attr in e.orm.entities.subclasses:
+                    #     if attr in e.orm.subentities:
                     
-                    subs = [x.orm.entities.__name__ for x in e.orm.subclasses]
+                    subs = [
+                        x.orm.entities.__name__ 
+                        for x in e.orm.subentities
+                    ]
                     if attr in subs:
                         try:
                             e = es.orm.entity(e.id)
@@ -5894,10 +6487,7 @@ class associations(entities):
 class association(entity):
     pass
 
-# TODO These should be made PascalCase
-class invalidcolumn(ValueError):
-    pass
-
-class invalidstream(ValueError):
-    pass
+# ORM Exceptions
+class InvalidColumn(ValueError): pass
+class InvalidStream(ValueError): pass
 

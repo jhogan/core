@@ -88,6 +88,7 @@ def getattr(obj, attr, *args):
     return reduce(rgetattr, [obj] + attr.split('.'))
 
 # Set conditional break points
+# TODO This method is already in dbg.py
 def B(x=True):
     if type(x) is str:
         print(x)
