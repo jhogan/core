@@ -28,7 +28,6 @@ import decimal; dec=decimal.Decimal
 import dom
 import exc
 import functools
-import gem
 import io
 import jwt as pyjwt
 import math
@@ -15410,7 +15409,6 @@ class test_orm(tester):
 '''
 Test General Entities Model (GEM)
 '''
-
 class gem_party_person(tester):
     def __init__(self):
         super().__init__()
@@ -20238,7 +20236,9 @@ class pom_site(tester):
 class pom_page(tester):
     def __init__(self):
         super().__init__()
-        gem.user.orm.recreate(recursive=True)
+        orm.orm.recreate(
+            party.user
+        )
 
     def it_calls__init__(self):
         name = uuid4().hex
@@ -20640,12 +20640,12 @@ class pom_page(tester):
         )
 
         self.eq(
-            'Datetime: 2020-02-10T00:00:00',
+            'Datetime: 2020-02-10T00:00:00+00:00',
             res['main ul>li:nth-of-type(2)'].text
         )
 
         self.eq(
-            'Primative Datetime: 2020-02-11T00:00:00',
+            'Primative Datetime: 2020-02-11T00:00:00+00:00',
             res['main ul>li:nth-of-type(3)'].text
         )
 
@@ -20893,7 +20893,7 @@ class pom_page(tester):
                 pwd = frm['input[name=password]'].first.value
 
                 # Load an authenticated user
-                usr = gem.user.authenticate(uid, pwd)
+                usr = party.user.authenticate(uid, pwd)
 
                 # If credentials were authenticated
                 if usr:
@@ -20961,9 +20961,9 @@ class pom_page(tester):
         # Create 10 users, but only save half. Since only half will be
         # in the database, the authenication logic will see them as
         # valid user. This rest won't be able to log in.
-        usrs = gem.users()
+        usrs = party.users()
         for i in range(10):
-            usrs += gem.user()
+            usrs += party.user()
             usrs.last.name     = uuid4().hex
             usrs.last.password = uuid4().hex
             if i > 5:

@@ -17,17 +17,20 @@
 #   objects.
 #   https://www.hr360.com/Resource-Center/HR-Terms.aspx
 
-import orm
-from orm import text, datespan, timespan
-import primative
 from datetime import datetime
 from dbg import B
-import builtins
 from decimal import Decimal as dec
+from orm import text, datespan, timespan
+import builtins
+import orm
+import os
+import primative
+import hashlib
 
 ''' Parties '''
 
 ''' orm.entities classes '''
+class users(orm.entities):                                   pass
 class parties(orm.entities):                                 pass
 class types(orm.entities):                                   pass
 class roles(orm.entities):                                   pass
@@ -104,6 +107,81 @@ class casestatuses(statuses):                                pass
 class communication_efforts(orm.associations):               pass
 
 ''' Parties '''
+
+class user(orm.entity):
+    name     =  str
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._password = None
+
+    @orm.attr(bytes, 16, 16)
+    def salt(self):
+        self._sethash()
+        return attr()
+
+    @orm.attr(bytes, 32, 32)
+    def hash(self):
+        self._sethash()
+        return attr()
+
+    def _sethash(self):
+        hash = self.orm.mappings['hash']
+        salt = self.orm.mappings['salt']
+
+        if hash.value and salt.value:
+            return
+
+        hash.value, salt.value = self._gethash()
+
+    def _gethash(self, pwd=None):
+        if not pwd:
+            pwd = self.password
+
+        if not pwd:
+            return None, None
+
+        salt = self.orm.mappings['salt'].value
+
+        if not salt:
+            salt = os.urandom(16)
+
+        pwd  = bytes(pwd, 'utf-8')
+        algo = 'sha256'
+        iter = 100000
+        fn   = hashlib.pbkdf2_hmac
+
+        hash = fn(algo, pwd, salt, iter)
+        return hash, salt
+
+    @property
+    def password(self):
+        return self._password
+
+    @password.setter
+    def password(self, v):
+        self.hash = self.salt = None
+        self._password = v
+
+    def ispassword(self, pwd):
+        # Ensure self._salt is set so _gethash doesn't make one up
+        self._sethash()
+        hash, _ = self._gethash(pwd)
+        return hash == self.hash
+
+    @staticmethod
+    def authenticate(name, password):
+        usrs = users(name=name)
+        if usrs.hasplurality:
+            raise ValueError('Multiple users found')
+
+        if usrs.hasone:
+            usr = usrs.first
+            if usr.ispassword(password):
+                return usr
+
+        return None
+
 class party(orm.entity):
     """ ``party`` is the abstract class under which two important classes
     exists: ``organization`` and ``person``. 

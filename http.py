@@ -25,7 +25,7 @@ import sys
 import textwrap
 import traceback
 import urllib
-import gem
+import party
 
 # NOTE Use the following diagram as a guide to determine what status
 # code to respond with:
@@ -223,7 +223,7 @@ class _request:
 
             # NOTE The JWT's sub property has a hex str
             # represetation of the user's id.
-            self._user = gem.user(jwt.sub)
+            self._user = party.user(jwt.sub)
 
         return self._user
                 
