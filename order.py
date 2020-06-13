@@ -144,6 +144,9 @@ class salesorder(order):
     # Tho party role that is responsible for the bill.
     billto = party.billto
 
+    # Tho party that the order will be shipped to.
+    shipto = party.shipto
+
     # The contact mechanism the order was placed using, such as a phone
     # number or address.
     placedusing = party.contactmechanism
@@ -155,6 +158,9 @@ class salesorder(order):
     # The contact mechanism for the orders billto - probably a
     # party.address.
     billtousing = party.contactmechanism
+
+    # The address that the order will be shipped to
+    shiptousing = party.contactmechanism
 
 class purchaseorder(order):
     """ A class representing a purchase order

@@ -49,6 +49,7 @@ class employees(personals):                                  pass
 class customers(personals):                                  pass
 class billtos(customers):                                    pass
 class placings(customers):                                   pass
+class shiptos(customers):                                    pass
 class party_types(orm.associations):                         pass
 class organizations(parties):                                pass
 class legalorganizations(organizations):                     pass
@@ -1424,6 +1425,13 @@ class placing(customer):
     party.
 
     Note that this entity was originally called PLACING CUSTOMER in "The
+    Data Modeling Resource Book".
+    """
+
+class shipto(customer):
+    """ A role indicating a party that should recieve the order.
+
+    Note that this entity was originally called SHIP TO CUSTOMER in "The
     Data Modeling Resource Book".
     """
 

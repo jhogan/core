@@ -19509,6 +19509,7 @@ class gem_order_order(tester):
             party.placing,
             party.internal,
             party.billto,
+            party.shipto,
         )
 
     def it_creates(self):
@@ -19669,16 +19670,19 @@ class gem_order_order(tester):
         placing = party.placing()
         internal = party.internal()
         billto = party.billto()
+        shipto = party.shipto()
 
         ''' Associate roles to the order '''
         so.placing  =  placing
         so.taking   =  internal
         so.billto   =  billto
+        so.shipto   =  shipto
 
         ''' Associate contact mechanism to the order '''
         so.placedusing  =  acmeaddr
         so.takenusing   =  acmesubaddr
         so.billtousing  =  acmeaddr
+        so.shiptousing  =  acmeshipto
 
         ''' Associate roles to the parties '''
 
@@ -19686,6 +19690,7 @@ class gem_order_order(tester):
         acme.roles  +=  placing
         sub.roles   +=  internal
         acme.roles  +=  billto
+        acme.roles  +=  shipto
 
         so.save()
 
@@ -19707,6 +19712,9 @@ class gem_order_order(tester):
         billto1 = so1.billto
         self.eq(billto.id, billto1.id)
 
+        shipto1 = so1.shipto
+        self.eq(shipto.id, shipto1.id)
+
         # FIXME We shouldn't have to use orm.super here
         acme1 = billto1.orm.super.orm.super.party
         self.eq(acme.id, acme1.id)
@@ -19714,10 +19722,13 @@ class gem_order_order(tester):
         acmeaddr1     =  so1.placedusing
         acmesubaddr1  =  so1.takenusing
         acmeaddr2     =  so1.billtousing
+        acmeshipto1   =  so1.shiptousing
 
         self.eq(acmeaddr.id,     acmeaddr1.id)
         self.eq(acmesubaddr.id,  acmesubaddr1.id)
         self.eq(acmeaddr.id,     acmeaddr2.id)
+        self.eq(acmeshipto.id,     acmeshipto1.id)
+
 
 
 
