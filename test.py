@@ -14699,6 +14699,4304 @@ class test_orm(tester):
             for prop in ('tube', 'watts', 'cost', 'name'):
                 self.eq(getattr(amp1, prop), getattr(amp2, prop))
 
+'''
+Test General Entities Model (GEM)
+'''
+
+class gem_party_person(tester):
+    def __init__(self):
+        super().__init__()
+        orm.orm.recreate(
+            party.party,
+            party.nametypes,
+            party.characteristictypes,
+            party.gendertypes,
+            party.position,
+            party.marital,
+            party.name,
+            party.citizenships,
+        )
+
+    @staticmethod
+    def getvalid():
+        per = party.person()
+
+        per.first          =  uuid4().hex
+        per.middle         =  uuid4().hex
+        per.last           =  uuid4().hex
+
+        per.title          =  uuid4().hex
+        per.suffix         =  uuid4().hex
+        per.mothersmaiden  =  uuid4().hex
+        per.maritalstatus  =  True
+        per.nationalids    =  uuid4().hex
+        per.isicv4         =  None
+        per.dun            =  None
+        return per
+
+    def it_saves_physical_characteristics(self):
+        hr = party.characteristictype(name='Heart rate')
+        sys = party.characteristictype(name='Systolic blood preasure')
+        dia = party.characteristictype(name='Diastolic blood preasure')
+
+        per = gem_party_person.getvalid()
+
+        per.characteristics += party.characteristic(
+            begin = primative.datetime('2021-03-07 08:00:00'),
+            value = 118,
+            characteristictype = sys,
+        )
+
+        per.characteristics += party.characteristic(
+            begin = primative.datetime('2021-03-07 08:00:00'),
+            value = 77,
+            characteristictype = dia,
+        )
+
+        per.characteristics += party.characteristic(
+            begin = primative.datetime('2021-03-07 08:00:00'),
+            value = 76,
+            characteristictype = hr,
+        )
+        
+        per.save()
+        per1 = per.orm.reloaded()
+
+        chrs = per.characteristics.sorted()
+        chrs1 = per1.characteristics.sorted()
+
+        self.three(chrs)
+        self.three(chrs1)
+
+        dt = primative.datetime('2021-03-07 08:00:00')
+        for chr, chr1 in zip(chrs, chrs1):
+            self.eq(dt, chr1.begin)
+            self.none(chr1.end)
+            self.eq(chr.value, chr1.value)
+            self.eq(
+                chr.characteristictype.id,
+                chr1.characteristictype.id
+            )
+            self.type(str, chr1.value)
+
+    def it_appends_marital_status(self):
+        per = gem_party_person.getvalid()
+
+        per.maritals += party.marital(
+            begin = primative.datetime('19760415'),
+            end   = primative.datetime('20041008'),
+            type = party.marital.Single,
+        )
+
+        per.maritals += party.marital(
+            begin = primative.datetime('20041009'),
+            type = party.marital.Married,
+        )
+
+        per.save()
+
+        per1 = per.orm.reloaded()
+
+        mars = per.maritals.sorted()
+        mars1 = per1.maritals.sorted()
+
+        self.two(mars)
+        self.two(mars1)
+
+        for mar, mar1 in zip(mars, mars1):
+            self.eq(mar.begin,  mar1.begin)
+            self.eq(mar.end,    mar1.end)
+            self.eq(mar.type,   mar1.type)
+
+    def it_calls_gender(self):
+        per = gem_party_person.getvalid()
+        self.none(per.gender)
+
+        # Gender must have already been registered
+        def f(per):
+            per.gender = 'Male'
+
+        self.expect(ValueError, lambda: f(per))
+
+        party.gendertype(name='Male').save()
+        party.gendertype(name='Female').save()
+        party.gendertype(name='Nonbinary').save()
+
+        per.gender = 'Male'
+        self.one(per.genders)
+
+        self.eq('Male', per.gender)
+
+        per.save()
+
+        per = per.orm.reloaded()
+
+        self.one(per.genders)
+        self.eq('Male', per.gender)
+
+        per.gender = 'Female'
+        self.eq('Female', per.gender)
+        self.one(per.genders)
+
+        per = per.orm.reloaded()
+
+        # NOTE:7f6906fc The mutator per.gender will save the gender
+        # object, so there is no need to call save here
+        # per.save()
+
+        self.eq('Female', per.gender)
+        self.one(per.genders)
+
+        ''' Make the Female gender a past gender and make per's current
+        gender nonbinary. '''
+
+        gen = per.genders.first
+        gen.begin = primative.datetime('1980-01-01')
+        gen.end   = primative.datetime('1990-01-01')
+
+        per.genders += party.gender(
+            begin       =  primative.datetime('1990-01-02'),
+            end         =  None,
+            gendertype  =  party.gendertypes(name='nonbinary').first,
+        )
+
+        self.eq('Nonbinary', per.gender)
+
+        per.save()
+
+        per1 = per.orm.reloaded()
+
+        gens = per.genders.sorted()
+        gens1 = per1.genders.sorted()
+
+        self.two(gens)
+        self.two(gens1)
+        self.eq('Nonbinary', per1.gender)
+
+        for gen, gen1 in zip(gens, gens1):
+            self.eq(gen.begin, gen1.begin)
+            self.eq(gen.end, gen1.end)
+            self.eq(gen.gendertype.id, gen1.gendertype.id)
+
+    def it_calls_name_properties(self):
+        per = party.person()
+        per.dun = None
+        per.isicv4 = None
+        per.nationalids = None
+
+        per.first = 'Joey'
+        self.eq('Joey', per.first)
+
+        per.middle = 'Middle'
+        self.eq('Middle', per.middle)
+
+        per.last = 'Armstrong'
+        self.eq('Armstrong', per.last)
+
+        per.save()
+
+        per1 = per.orm.reloaded()
+
+        for prop in ('first', 'middle', 'last'):
+            self.eq(getattr(per, prop), getattr(per1, prop))
+
+        names = party.nametypes.orm.all.pluck('name')
+
+        self.three(names)
+        self.true('first' in names)
+        self.true('middle' in names)
+        self.true('last' in names)
+
+    def it_adds_citizenships(self):
+        per = party.person()
+
+        au = party.region(
+            name = 'Austria',
+            type = party.region.Country
+        )
+
+        en = party.region(
+            name = 'England',
+            type = party.region.Country
+        )
+
+        per.citizenships += party.citizenship(
+            begin   = primative.datetime('1854-05-06'),
+            end     = primative.datetime('1938-05-01'),
+            country = au,
+        )
+
+        per.citizenships.last.passports += party.passport(
+            number = str(randint(1111111111, 99999999999)),
+            issuedat = primative.datetime('2010-05-06'),
+            expiresat = primative.datetime('2019-05-06'),
+        )
+
+        per.citizenships += party.citizenship(
+            begin   = primative.datetime('1938-05-01'),
+            end     = primative.datetime('1939-09-23'),
+            country = en,
+        )
+
+        per.citizenships.last.passports += party.passport(
+            number = str(randint(1111111111, 99999999999)),
+            issuedat = primative.datetime('2010-05-06'),
+            expiresat = primative.datetime('2019-05-06'),
+        )
+
+        per.save()
+
+        per1 = per.orm.reloaded()
+
+        cits = per.citizenships.sorted()
+        cits1 = per1.citizenships.sorted()
+
+        self.two(cits)
+        self.two(cits1)
+
+        for cit, cit1 in zip(cits, cits1):
+            self.eq(cit.begin, cit1.begin)
+            self.eq(cit.end, cit1.end)
+            self.eq(cit.country.id, cit1.country.id)
+
+            pps = cit.passports.sorted()
+            pps1 = cit1.passports.sorted()
+
+            self.one(pps)
+            self.one(pps1)
+
+            for pp, pp1 in zip(pps, pps1):
+                for prop in ('number', 'issuedat', 'expiresat'):
+                    self.eq( getattr(pp, prop), getattr(pp1, prop))
+
+    def it_creates(self):
+        per = self.getvalid()
+        per.save()
+
+        per1 = party.person(per.id)
+
+        for map in per.orm.mappings.fieldmappings:
+            self.eq(
+                getattr(per, map.name),
+                getattr(per1, map.name)
+            )
+
+    def it_updates(self):
+        # Create
+        per = self.getvalid()
+        per.save()
+
+        # Load
+        per = party.person(per.id)
+
+        # Update
+        oldfirstname = per.first
+        newfirstname = uuid4().hex
+
+        per.first = newfirstname
+        per.save()
+
+        # Reload
+        per1 = party.person(per.id)
+
+        # Test
+        self.eq(newfirstname, per1.first)
+        self.ne(oldfirstname, per1.first)
+
+    def it_creates_association_to_person(self):
+        bro = self.getvalid()
+        sis = self.getvalid()
+
+        # TODO Figure out a way to do this:
+        #
+        #     bro.siblings += sis
+        bro.party_parties += party.party_party.sibling(sis)
+
+        self.is_(bro, bro.party_parties.last.subject)
+        self.is_(sis, bro.party_parties.last.object)
+
+        bro.save()
+
+        bro1 = party.person(bro.id)
+
+        self.eq(bro.id, bro1.party_parties.last.subject.id)
+        self.eq(sis.id, bro1.party_parties.last.object.id)
+        
+    def it_creates_association_to_company(self):
+        per = self.getvalid()
+        com = gem_party_company.getvalid()
+
+        pp = party.party_party()
+        pp.object = com
+        pp.role = 'patronize'
+
+        per.party_parties += pp
+
+        self.is_(per, per.party_parties.last.subject)
+        self.is_(com, per.party_parties.last.object)
+
+        per.save()
+
+        per1 = party.person(per.id)
+
+        self.eq(per.id, per1.party_parties.last.subject.id)
+        self.eq(com.id, per1.party_parties.last.object.id)
+
+        self.one(per1.parties)
+        self.eq(com.id, per1.parties.first.id)
+
+        self.one(per1.companies)
+        self.eq(com.id, per1.companies.first.id)
+
+    def it_places_person_in_a_corporate_hierarchy(self):
+        ... # TODO
+
+    def it_creates_association_to_person(self):
+        bro = self.getvalid()
+        sis = self.getvalid()
+
+        # TODO Figure out a way to do this:
+        #
+        #     bro.siblings += sis
+
+        bro.party_parties += party.party_party.sibling(sis)
+
+        self.is_(bro, bro.party_parties.last.subject)
+        self.is_(sis, bro.party_parties.last.object)
+
+        bro.save()
+
+        bro1 = party.person(bro.id)
+
+        self.eq(bro.id, bro1.party_parties.last.subject.id)
+        self.eq(sis.id, bro1.party_parties.last.object.id)
+
+        self.one(bro1.parties)
+        self.eq(sis.id, bro1.parties.first.id)
+
+        self.one(bro1.persons)
+        self.eq(sis.id, bro1.persons.first.id)
+
+
+class gem_party_party_type(tester):
+    def __init__(self):
+        super().__init__()
+        orm.orm.recreate(
+            party.party,
+            party.type,
+        )
+
+    def it_creates(self):
+        typ = party.type()
+        typ.name = uuid4().hex
+
+        for i in range(2):
+            pt = party.party_type()
+            pt.begin = primative.datetime.utcnow(days=-100)
+            pt.party = gem_party_person.getvalid()
+            typ.party_types += pt
+
+        typ.save()
+
+        typ1 = party.type(typ.id)
+        self.eq(typ.name, typ1.name)
+
+        typ.party_types.sort() 
+        typ1.party_types.sort()
+
+        self.two(typ1.party_types)
+
+        self.eq(
+            typ.party_types.first.party.id, 
+            typ1.party_types.first.party.id
+        )
+
+        self.eq(
+            typ.party_types.second.party.id,
+            typ1.party_types.second.party.id
+        )
+
+        self.eq(
+            typ.id,
+            typ1.party_types.first.type.id
+        )
+
+    def it_updates(self):
+        # TODO
+        pass
+
+class party_party_role(tester):
+    def __init__(self):
+        super().__init__()
+        party.party.orm.recreate(recursive=True)
+        party.roletypes.orm.recreate(recursive=True)
+
+    def it_creates(self):
+        acme = party.company(name='ACME Corporation')
+
+        acme.roles += party.customer(
+            begin  =  primative.datetime('2006-01-01'),
+            end    =  primative.datetime('2008-04-14')
+        )
+
+        acme.roles += party.supplier()
+
+        acme.save()
+
+        acme1 = acme.orm.reloaded()
+
+        rls = acme.roles.sorted()
+        rls1 = acme1.roles.sorted()
+
+        self.two(rls)
+        self.two(rls1)
+
+        for rl, rl1 in zip(rls, rls1):
+            rl1 = rl.orm.entity(rl1)
+            self.eq(rl.begin, rl1.begin)
+            self.eq(rl.end, rl1.end)
+
+            rl1.partyroletype
+
+            self.eq(rl.partyroletype.id, rl1.partyroletype.id)
+
+class gem_party_role_role(tester):
+    def __init__(self):
+        super().__init__()
+        orm.orm.recreate(
+            party.party,
+            party.roletypes,
+            party.status,
+            party.communications,
+            party.priority,
+            party.role_role_status,
+        )
+
+    def it_creates(self):
+        # Create parties
+        rent = party.company(name='ACME Corporation')
+        sub  = party.company(name='ACME Subsidiary')
+
+        # Create priority
+        high = party.priority(name='high')
+
+        # Create status
+        act = party.role_role_status(name='active')
+
+        # Create roles
+        rent.roles += party.parent(
+            begin     =  primative.datetime('2006-01-01'),
+            end       =  None,
+        )
+
+        sub.roles += party.subsidiary(
+            begin  =  primative.datetime('2006-01-01'),
+            end    =  None,
+        )
+
+        # Associate the two roles created above
+        sub.roles.last.role_roles += party.role_role(
+            begin  =  primative.datetime('2006-01-01'),
+            end    =  None,
+            role_role_type = party.role_role_type(
+                name = 'Organizational rollup',
+                description = 'Shows that each organizational '
+                              'unit may be within one or more '
+                              'organization units, over time.',
+            ),
+
+            # FIXME `subject` need not be set here
+            subject = sub.roles.last, 
+
+            object = rent.roles.last,
+
+            # This is a "high" priority relationship.
+            priority = high,
+
+            # This is an active relationship.
+            status = act,
+
+        )
+
+        sub.roles.last.role_roles.last.communications += \
+            party.communication(
+                begin = primative.datetime('2010-02-18 12:01:23'),
+                end   = primative.datetime('2010-02-18 12:49:32'),
+                note  = 'Good phone call. I think we got him.',
+            )
+
+        rent.save(sub, sub.roles)
+
+        # Reload and test
+        sub1 = sub.orm.reloaded()
+
+        rls = sub.roles
+        rls1 = sub1.roles
+
+        self.one(rls)
+        self.one(rls1)
+
+        rrs = rls.first.role_roles
+        rrs1 = rls1.first.role_roles
+
+        self.one(rrs)
+        self.one(rrs1)
+
+        self.eq(
+            rrs.first.begin,
+            rrs1.first.begin,
+        )
+
+        self.eq(
+            rrs.first.end,
+            rrs1.first.end,
+        )
+
+        self.eq(
+            rrs.first.object.id,
+            rrs1.first.object.id,
+        )
+
+        self.eq(
+            rrs.first.priority.id,
+            rrs1.first.priority.id,
+        )
+
+        self.eq(
+            'high',
+            rrs1.first.priority.name,
+        )
+
+        self.eq(
+            rrs.first.status.id,
+            rrs1.first.status.id,
+        )
+
+        self.eq(
+            'active',
+            rrs1.first.status.name,
+        )
+
+        self.eq(
+            rrs.first.role_role_type.id,
+            rrs1.first.role_role_type.id,
+        )
+
+        self.eq(
+            rrs.first.role_role_type.name,
+            rrs1.first.role_role_type.name,
+        )
+
+        self.eq(
+            rrs.first.role_role_type.description,
+            rrs1.first.role_role_type.description,
+        )
+
+        coms = rrs.first.communications.sorted()
+        coms1 = rrs.first.communications.sorted()
+
+        self.one(coms)
+        self.one(coms1)
+
+        for com, com1 in zip(coms, coms1):
+            self.eq(com.id, com1.id)
+            self.eq(com.begin, com1.begin)
+            self.eq(com.end, com1.end)
+            self.eq(com.note, com1.note)
+
+class gem_party_company(tester):
+    def __init__(self):
+        super().__init__()
+        orm.orm.recreate(
+            party.party,
+            party.address,
+            party.party_contactmechanism,
+        )
+
+    @staticmethod
+    def getvalid(**kwargs):
+        com = party.company()
+        com.name = uuid4().hex
+        com.ein = str(uuid4().int)[:9]
+        com.nationalids    =  uuid4().hex
+        com.isicv4         =  'A'
+        com.dun            =  None
+
+        for k, v in kwargs.items():
+            setattr(com, k, v)
+        return com
+
+    def it_creates(self):
+        com = self.getvalid()
+        com.save()
+
+        com1 = party.company(com.id)
+
+        sup = com
+
+        while sup:
+            for map in sup.orm.mappings.fieldmappings:
+                self.eq(
+                    getattr(com, map.name),
+                    getattr(com1, map.name),
+                )
+
+            sup = sup.orm.super
+
+    def it_updates(self):
+        # Create
+        com = self.getvalid()
+        com.save()
+
+        # Load
+        com = party.company(com.id)
+
+        # Update
+        old, new = com.name, uuid4().hex
+        com.name = new
+        com.save()
+
+        # Reload
+        com1 = party.company(com.id)
+
+        # Test
+        self.eq(new, com1.name)
+        self.ne(old, com1.name)
+
+    def it_creates_association_to_person(self):
+        per = gem_party_person.getvalid()
+        com = self.getvalid()
+
+        pp = party.party_party()
+        pp.object = per
+        pp.role = 'employ'
+        pp.begin = date.today()
+
+        com.party_parties += pp
+
+        self.is_(com, com.party_parties.last.subject)
+        self.is_(per, com.party_parties.last.object)
+
+        com.save()
+
+        com1 = party.company(com.id)
+
+        self.eq(com.id, com1.party_parties.last.subject.id)
+        self.eq(per.id, com1.party_parties.last.object.id)
+
+        self.one(com1.party_parties)
+        pp1 = com1.party_parties.first
+        for map in pp.orm.mappings.fieldmappings:
+            self.eq(
+                getattr(pp, map.name),
+                getattr(pp1, map.name),
+            )
+
+    def it_associates_phone_numbers(self):
+        com = self.getvalid()
+
+        # Create two phone numbers
+        for i in range(2):
+
+            # Create phone number
+            ph = party.phone()
+            ph.area = int('20' + str(i))
+            ph.line = '555 5555'
+            
+            # Create party to contact mechanism association
+            pcm                   =  party.party_contactmechanism()
+            pcm.begin             =  primative.datetime('1976-01-01')
+            pcm.end               =  None
+            pcm.solicitations     =  False
+            pcm.extension         =  None
+            pcm.purpose           =  party.party_contactmechanism.roles.main
+            pcm.contactmechanism  =  ph
+            pcm.party             =  com
+
+            # Add association to the company object
+            com.party_contactmechanisms += pcm
+
+        # Save, reload and test
+        com.save()
+
+        com1 = party.company(com.id)
+
+        com.party_contactmechanisms.sort()
+        com1.party_contactmechanisms.sort()
+
+        self.two(com1.party_contactmechanisms)
+
+        for i in range(2):
+            self.eq(com.id, com1.party_contactmechanisms[i].party.id)
+
+            self.eq(
+                com.party_contactmechanisms[i].contactmechanism.id,
+                com1.party_contactmechanisms[i].contactmechanism.id
+            )
+            ph = party.phone(
+                com1.party_contactmechanisms[i].contactmechanism.id
+            )
+
+    def it_associates_email_addresses(self):
+        com = self.getvalid()
+
+        # Create two email addressess
+        for i in range(2):
+
+            # Create email addres
+            em = party.email()
+            em.address = 'jimbo%s@foonet.com' % i
+            
+            # Create party to contact mechanism association
+            priv = party.party_contactmechanism.roles.private
+
+            pcm                   =  party.party_contactmechanism()
+            pcm.begin             =  primative.datetime('1993-09-01')
+            pcm.end               =  None
+            pcm.solicitations     =  False
+            pcm.extension         =  None
+            pcm.purpose           =  priv # Private email address
+            pcm.contactmechanism  =  em
+            pcm.party             =  com
+
+            # Add association to the company object
+            com.party_contactmechanisms += pcm
+
+        # Save, reload and test
+        com.save()
+
+        com1 = party.company(com.id)
+
+        com.party_contactmechanisms.sort()
+        com1.party_contactmechanisms.sort()
+
+        self.two(com1.party_contactmechanisms)
+
+        for i in range(2):
+            self.eq(com.id, com1.party_contactmechanisms[i].party.id)
+
+            self.eq(
+                com.party_contactmechanisms[i].contactmechanism.id,
+                com1.party_contactmechanisms[i].contactmechanism.id
+            )
+
+            em = party.email(
+                com1.party_contactmechanisms[i].contactmechanism.id
+            )
+
+    def it_associates_postal_addresses(self):
+        com = self.getvalid()
+
+        # Create two postal addressess
+        for i in range(2):
+
+            # Create postal addres
+            addr = party.address()
+            addr.address1 = '742 Evergreen Terrace'
+            addr.address2 = None
+            addr.directions = self.dedent('''
+			Take on I-40 E. 
+            Take I-44 E to Glenstone Ave in Springfield. 
+            Take exit 80 from I-44 E
+			Drive to E Evergreen St
+            ''')
+
+            ar = party.address_region()
+            ar.region = gem_party_region.getvalid()
+            addr.address_regions += ar
+            
+            hm = party.party_contactmechanism.roles.home
+
+            # Create party-to-contact-mechanism association
+            pcm                   =  party.party_contactmechanism()
+            pcm.begin             =  primative.datetime('1993-09-01')
+            pcm.end               =  None
+            pcm.solicitations     =  False
+            pcm.extension         =  None
+            pcm.purpose           =  hm
+            pcm.contactmechanism  =  addr
+            pcm.party             =  com
+
+            # Add association to the company object
+            com.party_contactmechanisms += pcm
+
+        # Save, reload and test
+        com.save()
+
+        com1 = party.company(com.id)
+
+        com.party_contactmechanisms.sort()
+        com1.party_contactmechanisms.sort()
+
+        self.two(com1.party_contactmechanisms)
+
+        for i in range(2):
+            self.eq(com.id, com1.party_contactmechanisms[i].party.id)
+
+            self.eq(
+                com.party_contactmechanisms[i].contactmechanism.id,
+                com1.party_contactmechanisms[i].contactmechanism.id
+            )
+
+            addr = com.party_contactmechanisms[i].contactmechanism
+
+            # Downcast
+            addr1 = party.address(
+                com1.party_contactmechanisms[i].contactmechanism.id
+            )
+
+            self.eq(addr.address1, addr1.address1)
+
+            reg = addr.address_regions.first.region
+            reg1 = addr1.address_regions.first.region
+
+            expect = self.dedent('''
+			Scottsdale, Arizona 85281
+			United States of America
+            ''')
+            self.eq(expect, str(reg1))
+
+            self.eq(str(reg), str(reg1))
+
+    def it_appends_department(self):
+        # TODO:afa4ffc9 Rewrite the below to use the role_role
+        # association to associate persons to departments and divisions.
+        com = self.getvalid()
+        self.zero(com.departments)
+        dep = party.department(name='web')
+        com.departments += dep
+        self.is_(com, dep.company)
+        com.save()
+
+        com1 = party.company(com.id)
+        self.eq(com.id, com1.id)
+
+        self.one(com1.departments)
+
+        self.eq(com.departments.first.id, com1.departments.first.id)
+        self.eq('web', com1.departments.first.name)
+
+    def it_updates_department(self):
+        # TODO:afa4ffc9 Rewrite the below to use the role_role
+        # association to associate persons to departments and divisions.
+        com = self.getvalid()
+        self.zero(com.departments)
+        com.departments += party.department(name='web')
+        com.save()
+
+        com1 = party.company(com.id)
+
+        dep1 = com1.departments.first
+
+        # Update departement
+        dep1.name = 'web1'
+
+        # Save
+        com1.save()
+
+        # Load and test deparment
+        com1 = party.company(com.id)
+
+        dep1 = com1.departments.first
+
+        self.eq('web1', dep1.name)
+
+    def it_appends_divisions_to_departments(self):
+        # TODO:afa4ffc9 Rewrite the below to use the role_role
+        # association to associate persons to departments and divisions.
+        com = self.getvalid()
+
+        dep = party.department(name='web')
+        com.departments += dep
+
+        div = party.division(name='core')
+        dep.divisions += div
+        com.save()
+
+        com1 = party.company(com)
+
+        self.one(com1.departments)
+        self.one(com1.departments.first.divisions)
+
+        self.eq('web', com1.departments.first.name)
+        self.eq('core', com1.departments.first.divisions.first.name)
+
+        self.eq(
+            com.departments.first.id,
+            com1.departments.first.id
+        )
+
+        self.eq(
+            com.departments.first.divisions.first.id,
+            com1.departments.first.divisions.first.id
+        )
+
+    def it_creates_positions_within_company(self):
+        # TODO:afa4ffc9 Rewrite the below to use the role_role
+        # association to associate persons to departments and divisions.
+
+        # TODO We should be able to create a position in any
+        # party.legalorganization such as a non-profit.
+        jb = gem_party_job.getvalid()
+        com = gem_party_company.getvalid()
+
+        # Create positions based on the job
+        poss = party.positions()
+        poss += gem_party_position.getvalid()
+        poss += gem_party_position.getvalid()
+
+        com.departments += party.department(name='it')
+        div = party.division(name='ml')
+        com.departments.last.divisions += div
+
+        div.positions += poss
+
+        jb.positions += poss
+
+        com.positions += poss
+
+        # INSERT company (it's supers), its department and division, the
+        # two positions and jb (jb is a composite of the positions so it
+        # gets saved as well).
+        com.save()
+
+        ''' Test that rather large save '''
+        com1 = party.company(com.id)
+        self.eq(com.id, com1.id)
+        self.two(com1.positions)
+
+        ids = com1.positions.pluck('id')
+        self.true(com.positions.first.id in ids)
+        self.true(com.positions.second.id in ids)
+
+        self.eq(com1.positions.first.job.id, jb.id)
+        self.eq(com1.positions.second.job.id, jb.id)
+
+        self.true(com1.positions.first.job.positions.first.id in ids)
+        self.true(com1.positions.first.job.positions.second.id in ids)
+        self.ne(
+            com1.positions.first.job.positions.first.id,
+            com1.positions.first.job.positions.second.id
+        )
+
+        self.one(com1.departments)
+        self.one(com1.departments.first.divisions)
+        self.two(com1.departments.first.divisions.first.positions)
+
+    def it_fulfills_postition_within_company(self):
+        # TODO:afa4ffc9 Rewrite the below to use the role_role
+        # association to associate persons to departments and divisions.
+
+
+        jb = gem_party_job.getvalid()
+        com = gem_party_company.getvalid()
+        pers = gem_party_person.getvalid() + gem_party_person.getvalid()
+
+        # Create positions based on the job
+        pos = gem_party_position.getvalid()
+
+        dep = party.department(name='it')
+        com.departments += dep
+        div = party.division(name='ml')
+        com.departments.last.divisions += div
+
+        div.positions += pos
+        jb.positions += pos
+        com.positions += pos
+
+        #self.true(pos.isfulfilled)
+
+        for per in pers:
+            ful = party.position_fulfillment(
+                person = per,
+                begin  = date.today(),
+                end    = None,
+            )
+
+            pos.position_fulfillments += ful
+
+            self.is_(per, pos.position_fulfillments.last.person)
+
+            self.is_(ful, pos.position_fulfillments.last)
+
+            self.is_(
+                div,
+                pos.position_fulfillments.last.position.division
+            )
+
+            self.is_(
+                dep,
+                pos.position_fulfillments.last
+                    .position.division.department
+            )
+
+            self.is_(
+                com,
+                pos.position_fulfillments.last
+                    .position.division.department.company
+            )
+
+        self.two(pos.position_fulfillments)
+        self.two(pos.persons)
+
+        com.save()
+
+        com1 = party.company(com.id)
+
+        self.one(com1.positions)
+
+        ids = com.positions.first.position_fulfillments.pluck('id')
+        self.two(ids)
+
+        for ful1 in com1.positions.first.position_fulfillments:
+            self.true(ful1.id in ids)
+            ful = com.positions.first.position_fulfillments[ful1.id]
+            self.eq(ful.person.id, ful1.person.id)
+            self.eq(ful.position.id, ful1.position.id)
+            self.eq(ful.begin, ful1.begin)
+            self.none(ful1.end)
+
+        for per in pers:
+            per1 = party.person(per.id)
+            self.one(per1.positions)
+            self.one(per1.position_fulfillments)
+            self.eq(div.id, per1.positions.first.division.id)
+            self.eq(dep.id, per1.positions.first.division.department.id)
+            self.eq(
+                com.id,
+                per1.positions.first.division.department.company.id
+            )
+
+class gem_party_contactmechanism(tester):
+    def __init__(self):
+        super().__init__()
+        orm.orm.recreate(
+            party.party,
+            party.purposetypes,
+            party.contactmechanism_contactmechanism,
+        )
+
+    @staticmethod
+    def getvalid(type='phone'):
+        if type == 'phone':
+            # Create phone number
+            cm = party.phone()
+
+            cm.area =  randint(200, 999)
+            cm.line =  randint(100, 999)
+            cm.line += ' '
+            cm.line += str(randint(1000, 9999))
+
+        elif type == 'email':
+            cm = party.email(address='bgates@microsoft.com')
+        else:
+            raise TypeError('Type not supported')
+
+        return cm
+
+    def it_links_contactmechanisms(self):
+        # Create contact mechanisms
+        ph1 = gem_party_contactmechanism.getvalid(type='phone')
+        ph2 = gem_party_contactmechanism.getvalid(type='phone')
+        em  = gem_party_contactmechanism.getvalid(type='email')
+
+
+        # Make cm_cm reference the association class
+        cm_cm = party.contactmechanism_contactmechanism
+
+        # When ph1 is busy, the number will be forwarded to ph2
+        ph1.contactmechanism_contactmechanisms += cm_cm(
+            event   =  cm_cm.Busy,
+            do      =  cm_cm.Forward,
+            object  =  ph2,
+        )
+
+        # When no one answers ph2, forward the call will be forwarded
+        # to a voice recognition email.
+        ph2.contactmechanism_contactmechanisms += cm_cm(
+            event    =  cm_cm.Unanswered,
+            do       =  cm_cm.Forward,
+            object   =  em,
+        )
+
+        # This saves the cm's and the associations
+        ph1.save()
+
+        # Reload everyting
+        ph1_1 = ph1.orm.reloaded()
+
+        # Test that the first association (the first link in the chain)
+        # saved properly.
+        cm_cms1 = ph1.contactmechanism_contactmechanisms.sorted()
+        cm_cms1_1 = ph1_1.contactmechanism_contactmechanisms.sorted()
+
+        self.one(cm_cms1)
+        self.one(cm_cms1_1)
+
+        self.eq(cm_cms1.first.id,          cm_cms1_1.first.id)
+        self.eq(cm_cms1.first.on,       cm_cms1_1.first.on)
+        self.eq(cm_cms1.first.do,          cm_cms1_1.first.do)
+        self.eq(cm_cms1.first.object.id,   cm_cms1_1.first.object.id)
+        self.eq(cm_cms1.first.subject.id,  cm_cms1_1.first.subject.id)
+
+        # Test that the second association (the second link in the chain)
+        # saved properly.
+        cm_cms1 = cm_cms1.first.object \
+                    .contactmechanism_contactmechanisms \
+                    .sorted()
+
+        cm_cms1_1 = cm_cms1_1.first.object \
+                        .contactmechanism_contactmechanisms \
+                        .sorted()
+
+        self.one(cm_cms1)
+        self.one(cm_cms1_1)
+
+        self.eq(cm_cms1.first.id,          cm_cms1_1.first.id)
+        self.eq(cm_cms1.first.on,       cm_cms1_1.first.on)
+        self.eq(cm_cms1.first.do,          cm_cms1_1.first.do)
+        self.eq(cm_cms1.first.object.id,   cm_cms1_1.first.object.id)
+        self.eq(cm_cms1.first.subject.id,  cm_cms1_1.first.subject.id)
+
+    def it_associates_phone_numbers(self):
+        per = gem_party_person.getvalid()
+
+        # Create two phone numbers
+        for i in range(2):
+
+            # Create phone number
+            ph = party.phone()
+            ph.area = int('20' + str(i))
+            ph.line = '555 5555'
+            
+            # Create party to contact mechanism association
+            pcm                   =  party.party_contactmechanism()
+            pcm.begin             =  primative.datetime('1976-01-01')
+            pcm.end               =  None
+            pcm.solicitations     =  False
+            pcm.extension         =  None
+            pcm.purpose           =  party.party_contactmechanism.roles.main
+            pcm.contactmechanism  =  ph
+            pcm.party             =  per
+
+            # Add association to the person object
+            per.party_contactmechanisms += pcm
+
+        # Save, reload and test
+        per.save()
+
+        per1 = party.person(per.id)
+
+        per.party_contactmechanisms.sort()
+        per1.party_contactmechanisms.sort()
+
+        self.two(per1.party_contactmechanisms)
+
+        for i in range(2):
+            self.eq(per.id, per1.party_contactmechanisms[i].party.id)
+
+            self.eq(
+                per.party_contactmechanisms[i].contactmechanism.id,
+                per1.party_contactmechanisms[i].contactmechanism.id
+            )
+            ph = party.phone(
+                per1.party_contactmechanisms[i].contactmechanism.id
+            )
+
+    def it_associates_email_addresses(self):
+        per = gem_party_person.getvalid()
+
+        # Create two email addressess
+        for i in range(2):
+
+            # Create email addres
+            em = party.email()
+            em.address = 'jimbo%s@foonet.com' % i
+            
+            # Create party to contact mechanism association
+            priv = party.party_contactmechanism.roles.private
+
+            pcm                   =  party.party_contactmechanism()
+            pcm.begin             =  primative.datetime('1993-09-01')
+            pcm.end               =  None
+            pcm.solicitations     =  False
+            pcm.extension         =  None
+            pcm.purpose           =  priv # Private email address
+            pcm.contactmechanism  =  em
+            pcm.party             =  per
+
+            # Add association to the person object
+            per.party_contactmechanisms += pcm
+
+        # Save, reload and test
+        per.save()
+
+        per1 = party.person(per.id)
+
+        per.party_contactmechanisms.sort()
+        per1.party_contactmechanisms.sort()
+
+        self.two(per1.party_contactmechanisms)
+
+        for i in range(2):
+            self.eq(per.id, per1.party_contactmechanisms[i].party.id)
+
+            self.eq(
+                per.party_contactmechanisms[i].contactmechanism.id,
+                per1.party_contactmechanisms[i].contactmechanism.id
+            )
+
+            em = party.email(
+                per1.party_contactmechanisms[i].contactmechanism.id
+            )
+
+    def it_associates_postal_addresses(self):
+        per = gem_party_person.getvalid()
+
+        # Create two postal addressess
+        for i in range(2):
+
+            # Create postal addres
+            addr = party.address()
+            addr.address1 = '742 Evergreen Terrace'
+            addr.address2 = None
+            addr.directions = self.dedent('''
+			Take on I-40 E. 
+            Take I-44 E to Glenstone Ave in Springfield. 
+            Take exit 80 from I-44 E
+			Drive to E Evergreen St
+            ''')
+
+            ar = party.address_region()
+            ar.region = gem_party_region.getvalid()
+            addr.address_regions += ar
+            
+            hm = party.party_contactmechanism.roles.home
+
+            # Create party-to-contact-mechanism association
+            pcm                   =  party.party_contactmechanism()
+            pcm.begin             =  primative.datetime('1993-09-01')
+            pcm.end               =  None
+            pcm.solicitations     =  False
+            pcm.extension         =  None
+            pcm.purpose           =  hm
+            pcm.contactmechanism  =  addr
+            pcm.party             =  per
+
+            # Add association to the person object
+            per.party_contactmechanisms += pcm
+
+        # Save, reload and test
+        per.save()
+
+        per1 = party.person(per.id)
+
+        per.party_contactmechanisms.sort()
+        per1.party_contactmechanisms.sort()
+
+        self.two(per1.party_contactmechanisms)
+
+        for i in range(2):
+            self.eq(per.id, per1.party_contactmechanisms[i].party.id)
+
+            self.eq(
+                per.party_contactmechanisms[i].contactmechanism.id,
+                per1.party_contactmechanisms[i].contactmechanism.id
+            )
+
+            addr = per.party_contactmechanisms[i].contactmechanism
+
+            # Downcast
+            addr1 = party.address(
+                per1.party_contactmechanisms[i].contactmechanism.id
+            )
+
+            self.eq(addr.address1, addr1.address1)
+
+            reg = addr.address_regions.first.region
+            reg1 = addr1.address_regions.first.region
+
+            expect = self.dedent('''
+			Scottsdale, Arizona 85281
+			United States of America
+            ''')
+            self.eq(expect, str(reg1))
+
+            self.eq(str(reg), str(reg1))
+
+    def it_adds_purposes_to_contact_mechanisms(self):
+        tbl = (
+            ('ABC Corporation', 'company', '212 234 0958',    'phone',   'General phone number'),
+            ('ABC Corporation', 'company', '212 334 5896',    'phone',   'Main fax number'),
+            ('ABC Corporation', 'company', '212 356 4898',    'phone',   'Secondary fax number'),
+            ('ABC Corporation', 'company', '100 Main Street', 'address', 'Headquarters'),
+            ('ABC Corporation', 'company', '100 Main Street', 'address', 'Billing Inquires'),
+            ('ABC Corporation', 'company', '500 Jerry Street','address', 'Sales Office'),
+            ('ABC Corporation', 'company', 'http://abc.com',  'website', 'Central Internet Address'),
+
+            ('ABC Subsidiary',  'company', '100 Main Street', 'address', 'Service Address'),
+            ('ABC Subsidiary',  'company', '255 Fetch Street','address', 'Sales Office'),
+
+            ('John Smith',      'person',  '212 234 9856',     'phone',   'Main office number'),
+            ('John Smith',      'person',  '212 784 5893',     'phone',   'Main home number'),
+            ('John Smith',      'person',  '212 384 4387',     'phone',    None),
+            ('John Smith',      'person',  '345 Hamlet Place', 'address', 'Main home address'),
+            ('John Smith',      'person',  '245 Main Street',  'address', 'Main work address'),
+
+            ('Barry Goldstein',  'person',  '212 234 0045',            'phone',   'Main office number'),
+            ('Barry Goldstein',  'person',  '212 234 0046',            'phone',   'Secondary office number'),
+            ('Barry Goldstein',  'person',  'Bgoldstein@abc.com',      'email',   'Work email address'),
+            ('Barry Goldstein',  'person',  'barry@barrypersonal.com', 'email',   'Personal email address'),
+            ('Barry Goldstein',  'person',  '2985 Cordova Road',       'address', 'Main home address'),
+        )
+
+        parts = party.parties()
+        cms   = party.contactmechanisms()
+        for r in tbl:
+            # Objectify party
+            part, cls = r[0:2]
+            cls = getattr(party, cls)
+
+            for part1 in parts:
+                if part == part1.name:
+                    part = part1
+                    break
+            else:
+                part, name = cls(), part
+                if cls is party.person:
+                    # FIXME:d7f877ef person.name does not exist yet and I
+                    # was having a hard time getting it to work so I
+                    # used person.first instead. NOTE that this will
+                    # break if party.roles is uncommented. See 297f8176.
+                    part.first = name
+                part.name = name
+                parts += part
+
+            # Objectify contact mechanisms
+            cm, cls= r[2:4]
+            cls = getattr(party, cls)
+
+            def test(cm, cm1, attr):
+                return getattr(cm1, attr) == cm
+
+            if  cls  is  party.phone:    attr  =  'line'
+            if  cls  is  party.email:    attr  =  'address'
+            if  cls  is  party.address:  attr  =  'address1'
+            if  cls  is  party.website:  attr  =  'url'
+
+            for cm1 in cms:
+                if type(cm1) is not cls:
+                    continue
+
+                if test(cm, cm1, attr):
+                    cm = cm1
+                    break
+            else:
+                cm = cls(**{attr: cm})
+                if cls is party.phone:
+                    cm.area = None
+                elif cls is party.address:
+                    cm.address2 = None
+                cms += cm
+
+
+            # Associate party with contact mechanism
+            part.party_contactmechanisms += \
+                party.party_contactmechanism(
+                    party = part,
+                    contactmechanism = cm
+                )
+
+            pcm = part.party_contactmechanisms.last
+
+            now = primative.datetime.utcnow
+            pcm.purposes += party.purpose(
+                begin       = now(days=-randint(1, 1000)),
+                end         = now(days= randint(1, 1000)),
+                purposetype = party.purposetype(name=r[4])
+            )
+
+        parts.save()
+
+        parts1 = party.parties()
+        for part in parts:
+            parts1 += part.orm.reloaded()
+
+        parts.sorted()
+        parts1.sorted()
+
+        self.eq(parts.count, parts1.count)
+
+        for part, part1 in zip(parts, parts1):
+            cms = part.party_contactmechanisms.sorted()
+            cms1 = part1.party_contactmechanisms.sorted()
+
+            self.eq(cms.count, cms1.count)
+
+            for cm, cm1 in zip(cms, cms1):
+                self.eq(cm.id, cm1.id)
+                self.eq(cm.party.id, cm1.party.id)
+                self.eq(part.id, cm1.party.id)
+                self.eq(cm.contactmechanism.id, cm1.contactmechanism.id)
+
+                self.eq(
+                    cm.contactmechanism.id, 
+                    cm1.contactmechanism.id
+                )
+
+                purs = cm.purposes.sorted()
+                purs1 = cm1.purposes.sorted()
+                self.eq(purs.count, purs1.count)
+
+                for pur, pur1 in zip(purs, purs1):
+                    self.eq(pur.id,              pur1.id)
+                    self.eq(pur.begin,           pur1.begin)
+                    self.eq(pur.end,             pur1.end)
+                    self.eq(pur.purposetype.id,  pur1.purposetype.id)
+                    self.eq(
+                        pur.purposetype.name,  
+                        pur1.purposetype.name
+                    )
+        return
+
+        # The above `return` can be removed to print a tabularized
+        # version of the nested tuple from above. This comes from the
+        # reloaded party entities collection so it is a good way to
+        # visually verify what the test is saving/reloading.
+        tbl1 = table()
+        for part in parts1:
+            for pcm in part.party_contactmechanisms:
+                for pur in pcm.purposes:
+                    r = tbl1.newrow()
+                    try:
+                        r.newfield(part.name)
+                    except AttributeError:
+                        r.newfield(part.first)
+                        
+                    if party.phone.orm.exists(pcm.contactmechanism):
+                        cm = party.phone(pcm.contactmechanism)
+                        r.newfield(cm.line)
+                    elif party.address.orm.exists(pcm.contactmechanism):
+                        cm = party.address(pcm.contactmechanism)
+                        r.newfield(cm.address1)
+                    elif party.website.orm.exists(pcm.contactmechanism):
+                        cm = party.website(pcm.contactmechanism)
+                        r.newfield(cm.url)
+                    elif party.email.orm.exists(pcm.contactmechanism):
+                        cm = party.email(pcm.contactmechanism)
+                        r.newfield(cm.address)
+                    else:
+                        raise TypeError()
+
+                    r.newfield(pur.purposetype.name)
+
+        print(tbl1)
+
+class gem_party_position(tester):
+    def __init__(self):
+        super().__init__()
+        party.position.orm.recreate(recursive=True)
+
+    @staticmethod
+    def getvalid():
+        pos = party.position()
+        pos.estimated.begin = primative.datetime.utcnow()
+
+        pos.estimated.end = pos.estimated.begin.add(days=365)
+
+        pos.begin = primative.date.today()
+        pos.end = pos.begin.add(days=365)
+        return pos
+
+    def it_creates(self):
+        pos = self.getvalid()
+        pos.save()
+
+        pos1 = party.position(pos.id)
+        for map in pos.orm.mappings.fieldmappings:
+            prop = map.name
+            self.eq(getattr(pos, prop), getattr(pos1, prop), prop)
+
+    def it_updates(self):
+        pos = self.getvalid()
+        pos.save()
+
+        pos1 = party.position(pos.id)
+        pos1.estimated.begin  =  pos1.estimated.begin.add(days=1)
+        pos1.estimated.end    =  pos1.estimated.end.add(days=1)
+        pos1.begin            =  pos1.begin.add(days=1)
+        pos1.end              =  pos1.end.add(days=1)
+        pos1.save()
+
+        pos2 = party.position(pos.id)
+        for map in pos.orm.mappings.fieldmappings:
+            prop = map.name
+            self.eq(getattr(pos1, prop), getattr(pos2, prop))
+
+class gem_party_job(tester):
+    def __init__(self):
+        super().__init__()
+        party.jobs.orm.recreate(recursive=True)
+
+    @staticmethod
+    def getvalid():
+        jb = party.job()
+        jb.description = tester.dedent('''
+        As Machine Learning and Signal Processing Engineer you are going
+        to lead the effort to bring signal processing algorithms into
+        production which condition and extract rich morphological
+        features from our unique respiratory sensor. In addition, you
+        will bring machine learning models, which predict changes in a
+        patient's disease state, into production for both streaming and
+        batch mode use cases. You will collaborate closely with the
+        research and data science teams and become the expert on
+        tweaking, optimizing, deploying, and monitoring these algorithms
+        in a commercial environment.
+        ''')
+        jb.title = "Machine Learning and Signal Processing Engineer"
+        jb.description = jb.description.replace('\n', '')
+        return jb
+
+    def it_creates(self):
+        jb = self.getvalid()
+        jb.save()
+
+        jb1 = party.job(jb.id)
+        self.eq(jb.title, jb1.title)
+        self.eq(jb.description, jb1.description)
+        self.eq(jb.id, jb1.id)
+
+    def it_updates(self):
+        jb = self.getvalid()
+        jb.save()
+
+        jb1 = party.job(jb.id)
+        jb1.description += '. This is a fast pace work environment.'
+        jb1.title = 'NEEDED FAST!!! ' + jb1.title
+        jb1.save()
+
+        jb2 = party.job(jb.id)
+        self.eq(jb1.title, jb2.title)
+        self.eq(jb1.description, jb2.description)
+        self.eq(jb1.id, jb2.id)
+
+class gem_party_address(tester):
+    @staticmethod
+    def getvalid():
+        addr = party.address()
+        addr.address1 = '742 Evergreen Terrace'
+        addr.address2 = None
+        addr.directions = tester.dedent('''
+        Take on I-40 E. 
+        Take I-44 E to Glenstone Ave in Springfield. 
+        Take exit 80 from I-44 E
+        Drive to E Evergreen St
+        ''')
+        return addr
+
+class gem_party_facility(tester):
+    def __init__(self):
+        super().__init__()
+        orm.orm.recreate(party.party, party.facility)
+
+    def it_creates(self):
+        # Building
+        miniluv = party.facility(
+            name = 'Miniluv', 
+            type = party.facility.Building
+        )
+
+        # Floor
+        miniluv.facilities += party.facility(
+            name = '0',
+            type = party.facility.Floor
+        )
+
+        # Room
+        miniluv.facilities.last.facilities += party.facility(
+            name = '101',
+            type = party.facility.Room
+        )
+
+        # Footage defaults to None and we never set it above
+        self.none(miniluv.footage, None)
+
+        miniluv.save()
+
+        miniluv1 = miniluv.orm.reloaded()
+
+        fac = miniluv1
+        self.eq(party.facility.Building, fac.type)
+        self.none(fac.footage, None)
+        self.eq('Miniluv', fac.name)
+        self.one(fac.facilities)
+
+        fac = fac.facilities.first
+        self.eq(party.facility.Floor, fac.type)
+        self.none(fac.footage, None)
+        self.eq('0', fac.name)
+        self.one(fac.facilities)
+
+        fac = fac.facilities.first
+        self.eq(party.facility.Room, fac.type)
+        self.none(fac.footage, None)
+        self.eq('101', fac.name)
+        self.zero(fac.facilities)
+
+    def it_associates_with_parties(self):
+
+        # Create a facility
+        giga = party.facility(
+            name = 'Giga Navada', 
+            type = party.facility.Factory
+        )
+
+        # Create party
+        tsla = party.company(name='Tesla')
+
+        # Create association
+        tsla.party_facilities += party.party_facility(
+            party             =  tsla,
+            facility          =  giga,
+            facilityroletype  =  party.facilityroletype(name='owner'),
+        )
+
+        # Save and reload
+        tsla.save()
+
+        tsla1 = tsla.orm.reloaded()
+
+        # Test
+        pfs = tsla.party_facilities.sorted()
+        pfs1 = tsla1.party_facilities.sorted()
+
+        self.one(pfs)
+        self.one(pfs1)
+
+        for pf, pf1 in zip(pfs, pfs1):
+            self.eq(pf.id,                   pf1.id)
+            self.eq(pf.party.id,             pf1.party.id)
+            self.eq(pf.facility.id,          pf1.facility.id)
+            self.eq(pf.facilityroletype.id,  pf1.facilityroletype.id)
+
+    def it_associates_with_contactmechanisms(self):
+        # Create a facility
+        giga = party.facility(
+            name = 'Giga Shanghai', 
+            type = party.facility.Factory,
+            footage = 9300000,
+        )
+
+        # Associate a postal address with the facility
+        addr = party.address(
+            address1 = '浦东新区南汇新城镇同汇路168号',
+            address2 = 'D203A',
+        )
+
+        addr.address_regions += party.address_region(
+            region = party.region.create(
+                ('China',     party.region.Country,       'CH'),
+                ('Shanghai',  party.region.Municipality,  None),
+                ('Pudong',    party.region.District,      None),
+            )
+        )
+
+        giga.facility_contactmechanisms += party.facility_contactmechanism(
+            contactmechanism = addr,
+        )
+
+        # Associate a phone number with the facility.
+        giga.facility_contactmechanisms += party.facility_contactmechanism(
+            contactmechanism = party.phone(area=510, line='602-3960')
+        )
+
+        giga.save()
+
+        giga1 = giga.orm.reloaded()
+
+        fcms = giga.facility_contactmechanisms.sorted()
+        fcms1 = giga1.facility_contactmechanisms.sorted()
+
+        self.two(fcms)
+        self.two(fcms1)
+
+        for fcm, fcm1 in zip(fcms, fcms1):
+            self.eq(fcm.id, fcm1.id)
+            self.eq(fcm.facility.id, fcm1.facility.id)
+            
+            # Downcast
+            id = fcm1.contactmechanism.id
+            cm = fcm1.contactmechanism.orm.cast(party.phone)
+
+            if cm:
+                self.eq(fcm.contactmechanism.area, cm.area)
+                self.eq(fcm.contactmechanism.line, cm.line)
+            else:
+                cm = party.address.orm.cast(id)
+                cm = fcm1.contactmechanism.orm.cast(party.address)
+                assert cm is not None
+                self.eq(fcm.contactmechanism.address1, cm.address1)
+                self.eq(fcm.contactmechanism.address2, cm.address2)
+
+class gem_party_communication(tester):
+    def __init__(self):
+        super().__init__()
+        orm.orm.recreate(
+            party.communications,
+            party.parties,
+            party.objectivetypes,
+            party.communicationstatuses,
+            party.roletypes,
+        )
+
+    def it_associates_party_to_communication(self):
+        # This is for a simple association between party entity objects
+        # and `communication` event objects. However, the book says that
+        # ``communication`` events will usually be within the context of
+        # a "party relationship" (``role_role``) because it is within a
+        # relationship that communications usually make sense (see
+        # it_associates_relationship_to_communication).
+        will  =  party.person(first='William',  last='Jones')
+        marc  =  party.person(first='Marc',     last='Martinez')
+        john  =  party.person(first='John',     last='Smith')
+
+        comm = party.communication(
+            begin = primative.datetime('2019-03-23 13:00:00'),
+            end   = primative.datetime('2019-03-23 14:00:00'),
+            note  = 'A meeting between William, Marc and John',
+        )
+
+        participant = party.communicationroletype(name='participant')
+        for per in (will, marc, john):
+            pcs = getattr(per, 'party_communications')
+
+            pcs += party.party_communication(
+                communication          =  comm,
+                communicationroletype  =  participant,
+            )
+
+        will.save(marc, john)
+
+        will1 = will.orm.reloaded()
+        marc1 = marc.orm.reloaded()
+        john1 = john.orm.reloaded()
+
+        for per1 in (will1, marc1, john1): 
+            pcs1 = getattr(per1, 'party_communications')
+            self.one(pcs)
+            self.one(pcs1)
+
+            self.eq(
+                pcs.first.communicationroletype.id,
+                pcs1.first.communicationroletype.id,
+            )
+
+            pc1 = pcs1.first
+
+            self.eq(per1.id,      pc1.party.id)
+            self.eq(comm.id,     pc1.communication.id)
+            self.eq(comm.begin,  pc1.communication.begin)
+            self.eq(comm.end,    pc1.communication.end)
+
+    def it_associates_relationship_to_communication(self):
+        # Create parties
+        
+        ## Persons
+        will  =  party.person()
+        marc  =  party.person()
+        john  =  party.person()
+
+        ## Companies
+        abc   =  party.company(name='ABC Corporation')
+        acme  =  party.company(name='ACME Corporation')
+
+
+        # Will Jones has an Account Management role
+        will.roles += party.role(
+            begin          =  primative.datetime('2016-02-12'),
+            end            =  None,
+            partyroletype  =  party.partyroletype(name='Account Manager'),
+        )
+
+        # Marc Martinez hase a Customer Contact role
+        marc.roles += party.role(
+            begin          =  primative.datetime('2014-03-23'),
+            end            =  None,
+            partyroletype  =  party.partyroletype(name='Customer Contact'),
+        )
+
+        # As an account manager, Will Jones is associated with Marc
+        # Martinez's role as Customer Contact.
+        will.roles.first.role_roles += party.role_role(
+            begin   =  primative.datetime('2017-11-12'),
+            subject =  will.roles.last, # FIXME We shouldn't have to do this
+            object  =  marc.roles.last,
+        )
+
+        # Create objectivetypes
+        isc = party.objectivetype(name='Initial sales call')
+        ipd = party.objectivetype(name='Initial product demonstration')
+        dop = party.objectivetype(name='Demo of product')
+        sc  = party.objectivetype(name='Sales close')
+        god = party.objectivetype(name='Gather order details')
+        cs  = party.objectivetype(name='Customer service')
+        fu  = party.objectivetype(name='Follow-up')
+        css = party.objectivetype(name='Customer satisfacton survey')
+
+        # The role_role association between Will Jones and Marc Martinez
+        # has four ``communication`` events.
+        comms = will.roles.first.role_roles.last.communications
+
+        comms += party.inperson(
+            begin = primative.datetime('Jan 12, 2001, 3PM'),
+
+            # FIXME This assignment fails. The ``objective`` object
+            # retain an fk of <undef>. It should point to the
+            # `communication`'s ID
+            # objectives += \
+            #             party.objective(name='Initial sales call') + \
+            #             party.objective(
+            #                 name='Initial product demontration'
+            #             )
+
+        )
+
+        # FIXME I noticed that before the below line is executed,
+        # calling
+        #
+        #     comms.last.communicationstatus
+        #
+        # Results in an AttributeError. It would appear that composites
+        # defined at super class level raise this error when called by
+        # subclasses, i.e., :
+        #
+        #     try:
+        #          party.communication().communicationstatus
+        #     except Exception:
+        #         assert False
+        #     else:
+        #         assert True
+        #
+        # The above works as expected. But if we use a subclass of
+        # ``communication`` (``inperson``), we get an AttributeError.
+        #
+        #     try:
+        #          party.inperson().communicationstatus
+        #     except AttributeError:
+        #         assert True
+        #     else:
+        #         assert False
+        #
+        # This should be fixed because it leads to unexpected behavior
+        # by developers using the ORM.
+
+        comms.last.communicationstatus = \
+                party.communicationstatus(name='Completed')
+
+        comms.last.objectives += party.objective(
+            objectivetype = isc
+        )
+
+        comms.last.objectives += party.objective(
+            objectivetype = ipd
+        )
+
+        comms += party.webinar(
+            begin = primative.datetime('Jan 30, 2001, 2PM'),
+            communicationstatus = \
+                party.communicationstatus(name='Completed'),
+        )
+
+        comms.last.objectives += party.objective(
+            objectivetype = dop
+        )
+
+        comms += party.inperson(
+            begin = primative.datetime('Feb 12, 2002, 10PM'),
+            communicationstatus = \
+                party.communicationstatus(name='Completed'),
+        )
+
+        comms.last.objectives += party.objective(
+            objectivetype = sc
+        )
+
+        comms.last.objectives += party.objective(
+            objectivetype = god
+        )
+
+        comms += party.phonecall(
+            begin = primative.datetime('Feb 12, 2002, 1PM'),
+            communicationstatus = \
+                party.communicationstatus(name='Scheduled'),
+        )
+
+        comms.last.objectives += party.objective(
+            objectivetype = cs
+        )
+
+        comms.last.objectives += party.objective(
+            objectivetype = fu
+        )
+
+        comms.last.objectives += party.objective(
+            objectivetype = css
+        )
+
+        # FIXME We shouldn't have to save
+        # `will.roles.first.role_roles.last.communications`. Note that
+        # adding this only became necessary when we appended suptypes of
+        # ``communication`` above. If we append instance of
+        # ``communication`` itself, it worked correctly.
+        will.save(
+            marc, 
+            john,
+            will.roles.first.role_roles.last.communications,
+        )
+
+        will1 = will.orm.reloaded()
+        marc1 = marc.orm.reloaded()
+        john1 = john.orm.reloaded()
+
+        comms = will.roles.first.role_roles.first.communications
+        comms1 = will1.roles.first.role_roles.first.communications
+
+        comms.sort()
+        comms1.sort()
+
+        self.four(comms)
+        self.four(comms1)
+
+        for comm, comm1 in zip(comms, comms1):
+            self.eq(comm.id, comm1.id)
+
+            # FIXME We shouldn't have to call ``orm.super`` below.
+            self.eq(
+                comm.orm.super.communicationstatus.id, 
+                comm1.communicationstatus.id
+            )
+
+            self.eq(
+                comm.orm.super.communicationstatus.name, 
+                comm1.communicationstatus.name
+            )
+
+            # FIXME comm1 is a ``communication``
+            #
+            #     assert type(comm1) is party.communication
+            #
+            # However, it has no `objectives` attributes. If I downcast
+            # it, (see the lines immediaetly below) I am able to see the
+            # ``objectives`` attribute. This is very strange because the
+            # ``objectives`` attribute is defined in the
+            # ``communication`` class. We shouldn't be able to remove
+            # the downcast logic when this is fixed. (Also, comm1 should
+            # be loaded as it's most downcasted version, but that is a
+            # seperate issue.)
+            cast = party.inperson.orm.cast(comm1)
+
+            if not cast:
+                cast = party.webinar.orm.cast(comm1)
+
+            if not cast:
+                cast = party.phonecall.orm.cast(comm1)
+
+            assert cast is not None
+
+            comm1 = cast
+
+            objs  = comm.objectives.sorted()
+            objs1 = comm1.objectives.sorted()
+
+            self.eq(objs.count,  objs1.count)
+            self.gt(objs.count,  0)
+
+            for obj, obj1 in zip(objs, objs1):
+                self.eq(obj.id, obj1.id)
+                self.eq(None, obj1.name)
+                self.eq(obj.objectivetype.id, obj1.objectivetype.id)
+                self.eq(obj.objectivetype.name, obj1.objectivetype.name)
+
+class gem_party_region(tester):
+    def __init__(self):
+        super().__init__()
+        orm.orm.recreate(
+            party.party,
+            party.address,
+            party.region,
+        )
+
+    @staticmethod
+    def getvalid():
+        return party.region.create(
+            ('United States of America',  party.region.Country,    'USA'),
+            ('Arizona',                   party.region.State,      'AZ'),
+            ('Scottsdale',                party.region.City),
+            ('85281',                     party.region.Postal)
+        )
+
+    def it_creates(self):
+        party.region.orm.recreate()
+
+        reg = party.region.create(
+            ('United States of America',  party.region.Country,    'USA'),
+            ('Arizona',                   party.region.State,      'AZ'),
+            ('Scottsdale',                party.region.City),
+            ('85224',                     party.region.Postal)
+        )
+
+        self.eq('85224', reg.name)
+        self.zero(reg.regions)
+
+        reg = reg.region
+        self.eq('Scottsdale', reg.name)
+        self.one(reg.regions)
+
+        reg = reg.region
+        self.eq('Arizona', reg.name)
+        self.one(reg.regions)
+
+        reg = reg.region
+        self.eq('United States of America', reg.name)
+        self.one(reg.regions)
+        self.none(reg.region)
+
+        reg = party.region.create(
+            ('United States of America',  party.region.Country,    'USA'),
+            ('Arizona',                   party.region.State,      'AZ'),
+            ('Scottsdale',                party.region.City),
+            ('85254',                     party.region.Postal)
+        )
+
+    def it_associates_address_with_region(self):
+        # Create address and region
+        addr = gem_party_address.getvalid()
+        reg = self.getvalid()
+
+        # Create association
+        ar = party.address_region()
+        ar.region = reg
+
+        # Associate
+        addr.address_regions += ar
+
+        # Save
+        addr.save()
+
+        # Reload
+        addr1 = party.address(addr.id)
+
+        # Test
+        self.one(addr1.address_regions)
+
+        reg1 = addr1.address_regions.first.region
+
+        self.eq(reg.name, reg1.name)
+
+class gem_product_product(tester):
+    def __init__(self):
+        super().__init__()
+        orm.orm.recreate(
+            product.products,
+            product.categories,
+            product.measure,
+            party.facility,
+            party.priorities,
+        )
+
+    @staticmethod
+    def getvalid(type=None, comment=1000):
+        if type is None:
+            type = product.good
+
+        prod = type()
+        prod.name = uuid4().hex
+        prod.introducedat = primative.date.today(days=-100)
+        prod.comment = uuid4().hex * comment
+        return prod
+
+    def it_creates(self):
+        for str_prod in ['good', 'service']:
+            prod = getattr(product, str_prod)()
+
+            prod.name = uuid4().hex
+            prod.introducedat = primative.date.today(days=-100)
+            prod.comment = uuid4().hex * 1000
+
+            prod.save()
+
+            prod1 = getattr(product, str_prod)(prod.id)
+
+            props = (
+                'id', 
+                'name', 
+                'introducedat', 
+                'discontinuedat', 
+                'unsupportedat', 
+                'comment'
+            )
+
+            for prop in props:
+                self.eq(getattr(prod, prop), getattr(prod1, prop), prop)
+
+    def it_updates(self):
+        for str_prod in ['good', 'service']:
+            prod = getattr(product, str_prod)()
+
+            prod.name = uuid4().hex
+            prod.introducedat = primative.date.today(days=-100)
+            prod.comment = uuid4().hex * 1000
+
+            prod.save()
+
+            prod1 = getattr(product, str_prod)(prod.id)
+
+            prod1.name = uuid4().hex
+            prod1.introducedat = primative.date.today(days=-200)
+            prod1.discontinuedat = primative.date.today(days=+100)
+            prod1.unsupportedat = primative.date.today(days=+200)
+            prod1.comment = uuid4().hex * 1000
+
+            prod1.save()
+
+            prod2 = getattr(product, str_prod)(prod1.id)
+
+            props = (
+                'name', 
+                'introducedat', 
+                'discontinuedat', 
+                'unsupportedat', 
+                'comment'
+            )
+
+            for prop in props:
+                self.ne(
+                    getattr(prod, prop), 
+                    getattr(prod2, prop), 
+                    prop
+                )
+                self.eq(
+                    getattr(prod1, prop), 
+                    getattr(prod2, prop), 
+                    prop
+                )
+
+    def it_associates_to_features(self):
+        tup_colors = (
+            'white',  'red',     'orange',  'blue',
+            'green',  'purple',  'gray',    'cream',
+        )
+
+        tup_prods = (
+            'Johnson fine grade 8½ by 11 paper',
+        )
+
+        # Create features
+        feats = product.features()
+        selectables = product.colors()
+
+        for color in tup_colors:
+            feats += product.color(name=color)
+            
+            if color in ('blue', 'gray', 'cream', 'white'):
+                selectables += feats.last
+
+        # Create products
+        prods = product.products()
+        for prod in tup_prods:
+            prods += product.good(name=prod)
+
+
+        paper, = prods[:]
+
+        ''' Create "Johnson fine grade 8½ by 11 paper" and associate the
+        selectable color features of blue, gray, cream, white. '''
+
+        # Assign qualities
+
+        # Fine grade
+        paper.product_features += product.product_feature(
+            type=product.product_feature.Required,
+            feature=product.quality(name='Fine grade'),
+        )
+
+        # Extra glossy finish
+        paper.product_features += product.product_feature(
+            type=product.product_feature.Optional,
+            feature=product.quality(name='Extra glossy finish'),
+        )
+            
+        # Create product_feature associations
+        for sel in selectables:
+            pf = product.product_feature(
+                type=product.product_feature.Selectable,
+                feature=sel,
+            )
+
+            paper.product_features += pf
+
+        # This product is sold in reams
+        paper.measure = product.measure(name='ream')
+
+        # TODO:018aca88 The composite `measure` for paper doesn't get
+        # set probably because `paper` is a `good` which is a subentity
+        # of `product` which has a reference to `measure (see
+        # `measure.products`). Strangely, the `measure` is saved anyway,
+        # though paper has to be loaded as a `product` instead of a
+        # `good`. See the TODO below with the same ID (018aca88).
+        # self.eq('ream', paper.measure.name)
+
+        # Add dimension of 8½
+        dim = product.dimension(number=8.5)
+        dim.measure = product.measure(name='width')
+
+        paper.product_features += product.product_feature(
+            type=product.product_feature.Required,
+            feature=dim,
+        )
+
+        paper.save()
+
+        paper1 = product.good(paper)
+
+        # TODO:018aca88 The composite `measure` for `paper` nor `paper1`
+        # gets set. However, when loading paper as a product (see
+        # below), we are able to verify the `measure` got saved.
+        # self.eq('ream', paper1.measure.name)
+        # self.eq('ream', product.good(paper).measure.name)
+        self.eq('ream', product.product(paper).measure.name)
+
+        pfs = paper.product_features.sorted()
+        pfs1 = paper1.product_features.sorted()
+
+        self.seven(pfs1)
+        self.eq(pfs.count, pfs1.count)
+
+        for pf, pf1 in zip(pfs, pfs1):
+            self.eq(pf.type, pf1.type)
+            self.eq(pf.feature.name, pf1.feature.name)
+            self.eq(pf.product.name, pf1.product.name)
+            self.true(product.good.orm.exists(pf.product))
+
+        # Ensure all the Selectable features were added
+        sel = product.product_feature.Selectable
+        self.eq(
+            sorted(['white', 'cream', 'gray', 'blue']),
+            sorted(x.feature.name for x in pfs1 if x.type == sel)
+        )
+
+        # Ensure all the Required features were added
+        req = product.product_feature.Required
+        self.eq(
+            ['Fine grade'],
+            [
+                x.feature.name 
+                for x in pfs1 
+                if x.type == req and x.feature.name is not None
+            ]
+        )
+
+        for x in pfs1:
+            try:
+                dim1 = product.dimension(x.feature)
+            except db.RecordNotFoundError:
+                pass
+            else:
+                self.none(dim1.name)
+                self.eq(8.5, dim1.number)
+                self.eq('width', dim1.measure.name)
+                break
+        else:
+            self.fail("Couldn't find dimension feature")
+
+        # Ensure all the Optional features were added
+        opt = product.product_feature.Optional
+        self.eq(
+            ['Extra glossy finish'],
+            [x.feature.name for x in pfs1 if x.type == opt]
+        )
+
+    def it_adds_a_feature_association(self):
+        tup_colors = (
+            'white',  'red',     'orange',  'blue',
+            'green',  'purple',  'gray',    'cream',
+        )
+
+        # Create features
+        feats = product.features()
+
+        selectables = product.colors()
+
+        for color in tup_colors:
+            feats += product.color(name=color)
+            
+            # Capture 4 colors and associate them to `good` below
+            # Selectable features.
+            if color in ('blue', 'gray', 'cream', 'white'):
+                selectables += feats.last
+
+        feats.save()
+
+        # Create products
+        good = product.good(name='Johnson fine grade 8½ by 11 paper')
+
+        # Associate `good` with the colors as Selectables.
+        for sel in selectables:
+            pf = product.product_feature(
+                type=product.product_feature.Selectable,
+                feature=sel,
+                product=good
+            )
+
+            good.product_features += pf
+
+        good.save()
+
+        good1 = product.good(good)
+
+        pfs1 = good1.product_features
+
+        self.eq(
+            sorted(['white', 'cream', 'gray', 'blue']),
+            sorted(x.feature.name for x in pfs1)
+        )
+
+
+        # Associate `good1` to purple
+        good1.product_features += product.product_feature(
+            type=product.product_feature.Required,
+            feature=product.colors(name='purple').first,
+            product=good
+        )
+
+        good1.save()
+
+        good2 = product.good(good1)
+
+        sel = product.product_feature.Selectable
+        req = product.product_feature.Required
+
+        self.eq(
+            sorted(['white', 'cream', 'gray', 'blue']),
+            sorted(x.feature.name for x in pfs1 if x.type == sel)
+        )
+
+        self.eq(
+            ['purple'],
+            [x.feature.name for x in pfs1 if x.type == req]
+        )
+
+    def it_removes_feature_association(self):
+        tup_colors = (
+            'white',  'red',     'orange',  'blue',
+            'green',  'purple',  'gray',    'cream',
+        )
+
+        # Create features
+        feats = product.features()
+
+        selectables = product.colors()
+
+        for color in tup_colors:
+            feats += product.color(name=color)
+            
+            # Capture 4 colors and associate them to `good` below
+            # Selectable features.
+            if color in ('blue', 'gray', 'cream', 'white'):
+                selectables += feats.last
+
+        feats.save()
+
+        # Create products
+        good = product.good(name='Johnson fine grade 8½ by 11 paper')
+
+        # Associate `good` with the colors as Selectables.
+        for sel in selectables:
+            pf = product.product_feature(
+                type=product.product_feature.Selectable,
+                feature=sel,
+                product=good
+            )
+
+            good.product_features += pf
+
+        good.save()
+
+        good1 = product.good(good)
+
+        pfs1 = good1.product_features
+
+        self.eq(
+            sorted(['white', 'cream', 'gray', 'blue']),
+            sorted(x.feature.name for x in pfs1)
+        )
+
+        # TODO:32d39bee I thought this was broken, but it actual removes
+        # the association without removing any of the entities. We
+        # should look into why this works instead of cascading the
+        # deletes to the feature (color) entity.
+        white = [
+            x for x in good1.product_features 
+            if x.feature.name == 'white'
+        ][0]
+
+        good1.product_features -= white
+
+        pfs1 = good1.product_features
+        self.eq(
+            sorted(['cream', 'gray', 'blue']),
+            sorted(x.feature.name for x in pfs1)
+        )
+
+        good1.save()
+
+        good2 = product.good(good1)
+
+        pfs1 = good2.product_features
+        self.eq(
+            sorted(['cream', 'gray', 'blue']),
+            sorted(x.feature.name for x in pfs1)
+        )
+
+    def it_associates_product_to_suppliers(self):
+        # Create products
+        paper = product.good(
+            name='Johnson fine grade 8½ by 11 bond paper'
+        )
+
+        pallet = product.good(
+            name = "6' by 6' warehouse pallets"
+        )
+
+        abc = gem_party_company.getvalid(
+            name = 'ABC Corporation'
+        )
+
+        joes = gem_party_company.getvalid(
+            name = "Joe's Stationery"
+        )
+
+        mikes = gem_party_company.getvalid(
+            name = "Mike's Office Supply"
+        )
+
+        greggs = gem_party_company.getvalid(
+            name = "Gregg's Pallet Shop"
+        )
+
+        palletinc = gem_party_company.getvalid(
+            name = 'Pallets Incorporated'
+        )
+
+        warehousecomp = gem_party_company.getvalid(
+            name = 'The Warehouse Company'
+        )
+
+        # Create priorities
+        first = product.priority(ordinal=0)
+        second = product.priority(ordinal=1)
+        third = product.priority(ordinal=2)
+
+        sps = product.supplier_products()
+        sps += product.supplier_product(
+            supplier  =  abc,
+            product   =  paper,
+            lead      =  2
+        )
+
+        # TODO:28a4a305 There is a one-to-many relationship between
+        # priority and supplier_product. However, the
+        # supplier_product.priority composite is not available. I
+        # believe this would work for orm.entity, but this is an
+        # orm.association so I guess that feature was not added.
+        #sps.last.priority.ordinal = 0
+
+        first.supplier_products += sps.last
+
+        sps += product.supplier_product(
+            supplier  =  joes,
+            product   =  paper,
+            lead      =  3
+        )
+        second.supplier_products += sps.last
+
+        sps += product.supplier_product(
+            supplier  =  mikes,
+            product   =  paper,
+            lead      =  4
+        )
+        third.supplier_products += sps.last
+
+        sps += product.supplier_product(
+            supplier  =  greggs,
+            product   =  pallet,
+            lead      =  2
+        )
+        first.supplier_products += sps.last
+
+        sps += product.supplier_product(
+            supplier  =  palletinc,
+            product   =  pallet,
+            lead      =  3
+        )
+        second.supplier_products += sps.last
+
+        sps += product.supplier_product(
+            supplier  =  warehousecomp,
+            product   =  pallet,
+            lead      =  5
+        )
+        third.supplier_products += sps.last
+
+        paper.save(pallet, sps, first, second, third)
+
+        paper1 = paper.orm.reloaded()
+        pallet1 = pallet.orm.reloaded()
+        first = first.orm.reloaded()
+        second = second.orm.reloaded()
+        third = third.orm.reloaded()
+
+        sps = paper1.supplier_products.sorted('supplier.name')
+        self.eq('ABC Corporation',      sps.first.supplier.name)
+        self.eq("Joe's Stationery",     sps.second.supplier.name)
+        self.eq("Mike's Office Supply", sps.third.supplier.name)
+
+        sps = pallet1.supplier_products.sorted('supplier.name')
+        self.eq("Gregg's Pallet Shop",      sps.first.supplier.name)
+        self.eq('Pallets Incorporated',     sps.second.supplier.name)
+        self.eq('The Warehouse Company',    sps.third.supplier.name)
+
+        # TODO:167d775b We get an issue with calling the supplier_products
+        # constituent of priority. This is likely due to the fact that
+        # a one-to-many relationship between an entity and an
+        # association has not been implement. 
+        #
+        # sps = first.supplier_products.sorted()
+        # self.eq('ABC Corporation',      sps.first.supplier.name)
+        # self.eq("Gregg's Pallet Shop",  sps.first.supplier.name)
+        #
+        # sps = second.supplier_products.sorted()
+        # self.eq("Joe's Stationery",     sps.second.supplier.name)
+        # self.eq('Pallets Incorporated', sps.second.supplier.name)
+        #
+        # sps = second.supplier_products.sorted()
+        # self.eq("Mike's Office Supply", sps.third.supplier.name)
+        # self.eq('The Warehouse Company', sps.third.supplier.name)
+    
+    def it_creates_guildlines(self):
+        # Service products will not have guidelines
+        serv = gem_product_product.getvalid(product.service)
+        self.false(hasattr(serv, 'guidelines'))
+
+        good = gem_product_product.getvalid(product.good, comment=1)
+        reg = gem_party_region.getvalid()
+        fac = party.facility(name='Area 51', footage=100000)
+        fac.save()
+        org = gem_party_company.getvalid()
+
+        cnt = 2
+        for i in range(cnt):
+            good.guidelines += product.guideline(
+                end      = primative.datetime.utcnow(days=-200),
+                begin    = primative.datetime.utcnow(days=+200),
+                level    = randint(0, 255),
+                quantity = randint(0, 255)
+            )
+            good.guidelines.last.region = reg
+            good.guidelines.last.facility = fac
+            good.guidelines.last.organization = org
+
+        good.save()
+
+        good1 = good.orm.reloaded()
+
+        gls  = good.guidelines.sorted()
+        gls1 = good1.guidelines.sorted()
+
+        self.eq(cnt, gls1.count)
+
+        for gl, gl1 in zip(gls, gls1):
+            for prop in ('end', 'begin', 'level', 'quantity'):
+                self.eq(getattr(gl, prop), getattr(gl1, prop))
+
+        self.eq(gl.region.id,        gl1.region.id)
+        self.eq(gl.facility.id,      gl1.facility.id)
+        self.eq(gl.organization.id,  gl1.organization.id)
+
+class gem_product_item(tester):
+    def __init__(self):
+        super().__init__()
+        orm.orm.recreate(
+            product.products,
+            product.containers,
+            product.containertype,
+            product.lots,
+            product.status,
+            product.variance,
+            product.reason,
+        )
+
+    @staticmethod
+    def getvalid():
+        pen = product.good(name='Henry #2 Pencile')
+        itm = product.nonserial(quantity=1)
+        itm.good = pen
+        return itm
+
+    def it_stores_goods_in_inventory(self):
+        # Services don't have inventory representations
+        serv = gem_product_product.getvalid(product.service)
+        self.expect(AttributeError, lambda: serv.items)
+
+        # Goods should have a collection of inventory items
+        good = gem_product_product.getvalid(product.good, comment=1)
+        self.expect(None, lambda: good.items)
+
+
+        # Add 10 serialized inventory items for the good
+        for sn in range(10000, 10005):
+            good.items += product.serial(number=sn)
+
+        good.save()
+
+        for i in range(5):
+            good.items += product.nonserial(quantity=randint(1, 100))
+
+        good.save()
+
+        good1 = good.orm.reloaded()
+
+        itms  = good.items.sorted()
+        itms1 = good1.items.sorted()
+
+        self.ten(itms)
+        self.ten(itms1)
+
+        serial = 0
+        nonserial = 0
+        for itm, itm1 in zip(itms, itms1):
+            # Downcast
+            try:
+                itm = product.serial(itm)
+                itm1 = product.serial(itm1)
+                self.eq(itm.number, itm1.number)
+                serial += 1
+            except db.RecordNotFoundError:
+                # Must be nonserial
+                itm = product.nonserial(itm)
+                itm1 = product.nonserial(itm1)
+                self.eq(itm.quantity, itm1.quantity)
+                nonserial += 1
+
+        self.eq(5, serial)
+        self.eq(5, nonserial)
+
+    def it_stores_goods_in_a_facility(self):
+        # Create two warehouses to store the good
+        abccorp = party.facility(
+            name = 'ABC Corporation',
+            type = party.facility.Warehouse
+        )
+        
+        abcsub = party.facility(
+            name = 'ABC Subsidiary',
+            type = party.facility.Warehouse
+        )
+
+        # Create the four containers along with individual container
+        # types.
+        bin200 = product.containertype(
+            name = 'Bin 200',
+        )
+
+        bin200.containers += product.container(
+            name = 'Bin 200',
+            facility = abccorp
+        )
+
+        bin400 = product.containertype(
+            name = 'Bin 400',
+        )
+
+        bin400.containers += product.container(
+            name = 'Bin 400',
+            facility = abcsub
+        )
+
+        bin125 = product.containertype(
+            name = 'Bin 125',
+        )
+
+        bin125.containers += product.container(
+            name = 'Bin 125',
+            facility = abccorp
+        )
+
+        bin250 = product.containertype(
+            name = 'Bin 250',
+        )
+
+        bin250.containers += product.container(
+            name = 'Bin 250',
+            facility = abccorp
+        )
+
+        # Create the goods
+        copier = gem_product_product.getvalid(product.good, comment=1)
+        copier.name = 'Action 250 Quality Copier'
+
+        paper = gem_product_product.getvalid(product.good, comment=1)
+        paper.name = 'Johnson fine grade 8½ by 11 paper'
+
+        pen = gem_product_product.getvalid(product.good, comment=1)
+        pen.name = 'Goldstein Elite Pen'
+
+        diskette = gem_product_product.getvalid(product.good, comment=1)
+        diskette.name = "Jerry's box of 3½ inch diskettes"
+
+        # Create the inventory item for the goods
+        copier.items += product.serial(number=1094853)
+
+        # TODO:b62ec864 We shouldn't have to call `.orm.super` on `paperitm`
+        # here.
+        paper.items += product.nonserial(quantity=156)
+        paper.items += product.nonserial(quantity=300)
+
+        pen.items += product.nonserial(quantity=200)
+
+        diskette.items += product.nonserial(quantity=500)
+
+        # Locate the inventory item the appropriate facility
+        copier.items.last.facility = abccorp
+        paper.items.penultimate.orm.super.container = \
+            bin200.containers.last
+
+        paper.items.last.orm.super.container = \
+            bin400.containers.last
+
+        pen.items.first.orm.super.container = \
+            bin125.containers.last
+
+        diskette.items.first.orm.super.container = \
+            bin250.containers.last
+
+        copier.save(
+            paper, paper.items,
+            pen, pen.items,
+            diskette, diskette.items
+        )
+
+        copieritm = copier.items.last.orm.reloaded()
+        paperitm1 = paper.items.penultimate.orm.reloaded()
+        paperitm2 = paper.items.ultimate.orm.reloaded()
+        penitm = pen.items.first.orm.reloaded()
+        disketteitm = diskette.items.first.orm.reloaded()
+
+        # TODO 'orm.super' shouldn't have to be used before. There must
+        # be a bug in orm.py.
+        self.eq(abccorp.id, copieritm.orm.super.facility.id)
+
+        # TODO It would be nice if `paperitm.orm.super.facility`
+        # returned the same value as
+        # `paperitm.orm.super.container.facility. However, I do not
+        # believe that at the moment, it is possible to override a
+        # composite attribute. This would be a great nice-to-have,
+        # though.
+        # self.eq(abccorp.id, paperitm.orm.super.facility.id)
+
+        # TODO:b62ec864 We shouldn't have to call `.orm.super` on `paperitm`
+        # here.
+
+        # 156 instances of the paper item is stored in Bin 200 at
+        # abccorp. 300 are stored at Bin 400 at abcsub
+        self.eq(
+            bin200.containers.last.id, 
+            paperitm1.orm.super.container.id
+        )
+
+        self.eq(
+            abccorp.id,
+            paperitm1.orm.super.container.facility.id
+        )
+
+        self.eq(156,  paperitm1.quantity)
+
+        self.eq(
+            bin400.containers.last.id, 
+            paperitm2.orm.super.container.id
+        )
+
+        self.eq(
+            abcsub.id,
+            paperitm2.orm.super.container.facility.id
+        )
+        self.eq(300,  paperitm2.quantity)
+
+        self.eq(
+            bin125.containers.last.id, 
+            penitm.orm.super.container.id
+        )
+
+        self.eq(
+            abccorp.id,
+            penitm.orm.super.container.facility.id
+        )
+        self.eq(200,  penitm.quantity)
+
+        self.eq(
+            bin250.containers.last.id, 
+            disketteitm.orm.super.container.id
+        )
+
+        self.eq(
+            abccorp.id,
+            disketteitm.orm.super.container.facility.id
+        )
+        self.eq(500,  disketteitm.quantity)
+
+    def it_creates_a_lot(self):
+        lot = product.lot(
+            createdat = primative.datetime.utcnow(),
+            quantity  = 100,
+            expiresat = primative.datetime.utcnow(days=100)
+        )
+
+        lot.items += gem_product_item.getvalid()
+
+        lot.save()
+
+        lot1 = lot.orm.reloaded()
+
+        for prop in ('id', 'createdat', 'quantity', 'expiresat'):
+            self.eq(getattr(lot, prop), getattr(lot1, prop))
+
+        itms = lot.items
+        itms1 = lot1.items
+
+        self.one(itms)
+        self.one(itms1)
+
+        itm = product.nonserial(itms.first)
+        itm1 = product.nonserial(itms1.first)
+
+        self.eq(itm.quantity, itm1.quantity)
+
+        # TODO:b62ec864 We shouldn't have to use `.orm.super` here to get to the
+        # itm's `good` property.
+        self.eq(itm.orm.super.good.name, itm1.orm.super.good.name)
+        self.eq(itm.orm.super.good.id, itm1.orm.super.good.id)
+
+    def it_assigns_status_to_inventory_item(self):
+        book = gem_product_product.getvalid(product.good, comment=1)
+        book.name = 'The Data Model Resource Book'
+
+        good = product.status(name='Good')
+        plusgood = product.status(name='Plusgood')
+        doubleplusgood = product.status(name='Doubleplusgood')
+
+        for sn in range(6455170, 6455173):
+            book.items += product.serial(number=sn)
+
+        book.items.first.status = good
+        book.items.second.status = plusgood
+        book.items.third.status = doubleplusgood
+
+        book.save(book.items)
+
+        book1 = book.orm.reloaded()
+
+        itms = book.items.sorted()
+        itms1 = book1.items.sorted()
+
+        self.three(itms)
+        self.three(itms1)
+
+        for itm, itm1 in zip(itms, itms1):
+            # TODO:b62ec864 'orm.super' shouldn't have to be used for `itm`
+            self.eq(itm.orm.super.status.name, itm1.status.name)
+            self.eq(itm.orm.super.status.id, itm1.status.id)
+    
+    def it_assigns_variance(self):
+        book = gem_product_product.getvalid(product.good, comment=1)
+        book.name = 'The Data Model Resource Book'
+
+        book.items += product.serial(number=6455170)
+
+        book.items.last.variances += product.variance(
+            date = primative.datetime.utcnow(),
+            quantity = 1,
+            comment = None
+        )
+
+        overage = product.reason(name='overage')
+
+        book.items.last.variances.last.reason = overage
+
+        book.save()
+
+        book1 = book.orm.reloaded()
+
+        vars = book.items.last.variances
+        vars1 = book1.items.last.variances
+
+        self.one(vars)
+        self.one(vars1)
+
+        for prop in ('id', 'date', 'quantity', 'comment'):
+            self.eq(
+                getattr(vars.first, prop),
+                getattr(vars1.first, prop)
+            )
+
+        self.eq(vars.first.reason.id, vars1.first.reason.id)
+        self.eq(vars.first.reason.name, vars1.first.reason.name)
+
+        reasons = product.reasons(name='overage')
+
+        self.one(reasons)
+
+        self.eq('overage', reasons.first.name)
+
+        self.one(reasons.first.variances)
+
+        self.eq(vars.first.id, reasons.first.variances.first.id)
+
+class gem_product_categories(tester):
+    def __init__(self):
+        super().__init__()
+        product.products.orm.recreate(recursive=True)
+        product.categories.orm.recreate(recursive=True)
+
+    def it_creates(self):
+        ''' Simple, non-recursive test '''
+        cat = product.category()
+        cat.name = uuid4().hex
+        cat.save()
+
+        cat1 = product.category(cat.id)
+        self.eq(cat.id, cat1.id)
+        self.eq(cat.name, cat1.name)
+
+        ''' A one-level recursive test with two child categories'''
+        cat_0 = product.category()
+        cat_0.name = uuid4().hex
+
+        cat_1_0 = product.category()
+        cat_1_0.name = uuid4().hex
+
+        cat_1_1 = product.category()
+        cat_1_1.name = uuid4().hex
+
+        cat_0.categories += cat_1_0
+        cat_0.categories += cat_1_1
+
+        cat_0.save()
+
+        cat1 = product.category(cat_0.id)
+        self.eq(cat_0.id, cat1.id)
+        self.eq(cat_0.name, cat1.name)
+
+        cats0 = cat_0.categories.sorted()
+
+        cats1 = cat1.categories.sorted()
+
+        self.two(cats1)
+       
+        self.eq(cats0.first.id, cats1.first.id)
+        self.eq(cats0.first.name, cats1.first.name)
+
+        self.eq(cats0.second.id, cats1.second.id)
+        self.eq(cats0.second.name, cats1.second.name)
+
+        ''' A two-level recursive test with one child categories each'''
+        cat = product.category()
+        cat.name = uuid4().hex
+
+        cat_1 = product.category()
+        cat_1.name = uuid4().hex
+
+        cat_2 = product.category()
+        cat_2.name = uuid4().hex
+
+        cat.categories += cat_1
+        cat_1.categories += cat_2
+
+        cat.save()
+
+        cat1 = product.category(cat.id)
+
+        self.one(cat1.categories)
+        self.one(cat1.categories.first.categories)
+
+        self.eq(
+            cat.categories.first.id, 
+            cat1.categories.first.id, 
+        )
+
+        self.eq(
+            cat.categories.first.name, 
+            cat1.categories.first.name, 
+        )
+
+        self.eq(
+            cat.categories.first.categories.first.id, 
+            cat1.categories.first.categories.first.id, 
+        )
+
+        self.eq(
+            cat.categories.first.categories.first.name, 
+            cat1.categories.first.categories.first.name, 
+        )
+
+    def it_updates_non_recursive(self):
+        ''' Simple, non-recursive test '''
+        cat = product.category()
+        cat.name = uuid4().hex
+        cat.save()
+
+        cat1 = product.category(cat.id)
+        cat1.name = uuid4().hex
+        cat1.save()
+
+        cat2 = product.category(cat.id)
+
+        self.ne(cat.name, cat2.name)
+        self.eq(cat1.id, cat2.id)
+        self.eq(cat1.name, cat2.name)
+
+    def it_updates_recursive(self):
+        ''' A two-level, recursive test '''
+        # Create
+        cat = product.category()
+        cat.name = uuid4().hex
+
+        cat_1 = product.category()
+        cat_1.name = uuid4().hex
+
+        cat_2 = product.category()
+        cat_2.name = uuid4().hex
+
+        cat.categories += cat_1
+        cat_1.categories += cat_2
+
+        cat.save()
+
+        # Update
+        cat1 = product.category(cat.id)
+        cat1.name = uuid4().hex
+        cat1.categories.first.name = uuid4().hex
+        cat1.categories.first.categories.first.name = uuid4().hex
+        cat1.save()
+
+        # Test
+        cat2 = product.category(cat.id)
+        self.ne(cat.name, cat2.name)
+        self.eq(cat1.id, cat2.id)
+        self.eq(cat1.name, cat2.name)
+
+        self.ne(cat.categories.first.name, cat2.categories.first.name)
+        self.eq(cat1.categories.first.id, cat2.categories.first.id)
+        self.eq(cat1.categories.first.name, cat2.categories.first.name)
+
+        self.ne(
+            cat.categories.first.categories.first.name, 
+            cat2.categories.first.categories.first.name
+        )
+
+        self.eq(
+            cat1.categories.first.categories.first.id, 
+            cat2.categories.first.categories.first.id
+        )
+
+        self.eq(
+            cat1.categories.first.categories.first.name, 
+            cat2.categories.first.categories.first.name
+       )
+
+    def it_creates_association_between_product_and_category(self):
+        cat = product.category()
+        cat.name = uuid4().hex
+
+        prod = product.good()
+        prod.name = uuid4().hex
+        prod.introducedat = primative.datetime.utcnow(days=-100)
+        prod.comment = uuid4().hex * 1000
+        cc = product.category_classification()
+        cc.begin = primative.datetime.utcnow(days=-50)
+        cc.product = prod
+        cat.category_classifications += cc
+
+        prod = product.service()
+        prod.name = uuid4().hex
+        prod.introducedat = primative.datetime.utcnow(days=-100)
+        prod.comment = uuid4().hex * 1000
+        cc = product.category_classification()
+        cc.begin = primative.datetime.utcnow(days=-25)
+        cc.comment = uuid4().hex * 1000
+        cc.product = prod
+        cat.category_classifications += cc
+
+        cat.save()
+
+        cat1 = product.category(cat.id)
+
+        self.two(cat1.category_classifications)
+        self.two(cat1.products)
+
+        for ass in ('category_classifications', 'products'):
+            ccs = getattr(cat, ass).sorted()
+            ccs1 = getattr(cat1, ass).sorted()
+            
+            ccs = cat.category_classifications.sorted()
+            ccs1 = cat1.category_classifications.sorted()
+
+            self.eq(ccs.first.begin, ccs1.first.begin)
+            self.eq(ccs.second.begin, ccs1.second.begin)
+
+            self.eq(ccs.first.product.name, ccs1.first.product.name)
+            self.eq(ccs.second.product.name, ccs1.second.product.name)
+
+            self.eq(ccs.first.category.name, ccs1.first.category.name)
+            self.eq(ccs.second.category.name, ccs1.second.category.name)
+
+    def it_breaks_with_two_primary_associations(self):
+        """ Test to ensure that `category_classification.brokenrules`
+        checks the database to ensure a product is associated with only
+        one category as primary. 
+        """
+        cat = product.category()
+        cat.name = uuid4().hex
+
+        prod = gem_product_product.getvalid()
+        cc = product.category_classification()
+        cc.product = prod
+        cc.begin = primative.datetime.utcnow(days=-50)
+        cc.product = prod
+        cc.isprimary = True # Ensure isprimary is True
+        cat.category_classifications += cc
+
+        # Save and reload. Another brokenrule will be added by
+        # category_classifications.brokenrules to ensure that it does
+        # not contain a product set as primary in two different
+        # categories (currently not working (1c409d9d)). See below.
+        cat.save()
+        cat = product.category(cat.id)
+
+        cc = product.category_classification()
+        cc.product = prod
+        cc.begin = primative.datetime.utcnow(days=-25)
+        cc.comment = uuid4().hex * 1000
+        cc.product = prod
+        self.true(cat.isvalid)
+        cc.isprimary = True  # Ensure isprimary is True
+        cat.category_classifications += cc
+
+        # TODO:a082d2a9 `cat.brokenrules` doesn't recurse into
+        # `category_classification.brokenrules'
+        # self.one(cat.brokenrules);
+
+        self.expect(BrokenRulesError, lambda: cat.save())
+
+        ''' Ensure category_classifications disallows saving a product
+        to multple caterories as primary. NOTE Currently not working
+        (a082d2a9).'''
+        return
+
+        cat = product.category()
+        cat.name = uuid4().hex
+
+        prod = gem_product.getvalid()
+        cc = product.category_classification()
+        cc.product = prod
+        cc.begin = primative.datetime.utcnow(days=-50)
+        cc.product = prod
+        cc.isprimary = True
+        cat.category_classifications += cc
+
+        cc = product.category_classification()
+        cc.product = prod
+        cc.begin = primative.datetime.utcnow(days=-25)
+        cc.comment = uuid4().hex * 1000
+        cc.product = prod
+        cc.isprimary = True
+        cat.category_classifications += cc
+        cat.save()
+
+class gem_product_category_types(tester):
+    def __init__(self):
+        super().__init__()
+        orm.orm.recreate(
+            product.products,
+            party.type,
+        )
+
+    def it_creates(self):
+        sm = party.type(name='Small organizations')
+
+        # Small organizations have an interest in Wordpress services
+        sm.category_types += product.category_type(
+            begin=primative.datetime.utcnow(days=-100),
+            end=primative.datetime.utcnow(days=50),
+            category=product.category(name='Wordpress services')
+        )
+
+        # Small organizations have an interest in bank loans
+        sm.category_types += product.category_type(
+            begin=primative.datetime.utcnow(days=-100),
+            end=primative.datetime.utcnow(days=50),
+            category=product.category(name='Bank loans')
+        )
+
+        sm.save()
+
+        sm1 = party.type(sm.id)
+
+        self.two(sm1.category_types)
+        self.two(sm1.categories)
+
+        sm.category_types.sort()
+        sm1.category_types.sort()
+
+        for attr in 'id', 'begin', 'end':
+            self.eq(
+                getattr(sm.category_types.first, attr),
+                getattr(sm1.category_types.first, attr),
+            )
+
+            self.eq(
+                getattr(sm.category_types.second, attr),
+                getattr(sm1.category_types.second, attr),
+            )
+
+        for i in range(2):
+            self.eq(
+                sm.category_types[i].category.id,
+                sm1.category_types[i].category.id
+            )
+
+        for i in range(2):
+            self.eq(
+                sm.category_types[i].type.id,
+                sm1.category_types[i].type.id
+            )
+
+class gem_product_measure(tester):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        product.products.orm.recreate(recursive=True)
+        product.measure_measure.orm.recreate(recursive=True)
+
+    def it_converts(self):
+
+        # Create three pencil products
+        pen = product.product(name='Henry #2 Pencile')
+        small = product.product(name='Henry #2 Pencile Small Box')
+        large = product.product(name='Henry #2 Pencile Large Box')
+
+        # Create the unit of measures for the pencile products
+        each = product.measure(name='each')
+        smallbox = product.measure(name='smallbox')
+        largebox = product.measure(name='largebox')
+
+        # The `pen` product's UOM will be "each"
+        pen.measure = each
+
+
+        # The product `small` will have a unit of measure called
+        # `smallbox`
+        small.measure = smallbox
+
+        # The product `large` will have a unit of measure called
+        # `largebox`
+        large.measure = largebox
+
+        # Create associations between the above unit of measures so
+        # conversions between them can be done.
+
+        # A small box is `12` pencils
+        mm = product.measure_measure(
+            object   =  smallbox,
+            factor   =  12
+        )
+
+        # Associate each with smallbox
+        each.measure_measures += mm
+
+        # A large box is equivelent to 2 small boxes. Note the
+        # association beteen `each` and `largebox` is not created. We
+        # will rely on product.measure_measure to work issues like this
+        # out automatically via transitive logic.
+        mm = product.measure_measure(
+            object   =  largebox,
+            factor   =  2
+        )
+
+        smallbox.measure_measures += mm
+
+        self.eq(
+            dec(2),
+            smallbox.convert(largebox)
+        )
+
+        '''
+        # This can't work because we haven't yet saved the unit of
+        # measure association that associates largebox with smallbox.
+        # This should work once this association has been saved,
+        # however.
+        self.eq(
+            dec(2),
+            largebox.convert(smallbox)
+        )
+        '''
+
+        # Save the `pen` product along with `small` and `large` in the
+        # same tx
+        pen.save(small, large)
+
+        # Reload products
+        pen1    =  pen.orm.reloaded()
+        small1  =  small.orm.reloaded()
+        large1  =  large.orm.reloaded()
+
+        smallbox1 = smallbox.orm.reloaded()
+        largebox1 = largebox.orm.reloaded()
+
+        self.eq(
+            dec(12),
+            pen1.measure.convert(smallbox1)
+        )
+
+        self.eq(
+            dec(24),
+            pen1.measure.convert(largebox1)
+        )
+
+        self.eq(
+            dec(2),
+            small1.measure.convert(largebox1)
+        )
+
+        # Convert the other way. This will require .convert() to load
+        # the `measure_measure` records for the `measure` passed in to
+        # convert.
+        self.eq(
+            dec(12),
+            smallbox1.convert(pen1.measure)
+        )
+
+        self.eq(
+            dec(2),
+            largebox1.convert(small1.measure)
+        )
+
+        self.eq(
+            dec(24),
+            largebox1.convert(pen1.measure)
+        )
+
+        ''' Leaving the above conversion factors declared in
+        measure_measure, let's create dimension(feature) that have
+        their own unit of measures and conversion factor declarations in
+        measure_measures. Then we can test their conversions.'''
+
+        paper = product.product(
+            name = "Johnson fine grade 8½ by 11 paper"
+        )
+
+        dim_width = product.dimension(name='width', number=dec(8.5))
+        dim_length = product.dimension(name='length', number=dec(11))
+
+        # Create units of measure 'inches and 'centimeters' and
+        # associate them with each other along with the factor number
+        # that can be used to convert between them.
+        inches = product.measure(name='inches')
+        cent   = product.measure(name='centimeters')
+
+        # Make the width dimension in inches
+        inches.dimensions += dim_width
+
+        # Make the length dimension in centimeters (this would be a very
+        # string thing to do in real life).
+        cent.dimensions += dim_length
+
+        mm = product.measure_measure(
+            subject = inches,
+            object  = cent,
+            factor  = dec(2.54)
+        )
+
+        paper.features += dim_width
+
+        # Save everything associated with the paper product. The
+        # save doesn't discover the measure_measure association, so
+        # throw that in as well so it gets saved.
+        paper.save(mm)
+
+        self.one(paper.features)
+        dim_width = paper.features.first
+
+        # The paper's dimension(feature) knows it is measured in inches
+        # via its unit of measure (`measure`) property
+        self.eq(inches.id, dim_width.measure.id)
+
+        # 8.5 inches is 21.59 centimeters.
+        self.eq(dec('21.59'), dim_width.convert(cent))
+
+        # 11 centimenters is 4.33071 inches
+        d = dec('4.330708661417322834645669291')
+        self.eq(d, dim_length.convert(inches))
+
+class gem_product_rating(tester):
+    def __init__(self):
+        super().__init__()
+        product.ratings.orm.recreate(recursive=True)
+
+    def it_calls_make(self):
+        r = product.rating(score=product.rating.Outstanding)
+        r1 = product.rating(score=product.rating.Outstanding)
+        self.eq(r.id, r1.id)
+
+class gem_product_pricing(tester):
+    def __init__(self):
+        super().__init__()
+        product.product.orm.recreate(recursive=True)
+        product.quantitybreak.orm.recreate(recursive=True)
+
+    def it_creates_prices(self):
+        # Create organizations
+        abc = gem_party_company.getvalid(
+            name = 'ABC Corporation'
+        )
+
+        joes = gem_party_company.getvalid(
+            name = "Joe's Stationary"
+        )
+
+        # Create product
+        paper = product.good(
+            name='Johnson fine grade 8½ by 11 bond paper'
+        )
+
+        # Create government party type
+        gov = party.type(
+            name = 'Government'
+        )
+
+        # Create product category
+        cat_paper = product.category(
+            name = 'Paper',
+            begin = '2001-09-01',
+            end   = '2001-09-30'
+        )
+
+        # Associate product category to produt
+        cc = product.category_classification(
+            begin   = primative.datetime.utcnow(days=-50),
+            product = paper
+        )
+
+        cat_paper.category_classifications += cc
+
+        # Create geographic regions
+        east = party.region(
+            name = 'Eastern region',
+            type = None
+        )
+
+        west = party.region(
+            name = 'Western region',
+            type = None,
+        )
+
+        hi = party.region(
+            name = 'Hawaii',
+            type = party.region.State,
+            abbreviation = 'HI',
+            region = west,
+        )
+
+        al = party.region(
+            name = 'Alabama',
+            type = party.region.State,
+            abbreviation = 'AL',
+            region = east,
+        )
+
+        # Create features
+        cream = product.color(name='Cream')
+        fin   = product.quality(name='Extra glossy finish')
+
+        # Create prices
+
+        # Base prices
+        price1 = product.base(
+            region        =  east,
+            price         =  9.75,
+            organization  =  abc,
+            product       =  paper,
+            quantitybreak = product.quantitybreak(
+                begin = 0, 
+                end   = 100
+            )
+        )
+
+        price2 = product.base(
+            region        =  east,
+            price         =  9.00,
+            organization  =  abc,
+            product       =  paper,
+            quantitybreak = product.quantitybreak(
+                begin = 101, 
+                end   = None
+            )
+        )
+
+        price3 = product.base(
+            region        =  west,
+            price         =  8.75,
+            organization  =  abc,
+            product       =  paper,
+            quantitybreak = product.quantitybreak(
+                begin = 0, 
+                end   = 100
+            )
+        )
+
+        price4 = product.base(
+            region        =  west,
+            price         =  8.50,
+            organization  =  abc,
+            product       =  paper,
+            quantitybreak = product.quantitybreak(
+                begin = 101, 
+                end   = None
+            )
+        )
+
+        # Discount prices
+        price5 = product.discount(
+            percent       =  2,
+            type          =  gov,
+            product       =  paper,
+            organization  =  abc
+        )
+
+        price6 = product.discount(
+            percent       =  5,
+            organization  =  abc,
+            product       =  paper,
+            category      =  cat_paper
+        )
+
+        # Surchages
+        price7 = product.surcharge(
+            region        =  hi,
+            organization  =  abc,
+            product       =  paper,
+            price         =  2
+        )
+
+        price8 = product.base(
+            organization  =  joes,
+            product       =  paper,
+            price         =  11
+        )
+
+        paper.prices += price1
+        paper.prices += price2
+        paper.prices += price3
+        paper.prices += price4
+        paper.prices += price5
+        paper.prices += price6
+        paper.prices += price7
+        paper.prices += price8
+
+        paper.save(
+            paper.prices,        # prices
+            abc, joes,           # organizations
+            gov,                 # party types
+            cat_paper,           # product categories
+            east, west, hi, al,  # regions
+            cream, fin,          # features
+        )
+
+        paper1 = paper.orm.reloaded()
+
+        # Get first price
+        pr, prs = paper.getprice(
+            org  = abc,
+            regs = [al],
+            qty  = 20
+        )
+
+        # Despite AL being in the east, the algorith was able to find a
+        # cheaper base price of $8.75 based on the quantity break. A 5%
+        # discount was applied because all products in the "paper"
+        # category are 5% off.
+        self.eq(dec('8.3125'), pr)
+        self.eq(dec('8.75'), prs.first.price)
+        self.eq(dec('5'), prs.second.percent)
+
+        # Get second price
+        pr, prs = paper.getprice(
+            org = abc,
+            regs = [east],
+        )
+
+        # Since we didn't specify a quantity, we got the cheapest
+        # eastern price of $9. 5% was taken off since this was a paper
+        # product.
+        self.eq(dec('8.55'), pr)
+        self.eq(dec('9.00'), prs.first.price)
+        self.eq(dec('5'), prs.second.percent)
+
+        # Get third price
+        pr, prs = paper.getprice(
+            org  = abc,
+            regs = [west],
+        )
+
+        # Without specifying the qty, we get the cheapest eastern price
+        # with a 5% paper discount.
+        self.eq(dec('8.075'), pr)
+        self.eq(dec('8.50'), prs.first.price)
+        self.eq(dec('5'), prs.second.percent)
+
+        # Get fifth price
+        pr, prs = paper.getprice(
+            org  = abc,
+            pts  = [gov],
+            regs = [west],
+        )
+
+        # The cheapest western price was found and a paper product
+        # discount was applied as well as a 2% gov discount.
+        self.eq(dec('7.9135'), pr)
+        self.eq(dec('8.50'), prs.first.price)
+        self.eq(dec('2'), prs.second.percent)
+        self.eq(dec('5'), prs.third.percent)
+
+        # Get seventh price
+        pr, prs = paper.getprice(
+            org  = abc,
+            regs = [hi]
+        )
+
+        # HI is in the west, so we were able to get the $8.75 base
+        # price. The 5% off for all paper products was applied. A
+        # surcharge of $5 was also applied since we are shipping to HI.
+        self.eq(dec('10.075'), pr)
+        self.eq(dec('8.50'), prs.first.price)
+        self.eq(dec('5'), prs.second.percent)
+        self.eq(dec('2'), prs.third.price)
+
+        # Get eigth price
+        pr, prs = paper.getprice(
+            org  = joes,
+        )
+
+        # HI is in the west, so we were able to get the $8.75 base
+        # price. The 5% off for all paper products was applied. A
+        # surcharge of $5 was also applied since we are shipping to HI.
+        self.eq(dec('10.45'), pr)
+        self.eq(dec('11'), prs.first.price)
+        self.eq(dec('5'), prs.second.percent)
+        self.two(prs)
+
+class gem_product_estimate(tester):
+    def __init__(self):
+        super().__init__()
+        product.product.orm.recreate(recursive=True)
+
+        product.estimates.orm.recreate(recursive=True)
+
+        product.estimatetypes.orm.recreate(recursive=True)
+
+    def it_creates(self):
+        good = product.good(name='Johnson fine grade 8½ by 11 paper')
+
+        # Create regions
+        ny = party.region(
+            name          =  'New York',
+            abbreviation  =  'N.Y.',
+            type          =  party.region.State,
+        )
+
+        id = party.region(
+            name          =  'Idaho',
+            abbreviation  =  'I.D.',
+            type          =  party.region.State,
+        )
+
+        # Create estimatetypes
+        apc = product.estimatetype(
+            name = 'Anticipated purchase cost'
+        )
+
+        ao = product.estimatetype(
+            name = 'Administrative overhead'
+        )
+
+        fr = product.estimatetype(
+            name = 'Frieght'
+        )
+
+        good.estimates += product.estimate(
+            region        =  ny,
+            cost          =  2,
+            begin         =  primative.datetime('Jan  9,  2001'),
+            estimatetype  =  apc,
+        )
+
+        good.estimates += product.estimate(
+            region        =  ny,
+            cost          =  dec('1.9'),
+            begin         =  primative.datetime('Jan  9,  2001'),
+            estimatetype  =  ao,
+        )
+
+        good.estimates += product.estimate(
+            region        =  ny,
+            cost          =  dec('1.5'),
+            begin         =  primative.datetime('Jan  9,  2001'),
+            estimatetype  =  fr,
+        )
+
+        good.estimates += product.estimate(
+            region        =  ny,
+            cost          =  dec('2'),
+            begin         =  primative.datetime('Jan  9,  2001'),
+            estimatetype  =  apc,
+        )
+
+        good.estimates += product.estimate(
+            region        =  ny,
+            cost          =  dec('1.1'),
+            begin         =  primative.datetime('Jan  9,  2001'),
+            estimatetype  =  ao,
+        )
+
+        good.estimates += product.estimate(
+            region        =  ny,
+            cost          =  dec('1.1'),
+            begin         =  primative.datetime('Jan  9,  2001'),
+            estimatetype  =  fr,
+        )
+
+        good.save()
+
+        good1 = good.orm.reloaded()
+
+        ests  = good.estimates.sorted()
+        ests1 = good.estimates.sorted()
+
+        self.six(ests)
+        self.six(ests1)
+
+        for est, est1 in zip(ests, ests1):
+            self.eq(est.product.id, est1.product.id)
+            self.eq(est.estimatetype.id, est1.estimatetype.id)
+            self.eq(est.region.id, est1.region.id)
+            self.eq(est.cost, est1.cost)
+            self.eq(primative.date('Jan 9, 2001'), est1.begin)
+            self.eq(None, est1.end)
+
+class gem_product_product_product(tester):
+    """ Test the product_product association in the `product.py` module.
+    """
+    def __init__(self):
+        super().__init__()
+        product.product.orm.recreate(recursive=True)
+
+    def it_creates(self):
+        ''' Test the Component association. Create a parent product
+        called 'Office supply kit', and add child components. '''
+        rent     = product.good(name='Office supply kit')
+
+        rent.product_products += product.product_product(
+            object = product.good(
+                name='Johnson fine grade 8½ by 11 paper'
+            ),
+            quantity = 5,
+        )
+
+        rent.product_products += product.product_product(
+            object  = product.good(name="Pennie's 8½ by 11 binders"),
+            quantity = 5,
+        )
+
+        rent.product_products += product.product_product(
+            object = product.good(name="Shwinger black ball point pen"),
+            quantity = 6,
+        )
+
+        rent.save()
+
+        rent1 = rent.orm.reloaded()
+
+        pps = rent.product_products.sorted()
+        pps1 = rent1.product_products.sorted()
+
+        self.three(pps)
+        self.three(pps1)
+
+        for pp, pp1 in zip(pps, pps1):
+            self.eq(pp.quantity, pp1.quantity)
+            self.eq(rent.id, pp1.subject.id)
+            self.eq(pp.object.id, pp1.object.id)
+            self.eq(pp.id, pp1.id)
+        
+        ''' Test the Substitution association. '''
+        pps = product.product_products()
+
+        pps += product.product_product(
+            subject = product.good(
+                name='Small box of Henry #2 pencils'
+            ),
+            object = product.good(
+                name='Individual Henry #2 pencil'
+            ),
+            quantity = 12,
+        )
+
+        pps += product.product_product(
+            subject = product.good(
+                name='Goldstein Elite pen'
+            ),
+            object = product.good(
+                name="George's Elite pen"
+            ),
+        )
+
+        pps.save()
+
+        pps1 = product.product_products(
+            subject__productid = pps.first.subject.id
+        )
+
+        self.one(pps1)
+        self.eq(pps.first.subject.id, pps1.first.subject.id)
+        self.eq(pps.first.object.id, pps1.first.object.id)
+        self.eq(12, pps1.first.quantity)
+
+        pps1 = product.product_products(
+            subject__productid = pps.second.subject.id
+        )
+
+        self.one(pps1)
+        self.eq(pps.second.subject.id, pps1.first.subject.id)
+        self.eq(pps.second.object.id, pps1.first.object.id)
+        self.eq(None, pps1.first.quantity)
+
+class gem_case(tester):
+    def __init__(self):
+        super().__init__()
+        orm.orm.recreate(
+            party.communications,
+            party.parties,
+            party.case_party,
+            party.casestatuses,
+            party.statuses,
+        )
+
+    def it_raises_on_invalid_call_of_casesstatus(self):
+        self.expect(ValueError, lambda: party.casestatus('Active'))
+        self.expect(None, lambda: party.casestatus(name='Active'))
+
+    def it_associates_case_to_party(self):
+        # NOTE Names don't work if party.roles exist. This is due to
+        # 297f8176. If `party.roles` needs to be restored, remove the
+        # kwargs.
+        jerry = party.person(first="Jerry", last="Red")
+
+        # Create case
+        cs = party.case(
+            description = 'Techinal support issue with customer: '
+                          'software keeps crashing',
+            casestatus = party.casestatus(name='Active')
+        )
+
+        # Associate case with party
+        jerry.case_parties += party.case_party(
+            case = cs,
+        )
+
+        # FIXME:566e96a9 The caseroletype is not a real attribute
+        # because there is no caseroletype composite map in case_party.
+        # We can save or test caseroletype at the moment.
+        #
+        # jerry.case_parties.last.caseroletype = party.caseroletype(
+        #    name = 'Resolution lead'
+        #)
+
+        jerry.save()
+
+        jerry1 = jerry.orm.reloaded()
+
+        cps = jerry.case_parties
+        cps1 = jerry1.case_parties
+
+        self.one(cps)
+        self.one(cps1)
+
+        self.eq(cps.first.id,       cps1.first.id)
+        self.eq(jerry.id,           cps1.first.party.id)
+        self.eq(cps.first.case.id,  cps1.first.case.id)
+
+        self.eq(
+            cps.first.case.casestatus.id,
+            cps1.first.case.casestatus.id
+        )
+
+        # FIXME:566e96a9
+        # self.eq(cps.first.caseroletype.id,  cps1.first.caseroletype.id)
+        # self.eq(
+        #     cps.first.caseroletype.name,
+        #     cps1.first.caseroletype.name
+        # )
+
+    def it_appends_communications(self):
+        # Create work effort
+        eff = party.effort(
+            name = 'Software patch',
+            description = 'Send software patch out to customer '
+                          'to correct problem'
+        )
+
+        # Create case
+        cs = party.case(
+            description = 'Techinal support issue with customer: '
+                          'software keeps crashing',
+            casestatus = party.casestatus(name='Active')
+        )
+
+        # Add `commuication` events to `case` along with communication
+        # objectives, work effort associations, etc.
+        cs.communications += party.communication(
+            begin = primative.datetime('Sept 18 2001, 3PM'),
+        )
+
+        comm = cs.communications.last
+        comm.objectives += \
+            party.objective(
+                objectivetype = \
+                    party.objectivetype(
+                        name='Technical support call'
+                    )
+            ) \
+            + party.objective(
+                objectivetype = \
+                    party.objectivetype(
+                        name='Technical support call'
+                    )
+            )
+
+        comm.communication_efforts += party.communication_effort(
+            effort = eff
+        )
+
+        cs.communications += party.communication(
+            begin = primative.datetime('Sept 20 2001, 2PM'),
+        )
+        comm = cs.communications.last
+
+        comm.objectives += \
+            party.objective(
+                objectivetype = \
+                    party.objectivetype(
+                        name='Send software patch'
+                    )
+            )
+
+        comm.communication_efforts += party.communication_effort(
+            effort = eff
+        )
+
+        cs.communications += party.communication(
+            begin = primative.datetime('Sept 19 2001, 3PM'),
+        )
+        comm = cs.communications.last
+
+        comm.objectives += \
+            party.objective(
+                objectivetype = \
+                    party.objectivetype(
+                        name='Techinal support follow-up'
+                    )
+            ) \
+            + party.objective(
+                objectivetype = \
+                    party.objectivetype(
+                        name='Call resolution'
+                    )
+            )
+
+        cs.save()
+
+        cs1 = cs.orm.reloaded()
+
+        comms = cs.communications.sorted()
+        comms1 = cs1.communications.sorted()
+
+        self.three(comms)
+        self.three(comms1)
+
+        for comm, comm1 in zip(comms, comms1):
+            self.eq(comm.id, comm1.id)
+            self.eq(comm.begin, comm1.begin)
+
+            # FIXME When associations can be constituents,
+            # `comm1.communication_efforts` should be available and we
+            # can remove the ``continue`` below.
+            continue
+            ces = comm.communication_efforts
+            ces1 = comm1.communication_efforts
+
+            self.eq(ces.count, ces1.count)
+
+            for ce, ce1 in zip(ces, ces1):
+                self.eq(ce.id, ce1.id)
+                self.eq(ce.description, ce1.description)
+                self.eq(ce.effort.id, ce1.effort.id)
+                self.eq(ce.communication.id, ce1.communication.id)
+
+class gem_order_order(tester):
+    def __init__(self):
+        super().__init__()
+        orm.orm.recreate(
+            order.order,
+            order.items,
+            order.salesitems,
+            order.purchaseitems,
+            order.purchaseorders,
+            order.salesorders,
+            party.role,
+            party.partyroletype,
+            party.party,
+            party.company,
+            party.customer,
+            party.placing,
+            party.internal,
+            party.billto,
+            party.shipto,
+        )
+
+    def it_creates(self):
+        ''' Create products '''
+        # Goods
+        paper = gem_product_product.getvalid(product.good, comment=1)
+        paper.name='Johnson fine grade 8½ by 11 bond paper'
+
+        pen = gem_product_product.getvalid(product.good, comment=1)
+        pen.name = 'Goldstein Elite Pen'
+
+        diskette = gem_product_product.getvalid(product.good, comment=1)
+        diskette.name = "Jerry's box of 3½ inch diskettes"
+
+        georges = gem_product_product.getvalid(product.good, comment=1)
+        georges.name = "George's Elite pen"
+
+        kit = gem_product_product.getvalid(product.good, comment=1)
+        kit.name = 'Basic cleaning supplies kit'
+
+        # Service
+        cleaning = gem_product_product.getvalid(product.service, comment=1)
+        cleaning.name = 'Hourly office cleaning service'
+
+        ''' Create features '''
+        gray    =  product.color(name='gray')
+        blue    =  product.color(name='blue')
+        glossy  =  product.quality(name='Extra glossy finish')
+        autobill = product.billing(name='Automatically charge to CC')
+
+        ''' Create orders '''
+        so_1  =  order.salesorder()
+        so_2  =  order.salesorder()
+        po    =  order.purchaseorder()
+
+        ''' Add items to orders '''
+        so_1.items += order.salesitem(
+            product = paper,
+            quantity = 10,
+            price = dec('8.00')
+        )
+
+        # Add a feature item for the paper. We want the paper to be
+        # `gray` and `glossy`.
+        so_1.items.last.items += order.salesitem(feature=gray)
+        so_1.items.last.items += order.salesitem(
+            feature = glossy, 
+            price   = 2.00
+        )
+
+        so_1.items += order.salesitem(
+            product = pen,
+            quantity = 4,
+            price = dec('12.00')
+        )
+        so_1.items.last.items += order.salesitem(feature=blue)
+
+        so_1.items += order.salesitem(
+            product = diskette,
+            quantity = 6,
+            price = dec('7.00')
+        )
+
+        so_2.items += order.salesitem(
+            product = georges,
+            quantity = 10,
+            price = dec('10.00')
+        )
+
+        po.items += order.purchaseitem(
+            product = cleaning,
+            quantity = 12,
+            price = dec('15.00')
+        )
+        po.items.last.items += order.salesitem(feature=autobill)
+
+        po.items += order.purchaseitem(
+            product = kit,
+            quantity = 1,
+            price = dec('10.00')
+        )
+
+        so_1.save(so_2, po)
+
+        so_1_1 = so_1.orm.reloaded()
+        so_2_1 = so_2.orm.reloaded()
+        po1    = po.orm.reloaded()
+
+        self.three(so_1.items)
+        self.three(so_1_1.items)
+
+        self.one(so_2.items)
+        self.one(so_2_1.items)
+
+        self.two(po.items)
+        self.two(po1.items)
+
+        gen = zip(so_1.items.sorted(), so_1_1.items.sorted())
+        for itm, itm1 in gen:
+            self.eq(itm.id, itm1.id)
+
+            # The paper product had a gray and glossy feature added
+            if itm1.product.id == paper.id:
+                feats1 = itm1.items
+                names = feats1.pluck('feature.name')
+                self.two(feats1)
+                self.true('gray' in names)
+                self.true('Extra glossy finish' in names)
+            # The pen product had a blue feature added
+            elif itm1.product.id == pen.id:
+                feats1 = itm1.items
+                names = feats1.pluck('feature.name')
+                self.one(feats1)
+                self.true('blue' in names)
+
+        gen = zip(so_2.items.sorted(), so_2_1.items.sorted())
+        for itm, itm1 in gen:
+            self.eq(itm.id, itm1.id)
+
+        gen = zip(po.items.sorted(), po1.items.sorted())
+        for itm, itm1 in gen:
+            self.eq(itm.id, itm1.id)
+            # The cleaning service billing feature added to it
+            if itm1.product.id == cleaning.id:
+                feats1 = itm1.items
+                names = feats1.pluck('feature.name')
+                self.one(feats1)
+                self.true('Automatically charge to CC' in names)
+
+    def it_uses_roles(self):
+        """ A company called ACME will play a `placing` role (they act as
+        th placing customer) to a sales order.
+        """
+        ''' Create parties involved in order '''
+        acme = party.company(name='ACME Company')
+        sub  = party.company(name='ACME Subsidiary')
+
+        ''' Create contact mechanisms '''
+        acmeaddr = party.address(
+            address1='234 Stretch Street',
+            address2='New York, New York',
+        )
+
+        acmesubaddr = party.address(
+            address1='100 Main Street',
+            address2='New York, New York',
+        )
+
+        acmeshipto = party.address(
+            address1='Drident Avenue',
+            address2='New York, New York',
+        )
+
+        # Create order
+        so  =  order.salesorder()
+
+        ''' Create roles involved in order '''
+        placing = party.placing()
+        internal = party.internal()
+        billto = party.billto()
+        shipto = party.shipto()
+
+        ''' Associate roles to the order '''
+        so.placing  =  placing
+        so.taking   =  internal
+        so.billto   =  billto
+        so.shipto   =  shipto
+
+        ''' Associate contact mechanism to the order '''
+        so.placedusing  =  acmeaddr
+        so.takenusing   =  acmesubaddr
+        so.billtousing  =  acmeaddr
+        so.shiptousing  =  acmeshipto
+
+        ''' Associate roles to the parties '''
+
+        # Acme is places the order and Acme Subsidiary takes the order.
+        acme.roles  +=  placing
+        sub.roles   +=  internal
+        acme.roles  +=  billto
+        acme.roles  +=  shipto
+
+        so.save()
+
+        so1 = so.orm.reloaded()
+
+        placing1 = so1.placing
+        self.eq(placing.id, placing1.id)
+
+        # FIXME We shouldn't have to use orm.super here
+        acme1 = placing1.orm.super.orm.super.party
+        self.eq(acme.id, acme1.id)
+
+        internal1 = so1.taking
+        self.eq(internal.id, internal1.id)
+
+        sub1 = internal1.party
+        self.eq(sub.id, sub1.id)
+
+        billto1 = so1.billto
+        self.eq(billto.id, billto1.id)
+
+        shipto1 = so1.shipto
+        self.eq(shipto.id, shipto1.id)
+
+        # FIXME We shouldn't have to use orm.super here
+        acme1 = billto1.orm.super.orm.super.party
+        self.eq(acme.id, acme1.id)
+
+        acmeaddr1     =  so1.placedusing
+        acmesubaddr1  =  so1.takenusing
+        acmeaddr2     =  so1.billtousing
+        acmeshipto1   =  so1.shiptousing
+
+        self.eq(acmeaddr.id,     acmeaddr1.id)
+        self.eq(acmesubaddr.id,  acmesubaddr1.id)
+        self.eq(acmeaddr.id,     acmeaddr2.id)
+        self.eq(acmeshipto.id,     acmeshipto1.id)
 
 ########################################################################
 # Test dom                                                             #
@@ -22016,4304 +26314,6 @@ class test_selectors(tester):
                 lambda: dom.selectors(sel),
            )
 
-'''
-Test General Entities Model (GEM)
-'''
-
-class gem_party_person(tester):
-    def __init__(self):
-        super().__init__()
-        orm.orm.recreate(
-            party.party,
-            party.nametypes,
-            party.characteristictypes,
-            party.gendertypes,
-            party.position,
-            party.marital,
-            party.name,
-            party.citizenships,
-        )
-
-    @staticmethod
-    def getvalid():
-        per = party.person()
-
-        per.first          =  uuid4().hex
-        per.middle         =  uuid4().hex
-        per.last           =  uuid4().hex
-
-        per.title          =  uuid4().hex
-        per.suffix         =  uuid4().hex
-        per.mothersmaiden  =  uuid4().hex
-        per.maritalstatus  =  True
-        per.nationalids    =  uuid4().hex
-        per.isicv4         =  None
-        per.dun            =  None
-        return per
-
-    def it_saves_physical_characteristics(self):
-        hr = party.characteristictype(name='Heart rate')
-        sys = party.characteristictype(name='Systolic blood preasure')
-        dia = party.characteristictype(name='Diastolic blood preasure')
-
-        per = gem_party_person.getvalid()
-
-        per.characteristics += party.characteristic(
-            begin = primative.datetime('2021-03-07 08:00:00'),
-            value = 118,
-            characteristictype = sys,
-        )
-
-        per.characteristics += party.characteristic(
-            begin = primative.datetime('2021-03-07 08:00:00'),
-            value = 77,
-            characteristictype = dia,
-        )
-
-        per.characteristics += party.characteristic(
-            begin = primative.datetime('2021-03-07 08:00:00'),
-            value = 76,
-            characteristictype = hr,
-        )
-        
-        per.save()
-        per1 = per.orm.reloaded()
-
-        chrs = per.characteristics.sorted()
-        chrs1 = per1.characteristics.sorted()
-
-        self.three(chrs)
-        self.three(chrs1)
-
-        dt = primative.datetime('2021-03-07 08:00:00')
-        for chr, chr1 in zip(chrs, chrs1):
-            self.eq(dt, chr1.begin)
-            self.none(chr1.end)
-            self.eq(chr.value, chr1.value)
-            self.eq(
-                chr.characteristictype.id,
-                chr1.characteristictype.id
-            )
-            self.type(str, chr1.value)
-
-    def it_appends_marital_status(self):
-        per = gem_party_person.getvalid()
-
-        per.maritals += party.marital(
-            begin = primative.datetime('19760415'),
-            end   = primative.datetime('20041008'),
-            type = party.marital.Single,
-        )
-
-        per.maritals += party.marital(
-            begin = primative.datetime('20041009'),
-            type = party.marital.Married,
-        )
-
-        per.save()
-
-        per1 = per.orm.reloaded()
-
-        mars = per.maritals.sorted()
-        mars1 = per1.maritals.sorted()
-
-        self.two(mars)
-        self.two(mars1)
-
-        for mar, mar1 in zip(mars, mars1):
-            self.eq(mar.begin,  mar1.begin)
-            self.eq(mar.end,    mar1.end)
-            self.eq(mar.type,   mar1.type)
-
-    def it_calls_gender(self):
-        per = gem_party_person.getvalid()
-        self.none(per.gender)
-
-        # Gender must have already been registered
-        def f(per):
-            per.gender = 'Male'
-
-        self.expect(ValueError, lambda: f(per))
-
-        party.gendertype(name='Male').save()
-        party.gendertype(name='Female').save()
-        party.gendertype(name='Nonbinary').save()
-
-        per.gender = 'Male'
-        self.one(per.genders)
-
-        self.eq('Male', per.gender)
-
-        per.save()
-
-        per = per.orm.reloaded()
-
-        self.one(per.genders)
-        self.eq('Male', per.gender)
-
-        per.gender = 'Female'
-        self.eq('Female', per.gender)
-        self.one(per.genders)
-
-        per = per.orm.reloaded()
-
-        # NOTE:7f6906fc The mutator per.gender will save the gender
-        # object, so there is no need to call save here
-        # per.save()
-
-        self.eq('Female', per.gender)
-        self.one(per.genders)
-
-        ''' Make the Female gender a past gender and make per's current
-        gender nonbinary. '''
-
-        gen = per.genders.first
-        gen.begin = primative.datetime('1980-01-01')
-        gen.end   = primative.datetime('1990-01-01')
-
-        per.genders += party.gender(
-            begin       =  primative.datetime('1990-01-02'),
-            end         =  None,
-            gendertype  =  party.gendertypes(name='nonbinary').first,
-        )
-
-        self.eq('Nonbinary', per.gender)
-
-        per.save()
-
-        per1 = per.orm.reloaded()
-
-        gens = per.genders.sorted()
-        gens1 = per1.genders.sorted()
-
-        self.two(gens)
-        self.two(gens1)
-        self.eq('Nonbinary', per1.gender)
-
-        for gen, gen1 in zip(gens, gens1):
-            self.eq(gen.begin, gen1.begin)
-            self.eq(gen.end, gen1.end)
-            self.eq(gen.gendertype.id, gen1.gendertype.id)
-
-    def it_calls_name_properties(self):
-        per = party.person()
-        per.dun = None
-        per.isicv4 = None
-        per.nationalids = None
-
-        per.first = 'Joey'
-        self.eq('Joey', per.first)
-
-        per.middle = 'Middle'
-        self.eq('Middle', per.middle)
-
-        per.last = 'Armstrong'
-        self.eq('Armstrong', per.last)
-
-        per.save()
-
-        per1 = per.orm.reloaded()
-
-        for prop in ('first', 'middle', 'last'):
-            self.eq(getattr(per, prop), getattr(per1, prop))
-
-        names = party.nametypes.orm.all.pluck('name')
-
-        self.three(names)
-        self.true('first' in names)
-        self.true('middle' in names)
-        self.true('last' in names)
-
-    def it_adds_citizenships(self):
-        per = party.person()
-
-        au = party.region(
-            name = 'Austria',
-            type = party.region.Country
-        )
-
-        en = party.region(
-            name = 'England',
-            type = party.region.Country
-        )
-
-        per.citizenships += party.citizenship(
-            begin   = primative.datetime('1854-05-06'),
-            end     = primative.datetime('1938-05-01'),
-            country = au,
-        )
-
-        per.citizenships.last.passports += party.passport(
-            number = str(randint(1111111111, 99999999999)),
-            issuedat = primative.datetime('2010-05-06'),
-            expiresat = primative.datetime('2019-05-06'),
-        )
-
-        per.citizenships += party.citizenship(
-            begin   = primative.datetime('1938-05-01'),
-            end     = primative.datetime('1939-09-23'),
-            country = en,
-        )
-
-        per.citizenships.last.passports += party.passport(
-            number = str(randint(1111111111, 99999999999)),
-            issuedat = primative.datetime('2010-05-06'),
-            expiresat = primative.datetime('2019-05-06'),
-        )
-
-        per.save()
-
-        per1 = per.orm.reloaded()
-
-        cits = per.citizenships.sorted()
-        cits1 = per1.citizenships.sorted()
-
-        self.two(cits)
-        self.two(cits1)
-
-        for cit, cit1 in zip(cits, cits1):
-            self.eq(cit.begin, cit1.begin)
-            self.eq(cit.end, cit1.end)
-            self.eq(cit.country.id, cit1.country.id)
-
-            pps = cit.passports.sorted()
-            pps1 = cit1.passports.sorted()
-
-            self.one(pps)
-            self.one(pps1)
-
-            for pp, pp1 in zip(pps, pps1):
-                for prop in ('number', 'issuedat', 'expiresat'):
-                    self.eq( getattr(pp, prop), getattr(pp1, prop))
-
-    def it_creates(self):
-        per = self.getvalid()
-        per.save()
-
-        per1 = party.person(per.id)
-
-        for map in per.orm.mappings.fieldmappings:
-            self.eq(
-                getattr(per, map.name),
-                getattr(per1, map.name)
-            )
-
-    def it_updates(self):
-        # Create
-        per = self.getvalid()
-        per.save()
-
-        # Load
-        per = party.person(per.id)
-
-        # Update
-        oldfirstname = per.first
-        newfirstname = uuid4().hex
-
-        per.first = newfirstname
-        per.save()
-
-        # Reload
-        per1 = party.person(per.id)
-
-        # Test
-        self.eq(newfirstname, per1.first)
-        self.ne(oldfirstname, per1.first)
-
-    def it_creates_association_to_person(self):
-        bro = self.getvalid()
-        sis = self.getvalid()
-
-        # TODO Figure out a way to do this:
-        #
-        #     bro.siblings += sis
-        bro.party_parties += party.party_party.sibling(sis)
-
-        self.is_(bro, bro.party_parties.last.subject)
-        self.is_(sis, bro.party_parties.last.object)
-
-        bro.save()
-
-        bro1 = party.person(bro.id)
-
-        self.eq(bro.id, bro1.party_parties.last.subject.id)
-        self.eq(sis.id, bro1.party_parties.last.object.id)
-        
-    def it_creates_association_to_company(self):
-        per = self.getvalid()
-        com = gem_party_company.getvalid()
-
-        pp = party.party_party()
-        pp.object = com
-        pp.role = 'patronize'
-
-        per.party_parties += pp
-
-        self.is_(per, per.party_parties.last.subject)
-        self.is_(com, per.party_parties.last.object)
-
-        per.save()
-
-        per1 = party.person(per.id)
-
-        self.eq(per.id, per1.party_parties.last.subject.id)
-        self.eq(com.id, per1.party_parties.last.object.id)
-
-        self.one(per1.parties)
-        self.eq(com.id, per1.parties.first.id)
-
-        self.one(per1.companies)
-        self.eq(com.id, per1.companies.first.id)
-
-    def it_places_person_in_a_corporate_hierarchy(self):
-        ... # TODO
-
-    def it_creates_association_to_person(self):
-        bro = self.getvalid()
-        sis = self.getvalid()
-
-        # TODO Figure out a way to do this:
-        #
-        #     bro.siblings += sis
-
-        bro.party_parties += party.party_party.sibling(sis)
-
-        self.is_(bro, bro.party_parties.last.subject)
-        self.is_(sis, bro.party_parties.last.object)
-
-        bro.save()
-
-        bro1 = party.person(bro.id)
-
-        self.eq(bro.id, bro1.party_parties.last.subject.id)
-        self.eq(sis.id, bro1.party_parties.last.object.id)
-
-        self.one(bro1.parties)
-        self.eq(sis.id, bro1.parties.first.id)
-
-        self.one(bro1.persons)
-        self.eq(sis.id, bro1.persons.first.id)
-
-
-class gem_party_party_type(tester):
-    def __init__(self):
-        super().__init__()
-        orm.orm.recreate(
-            party.party,
-            party.type,
-        )
-
-    def it_creates(self):
-        typ = party.type()
-        typ.name = uuid4().hex
-
-        for i in range(2):
-            pt = party.party_type()
-            pt.begin = primative.datetime.utcnow(days=-100)
-            pt.party = gem_party_person.getvalid()
-            typ.party_types += pt
-
-        typ.save()
-
-        typ1 = party.type(typ.id)
-        self.eq(typ.name, typ1.name)
-
-        typ.party_types.sort() 
-        typ1.party_types.sort()
-
-        self.two(typ1.party_types)
-
-        self.eq(
-            typ.party_types.first.party.id, 
-            typ1.party_types.first.party.id
-        )
-
-        self.eq(
-            typ.party_types.second.party.id,
-            typ1.party_types.second.party.id
-        )
-
-        self.eq(
-            typ.id,
-            typ1.party_types.first.type.id
-        )
-
-    def it_updates(self):
-        # TODO
-        pass
-
-class party_party_role(tester):
-    def __init__(self):
-        super().__init__()
-        party.party.orm.recreate(recursive=True)
-        party.roletypes.orm.recreate(recursive=True)
-
-    def it_creates(self):
-        acme = party.company(name='ACME Corporation')
-
-        acme.roles += party.customer(
-            begin  =  primative.datetime('2006-01-01'),
-            end    =  primative.datetime('2008-04-14')
-        )
-
-        acme.roles += party.supplier()
-
-        acme.save()
-
-        acme1 = acme.orm.reloaded()
-
-        rls = acme.roles.sorted()
-        rls1 = acme1.roles.sorted()
-
-        self.two(rls)
-        self.two(rls1)
-
-        for rl, rl1 in zip(rls, rls1):
-            rl1 = rl.orm.entity(rl1)
-            self.eq(rl.begin, rl1.begin)
-            self.eq(rl.end, rl1.end)
-
-            rl1.partyroletype
-
-            self.eq(rl.partyroletype.id, rl1.partyroletype.id)
-
-class gem_party_role_role(tester):
-    def __init__(self):
-        super().__init__()
-        orm.orm.recreate(
-            party.party,
-            party.roletypes,
-            party.status,
-            party.communications,
-            party.priority,
-            party.role_role_status,
-        )
-
-    def it_creates(self):
-        # Create parties
-        rent = party.company(name='ACME Corporation')
-        sub  = party.company(name='ACME Subsidiary')
-
-        # Create priority
-        high = party.priority(name='high')
-
-        # Create status
-        act = party.role_role_status(name='active')
-
-        # Create roles
-        rent.roles += party.parent(
-            begin     =  primative.datetime('2006-01-01'),
-            end       =  None,
-        )
-
-        sub.roles += party.subsidiary(
-            begin  =  primative.datetime('2006-01-01'),
-            end    =  None,
-        )
-
-        # Associate the two roles created above
-        sub.roles.last.role_roles += party.role_role(
-            begin  =  primative.datetime('2006-01-01'),
-            end    =  None,
-            role_role_type = party.role_role_type(
-                name = 'Organizational rollup',
-                description = 'Shows that each organizational '
-                              'unit may be within one or more '
-                              'organization units, over time.',
-            ),
-
-            # FIXME `subject` need not be set here
-            subject = sub.roles.last, 
-
-            object = rent.roles.last,
-
-            # This is a "high" priority relationship.
-            priority = high,
-
-            # This is an active relationship.
-            status = act,
-
-        )
-
-        sub.roles.last.role_roles.last.communications += \
-            party.communication(
-                begin = primative.datetime('2010-02-18 12:01:23'),
-                end   = primative.datetime('2010-02-18 12:49:32'),
-                note  = 'Good phone call. I think we got him.',
-            )
-
-        rent.save(sub, sub.roles)
-
-        # Reload and test
-        sub1 = sub.orm.reloaded()
-
-        rls = sub.roles
-        rls1 = sub1.roles
-
-        self.one(rls)
-        self.one(rls1)
-
-        rrs = rls.first.role_roles
-        rrs1 = rls1.first.role_roles
-
-        self.one(rrs)
-        self.one(rrs1)
-
-        self.eq(
-            rrs.first.begin,
-            rrs1.first.begin,
-        )
-
-        self.eq(
-            rrs.first.end,
-            rrs1.first.end,
-        )
-
-        self.eq(
-            rrs.first.object.id,
-            rrs1.first.object.id,
-        )
-
-        self.eq(
-            rrs.first.priority.id,
-            rrs1.first.priority.id,
-        )
-
-        self.eq(
-            'high',
-            rrs1.first.priority.name,
-        )
-
-        self.eq(
-            rrs.first.status.id,
-            rrs1.first.status.id,
-        )
-
-        self.eq(
-            'active',
-            rrs1.first.status.name,
-        )
-
-        self.eq(
-            rrs.first.role_role_type.id,
-            rrs1.first.role_role_type.id,
-        )
-
-        self.eq(
-            rrs.first.role_role_type.name,
-            rrs1.first.role_role_type.name,
-        )
-
-        self.eq(
-            rrs.first.role_role_type.description,
-            rrs1.first.role_role_type.description,
-        )
-
-        coms = rrs.first.communications.sorted()
-        coms1 = rrs.first.communications.sorted()
-
-        self.one(coms)
-        self.one(coms1)
-
-        for com, com1 in zip(coms, coms1):
-            self.eq(com.id, com1.id)
-            self.eq(com.begin, com1.begin)
-            self.eq(com.end, com1.end)
-            self.eq(com.note, com1.note)
-
-class gem_party_company(tester):
-    def __init__(self):
-        super().__init__()
-        orm.orm.recreate(
-            party.party,
-            party.address,
-            party.party_contactmechanism,
-        )
-
-    @staticmethod
-    def getvalid(**kwargs):
-        com = party.company()
-        com.name = uuid4().hex
-        com.ein = str(uuid4().int)[:9]
-        com.nationalids    =  uuid4().hex
-        com.isicv4         =  'A'
-        com.dun            =  None
-
-        for k, v in kwargs.items():
-            setattr(com, k, v)
-        return com
-
-    def it_creates(self):
-        com = self.getvalid()
-        com.save()
-
-        com1 = party.company(com.id)
-
-        sup = com
-
-        while sup:
-            for map in sup.orm.mappings.fieldmappings:
-                self.eq(
-                    getattr(com, map.name),
-                    getattr(com1, map.name),
-                )
-
-            sup = sup.orm.super
-
-    def it_updates(self):
-        # Create
-        com = self.getvalid()
-        com.save()
-
-        # Load
-        com = party.company(com.id)
-
-        # Update
-        old, new = com.name, uuid4().hex
-        com.name = new
-        com.save()
-
-        # Reload
-        com1 = party.company(com.id)
-
-        # Test
-        self.eq(new, com1.name)
-        self.ne(old, com1.name)
-
-    def it_creates_association_to_person(self):
-        per = gem_party_person.getvalid()
-        com = self.getvalid()
-
-        pp = party.party_party()
-        pp.object = per
-        pp.role = 'employ'
-        pp.begin = date.today()
-
-        com.party_parties += pp
-
-        self.is_(com, com.party_parties.last.subject)
-        self.is_(per, com.party_parties.last.object)
-
-        com.save()
-
-        com1 = party.company(com.id)
-
-        self.eq(com.id, com1.party_parties.last.subject.id)
-        self.eq(per.id, com1.party_parties.last.object.id)
-
-        self.one(com1.party_parties)
-        pp1 = com1.party_parties.first
-        for map in pp.orm.mappings.fieldmappings:
-            self.eq(
-                getattr(pp, map.name),
-                getattr(pp1, map.name),
-            )
-
-    def it_associates_phone_numbers(self):
-        com = self.getvalid()
-
-        # Create two phone numbers
-        for i in range(2):
-
-            # Create phone number
-            ph = party.phone()
-            ph.area = int('20' + str(i))
-            ph.line = '555 5555'
-            
-            # Create party to contact mechanism association
-            pcm                   =  party.party_contactmechanism()
-            pcm.begin             =  primative.datetime('1976-01-01')
-            pcm.end               =  None
-            pcm.solicitations     =  False
-            pcm.extension         =  None
-            pcm.purpose           =  party.party_contactmechanism.roles.main
-            pcm.contactmechanism  =  ph
-            pcm.party             =  com
-
-            # Add association to the company object
-            com.party_contactmechanisms += pcm
-
-        # Save, reload and test
-        com.save()
-
-        com1 = party.company(com.id)
-
-        com.party_contactmechanisms.sort()
-        com1.party_contactmechanisms.sort()
-
-        self.two(com1.party_contactmechanisms)
-
-        for i in range(2):
-            self.eq(com.id, com1.party_contactmechanisms[i].party.id)
-
-            self.eq(
-                com.party_contactmechanisms[i].contactmechanism.id,
-                com1.party_contactmechanisms[i].contactmechanism.id
-            )
-            ph = party.phone(
-                com1.party_contactmechanisms[i].contactmechanism.id
-            )
-
-    def it_associates_email_addresses(self):
-        com = self.getvalid()
-
-        # Create two email addressess
-        for i in range(2):
-
-            # Create email addres
-            em = party.email()
-            em.address = 'jimbo%s@foonet.com' % i
-            
-            # Create party to contact mechanism association
-            priv = party.party_contactmechanism.roles.private
-
-            pcm                   =  party.party_contactmechanism()
-            pcm.begin             =  primative.datetime('1993-09-01')
-            pcm.end               =  None
-            pcm.solicitations     =  False
-            pcm.extension         =  None
-            pcm.purpose           =  priv # Private email address
-            pcm.contactmechanism  =  em
-            pcm.party             =  com
-
-            # Add association to the company object
-            com.party_contactmechanisms += pcm
-
-        # Save, reload and test
-        com.save()
-
-        com1 = party.company(com.id)
-
-        com.party_contactmechanisms.sort()
-        com1.party_contactmechanisms.sort()
-
-        self.two(com1.party_contactmechanisms)
-
-        for i in range(2):
-            self.eq(com.id, com1.party_contactmechanisms[i].party.id)
-
-            self.eq(
-                com.party_contactmechanisms[i].contactmechanism.id,
-                com1.party_contactmechanisms[i].contactmechanism.id
-            )
-
-            em = party.email(
-                com1.party_contactmechanisms[i].contactmechanism.id
-            )
-
-    def it_associates_postal_addresses(self):
-        com = self.getvalid()
-
-        # Create two postal addressess
-        for i in range(2):
-
-            # Create postal addres
-            addr = party.address()
-            addr.address1 = '742 Evergreen Terrace'
-            addr.address2 = None
-            addr.directions = self.dedent('''
-			Take on I-40 E. 
-            Take I-44 E to Glenstone Ave in Springfield. 
-            Take exit 80 from I-44 E
-			Drive to E Evergreen St
-            ''')
-
-            ar = party.address_region()
-            ar.region = gem_party_region.getvalid()
-            addr.address_regions += ar
-            
-            hm = party.party_contactmechanism.roles.home
-
-            # Create party-to-contact-mechanism association
-            pcm                   =  party.party_contactmechanism()
-            pcm.begin             =  primative.datetime('1993-09-01')
-            pcm.end               =  None
-            pcm.solicitations     =  False
-            pcm.extension         =  None
-            pcm.purpose           =  hm
-            pcm.contactmechanism  =  addr
-            pcm.party             =  com
-
-            # Add association to the company object
-            com.party_contactmechanisms += pcm
-
-        # Save, reload and test
-        com.save()
-
-        com1 = party.company(com.id)
-
-        com.party_contactmechanisms.sort()
-        com1.party_contactmechanisms.sort()
-
-        self.two(com1.party_contactmechanisms)
-
-        for i in range(2):
-            self.eq(com.id, com1.party_contactmechanisms[i].party.id)
-
-            self.eq(
-                com.party_contactmechanisms[i].contactmechanism.id,
-                com1.party_contactmechanisms[i].contactmechanism.id
-            )
-
-            addr = com.party_contactmechanisms[i].contactmechanism
-
-            # Downcast
-            addr1 = party.address(
-                com1.party_contactmechanisms[i].contactmechanism.id
-            )
-
-            self.eq(addr.address1, addr1.address1)
-
-            reg = addr.address_regions.first.region
-            reg1 = addr1.address_regions.first.region
-
-            expect = self.dedent('''
-			Scottsdale, Arizona 85281
-			United States of America
-            ''')
-            self.eq(expect, str(reg1))
-
-            self.eq(str(reg), str(reg1))
-
-    def it_appends_department(self):
-        # TODO:afa4ffc9 Rewrite the below to use the role_role
-        # association to associate persons to departments and divisions.
-        com = self.getvalid()
-        self.zero(com.departments)
-        dep = party.department(name='web')
-        com.departments += dep
-        self.is_(com, dep.company)
-        com.save()
-
-        com1 = party.company(com.id)
-        self.eq(com.id, com1.id)
-
-        self.one(com1.departments)
-
-        self.eq(com.departments.first.id, com1.departments.first.id)
-        self.eq('web', com1.departments.first.name)
-
-    def it_updates_department(self):
-        # TODO:afa4ffc9 Rewrite the below to use the role_role
-        # association to associate persons to departments and divisions.
-        com = self.getvalid()
-        self.zero(com.departments)
-        com.departments += party.department(name='web')
-        com.save()
-
-        com1 = party.company(com.id)
-
-        dep1 = com1.departments.first
-
-        # Update departement
-        dep1.name = 'web1'
-
-        # Save
-        com1.save()
-
-        # Load and test deparment
-        com1 = party.company(com.id)
-
-        dep1 = com1.departments.first
-
-        self.eq('web1', dep1.name)
-
-    def it_appends_divisions_to_departments(self):
-        # TODO:afa4ffc9 Rewrite the below to use the role_role
-        # association to associate persons to departments and divisions.
-        com = self.getvalid()
-
-        dep = party.department(name='web')
-        com.departments += dep
-
-        div = party.division(name='core')
-        dep.divisions += div
-        com.save()
-
-        com1 = party.company(com)
-
-        self.one(com1.departments)
-        self.one(com1.departments.first.divisions)
-
-        self.eq('web', com1.departments.first.name)
-        self.eq('core', com1.departments.first.divisions.first.name)
-
-        self.eq(
-            com.departments.first.id,
-            com1.departments.first.id
-        )
-
-        self.eq(
-            com.departments.first.divisions.first.id,
-            com1.departments.first.divisions.first.id
-        )
-
-    def it_creates_positions_within_company(self):
-        # TODO:afa4ffc9 Rewrite the below to use the role_role
-        # association to associate persons to departments and divisions.
-
-        # TODO We should be able to create a position in any
-        # party.legalorganization such as a non-profit.
-        jb = gem_party_job.getvalid()
-        com = gem_party_company.getvalid()
-
-        # Create positions based on the job
-        poss = party.positions()
-        poss += gem_party_position.getvalid()
-        poss += gem_party_position.getvalid()
-
-        com.departments += party.department(name='it')
-        div = party.division(name='ml')
-        com.departments.last.divisions += div
-
-        div.positions += poss
-
-        jb.positions += poss
-
-        com.positions += poss
-
-        # INSERT company (it's supers), its department and division, the
-        # two positions and jb (jb is a composite of the positions so it
-        # gets saved as well).
-        com.save()
-
-        ''' Test that rather large save '''
-        com1 = party.company(com.id)
-        self.eq(com.id, com1.id)
-        self.two(com1.positions)
-
-        ids = com1.positions.pluck('id')
-        self.true(com.positions.first.id in ids)
-        self.true(com.positions.second.id in ids)
-
-        self.eq(com1.positions.first.job.id, jb.id)
-        self.eq(com1.positions.second.job.id, jb.id)
-
-        self.true(com1.positions.first.job.positions.first.id in ids)
-        self.true(com1.positions.first.job.positions.second.id in ids)
-        self.ne(
-            com1.positions.first.job.positions.first.id,
-            com1.positions.first.job.positions.second.id
-        )
-
-        self.one(com1.departments)
-        self.one(com1.departments.first.divisions)
-        self.two(com1.departments.first.divisions.first.positions)
-
-    def it_fulfills_postition_within_company(self):
-        # TODO:afa4ffc9 Rewrite the below to use the role_role
-        # association to associate persons to departments and divisions.
-
-
-        jb = gem_party_job.getvalid()
-        com = gem_party_company.getvalid()
-        pers = gem_party_person.getvalid() + gem_party_person.getvalid()
-
-        # Create positions based on the job
-        pos = gem_party_position.getvalid()
-
-        dep = party.department(name='it')
-        com.departments += dep
-        div = party.division(name='ml')
-        com.departments.last.divisions += div
-
-        div.positions += pos
-        jb.positions += pos
-        com.positions += pos
-
-        #self.true(pos.isfulfilled)
-
-        for per in pers:
-            ful = party.position_fulfillment(
-                person = per,
-                begin  = date.today(),
-                end    = None,
-            )
-
-            pos.position_fulfillments += ful
-
-            self.is_(per, pos.position_fulfillments.last.person)
-
-            self.is_(ful, pos.position_fulfillments.last)
-
-            self.is_(
-                div,
-                pos.position_fulfillments.last.position.division
-            )
-
-            self.is_(
-                dep,
-                pos.position_fulfillments.last
-                    .position.division.department
-            )
-
-            self.is_(
-                com,
-                pos.position_fulfillments.last
-                    .position.division.department.company
-            )
-
-        self.two(pos.position_fulfillments)
-        self.two(pos.persons)
-
-        com.save()
-
-        com1 = party.company(com.id)
-
-        self.one(com1.positions)
-
-        ids = com.positions.first.position_fulfillments.pluck('id')
-        self.two(ids)
-
-        for ful1 in com1.positions.first.position_fulfillments:
-            self.true(ful1.id in ids)
-            ful = com.positions.first.position_fulfillments[ful1.id]
-            self.eq(ful.person.id, ful1.person.id)
-            self.eq(ful.position.id, ful1.position.id)
-            self.eq(ful.begin, ful1.begin)
-            self.none(ful1.end)
-
-        for per in pers:
-            per1 = party.person(per.id)
-            self.one(per1.positions)
-            self.one(per1.position_fulfillments)
-            self.eq(div.id, per1.positions.first.division.id)
-            self.eq(dep.id, per1.positions.first.division.department.id)
-            self.eq(
-                com.id,
-                per1.positions.first.division.department.company.id
-            )
-
-class gem_party_contactmechanism(tester):
-    def __init__(self):
-        super().__init__()
-        orm.orm.recreate(
-            party.party,
-            party.purposetypes,
-            party.contactmechanism_contactmechanism,
-        )
-
-    @staticmethod
-    def getvalid(type='phone'):
-        if type == 'phone':
-            # Create phone number
-            cm = party.phone()
-
-            cm.area =  randint(200, 999)
-            cm.line =  randint(100, 999)
-            cm.line += ' '
-            cm.line += str(randint(1000, 9999))
-
-        elif type == 'email':
-            cm = party.email(address='bgates@microsoft.com')
-        else:
-            raise TypeError('Type not supported')
-
-        return cm
-
-    def it_links_contactmechanisms(self):
-        # Create contact mechanisms
-        ph1 = gem_party_contactmechanism.getvalid(type='phone')
-        ph2 = gem_party_contactmechanism.getvalid(type='phone')
-        em  = gem_party_contactmechanism.getvalid(type='email')
-
-
-        # Make cm_cm reference the association class
-        cm_cm = party.contactmechanism_contactmechanism
-
-        # When ph1 is busy, the number will be forwarded to ph2
-        ph1.contactmechanism_contactmechanisms += cm_cm(
-            event   =  cm_cm.Busy,
-            do      =  cm_cm.Forward,
-            object  =  ph2,
-        )
-
-        # When no one answers ph2, forward the call will be forwarded
-        # to a voice recognition email.
-        ph2.contactmechanism_contactmechanisms += cm_cm(
-            event    =  cm_cm.Unanswered,
-            do       =  cm_cm.Forward,
-            object   =  em,
-        )
-
-        # This saves the cm's and the associations
-        ph1.save()
-
-        # Reload everyting
-        ph1_1 = ph1.orm.reloaded()
-
-        # Test that the first association (the first link in the chain)
-        # saved properly.
-        cm_cms1 = ph1.contactmechanism_contactmechanisms.sorted()
-        cm_cms1_1 = ph1_1.contactmechanism_contactmechanisms.sorted()
-
-        self.one(cm_cms1)
-        self.one(cm_cms1_1)
-
-        self.eq(cm_cms1.first.id,          cm_cms1_1.first.id)
-        self.eq(cm_cms1.first.on,       cm_cms1_1.first.on)
-        self.eq(cm_cms1.first.do,          cm_cms1_1.first.do)
-        self.eq(cm_cms1.first.object.id,   cm_cms1_1.first.object.id)
-        self.eq(cm_cms1.first.subject.id,  cm_cms1_1.first.subject.id)
-
-        # Test that the second association (the second link in the chain)
-        # saved properly.
-        cm_cms1 = cm_cms1.first.object \
-                    .contactmechanism_contactmechanisms \
-                    .sorted()
-
-        cm_cms1_1 = cm_cms1_1.first.object \
-                        .contactmechanism_contactmechanisms \
-                        .sorted()
-
-        self.one(cm_cms1)
-        self.one(cm_cms1_1)
-
-        self.eq(cm_cms1.first.id,          cm_cms1_1.first.id)
-        self.eq(cm_cms1.first.on,       cm_cms1_1.first.on)
-        self.eq(cm_cms1.first.do,          cm_cms1_1.first.do)
-        self.eq(cm_cms1.first.object.id,   cm_cms1_1.first.object.id)
-        self.eq(cm_cms1.first.subject.id,  cm_cms1_1.first.subject.id)
-
-    def it_associates_phone_numbers(self):
-        per = gem_party_person.getvalid()
-
-        # Create two phone numbers
-        for i in range(2):
-
-            # Create phone number
-            ph = party.phone()
-            ph.area = int('20' + str(i))
-            ph.line = '555 5555'
-            
-            # Create party to contact mechanism association
-            pcm                   =  party.party_contactmechanism()
-            pcm.begin             =  primative.datetime('1976-01-01')
-            pcm.end               =  None
-            pcm.solicitations     =  False
-            pcm.extension         =  None
-            pcm.purpose           =  party.party_contactmechanism.roles.main
-            pcm.contactmechanism  =  ph
-            pcm.party             =  per
-
-            # Add association to the person object
-            per.party_contactmechanisms += pcm
-
-        # Save, reload and test
-        per.save()
-
-        per1 = party.person(per.id)
-
-        per.party_contactmechanisms.sort()
-        per1.party_contactmechanisms.sort()
-
-        self.two(per1.party_contactmechanisms)
-
-        for i in range(2):
-            self.eq(per.id, per1.party_contactmechanisms[i].party.id)
-
-            self.eq(
-                per.party_contactmechanisms[i].contactmechanism.id,
-                per1.party_contactmechanisms[i].contactmechanism.id
-            )
-            ph = party.phone(
-                per1.party_contactmechanisms[i].contactmechanism.id
-            )
-
-    def it_associates_email_addresses(self):
-        per = gem_party_person.getvalid()
-
-        # Create two email addressess
-        for i in range(2):
-
-            # Create email addres
-            em = party.email()
-            em.address = 'jimbo%s@foonet.com' % i
-            
-            # Create party to contact mechanism association
-            priv = party.party_contactmechanism.roles.private
-
-            pcm                   =  party.party_contactmechanism()
-            pcm.begin             =  primative.datetime('1993-09-01')
-            pcm.end               =  None
-            pcm.solicitations     =  False
-            pcm.extension         =  None
-            pcm.purpose           =  priv # Private email address
-            pcm.contactmechanism  =  em
-            pcm.party             =  per
-
-            # Add association to the person object
-            per.party_contactmechanisms += pcm
-
-        # Save, reload and test
-        per.save()
-
-        per1 = party.person(per.id)
-
-        per.party_contactmechanisms.sort()
-        per1.party_contactmechanisms.sort()
-
-        self.two(per1.party_contactmechanisms)
-
-        for i in range(2):
-            self.eq(per.id, per1.party_contactmechanisms[i].party.id)
-
-            self.eq(
-                per.party_contactmechanisms[i].contactmechanism.id,
-                per1.party_contactmechanisms[i].contactmechanism.id
-            )
-
-            em = party.email(
-                per1.party_contactmechanisms[i].contactmechanism.id
-            )
-
-    def it_associates_postal_addresses(self):
-        per = gem_party_person.getvalid()
-
-        # Create two postal addressess
-        for i in range(2):
-
-            # Create postal addres
-            addr = party.address()
-            addr.address1 = '742 Evergreen Terrace'
-            addr.address2 = None
-            addr.directions = self.dedent('''
-			Take on I-40 E. 
-            Take I-44 E to Glenstone Ave in Springfield. 
-            Take exit 80 from I-44 E
-			Drive to E Evergreen St
-            ''')
-
-            ar = party.address_region()
-            ar.region = gem_party_region.getvalid()
-            addr.address_regions += ar
-            
-            hm = party.party_contactmechanism.roles.home
-
-            # Create party-to-contact-mechanism association
-            pcm                   =  party.party_contactmechanism()
-            pcm.begin             =  primative.datetime('1993-09-01')
-            pcm.end               =  None
-            pcm.solicitations     =  False
-            pcm.extension         =  None
-            pcm.purpose           =  hm
-            pcm.contactmechanism  =  addr
-            pcm.party             =  per
-
-            # Add association to the person object
-            per.party_contactmechanisms += pcm
-
-        # Save, reload and test
-        per.save()
-
-        per1 = party.person(per.id)
-
-        per.party_contactmechanisms.sort()
-        per1.party_contactmechanisms.sort()
-
-        self.two(per1.party_contactmechanisms)
-
-        for i in range(2):
-            self.eq(per.id, per1.party_contactmechanisms[i].party.id)
-
-            self.eq(
-                per.party_contactmechanisms[i].contactmechanism.id,
-                per1.party_contactmechanisms[i].contactmechanism.id
-            )
-
-            addr = per.party_contactmechanisms[i].contactmechanism
-
-            # Downcast
-            addr1 = party.address(
-                per1.party_contactmechanisms[i].contactmechanism.id
-            )
-
-            self.eq(addr.address1, addr1.address1)
-
-            reg = addr.address_regions.first.region
-            reg1 = addr1.address_regions.first.region
-
-            expect = self.dedent('''
-			Scottsdale, Arizona 85281
-			United States of America
-            ''')
-            self.eq(expect, str(reg1))
-
-            self.eq(str(reg), str(reg1))
-
-    def it_adds_purposes_to_contact_mechanisms(self):
-        tbl = (
-            ('ABC Corporation', 'company', '212 234 0958',    'phone',   'General phone number'),
-            ('ABC Corporation', 'company', '212 334 5896',    'phone',   'Main fax number'),
-            ('ABC Corporation', 'company', '212 356 4898',    'phone',   'Secondary fax number'),
-            ('ABC Corporation', 'company', '100 Main Street', 'address', 'Headquarters'),
-            ('ABC Corporation', 'company', '100 Main Street', 'address', 'Billing Inquires'),
-            ('ABC Corporation', 'company', '500 Jerry Street','address', 'Sales Office'),
-            ('ABC Corporation', 'company', 'http://abc.com',  'website', 'Central Internet Address'),
-
-            ('ABC Subsidiary',  'company', '100 Main Street', 'address', 'Service Address'),
-            ('ABC Subsidiary',  'company', '255 Fetch Street','address', 'Sales Office'),
-
-            ('John Smith',      'person',  '212 234 9856',     'phone',   'Main office number'),
-            ('John Smith',      'person',  '212 784 5893',     'phone',   'Main home number'),
-            ('John Smith',      'person',  '212 384 4387',     'phone',    None),
-            ('John Smith',      'person',  '345 Hamlet Place', 'address', 'Main home address'),
-            ('John Smith',      'person',  '245 Main Street',  'address', 'Main work address'),
-
-            ('Barry Goldstein',  'person',  '212 234 0045',            'phone',   'Main office number'),
-            ('Barry Goldstein',  'person',  '212 234 0046',            'phone',   'Secondary office number'),
-            ('Barry Goldstein',  'person',  'Bgoldstein@abc.com',      'email',   'Work email address'),
-            ('Barry Goldstein',  'person',  'barry@barrypersonal.com', 'email',   'Personal email address'),
-            ('Barry Goldstein',  'person',  '2985 Cordova Road',       'address', 'Main home address'),
-        )
-
-        parts = party.parties()
-        cms   = party.contactmechanisms()
-        for r in tbl:
-            # Objectify party
-            part, cls = r[0:2]
-            cls = getattr(party, cls)
-
-            for part1 in parts:
-                if part == part1.name:
-                    part = part1
-                    break
-            else:
-                part, name = cls(), part
-                if cls is party.person:
-                    # FIXME:d7f877ef person.name does not exist yet and I
-                    # was having a hard time getting it to work so I
-                    # used person.first instead. NOTE that this will
-                    # break if party.roles is uncommented. See 297f8176.
-                    part.first = name
-                part.name = name
-                parts += part
-
-            # Objectify contact mechanisms
-            cm, cls= r[2:4]
-            cls = getattr(party, cls)
-
-            def test(cm, cm1, attr):
-                return getattr(cm1, attr) == cm
-
-            if  cls  is  party.phone:    attr  =  'line'
-            if  cls  is  party.email:    attr  =  'address'
-            if  cls  is  party.address:  attr  =  'address1'
-            if  cls  is  party.website:  attr  =  'url'
-
-            for cm1 in cms:
-                if type(cm1) is not cls:
-                    continue
-
-                if test(cm, cm1, attr):
-                    cm = cm1
-                    break
-            else:
-                cm = cls(**{attr: cm})
-                if cls is party.phone:
-                    cm.area = None
-                elif cls is party.address:
-                    cm.address2 = None
-                cms += cm
-
-
-            # Associate party with contact mechanism
-            part.party_contactmechanisms += \
-                party.party_contactmechanism(
-                    party = part,
-                    contactmechanism = cm
-                )
-
-            pcm = part.party_contactmechanisms.last
-
-            now = primative.datetime.utcnow
-            pcm.purposes += party.purpose(
-                begin       = now(days=-randint(1, 1000)),
-                end         = now(days= randint(1, 1000)),
-                purposetype = party.purposetype(name=r[4])
-            )
-
-        parts.save()
-
-        parts1 = party.parties()
-        for part in parts:
-            parts1 += part.orm.reloaded()
-
-        parts.sorted()
-        parts1.sorted()
-
-        self.eq(parts.count, parts1.count)
-
-        for part, part1 in zip(parts, parts1):
-            cms = part.party_contactmechanisms.sorted()
-            cms1 = part1.party_contactmechanisms.sorted()
-
-            self.eq(cms.count, cms1.count)
-
-            for cm, cm1 in zip(cms, cms1):
-                self.eq(cm.id, cm1.id)
-                self.eq(cm.party.id, cm1.party.id)
-                self.eq(part.id, cm1.party.id)
-                self.eq(cm.contactmechanism.id, cm1.contactmechanism.id)
-
-                self.eq(
-                    cm.contactmechanism.id, 
-                    cm1.contactmechanism.id
-                )
-
-                purs = cm.purposes.sorted()
-                purs1 = cm1.purposes.sorted()
-                self.eq(purs.count, purs1.count)
-
-                for pur, pur1 in zip(purs, purs1):
-                    self.eq(pur.id,              pur1.id)
-                    self.eq(pur.begin,           pur1.begin)
-                    self.eq(pur.end,             pur1.end)
-                    self.eq(pur.purposetype.id,  pur1.purposetype.id)
-                    self.eq(
-                        pur.purposetype.name,  
-                        pur1.purposetype.name
-                    )
-        return
-
-        # The above `return` can be removed to print a tabularized
-        # version of the nested tuple from above. This comes from the
-        # reloaded party entities collection so it is a good way to
-        # visually verify what the test is saving/reloading.
-        tbl1 = table()
-        for part in parts1:
-            for pcm in part.party_contactmechanisms:
-                for pur in pcm.purposes:
-                    r = tbl1.newrow()
-                    try:
-                        r.newfield(part.name)
-                    except AttributeError:
-                        r.newfield(part.first)
-                        
-                    if party.phone.orm.exists(pcm.contactmechanism):
-                        cm = party.phone(pcm.contactmechanism)
-                        r.newfield(cm.line)
-                    elif party.address.orm.exists(pcm.contactmechanism):
-                        cm = party.address(pcm.contactmechanism)
-                        r.newfield(cm.address1)
-                    elif party.website.orm.exists(pcm.contactmechanism):
-                        cm = party.website(pcm.contactmechanism)
-                        r.newfield(cm.url)
-                    elif party.email.orm.exists(pcm.contactmechanism):
-                        cm = party.email(pcm.contactmechanism)
-                        r.newfield(cm.address)
-                    else:
-                        raise TypeError()
-
-                    r.newfield(pur.purposetype.name)
-
-        print(tbl1)
-
-class gem_party_position(tester):
-    def __init__(self):
-        super().__init__()
-        party.position.orm.recreate(recursive=True)
-
-    @staticmethod
-    def getvalid():
-        pos = party.position()
-        pos.estimated.begin = primative.datetime.utcnow()
-
-        pos.estimated.end = pos.estimated.begin.add(days=365)
-
-        pos.begin = primative.date.today()
-        pos.end = pos.begin.add(days=365)
-        return pos
-
-    def it_creates(self):
-        pos = self.getvalid()
-        pos.save()
-
-        pos1 = party.position(pos.id)
-        for map in pos.orm.mappings.fieldmappings:
-            prop = map.name
-            self.eq(getattr(pos, prop), getattr(pos1, prop), prop)
-
-    def it_updates(self):
-        pos = self.getvalid()
-        pos.save()
-
-        pos1 = party.position(pos.id)
-        pos1.estimated.begin  =  pos1.estimated.begin.add(days=1)
-        pos1.estimated.end    =  pos1.estimated.end.add(days=1)
-        pos1.begin            =  pos1.begin.add(days=1)
-        pos1.end              =  pos1.end.add(days=1)
-        pos1.save()
-
-        pos2 = party.position(pos.id)
-        for map in pos.orm.mappings.fieldmappings:
-            prop = map.name
-            self.eq(getattr(pos1, prop), getattr(pos2, prop))
-
-class gem_party_job(tester):
-    def __init__(self):
-        super().__init__()
-        party.jobs.orm.recreate(recursive=True)
-
-    @staticmethod
-    def getvalid():
-        jb = party.job()
-        jb.description = tester.dedent('''
-        As Machine Learning and Signal Processing Engineer you are going
-        to lead the effort to bring signal processing algorithms into
-        production which condition and extract rich morphological
-        features from our unique respiratory sensor. In addition, you
-        will bring machine learning models, which predict changes in a
-        patient's disease state, into production for both streaming and
-        batch mode use cases. You will collaborate closely with the
-        research and data science teams and become the expert on
-        tweaking, optimizing, deploying, and monitoring these algorithms
-        in a commercial environment.
-        ''')
-        jb.title = "Machine Learning and Signal Processing Engineer"
-        jb.description = jb.description.replace('\n', '')
-        return jb
-
-    def it_creates(self):
-        jb = self.getvalid()
-        jb.save()
-
-        jb1 = party.job(jb.id)
-        self.eq(jb.title, jb1.title)
-        self.eq(jb.description, jb1.description)
-        self.eq(jb.id, jb1.id)
-
-    def it_updates(self):
-        jb = self.getvalid()
-        jb.save()
-
-        jb1 = party.job(jb.id)
-        jb1.description += '. This is a fast pace work environment.'
-        jb1.title = 'NEEDED FAST!!! ' + jb1.title
-        jb1.save()
-
-        jb2 = party.job(jb.id)
-        self.eq(jb1.title, jb2.title)
-        self.eq(jb1.description, jb2.description)
-        self.eq(jb1.id, jb2.id)
-
-class gem_party_address(tester):
-    @staticmethod
-    def getvalid():
-        addr = party.address()
-        addr.address1 = '742 Evergreen Terrace'
-        addr.address2 = None
-        addr.directions = tester.dedent('''
-        Take on I-40 E. 
-        Take I-44 E to Glenstone Ave in Springfield. 
-        Take exit 80 from I-44 E
-        Drive to E Evergreen St
-        ''')
-        return addr
-
-class gem_party_facility(tester):
-    def __init__(self):
-        super().__init__()
-        orm.orm.recreate(party.party, party.facility)
-
-    def it_creates(self):
-        # Building
-        miniluv = party.facility(
-            name = 'Miniluv', 
-            type = party.facility.Building
-        )
-
-        # Floor
-        miniluv.facilities += party.facility(
-            name = '0',
-            type = party.facility.Floor
-        )
-
-        # Room
-        miniluv.facilities.last.facilities += party.facility(
-            name = '101',
-            type = party.facility.Room
-        )
-
-        # Footage defaults to None and we never set it above
-        self.none(miniluv.footage, None)
-
-        miniluv.save()
-
-        miniluv1 = miniluv.orm.reloaded()
-
-        fac = miniluv1
-        self.eq(party.facility.Building, fac.type)
-        self.none(fac.footage, None)
-        self.eq('Miniluv', fac.name)
-        self.one(fac.facilities)
-
-        fac = fac.facilities.first
-        self.eq(party.facility.Floor, fac.type)
-        self.none(fac.footage, None)
-        self.eq('0', fac.name)
-        self.one(fac.facilities)
-
-        fac = fac.facilities.first
-        self.eq(party.facility.Room, fac.type)
-        self.none(fac.footage, None)
-        self.eq('101', fac.name)
-        self.zero(fac.facilities)
-
-    def it_associates_with_parties(self):
-
-        # Create a facility
-        giga = party.facility(
-            name = 'Giga Navada', 
-            type = party.facility.Factory
-        )
-
-        # Create party
-        tsla = party.company(name='Tesla')
-
-        # Create association
-        tsla.party_facilities += party.party_facility(
-            party             =  tsla,
-            facility          =  giga,
-            facilityroletype  =  party.facilityroletype(name='owner'),
-        )
-
-        # Save and reload
-        tsla.save()
-
-        tsla1 = tsla.orm.reloaded()
-
-        # Test
-        pfs = tsla.party_facilities.sorted()
-        pfs1 = tsla1.party_facilities.sorted()
-
-        self.one(pfs)
-        self.one(pfs1)
-
-        for pf, pf1 in zip(pfs, pfs1):
-            self.eq(pf.id,                   pf1.id)
-            self.eq(pf.party.id,             pf1.party.id)
-            self.eq(pf.facility.id,          pf1.facility.id)
-            self.eq(pf.facilityroletype.id,  pf1.facilityroletype.id)
-
-    def it_associates_with_contactmechanisms(self):
-        # Create a facility
-        giga = party.facility(
-            name = 'Giga Shanghai', 
-            type = party.facility.Factory,
-            footage = 9300000,
-        )
-
-        # Associate a postal address with the facility
-        addr = party.address(
-            address1 = '浦东新区南汇新城镇同汇路168号',
-            address2 = 'D203A',
-        )
-
-        addr.address_regions += party.address_region(
-            region = party.region.create(
-                ('China',     party.region.Country,       'CH'),
-                ('Shanghai',  party.region.Municipality,  None),
-                ('Pudong',    party.region.District,      None),
-            )
-        )
-
-        giga.facility_contactmechanisms += party.facility_contactmechanism(
-            contactmechanism = addr,
-        )
-
-        # Associate a phone number with the facility.
-        giga.facility_contactmechanisms += party.facility_contactmechanism(
-            contactmechanism = party.phone(area=510, line='602-3960')
-        )
-
-        giga.save()
-
-        giga1 = giga.orm.reloaded()
-
-        fcms = giga.facility_contactmechanisms.sorted()
-        fcms1 = giga1.facility_contactmechanisms.sorted()
-
-        self.two(fcms)
-        self.two(fcms1)
-
-        for fcm, fcm1 in zip(fcms, fcms1):
-            self.eq(fcm.id, fcm1.id)
-            self.eq(fcm.facility.id, fcm1.facility.id)
-            
-            # Downcast
-            id = fcm1.contactmechanism.id
-            cm = fcm1.contactmechanism.orm.cast(party.phone)
-
-            if cm:
-                self.eq(fcm.contactmechanism.area, cm.area)
-                self.eq(fcm.contactmechanism.line, cm.line)
-            else:
-                cm = party.address.orm.cast(id)
-                cm = fcm1.contactmechanism.orm.cast(party.address)
-                assert cm is not None
-                self.eq(fcm.contactmechanism.address1, cm.address1)
-                self.eq(fcm.contactmechanism.address2, cm.address2)
-
-class gem_party_communication(tester):
-    def __init__(self):
-        super().__init__()
-        orm.orm.recreate(
-            party.communications,
-            party.parties,
-            party.objectivetypes,
-            party.communicationstatuses,
-            party.roletypes,
-        )
-
-    def it_associates_party_to_communication(self):
-        # This is for a simple association between party entity objects
-        # and `communication` event objects. However, the book says that
-        # ``communication`` events will usually be within the context of
-        # a "party relationship" (``role_role``) because it is within a
-        # relationship that communications usually make sense (see
-        # it_associates_relationship_to_communication).
-        will  =  party.person(first='William',  last='Jones')
-        marc  =  party.person(first='Marc',     last='Martinez')
-        john  =  party.person(first='John',     last='Smith')
-
-        comm = party.communication(
-            begin = primative.datetime('2019-03-23 13:00:00'),
-            end   = primative.datetime('2019-03-23 14:00:00'),
-            note  = 'A meeting between William, Marc and John',
-        )
-
-        participant = party.communicationroletype(name='participant')
-        for per in (will, marc, john):
-            pcs = getattr(per, 'party_communications')
-
-            pcs += party.party_communication(
-                communication          =  comm,
-                communicationroletype  =  participant,
-            )
-
-        will.save(marc, john)
-
-        will1 = will.orm.reloaded()
-        marc1 = marc.orm.reloaded()
-        john1 = john.orm.reloaded()
-
-        for per1 in (will1, marc1, john1): 
-            pcs1 = getattr(per1, 'party_communications')
-            self.one(pcs)
-            self.one(pcs1)
-
-            self.eq(
-                pcs.first.communicationroletype.id,
-                pcs1.first.communicationroletype.id,
-            )
-
-            pc1 = pcs1.first
-
-            self.eq(per1.id,      pc1.party.id)
-            self.eq(comm.id,     pc1.communication.id)
-            self.eq(comm.begin,  pc1.communication.begin)
-            self.eq(comm.end,    pc1.communication.end)
-
-    def it_associates_relationship_to_communication(self):
-        # Create parties
-        
-        ## Persons
-        will  =  party.person()
-        marc  =  party.person()
-        john  =  party.person()
-
-        ## Companies
-        abc   =  party.company(name='ABC Corporation')
-        acme  =  party.company(name='ACME Corporation')
-
-
-        # Will Jones has an Account Management role
-        will.roles += party.role(
-            begin          =  primative.datetime('2016-02-12'),
-            end            =  None,
-            partyroletype  =  party.partyroletype(name='Account Manager'),
-        )
-
-        # Marc Martinez hase a Customer Contact role
-        marc.roles += party.role(
-            begin          =  primative.datetime('2014-03-23'),
-            end            =  None,
-            partyroletype  =  party.partyroletype(name='Customer Contact'),
-        )
-
-        # As an account manager, Will Jones is associated with Marc
-        # Martinez's role as Customer Contact.
-        will.roles.first.role_roles += party.role_role(
-            begin   =  primative.datetime('2017-11-12'),
-            subject =  will.roles.last, # FIXME We shouldn't have to do this
-            object  =  marc.roles.last,
-        )
-
-        # Create objectivetypes
-        isc = party.objectivetype(name='Initial sales call')
-        ipd = party.objectivetype(name='Initial product demonstration')
-        dop = party.objectivetype(name='Demo of product')
-        sc  = party.objectivetype(name='Sales close')
-        god = party.objectivetype(name='Gather order details')
-        cs  = party.objectivetype(name='Customer service')
-        fu  = party.objectivetype(name='Follow-up')
-        css = party.objectivetype(name='Customer satisfacton survey')
-
-        # The role_role association between Will Jones and Marc Martinez
-        # has four ``communication`` events.
-        comms = will.roles.first.role_roles.last.communications
-
-        comms += party.inperson(
-            begin = primative.datetime('Jan 12, 2001, 3PM'),
-
-            # FIXME This assignment fails. The ``objective`` object
-            # retain an fk of <undef>. It should point to the
-            # `communication`'s ID
-            # objectives += \
-            #             party.objective(name='Initial sales call') + \
-            #             party.objective(
-            #                 name='Initial product demontration'
-            #             )
-
-        )
-
-        # FIXME I noticed that before the below line is executed,
-        # calling
-        #
-        #     comms.last.communicationstatus
-        #
-        # Results in an AttributeError. It would appear that composites
-        # defined at super class level raise this error when called by
-        # subclasses, i.e., :
-        #
-        #     try:
-        #          party.communication().communicationstatus
-        #     except Exception:
-        #         assert False
-        #     else:
-        #         assert True
-        #
-        # The above works as expected. But if we use a subclass of
-        # ``communication`` (``inperson``), we get an AttributeError.
-        #
-        #     try:
-        #          party.inperson().communicationstatus
-        #     except AttributeError:
-        #         assert True
-        #     else:
-        #         assert False
-        #
-        # This should be fixed because it leads to unexpected behavior
-        # by developers using the ORM.
-
-        comms.last.communicationstatus = \
-                party.communicationstatus(name='Completed')
-
-        comms.last.objectives += party.objective(
-            objectivetype = isc
-        )
-
-        comms.last.objectives += party.objective(
-            objectivetype = ipd
-        )
-
-        comms += party.webinar(
-            begin = primative.datetime('Jan 30, 2001, 2PM'),
-            communicationstatus = \
-                party.communicationstatus(name='Completed'),
-        )
-
-        comms.last.objectives += party.objective(
-            objectivetype = dop
-        )
-
-        comms += party.inperson(
-            begin = primative.datetime('Feb 12, 2002, 10PM'),
-            communicationstatus = \
-                party.communicationstatus(name='Completed'),
-        )
-
-        comms.last.objectives += party.objective(
-            objectivetype = sc
-        )
-
-        comms.last.objectives += party.objective(
-            objectivetype = god
-        )
-
-        comms += party.phonecall(
-            begin = primative.datetime('Feb 12, 2002, 1PM'),
-            communicationstatus = \
-                party.communicationstatus(name='Scheduled'),
-        )
-
-        comms.last.objectives += party.objective(
-            objectivetype = cs
-        )
-
-        comms.last.objectives += party.objective(
-            objectivetype = fu
-        )
-
-        comms.last.objectives += party.objective(
-            objectivetype = css
-        )
-
-        # FIXME We shouldn't have to save
-        # `will.roles.first.role_roles.last.communications`. Note that
-        # adding this only became necessary when we appended suptypes of
-        # ``communication`` above. If we append instance of
-        # ``communication`` itself, it worked correctly.
-        will.save(
-            marc, 
-            john,
-            will.roles.first.role_roles.last.communications,
-        )
-
-        will1 = will.orm.reloaded()
-        marc1 = marc.orm.reloaded()
-        john1 = john.orm.reloaded()
-
-        comms = will.roles.first.role_roles.first.communications
-        comms1 = will1.roles.first.role_roles.first.communications
-
-        comms.sort()
-        comms1.sort()
-
-        self.four(comms)
-        self.four(comms1)
-
-        for comm, comm1 in zip(comms, comms1):
-            self.eq(comm.id, comm1.id)
-
-            # FIXME We shouldn't have to call ``orm.super`` below.
-            self.eq(
-                comm.orm.super.communicationstatus.id, 
-                comm1.communicationstatus.id
-            )
-
-            self.eq(
-                comm.orm.super.communicationstatus.name, 
-                comm1.communicationstatus.name
-            )
-
-            # FIXME comm1 is a ``communication``
-            #
-            #     assert type(comm1) is party.communication
-            #
-            # However, it has no `objectives` attributes. If I downcast
-            # it, (see the lines immediaetly below) I am able to see the
-            # ``objectives`` attribute. This is very strange because the
-            # ``objectives`` attribute is defined in the
-            # ``communication`` class. We shouldn't be able to remove
-            # the downcast logic when this is fixed. (Also, comm1 should
-            # be loaded as it's most downcasted version, but that is a
-            # seperate issue.)
-            cast = party.inperson.orm.cast(comm1)
-
-            if not cast:
-                cast = party.webinar.orm.cast(comm1)
-
-            if not cast:
-                cast = party.phonecall.orm.cast(comm1)
-
-            assert cast is not None
-
-            comm1 = cast
-
-            objs  = comm.objectives.sorted()
-            objs1 = comm1.objectives.sorted()
-
-            self.eq(objs.count,  objs1.count)
-            self.gt(objs.count,  0)
-
-            for obj, obj1 in zip(objs, objs1):
-                self.eq(obj.id, obj1.id)
-                self.eq(None, obj1.name)
-                self.eq(obj.objectivetype.id, obj1.objectivetype.id)
-                self.eq(obj.objectivetype.name, obj1.objectivetype.name)
-
-class gem_party_region(tester):
-    def __init__(self):
-        super().__init__()
-        orm.orm.recreate(
-            party.party,
-            party.address,
-            party.region,
-        )
-
-    @staticmethod
-    def getvalid():
-        return party.region.create(
-            ('United States of America',  party.region.Country,    'USA'),
-            ('Arizona',                   party.region.State,      'AZ'),
-            ('Scottsdale',                party.region.City),
-            ('85281',                     party.region.Postal)
-        )
-
-    def it_creates(self):
-        party.region.orm.recreate()
-
-        reg = party.region.create(
-            ('United States of America',  party.region.Country,    'USA'),
-            ('Arizona',                   party.region.State,      'AZ'),
-            ('Scottsdale',                party.region.City),
-            ('85224',                     party.region.Postal)
-        )
-
-        self.eq('85224', reg.name)
-        self.zero(reg.regions)
-
-        reg = reg.region
-        self.eq('Scottsdale', reg.name)
-        self.one(reg.regions)
-
-        reg = reg.region
-        self.eq('Arizona', reg.name)
-        self.one(reg.regions)
-
-        reg = reg.region
-        self.eq('United States of America', reg.name)
-        self.one(reg.regions)
-        self.none(reg.region)
-
-        reg = party.region.create(
-            ('United States of America',  party.region.Country,    'USA'),
-            ('Arizona',                   party.region.State,      'AZ'),
-            ('Scottsdale',                party.region.City),
-            ('85254',                     party.region.Postal)
-        )
-
-    def it_associates_address_with_region(self):
-        # Create address and region
-        addr = gem_party_address.getvalid()
-        reg = self.getvalid()
-
-        # Create association
-        ar = party.address_region()
-        ar.region = reg
-
-        # Associate
-        addr.address_regions += ar
-
-        # Save
-        addr.save()
-
-        # Reload
-        addr1 = party.address(addr.id)
-
-        # Test
-        self.one(addr1.address_regions)
-
-        reg1 = addr1.address_regions.first.region
-
-        self.eq(reg.name, reg1.name)
-
-class gem_product_product(tester):
-    def __init__(self):
-        super().__init__()
-        orm.orm.recreate(
-            product.products,
-            product.categories,
-            product.measure,
-            party.facility,
-            party.priorities,
-        )
-
-    @staticmethod
-    def getvalid(type=None, comment=1000):
-        if type is None:
-            type = product.good
-
-        prod = type()
-        prod.name = uuid4().hex
-        prod.introducedat = primative.date.today(days=-100)
-        prod.comment = uuid4().hex * comment
-        return prod
-
-    def it_creates(self):
-        for str_prod in ['good', 'service']:
-            prod = getattr(product, str_prod)()
-
-            prod.name = uuid4().hex
-            prod.introducedat = primative.date.today(days=-100)
-            prod.comment = uuid4().hex * 1000
-
-            prod.save()
-
-            prod1 = getattr(product, str_prod)(prod.id)
-
-            props = (
-                'id', 
-                'name', 
-                'introducedat', 
-                'discontinuedat', 
-                'unsupportedat', 
-                'comment'
-            )
-
-            for prop in props:
-                self.eq(getattr(prod, prop), getattr(prod1, prop), prop)
-
-    def it_updates(self):
-        for str_prod in ['good', 'service']:
-            prod = getattr(product, str_prod)()
-
-            prod.name = uuid4().hex
-            prod.introducedat = primative.date.today(days=-100)
-            prod.comment = uuid4().hex * 1000
-
-            prod.save()
-
-            prod1 = getattr(product, str_prod)(prod.id)
-
-            prod1.name = uuid4().hex
-            prod1.introducedat = primative.date.today(days=-200)
-            prod1.discontinuedat = primative.date.today(days=+100)
-            prod1.unsupportedat = primative.date.today(days=+200)
-            prod1.comment = uuid4().hex * 1000
-
-            prod1.save()
-
-            prod2 = getattr(product, str_prod)(prod1.id)
-
-            props = (
-                'name', 
-                'introducedat', 
-                'discontinuedat', 
-                'unsupportedat', 
-                'comment'
-            )
-
-            for prop in props:
-                self.ne(
-                    getattr(prod, prop), 
-                    getattr(prod2, prop), 
-                    prop
-                )
-                self.eq(
-                    getattr(prod1, prop), 
-                    getattr(prod2, prop), 
-                    prop
-                )
-
-    def it_associates_to_features(self):
-        tup_colors = (
-            'white',  'red',     'orange',  'blue',
-            'green',  'purple',  'gray',    'cream',
-        )
-
-        tup_prods = (
-            'Johnson fine grade 8½ by 11 paper',
-        )
-
-        # Create features
-        feats = product.features()
-        selectables = product.colors()
-
-        for color in tup_colors:
-            feats += product.color(name=color)
-            
-            if color in ('blue', 'gray', 'cream', 'white'):
-                selectables += feats.last
-
-        # Create products
-        prods = product.products()
-        for prod in tup_prods:
-            prods += product.good(name=prod)
-
-
-        paper, = prods[:]
-
-        ''' Create "Johnson fine grade 8½ by 11 paper" and associate the
-        selectable color features of blue, gray, cream, white. '''
-
-        # Assign qualities
-
-        # Fine grade
-        paper.product_features += product.product_feature(
-            type=product.product_feature.Required,
-            feature=product.quality(name='Fine grade'),
-        )
-
-        # Extra glossy finish
-        paper.product_features += product.product_feature(
-            type=product.product_feature.Optional,
-            feature=product.quality(name='Extra glossy finish'),
-        )
-            
-        # Create product_feature associations
-        for sel in selectables:
-            pf = product.product_feature(
-                type=product.product_feature.Selectable,
-                feature=sel,
-            )
-
-            paper.product_features += pf
-
-        # This product is sold in reams
-        paper.measure = product.measure(name='ream')
-
-        # TODO:018aca88 The composite `measure` for paper doesn't get
-        # set probably because `paper` is a `good` which is a subentity
-        # of `product` which has a reference to `measure (see
-        # `measure.products`). Strangely, the `measure` is saved anyway,
-        # though paper has to be loaded as a `product` instead of a
-        # `good`. See the TODO below with the same ID (018aca88).
-        # self.eq('ream', paper.measure.name)
-
-        # Add dimension of 8½
-        dim = product.dimension(number=8.5)
-        dim.measure = product.measure(name='width')
-
-        paper.product_features += product.product_feature(
-            type=product.product_feature.Required,
-            feature=dim,
-        )
-
-        paper.save()
-
-        paper1 = product.good(paper)
-
-        # TODO:018aca88 The composite `measure` for `paper` nor `paper1`
-        # gets set. However, when loading paper as a product (see
-        # below), we are able to verify the `measure` got saved.
-        # self.eq('ream', paper1.measure.name)
-        # self.eq('ream', product.good(paper).measure.name)
-        self.eq('ream', product.product(paper).measure.name)
-
-        pfs = paper.product_features.sorted()
-        pfs1 = paper1.product_features.sorted()
-
-        self.seven(pfs1)
-        self.eq(pfs.count, pfs1.count)
-
-        for pf, pf1 in zip(pfs, pfs1):
-            self.eq(pf.type, pf1.type)
-            self.eq(pf.feature.name, pf1.feature.name)
-            self.eq(pf.product.name, pf1.product.name)
-            self.true(product.good.orm.exists(pf.product))
-
-        # Ensure all the Selectable features were added
-        sel = product.product_feature.Selectable
-        self.eq(
-            sorted(['white', 'cream', 'gray', 'blue']),
-            sorted(x.feature.name for x in pfs1 if x.type == sel)
-        )
-
-        # Ensure all the Required features were added
-        req = product.product_feature.Required
-        self.eq(
-            ['Fine grade'],
-            [
-                x.feature.name 
-                for x in pfs1 
-                if x.type == req and x.feature.name is not None
-            ]
-        )
-
-        for x in pfs1:
-            try:
-                dim1 = product.dimension(x.feature)
-            except db.RecordNotFoundError:
-                pass
-            else:
-                self.none(dim1.name)
-                self.eq(8.5, dim1.number)
-                self.eq('width', dim1.measure.name)
-                break
-        else:
-            self.fail("Couldn't find dimension feature")
-
-        # Ensure all the Optional features were added
-        opt = product.product_feature.Optional
-        self.eq(
-            ['Extra glossy finish'],
-            [x.feature.name for x in pfs1 if x.type == opt]
-        )
-
-    def it_adds_a_feature_association(self):
-        tup_colors = (
-            'white',  'red',     'orange',  'blue',
-            'green',  'purple',  'gray',    'cream',
-        )
-
-        # Create features
-        feats = product.features()
-
-        selectables = product.colors()
-
-        for color in tup_colors:
-            feats += product.color(name=color)
-            
-            # Capture 4 colors and associate them to `good` below
-            # Selectable features.
-            if color in ('blue', 'gray', 'cream', 'white'):
-                selectables += feats.last
-
-        feats.save()
-
-        # Create products
-        good = product.good(name='Johnson fine grade 8½ by 11 paper')
-
-        # Associate `good` with the colors as Selectables.
-        for sel in selectables:
-            pf = product.product_feature(
-                type=product.product_feature.Selectable,
-                feature=sel,
-                product=good
-            )
-
-            good.product_features += pf
-
-        good.save()
-
-        good1 = product.good(good)
-
-        pfs1 = good1.product_features
-
-        self.eq(
-            sorted(['white', 'cream', 'gray', 'blue']),
-            sorted(x.feature.name for x in pfs1)
-        )
-
-
-        # Associate `good1` to purple
-        good1.product_features += product.product_feature(
-            type=product.product_feature.Required,
-            feature=product.colors(name='purple').first,
-            product=good
-        )
-
-        good1.save()
-
-        good2 = product.good(good1)
-
-        sel = product.product_feature.Selectable
-        req = product.product_feature.Required
-
-        self.eq(
-            sorted(['white', 'cream', 'gray', 'blue']),
-            sorted(x.feature.name for x in pfs1 if x.type == sel)
-        )
-
-        self.eq(
-            ['purple'],
-            [x.feature.name for x in pfs1 if x.type == req]
-        )
-
-    def it_removes_feature_association(self):
-        tup_colors = (
-            'white',  'red',     'orange',  'blue',
-            'green',  'purple',  'gray',    'cream',
-        )
-
-        # Create features
-        feats = product.features()
-
-        selectables = product.colors()
-
-        for color in tup_colors:
-            feats += product.color(name=color)
-            
-            # Capture 4 colors and associate them to `good` below
-            # Selectable features.
-            if color in ('blue', 'gray', 'cream', 'white'):
-                selectables += feats.last
-
-        feats.save()
-
-        # Create products
-        good = product.good(name='Johnson fine grade 8½ by 11 paper')
-
-        # Associate `good` with the colors as Selectables.
-        for sel in selectables:
-            pf = product.product_feature(
-                type=product.product_feature.Selectable,
-                feature=sel,
-                product=good
-            )
-
-            good.product_features += pf
-
-        good.save()
-
-        good1 = product.good(good)
-
-        pfs1 = good1.product_features
-
-        self.eq(
-            sorted(['white', 'cream', 'gray', 'blue']),
-            sorted(x.feature.name for x in pfs1)
-        )
-
-        # TODO:32d39bee I thought this was broken, but it actual removes
-        # the association without removing any of the entities. We
-        # should look into why this works instead of cascading the
-        # deletes to the feature (color) entity.
-        white = [
-            x for x in good1.product_features 
-            if x.feature.name == 'white'
-        ][0]
-
-        good1.product_features -= white
-
-        pfs1 = good1.product_features
-        self.eq(
-            sorted(['cream', 'gray', 'blue']),
-            sorted(x.feature.name for x in pfs1)
-        )
-
-        good1.save()
-
-        good2 = product.good(good1)
-
-        pfs1 = good2.product_features
-        self.eq(
-            sorted(['cream', 'gray', 'blue']),
-            sorted(x.feature.name for x in pfs1)
-        )
-
-    def it_associates_product_to_suppliers(self):
-        # Create products
-        paper = product.good(
-            name='Johnson fine grade 8½ by 11 bond paper'
-        )
-
-        pallet = product.good(
-            name = "6' by 6' warehouse pallets"
-        )
-
-        abc = gem_party_company.getvalid(
-            name = 'ABC Corporation'
-        )
-
-        joes = gem_party_company.getvalid(
-            name = "Joe's Stationery"
-        )
-
-        mikes = gem_party_company.getvalid(
-            name = "Mike's Office Supply"
-        )
-
-        greggs = gem_party_company.getvalid(
-            name = "Gregg's Pallet Shop"
-        )
-
-        palletinc = gem_party_company.getvalid(
-            name = 'Pallets Incorporated'
-        )
-
-        warehousecomp = gem_party_company.getvalid(
-            name = 'The Warehouse Company'
-        )
-
-        # Create priorities
-        first = product.priority(ordinal=0)
-        second = product.priority(ordinal=1)
-        third = product.priority(ordinal=2)
-
-        sps = product.supplier_products()
-        sps += product.supplier_product(
-            supplier  =  abc,
-            product   =  paper,
-            lead      =  2
-        )
-
-        # TODO:28a4a305 There is a one-to-many relationship between
-        # priority and supplier_product. However, the
-        # supplier_product.priority composite is not available. I
-        # believe this would work for orm.entity, but this is an
-        # orm.association so I guess that feature was not added.
-        #sps.last.priority.ordinal = 0
-
-        first.supplier_products += sps.last
-
-        sps += product.supplier_product(
-            supplier  =  joes,
-            product   =  paper,
-            lead      =  3
-        )
-        second.supplier_products += sps.last
-
-        sps += product.supplier_product(
-            supplier  =  mikes,
-            product   =  paper,
-            lead      =  4
-        )
-        third.supplier_products += sps.last
-
-        sps += product.supplier_product(
-            supplier  =  greggs,
-            product   =  pallet,
-            lead      =  2
-        )
-        first.supplier_products += sps.last
-
-        sps += product.supplier_product(
-            supplier  =  palletinc,
-            product   =  pallet,
-            lead      =  3
-        )
-        second.supplier_products += sps.last
-
-        sps += product.supplier_product(
-            supplier  =  warehousecomp,
-            product   =  pallet,
-            lead      =  5
-        )
-        third.supplier_products += sps.last
-
-        paper.save(pallet, sps, first, second, third)
-
-        paper1 = paper.orm.reloaded()
-        pallet1 = pallet.orm.reloaded()
-        first = first.orm.reloaded()
-        second = second.orm.reloaded()
-        third = third.orm.reloaded()
-
-        sps = paper1.supplier_products.sorted('supplier.name')
-        self.eq('ABC Corporation',      sps.first.supplier.name)
-        self.eq("Joe's Stationery",     sps.second.supplier.name)
-        self.eq("Mike's Office Supply", sps.third.supplier.name)
-
-        sps = pallet1.supplier_products.sorted('supplier.name')
-        self.eq("Gregg's Pallet Shop",      sps.first.supplier.name)
-        self.eq('Pallets Incorporated',     sps.second.supplier.name)
-        self.eq('The Warehouse Company',    sps.third.supplier.name)
-
-        # TODO:167d775b We get an issue with calling the supplier_products
-        # constituent of priority. This is likely due to the fact that
-        # a one-to-many relationship between an entity and an
-        # association has not been implement. 
-        #
-        # sps = first.supplier_products.sorted()
-        # self.eq('ABC Corporation',      sps.first.supplier.name)
-        # self.eq("Gregg's Pallet Shop",  sps.first.supplier.name)
-        #
-        # sps = second.supplier_products.sorted()
-        # self.eq("Joe's Stationery",     sps.second.supplier.name)
-        # self.eq('Pallets Incorporated', sps.second.supplier.name)
-        #
-        # sps = second.supplier_products.sorted()
-        # self.eq("Mike's Office Supply", sps.third.supplier.name)
-        # self.eq('The Warehouse Company', sps.third.supplier.name)
-    
-    def it_creates_guildlines(self):
-        # Service products will not have guidelines
-        serv = gem_product_product.getvalid(product.service)
-        self.false(hasattr(serv, 'guidelines'))
-
-        good = gem_product_product.getvalid(product.good, comment=1)
-        reg = gem_party_region.getvalid()
-        fac = party.facility(name='Area 51', footage=100000)
-        fac.save()
-        org = gem_party_company.getvalid()
-
-        cnt = 2
-        for i in range(cnt):
-            good.guidelines += product.guideline(
-                end      = primative.datetime.utcnow(days=-200),
-                begin    = primative.datetime.utcnow(days=+200),
-                level    = randint(0, 255),
-                quantity = randint(0, 255)
-            )
-            good.guidelines.last.region = reg
-            good.guidelines.last.facility = fac
-            good.guidelines.last.organization = org
-
-        good.save()
-
-        good1 = good.orm.reloaded()
-
-        gls  = good.guidelines.sorted()
-        gls1 = good1.guidelines.sorted()
-
-        self.eq(cnt, gls1.count)
-
-        for gl, gl1 in zip(gls, gls1):
-            for prop in ('end', 'begin', 'level', 'quantity'):
-                self.eq(getattr(gl, prop), getattr(gl1, prop))
-
-        self.eq(gl.region.id,        gl1.region.id)
-        self.eq(gl.facility.id,      gl1.facility.id)
-        self.eq(gl.organization.id,  gl1.organization.id)
-
-class gem_product_item(tester):
-    def __init__(self):
-        super().__init__()
-        orm.orm.recreate(
-            product.products,
-            product.containers,
-            product.containertype,
-            product.lots,
-            product.status,
-            product.variance,
-            product.reason,
-        )
-
-    @staticmethod
-    def getvalid():
-        pen = product.good(name='Henry #2 Pencile')
-        itm = product.nonserial(quantity=1)
-        itm.good = pen
-        return itm
-
-    def it_stores_goods_in_inventory(self):
-        # Services don't have inventory representations
-        serv = gem_product_product.getvalid(product.service)
-        self.expect(AttributeError, lambda: serv.items)
-
-        # Goods should have a collection of inventory items
-        good = gem_product_product.getvalid(product.good, comment=1)
-        self.expect(None, lambda: good.items)
-
-
-        # Add 10 serialized inventory items for the good
-        for sn in range(10000, 10005):
-            good.items += product.serial(number=sn)
-
-        good.save()
-
-        for i in range(5):
-            good.items += product.nonserial(quantity=randint(1, 100))
-
-        good.save()
-
-        good1 = good.orm.reloaded()
-
-        itms  = good.items.sorted()
-        itms1 = good1.items.sorted()
-
-        self.ten(itms)
-        self.ten(itms1)
-
-        serial = 0
-        nonserial = 0
-        for itm, itm1 in zip(itms, itms1):
-            # Downcast
-            try:
-                itm = product.serial(itm)
-                itm1 = product.serial(itm1)
-                self.eq(itm.number, itm1.number)
-                serial += 1
-            except db.RecordNotFoundError:
-                # Must be nonserial
-                itm = product.nonserial(itm)
-                itm1 = product.nonserial(itm1)
-                self.eq(itm.quantity, itm1.quantity)
-                nonserial += 1
-
-        self.eq(5, serial)
-        self.eq(5, nonserial)
-
-    def it_stores_goods_in_a_facility(self):
-        # Create two warehouses to store the good
-        abccorp = party.facility(
-            name = 'ABC Corporation',
-            type = party.facility.Warehouse
-        )
-        
-        abcsub = party.facility(
-            name = 'ABC Subsidiary',
-            type = party.facility.Warehouse
-        )
-
-        # Create the four containers along with individual container
-        # types.
-        bin200 = product.containertype(
-            name = 'Bin 200',
-        )
-
-        bin200.containers += product.container(
-            name = 'Bin 200',
-            facility = abccorp
-        )
-
-        bin400 = product.containertype(
-            name = 'Bin 400',
-        )
-
-        bin400.containers += product.container(
-            name = 'Bin 400',
-            facility = abcsub
-        )
-
-        bin125 = product.containertype(
-            name = 'Bin 125',
-        )
-
-        bin125.containers += product.container(
-            name = 'Bin 125',
-            facility = abccorp
-        )
-
-        bin250 = product.containertype(
-            name = 'Bin 250',
-        )
-
-        bin250.containers += product.container(
-            name = 'Bin 250',
-            facility = abccorp
-        )
-
-        # Create the goods
-        copier = gem_product_product.getvalid(product.good, comment=1)
-        copier.name = 'Action 250 Quality Copier'
-
-        paper = gem_product_product.getvalid(product.good, comment=1)
-        paper.name = 'Johnson fine grade 8½ by 11 paper'
-
-        pen = gem_product_product.getvalid(product.good, comment=1)
-        pen.name = 'Goldstein Elite Pen'
-
-        diskette = gem_product_product.getvalid(product.good, comment=1)
-        diskette.name = "Jerry's box of 3½ inch diskettes"
-
-        # Create the inventory item for the goods
-        copier.items += product.serial(number=1094853)
-
-        # TODO:b62ec864 We shouldn't have to call `.orm.super` on `paperitm`
-        # here.
-        paper.items += product.nonserial(quantity=156)
-        paper.items += product.nonserial(quantity=300)
-
-        pen.items += product.nonserial(quantity=200)
-
-        diskette.items += product.nonserial(quantity=500)
-
-        # Locate the inventory item the appropriate facility
-        copier.items.last.facility = abccorp
-        paper.items.penultimate.orm.super.container = \
-            bin200.containers.last
-
-        paper.items.last.orm.super.container = \
-            bin400.containers.last
-
-        pen.items.first.orm.super.container = \
-            bin125.containers.last
-
-        diskette.items.first.orm.super.container = \
-            bin250.containers.last
-
-        copier.save(
-            paper, paper.items,
-            pen, pen.items,
-            diskette, diskette.items
-        )
-
-        copieritm = copier.items.last.orm.reloaded()
-        paperitm1 = paper.items.penultimate.orm.reloaded()
-        paperitm2 = paper.items.ultimate.orm.reloaded()
-        penitm = pen.items.first.orm.reloaded()
-        disketteitm = diskette.items.first.orm.reloaded()
-
-        # TODO 'orm.super' shouldn't have to be used before. There must
-        # be a bug in orm.py.
-        self.eq(abccorp.id, copieritm.orm.super.facility.id)
-
-        # TODO It would be nice if `paperitm.orm.super.facility`
-        # returned the same value as
-        # `paperitm.orm.super.container.facility. However, I do not
-        # believe that at the moment, it is possible to override a
-        # composite attribute. This would be a great nice-to-have,
-        # though.
-        # self.eq(abccorp.id, paperitm.orm.super.facility.id)
-
-        # TODO:b62ec864 We shouldn't have to call `.orm.super` on `paperitm`
-        # here.
-
-        # 156 instances of the paper item is stored in Bin 200 at
-        # abccorp. 300 are stored at Bin 400 at abcsub
-        self.eq(
-            bin200.containers.last.id, 
-            paperitm1.orm.super.container.id
-        )
-
-        self.eq(
-            abccorp.id,
-            paperitm1.orm.super.container.facility.id
-        )
-
-        self.eq(156,  paperitm1.quantity)
-
-        self.eq(
-            bin400.containers.last.id, 
-            paperitm2.orm.super.container.id
-        )
-
-        self.eq(
-            abcsub.id,
-            paperitm2.orm.super.container.facility.id
-        )
-        self.eq(300,  paperitm2.quantity)
-
-        self.eq(
-            bin125.containers.last.id, 
-            penitm.orm.super.container.id
-        )
-
-        self.eq(
-            abccorp.id,
-            penitm.orm.super.container.facility.id
-        )
-        self.eq(200,  penitm.quantity)
-
-        self.eq(
-            bin250.containers.last.id, 
-            disketteitm.orm.super.container.id
-        )
-
-        self.eq(
-            abccorp.id,
-            disketteitm.orm.super.container.facility.id
-        )
-        self.eq(500,  disketteitm.quantity)
-
-    def it_creates_a_lot(self):
-        lot = product.lot(
-            createdat = primative.datetime.utcnow(),
-            quantity  = 100,
-            expiresat = primative.datetime.utcnow(days=100)
-        )
-
-        lot.items += gem_product_item.getvalid()
-
-        lot.save()
-
-        lot1 = lot.orm.reloaded()
-
-        for prop in ('id', 'createdat', 'quantity', 'expiresat'):
-            self.eq(getattr(lot, prop), getattr(lot1, prop))
-
-        itms = lot.items
-        itms1 = lot1.items
-
-        self.one(itms)
-        self.one(itms1)
-
-        itm = product.nonserial(itms.first)
-        itm1 = product.nonserial(itms1.first)
-
-        self.eq(itm.quantity, itm1.quantity)
-
-        # TODO:b62ec864 We shouldn't have to use `.orm.super` here to get to the
-        # itm's `good` property.
-        self.eq(itm.orm.super.good.name, itm1.orm.super.good.name)
-        self.eq(itm.orm.super.good.id, itm1.orm.super.good.id)
-
-    def it_assigns_status_to_inventory_item(self):
-        book = gem_product_product.getvalid(product.good, comment=1)
-        book.name = 'The Data Model Resource Book'
-
-        good = product.status(name='Good')
-        plusgood = product.status(name='Plusgood')
-        doubleplusgood = product.status(name='Doubleplusgood')
-
-        for sn in range(6455170, 6455173):
-            book.items += product.serial(number=sn)
-
-        book.items.first.status = good
-        book.items.second.status = plusgood
-        book.items.third.status = doubleplusgood
-
-        book.save(book.items)
-
-        book1 = book.orm.reloaded()
-
-        itms = book.items.sorted()
-        itms1 = book1.items.sorted()
-
-        self.three(itms)
-        self.three(itms1)
-
-        for itm, itm1 in zip(itms, itms1):
-            # TODO:b62ec864 'orm.super' shouldn't have to be used for `itm`
-            self.eq(itm.orm.super.status.name, itm1.status.name)
-            self.eq(itm.orm.super.status.id, itm1.status.id)
-    
-    def it_assigns_variance(self):
-        book = gem_product_product.getvalid(product.good, comment=1)
-        book.name = 'The Data Model Resource Book'
-
-        book.items += product.serial(number=6455170)
-
-        book.items.last.variances += product.variance(
-            date = primative.datetime.utcnow(),
-            quantity = 1,
-            comment = None
-        )
-
-        overage = product.reason(name='overage')
-
-        book.items.last.variances.last.reason = overage
-
-        book.save()
-
-        book1 = book.orm.reloaded()
-
-        vars = book.items.last.variances
-        vars1 = book1.items.last.variances
-
-        self.one(vars)
-        self.one(vars1)
-
-        for prop in ('id', 'date', 'quantity', 'comment'):
-            self.eq(
-                getattr(vars.first, prop),
-                getattr(vars1.first, prop)
-            )
-
-        self.eq(vars.first.reason.id, vars1.first.reason.id)
-        self.eq(vars.first.reason.name, vars1.first.reason.name)
-
-        reasons = product.reasons(name='overage')
-
-        self.one(reasons)
-
-        self.eq('overage', reasons.first.name)
-
-        self.one(reasons.first.variances)
-
-        self.eq(vars.first.id, reasons.first.variances.first.id)
-
-class gem_product_categories(tester):
-    def __init__(self):
-        super().__init__()
-        product.products.orm.recreate(recursive=True)
-        product.categories.orm.recreate(recursive=True)
-
-    def it_creates(self):
-        ''' Simple, non-recursive test '''
-        cat = product.category()
-        cat.name = uuid4().hex
-        cat.save()
-
-        cat1 = product.category(cat.id)
-        self.eq(cat.id, cat1.id)
-        self.eq(cat.name, cat1.name)
-
-        ''' A one-level recursive test with two child categories'''
-        cat_0 = product.category()
-        cat_0.name = uuid4().hex
-
-        cat_1_0 = product.category()
-        cat_1_0.name = uuid4().hex
-
-        cat_1_1 = product.category()
-        cat_1_1.name = uuid4().hex
-
-        cat_0.categories += cat_1_0
-        cat_0.categories += cat_1_1
-
-        cat_0.save()
-
-        cat1 = product.category(cat_0.id)
-        self.eq(cat_0.id, cat1.id)
-        self.eq(cat_0.name, cat1.name)
-
-        cats0 = cat_0.categories.sorted()
-
-        cats1 = cat1.categories.sorted()
-
-        self.two(cats1)
-       
-        self.eq(cats0.first.id, cats1.first.id)
-        self.eq(cats0.first.name, cats1.first.name)
-
-        self.eq(cats0.second.id, cats1.second.id)
-        self.eq(cats0.second.name, cats1.second.name)
-
-        ''' A two-level recursive test with one child categories each'''
-        cat = product.category()
-        cat.name = uuid4().hex
-
-        cat_1 = product.category()
-        cat_1.name = uuid4().hex
-
-        cat_2 = product.category()
-        cat_2.name = uuid4().hex
-
-        cat.categories += cat_1
-        cat_1.categories += cat_2
-
-        cat.save()
-
-        cat1 = product.category(cat.id)
-
-        self.one(cat1.categories)
-        self.one(cat1.categories.first.categories)
-
-        self.eq(
-            cat.categories.first.id, 
-            cat1.categories.first.id, 
-        )
-
-        self.eq(
-            cat.categories.first.name, 
-            cat1.categories.first.name, 
-        )
-
-        self.eq(
-            cat.categories.first.categories.first.id, 
-            cat1.categories.first.categories.first.id, 
-        )
-
-        self.eq(
-            cat.categories.first.categories.first.name, 
-            cat1.categories.first.categories.first.name, 
-        )
-
-    def it_updates_non_recursive(self):
-        ''' Simple, non-recursive test '''
-        cat = product.category()
-        cat.name = uuid4().hex
-        cat.save()
-
-        cat1 = product.category(cat.id)
-        cat1.name = uuid4().hex
-        cat1.save()
-
-        cat2 = product.category(cat.id)
-
-        self.ne(cat.name, cat2.name)
-        self.eq(cat1.id, cat2.id)
-        self.eq(cat1.name, cat2.name)
-
-    def it_updates_recursive(self):
-        ''' A two-level, recursive test '''
-        # Create
-        cat = product.category()
-        cat.name = uuid4().hex
-
-        cat_1 = product.category()
-        cat_1.name = uuid4().hex
-
-        cat_2 = product.category()
-        cat_2.name = uuid4().hex
-
-        cat.categories += cat_1
-        cat_1.categories += cat_2
-
-        cat.save()
-
-        # Update
-        cat1 = product.category(cat.id)
-        cat1.name = uuid4().hex
-        cat1.categories.first.name = uuid4().hex
-        cat1.categories.first.categories.first.name = uuid4().hex
-        cat1.save()
-
-        # Test
-        cat2 = product.category(cat.id)
-        self.ne(cat.name, cat2.name)
-        self.eq(cat1.id, cat2.id)
-        self.eq(cat1.name, cat2.name)
-
-        self.ne(cat.categories.first.name, cat2.categories.first.name)
-        self.eq(cat1.categories.first.id, cat2.categories.first.id)
-        self.eq(cat1.categories.first.name, cat2.categories.first.name)
-
-        self.ne(
-            cat.categories.first.categories.first.name, 
-            cat2.categories.first.categories.first.name
-        )
-
-        self.eq(
-            cat1.categories.first.categories.first.id, 
-            cat2.categories.first.categories.first.id
-        )
-
-        self.eq(
-            cat1.categories.first.categories.first.name, 
-            cat2.categories.first.categories.first.name
-       )
-
-    def it_creates_association_between_product_and_category(self):
-        cat = product.category()
-        cat.name = uuid4().hex
-
-        prod = product.good()
-        prod.name = uuid4().hex
-        prod.introducedat = primative.datetime.utcnow(days=-100)
-        prod.comment = uuid4().hex * 1000
-        cc = product.category_classification()
-        cc.begin = primative.datetime.utcnow(days=-50)
-        cc.product = prod
-        cat.category_classifications += cc
-
-        prod = product.service()
-        prod.name = uuid4().hex
-        prod.introducedat = primative.datetime.utcnow(days=-100)
-        prod.comment = uuid4().hex * 1000
-        cc = product.category_classification()
-        cc.begin = primative.datetime.utcnow(days=-25)
-        cc.comment = uuid4().hex * 1000
-        cc.product = prod
-        cat.category_classifications += cc
-
-        cat.save()
-
-        cat1 = product.category(cat.id)
-
-        self.two(cat1.category_classifications)
-        self.two(cat1.products)
-
-        for ass in ('category_classifications', 'products'):
-            ccs = getattr(cat, ass).sorted()
-            ccs1 = getattr(cat1, ass).sorted()
-            
-            ccs = cat.category_classifications.sorted()
-            ccs1 = cat1.category_classifications.sorted()
-
-            self.eq(ccs.first.begin, ccs1.first.begin)
-            self.eq(ccs.second.begin, ccs1.second.begin)
-
-            self.eq(ccs.first.product.name, ccs1.first.product.name)
-            self.eq(ccs.second.product.name, ccs1.second.product.name)
-
-            self.eq(ccs.first.category.name, ccs1.first.category.name)
-            self.eq(ccs.second.category.name, ccs1.second.category.name)
-
-    def it_breaks_with_two_primary_associations(self):
-        """ Test to ensure that `category_classification.brokenrules`
-        checks the database to ensure a product is associated with only
-        one category as primary. 
-        """
-        cat = product.category()
-        cat.name = uuid4().hex
-
-        prod = gem_product_product.getvalid()
-        cc = product.category_classification()
-        cc.product = prod
-        cc.begin = primative.datetime.utcnow(days=-50)
-        cc.product = prod
-        cc.isprimary = True # Ensure isprimary is True
-        cat.category_classifications += cc
-
-        # Save and reload. Another brokenrule will be added by
-        # category_classifications.brokenrules to ensure that it does
-        # not contain a product set as primary in two different
-        # categories (currently not working (1c409d9d)). See below.
-        cat.save()
-        cat = product.category(cat.id)
-
-        cc = product.category_classification()
-        cc.product = prod
-        cc.begin = primative.datetime.utcnow(days=-25)
-        cc.comment = uuid4().hex * 1000
-        cc.product = prod
-        self.true(cat.isvalid)
-        cc.isprimary = True  # Ensure isprimary is True
-        cat.category_classifications += cc
-
-        # TODO:a082d2a9 `cat.brokenrules` doesn't recurse into
-        # `category_classification.brokenrules'
-        # self.one(cat.brokenrules);
-
-        self.expect(BrokenRulesError, lambda: cat.save())
-
-        ''' Ensure category_classifications disallows saving a product
-        to multple caterories as primary. NOTE Currently not working
-        (a082d2a9).'''
-        return
-
-        cat = product.category()
-        cat.name = uuid4().hex
-
-        prod = gem_product.getvalid()
-        cc = product.category_classification()
-        cc.product = prod
-        cc.begin = primative.datetime.utcnow(days=-50)
-        cc.product = prod
-        cc.isprimary = True
-        cat.category_classifications += cc
-
-        cc = product.category_classification()
-        cc.product = prod
-        cc.begin = primative.datetime.utcnow(days=-25)
-        cc.comment = uuid4().hex * 1000
-        cc.product = prod
-        cc.isprimary = True
-        cat.category_classifications += cc
-        cat.save()
-
-class gem_product_category_types(tester):
-    def __init__(self):
-        super().__init__()
-        orm.orm.recreate(
-            product.products,
-            party.type,
-        )
-
-    def it_creates(self):
-        sm = party.type(name='Small organizations')
-
-        # Small organizations have an interest in Wordpress services
-        sm.category_types += product.category_type(
-            begin=primative.datetime.utcnow(days=-100),
-            end=primative.datetime.utcnow(days=50),
-            category=product.category(name='Wordpress services')
-        )
-
-        # Small organizations have an interest in bank loans
-        sm.category_types += product.category_type(
-            begin=primative.datetime.utcnow(days=-100),
-            end=primative.datetime.utcnow(days=50),
-            category=product.category(name='Bank loans')
-        )
-
-        sm.save()
-
-        sm1 = party.type(sm.id)
-
-        self.two(sm1.category_types)
-        self.two(sm1.categories)
-
-        sm.category_types.sort()
-        sm1.category_types.sort()
-
-        for attr in 'id', 'begin', 'end':
-            self.eq(
-                getattr(sm.category_types.first, attr),
-                getattr(sm1.category_types.first, attr),
-            )
-
-            self.eq(
-                getattr(sm.category_types.second, attr),
-                getattr(sm1.category_types.second, attr),
-            )
-
-        for i in range(2):
-            self.eq(
-                sm.category_types[i].category.id,
-                sm1.category_types[i].category.id
-            )
-
-        for i in range(2):
-            self.eq(
-                sm.category_types[i].type.id,
-                sm1.category_types[i].type.id
-            )
-
-class gem_product_measure(tester):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        product.products.orm.recreate(recursive=True)
-        product.measure_measure.orm.recreate(recursive=True)
-
-    def it_converts(self):
-
-        # Create three pencil products
-        pen = product.product(name='Henry #2 Pencile')
-        small = product.product(name='Henry #2 Pencile Small Box')
-        large = product.product(name='Henry #2 Pencile Large Box')
-
-        # Create the unit of measures for the pencile products
-        each = product.measure(name='each')
-        smallbox = product.measure(name='smallbox')
-        largebox = product.measure(name='largebox')
-
-        # The `pen` product's UOM will be "each"
-        pen.measure = each
-
-
-        # The product `small` will have a unit of measure called
-        # `smallbox`
-        small.measure = smallbox
-
-        # The product `large` will have a unit of measure called
-        # `largebox`
-        large.measure = largebox
-
-        # Create associations between the above unit of measures so
-        # conversions between them can be done.
-
-        # A small box is `12` pencils
-        mm = product.measure_measure(
-            object   =  smallbox,
-            factor   =  12
-        )
-
-        # Associate each with smallbox
-        each.measure_measures += mm
-
-        # A large box is equivelent to 2 small boxes. Note the
-        # association beteen `each` and `largebox` is not created. We
-        # will rely on product.measure_measure to work issues like this
-        # out automatically via transitive logic.
-        mm = product.measure_measure(
-            object   =  largebox,
-            factor   =  2
-        )
-
-        smallbox.measure_measures += mm
-
-        self.eq(
-            dec(2),
-            smallbox.convert(largebox)
-        )
-
-        '''
-        # This can't work because we haven't yet saved the unit of
-        # measure association that associates largebox with smallbox.
-        # This should work once this association has been saved,
-        # however.
-        self.eq(
-            dec(2),
-            largebox.convert(smallbox)
-        )
-        '''
-
-        # Save the `pen` product along with `small` and `large` in the
-        # same tx
-        pen.save(small, large)
-
-        # Reload products
-        pen1    =  pen.orm.reloaded()
-        small1  =  small.orm.reloaded()
-        large1  =  large.orm.reloaded()
-
-        smallbox1 = smallbox.orm.reloaded()
-        largebox1 = largebox.orm.reloaded()
-
-        self.eq(
-            dec(12),
-            pen1.measure.convert(smallbox1)
-        )
-
-        self.eq(
-            dec(24),
-            pen1.measure.convert(largebox1)
-        )
-
-        self.eq(
-            dec(2),
-            small1.measure.convert(largebox1)
-        )
-
-        # Convert the other way. This will require .convert() to load
-        # the `measure_measure` records for the `measure` passed in to
-        # convert.
-        self.eq(
-            dec(12),
-            smallbox1.convert(pen1.measure)
-        )
-
-        self.eq(
-            dec(2),
-            largebox1.convert(small1.measure)
-        )
-
-        self.eq(
-            dec(24),
-            largebox1.convert(pen1.measure)
-        )
-
-        ''' Leaving the above conversion factors declared in
-        measure_measure, let's create dimension(feature) that have
-        their own unit of measures and conversion factor declarations in
-        measure_measures. Then we can test their conversions.'''
-
-        paper = product.product(
-            name = "Johnson fine grade 8½ by 11 paper"
-        )
-
-        dim_width = product.dimension(name='width', number=dec(8.5))
-        dim_length = product.dimension(name='length', number=dec(11))
-
-        # Create units of measure 'inches and 'centimeters' and
-        # associate them with each other along with the factor number
-        # that can be used to convert between them.
-        inches = product.measure(name='inches')
-        cent   = product.measure(name='centimeters')
-
-        # Make the width dimension in inches
-        inches.dimensions += dim_width
-
-        # Make the length dimension in centimeters (this would be a very
-        # string thing to do in real life).
-        cent.dimensions += dim_length
-
-        mm = product.measure_measure(
-            subject = inches,
-            object  = cent,
-            factor  = dec(2.54)
-        )
-
-        paper.features += dim_width
-
-        # Save everything associated with the paper product. The
-        # save doesn't discover the measure_measure association, so
-        # throw that in as well so it gets saved.
-        paper.save(mm)
-
-        self.one(paper.features)
-        dim_width = paper.features.first
-
-        # The paper's dimension(feature) knows it is measured in inches
-        # via its unit of measure (`measure`) property
-        self.eq(inches.id, dim_width.measure.id)
-
-        # 8.5 inches is 21.59 centimeters.
-        self.eq(dec('21.59'), dim_width.convert(cent))
-
-        # 11 centimenters is 4.33071 inches
-        d = dec('4.330708661417322834645669291')
-        self.eq(d, dim_length.convert(inches))
-
-class gem_product_rating(tester):
-    def __init__(self):
-        super().__init__()
-        product.ratings.orm.recreate(recursive=True)
-
-    def it_calls_make(self):
-        r = product.rating(score=product.rating.Outstanding)
-        r1 = product.rating(score=product.rating.Outstanding)
-        self.eq(r.id, r1.id)
-
-class gem_product_pricing(tester):
-    def __init__(self):
-        super().__init__()
-        product.product.orm.recreate(recursive=True)
-        product.quantitybreak.orm.recreate(recursive=True)
-
-    def it_creates_prices(self):
-        # Create organizations
-        abc = gem_party_company.getvalid(
-            name = 'ABC Corporation'
-        )
-
-        joes = gem_party_company.getvalid(
-            name = "Joe's Stationary"
-        )
-
-        # Create product
-        paper = product.good(
-            name='Johnson fine grade 8½ by 11 bond paper'
-        )
-
-        # Create government party type
-        gov = party.type(
-            name = 'Government'
-        )
-
-        # Create product category
-        cat_paper = product.category(
-            name = 'Paper',
-            begin = '2001-09-01',
-            end   = '2001-09-30'
-        )
-
-        # Associate product category to produt
-        cc = product.category_classification(
-            begin   = primative.datetime.utcnow(days=-50),
-            product = paper
-        )
-
-        cat_paper.category_classifications += cc
-
-        # Create geographic regions
-        east = party.region(
-            name = 'Eastern region',
-            type = None
-        )
-
-        west = party.region(
-            name = 'Western region',
-            type = None,
-        )
-
-        hi = party.region(
-            name = 'Hawaii',
-            type = party.region.State,
-            abbreviation = 'HI',
-            region = west,
-        )
-
-        al = party.region(
-            name = 'Alabama',
-            type = party.region.State,
-            abbreviation = 'AL',
-            region = east,
-        )
-
-        # Create features
-        cream = product.color(name='Cream')
-        fin   = product.quality(name='Extra glossy finish')
-
-        # Create prices
-
-        # Base prices
-        price1 = product.base(
-            region        =  east,
-            price         =  9.75,
-            organization  =  abc,
-            product       =  paper,
-            quantitybreak = product.quantitybreak(
-                begin = 0, 
-                end   = 100
-            )
-        )
-
-        price2 = product.base(
-            region        =  east,
-            price         =  9.00,
-            organization  =  abc,
-            product       =  paper,
-            quantitybreak = product.quantitybreak(
-                begin = 101, 
-                end   = None
-            )
-        )
-
-        price3 = product.base(
-            region        =  west,
-            price         =  8.75,
-            organization  =  abc,
-            product       =  paper,
-            quantitybreak = product.quantitybreak(
-                begin = 0, 
-                end   = 100
-            )
-        )
-
-        price4 = product.base(
-            region        =  west,
-            price         =  8.50,
-            organization  =  abc,
-            product       =  paper,
-            quantitybreak = product.quantitybreak(
-                begin = 101, 
-                end   = None
-            )
-        )
-
-        # Discount prices
-        price5 = product.discount(
-            percent       =  2,
-            type          =  gov,
-            product       =  paper,
-            organization  =  abc
-        )
-
-        price6 = product.discount(
-            percent       =  5,
-            organization  =  abc,
-            product       =  paper,
-            category      =  cat_paper
-        )
-
-        # Surchages
-        price7 = product.surcharge(
-            region        =  hi,
-            organization  =  abc,
-            product       =  paper,
-            price         =  2
-        )
-
-        price8 = product.base(
-            organization  =  joes,
-            product       =  paper,
-            price         =  11
-        )
-
-        paper.prices += price1
-        paper.prices += price2
-        paper.prices += price3
-        paper.prices += price4
-        paper.prices += price5
-        paper.prices += price6
-        paper.prices += price7
-        paper.prices += price8
-
-        paper.save(
-            paper.prices,        # prices
-            abc, joes,           # organizations
-            gov,                 # party types
-            cat_paper,           # product categories
-            east, west, hi, al,  # regions
-            cream, fin,          # features
-        )
-
-        paper1 = paper.orm.reloaded()
-
-        # Get first price
-        pr, prs = paper.getprice(
-            org  = abc,
-            regs = [al],
-            qty  = 20
-        )
-
-        # Despite AL being in the east, the algorith was able to find a
-        # cheaper base price of $8.75 based on the quantity break. A 5%
-        # discount was applied because all products in the "paper"
-        # category are 5% off.
-        self.eq(dec('8.3125'), pr)
-        self.eq(dec('8.75'), prs.first.price)
-        self.eq(dec('5'), prs.second.percent)
-
-        # Get second price
-        pr, prs = paper.getprice(
-            org = abc,
-            regs = [east],
-        )
-
-        # Since we didn't specify a quantity, we got the cheapest
-        # eastern price of $9. 5% was taken off since this was a paper
-        # product.
-        self.eq(dec('8.55'), pr)
-        self.eq(dec('9.00'), prs.first.price)
-        self.eq(dec('5'), prs.second.percent)
-
-        # Get third price
-        pr, prs = paper.getprice(
-            org  = abc,
-            regs = [west],
-        )
-
-        # Without specifying the qty, we get the cheapest eastern price
-        # with a 5% paper discount.
-        self.eq(dec('8.075'), pr)
-        self.eq(dec('8.50'), prs.first.price)
-        self.eq(dec('5'), prs.second.percent)
-
-        # Get fifth price
-        pr, prs = paper.getprice(
-            org  = abc,
-            pts  = [gov],
-            regs = [west],
-        )
-
-        # The cheapest western price was found and a paper product
-        # discount was applied as well as a 2% gov discount.
-        self.eq(dec('7.9135'), pr)
-        self.eq(dec('8.50'), prs.first.price)
-        self.eq(dec('2'), prs.second.percent)
-        self.eq(dec('5'), prs.third.percent)
-
-        # Get seventh price
-        pr, prs = paper.getprice(
-            org  = abc,
-            regs = [hi]
-        )
-
-        # HI is in the west, so we were able to get the $8.75 base
-        # price. The 5% off for all paper products was applied. A
-        # surcharge of $5 was also applied since we are shipping to HI.
-        self.eq(dec('10.075'), pr)
-        self.eq(dec('8.50'), prs.first.price)
-        self.eq(dec('5'), prs.second.percent)
-        self.eq(dec('2'), prs.third.price)
-
-        # Get eigth price
-        pr, prs = paper.getprice(
-            org  = joes,
-        )
-
-        # HI is in the west, so we were able to get the $8.75 base
-        # price. The 5% off for all paper products was applied. A
-        # surcharge of $5 was also applied since we are shipping to HI.
-        self.eq(dec('10.45'), pr)
-        self.eq(dec('11'), prs.first.price)
-        self.eq(dec('5'), prs.second.percent)
-        self.two(prs)
-
-class gem_product_estimate(tester):
-    def __init__(self):
-        super().__init__()
-        product.product.orm.recreate(recursive=True)
-
-        product.estimates.orm.recreate(recursive=True)
-
-        product.estimatetypes.orm.recreate(recursive=True)
-
-    def it_creates(self):
-        good = product.good(name='Johnson fine grade 8½ by 11 paper')
-
-        # Create regions
-        ny = party.region(
-            name          =  'New York',
-            abbreviation  =  'N.Y.',
-            type          =  party.region.State,
-        )
-
-        id = party.region(
-            name          =  'Idaho',
-            abbreviation  =  'I.D.',
-            type          =  party.region.State,
-        )
-
-        # Create estimatetypes
-        apc = product.estimatetype(
-            name = 'Anticipated purchase cost'
-        )
-
-        ao = product.estimatetype(
-            name = 'Administrative overhead'
-        )
-
-        fr = product.estimatetype(
-            name = 'Frieght'
-        )
-
-        good.estimates += product.estimate(
-            region        =  ny,
-            cost          =  2,
-            begin         =  primative.datetime('Jan  9,  2001'),
-            estimatetype  =  apc,
-        )
-
-        good.estimates += product.estimate(
-            region        =  ny,
-            cost          =  dec('1.9'),
-            begin         =  primative.datetime('Jan  9,  2001'),
-            estimatetype  =  ao,
-        )
-
-        good.estimates += product.estimate(
-            region        =  ny,
-            cost          =  dec('1.5'),
-            begin         =  primative.datetime('Jan  9,  2001'),
-            estimatetype  =  fr,
-        )
-
-        good.estimates += product.estimate(
-            region        =  ny,
-            cost          =  dec('2'),
-            begin         =  primative.datetime('Jan  9,  2001'),
-            estimatetype  =  apc,
-        )
-
-        good.estimates += product.estimate(
-            region        =  ny,
-            cost          =  dec('1.1'),
-            begin         =  primative.datetime('Jan  9,  2001'),
-            estimatetype  =  ao,
-        )
-
-        good.estimates += product.estimate(
-            region        =  ny,
-            cost          =  dec('1.1'),
-            begin         =  primative.datetime('Jan  9,  2001'),
-            estimatetype  =  fr,
-        )
-
-        good.save()
-
-        good1 = good.orm.reloaded()
-
-        ests  = good.estimates.sorted()
-        ests1 = good.estimates.sorted()
-
-        self.six(ests)
-        self.six(ests1)
-
-        for est, est1 in zip(ests, ests1):
-            self.eq(est.product.id, est1.product.id)
-            self.eq(est.estimatetype.id, est1.estimatetype.id)
-            self.eq(est.region.id, est1.region.id)
-            self.eq(est.cost, est1.cost)
-            self.eq(primative.date('Jan 9, 2001'), est1.begin)
-            self.eq(None, est1.end)
-
-class gem_product_product_product(tester):
-    """ Test the product_product association in the `product.py` module.
-    """
-    def __init__(self):
-        super().__init__()
-        product.product.orm.recreate(recursive=True)
-
-    def it_creates(self):
-        ''' Test the Component association. Create a parent product
-        called 'Office supply kit', and add child components. '''
-        rent     = product.good(name='Office supply kit')
-
-        rent.product_products += product.product_product(
-            object = product.good(
-                name='Johnson fine grade 8½ by 11 paper'
-            ),
-            quantity = 5,
-        )
-
-        rent.product_products += product.product_product(
-            object  = product.good(name="Pennie's 8½ by 11 binders"),
-            quantity = 5,
-        )
-
-        rent.product_products += product.product_product(
-            object = product.good(name="Shwinger black ball point pen"),
-            quantity = 6,
-        )
-
-        rent.save()
-
-        rent1 = rent.orm.reloaded()
-
-        pps = rent.product_products.sorted()
-        pps1 = rent1.product_products.sorted()
-
-        self.three(pps)
-        self.three(pps1)
-
-        for pp, pp1 in zip(pps, pps1):
-            self.eq(pp.quantity, pp1.quantity)
-            self.eq(rent.id, pp1.subject.id)
-            self.eq(pp.object.id, pp1.object.id)
-            self.eq(pp.id, pp1.id)
-        
-        ''' Test the Substitution association. '''
-        pps = product.product_products()
-
-        pps += product.product_product(
-            subject = product.good(
-                name='Small box of Henry #2 pencils'
-            ),
-            object = product.good(
-                name='Individual Henry #2 pencil'
-            ),
-            quantity = 12,
-        )
-
-        pps += product.product_product(
-            subject = product.good(
-                name='Goldstein Elite pen'
-            ),
-            object = product.good(
-                name="George's Elite pen"
-            ),
-        )
-
-        pps.save()
-
-        pps1 = product.product_products(
-            subject__productid = pps.first.subject.id
-        )
-
-        self.one(pps1)
-        self.eq(pps.first.subject.id, pps1.first.subject.id)
-        self.eq(pps.first.object.id, pps1.first.object.id)
-        self.eq(12, pps1.first.quantity)
-
-        pps1 = product.product_products(
-            subject__productid = pps.second.subject.id
-        )
-
-        self.one(pps1)
-        self.eq(pps.second.subject.id, pps1.first.subject.id)
-        self.eq(pps.second.object.id, pps1.first.object.id)
-        self.eq(None, pps1.first.quantity)
-
-class gem_case(tester):
-    def __init__(self):
-        super().__init__()
-        orm.orm.recreate(
-            party.communications,
-            party.parties,
-            party.case_party,
-            party.casestatuses,
-            party.statuses,
-        )
-
-    def it_raises_on_invalid_call_of_casesstatus(self):
-        self.expect(ValueError, lambda: party.casestatus('Active'))
-        self.expect(None, lambda: party.casestatus(name='Active'))
-
-    def it_associates_case_to_party(self):
-        # NOTE Names don't work if party.roles exist. This is due to
-        # 297f8176. If `party.roles` needs to be restored, remove the
-        # kwargs.
-        jerry = party.person(first="Jerry", last="Red")
-
-        # Create case
-        cs = party.case(
-            description = 'Techinal support issue with customer: '
-                          'software keeps crashing',
-            casestatus = party.casestatus(name='Active')
-        )
-
-        # Associate case with party
-        jerry.case_parties += party.case_party(
-            case = cs,
-        )
-
-        # FIXME:566e96a9 The caseroletype is not a real attribute
-        # because there is no caseroletype composite map in case_party.
-        # We can save or test caseroletype at the moment.
-        #
-        # jerry.case_parties.last.caseroletype = party.caseroletype(
-        #    name = 'Resolution lead'
-        #)
-
-        jerry.save()
-
-        jerry1 = jerry.orm.reloaded()
-
-        cps = jerry.case_parties
-        cps1 = jerry1.case_parties
-
-        self.one(cps)
-        self.one(cps1)
-
-        self.eq(cps.first.id,       cps1.first.id)
-        self.eq(jerry.id,           cps1.first.party.id)
-        self.eq(cps.first.case.id,  cps1.first.case.id)
-
-        self.eq(
-            cps.first.case.casestatus.id,
-            cps1.first.case.casestatus.id
-        )
-
-        # FIXME:566e96a9
-        # self.eq(cps.first.caseroletype.id,  cps1.first.caseroletype.id)
-        # self.eq(
-        #     cps.first.caseroletype.name,
-        #     cps1.first.caseroletype.name
-        # )
-
-    def it_appends_communications(self):
-        # Create work effort
-        eff = party.effort(
-            name = 'Software patch',
-            description = 'Send software patch out to customer '
-                          'to correct problem'
-        )
-
-        # Create case
-        cs = party.case(
-            description = 'Techinal support issue with customer: '
-                          'software keeps crashing',
-            casestatus = party.casestatus(name='Active')
-        )
-
-        # Add `commuication` events to `case` along with communication
-        # objectives, work effort associations, etc.
-        cs.communications += party.communication(
-            begin = primative.datetime('Sept 18 2001, 3PM'),
-        )
-
-        comm = cs.communications.last
-        comm.objectives += \
-            party.objective(
-                objectivetype = \
-                    party.objectivetype(
-                        name='Technical support call'
-                    )
-            ) \
-            + party.objective(
-                objectivetype = \
-                    party.objectivetype(
-                        name='Technical support call'
-                    )
-            )
-
-        comm.communication_efforts += party.communication_effort(
-            effort = eff
-        )
-
-        cs.communications += party.communication(
-            begin = primative.datetime('Sept 20 2001, 2PM'),
-        )
-        comm = cs.communications.last
-
-        comm.objectives += \
-            party.objective(
-                objectivetype = \
-                    party.objectivetype(
-                        name='Send software patch'
-                    )
-            )
-
-        comm.communication_efforts += party.communication_effort(
-            effort = eff
-        )
-
-        cs.communications += party.communication(
-            begin = primative.datetime('Sept 19 2001, 3PM'),
-        )
-        comm = cs.communications.last
-
-        comm.objectives += \
-            party.objective(
-                objectivetype = \
-                    party.objectivetype(
-                        name='Techinal support follow-up'
-                    )
-            ) \
-            + party.objective(
-                objectivetype = \
-                    party.objectivetype(
-                        name='Call resolution'
-                    )
-            )
-
-        cs.save()
-
-        cs1 = cs.orm.reloaded()
-
-        comms = cs.communications.sorted()
-        comms1 = cs1.communications.sorted()
-
-        self.three(comms)
-        self.three(comms1)
-
-        for comm, comm1 in zip(comms, comms1):
-            self.eq(comm.id, comm1.id)
-            self.eq(comm.begin, comm1.begin)
-
-            # FIXME When associations can be constituents,
-            # `comm1.communication_efforts` should be available and we
-            # can remove the ``continue`` below.
-            continue
-            ces = comm.communication_efforts
-            ces1 = comm1.communication_efforts
-
-            self.eq(ces.count, ces1.count)
-
-            for ce, ce1 in zip(ces, ces1):
-                self.eq(ce.id, ce1.id)
-                self.eq(ce.description, ce1.description)
-                self.eq(ce.effort.id, ce1.effort.id)
-                self.eq(ce.communication.id, ce1.communication.id)
-
-class gem_order_order(tester):
-    def __init__(self):
-        super().__init__()
-        orm.orm.recreate(
-            order.order,
-            order.items,
-            order.salesitems,
-            order.purchaseitems,
-            order.purchaseorders,
-            order.salesorders,
-            party.role,
-            party.partyroletype,
-            party.party,
-            party.company,
-            party.customer,
-            party.placing,
-            party.internal,
-            party.billto,
-            party.shipto,
-        )
-
-    def it_creates(self):
-        ''' Create products '''
-        # Goods
-        paper = gem_product_product.getvalid(product.good, comment=1)
-        paper.name='Johnson fine grade 8½ by 11 bond paper'
-
-        pen = gem_product_product.getvalid(product.good, comment=1)
-        pen.name = 'Goldstein Elite Pen'
-
-        diskette = gem_product_product.getvalid(product.good, comment=1)
-        diskette.name = "Jerry's box of 3½ inch diskettes"
-
-        georges = gem_product_product.getvalid(product.good, comment=1)
-        georges.name = "George's Elite pen"
-
-        kit = gem_product_product.getvalid(product.good, comment=1)
-        kit.name = 'Basic cleaning supplies kit'
-
-        # Service
-        cleaning = gem_product_product.getvalid(product.service, comment=1)
-        cleaning.name = 'Hourly office cleaning service'
-
-        ''' Create features '''
-        gray    =  product.color(name='gray')
-        blue    =  product.color(name='blue')
-        glossy  =  product.quality(name='Extra glossy finish')
-        autobill = product.billing(name='Automatically charge to CC')
-
-        ''' Create orders '''
-        so_1  =  order.salesorder()
-        so_2  =  order.salesorder()
-        po    =  order.purchaseorder()
-
-        ''' Add items to orders '''
-        so_1.items += order.salesitem(
-            product = paper,
-            quantity = 10,
-            price = dec('8.00')
-        )
-
-        # Add a feature item for the paper. We want the paper to be
-        # `gray` and `glossy`.
-        so_1.items.last.items += order.salesitem(feature=gray)
-        so_1.items.last.items += order.salesitem(
-            feature = glossy, 
-            price   = 2.00
-        )
-
-        so_1.items += order.salesitem(
-            product = pen,
-            quantity = 4,
-            price = dec('12.00')
-        )
-        so_1.items.last.items += order.salesitem(feature=blue)
-
-        so_1.items += order.salesitem(
-            product = diskette,
-            quantity = 6,
-            price = dec('7.00')
-        )
-
-        so_2.items += order.salesitem(
-            product = georges,
-            quantity = 10,
-            price = dec('10.00')
-        )
-
-        po.items += order.purchaseitem(
-            product = cleaning,
-            quantity = 12,
-            price = dec('15.00')
-        )
-        po.items.last.items += order.salesitem(feature=autobill)
-
-        po.items += order.purchaseitem(
-            product = kit,
-            quantity = 1,
-            price = dec('10.00')
-        )
-
-        so_1.save(so_2, po)
-
-        so_1_1 = so_1.orm.reloaded()
-        so_2_1 = so_2.orm.reloaded()
-        po1    = po.orm.reloaded()
-
-        self.three(so_1.items)
-        self.three(so_1_1.items)
-
-        self.one(so_2.items)
-        self.one(so_2_1.items)
-
-        self.two(po.items)
-        self.two(po1.items)
-
-        gen = zip(so_1.items.sorted(), so_1_1.items.sorted())
-        for itm, itm1 in gen:
-            self.eq(itm.id, itm1.id)
-
-            # The paper product had a gray and glossy feature added
-            if itm1.product.id == paper.id:
-                feats1 = itm1.items
-                names = feats1.pluck('feature.name')
-                self.two(feats1)
-                self.true('gray' in names)
-                self.true('Extra glossy finish' in names)
-            # The pen product had a blue feature added
-            elif itm1.product.id == pen.id:
-                feats1 = itm1.items
-                names = feats1.pluck('feature.name')
-                self.one(feats1)
-                self.true('blue' in names)
-
-        gen = zip(so_2.items.sorted(), so_2_1.items.sorted())
-        for itm, itm1 in gen:
-            self.eq(itm.id, itm1.id)
-
-        gen = zip(po.items.sorted(), po1.items.sorted())
-        for itm, itm1 in gen:
-            self.eq(itm.id, itm1.id)
-            # The cleaning service billing feature added to it
-            if itm1.product.id == cleaning.id:
-                feats1 = itm1.items
-                names = feats1.pluck('feature.name')
-                self.one(feats1)
-                self.true('Automatically charge to CC' in names)
-
-    def it_uses_roles(self):
-        """ A company called ACME will play a `placing` role (they act as
-        th placing customer) to a sales order.
-        """
-        ''' Create parties involved in order '''
-        acme = party.company(name='ACME Company')
-        sub  = party.company(name='ACME Subsidiary')
-
-        ''' Create contact mechanisms '''
-        acmeaddr = party.address(
-            address1='234 Stretch Street',
-            address2='New York, New York',
-        )
-
-        acmesubaddr = party.address(
-            address1='100 Main Street',
-            address2='New York, New York',
-        )
-
-        acmeshipto = party.address(
-            address1='Drident Avenue',
-            address2='New York, New York',
-        )
-
-        # Create order
-        so  =  order.salesorder()
-
-        ''' Create roles involved in order '''
-        placing = party.placing()
-        internal = party.internal()
-        billto = party.billto()
-        shipto = party.shipto()
-
-        ''' Associate roles to the order '''
-        so.placing  =  placing
-        so.taking   =  internal
-        so.billto   =  billto
-        so.shipto   =  shipto
-
-        ''' Associate contact mechanism to the order '''
-        so.placedusing  =  acmeaddr
-        so.takenusing   =  acmesubaddr
-        so.billtousing  =  acmeaddr
-        so.shiptousing  =  acmeshipto
-
-        ''' Associate roles to the parties '''
-
-        # Acme is places the order and Acme Subsidiary takes the order.
-        acme.roles  +=  placing
-        sub.roles   +=  internal
-        acme.roles  +=  billto
-        acme.roles  +=  shipto
-
-        so.save()
-
-        so1 = so.orm.reloaded()
-
-        placing1 = so1.placing
-        self.eq(placing.id, placing1.id)
-
-        # FIXME We shouldn't have to use orm.super here
-        acme1 = placing1.orm.super.orm.super.party
-        self.eq(acme.id, acme1.id)
-
-        internal1 = so1.taking
-        self.eq(internal.id, internal1.id)
-
-        sub1 = internal1.party
-        self.eq(sub.id, sub1.id)
-
-        billto1 = so1.billto
-        self.eq(billto.id, billto1.id)
-
-        shipto1 = so1.shipto
-        self.eq(shipto.id, shipto1.id)
-
-        # FIXME We shouldn't have to use orm.super here
-        acme1 = billto1.orm.super.orm.super.party
-        self.eq(acme.id, acme1.id)
-
-        acmeaddr1     =  so1.placedusing
-        acmesubaddr1  =  so1.takenusing
-        acmeaddr2     =  so1.billtousing
-        acmeshipto1   =  so1.shiptousing
-
-        self.eq(acmeaddr.id,     acmeaddr1.id)
-        self.eq(acmesubaddr.id,  acmesubaddr1.id)
-        self.eq(acmeaddr.id,     acmeaddr2.id)
-        self.eq(acmeshipto.id,     acmeshipto1.id)
 
 
 
