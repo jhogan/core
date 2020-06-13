@@ -18758,7 +18758,7 @@ class gem_product_measure(tester):
         inches = product.measure(name='inches')
         cent   = product.measure(name='centimeters')
 
-        # Make the width dimention in inches
+        # Make the width dimension in inches
         inches.dimensions += dim_width
 
         # Make the length dimension in centimeters (this would be a very

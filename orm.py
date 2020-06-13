@@ -60,6 +60,27 @@ import textwrap
 #     assert per.first == 'Jesse'
 #     assert per.last  == 'Hogan'
 
+# FIXME:1de11dc0 There is an issue with the way superentities
+# collections are accessed as attributes of orm.entity object. 
+#
+# The issue can be seen in the differente ways `rapper` (from test.py)
+# and `product.measuer` access their superentities attributes. For
+# example: `rapper` is able to access the `concerts` attribute because
+# `rapper`'s superentity is `singer` and `singer` has a `concerts`
+# attribute. 
+#
+# So far so good, but in the case of `product.measure`, which has a
+# constituents collection `dimensions`, we would expect to be able to
+# access a `features` attribute of `product.measure` because
+# `dimensions` is a subentity of `features`. However, since
+# `product.measure` has no superentity, we can not arrive at the
+# `feature` attribute because of the way the ORM code is written. We
+# instead get an AttributeError.
+#
+# This may or may not be important. So far, the need to access
+# superentities attributes has not come up. However, if the need arises,
+# we may want to correct this.
+
 @unique
 class types(Enum):
     """
@@ -2916,7 +2937,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         raise ValueError('FK map not found for entity')
 
                     # NOTE Though we've switch to implicit loading for
-                    # entities and associations, we shoud still
+                    # entities and associations, we should still
                     # explicitly load here for the sake of
                     # predictability.
                     es = map_entities(map1.name, self.id)
@@ -3078,8 +3099,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         superentities.
         """
 
-        # Get the superentities collection of the collection `e` was
-        # appened to.
+        # Get the superentities collection that the `e` was
+        # appended to.
         sup = src.orm.entities.orm.super
 
         # If there is no superentity, there is nothing for us to do.
