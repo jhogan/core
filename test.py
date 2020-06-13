@@ -35,6 +35,7 @@ import re
 import textwrap
 import party
 import product
+import order
 from pprint import pprint
 
 # We will use basic and supplementary multilingual plane UTF-8
@@ -4104,6 +4105,25 @@ class test_orm(tester):
         # NOTE The below line produced a failure today, but it went
         # away.  (Jul 6)
         # UPDATE Happend again Dec 15 2019
+        # UPDATE Happend again Jun 7, 2020
+        # This was found when `chrons` was printed:
+        '''
+		DB: RECONNECT
+		INSERT INTO test_singers (`id`, `createdat`, `updatedat`, `register`, `voice`) VALUES (_binary %s, %s, %s, %s, %s);
+		(UUID('a18737c1-882b-4407-a6c0-610856e62e9c'), datetime(2020, 6, 7, 19, 52, 58, 842050), datetime(2020, 6, 7, 19, 52, 58, 842050), 'laryngealization', '248f3e4d0c6946d48ef800deb7297585')
+
+		INSERT INTO test_concerts (`id`, `singerid`, `createdat`, `record`, `ticketprice`, `attendees`, `duration`, `capacity`, `externalid`, `externalid1`, `updatedat`) VALUES (_binary %s, _binary %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+		(UUID('63c88856-98e7-4380-99ac-af102c43a37b'), UUID('a18737c1-882b-4407-a6c0-610856e62e9c'), datetime(2020, 6, 7, 19, 52, 58, 844279), '3bdd2a7831c44c25b55a611124ea6e01', 0, 0, 0, 0, 0, 0, datetime(2020, 6, 7, 19, 52, 58, 844279))
+
+		INSERT INTO test_presentations (`id`, `artistid`, `createdat`, `name`, `updatedat`, `date`, `description`, `description1`, `title`) VALUES (_binary %s, _binary %s, %s, %s, %s, %s, %s, %s, %s);
+		(UUID('63c88856-98e7-4380-99ac-af102c43a37b'), UUID('a18737c1-882b-4407-a6c0-610856e62e9c'), datetime(2020, 6, 7, 19, 52, 58, 846927), 'bb73eb4983b549a89c7b320f3f8fc582', datetime(2020, 6, 7, 19, 52, 58, 846927), None, '2ef05799e9c04cecbefce257046d0a3e', '5b5bf3f46db64226a081a5e9cdfd6da8', '649e519fbe964c27897ce7e7d69a1c53')
+
+		INSERT INTO test_artists (`id`, `createdat`, `updatedat`, `networth`, `weight`, `lastname`, `dob1`, `bio2`, `bio`, `email_1`, `bio1`, `lifeform`, `firstname`, `password`, `email`, `style`, `phone2`, `ssn`, `dob2`, `dob`, `title`, `phone`) VALUES (_binary %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, _binary %s, %s, %s, %s, %s, %s, %s, %s, %s);
+		(UUID('a18737c1-882b-4407-a6c0-610856e62e9c'), datetime(2020, 6, 7, 19, 52, 58, 850580), datetime(2020, 6, 7, 19, 52, 58, 850580), 0, 0, 'Yourofsky', None, '2', None, '', '11', '04e601539d1b4ff197f092b435a13f5b', 'Gary', b'B{\te\x9e\xe2\x84\xfaH\x88\x17}\x0cY6\xf9\xbb\xe1:\t\xe2NP\xeb\x1aP\x12\xfc\xe5\xe2\xef0', 'username@domain.tld', 'classicism', '', '11111111111', None, None, '', 1111111)
+        '''
+        # So it seems that this is caused by an occasional reconnect. We
+        # should probably filter DB Reconnects out somehow.
+
         self.four(chrons)
 
 
@@ -15742,11 +15762,14 @@ class gem_party_person(tester):
 class gem_party_party_type(tester):
     def __init__(self):
         super().__init__()
-        party.party.orm.recreate(recursive=True)
+        orm.orm.recreate(
+            party.party,
+            party.type,
+        )
 
     def it_creates(self):
         typ = party.type()
-        typ.description = uuid4().hex
+        typ.name = uuid4().hex
 
         for i in range(2):
             pt = party.party_type()
@@ -15757,7 +15780,7 @@ class gem_party_party_type(tester):
         typ.save()
 
         typ1 = party.type(typ.id)
-        self.eq(typ.description, typ1.description)
+        self.eq(typ.name, typ1.name)
 
         typ.party_types.sort() 
         typ1.party_types.sort()
@@ -16431,6 +16454,7 @@ class gem_party_contactmechanism(tester):
         orm.orm.recreate(
             party.party,
             party.purposetypes,
+            party.contactmechanism_contactmechanism,
         )
 
     @staticmethod
@@ -16491,7 +16515,7 @@ class gem_party_contactmechanism(tester):
         self.one(cm_cms1_1)
 
         self.eq(cm_cms1.first.id,          cm_cms1_1.first.id)
-        self.eq(cm_cms1.first.event,       cm_cms1_1.first.event)
+        self.eq(cm_cms1.first.on,       cm_cms1_1.first.on)
         self.eq(cm_cms1.first.do,          cm_cms1_1.first.do)
         self.eq(cm_cms1.first.object.id,   cm_cms1_1.first.object.id)
         self.eq(cm_cms1.first.subject.id,  cm_cms1_1.first.subject.id)
@@ -16510,7 +16534,7 @@ class gem_party_contactmechanism(tester):
         self.one(cm_cms1_1)
 
         self.eq(cm_cms1.first.id,          cm_cms1_1.first.id)
-        self.eq(cm_cms1.first.event,       cm_cms1_1.first.event)
+        self.eq(cm_cms1.first.on,       cm_cms1_1.first.on)
         self.eq(cm_cms1.first.do,          cm_cms1_1.first.do)
         self.eq(cm_cms1.first.object.id,   cm_cms1_1.first.object.id)
         self.eq(cm_cms1.first.subject.id,  cm_cms1_1.first.subject.id)
@@ -16721,7 +16745,7 @@ class gem_party_contactmechanism(tester):
             else:
                 part, name = cls(), part
                 if cls is party.person:
-                    # FIXMEd7f877ef person.name does not exist yet and I
+                    # FIXME:d7f877ef person.name does not exist yet and I
                     # was having a hard time getting it to work so I
                     # used person.first instead. NOTE that this will
                     # break if party.roles is uncommented. See 297f8176.
@@ -17468,7 +17492,7 @@ class gem_product_product(tester):
 
         prod = type()
         prod.name = uuid4().hex
-        prod.introducedat = primative.datetime.utcnow(days=-100)
+        prod.introducedat = primative.date.today(days=-100)
         prod.comment = uuid4().hex * comment
         return prod
 
@@ -17477,7 +17501,7 @@ class gem_product_product(tester):
             prod = getattr(product, str_prod)()
 
             prod.name = uuid4().hex
-            prod.introducedat = primative.datetime.utcnow(days=-100)
+            prod.introducedat = primative.date.today(days=-100)
             prod.comment = uuid4().hex * 1000
 
             prod.save()
@@ -17501,7 +17525,7 @@ class gem_product_product(tester):
             prod = getattr(product, str_prod)()
 
             prod.name = uuid4().hex
-            prod.introducedat = primative.datetime.utcnow(days=-100)
+            prod.introducedat = primative.date.today(days=-100)
             prod.comment = uuid4().hex * 1000
 
             prod.save()
@@ -17509,9 +17533,9 @@ class gem_product_product(tester):
             prod1 = getattr(product, str_prod)(prod.id)
 
             prod1.name = uuid4().hex
-            prod1.introducedat = primative.datetime.utcnow(days=-100)
-            prod1.discontinuedat = primative.datetime.utcnow(days=+100)
-            prod1.unsupportedat = primative.datetime.utcnow(days=+200)
+            prod1.introducedat = primative.date.today(days=-200)
+            prod1.discontinuedat = primative.date.today(days=+100)
+            prod1.unsupportedat = primative.date.today(days=+200)
             prod1.comment = uuid4().hex * 1000
 
             prod1.save()
@@ -17527,8 +17551,16 @@ class gem_product_product(tester):
             )
 
             for prop in props:
-                self.ne(getattr(prod, prop), getattr(prod2, prop))
-                self.eq(getattr(prod1, prop), getattr(prod2, prop))
+                self.ne(
+                    getattr(prod, prop), 
+                    getattr(prod2, prop), 
+                    prop
+                )
+                self.eq(
+                    getattr(prod1, prop), 
+                    getattr(prod2, prop), 
+                    prop
+                )
 
     def it_associates_to_features(self):
         tup_colors = (
@@ -18574,10 +18606,13 @@ class gem_product_categories(tester):
 class gem_product_category_types(tester):
     def __init__(self):
         super().__init__()
-        product.products.orm.recreate(recursive=True)
+        orm.orm.recreate(
+            product.products,
+            party.type,
+        )
 
     def it_creates(self):
-        sm = party.type(description='Small organizations')
+        sm = party.type(name='Small organizations')
 
         # Small organizations have an interest in Wordpress services
         sm.category_types += product.category_type(
@@ -18825,7 +18860,7 @@ class gem_product_pricing(tester):
 
         # Create government party type
         gov = party.type(
-            description = 'Government'
+            name = 'Government'
         )
 
         # Create product category
@@ -19405,6 +19440,246 @@ class gem_case(tester):
                 self.eq(ce.description, ce1.description)
                 self.eq(ce.effort.id, ce1.effort.id)
                 self.eq(ce.communication.id, ce1.communication.id)
+
+class gem_order_order(tester):
+    def __init__(self):
+        super().__init__()
+        orm.orm.recreate(
+            order.order,
+            order.items,
+            order.salesitems,
+            order.purchaseitems,
+            order.purchaseorders,
+            order.salesorders,
+            party.role,
+            party.partyroletype,
+            party.party,
+            party.company,
+            party.customer,
+            party.placing,
+            party.internal,
+            party.billto,
+            party.shipto,
+        )
+
+    def it_creates(self):
+        ''' Create products '''
+        # Goods
+        paper = gem_product_product.getvalid(product.good, comment=1)
+        paper.name='Johnson fine grade 8½ by 11 bond paper'
+
+        pen = gem_product_product.getvalid(product.good, comment=1)
+        pen.name = 'Goldstein Elite Pen'
+
+        diskette = gem_product_product.getvalid(product.good, comment=1)
+        diskette.name = "Jerry's box of 3½ inch diskettes"
+
+        georges = gem_product_product.getvalid(product.good, comment=1)
+        georges.name = "George's Elite pen"
+
+        kit = gem_product_product.getvalid(product.good, comment=1)
+        kit.name = 'Basic cleaning supplies kit'
+
+        # Service
+        cleaning = gem_product_product.getvalid(product.service, comment=1)
+        cleaning.name = 'Hourly office cleaning service'
+
+        ''' Create features '''
+        gray    =  product.color(name='gray')
+        blue    =  product.color(name='blue')
+        glossy  =  product.quality(name='Extra glossy finish')
+        autobill = product.billing(name='Automatically charge to CC')
+
+        ''' Create orders '''
+        so_1  =  order.salesorder()
+        so_2  =  order.salesorder()
+        po    =  order.purchaseorder()
+
+        ''' Add items to orders '''
+        so_1.items += order.salesitem(
+            product = paper,
+            quantity = 10,
+            price = dec('8.00')
+        )
+
+        # Add a feature item for the paper. We want the paper to be
+        # `gray` and `glossy`.
+        so_1.items.last.items += order.salesitem(feature=gray)
+        so_1.items.last.items += order.salesitem(
+            feature = glossy, 
+            price   = 2.00
+        )
+
+        so_1.items += order.salesitem(
+            product = pen,
+            quantity = 4,
+            price = dec('12.00')
+        )
+        so_1.items.last.items += order.salesitem(feature=blue)
+
+        so_1.items += order.salesitem(
+            product = diskette,
+            quantity = 6,
+            price = dec('7.00')
+        )
+
+        so_2.items += order.salesitem(
+            product = georges,
+            quantity = 10,
+            price = dec('10.00')
+        )
+
+        po.items += order.purchaseitem(
+            product = cleaning,
+            quantity = 12,
+            price = dec('15.00')
+        )
+        po.items.last.items += order.salesitem(feature=autobill)
+
+        po.items += order.purchaseitem(
+            product = kit,
+            quantity = 1,
+            price = dec('10.00')
+        )
+
+        so_1.save(so_2, po)
+
+        so_1_1 = so_1.orm.reloaded()
+        so_2_1 = so_2.orm.reloaded()
+        po1    = po.orm.reloaded()
+
+        self.three(so_1.items)
+        self.three(so_1_1.items)
+
+        self.one(so_2.items)
+        self.one(so_2_1.items)
+
+        self.two(po.items)
+        self.two(po1.items)
+
+        gen = zip(so_1.items.sorted(), so_1_1.items.sorted())
+        for itm, itm1 in gen:
+            self.eq(itm.id, itm1.id)
+
+            # The paper product had a gray and glossy feature added
+            if itm1.product.id == paper.id:
+                feats1 = itm1.items
+                names = feats1.pluck('feature.name')
+                self.two(feats1)
+                self.true('gray' in names)
+                self.true('Extra glossy finish' in names)
+            # The pen product had a blue feature added
+            elif itm1.product.id == pen.id:
+                feats1 = itm1.items
+                names = feats1.pluck('feature.name')
+                self.one(feats1)
+                self.true('blue' in names)
+
+        gen = zip(so_2.items.sorted(), so_2_1.items.sorted())
+        for itm, itm1 in gen:
+            self.eq(itm.id, itm1.id)
+
+        gen = zip(po.items.sorted(), po1.items.sorted())
+        for itm, itm1 in gen:
+            self.eq(itm.id, itm1.id)
+            # The cleaning service billing feature added to it
+            if itm1.product.id == cleaning.id:
+                feats1 = itm1.items
+                names = feats1.pluck('feature.name')
+                self.one(feats1)
+                self.true('Automatically charge to CC' in names)
+
+    def it_uses_roles(self):
+        """ A company called ACME will play a `placing` role (they act as
+        th placing customer) to a sales order.
+        """
+        ''' Create parties involved in order '''
+        acme = party.company(name='ACME Company')
+        sub  = party.company(name='ACME Subsidiary')
+
+        ''' Create contact mechanisms '''
+        acmeaddr = party.address(
+            address1='234 Stretch Street',
+            address2='New York, New York',
+        )
+
+        acmesubaddr = party.address(
+            address1='100 Main Street',
+            address2='New York, New York',
+        )
+
+        acmeshipto = party.address(
+            address1='Drident Avenue',
+            address2='New York, New York',
+        )
+
+        # Create order
+        so  =  order.salesorder()
+
+        ''' Create roles involved in order '''
+        placing = party.placing()
+        internal = party.internal()
+        billto = party.billto()
+        shipto = party.shipto()
+
+        ''' Associate roles to the order '''
+        so.placing  =  placing
+        so.taking   =  internal
+        so.billto   =  billto
+        so.shipto   =  shipto
+
+        ''' Associate contact mechanism to the order '''
+        so.placedusing  =  acmeaddr
+        so.takenusing   =  acmesubaddr
+        so.billtousing  =  acmeaddr
+        so.shiptousing  =  acmeshipto
+
+        ''' Associate roles to the parties '''
+
+        # Acme is places the order and Acme Subsidiary takes the order.
+        acme.roles  +=  placing
+        sub.roles   +=  internal
+        acme.roles  +=  billto
+        acme.roles  +=  shipto
+
+        so.save()
+
+        so1 = so.orm.reloaded()
+
+        placing1 = so1.placing
+        self.eq(placing.id, placing1.id)
+
+        # FIXME We shouldn't have to use orm.super here
+        acme1 = placing1.orm.super.orm.super.party
+        self.eq(acme.id, acme1.id)
+
+        internal1 = so1.taking
+        self.eq(internal.id, internal1.id)
+
+        sub1 = internal1.party
+        self.eq(sub.id, sub1.id)
+
+        billto1 = so1.billto
+        self.eq(billto.id, billto1.id)
+
+        shipto1 = so1.shipto
+        self.eq(shipto.id, shipto1.id)
+
+        # FIXME We shouldn't have to use orm.super here
+        acme1 = billto1.orm.super.orm.super.party
+        self.eq(acme.id, acme1.id)
+
+        acmeaddr1     =  so1.placedusing
+        acmesubaddr1  =  so1.takenusing
+        acmeaddr2     =  so1.billtousing
+        acmeshipto1   =  so1.shiptousing
+
+        self.eq(acmeaddr.id,     acmeaddr1.id)
+        self.eq(acmesubaddr.id,  acmesubaddr1.id)
+        self.eq(acmeaddr.id,     acmeaddr2.id)
+        self.eq(acmeshipto.id,     acmeshipto1.id)
+
+
 
 
 cli().run()

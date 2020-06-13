@@ -104,6 +104,13 @@ class date(stddatetime.date):
     def add(self, **kwargs):
         return self + stddatetime.timedelta(**kwargs)
 
+    @staticmethod
+    def today(**kwargs):
+        r = date(stddatetime.date.today())
+
+        r = r.add(**kwargs)
+        return r
+
     def __add__(self, dt):
         dt = super().__add__(dt)
         return date(dt)

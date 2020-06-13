@@ -40,6 +40,7 @@ class personals(roles):                                      pass
 class organizationals(roles):                                pass
 class suppliers(organizationals):                            pass
 class organizationalunits(organizationals):                  pass
+class internals(organizationals):                            pass
 class subsidiaries(organizationalunits):                     pass
 class parents(organizationalunits):                          pass
 class roletypes(orm.entities):                               pass
@@ -47,6 +48,8 @@ class partyroletypes(roletypes):                             pass
 class employees(personals):                                  pass
 class customers(personals):                                  pass
 class billtos(customers):                                    pass
+class placings(customers):                                   pass
+class shiptos(customers):                                    pass
 class party_types(orm.associations):                         pass
 class organizations(parties):                                pass
 class legalorganizations(organizations):                     pass
@@ -832,8 +835,8 @@ class citizenship(orm.entity):
     vaild = datespan
 
     # TODO Add validaton logic to ensure the region is a country.
-    # The country the citizenship is for. Note this is a region which
-    # must have a type of country.
+    # The country that the citizenship is for. Note this is a `region`
+    # which must have a `type` of Country.
     country = region
 
     # A collection of passports issued for this citizenship
@@ -858,10 +861,7 @@ class contactmechanism_contactmechanism(orm.association):
     # Constants for `do`
     Forward = 0
 
-    # FIXME:0a8ee7fb I would prefer `event` to be replaced by `on` but
-    # `on` is a reserved word in MySQL. There is a TODO to allow for
-    # reserved words (see 0a8ee7fb).
-    event    =  int
+    on       =  int
     do       =  int
     subject  =  contactmechanism
     object   =  contactmechanism
@@ -1148,8 +1148,7 @@ class type(orm.entity):
         Data Modeling Resource Book".
     """
 
-    # TODO Change this to `name`
-    description = str
+    name = str
 
 class classification:
     """ ``party`` entity objects are classifiend into various categories
@@ -1272,15 +1271,15 @@ class role_role(orm.association):
     The grammer of this association can be understood with the following
     example:
     
-        The ``company`` "ABC Subsidary" has a ``role`` called
+        The ``company`` "ABC Subsidiary" has a ``role`` called
         "Subsidiary".  That role is the ``subject`` of a ``role_role``
         association. In that association, the ``object`` attribute
         references a ``role`` called "Parent Corporation" which belongs
         to "ABC Corporation". 
 
-        To put it in plainer English: ABC Subsidary has a subsidiary
+        To put it in plainer English: ABC Subsidiary has a subsidiary
         role that is associated with ABC Corporation's Parent
-        Corporation role, i.e., ABC Subsidary is the subsidiary of ABC
+        Corporation role, i.e., ABC Subsidiary is the subsidiary of ABC
         Corporation.
 
     Note that this is modeled after the PARTY RELATIONSHIP entity in
@@ -1353,6 +1352,13 @@ class organizationalunit(organizational):
     organizations as well as maintenance of organizational structure..
     """
 
+class internal(organizational):
+    """ The internal organizational role.
+
+    Note that this entity was originally called INTERNAL ORGANIZATION in "The
+    Data Modeling Resource Book".
+    """
+
 class subsidiary(organizationalunit):
     """ An organizational unit role a company plays to indicate that
     they are owned by a parent organization.
@@ -1416,6 +1422,24 @@ class customer(role):
 class billto(customer):
     """ A role indicating a party that has purchased a product from
     another party.
+
+    Note that this entity was originally called BILL TO CUSTOMER in "The
+    Data Modeling Resource Book".
+    """ 
+
+class placing(customer):
+    """ A role indicating a party that has places an order to another
+    party.
+
+    Note that this entity was originally called PLACING CUSTOMER in "The
+    Data Modeling Resource Book".
+    """
+
+class shipto(customer):
+    """ A role indicating a party that should recieve the order.
+
+    Note that this entity was originally called SHIP TO CUSTOMER in "The
+    Data Modeling Resource Book".
     """
 
 class party_type(orm.association):
@@ -1464,9 +1488,6 @@ class facility(orm.entity):
     Office     =  5
     Room       =  6
 
-    # TODO This class was created as a stub to test a class in
-    # product.py. It nor its subsidiary classes were never created for
-    # some reason. 
     entities = facilities
 
     # The name of the facility

@@ -6,26 +6,14 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
-import orm
+from datetime import datetime, date
+from dbg import B
+from decimal import Decimal as dec
 from orm import text, timespan, datespan
 import entities
-import primative
-from datetime import datetime
-from dbg import B
+import orm
 import party
-from decimal import Decimal as dec
-
-from orm import text, datespan, timespan
-
-#TODO The `decimal` module should be usable as type:
-#
-#   class dimension:
-#       number = decimal
-#
-# However, we currently have to do this:
-#
-#   class dimension:
-#       number = decimal.Decimal
+import primative
 
 class products(orm.entities): pass
 
@@ -74,7 +62,7 @@ class sizes(features):                     pass
 class brands(features):                    pass
 class softwares(features):                 pass
 class hardwares(features):                 pass
-class billings(orm.entities):              pass
+class billings(features):                  pass
 class measures(orm.entities):              pass
 class measure_measures(orm.associations):  pass
 class feature_features(orm.associations):  pass
@@ -283,20 +271,19 @@ class product(orm.entity):
     name = str
 
     # The date the product was first available to be sold.
-    introducedat = datetime  # TODO Make date type
+    introducedat = date
 
     # The date that the product will not be sold any more by the
     # manufacturer.
-    discontinuedat = datetime  # TODO Make date type
+    discontinuedat = date
 
     # The date the product will no longer be supported by the
     # manufacturer.
-    unsupportedat = datetime
+    unsupportedat = date
 
     comment = text
 
     ''' Various type of identifiers'''
-
     # A good's id designated by the manufacture
     manufacturerno = str
 
@@ -436,17 +423,6 @@ class category_classification(orm.association):
     # category. An `end` of None indicates that the product is currently
     # classified under the given category.
     span = datespan
-
-    # TODO It would be nice if we didn't have to end `isprimary` with
-    # an underscore but if we don't, MySQL sees it as an syntax
-    # error. It would be cool if the ORM could detect MySQL's
-    # keywords being used as column names and append the underscore
-    # automatically sparing the ORM user the inconvenience of
-    # remembering to add the underscore (assuming and underscore is
-    # the proper solution to this problem).
-    # UPDATE I changed 'primary_' to 'isprimary'. The TODO is still
-    # valid but prepending the 'is' might to booleans may deprioritize
-    # it.
 
     # If True, the category is will be considered the primary category of
     # the product. For instance, if a product is associated with
@@ -875,11 +851,13 @@ class priority(orm.entity):
     entities = priorities
 
     # TODO Since there is a finite number of priorities, we should
-    # fallowing the model of the `product.rating` type which autosaves
+    # following the model of the `product.rating` type which autosaves
     # the the record to the database in the construct if it needs too.
     # See product.rating.__init__ and product.rating.brokenrules. This
     # pattern may become so redundant that it could be encapsulated in a
     # method like orm.ensure()
+    # UPDATE `orm.ensure` was written and is in use by other entity
+    # objects. We can use it here when the need arises.
 
     # The ordinal indicating the priority. A priority of 0 indicates the
     # highest prioritity. 1 would be the second highest, and so one.
@@ -1010,7 +988,7 @@ class guideline(orm.entity):
     # The facility the guildline is for
     facility = party.facility
 
-    # TODO This should be interalorganization, but that does not exist
+    # TODO This should be internalorganization, but that does not exist
     # yet in the party module.
     # The internal organization the guideline is for
     organization = party.organization
@@ -1061,7 +1039,7 @@ class lot(orm.entity):
     type generally used to track inventory items back to their source.
     """
 
-    # TODO The user should be allowed to create the createdat field
+    # TODO The user shouldn't be allowed to create the createdat field
     # because that will get created by the metaclass anyway. This should
     # throw an error. Same for `updatedat`.
 
