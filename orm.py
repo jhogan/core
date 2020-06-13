@@ -3120,11 +3120,18 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # Get the entity being appended
         e = eargs.entity
 
-        # Get the superenities collection
-        es = getattr(self, sup.__name__)
-
-        # Append the entity to that entities collection
-        es += e
+        # Get the superentities collection
+        try:
+            es = getattr(self, sup.__name__)
+        except AttributeError:
+            # `self` won't have the attribute `sup.__name__` if the
+            # constituent class is a superentity.
+            #
+            # We should be able to remove this if 1de11dc0 is fixed.
+            pass
+        else:
+            # Append the entity to that entities collection
+            es += e
 
     def __repr__(self):
         """ Return a tabularized list of ``self``'s properties and their
