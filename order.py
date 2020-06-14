@@ -168,13 +168,48 @@ class salesorder(order):
     # party.address.
     billtousing = party.contactmechanism
 
-    # The address that the order will be shipped to
-    shiptousing = party.contactmechanism
-
 class purchaseorder(order):
     """ A class representing a purchase order
 
     Note that this entity was originally called PURCHASE ORDER in "The
     Data Modeling Resource Book".
     """
+class order_partytype(orm.entity):
+    """ Each role is described by a roletype entity. 
+    """
+    order_parties = order_parties
 
+    # The name of the role being played between the party and the order.
+    # Expamples include: 'salesperson', 'processor', 'reviewer',
+    # 'authorizer'.
+    name = str
+
+class order_party(orm.association):
+    """ In additional to the key order relationships (i.e., `placing`,
+    `taking`, `billto`, `shipto`), many other parties could be involved
+    in the order process. Examples includ people giving the order, the
+    person processing the order, the person approving the order, the
+    parties that are scheduled to coordinate instalation, and the
+    parties responsible for fulfilling the order.  An `order` be
+    associated with zero or more parties via this association which is
+    described by the `order_partytype` entity.
+
+    While many times these rolse will involve people, organizations may
+    also play some of these roles, such as service team that is
+    responsible for ensuring fulfillment of an order.
+
+    Note that this association was originally called ORDER ROLE in "The
+    Data Modeling Resource Book".
+    """
+
+    entities = order_parties
+
+    # The order in this association
+    order = order
+
+    # The party part of this association
+    party = party
+
+    # The percentage the `party` contributed to the order. This
+    # datum could be used to calculate a commission.
+    percentage = dec
