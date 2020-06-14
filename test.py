@@ -19640,9 +19640,7 @@ class gem_order_order(tester):
         ''' Associate contact mechanism to the order item'''
         so.items.last.shiptousing = acmeaddr
 
-
         ''' Associate roles to the parties '''
-
         # Acme is places the order and Acme Subsidiary takes the order.
         acme.roles  +=  placing
         sub.roles   +=  internal

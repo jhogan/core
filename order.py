@@ -191,14 +191,14 @@ class order_partytype(orm.entity):
 class order_party(orm.association):
     """ In additional to the key order relationships (i.e., `placing`,
     `taking`, `billto`, `shipto`), many other parties could be involved
-    in the order process. Examples includ people giving the order, the
+    in the order process. Examples include people giving the order, the
     person processing the order, the person approving the order, the
     parties that are scheduled to coordinate instalation, and the
-    parties responsible for fulfilling the order.  An `order` be
+    parties responsible for fulfilling the order.  An `order` is
     associated with zero or more parties via this association which is
     described by the `order_partytype` entity.
 
-    While many times these rolse will involve people, organizations may
+    While many times these roles will involve people, organizations may
     also play some of these roles, such as service team that is
     responsible for ensuring fulfillment of an order.
 
@@ -214,6 +214,6 @@ class order_party(orm.association):
     # The party part of this association
     party = party.party
 
-    # The percentage the `party` contributed to the order. This
-    # datum could be used to calculate a commission.
-    percentage = dec
+    # The percentage the `party` contributed to the order. This datum
+    # could be used to calculate commissions.
+    percent = dec
