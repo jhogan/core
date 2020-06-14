@@ -177,6 +177,10 @@ class purchaseorder(order):
 class order_partytype(orm.entity):
     """ Each role is described by a roletype entity. 
     """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
     order_parties = order_parties
 
     # The name of the role being played between the party and the order.
@@ -208,7 +212,7 @@ class order_party(orm.association):
     order = order
 
     # The party part of this association
-    party = party
+    party = party.party
 
     # The percentage the `party` contributed to the order. This
     # datum could be used to calculate a commission.

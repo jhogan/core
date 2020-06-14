@@ -15398,14 +15398,14 @@ class gem_party_person(tester):
             party.citizenships,
         )
 
+
     @staticmethod
-    def getvalid():
+    def getvalid(first=None, last=None):
         per = party.person()
 
-        per.first          =  uuid4().hex
-        per.middle         =  uuid4().hex
-        per.last           =  uuid4().hex
-
+        per.first = first if first else uuid4().hex
+        per.middle = uuid4().hex
+        per.last = last if last else uuid4().hex
         per.title          =  uuid4().hex
         per.suffix         =  uuid4().hex
         per.mothersmaiden  =  uuid4().hex
@@ -19440,6 +19440,8 @@ class gem_order_order(tester):
             order.purchaseitems,
             order.purchaseorders,
             order.salesorders,
+            order.order_party,
+            order.order_partytype,
             party.role,
             party.partyroletype,
             party.party,
@@ -19688,5 +19690,73 @@ class gem_order_order(tester):
         shiptousing1 = itm.shiptousing
         self.eq(acmeaddr.id, shiptousing1.id)
 
+    def it_uses_non_formal_roles(self):
+        """ In addition to the formal order.roles (billto,
+        shipto, taking, etc.) tested in it_uses_roles, we can also use
+        the order.order_party to associate arbitrary roles between
+        parties and orders. The actual roles are described by
+        order_partytype, while the association is taken maintained by
+        order_party.  """
+
+        # Create roles
+        salesperson  =  order.order_partytype(name='Salesperson')
+        processor    =  order.order_partytype(name='Processor')
+        reviewer     =  order.order_partytype(name='Reviewer')
+        authorizer   =  order.order_partytype(name='Authorizer')
+
+        # Create parties
+        person = gem_party_person.getvalid
+        johnjones  =  person(first='John',   last='Jones')
+        nancy      =  person(first='Nancy',  last='Barker')
+        frank      =  person(first='Frank',  last='Parks')
+        joe        =  person(first='Joe',    last='Williams')
+        johnsmith  =  person(first='John',   last='Smith')
+
+        # Create sales order
+        so = order.salesorder()
+
+        # Associate roles
+        so.order_parties += order.order_party(
+            percent = 50,
+            order_partytype = salesperson,
+            party = johnjones
+        )
+
+        so.order_parties += order.order_party(
+            percent = 50,
+            order_partytype = salesperson,
+            party = nancy
+        )
+
+        so.order_parties += order.order_party(
+            order_partytype = processor,
+            party = frank
+        )
+
+        so.order_parties += order.order_party(
+            order_partytype = reviewer,
+            party = joe
+        )
+
+        so.order_parties += order.order_party(
+            order_partytype = authorizer,
+            party = johnsmith,
+        )
+
+        so.save()
+
+        so1 = so.orm.reloaded()
+
+        ops = so.order_parties.sorted()
+        ops1 = so1.order_parties.sorted()
+
+        self.five(ops)
+        self.five(ops1)
+
+        for op, op1 in zip(ops, ops1):
+            self.eq(op.id, op1.id)
+            self.eq(op.percent, op1.percent)
+            self.eq(op.party.id, op1.party.id)
+            self.eq(op.order_partytype.id, op1.order_partytype.id)
 
 cli().run()
