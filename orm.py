@@ -79,7 +79,7 @@ import textwrap
 #
 # This may or may not be important. So far, the need to access
 # superentities attributes has not come up. However, if the need arises,
-# we may want to correct this.
+# we will want to correct this.
 
 # TODO I think text attributes should be None by default and this should
 # not be a validation error. We can create a fieldmapping.istextalias to
