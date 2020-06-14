@@ -3002,14 +3002,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 map = sup_orm.mappings(attr)
                 if map:
                     map_type = type(map)
-                    if map_type is entitymapping:
-                        # We don't want an entitymapping from a super
-                        # returned.  This would mean conc.artist would
-                        # work. But concerts don't have artists;
-                        # presentations do. Concerts have singers.
-                        msg = "'%s' object has no attribute '%s'"
-                        msg %= self.__class__.__name__, attr
-                        raise AttributeError(msg)
                         
                     v = getattr(sup, map.name)
                     # Assign the composite reference to the constituent
