@@ -41,6 +41,7 @@ class order(orm.entity):
     # `entry date` in the "Data Modeling Resource Book").
     received = date
 
+    # The collection of `saleitems` or `purchaseitem` for this order.
     items = items
 
 class item(orm.entity):

@@ -19593,6 +19593,8 @@ class gem_order_order(tester):
         """ A company called ACME will play a `placing` role (they act as
         th placing customer) to a sales order.
         """
+
+
         ''' Create parties involved in order '''
         acme = party.company(name='ACME Company')
         sub  = party.company(name='ACME Subsidiary')
