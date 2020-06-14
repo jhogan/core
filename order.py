@@ -22,11 +22,13 @@ class orders(orm.entities):  pass
 # subtypes of `item` like `salesitem` and `purchaseitem` entity objects.
 # If the composite is a `purchase`, then only `purchaseitem` should be
 # allowed. Likewise when the composite is a salesorder entitiy objects.
-class items(orm.entities):   pass
-class salesitems(items):     pass
-class purchaseitems(items):  pass
-class salesorders(orders):         pass
-class purchaseorders(orders):     pass
+class items(orm.entities):                 pass
+class salesitems(items):                   pass
+class purchaseitems(items):                pass
+class salesorders(orders):                 pass
+class purchaseorders(orders):              pass
+class order_parties(orm.associations):     pass
+class order_partytypes(orm.associations):  pass
 
 class order(orm.entity):
     """ The generic, abstract order class from with the `salesorder` and
@@ -119,6 +121,15 @@ class salesitem(item):
     Data Modeling Resource Book".
     """
 
+    # Tho party that the item will be shipped to.
+    shipto = party.shipto
+
+    # The address that the item will be shipped to.
+    shiptousing = party.contactmechanism
+
+    # NOTE We may want an installat and installusing attributes if
+    # installation is need.
+
 class purchaseitem(item):
     """ Represents an items for a purchase order.
 
@@ -143,9 +154,6 @@ class salesorder(order):
 
     # Tho party role that is responsible for the bill.
     billto = party.billto
-
-    # Tho party that the order will be shipped to.
-    shipto = party.shipto
 
     # The contact mechanism the order was placed using, such as a phone
     # number or address.

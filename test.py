@@ -19616,6 +19616,15 @@ class gem_order_order(tester):
         # Create order
         so  =  order.salesorder()
 
+        # Create a good for the sales item
+        paper = gem_product_product.getvalid(product.good, comment=1)
+        paper.name='Johnson fine grade 8½ by 11 bond paper'
+        so.items += order.salesitem(
+            product = paper,
+            quantity = 10,
+            price = dec('8.00')
+        )
+
         ''' Create roles involved in order '''
         placing = party.placing()
         internal = party.internal()
@@ -19626,13 +19635,18 @@ class gem_order_order(tester):
         so.placing  =  placing
         so.taking   =  internal
         so.billto   =  billto
-        so.shipto   =  shipto
+
+        # Ship this sales item to Acme Company
+        so.items.last.shipto = shipto
 
         ''' Associate contact mechanism to the order '''
         so.placedusing  =  acmeaddr
         so.takenusing   =  acmesubaddr
         so.billtousing  =  acmeaddr
-        so.shiptousing  =  acmeshipto
+
+        ''' Associate contact mechanism to the order item'''
+        so.items.last.shiptousing = acmeaddr
+
 
         ''' Associate roles to the parties '''
 
@@ -19662,9 +19676,6 @@ class gem_order_order(tester):
         billto1 = so1.billto
         self.eq(billto.id, billto1.id)
 
-        shipto1 = so1.shipto
-        self.eq(shipto.id, shipto1.id)
-
         # FIXME We shouldn't have to use orm.super here
         acme1 = billto1.orm.super.orm.super.party
         self.eq(acme.id, acme1.id)
@@ -19672,14 +19683,22 @@ class gem_order_order(tester):
         acmeaddr1     =  so1.placedusing
         acmesubaddr1  =  so1.takenusing
         acmeaddr2     =  so1.billtousing
-        acmeshipto1   =  so1.shiptousing
 
         self.eq(acmeaddr.id,     acmeaddr1.id)
         self.eq(acmesubaddr.id,  acmesubaddr1.id)
         self.eq(acmeaddr.id,     acmeaddr2.id)
-        self.eq(acmeshipto.id,     acmeshipto1.id)
 
 
+        itm = so1.items.first.orm.cast(order.salesitem)
+        shipto1 = itm.shipto
+        self.eq(shipto.id, shipto1.id)
+
+        # FIXME We shouldn't have to use orm.super here
+        acme1 = shipto1.orm.super.orm.super.party
+        self.eq(acme.id, acme1.id)
+
+        shiptousing1 = itm.shiptousing
+        self.eq(acmeaddr.id, shiptousing1.id)
 
 
 cli().run()
