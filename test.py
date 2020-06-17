@@ -19434,34 +19434,38 @@ class gem_order_order(tester):
     def __init__(self):
         super().__init__()
         orm.orm.recreate(
-            order.order,
-            order.items,
-            order.salesitems,
-            order.purchaseitems,
-            order.purchaseorders,
-            order.salesorders,
-            order.order_party,
-            order.order_partytype,
             order.adjustments,
             order.adjustmenttypes,
-            order.taxes,
-            order.shippings,
-            order.miscellaneouses,
             order.discounts,
-            order.surcharges,
             order.fees,
-            party.role,
-            party.partyroletype,
-            party.party,
+            order.items,
+            order.miscellaneouses,
+            order.order,
+            order.order_party,
+            order.order_partytype,
+            order.purchaseitems,
+            order.purchaseorders,
+            order.rates,
+            order.salesitems,
+            order.salesorders,
+            order.shippings,
+            order.surcharges,
+            order.taxes,
+            party.billto,
+            party.billtopurchaser,
             party.company,
             party.customer,
-            party.placing,
             party.internal,
-            party.billto,
-            party.shipto,
-            party.billtopurchaser,
+            party.party,
+            party.partyroletype,
+            party.placing,
             party.placingbuyer,
+            party.region,
+            party.role,
+            party.shipto,
             party.shiptobuyer,
+            product.categories,
+            product.products,
         )
 
     def it_creates_salesorder(self):
@@ -20001,7 +20005,6 @@ class gem_order_order(tester):
             self.eq(adj.id, adj1.id)
             self.eq(adj.amount, adj1.amount)
             self.eq(adj.percent, adj1.percent)
-            print(repr(adj1))
 
             if adj.adjustmenttype:
                 self.eq(adj.adjustmenttype.id, adj1.adjustmenttype.id)
