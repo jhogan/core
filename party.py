@@ -247,7 +247,7 @@ class company(legalorganization):
     profit.
     """
 
-    # NOTE that in "The Data Modeling Resource Book", this entity is
+    # NOTE that in "The Data Model Resource Book", this entity is
     # called CORPORATION. However, a corporation may actually be a
     # subtype of company since all corporations are companies but not
     # all companies are corporations. See the following link for the
@@ -290,7 +290,7 @@ class name(orm.entity):
     during which it is valid.
 
     Note that this is modeled after the PERSON NAME entity in "The Data
-    Modeling Resource Book".
+    Model Resource Book".
     """
 
     # The datespan during which the person's name is vaild
@@ -848,7 +848,7 @@ class contactmechanism(orm.entity):
     ``address`` and so on.
 
     Note that this is modeled after the CONTACT MECHANISM entity in "The
-    Data Modeling Resource Book".
+    Data Model Resource Book".
     """
 
 class contactmechanism_contactmechanism(orm.association):
@@ -871,7 +871,7 @@ class phone(contactmechanism):
     telecommunications lines such as fax machines, modems and pagers.
 
     Note that this is modeled after the TELECOMMUNICATIONS NUMBER entity
-    in "The Data Modeling Resource Book".
+    in "The Data Model Resource Book".
     """
 
     # The area code as defined by the North American Numbering Plan.
@@ -895,7 +895,7 @@ class email(contactmechanism):
     """ Represents a email address contact mechanism.
 
     Note that this is modeled after the ELECTRONIC ADDRESS entity in
-    "The Data Modeling Resource Book".
+    "The Data Model Resource Book".
     """
     address = str
 
@@ -905,7 +905,7 @@ class communication(orm.entity):
     emails, and so on.
 
     Note that this is modeled after the COMMUNICATION EVENT entity in
-    "The Data Modeling Resource Book".
+    "The Data Model Resource Book".
     """
 
     # NOTE Unlike most begin/end pairs, these should actually be
@@ -923,7 +923,7 @@ class party_contactmechanism(orm.association):
     which contact mechanisms are related to which parties.
 
     Note that this is modeled after the PARTY CONTACT MECHANISM entity
-    in "The Data Modeling Resource Book".
+    in "The Data Model Resource Book".
     """
 
     def __init__(self, *args, **kwargs):
@@ -993,7 +993,7 @@ class purpose(orm.entity):
     providing human-readable information about the actual purpose.
 
     Note that this is modeled after the PARTY CONTACT MECHANISM PURPOSE
-    entity in "The Data Modeling Resource Book".
+    entity in "The Data Model Resource Book".
     """
     span = datespan
 
@@ -1017,7 +1017,7 @@ class address(contactmechanism):
     """ Maintains all postal addresses used by an enterprise.
 
     Note that this is modeled after the POSTAL ADDRESS entity in "The
-    Data Modeling Resource Book".
+    Data Model Resource Book".
     """
 
     def __init__(self, *args, **kwargs):
@@ -1082,7 +1082,7 @@ class address_region(orm.association):
     geographic region (``region``).
 
     Note that this is modeled after the POSTAL ADDRESS BOUNDRY entity in
-    "The Data Modeling Resource Book".
+    "The Data Model Resource Book".
     """
     address = address
     region = region
@@ -1092,7 +1092,7 @@ class party_address(orm.association):
     postal address.
 
     Note that this is modeled after the PARTY POSTAL ADDRESS entity in
-    "The Data Modeling Resource Book".
+    "The Data Model Resource Book".
     """
     entities  =  party_addresses
     party     =  party
@@ -1145,7 +1145,7 @@ class type(orm.entity):
         party_type association is used.
 
         Note that this is modeled after the PARTY TYPE entity in "The
-        Data Modeling Resource Book".
+        Data Model Resource Book".
     """
 
     name = str
@@ -1156,7 +1156,7 @@ class classification:
     which parties may belong.
 
     Note that this is modeled after the PARTY CLASSIFICATION entity in
-    "The Data Modeling Resource Book".
+    "The Data Model Resource Book".
     """
     # TODO
 
@@ -1166,7 +1166,7 @@ class role(orm.entity):
     environment.
 
     Note that this is modeled after the PARTY ROLE entity in
-    "The Data Modeling Resource Book".
+    "The Data Model Resource Book".
     """
 
     def __init__(self, *args, **kwargs):
@@ -1186,7 +1186,8 @@ class role_role_type(orm.entity):
     """ Describe the type of relationship a role_role association
     declares.
 
-    Note that this is modeled after the PARTY RELATIONSHIP TYPE entity in "The Data Modeling Resource Book".
+    Note that this is modeled after the PARTY RELATIONSHIP TYPE entity
+    in "The Data Model Resource Book".
     """
     # The name of the role_role associtaion type. For example,
     # "customer relationship".
@@ -1206,7 +1207,7 @@ class status(orm.entity):
     classes, e.g., ``party.role_role_status``.
 
     Note that this is modeled after the STATUS TYPE entity in "The Data
-    Modeling Resource Book".
+    Model Resource Book".
     """
 
     entities = statuses
@@ -1223,7 +1224,7 @@ class role_role_status(status):
     "pursueing more involvement".
     
     Note that this is modeled after the PARTY RELATIONSHIP STATUS TYPE
-    entity in "The Data Modeling Resource Book".
+    entity in "The Data Model Resource Book".
     """
 
     entities = role_role_statuses
@@ -1244,7 +1245,7 @@ class priority(orm.entity):
     high", "high", "medium" and "low".
 
     Note that this is modeled after the PRIORITY TYPE entity in "The
-    Data Modeling Resource Book".
+    Data Model Resource Book".
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1283,7 +1284,7 @@ class role_role(orm.association):
         Corporation.
 
     Note that this is modeled after the PARTY RELATIONSHIP entity in
-    "The Data Modeling Resource Book".
+    "The Data Model Resource Book".
     """
 
     # A timespan to indicate when the relationship between roles are
@@ -1323,7 +1324,7 @@ class personal(role):
     ``employee`, ``contractor``, ``familial`` and ``contact``.
 
     Note that this is modeled after the PERSON ROLE entity in
-    "The Data Modeling Resource Book".
+    "The Data Model Resource Book".
     """
 
 class organizational(role):
@@ -1334,13 +1335,16 @@ class organizational(role):
     ``association``.
 
     Note that this is modeled after the ORGANIZATION ROLE entity in "The
-    Data Modeling Resource Book".
+    Data Model Resource Book".
     """
 
 class supplier(organizational):
     """ A supplier(organizational(role)) implies the role of a supplier
     -- an enterprise tha may or does provide products (goods and/or
     services) to an enterprise.
+
+    `suppliers` are the party role that takes purchase orders (see
+    `order.purchaseorder`.
     """
 
 class organizationalunit(organizational):
@@ -1356,7 +1360,7 @@ class internal(organizational):
     """ The internal organizational role.
 
     Note that this entity was originally called INTERNAL ORGANIZATION in "The
-    Data Modeling Resource Book".
+    Data Model Resource Book".
     """
 
 class subsidiary(organizationalunit):
@@ -1379,7 +1383,7 @@ class roletype(orm.entity):
     """ Stores a name for a role type.
 
     Note that this is modeled after the ROLE TYPE entity in "The
-    Data Modeling Resource Book".
+    Data Model Resource Book".
     """
 
     # Stores available values for role types.
@@ -1392,7 +1396,7 @@ class partyroletype(roletype):
     that stores available values of role types.
 
     Note that this is modeled after the PARTY ROLE TYPE entity in "The
-    Data Modeling Resource Book".
+    Data Model Resource Book".
     """
 
     # TODO:ddfffc45
@@ -1424,7 +1428,7 @@ class billto(customer):
     another party.
 
     Note that this entity was originally called BILL TO CUSTOMER in "The
-    Data Modeling Resource Book".
+    Data Model Resource Book".
     """ 
 
 class placing(customer):
@@ -1439,14 +1443,14 @@ class shipto(customer):
     """ A role indicating a party that should recieve the order.
 
     Note that this entity was originally called SHIP TO CUSTOMER in "The
-    Data Modeling Resource Book".
+    Data Model Resource Book".
     """
 
 class party_type(orm.association):
     """ An association between `party` and `type`. 
 
     Note that this is modeled after the PARTY CLASSIFICATION entity in
-    "The Data Modeling Resource Book".
+    "The Data Model Resource Book".
     """
 
     # `begin` and `end` are used to track the history of the
@@ -1518,7 +1522,7 @@ class facilityroletype(orm.entity):
     association.
 
     Note that this is modeled after the FACILITY ROLE TYPE entity in
-    "The Data Modeling Resource Book".
+    "The Data Model Resource Book".
     """
 
     def __init__(self, *args, **kwargs):
@@ -1541,7 +1545,7 @@ class facility_contactmechanism(orm.association):
     address of 100 Smith Street and another of PO BOX 1234.
 
     Note that this is modeled after the FACILITY CONTACT MECHANISM entity
-    in "The Data Modeling Resource Book".
+    in "The Data Model Resource Book".
     """
 
     # The facility being associated with a contact mechanism.
@@ -1557,7 +1561,7 @@ class party_facility(orm.association):
     ``party_facility.facilityroletype`` entity.
 
     Note that this is modeled after the FACILITY ROLE entity in
-    "The Data Modeling Resource Book".
+    "The Data Model Resource Book".
     """
 
     entities = party_facilities
@@ -1589,7 +1593,7 @@ class objective(orm.entity):
     """ The objective or purpose of a ``communication`` event.
 
     Note that this is modeled after the COMMUNICATION EVENT PURPOSE
-    entity in "The Data Modeling Resource Book".
+    entity in "The Data Model Resource Book".
     """
 
     def __init__(self, *args, **kwargs):
@@ -1627,7 +1631,7 @@ class communication(orm.entity):
     (facilitator, participant, note taker, etc.)
 
     Note that this is modeled after the COMMUNICATION EVENT entity in
-    "The Data Modeling Resource Book".
+    "The Data Model Resource Book".
     """
 
     def __init__(self, *args, **kwargs):
@@ -1651,7 +1655,7 @@ class inperson(communication):
     happens face-to-face.
 
     Note that this is modeled after the FACE-TO-FACE COMMUNICATION
-    entity in "The Data Modeling Resource Book".
+    entity in "The Data Model Resource Book".
     """
 
 class webinar(communication):
@@ -1659,7 +1663,7 @@ class webinar(communication):
     exchange of information can be delivered over a party's website.
 
     Note that this is modeled after the WEBSITE COMMUNICATION
-    entity in "The Data Modeling Resource Book".
+    entity in "The Data Model Resource Book".
     """
 
 class phonecall(communication):
@@ -1667,7 +1671,7 @@ class phonecall(communication):
     information over a phone call.
 
     Note that this is modeled after the PHONE COMMUNICATION
-    entity in "The Data Modeling Resource Book".
+    entity in "The Data Model Resource Book".
     """
 
 class communicationroletype(roletype):
@@ -1693,7 +1697,7 @@ class party_communication(orm.association):
     event (facilitator, participant, note taker, etc.)
 
     Note that this is modeled after the COMMUNICATION EVENT ROLE entity
-    in "The Data Modeling Resource Book".
+    in "The Data Model Resource Book".
     """
 
     party = party
@@ -1709,7 +1713,7 @@ class communicationstatus(status):
     progres", and "completed".
 
     Note that this is modeled after the COMMUNICATION EVENT STATUS TYPE
-    entity in "The Data Modeling Resource Book".
+    entity in "The Data Model Resource Book".
     """
 
     # TODO:9247b532 The ``name`` attribute should be in ``status``, not
@@ -1731,7 +1735,7 @@ class effort(orm.entity):
     """ A work effort.
 
     Note that this is modeled after the WORK EFFORT entity in "The Data
-    Modeling Resource Book".
+    Model Resource Book".
     """
     # TODO This will need to be moved into the work effor module. This
     # may create a circular dependency issue with the party/party module
@@ -1778,7 +1782,7 @@ class casestatus(status):
     between a ``casestatus`` and a ``case``.
 
     Note that this is modeled after the CASE STATUS TYPE entity in "The
-    Data Modeling Resource Book".
+    Data Model Resource Book".
     """
 
     entities = casestatuses
@@ -1806,7 +1810,7 @@ class case_party(orm.association):
     the ``party`` plays within a ``case``.
 
     Note that this is modeled after the CASE ROLE entity in "The Data
-    Modeling Resource Book".
+    ModeModel Resource Book".
     """
 
     entities = case_parties

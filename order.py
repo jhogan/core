@@ -119,30 +119,30 @@ class salesitem(item):
     """ Represents an items for a sales order.
 
     Note that this entity was originally called SALES ORDER ITEM in "The
-    Data Modeling Resource Book".
+    Data Model Resource Book".
     """
 
-    # Tho party that the item will be shipped to.
+    # The party that the item will be shipped to.
     shipto = party.shipto
 
     # The address that the item will be shipped to.
     shiptousing = party.contactmechanism
 
-    # NOTE We may want an installat and installusing attributes if
+    # NOTE We may want an `installat` and `installusing` attributes if
     # installation is need.
 
 class purchaseitem(item):
     """ Represents an items for a purchase order.
 
     Note that this entity was originally called PURCHASE ORDER ITEM in
-    "The Data Modeling Resource Book".
+    "The Data Model Resource Book".
     """
 
 class salesorder(order):
     """ A class representing a sales order. 
 
     Note that this entity was originally called SALES ORDER in "The
-    Data Modeling Resource Book".
+    Data Model Resource Book".
     """
 
     # The role that placed the order. To get the actual party that
@@ -203,9 +203,8 @@ class order_party(orm.association):
     responsible for ensuring fulfillment of an order.
 
     Note that this association was originally called ORDER ROLE in "The
-    Data Modeling Resource Book".
+    Data Model Resource Book".
     """
-
     entities = order_parties
 
     # The order in this association
