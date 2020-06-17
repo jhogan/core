@@ -148,9 +148,7 @@ class item(orm.entity):
     # features of the composite item.
     items = items
 
-    # TODO Like `orders`, `items` can have adjustments. We would need a
-    # similar implementation along with some tests.
-    # adjustments = adjustments
+    adjustments = adjustments
 
     @property
     def total(self):

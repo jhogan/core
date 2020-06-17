@@ -19948,7 +19948,73 @@ class gem_order_order(tester):
 
         self.eq(2, adjtype)
 
-        self.eq(dec('32.6'), so.total)
-        self.eq(dec('32.6'), so1.total)
-                
+    def it_applies_adjustments_to_salesitem(self):
+        so = order.salesorder()
+
+        ''' Create a good for the sales item '''
+        diskette = gem_product_product.getvalid(product.good, comment=1)
+        diskette.name = "Jerry's box of 3½ inch diskettes"
+
+        ''' Add good to sales order '''
+        so.items += order.salesitem(
+            product = diskette,
+            quantity = 10,
+            price = 5
+        )
+
+        itm = so.items.last
+
+        itm.adjustments += order.discount(
+            amount = 1
+        )
+
+        itm.adjustments += order.discount(
+            percent = 10
+        )
+
+        itm.adjustments += order.surcharge(
+            amount = 10,
+            adjustmenttype = order.adjustmenttype(
+                name = 'Delivery outside normal geographic area'
+            ),
+        )
+
+        itm.adjustments += order.fee(
+            amount = 1.5,
+            adjustmenttype = order.adjustmenttype(
+                name = 'Order processing fee'
+            ),
+        )
+
+        so.save()
+
+        so1 = so.orm.reloaded()
+
+        adjs = so.items.last.adjustments.sorted()
+        adjs1 = so1.items.last.adjustments.sorted()
+
+        self.four(adjs)
+        self.four(adjs1)
+
+        adjtype = 0
+        for adj, adj1 in zip(adjs, adjs1):
+            self.eq(adj.id, adj1.id)
+            self.eq(adj.amount, adj1.amount)
+            self.eq(adj.percent, adj1.percent)
+            print(repr(adj1))
+
+            if adj.adjustmenttype:
+                self.eq(adj.adjustmenttype.id, adj1.adjustmenttype.id)
+                self.eq(
+                    adj.adjustmenttype.name,
+                    adj1.adjustmenttype.name
+                )
+                adjtype += 1
+
+            else:
+                self.none(adj1.adjustmenttype)
+
+        self.eq(2, adjtype)
+
+
 cli().run()
