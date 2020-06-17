@@ -20016,5 +20016,43 @@ class gem_order_order(tester):
 
         self.eq(2, adjtype)
 
+    def it_populates_rate_table(self):
+        cat = product.category()
+        cat.name = uuid4().hex
+
+        reg = party.region.create(
+            ('United States of America',  party.region.Country,    'USA'),
+            ('Arizona',                   party.region.State,      'AZ'),
+            ('Scottsdale',                party.region.City),
+            ('85224',                     party.region.Postal)
+        )
+
+        rt = order.rate(
+            percent = 7.0,
+            region = reg,
+        )
+
+        rt.save()
+
+        rt1 = rt.orm.reloaded()
+
+        self.eq(rt.id, rt1.id)
+        self.eq(rt.region.id, rt1.region.id)
+        self.none(rt.category)
+        self.none(rt1.category)
+
+        rt = order.rate(
+            percent = 7.0,
+            region = reg,
+            category = cat,
+        )
+
+        rt.save()
+
+        rt1 = rt.orm.reloaded()
+
+        self.eq(rt.id, rt1.id)
+        self.eq(rt.region.id, rt1.region.id)
+        self.eq(rt.category.id, rt1.category.id)
 
 cli().run()

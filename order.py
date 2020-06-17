@@ -37,6 +37,7 @@ class miscellaneouses(adjustments):        pass
 class discounts(adjustments):              pass
 class surcharges(adjustments):             pass
 class fees(adjustments):                   pass
+class rates(orm.associations):             pass
 
 class order(orm.entity):
     """ The generic, abstract order class from with the `salesorder` and
@@ -407,5 +408,23 @@ class fee(adjustment):
     ``adjustments`` collection to apply a fee to an ``order`` or
     order ``item`` respectively.
     """
+
+class rate(orm.association):
+    """ ``rate`` stores a sales tax percentage that could very by
+    ``party.region`` and also may very by ``product.category``.
+
+    Note that this entity was originally called SALES TAX LOOKUP in
+    "The Data Model Resource Book".
+    """
+
+    # The sales tax rate.
+    percent = dec
+
+    # The geographic region, such as County, City or State.
+    region = party.region
+
+    # The product category that may affect the tax rate (perhaps for a
+    # special "sin tax" on tobacco or alcohol products).
+    category = product.category
 
 
