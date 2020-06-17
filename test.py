@@ -19442,6 +19442,14 @@ class gem_order_order(tester):
             order.salesorders,
             order.order_party,
             order.order_partytype,
+            order.adjustments,
+            order.adjustmenttypes,
+            order.taxes,
+            order.shippings,
+            order.miscellaneouses,
+            order.discounts,
+            order.surcharges,
+            order.fees,
             party.role,
             party.partyroletype,
             party.party,
@@ -19451,9 +19459,12 @@ class gem_order_order(tester):
             party.internal,
             party.billto,
             party.shipto,
+            party.billtopurchaser,
+            party.placingbuyer,
+            party.shiptobuyer,
         )
 
-    def it_creates(self):
+    def it_creates_salesorder(self):
         ''' Create products '''
         # Goods
         paper = gem_product_product.getvalid(product.good, comment=1)
@@ -19757,4 +19768,187 @@ class gem_order_order(tester):
             self.eq(op.party.id, op1.party.id)
             self.eq(op.order_partytype.id, op1.order_partytype.id)
 
+    def it_creates_purchaseorder(self):
+        """ Creating a purchase order is very similar to creating a
+        sales order (see it_creates_salesorder). The difference is that
+        the `purchaseorder` entity is used intead of the `salesorder`
+        entity and `purchaseitem` is used instead of `salesitem`. The
+        `purchaseorder` entity has slightly different party roles
+        (`shiptobuyer` instead of `shipto`(customer), etc.).  However,
+        purchuse orders use the same order_party, order_partytype and
+        contactmechanism classes that salesorders use.  """
+
+        ''' Create parties involved in purchase order '''
+        sub      = party.company(name='ABC Subsidiary')
+        ace      = party.company(name='Ace Cleaning Services')
+        abccorp  = party.company(name='ABC Corporation')
+        abcstore = party.company(name='ABC Retail Store')
+
+        ''' Create contact mechanisms '''
+        subaddr = party.address(
+            address1='100 Main Street',
+            address2='New York, New York',
+        )
+
+        aceaddr = party.address(
+            address1='3590 Cottage Avenue',
+            address2='New York, New York',
+        )
+
+        abccorpaddr = party.address(
+            address1='100 Main Street',
+            address2='New York, New York',
+        )
+
+        abcstoreaddr = party.address(
+            address1='2345 Johnson Blvd',
+            address2='New York, New York',
+        )
+
+        ''' Create purchase order '''
+        po  =  order.purchaseorder()
+
+        ''' Create roles involved in order '''
+        shipto           =  party.shiptobuyer()
+        placing          =  party.placingbuyer()
+        supplier         =  party.supplier()
+        billto           =  party.billtopurchaser()
+
+        ''' Create a good for the sales item '''
+        paper = gem_product_product.getvalid(product.good, comment=1)
+        paper.name='Johnson fine grade 8½ by 11 bond paper'
+        po.items += order.purchaseitem(
+            product = paper,
+            quantity = 10,
+            price = dec('8.00'),
+            shipto = shipto,
+        )
+
+        ''' Associate roles to the order '''
+        po.placing   =  placing
+        po.supplier  =  supplier
+        po.billto    =  billto
+
+        ''' Associate contact mechanism to the order '''
+        po.placedusing  =  subaddr
+        po.takenusing   =  aceaddr
+        po.billtousing  =  abccorpaddr
+
+        ''' Associate contact mechanism to the order item'''
+        po.items.last.shiptousing = abcstoreaddr
+
+        ''' Associate roles to the parties '''
+        sub.roles       +=  placing
+        ace.roles       +=  supplier
+        abccorp.roles   +=  billto
+        abcstore.roles  +=  shipto
+
+        po.save()
+
+        po1 = po.orm.reloaded()
+
+        placing1 = po1.placing
+        self.eq(placing.id, placing1.id)
+
+        sub1 = placing1.party
+        self.eq(sub.id, sub1.id)
+
+        supplier1 = po1.supplier
+        self.eq(supplier.id, supplier1.id)
+
+        ace1 = supplier1.party
+        self.eq(ace.id, ace1.id)
+
+        billto1 = po1.billto
+        self.eq(billto.id, billto1.id)
+
+        abccorp1 = billto1.party
+        self.eq(abccorp.id, abccorp1.id)
+
+        subaddr1      =  po1.placedusing
+        aceaddr1      =  po1.takenusing
+        abccorpaddr1  =  po1.billtousing
+
+        self.eq(subaddr.id,      subaddr1.id)
+        self.eq(aceaddr.id,      aceaddr1.id)
+        self.eq(abccorpaddr.id,  abccorpaddr1.id)
+
+        itm = po1.items.first.orm.cast(order.purchaseitem)
+        shipto1 = itm.shipto
+        self.eq(shipto.id, shipto1.id)
+
+        abcstore1 = shipto1.party
+        self.eq(abcstore.id, abcstore1.id)
+
+        abcstoreaddr1 = itm.shiptousing
+        self.eq(abcstoreaddr.id, abcstoreaddr1.id)
+
+    def it_applies_adjustments(self):
+        so = order.salesorder()
+
+        ''' Create a good for the sales item '''
+        diskette = gem_product_product.getvalid(product.good, comment=1)
+        diskette.name = "Jerry's box of 3½ inch diskettes"
+
+        ''' Add good to sales order '''
+        so.items += order.salesitem(
+            product = diskette,
+            quantity = 10,
+            price = 5
+        )
+
+        so.adjustments += order.discount(
+            amount = 1
+        )
+
+        so.adjustments += order.discount(
+            percent = 10
+        )
+
+        so.adjustments += order.surcharge(
+            amount = 10,
+            adjustmenttype = order.adjustmenttype(
+                name = 'Delivery outside normal geographic area'
+            ),
+        )
+
+        so.adjustments += order.fee(
+            amount = 1.5,
+            adjustmenttype = order.adjustmenttype(
+                name = 'Order processing fee'
+            ),
+        )
+
+        so.save()
+
+        so1 = so.orm.reloaded()
+
+        adjs = so.adjustments.sorted()
+        adjs1 = so1.adjustments.sorted()
+
+        self.four(adjs)
+        self.four(adjs1)
+
+        adjtype = 0
+        for adj, adj1 in zip(adjs, adjs1):
+            self.eq(adj.id, adj1.id)
+            self.eq(adj.amount, adj1.amount)
+            self.eq(adj.percent, adj1.percent)
+
+            if adj.adjustmenttype:
+                self.eq(adj.adjustmenttype.id, adj1.adjustmenttype.id)
+                self.eq(
+                    adj.adjustmenttype.name,
+                    adj1.adjustmenttype.name
+                )
+                adjtype += 1
+
+            else:
+                self.none(adj1.adjustmenttype)
+
+        self.eq(2, adjtype)
+
+        self.eq(dec('32.6'), so.total)
+        self.eq(dec('32.6'), so1.total)
+                
 cli().run()

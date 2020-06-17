@@ -49,6 +49,9 @@ class employees(personals):                                  pass
 class customers(personals):                                  pass
 class billtos(customers):                                    pass
 class placings(customers):                                   pass
+class placingbuyers(customers):                              pass
+class billtopurchasers(customers):                           pass
+class shiptobuyers(customers):                               pass
 class shiptos(customers):                                    pass
 class party_types(orm.associations):                         pass
 class organizations(parties):                                pass
@@ -1436,7 +1439,38 @@ class placing(customer):
     party.
 
     Note that this entity was originally called PLACING CUSTOMER in "The
-    Data Modeling Resource Book".
+    Data Model Resource Book".
+    """
+
+class placingbuyer(customer):
+    """ The placing buyer is the role a party plays when it places a
+    purchase order.
+
+    Note that this entity was originally called PLACING BUYER in "The
+    Data Model Resource Book".
+    """
+
+class billtopurchaser(customer):
+    """ The bill to purchaser is the role a party plays when it picks up
+    the bill for a purchase order.
+
+    Note that this entity was originally called BILL TO PURCHASER in
+    "The Data Model Resource Book".
+    """
+
+class shiptobuyer(customer):
+    """ The ship to buyer is the role a pary plays when it is intended
+    to receive the purchase order.
+
+    Note that this entity was originally called SHIP TO PURCHASER in
+    "The Data Model Resource Book".
+    """
+
+class placingbuyer(customer):
+    """ 
+
+    Note that this entity was originally called PLACING BUYER in "The
+    Data Model Resource Book".
     """
 
 class shipto(customer):
