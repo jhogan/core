@@ -19451,6 +19451,10 @@ class gem_order_order(tester):
             order.shippings,
             order.surcharges,
             order.taxes,
+            order.status,
+            order.statustypes,
+            order.term,
+            order.termtypes,
             party.billto,
             party.billtopurchaser,
             party.company,
@@ -20057,5 +20061,138 @@ class gem_order_order(tester):
         self.eq(rt.id, rt1.id)
         self.eq(rt.region.id, rt1.region.id)
         self.eq(rt.category.id, rt1.category.id)
+
+    def it_records_statuses(self):
+        ''' Create sales order '''
+        so = order.salesorder()
+
+        ''' Create statutes '''
+        received = order.statustype(name='Recieved')
+        approved = order.statustype(name='Approved')
+        canceled = order.statustype(name='Canceled')
+
+        ''' Create a good for the sales item '''
+        diskette = gem_product_product.getvalid(product.good, comment=1)
+        diskette.name = "Jerry's box of 3½ inch diskettes"
+
+        ''' Add good to sales order '''
+        so.items += order.salesitem(
+            product = diskette,
+            quantity = 10,
+            price = 5
+        )
+
+        # Get the sales item
+        itm = so.items.last
+
+        so.statuses += order.status(
+            begin = primative.datetime('2020-01-04 13:11:23'),
+            statustype = received,
+        )
+
+        itm.statuses += order.status(
+            begin = primative.datetime('2020-01-04 13:11:24'),
+            statustype = received,
+        )
+
+        so.statuses += order.status(
+            begin = primative.datetime('2020-01-04 13:11:25'),
+            statustype = received,
+        )
+
+        itm.statuses += order.status(
+            begin = primative.datetime('2020-01-04 13:11:26'),
+            statustype = approved,
+        )
+
+        so.save()
+        
+        so1 = so.orm.reloaded()
+
+        es = (
+            (so, so1),
+            (so.items.first, so1.items.first)
+        )
+
+        for e, e1 in es:
+            sts  = e.statuses.sorted()
+            sts1 = e1.statuses.sorted()
+
+            self.two(sts)
+            self.two(sts1)
+
+            for st, st1 in zip(sts, sts1):
+                self.eq(st.id, st1.id)
+                self.eq(st.statustype.id, st1.statustype.id)
+
+    def it_creates_terms(self):
+        # Create an order
+        so = order.salesorder()
+
+        # Add a term to the order
+        so.terms += order.term(
+            value = 25,
+            termtype = order.termtype(
+                name = 'Percentage cancellation charge'
+            )
+        )
+
+        # Add another term to the order
+        so.terms += order.term(
+            value = 10,
+            termtype = order.termtype(
+                name = 'Days within which one may cancel order '
+                       'without a penalty'
+            )
+        )
+
+        # Create a product for the order
+        pen = gem_product_product.getvalid(product.good, comment=1)
+        pen.name ='Henry #2 Pencile'
+
+        # Add an item
+        so.items += order.salesitem(
+            product = pen
+        )
+
+        # Add a term to the item
+        so.items.last.terms += order.term(
+            quantity = 1,
+            price = 5,
+        )
+
+        # Assign a termtype to the term
+        so.items.last.terms.last.termtype = order.termtype(
+            name = 'No exchange or refunds once delivered'
+        )
+
+        so.save()
+
+        so1 = so.orm.reloaded()
+
+        trms = so.terms.sorted()
+        trms1 = so1.terms.sorted()
+
+        self.two(trms)
+        self.two(trms1)
+
+        for trm, trm1 in zip(trms, trms1):
+            self.eq(trm.id, trm1.id)
+            self.eq(trm.termtype.id, trm1.termtype.id)
+            self.eq(trm.termtype.name, trm1.termtype.name)
+
+        trms = so.items.first.terms
+        trms1 = so1.items.first.terms
+
+        self.one(trms)
+        self.one(trms1)
+
+        self.eq(trms.first.id, trms1.first.id)
+        self.eq(trms.first.termtype.id, trms1.first.termtype.id)
+        self.eq(trms.first.termtype.name, trms1.first.termtype.name)
+
+
+
+
 
 cli().run()

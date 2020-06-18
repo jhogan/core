@@ -38,6 +38,10 @@ class discounts(adjustments):              pass
 class surcharges(adjustments):             pass
 class fees(adjustments):                   pass
 class rates(orm.associations):             pass
+class statuses(orm.entities):             pass
+class statustypes(orm.entities):           pass
+class terms(orm.entities):                pass
+class termtypes(orm.entities):             pass
 
 class order(orm.entity):
     """ The generic, abstract order class from with the `salesorder` and
@@ -56,6 +60,14 @@ class order(orm.entity):
     # A collection of `adjustment` entities that can be applied to an
     # order to increase or decrease the orders price
     adjustments = adjustments
+
+    # A collection of statuses that this order has been in, such as
+    # "received", "approved" or "canceled".
+    statuses = statuses
+
+    # A collection of arrangements that a party has agreed on regrading
+    # the ``order``.
+    terms = terms
 
     @property
     def total(self):
@@ -150,6 +162,14 @@ class item(orm.entity):
     items = items
 
     adjustments = adjustments
+
+    # A collection of arrangements that a party has agreed on regrading
+    # the ``item``.
+    terms = terms
+
+    # A collection of statuses that this item has been in, such as
+    # "received", "approved" or "canceled".
+    statuses = statuses
 
     @property
     def total(self):
@@ -426,5 +446,66 @@ class rate(orm.association):
     # The product category that may affect the tax rate (perhaps for a
     # special "sin tax" on tobacco or alcohol products).
     category = product.category
+
+class status(orm.entity):
+    """ An ``order`` or order ``item`` may be in a number of statuses over a
+    period of time such as "received", "approved" and "canceled".
+    `order` and `item` have a collection of statuses that
+    track the history their status history.
+
+    The name of the states is store in `statustype`.
+
+    Note that this entity was originally called ORDER STATUS in "The
+    Data Model Resource Book".
+    """
+    entities = statuses
+
+    # The date and time when the order transitioned in to the given
+    # status.
+    begin = datetime
+
+class statustype(orm.entity):
+    """ Records the type of status.
+
+    Note that this entity was originally called ORDER STATUS TYPE in
+    "The Data Model Resource Book".
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    # The name of the status type, such as "received", "approved" or
+    # "canceled".
+    name = str
+
+    # The collection of statuses belonging to this type
+    statuses = statuses
+
+class term(orm.entity):
+    """ An ``order`` or an ``item`` can have multiple ``terms``. A term
+    an arrangement that a party has agreed on regarding an ``order`` or
+    an ``item``.
+
+    Note that this entity was originally called ORDER TERM in "The Data
+    Model Resource Book".
+    """
+    
+    # The term value attribute is applicale only to some of the order
+    # terms, an its meaning is dependent hon the type of term.
+    value = dec
+
+class termtype(orm.entity):
+    """ The ``termtype`` class categorizes ``term`` entity objects.
+
+    Note that this entity was originally called TERM TYPE in
+    "The Data Model Resource Book".
+    """
+
+    # The name or description of the term type
+    name = str
+
+    # The collection of term entity objects that belong to this
+    # termtype.
+    terms = terms
 
 
