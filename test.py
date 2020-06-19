@@ -19438,6 +19438,7 @@ class gem_order_order(tester):
             order.adjustmenttypes,
             order.discounts,
             order.fees,
+            order.item_items,
             order.items,
             order.miscellaneouses,
             order.order,
@@ -19449,10 +19450,10 @@ class gem_order_order(tester):
             order.salesitems,
             order.salesorders,
             order.shippings,
-            order.surcharges,
-            order.taxes,
             order.status,
             order.statustypes,
+            order.surcharges,
+            order.taxes,
             order.term,
             order.termtypes,
             party.billto,
@@ -20190,6 +20191,58 @@ class gem_order_order(tester):
         self.eq(trms.first.id, trms1.first.id)
         self.eq(trms.first.termtype.id, trms1.first.termtype.id)
         self.eq(trms.first.termtype.name, trms1.first.termtype.name)
+
+    def it_associates_item_with_item(self):
+        so = order.salesorder()
+
+        # Create a product for the order
+        pen = gem_product_product.getvalid(product.good, comment=1)
+        pen.name ='Henry #2 Pencile'
+
+        # Add an item
+        so.items += order.salesitem(
+            product = pen,
+            quantity = 20,
+        )
+
+        po = order.purchaseorder()
+
+        # Add an item
+        po.items += order.purchaseitem(
+            product = pen,
+            quantity = 100,
+        )
+
+        ii = order.item_item(
+            subject = so.items.last,
+            object  = po.items.last,
+        )
+
+        ii.save()
+
+        itm = so.items.last
+        itm1 = so.items.last.orm.reloaded()
+
+        iis  = itm.item_items
+        iis1 = itm1.item_items
+
+        self.one(iis)
+        self.one(iis1)
+
+        self.eq(
+            iis.first.subject.id,
+            iis1.first.subject.id,
+        )
+
+        self.eq(
+            iis.first.object.id,
+            iis1.first.object.id,
+        )
+
+
+
+
+
 
 
 

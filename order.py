@@ -38,10 +38,11 @@ class discounts(adjustments):              pass
 class surcharges(adjustments):             pass
 class fees(adjustments):                   pass
 class rates(orm.associations):             pass
-class statuses(orm.entities):             pass
+class statuses(orm.entities):              pass
 class statustypes(orm.entities):           pass
-class terms(orm.entities):                pass
+class terms(orm.entities):                 pass
 class termtypes(orm.entities):             pass
+class item_items(orm.associations):         pass
 
 class order(orm.entity):
     """ The generic, abstract order class from with the `salesorder` and
@@ -508,4 +509,27 @@ class termtype(orm.entity):
     # termtype.
     terms = terms
 
+class item_item(orm.association):
+    """ This reflexive association links a ``item`` to another.
 
+    An example of this association occurs when a soles order itme is
+    dependent on a purchase order item. For example, a distributor may
+    receive a sales order but may not have enough inventory in stock to
+    cover one of the items on it. In tur, the distributor may place a
+    purchace order to one of its suppliers (or many POs to mayn
+    suppliers) to fulfill the item that was short. In other words, the
+    sales order item was "backordered" and covered by a pruchase order
+    item.
+
+    Note that this entity was originally called ORDER ITEM ASSOCIATION
+    in "The Data Model Resource Book".
+    """
+
+    # NOTE We may want to create an item_item_type entity to indicate
+    # the type of association this is. 
+
+    # The first item being linked
+    subject = item
+
+    # The other item being linked
+    object = item
