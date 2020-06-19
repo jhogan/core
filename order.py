@@ -6,6 +6,24 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2020
 
+""" This module contains ``orm.entity`` objects related the management
+of sales orders, purchase orders, etc.
+
+These entity objects are based on the "Ordering Products" chapter of
+"The Data Model Resource Book".
+
+Examples:
+    See test.py for examples. 
+
+Todo:
+    TODO: So far, the most common order entities have been declared. The
+    second section of the "Ordering Products" chapter, called "Optional
+    Order Model", offers data models to track order requirements,
+    requests, quotes and agreements (the book calls these entities
+    REQUIREMENTs, REQUESTs, QUOTEs and AGREEMENTs respectively). These
+    can be implemented when needed.
+"""
+
 from datetime import datetime, date
 from dbg import B
 from decimal import Decimal as dec
@@ -52,7 +70,7 @@ class order(orm.entity):
     # The date on which the enterprise received or gave the order. This
     # is in contrast to the inherited `createdat` date which is used to
     # indicate when the order was entered into the system (called the
-    # `entry date` in the "Data Model Resource Book").
+    # `entry date` in "The Data Model Resource Book").
     received = date
 
     # The collection of `saleitems` or `purchaseitem` for this order.

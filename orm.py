@@ -4656,6 +4656,7 @@ class orm:
             # exist and are accessable via the construct with no fuss.
             self.instance.save()
             
+    # TODO This should probably be renamed to `loaded`
     def reloaded(self):
         return self.entity(self.instance.id)
 
