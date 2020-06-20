@@ -80,7 +80,7 @@ import textwrap
 #
 # This may or may not be important. So far, the need to access
 # superentities attributes has not come up. However, if the need arises,
-# we may want to correct this.
+# we will want to correct this.
 
 # TODO I think text attributes should be None by default and this should
 # not be a validation error. We can create a fieldmapping.istextalias to
@@ -3005,14 +3005,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 map = sup_orm.mappings(attr)
                 if map:
                     map_type = type(map)
-                    if map_type is entitymapping:
-                        # We don't want an entitymapping from a super
-                        # returned.  This would mean conc.artist would
-                        # work. But concerts don't have artists;
-                        # presentations do. Concerts have singers.
-                        msg = "'%s' object has no attribute '%s'"
-                        msg %= self.__class__.__name__, attr
-                        raise AttributeError(msg)
                         
                     v = getattr(sup, map.name)
                     # Assign the composite reference to the constituent
@@ -4667,6 +4659,7 @@ class orm:
             # exist and are accessable via the construct with no fuss.
             self.instance.save()
             
+    # TODO This should probably be renamed to `loaded`
     def reloaded(self):
         return self.entity(self.instance.id)
 

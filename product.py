@@ -350,7 +350,7 @@ class category(orm.entity):
     """ A recursive entity to categories products.
 
     Note that this entity was originally called PRODUCT CATEGORY in "The
-    Data Modeling Resource Book".
+    Data Model Resource Book".
     """
     entities = categories
 
@@ -491,7 +491,7 @@ class category_type(orm.association):
     `end` date are included.
 
     Note that this class is based off the MARKET INTEREST entity in "The
-    Data Modeling Resource Book". The name "category_type" is used
+    Data Model Resource Book". The name "category_type" is used
     instead because it adhers to the ORM's convention on naming
     associations - consequently resulting in an unfortunate misnomer.
     """
@@ -505,7 +505,7 @@ class feature(orm.entity):
     `product_feature` associations.
 
     Note that this entity was originally called PRODUCT FEATURE in "The
-    Data Modeling Resource Book".
+    Data Model Resource Book".
     """
     name = str
 
@@ -601,7 +601,7 @@ class measure(orm.entity):
     """ A `measure` defines the product in terms of the type of
     measurement for the product. See `dimension` for more.
 
-    Note, this class is called UNIT OF MEASURE in the "The Data Modeling
+    Note, this class is called UNIT OF MEASURE in the "The Data Model
     Resource Book".
     """
     abbr        =  str
@@ -727,7 +727,7 @@ class feature_feature(orm.association):
     gives `feature_feature` a `product` composite.)
 
     Note that this entity was originally called
-    PRODUCT FEATURE INTERACTION in "The Data Modeling Resource Book".
+    PRODUCT FEATURE INTERACTION in "The Data Model Resource Book".
     """
 
     # Constants for the `type` property. Do not change the values for
@@ -782,7 +782,7 @@ class product_feature(orm.association):
     selectable with the product.
 
     Note that this entity was originally called
-    PRODUCT FEATURE APPLICABILITY in "The Data Modeling Resource Book".
+    PRODUCT FEATURE APPLICABILITY in "The Data Model Resource Book".
     """
 
     ''' Types '''
@@ -963,7 +963,7 @@ class guideline(orm.entity):
     internal organization, such as a `party.division`.
 
     Note that this class is based off the REORDER GUILDLINE entity in "The
-    Data Modeling Resource Book".
+    Data Model Resource Book".
     """
 
     # A datespan to indicate when the guildelines are valid
@@ -1088,7 +1088,7 @@ class status(orm.entity):
     repaired", "slighly damaged", "defective", "scrap" and so on.
 
     Note that this entity was originally called
-    INVENTORY ITEM STATUS TYPE in "The Data Modeling Resource Book".
+    INVENTORY ITEM STATUS TYPE in "The Data Model Resource Book".
     """
 
     entities = statuses
@@ -1106,7 +1106,7 @@ class variance(orm.entity):
     or inspections of the item.
 
     Note that this entity was originally called ITEM VARIANCE in "The
-    Data Modeling Resource Book".
+    Data Model Resource Book".
     """
 
     # The physical inventory date, i.e., the date that the item variance
@@ -1148,7 +1148,7 @@ class price(orm.entity):
     """ The price of a product. See `price`'s subtypes for more.
 
     Note that this entity was originally called PRICE COMPONENT in "The
-    Data Modeling Resource Book".
+    Data Model Resource Book".
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1161,7 +1161,7 @@ class price(orm.entity):
                 except KeyError:
                     setattr(self, prop, None)
 
-    # NOTE "The Data Modeling Resource Book" specifies each of the
+    # NOTE "The Data Model Resource Book" specifies each of the
     # subentity objects. However, it also says, "These represents the
     # common variables for pricing; however, the enterprise needs to
     # determine if these variables are applicable or if there are other
@@ -1220,7 +1220,7 @@ class base(price):
     """ The starting price for a product.
 
     Note that this entity was originally called BASE PRICE in "The
-    Data Modeling Resource Book".
+    Data Model Resource Book".
     """
     pass
 
@@ -1228,14 +1228,14 @@ class discount(price):
     """ This entity stores a valid reduction to the base price.
 
     Note that this entity was originally called DISCOUNT COMPONENT in
-    "The Data Modeling Resource Book".
+    "The Data Model Resource Book".
     """
 
 class surcharge(price):
     """ This entity adds on possible charges to the price of a product.
 
     Note that this entity was originally called SURCHARGE COMPONENT in
-    "The Data Modeling Resource Book".
+    "The Data Model Resource Book".
     """
     pass
 
@@ -1243,7 +1243,7 @@ class suggested(price):
     """ This entity adds on possible charges to the price of a product.
 
     Note that this entity was originally called
-    MANUFACTURER SUGGESTED PRICE in "The Data Modeling Resource Book".
+    MANUFACTURER SUGGESTED PRICE in "The Data Model Resource Book".
     """
     pass
 
@@ -1252,7 +1252,7 @@ class onetime(price):
     time.
 
     Note that this entity was originally called ONE TIME CHARGE in "The
-    Data Modeling Resource Book".
+    Data Model Resource Book".
     """
     pass
 
@@ -1261,7 +1261,7 @@ class recurring(price):
     time frequencey measure (per hour, per day, per month).
 
     Note that this entity was originally called RECURRING CHARGE in "The
-    Data Modeling Resource Book".
+    Data Model Resource Book".
     """
     pass
   
@@ -1271,7 +1271,7 @@ class utilization(price):
     "internet hits" to describe the charge for Web hosting services.
 
     Note that this entity was originally called UTILIZATION CHARGE in
-    "The Data Modeling Resource Book".
+    "The Data Model Resource Book".
     """
     quantity = int
 
@@ -1282,7 +1282,7 @@ class quantitybreak(orm.entity):
     purchased for the given product.
 
     Note that this entity was originally called QUANTITY BREAK in
-    "The Data Modeling Resource Book".
+    "The Data Model Resource Book".
     """
 
     begin = int
@@ -1301,7 +1301,7 @@ class value(orm.entity):
     pricing levels based on total amounts of orders.
 
     Note that this entity was originally called ORDER VALUE in "The Data
-    Modeling Resource Book".
+    Model Resource Book".
     """
 
     # The span an order's total amount can fall in to be applicable for
@@ -1319,7 +1319,7 @@ class salestype(orm.entity):
     price than retail-based salse or catalog-based sales.
 
     Note that this entity was originally called SALES TYPE in "The Data
-    Modeling Resource Book".
+    Model Resource Book".
     """
 
     # The name or description for this sales type
@@ -1334,7 +1334,7 @@ class estimate(orm.entity):
     estimated costs.
 
     Note that this entity was originally called ESTIMATED PRODUCT COST
-    in "The Data Modeling Resource Book".
+    in "The Data Model Resource Book".
     """
 
     # NOTE There is a one-to-many relationship between
@@ -1367,7 +1367,7 @@ class estimatetype(orm.entity):
     """ This entity specifies what tpo of cost an ``estimate`` is.
 
     Note that this entity was originally called COST COMPONENT TYPE
-    in "The Data Modeling Resource Book".
+    in "The Data Model Resource Book".
     """
 
     # The name or description of the estimate type
@@ -1384,7 +1384,7 @@ class product_product(orm.association):
     relationship type.
 
     Note that this entity was originally called PRODUCT ASSOCIATION
-    in "The Data Modeling Resource Book".
+    in "The Data Model Resource Book".
     """
 
     def __init__(self, *args, **kwargs):
@@ -1423,7 +1423,7 @@ class product_product(orm.association):
     # `end` dates can be used to specify the time frames that products
     # may be substituted for each other. The `quantity` attribute allows
     # a product to be substituted for a certain quantity of another
-    # product. (See PRODUCT SUBSTITUTE in "The Data Modeling Resource
+    # product. (See PRODUCT SUBSTITUTE in "The Data Model Resource
     # Book" for examples). The `comment` attribute provides additional
     # information regarding the substution of a product; for example,
     # "try not to substitute with this product if it can be avoided as

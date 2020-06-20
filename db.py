@@ -348,6 +348,7 @@ class connection(entity):
             return dbresultset(cur)
 
         for _ in range(2):
+            conn = None
             try:
                 conn = self._connection
                 cur = conn.cursor()
@@ -364,7 +365,7 @@ class connection(entity):
                 except:
                     errno = ''
 
-                isopen = conn.open
+                isopen = conn and conn.open
 
                 if errno == 2006 or not isopen:
                     msg = 'Reconnect[{0}]: errno: {1}; isopen: {2}'
