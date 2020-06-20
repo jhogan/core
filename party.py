@@ -152,9 +152,7 @@ class party(orm.entity):
     # organization, business person, or place.
     isicv4 = str, 1, 1
 
-    # Removing this constituent declaration. For some reason it causes
-    # 297f8176 to happen. TODO:297f8176 Uncomment when 297f8176 is
-    # fixed.
+    # A collection of party roles this party plays.
     roles = roles
 
 class organization(party):
@@ -1545,8 +1543,8 @@ class facility(orm.entity):
     facilities = facilities
 
     # TODO There should probably be brokenrules to ensure commonsense
-    # notions such as: A `Room` may be within a `Floor`, but a `Floor` may not
-    # be within a `Room`.
+    # notions such as: A `Room` may be within a `Floor`, but a `Floor`
+    # may not be within a `Room`.
 
 class facilityroletype(orm.entity):
     """ The role being played between a party and a facility. For

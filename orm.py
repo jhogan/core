@@ -11,7 +11,12 @@
 "Simplicity is complexity resolved." 
     # Constantin Brancusi, Romanian Sculptor
 
-""" This file contains all classes related to object-relational mapping.
+""" This module contains all classes related to object-relational
+mapping.
+
+Todo:
+    TODO: s/explicit attribute/imperitive attribute/
+    
 """
 
 from collections.abc import Iterable
@@ -1977,10 +1982,15 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             # brokenrule collections being tested at the bottom of
             # it_loads_and_saves_reflexive_associations_of_subentity_objects
             # for more clarifications.
+
+            # TODO Replace with any().
+            # 
+            #     if any(e in guestbook for e in self): return brs
             for e in self:
                 if e in guestbook:
                     return brs
 
+        # Replace with any() - see above.
         for e in self:
             if not isinstance(e, self.orm.entity):
                 prop = type(self).__name__
@@ -2787,6 +2797,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         else:
             guestbook += self,
 
+        # TODO s/super/sup/
         super = self.orm._super
         if super:
             brs += super._getbrokenrules(

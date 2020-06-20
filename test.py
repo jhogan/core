@@ -2064,7 +2064,8 @@ class test_entity(tester):
 
     def it_gets_brokenrules(self):
         """ This functionality is tested in
-        test_entities.it_gets_brokenrules."""
+        test_entities.it_gets_brokenrules.
+        """
         pass
 
 class test_table(tester):
@@ -7258,8 +7259,6 @@ class test_orm(tester):
 
         self.eq(Δ * 255, fact.serial)
 
-
-
     def it_calls_text_attr_on_entity(self):
         map = artifact.orm.mappings['comments']
 
@@ -9914,7 +9913,6 @@ class test_orm(tester):
         # presentation object.
         self.eq(loc2.presentation.name, name)
         self.eq(loc2.presentation.artist.presentations.first.name, name)
-
 
     def it_saves_and_loads_subsubentity_constituent(self):
         # Make sure the constituent is None for new composites
@@ -16746,10 +16744,6 @@ class gem_party_contactmechanism(tester):
             else:
                 part, name = cls(), part
                 if cls is party.person:
-                    # FIXME:d7f877ef person.name does not exist yet and I
-                    # was having a hard time getting it to work so I
-                    # used person.first instead. NOTE that this will
-                    # break if party.roles is uncommented. See 297f8176.
                     part.first = name
                 part.name = name
                 parts += part
@@ -19275,9 +19269,6 @@ class gem_case(tester):
         self.expect(None, lambda: party.casestatus(name='Active'))
 
     def it_associates_case_to_party(self):
-        # NOTE Names don't work if party.roles exist. This is due to
-        # 297f8176. If `party.roles` needs to be restored, remove the
-        # kwargs.
         jerry = party.person(first="Jerry", last="Red")
 
         # Create case
@@ -20331,9 +20322,5 @@ class gem_ship(tester):
                 self.eq(itm.good.id, itm1.good.id)
             elif itm1.contents:
                 self.eq(itm.contents, itm1.contents)
-
-        
-        
-
 
 cli().run()
