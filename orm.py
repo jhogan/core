@@ -20,7 +20,7 @@ Todo:
 """
 
 from collections.abc import Iterable
-from contextlib import suppress
+from contextlib import suppress, contextmanager
 from datetime import datetime, date
 from dbg import B
 from enum import Enum, unique
@@ -93,6 +93,37 @@ import textwrap
 # at the moment. It just seems like a lot of fields that are of type
 # text (field names like description, comment, instructions, etc. should
 # by default be optional.)
+
+class collation(entitiesmod.entity):
+
+    class guestbook(entitiesmod.entities):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            
+            self.signatures = list()
+
+        def sign(self, e):
+            self.signatures.append(e)
+
+        def __contains(self, other):
+            return other in self.signatures
+
+    class _stack(entitiesmod.entities):
+        pass
+
+    stack = _stack()
+
+    def __init__(self):
+        self.guestbook = collation.guestbook()
+
+    @contextmanager
+    def collate(self):
+        co = collation()
+        collation.stack += co
+
+        yield co
+
+        collation.stack.pop()
 
 @unique
 class types(Enum):
@@ -2784,11 +2815,21 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         
     @property
     def brokenrules(self):
-        return self._getbrokenrules()
+        if collation.stack.ispopulated:
+            return self._getbrokenrules()
+
+        with collation().collate():
+            return self._getbrokenrules()
 
     def _getbrokenrules(self, guestbook=None, followentitymapping=True, followentitiesmapping=True):
         brs = entitiesmod.brokenrules()
 
+        gb = collation.stack.last.guestbook
+        if self in gb:
+            return brs
+        else:
+            gb.sign(self)
+            
         # This "guestbook" logic prevents infinite recursion and duplicated
         # brokenrules.
         guestbook = [] if guestbook is None else guestbook

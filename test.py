@@ -3437,6 +3437,14 @@ class artist(orm.entity):
 
     def __str__(self):
         return self.fullname
+
+    @property
+    def brokenrules(self):
+        brs = super().brokenrules
+        em = self.email
+        if '@' not in em:
+            brs += brokenrule('Email address has no @ in it')
+        return brs
         
 class artist_artifacts(orm.associations):
     pass
@@ -3774,6 +3782,10 @@ class test_orm(tester):
             cnt += int(chron.op not in ('reconnect',))
             
         self.eq(t.count, cnt, msg)
+
+    def it_calls_imperative_brokenrules(self):
+        art = artist.getvalid()
+        self.zero(art.brokenrules)
 
     def it_uses_reserved_mysql_words_for_fields(self):
         """ Ensure that the CREATE TABLE statement uses backticks to
