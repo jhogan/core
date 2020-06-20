@@ -20240,13 +20240,100 @@ class gem_order_order(tester):
             iis1.first.object.id,
         )
 
+class gem_ship(tester):
+    def __init__(self):
+        super().__init__()
+        orm.orm.recreate(
+            ship.shipments,
+            ship.items,
+            ship.statuses,
+            ship.statustypes,
+        )
 
+    def it_creates(self):
+        sh = ship.shipment(
+            estimatedshipat = primative.date('May 6, 2001'),
+            estimatedarriveat = primative.date('May 8, 2001'),
+            shipto = party.company(name='ACME Corporation'),
+            shipfrom = party.company(name='ACME Subsidiary'),
+            shiptousing = party.address(
+                address1='234 Stretch St',
+                address2='New York, New York',
+            ),
+            shipfromusing = party.address(
+                address1='300 Main St',
+                address2='New York, New York',
+            ),
+        )
 
+        sh.save()
 
+        sh1 = sh.orm.reloaded()
 
+        self.eq(sh.id, sh1.id)
+        self.eq(sh.estimatedshipat, sh1.estimatedshipat)
+        self.eq(sh.estimatedarriveat, sh1.estimatedarriveat)
+        self.eq(sh.shipto.id, sh1.shipto.id)
+        self.eq(sh.shiptousing.id, sh1.shiptousing.id)
+        self.eq(sh.shipfrom.id, sh1.shipfrom.id)
+        self.eq(sh.shipfromusing.id, sh1.shipfromusing.id)
 
+    def it_creates_items(self):
+        sh = ship.shipment(
+            estimatedshipat = primative.date('May 6, 2001'),
+            estimatedarriveat = primative.date('May 8, 2001'),
+            shipto = party.company(name='ACME Corporation'),
+            shipfrom = party.company(name='ACME Subsidiary'),
+            shiptousing = party.address(
+                address1='234 Stretch St',
+                address2='New York, New York',
+            ),
+            shipfromusing = party.address(
+                address1='300 Main St',
+                address2='New York, New York',
+            ),
+        )
 
+        sh.items += ship.item(
+            quantity = 1000,
+            good = product.good(name='Henry #2 Pencile'),
+        )
 
+        sh.items += ship.item(
+            quantity = 1000,
+            good = product.good(name='Goldstein Elite pens'),
+        )
+
+        sh.items += ship.item(
+            quantity = 100,
+        )
+
+        # FIXME Setting `contents` here should be done in the constructor
+        # but can't because of a bug.
+        sh.items.last.contents = 'Boxes of HD diskettes',
+
+        sh.save()
+
+        sh1 = sh.orm.reloaded()
+
+        itms = sh.items.sorted()
+        itms1 = sh1.items.sorted()
+
+        self.three(itms)
+        self.three(itms1)
+
+        self.one(itms1.where(lambda x: x.good is None))
+        self.two(itms1.where(lambda x: x.contents is None))
+
+        for itm, itm1 in zip(itms, itms1):
+            self.eq(itm.quantity, itm1.quantity)
+            if itm1.good:
+                self.eq(itm.good.id, itm1.good.id)
+            elif itm1.contents:
+                self.eq(itm.contents, itm1.contents)
+
+        
+        
 
 
 cli().run()
