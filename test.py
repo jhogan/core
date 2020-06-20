@@ -15,6 +15,7 @@ from datetime import timezone, datetime, date
 from entities import BrokenRulesError
 from func import enumerate, getattr, B
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
+from pprint import pprint
 from random import randint, uniform, random
 from table import *
 from tester import *
@@ -28,15 +29,15 @@ import jwt as pyjwt
 import math
 import MySQLdb
 import _mysql_exceptions
+import order
 import orm
+import party
 import pathlib
 import primative
-import re
-import textwrap
-import party
 import product
-import order
-from pprint import pprint
+import re
+import ship
+import textwrap
 
 # We will use basic and supplementary multilingual plane UTF-8
 # characters when testing str attributes to ensure unicode is being
