@@ -22,6 +22,7 @@ from dbg import B
 from decimal import Decimal as dec
 from orm import text, timespan, datespan
 import entities
+import order
 import orm
 import party
 import primative
@@ -31,6 +32,7 @@ class shipments(orm.entities): pass
 class items(orm.entities): pass
 class statuses(orm.entities): pass
 class statustypes(orm.entities): pass
+class shipitem_orderitems(orm.associations): pass
 
 class shipment(orm.entity):
     """ Records the details of a shipment.
@@ -106,9 +108,15 @@ class shipment(orm.entity):
     # The collection of items (i.e., goods) that compose a shipment.
     items = items
 
+    # The collection of statuses this shipment has been through.
+    statuses = statuses
+
 class item(orm.entity):
     """ A line item in a ``shipment``. Each ``shipment`` can have one or
     more ``items``.
+
+    Note that this entity was originally called SHIPMENT ITEM in
+    "The Data Model Resource Book".
     """
 
     def __init__(self, *args, **kwargs):
@@ -149,18 +157,54 @@ class item(orm.entity):
     items = items
 
 class status(orm.entity):
-    """ Describes the state of the shipment at various points in time
-    """
+    """ An entity that records the state of the shipment at various
+    points in time. ``status`` entries are described by the
+    ``statustype`` entity..
 
+    Note that this entity was originally called SHIPMENT STATUS in "The
+    Data Model Resource Book".
+    """
     entities = statuses
     
-    begin = date
+    # The date and time at which a ``shipment`` entered into this status
+    begin = datetime
 
 class statustype(orm.entity):
+    """ This entity describes a shipment's ``status``. It has a
+    one-to-many relationship with ``status``.
+
+    Examples of status types include "scheduled", ""shipped", "in
+    route", "delivered", and "canceled".
+
+    Note that this entity was originally called SHIPMENT STATUS TYPE in
+    "The Data Model Resource Book".
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.orm.ensure(expects=('name',), **kwargs)
 
     name = str
 
+    # The collection of status entities that belong that have this
+    # status type.
+    statuses = statuses
+
+class shipitem_orderitem(orm.association):
+    """ This association links a shipment item (``ship.item``) with an
+    order item (``order.item``). This many-to-many relationship this
+    creates between the two entity objects is required to handle partial
+    shipments and combined shipments.
+
+    Note that this entity was originally called ORDER SHIPMENT in
+    "The Data Model Resource Book".
+    """
+
+    # The shipment item portion of the association.
+    shipitem = item
+
+    # The order item portion of the association.
+    orderitem = order.item
+
+    # TODO Comment on this attribute
+    quantity = int
 

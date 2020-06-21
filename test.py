@@ -20338,8 +20338,159 @@ class gem_ship(tester):
             elif itm1.contents:
                 self.eq(itm.contents, itm1.contents)
 
-        
-        
+    def it_handles_statuses(self):
+        sh = ship.shipment(
+            estimatedshipat = primative.date('May 6, 2001'),
+            estimatedarriveat = primative.date('May 8, 2001'),
+            shipto = party.company(name='ACME Corporation'),
+            shipfrom = party.company(name='ACME Subsidiary'),
+            shiptousing = party.address(
+                address1='234 Stretch St',
+                address2='New York, New York',
+            ),
+            shipfromusing = party.address(
+                address1='300 Main St',
+                address2='New York, New York',
+            ),
+        )
 
+        sh.statuses += ship.status(
+            begin=primative.datetime('May 6, 2001'),
+            statustype = ship.statustype(
+                name = 'scheduled'
+            )
+        )
+
+        sh.statuses += ship.status(
+            begin = primative.datetime('May 7, 2001'),
+            statustype = ship.statustype(
+                name = 'in route'
+            )
+        )
+
+        sh.statuses += ship.status(
+            begin = primative.datetime('May 8, 2001'),
+            statustype = ship.statustype(
+                name = 'delivered'
+            )
+        )
+
+        sh.save()
+
+        sh1 = sh.orm.reloaded()
+
+        self.eq(
+            ['scheduled', 'in route', 'delivered'],
+            sh1.statuses.sorted('begin').pluck('statustype.name')
+        )
+
+    def it_associates_order_items_with_shipment_items(self):
+        # Create goods
+        pencil = product.good(name='Jones #2 penciles')
+        pen    = product.good(name='Goldstein Elite pens')
+        erase  = product.good(name='Standard erasers')
+        box    = product.good(name='Bokes of HD diskettes')
+
+        # Create the first sales order
+        so100 = order.salesorder()
+
+        # Create sales items
+        so100.items += order.salesitem(
+            product = pencil,
+            quantity = 1500,
+        )
+
+        so100.items += order.salesitem(
+            product = pen,
+            quantity = 2500,
+        )
+
+        so100.items += order.salesitem(
+            product = erase,
+            quantity = 350,
+        )
+
+        # Create the second sales order
+        so200 = order.salesorder()
+
+        # Create sales items
+        so100.items += order.salesitem(
+            product = pen,
+            quantity = 300,
+        )
+
+        so100.items += order.salesitem(
+            product = box ,
+            quantity = 200,
+        )
+
+        # Create shipments
+        sh9000 = ship.shipment()
+
+        sh9000.items += ship.item(
+            good = pencil,
+            quantity = 1000,
+        )
+
+        sh9000.items += ship.item(
+            good = pen,
+            quantity = 1000,
+        )
+
+        sh9000.items += ship.item(
+            good = box,
+            quantity = 100,
+        )
+
+        # Create another shipment
+        sh9200 = ship.shipment()
+
+        sh9200.items += ship.item(
+            good = erase,
+            quantity = 350,
+        )
+
+        sh9200.items += ship.item(
+            good = box,
+            quantity = 100,
+        )
+
+        sh9200.items += ship.item(
+            good = pen,
+            quantity = 1500,
+        )
+
+        # Create the final shipment
+        sh9400 = ship.shipment()
+
+        sh9400.items += ship.item(
+            good = pen,
+            quantity = 500,
+        )
+
+        # Create shipitem_orderitem associations
+
+        so100.items.first.shipitem_orderitems += shipitem_orderitem(
+            shipitem = sh9000.first,
+            quantity = 1000,
+        )
+
+        so100.items.first.shipitem_orderitems += shipitem_orderitem(
+            shipitem = sh9400,
+            quantity = 500,
+        )
+
+        so100.items.second.shipitem_orderitems += shipitem_orderitem(
+            shipitem = sh9000,
+            quantity = 700,
+        )
+
+        so100.items.third.shipitem_orderitems += shipitem_orderitem(
+            shipitem = sh9200,
+            quantity = 350,
+        )
+
+
+        
 
 cli().run()
