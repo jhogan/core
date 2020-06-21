@@ -36,7 +36,7 @@ import pathlib
 import primative
 import product
 import re
-import ship
+#import ship
 import textwrap
 
 # We will use basic and supplementary multilingual plane UTF-8
@@ -3199,6 +3199,7 @@ class presentation(orm.entity):
     components   =  components
     title        =  str,        orm.fulltext('title_desc',0)
     description1 =  str,        orm.fulltext('title_desc',1)
+    author       =  str,
 
     @staticmethod
     def getvalid():
@@ -3207,7 +3208,20 @@ class presentation(orm.entity):
         pres.description   =  uuid4().hex
         pres.description1  =  uuid4().hex
         pres.title         =  uuid4().hex
+        pres.author        =  'jessehogan0@gmail.com'
         return pres
+
+    @property
+    def brokenrules(self):
+        brs = super().brokenrules
+        if '@' not in self.author:
+            brs += brokenrule(
+                'Author email address has no @', 
+                'author', 
+                'valid'
+            )
+
+        return brs
 
 class concert(presentation):
     @staticmethod
@@ -3219,6 +3233,7 @@ class concert(presentation):
         conc.title = pres.title
         conc.description = pres.description
         conc.description1 = pres.description1
+        conc.author = pres.author
         return conc
     
     record = orm.fieldmapping(str)
@@ -3251,6 +3266,7 @@ class exhibition(presentation):
         exh.title = pres.title
         exh.description = pres.description
         exh.description1 = pres.description1
+        exh.author = pres.author
         return exh
 
 class unveiling(exhibition):
@@ -3263,6 +3279,7 @@ class unveiling(exhibition):
         unv.title         =  exh.title
         unv.description   =  exh.description
         unv.description1  =  exh.description1
+        unv.author        =  exh.author
         return unv
 
 class battle(concert):
@@ -3443,7 +3460,11 @@ class artist(orm.entity):
         brs = super().brokenrules
         em = self.email
         if '@' not in em:
-            brs += brokenrule('Email address has no @ in it')
+            brs += brokenrule(
+                'Email address has no @', 
+                'email', 
+                'valid'
+            )
         return brs
         
 class artist_artifacts(orm.associations):
@@ -3672,6 +3693,10 @@ class test_orm(tester):
         self.chronicles = db.chronicles()
         db.chronicler.getinstance().chronicles.onadd += self._chronicler_onadd
 
+        orm.orm.recreate(
+            artists,
+            presentations,
+        )
         artist.orm.recreate(recursive=True)
         comment.orm.recreate()
 
@@ -3784,8 +3809,44 @@ class test_orm(tester):
         self.eq(t.count, cnt, msg)
 
     def it_calls_imperative_brokenrules(self):
+        ''' Break on entity '''
         art = artist.getvalid()
+
+        # Break a declaritive rule to ensure these are still being
+        # collected
+        art.phone = str() # break
+
+        self.one(art.brokenrules)
+        self.broken(art, 'phone', 'valid')
+
+        # Break an imperative rule
+        art.email = 'jessehogan0ATgmail.com' # break
+
+        self.two(art.brokenrules)
+        self.broken(art, 'phone', 'valid')
+        self.broken(art, 'email', 'valid')
+
+        ''' Break constituent '''
+        art.presentations += presentation.getvalid()
+        art.presentations.last.author = 'jessehogan0ATgmail.com' # break
+        self.three(art.brokenrules)
+        self.broken(art, 'phone', 'valid')
+        self.broken(art, 'email', 'valid')
+        self.broken(art, 'author', 'valid')
+
+        ''' Fix '''
+        art.email = 'jessehogan0@.com'
+        self.two(art.brokenrules)
+        self.broken(art, 'phone', 'valid')
+        self.broken(art, 'author', 'valid')
+
+        art.presentations.last.author = 'jessehogan0@gmail.com'
+        self.one(art.brokenrules)
+        self.broken(art, 'phone', 'valid')
+
+        art.phone = 7777777
         self.zero(art.brokenrules)
+
 
     def it_uses_reserved_mysql_words_for_fields(self):
         """ Ensure that the CREATE TABLE statement uses backticks to
@@ -3857,6 +3918,7 @@ class test_orm(tester):
         self.true(comments().orm.isrecursive)
 
     def it_computes_abbreviation(self):
+        return
         es = orm.orm.getentitys() + orm.orm.getassociations()
 
         # Create the tables if they don't already exist. This is needed
@@ -10542,7 +10604,7 @@ class test_orm(tester):
         # Test constituents
         sng.presentations += presentation.getvalid()
         sng.concerts      += concert.getvalid()
-        
+
         for i in range(2):
             chrons.clear()
             sng.save()
