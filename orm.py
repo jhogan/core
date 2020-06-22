@@ -4767,7 +4767,7 @@ class orm:
     @property
     def isreflexive(self):
         maps = self.mappings.entitymappings
-        types = [x.entity.__name__ for x in maps]
+        types = [x.entity for x in maps]
 
         return bool(len(types)) and len(types) > len(set(types))
         
