@@ -20254,6 +20254,7 @@ class gem_ship(tester):
             ship.items,
             ship.statuses,
             ship.statustypes,
+            ship.item_features,
         )
 
     def it_creates(self):
@@ -20302,7 +20303,7 @@ class gem_ship(tester):
 
         sh.items += ship.item(
             quantity = 1000,
-            good = product.good(name='Henry #2 Pencile'),
+            good = product.good(name='Henry #2 Pencil'),
         )
 
         sh.items += ship.item(
@@ -20386,7 +20387,7 @@ class gem_ship(tester):
 
     def it_associates_order_items_with_shipment_items(self):
         # Create goods
-        pencil = product.good(name='Jones #2 penciles')
+        pencil = product.good(name='Jones #2 pencils')
         pen    = product.good(name='Goldstein Elite pens')
         erase  = product.good(name='Standard erasers')
         box    = product.good(name='Bokes of HD diskettes')
@@ -20414,12 +20415,12 @@ class gem_ship(tester):
         so200 = order.salesorder()
 
         # Create sales items
-        so100.items += order.salesitem(
+        so200.items += order.salesitem(
             product = pen,
             quantity = 300,
         )
 
-        so100.items += order.salesitem(
+        so200.items += order.salesitem(
             product = box ,
             quantity = 200,
         )
@@ -20469,28 +20470,89 @@ class gem_ship(tester):
         )
 
         # Create shipitem_orderitem associations
+        shipitem_orderitem = ship.shipitem_orderitem
 
         so100.items.first.shipitem_orderitems += shipitem_orderitem(
-            shipitem = sh9000.first,
+            shipitem = sh9000.items.first,
             quantity = 1000,
         )
 
         so100.items.first.shipitem_orderitems += shipitem_orderitem(
-            shipitem = sh9400,
+            shipitem = sh9400.items.first,
             quantity = 500,
         )
 
         so100.items.second.shipitem_orderitems += shipitem_orderitem(
-            shipitem = sh9000,
+            shipitem = sh9000.items.second,
             quantity = 700,
         )
 
         so100.items.third.shipitem_orderitems += shipitem_orderitem(
-            shipitem = sh9200,
+            shipitem = sh9200.items.first,
             quantity = 350,
         )
 
-
+        so100.save()
         
+        so100_1 = so100.orm.reloaded()
+
+        itms = so100.items.sorted()
+        itms1 = so100_1.items.sorted()
+
+        self.three(itms)
+        self.three(itms1)
+
+        for itm, itm1 in zip(itms, itms1):
+            siois = itm.shipitem_orderitems.sorted()
+            siois1 = itm1.shipitem_orderitems.sorted()
+            self.gt(siois.count, 0)
+            self.gt(siois1.count, 0)
+            self.eq(siois.count, siois1.count)
+
+            for sioi, sioi1 in zip(siois, siois1):
+                self.eq(sioi.id, sioi1.id)
+                self.eq(sioi.shipitem.id, sioi1.shipitem.id)
+                self.eq(sioi.quantity, sioi1.quantity)
+
+
+
+
+    def it_associates_item_to_feature(self):
+        # Create feature
+        blue = product.color(name='blue')
+
+        # Create good
+        pen = product.good(name='Goldstein Elite pens')
+        
+        # Create order
+        so = order.salesorder()
+
+        # Create sales items
+        so.items += order.salesitem(
+            product = pen,
+            quantity = 2500,
+            price = dec('12.00')
+        )
+
+        so.items.last.items += order.salesitem(feature=blue)
+
+        sh = ship.shipment()
+
+        sh.items += ship.item(
+            good = pen,
+            quantity = 1000,
+        )
+
+        sh.items.last.item_features += ship.item_feature(
+            feature = blue
+        )
+
+        sh.save()
+
+        if_ = sh.items.last.item_features.first
+        if0 = if_.orm.reloaded()
+
+        self.eq(if_.item.id, sh.items.last.id)
+        self.eq(if_.feature.id, blue.id)
 
 cli().run()

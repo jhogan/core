@@ -208,3 +208,6 @@ class shipitem_orderitem(orm.association):
     # TODO Comment on this attribute
     quantity = int
 
+class item_feature(orm.association):
+    item = item
+    feature = product.feature
