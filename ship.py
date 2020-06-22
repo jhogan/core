@@ -28,11 +28,12 @@ import party
 import primative
 import product
 
-class shipments(orm.entities): pass
-class items(orm.entities): pass
-class statuses(orm.entities): pass
-class statustypes(orm.entities): pass
-class shipitem_orderitems(orm.associations): pass
+class shipments(orm.entities):                pass
+class items(orm.entities):                    pass
+class statuses(orm.entities):                 pass
+class statustypes(orm.entities):              pass
+class shipitem_orderitems(orm.associations):  pass
+class item_features(orm.associations):         pass
 
 class shipment(orm.entity):
     """ Records the details of a shipment.
