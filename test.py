@@ -20514,9 +20514,6 @@ class gem_ship(tester):
                 self.eq(sioi.shipitem.id, sioi1.shipitem.id)
                 self.eq(sioi.quantity, sioi1.quantity)
 
-
-
-
     def it_associates_item_to_feature(self):
         # Create feature
         blue = product.color(name='blue')
