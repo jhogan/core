@@ -20255,6 +20255,12 @@ class gem_ship(tester):
             ship.statuses,
             ship.statustypes,
             ship.item_features,
+            ship.packages,
+            ship.item_packages,
+            ship.roletypes,
+            ship.roles,
+            ship.receipts,
+            ship.reasons,
         )
 
     def it_creates(self):
@@ -20551,5 +20557,53 @@ class gem_ship(tester):
 
         self.eq(if_.item.id, sh.items.last.id)
         self.eq(if_.feature.id, blue.id)
+
+    def it_creates_receipts(self):
+        # Create good
+        pencil = product.good(name='Jones #2 pencils')
+
+        # Create an incoming shipment from a supplier
+        sh1146 = ship.shipment()
+
+        sh1146.items += ship.item(
+            good = pencil,
+            quantity = 2000,
+        )
+
+        pkg = ship.package(
+            created = primative.datetime('Jun 23 22:08:16 UTC 2020'),
+            packageid = uuid4().hex
+        )
+
+        sh1146.items.last.item_packages += ship.item_package(
+            quantity=1000,
+            package = pkg,
+        )
+
+        pkg.receipts += ship.receipt(
+            receivedat = primative.datetime('Jun 23 22:19:37 2020'),
+            quantity = 1000,
+        )
+
+        sh1146.save()
+
+
+        sh1146_1 = sh1146.orm.reloaded()
+
+        ip = sh1146.items.last.item_packages.first
+        ip1 = sh1146_1.items.last.item_packages.first
+
+        self.eq(ip.id, ip1.id)
+        self.eq(1000, ip1.quantity)
+
+        pkg1 = ip1.package
+        self.eq(pkg.id, pkg1.id)
+
+        self.one(pkg1.receipts)
+
+        recp = pkg.receipts.first
+        recp1 = pkg1.receipts.first
+
+        self.eq(recp.id, recp1.id)
 
 cli().run()

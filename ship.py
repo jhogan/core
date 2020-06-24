@@ -33,12 +33,17 @@ class items(orm.entities):                    pass
 class statuses(orm.entities):                 pass
 class statustypes(orm.entities):              pass
 class shipitem_orderitems(orm.associations):  pass
-class item_features(orm.associations):         pass
+class item_features(orm.associations):        pass
+class packages(orm.entities):                 pass
+class item_packages(orm.associations):        pass
+class roletypes(party.roletypes):             pass
+class roles(party.roles):                     pass
+class receipts(orm.entities):                 pass
+class reasons(orm.entities):                  pass
 
 class shipment(orm.entity):
     """ Records the details of a shipment.
     """
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.orm.isnew:
@@ -212,3 +217,109 @@ class shipitem_orderitem(orm.association):
 class item_feature(orm.association):
     item = item
     feature = product.feature
+
+class package(orm.entity):
+    """ A package, such as a box, carton or container used to ship a
+    good. An ``item`` may be packaged within one or more ``package``
+    entity and vice-versa hence the associative entity ``item_package``.
+
+    Note that this entity was originally called SHIPMENT PACKAGE in "The
+    Data Model Resource Book".
+    """
+
+    # The date and time the package was created. Not to be confused with
+    # `createdat`, which is the time the ``package`` record was created.
+    created = datetime
+        
+    # An external id for the package such as its barcode id.
+    packageid = str
+
+    # Each shipment ``package `` is received via one or more shipment
+    # ``receipts`` that store the details of the receipt.
+    receipts = receipts
+
+class item_package(orm.association):
+    """ Creates a many-to-many relationship between ``item`` and
+    ``package``.
+
+    Note that this entity was originally called PACKAGING CONTENT in
+    "The Data Model Resource Book".
+    """
+
+    # The the shipping item
+    item = item
+
+    # The package the item is shipped in.
+    package = package
+
+    # Determines how many items are in th package
+    quantity = dec
+
+class roletype(party.roletype):
+    """ Describes the ``role`` being played by a party. 
+    """
+
+class role(party.role):
+    """ For each ``receipt``, there could be multiple shipment receipt
+    ``roles`` such as the person signing for the receipt, the inspector
+    of the goods, the person responsible for storing the receipt within
+    the inventory, the receiving manager, and the organization that is
+    receiving the item.
+
+    Note that this entity was originally called SHIPMENT RECEIPT ROLE in
+    "The Data Model Resource Book".
+    """
+
+class receipt(orm.entity):
+    """ Each shipment ``package`` is received via one or more shipment
+    ``receipts`` that store the details of the receipt.
+
+    Note that this entity was originally called SHIPMENT RECEIPT in
+    "The Data Model Resource Book".
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.orm.isnew:
+            self.description = None
+
+    # The exact date and time the receipt occured
+    receivedat = datetime
+
+    # The relationship to ``product.good`` maintains what was received
+    # for standard goods (see ``description`` for non-standard goods).
+    good = product.good
+
+    # Maintains what was received for non-standard items that would not
+    # be maintaind as a `product.good` within the entity model - for
+    # instance, for one-time purchases.
+    description = str
+
+    # Represents the quantity of the ``good`` (or non-standard good
+    # reference in ``description``) that the organization determined to
+    # be acceptable to receive.
+    accepted = dec
+
+    # Represents the quantity of the ``good`` (or non-standard good
+    # reference in ``description``) that the organization determined to
+    # be unacceptable to receive.
+    rejected = dec
+
+    # The collection of roles for the receipt. See ``role`` for more.
+    roles = roles
+
+    # The collection of rejection ``reasons`` for this receipt. (see
+    # ``reason`` for more).
+    reasons = reasons
+
+class reason(orm.entity):
+    """ Stores an explanation of why certain items may not be accepted.
+
+    Note that this entity was originally called REJECTION REASON in
+    "The Data Model Resource Book".
+    """
+
+    description = str
+
+class issuance(orm.entity):
+    """ A shipment ``item``
