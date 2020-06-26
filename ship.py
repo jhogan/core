@@ -40,6 +40,20 @@ class roletypes(party.roletypes):             pass
 class roles(party.roles):                     pass
 class receipts(orm.entities):                 pass
 class reasons(orm.entities):                  pass
+class issuances(orm.entities):                pass
+class picklists(orm.entities):                pass
+class picklistitems(orm.entities):            pass
+class issuanceroles(party.roles):             pass
+class issuanceroletypes(party.roletypes):     pass
+class documents(orm.entities):     pass
+class documenttypes(orm.entities):     pass
+class bols(documents):     pass
+class slips(documents):     pass
+class exports(documents):     pass
+class manifests(documents):     pass
+class portcharges(documents):     pass
+class taxandtarrifs(documents):     pass
+class hazardouses(documents):     pass
 
 class shipment(orm.entity):
     """ Records the details of a shipment.
@@ -117,6 +131,13 @@ class shipment(orm.entity):
     # The collection of statuses this shipment has been through.
     statuses = statuses
 
+    # A collection of shipping documents for this shipment.
+    documents = documents
+
+    # A collection of routes describing the journey that comprise the
+    # shipment.
+    routes = routes
+
 class item(orm.entity):
     """ A line item in a ``shipment``. Each ``shipment`` can have one or
     more ``items``.
@@ -161,6 +182,12 @@ class item(orm.entity):
     # another shipment ``item` that is related to the orginal shipment
     # item).
     items = items
+
+    # A shipment item may have multiple issuances.
+    issuances = issuances
+
+    # A collection of shipping documents for this shipping item.
+    documents = documents
 
 class status(orm.entity):
     """ An entity that records the state of the shipment at various
@@ -237,6 +264,9 @@ class package(orm.entity):
     # Each shipment ``package `` is received via one or more shipment
     # ``receipts`` that store the details of the receipt.
     receipts = receipts
+
+    # A collection of shipping documents for this packages.
+    documents = documents
 
 class item_package(orm.association):
     """ Creates a many-to-many relationship between ``item`` and
@@ -322,4 +352,226 @@ class reason(orm.entity):
     description = str
 
 class issuance(orm.entity):
-    """ A shipment ``item``
+    """ A item ``issuance` is the act of pulling ``product.items` from
+    inventory. These items are usually pulled in order to be shipped
+    (though this is not always the case, such as when an item is pulled
+    from inventory for use in the same location that the item had been
+    stored in.)
+
+
+    Note that this entity was originally called ITEM ISSUANCE in
+    "The Data Model Resource Book".
+    """
+
+    # The date and time the item was issued
+    issuedat = datetime
+
+    # The number of items issued
+    quantity = dec
+
+    inventoryitem = product.item
+
+    # NOTE A one-to-many relationship exists between ``item`` and
+    # ``issuance``; therefore an implicit ``item`` attribute is
+    # available at runtime.
+
+    inventoryitem = product.item
+
+class picklist(orm.entity):
+    """ Based on shipment needs, which could be obtaind by reviewing the
+    a ``shipment`` and its ``items``, a ``picklist`` is generated,
+    identifying the plan for picking from inventory. Each `picklist``
+    will have a collection of ``picklistitems`` that store the quantity
+    of goods needed and are to be picked from each inventory item
+    (``product.item``) in order to meet the shipment need.
+
+    Note that this is based of the PACKLIST entity in "The Data
+    Model Resource Book".
+    """
+    # The date and time the picklist was created. Not to be confused
+    # with implicit ``createdat``, which is the date and time the
+    # ``picklist`` record was created.
+    created = datetime
+
+    items = picklistitems
+
+class picklistitem(orm.entity):
+    """ A line item of a ``picklist``.
+
+    Note that this is based of the PACKLIST ITEM entity in "The Data
+    Model Resource Book".
+    """
+    # The invetory item 
+    item = product.item
+
+    # The quantity of this picklist item
+    quantity = dec
+
+class issuancerole(party.role):
+    """ Each item ``issuance` may have mayn people involved in this
+    process and therefore may have many ``issuanceroles`` for each party
+    involved; each role is described by the ``issuanceroletype``.
+    """
+
+class issuanceroletype(party.roletype):
+    """ Describes the ```issuancerole```
+    """
+
+class document(orm.entity):
+    """ Shipments often are required to carry shipment documents for
+    various reasons. Some reason are practical in nature,such as to
+    easily identify the contens of packages with a packing slip or bills
+    of lading to identify the contents of shipments. Som reas are
+    reguralted, such as tak, tariff, or export documentations.
+
+    Depending on the type of shipping document (subentity objcets of
+    ``document``), the documentment may be related to the ``shipment``,
+    the ``item`` or the ``package``.
+    """
+
+    # IMPLEMENTATION NOTE: Currently, ``document`` inherits from
+    # ``orm.entity``. However, the book indicates that this class should
+    # inherit from a general ``document`` class (where as the current
+    # class would mearly be a subentity for _shipping documents_. This
+    # has currently not been implemented because it is not clear what
+    # module the generic ``document`` class would go in.This has
+    # currently not been implemented because it is not clear what module
+    # the generic ``document`` class would go in.
+
+    description = str
+
+class documenttype(orm.entity):
+    """ Provides for other types of documents than the standard ones
+    (the subentities of ``document``).
+
+    Note that this entity was originally called DOCUMENT TYPE in
+    "The Data Model Resource Book".
+    """
+
+    name = str
+
+    # The collection of documents that this class describes
+    documents = documents
+
+class bol(document):
+    """ A bill of lading document.
+
+    The bill of lading is a required document to move a freight
+    shipment. The bill of lading (BOL) works as a receipt of freight
+    services, a contract between a freight carrier and shipper and a
+    document of title. The bill of lading is a legally binding document
+    providing the driver and the carrier all the details needed to
+    process the freight shipment and invoice it correctly.
+
+    Note that this entity was originally called BILL OF LADING in
+    "The Data Model Resource Book".
+    """
+
+class slip(document):
+    """ A packaging slip document.
+
+    Note that this entity was originally called PACKAGING SLIP in
+    "The Data Model Resource Book".
+    """
+
+class export(document):
+    """ A export document.
+
+    Note that this entity was originally called EXPORT DOCUMENTATION in
+    "The Data Model Resource Book".
+    """
+
+class manifest(document):
+    """ A shipping manifest document.
+
+    Note that this entity was originally called MANIFEST in
+    "The Data Model Resource Book".
+    """
+
+class portcharge(document):
+    """ A port charges document.
+
+    Note that this entity was originally called PORT CHARGES DOCUMENT in
+    "The Data Model Resource Book".
+    """
+
+class taxandtarrif(document):
+    """ A tax and tarrif shipping document.
+
+    Note that this entity was originally called TAX AND TARIFF DOCUMENT  in
+    "The Data Model Resource Book".
+    """
+
+class hazardous(document):
+    """ A hazardous materials shipping document.
+
+    Note that this entity was originally called HAZARDOUS MATERIALS
+    DOCUMENT in "The Data Model Resource Book".
+    """
+    entities = hazardouses
+
+class route(orm.entity):
+    """ Maintains information about each leg of the journey for a
+    ``shipment``. It identifies the particular portions of the journey along
+    which a shipment travels. It identifies the particular portions of
+    the journey along which a shipment travels.
+
+    Each route is describe by a shipment method ``type`` entity, which
+    identifies it as ground, cargo ship, air, etc. An implicite ``type`
+    attribute will be available for each route object::
+        
+        rt = route()
+        rt.type = type(name='air')
+
+    Note that this entity was originally called SHIPMENT ROUTE SEGMENT
+    in "The Data Model Resource Book".
+    """
+
+class type(orm.entity):
+    """ A type of shipment method such as ground, cargo ship or air.
+
+    Note that this entity was originally called SHIPMENT METHOD TYPE in
+    "The Data Model Resource Book".
+    """
+
+    # The name of the shipment method, e.g., 'ground', 'cargo ship', or
+    # 'air'.
+    name = str
+
+    # The shipment ``route`` segments that this type describes.
+    routes = routes
+
+class carrier(party.organizational):
+    """ An organizational role where a party acts as a carrier.
+    Shipments must be shipped by a particular ``carrier`` , even if that
+    carrier is part of the enterprise itself.
+    """
+
+class asset(orm.entity)
+    """ A fixed asset.
+
+    IMPLEMETATION NOTE/TODO: FIXED ASSET is defined in the Work Effort
+    chapter. It was prematurly introduced in the shipping chapter so its
+    subentity, VEHICAL could be introduced. Since FIXED ASSET is in a
+    future chapter, it's still up in the air as to where ``asset``
+    should go to prevent circular reference issues - perhaps it makes
+    sense to put it in product.py so shipment.py and effort.py can
+    access it. Either way, this is all TBD.
+
+    Note that this entity was originally called FIXED ASSET in
+    "The Data Model Resource Book".
+    """
+    name = str
+
+class vehical(asset):
+    """ Optionally, the ``vehicle`` involved in a shipment ``route``
+    segment may be tracked. This is usually don in circumstances where
+    the enterprise maintanis its own fleet. If the enterprise uses
+    external carrieres, the enterprise would probbaly not need to track
+    the vehical. Each shipment ``route`` segment will track zero or one
+    vehical.
+    """
+
+
+
+

@@ -20261,6 +20261,20 @@ class gem_ship(tester):
             ship.roles,
             ship.receipts,
             ship.reasons,
+            ship.issuances,
+            ship.picklists,
+            ship.picklistitems,
+            ship.issuanceroles,
+            ship.issuanceroletypes,
+            ship.documents,
+            ship.documenttypes,
+            ship.bols,
+            ship.slips,
+            ship.exports,
+            ship.manifests,
+            ship.portcharges,
+            ship.taxandtarrifs,
+            ship.hazardouses,
         )
 
     def it_creates(self):
@@ -20587,7 +20601,6 @@ class gem_ship(tester):
 
         sh1146.save()
 
-
         sh1146_1 = sh1146.orm.reloaded()
 
         ip = sh1146.items.last.item_packages.first
@@ -20605,5 +20618,82 @@ class gem_ship(tester):
         recp1 = pkg1.receipts.first
 
         self.eq(recp.id, recp1.id)
+
+    def it_creates_issuances(self):
+        # Create goods
+        pencil = product.good(name='Jones #2 pencils')
+
+        # Create shipments
+        sh = ship.shipment()
+
+        sh.items += ship.item(
+            good = pencil,
+            quantity = 1000,
+        )
+
+        pkg = ship.package(
+            created = primative.datetime('Jun 23 22:08:16 UTC 2020'),
+            packageid = uuid4().hex
+        )
+
+        sh.items.last.item_packages += ship.item_package(
+            quantity=1000,
+            package = pkg,
+        )
+
+        sh.items.last.issuances += ship.issuance(
+            issued = primative.datetime('Thu Jun 25 22:18:40 UTC 2020'),
+            quantity = 1000,
+        )
+
+        sh.save()
+
+        sh1 = sh.orm.reloaded()
+
+        self.eq(
+            sh.items.first.issuances.first.id,
+            sh1.items.first.issuances.first.id,
+        )
+
+        self.eq(
+            sh.items.first.issuances.first.quantity,
+            sh1.items.first.issuances.first.quantity,
+        )
+
+    def it_creates_documents(self):
+        sh = ship.shipment()
+        sh.documents += ship.hazardous(
+            description = 'Not really sure what to put here'
+        )
+
+        sh.documents += ship.document(
+            description = 'Not really sure what to put here, either',
+            documenttype = ship.documenttype(
+                name = 'Dangerous goods form'
+            )
+        )
+
+        sh.save()
+
+        sh1 = sh.orm.reloaded()
+
+        docs = sh.documents.sorted()
+        docs1 = sh1.documents.sorted()
+        self.two(docs)
+        self.two(docs1)
+
+        for doc, doc1 in zip(docs, docs1):
+            self.eq(doc.id, doc1.id)
+            self.eq(doc.description, doc1.description)
+            if doc.documenttype:
+                self.eq(doc.documenttype.id, doc1.documenttype.id)
+                self.eq(doc.documenttype.name, doc1.documenttype.name)
+
+        # docs1 has one entity tha has a non-None documenttype attribute
+        self.one([x for x in docs1.pluck('documenttype') if x is not None])
+
+
+
+
 
 cli().run()
