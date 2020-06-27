@@ -3751,9 +3751,10 @@ class test_orm(tester):
                     if not self._test(e, 'create'):
                         test_orm._failures += failure()
 
-            def retrieved(self, e):
-                if not self._test(e, 'retrieve'):
-                    test_orm._failures += failure()
+            def retrieved(self, *es):
+                for e in es:
+                    if not self._test(e, 'retrieve'):
+                        test_orm._failures += failure()
 
             def updated(self, *es):
                 for e in es:
