@@ -9753,7 +9753,8 @@ class test_orm(tester):
                 self.eq(getattr(loc2, 'description'), getattr(loc1, 'description'))
 
     def it_updates_subsubentitys_subsubentities_constituents_properties(
-        self):
+        self
+    ):
 
         rpr = rapper.getvalid()
 
@@ -9823,11 +9824,15 @@ class test_orm(tester):
 
         with self._chrontest() as t:
             t.run(rpr1.save)
+            t.retrieved(rpr1.orm.super)
+            t.retrieved(rpr1.orm.super.orm.super)
             for btl in rpr1.battles:
+                # FIXME We never get here
                 t.updated(btl)
                 t.updated(btl.orm.super)
                 for loc in btl.locations:
                     t.updated(loc)
+
 
         rpr2 = rapper(rpr.id)
         btls = (rpr.battles, rpr1.battles, rpr2.battles)

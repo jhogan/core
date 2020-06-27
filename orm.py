@@ -2319,7 +2319,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
     def __init__(self, o=None, **kwargs):
         try:
             self.orm = self.orm.clone()
-            self.orm.initing = True # change to `isiniting`
+            self.orm.initing = True # TODO change to `isiniting`
             self.orm.instance = self
 
             self.onbeforesave       =  entitiesmod.event()
@@ -3565,7 +3565,6 @@ WHERE id = %s;
         args.append(args.pop(0))
 
         sql = orm.introduce(sql, args)
-        print(sql)
         return sql, args
 
     def getdelete(self):
