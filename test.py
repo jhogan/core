@@ -6595,18 +6595,18 @@ class test_orm(tester):
 
         b = bacterium()
         self.is_(b.orm.entities, bacteria)
-        self.eq(b.orm.table, 'test_bacteria')
+        self.eq('main_bacteria', b.orm.table)
 
         # Test implicit entities detection based on naive pluralisation
         art = artist()
         self.is_(art.orm.entities, artists)
-        self.eq(art.orm.table, 'test_artists')
+        self.eq('main_artists', art.orm.table)
 
         # Test implicit entities detection of entities subclass based on naive
         # pluralisation
         s = singer()
         self.is_(s.orm.entities, singers)
-        self.eq(s.orm.table, 'test_singers')
+        self.eq('main_singers', s.orm.table)
 
     def it_calls_id_on_entity(self):
         art = artist.getvalid()
