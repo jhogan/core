@@ -38,6 +38,7 @@ import product
 import re
 import ship
 import textwrap
+import effort
 
 # We will use basic and supplementary multilingual plane UTF-8
 # characters when testing str attributes to ensure unicode is being
