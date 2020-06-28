@@ -45,15 +45,20 @@ class picklists(orm.entities):                pass
 class picklistitems(orm.entities):            pass
 class issuanceroles(party.roles):             pass
 class issuanceroletypes(party.roletypes):     pass
-class documents(orm.entities):     pass
-class documenttypes(orm.entities):     pass
-class bols(documents):     pass
-class slips(documents):     pass
-class exports(documents):     pass
-class manifests(documents):     pass
-class portcharges(documents):     pass
-class taxandtarrifs(documents):     pass
-class hazardouses(documents):     pass
+class documents(orm.entities):                pass
+class documenttypes(orm.entities):            pass
+class bols(documents):                        pass
+class slips(documents):                       pass
+class exports(documents):                     pass
+class manifests(documents):                   pass
+class portcharges(documents):                 pass
+class taxandtarrifs(documents):               pass
+class hazardouses(documents):                 pass
+class routes(orm.entities):                   pass
+class types(orm.entities):                    pass
+class carriers(party.organizationals):        pass
+class assets(orm.entities):                   pass
+class vehicals(orm.entities):                 pass
 
 class shipment(orm.entity):
     """ Records the details of a shipment.
@@ -527,8 +532,20 @@ class route(orm.entity):
     in "The Data Model Resource Book".
     """
 
+    # The source facility from which this route originates. Note that
+    # this relationships to ``facility`, as well as ``destination`` are
+    # optional because the enterprise may not have the will and means to
+    # track each physical location to and from which the shipment
+    # travels. The relationship would probably not be needed for
+    # enterprises that always use external carriers to ship their goods.
+    source = party.facility
+
+    # The destination facility to which this route terminates
+    destination = party.facility
+
 class type(orm.entity):
-    """ A type of shipment method such as ground, cargo ship or air.
+    """ A type of shipment method such as ground, first-class air,
+    train, truck, cargo ship or air.
 
     Note that this entity was originally called SHIPMENT METHOD TYPE in
     "The Data Model Resource Book".
@@ -547,7 +564,7 @@ class carrier(party.organizational):
     carrier is part of the enterprise itself.
     """
 
-class asset(orm.entity)
+class asset(orm.entity):
     """ A fixed asset.
 
     IMPLEMETATION NOTE/TODO: FIXED ASSET is defined in the Work Effort
@@ -563,14 +580,32 @@ class asset(orm.entity)
     """
     name = str
 
-class vehical(asset):
+# FIXME For some reason, the mear existance of this class causes a
+# maximum recursion exception.
+'''
+class vehical(orm.entity):
     """ Optionally, the ``vehicle`` involved in a shipment ``route``
-    segment may be tracked. This is usually don in circumstances where
+    segment may be tracked. This is usually done in circumstances where
     the enterprise maintanis its own fleet. If the enterprise uses
-    external carrieres, the enterprise would probbaly not need to track
+    external carrieres, the enterprise would probably not need to track
     the vehical. Each shipment ``route`` segment will track zero or one
     vehical.
     """
+
+    # IMPLEMENTATION NOTE: Information that enterprises may want to keep
+    # about the `vehicle`` would be the statistics behind the use of the
+    # vehicle, such as the *start mileage** and *end mileage* (if
+    # appropriate) and amount of *fuel used*. For detailed tracking, one
+    # may also want to track the date and time a particular vehicle
+    # picked up a shipment and when it unloaded it. With this
+    # information, it can easily be determined in what order multiple
+    # vehicles were used to deliver a single shipment and how long it
+    # took, including transfers.
+
+    # The shipment ``route`` segments that this vehical is involved in
+    # to transport the given ``shipment``.
+    # routes = routes
+'''
 
 
 
