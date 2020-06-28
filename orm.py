@@ -5970,6 +5970,7 @@ class orm:
 
             return orm._abbrdict[abbr]
 
+    # TODO s/getentitys/getentityclasses/
     @staticmethod
     def getentitys():
         r = []
