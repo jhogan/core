@@ -4636,15 +4636,10 @@ class orm:
         else:
             mod = mod.__name__
 
-
-        if mod == 'test':
-            B()
-
         return '%s_%s' % (mod, self._table)
 
     @table.setter
     def table(self, v):
-        B(v == 'gem_partyroletypes');
         self._table = v
         
     def iscollinear(self, with_):
