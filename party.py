@@ -1242,7 +1242,7 @@ class classification:
     # TODO
 
 class role(orm.entity):
-    """ The role entity difines how a ``party`` acts or, in other words,
+    """ The role entity defines how a ``party`` acts or, in other words,
     what roles the party plays in the context of the enterprises's
     environment.
 

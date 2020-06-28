@@ -3313,10 +3313,31 @@ class mappings(entitiesmod.entities):
                     )
                 )
 
+            # Set the recursion limit to a value a little higher than
+            # the default (1000). This method is highly recursive
+            # because of the calls to ``orm.getentitys`` and
+            # ''orm.getassociations``. This recursion is necessary for
+            # the algorithm. 
+            #
+            # Increasing the recursion limit was not necessary until
+            # about halfway through creating the GEM classes when the
+            # number of `orm.entity` classes got to about 200. 
+            #
+            # Unfortunately, I was not able to to figure out a way to
+            # return the limit to its default. The normal practice of
+            # doing this in a ``finally`` block does't work because it's
+            # a global value and doing so would affect the other stacked
+            # frames which would rely on the elevated value. So,
+            # increasing it here means it's increased for the entire
+            # program (unless an effort is made to find every area this
+            # method is called). This is probably okay, however, since
+            # it seems unlikely it will ever get so big it becomes a
+            # problem.
+            sys.setrecursionlimit(2000)
+
             ''' Add composite and constituent mappings '''
             # For each class that inherits from `orm.entity`
             for e in orm.getentitys():
-
                 # If the entity is `self`, ignore unless this is a
                 # recursive entity.
                 if e is self.orm.entity and not self.orm.isrecursive:
@@ -4770,7 +4791,7 @@ class orm:
     @property
     def isreflexive(self):
         maps = self.mappings.entitymappings
-        types = [x.entity.__name__ for x in maps]
+        types = [x.entity for x in maps]
 
         return bool(len(types)) and len(types) > len(set(types))
         
@@ -5952,6 +5973,7 @@ class orm:
 
             return orm._abbrdict[abbr]
 
+    # TODO s/getentitys/getentityclasses/
     @staticmethod
     def getentitys():
         r = []

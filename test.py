@@ -43,6 +43,7 @@ import pytz
 import re
 import ship
 import textwrap
+import effort
 
 # We will use basic and supplementary multilingual plane UTF-8
 # characters when testing str attributes to ensure unicode is being
@@ -18050,7 +18051,7 @@ class gem_product_item(tester):
 
     @staticmethod
     def getvalid():
-        pen = product.good(name='Henry #2 Pencile')
+        pen = product.good(name='Henry #2 Pencil')
         itm = product.nonserial(quantity=1)
         itm.good = pen
         return itm
@@ -18691,11 +18692,11 @@ class gem_product_measure(tester):
     def it_converts(self):
 
         # Create three pencil products
-        pen = product.product(name='Henry #2 Pencile')
-        small = product.product(name='Henry #2 Pencile Small Box')
-        large = product.product(name='Henry #2 Pencile Large Box')
+        pen = product.product(name='Henry #2 Pencil')
+        small = product.product(name='Henry #2 Pencil Small Box')
+        large = product.product(name='Henry #2 Pencil Large Box')
 
-        # Create the unit of measures for the pencile products
+        # Create the unit of measures for the pencil products
         each = product.measure(name='each')
         smallbox = product.measure(name='smallbox')
         largebox = product.measure(name='largebox')
@@ -20181,7 +20182,7 @@ class gem_order_order(tester):
 
         # Create a product for the order
         pen = gem_product_product.getvalid(product.good, comment=1)
-        pen.name ='Henry #2 Pencile'
+        pen.name ='Henry #2 Pencil'
 
         # Add an item
         so.items += order.salesitem(
@@ -20229,7 +20230,7 @@ class gem_order_order(tester):
 
         # Create a product for the order
         pen = gem_product_product.getvalid(product.good, comment=1)
-        pen.name ='Henry #2 Pencile'
+        pen.name ='Henry #2 Pencil'
 
         # Add an item
         so.items += order.salesitem(
