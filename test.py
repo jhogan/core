@@ -3180,6 +3180,9 @@ class artifacts(orm.entities):
 class artists(orm.entities):
     pass
 
+class timelogs(orm.entities):
+    pass
+
 class location(orm.entity):
     address     = str
     description = str
@@ -3210,18 +3213,6 @@ class presentation(orm.entity):
         pres.title         =  uuid4().hex
         pres.author        =  'jessehogan0@gmail.com'
         return pres
-
-    @property
-    def brokenrules(self):
-        brs = super().brokenrules
-        if '@' not in self.author:
-            brs += brokenrule(
-                'Author email address has no @', 
-                'author', 
-                'valid'
-            )
-
-        return brs
 
 class concert(presentation):
     @staticmethod
@@ -3455,18 +3446,6 @@ class artist(orm.entity):
     def __str__(self):
         return self.fullname
 
-    @property
-    def brokenrules(self):
-        brs = super().brokenrules
-        em = self.email
-        if '@' not in em:
-            brs += brokenrule(
-                'Email address has no @', 
-                'email', 
-                'valid'
-            )
-        return brs
-        
 class artist_artifacts(orm.associations):
     pass
 
@@ -3649,9 +3628,49 @@ class issues(orm.entities):
     pass
 
 class issue(orm.entity):
+    @staticmethod
+    def getvalid():
+        iss = issue()
+        iss.name = uuid4().hex
+        iss.assignee  = '%s@mail.com' % uuid4().hex
+        return iss
+
     @orm.attr(str)
     def raiseAttributeError(self):
         raise AttributeError()
+
+    name = str
+    assignee = str
+
+    timelogs = timelogs
+
+    @property
+    def brokenrules(self):
+        brs = super().brokenrules
+        if '@' not in self.assignee:
+            brs += brokenrule(
+                'Assignee email address has no @', 
+                'assignee', 
+                'valid'
+            )
+
+        return brs
+
+class timelog(orm.entity):
+    hours = dec
+
+    @property
+    def brokenrules(self):
+        brs = super().brokenrules
+        if '@' not in self.author:
+            brs += brokenrule(
+                'Author email address has no @', 
+                'author', 
+                'valid'
+            )
+
+        return brs
+
 
 class artist_artists(orm.associations):
     pass
@@ -3811,42 +3830,43 @@ class test_orm(tester):
 
     def it_calls_imperative_brokenrules(self):
         ''' Break on entity '''
-        art = artist.getvalid()
+        iss = issue.getvalid()
 
         # Break a declaritive rule to ensure these are still being
         # collected
-        art.phone = str() # break
+        iss.name = str() # break
 
-        self.one(art.brokenrules)
-        self.broken(art, 'phone', 'valid')
+        self.one(iss.brokenrules)
+        self.broken(iss, 'name', 'valid')
 
         # Break an imperative rule
-        art.email = 'jessehogan0ATgmail.com' # break
+        iss.assignee = 'jessehogan0ATgmail.com' # break
 
-        self.two(art.brokenrules)
-        self.broken(art, 'phone', 'valid')
-        self.broken(art, 'email', 'valid')
+        self.two(iss.brokenrules)
+        self.broken(iss, 'name', 'valid')
+        self.broken(iss, 'assignee', 'valid')
 
+        return
         ''' Break constituent '''
-        art.presentations += presentation.getvalid()
-        art.presentations.last.author = 'jessehogan0ATgmail.com' # break
-        self.three(art.brokenrules)
-        self.broken(art, 'phone', 'valid')
-        self.broken(art, 'email', 'valid')
-        self.broken(art, 'author', 'valid')
+        iss.presentations += presentation.getvalid()
+        iss.presentations.last.author = 'jessehogan0ATgmail.com' # break
+        self.three(iss.brokenrules)
+        self.broken(iss, 'phone', 'valid')
+        self.broken(iss, 'email', 'valid')
+        self.broken(iss, 'author', 'valid')
 
         ''' Fix '''
-        art.email = 'jessehogan0@.com'
-        self.two(art.brokenrules)
-        self.broken(art, 'phone', 'valid')
-        self.broken(art, 'author', 'valid')
+        iss.email = 'jessehogan0@.com'
+        self.two(iss.brokenrules)
+        self.broken(iss, 'phone', 'valid')
+        self.broken(iss, 'author', 'valid')
 
-        art.presentations.last.author = 'jessehogan0@gmail.com'
-        self.one(art.brokenrules)
-        self.broken(art, 'phone', 'valid')
+        iss.presentations.last.author = 'jessehogan0@gmail.com'
+        self.one(iss.brokenrules)
+        self.broken(iss, 'phone', 'valid')
 
-        art.phone = 7777777
-        self.zero(art.brokenrules)
+        iss.phone = 7777777
+        self.zero(iss.brokenrules)
 
 
     def it_uses_reserved_mysql_words_for_fields(self):
@@ -9825,8 +9845,6 @@ class test_orm(tester):
 
         with self._chrontest() as t:
             t.run(rpr1.save)
-            t.retrieved(rpr1.orm.super)
-            t.retrieved(rpr1.orm.super.orm.super)
             for btl in rpr1.battles:
                 # FIXME We never get here
                 t.updated(btl)
