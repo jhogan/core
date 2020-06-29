@@ -18,10 +18,10 @@ Examples:
 Todo:
     TODO: So far, the most common order entities have been declared. The
     second section of the "Ordering Products" chapter, called "Optional
-    Order Model", offers data models to track order requirements,
-    requests, quotes and agreements (the book calls these entities
-    REQUIREMENTs, REQUESTs, QUOTEs and AGREEMENTs respectively). These
-    can be implemented when needed.
+    Order Model", offers data models to track order requirements
+    (partially implemented), requests, quotes and agreements (the book
+    calls these entities REQUIREMENTs, REQUESTs, QUOTEs and AGREEMENTs
+    respectively). These can be implemented when needed.
 """
 
 from datetime import datetime, date

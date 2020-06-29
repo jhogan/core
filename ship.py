@@ -580,9 +580,6 @@ class asset(orm.entity):
     """
     name = str
 
-# FIXME For some reason, the mear existance of this class causes a
-# maximum recursion exception.
-'''
 class vehical(orm.entity):
     """ Optionally, the ``vehicle`` involved in a shipment ``route``
     segment may be tracked. This is usually done in circumstances where
@@ -605,8 +602,3 @@ class vehical(orm.entity):
     # The shipment ``route`` segments that this vehical is involved in
     # to transport the given ``shipment``.
     # routes = routes
-'''
-
-
-
-
