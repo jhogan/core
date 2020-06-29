@@ -20693,8 +20693,122 @@ class gem_ship(tester):
         # docs1 has one entity tha has a non-None documenttype attribute
         self.one([x for x in docs1.pluck('documenttype') if x is not None])
 
+class gem_effort(tester):
+    def __init__(self):
+        super().__init__()
+        orm.orm.recreate(
+            order.requirement,
+            order.requirementtype,
+            effort.requirement,
+            effort.requirementtype,
+            effort.effort,
+            product.product,
+            product.good,
+            effort.deliverables,
+            ship.asset,
+        )
 
+    def it_creates_requirements(self):
+        req = order.requirement(
+            requirementtype = order.requirementtype(
+                name='Production run'
+            ),
+            created = 'Jul 5, 2000',
+            required = 'Aug 5, 2000',
+            description = self.dedent('''
+            Anticipated demand of 2,000 custom engraved black pens with
+            gold trim.
+            ''')
+        )
 
+        req.save()
 
+        req1 = req.orm.reloaded()
+
+        self.eq(req.id,                    req1.id)
+        self.eq(req.created,               req1.created)
+        self.ne(req.createdat,             req1.created)
+        self.eq(req.required,              req1.required)
+        self.eq(req.description,           req1.description)
+        self.eq(req.created,               req1.created)
+        self.eq(req.requirementtype.id,    req1.requirementtype.id)
+        self.eq(req.requirementtype.name,  req1.requirementtype.name)
+
+    def it_creates_deliverables(self):
+        """ Deliverables here means assets, products and deliverables
+        attached to a work ``requirement``.
+        """
+
+        # Create work requirement types
+        run = effort.requirementtype(name='Production run')
+        ip  = effort.requirementtype(name='Internal project')
+        maint = effort.requirementtype(name='Maintenance')
+
+        # Create product, deliverable and asset
+        good = gem_product_product.getvalid(product.good, comment=1)
+        good.name = 'Engraved black pen with gold trim'
+
+        deliv = effort.deliverable(name='2001 Sales/Marketing Plan')
+
+        ass = ship.asset(name='Engraving machine')
+
+        # Create requirements
+
+        # We need 2000 engraved pens for the anticipatde demand
+        req = effort.requirement(
+            description = self.dedent('''
+            Anticipated demand of 2,000 custom-engraved black pens with gold trim.
+            '''),
+            product          =  good,
+            quantity         =  2000,
+            requirementtype  =  run,
+        )
+
+        req.save()
+
+        req1 = req.orm.reloaded()
+        self.eq(req.id, req1.id)
+        self.eq(req.product.id, req1.product.id)
+        self.eq(req.quantity, req1.quantity)
+        self.eq(req.requirementtype.id, req1.requirementtype.id)
+        self.none(req.deliverable)
+        self.none(req1.asset)
+
+        # We need a sales plan; call it 2001 Sales/Marketing Plan
+        req = effort.requirement(
+            description = self.dedent('''
+            2001 Sales/Marketing Plan
+            '''),
+            deliverable      =  deliv,
+            requirementtype  =  ip,
+        )
+
+        req.save()
+
+        req1 = req.orm.reloaded()
+        self.eq(req.id, req1.id)
+        self.none(req1.product)
+        self.none(req1.asset)
+        self.eq(0, req1.quantity)
+        self.eq(ip.id, req1.requirementtype.id)
+
+        # We need to fixe the engraving machine 
+        req = effort.requirement(
+            description = self.dedent('''
+            Fix engraving machine
+            '''),
+            requirementtype  =  maint,
+            asset            =  ass
+        )
+
+        req.save()
+
+        req1 = req.orm.reloaded()
+        self.eq(req.id, req1.id)
+        self.none(req1.product)
+        self.none(req1.deliverable)
+        self.eq(0, req1.quantity)
+        self.eq(maint.id, req1.requirementtype.id)
+        self.eq(ass.id, req1.asset.id)
 
 cli().run()

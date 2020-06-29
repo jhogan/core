@@ -61,6 +61,8 @@ class statustypes(orm.entities):           pass
 class terms(orm.entities):                 pass
 class termtypes(orm.entities):             pass
 class item_items(orm.associations):         pass
+class requirements(orm.entities):         pass
+class requirementtypes(orm.entities):         pass
 
 class order(orm.entity):
     """ The generic, abstract order class from with the `salesorder` and
@@ -551,3 +553,59 @@ class item_item(orm.association):
 
     # The other item being linked
     object = item
+
+class requirement(orm.entity):
+    """ A ``requirement`` is an organization's need for *anything*.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.orm.isnew:
+            self.reason = None
+
+    # IMPLEMENTATION NOTE: The Ordering Product chapter of "The Data
+    # Model Resource Book" presents a optional "Requirements" model for
+    # requirements related to order ``items``. **This data model has not
+    # been implemented here yet**. This single class has only been
+    # implemented here to function as a superentity to
+    # ``effort.requirement``.
+
+    # Defines the need of the requirement. ``description`` allows for a
+    # full explanation and comments for the requirment.
+    description = text
+
+    # Specifies when the requirement was first created (not to be
+    # confused with ``createdat`` which is an implicit attribute
+    # indicating the datetime the record was created)
+    created = date
+
+    # The date by which the requirement item is needed.
+    required = date
+
+    # Identities thow much money is allocated for fulfilling the
+    # requirement (originally called: *estimated budget*)
+    budget = dec
+
+    # Determines the number of items needed in the requirement and
+    # allows the requirement to specify the several products or things
+    # are need. For instance there may be a requirement to hire 3
+    # programmers.
+    quantity = dec
+
+    # Explains why there is a need for the requirements
+    reason = text
+
+class requirementtype(orm.entity):
+    """ Defines the possible categories for the requirements.
+
+    Possible requirement types include "project", "maintenance" and
+    "production run".
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    name = str
+
+    # A collection of ``requirements`` that correspond to this type
+    requirements = requirements
