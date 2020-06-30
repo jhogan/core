@@ -3128,6 +3128,18 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # Then this line can be remove.
         sup = sup.orm.entities
 
+        # If the entities collection that was appended to has the same
+        # name as the superentities collection, abort. If we didn't
+        # abort, we would append to the same entities collection until
+        # maximum recursion was reached. This happens when the entities
+        # collection inherits from a super entity with the same name but
+        # is contained within a different module. This catch was added
+        # so ``effort.requirment.roles`` could be appended to. Here,
+        # ``roles`` is <effort.roles> which inherits from
+        # <party.roles>. See gem_effort.it_creates_roles.
+        if type(src).__name__ == sup.__name__:
+            return
+
         # Get the entity being appended
         e = eargs.entity
 
