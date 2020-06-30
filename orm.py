@@ -3161,6 +3161,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         corresponding values. Any exceptions that happen to occure will
         be trapped and a string representations of the exception will be
         returned."""
+
         try:
             tbl = table()
 
@@ -3175,7 +3176,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     r = tbl.newrow()
                 r = tbl.newrow()
                 r.newfield('Class')
-                r.newfield('%s' % type(e).__name__)
+                r.newfield('%s.%s' % (e.__module__, type(e).__name__))
 
                 for map in e.orm.mappings:
                     r = tbl.newrow()
