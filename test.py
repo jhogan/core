@@ -20697,6 +20697,8 @@ class gem_effort(tester):
     def __init__(self):
         super().__init__()
         orm.orm.recreate(
+            effort.roles,
+            effort.roletypes,
             order.requirement,
             order.requirementtype,
             effort.requirement,
@@ -20810,5 +20812,30 @@ class gem_effort(tester):
         self.eq(0, req1.quantity)
         self.eq(maint.id, req1.requirementtype.id)
         self.eq(ass.id, req1.asset.id)
+
+    def it_creates_roles(self):
+        abc = party.company(name='ABC Manufacturing, Inc.')
+
+        req = effort.requirement(description='Fix equipment')
+
+        role = effort.role(
+            roletype = effort.roletype(name='Created for'),
+            begin = 'Jul 5, 2000',
+        )
+
+        abc.roles += role
+
+        req.roles += role
+
+        req.save()
+
+        req1 = req.orm.reloaded()
+
+        self.eq(req.id, req1.id)
+        self.eq(abc.id, req1.roles.first.party.id)
+        self.eq(role.roletype.id, req1.roles.first.roletype.id)
+        self.eq(req.roles.first.begin, req1.roles.first.begin)
+        self.none(req1.roles.first.end)
+
 
 cli().run()

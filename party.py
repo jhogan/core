@@ -1389,6 +1389,10 @@ class roletype(orm.entity):
     Data Model Resource Book".
     """
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
     # Stores available values for role types.
     name = str
 

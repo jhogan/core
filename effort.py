@@ -34,6 +34,8 @@ class requirementtypes(order.requirementtypes): pass
 class efforts(orm.entities): pass
 class deliverables(orm.entities): pass
 class deliverabletypes(orm.entities): pass
+class roles(party.roles): pass
+class roletypes(party.roletypes): pass
 
 class requirement(order.requirement):
     """ Repersents the *need* to perform some type of work. This could
@@ -81,6 +83,8 @@ class requirement(order.requirement):
     # result of the one-to-many relationship that ``deliverable`` has to
     # ``requirement``.
 
+    roles = roles
+
 class requirementtype(order.requirementtype):
     """ Defines the possible categories for the requirements.
 
@@ -127,3 +131,26 @@ class deliverabletype(orm.entity):
         self.orm.ensure(expects=('name',), **kwargs)
 
     deliverables = deliverables
+
+class role(party.role):
+    """ Contains the intersection of ``party.party``, ``requirement``
+    and ``roletype``.
+    """
+
+    # A datespan to indicate the duration of the role.
+    span = datespan
+
+class roletype(party.roletype):
+    """ Stores all the valid roles defined by an enterprise that could
+    be related to a ``requirement``. Possible values for ``name`` would
+    include "Created for', "Responsible for", "Authorized by". These
+    phrases would be in reference to ``role.party``, i.e., "Created
+    for ``role.party``".
+
+    Note that this is modeled after the REQUIREMENT ROLE TYPE (also
+    refered to as WORK REQUIREMENT ROLE TYPE) entity in "The Data Model
+    Resource Book".
+    """
+
+    # The collection of ``roles`` matching this ``roletype``
+    roles = roles
