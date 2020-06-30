@@ -580,6 +580,18 @@ class asset(orm.entity):
     """
     name = str
 
+    # The date the asset was acquired
+    acquired = date
+
+    # The date on which the asset was last serviced
+    serviced = date
+
+    # The next date the asset is scheduled to be serviced
+    next = date
+
+    # The asset's production capacity
+    capacity = dec
+
 class vehical(orm.entity):
     """ Optionally, the ``vehicle`` involved in a shipment ``route``
     segment may be tracked. This is usually done in circumstances where
