@@ -39,6 +39,7 @@ import re
 import ship
 import textwrap
 import effort
+import apriori
 
 # We will use basic and supplementary multilingual plane UTF-8
 # characters when testing str attributes to ensure unicode is being
@@ -20699,7 +20700,7 @@ class gem_effort(tester):
         orm.orm.recreate(
             effort.roles,
             effort.roletypes,
-            order.requirement,
+            apriori.requirement,
             order.requirementtype,
             effort.requirement,
             effort.requirementtype,
@@ -20711,7 +20712,7 @@ class gem_effort(tester):
         )
 
     def it_creates_requirements(self):
-        req = order.requirement(
+        req = apriori.requirement(
             requirementtype = order.requirementtype(
                 name='Production run'
             ),

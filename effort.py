@@ -28,16 +28,30 @@ import party
 import primative
 import product
 import ship
+import apriori
 
-class requirements(order.requirements): pass
-class requirementtypes(order.requirementtypes): pass
-class efforts(orm.entities): pass
-class deliverables(orm.entities): pass
-class deliverabletypes(orm.entities): pass
-class roles(party.roles): pass
-class roletypes(party.roletypes): pass
+class  requirements(apriori.requirements):        pass
+class  requirementtypes(order.requirementtypes):  pass
+class  efforts(orm.entities):                     pass
+class  programs(efforts):                         pass
+class  projects(efforts):                         pass
+class  phases(efforts):                           pass
+class  tasks(efforts):                            pass
+class  activities(efforts):                       pass
+class  productionruns(efforts):                   pass
+class  maintenences(productionruns):              pass
+class  workflows(productionruns):                 pass
+class  researches(productionruns):                pass
+class  deliverables(orm.entities):                pass
+class  deliverabletypes(orm.entities):            pass
+class  roles(party.roles):                        pass
+class  roletypes(party.roletypes):                pass
+class  items(order.items):                        pass
+class  effort_items(orm.associations):            pass
+class  efforttypes(orm.entities):                 pass
+class  effortpurposetypes(orm.entities):          pass
 
-class requirement(order.requirement):
+class requirement(apriori.requirement):
     """ Represents the *need* to perform some type of work. This could
     be a requirment stemming from a decision to manufacture inventory
     items, deliver services, conduct a procedure, or repair an asset of
@@ -100,7 +114,100 @@ class effort(orm.entity):
     setting up and planning for the actual work that will be performed,
     as well as recording the status and information related to the
     efforts and tasks that are taking place.
+
+    Work efforts may fulfill an internal commitment to do work, or they
+    may fulfill an external requirement such as a sales order item
+    (``order.salesitem``). The work effort may result from scenarios
+    such as :
+        
+        - A work requirment.
+        - A customer orders an item that needs to be manufactured.
+        - A service that was sold now needs to be performed.
+        - A customer places an order to repair or service an item that
+          was previously sold to him or her.
+
+    ``efforts`` are used to fulfill the requirments of either a work
+    ``requirement`` or work order ``item`. 
+
+    Work ``efforts` are subtyped according to its level of detail.
+    Possible subtypes include ``program``, ``project``, ``phase``,
+    ``activity``, and ``task``.  The ``efforttype`` entity is used to
+    include more types if necessary. 
+
+    Note that this entity was originally called WORK EFFORT in "The
+    Data Model Resource Book".
     """
+
+    # The name for the overall work effort, such as a project name
+    name = str
+
+    # A detailed description of the effort
+    description = text
+
+    # To facility project tracing, the enterprise may want to list
+    # scheduled start and end date, and estimated hourse for the effort
+    scheduled = datespan(prefix='scheduled')
+
+    # Funding or time limits may be imposed under certain circumstances
+    # by various agencies, so ``effort``s includ **total dollars
+    # allowed** and **total hours allowed**.
+    dollarsallowed = dec
+    hoursallowed   = dec
+
+    # The actual start datetime, actual completion datetime, and actual
+    # hoursestored to track efficiency.
+    actual = timespan(prefix='actual')
+
+    # The actual hours the work effort took.
+    hours = dec
+
+    # If there is a need for any special terms that anyone needs to know
+    # about, those can be recorded as well.
+    terms = text
+
+class program(effort): 
+    pass
+
+class project(effort): 
+    pass
+
+class phase(effort): 
+    pass
+
+class task(effort): 
+    pass
+
+class activity(effort): 
+    entities = activities
+
+class productionrun(effort): 
+    """ "A group of similar or related goods that is produced by using a
+    particular group of manufacturing procedures, processes or
+    conditions. The most desirable size of a production run required by
+    a business will depend on the consumer demand for the good produced,
+    as well as how much it costs to set up production and carry excess
+    inventory."
+        -- http://www.businessdictionary.com/definition/production-run.html
+
+    Note that this entity was originally called PRODUCTION RUN in "The
+    Data Model Resource Book".
+    """
+    # Maintains the expected quantity for the production run
+    expected = dec
+
+    # Records the actual production from the production run
+    produced = dec
+
+    rejected = dec
+
+class maintenance(productionrun): 
+    entities = maintenences
+
+class workflow(productionrun): 
+    pass
+
+class research(productionrun): 
+    entities = researches
 
 class deliverable(orm.entity):
     """ For ``requirements`` that have a type of "internal project", the
@@ -154,3 +261,69 @@ class roletype(party.roletype):
 
     # The collection of ``roles`` matching this ``roletype``
     roles = roles
+
+class item(order.item):
+    """ The work order ``item`` represents the commment to complete some
+    work. Work order ``items`` usually result from work ``requirements``
+    however, they can result from certain ``product.requirements`` such
+    as for a product that needs to be manufactured. jj
+
+    Note that this entity was originally called WORK ORDER ITEM in "The
+    Data Model Resource Book".
+    """
+
+class effort_item(orm.association):
+    """ Associates an ``effort`` with an ``item``.
+
+    Note that this entity was originally called WORK ORDER ITEM
+    FULFILLMENT in "The Data Model Resource Book".
+    """
+
+    # The work ``effort`` side of the association.
+    effort = effort
+    
+    # The work order ``item`` side of the association. The above work
+    # ``effort`` is said to be the fulliment of the work ``item``
+    item = item
+
+class efforttype(orm.entity):
+    """ Catagorizes the ``effort``.
+
+    Note that this entity was originally called WORK EFFORT TYPE in "The
+    Data Model Resource Book".
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    name = str
+
+    # The standard number of work hours for this effort type. This is an
+    # estimate of how many hours it would normally take to complete this
+    # ``effort``.
+    hours = dec
+
+    # A collection of work ``efforts` that match this type.
+    efforts = efforts
+
+class effortpurposetype(orm.entity):
+    """ A work ``effort`` tracks the work to fix or produce something
+    for manufacturing and involves the allocation of resources: people
+    (labor), parts (inventory), and fixed assets (eqipment). Therefore,
+    each work ``effort`` may be for the purpose of a work
+    ``effortpurposetype`` including ``maintenance``, ``production run``,
+    ``work flow``, and ``research``. 
+
+    Note that this entity was originally called WORK EFFORT PURPOSE TYPE
+    in "The Data Model Resource Book".
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    name = str
+
+    # A collection of work ``efforts` that match this type.
+    efforts = efforts

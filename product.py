@@ -14,6 +14,7 @@ import entities
 import orm
 import party
 import primative
+import apriori
 
 class products(orm.entities): pass
 
@@ -80,6 +81,7 @@ class containertypes(orm.entities):        pass
 class statuses(orm.entities):              pass
 class variances(orm.entities):             pass
 class reasons(orm.entities):               pass
+class requirements(apriori.requirements):          pass
 
 class prices(orm.entities):
     def getprice(self, org, regs=None, pts=None, qty=None):
@@ -1508,3 +1510,23 @@ class product_product(orm.association):
 
     subject = product
     object  = product
+
+class requirement(apriori.requirement):
+    """ A ``requirement`` for a product (its manufacture, etc.)
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.orm.isnew:
+            self.reason = None
+
+    # IMPLEMENTATION NOTE: The Ordering Product chapter of "The Data
+    # Model Resource Book" presents a optional "Requirements" model for
+    # requirements related to order ``items``. **This data model has not
+    # been implemented here yet**. This single class has only been
+    # implemented here to function as a superentity to
+    # ``effort.requirement``.
+
+    # Defines the need of the requirement. ``description`` allows for a
+    # full explanation and comments for the requirment.
+    description = text
+
