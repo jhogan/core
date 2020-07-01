@@ -7,7 +7,6 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
 # TODO Add Tests
-from configfile import configfile
 from entities import *
 from MySQLdb.constants.ER import BAD_TABLE_ERROR
 from table import table
@@ -17,6 +16,8 @@ import uuid
 import func
 from contextlib import contextmanager
 from dbg import B
+from config import config
+import accounts
 
 # Some errors in MySQL are classified as "warnings" (such as 'SELECT 0/0').
 # This means that no exception is raised; just an error message is printed to
@@ -274,10 +275,10 @@ class connections(entities):
     _instance = None
     def __init__(self):
         super().__init__()
-        cfg = configfile.getinstance()
-        accts = cfg.accounts.mysqlaccounts
-        for acct in accts:
-            self += connection(acct)
+        cfg = config()
+        for acct in cfg.accounts:
+            if isinstance(acct, accounts.mysql):
+                self += connection(acct)
 
     @classmethod
     def getinstance(cls):

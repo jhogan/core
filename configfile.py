@@ -26,7 +26,6 @@ class configfile(entity):
 
     @classmethod
     def getinstance(cls):
-
         if cls._instance == None:
             cls._instance = configfile()
 
