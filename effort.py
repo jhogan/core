@@ -38,7 +38,7 @@ class roles(party.roles): pass
 class roletypes(party.roletypes): pass
 
 class requirement(order.requirement):
-    """ Repersents the *need* to perform some type of work. This could
+    """ Represents the *need* to perform some type of work. This could
     be a requirment stemming from a decision to manufacture inventory
     items, deliver services, conduct a procedure, or repair an asset of
     the enterprise such as a piece of equpment or a piece of software.
