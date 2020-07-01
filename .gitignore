@@ -1,4 +1,4 @@
-conf.*py
+config.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -90,7 +90,6 @@ ENV/
 # Rope project settings
 .ropeproject
 
-epiphany.yaml
 # Swap
 [._]*.s[a-v][a-z]
 [._]*.sw[a-p]
