@@ -38,6 +38,10 @@ class account(entity):
     def password(self):
         return self._pwd
 
+    @password.setter
+    def password(self, v):
+        self._pwd = v
+
     @property
     def host(self):
         return self._host
@@ -74,6 +78,12 @@ class mysql(account):
     @property
     def database(self):
         return self._db
+
+    def __repr__(self):
+        return self.url
+
+    def __str__(self):
+        return self.url
 
     @property
     def url(self):

@@ -8,6 +8,10 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
 import party
+import product
+import order
+import ship
+import effort
 from configfile import configfile
 from dbg import B
 import pathlib
@@ -30,8 +34,21 @@ def wf(file, txt):
     p = pathlib.Path(file)
     return p.write_text(txt)
 
+def mig():
+    for es in orm.orm.getentitys(includeassociations=True):
+        tbl = es.orm.dbtable
+
+        if tbl:
+            # The table exists in the database so let's diff it...
+            ...
+        else:
+            maps = es.orm.mappings.fieldmappings
+            for map in maps:
+                print(repr(map))
+
+
 cfg = config()
-dbacct = db.connections.getinstance().default.account
+acct = db.connections.getinstance().default.account
 
 if cfg.inproduction:
     print("You are in a production environment".upper())
@@ -48,8 +65,13 @@ print("""
         Username: {}
         Database: {}
         Port:     {}
-    """.format(dbacct.host,
-               dbacct.username,
-               dbacct.database,
-               dbacct.port)
+    """.format(acct.host,
+               acct.username,
+               acct.database,
+               acct.port)
 )
+
+import code
+B()
+code.interact(banner='banner')
+mig()

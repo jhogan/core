@@ -5038,6 +5038,25 @@ class orm:
             self.isloaded = False
             self.collect(orderby, limit, offset)
 
+    def query(self, sql):
+        ress = None
+        def exec(cur):
+            nonlocal ress
+            cur.execute(sql)
+            ress = db.dbresultset(cur)
+
+        exec = db.executioner(exec)
+
+        exec.execute()
+
+        return res
+
+    @property
+    def dbtable(self):
+        pool = db.pool.getdefault()
+        with pool.take() as conn:
+            return db.table(conn, self.table)
+
     def load(self, id):
         sql = 'SELECT * FROM {} WHERE id = _binary %s'
         sql = sql.format(self.table)
@@ -5985,12 +6004,15 @@ class orm:
 
     # TODO s/getentitys/getentityclasses/
     @staticmethod
-    def getentitys():
+    def getentitys(includeassociations=False):
         r = []
         for e in orm.getsubclasses(of=entity):
-            if association not in e.mro():
-                if e is not association:
-                    r += [e]
+            if includeassociations:
+                r += [e]
+            else:
+                if association not in e.mro():
+                    if e is not association:
+                        r += [e]
         return r
 
     @staticmethod

@@ -271,7 +271,6 @@ class dbentity(entity):
         return ress.rowcount
 
 class connections(entities):
-
     _instance = None
     def __init__(self):
         super().__init__()
@@ -301,6 +300,10 @@ class connection(entity):
     @property
     def account(self):
         return self._account
+
+    def __repr__(self):
+        conn = self._connection
+        return '%s (Open: %s)' % (self.account.url, str(bool(conn.open)))
 
     @property
     def _connection(self):
@@ -657,4 +660,24 @@ class executioner(entity):
             finally:
                 cur.close()
                 pl.push(conn)
+
+class catelogs(entities):
+    pass
+
+class catelog(entity):
+    pass
+
+class tables(entities):
+    pass
+
+class table(entity):
+    def __init__(self, conn, tbl):
+        sql = '''
+        select *
+        from information_schema.columns
+        where table_schema='%s'
+            and table_name='%s';
+        ''' % (tbl, conn.account.database)
+
+        ress = conn.query(sql)
 
