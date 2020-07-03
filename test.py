@@ -20838,5 +20838,28 @@ class gem_effort(tester):
         self.eq(req.roles.first.begin, req1.roles.first.begin)
         self.none(req1.roles.first.end)
 
+    def it_associates_effort_with_requirment(self):
+        req50985 = effort.requirement(
+           name = self.dedent('''
+           Anticipated demand of 2,000 custom-engraved black pens
+           with gold trim
+           ''')
+        )
+
+        req51245 = effort.requirement(
+           name = self.dedent('''
+           Anticipated demand of 1,500 custom-engraved black pens
+           with gold trim
+           ''')
+        )
+
+        eff28045 = effort.effort(
+            scheduledbegin = 'June 1, 2000',
+            name = 'Production run',
+            description = self.dedent('''
+            Production run of 3,500 pencils
+            '''),
+        )
+
 
 cli().run()
