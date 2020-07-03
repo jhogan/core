@@ -15,7 +15,7 @@ from pprint import pprint
 from functools import total_ordering
 import decimal
 import string
-from func import getattr
+from func import getattr, enumerate
 from dbg import B
 
 class entities(object):

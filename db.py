@@ -9,7 +9,7 @@
 # TODO Add Tests
 from entities import *
 from MySQLdb.constants.ER import BAD_TABLE_ERROR
-from table import table
+import table as tblmod
 import MySQLdb
 import warnings
 import uuid
@@ -163,7 +163,7 @@ class dbentities(entities):
                 return None
             return functools.reduce(rgetattr, [obj] + attr.split('.'))
 
-        tbl = table()
+        tbl = tblmod.table()
 
         if props:
             props = ('ix', 'id') + tuple(props)
@@ -403,7 +403,7 @@ class dbresultset(entities):
         return self.first
 
     def __repr__(self):
-        tbl = table()
+        tbl = tblmod.table()
 
         for i, res in func.enumerate(self):
             if i.first:
@@ -671,13 +671,73 @@ class tables(entities):
     pass
 
 class table(entity):
-    def __init__(self, conn, tbl):
-        sql = '''
-        select *
-        from information_schema.columns
-        where table_schema='%s'
-            and table_name='%s';
-        ''' % (tbl, conn.account.database)
+    def __init__(self, name):
+        self.name = name
+        self.columns = columns(self)
 
-        ress = conn.query(sql)
+    def __repr__(self):
+        r = 'CREATE TABLE %s (\n'
+        for i, col in self.columns.enumerate():
+            if not i.first:
+                r += ',\n'
+            r += '    %s' % repr(col)
+        r += '\n)'
+        return r % self.name
+
+class columns(entities):
+    def __init__(self, tbl, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.table = tbl
+
+        pl = pool.getdefault()
+        with pl.take() as conn:
+            sql = '''select *
+            from information_schema.columns
+            where table_schema = %s
+                and table_name = %s
+            '''
+            ress = conn.query(sql, (conn.account.database, tbl.name))
+            for res in ress:
+                self += column(res)
+
+class column(entity):
+    def __init__(self, res, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        flds = res.fields
+        self._name = flds['COLUMN_NAME'].value
+        self._ordinal = flds['ORDINAL_POSITION'].value
+        self._type = flds['DATA_TYPE'].value
+        self._max = flds['CHARACTER_MAXIMUM_LENGTH'].value
+        if self._type == 'datatime':
+            self._precision = flds['DATETIME_PRECISION'].value
+        else:
+            self._precision = flds['NUMERIC_PRECISION'].value
+        self._scale = flds['NUMERIC_SCALE'].value
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def ordinal(self):
+        return self._ordinal
+
+    @property
+    def type(self):
+        return self._type
+
+    @property
+    def max(self):
+        return self._max
+
+    @property
+    def precision(self):
+        return self._precision
+
+    @property
+    def scale(self):
+        return self._scale
+
+    def __repr__(self):
+       return '%s %s' % (self.name, self.type)
 

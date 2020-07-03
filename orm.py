@@ -5053,9 +5053,7 @@ class orm:
 
     @property
     def dbtable(self):
-        pool = db.pool.getdefault()
-        with pool.take() as conn:
-            return db.table(conn, self.table)
+        return db.table(self.table)
 
     def load(self, id):
         sql = 'SELECT * FROM {} WHERE id = _binary %s'
