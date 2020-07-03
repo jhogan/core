@@ -35,16 +35,7 @@ def wf(file, txt):
     return p.write_text(txt)
 
 def mig():
-    for es in orm.orm.getentitys(includeassociations=True):
-        tbl = es.orm.dbtable
-
-        if tbl:
-            # The table exists in the database so let's diff it...
-            ...
-        else:
-            maps = es.orm.mappings.fieldmappings
-            for map in maps:
-                print(repr(map))
+    orm.migration.run()
 
 
 cfg = config()

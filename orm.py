@@ -6534,6 +6534,19 @@ class associations(entities):
 class association(entity):
     pass
 
+class migration:
+    @staticmethod
+    def run():
+        for es in orm.getentitys(includeassociations=True):
+            tbl = es.orm.dbtable
+            if tbl:
+                # The table exists in the database so let's diff it...
+                ...
+            else:
+                maps = es.orm.mappings.fieldmappings
+                for map in maps:
+                    print(repr(map))
+
 # ORM Exceptions
 class InvalidColumn(ValueError): pass
 class InvalidStream(ValueError): pass
