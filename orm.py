@@ -1968,10 +1968,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
     def brokenrules(self):
         return self._getbrokenrules()
 
-    def _getbrokenrules(self):
+    def _getbrokenrules(self, gb):
         brs = entitiesmod.brokenrules()
 
-        gb = collation.stack.last.guestbook
         # This test corrects a fairly deep issue that has only come
         # up with subentity-superassociation-subentity
         # relationships. We use the below logic to return
@@ -2001,7 +2000,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             # error message here. Instead, we should chek the return
             # value of e.brokenrules and, if its None, raise a more
             # informative error message.
-            brs += e.brokenrules
+            brs += e._getbrokenrules(gb=gb)
 
         return brs
 
@@ -2793,25 +2792,23 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         
     @property
     def brokenrules(self):
-        if collation.stack.ispopulated:
-            return self._getbrokenrules()
+        return self._getbrokenrules()
 
-        with collation().collate():
-            return self._getbrokenrules()
-
-    def _getbrokenrules(self):
+    def _getbrokenrules(self, gb=None):
         brs = entitiesmod.brokenrules()
 
-        gb = collation.stack.last.guestbook
+        if gb is None:
+            gb = list()
+
         if self in gb:
             return brs
-        else:
-            gb.sign(self)
+
+        gb.append(self)
             
         # TODO s/super/sup/
         super = self.orm._super
         if super:
-            brs += super._getbrokenrules()
+            brs += super._getbrokenrules(gb=gb)
 
         for map in self.orm.mappings:
             if type(map) is fieldmapping:
@@ -2895,7 +2892,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         msg = "'%s' attribute is wrong type: %s"
                         msg %= (map.name, type(es))
                         brs += entitiesmod.brokenrule(msg, map.name, 'valid')
-                    brs += es.brokenrules
+                    brs += es._getbrokenrules(gb=gb)
 
             elif type(map) is entitymapping:
                 if map.isloaded:
@@ -2904,11 +2901,17 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         msg %= (map.name, type(map.value))
                         args = msg, map.name, 'valid'
                         brs += entitiesmod.brokenrule(*args)
-                    brs += map.value._getbrokenrules()
+
+                    # If the ORM user has overridden `getbrokenrules`,
+                    # check if the entity has already been processed by
+                    # seeing if `map.value` is in the guestbook.
+                    if map.value not in gb:
+                        # Get entities brokenrules
+                        brs += map.value._getbrokenrules(gb=gb)
 
             elif type(map) is associationsmapping:
                 if map.isloaded:
-                    brs += map.value._getbrokenrules()
+                    brs += map.value._getbrokenrules(gb=gb)
 
         return brs
 

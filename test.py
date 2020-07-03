@@ -3142,15 +3142,29 @@ class comments(orm.entities):
     pass
 
 class comment(orm.entity):
-    title = str
-    body = str
-    comments = comments
+    title     =  str
+    body      =  str
+    comments  =  comments
+    author    =  str
+
+    def _getbrokenrules(self, *args, **kwargs):
+        brs = super()._getbrokenrules(*args, **kwargs)
+        if '@' not in self.author:
+            brs += brokenrule(
+                'Author email address has no @', 
+                'author', 
+                'valid'
+            )
+
+        return brs
+
 
     @staticmethod
     def getvalid():
         com = comment()
         com.title = uuid4().hex
         com.body = '%s\n%s' % (uuid4().hex, uuid4().hex)
+        com.author = '%s@%s.com' % (uuid4().hex, uuid4().hex)
         return com
 
 class locations(orm.entities):
@@ -3628,25 +3642,30 @@ class issues(orm.entities):
     pass
 
 class issue(orm.entity):
+    name      =  str
+    assignee  =  str
+    timelogs  =  timelogs
+    comments  =  comments
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.raise_ = True
+
     @staticmethod
     def getvalid():
         iss = issue()
         iss.name = uuid4().hex
         iss.assignee  = '%s@mail.com' % uuid4().hex
+        iss.raise_ = False
         return iss
 
     @orm.attr(str)
     def raiseAttributeError(self):
-        raise AttributeError()
+        if self.raise_:
+            raise AttributeError()
 
-    name = str
-    assignee = str
-
-    timelogs = timelogs
-
-    @property
-    def brokenrules(self):
-        brs = super().brokenrules
+    def _getbrokenrules(self, *args, **kwargs):
+        brs = super()._getbrokenrules(*args, **kwargs)
         if '@' not in self.assignee:
             brs += brokenrule(
                 'Assignee email address has no @', 
@@ -3837,35 +3856,34 @@ class test_orm(tester):
         iss.name = str() # break
 
         self.one(iss.brokenrules)
-        self.broken(iss, 'name', 'valid')
+        self.broken(iss, 'name', 'fits')
 
         # Break an imperative rule
         iss.assignee = 'jessehogan0ATgmail.com' # break
 
         self.two(iss.brokenrules)
-        self.broken(iss, 'name', 'valid')
+        self.broken(iss, 'name', 'fits')
         self.broken(iss, 'assignee', 'valid')
 
-        return
         ''' Break constituent '''
-        iss.presentations += presentation.getvalid()
-        iss.presentations.last.author = 'jessehogan0ATgmail.com' # break
+        iss.comments += comment.getvalid()
+        iss.comments.last.author = 'jessehogan0ATgmail.com' # break
         self.three(iss.brokenrules)
-        self.broken(iss, 'phone', 'valid')
-        self.broken(iss, 'email', 'valid')
+        self.broken(iss, 'name', 'fits')
+        self.broken(iss, 'assignee', 'valid')
         self.broken(iss, 'author', 'valid')
 
         ''' Fix '''
-        iss.email = 'jessehogan0@.com'
+        iss.assignee = 'jessehogan0@mail.com'
         self.two(iss.brokenrules)
-        self.broken(iss, 'phone', 'valid')
+        self.broken(iss, 'name', 'fits')
         self.broken(iss, 'author', 'valid')
 
-        iss.presentations.last.author = 'jessehogan0@gmail.com'
+        iss.comments.last.author = 'jessehogan0@gmail.com'
         self.one(iss.brokenrules)
-        self.broken(iss, 'phone', 'valid')
+        self.broken(iss, 'name', 'fits')
 
-        iss.phone = 7777777
+        iss.name = 'My Issue'
         self.zero(iss.brokenrules)
 
 
