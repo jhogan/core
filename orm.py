@@ -94,37 +94,6 @@ import textwrap
 # text (field names like description, comment, instructions, etc. should
 # by default be optional.)
 
-class collation(entitiesmod.entity):
-
-    class guestbook(entitiesmod.entities):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            
-            self.signatures = list()
-
-        def sign(self, e):
-            self.signatures.append(e)
-
-        def __contains__(self, other):
-            return other in self.signatures
-
-    class _stack(entitiesmod.entities):
-        pass
-
-    stack = _stack()
-
-    def __init__(self):
-        self.guestbook = collation.guestbook()
-
-    @contextmanager
-    def collate(self):
-        co = collation()
-        collation.stack += co
-
-        yield co
-
-        collation.stack.pop()
-
 @unique
 class types(Enum):
     """
