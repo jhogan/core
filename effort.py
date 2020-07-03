@@ -165,6 +165,17 @@ class effort(orm.entity):
     # about, those can be recorded as well.
     terms = text
 
+    # A work effort may be associated with zero or one facility, i.e.,
+    # the work may occure at aphysical structure such as a particular
+    # building, room, or floor.. Since ``effort`` is a recursive entity,
+    # if facility is None, the work effort is assumed to take place a
+    # the closest parent that has a non-None ``facility`` attribute.
+    facility = party.facility
+
+    # Make efforts recursive. This could be useful, for example, for
+    # creating subtasks from a main task in a ticket system.
+    efforts = efforts
+
 class program(effort): 
     pass
 
