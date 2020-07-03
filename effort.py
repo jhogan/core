@@ -137,6 +137,10 @@ class effort(orm.entity):
     Note that this entity was originally called WORK EFFORT in "The
     Data Model Resource Book".
     """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.terms = None
+        self.description = None
 
     # The name for the overall work effort, such as a project name
     name = str
@@ -283,6 +287,16 @@ class item(order.item):
     Data Model Resource Book".
     """
 
+class item_requirement(orm.association):
+    """ Associates an ``item`` with a ``requirement`` entity.
+    
+    Note that this entity was originally called ORDER REQUIREMENT
+    COMMITMENT in "The Data Model Resource Book".
+    """
+
+    item = item
+    requirement = requirement
+
 class effort_item(orm.association):
     """ Associates an ``effort`` with an ``item``.
 
@@ -338,3 +352,12 @@ class effortpurposetype(orm.entity):
 
     # A collection of work ``efforts` that match this type.
     efforts = efforts
+
+class effort_requirement(orm.association):
+    """ Associates an effort with a requirement.
+
+    Note that this entity was originally called WORK REQUIREMENT
+    FULFILLMENT in "The Data Model Resource Book".
+    """
+    effort = effort
+    requirement = requirement

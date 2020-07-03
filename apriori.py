@@ -30,6 +30,7 @@ class requirement(orm.entity):
         super().__init__(*args, **kwargs)
         if self.orm.isnew:
             self.reason = None
+            self.description = None
 
     # IMPLEMENTATION NOTE: The Ordering Product chapter of "The Data
     # Model Resource Book" presents a optional "Requirements" model for

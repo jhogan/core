@@ -20703,8 +20703,10 @@ class gem_effort(tester):
             apriori.requirement,
             order.requirementtype,
             effort.requirement,
+            effort.effort_requirements,
             effort.requirementtype,
             effort.effort,
+            effort.item_requirements,
             product.product,
             product.good,
             effort.deliverables,
@@ -20839,27 +20841,118 @@ class gem_effort(tester):
         self.none(req1.roles.first.end)
 
     def it_associates_effort_with_requirment(self):
+        ''' Associate using effort_requirement '''
         req50985 = effort.requirement(
-           name = self.dedent('''
+           description = self.dedent('''
            Anticipated demand of 2,000 custom-engraved black pens
            with gold trim
            ''')
         )
 
         req51245 = effort.requirement(
-           name = self.dedent('''
+           description = self.dedent('''
            Anticipated demand of 1,500 custom-engraved black pens
            with gold trim
            ''')
         )
 
-        eff28045 = effort.effort(
+        eff28045 = effort.productionrun(
             scheduledbegin = 'June 1, 2000',
             name = 'Production run',
             description = self.dedent('''
             Production run of 3,500 pencils
             '''),
         )
+
+        eff28045.effort_requirements += effort.effort_requirement(
+            requirement = req50985,
+        )
+
+        eff28045.effort_requirements += effort.effort_requirement(
+            requirement = req51245,
+        )
+
+        eff28045.save()
+
+        eff28045_1 = eff28045.orm.reloaded()
+
+        ers = eff28045.effort_requirements.sorted()
+        ers1 = eff28045_1.effort_requirements.sorted()
+
+        self.two(ers)
+        self.two(ers1)
+
+        for er, er1 in zip(ers, ers1):
+            self.eq(er.id, er1.id)
+            self.eq(er.requirement.id, er1.requirement.id)
+            self.eq(er.requirement.id, er1.requirement.id)
+
+        ''' Associate using effort.item '''
+
+        # Create efforts
+        eff29534 = effort.productionrun(
+            name = 'Production run #1 of pens',
+            scheduledbegin = 'Feb 23, 2001',
+        )
+
+        eff29874 = effort.productionrun(
+            name = 'Production run #2 of pens',
+            scheduledbegin = 'Mar 23, 2001',
+        )
+
+        # Create requirement
+        req = effort.requirement(
+            description = 'Need for customized pens'
+        )
+
+        # Create work order item
+        itm = effort.item(
+            description = self.dedent('''
+            Sales Order Item to produce 2,500 customized engraved pens.
+            ''')
+        )
+
+        # Link requirement to work order item
+        req.item_requirements += effort.item_requirement(
+            item = itm 
+        )
+
+        # Link work order item to efforts
+        itm.effort_items += effort.effort_item(
+            effort = eff29874
+        )
+
+        itm.effort_items += effort.effort_item(
+            effort = eff29534
+        )
+
+        req.save()
+
+        req1 = req.orm.reloaded()
+
+        self.eq(req.id, req1.id)
+
+        self.one(req.item_requirements)
+        self.one(req1.item_requirements)
+
+        ir = req.item_requirements.first
+        ir1 = req1.item_requirements.first
+
+        self.eq(ir.id, ir1.id)
+
+        self.eq(ir.item.id, ir1.item.id)
+
+        eis = ir.item.effort_items.sorted()
+        eis1 = ir1.item.effort_items.sorted()
+
+        self.two(eis)
+        self.two(eis1)
+
+        for ei, ei1 in zip(eis, eis1):
+            self.eq(ei.id, ei1.id)
+            self.eq(ei.effort.id, ei1.effort.id)
+
+
 
 
 cli().run()
