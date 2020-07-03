@@ -36,7 +36,7 @@ import pathlib
 import primative
 import product
 import re
-#import ship
+import ship
 import textwrap
 
 # We will use basic and supplementary multilingual plane UTF-8

@@ -123,19 +123,19 @@ class text(alias):
 
             str, 1, 65535
 
-        Many entity objects in the GEM simply want what would be
-        equivalent to a MySQL ``text`` date type. This alias allows a
-        GEM author to say::
+    Many entity objects in the GEM simply want what would be
+    equivalent to a MySQL ``text`` date type. This alias allows a
+    GEM author to say::
 
-            class person(orm.entity):
-                name = str
-                bio = orm.text
+        class person(orm.entity):
+            name = str
+            bio = orm.text
 
-        instead of::
+    instead of::
 
-            class person(orm.entity):
-                name = str
-                bio = str, 1, 65535
+        class person(orm.entity):
+            name = str
+            bio = str, 1, 65535
 
     """
     type = str

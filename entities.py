@@ -914,7 +914,6 @@ class brokenrules(entities):
 
         wrongtype = False
         if v is not None:
-
             if type is not None:
                 if builtins.type(v) is not type:
                     self += brokenrule(prop + ' is wrong type', prop, 'valid')
