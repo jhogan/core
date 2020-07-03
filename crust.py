@@ -62,7 +62,4 @@ print("""
                acct.port)
 )
 
-import code
-B()
-code.interact(banner='banner')
 mig()
