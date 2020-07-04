@@ -1988,15 +1988,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
         gb.append(self)
             
-        # TODO I'm not sure if this is necessary. We will iterate over
-        # ``self`` anyway passing in gb so this seems redudent.
-        # 
-        # TODO Replace with any().
-        # 
-        #     if any(e in guestbook for e in self): return brs
-        for e in self:
-            if e in gb:
-                return brs
+        if any(x in gb for x in self):
+            return brs
 
         # Replace with any() - see above.
         for e in self:
