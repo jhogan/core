@@ -3149,8 +3149,8 @@ class comment(orm.entity):
     comments  =  comments
     author    =  str
 
-    def _getbrokenrules(self, *args, **kwargs):
-        brs = super()._getbrokenrules(*args, **kwargs)
+    def getbrokenrules(self, *args, **kwargs):
+        brs = super().getbrokenrules(*args, **kwargs)
         if '@' not in self.author:
             brs += brokenrule(
                 'Author email address has no @', 
@@ -3641,8 +3641,8 @@ class rapper(singer):
         return str(attr()) if attr() else attr(str(bs()))
 
 class issues(orm.entities):
-    def _getbrokenrules(self, *args, **kwargs):
-        brs = super()._getbrokenrules(*args, **kwargs)
+    def getbrokenrules(self, *args, **kwargs):
+        brs = super().getbrokenrules(*args, **kwargs)
         names = self.pluck('name')
         dups = set(x for x in names if names.count(x) > 1)
 
@@ -3677,8 +3677,8 @@ class issue(orm.entity):
         if self.raise_:
             raise AttributeError()
 
-    def _getbrokenrules(self, *args, **kwargs):
-        brs = super()._getbrokenrules(*args, **kwargs)
+    def getbrokenrules(self, *args, **kwargs):
+        brs = super().getbrokenrules(*args, **kwargs)
         if '@' not in self.assignee:
             brs += brokenrule(
                 'Assignee email address has no @', 
@@ -3695,8 +3695,8 @@ class programmer(orm.entity):
     name = str
     ismaintenance = bool
 
-    def _getbrokenrules(self, *args, **kwargs):
-        brs = super()._getbrokenrules(*args, **kwargs)
+    def getbrokenrules(self, *args, **kwargs):
+        brs = super().getbrokenrules(*args, **kwargs)
         if len(self.name) > 20:
             brs += brokenrule(
                 'Programmer name must be less than 20 chars', 
@@ -3707,8 +3707,8 @@ class programmer(orm.entity):
         return brs
 
 class programmer_issues(orm.associations):
-    def _getbrokenrules(self, *args, **kwargs):
-        brs = super()._getbrokenrules(*args, **kwargs)
+    def getbrokenrules(self, *args, **kwargs):
+        brs = super().getbrokenrules(*args, **kwargs)
 
         for ass in self:
             for ass1 in self:
@@ -3733,8 +3733,8 @@ class programmer_issue(orm.association):
     programmer = programmer
     issue = issue
 
-    def _getbrokenrules(self, *args, **kwargs):
-        brs = super()._getbrokenrules(*args, **kwargs)
+    def getbrokenrules(self, *args, **kwargs):
+        brs = super().getbrokenrules(*args, **kwargs)
         if not self.programmer.ismaintenance:
             brs += brokenrule(
                 'Only maintenance programmers can be assigned to issues', 

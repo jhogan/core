@@ -932,11 +932,10 @@ class rating(orm.entity):
             # exist and are accessable via the construct with no fuss.
             self.save()
 
-        
     @property
     def brokenrules(self):
         # TODO I think this needs to be changed to
-        # _getbrokenrules(guestbook) so the guestbook can be pased to
+        # getbrokenrules(guestbook) so the guestbook can be pased to
         # the super object.
         brs = super().brokenrules
         valid = (

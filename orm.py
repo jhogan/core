@@ -1966,9 +1966,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
     @property
     def brokenrules(self):
-        return self._getbrokenrules()
+        return self.getbrokenrules()
 
-    def _getbrokenrules(self, gb=None):
+    def getbrokenrules(self, gb=None):
         brs = entitiesmod.brokenrules()
 
         # This test corrects a fairly deep issue that has only come
@@ -2004,7 +2004,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             # error message here. Instead, we should chek the return
             # value of e.brokenrules and, if its None, raise a more
             # informative error message.
-            brs += e._getbrokenrules(gb=gb)
+            brs += e.getbrokenrules(gb=gb)
 
         return brs
 
@@ -2796,9 +2796,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         
     @property
     def brokenrules(self):
-        return self._getbrokenrules()
+        return self.getbrokenrules()
 
-    def _getbrokenrules(self, gb=None):
+    def getbrokenrules(self, gb=None):
         brs = entitiesmod.brokenrules()
 
         if gb is None:
@@ -2812,7 +2812,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # TODO s/super/sup/
         super = self.orm._super
         if super:
-            brs += super._getbrokenrules(gb=gb)
+            brs += super.getbrokenrules(gb=gb)
 
         for map in self.orm.mappings:
             if type(map) is fieldmapping:
@@ -2896,7 +2896,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         msg = "'%s' attribute is wrong type: %s"
                         msg %= (map.name, type(es))
                         brs += entitiesmod.brokenrule(msg, map.name, 'valid')
-                    brs += es._getbrokenrules(gb=gb)
+                    brs += es.getbrokenrules(gb=gb)
 
             elif type(map) is entitymapping:
                 if map.isloaded:
@@ -2911,11 +2911,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     # seeing if `map.value` is in the guestbook.
                     if map.value not in gb:
                         # Get entities brokenrules
-                        brs += map.value._getbrokenrules(gb=gb)
+                        brs += map.value.getbrokenrules(gb=gb)
 
             elif type(map) is associationsmapping:
                 if map.isloaded:
-                    brs += map.value._getbrokenrules(gb=gb)
+                    brs += map.value.getbrokenrules(gb=gb)
 
         return brs
 
@@ -3217,7 +3217,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             if type(map) in (entitiesmapping, associationsmapping):
                                 es = v
                                 if es:
-                                    brs = es._getbrokenrules(
+                                    brs = es.getbrokenrules(
                                         guestbook=None, 
                                         followentitymapping=False
                                     )
