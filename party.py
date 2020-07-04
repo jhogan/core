@@ -878,7 +878,7 @@ class phone(contactmechanism):
     # The area code as defined by the North American Numbering Plan.
     # This should probably be None for phone numbers outside of North
     # America and the Caribean. NOTE many of the numbers within the 200,
-    # 999 range are currently considered invalid. The should probably
+    # 999 range are currently considered invalid. They should probably
     # result in `brokenrules` if given. See
     # https://en.wikipedia.org/wiki/List_of_North_American_Numbering_Plan_area_codes
     area = int, 200, 999
