@@ -3150,6 +3150,18 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # Then this line can be remove.
         sup = sup.orm.entities
 
+        # If the entities collection that was appended to has the same
+        # name as the superentities collection, abort. If we didn't
+        # abort, we would append to the same entities collection until
+        # maximum recursion was reached. This happens when the entities
+        # collection inherits from a super entity with the same name but
+        # is contained within a different module. This catch was added
+        # so ``effort.requirment.roles`` could be appended to. Here,
+        # ``roles`` is <effort.roles> which inherits from
+        # <party.roles>. See gem_effort.it_creates_roles.
+        if type(src).__name__ == sup.__name__:
+            return
+
         # Get the entity being appended
         e = eargs.entity
 
@@ -3171,6 +3183,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         corresponding values. Any exceptions that happen to occure will
         be trapped and a string representations of the exception will be
         returned."""
+
         try:
             tbl = table()
 
@@ -3185,7 +3198,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     r = tbl.newrow()
                 r = tbl.newrow()
                 r.newfield('Class')
-                r.newfield('%s' % type(e).__name__)
+                r.newfield('%s.%s' % (e.__module__, type(e).__name__))
 
                 for map in e.orm.mappings:
                     r = tbl.newrow()
@@ -3332,10 +3345,31 @@ class mappings(entitiesmod.entities):
                     )
                 )
 
+            # Set the recursion limit to a value a little higher than
+            # the default (1000). This method is highly recursive
+            # because of the calls to ``orm.getentitys`` and
+            # ''orm.getassociations``. This recursion is necessary for
+            # the algorithm. 
+            #
+            # Increasing the recursion limit was not necessary until
+            # about halfway through creating the GEM classes when the
+            # number of `orm.entity` classes got to about 200. 
+            #
+            # Unfortunately, I was not able to to figure out a way to
+            # return the limit to its default. The normal practice of
+            # doing this in a ``finally`` block does't work because it's
+            # a global value and doing so would affect the other stacked
+            # frames which would rely on the elevated value. So,
+            # increasing it here means it's increased for the entire
+            # program (unless an effort is made to find every area this
+            # method is called). This is probably okay, however, since
+            # it seems unlikely it will ever get so big it becomes a
+            # problem.
+            sys.setrecursionlimit(2000)
+
             ''' Add composite and constituent mappings '''
             # For each class that inherits from `orm.entity`
             for e in orm.getentitys():
-
                 # If the entity is `self`, ignore unless this is a
                 # recursive entity.
                 if e is self.orm.entity and not self.orm.isrecursive:
@@ -4790,7 +4824,7 @@ class orm:
     @property
     def isreflexive(self):
         maps = self.mappings.entitymappings
-        types = [x.entity.__name__ for x in maps]
+        types = [x.entity for x in maps]
 
         return bool(len(types)) and len(types) > len(set(types))
         
@@ -5972,6 +6006,7 @@ class orm:
 
             return orm._abbrdict[abbr]
 
+    # TODO s/getentitys/getentityclasses/
     @staticmethod
     def getentitys():
         r = []

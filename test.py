@@ -38,6 +38,8 @@ import product
 import re
 import ship
 import textwrap
+import effort
+import apriori
 
 # We will use basic and supplementary multilingual plane UTF-8
 # characters when testing str attributes to ensure unicode is being
@@ -4109,7 +4111,12 @@ class test_orm(tester):
         self.true(comments().orm.isrecursive)
 
     def it_computes_abbreviation(self):
+        # FIXME Suddenly, running the test script resulted in a mess of
+        # MySQL Too Many Connection errors. It seems to be related to
+        # the GEM entities instatiated by this unit test. When
+        # completed, remove the `return` below.
         return
+
         es = orm.orm.getentitys() + orm.orm.getassociations()
 
         # Create the tables if they don't already exist. This is needed
@@ -18281,7 +18288,7 @@ class gem_product_item(tester):
 
     @staticmethod
     def getvalid():
-        pen = product.good(name='Henry #2 Pencile')
+        pen = product.good(name='Henry #2 Pencil')
         itm = product.nonserial(quantity=1)
         itm.good = pen
         return itm
@@ -18922,11 +18929,11 @@ class gem_product_measure(tester):
     def it_converts(self):
 
         # Create three pencil products
-        pen = product.product(name='Henry #2 Pencile')
-        small = product.product(name='Henry #2 Pencile Small Box')
-        large = product.product(name='Henry #2 Pencile Large Box')
+        pen = product.product(name='Henry #2 Pencil')
+        small = product.product(name='Henry #2 Pencil Small Box')
+        large = product.product(name='Henry #2 Pencil Large Box')
 
-        # Create the unit of measures for the pencile products
+        # Create the unit of measures for the pencil products
         each = product.measure(name='each')
         smallbox = product.measure(name='smallbox')
         largebox = product.measure(name='largebox')
@@ -20409,7 +20416,7 @@ class gem_order_order(tester):
 
         # Create a product for the order
         pen = gem_product_product.getvalid(product.good, comment=1)
-        pen.name ='Henry #2 Pencile'
+        pen.name ='Henry #2 Pencil'
 
         # Add an item
         so.items += order.salesitem(
@@ -20457,7 +20464,7 @@ class gem_order_order(tester):
 
         # Create a product for the order
         pen = gem_product_product.getvalid(product.good, comment=1)
-        pen.name ='Henry #2 Pencile'
+        pen.name ='Henry #2 Pencil'
 
         # Add an item
         so.items += order.salesitem(
@@ -20507,6 +20514,27 @@ class gem_ship(tester):
             ship.items,
             ship.statuses,
             ship.statustypes,
+            ship.item_features,
+            ship.packages,
+            ship.item_packages,
+            ship.roletypes,
+            ship.roles,
+            ship.receipts,
+            ship.reasons,
+            ship.issuances,
+            ship.picklists,
+            ship.picklistitems,
+            ship.issuanceroles,
+            ship.issuanceroletypes,
+            ship.documents,
+            ship.documenttypes,
+            ship.bols,
+            ship.slips,
+            ship.exports,
+            ship.manifests,
+            ship.portcharges,
+            ship.taxandtarrifs,
+            ship.hazardouses,
         )
 
     def it_creates(self):
@@ -20555,7 +20583,7 @@ class gem_ship(tester):
 
         sh.items += ship.item(
             quantity = 1000,
-            good = product.good(name='Henry #2 Pencile'),
+            good = product.good(name='Henry #2 Pencil'),
         )
 
         sh.items += ship.item(
@@ -20590,5 +20618,694 @@ class gem_ship(tester):
                 self.eq(itm.good.id, itm1.good.id)
             elif itm1.contents:
                 self.eq(itm.contents, itm1.contents)
+
+    def it_handles_statuses(self):
+        sh = ship.shipment(
+            estimatedshipat = primative.date('May 6, 2001'),
+            estimatedarriveat = primative.date('May 8, 2001'),
+            shipto = party.company(name='ACME Corporation'),
+            shipfrom = party.company(name='ACME Subsidiary'),
+            shiptousing = party.address(
+                address1='234 Stretch St',
+                address2='New York, New York',
+            ),
+            shipfromusing = party.address(
+                address1='300 Main St',
+                address2='New York, New York',
+            ),
+        )
+
+        sh.statuses += ship.status(
+            begin=primative.datetime('May 6, 2001'),
+            statustype = ship.statustype(
+                name = 'scheduled'
+            )
+        )
+
+        sh.statuses += ship.status(
+            begin = primative.datetime('May 7, 2001'),
+            statustype = ship.statustype(
+                name = 'in route'
+            )
+        )
+
+        sh.statuses += ship.status(
+            begin = primative.datetime('May 8, 2001'),
+            statustype = ship.statustype(
+                name = 'delivered'
+            )
+        )
+
+        sh.save()
+
+        sh1 = sh.orm.reloaded()
+
+        self.eq(
+            ['scheduled', 'in route', 'delivered'],
+            sh1.statuses.sorted('begin').pluck('statustype.name')
+        )
+
+    def it_associates_order_items_with_shipment_items(self):
+        # Create goods
+        pencil = product.good(name='Jones #2 pencils')
+        pen    = product.good(name='Goldstein Elite pens')
+        erase  = product.good(name='Standard erasers')
+        box    = product.good(name='Bokes of HD diskettes')
+
+        # Create the first sales order
+        so100 = order.salesorder()
+
+        # Create sales items
+        so100.items += order.salesitem(
+            product = pencil,
+            quantity = 1500,
+        )
+
+        so100.items += order.salesitem(
+            product = pen,
+            quantity = 2500,
+        )
+
+        so100.items += order.salesitem(
+            product = erase,
+            quantity = 350,
+        )
+
+        # Create the second sales order
+        so200 = order.salesorder()
+
+        # Create sales items
+        so200.items += order.salesitem(
+            product = pen,
+            quantity = 300,
+        )
+
+        so200.items += order.salesitem(
+            product = box ,
+            quantity = 200,
+        )
+
+        # Create shipments
+        sh9000 = ship.shipment()
+
+        sh9000.items += ship.item(
+            good = pencil,
+            quantity = 1000,
+        )
+
+        sh9000.items += ship.item(
+            good = pen,
+            quantity = 1000,
+        )
+
+        sh9000.items += ship.item(
+            good = box,
+            quantity = 100,
+        )
+
+        # Create another shipment
+        sh9200 = ship.shipment()
+
+        sh9200.items += ship.item(
+            good = erase,
+            quantity = 350,
+        )
+
+        sh9200.items += ship.item(
+            good = box,
+            quantity = 100,
+        )
+
+        sh9200.items += ship.item(
+            good = pen,
+            quantity = 1500,
+        )
+
+        # Create the final shipment
+        sh9400 = ship.shipment()
+
+        sh9400.items += ship.item(
+            good = pen,
+            quantity = 500,
+        )
+
+        # Create shipitem_orderitem associations
+        shipitem_orderitem = ship.shipitem_orderitem
+
+        so100.items.first.shipitem_orderitems += shipitem_orderitem(
+            shipitem = sh9000.items.first,
+            quantity = 1000,
+        )
+
+        so100.items.first.shipitem_orderitems += shipitem_orderitem(
+            shipitem = sh9400.items.first,
+            quantity = 500,
+        )
+
+        so100.items.second.shipitem_orderitems += shipitem_orderitem(
+            shipitem = sh9000.items.second,
+            quantity = 700,
+        )
+
+        so100.items.third.shipitem_orderitems += shipitem_orderitem(
+            shipitem = sh9200.items.first,
+            quantity = 350,
+        )
+
+        so100.save()
+        
+        so100_1 = so100.orm.reloaded()
+
+        itms = so100.items.sorted()
+        itms1 = so100_1.items.sorted()
+
+        self.three(itms)
+        self.three(itms1)
+
+        for itm, itm1 in zip(itms, itms1):
+            siois = itm.shipitem_orderitems.sorted()
+            siois1 = itm1.shipitem_orderitems.sorted()
+            self.gt(siois.count, 0)
+            self.gt(siois1.count, 0)
+            self.eq(siois.count, siois1.count)
+
+            for sioi, sioi1 in zip(siois, siois1):
+                self.eq(sioi.id, sioi1.id)
+                self.eq(sioi.shipitem.id, sioi1.shipitem.id)
+                self.eq(sioi.quantity, sioi1.quantity)
+
+    def it_associates_item_to_feature(self):
+        # Create feature
+        blue = product.color(name='blue')
+
+        # Create good
+        pen = product.good(name='Goldstein Elite pens')
+        
+        # Create order
+        so = order.salesorder()
+
+        # Create sales items
+        so.items += order.salesitem(
+            product = pen,
+            quantity = 2500,
+            price = dec('12.00')
+        )
+
+        so.items.last.items += order.salesitem(feature=blue)
+
+        sh = ship.shipment()
+
+        sh.items += ship.item(
+            good = pen,
+            quantity = 1000,
+        )
+
+        sh.items.last.item_features += ship.item_feature(
+            feature = blue
+        )
+
+        sh.save()
+
+        if_ = sh.items.last.item_features.first
+        if0 = if_.orm.reloaded()
+
+        self.eq(if_.item.id, sh.items.last.id)
+        self.eq(if_.feature.id, blue.id)
+
+    def it_creates_receipts(self):
+        # Create good
+        pencil = product.good(name='Jones #2 pencils')
+
+        # Create an incoming shipment from a supplier
+        sh1146 = ship.shipment()
+
+        sh1146.items += ship.item(
+            good = pencil,
+            quantity = 2000,
+        )
+
+        pkg = ship.package(
+            created = primative.datetime('Jun 23 22:08:16 UTC 2020'),
+            packageid = uuid4().hex
+        )
+
+        sh1146.items.last.item_packages += ship.item_package(
+            quantity=1000,
+            package = pkg,
+        )
+
+        pkg.receipts += ship.receipt(
+            receivedat = primative.datetime('Jun 23 22:19:37 2020'),
+            quantity = 1000,
+        )
+
+        sh1146.save()
+
+        sh1146_1 = sh1146.orm.reloaded()
+
+        ip = sh1146.items.last.item_packages.first
+        ip1 = sh1146_1.items.last.item_packages.first
+
+        self.eq(ip.id, ip1.id)
+        self.eq(1000, ip1.quantity)
+
+        pkg1 = ip1.package
+        self.eq(pkg.id, pkg1.id)
+
+        self.one(pkg1.receipts)
+
+        recp = pkg.receipts.first
+        recp1 = pkg1.receipts.first
+
+        self.eq(recp.id, recp1.id)
+
+    def it_creates_issuances(self):
+        # Create goods
+        pencil = product.good(name='Jones #2 pencils')
+
+        # Create shipments
+        sh = ship.shipment()
+
+        sh.items += ship.item(
+            good = pencil,
+            quantity = 1000,
+        )
+
+        pkg = ship.package(
+            created = primative.datetime('Jun 23 22:08:16 UTC 2020'),
+            packageid = uuid4().hex
+        )
+
+        sh.items.last.item_packages += ship.item_package(
+            quantity=1000,
+            package = pkg,
+        )
+
+        sh.items.last.issuances += ship.issuance(
+            issued = primative.datetime('Thu Jun 25 22:18:40 UTC 2020'),
+            quantity = 1000,
+        )
+
+        sh.save()
+
+        sh1 = sh.orm.reloaded()
+
+        self.eq(
+            sh.items.first.issuances.first.id,
+            sh1.items.first.issuances.first.id,
+        )
+
+        self.eq(
+            sh.items.first.issuances.first.quantity,
+            sh1.items.first.issuances.first.quantity,
+        )
+
+    def it_creates_documents(self):
+        sh = ship.shipment()
+        sh.documents += ship.hazardous(
+            description = 'Not really sure what to put here'
+        )
+
+        sh.documents += ship.document(
+            description = 'Not really sure what to put here, either',
+            documenttype = ship.documenttype(
+                name = 'Dangerous goods form'
+            )
+        )
+
+        sh.save()
+
+        sh1 = sh.orm.reloaded()
+
+        docs = sh.documents.sorted()
+        docs1 = sh1.documents.sorted()
+        self.two(docs)
+        self.two(docs1)
+
+        for doc, doc1 in zip(docs, docs1):
+            self.eq(doc.id, doc1.id)
+            self.eq(doc.description, doc1.description)
+            if doc.documenttype:
+                self.eq(doc.documenttype.id, doc1.documenttype.id)
+                self.eq(doc.documenttype.name, doc1.documenttype.name)
+
+        # docs1 has one entity tha has a non-None documenttype attribute
+        self.one([x for x in docs1.pluck('documenttype') if x is not None])
+
+class gem_effort(tester):
+    def __init__(self):
+        super().__init__()
+        orm.orm.recreate(
+            effort.roles,
+            effort.roletypes,
+            effort.jobs,
+            effort.effort_efforts,
+            apriori.requirement,
+            order.requirementtype,
+            effort.requirement,
+            effort.effort_effort_precedency,
+            effort.effort_effort_dependencies,
+            effort.effort_requirements,
+            effort.requirementtype,
+            effort.effort,
+            effort.item_requirements,
+            product.product,
+            product.good,
+            effort.deliverables,
+            ship.asset,
+        )
+
+    def it_creates_requirements(self):
+        req = apriori.requirement(
+            requirementtype = order.requirementtype(
+                name='Production run'
+            ),
+            created = 'Jul 5, 2000',
+            required = 'Aug 5, 2000',
+            description = self.dedent('''
+            Anticipated demand of 2,000 custom engraved black pens with
+            gold trim.
+            ''')
+        )
+
+        req.save()
+
+        req1 = req.orm.reloaded()
+
+        self.eq(req.id,                    req1.id)
+        self.eq(req.created,               req1.created)
+        self.ne(req.createdat,             req1.created)
+        self.eq(req.required,              req1.required)
+        self.eq(req.description,           req1.description)
+        self.eq(req.created,               req1.created)
+        self.eq(req.requirementtype.id,    req1.requirementtype.id)
+        self.eq(req.requirementtype.name,  req1.requirementtype.name)
+
+    def it_creates_deliverables(self):
+        """ Deliverables here means assets, products and deliverables
+        attached to a work ``requirement``.
+        """
+
+        # Create work requirement types
+        run = effort.requirementtype(name='Production run')
+        ip  = effort.requirementtype(name='Internal project')
+        maint = effort.requirementtype(name='Maintenance')
+
+        # Create product, deliverable and asset
+        good = gem_product_product.getvalid(product.good, comment=1)
+        good.name = 'Engraved black pen with gold trim'
+
+        deliv = effort.deliverable(name='2001 Sales/Marketing Plan')
+
+        ass = ship.asset(name='Engraving machine')
+
+        # Create requirements
+
+        # We need 2000 engraved pens for the anticipatde demand
+        req = effort.requirement(
+            description = self.dedent('''
+            Anticipated demand of 2,000 custom-engraved black pens with gold trim.
+            '''),
+            product          =  good,
+            quantity         =  2000,
+            requirementtype  =  run,
+        )
+
+        req.save()
+
+        req1 = req.orm.reloaded()
+        self.eq(req.id, req1.id)
+        self.eq(req.product.id, req1.product.id)
+        self.eq(req.quantity, req1.quantity)
+        self.eq(req.requirementtype.id, req1.requirementtype.id)
+        self.none(req.deliverable)
+        self.none(req1.asset)
+
+        # We need a sales plan; call it 2001 Sales/Marketing Plan
+        req = effort.requirement(
+            description = self.dedent('''
+            2001 Sales/Marketing Plan
+            '''),
+            deliverable      =  deliv,
+            requirementtype  =  ip,
+        )
+
+        req.save()
+
+        req1 = req.orm.reloaded()
+        self.eq(req.id, req1.id)
+        self.none(req1.product)
+        self.none(req1.asset)
+        self.eq(0, req1.quantity)
+        self.eq(ip.id, req1.requirementtype.id)
+
+        # We need to fixe the engraving machine 
+        req = effort.requirement(
+            description = self.dedent('''
+            Fix engraving machine
+            '''),
+            requirementtype  =  maint,
+            asset            =  ass
+        )
+
+        req.save()
+
+        req1 = req.orm.reloaded()
+        self.eq(req.id, req1.id)
+        self.none(req1.product)
+        self.none(req1.deliverable)
+        self.eq(0, req1.quantity)
+        self.eq(maint.id, req1.requirementtype.id)
+        self.eq(ass.id, req1.asset.id)
+
+    def it_creates_roles(self):
+        abc = party.company(name='ABC Manufacturing, Inc.')
+
+        req = effort.requirement(description='Fix equipment')
+
+        role = effort.role(
+            roletype = effort.roletype(name='Created for'),
+            begin = 'Jul 5, 2000',
+        )
+
+        abc.roles += role
+
+        req.roles += role
+
+        req.save()
+
+        req1 = req.orm.reloaded()
+
+        self.eq(req.id, req1.id)
+        self.eq(abc.id, req1.roles.first.party.id)
+        self.eq(role.roletype.id, req1.roles.first.roletype.id)
+        self.eq(req.roles.first.begin, req1.roles.first.begin)
+        self.none(req1.roles.first.end)
+
+    def it_associates_effort_with_requirment(self):
+        ''' Associate using effort_requirement '''
+        req50985 = effort.requirement(
+           description = self.dedent('''
+           Anticipated demand of 2,000 custom-engraved black pens
+           with gold trim
+           ''')
+        )
+
+        req51245 = effort.requirement(
+           description = self.dedent('''
+           Anticipated demand of 1,500 custom-engraved black pens
+           with gold trim
+           ''')
+        )
+
+        eff28045 = effort.productionrun(
+            scheduledbegin = 'June 1, 2000',
+            name = 'Production run',
+            description = self.dedent('''
+            Production run of 3,500 pencils
+            '''),
+        )
+
+        eff28045.effort_requirements += effort.effort_requirement(
+            requirement = req50985,
+        )
+
+        eff28045.effort_requirements += effort.effort_requirement(
+            requirement = req51245,
+        )
+
+        eff28045.save()
+
+        eff28045_1 = eff28045.orm.reloaded()
+
+        ers = eff28045.effort_requirements.sorted()
+        ers1 = eff28045_1.effort_requirements.sorted()
+
+        self.two(ers)
+        self.two(ers1)
+
+        for er, er1 in zip(ers, ers1):
+            self.eq(er.id, er1.id)
+            self.eq(er.requirement.id, er1.requirement.id)
+            self.eq(er.requirement.id, er1.requirement.id)
+
+        ''' Associate using effort.item '''
+
+        # Create efforts
+        eff29534 = effort.productionrun(
+            name = 'Production run #1 of pens',
+            scheduledbegin = 'Feb 23, 2001',
+        )
+
+        eff29874 = effort.productionrun(
+            name = 'Production run #2 of pens',
+            scheduledbegin = 'Mar 23, 2001',
+        )
+
+        # Create requirement
+        req = effort.requirement(
+            description = 'Need for customized pens'
+        )
+
+        # Create work order item
+        itm = effort.item(
+            description = self.dedent('''
+            Sales Order Item to produce 2,500 customized engraved pens.
+            ''')
+        )
+
+        # Link requirement to work order item
+        req.item_requirements += effort.item_requirement(
+            item = itm 
+        )
+
+        # Link work order item to efforts
+        itm.effort_items += effort.effort_item(
+            effort = eff29874
+        )
+
+        itm.effort_items += effort.effort_item(
+            effort = eff29534
+        )
+
+        req.save()
+
+        req1 = req.orm.reloaded()
+
+        self.eq(req.id, req1.id)
+
+        self.one(req.item_requirements)
+        self.one(req1.item_requirements)
+
+        ir = req.item_requirements.first
+        ir1 = req1.item_requirements.first
+
+        self.eq(ir.id, ir1.id)
+
+        self.eq(ir.item.id, ir1.item.id)
+
+        eis = ir.item.effort_items.sorted()
+        eis1 = ir1.item.effort_items.sorted()
+
+        self.two(eis)
+        self.two(eis1)
+
+        for ei, ei1 in zip(eis, eis1):
+            self.eq(ei.id, ei1.id)
+            self.eq(ei.effort.id, ei1.effort.id)
+
+    def it_associates_efforts_with_efforts(self):
+        job28045 = effort.job(
+            name = 'Production run #1'
+        )
+
+        act120001 = effort.activity(name='Set up production line')
+        act120002 = effort.activity(name='Operate machinery')
+        act120003 = effort.activity(name='Clean up machinery')
+        act120004 = effort.activity(name='Quality assure goods produced')
+
+        for act in (act120001, act120002, act120003, act120004):
+            job28045.effort_efforts += effort.effort_effort(
+                object = act
+            )
+
+
+        job28045.save()
+
+        job28045_1 = job28045.orm.reloaded()
+
+        ees = job28045.effort_efforts.sorted()
+        ees1 = job28045_1.effort_efforts.sorted()
+
+        self.eq(job28045.id, job28045_1.id)
+
+        self.four(ees)
+        self.four(ees1)
+
+        for ee, ee1 in zip(ees, ees1):
+            self.eq(ee.id, ee1.id)
+            self.eq(ee.subject.id, ee1.subject.id)
+            self.eq(ee.object.id, ee1.object.id)
+
+    def it_associates_preceding_efforts_with_efforts(self):
+        job28045 = effort.job(
+            name = 'Production run #1'
+        )
+
+        act120001 = effort.activity(name='Set up production line')
+        act120002 = effort.activity(name='Operate machinery')
+        act120003 = effort.activity(name='Clean up machinery')
+        act120004 = effort.activity(name='Quality assure goods produced')
+
+        for act in (act120001, act120002, act120003, act120004):
+            job28045.effort_efforts += effort.effort_effort(
+                object = act
+            )
+
+        # Declare that "Operate machinery" activity (act120002) depends
+        # on the completion of the "Set up production line' activity
+        # (act120001).
+
+        # NOTE I thought that subassociations did not work (314b9645),
+        # but here is an example of using a subassociation of
+        # effort.effort_effort called effort.effort_effort_precedency
+        # that saves and reloads without issue (although the reload is
+        # the effort_effort instead of the subassociation, but at the
+        # moment, that is how all entities collection reload their
+        # constituents. TODO:314b9645 :One small problem is that I had
+        # to specify ``subject`` in the constructor for
+        # effort_effort_precedency. This had been fixed in
+        # non-subassociations appends, (see the append above to
+        # ``job28045.effort_efforts``) but is still required for
+        # subassociation appends for some reason.
+        act120001.effort_efforts += \
+            effort.effort_effort_precedency(
+                subject = act120001,
+                object = act120002
+            )
+
+        job28045.save()
+
+        job28045_1 = job28045.orm.reloaded()
+
+        ees = job28045.effort_efforts.sorted()
+        ees1 = job28045_1.effort_efforts.sorted()
+
+        self.eq(job28045.id, job28045_1.id)
+
+        self.four(ees)
+        self.four(ees1)
+
+        for ee, ee1 in zip(ees, ees1):
+            self.eq(ee.id, ee1.id)
+            self.eq(ee.subject.id, ee1.subject.id)
+            self.eq(ee.object.id, ee1.object.id)
+
+            if ee1.object.id == act120001.id:
+                ees1 = ee1.object.effort_efforts
+                self.one(ees1)
+                self.eq(ees1.first.subject.id, act120001.id)
+                self.eq(ees1.first.object.id, act120002.id)
+        
 
 cli().run()

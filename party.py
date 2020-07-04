@@ -1162,7 +1162,7 @@ class classification:
     # TODO
 
 class role(orm.entity):
-    """ The role entity difines how a ``party`` acts or, in other words,
+    """ The role entity defines how a ``party`` acts or, in other words,
     what roles the party plays in the context of the enterprises's
     environment.
 
@@ -1386,6 +1386,10 @@ class roletype(orm.entity):
     Note that this is modeled after the ROLE TYPE entity in "The
     Data Model Resource Book".
     """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
 
     # Stores available values for role types.
     name = str
