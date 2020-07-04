@@ -3686,6 +3686,66 @@ class issue(orm.entity):
 
         return brs
 
+class programmers(orm.entities):
+    pass
+
+class programmer(orm.entity):
+    name = str
+    ismaintenance = bool
+
+    def _getbrokenrules(self, *args, **kwargs):
+        brs = super()._getbrokenrules(*args, **kwargs)
+        if len(self.name) > 20:
+            brs += brokenrule(
+                'Programmer name must be less than 20 chars', 
+                'name', 
+                'fits'
+            )
+
+        return brs
+
+class programmer_issues(orm.associations):
+    def _getbrokenrules(self, *args, **kwargs):
+        brs = super()._getbrokenrules(*args, **kwargs)
+
+        for ass in self:
+            for ass1 in self:
+                if ass.id == ass1.id: continue
+
+                if ass.programmer.id == ass1.programmer.id \
+                    and ass.issue.id == ass1.issue.id:
+                    brs += brokenrule(
+                        'Duplicate programmer and '
+                        'issue associtation', 
+                        'id', 
+                        'valid'
+                    )
+                    break
+            else:
+                continue
+            break
+
+        return brs
+
+class programmer_issue(orm.association):
+    programmer = programmer
+    issue = issue
+
+    def _getbrokenrules(self, *args, **kwargs):
+        brs = super()._getbrokenrules(*args, **kwargs)
+        if not self.programmer.ismaintenance:
+            brs += brokenrule(
+                'Only maintenance programmers can be assigned to issues', 
+                'ismaintenance', 
+                'valid'
+            )
+
+        return brs
+
+
+
+
+
 class timelog(orm.entity):
     hours = dec
 
@@ -3934,7 +3994,50 @@ class test_orm(tester):
         self.broken(isss,  'names',     'valid')
         self.broken(isss,  'assignee',  'valid')
         self.broken(isss,  'name',      'fits')   #  x2
-        self.broken(iss,   'author',    'valid')
+        self.broken(isss,  'author',    'valid')
+
+        # Fix everything
+        isss.second.assignee = 'jessehogan0@.com' # break
+        isss.first.name = uuid4().hex
+        isss.second.name = uuid4().hex
+        isss.first.comments.last.author = 'jhogan@mail.com' # break
+        self.zero(isss.brokenrules)
+
+        ''' Test traversing an association to an entity to get a broken
+        rule '''
+        prog = programmer()
+
+        # Programmer names can only be 20 characters long
+        prog.name = 'x' * 21  # break
+        prog.ismaintenance = True
+
+        isss.first.programmer_issues += programmer_issue(
+            programmer = prog
+        )
+
+        self.one(isss.brokenrules)
+        self.broken(isss, 'name', 'fits')
+
+        ''' Break an association-level rule '''
+
+        # Only maintenance programmers can be associated with an issue
+        prog.ismaintenance = False
+        self.two(iss.brokenrules)
+        self.broken(isss, 'name', 'fits')
+        self.broken(isss, 'ismaintenance', 'valid')
+
+        ''' Break an associations-level rule '''
+
+        # A given programmer can't be associated with the same issue
+        # more than once.
+        isss.first.programmer_issues += programmer_issue(
+            programmer = prog
+        )
+
+        self.four(iss.brokenrules)
+        self.broken(isss, 'name', 'fits')
+        self.broken(isss, 'ismaintenance', 'valid')
+        self.broken(isss, 'id', 'valid')
 
     def it_uses_reserved_mysql_words_for_fields(self):
         """ Ensure that the CREATE TABLE statement uses backticks to
