@@ -1968,7 +1968,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
     def brokenrules(self):
         return self._getbrokenrules()
 
-    def _getbrokenrules(self, gb):
+    def _getbrokenrules(self, gb=None):
         brs = entitiesmod.brokenrules()
 
         # This test corrects a fairly deep issue that has only come
@@ -1980,6 +1980,17 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         # it_loads_and_saves_reflexive_associations_of_subentity_objects
         # for more clarifications.
 
+        if gb is None:
+            gb = list()
+
+        if self in gb:
+            return
+
+        gb.append(self)
+            
+        # TODO I'm not sure if this is necessary. We will iterate over
+        # ``self`` anyway passing in gb so this seems redudent.
+        # 
         # TODO Replace with any().
         # 
         #     if any(e in guestbook for e in self): return brs

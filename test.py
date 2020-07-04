@@ -3639,7 +3639,18 @@ class rapper(singer):
         return str(attr()) if attr() else attr(str(bs()))
 
 class issues(orm.entities):
-    pass
+    def _getbrokenrules(self, *args, **kwargs):
+        brs = super()._getbrokenrules(*args, **kwargs)
+        names = self.pluck('name')
+        dups = set(x for x in names if names.count(x) > 1)
+
+        if dups:
+            brs += brokenrule(
+                'Duplicate names found %s' % dups,
+                'names',
+                'valid'
+            )
+        return brs
 
 class issue(orm.entity):
     name      =  str
@@ -3873,7 +3884,7 @@ class test_orm(tester):
         self.broken(iss, 'assignee', 'valid')
         self.broken(iss, 'author', 'valid')
 
-        ''' Fix '''
+        # Fix
         iss.assignee = 'jessehogan0@mail.com'
         self.two(iss.brokenrules)
         self.broken(iss, 'name', 'fits')
@@ -3886,6 +3897,44 @@ class test_orm(tester):
         iss.name = 'My Issue'
         self.zero(iss.brokenrules)
 
+        ''' Break entities '''
+        # Create a collection. It should start with zero broken rules
+        isss = issues()
+        self.zero(isss.brokenrules)
+
+        # Add existing issue. The existing issue should have no broken
+        # rules.
+        isss += iss  
+        self.zero(isss.brokenrules)
+
+        # Add a new issue with the same name. Duplicate issue names have
+        # been forbidden by an imperitive broken rule at
+        # issues.getbrokenrules
+        isss += issue.getvalid()
+        isss.last.name = iss.name
+
+        self.one(isss.brokenrules)
+        self.broken(isss, 'names', 'valid')
+
+        # Break some more stuff
+        isss.second.assignee = 'jessehogan0ATgmail.com' # break
+        self.two(isss.brokenrules)
+        self.broken(isss, 'names', 'valid')
+        self.broken(isss, 'assignee', 'valid')
+
+        isss.first.name = str() # break
+        isss.second.name = str() # break
+        self.four(isss.brokenrules)
+        self.broken(isss, 'names', 'valid')  
+        self.broken(isss, 'assignee', 'valid')
+        self.broken(isss, 'name', 'fits')  # x2
+
+        isss.first.comments.last.author = 'jhoganATmail.com' # break
+        self.five(isss.brokenrules)
+        self.broken(isss,  'names',     'valid')
+        self.broken(isss,  'assignee',  'valid')
+        self.broken(isss,  'name',      'fits')   #  x2
+        self.broken(iss,   'author',    'valid')
 
     def it_uses_reserved_mysql_words_for_fields(self):
         """ Ensure that the CREATE TABLE statement uses backticks to
