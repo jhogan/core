@@ -1399,11 +1399,12 @@ class product_product(orm.association):
                 except KeyError:
                     setattr(self, prop, None)
 
-    # TODO When subassociations are supported, it will be more elegant
-    # to use subtypes instead of a ``type`` property attribute since the
-    # subassociations have different properties from each other. As it
-    # stands, some entries will always have None values for some
-    # attributes if the type does not support a given attribute.
+    # TODO:314b9645 When subassociations are supported, it will be more
+    # elegant to use subtypes instead of a ``type`` property attribute
+    # since the subassociations have different properties from each
+    # other. As it stands, some entries will always have None values for
+    # some attributes if the type does not support a given attribute.
+
     # TODO Validation rules will have to be writen to support these
     # constraints. See the type constants below for more information.
 

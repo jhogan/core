@@ -30,26 +30,32 @@ import product
 import ship
 import apriori
 
-class  requirements(apriori.requirements):        pass
-class  requirementtypes(order.requirementtypes):  pass
-class  efforts(orm.entities):                     pass
-class  programs(efforts):                         pass
-class  projects(efforts):                         pass
-class  phases(efforts):                           pass
-class  tasks(efforts):                            pass
-class  activities(efforts):                       pass
-class  productionruns(efforts):                   pass
-class  maintenences(productionruns):              pass
-class  workflows(productionruns):                 pass
-class  researches(productionruns):                pass
-class  deliverables(orm.entities):                pass
-class  deliverabletypes(orm.entities):            pass
-class  roles(party.roles):                        pass
-class  roletypes(party.roletypes):                pass
-class  items(order.items):                        pass
-class  effort_items(orm.associations):            pass
-class  efforttypes(orm.entities):                 pass
-class  effortpurposetypes(orm.entities):          pass
+class requirements(apriori.requirements):                      pass
+class requirementtypes(order.requirementtypes):                pass
+class efforts(orm.entities):                                   pass
+class programs(efforts):                                       pass
+class projects(efforts):                                       pass
+class phases(efforts):                                         pass
+class tasks(efforts):                                          pass
+class jobs(efforts):                                           pass
+class activities(efforts):                                     pass
+class productionruns(efforts):                                 pass
+class maintenences(productionruns):                            pass
+class workflows(productionruns):                               pass
+class researches(productionruns):                              pass
+class deliverables(orm.entities):                              pass
+class deliverabletypes(orm.entities):                          pass
+class roles(party.roles):                                      pass
+class roletypes(party.roletypes):                              pass
+class items(order.items):                                      pass
+class item_requirements(orm.associations):                     pass
+class effort_items(orm.associations):                          pass
+class efforttypes(orm.entities):                               pass
+class effortpurposetypes(orm.entities):                        pass
+class effort_requirements(orm.associations):                   pass
+class effort_efforts(orm.associations):                        pass
+class effort_effort_dependencies(effort_efforts):              pass
+class effort_effort_precedencies(effort_effort_dependencies):  pass
 
 class requirement(apriori.requirement):
     """ Represents the *need* to perform some type of work. This could
@@ -176,8 +182,14 @@ class effort(orm.entity):
     # the closest parent that has a non-None ``facility`` attribute.
     facility = party.facility
 
-    # Make efforts recursive. This could be useful, for example, for
-    # creating subtasks from a main task in a ticket system.
+    # Make ``efforts`` recursive. Work efforts can be associated with
+    # other work efforts using the reflexive association
+    # ``effort_effort`` and its subassociations..  However, the
+    # recursive relationship created with the ``efforts`` attribute
+    # belowe is reserved for redos. As the book puts it, "The
+    # one-to-many recursion around WORK EFFORT provides for work efforts
+    # to be redone by other work efforts and to capture this
+    # relationshipt."
     efforts = efforts
 
 class program(effort): 
@@ -194,6 +206,9 @@ class task(effort):
 
 class activity(effort): 
     entities = activities
+
+class job(effort):
+    pass
 
 class productionrun(effort): 
     """ "A group of similar or related goods that is produced by using a
@@ -361,3 +376,27 @@ class effort_requirement(orm.association):
     """
     effort = effort
     requirement = requirement
+
+class effort_effort(orm.association):
+    """ Associates an effort with another effort
+
+    Note that this entity was originally called WORK EFFORT ASSOCIATION
+    in "The Data Model Resource Book".
+    """
+    # The subjective side of the relationship
+    subject = effort
+
+    # The objective side of the relationship
+    object = effort
+
+class effort_effort_dependency(effort_effort):
+    entities = effort_effort_dependencies
+
+class effort_effort_precedency(effort_effort_dependency):
+    """ A subassociation of ``effort_effort``, this entity declares that
+    the``object`` effort is dependent on the ``subject`` effort.
+
+    Note that this entity was originally called WORK EFFORT DEPENDENCY
+    in "The Data Model Resource Book".
+    """
+    entities = effort_effort_precedencies
