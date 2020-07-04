@@ -20700,9 +20700,13 @@ class gem_effort(tester):
         orm.orm.recreate(
             effort.roles,
             effort.roletypes,
+            effort.jobs,
+            effort.effort_efforts,
             apriori.requirement,
             order.requirementtype,
             effort.requirement,
+            effort.effort_effort_precedency,
+            effort.effort_effort_dependencies,
             effort.effort_requirements,
             effort.requirementtype,
             effort.effort,
@@ -20952,7 +20956,98 @@ class gem_effort(tester):
             self.eq(ei.id, ei1.id)
             self.eq(ei.effort.id, ei1.effort.id)
 
+    def it_associates_efforts_with_efforts(self):
+        job28045 = effort.job(
+            name = 'Production run #1'
+        )
+
+        act120001 = effort.activity(name='Set up production line')
+        act120002 = effort.activity(name='Operate machinery')
+        act120003 = effort.activity(name='Clean up machinery')
+        act120004 = effort.activity(name='Quality assure goods produced')
+
+        for act in (act120001, act120002, act120003, act120004):
+            job28045.effort_efforts += effort.effort_effort(
+                object = act
+            )
 
 
+        job28045.save()
+
+        job28045_1 = job28045.orm.reloaded()
+
+        ees = job28045.effort_efforts.sorted()
+        ees1 = job28045_1.effort_efforts.sorted()
+
+        self.eq(job28045.id, job28045_1.id)
+
+        self.four(ees)
+        self.four(ees1)
+
+        for ee, ee1 in zip(ees, ees1):
+            self.eq(ee.id, ee1.id)
+            self.eq(ee.subject.id, ee1.subject.id)
+            self.eq(ee.object.id, ee1.object.id)
+
+    def it_associates_preceding_efforts_with_efforts(self):
+        job28045 = effort.job(
+            name = 'Production run #1'
+        )
+
+        act120001 = effort.activity(name='Set up production line')
+        act120002 = effort.activity(name='Operate machinery')
+        act120003 = effort.activity(name='Clean up machinery')
+        act120004 = effort.activity(name='Quality assure goods produced')
+
+        for act in (act120001, act120002, act120003, act120004):
+            job28045.effort_efforts += effort.effort_effort(
+                object = act
+            )
+
+        # Declare that "Operate machinery" activity (act120002) depends
+        # on the completion of the "Set up production line' activity
+        # (act120001).
+
+        # NOTE I thought that subassociations did not work (314b9645),
+        # but here is an example of using a subassociation of
+        # effort.effort_effort called effort.effort_effort_precedency
+        # that saves and reloads without issue (although the reload is
+        # the effort_effort instead of the subassociation, but at the
+        # moment, that is how all entities collection reload their
+        # constituents. TODO:314b9645 :One small problem is that I had
+        # to specify ``subject`` in the constructor for
+        # effort_effort_precedency. This had been fixed in
+        # non-subassociations appends, (see the append above to
+        # ``job28045.effort_efforts``) but is still required for
+        # subassociation appends for some reason.
+        act120001.effort_efforts += \
+            effort.effort_effort_precedency(
+                subject = act120001,
+                object = act120002
+            )
+
+        job28045.save()
+
+        job28045_1 = job28045.orm.reloaded()
+
+        ees = job28045.effort_efforts.sorted()
+        ees1 = job28045_1.effort_efforts.sorted()
+
+        self.eq(job28045.id, job28045_1.id)
+
+        self.four(ees)
+        self.four(ees1)
+
+        for ee, ee1 in zip(ees, ees1):
+            self.eq(ee.id, ee1.id)
+            self.eq(ee.subject.id, ee1.subject.id)
+            self.eq(ee.object.id, ee1.object.id)
+
+            if ee1.object.id == act120001.id:
+                ees1 = ee1.object.effort_efforts
+                self.one(ees1)
+                self.eq(ees1.first.subject.id, act120001.id)
+                self.eq(ees1.first.object.id, act120002.id)
+        
 
 cli().run()
