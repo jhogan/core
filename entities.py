@@ -909,6 +909,11 @@ class brokenrules(entities):
                      type=None,
                      instanceof=None):
 
+        # TODO I think ``cls`` is always going to be a referenc to an
+        # entities.entity, so should rename it to ``e``.
+
+        # TODO A lot of lines are greater than 72 characters.
+
         # TODO Write unit tests
         v = getattr(cls, prop)
 
