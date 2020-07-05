@@ -921,12 +921,12 @@ class brokenrules(entities):
         if v is not None:
             if type is not None:
                 if builtins.type(v) is not type:
-                    self += brokenrule(prop + ' is wrong type', prop, 'valid')
+                    self += brokenrule(prop + ' is wrong type', prop, 'valid', cls)
                     wrongtype = True
 
             if instanceof is not None :
                 if not isinstance(v, instanceof):
-                    self += brokenrule(prop + ' is wrong type', prop, 'valid')
+                    self += brokenrule(prop + ' is wrong type', prop, 'valid', cls)
                     wrongtype = True
 
         if not wrongtype and type in (float, decimal.Decimal):
@@ -947,16 +947,16 @@ class brokenrules(entities):
                 msg = 'decimal part is too long'
 
             if msg:
-                self += brokenrule(msg, prop, 'fits')
+                self += brokenrule(msg, prop, 'fits', cls)
 
         if full:
             if (builtins.type(v) == str and v.strip() == '') or v is None:
-                self += brokenrule(prop + ' is empty', prop, 'full')
+                self += brokenrule(prop + ' is empty', prop, 'full', cls)
 
         if isemail:
             pattern = r'[^@]+@[^@]+\.[^@]+'
             if v == None or not re.match(pattern, v):
-                self += brokenrule(prop + ' is invalid', prop, 'valid')
+                self += brokenrule(prop + ' is invalid', prop, 'valid', cls)
 
         if not wrongtype:
             for i, limit in enumerate((max, min)):
@@ -1000,11 +1000,11 @@ class brokenrules(entities):
                                 else:
                                     raise NotImplementedError()
 
-                                self += brokenrule(msg, prop, 'fits')
+                                self += brokenrule(msg, prop, 'fits', cls)
 
         if isdate:
             if builtins.type(v) != datetime:
-                self += brokenrule(prop + " isn't a date", prop, 'valid')
+                self += brokenrule(prop + " isn't a date", prop, 'valid', cls)
 
     def contains(self, prop=None, type=None):
         for br in self:
@@ -1012,12 +1012,12 @@ class brokenrules(entities):
                (type == None or br.type     == type):
                 return True
         return False
-                
 
 class brokenrule(entity):
-    def __init__(self, msg, prop=None, type=None):
-        self.message = msg
-        self.property = prop
+    def __init__(self, msg, prop=None, type=None, e=None):
+        self.message   =  msg
+        self.property  =  prop
+        self.entity    =  e
 
         if type != None:
             if type not in ['full', 'valid', 'fits', 'empty', 'unique']:

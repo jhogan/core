@@ -3154,12 +3154,10 @@ class comment(orm.entity):
         if '@' not in self.author:
             brs += brokenrule(
                 'Author email address has no @', 
-                'author', 
-                'valid'
+                'author', 'valid', self,
             )
 
         return brs
-
 
     @staticmethod
     def getvalid():
@@ -3650,7 +3648,9 @@ class issues(orm.entities):
             brs += brokenrule(
                 'Duplicate names found %s' % dups,
                 'names',
-                'valid'
+                'valid',
+                self,
+
             )
         return brs
 
@@ -3683,7 +3683,8 @@ class issue(orm.entity):
             brs += brokenrule(
                 'Assignee email address has no @', 
                 'assignee', 
-                'valid'
+                'valid',
+                self,
             )
 
         return brs
@@ -3701,7 +3702,8 @@ class programmer(orm.entity):
             brs += brokenrule(
                 'Programmer name must be less than 20 chars', 
                 'name', 
-                'fits'
+                'fits',
+                self,
             )
 
         return brs
@@ -3720,7 +3722,8 @@ class programmer_issues(orm.associations):
                         'Duplicate programmer and '
                         'issue associtation', 
                         'id', 
-                        'valid'
+                        'valid',
+                        self,
                     )
                     break
             else:
@@ -3739,14 +3742,11 @@ class programmer_issue(orm.association):
             brs += brokenrule(
                 'Only maintenance programmers can be assigned to issues', 
                 'ismaintenance', 
-                'valid'
+                'valid',
+                self
             )
 
         return brs
-
-
-
-
 
 class timelog(orm.entity):
     hours = dec
@@ -3762,7 +3762,6 @@ class timelog(orm.entity):
             )
 
         return brs
-
 
 class artist_artists(orm.associations):
     pass
@@ -3919,6 +3918,72 @@ class test_orm(tester):
             cnt += int(chron.op not in ('reconnect',))
             
         self.eq(t.count, cnt, msg)
+
+    def it_calls_entity_on_brokenrule(self):
+        iss = issue.getvalid()
+
+        # Break a declaritive rule
+        iss.name = str() # break
+        self.one(iss.brokenrules)
+        self.is_(iss, iss.brokenrules.first.entity)
+
+        # Break an imperative rule
+        iss.assignee = 'jessehogan0ATgmail.com' # break
+        self.two(iss.brokenrules)
+        self.is_(iss, iss.brokenrules.first.entity)
+        self.is_(iss, iss.brokenrules.second.entity)
+
+        # Break constituent
+        iss.comments += comment.getvalid()
+        iss.comments.last.author = 'jessehogan0ATgmail.com' # break
+        self.three(iss.brokenrules)
+
+        es = [x.entity for x in iss.brokenrules]
+        self.true(es.count(iss) == 2)
+        self.true(es.count(iss.comments.first) == 1)
+
+        prog = programmer()
+
+        # Programmer names can only be 20 characters long
+        prog.name = 'x' * 21  # break
+        prog.ismaintenance = True  # Ensure ismaintenance is valid
+
+        iss.programmer_issues += programmer_issue(
+            programmer = prog
+        )
+
+        self.four(iss.brokenrules)
+        es = [x.entity for x in iss.brokenrules]
+        self.true(es.count(iss) == 2)
+        self.true(es.count(iss.comments.first) == 1)
+        self.true(es.count(iss.programmer_issues.first.programmer) == 1)
+
+        ''' Break an association-level rule '''
+
+        # Only maintenance programmers can be associated with an issue
+        prog.ismaintenance = False  # Break
+        es = [x.entity for x in iss.brokenrules]
+        self.five(iss.brokenrules)
+        self.true(es.count(iss) == 2)
+        self.true(es.count(iss.comments.first) == 1)
+        self.true(es.count(iss.programmer_issues.first.programmer) == 1)
+        self.true(es.count(iss.programmer_issues.first) == 1)
+
+        ''' Break an associations-level rule '''
+
+        # A given programmer can't be associated with the same issue
+        # more than once.
+        iss.programmer_issues += programmer_issue(
+            programmer = prog
+        )
+
+        es = [x.entity for x in iss.brokenrules]
+        self.seven(iss.brokenrules)
+        self.true(es.count(iss) == 2)
+        self.true(es.count(iss.comments.first) == 1)
+        self.true(es.count(iss.programmer_issues.first.programmer) == 1)
+        self.true(es.count(iss.programmer_issues.first) == 1)
+        self.true(es.count(iss.programmer_issues) == 1)
 
     def it_calls_imperative_brokenrules(self):
         ''' Break on entity '''
