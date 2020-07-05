@@ -11,11 +11,16 @@
 "Simplicity is complexity resolved." 
     # Constantin Brancusi, Romanian Sculptor
 
-""" This file contains all classes related to object-relational mapping.
+""" This module contains all classes related to object-relational
+mapping.
+
+Todo:
+    TODO: s/explicit attribute/imperitive attribute/
+    
 """
 
 from collections.abc import Iterable
-from contextlib import suppress
+from contextlib import suppress, contextmanager
 from datetime import datetime, date
 from dbg import B
 from enum import Enum, unique
@@ -118,19 +123,19 @@ class text(alias):
 
             str, 1, 65535
 
-        Many entity objects in the GEM simply want what would be
-        equivalent to a MySQL ``text`` date type. This alias allows a
-        GEM author to say::
+    Many entity objects in the GEM simply want what would be
+    equivalent to a MySQL ``text`` date type. This alias allows a
+    GEM author to say::
 
-            class person(orm.entity):
-                name = str
-                bio = orm.text
+        class person(orm.entity):
+            name = str
+            bio = orm.text
 
-        instead of::
+    instead of::
 
-            class person(orm.entity):
-                name = str
-                bio = str, 1, 65535
+        class person(orm.entity):
+            name = str
+            bio = str, 1, 65535
 
     """
     type = str
@@ -1961,26 +1966,32 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
     @property
     def brokenrules(self):
-        return self._getbrokenrules()
+        return self.getbrokenrules()
 
-    def _getbrokenrules(self, guestbook=None, followentitymapping=True):
+    def getbrokenrules(self, gb=None):
         brs = entitiesmod.brokenrules()
 
-        if guestbook is None:
-            guestbook = list()
-        else:
-            # This test corrects a fairly deep issue that has only come
-            # up with subentity-superassociation-subentity
-            # relationships. We use the below logic to return
-            # immediately when an association's (self) collection has any
-            # constituents that have already been visited. See the
-            # brokenrule collections being tested at the bottom of
-            # it_loads_and_saves_reflexive_associations_of_subentity_objects
-            # for more clarifications.
-            for e in self:
-                if e in guestbook:
-                    return brs
+        # This test corrects a fairly deep issue that has only come
+        # up with subentity-superassociation-subentity
+        # relationships. We use the below logic to return
+        # immediately when an association's (self) collection has any
+        # constituents that have already been visited. See the
+        # brokenrule collections being tested at the bottom of
+        # it_loads_and_saves_reflexive_associations_of_subentity_objects
+        # for more clarifications.
 
+        if gb is None:
+            gb = list()
+
+        if self in gb:
+            return
+
+        gb.append(self)
+            
+        if any(x in gb for x in self):
+            return brs
+
+        # Replace with any() - see above.
         for e in self:
             if not isinstance(e, self.orm.entity):
                 prop = type(self).__name__
@@ -1988,7 +1999,12 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 msg %= (prop, type(e).__name__)
                 brs += entitiesmod.brokenrule(msg, prop, 'valid')
                 
-            brs += e._getbrokenrules(guestbook, followentitymapping=followentitymapping)
+            # TODO If an ORM users creates a brokenrules property and
+            # forgets to return anything, it will lead to a strange
+            # error message here. Instead, we should chek the return
+            # value of e.brokenrules and, if its None, raise a more
+            # informative error message.
+            brs += e.getbrokenrules(gb=gb)
 
         return brs
 
@@ -2275,7 +2291,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
     def __init__(self, o=None, **kwargs):
         try:
             self.orm = self.orm.clone()
-            self.orm.initing = True # change to `isiniting`
+            self.orm.initing = True # TODO change to `isiniting`
             self.orm.instance = self
 
             self.onbeforesave       =  entitiesmod.event()
@@ -2541,7 +2557,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                                     = (False,) * 2
                 # Raise event
                 self.onaftersave(self, eargs)
-            else:
                 # If there is no sql, then the entity isn't new, dirty
                 # or marked for deletion. In that case, don't save.
                 # However, allow any constituents to be saved.
@@ -2554,6 +2569,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             for map in self.orm.mappings:
 
                 if type(map) is entitymapping:
+                    # TODO The below comments should probably be
+                    # deleted; followentitiesmapping isn't used any more:
+                    # ...
                     # Call the entity constituent's save method. Setting
                     # followentitiesmapping to false here prevents it's
                     # child/entitiesmapping constituents from being
@@ -2624,6 +2642,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                 if crud == 'delete':
                                     e.orm.ismarkedfordeletion = True
 
+                                # TODO The below comments should
+                                # probably be deleted;
+                                # followentitymapping isn't used any
+                                # more:
                                 # If the previous operation on self was
                                 # a delete, don't ascend back to self
                                 # (followentitymapping == False). Doing
@@ -2774,25 +2796,23 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         
     @property
     def brokenrules(self):
-        return self._getbrokenrules()
+        return self.getbrokenrules()
 
-    def _getbrokenrules(self, guestbook=None, followentitymapping=True, followentitiesmapping=True):
+    def getbrokenrules(self, gb=None):
         brs = entitiesmod.brokenrules()
 
-        # This "guestbook" logic prevents infinite recursion and duplicated
-        # brokenrules.
-        guestbook = [] if guestbook is None else guestbook
-        if self in guestbook:
-            return brs
-        else:
-            guestbook += self,
+        if gb is None:
+            gb = list()
 
+        if self in gb:
+            return brs
+
+        gb.append(self)
+            
+        # TODO s/super/sup/
         super = self.orm._super
         if super:
-            brs += super._getbrokenrules(
-                guestbook, 
-                followentitymapping=followentitymapping
-            )
+            brs += super.getbrokenrules(gb=gb)
 
         for map in self.orm.mappings:
             if type(map) is fieldmapping:
@@ -2863,37 +2883,39 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # want to add (as one would expect) the `followentitiesmapping`
             # flag here as well.
             elif type(map) is entitiesmapping:
-                # Currently, map.value will not load the entities on invocation
-                # so we get None for es. This is good because we don't want to
-                # needlessly load an object to see if it has broken rules.
-                # However, if this changes, we will want to make sure that we
-                # don't needlessy load this. This could lead to infinite
-                # h (see it_entity_constituents_break_entity)
+                # NOTE Currently, map.value will not load the entities
+                # on invocation so we get None for es. This is good
+                # because we don't want to needlessly load an object to
+                # see if it has broken rules.  However, if this changes,
+                # we will want to make sure that we don't needlessy load
+                # this. This could lead to infinite recursion (see
+                # it_entity_constituents_break_entity)
                 es = map.value
                 if es:
                     if not isinstance(es, map.entities):
                         msg = "'%s' attribute is wrong type: %s"
                         msg %= (map.name, type(es))
                         brs += entitiesmod.brokenrule(msg, map.name, 'valid')
-                    brs += es._getbrokenrules(guestbook, 
-                        followentitymapping=followentitymapping
-                    )
+                    brs += es.getbrokenrules(gb=gb)
 
-            elif followentitymapping and type(map) is entitymapping:
+            elif type(map) is entitymapping:
                 if map.isloaded:
                     if not isinstance(map.value, map.entity):
                         msg = "'%s' attribute is wrong type: %s"
                         msg %= (map.name, type(map.value))
                         args = msg, map.name, 'valid'
                         brs += entitiesmod.brokenrule(*args)
-                    brs += map.value._getbrokenrules(guestbook, 
-                        followentitymapping=followentitymapping,
-                        followentitiesmapping=False
-                    )
 
-            elif followentitiesmapping and type(map) is associationsmapping:
+                    # If the ORM user has overridden `getbrokenrules`,
+                    # check if the entity has already been processed by
+                    # seeing if `map.value` is in the guestbook.
+                    if map.value not in gb:
+                        # Get entities brokenrules
+                        brs += map.value.getbrokenrules(gb=gb)
+
+            elif type(map) is associationsmapping:
                 if map.isloaded:
-                    brs += map.value._getbrokenrules(guestbook)
+                    brs += map.value.getbrokenrules(gb=gb)
 
         return brs
 
@@ -3195,7 +3217,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             if type(map) in (entitiesmapping, associationsmapping):
                                 es = v
                                 if es:
-                                    brs = es._getbrokenrules(
+                                    brs = es.getbrokenrules(
                                         guestbook=None, 
                                         followentitymapping=False
                                     )
@@ -4617,6 +4639,8 @@ class orm:
                 mod = os.path.splitext(
                     os.path.basename(mod.__file__)
                 )[0]
+                if mod == 'test':
+                    mod = 'main'
             else:
                 mod = 'main'
         else:
@@ -4626,7 +4650,6 @@ class orm:
 
     @table.setter
     def table(self, v):
-        B(v == 'gem_partyroletypes');
         self._table = v
         
     def iscollinear(self, with_):

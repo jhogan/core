@@ -37,7 +37,7 @@ import apriori
 
 class orders(orm.entities):  pass
 
-# TODO Write validation rule to disallow instance of `item`. Only alow
+# TODO Write validation rule to disallow instance of `item`. Only allow
 # subtypes of `item` like `salesitem` and `purchaseitem` entity objects.
 # If the composite is a `purchase`, then only `purchaseitem` should be
 # allowed. Likewise when the composite is a salesorder entitiy objects.

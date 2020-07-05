@@ -154,6 +154,7 @@ class party(orm.entity):
     # organization, business person, or place.
     isicv4 = str, 1, 1
 
+    # A collection of party roles this party plays.
     roles = roles
 
     # A collection of skills belonging to this party
@@ -882,7 +883,7 @@ class phone(contactmechanism):
     # The area code as defined by the North American Numbering Plan.
     # This should probably be None for phone numbers outside of North
     # America and the Caribean. NOTE many of the numbers within the 200,
-    # 999 range are currently considered invalid. The should probably
+    # 999 range are currently considered invalid. They should probably
     # result in `brokenrules` if given. See
     # https://en.wikipedia.org/wiki/List_of_North_American_Numbering_Plan_area_codes
     area = int, 200, 999
@@ -1554,8 +1555,8 @@ class facility(orm.entity):
     facilities = facilities
 
     # TODO There should probably be brokenrules to ensure commonsense
-    # notions such as: A `Room` may be within a `Floor`, but a `Floor` may not
-    # be within a `Room`.
+    # notions such as: A `Room` may be within a `Floor`, but a `Floor`
+    # may not be within a `Room`.
 
 class facilityroletype(orm.entity):
     """ The role being played between a party and a facility. For

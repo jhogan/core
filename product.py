@@ -19,15 +19,8 @@ import apriori
 class products(orm.entities): pass
 
 class category_classifications(orm.associations):
-    # TODO:1c409d9d The ORM does not call orm.entities.brokenrules when
-    # saving.
-
-    # TODO:a082d2a9 Some work needs to be done to ensure that entity and
-    # entities objects can override brokenrules correctely.
-    '''
-    @property
-    def brokenrules(self):
-        brs = entities.brokenrules()
+    def getbrokenrules(self, *args, **kwargs):
+        brs = super().getbrokenrules(*args, **kwargs)
 
         # Ensure that no product can be put two different categories
         # with a primary flag.
@@ -38,18 +31,23 @@ class category_classifications(orm.associations):
                     if cc1.isprimary:
                         if primary:
                             brs += entities.brokenrule(
-                                'The product "%s" already is set to '
+                                'The product "%s" is already set to '
                                 'primary in category "%s".' 
                                     % (
                                         cc1.product.name,
                                         cc.category.name
-                                )
+                                ),
+                                'isprimary',
+                                'valid',
                             )
+                            break
                         else:
                             primary = cc.category
+            else:
+                continue
+            break
                 
         return brs
-    '''
 
 class categories(orm.entities):            pass
 class goods(products):                     pass
@@ -413,7 +411,6 @@ class category(orm.entity):
 
         return cats
 
-
 class category_classification(orm.association):
     """ An association linking a product witha a category.
     """
@@ -442,21 +439,23 @@ class category_classification(orm.association):
     def brokenrules(self):
         brs = super().brokenrules
 
-        # TODO Only one "primary" association can exist between a given
-        # product and a category. See the "isprimary" column.
-        pid = self.product.id
-        cc = category_classifications(
-            product__productid=pid,
-            isprimary=True
-        )
-        if cc.ispopulated:
-            brs += entities.brokenrule(
-                'The product "%s" already is set to primary in '
-                'category "%s".' % (
-                                        self.product.name,
-                                        self.category.name
-                                    )
-                )
+        if self.isprimary:
+            pid = self.product.id
+            cc = category_classifications(
+                product__productid=pid,
+                isprimary=True
+            )
+
+            if cc.ispopulated:
+                brs += entities.brokenrule(
+                    'The product "%s" is alredy set to primary in '
+                    'category "%s" in the database.' % (
+                                            self.product.name,
+                                            self.category.name
+                                        ),
+                        'isprimary',
+                        'valid'
+                    )
         return brs
 
 class good(product):
@@ -932,13 +931,8 @@ class rating(orm.entity):
             # exist and are accessable via the construct with no fuss.
             self.save()
 
-        
-    @property
-    def brokenrules(self):
-        # TODO I think this needs to be changed to
-        # _getbrokenrules(guestbook) so the guestbook can be pased to
-        # the super object.
-        brs = super().brokenrules
+    def getbrokenrules(self, *args, **kwargs):
+        brs = super().getbrokenrules(*args, **kwargs)
         valid = (
             rating.Outstanding,
             rating.Good,
