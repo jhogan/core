@@ -105,6 +105,8 @@ class case_parties(orm.associations):                        pass
 class caseroletypes(roletypes):                              pass
 class casestatuses(statuses):                                pass
 class communication_efforts(orm.associations):               pass
+class skills(orm.entities):                                  pass
+class skilltypes(orm.entities):                              pass
 
 ''' Parties '''
 class party(orm.entity):
@@ -152,10 +154,10 @@ class party(orm.entity):
     # organization, business person, or place.
     isicv4 = str, 1, 1
 
-    # Removing this constituent declaration. For some reason it causes
-    # 297f8176 to happen. TODO:297f8176 Uncomment when 297f8176 is
-    # fixed.
     roles = roles
+
+    # A collection of skills belonging to this party
+    skills = skills
 
 class organization(party):
     """ An abstract class representing a group of people with a common
@@ -1902,3 +1904,35 @@ class communication_effort(orm.association):
 
     # The communication event being associated to the ``effort``
     communication = communication
+
+class skill(orm.entity):
+    """ A skill a party has along with the years of experience in that
+    skill.
+
+    Note that this entity was originally called SKILL in "The Data Model
+    Resource Book" and was introduced in the Work Effort chapter rather
+    than the People and Organizations chapter.
+    """
+
+    # The *years of experience* tells how many years that the person or
+    # organization has been involved in this skill.
+    years = dec
+
+    # The rating indicates how proficient the party is in the skill.
+    rating = dec
+
+class skilltype(orm.entity):
+    """ Describes the ``skill``.
+
+    Note that this entity was originally called SKILL TYPE in
+    "The Data Model Resource Book" and was introduced in the Work Effort
+    chapter rather than the People and Organizations chapter.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    name = str
+
+    # The collection of skills matching this skill type
+    skills = skills

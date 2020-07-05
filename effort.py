@@ -433,6 +433,12 @@ class effort_party(orm.association):
     possible to assign parties to work efforts in various roles as well
     as at various levels of the work effort.
 
+    When scheduling an assignment of a party to an effort, managers need
+    to know the qualifications of prospective parties. This is handled
+    using the ``party.skills`` and ``party.skilltypes`` entities.
+    ``party.skills`` contains a list of skill types, years of
+    experience, and a skill rating.
+
     Note that this entity was originally called WORK EFFORT PARTY
     ASSIGNMENT in "The Data Model Resource Book".
     """

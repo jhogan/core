@@ -17482,6 +17482,48 @@ class gem_party_region(tester):
 
         self.eq(reg.name, reg1.name)
 
+class gem_party_skills(tester):
+    def __init__(self):
+        super().__init__()
+        orm.orm.recreate(
+            party.persons,
+            party.skills,
+            party.skilltypes,
+        )
+
+    def it_creates(self):
+        per = party.person(first='John', last='Smith')
+
+        per.skills += party.skill(
+            years = 20,
+            rating = 10,
+            skilltype = party.skilltype(name='Project management')
+        )
+
+        per.skills += party.skill(
+            years = 5,
+            rating = 6,
+            skilltype = party.skilltype(name='Marketing')
+        )
+
+        per.save()
+
+        per1 = per.orm.reloaded()
+
+        self.eq(per.id, per1.id)
+
+        sks = per.skills.sorted()
+        sks1 = per1.skills.sorted()
+
+        self.two(sks)
+        self.two(sks1)
+
+        for ks, ks1 in zip(sks, sks1):
+            self.eq(ks.id, ks1.id)
+            self.eq(ks.years, ks1.years)
+            self.eq(ks.rating, ks1.rating)
+            self.eq(ks.skilltype.id, ks1.skilltype.id)
+
 class gem_product_product(tester):
     def __init__(self):
         super().__init__()
