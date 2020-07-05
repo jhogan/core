@@ -20698,6 +20698,8 @@ class gem_effort(tester):
     def __init__(self):
         super().__init__()
         orm.orm.recreate(
+            effort.status,
+            effort.statustype,
             effort.roles,
             effort.roletypes,
             effort.jobs,
@@ -21117,6 +21119,43 @@ class gem_effort(tester):
             self.eq(ep.effort_partytype.id, ep1.effort_partytype.id)
             self.eq(ep.begin, ep1.begin)
             self.eq(ep.end, ep1.end)
+
+    def it_creates_status(self):
+        act = effort.activity(
+            name='Set up production line',
+        )
+
+        act.statuses += effort.status(
+            begin = 'Jun 2 2000, 1pm',
+            statustype = effort.statustype(name='Started'),
+        )
+
+        act.statuses += effort.status(
+            begin = 'Jun 2 2000, 2pm',
+            statustype = effort.statustype(name='Completed'),
+        )
+
+        act.save()
+        act1 = act.orm.reloaded()
+
+        self.eq(act.id, act1.id)
+
+        sts = act.statuses.sorted()
+        sts1 = act1.statuses.sorted()
+
+        self.two(sts)
+        self.two(sts1)
+
+        for st, st1 in zip(sts, sts1):
+            self.eq(st.id, st1.id)
+            self.eq(st.begin, st1.begin)
+            self.eq(st.statustype.id, st1.statustype.id)
+            self.eq(st.statustype.name, st1.statustype.name)
+
+
+
+
+
 
         
 

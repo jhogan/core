@@ -59,6 +59,8 @@ class effort_effort_precedencies(effort_effort_dependencies):  pass
 class effort_effort_concurrency(effort_effort_dependencies):   pass
 class effort_parties(orm.associations):                        pass
 class effort_partytypes(orm.entities):                         pass
+class statuses(orm.entities):                                  pass
+class statustypes(orm.entities):                               pass
 
 class requirement(apriori.requirement):
     """ Represents the *need* to perform some type of work. This could
@@ -194,6 +196,9 @@ class effort(orm.entity):
     # to be redone by other work efforts and to capture this
     # relationshipt."
     efforts = efforts
+
+    # The collection of statuses that this effort has been in 
+    statuses = statuses
 
 class program(effort): 
     pass
@@ -464,3 +469,36 @@ class effort_partytype(orm.entity):
     name = str
 
     effort_parties = effort_parties
+
+class status(orm.entity):
+    """ Maintains the status of a work ``effort``. Examples include, "In
+    progress", "Started", and "Pending".
+
+    The status of the work ``effort`` may have an effect on the
+    ``requrimentstatus``; however, they may also be independent of each
+    other. For instance, a status of "completed" on the work efforts
+    required to implement a requirement ma lead to the requirement
+    having a status of "fulfilled". They, however, may have different
+    unrelated statuses, such as the requirement  have a status of
+    "approved" and the work effort having a status of "in progress".
+
+    Note that this entity was originally called WORK EFFORT STATUS in
+    "The Data Model Resource Book".
+    """
+    entities = statuses
+
+    begin = datetime
+
+class statustype(orm.entity):
+    """ Describes a ``status`` entity.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    name = str
+
+    # The collection of status entities that this entity describes.
+    statuses = statuses
+
