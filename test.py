@@ -18604,8 +18604,31 @@ class gem_product_item(tester):
 class gem_product_categories(tester):
     def __init__(self):
         super().__init__()
-        product.products.orm.recreate(recursive=True)
-        product.categories.orm.recreate(recursive=True)
+        orm.orm.recreate(
+            product.bases,                     product.billings,
+            product.brands,                    product.categories,
+            product.category_classifications,  product.category_types,
+            product.colors,                    product.containers,
+            product.containertypes,            product.dimensions,
+            product.discounts,                 product.estimates,
+            product.estimatetypes,             product.feature_features,
+            product.features,                  product.goods,
+            product.guidelines,                product.hardwares,
+            product.items,                     product.lots,
+            product.measure_measures,          product.measures,
+            product.nonserials,                product.onetimes,
+            product.prices,                    product.priorities,
+            product.product_features,          product.product_products,
+            product.products,                  product.qualities,
+            product.quantitybreaks,            product.ratings,
+            product.reasons,                   product.recurrings,
+            product.salestypes,                product.serials,
+            product.services,                  product.sizes,
+            product.softwares,                 product.statuses,
+            product.suggesteds,                product.supplier_products,
+            product.surcharges,                product.utilizations,
+            product.values,                    product.variances,
+        )
 
     def it_creates(self):
         ''' Simple, non-recursive test '''
@@ -18804,6 +18827,8 @@ class gem_product_categories(tester):
         checks the database to ensure a product is associated with only
         one category as primary. 
         """
+
+        ''' Test category_classifications.getbrokenrules '''
         cat = product.category()
         cat.name = uuid4().hex
 
@@ -18818,8 +18843,9 @@ class gem_product_categories(tester):
         # Save and reload. Another brokenrule will be added by
         # category_classifications.brokenrules to ensure that it does
         # not contain a product set as primary in two different
-        # categories (currently not working (1c409d9d)). See below.
+        # categories.
         cat.save()
+
         cat = product.category(cat.id)
 
         cc = product.category_classification()
@@ -18831,36 +18857,24 @@ class gem_product_categories(tester):
         cc.isprimary = True  # Ensure isprimary is True
         cat.category_classifications += cc
 
-        # TODO:a082d2a9 `cat.brokenrules` doesn't recurse into
-        # `category_classification.brokenrules'
-        # self.one(cat.brokenrules);
+        self.one(cat.brokenrules);
+        self.broken(cat, 'isprimary', 'valid')
 
         self.expect(BrokenRulesError, lambda: cat.save())
 
-        ''' Ensure category_classifications disallows saving a product
-        to multple caterories as primary. NOTE Currently not working
-        (a082d2a9).'''
-        return
-
-        cat = product.category()
-        cat.name = uuid4().hex
-
-        prod = gem_product.getvalid()
-        cc = product.category_classification()
-        cc.product = prod
-        cc.begin = primative.datetime.utcnow(days=-50)
-        cc.product = prod
-        cc.isprimary = True
-        cat.category_classifications += cc
-
+        ''' Test category_classification.getbrokenrules '''
+        cat = product.category(cat.id)
         cc = product.category_classification()
         cc.product = prod
         cc.begin = primative.datetime.utcnow(days=-25)
         cc.comment = uuid4().hex * 1000
         cc.product = prod
-        cc.isprimary = True
-        cat.category_classifications += cc
-        cat.save()
+        cc.category = cat
+        self.true(cc.isvalid)
+        cc.isprimary = True  # Ensure isprimary is True
+        self.one(cc.brokenrules)
+        self.broken(cc, 'isprimary', 'valid')
+
 
 class gem_product_category_types(tester):
     def __init__(self):
