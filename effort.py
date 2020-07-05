@@ -410,3 +410,57 @@ class effort_effort_precedency(effort_effort_dependency):
     in "The Data Model Resource Book".
     """
     entities = effort_effort_precedencies
+
+class effort_effort_concurrency(effort_effort_dependency):
+    """ A subassociation of ``effort_effort``, this entity declares that
+    the``subject`` effort must be executed in parallel with the
+    ``object`` effort.
+
+    Note that this entity was originally called WORK EFFORT CONCURRENCY
+    in "The Data Model Resource Book".
+    """
+    entities = effort_effort_concurrency
+
+class effort_party(orm.association):
+    """ This association between ``effort`` and ``party`` entities
+    provide a means by which people, or groups of people, can be
+    assigned or allocated to a work ``efforts``. With this, it is
+    possible to assign parties to work efforts in various roles as well
+    as at various levels of the work effort.
+
+    Note that this entity was originally called WORK EFFORT PARTY
+    ASSIGNMENT in "The Data Model Resource Book".
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.orm.isnew:
+            self.comment = None
+
+    entities = effort_parties
+
+    # The effort and party being associated
+    effort = effort
+    party = party
+
+    # The span of time through which the party's assignment to the
+    # effort is valid
+    span = datespan
+
+    # A note on the party's association with the effort
+    comment = text
+
+class effort_partytype(orm.entity):
+    """ Describes the role that the party is playing with the effort.
+
+    Note that this entity was originally called WORK EFFORT ROLE TYPE in
+    "The Data Model Resource Book".
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    name = str
+
+    effort_parties = effort_parties

@@ -20702,6 +20702,8 @@ class gem_effort(tester):
             effort.roletypes,
             effort.jobs,
             effort.effort_efforts,
+            effort.effort_parties,
+            effort.effort_partytype,
             apriori.requirement,
             order.requirementtype,
             effort.requirement,
@@ -21048,6 +21050,74 @@ class gem_effort(tester):
                 self.one(ees1)
                 self.eq(ees1.first.subject.id, act120001.id)
                 self.eq(ees1.first.object.id, act120002.id)
+
+    def it_associates_effort_to_party(self):
+        # Create effort
+        eff = effort.effort(name='Develop a sales and marketing plan')
+
+        # Create persons
+        dick  =  party.person(first='Dick',  last='Jones')
+        bob   =  party.person(first='Bob',   last='Jenkins')
+        john  =  party.person(first='John',  last='Smith')
+        jane  =  party.person(first='Jane',  last='Smith')
+
+        # Create role types
+        manager = effort.effort_partytype(name='Project manager')
+        admin   = effort.effort_partytype(name='Project administrator')
+        member  = effort.effort_partytype(name='Team member')
+
+        eff.effort_parties += effort.effort_party(
+            party = dick,
+            effort_partytype = manager,
+            begin = 'Jan 2, 2001',
+            end = 'Sept 15, 2001',
+        )
+
+        eff.effort_parties += effort.effort_party(
+            party = bob,
+            effort_partytype = admin,
+        )
+
+
+        eff.effort_parties += effort.effort_party(
+            party = john,
+            effort_partytype = member,
+            begin = 'Mar 5, 2001',
+            end = 'Aug 6, 2001',
+            comment = 'Leaving for three-week vacation on Aug 7, 2001'
+        )
+
+
+        eff.effort_parties += effort.effort_party(
+            party = john,
+            effort_partytype = member,
+            begin = 'Sept 1, 2001',
+            end = 'Dec 2, 2001',
+        )
+
+        eff.effort_parties += effort.effort_party(
+            party = jane,
+            effort_partytype = member,
+            begin = 'Aug 6, 2000',
+            end = 'Sept 15, 2001',
+        )
+
+        eff.save()
+
+        eff1 = eff.orm.reloaded()
+
+        eps = eff.effort_parties.sorted()
+        eps1 = eff1.effort_parties.sorted()
+
+        self.five(eps)
+        self.five(eps1)
+
+        for ep, ep1 in zip(eps, eps1):
+            self.eq(ep.id, ep1.id)
+            self.eq(ep.effort_partytype.id, ep1.effort_partytype.id)
+            self.eq(ep.begin, ep1.begin)
+            self.eq(ep.end, ep1.end)
+
         
 
 cli().run()
