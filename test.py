@@ -21098,6 +21098,13 @@ class gem_effort(tester):
             product.good,
             effort.deliverables,
             ship.asset,
+            effort.times,
+            effort.timesheet,
+            effort.timesheetroles,
+            effort.timesheetroletypes,
+            party.worker,
+            party.employee,
+            party.contractor,
         )
 
     def it_creates_requirements(self):
@@ -21530,6 +21537,82 @@ class gem_effort(tester):
             self.eq(st.begin, st1.begin)
             self.eq(st.statustype.id, st1.statustype.id)
             self.eq(st.statustype.name, st1.statustype.name)
+
+    def it_creates_time_entries(self):
+        # Create efforts
+        eff29000 = effort.effort(
+            name = 'Develop a sales and marketing plan'
+        )
+
+        eff29005 = effort.effort(
+            name = 'Develop a sales and marketing plan'
+        )
+
+        # Create party
+        dick = party.person(first='Dick',  last='Jones')
+
+        # Create a role for the party to log time as
+        emp = party.employee()
+
+        dick.roles += emp
+
+        # Create a timeship
+        ts = effort.timesheet(
+            begin = 'Jan 1, 2001',
+            end   = 'Jan 15, 2001',
+        )
+
+        # Assign the timesheet to the role's timesheet collection
+        ts.worker = emp
+
+        # Add `time`` entries to the timesheet for each of the efforts
+        ts.times += effort.time(
+            begin = 'Jan 2, 2001',
+            end   = 'Jan 4, 2001',
+            hours = 13,
+            effort = eff29000,
+        )
+
+        ts.times += effort.time(
+            begin = 'Jan 5, 2001',
+            end   = 'Jan 6, 2001',
+            hours = 7,
+            effort = eff29005,
+        )
+
+        # Save and reload
+        dick.save(ts)
+        dict1 = dick.orm.reloaded()
+
+        # Get the employee role
+        emp1 = dick.roles.first
+
+        self.eq(emp.id, emp1.id)
+
+        # Use the employee role to get its collection of timesheets.
+
+        # TODO:9b700e9a We should be able to call ``emp1.timesheets``
+        # but the ORM doesn't suppert that yet. We are in a situation
+        # wher employee can't have a reference to ``timesheets`` as a
+        # collection because due to the circular reference it would
+        # cause.
+        ts1 = effort.timesheets('worker__workerid', emp1.id).first
+
+        self.eq(ts.id, ts1.id)
+
+        times = ts.times.sorted()
+        times1 = ts1.times.sorted()
+
+        self.two(times)
+        self.two(times1)
+
+        for t, t1 in zip(times, times1):
+            self.eq(t.id, t1.id)
+            self.eq(t.begin, t1.begin)
+            self.eq(t.end, t1.end)
+            self.eq(t.hours, t1.hours)
+            self.eq(t.comment, t1.comment)
+
 
 
         

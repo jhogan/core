@@ -31,6 +31,9 @@ from decimal import Decimal as dec
 class parties(orm.entities):                                 pass
 class types(orm.entities):                                   pass
 class roles(orm.entities):                                   pass
+class workers(roles):                                        pass
+class employees(workers):                                    pass
+class contractors(workers):                                  pass
 class role_role_types(orm.entities):                         pass
 class statuses(orm.entities):                                pass
 class role_role_statuses(statuses):                          pass
@@ -1384,10 +1387,26 @@ class parent(organizationalunit):
     ``subsidiary(organizationalunit)`` entity).
     """
 
+class worker(personal):
+    """ Represents the role of anyone who performs work. May be an
+    ``employee`` or ``contractor``.
+    """
+
+class employee(worker):
+    """ A party role implying legal employment with an enterprise.
+    """
+
+class contractor(worker):
+    """ A worker role implying a contractor.
+    """
+
+
 # TODO Add subtypes of ``organizational``: (distribution) ``channel``,
 # ``partner``, ``competitor``, ``household`, (regulatory) ``agency`` and
 # ``association``.
 
+# TODO Since roletype is used as a base class in many other places in
+# the GEM, we may consider moving it to apriori.py.
 class roletype(orm.entity):
     """ Stores a name for a role type.
 
@@ -1422,12 +1441,7 @@ class partyroletype(roletype):
     # that relationship type is not currently supported. 
     # party_contactmechanisms = party_contactmechanisms
 
-class employee(personal):
-    """ A party role implying legal employment with an enterprise.
-    """
-
-# TODO Add ``contractor``, ``familial`` and ``contact`` subtypes to
-# personal(role).
+# TODO Add ``familial`` and ``contact`` subtypes to personal(role).
 
 class customer(role):
     """ A role indicating a party that has purchased, been shipped, or

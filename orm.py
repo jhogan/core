@@ -94,6 +94,20 @@ import textwrap
 # text (field names like description, comment, instructions, etc. should
 # by default be optional.)
 
+# TODO:9b700e9a When an entity reference exist, we should create an
+# entities collection on the referent. For example, given:
+#
+#     class party(orm.entity):
+#         pass
+#
+#     class timesheets:
+#         party = party.party
+#
+# we should be able to access ``timesheets`` off a party instance:
+#
+#     for ts in party(id).timesheets:
+#         ...
+
 @unique
 class types(Enum):
     """

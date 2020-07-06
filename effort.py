@@ -58,9 +58,13 @@ class effort_effort_dependencies(effort_efforts):              pass
 class effort_effort_precedencies(effort_effort_dependencies):  pass
 class effort_effort_concurrency(effort_effort_dependencies):   pass
 class effort_parties(orm.associations):                        pass
-class effort_partytypes(orm.entities):                         pass
+class effort_partytypes(party.types):                          pass
 class statuses(orm.entities):                                  pass
 class statustypes(orm.entities):                               pass
+class times(orm.entities):                                     pass
+class timesheets(orm.entities):                                pass
+class timesheetroles(orm.entities):                            pass
+class timesheetroletypes(orm.entities):                        pass
 
 class requirement(apriori.requirement):
     """ Represents the *need* to perform some type of work. This could
@@ -439,6 +443,14 @@ class effort_party(orm.association):
     ``party.skills`` contains a list of skill types, years of
     experience, and a skill rating.
 
+    If desired, an enterprise could put in place business rules that
+    require parties to be assigned at the top level of the effort -- for
+    example, the overall project -- in order to be assigned to lower
+    level responibilities. For this reason, a scheduled start date and
+    scheduled completion date (``span.begin`` and ``span.end``) are
+    included in order to schedule parties or record what actually
+    occurred in terms of their assignment.
+
     Note that this entity was originally called WORK EFFORT PARTY
     ASSIGNMENT in "The Data Model Resource Book".
     """
@@ -461,18 +473,24 @@ class effort_party(orm.association):
     # A note on the party's association with the effort
     comment = text
 
-class effort_partytype(orm.entity):
+    # The facilty that the work effort is performed at. For ``efforts``
+    # that have no location recorded for them, it is assumed that they
+    # occur at the facility associated with the parent ``effort`` or that
+    # the location is immaterial.
+    #
+    # (The book offers the idea of relating effort_party to an
+    # ``party.contactmechanism`` as an alternative to
+    # ``party.facility`` where only the postal address or email address
+    # is known for the party. However, this attribute is not currently
+    # implemented.)
+    facility = party.facility
+
+class effort_partytype(party.roletype):
     """ Describes the role that the party is playing with the effort.
 
     Note that this entity was originally called WORK EFFORT ROLE TYPE in
     "The Data Model Resource Book".
     """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    name = str
 
     effort_parties = effort_parties
 
@@ -507,4 +525,79 @@ class statustype(orm.entity):
 
     # The collection of status entities that this entity describes.
     statuses = statuses
+
+class time(orm.entity):
+    """ A ``time`` entry holds information about how much time was spent
+    during a given period on various work ``efforts``.  This data is
+    used for payroll as well as taks tracking, cost determination, and
+    prehaps client billing.  
+
+    Each ``time`` entry may be part of a ``timesheet`` that may record
+    many time entries. Each ``time`` entry may be for a particular
+    ``worker``, ``employee`` or ``contractor. Each ``timesheet`` may
+    have several other ``parties`.
+    
+    Note that this is modeled after the TIME ENTRY entity in "The Data
+    Model Resource Book".
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.orm.isnew:
+            self.comment = None
+
+    # The time frame that the effort was worked on
+    span = timespan
+
+    # The number of hours the effort was worked on. NOTE If other units
+    # of meesures are need for time entries aside from hours, such as
+    # the number of days, then we can add a ``quantity`` attribute with
+    # a relationship to product.measure (unit of measure).
+    hours = dec
+
+    comment = text
+
+class timesheet(orm.entity):
+    """ A ``timesheet`` is a collection of ``time`` entries belonging to
+    a ``party.worker`` role (which itself belongs to a party). The
+    ``worker`` role may **submit** many timesheets over time, whicha are
+    each **composed of** ``time`` entries for a particular period of
+    time. Each ``time`` entry is **within** a ``timesheet`` and als tied
+    back to a work ``effort``, which determines the effort to which the
+    time is charged.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.orm.isnew:
+            self.comment = None
+
+    # The time frame of the time sheet
+    span = datespan
+
+    comment = text
+
+    # The ``worker`` role to which this timesheet belongs - typically a
+    # ``party.employee`` or a ``party.contractor``.
+    worker = party.worker
+
+    # The collection of ``time`` entries for this timesheet
+    times = times
+
+class timesheetrole(orm.entity):
+    """ A ``timesheet`` may have several other ``parties`` in various
+    ``timesheetroles`` categorized by ``timesheetroletype``.
+    """
+
+class timesheetroletype(orm.entity):
+    """ Categorizes ``timesheeroles``. Examples include "approver",
+    "manager", and "enterer".
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    name = str
+
+    # A collection of timesheetroles that match this type.
+    timesheetroles = timesheetroles
 
