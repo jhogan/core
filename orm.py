@@ -4985,6 +4985,21 @@ class orm:
                     raise
 
     @property
+    def altertable(self):
+        from itertools import zip_longest
+        maps = self.mappings
+        tbl = self.dbtable
+        for map, col in zip_longest(maps, tbl.columns):
+            if col.name == map.name:
+                B()
+                if col.type == map.dbtype:
+                    ...
+                
+            print('map %s; col: %s' % (map, col))
+        B()
+        
+
+    @property
     def createtable(self):
         r = 'CREATE TABLE `%s`(\n' % self.table 
 
@@ -6538,12 +6553,9 @@ class migration:
         for es in orm.getentitys(includeassociations=True):
             tbl = es.orm.dbtable
             if tbl:
-                # The table exists in the database so let's diff it...
-                ...
+                ddl = es.orm.altertable
             else:
-                maps = es.orm.mappings.fieldmappings
-                for map in maps:
-                    print(repr(map))
+                ddl = es.createtable
 
 # ORM Exceptions
 class InvalidColumn(ValueError): pass
