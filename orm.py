@@ -6547,7 +6547,7 @@ class associations(entities):
 class association(entity):
     pass
 
-class migration:
+class migrator:
     @staticmethod
     def run():
         for es in orm.getentitys(includeassociations=True):

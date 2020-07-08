@@ -4,7 +4,6 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
-from configfile import configfile
 from contextlib import contextmanager
 from entities import *
 from pprint import pprint
@@ -20,6 +19,7 @@ import pprint
 import primative
 import sys
 import uuid
+from config import config
 
 # TODO Ensure tester.py won't run in non-dev environment
 
@@ -41,8 +41,7 @@ class testers(entities):
 
         testclass, testmethod, *_ = tu.split('.') + [None] if tu else [None] * 2
 
-        cfg = configfile.getinstance()
-        if cfg.isloaded and cfg.inproduction:
+        if config().inproduction:
             raise Exception("Won't run in production environment.")
 
         for subcls in self.testerclasses:
