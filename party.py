@@ -1951,3 +1951,57 @@ class skilltype(orm.entity):
 
     # The collection of skills matching this skill type
     skills = skills
+
+class rate(orm.entity):
+    span = datespan
+    rate = dec
+
+class ratetype(orm.entity):
+    """ Provides the ability to classify the various types of rates to
+    alllow the flexibility to capture different types of rates such as
+    billing rates, payroll rates (amount that needs to be paid to the
+    worker), costs, overtime rates, and so on.
+
+    Note that this entity was originally called RATE TYPE in
+    "The Data Model Resource Book" and was introduced in the Work Effort
+    chapter rather than the People and Organizations chapter.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    # The name of the rate type. For example, a ``name`` of "biling
+    # rate" establishes how much is billed and whether it is to be
+    # billed to an external or internal organization. A ``name`` of cost
+    # determines how much will be used as the cost basis to calculate
+    # how much the work is costing.
+    name = str
+
+    # The collection of rates matching this rates type
+    rates = rates
+
+class positionrate(orm.entity):
+    """ The ``positionrate`` may store a rate, overtime rate, cost, or
+    other type of rate depending on the needs of the organization. The
+    ``positiontype`` would indicate which rate is being specified. 
+
+    Note that this is modeled after the POSITION TYPE RATE entity in
+    "The Data Model Resource Book".
+    """
+    span = datespan
+    rate = dec
+
+class positiontype(orm.entity
+    """
+
+    Note that this is modeled after the POSITION TYPE entity in "The
+    Data Model Resource Book".
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    name = str
+
+
+    positionrates = positionrates
