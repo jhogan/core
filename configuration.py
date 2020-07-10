@@ -8,10 +8,14 @@
 
 import accounts
 from dbg import B
+from logs import *
 
 class configuration:
     recaptcha_key = '<RECAPTCHA-KEY>'
     environment = 'development'
+
+    def __init__(self):
+        self._logs = None
 
     @property
     def inproduction(self):
@@ -27,4 +31,27 @@ class configuration:
                 database = 'epitest',
             )
         )
+
+    @property
+    def logs(self):
+        if not self._logs:
+            self._logs = logs()
+            self._logs += log(
+		addr = '/dev/log', 
+                fac = 'user',
+                tag = 'CORETEST', 
+                fmt = '[%(process)d]: %(levelname)s '
+                      '%(message)s (%(pathname)s:%(lineno)d) ',
+                lvl = 'NOTSET',
+            )
+        return self._logs
+
+    class jwt:
+        @property
+        def secret(self):
+            raise NotImplementedError('Must override')
+
+    @property
+    def jwt(self):
+        return type(self)._jwt()
 

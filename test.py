@@ -9,7 +9,7 @@
 ########################################################################
 
 from auth import jwt
-from configfile import configfile
+from config import config
 from contextlib import contextmanager
 from datetime import timezone, datetime, date
 from entities import BrokenRulesError
@@ -2970,7 +2970,7 @@ class test_logs(tester):
         def onlog(src, eargs):
             logs.append(eargs.record.message)
 
-        cfg = configfile.getinstance()
+        cfg = config()
         if not cfg.isloaded:
             # TODO We should raise something like CantTestError
             return
@@ -3024,7 +3024,7 @@ class test_jwt(tester):
     def it_calls_token(self):
         t = jwt()
         token = t.token
-        secret = configfile.getinstance()['jwt-secret']
+        secret = config().jwt.secret
 
         d = pyjwt.decode(token, secret)
 

@@ -817,8 +817,8 @@ class entity():
     @property
     def log(self):
         # Defer import to avoid circular dependency
-        from configfile import configfile
-        return configfile.getinstance().logs.default
+        from config import config
+        return config().logs.default
 
     def _setvalue(self, field, new, prop, setattr=setattr, cmp=True):
         # TODO: It's nice to strip any string because that's vitually

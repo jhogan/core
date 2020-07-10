@@ -9,7 +9,6 @@
 # TODO Write Tests
 from accounts import *
 from entities import *
-from logs import *
 from pprint import pprint
 import os
 import yaml
