@@ -2971,9 +2971,6 @@ class test_logs(tester):
             logs.append(eargs.record.message)
 
         cfg = config()
-        if not cfg.isloaded:
-            # TODO We should raise something like CantTestError
-            return
 
         l = cfg.logs.default
         l.onlog += onlog
