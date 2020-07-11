@@ -21618,8 +21618,79 @@ class gem_effort(tester):
             self.eq(t.hours, t1.hours)
             self.eq(t.comment, t1.comment)
 
+    def it_creates_rates(self):
+        # Create work effort (task)
+        tsk = effort.task(name='Develop accounting programm')
 
+        # Create types of rates
+        rgbill  =  party.ratetype(name='Regular billing')
+        otbill  =  party.ratetype(name='Overtime billing')
+        rgpay   =  party.ratetype(name='Regular pay')
+        otpay   =  party.ratetype(name='Overtime pay')
 
-        
+        # Create a party
+        gary = party.person(first='Gary', last='Smith')
+
+        # Associate party to work effort
+        ep = effort.effort_party(
+            effort = tsk,
+        )
+
+        ep.party = gary
+
+        # Add rates to the association between effort and party
+        ep.rates += party.rate(
+            begin    = 'May 15, 2000',
+            end      = 'May 14, 2001',
+            rate     = 65,
+            ratetype = rgbill,
+        )
+
+        ep.rates += party.rate(
+            begin    = 'May 15, 2000',
+            end      = 'May 14, 2001',
+            rate     = 70,
+            ratetype = otbill,
+        )
+
+        ep.rates += party.rate(
+            begin    = 'May 15, 2000',
+            end      = 'May 14, 2001',
+            rate     = 40,
+            ratetype = rgpay,
+        )
+        ep.rates += party.rate(
+            begin    = 'May 15, 2000',
+            end      = 'May 14, 2001',
+            rate     = 43,
+            ratetype = otpay,
+        )
+        ep.rates += party.rate(
+            begin    = 'May 15, 2000',
+            rate     = 45,
+            ratetype = rgpay,
+        )
+        ep.rates += party.rate(
+            begin    = 'May 15, 2000',
+            rate     = 45,
+            ratetype = otpay,
+        )
+        ep.save()
+        ep1 = ep.orm.reloaded()
+
+        self.eq(ep.id, ep1.id)
+
+        rts = ep.rates.sorted()
+        rts1 = ep1.rates.sorted()
+
+        self.six(rts)
+        self.six(rts1)
+
+        for rt, rt1 in zip(rts, rts1):
+            self.eq(rt.begin, rt1.begin)
+            self.eq(rt.end, rt1.end)
+            self.eq(rt.rate, rt1.rate)
+            self.eq(rt.ratetype.id, rt1.ratetype.id)
+            self.eq(rt.ratetype.name, rt1.ratetype.name)
 
 cli().run()
