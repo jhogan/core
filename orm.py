@@ -4045,6 +4045,12 @@ class fieldmapping(mapping):
 
         super().__init__(name, isderived)
 
+    @property
+    def column(self):
+        col = db.column()
+        col.name = self.name
+        return col
+
     def clone(self):
         ix = self.index
 

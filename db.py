@@ -685,9 +685,14 @@ class table(entity):
         return r % self.name
 
 class columns(entities):
-    def __init__(self, tbl, *args, **kwargs):
+    def __init__(self, tbl=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.table = tbl
+
+        # Don't load if there is no ``table``. We probably just want to
+        # use ``columns`` for collecting ``column`` objects
+        if not self.table:
+            return
 
         pl = pool.getdefault()
         with pl.take() as conn:
@@ -699,44 +704,24 @@ class columns(entities):
             ress = conn.query(sql, (conn.account.database, tbl.name))
             for res in ress:
                 self += column(res)
-
+    
 class column(entity):
-    def __init__(self, res, *args, **kwargs):
+    def __init__(self, res=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if res:
+            self.populate(res)
+
+    def populate(self, res):
         flds = res.fields
-        self._name = flds['COLUMN_NAME'].value
-        self._ordinal = flds['ORDINAL_POSITION'].value
-        self._type = flds['DATA_TYPE'].value
-        self._max = flds['CHARACTER_MAXIMUM_LENGTH'].value
-        if self._type == 'datatime':
-            self._precision = flds['DATETIME_PRECISION'].value
+        self.name = flds['COLUMN_NAME'].value
+        self.ordinal = flds['ORDINAL_POSITION'].value
+        self.type = flds['DATA_TYPE'].value
+        self.max = flds['CHARACTER_MAXIMUM_LENGTH'].value
+        if self.type == 'datatime':
+            self.precision = flds['DATETIME_PRECISION'].value
         else:
-            self._precision = flds['NUMERIC_PRECISION'].value
-        self._scale = flds['NUMERIC_SCALE'].value
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def ordinal(self):
-        return self._ordinal
-
-    @property
-    def type(self):
-        return self._type
-
-    @property
-    def max(self):
-        return self._max
-
-    @property
-    def precision(self):
-        return self._precision
-
-    @property
-    def scale(self):
-        return self._scale
+            self.precision = flds['NUMERIC_PRECISION'].value
+        self.scale = flds['NUMERIC_SCALE'].value
 
     def __repr__(self):
        return '%s %s' % (self.name, self.type)
