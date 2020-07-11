@@ -108,6 +108,14 @@ import textwrap
 #     for ts in party(id).timesheets:
 #         ...
 
+# TODO:abf324b4 Do we really need pseudocollections? In the ~200 classes
+# so far in the GEM, none have really needed or would seem to benefit
+# from pseudocollections. Let's reflect on how valuable they are going
+# forward. If after the code has been in production serving web pages
+# for some while, and pseudocollections have not proven themselves to be
+# worthy, I think we should rip out the pseudocollection logic. This
+# logic is tedious to maintain and may be slowing down execution time.
+
 @unique
 class types(Enum):
     """
@@ -6183,6 +6191,29 @@ class associations(entities):
                 # association.
                 if not comp:
                     continue
+
+                # When a reflexive association has an entitymap other
+                # than `object` (this could be `subject` or some
+                # arbitrary entity map such as `myassociationstype`, an
+                # attempt to get the pseudocollection will result in an
+                # AttributeError below. We want to skip this map
+                # entirely. TODO Note that this raise the
+                # issue of what happens when a non-reflexive association
+                # has an entity map that isn't a part of the
+                # association:
+                #
+                #    class person_movie(association):
+                #        person = person
+                #        movie  = movie
+                #        genre  = genre 
+                # 
+                # At the moment, it's not clear how `genre` would not
+                # get included in this loop. We would expect an
+                # AttributeError if we did this:
+                #
+                #     pms += person_movie(
+                #         person=per, movie=mov, genre=gen
+                #     )
 
                 if self.orm.isreflexive and not map.isobjective:
                     continue
