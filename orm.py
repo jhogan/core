@@ -4994,15 +4994,16 @@ class orm:
     def altertable(self):
         from itertools import zip_longest
         maps = self.mappings
-        tbl = self.dbtable
-        for map, col in zip_longest(maps, tbl.columns):
-            if col.name == map.name:
-                B()
-                if col.type == map.dbtype:
-                    ...
-                
-            print('map %s; col: %s' % (map, col))
-        B()
+        cols = self.dbtable.columns
+        adds = db.columns()
+        for i, map in maps.enumerate():
+            for j, col in cols.enumerate():
+                if col.name == map.name:
+                    continue
+                adds += map.column
+
+        r = 'ALTER TABLE `%s`(\n' % self.table 
+        return r
         
 
     @property

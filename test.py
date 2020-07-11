@@ -3772,6 +3772,20 @@ class test_orm(tester):
             
         self.eq(t.count, cnt, msg)
 
+    def it_migrates_a_new_field(self):
+        class cats(orm.entities): pass
+        class cat(orm.entity):
+            name = str
+
+        cat.orm.recreate()
+
+        class cat(orm.entity):
+            name = str
+            wiskers = int
+
+        alter = cat.orm.altertable()
+
+
     def it_uses_reserved_mysql_words_for_fields(self):
         """ Ensure that the CREATE TABLE statement uses backticks to
         quote column names so we can use MySQL reserved words, such as
