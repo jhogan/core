@@ -16141,10 +16141,6 @@ class gem_party_party_type(tester):
             typ1.party_types.first.type.id
         )
 
-    def it_updates(self):
-        # TODO
-        pass
-
 class party_party_role(tester):
     def __init__(self):
         super().__init__()
@@ -16235,7 +16231,6 @@ class gem_party_role_role(tester):
 
             # This is an active relationship.
             status = act,
-
         )
 
         sub.roles.last.role_roles.last.communications += \

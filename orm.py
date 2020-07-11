@@ -6173,8 +6173,8 @@ class associations(entities):
                     setattr(obj, map.name, comp)
                     break
 
-            # TODO This is the second interation of the entitymappings
-            # collection. We should consolodate these into one loop.
+            # TODO This is the second iteration of the entitymappings
+            # collection. We should consolidate these into one loop.
             for map in obj.orm.mappings.entitymappings:
                 if not map.isloaded:
                     continue
@@ -6197,6 +6197,7 @@ class associations(entities):
                             self, 
                             map.value.orm.entities.__name__
                         )
+
                     except AttributeError:
                         # If the object stored in map.value is the wrong
                         # type, use the map.entity reference. This is
@@ -6205,8 +6206,8 @@ class associations(entities):
                         # error, instead prefering that the error is
                         # discovered in the broken rules collection. See
                         # it_doesnt_raise_exception_on_invalid_attr_values
-                        # where a location object is being appended to
-                        # an artifact's pseudocollection.
+                        # where a `location` object is being appended to
+                        # an `artifact`'s pseudocollection.
                         es = getattr(
                             self, 
                             map.entity.orm.entities.__name__
@@ -6452,11 +6453,12 @@ class associations(entities):
             comp = comp.orm.super
 
         try:
-            # Returned a memoized constituent. These are created in the
+            # Return a memoized constituent. These are created in the
             # `except KeyError` block.
             return self.orm.constituents[attr]
         except KeyError:
             for map in self.orm.mappings.entitymappings:
+                # TODO Remove paranthesis
                 if (self.orm.isreflexive and not map.isobjective):
                     continue
 
@@ -6479,8 +6481,8 @@ class associations(entities):
                 for es in ess:
                     if es.__name__ == attr:
                         # Create a pseudocollection for the associations
-                        # collection object (self). Append it to the self's
-                        # _constituents collection.
+                        # collection object (self). Append it to the self.orm's
+                        # `constituents` collection.
                         es = es()
                         es.onadd    += self.entities_onadd
                         es.onremove += self.entities_onremove
@@ -6520,6 +6522,7 @@ class associations(entities):
                         x.orm.entities.__name__ 
                         for x in e.orm.subentities
                     ]
+
                     if attr in subs:
                         try:
                             e = es.orm.entity(e.id)
