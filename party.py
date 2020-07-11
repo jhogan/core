@@ -38,7 +38,7 @@ class role_role_types(orm.entities):                         pass
 class statuses(orm.entities):                                pass
 class role_role_statuses(statuses):                          pass
 class priorities(orm.entities):                              pass
-class role_roles(orm.entities):                              pass
+class role_roles(orm.associations):                          pass
 class personals(roles):                                      pass
 class organizationals(roles):                                pass
 class suppliers(organizationals):                            pass

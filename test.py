@@ -16186,6 +16186,7 @@ class gem_party_role_role(tester):
             party.communications,
             party.priority,
             party.role_role_status,
+            party.role_roles,
         )
 
     def it_creates(self):
@@ -16220,9 +16221,6 @@ class gem_party_role_role(tester):
                               'unit may be within one or more '
                               'organization units, over time.',
             ),
-
-            # FIXME `subject` need not be set here
-            subject = sub.roles.last, 
 
             object = rent.roles.last,
 

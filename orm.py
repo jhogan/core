@@ -6184,6 +6184,9 @@ class associations(entities):
                 if not comp:
                     continue
 
+                if self.orm.isreflexive and not map.isobjective:
+                    continue
+
                 compsups = [comp.orm.entity] \
                            + comp.orm.entity.orm.superentities
 
