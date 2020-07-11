@@ -1957,6 +1957,13 @@ class skilltype(orm.entity):
     skills = skills
 
 class rate(orm.entity):
+    """ The ``rate`` entity may store a rate, overtime rate, cost, or
+    other type of rate depending on the needs of the organization. The
+    ``party.ratetype`` would indicate which rate is being specified. 
+
+    Note that this is modeled after the WORK EFFORT ASSIGNMENT RATE
+    entity in "The Data Model Resource Book".
+    """
     span = datespan
     rate = dec
 

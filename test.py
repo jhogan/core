@@ -21077,6 +21077,8 @@ class gem_effort(tester):
     def __init__(self):
         super().__init__()
         orm.orm.recreate(
+            party.ratetypes,
+            party.rate,
             effort.status,
             effort.statustype,
             effort.roles,

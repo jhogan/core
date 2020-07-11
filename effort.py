@@ -65,7 +65,6 @@ class times(orm.entities):                                     pass
 class timesheets(orm.entities):                                pass
 class timesheetroles(orm.entities):                            pass
 class timesheetroletypes(orm.entities):                        pass
-class rates(orm.entities):                                     pass
 
 class requirement(apriori.requirement):
     """ Represents the *need* to perform some type of work. This could
@@ -487,7 +486,7 @@ class effort_party(orm.association):
     facility = party.facility
 
     # The collection of work effort assignment ``rates``
-    rates = rates
+    rates = party.rates
     
 class effort_partytype(party.roletype):
     """ Describes the role that the party is playing with the effort.
@@ -605,15 +604,3 @@ class timesheetroletype(orm.entity):
     # A collection of timesheetroles that match this type.
     timesheetroles = timesheetroles
 
-class rate(orm.entity):
-    """ The ``rate`` entity may store a rate, overtime rate, cost, or
-    other type of rate depending on the needs of the organization. The
-    ``party.ratetype`` would indicate which rate is being specified. 
-
-    Note that this is modeled after the WORK EFFORT ASSIGNMENT RATE
-    entity in "The Data Model Resource Book".
-    """
-
-    span = datespan
-
-    rate = dec
