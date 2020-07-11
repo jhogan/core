@@ -21105,6 +21105,9 @@ class gem_effort(tester):
             party.worker,
             party.employee,
             party.contractor,
+            effort.productionrun,
+            effort.items,
+            effort.activities,
         )
 
     def it_creates_requirements(self):

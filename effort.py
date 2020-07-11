@@ -65,6 +65,7 @@ class times(orm.entities):                                     pass
 class timesheets(orm.entities):                                pass
 class timesheetroles(orm.entities):                            pass
 class timesheetroletypes(orm.entities):                        pass
+class rates(orm.entities):                                     pass
 
 class requirement(apriori.requirement):
     """ Represents the *need* to perform some type of work. This could

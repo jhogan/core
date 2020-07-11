@@ -110,6 +110,10 @@ class casestatuses(statuses):                                pass
 class communication_efforts(orm.associations):               pass
 class skills(orm.entities):                                  pass
 class skilltypes(orm.entities):                              pass
+class rates(orm.entities):                                   pass
+class ratetypes(orm.entities):                               pass
+class positionrates(orm.entities):                           pass
+class positiontypes(orm.entities):                           pass
 
 ''' Parties '''
 class party(orm.entity):
@@ -1991,7 +1995,7 @@ class positionrate(orm.entity):
     span = datespan
     rate = dec
 
-class positiontype(orm.entity
+class positiontype(orm.entity):
     """
 
     Note that this is modeled after the POSITION TYPE entity in "The
@@ -2002,6 +2006,5 @@ class positiontype(orm.entity
         self.orm.ensure(expects=('name',), **kwargs)
 
     name = str
-
 
     positionrates = positionrates
