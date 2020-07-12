@@ -723,6 +723,19 @@ class column(entity):
             self.precision = flds['NUMERIC_PRECISION'].value
         self.scale = flds['NUMERIC_SCALE'].value
 
+    def definition(self):
+        """ The portion of a CREATE TABLE or ALTER TABLE statement that
+        would define a column::
+
+        ALTER TABLE mytable
+            ADD mybit BIT   -- "mybit BIT' is the definition
+                ---------
+        """
+
+        # NOTE I believe map.dbtype shold be renamed to "definition".
+        # ``type`` should be 'BIT' (or 'INT', 'VARCHAR', etc.)
+        raise NotImplementedError()
+
     def __repr__(self):
        return '%s %s' % (self.name, self.type)
 
