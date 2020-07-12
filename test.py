@@ -3772,7 +3772,7 @@ class test_orm(tester):
             
         self.eq(t.count, cnt, msg)
 
-    def it_migrates_a_new_field(self):
+    def it_migrates_new_field(self):
         class cats(orm.entities): pass
         class cat(orm.entity):
             name = str
@@ -3783,7 +3783,19 @@ class test_orm(tester):
             name = str
             wiskers = int
 
-        alter = cat.orm.altertable()
+
+        expect = self.dedent('''
+        ALTER TABLE test_cats(
+            ADD wiskers int
+        );
+        ''')
+
+        actual = cat.orm.altertable
+        self.eq(expect, actual)
+
+        B()
+        cat.orm.migrate()
+        self.none(cat.orm.altertable)
 
 
     def it_uses_reserved_mysql_words_for_fields(self):

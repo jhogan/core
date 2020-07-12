@@ -4049,6 +4049,7 @@ class fieldmapping(mapping):
     def column(self):
         col = db.column()
         col.name = self.name
+        col.type = self.dbtype
         return col
 
     def clone(self):
@@ -4974,6 +4975,21 @@ class orm:
             with pool.take() as conn:
                 conn.query(sql)
     
+    def migrate(self, cur=None):
+        # TODO Use executioner
+        sql = self.altertable
+
+        if not sql:
+            return
+
+        if cur:
+            cur.execute(sql)
+        else:
+            pool = db.pool.getdefault()
+            with pool.take() as conn:
+                B()
+                conn.query(sql)
+
     def create(self, cur=None, ignore=False):
         # TODO Use executioner
         sql = self.createtable
@@ -4992,19 +5008,29 @@ class orm:
 
     @property
     def altertable(self):
-        from itertools import zip_longest
         maps = self.mappings
         cols = self.dbtable.columns
         adds = db.columns()
         for i, map in maps.enumerate():
-            for j, col in cols.enumerate():
-                if col.name == map.name:
-                    continue
+            try:
+                col = cols[i]
+            except IndexError:
                 adds += map.column
 
-        r = 'ALTER TABLE `%s`(\n' % self.table 
+
+        r = f'ALTER TABLE {self.table}(\n'
+        for i, add in adds.enumerate():
+            if i.first:
+                r += '    ADD '
+            else:
+                r += ',\n        '
+
+            r += f'{add.name} {add.type}\n'
+
+            if i.last:
+                r += ');'
+                
         return r
-        
 
     @property
     def createtable(self):
