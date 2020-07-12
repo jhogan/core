@@ -3708,6 +3708,11 @@ class programmer(orm.entity):
 
         return brs
 
+class programmer_issueroles(orm.entities):
+    pass
+class programmer_issuerole(orm.entity):
+    name = str
+
 class programmer_issues(orm.associations):
     def getbrokenrules(self, *args, **kwargs):
         brs = super().getbrokenrules(*args, **kwargs)
@@ -3735,6 +3740,7 @@ class programmer_issues(orm.associations):
 class programmer_issue(orm.association):
     programmer = programmer
     issue = issue
+    programmer_issuerole = programmer_issuerole
 
     def getbrokenrules(self, *args, **kwargs):
         brs = super().getbrokenrules(*args, **kwargs)
@@ -3806,6 +3812,10 @@ class test_orm(tester):
         orm.orm.recreate(
             artists,
             presentations,
+            issues,
+            programmer_issues,
+            programmers,
+            programmer_issuerole,
         )
         artist.orm.recreate(recursive=True)
         comment.orm.recreate()
@@ -6941,6 +6951,45 @@ class test_orm(tester):
         uuid = uuid4().hex
         sng.test = uuid
         self.eq(uuid, sng.test)
+
+    def it_allows_for_associations_with_entity_references(self):
+        # It was noticed that reflexive associations have an issue when
+        # an additional entity reference is added. The party.role_role's
+        # ``priority`` entity reference cause an issues since the orm
+        # logic assumed it was part of the reflexive association. THis
+        # was fixed in 40a1451b3c5b265b743424cfc23e6f2485c4bddb. The
+        # following test ensures that there is no problem with having an
+        # entity reference (programmer_issuerole.programmer_issuerole)
+        # alongside the associated reference in programmer_issue
+        # (programmer and issue). No issues had to be fixed after the test
+        # was written. This seems to mean that an association can
+        # associated two or more entities.
+            
+        iss = issue.getvalid()
+        iss.name = 'Fix asset'
+        prog = programmer(name='Cody', ismaintenance=True)
+        rl = programmer_issuerole(name='QA')
+
+        iss.programmer_issues += programmer_issue(
+            programmer = prog,
+            programmer_issuerole = rl
+        )
+        iss.save()
+        iss1 = iss.orm.reloaded()
+
+        pis = iss.programmer_issues.sorted()
+        pis1 = iss1.programmer_issues.sorted()
+
+        self.one(pis)
+        self.one(pis1)
+
+        pi = pis.first
+        pi1 = pis1.first
+
+        self.eq(pi.id, pi1.id)
+        self.eq(pi.programmer.id, pi1.programmer.id)
+        self.eq(pi.issue.id, pi1.issue.id)
+        self.eq(pi.programmer_issuerole.id, pi1.programmer_issuerole.id)
 
     def it_calls_custom_methods_on_subsubentity(self):
         # TODO Currently, concerts and locations entities collections
