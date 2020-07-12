@@ -116,6 +116,9 @@ import textwrap
 # worthy, I think we should rip out the pseudocollection logic. This
 # logic is tedious to maintain and may be slowing down execution time.
 
+# TODO:In the GEM, change all date and datetime attributes to past
+# tense, e.g., s/acquiredat/acquired/
+
 @unique
 class types(Enum):
     """

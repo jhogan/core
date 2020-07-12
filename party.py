@@ -1823,7 +1823,7 @@ class case(orm.entity):
     """
 
     # NOTE ``case`` and its subsideries may need to be moved into
-    # the work effor module. Although, maybe not if it is mearly a
+    # the work effort module. Although, maybe not if it is mearly a
     # collection of ``communication`` events -- ``communication`` events
     # happy to be in the party module.
     
@@ -1874,7 +1874,6 @@ class case_party(orm.association):
     Note that this is modeled after the CASE ROLE entity in "The Data
     ModeModel Resource Book".
     """
-
     entities = case_parties
 
     # The case being associated to the party

@@ -17519,7 +17519,6 @@ class gem_party_communication(tester):
         abc   =  party.company(name='ABC Corporation')
         acme  =  party.company(name='ACME Corporation')
 
-
         # Will Jones has an Account Management role
         will.roles += party.role(
             begin          =  primative.datetime('2016-02-12'),
@@ -17694,7 +17693,7 @@ class gem_party_communication(tester):
             #     assert type(comm1) is party.communication
             #
             # However, it has no `objectives` attributes. If I downcast
-            # it, (see the lines immediaetly below) I am able to see the
+            # it, (see the lines immediately below) I am able to see the
             # ``objectives`` attribute. This is very strange because the
             # ``objectives`` attribute is defined in the
             # ``communication`` class. We shouldn't be able to remove
