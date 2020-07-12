@@ -17586,7 +17586,6 @@ class gem_party_communication(tester):
         # Martinez's role as Customer Contact.
         will.roles.first.role_roles += party.role_role(
             begin   =  primative.datetime('2017-11-12'),
-            subject =  will.roles.last, # FIXME We shouldn't have to do this
             object  =  marc.roles.last,
         )
 
@@ -17606,16 +17605,6 @@ class gem_party_communication(tester):
 
         comms += party.inperson(
             begin = primative.datetime('Jan 12, 2001, 3PM'),
-
-            # FIXME This assignment fails. The ``objective`` object
-            # retain an fk of <undef>. It should point to the
-            # `communication`'s ID
-            # objectives += \
-            #             party.objective(name='Initial sales call') + \
-            #             party.objective(
-            #                 name='Initial product demontration'
-            #             )
-
         )
 
         # FIXME I noticed that before the below line is executed,
@@ -17700,16 +17689,7 @@ class gem_party_communication(tester):
             objectivetype = css
         )
 
-        # FIXME We shouldn't have to save
-        # `will.roles.first.role_roles.last.communications`. Note that
-        # adding this only became necessary when we appended suptypes of
-        # ``communication`` above. If we append instance of
-        # ``communication`` itself, it worked correctly.
-        will.save(
-            marc, 
-            john,
-            will.roles.first.role_roles.last.communications,
-        )
+        will.save(marc, john)
 
         will1 = will.orm.reloaded()
         marc1 = marc.orm.reloaded()
@@ -18057,11 +18037,8 @@ class gem_product_product(tester):
 
         paper1 = product.good(paper)
 
-        # TODO:018aca88 The composite `measure` for `paper` nor `paper1`
-        # gets set. However, when loading paper as a product (see
-        # below), we are able to verify the `measure` got saved.
-        # self.eq('ream', paper1.measure.name)
-        # self.eq('ream', product.good(paper).measure.name)
+        self.eq('ream', paper1.measure.name)
+        self.eq('ream', product.good(paper).measure.name)
         self.eq('ream', product.product(paper).measure.name)
 
         pfs = paper.product_features.sorted()
@@ -18364,22 +18341,17 @@ class gem_product_product(tester):
         self.eq('Pallets Incorporated',     sps.second.supplier.name)
         self.eq('The Warehouse Company',    sps.third.supplier.name)
 
-        # TODO:167d775b We get an issue with calling the supplier_products
-        # constituent of priority. This is likely due to the fact that
-        # a one-to-many relationship between an entity and an
-        # association has not been implement. 
-        #
-        # sps = first.supplier_products.sorted()
-        # self.eq('ABC Corporation',      sps.first.supplier.name)
-        # self.eq("Gregg's Pallet Shop",  sps.first.supplier.name)
-        #
-        # sps = second.supplier_products.sorted()
-        # self.eq("Joe's Stationery",     sps.second.supplier.name)
-        # self.eq('Pallets Incorporated', sps.second.supplier.name)
-        #
-        # sps = second.supplier_products.sorted()
-        # self.eq("Mike's Office Supply", sps.third.supplier.name)
-        # self.eq('The Warehouse Company', sps.third.supplier.name)
+        sps = first.supplier_products.sorted('supplier.name')
+        self.eq('ABC Corporation',      sps.first.supplier.name)
+        self.eq("Gregg's Pallet Shop",  sps.second.supplier.name)
+        
+        sps = second.supplier_products.sorted('supplier.name')
+        self.eq("Joe's Stationery",     sps.first.supplier.name)
+        self.eq('Pallets Incorporated', sps.second.supplier.name)
+        
+        sps = third.supplier_products.sorted('supplier.name')
+        self.eq("Mike's Office Supply", sps.first.supplier.name)
+        self.eq('The Warehouse Company', sps.second.supplier.name)
     
     def it_creates_guildlines(self):
         # Service products will not have guidelines
@@ -19697,6 +19669,7 @@ class gem_case(tester):
             party.communications,
             party.parties,
             party.case_party,
+            party.caseroletype,
             party.casestatuses,
             party.statuses,
         )
@@ -19720,13 +19693,9 @@ class gem_case(tester):
             case = cs,
         )
 
-        # FIXME:566e96a9 The caseroletype is not a real attribute
-        # because there is no caseroletype composite map in case_party.
-        # We can save or test caseroletype at the moment.
-        #
-        # jerry.case_parties.last.caseroletype = party.caseroletype(
-        #    name = 'Resolution lead'
-        #)
+        jerry.case_parties.last.caseroletype = party.caseroletype(
+           name = 'Resolution lead'
+        )
 
         jerry.save()
 
@@ -19741,18 +19710,18 @@ class gem_case(tester):
         self.eq(cps.first.id,       cps1.first.id)
         self.eq(jerry.id,           cps1.first.party.id)
         self.eq(cps.first.case.id,  cps1.first.case.id)
+        self.eq(cps.first.caseroletype.id,  cps1.first.caseroletype.id)
 
         self.eq(
             cps.first.case.casestatus.id,
             cps1.first.case.casestatus.id
         )
 
-        # FIXME:566e96a9
-        # self.eq(cps.first.caseroletype.id,  cps1.first.caseroletype.id)
-        # self.eq(
-        #     cps.first.caseroletype.name,
-        #     cps1.first.caseroletype.name
-        # )
+        self.eq(cps.first.caseroletype.id,  cps1.first.caseroletype.id)
+        self.eq(
+            cps.first.caseroletype.name,
+            cps1.first.caseroletype.name
+        )
 
     def it_appends_communications(self):
         # Create work effort
@@ -19844,10 +19813,6 @@ class gem_case(tester):
             self.eq(comm.id, comm1.id)
             self.eq(comm.begin, comm1.begin)
 
-            # FIXME When associations can be constituents,
-            # `comm1.communication_efforts` should be available and we
-            # can remove the ``continue`` below.
-            continue
             ces = comm.communication_efforts
             ces1 = comm1.communication_efforts
 
