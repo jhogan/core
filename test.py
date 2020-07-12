@@ -21070,6 +21070,7 @@ class gem_effort(tester):
     def __init__(self):
         super().__init__()
         orm.orm.recreate(
+            effort.effort_inventoryitems,
             party.ratetypes,
             party.rate,
             effort.status,
@@ -21685,5 +21686,51 @@ class gem_effort(tester):
             self.eq(rt.rate, rt1.rate)
             self.eq(rt.ratetype.id, rt1.ratetype.id)
             self.eq(rt.ratetype.name, rt1.ratetype.name)
+
+    def it_associates_effort_with_inventory_items(self):
+        # Create work effort
+        tsk = effort.task(name='Assemble pencil components')
+
+        # Create goods
+        cartridge = gem_product_product.getvalid(product.good, comment=1)
+        cartridge.name = 'Pencil cartridges'
+
+        eraser = gem_product_product.getvalid(product.good, comment=1)
+        eraser.name = 'Pencil eraser'
+
+        label = gem_product_product.getvalid(product.good, comment=1)
+        label.name = 'Pencil label'
+
+        # Create inventory item
+        cartridge.items += product.serial(number=100020)
+        cartridge = cartridge.items.last
+
+        eraser.items += product.serial(number=100021)
+        eraser = eraser.items.last
+
+        label.items += product.serial(number=100022)
+        label = label.items.last
+
+        # Associate work effort with inventory items
+        for itm in (cartridge, eraser, label):
+            tsk.effort_inventoryitems += effort.effort_inventoryitem(
+                quantity = 100,
+                item = itm
+            )
+
+        tsk.save()
+
+        tsk1 = tsk.orm.reloaded()
+
+        eis = tsk.effort_inventoryitems.sorted()
+        eis1 = tsk1.effort_inventoryitems.sorted()
+
+        self.three(eis)
+        self.three(eis1)
+
+        for ei, ei1 in zip(eis, eis1):
+            self.eq(ei.id, ei1.id)
+            self.eq(ei.quantity, ei1.quantity)
+            self.eq(ei.item.id, ei1.item.id)
 
 cli().run()

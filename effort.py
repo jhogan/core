@@ -65,6 +65,7 @@ class times(orm.entities):                                     pass
 class timesheets(orm.entities):                                pass
 class timesheetroles(orm.entities):                            pass
 class timesheetroletypes(orm.entities):                        pass
+class effort_inventoryitems(orm.associations):                 pass
 
 class requirement(apriori.requirement):
     """ Represents the *need* to perform some type of work. This could
@@ -604,3 +605,23 @@ class timesheetroletype(orm.entity):
     # A collection of timesheetroles that match this type.
     timesheetroles = timesheetroles
 
+class effort_inventoryitem(orm.association):
+    """ An association between effort and an inventory item
+    (``product.item``). 
+
+    In order to complete certain work efforts, raw materials or other
+    items may be required. This class tracks the actual use of inventory
+    during the execution of a work effort.
+
+    Note that this is based on the WORK EFFORT INVENTORY ASSIGNMENT
+    entity in "The Data Model Resource Book".
+    """
+    
+    # The ``effort`` side of the association
+    effort = effort
+
+    # The inventory item (``product.item``) side of the association
+    item = product.item
+
+    # The number of inventory items used for the work effort
+    quantity = dec
