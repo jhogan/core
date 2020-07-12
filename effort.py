@@ -21,6 +21,8 @@ from datetime import datetime, date
 from dbg import B
 from decimal import Decimal as dec
 from orm import text, timespan, datespan
+import apriori
+import asset
 import entities
 import order
 import orm
@@ -28,7 +30,6 @@ import party
 import primative
 import product
 import ship
-import apriori
 
 class requirements(apriori.requirements):                      pass
 class requirementtypes(order.requirementtypes):                pass
@@ -66,6 +67,8 @@ class timesheets(orm.entities):                                pass
 class timesheetroles(orm.entities):                            pass
 class timesheetroletypes(orm.entities):                        pass
 class effort_inventoryitems(orm.associations):                 pass
+class asset_efforttypes(orm.entities):                         pass
+class asset_efforts(orm.associations):                         pass
 
 class requirement(apriori.requirement):
     """ Represents the *need* to perform some type of work. This could
@@ -625,3 +628,21 @@ class effort_inventoryitem(orm.association):
 
     # The number of inventory items used for the work effort
     quantity = dec
+
+class asset_effort(orm.association):
+    span = datespan
+    cost = dec
+    comment = text
+
+    asset = asset.asset
+    effort = effort
+
+class asset_efforttype(orm.entity):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    name = str
+
+    asset_efforts = asset_efforts
+    

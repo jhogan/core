@@ -15,6 +15,7 @@ import orm
 import party
 import primative
 import apriori
+import asset
 
 class products(orm.entities): pass
 
@@ -612,6 +613,8 @@ class measure(orm.entity):
     # objects as constituents
     dimensions  =  dimensions
     products    =  products
+
+    assets = asset.assets
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
