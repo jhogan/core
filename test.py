@@ -8,27 +8,30 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019                 #
 ########################################################################
 
+from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
 from auth import jwt
 from configfile import configfile
 from contextlib import contextmanager
 from datetime import timezone, datetime, date
 from entities import BrokenRulesError
 from func import enumerate, getattr, B
-from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
 from pprint import pprint
 from random import randint, uniform, random
 from table import *
 from tester import *
 from uuid import uuid4
+import MySQLdb
+import _mysql_exceptions
+import apriori
+import asset
 import dateutil
 import db
 import decimal; dec=decimal.Decimal
+import effort
 import functools
 import io
 import jwt as pyjwt
 import math
-import MySQLdb
-import _mysql_exceptions
 import order
 import orm
 import party
@@ -38,8 +41,6 @@ import product
 import re
 import ship
 import textwrap
-import effort
-import apriori
 
 # We will use basic and supplementary multilingual plane UTF-8
 # characters when testing str attributes to ensure unicode is being
@@ -21083,40 +21084,42 @@ class gem_effort(tester):
     def __init__(self):
         super().__init__()
         orm.orm.recreate(
-            effort.effort_inventoryitems,
-            party.ratetypes,
-            party.rate,
-            effort.status,
-            effort.statustype,
-            effort.roles,
-            effort.roletypes,
-            effort.jobs,
+            apriori.requirement,
+            asset.types,
+            asset.asset,
+            effort.activities,
+            effort.deliverables,
+            effort.effort,
+            effort.effort_effort_dependencies,
+            effort.effort_effort_precedency,
             effort.effort_efforts,
+            effort.effort_inventoryitems,
             effort.effort_parties,
             effort.effort_partytype,
-            apriori.requirement,
-            order.requirementtype,
-            effort.requirement,
-            effort.effort_effort_precedency,
-            effort.effort_effort_dependencies,
             effort.effort_requirements,
-            effort.requirementtype,
-            effort.effort,
             effort.item_requirements,
-            product.product,
-            product.good,
-            effort.deliverables,
-            ship.asset,
+            effort.items,
+            effort.jobs,
+            effort.productionrun,
+            effort.requirement,
+            effort.requirementtype,
+            effort.roles,
+            effort.roletypes,
+            effort.status,
+            effort.statustype,
             effort.times,
             effort.timesheet,
             effort.timesheetroles,
             effort.timesheetroletypes,
-            party.worker,
-            party.employee,
+            order.requirementtype,
             party.contractor,
-            effort.productionrun,
-            effort.items,
-            effort.activities,
+            party.employee,
+            party.rate,
+            party.ratetypes,
+            party.worker,
+            product.good,
+            product.product,
+            ship.asset,
         )
 
     def it_creates_requirements(self):
@@ -21745,5 +21748,43 @@ class gem_effort(tester):
             self.eq(ei.id, ei1.id)
             self.eq(ei.quantity, ei1.quantity)
             self.eq(ei.item.id, ei1.item.id)
+
+    def it_creates_fixed_assets(self):
+        ass = asset.asset(
+            name='Pencil labeler #1',
+            type = asset.type(name='Pencil-making machine'),
+            acquired = 'Jun 12, 2000',
+            serviced = 'Jun 12, 2000',
+            nextserviced = 'Jun 12, 2001',
+            capacity = 1_000_000,
+            measure = product.measure(name='Pens/day')
+        )
+
+        ass.save()
+        ass1 = ass.orm.reloaded()
+        attrs = (
+            'name', 'acquired', 'serviced', 'nextserviced',
+            'capacity', 'measure.id', 'measure.name', 'type.id',
+            'type.name'
+        )
+
+        for attr in attrs:
+            self.eq(getattr(ass, attr), getattr(ass1, attr))
+    
+    def it_creates_assettypes_recursively(self):
+        eq = asset.type(name='Equipment')
+        eq.types += asset.type(name='Pencil-making machine')
+        eq.types += asset.type(name='Pen-making machine')
+        eq.types += asset.type(name='Paper-making machine')
+
+        eq.save()
+        eq1 = eq.orm.reloaded()
+
+        self.three(eq.types)
+        self.three(eq1.types)
+
+        for typ, typ1 in zip(eq.types.sorted(), eq1.types.sorted()):
+            self.eq(typ.id, typ1.id)
+            self.eq(typ.name, typ1.name)
 
 cli().run()
