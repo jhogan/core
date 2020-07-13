@@ -5119,7 +5119,12 @@ class orm:
     # TODO:1d1e17dc s/dbtable/table
     @property
     def dbtable(self):
-        return db.table(self.table)
+        try:
+            return db.table(self.table)
+        except _mysql_exceptions.OperationalError as ex:
+            if ex.args[0] == BAD_TABLE_ERROR:
+                return None
+            raise
 
     def load(self, id):
         sql = 'SELECT * FROM {} WHERE id = _binary %s'
