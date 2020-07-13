@@ -555,6 +555,7 @@ class joins(entitiesmod.entities):
         self.entities = es
         super().__init__(initial=initial)
 
+    # TODO:1d1e17dc s/table/tablename
     @property
     def table(self):
         """
@@ -4987,7 +4988,6 @@ class orm:
         else:
             pool = db.pool.getdefault()
             with pool.take() as conn:
-                B()
                 conn.query(sql)
 
     def create(self, cur=None, ignore=False):
@@ -5099,6 +5099,7 @@ class orm:
 
         return res
 
+    # TODO:1d1e17dc s/dbtable/table
     @property
     def dbtable(self):
         return db.table(self.table)
