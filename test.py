@@ -3773,29 +3773,49 @@ class test_orm(tester):
         self.eq(t.count, cnt, msg)
 
     def it_migrates_new_field(self):
+        # Create entity (cat)
         class cats(orm.entities): pass
         class cat(orm.entity):
             name = str
 
+        # DROP the table
+        cat.orm.drop(ignore=True)
+
+        # Since there is no table, altertable should be None
+        self.none(cat.orm.altertable)
+
+        # CREATE TABLE
         cat.orm.recreate()
 
+        # Add new field at the end of the entity
         class cat(orm.entity):
             name = str
-            wiskers = int
+            whiskers = int
 
-
+        # altertable should now be an ALTER TABLE statement to add the
+        # new column.
         expect = self.dedent('''
-        ALTER TABLE test_cats(
-            ADD wiskers int
-        );
+        ALTER TABLE test_cats
+            ADD whiskers int;
         ''')
 
         actual = cat.orm.altertable
         self.eq(expect, actual)
 
-        B()
+        # Execute the ALTER TABLE
         cat.orm.migrate()
+
+        # Now that the table and model match, there should be no
+        # altertable.
         self.none(cat.orm.altertable)
+
+        # Test the new column
+        ct = cat(name='Felix', whiskers=100)
+        ct.save()
+        ct = ct.orm.reloaded()
+
+        self.eq('Felix', ct.name)
+        self.eq(100, ct.whiskers)
 
 
     def it_uses_reserved_mysql_words_for_fields(self):

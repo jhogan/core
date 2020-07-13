@@ -4965,16 +4965,21 @@ class orm:
                 if cur:
                     cur.close()
 
-    def drop(self, cur=None):
+    def drop(self, cur=None, ignore=False):
         # TODO Use executioner
         sql = 'drop table `%s`;' % self.table
 
-        if cur:
-            cur.execute(sql)
-        else:
-            pool = db.pool.getdefault()
-            with pool.take() as conn:
-                conn.query(sql)
+        try:
+            if cur:
+                cur.execute(sql)
+            else:
+                pool = db.pool.getdefault()
+                with pool.take() as conn:
+                    conn.query(sql)
+        except _mysql_exceptions.OperationalError as ex:
+            if ex.args[0] == BAD_TABLE_ERROR:
+                if not ignore:
+                    raise
     
     def migrate(self, cur=None):
         # TODO Use executioner
@@ -5009,7 +5014,15 @@ class orm:
     @property
     def altertable(self):
         maps = self.mappings
-        cols = self.dbtable.columns
+        tbl = self.dbtable
+
+        # If there is no table in the database, there can be no ALTER
+        # TABLE. We would need a CREATE TABLE, obviously, so return
+        # None.
+        if not tbl:
+            return None
+
+        cols = tbl.columns
         adds = db.columns()
         for i, map in maps.enumerate():
             try:
@@ -5017,18 +5030,22 @@ class orm:
             except IndexError:
                 adds += map.column
 
+        if not adds.count:
+            return None
 
-        r = f'ALTER TABLE {self.table}(\n'
+        r = f'ALTER TABLE {self.table}\n'
         for i, add in adds.enumerate():
             if i.first:
                 r += '    ADD '
             else:
                 r += ',\n        '
 
-            r += f'{add.name} {add.type}\n'
+            r += f'{add.name} {add.type}'
 
             if i.last:
-                r += ');'
+                r += ';'
+            else:
+                r += '\n'
                 
         return r
 
