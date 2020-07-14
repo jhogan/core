@@ -658,6 +658,10 @@ class entities(object):
 
         return self[ix]
 
+    def getprevious(self, e):
+        ix = self.getindex(e)
+        return self(ix - 1)
+
     def getindex(self, e):
         """ Return the first index of e in the collection.
 
