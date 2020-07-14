@@ -3796,7 +3796,8 @@ class test_orm(tester):
         # new column.
         expect = self.dedent('''
         ALTER TABLE test_cats
-            ADD whiskers int;
+            ADD whiskers int
+                AFTER name;
         ''')
 
         actual = cat.orm.altertable
@@ -3816,6 +3817,25 @@ class test_orm(tester):
 
         self.eq('Felix', ct.name)
         self.eq(100, ct.whiskers)
+
+        # Add new field to the middle. We want the new field to be
+        # positioned in the database as it is in the entity.
+        class cat(orm.entity):
+            name = str
+            lives = int
+            whiskers = int
+
+        # altertable should now be an ALTER TABLE statement to add the
+        # new column AFTER name.
+        expect = self.dedent('''
+        ALTER TABLE test_cats
+            ADD lives int
+                AFTER name;
+        ''')
+
+        actual = cat.orm.altertable
+        self.eq(expect, actual)
+
 
 
     def it_uses_reserved_mysql_words_for_fields(self):

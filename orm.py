@@ -5024,15 +5024,22 @@ class orm:
 
         cols = tbl.columns
         adds = db.columns()
+        offset = 0
         for i, map in maps.enumerate():
             try:
                 col = cols[i]
             except IndexError:
-                adds += map.column
+                if map.name != col.name:
+                    adds += map
+            else:
+                if map.name != col.name:
+                    offset -= 1
+                    adds += map
 
         if not adds.count:
             return None
 
+        I = ' ' * 4
         r = f'ALTER TABLE {self.table}\n'
         for i, add in adds.enumerate():
             if i.first:
@@ -5040,7 +5047,9 @@ class orm:
             else:
                 r += ',\n        '
 
-            r += f'{add.name} {add.type}'
+            r += f'{add.name} {map.dbtype}'
+
+            r += f'\n{I * 2}AFTER {maps.getprevious(add).name}'
 
             if i.last:
                 r += ';'
