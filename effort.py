@@ -67,8 +67,8 @@ class timesheets(orm.entities):                                pass
 class timesheetroles(orm.entities):                            pass
 class timesheetroletypes(orm.entities):                        pass
 class effort_inventoryitems(orm.associations):                 pass
-class asset_efforttypes(orm.entities):                         pass
 class asset_efforts(orm.associations):                         pass
+class asset_effortstatuses(orm.entities):                      pass
 
 class requirement(apriori.requirement):
     """ Represents the *need* to perform some type of work. This could
@@ -630,14 +630,42 @@ class effort_inventoryitem(orm.association):
     quantity = dec
 
 class asset_effort(orm.association):
+    """ Indicates which fixed ``asset`` (asset.asset) is being used for
+    a work effort.
+
+    Note that this is based on the WORK EFFORT FLXED ASSET ASSIGNMENT
+    entity in "The Data Model Resource Book".
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.orm.isnew:
+            self.comment = None
+
+
+    # The start date and end date for the assignment. These will be very
+    # important for task scheduling purposes.
     span = datespan
+
+    # The allocated ``cost`` attribute provides a record of how much
+    # cost was recorded to that work effort for the usage of that fixed
+    # ``asset``. This information would be important to capture the
+    # costs incurred during any work effort for usage of a fixed
+    # ``asset``.
     cost = dec
     comment = text
 
     asset = asset.asset
     effort = effort
 
-class asset_efforttype(orm.entity):
+class asset_effortstatus(orm.entity):
+    """ This class represents the status that an asset-to-effort
+    relationship has. This will indicate such things as whether the
+    assignment is "requested" or "assigned".
+
+    Note that this is based on the WORK EFFORT ASSET ASSIGNMENT STATUS
+    TYPE entity in "The Data Model Resource Book".
+    """
+    entities = asset_effortstatuses
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.orm.ensure(expects=('name',), **kwargs)

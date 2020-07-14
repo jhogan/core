@@ -21088,6 +21088,8 @@ class gem_effort(tester):
             asset.types,
             asset.asset,
             effort.activities,
+            effort.asset_efforts,
+            effort.asset_effortstatus,
             effort.deliverables,
             effort.effort,
             effort.effort_effort_dependencies,
@@ -21786,5 +21788,30 @@ class gem_effort(tester):
         for typ, typ1 in zip(eq.types.sorted(), eq1.types.sorted()):
             self.eq(typ.id, typ1.id)
             self.eq(typ.name, typ1.name)
+
+    def it_associates_effort_with_asset(self):
+        eff = effort.effort(name='Label pencils')
+        ass = asset.asset(name='Pencile labeler #1')
+
+        eff.asset_efforts += effort.asset_effort(
+            begin = 'Jun 12, 2000',
+            end   = 'Jun 15, 2000',
+        )
+
+        eff.save()
+        eff1 = eff.orm.reloaded()
+
+        self.eq(eff.id, eff1.id)
+
+        aes = eff.asset_efforts.sorted()
+        aes1 = eff1.asset_efforts.sorted()
+
+        self.one(aes)
+        self.one(aes1)
+
+        for ae, ae1 in zip(aes, aes1):
+            self.eq(ae.id, ae1.id)
+            self.eq(ae.begin, ae1.begin)
+            self.eq(ae.end, ae1.end)
 
 cli().run()
