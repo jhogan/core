@@ -21085,6 +21085,8 @@ class gem_effort(tester):
         super().__init__()
         orm.orm.recreate(
             apriori.requirement,
+            party.asset_parties,
+            party.asset_partystatustype,
             asset.types,
             asset.asset,
             effort.activities,
@@ -21813,5 +21815,36 @@ class gem_effort(tester):
             self.eq(ae.id, ae1.id)
             self.eq(ae.begin, ae1.begin)
             self.eq(ae.end, ae1.end)
+
+    def it_creates_asset_to_party_assignments(self):
+        john = party.person(first='John', last='Smith')
+        car = asset.asset(name='Car #25')
+
+        john.asset_parties += party.asset_party(
+            begin = 'Jan 1, 2000',
+            end   = 'Jan 1, 2001',
+            asset_partystatustype = party.asset_partystatustype(
+                name = 'Active'
+            )
+        )
+
+        john.save()
+        john1 = john.orm.reloaded()
+
+        self.eq(john.id, john1.id)
+
+        aps = john.asset_parties.sorted()
+        aps1 = john1.asset_parties.sorted()
+
+        self.one(aps)
+        self.one(aps1)
+
+        ap = aps.first
+        ap1 = aps1.first
+
+        self.eq(ap.id, ap1.id)
+        self.eq(primative.date('Jan 1, 2000'), ap1.begin)
+        self.eq(primative.date('Jan 1, 2001'), ap1.end)
+        self.eq('Active', ap1.asset_partystatustype.name)
 
 cli().run()

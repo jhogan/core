@@ -24,6 +24,7 @@ from datetime import datetime
 from dbg import B
 import builtins
 from decimal import Decimal as dec
+import asset
 
 ''' Parties '''
 
@@ -114,6 +115,8 @@ class rates(orm.entities):                                   pass
 class ratetypes(orm.entities):                               pass
 class positionrates(orm.entities):                           pass
 class positiontypes(orm.entities):                           pass
+class asset_parties(orm.associations):                       pass
+class asset_partystatustypes(orm.entities):                  pass
 
 ''' Parties '''
 class party(orm.entity):
@@ -2002,7 +2005,7 @@ class positionrate(orm.entity):
     rate = dec
 
 class positiontype(orm.entity):
-    """
+    """ Categorizes positions by type.
 
     Note that this is modeled after the POSITION TYPE entity in "The
     Data Model Resource Book".
@@ -2014,3 +2017,51 @@ class positiontype(orm.entity):
     name = str
 
     positionrates = positionrates
+
+class asset_party(orm.association):
+    """ Represents the assignment or *checking out* of a fixed asset
+    (``asset.asset``) to a ``party``.
+
+    Note that this is modeled after the PARTY ASSET ASSIGNMENT
+    TYPE entity in "The Data Model Resource Book".
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.orm.isnew:
+            self.comment = None
+
+    entities = asset_parties
+
+    # The ``party`` side of the association.
+    party = party
+
+    # The ``asset`` side of the association.
+    asset = asset.asset
+
+    # The time frame for the assignment or check out 
+    span = datespan
+
+    # The allocated cost of the assignment
+    cost = dec
+
+    # A comment
+    comment = text
+
+class asset_partystatustype(orm.entity):
+    """ Provides information about the assignment (``asset_party``) of a
+    fixed asset (``asset.asset``) to a ``party.
+
+    Note that this is modeled after the PARTY ASSET ASSIGN STATUS
+    TYPE entity in "The Data Model Resource Book".
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    name = str
+
+    # The collection of asset-to-party assignments that this status type
+    # represents.
+    asset_parties = asset_parties
+
