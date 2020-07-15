@@ -3836,6 +3836,75 @@ class test_orm(tester):
         actual = cat.orm.altertable
         self.eq(expect, actual)
 
+        cat.orm.migrate()
+        self.none(cat.orm.altertable)
+
+        # Add new field to the begining. We want the new field to be
+        # positioned in the database as it is in the entity.
+        class cat(orm.entity):
+            dob = date
+            name = str
+            lives = int
+            whiskers = int
+
+        expect = self.dedent('''
+        ALTER TABLE test_cats
+            ADD dob date
+                AFTER updatedat;
+        ''')
+
+        actual = cat.orm.altertable
+        self.eq(expect, actual)
+
+        cat.orm.migrate()
+        self.none(cat.orm.altertable)
+
+        """
+        # TODO Remove these comment tokens
+        def it_migrates_new_fields(self):
+        """
+        class cat(orm.entity):
+            pass
+
+        cat.orm.recreate()
+        self.none(cat.orm.altertable)
+
+        class cat(orm.entity):
+            dob = date
+            name = str
+
+        expect = self.dedent('''
+        ALTER TABLE test_cats
+            ADD dob date
+                AFTER updatedat,
+            ADD name varchar(255)
+                AFTER dob;
+        ''')
+
+        actual = cat.orm.altertable
+        self.eq(expect, actual)
+
+        cat.orm.migrate()
+        self.none(cat.orm.altertable)
+
+        class cat(orm.entity):
+            dob = date
+            name = str
+            lives = int
+            whiskers = int
+
+        expect = self.dedent('''
+        ALTER TABLE test_cats
+            ADD lives int
+                AFTER name,
+            ADD whiskers int
+                AFTER lives;
+        ''')
+
+        actual = cat.orm.altertable
+        self.eq(expect, actual)
+
+
 
 
     def it_uses_reserved_mysql_words_for_fields(self):

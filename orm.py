@@ -5026,6 +5026,7 @@ class orm:
         adds = db.columns()
         offset = 0
         for i, map in maps.enumerate():
+            i += offset
             try:
                 col = cols[i]
             except IndexError:
@@ -5045,16 +5046,14 @@ class orm:
             if i.first:
                 r += '    ADD '
             else:
-                r += ',\n        '
+                r += ',\n    ADD '
 
-            r += f'{add.name} {map.dbtype}'
+            r += f'{add.name} {add.dbtype}'
 
             r += f'\n{I * 2}AFTER {maps.getprevious(add).name}'
 
             if i.last:
                 r += ';'
-            else:
-                r += '\n'
                 
         return r
 
