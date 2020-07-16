@@ -363,6 +363,18 @@ class type(orm.entity):
     # A collection of work ``efforts` that match this type.
     efforts = efforts
 
+    # A collection of skill standard entities that this work effort
+    # ``type`` requires.
+    skillstandards = skillstandards
+
+    # A collection of good (as in ``product.good``) standard entities
+    # that this work effort ``type`` requires.
+    goodstandards = goodstandards
+
+    # A collection of asset (as in ``asset.asset``) standard entities
+    # that this work effort ``type`` requires.
+    assetstandards = assetstandards
+
 class effortpurposetype(orm.entity):
     """ A work ``effort`` tracks the work to fix or produce something
     for manufacturing and involves the allocation of resources: people
@@ -674,3 +686,100 @@ class asset_effortstatus(orm.entity):
 
     asset_efforts = asset_efforts
     
+""" 
+***
+Standards classes
+***
+
+The ``effort.type`` class has a one-to-many relationship with each of
+the standards classes: skillstandard, goodstandard and assetstandard.
+
+The standards classes store information that can be used for scheduling
+resources and estimating time and costs for each work effort.
+Additionally, they can be used to compare actual skills, goods and fied
+asset usage agains the standards.  Each of these standards entities has
+attributes that define expeted needs for the type of work effort. 
+"""
+class skillstandard(orm.entity):
+    # The associated ``party.skill``
+    skill = party.skill
+
+    # The **estimate number** of people. This records how many people of
+    # this skill type are typically needod for the given work effort.
+    people = dec
+
+    # The **estimated duration** records how long the skill is needed
+    # for the work ``effort.type``.
+    duration = dec
+
+    # The **estimated cost** is an estimation of how much this type of
+    # skill will cost for the associated work ``effort.type``.
+    cost = dec
+
+class goodstandard(orm.entity):
+    """ Relates a work effort '`types`` to the goods (``product.goods``)
+    that are typically needed for that work effort. 
+    
+    Attribute to record estimates for the quantity and cost of the good
+    can be used for ensuring that enough of those goods exist in
+    inventory to execute a particular work effort.
+
+    Note that the relationship is to ``good`` not inventory item
+    (``product.item``). Because this informatios is for planning, it is
+    necessary to know only the type of good needed. There is no need to
+    locate an actualy inventory item in stock. If, in examining this
+    information, it is determined that for a planned work ``effort``,
+    the work effort `type`` will require more of a ``product.good`` than
+    is currently in inventory then the enterprise will know that it
+    needs to reorder that good in order to complete the planned effort.
+
+    Another point to note is that not all work effort ``types`` will have
+    inventory requirements. For example, a work effort type of "prepare
+    project plan", which is a work effor associated with providing a
+    service as opposed to creating products, would not have any
+    inventory requirement.
+    """
+    # The associated ``product.good``
+    good = product.good
+
+    # The **estimated quantity** maintains how many of each good is
+    # typically needed.
+    quantity = dec
+
+    # The **estimated cost** attribute maintains the estimated cost that
+    # is expected for the type of work effort.
+    cost = dec
+
+class assetstandard(orm.entity):
+    # The associated fixed asset
+    asset = asset.asset
+
+    # The **estimated quantity** attribute determines how many of the
+    # fixed assets are needed for the work effort ``type``.
+    quantity = dec
+
+    # The **estimated duration** attribute maintains how long the fixed
+    # asset is typically needed for the work effort type.
+    duration = dec
+
+    # The **estimate cost** maintains the anticipated cost for the
+    # given type of work effort.
+    cost = dec
+
+class type_type(orm.association):
+    """ Associates a work effort ``type`` with another. The associated
+    ``type`` represents the standard type ``breakdown`` and ``type``
+    ``dependencies``. These represent the standard types of efforts that
+    normally make up a larger type of work effort as well as the
+    standard dependencies that occur.
+    """
+    subject = type
+    object = type
+
+class breakdown(type_type):
+    """"""
+
+class dependency(type_type):
+    """
+    """
+
