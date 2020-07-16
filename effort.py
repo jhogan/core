@@ -51,7 +51,7 @@ class roletypes(party.roletypes):                              pass
 class items(order.items):                                      pass
 class item_requirements(orm.associations):                     pass
 class effort_items(orm.associations):                          pass
-class efforttypes(orm.entities):                               pass
+class types(orm.entities):                                     pass
 class effortpurposetypes(orm.entities):                        pass
 class effort_requirements(orm.associations):                   pass
 class effort_efforts(orm.associations):                        pass
@@ -150,7 +150,7 @@ class effort(orm.entity):
 
     Work ``efforts` are subtyped according to its level of detail.
     Possible subtypes include ``program``, ``project``, ``phase``,
-    ``activity``, and ``task``.  The ``efforttype`` entity is used to
+    ``activity``, and ``task``.  The ``type`` entity is used to
     include more types if necessary. 
 
     Note that this entity was originally called WORK EFFORT in "The
@@ -342,7 +342,7 @@ class effort_item(orm.association):
     # ``effort`` is said to be the fulliment of the work ``item``
     item = item
 
-class efforttype(orm.entity):
+class type(orm.entity):
     """ Catagorizes the ``effort``.
 
     Note that this entity was originally called WORK EFFORT TYPE in "The
