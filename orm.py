@@ -5024,6 +5024,7 @@ class orm:
 
         cols = tbl.columns
         adds = db.columns()
+        drops = db.columns()
         offset = 0
         for i, map in maps.enumerate():
             i += offset
@@ -5034,14 +5035,22 @@ class orm:
                     adds += map
             else:
                 if map.name != col.name:
-                    offset -= 1
-                    adds += map
+                    if col.name in maps:
+                        offset -= 1
+                        adds += map
+                    else:
+                        offset += 1
+                        drops += col
 
-        if not adds.count:
+        drops += cols[maps.count + drops.count:]
+
+        if not adds.count + drops.count:
             return None
 
         I = ' ' * 4
         r = f'ALTER TABLE {self.table}\n'
+
+        # ADD <column-name> <definition>
         for i, add in adds.enumerate():
             if i.first:
                 r += '    ADD '
@@ -5052,8 +5061,15 @@ class orm:
 
             r += f'\n{I * 2}AFTER {maps.getprevious(add).name}'
 
-            if i.last:
-                r += ';'
+        # DROP <column-name>
+        for i, drop in drops.enumerate():
+            if not i.last:
+                r += ',\n'
+
+            r += f'{I}DROP COLUMN {drop.name}'
+
+
+        r += ';'
                 
         return r
 

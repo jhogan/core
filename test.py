@@ -3773,6 +3773,18 @@ class test_orm(tester):
         self.eq(t.count, cnt, msg)
 
     def it_migrates_new_field(self):
+        def migrate(cat, expect):
+            actual = cat.orm.altertable
+            self.eq(expect, actual)
+
+            # Execute the ALTER TABLE
+            cat.orm.migrate()
+
+            # Now that the table and model match, there should be no
+            # altertable.
+            B(cat.orm.altertable)
+            self.none(cat.orm.altertable)
+
         # Create entity (cat)
         class cats(orm.entities): pass
         class cat(orm.entity):
@@ -3800,15 +3812,7 @@ class test_orm(tester):
                 AFTER name;
         ''')
 
-        actual = cat.orm.altertable
-        self.eq(expect, actual)
-
-        # Execute the ALTER TABLE
-        cat.orm.migrate()
-
-        # Now that the table and model match, there should be no
-        # altertable.
-        self.none(cat.orm.altertable)
+        migrate(cat, expect)
 
         # Test the new column
         ct = cat(name='Felix', whiskers=100)
@@ -3833,11 +3837,7 @@ class test_orm(tester):
                 AFTER name;
         ''')
 
-        actual = cat.orm.altertable
-        self.eq(expect, actual)
-
-        cat.orm.migrate()
-        self.none(cat.orm.altertable)
+        migrate(cat, expect)
 
         # Add new field to the begining. We want the new field to be
         # positioned in the database as it is in the entity.
@@ -3853,11 +3853,7 @@ class test_orm(tester):
                 AFTER updatedat;
         ''')
 
-        actual = cat.orm.altertable
-        self.eq(expect, actual)
-
-        cat.orm.migrate()
-        self.none(cat.orm.altertable)
+        migrate(cat, expect)
 
         """
         # TODO Remove these comment tokens
@@ -3869,6 +3865,7 @@ class test_orm(tester):
         cat.orm.recreate()
         self.none(cat.orm.altertable)
 
+        # Add two new fields at begining
         class cat(orm.entity):
             dob = date
             name = str
@@ -3881,12 +3878,9 @@ class test_orm(tester):
                 AFTER dob;
         ''')
 
-        actual = cat.orm.altertable
-        self.eq(expect, actual)
+        migrate(cat, expect)
 
-        cat.orm.migrate()
-        self.none(cat.orm.altertable)
-
+        # Add two new fields at end
         class cat(orm.entity):
             dob = date
             name = str
@@ -3901,11 +3895,79 @@ class test_orm(tester):
                 AFTER lives;
         ''')
 
-        actual = cat.orm.altertable
-        self.eq(expect, actual)
+        migrate(cat, expect)
 
+        # Add two new fields to the middle
+        class cat(orm.entity):
+            dob = date
+            name = str
+            shedder = bool
+            skittish = bool
+            lives = int
+            whiskers = int
 
+        expect = self.dedent('''
+        ALTER TABLE test_cats
+            ADD shedder bit
+                AFTER name,
+            ADD skittish bit
+                AFTER shedder;
+        ''')
 
+        migrate(cat, expect)
+
+        """
+        # TODO Remove these comment tokens
+        def it_migrates_dropped_field(self):
+        """
+        class cat(orm.entity):
+            dob = date
+            name = str
+            shedder = bool
+            skittish = bool
+            lives = int
+
+        cat.orm.recreate()
+        self.none(cat.orm.altertable)
+
+        # Drop column (dob) from begining
+        class cat(orm.entity):
+            name = str
+            shedder = bool
+            skittish = bool
+            lives = int
+
+        expect = self.dedent('''
+        ALTER TABLE test_cats
+            DROP COLUMN dob;
+        ''')
+
+        migrate(cat, expect)
+
+        # Drop column (lives) from end
+        class cat(orm.entity):
+            name = str
+            shedder = bool
+            skittish = bool
+
+        expect = self.dedent('''
+        ALTER TABLE test_cats
+            DROP COLUMN lives;
+        ''')
+
+        migrate(cat, expect)
+
+        # Drop column (shedder) from middle
+        class cat(orm.entity):
+            name = str
+            skittish = bool
+
+        expect = self.dedent('''
+        ALTER TABLE test_cats
+            DROP COLUMN shedder;
+        ''')
+
+        migrate(cat, expect)
 
     def it_uses_reserved_mysql_words_for_fields(self):
         """ Ensure that the CREATE TABLE statement uses backticks to
