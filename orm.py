@@ -5028,6 +5028,8 @@ class orm:
                 with pool.take() as conn:
                     conn.query(sql)
         except _mysql_exceptions.OperationalError as ex:
+            # TODO There should be an alternative block here that calls
+            # `raise`
             if ex.args[0] == TABLE_EXISTS_ERROR:
                 if not ignore:
                     raise
