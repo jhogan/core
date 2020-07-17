@@ -69,6 +69,12 @@ class timesheetroletypes(orm.entities):                        pass
 class effort_inventoryitems(orm.associations):                 pass
 class asset_efforts(orm.associations):                         pass
 class asset_effortstatuses(orm.entities):                      pass
+class skillstandards(orm.entities):                            pass
+class goodstandards(orm.entities):                             pass
+class assetstandards(orm.entities):                            pass
+class type_types(orm.associations):                            pass
+class breakdowns(type_types):                                  pass
+class dependencies(type_types):                                pass
 
 class requirement(apriori.requirement):
     """ Represents the *need* to perform some type of work. This could
@@ -752,7 +758,7 @@ class goodstandard(orm.entity):
 
 class assetstandard(orm.entity):
     # The associated fixed asset
-    asset = asset.asset
+    asset = asset.type
 
     # The **estimated quantity** attribute determines how many of the
     # fixed assets are needed for the work effort ``type``.
@@ -782,4 +788,5 @@ class breakdown(type_type):
 class dependency(type_type):
     """
     """
+    entities = dependencies
 

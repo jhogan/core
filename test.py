@@ -21084,6 +21084,9 @@ class gem_effort(tester):
     def __init__(self):
         super().__init__()
         orm.orm.recreate(
+            effort.types,
+            effort.assetstandards,
+            effort.goodstandards,
             apriori.requirement,
             party.asset_parties,
             party.asset_partystatustype,
@@ -21846,5 +21849,74 @@ class gem_effort(tester):
         self.eq(primative.date('Jan 1, 2000'), ap1.begin)
         self.eq(primative.date('Jan 1, 2001'), ap1.end)
         self.eq('Active', ap1.asset_partystatustype.name)
+
+    def it_creates_standards(self):
+        ''' Test good standard '''
+        # Create effort type
+        pencil = effort.type(name='Large production run of pencils')
+
+        # Create a good
+        eraser = gem_product_product.getvalid(product.good, comment=1)
+        eraser.name = 'Pencil eraser'
+
+        # Add a goods standard to the 'Large production run of pencils'
+        # effort type
+        pencil.goodstandards += effort.goodstandard(
+            quantity = 1_000,
+            cost = 2_500,
+            good = eraser,
+        )
+
+        # Save, reload and test
+        pencil.save()
+
+        pencil1 = pencil.orm.reloaded()
+
+        sts = pencil.goodstandards.sorted()
+        sts1 = pencil1.goodstandards.sorted()
+
+        st = sts.first
+        st1 = sts1.first
+
+        self.eq(st.id, st1.id)
+        self.eq(1_000, st1.quantity)
+        self.eq(2_500, st1.cost)
+        self.eq(st.good.id, st1.good.id)
+        self.eq(st.good.name, st1.good.name)
+
+        ''' Test asset standard '''
+        labeler = asset.type(name='Pencil labeler')
+
+        pencil.assetstandards += effort.assetstandard(
+            quantity = 1,
+            duration = 10,
+            asset = labeler,
+        )
+
+        pencil.save()
+
+        pencil1 = pencil.orm.reloaded()
+
+        sts = pencil.assetstandards
+        sts1 = pencil1.assetstandards
+
+        self.one(sts)
+        self.one(sts1)
+
+        st = sts.first
+        st1 = sts1.first
+
+        self.eq(st.id, st1.id)
+        self.eq(1, st1.quantity)
+        self.eq(10, st1.duration)
+        self.eq(st.asset.id, st1.asset.id)
+        self.eq(st.asset.name, st1.asset.name)
+
+
+        
+
+
+
+
 
 cli().run()
