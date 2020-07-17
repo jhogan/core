@@ -4050,7 +4050,7 @@ class fieldmapping(mapping):
     def column(self):
         col = db.column()
         col.name = self.name
-        col.type = self.dbtype
+        col.dbtype = self.definition
         return col
 
     def clone(self):
@@ -4245,8 +4245,72 @@ class fieldmapping(mapping):
     @property
     def dbtype(self):
         """ Returns a string representing the MySQL data type
+        corresponding to this field mapping e.g., 'varchar',
+        'datetime', 'bit', 'tinyint', 'smallint unsigned', etc.
+
+        This is similar to the ``definition`` property, however dbtype
+        only returns the name of the database type in string form. The
+        precision, scale and size are not included.
+        """
+        if self.isstr:
+            if self.max <= 4000:
+                if self.isfixed:
+                    return 'char'
+                else:
+                    return 'varchar'
+            else:
+                return 'longtext'
+
+        elif self.isint:
+            if self.min < 0:
+                if    self.min  >=  -128         and  self.max  <=  127:
+                    return 'tinyint'
+                elif  self.min  >=  -32768       and  self.max  <=  32767:
+                    return 'smallint'
+                elif  self.min  >=  -8388608     and  self.max  <=  8388607:
+                    return 'mediumint'
+                elif  self.min  >=  -2147483648  and  self.max  <=  2147483647:
+                    return 'int'
+                elif  self.min  >=  -2**63       and  self.max  <=  2**63-1:
+                    return 'bigint'
+                else:
+                    raise ValueError()
+            else:
+                if self.max  <=  255:
+                    return 'tinyint unsigned'
+                elif self.max  <=  65535:
+                    return 'smallint unsigned'
+                elif self.max  <=  16777215:
+                    return 'mediumint unsigned'
+                elif self.max  <=  4294967295:
+                    return 'int unsigned'
+                elif self.max  <=  (2 ** 64) - 1:
+                    return 'bigint unsigned'
+                else:
+                    raise ValueError()
+        elif self.isdatetime:
+            return 'datetime'
+        elif self.isdate:
+            return 'date'
+        elif self.isbool:
+            return 'bit'
+        elif self.isfloat:
+            return 'double'
+        elif self.isdecimal:
+            return 'decimal'
+        elif self.isbytes:
+            if self.isfixed:
+                return 'binary'
+            else:
+                return 'varbinary'
+        else:
+            raise ValueError()
+
+    @property
+    def definition(self):
+        """ Returns a string representing the MySQL data type
         corresponding to this field mapping e.g., varchar(255),
-        datetime(6) bit, tinyint, etc.
+        datetime(6) bit, tinyint, etc. 
         """
         if self.isstr:
             # However, setting the varchar max to 16,383 can cause
@@ -4444,6 +4508,10 @@ class foreignkeyfieldmapping(fieldmapping):
 
     @property
     def dbtype(self):
+        return 'binary'
+
+    @property
+    def definition(self):
         return 'binary(16)'
 
     @property
@@ -4470,6 +4538,10 @@ class primarykeyfieldmapping(fieldmapping):
 
     @property
     def dbtype(self):
+        return 'binary'
+
+    @property
+    def definition(self):
         return 'binary(16) primary key'
 
     @property

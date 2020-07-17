@@ -7256,7 +7256,7 @@ class test_orm(tester):
 
         # Make sure the password field hasn't been tampered with
         self.ne(map.min, map.max) 
-        self.eq('varbinary(%s)' % map.max, map.dbtype)
+        self.eq('varbinary(%s)' % map.max, map.definition)
         self.true(hasattr(comp, 'digest'))
         self.type(bytes, comp.digest)
         self.one(comp.brokenrules)
@@ -7298,7 +7298,7 @@ class test_orm(tester):
 
         # Make sure the password field hasn't been tampered with
         self.eq(map.min, map.max) 
-        self.eq('binary(%s)' % map.max, map.dbtype)
+        self.eq('binary(%s)' % map.max, map.definition)
         self.true(hasattr(art, 'password'))
         self.type(bytes, art.password)
         self.one(art.brokenrules)
@@ -7336,7 +7336,7 @@ class test_orm(tester):
             return getattr(e, attr) == getattr(e1, attr)
 
         fact = artifact.getvalid()
-        self.eq('bit', fact.orm.mappings['abstract'].dbtype)
+        self.eq('bit', fact.orm.mappings['abstract'].definition)
         self.type(bool, fact.abstract)
         self.true(hasattr(fact, 'abstract'))
         self.zero(fact.brokenrules)
@@ -7516,7 +7516,7 @@ class test_orm(tester):
                 map = art.orm.super.orm.mappings['firstname']
 
             self.false(map.isfixed)
-            self.eq('varchar(%s)' % (str(map.max),), map.dbtype)
+            self.eq('varchar(%s)' % (str(map.max),), map.definition)
 
             min, max = map.min, map.max
 
@@ -7565,7 +7565,7 @@ class test_orm(tester):
 
             map = art.orm.mappings['ssn']
             self.true(map.isfixed)
-            self.eq('char(%s)' % (map.max,), map.dbtype)
+            self.eq('char(%s)' % (map.max,), map.definition)
             self.empty(art.ssn)
 
             # We are treating ssn as a fixed-length string that can hold any
@@ -7590,13 +7590,13 @@ class test_orm(tester):
 
             map = art.orm.mappings['bio1']
             self.false(map.isfixed)
-            self.eq('longtext', map.dbtype)
+            self.eq('longtext', map.definition)
             self.eq(4001, map.max)
             self.eq(1, map.min)
 
             map = art.orm.mappings['bio2']
             self.false(map.isfixed)
-            self.eq('varchar(4000)', map.dbtype)
+            self.eq('varchar(4000)', map.definition)
             self.eq(4000, map.max)
             self.eq(1, map.min)
 
@@ -7617,7 +7617,7 @@ class test_orm(tester):
 
             map = art.orm.mappings['bio']
             self.false(map.isfixed)
-            self.eq('longtext', map.dbtype)
+            self.eq('longtext', map.definition)
             self.none(art.bio)
 
             art.bio = V * map.max
@@ -7770,7 +7770,7 @@ class test_orm(tester):
 
             min, max = map.min, map.max
 
-            self.eq(type, map.dbtype, str(const))
+            self.eq(type, map.definition, str(const))
             self.eq(signed, map.signed, str(const))
             self.true(hasattr(obj, attr))
             self.zero(obj.brokenrules)

@@ -723,7 +723,7 @@ class column(entity):
         flds = res.fields
         self.name = flds['COLUMN_NAME'].value
         self.ordinal = flds['ORDINAL_POSITION'].value
-        self.type = flds['DATA_TYPE'].value
+        self.dbtype = flds['DATA_TYPE'].value
         self.max = flds['CHARACTER_MAXIMUM_LENGTH'].value
         if self.type == 'datatime':
             self.precision = flds['DATETIME_PRECISION'].value
@@ -740,8 +740,7 @@ class column(entity):
                 ---------
         """
 
-        # NOTE I believe map.dbtype shold be renamed to "definition".
-        # ``type`` should be 'BIT' (or 'INT', 'VARCHAR', etc.)
+
         raise NotImplementedError()
 
     def __repr__(self):
