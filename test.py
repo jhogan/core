@@ -3969,6 +3969,82 @@ class test_orm(tester):
 
         migrate(cat, expect)
 
+        '''
+        Ensure it migrates multiple dropped fields
+        '''
+        class cat(orm.entity):
+            dob = date
+            name = str
+            shedder = bool
+            skittish = bool
+            lives = int
+
+        cat.orm.recreate()
+        self.none(cat.orm.altertable)
+
+        # Drop from beginning
+        class cat(orm.entity):
+            shedder = bool
+            skittish = bool
+            lives = int
+
+        expect = self.dedent('''
+        ALTER TABLE test_cats
+            DROP COLUMN dob,
+            DROP COLUMN name;
+        ''')
+
+        migrate(cat, expect)
+
+        # Drop from ending
+        class cat(orm.entity):
+            shedder = bool
+
+        expect = self.dedent('''
+        ALTER TABLE test_cats
+            DROP COLUMN skittish,
+            DROP COLUMN lives;
+        ''')
+
+        migrate(cat, expect)
+
+        # Recreate class
+        class cat(orm.entity):
+            dob = date
+            name = str
+            shedder = bool
+            skittish = bool
+            lives = int
+
+        cat.orm.recreate()
+        self.none(cat.orm.altertable)
+
+        class cat(orm.entity):
+            dob = date
+            skittish = bool
+            lives = int
+
+        expect = self.dedent('''
+        ALTER TABLE test_cats
+            DROP COLUMN name,
+            DROP COLUMN shedder;
+        ''')
+
+        migrate(cat, expect)
+
+        # Drop all columns
+        class cat(orm.entity):
+            pass
+
+        expect = self.dedent('''
+        ALTER TABLE test_cats
+            DROP COLUMN dob,
+            DROP COLUMN skittish,
+            DROP COLUMN lives;
+        ''')
+
+        migrate(cat, expect)
+
     def it_uses_reserved_mysql_words_for_fields(self):
         """ Ensure that the CREATE TABLE statement uses backticks to
         quote column names so we can use MySQL reserved words, such as

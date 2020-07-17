@@ -5097,21 +5097,23 @@ class orm:
         cols = tbl.columns
         adds = db.columns()
         drops = db.columns()
-        offset = 0
-        for i, map in maps.enumerate():
-            i += offset
+        colsoffset = 0
+        mapsoffset = 0
+
+        for i in range(maps.count):
+            map = maps[i + mapsoffset]
             try:
-                col = cols[i]
+                col = cols[i + colsoffset]
             except IndexError:
                 if map.name != col.name:
                     adds += map
             else:
                 if map.name != col.name:
                     if col.name in maps:
-                        offset -= 1
+                        colsoffset -= 1
                         adds += map
                     else:
-                        offset += 1
+                        mapsoffset -= 1
                         drops += col
 
         drops += cols[maps.count + drops.count:]
@@ -5129,16 +5131,16 @@ class orm:
             else:
                 r += ',\n    ADD '
 
-            r += f'{add.name} {add.dbtype}'
+            r += f'{add.name} {add.definition}'
 
             r += f'\n{I * 2}AFTER {maps.getprevious(add).name}'
 
         # DROP <column-name>
         for i, drop in drops.enumerate():
+            r += f'{I}DROP COLUMN {drop.name}'
             if not i.last:
                 r += ',\n'
 
-            r += f'{I}DROP COLUMN {drop.name}'
 
 
         r += ';'
@@ -5159,7 +5161,7 @@ class orm:
             r += '    `%s`' % map.name
 
             if isinstance(map, fieldmapping):
-                r += ' ' + map.dbtype
+                r += ' ' + map.definition
 
         for ix in self.mappings.aggregateindexes:
             r += ',\n    ' + str(ix)
