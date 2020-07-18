@@ -18232,52 +18232,44 @@ class gem_product_product(tester):
         sps += product.supplier_product(
             supplier  =  abc,
             product   =  paper,
-            lead      =  2
+            lead      =  2,
+            priority  = first,
         )
-
-        # TODO:28a4a305 There is a one-to-many relationship between
-        # priority and supplier_product. However, the
-        # supplier_product.priority composite is not available. I
-        # believe this would work for orm.entity, but this is an
-        # orm.association so I guess that feature was not added.
-        #sps.last.priority.ordinal = 0
-
-        first.supplier_products += sps.last
 
         sps += product.supplier_product(
             supplier  =  joes,
             product   =  paper,
-            lead      =  3
+            lead      =  3,
+            priority  = second,
         )
-        second.supplier_products += sps.last
 
         sps += product.supplier_product(
             supplier  =  mikes,
             product   =  paper,
-            lead      =  4
+            lead      =  4,
+            priority  =  third,
         )
-        third.supplier_products += sps.last
 
         sps += product.supplier_product(
             supplier  =  greggs,
             product   =  pallet,
-            lead      =  2
+            lead      =  2,
+            priority  =  first,
         )
-        first.supplier_products += sps.last
 
         sps += product.supplier_product(
             supplier  =  palletinc,
             product   =  pallet,
-            lead      =  3
+            lead      =  3,
+            priority  =  second,
         )
-        second.supplier_products += sps.last
 
         sps += product.supplier_product(
             supplier  =  warehousecomp,
             product   =  pallet,
-            lead      =  5
+            lead      =  5,
+            priority  =  third,
         )
-        third.supplier_products += sps.last
 
         paper.save(pallet, sps, first, second, third)
 
