@@ -119,6 +119,13 @@ import textwrap
 # TODO:In the GEM, change all date and datetime attributes to past
 # tense, e.g., s/acquiredat/acquired/
 
+# TODO There should be a standard for association class names that makes
+# them predictable. Perhaps the should be alphabetical. For example,
+# given an association that associates an ``effort`` and an ``item``,
+# the name should be ``effort_item`` instead of ``item_effort``, since
+# the former is alphabetized. This would help to locate them faster and
+# to use them in code more efficiently.
+
 @unique
 class types(Enum):
     """
