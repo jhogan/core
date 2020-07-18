@@ -17963,13 +17963,7 @@ class gem_product_product(tester):
         # This product is sold in reams
         paper.measure = product.measure(name='ream')
 
-        # TODO:018aca88 The composite `measure` for paper doesn't get
-        # set probably because `paper` is a `good` which is a subentity
-        # of `product` which has a reference to `measure (see
-        # `measure.products`). Strangely, the `measure` is saved anyway,
-        # though paper has to be loaded as a `product` instead of a
-        # `good`. See the TODO below with the same ID (018aca88).
-        # self.eq('ream', paper.measure.name)
+        self.eq('ream', paper.measure.name)
 
         # Add dimension of 8½
         dim = product.dimension(number=8.5)
@@ -17985,8 +17979,23 @@ class gem_product_product(tester):
         paper1 = product.good(paper)
 
         self.eq('ream', paper1.measure.name)
-        self.eq('ream', product.good(paper).measure.name)
+        self.one(paper.measure.products)
+        self.one(paper1.measure.products)
+
+        self.eq(
+            paper.measure.products.first.id, 
+            paper1.measure.products.first.id
+        )
+
         self.eq('ream', product.product(paper).measure.name)
+
+        self.one(paper.measure.products)
+        self.one(product.product(paper).measure.products)
+
+        self.eq(
+            paper.measure.products.first.id,
+            product.product(paper).measure.products.first.id
+        )
 
         pfs = paper.product_features.sorted()
         pfs1 = paper1.product_features.sorted()
