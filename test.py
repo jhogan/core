@@ -18511,9 +18511,9 @@ class gem_product_item(tester):
 
         self.eq(abccorp.id, copieritm.facility.id)
 
-        # TODO It would be nice if `paperitm.orm.super.facility`
-        # returned the same value as
-        # `paperitm.orm.super.container.facility. However, I do not
+        # TODO:1e7dd1dd It would be nice if
+        # `paperitm1.orm.super.facility` returned the same value as
+        # `paperitm1.orm.super.container.facility. However, I do not
         # believe that at the moment, it is possible to override a
         # composite attribute. This would be a great nice-to-have,
         # though.
