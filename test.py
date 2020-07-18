@@ -18199,12 +18199,13 @@ class gem_product_product(tester):
             name = "6' by 6' warehouse pallets"
         )
 
+        # Create companies
         abc = gem_party_company.getvalid(
             name = 'ABC Corporation'
         )
 
         joes = gem_party_company.getvalid(
-            name = "Joe's Stationery"
+            name = "Joe's Stationary"
         )
 
         mikes = gem_party_company.getvalid(
@@ -18281,7 +18282,7 @@ class gem_product_product(tester):
 
         sps = paper1.supplier_products.sorted('supplier.name')
         self.eq('ABC Corporation',      sps.first.supplier.name)
-        self.eq("Joe's Stationery",     sps.second.supplier.name)
+        self.eq("Joe's Stationary",     sps.second.supplier.name)
         self.eq("Mike's Office Supply", sps.third.supplier.name)
 
         sps = pallet1.supplier_products.sorted('supplier.name')
@@ -18294,7 +18295,7 @@ class gem_product_product(tester):
         self.eq("Gregg's Pallet Shop",  sps.second.supplier.name)
         
         sps = second.supplier_products.sorted('supplier.name')
-        self.eq("Joe's Stationery",     sps.first.supplier.name)
+        self.eq("Joe's Stationary",     sps.first.supplier.name)
         self.eq('Pallets Incorporated', sps.second.supplier.name)
         
         sps = third.supplier_products.sorted('supplier.name')
