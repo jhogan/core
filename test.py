@@ -21368,21 +21368,8 @@ class gem_effort(tester):
         # on the completion of the "Set up production line' activity
         # (act120001).
 
-        # NOTE I thought that subassociations did not work (314b9645),
-        # but here is an example of using a subassociation of
-        # effort.effort_effort called effort.effort_effort_precedency
-        # that saves and reloads without issue (although the reload is
-        # the effort_effort instead of the subassociation, but at the
-        # moment, that is how all entities collection reload their
-        # constituents. TODO:314b9645 :One small problem is that I had
-        # to specify ``subject`` in the constructor for
-        # effort_effort_precedency. This had been fixed in
-        # non-subassociations appends, (see the append above to
-        # ``job28045.effort_efforts``) but is still required for
-        # subassociation appends for some reason.
         act120001.effort_efforts += \
             effort.effort_effort_precedency(
-                subject = act120001,
                 object = act120002
             )
 

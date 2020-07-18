@@ -6157,44 +6157,56 @@ class associations(entities):
         # objects.
         comp = self.orm.composite
         if isinstance(obj, association):
-            for map in obj.orm.mappings.entitymappings:
-                # TODO We probably should be using the association's
-                # (self) mappings collection to test the composites
-                # names. The name that matters is on the LHS of the map
-                # when being defined in the association class.
-                if self.orm.isreflexive:
-                    if map.issubjective:
-                        # NOTE self.orm.composite can be None when the
-                        # association is new. Calling 
-                        #
-                        #     settattr(obj, map.name, None)
-                        #
-                        # results in an error. The alternative block
-                        # avoided this because the following will
-                        # always be False. TODO We need to only run this
-                        # code `if self.orm.composite`
-                        #     self.name == type(None).__name__ 
-                        #
-                        # Or we could make the setattr() call accept a
-                        # composite of None.
-                        if comp is not None:
-                            
-                            # TODO map.name will always be 'subject'
-                            # here. Don't we want it to be
-                            #
-                            #     `self.orm.composite.__class__.__name__` 
-                            #
-                            # Unfortately, when this is corrected,
-                            # several issues result when running the
-                            # tests.
-                            setattr(obj, map.name, comp)
-                            break
-                elif isinstance(comp, map.entity):
-                    setattr(obj, map.name, comp)
-                    break
+            # Backup obj so we can use it to ascend inheritance tree
+            obj1 = obj 
 
-            # TODO This is the second iteration of the entitymappings
-            # collection. We should consolidate these into one loop.
+            # We will continue up the inheritance tree until we find a
+            # map that corresponds to the composite. We will set the
+            # map's value to the composite.
+            while obj:
+                for map in obj.orm.mappings.entitymappings:
+                    # TODO We probably should be using the association's
+                    # (self) mappings collection to test the composites
+                    # names. The name that matters is on the LHS of the map
+                    # when being defined in the association class.
+                    if self.orm.isreflexive:
+                        if map.issubjective:
+                            # NOTE self.orm.composite can be None when the
+                            # association is new. Calling 
+                            #
+                            #     settattr(obj, map.name, None)
+                            #
+                            # results in an error. The alternative block
+                            # avoided this because the following will
+                            # always be False. TODO We need to only run this
+                            # code `if self.orm.composite`
+                            #     self.name == type(None).__name__ 
+                            #
+                            # Or we could make the setattr() call accept a
+                            # composite of None.
+                            if comp is not None:
+                                
+                                # TODO map.name will always be 'subject'
+                                # here. Don't we want it to be
+                                #
+                                #     `self.orm.composite.__class__.__name__` 
+                                #
+                                # Unfortately, when this is corrected,
+                                # several issues result when running the
+                                # tests.
+                                setattr(obj, map.name, comp)
+                                break
+                    elif isinstance(comp, map.entity):
+                        setattr(obj, map.name, comp)
+                        break
+                else:
+                    obj = obj.orm.super  # Ascend
+                    continue
+                break
+
+            # Restore `obj` to its original reference
+            obj = obj1
+
             for map in obj.orm.mappings.entitymappings:
                 if not map.isloaded:
                     continue
