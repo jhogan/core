@@ -723,14 +723,20 @@ class column(entity):
         flds = res.fields
         self.name = flds['COLUMN_NAME'].value
         self.ordinal = flds['ORDINAL_POSITION'].value
-        self.dbtype = flds['DATA_TYPE'].value
+        self.type = flds['DATA_TYPE'].value
         self.max = flds['CHARACTER_MAXIMUM_LENGTH'].value
-        if self.type == 'datatime':
+        self.key = flds['COLUMN_KEY'].value
+        if self.type == 'datetime':
             self.precision = flds['DATETIME_PRECISION'].value
         else:
             self.precision = flds['NUMERIC_PRECISION'].value
         self.scale = flds['NUMERIC_SCALE'].value
 
+    @property
+    def isprimary(self):
+        return self.key.lower() == 'pri'
+
+    @property
     def definition(self):
         """ The portion of a CREATE TABLE or ALTER TABLE statement that
         would define a column::
@@ -739,10 +745,20 @@ class column(entity):
             ADD mybit BIT   -- "mybit BIT' is the definition
                 ---------
         """
+        r = self.type
 
 
-        raise NotImplementedError()
+        if self.type == 'datetime':
+            r += f'({self.precision})'
+        else:
+            if self.max:
+                r += f'({self.max})'
+
+        if self.isprimary:
+            r += ' primary key'
+
+        return r
 
     def __repr__(self):
-       return '%s %s' % (self.name, self.type)
+       return '%s %s' % (self.name, self.definition)
 

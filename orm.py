@@ -5094,9 +5094,10 @@ class orm:
         if not tbl:
             return None
 
-        cols = tbl.columns
-        adds = db.columns()
-        drops = db.columns()
+        cols   =  tbl.columns
+        adds   =  db.columns()
+        drops  =  db.columns()
+        mods   =  db.columns()
         colsoffset = 0
         mapsoffset = 0
 
@@ -5108,7 +5109,10 @@ class orm:
                 if map.name != col.name:
                     adds += map
             else:
-                if map.name != col.name:
+                if map.name == col.name:
+                    if map.definition != col.definition:
+                        mods += map
+                else:
                     if col.name in maps:
                         colsoffset -= 1
                         adds += map
@@ -5116,9 +5120,10 @@ class orm:
                         mapsoffset -= 1
                         drops += col
 
+
         drops += cols[maps.count + drops.count:]
 
-        if not adds.count + drops.count:
+        if not len(adds + drops + mods):
             return None
 
         I = ' ' * 4
@@ -5135,13 +5140,17 @@ class orm:
 
             r += f'\n{I * 2}AFTER {maps.getprevious(add).name}'
 
-        # DROP <column-name>
+        # DROP COLUMN <column-name>
         for i, drop in drops.enumerate():
             r += f'{I}DROP COLUMN {drop.name}'
             if not i.last:
                 r += ',\n'
 
-
+        # MODIFY COLUMN <column-name> <column-definition>
+        for i, mod in mods.enumerate():
+            r += f'{I}MODIFY COLUMN {mod.name} {mod.definition}'
+            if not i.last:
+                r += ',\n'
 
         r += ';'
                 

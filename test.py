@@ -4045,6 +4045,48 @@ class test_orm(tester):
 
         migrate(cat, expect)
 
+        '''
+        Test Modifications
+        '''
+        # Recreate class
+        class cat(orm.entity):
+            dob = date
+            name = str
+            shedder = bool
+            skittish = bool
+            lives = int
+
+        cat.orm.recreate()
+        self.none(cat.orm.altertable)
+
+        class cat(orm.entity):
+            dob       =  date
+            name      =  str
+            shedder   =  int # Change from bool to int
+            skittish  =  bool
+            lives     =  int
+
+        expect = self.dedent('''
+        ALTER TABLE test_cats
+            MODIFY COLUMN shedder int;
+        ''')
+
+        migrate(cat, expect)
+
+        class cat(orm.entity):
+            dob       =  datetime # Change from date to datetime
+            name      =  str
+            shedder   =  int
+            skittish  =  bool
+            lives     =  int
+
+        expect = self.dedent('''
+        ALTER TABLE test_cats
+            MODIFY COLUMN dob datetime(6);
+        ''')
+
+        migrate(cat, expect)
+
     def it_uses_reserved_mysql_words_for_fields(self):
         """ Ensure that the CREATE TABLE statement uses backticks to
         quote column names so we can use MySQL reserved words, such as
