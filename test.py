@@ -17688,30 +17688,6 @@ class gem_party_communication(tester):
                 comm1.communicationstatus.name
             )
 
-            # FIXME comm1 is a ``communication``
-            #
-            #     assert type(comm1) is party.communication
-            #
-            # However, it has no `objectives` attributes. If I downcast
-            # it, (see the lines immediately below) I am able to see the
-            # ``objectives`` attribute. This is very strange because the
-            # ``objectives`` attribute is defined in the
-            # ``communication`` class. We shouldn't be able to remove
-            # the downcast logic when this is fixed. (Also, comm1 should
-            # be loaded as it's most downcasted version, but that is a
-            # seperate issue.)
-            cast = party.inperson.orm.cast(comm1)
-
-            if not cast:
-                cast = party.webinar.orm.cast(comm1)
-
-            if not cast:
-                cast = party.phonecall.orm.cast(comm1)
-
-            assert cast is not None
-
-            comm1 = cast
-
             objs  = comm.objectives.sorted()
             objs1 = comm1.objectives.sorted()
 
