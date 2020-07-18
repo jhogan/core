@@ -16750,7 +16750,6 @@ class gem_party_company(tester):
         # TODO:afa4ffc9 Rewrite the below to use the role_role
         # association to associate persons to departments and divisions.
 
-
         jb = gem_party_job.getvalid()
         com = gem_party_company.getvalid()
         pers = gem_party_person.getvalid() + gem_party_person.getvalid()
@@ -17601,41 +17600,12 @@ class gem_party_communication(tester):
         css = party.objectivetype(name='Customer satisfacton survey')
 
         # The role_role association between Will Jones and Marc Martinez
-        # has four ``communication`` events.
+        # will have four ``communication`` events.
         comms = will.roles.first.role_roles.last.communications
 
         comms += party.inperson(
             begin = primative.datetime('Jan 12, 2001, 3PM'),
         )
-
-        # FIXME I noticed that before the below line is executed,
-        # calling
-        #
-        #     comms.last.communicationstatus
-        #
-        # Results in an AttributeError. It would appear that composites
-        # defined at super class level raise this error when called by
-        # subclasses, i.e., :
-        #
-        #     try:
-        #          party.communication().communicationstatus
-        #     except Exception:
-        #         assert False
-        #     else:
-        #         assert True
-        #
-        # The above works as expected. But if we use a subclass of
-        # ``communication`` (``inperson``), we get an AttributeError.
-        #
-        #     try:
-        #          party.inperson().communicationstatus
-        #     except AttributeError:
-        #         assert True
-        #     else:
-        #         assert False
-        #
-        # This should be fixed because it leads to unexpected behavior
-        # by developers using the ORM.
 
         comms.last.communicationstatus = \
                 party.communicationstatus(name='Completed')
