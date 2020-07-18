@@ -75,6 +75,8 @@ class assetstandards(orm.entities):                            pass
 class type_types(orm.associations):                            pass
 class breakdowns(type_types):                                  pass
 class dependencies(type_types):                                pass
+class deliverable_efforts(orm.associations):                   pass
+class effort_product_items(orm.associations):                  pass
 
 class requirement(apriori.requirement):
     """ Represents the *need* to perform some type of work. This could
@@ -214,6 +216,9 @@ class effort(orm.entity):
     # The collection of statuses that this effort has been in 
     statuses = statuses
 
+    # A work effort my result the repair of a fixed asset.
+    asset = asset.asset
+
 class program(effort): 
     pass
 
@@ -267,7 +272,17 @@ class deliverable(orm.entity):
     include such things as a management report, analysis document or the
     creation of a particular business method or tool. The
     ``deliverabletype`` attribute would store the type.
+
+    A work effort may result in the production of one or more
+    ``deliverables``. When this happens, the ``effort`` is linked to the
+    ``deliverable_effort`` associtation..
     """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.orm.isnew:
+            self.description = None
+    name = str
+    description = text
 
     # A collection of ``requirements`` that have this ``deliverable`` as
     # its deliverable.
@@ -290,6 +305,17 @@ class deliverabletype(orm.entity):
         self.orm.ensure(expects=('name',), **kwargs)
 
     deliverables = deliverables
+
+class deliverable_effort(orm.association):
+    """ An association between a work ``effort`` and a ``deliverable``.
+    The association will typically imply that the deliverable was
+    produced by the work ``effort``.
+
+    Note that this entity was originally called WORK EFFORT DELIVERABLE
+    PRODUCED in "The Data Model Resource Book".
+    """
+    deliverables = deliverable
+    effort = effort
 
 class role(party.role):
     """ Contains the intersection of ``party.party``, ``requirement``
@@ -346,6 +372,23 @@ class effort_item(orm.association):
     
     # The work order ``item`` side of the association. The above work
     # ``effort`` is said to be the fulliment of the work ``item``
+    item = item
+
+class effort_product_item(orm.association):
+    """ Associates an ``effort`` with an ``product.item``. When
+    ``efforts`` are linked to ``product.items`` via this class, it
+    implies that the ``product.item`` was produced as a result of the
+    work ``effort``.
+
+    Note that this entity was originally called WORK EFFORT INVENTORY
+    PRODUCED in "The Data Model Resource Book".
+    """
+
+    # The work ``effort`` side of the association.
+    effort = effort
+    
+    # The inventory item (``product.item``) side of the association. The
+    # item is said to be a product of the associated work ``effort``.
     item = item
 
 class type(orm.entity):
