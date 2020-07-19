@@ -256,13 +256,12 @@ class product(orm.entity):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.orm.isnew:
-            self.manufacturerno  =  None
-            self.sku             =  None
-            self.upca            =  None
-            self.upce            =  None
-            self.isbn            =  None
-            self.comment         =  None
+        attrs = (
+            'manufacturerno', 'sku', 'upca', 
+            'upce', 'comment', 'isbn'
+        )
+        for attr in attrs:
+            self.orm.default(attr, None)
 
     # A description of a product.
     name = str
@@ -533,8 +532,7 @@ class dimension(feature):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.orm.isnew:
-            self.name = None
+        self.orm.default('name', None)
 
     number = dec
 
@@ -608,10 +606,10 @@ class measure(orm.entity):
 
     assets = asset.assets
 
+    # TODO Move __init__ to top
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.orm.isnew:
-            self.abbr = None
+        self.orm.default('abbr', None)
 
     def convert(self, meas, dir=False, _selfonly=None, _measonly=None):
         """ Convert from the current unit of measure (``self``) to the
@@ -1143,14 +1141,8 @@ class price(orm.entity):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        # TODO:a95ef3d8
-        if self.orm.isnew:
-            for prop in ('comment', 'percent', 'price'):
-                try:
-                    kwargs[prop]
-                except KeyError:
-                    setattr(self, prop, None)
+        for attr in ('comment', 'percent', 'price'):
+            self.orm.default(attr, None)
 
     # NOTE "The Data Model Resource Book" specifies each of the
     # subentity objects. However, it also says, "These represents the
@@ -1380,13 +1372,9 @@ class product_product(orm.association):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.orm.isnew:
-            props = 'comment', 'instruction', 'reason', 'quantity'
-            for prop in props:
-                try:
-                    kwargs[prop]
-                except KeyError:
-                    setattr(self, prop, None)
+        attrs = 'comment', 'instruction', 'reason', 'quantity'
+        for attr in attrs:
+            self.orm.default(attr, None)
 
     # TODO:314b9645 When subassociations are supported, it will be more
     # elegant to use subtypes instead of a ``type`` property attribute

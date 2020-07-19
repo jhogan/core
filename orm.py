@@ -4663,6 +4663,64 @@ class orm:
 
         self.recreate = self._recreate
 
+    def default(self, attr, v, dict=None):
+        """ Sets an attribute to a default value. ``default`` is
+        intended to be called by an entity's constructor after the
+        call to ``super().__init__(*args, **kwargs)`` has been made. 
+
+        Before setting the attribute to ``v``, however, the kwargs dict
+        in the entity's constructor is inspected to determine if the
+        user instantiating the entity wants to set the attribute to a
+        non-default value. For example, the ``artist`` class in test.py
+        defaults the ``style`` attribute to the string "classicism":
+
+            art = artist()
+            assert art.style == 'classicism'
+
+        The ``kwargs`` argument can be used to overide this default::
+
+            art = artist(style='cubism')
+            assert art.style == 'cubism'
+
+        The kwargs arguments is will be discoverd through inspection,
+        though the ``dict`` parameter  can be used instead if the kwargs
+        argument isn't available for some reason.
+        
+        :param: attr str: The attribute/map to be set
+        :param: v object: The value to set the attribute to
+        :param: dict dict: A replacment dict if the calling method
+        (usually __init__) doesn't have a **kwargs parameter.
+        """
+
+        # Only set defaults if the entity is new, i.e., not in the
+        # database yet.
+        if not self.isnew:
+            return
+
+        # Get the **kwargs dict from the calling method unless the
+        # ``dict` argument was passed in.
+        if dict is None:
+            st = inspect.stack()
+            try:
+                dict = st[1].frame.f_locals['kwargs']
+            except Exception as ex:
+                raise ValueError(
+                    'Failed finding `kwargs`. '
+                    'Call `default` from `__init__` with **kwargs '
+                    'or set `dict`. ' + repr(ex)
+
+                )
+        # If the kwargs parameter from the calling method has a key for
+        # attr, use it. Otherwise use the value from the ``v``.
+        try:
+            if dict:
+                v = dict[attr]
+        except KeyError:
+            pass
+
+        # Set the attribute
+        setattr(self.instance, attr, v)
+            
     @property
     def table(self):
         mod = inspect.getmodule(self.entities)

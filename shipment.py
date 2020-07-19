@@ -153,8 +153,7 @@ class item(orm.entity):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.orm.isnew:
-            self.contents = None
+        self.orm.default('contents', None)
 
     # TODO Write a validation rule to ensure that one of either
     # `contents` or `good` is set but not both.

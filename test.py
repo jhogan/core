@@ -3433,14 +3433,13 @@ class artist(orm.entity):
         self.orm.mappings('phone').value = v
     """
 
-    def __init__(self, o=None):
-        super().__init__(o)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-        if self.orm.isnew:
-            self.lifeform = 'organic'
-            self.bio = None
-            self.style = 'classicism'
-            self._processing = False
+        self.orm.default('lifeform', 'organic')
+        self.orm.default('bio', None)
+        self.orm.default('style', 'classicism')
+        self.orm.default('_processing', False)
 
     def clear(self):
         self.locations.clear()
@@ -3597,11 +3596,10 @@ class rapper(singer):
     stagename = str
     battles = battles
 
-    def __init__(self, o=None):
-        super().__init__(o)
-        if self.orm.isnew:
-            self.nice = 10
-            self._elevating = False
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.default('nice', 10)
+        self.orm.default('_elevating', False)
 
     @staticmethod
     def getvalid():
@@ -20670,11 +20668,8 @@ class gem_shipment(tester):
 
         sh.items += shipment.item(
             quantity = 100,
+            contents = 'Boxes of HD diskettes',
         )
-
-        # FIXME Setting `contents` here should be done in the constructor
-        # but can't because of a bug.
-        sh.items.last.contents = 'Boxes of HD diskettes',
 
         sh.save()
 

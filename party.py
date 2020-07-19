@@ -137,14 +137,10 @@ class party(orm.entity):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.orm.default('nationalids', None)
+        self.orm.default('isicv4', None)
+        self.orm.default('dun', None)
 
-        # TODO:a95ef3d8
-        if self.orm.isnew:
-            for prop in ('nationalids', 'isicv4', 'dun'):
-                try:
-                    kwargs[prop]
-                except KeyError:
-                    setattr(self, prop, None)
     entities = parties
     
     # A party may have 0 or more national id numbers. For example, an
@@ -241,8 +237,7 @@ class department(unit):
 class legalorganization(organization):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.orm.isnew:
-            self.ein = None
+        self.orm.default('ein', None)
 
     # The Employer Identification Number (EIN), also known as the
     # Federal Employer Identification Number (FEIN) or the Federal Tax
@@ -423,14 +418,8 @@ class person(party):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        # TODO:a95ef3d8
-        if self.orm.isnew:
-            for prop in ('maiden', 'comment', 'social'):
-                try:
-                    kwargs[prop]
-                except KeyError:
-                    setattr(self, prop, None)
+        for prop in ('maiden', 'comment', 'social'):
+            self.orm.default(prop, None)
 
     # The person's birth date
     birthedat = datetime
@@ -640,13 +629,6 @@ class region(orm.entity):
     Country       =  8
 
     def __init__(self, *args, **kwargs):
-        # TODO::a95ef3d8 abbreviation is a standard string but we want
-        # to default it to None. This should be done in the constructor,
-        # however, the advent of the kwargs parameter for entities makes
-        # this expression "default 'abbreviation' to None" a bit cryptic
-        # and hard to remember. We need to devise an easier way to
-        # default attributes.
-
         # TODO The constructor should be rewritten so that it is modeled
         # after product.rating. The constructor should check to see if
         # the requested region is in the database already. If it's not,
@@ -659,11 +641,7 @@ class region(orm.entity):
         # can call to perform these steps.
 
         super().__init__(*args, **kwargs)
-        if self.orm.isnew:
-            try:
-                kwargs['abbreviation']
-            except KeyError:
-                self.abbreviation = None
+        self.orm.default('abbreviation', None)
                 
     @staticmethod
     def create(*args):
@@ -944,8 +922,7 @@ class party_contactmechanism(orm.association):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.orm.isnew:
-            self.extension = None
+        self.orm.default('extension', None)
 
     # TODO These should probably just be constants.
     class roles:
@@ -1123,8 +1100,7 @@ class party_party(orm.association):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.orm.isnew:
-            self.role = None
+        self.orm.default('role', None)
 
     span = datespan
 
@@ -1543,8 +1519,7 @@ class facility(orm.entity):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.orm.isnew:
-            self.footage = None
+        self.orm.default('footage', None)
             
     # NOTE These values can't change because they are persisted to the
     # database.
@@ -1663,8 +1638,7 @@ class objective(orm.entity):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.orm.isnew:
-            self.name = None
+        self.orm.default('name', None)
 
     # The name or description of the `communication`'s objective such as
     # "This is a critical sales call that must turn client around"
