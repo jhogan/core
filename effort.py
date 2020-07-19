@@ -29,7 +29,7 @@ import orm
 import party
 import primative
 import product
-import ship
+import shipment
 
 class requirements(apriori.requirements):                      pass
 class requirementtypes(order.requirementtypes):                pass
@@ -114,7 +114,7 @@ class requirement(apriori.requirement):
     # An optional reference to an asset. When the ``requirementtype`` is
     # "maintenence" or "repair" for example, then there is a definite
     # need to know what piece of equipment needs to be worked on.
-    asset = ship.asset
+    asset = shipment.asset
 
     # A product (good or service) that the work ``requirment`` may be
     # for.

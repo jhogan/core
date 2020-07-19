@@ -39,7 +39,7 @@ import pathlib
 import primative
 import product
 import re
-import ship
+import shipment
 import textwrap
 
 # We will use basic and supplementary multilingual plane UTF-8
@@ -20582,39 +20582,40 @@ class gem_order_order(tester):
             iis1.first.object.id,
         )
 
-class gem_ship(tester):
+class gem_shipment(tester):
     def __init__(self):
         super().__init__()
         orm.orm.recreate(
-            ship.shipments,
-            ship.items,
-            ship.statuses,
-            ship.statustypes,
-            ship.item_features,
-            ship.packages,
-            ship.item_packages,
-            ship.roletypes,
-            ship.roles,
-            ship.receipts,
-            ship.reasons,
-            ship.issuances,
-            ship.picklists,
-            ship.picklistitems,
-            ship.issuanceroles,
-            ship.issuanceroletypes,
-            ship.documents,
-            ship.documenttypes,
-            ship.bols,
-            ship.slips,
-            ship.exports,
-            ship.manifests,
-            ship.portcharges,
-            ship.taxandtarrifs,
-            ship.hazardouses,
+            shipment.shipitem_orderitem,
+            shipment.shipments,
+            shipment.items,
+            shipment.statuses,
+            shipment.statustypes,
+            shipment.item_features,
+            shipment.packages,
+            shipment.item_packages,
+            shipment.roletypes,
+            shipment.roles,
+            shipment.receipts,
+            shipment.reasons,
+            shipment.issuances,
+            shipment.picklists,
+            shipment.picklistitems,
+            shipment.issuanceroles,
+            shipment.issuanceroletypes,
+            shipment.documents,
+            shipment.documenttypes,
+            shipment.bols,
+            shipment.slips,
+            shipment.exports,
+            shipment.manifests,
+            shipment.portcharges,
+            shipment.taxandtarrifs,
+            shipment.hazardouses,
         )
 
     def it_creates(self):
-        sh = ship.shipment(
+        sh = shipment.shipment(
             estimatedshipat = primative.date('May 6, 2001'),
             estimatedarriveat = primative.date('May 8, 2001'),
             shipto = party.company(name='ACME Corporation'),
@@ -20642,7 +20643,7 @@ class gem_ship(tester):
         self.eq(sh.shipfromusing.id, sh1.shipfromusing.id)
 
     def it_creates_items(self):
-        sh = ship.shipment(
+        sh = shipment.shipment(
             estimatedshipat = primative.date('May 6, 2001'),
             estimatedarriveat = primative.date('May 8, 2001'),
             shipto = party.company(name='ACME Corporation'),
@@ -20657,17 +20658,17 @@ class gem_ship(tester):
             ),
         )
 
-        sh.items += ship.item(
+        sh.items += shipment.item(
             quantity = 1000,
             good = product.good(name='Henry #2 Pencil'),
         )
 
-        sh.items += ship.item(
+        sh.items += shipment.item(
             quantity = 1000,
             good = product.good(name='Goldstein Elite pens'),
         )
 
-        sh.items += ship.item(
+        sh.items += shipment.item(
             quantity = 100,
         )
 
@@ -20696,7 +20697,7 @@ class gem_ship(tester):
                 self.eq(itm.contents, itm1.contents)
 
     def it_handles_statuses(self):
-        sh = ship.shipment(
+        sh = shipment.shipment(
             estimatedshipat = primative.date('May 6, 2001'),
             estimatedarriveat = primative.date('May 8, 2001'),
             shipto = party.company(name='ACME Corporation'),
@@ -20711,23 +20712,23 @@ class gem_ship(tester):
             ),
         )
 
-        sh.statuses += ship.status(
+        sh.statuses += shipment.status(
             begin=primative.datetime('May 6, 2001'),
-            statustype = ship.statustype(
+            statustype = shipment.statustype(
                 name = 'scheduled'
             )
         )
 
-        sh.statuses += ship.status(
+        sh.statuses += shipment.status(
             begin = primative.datetime('May 7, 2001'),
-            statustype = ship.statustype(
+            statustype = shipment.statustype(
                 name = 'in route'
             )
         )
 
-        sh.statuses += ship.status(
+        sh.statuses += shipment.status(
             begin = primative.datetime('May 8, 2001'),
-            statustype = ship.statustype(
+            statustype = shipment.statustype(
                 name = 'delivered'
             )
         )
@@ -20782,51 +20783,51 @@ class gem_ship(tester):
         )
 
         # Create shipments
-        sh9000 = ship.shipment()
+        sh9000 = shipment.shipment()
 
-        sh9000.items += ship.item(
+        sh9000.items += shipment.item(
             good = pencil,
             quantity = 1000,
         )
 
-        sh9000.items += ship.item(
+        sh9000.items += shipment.item(
             good = pen,
             quantity = 1000,
         )
 
-        sh9000.items += ship.item(
+        sh9000.items += shipment.item(
             good = box,
             quantity = 100,
         )
 
         # Create another shipment
-        sh9200 = ship.shipment()
+        sh9200 = shipment.shipment()
 
-        sh9200.items += ship.item(
+        sh9200.items += shipment.item(
             good = erase,
             quantity = 350,
         )
 
-        sh9200.items += ship.item(
+        sh9200.items += shipment.item(
             good = box,
             quantity = 100,
         )
 
-        sh9200.items += ship.item(
+        sh9200.items += shipment.item(
             good = pen,
             quantity = 1500,
         )
 
         # Create the final shipment
-        sh9400 = ship.shipment()
+        sh9400 = shipment.shipment()
 
-        sh9400.items += ship.item(
+        sh9400.items += shipment.item(
             good = pen,
             quantity = 500,
         )
 
         # Create shipitem_orderitem associations
-        shipitem_orderitem = ship.shipitem_orderitem
+        shipitem_orderitem = shipment.shipitem_orderitem
 
         so100.items.first.shipitem_orderitems += shipitem_orderitem(
             shipitem = sh9000.items.first,
@@ -20889,14 +20890,14 @@ class gem_ship(tester):
 
         so.items.last.items += order.salesitem(feature=blue)
 
-        sh = ship.shipment()
+        sh = shipment.shipment()
 
-        sh.items += ship.item(
+        sh.items += shipment.item(
             good = pen,
             quantity = 1000,
         )
 
-        sh.items.last.item_features += ship.item_feature(
+        sh.items.last.item_features += shipment.item_feature(
             feature = blue
         )
 
@@ -20913,24 +20914,24 @@ class gem_ship(tester):
         pencil = product.good(name='Jones #2 pencils')
 
         # Create an incoming shipment from a supplier
-        sh1146 = ship.shipment()
+        sh1146 = shipment.shipment()
 
-        sh1146.items += ship.item(
+        sh1146.items += shipment.item(
             good = pencil,
             quantity = 2000,
         )
 
-        pkg = ship.package(
+        pkg = shipment.package(
             created = primative.datetime('Jun 23 22:08:16 UTC 2020'),
             packageid = uuid4().hex
         )
 
-        sh1146.items.last.item_packages += ship.item_package(
+        sh1146.items.last.item_packages += shipment.item_package(
             quantity=1000,
             package = pkg,
         )
 
-        pkg.receipts += ship.receipt(
+        pkg.receipts += shipment.receipt(
             receivedat = primative.datetime('Jun 23 22:19:37 2020'),
             quantity = 1000,
         )
@@ -20960,24 +20961,24 @@ class gem_ship(tester):
         pencil = product.good(name='Jones #2 pencils')
 
         # Create shipments
-        sh = ship.shipment()
+        sh = shipment.shipment()
 
-        sh.items += ship.item(
+        sh.items += shipment.item(
             good = pencil,
             quantity = 1000,
         )
 
-        pkg = ship.package(
+        pkg = shipment.package(
             created = primative.datetime('Jun 23 22:08:16 UTC 2020'),
             packageid = uuid4().hex
         )
 
-        sh.items.last.item_packages += ship.item_package(
+        sh.items.last.item_packages += shipment.item_package(
             quantity=1000,
             package = pkg,
         )
 
-        sh.items.last.issuances += ship.issuance(
+        sh.items.last.issuances += shipment.issuance(
             issued = primative.datetime('Thu Jun 25 22:18:40 UTC 2020'),
             quantity = 1000,
         )
@@ -20997,14 +20998,14 @@ class gem_ship(tester):
         )
 
     def it_creates_documents(self):
-        sh = ship.shipment()
-        sh.documents += ship.hazardous(
+        sh = shipment.shipment()
+        sh.documents += shipment.hazardous(
             description = 'Not really sure what to put here'
         )
 
-        sh.documents += ship.document(
+        sh.documents += shipment.document(
             description = 'Not really sure what to put here, either',
-            documenttype = ship.documenttype(
+            documenttype = shipment.documenttype(
                 name = 'Dangerous goods form'
             )
         )
@@ -21074,7 +21075,7 @@ class gem_effort(tester):
             party.worker,
             product.good,
             product.product,
-            ship.asset,
+            shipment.asset,
         )
 
     def it_creates_requirements(self):
@@ -21119,7 +21120,7 @@ class gem_effort(tester):
 
         deliv = effort.deliverable(name='2001 Sales/Marketing Plan')
 
-        ass = ship.asset(name='Engraving machine')
+        ass = shipment.asset(name='Engraving machine')
 
         # Create requirements
 
