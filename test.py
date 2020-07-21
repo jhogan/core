@@ -4010,11 +4010,11 @@ class test_orm(tester):
 
         # Recreate class
         class cat(orm.entity):
-            dob = date
-            name = str
-            shedder = bool
-            skittish = bool
-            lives = int
+            dob       =  date
+            name      =  str
+            shedder   =  bool
+            skittish  =  bool
+            lives     =  int
 
         cat.orm.recreate()
         self.none(cat.orm.altertable)
