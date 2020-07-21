@@ -3663,6 +3663,10 @@ class mapping(entitiesmod.entity):
         self.isderived = isderived
 
     @property
+    def isdefined(self):
+        return self._value is not undef
+
+    @property
     def name(self):
         return self._name
 

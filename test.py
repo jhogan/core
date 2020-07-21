@@ -29,6 +29,7 @@ import db
 import decimal; dec=decimal.Decimal
 import effort
 import functools
+import invoice
 import io
 import jwt as pyjwt
 import math
@@ -21843,11 +21844,71 @@ class gem_effort(tester):
         self.eq(st.asset.id, st1.asset.id)
         self.eq(st.asset.name, st1.asset.name)
 
+class gem_invoice(tester):
+    def __init__(self):
+        super().__init__()
+        orm.orm.recreate(
+            invoice.invoice,
+            invoice.items,
+        )
 
-        
+    def it_creates_items(self):
+        # Create products
+        paper = product.good(name='Johnson fine grade 8½ by 11 paper')
 
+        # Create product feature
+        glossy = product.quality(name='Extra glossy finish')
 
+        # Create invoice
+        inv = invoice.invoice(name='inv-30002')
 
+        # Add product as item to invoice
+        inv.items += invoice.item(
+            product    =  paper,
+            quantity   =  10,
+            istaxable  =  True,
+        )
 
+        # Add feature as nested invoice item to indicate that the
+        # feature is for the product ('Johnson fine grade 8½ by 11
+        # paper' was solf with the "Extra glassy finish'.
+        inv.items.last.items += invoice.item(
+            feature = glossy,
+            istaxable = True,
+        )
+
+        inv.save()
+
+        inv1 = inv.orm.reloaded()
+
+        self.eq(inv.id, inv1.id)
+
+        itms = inv.items
+        itms1 = inv1.items
+
+        self.one(itms)
+        self.one(itms1)
+
+        itm = itms.first
+        itm1 = itms1.first
+
+        self.eq(itm.id,    itm1.id)
+        self.eq(paper.id,  itm1.product.id)
+        self.eq(10,        itm1.quantity)
+
+        self.true(itm1.istaxable)
+
+        itms = itm.items
+        itms1 = itm1.items
+
+        self.one(itms)
+        self.one(itms1)
+
+        itm = itms.first
+        itm1 = itms1.first
+
+        self.eq(itm.id,    itm1.id)
+        self.eq(glossy.id,  itm1.feature.id)
+        self.true(itm1.istaxable)
 
 cli().run()
