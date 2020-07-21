@@ -5098,6 +5098,7 @@ class orm:
         adds   =  db.columns()
         drops  =  db.columns()
         mods   =  db.columns()
+        mvs    =  db.columns()
         colsoffset = 0
         mapsoffset = 0
 
@@ -5114,8 +5115,11 @@ class orm:
                         mods += map
                 else:
                     if col.name in maps:
-                        colsoffset -= 1
-                        adds += map
+                        if map.name in cols:
+                            mvs += map
+                        else:
+                            colsoffset -= 1
+                            adds += map
                     else:
                         mapsoffset -= 1
                         drops += col
@@ -5123,7 +5127,7 @@ class orm:
 
         drops += cols[maps.count + drops.count:]
 
-        if not len(adds + drops + mods):
+        if not len(adds + drops + mods + mvs):
             return None
 
         I = ' ' * 4

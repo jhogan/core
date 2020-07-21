@@ -4081,11 +4081,54 @@ class test_orm(tester):
             lives     =  int
 
         expect = self.dedent('''
-        ALTER TABLE test_cats
-            MODIFY COLUMN dob datetime(6);
+        ALTER TABLE `test_cats`
+            CHANGE COLUMN `name` `name` varchar(255)
+                AFTER `updatedat`,
+            CHANGE COLUMN `dob` `dob` date
+                AFTER `name`;
         ''')
 
         migrate(cat, expect)
+
+        self.eq(
+            [
+                'id',   'createdat',  'updatedat',  'name',
+                'dob',  'shedder',    'skittish',   'lives',
+            ],
+            [x.name for x in cat.orm.dbtable.columns]
+        )
+
+        class cat(orm.entity):
+            dob       =  date
+            shedder   =  bool
+            skittish  =  bool
+            lives     =  int
+            name      =  str  # Move name from begining to end
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            CHANGE COLUMN `dob` `dob` date
+                AFTER `updatedat`,
+            CHANGE COLUMN `shedder` `shedder` bit
+                AFTER `dob`,
+            CHANGE COLUMN `skittish` `skittish` bit
+                AFTER `shedder`,
+            CHANGE COLUMN `lives` `lives` int
+                AFTER `skittish`,
+            CHANGE COLUMN `name` `name` varchar(255)
+                AFTER `lives`;
+        ''')
+
+        migrate(cat, expect)
+
+        self.eq(
+            [
+                'id',       'createdat',  'updatedat',  'dob',
+                'shedder',  'skittish',   'lives',      'name',
+            ],
+            [x.name for x in cat.orm.dbtable.columns]
+        )
+
 
     def it_uses_reserved_mysql_words_for_fields(self):
         """ Ensure that the CREATE TABLE statement uses backticks to
