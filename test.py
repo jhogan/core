@@ -4060,6 +4060,57 @@ class test_orm(tester):
         self.none(cat.orm.altertable)
 
         class cat(orm.entity):
+            dob       =  datetime # Change from date to datetime
+            name      =  str
+            shedder   =  bool
+            skittish  =  bool
+            lives     =  int
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            MODIFY COLUMN `dob` datetime(6);
+        ''')
+
+        migrate(cat, expect)
+
+        # Recreate class
+        class cat(orm.entity):
+            dob       =  date
+            name      =  str
+            shedder   =  bool
+            skittish  =  bool
+            lives     =  int
+
+        cat.orm.recreate()
+        self.none(cat.orm.altertable)
+
+        class cat(orm.entity):
+            dob       =  date
+            name      =  date # Change from str to date
+            shedder   =  bool 
+            skittish  =  bool
+            lives     =  int
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            MODIFY COLUMN `name` date;
+        ''')
+
+        migrate(cat, expect)
+
+        # Recreate class
+        class cat(orm.entity):
+            dob       =  date
+            name      =  str
+            shedder   =  bool
+            skittish  =  bool
+            lives     =  int
+
+        cat.orm.recreate()
+        self.none(cat.orm.altertable)
+
+
+        class cat(orm.entity):
             dob       =  date
             name      =  str
             shedder   =  int # Change from bool to int
@@ -4067,16 +4118,86 @@ class test_orm(tester):
             lives     =  int
 
         expect = self.dedent('''
-        ALTER TABLE test_cats
-            MODIFY COLUMN shedder int;
+        ALTER TABLE `test_cats`
+            MODIFY COLUMN `shedder` int;
+        ''')
+
+        migrate(cat, expect)
+
+        # Recreate class
+        class cat(orm.entity):
+            dob       =  date
+            name      =  str
+            shedder   =  bool
+            skittish  =  bool
+            lives     =  int
+
+        cat.orm.recreate()
+        self.none(cat.orm.altertable)
+
+        class cat(orm.entity):
+            dob       =  date
+            name      =  str
+            shedder   =  bool 
+            skittish  =  str  # Change from bool to str
+            lives     =  int
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            MODIFY COLUMN `skittish` varchar(255);
+        ''')
+
+        migrate(cat, expect)
+
+        ''' MODIFY multiple columns '''
+        class cat(orm.entity):
+            dob       =  datetime  # change
+            name      =  datetime  # change
+            shedder   =  datetime  # change
+            skittish  =  str
+            lives     =  int
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            MODIFY COLUMN `dob` datetime(6),
+            MODIFY COLUMN `name` datetime(6),
+            MODIFY COLUMN `shedder` datetime(6);
         ''')
 
         migrate(cat, expect)
 
         class cat(orm.entity):
-            dob       =  datetime # Change from date to datetime
+            dob       =  datetime
+            name      =  datetime
+            shedder   =  datetime 
+            skittish  =  datetime  # change
+            lives     =  datetime  # change
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            MODIFY COLUMN `skittish` datetime(6),
+            MODIFY COLUMN `lives` datetime(6);
+        ''')
+
+        migrate(cat, expect)
+
+        ''' Move attributes/columns '''
+
+        # Recreate class
+        class cat(orm.entity):
+            dob       =  date
             name      =  str
-            shedder   =  int
+            shedder   =  bool
+            skittish  =  bool
+            lives     =  int
+
+        cat.orm.recreate()
+        self.none(cat.orm.altertable)
+
+        class cat(orm.entity):
+            name      =  str
+            dob       =  date
+            shedder   =  bool
             skittish  =  bool
             lives     =  int
 
