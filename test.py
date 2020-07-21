@@ -21849,7 +21849,9 @@ class gem_invoice(tester):
         super().__init__()
         orm.orm.recreate(
             invoice.invoice,
+            invoice.salesinvoice,
             invoice.items,
+            invoice.salesitems,
         )
 
     def it_creates_items(self):
@@ -21860,10 +21862,10 @@ class gem_invoice(tester):
         glossy = product.quality(name='Extra glossy finish')
 
         # Create invoice
-        inv = invoice.invoice(name='inv-30002')
+        inv = invoice.salesinvoice(name='inv-30002')
 
         # Add product as item to invoice
-        inv.items += invoice.item(
+        inv.items += invoice.salesitem(
             product    =  paper,
             quantity   =  10,
             istaxable  =  True,

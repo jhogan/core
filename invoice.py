@@ -15,6 +15,13 @@ Model Resource Book".
 Examples:
     See test.py for examples. 
 
+Todo:
+    
+   TODO: There are a large number of ``item`` subentities that can be
+   created and used if more precision is needed. These include subtypes
+   such as INVOCIE ADJUSTMENTs, INVOICE ACQUIRING ITEMS and subtypes
+   thereof.
+
 """
 from datetime import datetime, date
 from dbg import B
@@ -22,10 +29,17 @@ from decimal import Decimal as dec
 from orm import text, timespan, datespan
 import orm
 import product
+import party
 
 class invoices(orm.entities): pass
+class salesinvoices(invoices): pass
+class purchaseinvoices(invoices): pass
 class items(orm.entities): pass
+class salesitems(items): pass
+class purchaseitems(items): pass
 class types(orm.entities): pass
+class roles(orm.entities): pass
+class roletypes(orm.entities): pass
 
 class invoice(orm.entity):
     """ The ``invoice`` maintains header information abut the
@@ -53,10 +67,49 @@ class invoice(orm.entity):
     description = text
     items = items
 
+    # NOTE ``seller`` and ``buyer`` are the two main, hardcoded (so to
+    # speak) roles of an invoice. Other roles can be added dynamically
+    # through the ``role`` entity.
+
+    # The party to the invoice to whom money is owed. (In the book, this
+    # is called the **billed from** attribute.) 
+    seller = party.party
+
+    # The party to the invoice who is recieving the bill. (In the book, this
+    # is called the **billed to** attribute.)
+    buyer = party.party
+
+    # NOTE Invoices may be sent or receiviad via numerous subentities of
+    # ``contactmechanism`` including ``party.phone``, ``party.email``
+    # and ``party.phone`` (i.e., faxed). Invoices can also be sent
+    # through snail mail (``party.adderss``).
+
+    # The contact mechanism from which the invoice was sent. This is
+    # called **send from** in the book.
+    source = party.contactmechanism
+
+    # The contact mechanism to which the invoice is addressed. This is
+    # called **addressed to** in the book.
+    destination = party.contactmechanism
+
+class salesinvoice(invoice):
+    """ A subentity of ``invoice`` related to a purchase order.
+
+    Note that this entity was originally called SALES INVOICE in
+    "The Data Model Resource Book".
+    """
+
+class purchaseinvoice(invoice):
+    """ A subentity of ``invoice`` related to a purchase order.
+
+    Note that this entity was originally called PURCHASE INVOICE in
+    "The Data Model Resource Book".
+    """
+
 class item(orm.entity):
     """ An invoice ``item`` represents any items that are being charged.
 
-    Each invoince ``item`` may have a many-to-one relationship to
+    Each invoice ``item`` may have a many-to-one relationship to
     either ``product.product`` or ``product.feature``. It may also be
     related to a serialzied inventory item (see the ``serial``
     attribute) because maintainng the actual instance of the product
@@ -117,6 +170,19 @@ class item(orm.entity):
     # ``item`` that was for a ``product``.
     items = items
 
+class salesitem(item):
+    """ An invoice item for sales order items.
+
+    Note that this entity was originally called PURCHASE INVOICE ITEM in
+    "The Data Model Resource Book".
+    """
+
+class purchaseitem(item):
+    """ An invoice item for purchase order items.
+
+    Note that this entity was originally called PURCHASE INVOICE ITEM in
+    "The Data Model Resource Book".
+    """
 class type(orm.entity):
     """ Each invoice ``item`` may be categorized by an invoice item
     ``type``. The value for the ``name`` attribute  could include values
@@ -134,3 +200,22 @@ class type(orm.entity):
     name = str
     items = items
 
+class role(orm.entity):
+    """ Records each party involved in each ``roletype`` for an
+    ``invoice``.
+
+    """
+
+    # The date and time that the ``person`` or ``organization`` performed
+    # the role.
+    datetime = datetime
+    percent = dec
+
+class roletype(orm.entity):
+    """ A type of ``role``. 
+    
+    Examples of role include "entered by", "approver", "sender" and
+    "receiver". Note that the key roles for an invoice, "seller" and
+    "buyer" are hardcoded in ``invoice.seller`` and ``invoice.buyer``.
+    """
+    roles = roles
