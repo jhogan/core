@@ -5131,8 +5131,15 @@ class orm:
             return None
 
         I = ' ' * 4
-        r = f'ALTER TABLE {self.table}\n'
+        r = f'ALTER TABLE `{self.table}`\n'
 
+        for i, mv in mvs.enumerate():
+            r += f'{I}CHANGE COLUMN `{mv.name}` `{mv.name}` ' + \
+                 f'{mv.definition}'
+            r += f'\n{I * 2}AFTER `{maps.getprevious(mv).name}`'
+            if not i.last:
+                r += ',\n'
+            
         # ADD <column-name> <definition>
         for i, add in adds.enumerate():
             if i.first:
@@ -5140,19 +5147,19 @@ class orm:
             else:
                 r += ',\n    ADD '
 
-            r += f'{add.name} {add.definition}'
+            r += f'`{add.name}` {add.definition}'
 
-            r += f'\n{I * 2}AFTER {maps.getprevious(add).name}'
+            r += f'\n{I * 2}AFTER `{maps.getprevious(add).name}`'
 
         # DROP COLUMN <column-name>
         for i, drop in drops.enumerate():
-            r += f'{I}DROP COLUMN {drop.name}'
+            r += f'{I}DROP COLUMN `{drop.name}`'
             if not i.last:
                 r += ',\n'
 
         # MODIFY COLUMN <column-name> <column-definition>
         for i, mod in mods.enumerate():
-            r += f'{I}MODIFY COLUMN {mod.name} {mod.definition}'
+            r += f'{I}MODIFY COLUMN `{mod.name}` {mod.definition}'
             if not i.last:
                 r += ',\n'
 

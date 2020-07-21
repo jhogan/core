@@ -3807,9 +3807,9 @@ class test_orm(tester):
         # altertable should now be an ALTER TABLE statement to add the
         # new column.
         expect = self.dedent('''
-        ALTER TABLE test_cats
-            ADD whiskers int
-                AFTER name;
+        ALTER TABLE `test_cats`
+            ADD `whiskers` int
+                AFTER `name`;
         ''')
 
         migrate(cat, expect)
@@ -3832,9 +3832,9 @@ class test_orm(tester):
         # altertable should now be an ALTER TABLE statement to add the
         # new column AFTER name.
         expect = self.dedent('''
-        ALTER TABLE test_cats
-            ADD lives int
-                AFTER name;
+        ALTER TABLE `test_cats`
+            ADD `lives` int
+                AFTER `name`;
         ''')
 
         migrate(cat, expect)
@@ -3848,9 +3848,9 @@ class test_orm(tester):
             whiskers = int
 
         expect = self.dedent('''
-        ALTER TABLE test_cats
-            ADD dob date
-                AFTER updatedat;
+        ALTER TABLE `test_cats`
+            ADD `dob` date
+                AFTER `updatedat`;
         ''')
 
         migrate(cat, expect)
@@ -3871,11 +3871,11 @@ class test_orm(tester):
             name = str
 
         expect = self.dedent('''
-        ALTER TABLE test_cats
-            ADD dob date
-                AFTER updatedat,
-            ADD name varchar(255)
-                AFTER dob;
+        ALTER TABLE `test_cats`
+            ADD `dob` date
+                AFTER `updatedat`,
+            ADD `name` varchar(255)
+                AFTER `dob`;
         ''')
 
         migrate(cat, expect)
@@ -3888,11 +3888,11 @@ class test_orm(tester):
             whiskers = int
 
         expect = self.dedent('''
-        ALTER TABLE test_cats
-            ADD lives int
-                AFTER name,
-            ADD whiskers int
-                AFTER lives;
+        ALTER TABLE `test_cats`
+            ADD `lives` int
+                AFTER `name`,
+            ADD `whiskers` int
+                AFTER `lives`;
         ''')
 
         migrate(cat, expect)
@@ -3907,11 +3907,11 @@ class test_orm(tester):
             whiskers = int
 
         expect = self.dedent('''
-        ALTER TABLE test_cats
-            ADD shedder bit
-                AFTER name,
-            ADD skittish bit
-                AFTER shedder;
+        ALTER TABLE `test_cats`
+            ADD `shedder` bit
+                AFTER `name`,
+            ADD `skittish` bit
+                AFTER `shedder`;
         ''')
 
         migrate(cat, expect)
@@ -3938,8 +3938,8 @@ class test_orm(tester):
             lives = int
 
         expect = self.dedent('''
-        ALTER TABLE test_cats
-            DROP COLUMN dob;
+        ALTER TABLE `test_cats`
+            DROP COLUMN `dob`;
         ''')
 
         migrate(cat, expect)
@@ -3951,8 +3951,8 @@ class test_orm(tester):
             skittish = bool
 
         expect = self.dedent('''
-        ALTER TABLE test_cats
-            DROP COLUMN lives;
+        ALTER TABLE `test_cats`
+            DROP COLUMN `lives`;
         ''')
 
         migrate(cat, expect)
@@ -3963,8 +3963,8 @@ class test_orm(tester):
             skittish = bool
 
         expect = self.dedent('''
-        ALTER TABLE test_cats
-            DROP COLUMN shedder;
+        ALTER TABLE `test_cats`
+            DROP COLUMN `shedder`;
         ''')
 
         migrate(cat, expect)
@@ -3989,9 +3989,9 @@ class test_orm(tester):
             lives = int
 
         expect = self.dedent('''
-        ALTER TABLE test_cats
-            DROP COLUMN dob,
-            DROP COLUMN name;
+        ALTER TABLE `test_cats`
+            DROP COLUMN `dob`,
+            DROP COLUMN `name`;
         ''')
 
         migrate(cat, expect)
@@ -4001,9 +4001,9 @@ class test_orm(tester):
             shedder = bool
 
         expect = self.dedent('''
-        ALTER TABLE test_cats
-            DROP COLUMN skittish,
-            DROP COLUMN lives;
+        ALTER TABLE `test_cats`
+            DROP COLUMN `skittish`,
+            DROP COLUMN `lives`;
         ''')
 
         migrate(cat, expect)
@@ -4025,9 +4025,9 @@ class test_orm(tester):
             lives = int
 
         expect = self.dedent('''
-        ALTER TABLE test_cats
-            DROP COLUMN name,
-            DROP COLUMN shedder;
+        ALTER TABLE `test_cats`
+            DROP COLUMN `name`,
+            DROP COLUMN `shedder`;
         ''')
 
         migrate(cat, expect)
@@ -4037,10 +4037,10 @@ class test_orm(tester):
             pass
 
         expect = self.dedent('''
-        ALTER TABLE test_cats
-            DROP COLUMN dob,
-            DROP COLUMN skittish,
-            DROP COLUMN lives;
+        ALTER TABLE `test_cats`
+            DROP COLUMN `dob`,
+            DROP COLUMN `skittish`,
+            DROP COLUMN `lives`;
         ''')
 
         migrate(cat, expect)
