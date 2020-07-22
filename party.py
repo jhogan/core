@@ -1021,6 +1021,7 @@ class address(contactmechanism):
     # TODO Automatically pluralize
     entities = addresses
 
+    # TODO s/address(\d)/line\1/
     # Address line 1
     address1 = str
 
