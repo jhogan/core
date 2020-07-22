@@ -3838,7 +3838,7 @@ class test_orm(tester):
 
         migrate(cat, expect)
 
-        # Add new field to the begining. We want the new field to be
+        # Add new field to the beginning. We want the new field to be
         # positioned in the database as it is in the entity.
         class cat(orm.entity):
             dob = date
@@ -3854,17 +3854,14 @@ class test_orm(tester):
 
         migrate(cat, expect)
 
-        """
-        # TODO Remove these comment tokens
-        def it_migrates_new_fields(self):
-        """
+        ''' Test adding muliple fields '''
         class cat(orm.entity):
             pass
 
         cat.orm.recreate()
         self.none(cat.orm.altertable)
 
-        # Add two new fields at begining
+        # Add two new fields at beginning
         class cat(orm.entity):
             dob = date
             name = str
@@ -3915,10 +3912,7 @@ class test_orm(tester):
 
         migrate(cat, expect)
 
-        """
-        # TODO Remove these comment tokens
-        def it_migrates_dropped_field(self):
-        """
+        ''' Test dropping fields '''
         class cat(orm.entity):
             dob = date
             name = str
@@ -3929,7 +3923,7 @@ class test_orm(tester):
         cat.orm.recreate()
         self.none(cat.orm.altertable)
 
-        # Drop column (dob) from begining
+        # Drop column (dob) from beginning
         class cat(orm.entity):
             name = str
             shedder = bool
@@ -4108,7 +4102,6 @@ class test_orm(tester):
         cat.orm.recreate()
         self.none(cat.orm.altertable)
 
-
         class cat(orm.entity):
             dob       =  date
             name      =  str
@@ -4229,7 +4222,6 @@ class test_orm(tester):
                 AFTER `updatedat`,
         ''')
 
-        B()
         migrate(cat, expect)
 
         self.eq(
