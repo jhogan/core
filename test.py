@@ -21913,4 +21913,60 @@ class gem_invoice(tester):
         self.eq(glossy.id,  itm1.feature.id)
         self.true(itm1.istaxable)
 
+    def it_creates_roles_and_contactmechanisms(self):
+        # Create invoice
+        inv = invoice.salesinvoice(name='inv-30002')
+        inv.created = 'May 25, 2001'
+
+        # Create billed-to party
+        inv.buyer = party.company(name='ACME Corporation')
+        inv.seller = party.company(name='ACME Subsidiary')
+
+        # Create contactmechanisms
+        inv.source = party.address(
+            address1 = '100 Bridge Street',
+            address2 = None,
+        )
+
+        inv.destination = party.address(
+            address1 = '123 Main Street',
+            address2 = None,
+        )
+
+        inv.save()
+
+        inv1 = inv.orm.reloaded()
+
+        self.eq(inv.id, inv1.id)
+        self.eq(primative.date('May 25, 2001'), inv1.created)
+
+        # TODO We shouldn't have to down cast entitymappings
+        B()
+        self.eq(
+            '100 Bridge Street', 
+            inv1.source.orm.cast(party.address).address1
+        )
+
+        self.eq(
+            '123 Main Street', 
+            inv1.destination.orm.cast(party.address).address1
+        )
+
+        self.eq(
+            'ACME Subsidiary', 
+            inv1.seller.orm.cast(party.company).name
+        )
+
+        self.eq(
+            'ACME Subsidiary', 
+            inv1.seller.orm.cast(party.company).name
+        )
+
+        
+
+
+
+
+
+
 cli().run()

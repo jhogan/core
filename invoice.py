@@ -219,3 +219,45 @@ class roletype(orm.entity):
     "buyer" are hardcoded in ``invoice.seller`` and ``invoice.buyer``.
     """
     roles = roles
+
+class account(orm.entity):
+    """ The billing ``account`` entity provides a mechanism for grouping
+    different types of items on different invoice.
+
+    The typical way to bill a customer is by sending an invoice. An
+    alternative is to use a billing ``account``. This method of billing
+    is used only in certain circumstances for specific types of
+    businesses. For example, a client might want one account for his
+    or her office supplies and another account for furniture purchase.
+
+    Note that this is modeled after the BILLING ACCOUNT entity in "The
+    Data Model Resource Book".
+    """
+
+class account_role(orm.association):
+    """ An intersection between ``party`` and a billing ``account` allowing
+    for maintenance of the various parties involved on the account.
+
+    Note that this is modeled after the BILLING ACCOUNT ROLE entity in
+    "The Data Model Resource Book".
+    """
+    
+    # The party side of the association.
+    party = party.party
+
+    # The party side of the association.
+    account = account
+
+    span = datespan
+
+class account_roletype(orm.entity):
+    """ The billing account role (``account_role``) allows each
+    ``party`` to play a billing ``account`` role type
+    (``account_roletype``) in the ``account``. Roles could include
+    "primary payer", indicating the main party that is supposed to pay,
+    or "secondary payer", indicating other parties that could pay in
+    case of of default. Other roles include, "customer service
+    representative", "manager", and "sale representative". tha could be
+    involved with the account as well. 
+    """
+
