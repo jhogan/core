@@ -5116,7 +5116,13 @@ class orm:
                 else:
                     if col.name in maps:
                         if map.name in cols:
-                            mvs += map
+                            mvs += maps[col.name]
+
+                            getindex = maps.getindex
+                            if getindex(maps[col.name]) > getindex(map):
+                                mapsoffset -= 1
+                            else:
+                                colsoffset -= 1
                         else:
                             colsoffset -= 1
                             adds += map

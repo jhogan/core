@@ -3782,7 +3782,6 @@ class test_orm(tester):
 
             # Now that the table and model match, there should be no
             # altertable.
-            B(cat.orm.altertable)
             self.none(cat.orm.altertable)
 
         # Create entity (cat)
@@ -4196,50 +4195,41 @@ class test_orm(tester):
 
         class cat(orm.entity):
             name      =  str
-            dob       =  date
             shedder   =  bool
             skittish  =  bool
             lives     =  int
+            dob       =  date  # Move dob from beginning to end
 
         expect = self.dedent('''
         ALTER TABLE `test_cats`
-            CHANGE COLUMN `name` `name` varchar(255)
-                AFTER `updatedat`,
             CHANGE COLUMN `dob` `dob` date
-                AFTER `name`;
+                AFTER `lives`;
         ''')
 
         migrate(cat, expect)
 
         self.eq(
             [
-                'id',   'createdat',  'updatedat',  'name',
-                'dob',  'shedder',    'skittish',   'lives',
+                'id',       'createdat',  'updatedat',  'name',
+                'shedder',  'skittish',   'lives',      'dob',
             ],
             [x.name for x in cat.orm.dbtable.columns]
         )
 
         class cat(orm.entity):
-            dob       =  date
+            dob       =  date  # Move dob from end to beginning
+            name      =  str
             shedder   =  bool
             skittish  =  bool
             lives     =  int
-            name      =  str  # Move name from begining to end
 
         expect = self.dedent('''
         ALTER TABLE `test_cats`
             CHANGE COLUMN `dob` `dob` date
                 AFTER `updatedat`,
-            CHANGE COLUMN `shedder` `shedder` bit
-                AFTER `dob`,
-            CHANGE COLUMN `skittish` `skittish` bit
-                AFTER `shedder`,
-            CHANGE COLUMN `lives` `lives` int
-                AFTER `skittish`,
-            CHANGE COLUMN `name` `name` varchar(255)
-                AFTER `lives`;
         ''')
 
+        B()
         migrate(cat, expect)
 
         self.eq(
