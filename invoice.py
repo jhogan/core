@@ -248,6 +248,8 @@ class account_role(orm.association):
     # The party side of the association.
     account = account
 
+    # The span of time when the ``party`` became active on the
+    # ``account``.
     span = datespan
 
 class account_roletype(orm.entity):
