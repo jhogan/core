@@ -35,8 +35,9 @@ def wf(file, txt):
     return p.write_text(txt)
 
 def mig():
-    orm.migration.run()
-
+    for e in orm.migration().entities:
+        print(e.migration)
+        at = e.orm.altertable
 
 cfg = config()
 acct = db.connections.getinstance().default.account

@@ -1338,7 +1338,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             if not hasattr(type(self), 'orm'):
                 raise NotImplementedError(
                     '"orm" attribute not found for "%s". '
-                    'Check that the entity is inherting from the '
+                    'Check that the entity inherits from the '
                     'correct base class.' % type(self).__name__
                 )
             try:
@@ -5082,6 +5082,9 @@ class orm:
             if ex.args[0] == TABLE_EXISTS_ERROR:
                 if not ignore:
                     raise
+    @property
+    def issynced(self):
+        return bool(self.altertable)
 
     @property
     def altertable(self):
@@ -6727,15 +6730,36 @@ class associations(entities):
 class association(entity):
     pass
 
-class migrator:
-    @staticmethod
-    def run():
-        for es in orm.getentitys(includeassociations=True):
-            tbl = es.orm.dbtable
-            if tbl:
-                ddl = es.orm.altertable
+class migration:
+    @property
+    def altertables(self):
+        ... # TODO
+
+    @property
+    def entities(self):
+        r = entitiesmod.entities()
+        es = orm.getentitys(includeassociations=True)
+        for tbl in db.catelog().tables:
+            mod, name = tbl.name.split('_', 1)
+
+            for e in es:
+                if e.__name__ == tbl.name:
+                    B()
+                    break
             else:
-                ddl = es.createtable
+                continue
+
+            if e.orm.issynced:
+                continue
+
+            r += e
+
+        return r
+            
+
+
+            
+        
 
 # ORM Exceptions
 class InvalidColumn(ValueError): pass

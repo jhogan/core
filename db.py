@@ -666,15 +666,43 @@ class catelogs(entities):
     pass
 
 class catelog(entity):
-    pass
+    @property
+    def tables(self):
+        return tables()
 
 class tables(entities):
-    pass
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        with pool.getdefault().take() as conn:
+
+            sql = '''
+            select *
+            from information_schema.columns
+            where table_schema = %s;
+            '''
+
+            ress = conn.query(sql, (conn.account.database,))
+            tbls = dict()
+            for res in ress:
+
+                fld = res.fields['TABLE_NAME']
+                name = fld.value
+
+                try:
+                    ress1 = tbls[name]
+                except KeyError:
+                    ress1 = list()
+                    tbls[name] = ress1
+
+                ress1.append(res) 
+
+            for name, ress in tbls.items():
+                self += table(name=name, ress=ress)
 
 class table(entity):
-    def __init__(self, name):
+    def __init__(self, name, ress=None):
         self.name = name
-        self.columns = columns(self)
+        self.columns = columns(tbl=self, ress=ress)
 
     def __repr__(self):
         r = 'CREATE TABLE %s (\n'
@@ -686,32 +714,34 @@ class table(entity):
         return r % self.name
 
 class columns(entities):
-    def __init__(self, tbl=None, *args, **kwargs):
+    def __init__(self, tbl=None, ress=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.table = tbl
 
         # Don't load if there is no ``table``. We probably just want to
         # use ``columns`` for collecting ``column`` objects
-        if not self.table:
-            return
-
-        pl = pool.getdefault()
-        with pl.take() as conn:
-            sql = '''select *
-            from information_schema.columns
-            where table_schema = %s
-                and table_name = %s
-            '''
-            ress = conn.query(sql, (conn.account.database, tbl.name))
-            if not ress.count:
-                # If no columns were returned then tbl.name doesn't
-                # exist in the database, so throw the kind of exception
-                # MySQLdb would.
-                raise _mysql_exceptions.OperationalError(
-                    BAD_TABLE_ERROR, 'Table not found'
+        if self.table and ress is None:
+            pl = pool.getdefault()
+            with pl.take() as conn:
+                sql = '''select *
+                from information_schema.columns
+                where table_schema = %s
+                    and table_name = %s
+                '''
+                ress = conn.query(
+                    sql, (conn.account.database, tbl.name)
                 )
-            for res in ress:
-                self += column(res)
+
+                if not ress.count:
+                    # If no columns were returned then tbl.name doesn't
+                    # exist in the database, so throw the kind of
+                    # exception MySQLdb would.
+                    raise _mysql_exceptions.OperationalError(
+                        BAD_TABLE_ERROR, 'Table not found'
+                    )
+
+        for res in ress:
+            self += column(res)
     
 class column(entity):
     def __init__(self, res=None, *args, **kwargs):
