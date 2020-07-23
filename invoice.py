@@ -40,6 +40,9 @@ class purchaseitems(items): pass
 class types(orm.entities): pass
 class roles(orm.entities): pass
 class roletypes(orm.entities): pass
+class accounts(orm.entities): pass
+class account_roles(orm.associations): pass
+class account_roletypes(orm.entities): pass
 
 class invoice(orm.entity):
     """ The ``invoice`` maintains header information abut the
@@ -234,6 +237,16 @@ class account(orm.entity):
     Data Model Resource Book".
     """
 
+    # The span of time for whit the billing ``account`` is active.
+    span = datespan
+
+    # Used to identify the nature of the billing ``account.
+    description = text
+
+    # In order to determine where to send the invoice, the account in
+    # quastion must, be related to a contact mechanism. 
+    contactmechanism = party.contactmechanism
+
 class account_role(orm.association):
     """ An intersection between ``party`` and a billing ``account` allowing
     for maintenance of the various parties involved on the account.
@@ -242,10 +255,10 @@ class account_role(orm.association):
     "The Data Model Resource Book".
     """
     
-    # The party side of the association.
+    # The ``party`` side of the association
     party = party.party
 
-    # The party side of the association.
+    # The billing ``account`` side of the association
     account = account
 
     # The span of time when the ``party`` became active on the
@@ -259,7 +272,15 @@ class account_roletype(orm.entity):
     "primary payer", indicating the main party that is supposed to pay,
     or "secondary payer", indicating other parties that could pay in
     case of of default. Other roles include, "customer service
-    representative", "manager", and "sale representative". tha could be
-    involved with the account as well. 
+    representative", "manager", and "sale representative" that could be
+    involved with the account as well. An invoice may be billed to
+    either a billing account or directly to a party (``invoice.buyer``)
     """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    name = str
+
+    account_roles = account_roles
 

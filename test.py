@@ -21852,6 +21852,9 @@ class gem_invoice(tester):
             invoice.salesinvoice,
             invoice.items,
             invoice.salesitems,
+            invoice.account_roletype,
+            invoice.accounts,
+            invoice.account_role,
         )
 
     def it_creates_items(self):
@@ -21941,7 +21944,6 @@ class gem_invoice(tester):
         self.eq(primative.date('May 25, 2001'), inv1.created)
 
         # TODO We shouldn't have to down cast entitymappings
-        B()
         self.eq(
             '100 Bridge Street', 
             inv1.source.orm.cast(party.address).address1
@@ -21962,11 +21964,57 @@ class gem_invoice(tester):
             inv1.seller.orm.cast(party.company).name
         )
 
-        
+    def it_creates_a_billing_account(self):
+        # Create party
+        com = party.company(name='ACME Corporation')
+
+        # Create contactmechanisms
+        addr = party.address(
+            address1 = '123 Main Street',
+            address2 = 'New York, New York', 
+        )
+
+        acct = invoice.account(
+            contactmechanism = addr,
+            description = 'All charges for office supplies',
+        )
+
+        art = invoice.account_roletype(
+            name = 'Primary payer'
+        )
+
+        ar = invoice.account_role(
+            begin = 'Apr 15, 2000',
+            party = com,
+            account = acct,
+            account_roletype = art,
+        )
+
+        ar.save()
 
 
+        acct1 = acct.orm.reloaded()
 
+        self.eq(acct.id, acct1.id)
+        self.eq('All charges for office supplies', acct1.description) 
 
+        self.eq(acct.contactmechanism.id, acct1.contactmechanism.id)
+        self.eq(
+            '123 Main Street', 
+            acct1.contactmechanism.orm.cast(party.address).address1
+        )
 
+        ars = acct.account_roles
+        ars1 = acct1.account_roles
 
+        self.one(ars)
+        self.one(ars1)
+
+        ar = ars.first
+        ar1 = ars1.first
+
+        self.eq(ar.id, ar1.id)
+        self.eq(primative.date('Apr 15, 2000'), ar1.begin)
+        self.eq(art.id, ar1.account_roletype.id)
+        self.eq('Primary payer', ar1.account_roletype.name)
 cli().run()
