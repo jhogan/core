@@ -5083,8 +5083,12 @@ class orm:
                 if not ignore:
                     raise
     @property
-    def issynced(self):
-        return bool(self.altertable)
+    def ismigrated(self):
+        return not bool(self.altertable)
+
+    @property
+    def migration(self):
+        return migration(self.entity)
 
     @property
     def altertable(self):
@@ -5107,6 +5111,10 @@ class orm:
 
         for i in range(maps.count):
             map = maps[i + mapsoffset]
+
+            if not isinstance(map, fieldmapping):
+                continue
+
             try:
                 col = cols[i + colsoffset]
             except IndexError:
@@ -6731,30 +6739,68 @@ class association(entity):
     pass
 
 class migration:
+    def __init__(self, e=None):
+        self.entity = e
+
     @property
     def altertables(self):
         ... # TODO
 
     @property
     def entities(self):
-        r = entitiesmod.entities()
+        r = ormclasseswrapper()
         es = orm.getentitys(includeassociations=True)
         for tbl in db.catelog().tables:
-            mod, name = tbl.name.split('_', 1)
+            try:
+                mod, name = tbl.name.split('_', 1)
+            except ValueError:
+                # The table doesn't match the expected format (no
+                # underscore), so ignore it.
+                pass
 
             for e in es:
-                if e.__name__ == tbl.name:
-                    B()
+                if e.orm.table == tbl.name:
                     break
             else:
                 continue
 
-            if e.orm.issynced:
-                continue
-
-            r += e
+            if not e.orm.ismigrated:
+                r += e
 
         return r
+
+    def __repr__(self):
+        tbl = table()
+
+        row = tbl.newrow()
+
+        e = self.entity
+
+        row.newfields('Model', e, 'Table', e.orm.table)
+
+        maps, cols = e.orm.mappings, e.orm.dbtable.columns
+
+        cnt = max(len(list(maps.fieldmappings)), cols.count)
+
+        for i in range(cnt):
+            map = maps(i)
+
+            if not isinstance(map, fieldmapping):
+                continue
+
+            col = cols(i)
+
+            if map.name == col.name:
+                row = tbl.newrow()
+                row.newfields(
+                    map.name, map.definition, 
+                    col.name, col.definition
+                )
+
+        return str(tbl)
+            
+
+
             
 
 

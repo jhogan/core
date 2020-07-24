@@ -36,7 +36,7 @@ def wf(file, txt):
 
 def mig():
     for e in orm.migration().entities:
-        print(e.migration)
+        print(e.orm.migration)
         at = e.orm.altertable
 
 cfg = config()

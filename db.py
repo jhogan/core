@@ -740,8 +740,9 @@ class columns(entities):
                         BAD_TABLE_ERROR, 'Table not found'
                     )
 
-        for res in ress:
-            self += column(res)
+        if ress is not None:
+            for res in ress:
+                self += column(res)
     
 class column(entity):
     def __init__(self, res=None, *args, **kwargs):
