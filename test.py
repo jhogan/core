@@ -21849,6 +21849,8 @@ class gem_invoice(tester):
         super().__init__()
         orm.orm.recreate(
             invoice.invoice,
+            invoice.statustype,
+            invoice.status,
             invoice.salesinvoice,
             invoice.items,
             invoice.salesitems,
@@ -22017,4 +22019,36 @@ class gem_invoice(tester):
         self.eq(primative.date('Apr 15, 2000'), ar1.begin)
         self.eq(art.id, ar1.account_roletype.id)
         self.eq('Primary payer', ar1.account_roletype.name)
+
+    def it_creates_statuses(self):
+        inv = invoice.invoice()
+        inv.statuses += invoice.status(
+            assigned = 'May 25, 2001',
+            statustype = invoice.statustype(name='Approved')
+        )
+        inv.statuses += invoice.status(
+            assigned = 'May 30, 2001',
+            statustype = invoice.statustype(name='Sent')
+        )
+
+        inv.save()
+
+        inv1 = inv.orm.reloaded()
+
+        self.eq(inv.id, inv1.id)
+
+        sts = inv.statuses.sorted('assigned')
+        sts1 = inv1.statuses.sorted('assigned')
+
+        self.two(sts)
+        self.two(sts1)
+
+        st = sts1.first
+        self.eq(primative.datetime('May 25, 2001'), st.assigned)
+        self.eq('Approved', st.statustype.name)
+
+        st = sts1.second
+        self.eq(primative.datetime('May 30, 2001'), st.assigned)
+        self.eq('Sent', st.statustype.name)
+        
 cli().run()

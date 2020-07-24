@@ -43,6 +43,8 @@ class roletypes(orm.entities): pass
 class accounts(orm.entities): pass
 class account_roles(orm.associations): pass
 class account_roletypes(orm.entities): pass
+class statuses(party.statuses): pass
+class statustypes(orm.entities): pass
 
 class invoice(orm.entity):
     """ The ``invoice`` maintains header information abut the
@@ -94,6 +96,9 @@ class invoice(orm.entity):
     # The contact mechanism to which the invoice is addressed. This is
     # called **addressed to** in the book.
     destination = party.contactmechanism
+
+    # A collection of statuses for the ``invoice``
+    statuses = statuses
 
 class salesinvoice(invoice):
     """ A subentity of ``invoice`` related to a purchase order.
@@ -275,6 +280,9 @@ class account_roletype(orm.entity):
     representative", "manager", and "sale representative" that could be
     involved with the account as well. An invoice may be billed to
     either a billing account or directly to a party (``invoice.buyer``)
+
+    Note that this is modeled after the BILLING ACCOUNT ROLE TYPE entity
+    in "The Data Model Resource Book".
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -283,4 +291,38 @@ class account_roletype(orm.entity):
     name = str
 
     account_roles = account_roles
+
+class status(party.status):
+    """ Tracks the changes to an ``invoice``'s status over time.
+    Examples of ``status`` include "sent", "void", and "approved".
+    "Paid" is not a valid status because that can be determined via
+    payment transactions.
+
+    Note that this is modeled after the INVOICE STATUS in "The Data
+    Model Resource Book".
+    """
+
+    entities = statuses
+
+    # TODO ``assigned`` is a pretty good name for this concept. Ensure
+    # that other status classes use this name; or, better yet, use
+    # ``assigned`` in the base class (``party.status``)
+    # The datetime that the status took effect
+    assigned = datetime
+
+# TODO I guess there isn't a party.statustype at the moment.
+class statustype(orm.entity):
+    """ Categorizes ``statuses``.
+
+    Note that this is modeled after the INVOICE STATUS TYPE in "The Data
+    Model Resource Book".
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    name = str
+
+    # The collection of invoice statuses categorized by this status type
+    statuses = statuses
 
