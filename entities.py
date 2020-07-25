@@ -356,6 +356,10 @@ class entities(object):
         def __eq__(self, e): return (self is e)
 
     # TODO Test reverse parameter
+    # TODO It would be cool if ``key`` could be a nested attribute the
+    # way rgetattr() works:
+    #
+    #     inv.terms.sort('termtype.name')
     def sort(self, key, reverse=False):
         if type(key) == str:
             min = entities.mintype()
