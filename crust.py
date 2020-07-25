@@ -34,13 +34,38 @@ def wf(file, txt):
     p = pathlib.Path(file)
     return p.write_text(txt)
 
-def ask(msg, opts):
-    return input(msg)
+def ask(msg, yesno=True, default=None, **kwargs):
+    res = None
+    while not res:
+        res = input(f'{msg} ').lower()
+        if not res and default:
+            return default
+
+    if yesno:
+        if res in ('y', 'yes'):
+            return 'yes'
+        elif res in ('n', 'no'):
+            return 'no'
+
+    for k, v in kwargs.items():
+        if res == v:
+            return k
+    return None
 
 def say(msg):
-    return print(msg)
+    print(msg)
 
 def mig():
+    def usage():
+        print("""
+        y - yes, apply DDL
+        n - no, do not apply DDL
+        q - quit migration
+        a - apply this DDL and all later DLL
+        e - manually edit the current DDL
+        ? - print help
+        """)
+        
     say('Scanning for entities to migrate ...\n')
 
     es = orm.migration().entities
@@ -50,12 +75,25 @@ def mig():
     for e in es:
         say(f'    - {e.__module__}.{e.__name__}')
 
-    res = ask(
-        '\nWould you like to start?', '[Yn]'
+    start = ask(
+        '\nWould you like to start [Yn]?', yesno=True, default='yes'
     )
 
+    if start != 'yes':
+        return
+
+    # Stage this hunk [y,n,q,a,d,s,e,?]?
     for e in orm.migration().entities:
-        at = e.orm.altertable
+        print(f'{e.orm.migration!r}\n{e.orm.altertable}')
+        res = ask(
+            'Apply this DDL [y,n,q,a,e,?]?', yesno=True, 
+            quit='q', all='a', edit='e', help='?')
+        if res == 'quit':
+            return
+        elif res == 'help':
+            usage()
+        elif res == 'no':
+            continue
 
 cfg = config()
 acct = db.connections.getinstance().default.account

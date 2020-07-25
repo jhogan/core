@@ -4627,9 +4627,13 @@ class ormclasswrapper(entitiesmod.entity):
 
     def __getattr__(self, attr):
         """ A proxy to any of the wrapped entity's attributes not
-        imlemented here.
+        implemented here.
         """
         return getattr(self.entity, attr)
+
+    @property
+    def __module__(self):
+        return self.entity.__module__
 
     @property
     def orm(self):
