@@ -3811,6 +3811,7 @@ class test_orm(tester):
                 AFTER `name`;
         ''')
 
+
         migrate(cat, expect)
 
         # Test the new column
@@ -4038,6 +4039,68 @@ class test_orm(tester):
 
         migrate(cat, expect)
 
+        ''' Move attributes/columns '''
+
+        # Recreate class
+        class cat(orm.entity):
+            dob       =  date
+            name      =  str
+            shedder   =  bool
+            skittish  =  bool
+            lives     =  int
+
+        cat.orm.recreate()
+        self.none(cat.orm.altertable)
+
+        class cat(orm.entity):
+            name      =  str
+            shedder   =  bool
+            skittish  =  bool
+            lives     =  int
+            dob       =  date  # Move dob from beginning to end
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            CHANGE COLUMN `dob` `dob` date
+                AFTER `lives`;
+        ''')
+
+        B()
+        migrate(cat, expect)
+
+        self.eq(
+            [
+                'id',       'createdat',  'updatedat',  'name',
+                'shedder',  'skittish',   'lives',      'dob',
+            ],
+            [x.name for x in cat.orm.dbtable.columns]
+        )
+
+        class cat(orm.entity):
+            dob       =  date  # Move dob from end to beginning
+            name      =  str
+            shedder   =  bool
+            skittish  =  bool
+            lives     =  int
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            CHANGE COLUMN `dob` `dob` date
+                AFTER `updatedat`,
+        ''')
+
+        migrate(cat, expect)
+
+        self.eq(
+            [
+                'id',       'createdat',  'updatedat',  'dob',
+                'shedder',  'skittish',   'lives',      'name',
+            ],
+            [x.name for x in cat.orm.dbtable.columns]
+        )
+
+
+
         '''
         Test Modifications
         '''
@@ -4172,67 +4235,6 @@ class test_orm(tester):
         ''')
 
         migrate(cat, expect)
-
-        ''' Move attributes/columns '''
-
-        # Recreate class
-        class cat(orm.entity):
-            dob       =  date
-            name      =  str
-            shedder   =  bool
-            skittish  =  bool
-            lives     =  int
-
-        cat.orm.recreate()
-        self.none(cat.orm.altertable)
-
-        class cat(orm.entity):
-            name      =  str
-            shedder   =  bool
-            skittish  =  bool
-            lives     =  int
-            dob       =  date  # Move dob from beginning to end
-
-        expect = self.dedent('''
-        ALTER TABLE `test_cats`
-            CHANGE COLUMN `dob` `dob` date
-                AFTER `lives`;
-        ''')
-
-        migrate(cat, expect)
-
-        self.eq(
-            [
-                'id',       'createdat',  'updatedat',  'name',
-                'shedder',  'skittish',   'lives',      'dob',
-            ],
-            [x.name for x in cat.orm.dbtable.columns]
-        )
-
-        class cat(orm.entity):
-            dob       =  date  # Move dob from end to beginning
-            name      =  str
-            shedder   =  bool
-            skittish  =  bool
-            lives     =  int
-
-        expect = self.dedent('''
-        ALTER TABLE `test_cats`
-            CHANGE COLUMN `dob` `dob` date
-                AFTER `updatedat`,
-        ''')
-
-        migrate(cat, expect)
-
-        self.eq(
-            [
-                'id',       'createdat',  'updatedat',  'dob',
-                'shedder',  'skittish',   'lives',      'name',
-            ],
-            [x.name for x in cat.orm.dbtable.columns]
-        )
-
-
     def it_uses_reserved_mysql_words_for_fields(self):
         """ Ensure that the CREATE TABLE statement uses backticks to
         quote column names so we can use MySQL reserved words, such as

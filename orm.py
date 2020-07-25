@@ -14,17 +14,21 @@
 """ This file contains all classes related to object-relational mapping.
 """
 
+from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
 from collections.abc import Iterable
 from contextlib import suppress
 from datetime import datetime, date
 from dbg import B
+from difflib import SequenceMatcher
 from enum import Enum, unique
-from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
+from func import enumerate
 from pprint import pprint
 from shlex import shlex
 from table import table
 from types import ModuleType
 from uuid import uuid4, UUID
+import MySQLdb
+import _mysql_exceptions
 import builtins
 import dateutil
 import db
@@ -34,8 +38,6 @@ import func
 import gc
 import inspect
 import itertools
-import MySQLdb
-import _mysql_exceptions
 import os
 import primative
 import re
@@ -5096,7 +5098,6 @@ class orm:
 
     @property
     def altertable(self):
-        maps = self.mappings
         tbl = self.dbtable
 
         # If there is no table in the database, there can be no ALTER
@@ -5105,88 +5106,70 @@ class orm:
         if not tbl:
             return None
 
-        cols   =  tbl.columns
-        adds   =  db.columns()
-        drops  =  db.columns()
-        mods   =  db.columns()
-        mvs    =  db.columns()
-        colsoffset = 0
-        mapsoffset = 0
+        maps = mappings(
+            initial=(
+                x for x in self.mappings 
+                if isinstance(x, fieldmapping)
+            )
+        )
 
-        for i in range(maps.count):
-            map = maps[i + mapsoffset]
-
-            if not isinstance(map, fieldmapping):
-                continue
-
-            try:
-                col = cols[i + colsoffset]
-            except IndexError:
-                if map.name != col.name:
-                    adds += map
-            else:
-                if map.name == col.name:
-                    if map.definition != col.definition:
-                        mods += map
-                else:
-                    if col.name in maps:
-                        if map.name in cols:
-                            mvs += maps[col.name]
-
-                            getindex = maps.getindex
-                            if getindex(maps[col.name]) > getindex(map):
-                                mapsoffset -= 1
-                            else:
-                                colsoffset -= 1
-                        else:
-                            colsoffset -= 1
-                            adds += map
-                    else:
-                        mapsoffset -= 1
-                        drops += col
+        attrs = [x.name for x in maps]
+        cols = [x.name for x in tbl.columns]
 
 
-        drops += cols[maps.count + drops.count:]
+        opcodes = SequenceMatcher(a=cols, b=attrs).get_opcodes()
 
-        if not len(adds + drops + mods + mvs):
+        # If there are no differences, return None; there is nothing to
+        # ALTER.
+        isdiff = any([x for x in opcodes if x[0] != 'equal'])
+        if not isdiff:
             return None
+
+        print(opcodes)
 
         I = ' ' * 4
         r = f'ALTER TABLE `{self.table}`\n'
 
-        for i, mv in mvs.enumerate():
-            r += f'{I}CHANGE COLUMN `{mv.name}` `{mv.name}` ' + \
-                 f'{mv.definition}'
-            r += f'\n{I * 2}AFTER `{maps.getprevious(mv).name}`'
-            if not i.last:
-                r += ',\n'
-            
-        # ADD <column-name> <definition>
-        for i, add in adds.enumerate():
-            if i.first:
-                r += '    ADD '
-            else:
-                r += ',\n    ADD '
+        for tag, i1, i2, j1, j2 in opcodes:
 
-            r += f'`{add.name}` {add.definition}'
+            if tag not in ('insert', 'delete'):
+                continue
 
-            r += f'\n{I * 2}AFTER `{maps.getprevious(add).name}`'
+            print(tag, i1, i2, j1, j2)
+            if tag == 'insert':
+				# ADD <column-name> <definition>
+                for i, attr in enumerate(attrs[j1:j2]):
+                    if i.first:
+                        r += '    ADD '
+                    else:
+                        r += ',\n    ADD '
 
-        # DROP COLUMN <column-name>
-        for i, drop in drops.enumerate():
-            r += f'{I}DROP COLUMN `{drop.name}`'
-            if not i.last:
-                r += ',\n'
+                    map = maps[attr]
 
-        # MODIFY COLUMN <column-name> <column-definition>
-        for i, mod in mods.enumerate():
-            r += f'{I}MODIFY COLUMN `{mod.name}` {mod.definition}'
-            if not i.last:
-                r += ',\n'
+                    r += f'`{map.name}` {map.definition}'
 
-        r += ';'
+                    r += f'\n{I * 2}AFTER `{maps.getprevious(map).name}`'
+
+            elif tag == 'delete':
+                inserts = [x for x in opcodes if x[0] == 'insert']
+                for insert in inserts:
+                    if cols[i1:i2] == attrs[slice(*insert[3:])]:
+                        rename = True
+                        break
+                else:
+                    rename = False
+
+                if rename:
+                    B()
+                else:
+                    # DROP COLUMN <column-name>
+                    for i, col in enumerate(cols[i1:i2]):
+                        r += f'{I}DROP COLUMN `{col}`'
+
+                        if not i.last:
+                            r += ',\n'
                 
-        return r
+        return r + ';'
 
     @property
     def createtable(self):
