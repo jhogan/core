@@ -45,6 +45,8 @@ class account_roles(orm.associations): pass
 class account_roletypes(orm.entities): pass
 class statuses(party.statuses): pass
 class statustypes(orm.entities): pass
+class terms(orm.entities): pass
+class termtypes(orm.entities): pass
 
 class invoice(orm.entity):
     """ The ``invoice`` maintains header information abut the
@@ -99,6 +101,9 @@ class invoice(orm.entity):
 
     # A collection of statuses for the ``invoice``
     statuses = statuses
+
+    # A collection of terms associated with the ``invoice``
+    terms = terms
 
 class salesinvoice(invoice):
     """ A subentity of ``invoice`` related to a purchase order.
@@ -177,6 +182,9 @@ class item(orm.entity):
     # indicate that the feature was invoiced for a specific invoice
     # ``item`` that was for a ``product``.
     items = items
+
+    # A collection of terms associated with the ``item``
+    terms = terms
 
 class salesitem(item):
     """ An invoice item for sales order items.
@@ -326,3 +334,26 @@ class statustype(orm.entity):
     # The collection of invoice statuses categorized by this status type
     statuses = statuses
 
+class term(orm.entity):
+    """ A term or condition for an invoice. ``invoice.invoice``  and
+    ``invoice.item`` have collections of ``terms``.
+
+    Note that this is modeled after the INVOICE TERM in "The Data Model
+    Resource Book".
+    """
+    value = dec
+
+class termtype(orm.entity):
+    """ Categorizes a term.
+
+    Note that this is modeled after the INVOICE TERM in "The Data Model
+    Resource Book".
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    name = str
+
+    # The collection of ``terms`` categorized by this ``termtype``.
+    terms = terms

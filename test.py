@@ -21849,6 +21849,8 @@ class gem_invoice(tester):
         super().__init__()
         orm.orm.recreate(
             invoice.invoice,
+            invoice.term,
+            invoice.termtype,
             invoice.statustype,
             invoice.status,
             invoice.salesinvoice,
@@ -22050,5 +22052,73 @@ class gem_invoice(tester):
         st = sts1.second
         self.eq(primative.datetime('May 30, 2001'), st.assigned)
         self.eq('Sent', st.statustype.name)
+
+    def it_creates_term(self):
+        inv = invoice.invoice()
+
+        paper = product.good(name='Johnson fine grade 8½ by 11 paper')
+        # Add product as item to invoice
+        inv.items += invoice.salesitem(
+            product    =  paper,
+            quantity   =  10,
+            istaxable  =  True,
+        )
+
+        inv.items.last.terms += invoice.term(
+            value = None,
+            termtype = invoice.termtype(
+                name='Non-returnable sales item'
+            )
+        )
+
+        inv.terms += invoice.term(
+            value = 30,
+            termtype = invoice.termtype(
+                name='Payment-net days'
+            )
+        )
+
+        inv.terms += invoice.term(
+            value = 2,
+            termtype = invoice.termtype(
+                name='Late fee-percent'
+            )
+        )
+
+        inv.terms += invoice.term(
+            value = 5,
+            termtype = invoice.termtype(
+                name='Penalty for collection agency-percent'
+            )
+        )
+
+
+        inv.save()
+        inv1 = inv.orm.reloaded()
+
+        self.eq(inv.id, inv1.id)
+
+        trm1 = inv1.items.first.terms.first
+        self.eq(None, trm1.value)
+        self.eq('Non-returnable sales item', trm1.termtype.name)
+
+        trms1 = inv1.terms.sorted('value')
+
+        self.three(trms1)
+
+        trm1 = trms1.first
+        self.eq(2, trm1.value)
+        self.eq('Late fee-percent', trm1.termtype.name)
+
+        trm1 = trms1.second
+        self.eq(5, trm1.value)
+        self.eq(
+            'Penalty for collection agency-percent', 
+            trm1.termtype.name
+        )
+
+        trm1 = trms1.third
+        self.eq(30, trm1.value)
+        self.eq('Payment-net days', trm1.termtype.name)
         
 cli().run()
