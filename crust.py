@@ -34,9 +34,27 @@ def wf(file, txt):
     p = pathlib.Path(file)
     return p.write_text(txt)
 
+def ask(msg, opts):
+    return input(msg)
+
+def say(msg):
+    return print(msg)
+
 def mig():
+    say('Scanning for entities to migrate ...\n')
+
+    es = orm.migration().entities
+    if es.count:
+        say(f'There are {es.count} entities to migrate:')
+
+    for e in es:
+        say(f'    - {e.__module__}.{e.__name__}')
+
+    res = ask(
+        '\nWould you like to start?', '[Yn]'
+    )
+
     for e in orm.migration().entities:
-        print(e.orm.migration)
         at = e.orm.altertable
 
 cfg = config()

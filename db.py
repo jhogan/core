@@ -778,12 +778,12 @@ class column(entity):
         """
         r = self.type
 
-
         if self.type == 'datetime':
             r += f'({self.precision})'
-        else:
-            if self.max:
-                r += f'({self.max})'
+        elif self.type == 'decimal':
+            r += f'({self.precision}, {self.scale})'
+        elif self.type in ('binary', 'varchar', 'char'):
+            r += f'({self.max})'
 
         if self.isprimary:
             r += ' primary key'

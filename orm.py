@@ -6769,18 +6769,29 @@ class migration:
 
         return r
 
-    def __repr__(self):
+    @property
+    def table(self):
         tbl = table()
 
         row = tbl.newrow()
 
         e = self.entity
 
-        row.newfields('Model', e, 'Table', e.orm.table)
+        maps = mappings(
+            initial=(
+                x for x in e.orm.mappings 
+                if isinstance(x, fieldmapping)
+            )
+        )
 
-        maps, cols = e.orm.mappings, e.orm.dbtable.columns
+        cols = e.orm.dbtable.columns
 
-        cnt = max(len(list(maps.fieldmappings)), cols.count)
+        cnt = max(maps.count, cols.count)
+
+        row.newfields(
+            f'Model: {e.__module__}.{e.__name__}', str(), 
+            f'Table: {e.orm.table}', str()
+        )
 
         for i in range(cnt):
             map = maps(i)
@@ -6797,7 +6808,13 @@ class migration:
                     col.name, col.definition
                 )
 
-        return str(tbl)
+        return tbl
+
+    def __repr__(self):
+        if self.entity.orm.ismigrated:
+            return str()
+
+        return f'{self.table}\n{self.entity.orm.altertable}'
             
 
 
