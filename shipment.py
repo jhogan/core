@@ -222,6 +222,7 @@ class statustype(orm.entity):
     # status type.
     statuses = statuses
 
+# TODO Rename to `shipmentitem_orderitem`
 class shipitem_orderitem(orm.association):
     """ This association links a shipment item (``ship.item``) with an
     order item (``order.item``). This many-to-many relationship this
