@@ -30,6 +30,7 @@ from orm import text, timespan, datespan
 import orm
 import product
 import party
+import shipment
 
 class invoices(orm.entities): pass
 class salesinvoices(invoices): pass
@@ -47,6 +48,7 @@ class statuses(party.statuses): pass
 class statustypes(orm.entities): pass
 class terms(orm.entities): pass
 class termtypes(orm.entities): pass
+class invoiceitem_shipmentitems(orm.associations): pass
 
 class invoice(orm.entity):
     """ The ``invoice`` maintains header information abut the
@@ -121,6 +123,9 @@ class purchaseinvoice(invoice):
 
 class item(orm.entity):
     """ An invoice ``item`` represents any items that are being charged.
+    Each invoice ``item`` may include moneys that are owed from shipment
+    items (`shipment.item``), work efforts (``effort.effort``), time entries
+    (``effort.time``) or order items (``order.item``).
 
     Each invoice ``item`` may have a many-to-one relationship to
     either ``product.product`` or ``product.feature``. It may also be
@@ -357,3 +362,11 @@ class termtype(orm.entity):
 
     # The collection of ``terms`` categorized by this ``termtype``.
     terms = terms
+
+class invoiceitem_shipmentitem(orm.association):
+    """ Associates an invoice ``item`` with a shipment item
+    (``shipment.item``). 
+    """
+
+    invoiceitem = item
+    shipmentitem = shipment.item

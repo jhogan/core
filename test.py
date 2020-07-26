@@ -21848,6 +21848,7 @@ class gem_invoice(tester):
     def __init__(self):
         super().__init__()
         orm.orm.recreate(
+            invoice.invoiceitem_shipmentitems,
             invoice.invoice,
             invoice.term,
             invoice.termtype,
@@ -22120,5 +22121,36 @@ class gem_invoice(tester):
         trm1 = trms1.third
         self.eq(30, trm1.value)
         self.eq('Payment-net days', trm1.termtype.name)
+
+    def it_associates_shipmentitem_with_invoiceitem(self):
+        sh = shipment.shipment()
+        sh.items += shipment.item()
+
+        inv = invoice.invoice()
+        inv.items += invoice.salesitem(quantity=1000)
+
+        itm = sh.items.first
+        itm.invoiceitem_shipmentitems +=  \
+            invoice.invoiceitem_shipmentitem(
+                invoiceitem = inv.items.first
+            )
+
+        sh.save()
+
+        sh1 = sh.orm.reloaded()
+
+        iisis = sh.items.first.invoiceitem_shipmentitems
+        iisis1 = sh1.items.first.invoiceitem_shipmentitems
+
+        self.one(iisis)
+        self.one(iisis1)
+
+        iisi = iisis.first
+        iisi1 = iisis1.first
+
+        self.eq(iisi.id, iisi1.id)
+        self.eq(1000, iisi1.invoiceitem.quantity)
+        self.eq(inv.items.first.id, iisi1.invoiceitem.id)
+        self.eq(sh.items.first.id, iisi1.shipmentitem.id)
         
 cli().run()
