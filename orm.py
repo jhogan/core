@@ -2484,17 +2484,18 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # Create an executioner object with the above save() callable
         exec = db.executioner(save)
 
-        # Register reconnect events of then executioner so they can be re-raised
+        # Register reconnect events of then executioner so they can be
+        # issued
         exec.onbeforereconnect += \
             lambda src, eargs: self.onbeforereconnect(src, eargs)
         exec.onafterreconnect  += \
             lambda src, eargs: self.onafterreconnect(src, eargs)
 
-        # Call then executioner's exec methed which will call the exec() callable
-        # above. executioner.execute will take care of dead, pooled connection,
-        # and atomicity.
+        # Call then executioner's exec methed which will call the exec()
+        # callable above. executioner.execute will take care of dead,
+        # pooled connection, and atomicity.
         exec.execute()
-        
+
     def _save(self, cur=None, guestbook=None):
 
         if guestbook is None:
