@@ -4693,6 +4693,14 @@ class orm:
 
         self.recreate = self._recreate
 
+    @staticmethod
+    def exec(sql, args=None):
+        exec = db.executioner(
+            lambda cur: cur.execute(sql, args)
+        )
+
+        exec()
+        
     @property
     def table(self):
         mod = inspect.getmodule(self.entities)

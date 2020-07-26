@@ -84,7 +84,8 @@ def mig():
 
     # Stage this hunk [y,n,q,a,d,s,e,?]?
     for e in orm.migration().entities:
-        print(f'{e.orm.migration!r}\n{e.orm.altertable}')
+        at = e.orm.altertable
+        print(f'{e.orm.migration!r}\n{at}')
         res = ask(
             'Apply this DDL [y,n,q,a,e,?]?', yesno=True, 
             quit='q', all='a', edit='e', help='?')
@@ -92,8 +93,10 @@ def mig():
             return
         elif res == 'help':
             usage()
-        elif res == 'no':
-            continue
+        elif res == 'yes':
+            print('applying ...')
+            B()
+            orm.orm.exec(at)
 
 cfg = config()
 acct = db.connections.getinstance().default.account

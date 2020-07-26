@@ -614,6 +614,9 @@ class executioner(entity):
         self.onbeforereconnect  =  event()
         self.onafterreconnect   =  event()
     
+    def __call__(self, es=None):
+        self.execute(es)
+
     def execute(self, es=None):
         pl = pool.getdefault()
         for i in range(self.max):
