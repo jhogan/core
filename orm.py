@@ -5116,8 +5116,24 @@ class orm:
         attrs = [x.name for x in maps]
         cols = [x.name for x in tbl.columns]
 
-
         opcodes = SequenceMatcher(a=cols, b=attrs).get_opcodes()
+
+        # listify tuples so they are mutable
+        opcodes = [list(x) for x in opcodes]
+        rms = list()
+        for i, (tag, i1, i2, j1, j2) in enumerate(opcodes):
+            if tag == 'delete':
+                inserts = [x for x in opcodes if x[0] == 'insert']
+                for insert in inserts:
+                    ix = slice(*insert[3:])
+                    if cols[i1:i2] == attrs[ix]:
+                        rms.append(opcodes.index(insert))
+                        opcodes[i][0] = 'move'
+                        insert[0] = 'after'
+                        opcodes[i].append(insert)
+
+        for rm in rms:
+            del opcodes[rm]
 
         # If there are no differences, return None; there is nothing to
         # ALTER.
@@ -5128,48 +5144,51 @@ class orm:
         print(opcodes)
 
         I = ' ' * 4
-        r = f'ALTER TABLE `{self.table}`\n'
+        hdr = f'ALTER TABLE `{self.table}`\n'
+        r = str()
 
-        for tag, i1, i2, j1, j2 in opcodes:
+        for opcode in opcodes:
+            tag, i1, i2, j1, j2 = opcode[:5]
 
-            if tag not in ('insert', 'delete'):
+            try:
+                after = opcode[5]
+            except IndexError:
+                pass
+
+            if tag not in ('insert', 'delete', 'move'):
                 continue
 
-            print(tag, i1, i2, j1, j2)
             if tag == 'insert':
 				# ADD <column-name> <definition>
                 for i, attr in enumerate(attrs[j1:j2]):
-                    if i.first:
-                        r += '    ADD '
-                    else:
-                        r += ',\n    ADD '
-
                     map = maps[attr]
+                    if r: r += ',\n'
 
-                    r += f'`{map.name}` {map.definition}'
+                    r += f'{I}ADD `{map.name}` {map.definition}'
 
-                    r += f'\n{I * 2}AFTER `{maps.getprevious(map).name}`'
+                    r += f'\n{I*2}AFTER `{maps.getprevious(map).name}`'
+
+            elif tag == 'move':
+                # CHANGE COLUMN <col-name> <col-name> <col-definition> 
+                #     AFTER <after>
+                after = opcode[-1]
+                col = cols[i1:i2][0]
+                ix = after[1] - 1
+                after = cols[ix]
+                map = maps[col]
+                if r: r += ',\n'
+
+                r += f'{I}CHANGE COLUMN `{col}` ' + \
+                     f'`{col}` {map.definition}'  + \
+                     f'\n{I * 2}AFTER `{after}`'
 
             elif tag == 'delete':
-                inserts = [x for x in opcodes if x[0] == 'insert']
-                for insert in inserts:
-                    if cols[i1:i2] == attrs[slice(*insert[3:])]:
-                        rename = True
-                        break
-                else:
-                    rename = False
+                for i, col in enumerate(cols[i1:i2]):
+                    if r: r += ',\n'
 
-                if rename:
-                    B()
-                else:
-                    # DROP COLUMN <column-name>
-                    for i, col in enumerate(cols[i1:i2]):
-                        r += f'{I}DROP COLUMN `{col}`'
+                    r += f'{I}DROP COLUMN `{col}`'
 
-                        if not i.last:
-                            r += ',\n'
-                
-        return r + ';'
+        return f'{hdr}{r};'
 
     @property
     def createtable(self):

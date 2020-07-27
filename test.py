@@ -3772,7 +3772,7 @@ class test_orm(tester):
             
         self.eq(t.count, cnt, msg)
 
-    def it_migrates_new_field(self):
+    def it_migrates(self):
         def migrate(cat, expect):
             actual = cat.orm.altertable
             self.eq(expect, actual)
@@ -4065,7 +4065,6 @@ class test_orm(tester):
                 AFTER `lives`;
         ''')
 
-        B()
         migrate(cat, expect)
 
         self.eq(
@@ -4086,19 +4085,18 @@ class test_orm(tester):
         expect = self.dedent('''
         ALTER TABLE `test_cats`
             CHANGE COLUMN `dob` `dob` date
-                AFTER `updatedat`,
+                AFTER `updatedat`;
         ''')
 
         migrate(cat, expect)
 
         self.eq(
             [
-                'id',       'createdat',  'updatedat',  'dob',
-                'shedder',  'skittish',   'lives',      'name',
+                'id',    'createdat',  'updatedat',  'dob',
+                'name',  'shedder',    'skittish',   'lives',
             ],
             [x.name for x in cat.orm.dbtable.columns]
         )
-
 
 
         '''
