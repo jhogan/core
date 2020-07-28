@@ -18,6 +18,9 @@ import pathlib
 import db
 import orm
 from config import config
+import tempfile
+import os
+import textwrap
 
 def dbg(code):
     try:
@@ -34,11 +37,12 @@ def wf(file, txt):
     p = pathlib.Path(file)
     return p.write_text(txt)
 
-def ask(msg, yesno=True, default=None, **kwargs):
+class undef: pass
+def ask(msg, yesno=True, default=undef, **kwargs):
     res = None
     while not res:
         res = input(f'{msg} ').lower()
-        if not res and default:
+        if not res and default is not undef:
             return default
 
     if yesno:
@@ -50,53 +54,103 @@ def ask(msg, yesno=True, default=None, **kwargs):
     for k, v in kwargs.items():
         if res == v:
             return k
-    return None
+
+    return res
 
 def say(msg):
     print(msg)
 
 def mig():
+    tmp = None
     def usage():
-        print("""
+        print(textwrap.dedent("""
         y - yes, apply DDL
         n - no, do not apply DDL
         q - quit migration
         a - apply this DDL and all later DLL
         e - manually edit the current DDL
-        ? - print help
-        """)
+        h - print help
+        """))
         
-    say('Scanning for entities to migrate ...\n')
+    try:
+        say('Scanning for entities to migrate ...\n')
 
-    es = orm.migration().entities
-    if es.count:
-        say(f'There are {es.count} entities to migrate:')
+        es = orm.migration().entities
+        if es.count:
+            say(f'There are {es.count} entities to migrate:')
 
-    for e in es:
-        say(f'    - {e.__module__}.{e.__name__}')
+        for e in es:
+            say(f'    - {e.__module__}.{e.__name__}')
 
-    start = ask(
-        '\nWould you like to start [Yn]?', yesno=True, default='yes'
-    )
+        start = ask(
+            '\nWould you like to start [Yn]?', yesno=True, default='yes'
+        )
 
-    if start != 'yes':
-        return
-
-    # Stage this hunk [y,n,q,a,d,s,e,?]?
-    for e in orm.migration().entities:
-        at = e.orm.altertable
-        print(f'{e.orm.migration!r}\n{at}')
-        res = ask(
-            'Apply this DDL [y,n,q,a,e,?]?', yesno=True, 
-            quit='q', all='a', edit='e', help='?')
-        if res == 'quit':
+        if start != 'yes':
             return
-        elif res == 'help':
-            usage()
-        elif res == 'yes':
-            print('applying ...')
+
+        # Stage this hunk [y,n,q,a,d,s,e,h]?
+        for e in orm.migration().entities:
+            at = e.orm.altertable
+            print(f'{e.orm.migration!r}\n{at}')
+
+            while True:
+                res = ask(
+                    'Apply this DDL [y,n,q,a,e,h]?', yesno=True, 
+                    quit='q', all='a', edit='e', help='h'
+                )
+
+                if res in ('yes', 'no', 'quit', 'all', 'edit'):
+                    break
+
+                if res == 'help':
+                    usage()
+
+            if res == 'quit':
+                return
+            elif res == 'edit':
+                # Create a tmp file
+                if not tmp:
+                    _, tmp = tempfile.mkstemp()
+
+                # Write the ALTER TABLE to the tmp file
+                with open(tmp, 'w') as f:
+                    f.write(at)
+
+                # Get an editor that the user likes
+                editor = os.getenv('EDITOR') or '/usr/bin/vim'
+
+                while True:
+                    # Prompt the user to edit the file
+                    os.system(f'{editor} {tmp}')
+
+                    # Read back in the edited file
+                    with open(tmp, mode='r') as f:
+                        at = f.read()
+
+                    # Execute the edited ALTER TABLE statement
+                    try:
+                        orm.orm.exec(at)
+                    except Exception as ex:
+                        res = ask(
+                            f'\n{ex}\n\nPress any key to continue...',
+                            default = None
+                        )
+                        if res and res.lower() in ('q', 'quit', 'exit'):
+                            return
+                    else:
+                        break
+            
+            elif res == 'yes':
+                print('applying ...')
+                B()
+                orm.orm.exec(at)
+    except Exception as ex:
+        print(f'\n{ex}\n')
+    finally:
+        if tmp:
             B()
-            orm.orm.exec(at)
+            os.remove(tmp)
 
 cfg = config()
 acct = db.connections.getinstance().default.account
