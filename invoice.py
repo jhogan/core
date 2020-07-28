@@ -31,6 +31,7 @@ import orm
 import product
 import party
 import shipment
+import effort
 
 class invoices(orm.entities): pass
 class salesinvoices(invoices): pass
@@ -49,6 +50,7 @@ class statustypes(orm.entities): pass
 class terms(orm.entities): pass
 class termtypes(orm.entities): pass
 class invoiceitem_shipmentitems(orm.associations): pass
+class effort_items(orm.associations): pass
 
 class invoice(orm.entity):
     """ The ``invoice`` maintains header information abut the
@@ -370,3 +372,22 @@ class invoiceitem_shipmentitem(orm.association):
 
     invoiceitem = item
     shipmentitem = shipment.item
+
+class effort_item(orm.association):
+    """ An association between a work effort (``effort.effort``) and an
+    invoice ``item. The main use case for this class is to allow invoice
+    items to be linked to time (``effort.time``) entries. This gives an
+    application the ability to bill a customer for time spent providing
+    a service.
+
+    Note that this is modeled after the WORK EFFORT BILLING in "The Data
+    Model Resource Book".
+    """
+
+    # The invoice ``item`` side of the association
+    item = item
+
+    # The work effort side of the association
+    effort = effort.effort
+
+    percent = dec
