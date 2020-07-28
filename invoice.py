@@ -32,6 +32,7 @@ import product
 import party
 import shipment
 import effort
+import order
 
 class invoices(orm.entities): pass
 class salesinvoices(invoices): pass
@@ -51,6 +52,7 @@ class terms(orm.entities): pass
 class termtypes(orm.entities): pass
 class invoiceitem_shipmentitems(orm.associations): pass
 class effort_items(orm.associations): pass
+class invoiceitem_orderitems(orm.associations): pass
 
 class invoice(orm.entity):
     """ The ``invoice`` maintains header information abut the
@@ -391,3 +393,21 @@ class effort_item(orm.association):
     effort = effort.effort
 
     percent = dec
+
+class invoiceitem_orderitem(orm.association):
+    """ An association that allows for a many-to-many association
+    between ``order.items`` and ``invoice.items``. This association
+    allows order items to be groped together on an ``invocie.item`` or,
+    conversely, more than one ``invoice.item`` for an ``order.item``.
+
+    Note that this is modeled after the ORDER ITEM BILLING in "The Data
+    Model Resource Book".
+    """
+    invoiceitem = item
+    orderitem = order.item
+
+    # These attributes ``amount`` and ``quantity`` are provided to
+    # record the distribition of the amount or quantity from an
+    # order.item to multiple invoices or vice versa.
+    amount = dec
+    quantity = dec

@@ -21849,6 +21849,8 @@ class gem_invoice(tester):
         super().__init__()
         orm.orm.recreate(
             invoice.invoiceitem_shipmentitems,
+            invoice.invoiceitem_orderitems,
+            invoice.purchaseitem,
             invoice.invoice,
             invoice.term,
             invoice.termtype,
@@ -22152,5 +22154,42 @@ class gem_invoice(tester):
         self.eq(1000, iisi1.invoiceitem.quantity)
         self.eq(inv.items.first.id, iisi1.invoiceitem.id)
         self.eq(sh.items.first.id, iisi1.shipmentitem.id)
-        
+
+    def it_associates_order_items_to_invoice_items(self):
+        # Create order.purchaseitem
+        po = order.purchaseorder()
+        po.items += order.purchaseitem(
+            quantity  =  40,
+            price     =  60
+        )
+
+        # Create invoice.purchaseitem
+        inv = invoice.invoice()
+        inv.items += invoice.purchaseitem(quantity=100)
+
+        # Associate the items
+        po.items.last.invoiceitem_orderitems += \
+            invoice.invoiceitem_orderitem(
+                invoiceitem = inv.items.last
+            )
+
+        # Save, reload and test
+        po.save()
+
+        po1 = po.orm.reloaded()
+
+        self.eq(po.id, po1.id)
+
+        iiois = po.items.last.invoiceitem_orderitems
+        iiois1 = po1.items.last.invoiceitem_orderitems
+
+        self.one(iiois)
+        self.one(iiois1)
+
+        iioi = iiois.first
+        iioi1 = iiois1.first
+
+        self.eq(iioi.invoiceitem.id, iioi1.invoiceitem.id)
+        self.eq(iioi.orderitem.id, iioi1.orderitem.id)
+
 cli().run()
