@@ -269,6 +269,11 @@ class account(orm.entity):
     # quastion must, be related to a contact mechanism. 
     contactmechanism = party.contactmechanism
 
+    # A collection of payments for this account. This is for when
+    # payments are applied "on account" rather than on an invoice via
+    # ``invoice_payment``.
+    payments = payments
+
 class account_role(orm.association):
     """ An intersection between ``party`` and a billing ``account` allowing
     for maintenance of the various parties involved on the account.
@@ -411,3 +416,81 @@ class invoiceitem_orderitem(orm.association):
     # order.item to multiple invoices or vice versa.
     amount = dec
     quantity = dec
+
+class payment(orm.entity):
+    """ Tracks the payments made on ``invoices``. 
+
+    A many-to-many relationship between ``invoice`` and ``payment``
+    exists via the ``invoice_payment`` association. See the
+    documentation in that class for more information.
+
+    In addition to a payment on an invoice, a payment may be applied
+    "on account", which means it is applied to a billing ``account``.
+    without being applied to specific invoices. Thus, there is a
+    one-to-many relationship between ``account`` and ``payment``.
+    """
+
+    # Documents the date the payment can be realized. For instance, an
+    # electronic transfer may be for a future time, or a check may be
+    # postedated and take effect at a later time. (The book calls this
+    # the **effective date**.)
+    realized = datetime
+
+    # References a payment identifier such as a check number or
+    # electronic transfer identifier.
+    reference = str
+    amount = dec
+
+    # An attribute to fully describe any circumstances involved in the
+    # transaction such as "payment was made with a message that
+    # complimented the service provided".
+    comment = text
+
+    party = party
+
+class paymenttype(orm.entity):
+    """ Identifies the kind of payment being tracked by the ``payment``
+    entity. As such, there is a one-to-many relationship between
+    ``paymenttype`` and ``payment``. Examples of payment types include
+    "electronic" (for electronic transfers of moneys), "cash",
+    "certified check", "personal check", and "credit card". 
+
+    Note that this entity was originally called PAYMENT METHOD TYPE in
+    "The Data Model Resource Book".
+    """
+
+    name = str
+    payments = payments
+
+
+class receipt(payment):
+    """ A subentity of payment that represents incoming moneys to an
+    internal organization (``party.internalorganization``) of the
+    enterprise. In this case, the ``party`` attribute (inherited from
+    ``payment``) represents the party receiving the payment. A
+    ``disbursement`` represents the opposite case.
+    """
+
+class disbursement(payment):
+    """ A subentity of payment that represents outgoing moneys sent by
+    an internal organization (``party.internalorganization``) of the
+    enterprise. In this case, the ``party`` attribute (inherited from
+    ``payment``) represents the party sending the payment. A
+    ``receipt`` represents the opposite case.
+    """
+
+class invoice_payment(orm.association):
+    """ Associates an ``invoice`` with a ``payment``. 
+    
+    Each ``payment`` may be applied toward many ``invoices`` via this
+    association. Conversely, multiple payments may pay for a single
+    ``invoice`` when partial payments are made.
+
+    Alternatively, the payment may be appliend "on account", which means
+    it is applied to a billing ``account``. without being applied to
+    specific invoices. 
+
+    Note that this entity was originally called PAYMENT APPLICATION in
+    "The Data Model Resource Book".
+    """
+    amount = dec
