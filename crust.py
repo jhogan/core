@@ -21,6 +21,7 @@ from config import config
 import tempfile
 import os
 import textwrap
+from func import enumerate
 
 def dbg(code):
     try:
@@ -89,10 +90,12 @@ def mig():
         if start != 'yes':
             return
 
-        # Stage this hunk [y,n,q,a,d,s,e,h]?
-        for e in orm.migration().entities:
+        es = orm.migration().entities
+
+        for i, e in es.enumerate():
             at = e.orm.altertable
-            print(f'{e.orm.migration!r}\n{at}')
+            tbl = e.orm.migration.table
+            print(f'{tbl!s}\n{at}\n')
 
             while True:
                 res = ask(
@@ -106,7 +109,20 @@ def mig():
                 if res == 'help':
                     usage()
 
-            if res == 'quit':
+            if res == 'all':
+                B()
+                ddl = str()
+                for j, e in enumerate(es[i:]):
+                    at = e.orm.altertable
+                    ddl += f'{at}\n\n'
+
+                res = ask(f'{ddl}\nExecute the above DDL? [Yn]')
+                if res == 'yes':
+                    say('executing...')
+                elif res == 'no':
+                    continue
+
+            elif res == 'quit':
                 return
             elif res == 'edit':
                 # Create a tmp file
@@ -115,14 +131,26 @@ def mig():
 
                 # Write the ALTER TABLE to the tmp file
                 with open(tmp, 'w') as f:
-                    f.write(at)
+                    f.write(
+                        f'{at}\n\n'
+                        f'/* Model-to-table comparison: \n{tbl}\n*/'
+                    )
 
                 # Get an editor that the user likes
                 editor = os.getenv('EDITOR') or '/usr/bin/vim'
 
+                basename = os.path.basename(editor)
+
+                flags = ''
+                if basename in ('vi', 'vim'):
+                    flags = '-c "set syn=sql"'
+
                 while True:
                     # Prompt the user to edit the file
-                    os.system(f'{editor} {tmp}')
+                    if flags:
+                        flags = f' {flags} '
+
+                    os.system(f'{editor}{flags}{tmp}')
 
                     # Read back in the edited file
                     with open(tmp, mode='r') as f:
@@ -132,24 +160,24 @@ def mig():
                     try:
                         orm.orm.exec(at)
                     except Exception as ex:
+                        say(f'\n{ex}\n\n')
                         res = ask(
-                            f'\n{ex}\n\nPress any key to continue...',
-                            default = None
+                            'Press re[e]dit, [i]gnore or [q]uit...',
+                            edit='e', ignore='i', quit='q'
                         )
-                        if res and res.lower() in ('q', 'quit', 'exit'):
+                        if res == 'ignore':
+                            break
+                        elif res == 'quit':
                             return
                     else:
                         break
-            
             elif res == 'yes':
                 print('applying ...')
-                B()
                 orm.orm.exec(at)
     except Exception as ex:
         print(f'\n{ex}\n')
     finally:
         if tmp:
-            B()
             os.remove(tmp)
 
 cfg = config()
