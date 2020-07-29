@@ -58,11 +58,92 @@ def ask(msg, yesno=True, default=undef, **kwargs):
 
     return res
 
-def say(msg):
-    print(msg)
+class process:
+    def say(msg):
+        print(msg)
+    
+class mig(process):
+    def __init__(self):
+        self._done = orm.ormclasseswrapper()
+        self._todo = orm.ormclasseswrapper()
+        self._isscaned = False
 
-def mig():
-    tmp = None
+    class exec(self):
+        def run(self):
+            # Execute the edited ALTER TABLE statement
+            try:
+                orm.orm.exec(at)
+            except Exception as ex:
+                say(f'\n{ex}\n\n')
+                res = ask(
+                    'Press re[e]dit, [i]gnore or [q]uit...',
+                    edit='e', ignore='i', quit='q'
+                )
+                if res == 'ignore':
+                    break
+                elif res == 'quit':
+                    return
+            else:
+                break
+
+    class all(process):
+        def run(self):
+            ddl = str()
+            for j, e in enumerate(es[i:]):
+                at = e.orm.altertable
+                ddl += f'{at}\n\n'
+
+            res = ask(f'{ddl}\nExecute the above DDL? [Yn]')
+            if res == 'yes':
+                say('executing...')
+                return 'done'
+            elif res == 'no':
+                return 'abort'
+    class edit(process):
+        def __init__(self):
+            self._tmp = None
+
+        @property
+        def tmp(self):
+            # Create a tmp file
+            if not self._tmp:
+                _, self._tmp = tempfile.mkstemp()
+            return self._tmp
+
+        @property
+        def editor(self):
+            # Get an editor that the user likes
+            editor = os.getenv('EDITOR') or '/usr/bin/vim'
+
+        def edit(self):
+            basename = os.path.basename(self.editor)
+            
+            flags = ''
+            if basename in ('vi', 'vim'):
+                flags = '-c "set syn=sql"'
+            if flags:
+                flags = f' {flags} '
+
+            os.system(f'{editor}{flags}{tmp}')
+
+        def run(self):
+            # Write the ALTER TABLE to the tmp file
+            with open(tmp, 'w') as f:
+                f.write(
+                    f'{at}\n\n'
+                    f'/* Model-to-table comparison: \n{tbl}\n*/'
+                )
+
+            self.edit()
+
+            # Read back in the edited file
+            with open(tmp, mode='r') as f:
+                at = f.read()
+
+            self.processes.process('exec', at)
+
+
+
     def usage():
         print(textwrap.dedent("""
         y - yes, apply DDL
@@ -72,17 +153,31 @@ def mig():
         e - manually edit the current DDL
         h - print help
         """))
-        
-    try:
-        say('Scanning for entities to migrate ...\n')
 
-        es = orm.migration().entities
-        if es.count:
-            say(f'There are {es.count} entities to migrate:')
+    def scan(self):
+        tmp = None
+        if not self._isscaned:
+            self._todo += orm.migration().entities
 
-        for e in es:
-            say(f'    - {e.__module__}.{e.__name__}')
+            self.say('Scanning for entities to migrate ...\n')
 
+            es = self.todo
+            if es.count:
+                self.say(f'There are {es.count} entities to migrate:')
+
+            for e in es:
+                say(f'    - {e.__module__}.{e.__name__}')
+
+    @property
+    def done(self):
+        return self._done
+
+    @property
+    def todo(self):
+        scan()
+        return self._todo
+
+    def run():
         start = ask(
             '\nWould you like to start [Yn]?', yesno=True, default='yes'
         )
@@ -90,8 +185,9 @@ def mig():
         if start != 'yes':
             return
 
-        es = orm.migration().entities
+        scan()
 
+        es = self.todo
         for i, e in es.enumerate():
             at = e.orm.altertable
             tbl = e.orm.migration.table
@@ -110,70 +206,14 @@ def mig():
                     usage()
 
             if res == 'all':
-                B()
-                ddl = str()
-                for j, e in enumerate(es[i:]):
-                    at = e.orm.altertable
-                    ddl += f'{at}\n\n'
-
-                res = ask(f'{ddl}\nExecute the above DDL? [Yn]')
-                if res == 'yes':
-                    say('executing...')
-                elif res == 'no':
+                res = self.processes.process('all')
+                if res == 'abort':
                     continue
-
             elif res == 'quit':
                 return
+
             elif res == 'edit':
-                # Create a tmp file
-                if not tmp:
-                    _, tmp = tempfile.mkstemp()
-
-                # Write the ALTER TABLE to the tmp file
-                with open(tmp, 'w') as f:
-                    f.write(
-                        f'{at}\n\n'
-                        f'/* Model-to-table comparison: \n{tbl}\n*/'
-                    )
-
-                # Get an editor that the user likes
-                editor = os.getenv('EDITOR') or '/usr/bin/vim'
-
-                basename = os.path.basename(editor)
-
-                flags = ''
-                if basename in ('vi', 'vim'):
-                    flags = '-c "set syn=sql"'
-
-                while True:
-                    # Prompt the user to edit the file
-                    if flags:
-                        flags = f' {flags} '
-
-                    os.system(f'{editor}{flags}{tmp}')
-
-                    # Read back in the edited file
-                    with open(tmp, mode='r') as f:
-                        at = f.read()
-
-                    # Execute the edited ALTER TABLE statement
-                    try:
-                        orm.orm.exec(at)
-                    except Exception as ex:
-                        say(f'\n{ex}\n\n')
-                        res = ask(
-                            'Press re[e]dit, [i]gnore or [q]uit...',
-                            edit='e', ignore='i', quit='q'
-                        )
-                        if res == 'ignore':
-                            break
-                        elif res == 'quit':
-                            return
-                    else:
-                        break
-            elif res == 'yes':
-                print('applying ...')
-                orm.orm.exec(at)
+                res = self.processes.process('edit')
     except Exception as ex:
         print(f'\n{ex}\n')
     finally:
