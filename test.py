@@ -21848,6 +21848,8 @@ class gem_invoice(tester):
     def __init__(self):
         super().__init__()
         orm.orm.recreate(
+            invoice.invoice_payments,
+            invoice.payments,
             invoice.invoiceitem_shipmentitems,
             invoice.invoiceitem_orderitems,
             invoice.purchaseitem,
@@ -22191,5 +22193,33 @@ class gem_invoice(tester):
 
         self.eq(iioi.invoiceitem.id, iioi1.invoiceitem.id)
         self.eq(iioi.orderitem.id, iioi1.orderitem.id)
+
+    def it_associates_invoice_with_payment(self):
+        inv = invoice.invoice()
+
+        inv.invoice_payments += invoice.invoice_payment(
+            amount = 182.20,
+            payment = invoice.payment(
+                amount = 182.20
+            )
+        )
+
+        inv.save()
+
+        inv1 = inv.orm.reloaded()
+
+        ips = inv.invoice_payments
+        ips1 = inv1.invoice_payments
+
+        self.one(ips)
+        self.one(ips1)
+
+        ip = inv.invoice_payments.first
+        ip1 = inv1.invoice_payments.first
+
+        self.eq(ip.id, ip1.id)
+        self.eq(dec('182.20'), ip1.amount)
+        self.eq(dec('182.20'), ip1.payment.amount)
+
 
 cli().run()

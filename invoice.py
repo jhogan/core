@@ -53,6 +53,11 @@ class termtypes(orm.entities): pass
 class invoiceitem_shipmentitems(orm.associations): pass
 class effort_items(orm.associations): pass
 class invoiceitem_orderitems(orm.associations): pass
+class payments(orm.entities): pass
+class paymenttypes(orm.entities): pass
+class receipts(payments): pass
+class disbursements(payments): pass
+class invoice_payments(orm.associations): pass
 
 class invoice(orm.entity):
     """ The ``invoice`` maintains header information abut the
@@ -429,6 +434,10 @@ class payment(orm.entity):
     without being applied to specific invoices. Thus, there is a
     one-to-many relationship between ``account`` and ``payment``.
     """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.default('reference', None)
+        self.orm.default('comment', None)
 
     # Documents the date the payment can be realized. For instance, an
     # electronic transfer may be for a future time, or a check may be
@@ -458,10 +467,8 @@ class paymenttype(orm.entity):
     Note that this entity was originally called PAYMENT METHOD TYPE in
     "The Data Model Resource Book".
     """
-
     name = str
     payments = payments
-
 
 class receipt(payment):
     """ A subentity of payment that represents incoming moneys to an
@@ -494,3 +501,9 @@ class invoice_payment(orm.association):
     "The Data Model Resource Book".
     """
     amount = dec
+
+    # The invoice side of the association
+    invoice = invoice
+
+    # The payment side of the association
+    payment = payment
