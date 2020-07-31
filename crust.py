@@ -7,6 +7,9 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
+import pygments
+import pygments.lexers
+import pygments.formatters
 import party
 import product
 import order
@@ -41,7 +44,31 @@ def wf(file, txt):
 class undef: pass
 
 class process:
+    @property
+    def formatter(self):
+        if not hasattr(self, '_formatter'):
+            self._formatter = pygments.formatters.TerminalFormatter()
+        return self._formatter
+
+    @property
+    def mysqllexer(self):
+        if not hasattr(self, '_mysqllexer'):
+            self._mysqllexer = pygments.lexers.MySqlLexer()
+        return self._mysqllexer
+
     class Abort(Exception): pass
+
+    def print(self, msg, lang=None):
+        if lang:
+            if lang not in ('sql',):
+                raise ValueError("Supported languages: 'sql'")
+
+            if lang == 'sql':
+                lex = self.mysqllexer
+
+            msg = pygments.highlight(msg, lex, self.formatter)
+
+        print(msg)
 
     def say(self, msg):
         print(msg)
@@ -68,6 +95,7 @@ class process:
 class mig(process):
     def __init__(self):
         self._done = orm.ormclasseswrapper()
+        self._failed = orm.ormclasseswrapper()
         self._todo = orm.ormclasseswrapper()
         self._isscaned = False
         self._tmp = None
@@ -96,16 +124,9 @@ class mig(process):
         # Get an editor that the user likes
         return os.getenv('EDITOR') or '/usr/bin/vim'
 
-    def exec_alter_table(self, e):
+    def exec_alter_table(self, e=None, at=None):
         try:
-            at = e.orm.altertable
-            #MESSUP THE ALTERTABLE
-
-
-
-
-            at = 'xxx' + at
-
+            at = at or e.orm.altertable
             orm.orm.exec(at)
         except Exception as ex:
             self.say(f'\n{ex}\n\n')
@@ -114,10 +135,10 @@ class mig(process):
                 edit='e', ignore='i', quit='q'
             )
             if res == 'edit':
-                self.exec_edited_alter_table(e)
+                self.edit_alter_table(at=at)
 
             elif res == 'ignore':
-                return
+                raise
             elif res == 'quit':
                 raise self.Abort()
 
@@ -144,15 +165,18 @@ class mig(process):
 
     def process_all(self):
         ddl = str()
-        for j, e in enumerate(es[i:]):
+        for e in self.todo:
             at = e.orm.altertable
             ddl += f'{at}\n\n'
 
-        res = ask(f'{ddl}\nExecute the above DDL? [Yn]')
+        self.print(ddl, lang='sql')
+        res = self.ask(
+            f'Execute the above DDL? [Yn]', yesno=True, default='yes'
+        )
         if res == 'yes':
-            say('executing...')
-            return 'done'
+            self.exec_alter_table(at=ddl)
         elif res == 'no':
+            B()
             return 'abort'
 
     def edit_alter_table(self, e, at=None):
@@ -206,10 +230,22 @@ class mig(process):
     def done(self):
         return self._done
 
+    @done.setter
+    def done(self, v):
+        self._done = v
+
+    @property
+    def failed(self):
+        return self._failed
+
+    @failed.setter
+    def failed(self, v):
+        self._failed = v
+
     @property
     def todo(self):
         self.scan()
-        return self._todo
+        return self._todo - self.done - self.failed
 
     def __call__(self):
         def usage():
@@ -231,36 +267,47 @@ class mig(process):
 
         self.scan()
 
-        es = self.todo
-        for i, e in es.enumerate():
+
+        def show(e):
             at = e.orm.altertable
             tbl = e.orm.migration.table
-            print(f'{tbl!s}\n{at}\n')
+
+            self.print(f'\n{tbl!s}')
+            self.print(at, lang='sql')
+
+        es = self.todo
+        for i, e in es.enumerate():
+            show(e)
 
             while True:
                 res = self.ask(
-                    'Apply this DDL [y,n,q,a,e,h]?', yesno=True, 
-                    quit='q', all='a', edit='e', help='h'
+                    'Apply this DDL [y,n,q,a,e,s,h]?', yesno=True, 
+                    quit='q', all='a', edit='e', show='s', help='h'
                 )
 
-                if res in ('yes', 'no', 'quit', 'all', 'edit'):
+                if res == 'show':
+                    show(e)
+                elif res == 'help':
+                    usage()
+                else:
                     break
 
-                if res == 'help':
-                    usage()
-
             if res == 'yes':
-                self.exec_alter_table(e)
+                try:
+                    self.exec_alter_table(e)
+                except:
+                    self.failed += e
+                else:
+                    self.done += e
+
             elif res == 'no':
                 continue
             elif res == 'quit':
-                B()
                 raise process.Abort()
             elif res == 'all':
                 res = self.process_all()
                 if res == 'abort':
                     continue
-
             elif res == 'edit':
                 res = self.processes.process('edit')
 
