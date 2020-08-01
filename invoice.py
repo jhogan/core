@@ -34,30 +34,40 @@ import shipment
 import effort
 import order
 
-class invoices(orm.entities): pass
-class salesinvoices(invoices): pass
-class purchaseinvoices(invoices): pass
-class items(orm.entities): pass
-class salesitems(items): pass
-class purchaseitems(items): pass
-class types(orm.entities): pass
-class roles(orm.entities): pass
-class roletypes(orm.entities): pass
-class accounts(orm.entities): pass
-class account_roles(orm.associations): pass
-class account_roletypes(orm.entities): pass
-class statuses(party.statuses): pass
-class statustypes(orm.entities): pass
-class terms(orm.entities): pass
-class termtypes(orm.entities): pass
-class invoiceitem_shipmentitems(orm.associations): pass
-class effort_items(orm.associations): pass
-class invoiceitem_orderitems(orm.associations): pass
-class payments(orm.entities): pass
-class paymenttypes(orm.entities): pass
-class receipts(payments): pass
-class disbursements(payments): pass
-class invoice_payments(orm.associations): pass
+class invoices(orm.entities):                       pass
+class salesinvoices(invoices):                      pass
+class purchaseinvoices(invoices):                   pass
+class items(orm.entities):                          pass
+class salesitems(items):                            pass
+class purchaseitems(items):                         pass
+class types(orm.entities):                          pass
+class roles(orm.entities):                          pass
+class roletypes(orm.entities):                      pass
+class accounts(orm.entities):                       pass
+class account_roles(orm.associations):              pass
+class account_roletypes(orm.entities):              pass
+class statuses(party.statuses):                     pass
+class statustypes(orm.entities):                    pass
+class terms(orm.entities):                          pass
+class termtypes(orm.entities):                      pass
+class invoiceitem_shipmentitems(orm.associations):  pass
+class effort_items(orm.associations):               pass
+class invoiceitem_orderitems(orm.associations):     pass
+class payments(orm.entities):                       pass
+class paymenttypes(orm.entities):                   pass
+class receipts(payments):                           pass
+class disbursements(payments):                      pass
+class invoice_payments(orm.associations):           pass
+class transactions(orm.entities):                   pass
+class withdrawals(transactions):                    pass
+class deposits(transactions):                       pass
+class adjustments(transactions):                    pass
+class financialaccounts(orm.entities):              pass
+class financialaccounttypes(orm.entities):          pass
+class investmentaccounts(financialaccounts):        pass
+class bankaccounts(financialaccounts):              pass
+class financialaccount_parties(orm.associations):   pass
+class financialaccount_partytypes(orm.entities):    pass
 
 class invoice(orm.entity):
     """ The ``invoice`` maintains header information abut the
@@ -555,7 +565,6 @@ class financialaccounttype(orm.entity):
     Note that this entity was originally called FINANCIAL ACCOUNT TYPE
     in "The Data Model Resource Book".
     """
-    fund", etc.
     financialaccounts = financialaccounts
 
 class investmentaccount(financialaccount):
@@ -569,6 +578,8 @@ class financialaccount_party(orm.association):
     Note that this entity was originally called FINANCIAL ACCOUNT ROLE
     in "The Data Model Resource Book".
     """
+    entities = financialaccount_parties
+
     span = datespan
 
 class financialaccount_partytype(orm.entity):

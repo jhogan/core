@@ -16,6 +16,8 @@ mapping.
 
 Todo:
     TODO: s/explicit attribute/imperitive attribute/
+
+    TODO Add automatic pluralisation of entities
     
 """
 

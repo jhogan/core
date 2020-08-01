@@ -22221,5 +22221,4 @@ class gem_invoice(tester):
         self.eq(dec('182.20'), ip1.amount)
         self.eq(dec('182.20'), ip1.payment.amount)
 
-
 cli().run()
