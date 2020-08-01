@@ -507,3 +507,78 @@ class invoice_payment(orm.association):
 
     # The payment side of the association
     payment = payment
+
+class transaction(orm.entity):
+    """
+
+    Note that this entity was originally called FINANCIAL ACCOUNT
+    TRANSACTION in "The Data Model Resource Book".
+    """
+
+    transacted = datetime
+    entered = datetime
+
+class withdrawal(transaction):
+    pass
+
+class deposit(transaction):
+    pass
+
+class adjustment(transaction):
+    """
+    Note that this entity was originally called FINANCIAL ACCOUNT
+    ADJUSTMENT in "The Data Model Resource Book".
+    """
+
+class financialaccount(orm.entity):
+    """ A financial account is a vehical for maintaining funds.
+    Subentities includ ``bankaccount`` and ``investmentaccount``.
+
+    ``financialaccounttype` could store other tyes of
+    ``financialaccounts`` such as "checking", "savings", "IRA", "mutual
+    fund", etc.
+
+    Each ``payment`` may be either a ``receipt`` or ``disbursement`,
+    which is linked to different types of financial account
+    ``transactions
+
+    Note that this entity was originally called FINANCIAL ACCOUNT in
+    "The Data Model Resource Book".
+    """
+    name = str
+
+class financialaccounttype(orm.entity):
+    """ ``financialaccounttype` can be used to stores tyess of
+    ``financialaccounts`` such as "checking", "savings", "IRA", "mutual
+    funds", and so on.
+
+    Note that this entity was originally called FINANCIAL ACCOUNT TYPE
+    in "The Data Model Resource Book".
+    """
+    fund", etc.
+    financialaccounts = financialaccounts
+
+class investmentaccount(financialaccount):
+    pass
+
+class bankaccount(financialaccount):
+    pass
+
+class financialaccount_party(orm.association):
+    """
+    Note that this entity was originally called FINANCIAL ACCOUNT ROLE
+    in "The Data Model Resource Book".
+    """
+    span = datespan
+
+class financialaccount_partytype(orm.entity):
+    """
+    Note that this entity was originally called FINANCIAL ACCOUNT ROLE
+    TYPE in "The Data Model Resource Book".
+    """
+    financialaccount_parties = financialaccount_parties
+    
+
+
+
+
