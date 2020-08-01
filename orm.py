@@ -3612,6 +3612,13 @@ class mapping(entitiesmod.entity):
         self.isderived = isderived
 
     @property
+    def isstandard(self):
+        """ Returns True if this is a standard field mapping applied by
+        the entitymeta.
+        """
+        return self.name in ('id', 'createdat', 'updatedat')
+
+    @property
     def name(self):
         return self._name
 
