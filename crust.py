@@ -58,7 +58,7 @@ class process:
 
     class Abort(Exception): pass
 
-    def print(self, msg, lang=None):
+    def print(self, msg, lang=None, end='\n'):
         if lang:
             if lang not in ('sql',):
                 raise ValueError("Supported languages: 'sql'")
@@ -68,7 +68,7 @@ class process:
 
             msg = pygments.highlight(msg, lex, self.formatter)
 
-        print(msg)
+        print(msg, end=end)
 
     def say(self, msg):
         print(msg)
@@ -94,11 +94,12 @@ class process:
     
 class mig(process):
     def __init__(self):
-        self._done = orm.ormclasseswrapper()
-        self._failed = orm.ormclasseswrapper()
-        self._todo = orm.ormclasseswrapper()
-        self._isscaned = False
-        self._tmp = None
+        self._done      =  orm.ormclasseswrapper()
+        self._failed    =  orm.ormclasseswrapper()
+        self._todo      =  orm.ormclasseswrapper()
+        self._isscaned  =  False
+        self._tmp       =  None
+
         try:
             self()
         except process.Abort:
@@ -107,6 +108,34 @@ class mig(process):
             raise
         finally:
             self.destructor()
+
+    def counts(self):
+        print()
+        def show(es):
+            print(f'({es.count})', end='')
+            if es.count:
+                print(':')
+            else:
+                print()
+
+            for e in es:
+                self.say(f'    - {e.__module__}.{e.__name__}')
+
+            print()
+
+        todo    =  self.todo
+        done    =  self.done
+        failed  =  self.failed
+
+        self.print('todo', end='')
+        show(todo)
+
+        self.print('done', end='')
+        show(done)
+
+        self.print('failed', end='')
+        show(failed)
+        print()
     
     def destructor(self):
         if self._tmp is not None:
@@ -125,22 +154,24 @@ class mig(process):
         return os.getenv('EDITOR') or '/usr/bin/vim'
 
     def exec_alter_table(self, e=None, at=None):
-        try:
-            at = at or e.orm.altertable
-            orm.orm.exec(at)
-        except Exception as ex:
-            self.say(f'\n{ex}\n\n')
-            res = self.ask(
-                'Press [e]dit, [i]gnore or [q]uit...',
-                edit='e', ignore='i', quit='q'
-            )
-            if res == 'edit':
-                self.edit_alter_table(at=at)
-
-            elif res == 'ignore':
-                raise
-            elif res == 'quit':
-                raise self.Abort()
+        while True:
+            try:
+                at = at or e.orm.altertable
+                orm.orm.exec(at)
+            except Exception as ex:
+                self.say(f'\n{ex}\n\n')
+                res = self.ask(
+                    'Press [e]dit, [i]gnore or [q]uit...',
+                    edit='e', ignore='i', quit='q'
+                )
+                if res == 'edit':
+                    at = self.edit_alter_table(at=at)
+                    continue
+                elif res == 'ignore':
+                    B()
+                    raise
+                elif res == 'quit':
+                    raise self.Abort()
 
     def exec_edited_alter_table(self, e):
         at = None
@@ -164,22 +195,40 @@ class mig(process):
                 break
 
     def process_all(self):
-        ddl = str()
+        def usage():
+            print(textwrap.dedent("""
+            y - yes, apply DDL
+            n - no, do not apply DDL
+            q - quit migration
+            e - manually edit the current DDL
+            h - print help
+            """))
+
+        at = str()
         for e in self.todo:
-            at = e.orm.altertable
-            ddl += f'{at}\n\n'
+            at += f'{e.orm.altertable}\n\n'
 
-        self.print(ddl, lang='sql')
-        res = self.ask(
-            f'Execute the above DDL? [Yn]', yesno=True, default='yes'
-        )
-        if res == 'yes':
-            self.exec_alter_table(at=ddl)
-        elif res == 'no':
-            B()
-            return 'abort'
+        self.print(at, lang='sql')
 
-    def edit_alter_table(self, e, at=None):
+        while True:
+            res = self.ask(
+                f'Execute the above DDL? [Yqeh]', 
+                yesno=True, default='yes',
+                quit='q',   edit='e', help='h'
+            )
+
+            if res == 'yes':
+                self.exec_alter_table(at=at)
+            elif res == 'edit':
+                at = self.edit_alter_table(at=at)
+                self.exec_alter_table(at=at)
+                return
+            elif res == 'quit':
+                raise self.Abort()
+            elif res == 'help':
+                usage()
+
+    def edit_alter_table(self, e=None, at=None):
         if not at:
             at = e.orm.altertable
             tbl = e.orm.migration.table
@@ -255,6 +304,8 @@ class mig(process):
             q - quit migration
             a - apply this DDL and all later DLL
             e - manually edit the current DDL
+            s - summary
+            c - show counts
             h - print help
             """))
 
@@ -281,14 +332,17 @@ class mig(process):
 
             while True:
                 res = self.ask(
-                    'Apply this DDL [y,n,q,a,e,s,h]?', yesno=True, 
-                    quit='q', all='a', edit='e', show='s', help='h'
+                    'Apply this DDL [y,n,q,a,e,s,c,h]?', yesno=True, 
+                    quit='q', all='a', edit='e', show='s', help='h',
+                    counts='c',
                 )
 
                 if res == 'show':
                     show(e)
                 elif res == 'help':
                     usage()
+                elif res == 'counts':
+                    self.counts()
                 else:
                     break
 
@@ -305,9 +359,12 @@ class mig(process):
             elif res == 'quit':
                 raise process.Abort()
             elif res == 'all':
-                res = self.process_all()
-                if res == 'abort':
-                    continue
+                try:
+                    res = self.process_all()
+                except self.Abort:
+                    raise
+                except:
+                    self.failed += self.todo
             elif res == 'edit':
                 res = self.processes.process('edit')
 
