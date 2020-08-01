@@ -5150,6 +5150,13 @@ class orm:
 
         print(opcodes)
 
+        # Create an in-memory version of the table that we would expect
+        # to exist after the alteration.
+        altered = db.table()
+        altered.columns += db.columns(
+            initial=(x for x in maps if x.isstandard)
+        )
+
         I = ' ' * 4
         hdr = f'ALTER TABLE `{self.table}`\n'
         r = str()
