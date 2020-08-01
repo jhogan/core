@@ -700,7 +700,7 @@ class tables(entities):
                 self += table(name=name, ress=ress)
 
 class table(entity):
-    def __init__(self, name, ress=None):
+    def __init__(self, name=None, ress=None):
         self.name = name
         self.columns = columns(tbl=self, ress=ress)
 
@@ -720,7 +720,7 @@ class columns(entities):
 
         # Don't load if there is no ``table``. We probably just want to
         # use ``columns`` for collecting ``column`` objects
-        if self.table and ress is None:
+        if self.table and self.table.name and ress is None:
             pl = pool.getdefault()
             with pl.take() as conn:
                 sql = '''select *
@@ -743,7 +743,7 @@ class columns(entities):
         if ress is not None:
             for res in ress:
                 self += column(res)
-    
+
 class column(entity):
     def __init__(self, res=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
