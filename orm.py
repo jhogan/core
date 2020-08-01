@@ -5162,7 +5162,7 @@ class orm:
             except IndexError:
                 pass
 
-            if tag not in ('insert', 'delete', 'move'):
+            if tag not in ('insert', 'delete', 'move', 'replace'):
                 continue
 
             if tag == 'insert':
@@ -5175,25 +5175,48 @@ class orm:
 
                     r += f'\n{I*2}AFTER `{maps.getprevious(map).name}`'
 
+                    col = column(map.name, map.definition)
+                    after = maps.getprevious(map).name
+                    altered.columns.insertafter(after)
+
             elif tag == 'move':
                 # CHANGE COLUMN <col-name> <col-name> <col-definition> 
                 #     AFTER <after>
                 after = opcode[-1]
-                col = cols[i1:i2][0]
-                ix = after[1] - 1
-                after = cols[ix]
-                map = maps[col]
-                if r: r += ',\n'
 
-                r += f'{I}CHANGE COLUMN `{col}` ' + \
-                     f'`{col}` {map.definition}'  + \
-                     f'\n{I * 2}AFTER `{after}`'
+                ix = after[1] - 1
+
+                after = tbl.columns[ix]
+                for col in cols[i1:i2]:
+                    map = maps[col]
+
+                    if r: r += ',\n'
+
+                    r += f'{I}CHANGE COLUMN `{col}` ' + \
+                         f'`{col}` {map.definition}'  + \
+                         f'\n{I * 2}AFTER `{after.name}`'
+
+                    after = map
 
             elif tag == 'delete':
                 for i, col in enumerate(cols[i1:i2]):
                     if r: r += ',\n'
 
                     r += f'{I}DROP COLUMN `{col}`'
+
+            elif tag == 'replace':
+                for col, map in zip(cols[i1:i2], maps[j1:j2]):
+                    if r: r += ',\n'
+                    r += (
+                        f'{I}CHANGE COLUMN `{col}` `{map.name}` '
+                        f'{map.definition}'
+                    )
+
+        mapdefs = [x.definition for x in maps]
+        coldefs = [x.definition for x in tbl.columns]
+
+
+
 
         return f'{hdr}{r};'
 
