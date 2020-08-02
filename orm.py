@@ -5113,6 +5113,11 @@ class orm:
         if not tbl:
             return None
 
+        # Create a clone of the table to track changes that would be
+        # made to the real table if the altertable statement were
+        # applied to it.
+        altered = tbl.clone()
+
         maps = mappings(
             initial=(
                 x for x in self.mappings 
