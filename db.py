@@ -714,7 +714,7 @@ class table(entity):
         for i, col in self.columns.enumerate():
             if not i.first:
                 r += ',\n'
-            r += '    %s' % repr(col)
+            r += '    %s' % str(col)
         r += '\n)'
         return r % self.name
 
@@ -861,7 +861,3 @@ class column(entity):
             r += ' primary key'
 
         return r
-
-    def __repr__(self):
-       return '%s %s' % (self.name, self.definition)
-
