@@ -4057,6 +4057,10 @@ class fieldmapping(mapping):
 
     @property
     def column(self):
+        # NOTE This should probably be rewritten like this:
+        #
+        #     return db.column(self)
+
         col = db.column()
         col.name = self.name
         col.dbtype = self.definition
@@ -5150,87 +5154,98 @@ class orm:
         # If there are no differences, return None; there is nothing to
         # ALTER.
         isdiff = any([x for x in opcodes if x[0] != 'equal'])
-        if not isdiff:
-            return None
-
-        print(opcodes)
-
-        # Create an in-memory version of the table that we would expect
-        # to exist after the alteration.
-        altered = db.table()
-        altered.columns += db.columns(
-            initial=(x for x in maps if x.isstandard)
-        )
 
         I = ' ' * 4
-        hdr = f'ALTER TABLE `{self.table}`\n'
         r = str()
+        hdr = f'ALTER TABLE `{self.table}`\n'
+        if isdiff:
 
-        for opcode in opcodes:
-            tag, i1, i2, j1, j2 = opcode[:5]
+            for tag, i1, i2, j1, j2, *after in  opcodes:
 
-            try:
-                after = opcode[5]
-            except IndexError:
-                pass
+                if tag not in ('insert', 'delete', 'move', 'replace'):
+                    continue
 
-            if tag not in ('insert', 'delete', 'move', 'replace'):
-                continue
+                if tag == 'insert':
+                    # ADD <column-name> <definition>
+                    for i, attr in enumerate(attrs[j1:j2]):
+                        map = maps[attr]
+                        after = maps.getprevious(map)
+                        after = altered.columns[after.name]
 
-            if tag == 'insert':
-				# ADD <column-name> <definition>
-                for i, attr in enumerate(attrs[j1:j2]):
-                    map = maps[attr]
-                    if r: r += ',\n'
+                        if r: r += ',\n'
 
-                    r += f'{I}ADD `{map.name}` {map.definition}'
+                        r += f'{I}ADD `{map.name}` {map.definition}'
 
-                    r += f'\n{I*2}AFTER `{maps.getprevious(map).name}`'
+                        r += f'\n{I*2}AFTER `{after.name}`'
 
-                    col = column(map.name, map.definition)
-                    after = maps.getprevious(map).name
-                    altered.columns.insertafter(after)
+                        col = db.column(map)
+                        ix = altered.columns.getindex(after.name)
+                        altered.columns.insertafter(ix, col)
 
-            elif tag == 'move':
-                # CHANGE COLUMN <col-name> <col-name> <col-definition> 
-                #     AFTER <after>
-                after = opcode[-1]
+                elif tag == 'move':
+                    # CHANGE COLUMN <name> <-name> <-definition> 
+                    #     AFTER <after>
 
-                ix = after[1] - 1
+                    ix = after[0][1] - 1
 
-                after = tbl.columns[ix]
-                for col in cols[i1:i2]:
-                    map = maps[col]
+                    after = tbl.columns[ix]
+                    for col in cols[i1:i2]:
+                        map = maps[col]
 
-                    if r: r += ',\n'
+                        if r: r += ',\n'
 
-                    r += f'{I}CHANGE COLUMN `{col}` ' + \
-                         f'`{col}` {map.definition}'  + \
-                         f'\n{I * 2}AFTER `{after.name}`'
+                        r += f'{I}CHANGE COLUMN `{col}` ' + \
+                             f'`{col}` {map.definition}'  + \
+                             f'\n{I * 2}AFTER `{after.name}`'
 
-                    after = map
+                        ix = altered.columns.getindex(after.name)
+                        col = altered.columns[col]
+                        altered.columns.moveafter(ix, col)
 
-            elif tag == 'delete':
-                for i, col in enumerate(cols[i1:i2]):
-                    if r: r += ',\n'
+                        after = map
 
-                    r += f'{I}DROP COLUMN `{col}`'
+                elif tag == 'delete':
+                    for i, col in enumerate(cols[i1:i2]):
+                        if r: r += ',\n'
 
-            elif tag == 'replace':
-                for col, map in zip(cols[i1:i2], maps[j1:j2]):
-                    if r: r += ',\n'
-                    r += (
-                        f'{I}CHANGE COLUMN `{col}` `{map.name}` '
-                        f'{map.definition}'
-                    )
+                        r += f'{I}DROP COLUMN `{col}`'
+
+                        altered.columns.remove(col)
+
+                elif tag == 'replace':
+                    for col, map in zip(cols[i1:i2], maps[j1:j2]):
+                        if r: r += ',\n'
+                        r += (
+                            f'{I}CHANGE COLUMN `{col}` `{map.name}` '
+                            f'{map.definition}'
+                        )
+                        altered.columns[col].name = map.name
+
+            r = f'{hdr}{r};'
 
         mapdefs = [x.definition for x in maps]
-        coldefs = [x.definition for x in tbl.columns]
+        coldefs = [x.definition for x in altered.columns]
+
+        opcodes = SequenceMatcher(a=coldefs, b=mapdefs).get_opcodes()
+
+        isdiff = any([x for x in opcodes if x[0] != 'equal'])
+
+        if isdiff:
+            if r:
+                r += '\n\n'
+
+            r += f'ALTER TABLE `{self.table}`\n'
+
+            for tag, i1, i2, j1, j2 in opcodes:
+                if tag == 'equal':
+                    continue
+
+                print(tag, i1, i2, j1, j2)
+                B()
+
+        return r or None
 
 
-
-
-        return f'{hdr}{r};'
 
     @property
     def createtable(self):

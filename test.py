@@ -4269,7 +4269,6 @@ class test_orm(tester):
             ],
             [x.name for x in cat.orm.dbtable.columns]
         )
-        return
 
 
         '''
@@ -4298,7 +4297,9 @@ class test_orm(tester):
             MODIFY COLUMN `dob` datetime(6);
         ''')
 
+        B()
         migrate(cat, expect)
+        return
 
         # Recreate class
         class cat(orm.entity):

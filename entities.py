@@ -394,11 +394,14 @@ class entities(object):
             rms = [e]
         elif callable(e) and not isinstance(self, event):
             rms = self.where(e)
-        elif type(e) == int:
+        elif isinstance(e, int):
             rm = self._ls[e]
             del self._ls[e]
             self.onremove(self, entityremoveeventargs(rm))
             return
+        elif isinstance(e, str):
+            ix = self.getindex(e)
+            return self.remove(ix)
         else:
             rms = [e]
 
@@ -449,6 +452,15 @@ class entities(object):
         if self.isempty: return None
         return self.count - 1
 
+    def move(self, ix, e):
+        """ Insert `e` *before* the element at position `ix`.
+        """
+        raise NotImplementedError('TODO')
+
+    def moveafter(self, ix, e):
+        self.remove(e)
+        self.insertafter(ix, e)
+
     def insert(self, ix, e):
         self.insertbefore(ix, e)
 
@@ -473,8 +485,8 @@ class entities(object):
         self += e
 
     def give(self, es):
-        """ Move the elements self to es. Clear es. A slice parameter can be used
-        to limit what is moved. """
+        """ Move the elements self to es. Clear es. A slice parameter
+        can be used to limit what is moved. """
 
         # TODO: Write test
         es += self
