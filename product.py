@@ -979,7 +979,6 @@ class guideline(orm.entity):
 
     # TODO This should be internalorganization, but that does not exist
     # yet in the party module.
-    # The internal organization the guideline is for
     organization = party.organization
 
 class item(orm.entity):
