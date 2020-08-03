@@ -42,6 +42,7 @@ import product
 import re
 import shipment
 import textwrap
+import account
 
 # We will use basic and supplementary multilingual plane UTF-8
 # characters when testing str attributes to ensure unicode is being
@@ -22220,5 +22221,63 @@ class gem_invoice(tester):
         self.eq(ip.id, ip1.id)
         self.eq(dec('182.20'), ip1.amount)
         self.eq(dec('182.20'), ip1.payment.amount)
+
+class gem_account(tester):
+    def __init__(self):
+        super().__init__()
+        orm.orm.recreate(
+            account.account,
+            account.type,
+        )
+
+    def it_creates_accounts(self):
+        accts = account.accounts()
+
+        # Cash
+        accts += account.account(
+            number = 110,
+            name   = 'Cash',
+            description = 'Liquid amounts of money available',
+            type = account.type(
+                name = 'Asset'
+            )
+        )
+
+        # Accounts receivable
+        accts += account.account(
+            number = 120,
+            name   = 'Accounts receivable',
+            description = 'Total amount of moneys due from all sources',
+            type = account.type(
+                name = 'Asset'
+            )
+        )
+
+        # Notes Payable
+        accts += account.account(
+            number = 240,
+            name   = 'Notes Payable',
+            description = (
+                'Amounts due in the form of written '
+                'contractual promissory notes'
+            ),
+            type = account.type(
+                name = 'Liability'
+            )
+        )
+
+        accts.save()
+
+        accts1 = accts.orm.all.sorted()
+        accts.sort()
+
+        self.three(accts)
+        self.three(accts1)
+
+        for acct, acct1 in zip(accts, accts1):
+            self.eq(acct.id, acct1.id)
+            self.eq(acct.name, acct1.name)
+            self.eq(acct.description, acct1.description)
+            self.eq(acct.type.name, acct1.type.name)
 
 cli().run()
