@@ -22228,6 +22228,9 @@ class gem_account(tester):
         orm.orm.recreate(
             account.account,
             account.type,
+            account.periodtypes,
+            account.account_organizations,
+            account.periods,
         )
 
     def it_creates_accounts(self):
@@ -22279,5 +22282,49 @@ class gem_account(tester):
             self.eq(acct.name, acct1.name)
             self.eq(acct.description, acct1.description)
             self.eq(acct.type.name, acct1.type.name)
+
+    def it_associates_organizations_to_accounts(self):
+        com = party.company(name='ACME Corporation')
+        sub = party.company(name='ACME Subsidiary')
+
+        for org in (com, sub):
+            account.period(
+                begin = 'Jan 1, 2001',
+                end   = 'Dec 31, 2001',
+                periodtype = account.periodtype(name='Fiscal Year'),
+                organization = com,
+            ).save()
+
+
+        cash = account.account(
+            name = 'Cash', 
+            type = account.type(name='Asset'),
+            number = '100',
+        )
+
+        com.account_organizations += account.account_organization(
+            account = cash
+        )
+
+        com.save()
+
+        com1 = com.orm.reloaded()
+        self.eq(com.id, com1.id)
+
+        aos = com.account_organizations.sorted()
+        aos1 = com1.account_organizations.sorted()
+
+        self.one(aos)
+        self.one(aos1)
+
+        for ao, ao1 in zip(aos, aos1):
+            self.eq(ao.account.id,         ao1.account.id)
+            self.eq(ao.account.name,       ao1.account.name)
+            self.eq(ao.account.number,     ao1.account.number)
+
+            self.eq(ao.organization.id,    ao1.organization.id)
+            self.eq(ao.organization.name,  ao1.organization.name)
+
+
 
 cli().run()
