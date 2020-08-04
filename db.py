@@ -607,6 +607,7 @@ class chronicle(entity):
     def clone(self):
         return chronicle(self.entity, self.op, self.sql, self.args)
 
+# TODO s/executioner/executor/
 class executioner(entity):
     def __init__(self, exec, max=2):
         self._execute = exec

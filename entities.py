@@ -519,7 +519,9 @@ class entities(object):
                     self.append(t, r=r)
             return r
         else: 
-            raise ValueError('Unsupported object appended: ' + str(type(obj)))
+            raise ValueError(
+                'Unsupported object appended: ' + str(type(obj))
+            )
 
         if uniq and self.has(t):
             return r

@@ -25,6 +25,7 @@ import tempfile
 import os
 import textwrap
 from func import enumerate
+import entities
 
 def dbg(code):
     try:
@@ -58,7 +59,7 @@ class process:
 
     class Abort(Exception): pass
 
-    def print(self, msg, lang=None, end='\n'):
+    def print(self, msg='', lang=None, end='\n'):
         if lang:
             if lang not in ('sql',):
                 raise ValueError("Supported languages: 'sql'")
@@ -94,9 +95,9 @@ class process:
     
 class mig(process):
     def __init__(self):
-        self._done      =  orm.ormclasseswrapper()
-        self._failed    =  orm.ormclasseswrapper()
-        self._todo      =  orm.ormclasseswrapper()
+        self._done      =  entities.entities()
+        self._failed    =  entities.entities()
+        self._todo      =  entities.entities()
         self._isscaned  =  False
         self._tmp       =  None
 
@@ -119,7 +120,8 @@ class mig(process):
                 print()
 
             for e in es:
-                self.say(f'    - {e.__module__}.{e.__name__}')
+                op = 'A' if e.orm.dbtable else 'C'
+                self.say(f'    {op} {e.__module__}.{e.__name__}')
 
             print()
 
@@ -153,11 +155,22 @@ class mig(process):
         # Get an editor that the user likes
         return os.getenv('EDITOR') or '/usr/bin/vim'
 
-    def exec_alter_table(self, e=None, at=None):
+    @staticmethod
+    def getddl(e):
+        if isinstance(e, db.table):
+            return f'DROP TABLE `{e.name}`;'
+        else:
+            ddl = e.orm.altertable
+            if ddl:
+                return ddl
+            else:
+                return e.orm.createtable
+
+    def exec(self, e=None, ddl=None):
         while True:
             try:
-                at = at or e.orm.altertable
-                orm.orm.exec(at)
+                ddl = ddl or self.getddl(e)
+                orm.orm.exec(ddl)
             except Exception as ex:
                 self.say(f'\n{ex}\n\n')
                 res = self.ask(
@@ -165,13 +178,14 @@ class mig(process):
                     edit='e', ignore='i', quit='q'
                 )
                 if res == 'edit':
-                    at = self.edit_alter_table(at=at)
+                    ddl = self.edit_alter_table(ddl=ddl)
                     continue
                 elif res == 'ignore':
-                    B()
                     raise
                 elif res == 'quit':
                     raise self.Abort()
+            else:
+                return
 
     def exec_edited_alter_table(self, e):
         at = None
@@ -218,10 +232,10 @@ class mig(process):
             )
 
             if res == 'yes':
-                self.exec_alter_table(at=at)
+                self.exec(at=at)
             elif res == 'edit':
                 at = self.edit_alter_table(at=at)
-                self.exec_alter_table(at=at)
+                self.exec(at=at)
                 return
             elif res == 'quit':
                 raise self.Abort()
@@ -267,13 +281,24 @@ class mig(process):
             finally:
                 self._isscaned = True
 
-
             es = self.todo
+
+            self.sort(es)
+
             if es.count:
                 self.say(f'There are {es.count} entities to migrate:')
 
             for e in es:
-                self.say(f'    - {e.__module__}.{e.__name__}')
+                if isinstance(e, db.table):
+                    op = 'D'
+                    name = e.name
+                else:
+                    op = 'A' if e.orm.dbtable else 'C'
+                    name = f'{e.__module__}.{e.__name__}'
+
+                self.say(f'    {op} {name}')
+
+            self.print()
 
     @property
     def done(self):
@@ -290,6 +315,22 @@ class mig(process):
     @failed.setter
     def failed(self, v):
         self._failed = v
+
+    def _key(e):
+        if isinstance(e, db.table):
+            return 'D'
+        else:
+            return 'A' if e.orm.dbtable else 'C'
+
+    @staticmethod
+    def sort(es):
+        return es.sort(key=mig._key)
+
+    @staticmethod
+    def sorted(es):
+        return es.sorted(key=mig._key)
+
+
 
     @property
     def todo(self):
@@ -318,17 +359,20 @@ class mig(process):
 
         self.scan()
 
-
         def show(e):
-            at = e.orm.altertable
-            tbl = e.orm.migration.table
+            ddl = self.getddl(e)
+            if ddl.startswith('ALTER'):
+                self.print(f'\n{e.orm.migration.table!s}')
+            else:
+                self.print()
 
-            self.print(f'\n{tbl!s}')
-            self.print(at, lang='sql')
+            self.print(ddl, lang='sql')
+
+            return ddl
 
         es = self.todo
         for i, e in es.enumerate():
-            show(e)
+            ddl = show(e)
 
             while True:
                 res = self.ask(
@@ -348,7 +392,7 @@ class mig(process):
 
             if res == 'yes':
                 try:
-                    self.exec_alter_table(e)
+                    self.exec(ddl=ddl)
                 except:
                     self.failed += e
                 else:

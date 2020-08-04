@@ -546,7 +546,7 @@ class joins(entitiesmod.entities):
     """ A collection of ``join`` classes.
     """
     def __init__(self, initial=None, es=None):
-        # NOTE In order to conform to the entitymod.entities.__init__'s
+        # NOTE In order to conform to the entitiesmod.entities.__init__'s
         # signature, we have to make es=None by default. However, we actually
         # don't want es to have a default, so we simulate the behavior here.
         if es is None:
@@ -4719,7 +4719,6 @@ class orm:
 
     @table.setter
     def table(self, v):
-        B(v == 'gem_partyroletypes');
         self._table = v
         
     def iscollinear(self, with_):
@@ -6761,9 +6760,18 @@ class migration:
 
     @property
     def entities(self):
-        r = ormclasseswrapper()
+        r = entitiesmod.entities()
         es = orm.getentitys(includeassociations=True)
-        for tbl in db.catelog().tables:
+        tbls = db.catelog().tables
+
+        for e in es:
+            if not tbls(e.orm.table):
+                # The model `e` has no corresponding table, so it should
+                # probably be CREATEd
+                r += ormclasswrapper(e)
+
+        for tbl in tbls:
+            # TODO Do we need this try block
             try:
                 mod, name = tbl.name.split('_', 1)
             except ValueError:
@@ -6775,10 +6783,16 @@ class migration:
                 if e.orm.table == tbl.name:
                     break
             else:
+                # `tbl` exist in database but not in model, so should
+                # probably be DROPped.
+                r += tbl 
                 continue
 
             if not e.orm.ismigrated:
-                r += e
+                # The ``e`` entity has an corresponding table, but the
+                # table is not "migrated" (it differs from the model),
+                # so it should probably be ALTERed.
+                r += ormclasswrapper(e)
 
         return r
 
