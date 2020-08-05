@@ -71,9 +71,6 @@ class process:
 
         print(msg, end=end)
 
-    def say(self, msg):
-        print(msg)
-
     def ask(self, msg, yesno=True, default=undef, **kwargs):
         res = None
         while not res:
@@ -110,20 +107,27 @@ class mig(process):
         finally:
             self.destructor()
 
-    def counts(self):
-        print()
+    def counts(self, e):
+        self.print()
         def show(es):
-            print(f'({es.count})', end='')
+            self.print(f'({es.count})', end='')
             if es.count:
-                print(':')
+                self.print(':')
             else:
-                print()
+                self.print()
 
-            for e in es:
-                op = 'A' if e.orm.dbtable else 'C'
-                self.say(f'    {op} {e.__module__}.{e.__name__}')
+            for e1 in es:
+                if e is e1:
+                    self.print('->  ', end='')
+                else:
+                    self.print('    ', end='')
 
-            print()
+                self.print(
+                    f'{self.getoperation(e1)} '
+                    f'{self.getname(e1)}',
+                )
+
+            self.print()
 
         todo    =  self.todo
         done    =  self.done
@@ -137,7 +141,6 @@ class mig(process):
 
         self.print('failed', end='')
         show(failed)
-        print()
     
     def destructor(self):
         if self._tmp is not None:
@@ -172,13 +175,13 @@ class mig(process):
                 ddl = ddl or self.getddl(e)
                 orm.orm.exec(ddl)
             except Exception as ex:
-                self.say(f'\n{ex}\n\n')
+                self.print(f'\n{ex}\n\n')
                 res = self.ask(
                     'Press [e]dit, [i]gnore or [q]uit...',
                     edit='e', ignore='i', quit='q'
                 )
                 if res == 'edit':
-                    ddl = self.edit_alter_table(ddl=ddl)
+                    ddl = self.edit(ddl=ddl)
                     continue
                 elif res == 'ignore':
                     raise
@@ -191,12 +194,12 @@ class mig(process):
         at = None
         while True:
             # Execute the edited ALTER TABLE statement
-            at = self.edit_alter_table(e, at)
+            at = self.edit(e, at)
 
             try:
                 orm.orm.exec(at)
             except Exception as ex:
-                self.say(f'\n{ex}\n\n')
+                self.print(f'\n{ex}\n\n')
                 res = self.ask(
                     'Press [e]dit, [i]gnore or [q]uit...',
                     edit='e', ignore='i', quit='q'
@@ -210,7 +213,7 @@ class mig(process):
 
     def process_all(self):
         def usage():
-            print(textwrap.dedent("""
+            self.print(textwrap.dedent("""
             y - yes, apply DDL
             n - no, do not apply DDL
             q - quit migration
@@ -218,12 +221,19 @@ class mig(process):
             h - print help
             """))
 
-        at = str()
+        ddls = str()
         for e in self.todo:
-            at += f'{e.orm.altertable}\n\n'
+            ddl = self.getddl(e)
+            if ddl.startswith('ALTER'):
+                ddls += f'\n/*\n{e.orm.migration.table!s}*/\n\n'
+            else:
+                ddls += '\n'
 
-        self.print(at, lang='sql')
+            ddls += ddl
 
+            self.print(ddls, lang='sql')
+
+        ddl = ddls.strip()
         while True:
             res = self.ask(
                 f'Execute the above DDL? [Yqeh]', 
@@ -232,28 +242,27 @@ class mig(process):
             )
 
             if res == 'yes':
-                self.exec(at=at)
+                self.exec(ddl=ddl)
             elif res == 'edit':
-                at = self.edit_alter_table(at=at)
-                self.exec(at=at)
+                ddl = self.edit(ddl=ddl)
+                self.exec(ddl=ddl)
                 return
             elif res == 'quit':
                 raise self.Abort()
             elif res == 'help':
                 usage()
 
-    def edit_alter_table(self, e=None, at=None):
-        if not at:
-            at = e.orm.altertable
-            tbl = e.orm.migration.table
-            at = (
-                f'{at}\n\n'
-                f'/* Model-to-table comparison: \n{tbl}\n*/'
-            )
+    def edit(self, e=None, ddl=None):
+        if not ddl:
+            ddl = self.getddl(e)
+
+            if ddl.startswith('ALTER'):
+                tbl = e.orm.migration.table
+                ddl += f'\n\n/* Model-to-table comparison: \n{tbl}\n*/'
         
         # Write the ALTER TABLE to the tmp file
         with open(self.tmp, 'w') as f:
-            f.write(at)
+            f.write(ddl)
 
         flags = ''
         basename = os.path.basename(self.editor)
@@ -266,13 +275,13 @@ class mig(process):
 
         # Read back in the edited file
         with open(self.tmp, mode='r') as f:
-            at = f.read()
+            ddl = f.read()
 
-        return at
+        return ddl
 
     def scan(self):
         if not self._isscaned:
-            self.say('Scanning for entities to migrate ...\n')
+            self.print('Scanning for entities to migrate ...\n')
 
             try:
                 self._todo += orm.migration().entities
@@ -286,19 +295,28 @@ class mig(process):
             self.sort(es)
 
             if es.count:
-                self.say(f'There are {es.count} entities to migrate:')
+                self.print(f'There are {es.count} entities to migrate:')
 
             for e in es:
-                if isinstance(e, db.table):
-                    op = 'D'
-                    name = e.name
-                else:
-                    op = 'A' if e.orm.dbtable else 'C'
-                    name = f'{e.__module__}.{e.__name__}'
-
-                self.say(f'    {op} {name}')
+                self.print(
+                    f'    {self.getoperation(e)} {self.getname(e)}'
+                )
 
             self.print()
+
+    @staticmethod
+    def getname(e):
+        if isinstance(e, db.table):
+            return e.name
+        else:
+            return f'{e.__module__}.{e.__name__}'
+
+    @staticmethod
+    def getoperation(e):
+        if isinstance(e, db.table):
+            return 'D'
+        else:
+            return 'A' if e.orm.dbtable else 'C'
 
     @property
     def done(self):
@@ -318,9 +336,9 @@ class mig(process):
 
     def _key(e):
         if isinstance(e, db.table):
-            return 'D'
+            return 0
         else:
-            return 'A' if e.orm.dbtable else 'C'
+            return 1 if e.orm.dbtable else 2
 
     @staticmethod
     def sort(es):
@@ -345,7 +363,7 @@ class mig(process):
             q - quit migration
             a - apply this DDL and all later DLL
             e - manually edit the current DDL
-            s - summary
+            s - show current DDL
             c - show counts
             h - print help
             """))
@@ -386,7 +404,8 @@ class mig(process):
                 elif res == 'help':
                     usage()
                 elif res == 'counts':
-                    self.counts()
+                    self.counts(e)
+                    show(e)
                 else:
                     break
 
@@ -407,7 +426,8 @@ class mig(process):
                     res = self.process_all()
                 except self.Abort:
                     raise
-                except:
+                except Exception as ex:
+                    self.print(f'\nException: {ex}')
                     self.failed += self.todo
             elif res == 'edit':
                 res = self.processes.process('edit')

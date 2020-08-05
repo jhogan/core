@@ -6755,10 +6755,6 @@ class migration:
         self.entity = e
 
     @property
-    def altertables(self):
-        ... # TODO
-
-    @property
     def entities(self):
         r = entitiesmod.entities()
         es = orm.getentitys(includeassociations=True)
@@ -6771,14 +6767,6 @@ class migration:
                 r += ormclasswrapper(e)
 
         for tbl in tbls:
-            # TODO Do we need this try block
-            try:
-                mod, name = tbl.name.split('_', 1)
-            except ValueError:
-                # The table doesn't match the expected format (no
-                # underscore), so ignore it.
-                pass
-
             for e in es:
                 if e.orm.table == tbl.name:
                     break
