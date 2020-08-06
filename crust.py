@@ -93,6 +93,7 @@ class process:
 class mig(process):
     def __init__(self):
         self._done      =  entities.entities()
+        self._skipped   =  entities.entities()
         self._failed    =  entities.entities()
         self._todo      =  entities.entities()
         self._isscaned  =  False
@@ -107,7 +108,7 @@ class mig(process):
         finally:
             self.destructor()
 
-    def counts(self, e):
+    def counts(self, e=None):
         self.print()
         def show(es):
             self.print(f'({es.count})', end='')
@@ -117,7 +118,7 @@ class mig(process):
                 self.print()
 
             for e1 in es:
-                if e is e1:
+                if e and e is e1:
                     self.print('->  ', end='')
                 else:
                     self.print('    ', end='')
@@ -131,6 +132,7 @@ class mig(process):
 
         todo    =  self.todo
         done    =  self.done
+        skipped =  self.skipped
         failed  =  self.failed
 
         self.print('todo', end='')
@@ -138,6 +140,9 @@ class mig(process):
 
         self.print('done', end='')
         show(done)
+
+        self.print('skipped', end='')
+        show(skipped)
 
         self.print('failed', end='')
         show(failed)
@@ -221,6 +226,12 @@ class mig(process):
             h - print help
             """))
 
+        def abort():
+            self.print('You have chosen to ignore. Bye.')
+            self.skipped += self.todo
+            self.counts()
+            raise self.Abort()
+
         ddls = str()
         for e in self.todo:
             ddl = self.getddl(e)
@@ -231,21 +242,37 @@ class mig(process):
 
             ddls += ddl
 
-            self.print(ddls, lang='sql')
+        self.print(ddls, lang='sql')
 
         ddl = ddls.strip()
         while True:
             res = self.ask(
-                f'Execute the above DDL? [Yqeh]', 
-                yesno=True, default='yes',
-                quit='q',   edit='e', help='h'
+                f'Execute the above DDL? [yqeh]', 
+                yesno=True, quit='q', edit='e', help='h'
             )
 
             if res == 'yes':
-                self.exec(ddl=ddl)
+                try:
+                    self.exec(ddl=ddl)
+                except self.Abort:
+                    raise
+                except:
+                    abort()
+                 
             elif res == 'edit':
                 ddl = self.edit(ddl=ddl)
-                self.exec(ddl=ddl)
+                try:
+                    self.exec(ddl=ddl)
+                except self.Abort:
+                    raise
+                except:
+                    # self.exec will only raise an exception if the user
+                    # has chosen to ignore that happen within the
+                    # method. So we are here because the user has
+                    # ignored the exception caused by executing the
+                    # concatenated DDL. In that case, print a summary
+                    # and exit the process.
+                    abort()
                 return
             elif res == 'quit':
                 raise self.Abort()
@@ -318,22 +345,6 @@ class mig(process):
         else:
             return 'A' if e.orm.dbtable else 'C'
 
-    @property
-    def done(self):
-        return self._done
-
-    @done.setter
-    def done(self, v):
-        self._done = v
-
-    @property
-    def failed(self):
-        return self._failed
-
-    @failed.setter
-    def failed(self, v):
-        self._failed = v
-
     def _key(e):
         if isinstance(e, db.table):
             return 0
@@ -348,12 +359,36 @@ class mig(process):
     def sorted(es):
         return es.sorted(key=mig._key)
 
-
-
     @property
     def todo(self):
         self.scan()
-        return self._todo - self.done - self.failed
+        es = self._todo - self.done - self.failed - self.skipped
+        self.sort(es)
+        return es
+
+    @property
+    def done(self):
+        return self._done
+
+    @done.setter
+    def done(self, v):
+        self._done = v
+        
+    @property
+    def skipped(self):
+        return self._skipped
+
+    @skipped.setter
+    def skipped(self, v):
+        self._skipped = v
+
+    @property
+    def failed(self):
+        return self._failed
+
+    @failed.setter
+    def failed(self, v):
+        self._failed = v
 
     def __call__(self):
         def usage():
@@ -367,13 +402,6 @@ class mig(process):
             c - show counts
             h - print help
             """))
-
-        start = self.ask(
-            '\nWould you like to start [Yn]?', yesno=True, default='yes'
-        )
-
-        if start != 'yes':
-            return
 
         self.scan()
 
@@ -405,7 +433,6 @@ class mig(process):
                     usage()
                 elif res == 'counts':
                     self.counts(e)
-                    show(e)
                 else:
                     break
 
@@ -418,6 +445,7 @@ class mig(process):
                     self.done += e
 
             elif res == 'no':
+                self.skipped += e
                 continue
             elif res == 'quit':
                 raise process.Abort()
