@@ -177,14 +177,30 @@ class transaction(orm.entity):
     """ A supertype that encompasses all the transactions that affect the
     financial statmentes of an enterprise.
 
+    There are two main types of transactions: ``internal`` and
+    ``external``. ``internal`` transactions are adjustment transactions
+    that affect only the books of the internal organization being
+    affected. ``external`` involve are those that involve transactions
+    with a party (``party.party``) that is external to the enterprise
+    for whom the books are kept.
+
     Note that this entity was originally called ACCOUTING TRANSACTION in
     "The Data Model Resource Book".
     """
 
-    name = str
+    # Note that there is no ``amount`` attribute because the transaction
+    # amounts are maintained in the transaction ``detail`` class.
 
+    # Describes the details behind the transaction.
+    description = text
+
+    # The date on which the entry was made into the system. (The book
+    # calls this the **entry date**.) NOTE This may be redundant with
+    # ``createdat``.
     entered = datetime
 
+    # The date on which the transaction occurred. (The book calls this
+    # the **transaction date**.)
     transacted = datetime
 
 class transactiontype(orm.entity):
@@ -205,7 +221,9 @@ class transactiontype(orm.entity):
 
 
 class internal(transaction):
-    """
+    """ ``internal`` transactions are adjustment transactions that
+    affect only the books of the internal organization being affected.
+
     Note that this entity was originally called ITERNAL ACCTG TRANS in
     "The Data Model Resource Book".
     """
@@ -248,7 +266,10 @@ class other(other):
     """
 
 class external(other):
-    """
+    """ ``external`` involve are those that involve transactions with a
+    party (``party.party``) that is external to the enterprise for whom
+    the books are kept.
+
     Note that this entity was originally called EXTERNAL ACCTG TRANS in
     "The Data Model Resource Book".
     """
@@ -257,31 +278,42 @@ class external(other):
     receiver = party.party
 
 class obligation(external):
-    """
-    Note that this entity was originally called OBLIGATION ACCTG TRANS in
-    "The Data Model Resource Book".
+    """ A type of ``external`` ``transaction`` that represents different
+    forms of a party owing moneys to another party (``party.party``). 
+
+    Note that this entity was originally called OBLIGATION ACCTG TRANS
+    in "The Data Model Resource Book".
     """
 
 class note(obligation):
-    pass
+    """ Represents either a note payable, where the internal
+    organization owes money, or a note receivable, where the
+    organization is due money.
+    """
 
-class taxdue(obligation):
-    pass
+class tax(obligation):
+    """ An ``obligation`` to pay taxes to government agencies.
+    """
 
 class otherobligation(obligation):
     pass
 
 class memo(obligation):
-    """
+    """ A credit ``memo`` is a transaction where credit is given from
+    one party (``party.party``) to another party.
     Note that this entity was originally called CREDIT MEMO in
     "The Data Model Resource Book".
     """
 
 class creditline(obligation):
-    pass
+    """ Represents money actually borrowed from a line of credit
+    extended from a financial institute to another party
+    (``party.party``).
+    """
 
 class sale(obligation):
-    """
+    """ Represent the obligation to pay for products sold.
+
     Note that this entity was originally called SALES ACCTG TRANS in
     "The Data Model Resource Book".
     """
@@ -291,8 +323,15 @@ class sale(obligation):
     invoice = invoice.invoice
 
 class payment(external):
-    """ Represents either a ``recept`` for moneys coming in or a
-    ``disbursement`` for moneys going out.
+    """ A type of ``external`` ``transaction`` that represents
+    collections of moneys received by an ``internalorganization`` (in
+    the case of a ``receipt`` transaction) or payments of moneys sent by
+    an internal organization (in the case of a ``disbursement``
+    transaction). A payment made from one ``internalorganization`` to
+    another ``internalorganization`` results in two ``payment``
+    instances; one ``internalorganization`` will record a ``receipt``,
+    and the other ``internalorganization`` will record a
+    ``disbursement``.
 
     Note that this entity was originally called PAYMENT ACCTG TRANS in
     "The Data Model Resource Book".
@@ -301,8 +340,7 @@ class payment(external):
     # The ``payment`` for which this entity originated.
     payment = invoice.payment
 
-
-class recept(payment):
+class receipt(payment):
     """ Represents moneys coming in.
 
     Note that this entity was originally called RECEIPT ACCTG TRANS in
