@@ -90,7 +90,7 @@ class process:
 
         return res
     
-class mig(process):
+class migration(process):
     def __init__(self):
         self._done      =  entities.entities()
         self._skipped   =  entities.entities()
@@ -458,8 +458,11 @@ class mig(process):
                     self.print(f'\nException: {ex}')
                     self.failed += self.todo
             elif res == 'edit':
+                # FIXME
                 res = self.processes.process('edit')
 
+# A user-friendly alias
+mig = migration
 
 cfg = config()
 acct = db.connections.getinstance().default.account
@@ -485,4 +488,3 @@ print("""
                acct.port)
 )
 
-mig()
