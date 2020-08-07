@@ -711,6 +711,10 @@ class tables(entities):
             for name, ress in tbls.items():
                 self += table(name=name, ress=ress)
 
+    def drop(self):
+        for tbl in self:
+            tbl.drop()
+
 class table(entity):
     def __init__(self, name, ress=None):
         self.name = name
@@ -724,6 +728,9 @@ class table(entity):
             r += '    %s' % repr(col)
         r += '\n)'
         return r % self.name
+
+    def drop(self):
+        exec(f'DROP TABLE `{self.name}`')
 
 class columns(entities):
     def __init__(self, tbl=None, ress=None, *args, **kwargs):
