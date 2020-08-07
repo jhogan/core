@@ -381,6 +381,7 @@ class connection(entity):
                 else:
                     raise
 
+
 # TODO The 'db' prefix on these class names are redundant.
 class dbresultset(entities):
     """ Represents a collections of rows returned from a db query. """
@@ -665,6 +666,13 @@ class executioner(entity):
             finally:
                 cur.close()
                 pl.push(conn)
+
+def exec(sql, args=None):
+    exec = executioner(
+        lambda cur: cur.execute(sql, args)
+    )
+
+    exec()
 
 class catelogs(entities):
     pass
