@@ -754,13 +754,13 @@ class columns(entities):
                     sql, (conn.account.database, tbl.name)
                 )
 
-                if not ress.count:
-                    # If no columns were returned then tbl.name doesn't
-                    # exist in the database, so throw the kind of
-                    # exception MySQLdb would.
-                    raise _mysql_exceptions.OperationalError(
-                        BAD_TABLE_ERROR, 'Table not found'
-                    )
+            if not ress.count:
+                # If no columns were returned then tbl.name doesn't
+                # exist in the database, so throw the kind of
+                # exception MySQLdb would.
+                raise _mysql_exceptions.OperationalError(
+                    BAD_TABLE_ERROR, 'Table not found'
+                )
 
         if ress is not None:
             for res in ress:
