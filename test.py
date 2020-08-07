@@ -8,27 +8,29 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019                 #
 ########################################################################
 
+from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
 from auth import jwt
 from config import config
-from contextlib import contextmanager
+from contextlib import contextmanager, redirect_stdout
 from datetime import timezone, datetime, date
 from entities import BrokenRulesError
 from func import enumerate, getattr, B
-from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
 from pprint import pprint
 from random import randint, uniform, random
 from table import *
 from tester import *
 from uuid import uuid4
+import MySQLdb
+import _mysql_exceptions
+import crust
 import dateutil
 import db
 import decimal; dec=decimal.Decimal
+import effort
 import functools
 import io
 import jwt as pyjwt
 import math
-import MySQLdb
-import _mysql_exceptions
 import order
 import orm
 import party
@@ -38,7 +40,6 @@ import product
 import re
 import ship
 import textwrap
-import effort
 
 # We will use basic and supplementary multilingual plane UTF-8
 # characters when testing str attributes to ensure unicode is being
@@ -15845,6 +15846,23 @@ class test_orm(tester):
             amp2 = amplifier(amp1.id)
             for prop in ('tube', 'watts', 'cost', 'name'):
                 self.eq(getattr(amp1, prop), getattr(amp2, prop))
+
+class crust_migration(tester):
+    def it_shows_migrants(self):
+        db.tables().drop()
+
+        es = orm.orm.getentitys(includeassociations=True)
+        for e in es:
+            e.orm.create()
+
+        self.one(db.tables())
+
+        f = io.StringIO()
+        with redirect_stdout(f):
+            mig = crust.migration()
+        B()
+
+
 
 '''
 Test General Entities Model (GEM)
