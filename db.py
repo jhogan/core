@@ -686,7 +686,6 @@ class tables(entities):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         with pool.getdefault().take() as conn:
-
             sql = '''
             select *
             from information_schema.columns
@@ -694,6 +693,9 @@ class tables(entities):
             '''
 
             ress = conn.query(sql, (conn.account.database,))
+
+            # TODO The below could be unindented to allow the pool the
+            # recover its connection.
             tbls = dict()
             for res in ress:
 
@@ -742,6 +744,7 @@ class columns(entities):
         if self.table and ress is None:
             pl = pool.getdefault()
             with pl.take() as conn:
+
                 sql = '''select *
                 from information_schema.columns
                 where table_schema = %s
