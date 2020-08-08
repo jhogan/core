@@ -221,8 +221,12 @@ class transactiontype(orm.entity):
 
 
 class internal(transaction):
-    """ ``internal`` transactions are adjustment transactions that
-    affect only the books of the internal organization being affected.
+    """ ``internal`` transactions identify transactions that serve as
+    adjustments to the books of an internal organization
+    (party.internalorganization). Because there is only one organization
+    involved in the transaction (namely, the internal organization whose
+    books are being adjusted), there is a single relationship to an
+    ``internalorganization``.
 
     Note that this entity was originally called ITERNAL ACCTG TRANS in
     "The Data Model Resource Book".
@@ -266,10 +270,16 @@ class other(other):
     """
 
 class external(other):
-    """ ``external`` involve are those that involve transactions with a
-    party (``party.party``) that is external to the enterprise for whom
-    the books are kept.
-
+    """ ``external`` models accounting transactions that affect two
+    parties. An ``external`` transaction may be either an
+    ``obligation`` transaction or a ``payment`` transaction. An
+    ``obligation`` transaction represents a transaction where one party
+    has recognized that it owes moneys to another party. Therefore, the
+    ``sender`` and ``receiver`` identify the parties involved on both
+    sides of a transaction. A ``payment`` transaction represents a
+    transaction where one party is paying another party; therefore it
+    also relates to two parties.
+    
     Note that this entity was originally called EXTERNAL ACCTG TRANS in
     "The Data Model Resource Book".
     """
