@@ -4405,6 +4405,107 @@ class test_orm(tester):
         ''')
 
         migrate(cat, expect)
+
+        class cat(orm.entity):
+            dob       =  date  # change
+            name      =  datetime
+            shedder   =  datetime 
+            skittish  =  datetime
+            lives     =  date  # change
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            MODIFY COLUMN `dob` date,
+            MODIFY COLUMN `lives` date;
+        ''')
+
+        migrate(cat, expect)
+
+        ''' The next tests will be attempts to confuse the
+        algorithm by mixing different columns to be added, dropped, renamed,
+        moved at the same time.
+        '''
+
+        ''' ADD and DROP '''
+        class cat(orm.entity):
+            #dob      =  date      #  drop
+            name      =  datetime
+            shedder   =  datetime
+            skittish  =  datetime
+            lives     =  date
+            birthed   =  date      #  add
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            DROP COLUMN `dob`,
+            ADD `birthed` date
+                AFTER `lives`;
+        ''')
+
+        migrate(cat, expect)
+
+        class cat(orm.entity):
+            dob       =  date      #  add
+            name      =  datetime
+            shedder   =  datetime
+            skittish  =  datetime
+            lives     =  date
+            #birthed  =  date      #  drop
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            ADD `dob` date
+                AFTER `updatedat`,
+            DROP COLUMN `birthed`;
+        ''')
+
+        migrate(cat, expect)
+
+        class cat(orm.entity):
+            add1       =  str       #  add
+            add2       =  str       #  add
+            dob        =  date
+            name       =  datetime
+            shedder    =  datetime
+            #skittish  =  datetime  #  drop
+            #lives     =  date      #  drop
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            ADD `add1` varchar(255)
+                AFTER `updatedat`,
+            ADD `add2` varchar(255)
+                AFTER `add1`,
+            DROP COLUMN `skittish`,
+            DROP COLUMN `lives`;
+        ''')
+
+        migrate(cat, expect)
+
+        class cat(orm.entity):
+            #add1     =  str       #  drop
+            #add2     =  str       #  drop
+            dob       =  date
+            name      =  datetime
+            shedder   =  datetime
+            skittish  =  datetime  #  add
+            lives     =  date      #  add
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            DROP COLUMN `add1`,
+            DROP COLUMN `add2`,
+            ADD `skittish` datetime(6)
+                AFTER `shedder`,
+            ADD `lives` date
+                AFTER `skittish`;
+        ''')
+
+        migrate(cat, expect)
+
+
+
+
     def it_uses_reserved_mysql_words_for_fields(self):
         """ Ensure that the CREATE TABLE statement uses backticks to
         quote column names so we can use MySQL reserved words, such as

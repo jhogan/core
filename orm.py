@@ -5156,7 +5156,7 @@ class orm:
         isdiff = any([x for x in opcodes if x[0] != 'equal'])
 
         I = ' ' * 4
-        r = str()
+        at1 = str()
         hdr = f'ALTER TABLE `{self.table}`\n'
         if isdiff:
 
@@ -5172,11 +5172,14 @@ class orm:
                         after = maps.getprevious(map)
                         after = altered.columns[after.name]
 
-                        if r: r += ',\n'
+                        if at1: at1 += ',\n'
 
-                        r += f'{I}ADD `{map.name}` {map.definition}'
+                        # TODO s/ADD/ADD COLUMN/ for clarity and
+                        # consistancy (because we use DROP COLUMN and
+                        # MODIFY COLUMN)
+                        at1 += f'{I}ADD `{map.name}` {map.definition}'
 
-                        r += f'\n{I*2}AFTER `{after.name}`'
+                        at1 += f'\n{I*2}AFTER `{after.name}`'
 
                         col = db.column(map)
                         ix = altered.columns.getindex(after.name)
@@ -5192,9 +5195,9 @@ class orm:
                     for col in cols[i1:i2]:
                         map = maps[col]
 
-                        if r: r += ',\n'
+                        if at1: at1 += ',\n'
 
-                        r += f'{I}CHANGE COLUMN `{col}` ' + \
+                        at1 += f'{I}CHANGE COLUMN `{col}` ' + \
                              f'`{col}` {map.definition}'  + \
                              f'\n{I * 2}AFTER `{after.name}`'
 
@@ -5206,46 +5209,54 @@ class orm:
 
                 elif tag == 'delete':
                     for i, col in enumerate(cols[i1:i2]):
-                        if r: r += ',\n'
+                        if at1: at1 += ',\n'
 
-                        r += f'{I}DROP COLUMN `{col}`'
+                        at1 += f'{I}DROP COLUMN `{col}`'
 
                         altered.columns.remove(col)
 
                 elif tag == 'replace':
                     for col, map in zip(cols[i1:i2], maps[j1:j2]):
-                        if r: r += ',\n'
-                        r += (
+                        if at1: at1 += ',\n'
+                        at1 += (
                             f'{I}CHANGE COLUMN `{col}` `{map.name}` '
                             f'{map.definition}'
                         )
                         altered.columns[col].name = map.name
 
-            r = f'{hdr}{r};'
+            at1 = f'{hdr}{at1};'
 
-        mapdefs = [x.definition for x in maps]
-        coldefs = [x.definition for x in altered.columns]
+        if maps.count != altered.columns.count:
+            raise ValueError(
+                'Mapping error: mappings:%s columns:%s' % 
+                    (maps.count, altered.columns.count)
+            )
 
-        opcodes = SequenceMatcher(a=coldefs, b=mapdefs).get_opcodes()
+        at2 = str()
+        for map, col in zip(maps, altered.columns):
+            if col.name != map.name:
+                raise ValueError(
+                    f'Mapping error: {map.name} != {col.name}'
+                )
 
-        isdiff = any([x for x in opcodes if x[0] != 'equal'])
+            if col.definition == map.definition:
+                continue
 
-        if isdiff:
-            if r:
-                r += '\n\n'
+            if at2: at2 += ',\n'
+            at2 += f'{I}MODIFY COLUMN `{col.name}` {map.definition}';
 
-            r += f'ALTER TABLE `{self.table}`\n'
+        if at2:
+            at2 = f'ALTER TABLE `{self.table}`\n{at2};'
 
-            for tag, i1, i2, j1, j2 in opcodes:
-                if tag == 'equal':
-                    continue
+        r = str()
+        if at1:
+            r = at1
 
-                print(tag, i1, i2, j1, j2)
-                B()
+        if at2:
+            if r: r += '\n\n'
+            r += at2
 
         return r or None
-
-
 
     @property
     def createtable(self):
