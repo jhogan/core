@@ -20,10 +20,10 @@ from dbg import B
 from config import config
 import accounts
 
-# Some errors in MySQL are classified as "warnings" (such as 'SELECT 0/0').
-# This means that no exception is raised; just an error message is printed to
-# stderr. We want these warnings to be proper exceptions so they
-# won't go unnoticed. The below code does just that.
+# Some errors in MySQL are classified as "warnings" (such as 'SELECT
+# 0/0').  This means that no exception is raised; just an error message
+# is printed to stderr. We want these warnings to be proper exceptions
+# so they won't go unnoticed. The below code does just that.
 warnings.filterwarnings('error', category=MySQLdb.Warning)
 
 class dbentities(entities):
@@ -35,10 +35,10 @@ class dbentities(entities):
             for res in ress:
                 self += self.dbentity(res)
 
-        # The collection may have been added to above. If that is the case, the
-        # _isdirty flag will be set to True in the _self_onadd event handler.
-        # Set it back to False since we are just __init__'ing the object; it
-        # shouldn't be dirty at this point.
+        # The collection may have been added to above. If that is the
+        # case, the _isdirty flag will be set to True in the _self_onadd
+        # event handler.  Set it back to False since we are just
+        # __init__'ing the object; it shouldn't be dirty at this point.
 
         self._isdirty = False
 
