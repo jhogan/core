@@ -4183,8 +4183,11 @@ class fieldmapping(mapping):
 
     @property
     def precision(self):
-        if not (self.isfloat or self.isdecimal):
+        if not (self.isfloat or self.isdecimal, self.isdatetime):
             return None
+
+        if self.isdatetime:
+            return 6
 
         if self._precision is None:
             return 12
