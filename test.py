@@ -15857,10 +15857,7 @@ class crust_migration(tester):
 
         self.one(db.tables())
 
-        f = io.StringIO()
-        with redirect_stdout(f):
-            mig = crust.migration()
-        B()
+        mig = crust.migration()
 
 
 

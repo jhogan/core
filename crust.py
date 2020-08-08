@@ -7,25 +7,26 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
-import pygments
-import pygments.lexers
-import pygments.formatters
-import party
-import product
-import order
-import ship
-import effort
+from config import config
 from configfile import configfile
 from dbg import B
-import pathlib
-import db
-import orm
-from config import config
-import tempfile
-import os
-import textwrap
 from func import enumerate
+import db
+import effort
 import entities
+import _mysql_exceptions
+import order
+import orm
+import os
+import party
+import pathlib
+import product
+import pygments
+import pygments.formatters
+import pygments.lexers
+import ship
+import tempfile
+import textwrap
 
 def dbg(code):
     try:
@@ -45,6 +46,18 @@ def wf(file, txt):
 class undef: pass
 
 class process:
+    class onaskeventargs(entities.eventargs):
+        def __init__(self, msg, yesno, default, **kwargs):
+            self.message   =  msg
+            self.yesno     =  yesno
+            self.default   =  default
+            self.kwargs    =  kwargs
+            self.response  =  None
+
+    def __init__(self):
+        self.onask = entities.event()
+        self.onask += self.self_onask
+
     @property
     def formatter(self):
         if not hasattr(self, '_formatter'):
@@ -71,27 +84,44 @@ class process:
 
         print(msg, end=end)
 
-    def ask(self, msg, yesno=True, default=undef, **kwargs):
+    def self_onask(self, src, eargs):
+        msg      =  eargs.message
+        default  =  eargs.default
+        yesno    =  eargs.yesno
+        kwargs   =  eargs.kwargs
+
         res = None
         while not res:
             res = input(f'{msg} ').lower()
             if not res and default is not undef:
-                return default
+                eargs.response = default
 
         if yesno:
             if res in ('y', 'yes'):
-                return 'yes'
+                eargs.response = 'yes'
             elif res in ('n', 'no'):
-                return 'no'
+                eargs.response = 'no'
 
         for k, v in kwargs.items():
             if res == v:
-                return k
+                eargs.response = k
 
-        return res
-    
+        if not eargs.response:
+            eargs.response = res
+
+    def ask(self, msg, yesno=True, default=undef, **kwargs):
+        eargs = self.onaskeventargs(
+            msg=msg, yesno=yesno, default=default, **kwargs
+        )
+
+        self.onask(self, eargs)
+
+        return eargs.response
+
 class migration(process):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
         self._done      =  entities.entities()
         self._skipped   =  entities.entities()
         self._failed    =  entities.entities()
@@ -458,8 +488,19 @@ class migration(process):
                     self.print(f'\nException: {ex}')
                     self.failed += self.todo
             elif res == 'edit':
-                # FIXME
-                res = self.processes.process('edit')
+                ddl = self.edit(ddl=ddl)
+                try:
+                    self.exec(ddl=ddl)
+                except self.Abort:
+                    raise
+                except _mysql_exceptions.MySQLError as ex:
+                    self.skipped += e
+                except Exception as ex:
+                    self.print(f'\nException: {ex}')
+                    self.failed += self.todo
+                else:
+                    self.done += e
+
 
 # A user-friendly alias
 mig = migration
@@ -487,4 +528,4 @@ print("""
                acct.database,
                acct.port)
 )
-
+mig()
