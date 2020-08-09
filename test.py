@@ -22234,6 +22234,10 @@ class gem_account(tester):
             account.depreciation,
             account.transactions,
             account.internals,
+            account.sales,
+            account.obligation,
+            account.external,
+            account.other,
         )
 
     def it_creates_accounts(self):
@@ -22336,8 +22340,6 @@ class gem_account(tester):
         corp = party.company(name='ABC Corporation')
         corp.roles += party.internal()
 
-        rec  = party.company(name='Johnson Recycling')
-
         txs = account.transactions()
 
         txs += account.depreciation(
@@ -22346,20 +22348,39 @@ class gem_account(tester):
             internal = corp.roles.last
         )
 
+        txs += account.sale(
+            transacted  = 'Jan 1, 2000',
+            description = 'Invoiced amount due',
+            sender = corp,
+            receiver = com,
+        )
+
         txs.save()
         txs.sort()
 
         txs1 = txs.orm.all.sorted()
 
-        self.one(txs)
-        self.one(txs1)
+        self.two(txs)
+        self.two(txs1)
 
         for tx, tx1 in zip(txs, txs1):
-            tx1 = tx1.orm.cast(account.depreciation)
+            dep = tx1.orm.cast(account.depreciation)
+            if dep:
+                tx1 = dep
+            else:
+                tx1 = tx1.orm.cast(account.sale)
+
             self.eq(tx.id, tx1.id)
             self.eq(tx.transacted, tx1.transacted)
             self.eq(tx.description, tx1.description)
-            self.eq(tx.internal.id, tx1.internal.id)
+
+            if isinstance(tx1, account.external):
+                self.eq(tx.sender.id, tx1.sender.id)
+                self.eq(tx.receiver.id, tx1.receiver.id)
+            elif isinstance(tx1, account.internal):
+                self.eq(tx.internal.id, tx1.internal.id)
+            else:
+                self.fail()
 
         
 
