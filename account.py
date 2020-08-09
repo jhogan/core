@@ -24,12 +24,34 @@ from decimal import Decimal as dec
 from orm import text, timespan, datespan
 import orm
 import party
+import product
+import invoice
 
 class accounts(orm.entities): pass
 class types(orm.entities): pass
 class account_organizations(orm.associations): pass
 class periods(orm.entities): pass
 class periodtypes(orm.entities): pass
+class transactions(orm.entities): pass
+class transactiontypes(orm.entities): pass
+class internals(transactions): pass
+class depreciations(internals): pass
+class capitalizations(internals): pass
+class amortizations(internals): pass
+class variances(internals): pass
+class others(internals): pass
+class externals(transactions): pass
+class obligations(externals): pass
+class notes(obligations): pass
+class taxes(obligations): pass
+class otherobligations(obligations): pass
+class memos(obligations): pass
+class creditlines(obligations): pass
+class sales(obligations): pass
+class creditlines(obligations): pass
+class payments(externals): pass
+class receipts(payments): pass
+class disbursements(payments): pass
 
 class account(orm.entity):
     """ Represents a type of financial reporting bucket to which
@@ -219,11 +241,10 @@ class transactiontype(orm.entity):
 
     transactions = transactions
 
-
 class internal(transaction):
     """ ``internal`` transactions identify transactions that serve as
     adjustments to the books of an internal organization
-    (party.internalorganization). Because there is only one organization
+    (party.internal). Because there is only one organization
     involved in the transaction (namely, the internal organization whose
     books are being adjusted), there is a single relationship to an
     ``internalorganization``.
@@ -232,7 +253,7 @@ class internal(transaction):
     "The Data Model Resource Book".
     """
 
-    organization = party.internalorganization
+    internal = party.internal
 
 class depreciation(internal):
     """
@@ -261,7 +282,7 @@ class variance(internal):
     # The product.variance from which this entity originated.
     variance = product.variance
 
-class other(other):
+class other(internal):
     """ Documents adjustments to the internal organization's financial
     position.
 
@@ -304,6 +325,7 @@ class note(obligation):
 class tax(obligation):
     """ An ``obligation`` to pay taxes to government agencies.
     """
+    entities = taxes
 
 class otherobligation(obligation):
     pass

@@ -22231,6 +22231,9 @@ class gem_account(tester):
             account.periodtypes,
             account.account_organizations,
             account.periods,
+            account.depreciation,
+            account.transactions,
+            account.internals,
         )
 
     def it_creates_accounts(self):
@@ -22325,6 +22328,39 @@ class gem_account(tester):
             self.eq(ao.organization.id,    ao1.organization.id)
             self.eq(ao.organization.name,  ao1.organization.name)
 
+    def it_posts_accounting_transactions(self):
+        account.transaction.orm.truncate()
 
+        com  = party.company(name='ACME Company')
+
+        corp = party.company(name='ABC Corporation')
+        corp.roles += party.internal()
+
+        rec  = party.company(name='Johnson Recycling')
+
+        txs = account.transactions()
+
+        txs += account.depreciation(
+            transacted  = 'Jan 1, 2000',
+            description = 'Depreciation on pen engraver',
+            internal = corp.roles.last
+        )
+
+        txs.save()
+        txs.sort()
+
+        txs1 = txs.orm.all.sorted()
+
+        self.one(txs)
+        self.one(txs1)
+
+        for tx, tx1 in zip(txs, txs1):
+            tx1 = tx1.orm.cast(account.depreciation)
+            self.eq(tx.id, tx1.id)
+            self.eq(tx.transacted, tx1.transacted)
+            self.eq(tx.description, tx1.description)
+            self.eq(tx.internal.id, tx1.internal.id)
+
+        
 
 cli().run()
