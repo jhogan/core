@@ -5136,6 +5136,7 @@ class orm:
         cols = [x.name for x in tbl.columns]
 
         opcodes = SequenceMatcher(a=cols, b=attrs).get_opcodes()
+        print(opcodes)
 
         # listify tuples so they are mutable
         opcodes = [list(x) for x in opcodes]
@@ -5230,15 +5231,15 @@ class orm:
             at1 = f'{hdr}{at1};'
 
         if maps.count != altered.columns.count:
-            raise ValueError(
-                'Mapping error: mappings:%s columns:%s' % 
+            raise ConfusionError(
+                'mappings:%s columns:%s' % 
                     (maps.count, altered.columns.count)
             )
 
         at2 = str()
         for map, col in zip(maps, altered.columns):
             if col.name != map.name:
-                raise ValueError(
+                raise ConfusionError(
                     f'Mapping error: {map.name} != {col.name}'
                 )
 
@@ -6893,15 +6894,8 @@ class migration:
 
         return f'{self.table}\n{self.entity.orm.altertable}'
             
-
-
-            
-
-
-            
-        
-
 # ORM Exceptions
 class InvalidColumn(ValueError): pass
 class InvalidStream(ValueError): pass
+class ConfusionError(ValueError): pass
 
