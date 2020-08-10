@@ -33,6 +33,7 @@ class account_organizations(orm.associations): pass
 class periods(orm.entities): pass
 class periodtypes(orm.entities): pass
 class transactions(orm.entities): pass
+class details(orm.entities): pass
 class transactiontypes(orm.entities): pass
 class internals(transactions): pass
 class depreciations(internals): pass
@@ -206,9 +207,15 @@ class transaction(orm.entity):
     with a party (``party.party``) that is external to the enterprise
     for whom the books are kept.
 
+    Each ``transaction`` must be composed of one or more transaction
+    ``detail`` objects. 
+
     Note that this entity was originally called ACCOUTING TRANSACTION in
     "The Data Model Resource Book".
     """
+
+    # TODO Write validation rule to ensure that each transaction has
+    # at least one debit and one credit `detail`. 
 
     # Note that there is no ``amount`` attribute because the transaction
     # amounts are maintained in the transaction ``detail`` class.
@@ -225,11 +232,41 @@ class transaction(orm.entity):
     # the **transaction date**.)
     transacted = datetime
 
+class detail(orm.entity):
+    """ Transaction ``detail``s represents the debit and credit entries
+    for a given transaction. each debit or credit entry will affect one
+    of the ``internalorganization``'s accounts and therefore is related to
+    the ``account_organization`` association, which is the bucket for a
+    general ledger ``account`` for an ``internalorganization``.
+    
+    Each ``transaction`` must be composed of one or more transaction
+    ``detail`` objects. Transaction ``details`` show how ecah part of
+    the transaction affects a specific ``account_organization`` (aka
+    ORGANIZATION GL ACCOUNT) association. A ``detail`` instance
+    corresponds to a "journal entry line item" in accounting terms.
+
+    The ``detail`` class facilities the principles of double-entry
+    accounting; that each transaction has at least two ``detail``
+    records, a debit and a credit.
+
+    Note that this entity was originally called TRANSACTION DETAIL In
+    "The Data Model Resource Book".
+    """
+
+    # TODO Write iscredit and isdebit properties
+
+
+    # The currency (e.g., dollar) amount of the transaction ``detail``.
+    # If the ``amount`` is negative, the detail is considered a *debit*,
+    # otherwise it's considered a *credit*.
+    amount = dec
+
 class transactiontype(orm.entity):
     """ Provides a specific low-level categorization of each
     transaction. ``transactiontypes`` may include further breakdowns of
     the subentities such as "Payment Recept for Asset Sale" or "Payment
     Disbursement for Purchase Order".
+
     Note that this entity was originally called ACCOUNTING TRANSACTION
     TYPE In "The Data Model Resource Book".
     """
