@@ -86,6 +86,9 @@ class account(orm.entity):
     # understood properly
     description = text
 
+    # The collection of  "journal entry line items" for this account
+    items = items
+
 class type(orm.entity):
     """ Each general ledger ``account`` may be categorized by one and only one
     general ledger account type (``type``) to specify the

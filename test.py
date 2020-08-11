@@ -22238,6 +22238,7 @@ class gem_account(tester):
             account.obligation,
             account.external,
             account.other,
+            account.item,
         )
 
     def it_creates_accounts(self):
@@ -22381,7 +22382,65 @@ class gem_account(tester):
                 self.eq(tx.internal.id, tx1.internal.id)
             else:
                 self.fail()
+    
+    def it_creates_transaction_details(self):
+        account.transaction.orm.truncate()
+
+        corp = party.company(name='ABC Corporation')
+        corp.roles += party.internal()
+
+        txs = account.transactions()
+
+        txs += account.depreciation(
+            description='Depreciation on equipment',
+            internal = corp.roles.last
+        )
+
+        txs.last.items += account.item(
+            amount = -200,  # A debit?
+            account = account.account(
+                name = 'Depreciation expense',
+                number = 100,
+            ),
+        )
+
+        txs.last.items += account.item(
+            amount = 200,  # A credit?
+            account = account.account(
+                name = 'Accumulated depreciation for equipment',
+                number = 200,
+            ),
+        )
+
+        txs.save()
+
+        txs1 = account.transactions.orm.all
+
+        self.one(txs)
+        self.one(txs1)
+
+        for tx, tx1 in zip(txs, txs1):
+            tx1 = tx1.orm.cast(account.depreciation)
+            self.eq(tx.id, tx1.id)
+            self.eq(
+                tx.description,
+                tx1.description,
+            )
+
+            self.eq(
+                tx.internal.id, 
+                tx1.internal.id, 
+            )
+
+            itms = tx.items
+            itms1 = tx.items
+
+            self.eq(itms.count, itms1.count)
+
+            for itm, itm1 in zip(itms, itms1):
+                self.eq(itm.amount, itm1.amount)
+                self.eq(itm.account.id, itm1.account.id)
+                self.eq(itm.account.name, itm1.account.name)
 
         
-
 cli().run()
