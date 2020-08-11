@@ -2360,6 +2360,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                 self.orm.populate(res)
 
+            # TODO If k is not in self.orm.mappings, we should throw a
+            # ValueError.
             # Set attributes via keyword arguments:
             #     per = person(first='Jesse', last='Hogan')
             for k, v in kwargs.items():

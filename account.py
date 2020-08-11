@@ -262,10 +262,11 @@ class item(orm.entity):
 
     # TODO Write iscredit and isdebit properties
 
-
-    # The currency (e.g., dollar) amount of the transaction ``detail``.
-    # If the ``amount`` is negative, the detail is considered a *debit*,
-    # otherwise it's considered a *credit*.
+    # The currency (e.g., dollar) amount of the transaction ``item``.
+    # If the ``amount`` is negative, the item is considered a *debit*,
+    # otherwise it's considered a *credit*. Although,
+    # counter-intuitively, it might be the other way around. TODO Get
+    # confirmation on this.
     amount = dec
 
 class transactiontype(orm.entity):
