@@ -33,7 +33,7 @@ class account_organizations(orm.associations): pass
 class periods(orm.entities): pass
 class periodtypes(orm.entities): pass
 class transactions(orm.entities): pass
-class details(orm.entities): pass
+class items(orm.entities): pass
 class transactiontypes(orm.entities): pass
 class internals(transactions): pass
 class depreciations(internals): pass
@@ -208,17 +208,17 @@ class transaction(orm.entity):
     for whom the books are kept.
 
     Each ``transaction`` must be composed of one or more transaction
-    ``detail`` objects. 
+    ``item`` objects. 
 
     Note that this entity was originally called ACCOUTING TRANSACTION in
     "The Data Model Resource Book".
     """
 
     # TODO Write validation rule to ensure that each transaction has
-    # at least one debit and one credit `detail`. 
+    # at least one debit and one credit `item`. 
 
     # Note that there is no ``amount`` attribute because the transaction
-    # amounts are maintained in the transaction ``detail`` class.
+    # amounts are maintained in the transaction ``item`` class.
 
     # Describes the details behind the transaction.
     description = text
@@ -232,21 +232,25 @@ class transaction(orm.entity):
     # the **transaction date**.)
     transacted = datetime
 
-class detail(orm.entity):
-    """ Transaction ``detail``s represents the debit and credit entries
+    # A collection of items (in accounting terms, these correspond to a
+    # a collection of "journal entry line items") for the `transaction`.
+    items = items
+
+class item(orm.entity):
+    """ Transaction ``item``s represents the debit and credit entries
     for a given transaction. each debit or credit entry will affect one
     of the ``internalorganization``'s accounts and therefore is related to
     the ``account_organization`` association, which is the bucket for a
     general ledger ``account`` for an ``internalorganization``.
     
     Each ``transaction`` must be composed of one or more transaction
-    ``detail`` objects. Transaction ``details`` show how ecah part of
+    ``item`` objects. Transaction ``items`` show how each part of
     the transaction affects a specific ``account_organization`` (aka
-    ORGANIZATION GL ACCOUNT) association. A ``detail`` instance
+    ORGANIZATION GL ACCOUNT) association. An ``item`` instance
     corresponds to a "journal entry line item" in accounting terms.
 
-    The ``detail`` class facilities the principles of double-entry
-    accounting; that each transaction has at least two ``detail``
+    The ``item`` class facilities the principles of double-entry
+    accounting; that each transaction has at least two ``item``
     records, a debit and a credit.
 
     Note that this entity was originally called TRANSACTION DETAIL In
