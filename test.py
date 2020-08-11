@@ -22,7 +22,6 @@ from tester import *
 from uuid import uuid4
 import MySQLdb
 import _mysql_exceptions
-import crust
 import dateutil
 import db
 import decimal; dec=decimal.Decimal
@@ -40,6 +39,12 @@ import product
 import re
 import ship
 import textwrap
+
+# Import crust. Ensure that stdout is suppressed because it will print
+# out status information on startup.
+with redirect_stdout(None):
+    import crust
+
 
 # We will use basic and supplementary multilingual plane UTF-8
 # characters when testing str attributes to ensure unicode is being
@@ -15849,15 +15854,34 @@ class test_orm(tester):
 
 class crust_migration(tester):
     def it_shows_migrants(self):
+        # Drop all table in db
         db.tables().drop()
 
+        # Recreate all tables
         es = orm.orm.getentitys(includeassociations=True)
         for e in es:
             e.orm.create()
 
-        self.one(db.tables())
+        # Ensure entities count matches table count
+        self.eq(len(es), db.tables().count)
 
-        mig = crust.migration()
+        def onask(src, eargs):
+            # Ensure the list of entities to migrate (.todo) is zero
+            # since we just recreated all the tables.
+            self.zero(src.todo)
+
+            # Respond with quit. This is equivalent to the user entering
+            # 'q'.
+            eargs.response = 'quit'
+
+        # Redirect stdout to /dev/null (so to speak)
+        with redirect_stdout(None):
+            # Instatiate the migration command passing in `onask` as a
+            # handler for the migration.onask event. This has to be done
+            # in the constructor because crust.migration.__init__ waists
+            # no time interacting with the user.
+            mig = crust.migration(onask=onask)
+
 
 
 

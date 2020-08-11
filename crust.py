@@ -45,7 +45,7 @@ def wf(file, txt):
 
 class undef: pass
 
-class process:
+class command:
     class onaskeventargs(entities.eventargs):
         def __init__(self, msg, yesno, default, **kwargs):
             self.message   =  msg
@@ -54,9 +54,13 @@ class process:
             self.kwargs    =  kwargs
             self.response  =  None
 
-    def __init__(self):
+    def __init__(self, onask=None):
         self.onask = entities.event()
-        self.onask += self.self_onask
+
+        if onask:
+            self.onask += onask
+        else:
+            self.onask += self.self_onask
 
     @property
     def formatter(self):
@@ -118,20 +122,79 @@ class process:
 
         return eargs.response
 
-class migration(process):
+class migration(command):
+    class migrants(entities.entities):
+        @staticmethod
+        def _key(mig):
+            """ Defines the sort order:
+                    0 - Tables that must be dropped (D)
+                    1 - Tables that must be altered (A)
+                    2 - Tables that must be created (C)
+            """
+            e = mig.entity
+            if isinstance(e, db.table):
+                return 0
+            else:
+                return 1 if e.orm.dbtable else 2
+
+        def sort(self):
+            super().sort(key=self._key)
+
+        def sort(self):
+            return super().sorted(key=self._key)
+
+    class migrant(entities.entity):
+        def __init__(self, e, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.entity = e
+
+        @property
+        def istable(self):
+            return isinstance(self.entity, db.table)
+
+        @property
+        def isormentity(self):
+            return not self.istable
+
+        @property
+        def name(self):
+            e = self.entity
+            if self.istable:
+                return e.name
+            else:
+                return f'{e.__module__}.{e.__name__}'
+
+        @property
+        def operation(self):
+            if self.istable:
+                return 'D'
+            else:
+                return 'A' if self.entity.orm.dbtable else 'C'
+
+        @property
+        def ddl(self):
+            if self.istable:
+                return f'DROP TABLE `{self.name}`;'
+            else:
+                ddl = self.entity.orm.altertable
+                if ddl:
+                    return ddl
+                else:
+                    return self.entity.orm.createtable
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self._done      =  entities.entities()
-        self._skipped   =  entities.entities()
-        self._failed    =  entities.entities()
-        self._todo      =  entities.entities()
+        self._done      =  migration.migrants()
+        self._skipped   =  migration.migrants()
+        self._failed    =  migration.migrants()
+        self._todo      =  migration.migrants()
         self._isscaned  =  False
         self._tmp       =  None
 
         try:
             self()
-        except process.Abort:
+        except command.Abort:
             pass
         except:
             raise
@@ -154,8 +217,8 @@ class migration(process):
                     self.print('    ', end='')
 
                 self.print(
-                    f'{self.getoperation(e1)} '
-                    f'{self.getname(e1)}',
+                    f'{e1.operation} '
+                    f'{e1.name} '
                 )
 
             self.print()
@@ -193,21 +256,10 @@ class migration(process):
         # Get an editor that the user likes
         return os.getenv('EDITOR') or '/usr/bin/vim'
 
-    @staticmethod
-    def getddl(e):
-        if isinstance(e, db.table):
-            return f'DROP TABLE `{e.name}`;'
-        else:
-            ddl = e.orm.altertable
-            if ddl:
-                return ddl
-            else:
-                return e.orm.createtable
-
     def exec(self, e=None, ddl=None):
         while True:
             try:
-                ddl = ddl or self.getddl(e)
+                ddl = ddl or e.ddl
                 orm.orm.exec(ddl)
             except Exception as ex:
                 self.print(f'\n{ex}\n\n')
@@ -242,7 +294,7 @@ class migration(process):
                 if res == 'ignore':
                     return
                 elif res == 'quit':
-                    raise process.Abort()
+                    raise command.Abort()
             else:
                 break
 
@@ -263,8 +315,9 @@ class migration(process):
             raise self.Abort()
 
         ddls = str()
-        for e in self.todo:
-            ddl = self.getddl(e)
+        for mig in self.todo:
+            e = mig.entity
+            ddl = mig.ddl
             if ddl.startswith('ALTER'):
                 ddls += f'\n/*\n{e.orm.migration.table!s}*/\n\n'
             else:
@@ -301,7 +354,7 @@ class migration(process):
                     # method. So we are here because the user has
                     # ignored the exception caused by executing the
                     # concatenated DDL. In that case, print a summary
-                    # and exit the process.
+                    # and exit the command.
                     abort()
                 return
             elif res == 'quit':
@@ -311,7 +364,7 @@ class migration(process):
 
     def edit(self, e=None, ddl=None):
         if not ddl:
-            ddl = self.getddl(e)
+            ddl = e.ddl
 
             if ddl.startswith('ALTER'):
                 tbl = e.orm.migration.table
@@ -341,7 +394,8 @@ class migration(process):
             self.print('Scanning for entities to migrate ...\n')
 
             try:
-                self._todo += orm.migration().entities
+                for e in orm.migration().entities:
+                    self._todo += migration.migrant(e=e)
             except:
                 raise
             finally:
@@ -349,51 +403,23 @@ class migration(process):
 
             es = self.todo
 
-            self.sort(es)
+            es.sort()
 
             if es.count:
                 self.print(f'There are {es.count} entities to migrate:')
 
             for e in es:
                 self.print(
-                    f'    {self.getoperation(e)} {self.getname(e)}'
+                    f'    {e.operation} {e.name}'
                 )
 
             self.print()
-
-    @staticmethod
-    def getname(e):
-        if isinstance(e, db.table):
-            return e.name
-        else:
-            return f'{e.__module__}.{e.__name__}'
-
-    @staticmethod
-    def getoperation(e):
-        if isinstance(e, db.table):
-            return 'D'
-        else:
-            return 'A' if e.orm.dbtable else 'C'
-
-    def _key(e):
-        if isinstance(e, db.table):
-            return 0
-        else:
-            return 1 if e.orm.dbtable else 2
-
-    @staticmethod
-    def sort(es):
-        return es.sort(key=mig._key)
-
-    @staticmethod
-    def sorted(es):
-        return es.sorted(key=mig._key)
 
     @property
     def todo(self):
         self.scan()
         es = self._todo - self.done - self.failed - self.skipped
-        self.sort(es)
+        es.sort()
         return es
 
     @property
@@ -435,8 +461,9 @@ class migration(process):
 
         self.scan()
 
-        def show(e):
-            ddl = self.getddl(e)
+        def show(mig):
+            e = mig.entity
+            ddl = mig.ddl
             if ddl.startswith('ALTER'):
                 self.print(f'\n{e.orm.migration.table!s}')
             else:
@@ -454,7 +481,7 @@ class migration(process):
                 res = self.ask(
                     'Apply this DDL [y,n,q,a,e,s,c,h]?', yesno=True, 
                     quit='q', all='a', edit='e', show='s', help='h',
-                    counts='c',
+                    counts='c'
                 )
 
                 if res == 'show':
@@ -464,7 +491,8 @@ class migration(process):
                 elif res == 'counts':
                     self.counts(e)
                 else:
-                    break
+                    if res in ('yes', 'no', 'all', 'edit'):
+                        break
 
             if res == 'yes':
                 try:
@@ -478,7 +506,7 @@ class migration(process):
                 self.skipped += e
                 continue
             elif res == 'quit':
-                raise process.Abort()
+                raise command.Abort()
             elif res == 'all':
                 try:
                     res = self.process_all()
@@ -500,7 +528,6 @@ class migration(process):
                     self.failed += self.todo
                 else:
                     self.done += e
-
 
 # A user-friendly alias
 mig = migration
