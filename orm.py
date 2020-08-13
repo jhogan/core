@@ -41,6 +41,7 @@ import primative
 import re
 import sys
 import textwrap
+from difflib import SequenceMatcher
 
 # TODO Research making these constants the same as their function
 # equivalent.
@@ -6824,6 +6825,84 @@ class migration:
                 )
 
         return tbl
+
+    @property
+    def table1(self):
+        tbl = table()
+
+        row = tbl.newrow()
+
+        e = self.entity
+
+        maps = mappings(
+            initial=(
+                x for x in e.orm.mappings 
+                if isinstance(x, fieldmapping)
+            )
+        )
+
+        cols = e.orm.dbtable.columns
+
+        row.newfields(
+            f'Model: {e.__module__}.{e.__name__}', str(), 
+            f'Table: {e.orm.table}', str()
+        )
+
+        mapdefs = [f'{x.name} {x.definition}' for x in maps]
+        coldefs = [f'{x.name} {x.definition}' for x in cols]
+
+
+        # TODO REMOVE ME
+
+        mapdefs = (
+            'id primary key',
+            'middle varchar(255)',
+            'last varchar(255)',
+            'first varchar(255)',
+            'email varchar(255)',
+            'dob date',
+        )
+
+        coldefs = (
+            'id int',
+            'first varchar(255)',
+            'middle varchar(255)',
+            'last varchar(255)',
+            'email varchar(255)',
+            'dob date',
+        )
+
+        opcodes = SequenceMatcher(None, coldefs, mapdefs).get_opcodes()
+        print(opcodes)
+
+        for tag, i1, i2, j1, j2 in opcodes:
+            if tag == 'equal':
+                gen = zip(mapdefs[j1:j2], coldefs[i1:i2])
+
+                for mapdef, coldef in gen:
+                    row = tbl.newrow()
+                    row.newfields(mapdef, coldef)
+
+            elif tag == 'delete':
+                for coldef in coldefs[i1:i2]:
+                    row = tbl.newrow()
+                    row.newfields('', coldef)
+            elif tag == 'insert':
+                for mapdef in mapdefs[j1:j2]:
+                    row = tbl.newrow()
+                    row.newfields(mapdef, '')
+            elif tag == 'replace':
+                gen = zip(mapdefs[j1:j2], coldefs[i1:i2])
+
+                for mapdef, coldef in gen:
+                    row = tbl.newrow()
+                    row.newfields(mapdef, coldef)
+            else:
+                raise ValueError()
+
+
+        return tbl
+
 
     def __repr__(self):
         if self.entity.orm.ismigrated:
