@@ -15900,8 +15900,90 @@ class crust_migration(tester):
             # no time interacting with the user.
             mig = crust.migration(onask=onask)
 
+    def it_calls_editor(self):
+        def onask(src, eargs):
+            self.eq('/usr/bin/vim', src.editor)
+
+            eargs.response = 'quit'
+
+        with redirect_stdout(None):
+            mig = crust.migration(onask=onask)
+
+    def it_edits(self):
+        """ Let crust write an ALTER TABLE script to its tmp file, read
+        the file and confirm it's an alter table. Currently, we aren't
+        bothering to capture the call to the editor to make or own
+        edits. We just write the contents of the tmp file to our own tmp
+        file using `cat` (see below). Then we check what was written.
+        """
+
+        # TODO When things are more predictable, we should set up the
+        # database environment such that we are certain we know what
+        # will be in the DLL that's being edited. Right now, we are
+        # making the assumption that it starts with ALTER TABLE.
+
+        _, tmp = tempfile.mkstemp()
+        cnt = 0
+        def onask(src, eargs):
+            nonlocal cnt
+            cnt += 1
+
+            if cnt == 1:
+                eargs.response = 'edit'
+            elif cnt == 2:
+                
+                with open(tmp) as f:
+                    ddl = f.read()
+
+                self.true(ddl.startswith('ALTER TABLE'))
+                eargs.response = 'quit'
+
+        with redirect_stdout(None):
+            os.environ['EDITOR'] = f'cat >{tmp} <'
+            mig = crust.migration(onask=onask)
+
+    def it_calls_tmp(self):
+        def onask(src, eargs):
+            tmp = src.tmp
+            self.true(tmp.startswith('/tmp/tmp'))
+            self.true(os.path.exists(tmp))
+
+            eargs.response = 'quit'
+
+        with redirect_stdout(None):
+            mig = crust.migration(onask=onask)
+            self.false(os.path.exists(mig.tmp))
+
+    def it_navigates_to_help(self):
+        cnt = 0
+        f = io.StringIO()
+        def onask(src, eargs):
+            nonlocal cnt
+            cnt += 1
+
+            if cnt == 1:
+                # Flush the StringIO buffer.
+                f.truncate(0); f.seek(0)
+                eargs.response = 'help'
+            elif cnt == 2:
+                eargs.response = 'quit'
 
 
+        with redirect_stdout(f):
+            mig = crust.migration(onask=onask)
+
+        expect = self.dedent('''
+            y - yes, apply DDL
+            n - no, do not apply DDL
+            q - quit migration
+            a - apply this DDL and all later DLL
+            e - manually edit the current DDL
+            s - show current DDL
+            c - show counts
+            h - print help
+        ''')
+
+        self.eq(expect, f.getvalue().strip())
 
 '''
 Test General Entities Model (GEM)
