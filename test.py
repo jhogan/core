@@ -32,12 +32,14 @@ import jwt as pyjwt
 import math
 import order
 import orm
+import os
 import party
 import pathlib
 import primative
 import product
 import re
 import ship
+import tempfile
 import textwrap
 
 # Import crust. Ensure that stdout is suppressed because it will print
@@ -15851,6 +15853,22 @@ class test_orm(tester):
             amp2 = amplifier(amp1.id)
             for prop in ('tube', 'watts', 'cost', 'name'):
                 self.eq(getattr(amp1, prop), getattr(amp2, prop))
+
+class orm_migration(tester):
+    def it_calls_table(self):
+        class cats(orm.entities): pass
+
+        class cat(orm.entity):
+            dob      =  date
+            name     =  str
+            lives    =  int
+            shedder  =  bool
+
+        cat.orm.recreate()
+
+        mig = orm.migration(e=cat)
+
+        print(mig.table1)
 
 class crust_migration(tester):
     def it_shows_migrants(self):
