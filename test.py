@@ -22,11 +22,15 @@ from tester import *
 from uuid import uuid4
 import MySQLdb
 import _mysql_exceptions
+import account
+import apriori
+import asset
 import dateutil
 import db
 import decimal; dec=decimal.Decimal
 import effort
 import functools
+import invoice
 import io
 import jwt as pyjwt
 import math
@@ -38,7 +42,7 @@ import pathlib
 import primative
 import product
 import re
-import ship
+import shipment
 import tempfile
 import textwrap
 
@@ -46,7 +50,6 @@ import textwrap
 # out status information on startup.
 with redirect_stdout(None):
     import crust
-
 
 # We will use basic and supplementary multilingual plane UTF-8
 # characters when testing str attributes to ensure unicode is being
@@ -2073,7 +2076,8 @@ class test_entity(tester):
 
     def it_gets_brokenrules(self):
         """ This functionality is tested in
-        test_entities.it_gets_brokenrules."""
+        test_entities.it_gets_brokenrules.
+        """
         pass
 
 class test_table(tester):
@@ -3147,15 +3151,27 @@ class comments(orm.entities):
     pass
 
 class comment(orm.entity):
-    title = str
-    body = str
-    comments = comments
+    title     =  str
+    body      =  str
+    comments  =  comments
+    author    =  str
+
+    def getbrokenrules(self, *args, **kwargs):
+        brs = super().getbrokenrules(*args, **kwargs)
+        if '@' not in self.author:
+            brs += brokenrule(
+                'Author email address has no @', 
+                'author', 'valid', self,
+            )
+
+        return brs
 
     @staticmethod
     def getvalid():
         com = comment()
         com.title = uuid4().hex
         com.body = '%s\n%s' % (uuid4().hex, uuid4().hex)
+        com.author = '%s@%s.com' % (uuid4().hex, uuid4().hex)
         return com
 
 class locations(orm.entities):
@@ -3185,6 +3201,9 @@ class artifacts(orm.entities):
 class artists(orm.entities):
     pass
 
+class timelogs(orm.entities):
+    pass
+
 class location(orm.entity):
     address     = str
     description = str
@@ -3204,6 +3223,7 @@ class presentation(orm.entity):
     components   =  components
     title        =  str,        orm.fulltext('title_desc',0)
     description1 =  str,        orm.fulltext('title_desc',1)
+    author       =  str,
 
     @staticmethod
     def getvalid():
@@ -3212,6 +3232,7 @@ class presentation(orm.entity):
         pres.description   =  uuid4().hex
         pres.description1  =  uuid4().hex
         pres.title         =  uuid4().hex
+        pres.author        =  'jessehogan0@gmail.com'
         return pres
 
 class concert(presentation):
@@ -3224,6 +3245,7 @@ class concert(presentation):
         conc.title = pres.title
         conc.description = pres.description
         conc.description1 = pres.description1
+        conc.author = pres.author
         return conc
     
     record = orm.fieldmapping(str)
@@ -3256,6 +3278,7 @@ class exhibition(presentation):
         exh.title = pres.title
         exh.description = pres.description
         exh.description1 = pres.description1
+        exh.author = pres.author
         return exh
 
 class unveiling(exhibition):
@@ -3268,6 +3291,7 @@ class unveiling(exhibition):
         unv.title         =  exh.title
         unv.description   =  exh.description
         unv.description1  =  exh.description1
+        unv.author        =  exh.author
         return unv
 
 class battle(concert):
@@ -3415,14 +3439,13 @@ class artist(orm.entity):
         self.orm.mappings('phone').value = v
     """
 
-    def __init__(self, o=None):
-        super().__init__(o)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-        if self.orm.isnew:
-            self.lifeform = 'organic'
-            self.bio = None
-            self.style = 'classicism'
-            self._processing = False
+        self.orm.default('lifeform', 'organic')
+        self.orm.default('bio', None)
+        self.orm.default('style', 'classicism')
+        self.orm.default('_processing', False)
 
     def clear(self):
         self.locations.clear()
@@ -3442,7 +3465,7 @@ class artist(orm.entity):
 
     def __str__(self):
         return self.fullname
-        
+
 class artist_artifacts(orm.associations):
     pass
 
@@ -3579,11 +3602,10 @@ class rapper(singer):
     stagename = str
     battles = battles
 
-    def __init__(self, o=None):
-        super().__init__(o)
-        if self.orm.isnew:
-            self.nice = 10
-            self._elevating = False
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.default('nice', 10)
+        self.orm.default('_elevating', False)
 
     @staticmethod
     def getvalid():
@@ -3622,12 +3644,135 @@ class rapper(singer):
         return str(attr()) if attr() else attr(str(bs()))
 
 class issues(orm.entities):
-    pass
+    def getbrokenrules(self, *args, **kwargs):
+        brs = super().getbrokenrules(*args, **kwargs)
+        names = self.pluck('name')
+        dups = set(x for x in names if names.count(x) > 1)
+
+        if dups:
+            brs += brokenrule(
+                'Duplicate names found %s' % dups,
+                'names',
+                'valid',
+                self,
+
+            )
+        return brs
 
 class issue(orm.entity):
+    name      =  str
+    assignee  =  str
+    timelogs  =  timelogs
+    comments  =  comments
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.raise_ = True
+
+    @staticmethod
+    def getvalid():
+        iss = issue()
+        iss.name = uuid4().hex
+        iss.assignee  = '%s@mail.com' % uuid4().hex
+        iss.raise_ = False
+        return iss
+
     @orm.attr(str)
     def raiseAttributeError(self):
-        raise AttributeError()
+        if self.raise_:
+            raise AttributeError()
+
+    def getbrokenrules(self, *args, **kwargs):
+        brs = super().getbrokenrules(*args, **kwargs)
+        if '@' not in self.assignee:
+            brs += brokenrule(
+                'Assignee email address has no @', 
+                'assignee', 
+                'valid',
+                self,
+            )
+
+        return brs
+
+class programmers(orm.entities):
+    pass
+
+class programmer(orm.entity):
+    name = str
+    ismaintenance = bool
+
+    def getbrokenrules(self, *args, **kwargs):
+        brs = super().getbrokenrules(*args, **kwargs)
+        if len(self.name) > 20:
+            brs += brokenrule(
+                'Programmer name must be less than 20 chars', 
+                'name', 
+                'fits',
+                self,
+            )
+
+        return brs
+
+class programmer_issueroles(orm.entities):
+    pass
+class programmer_issuerole(orm.entity):
+    name = str
+
+class programmer_issues(orm.associations):
+    def getbrokenrules(self, *args, **kwargs):
+        brs = super().getbrokenrules(*args, **kwargs)
+
+        for ass in self:
+            for ass1 in self:
+                if ass.id == ass1.id: continue
+
+                if ass.programmer.id == ass1.programmer.id \
+                    and ass.issue.id == ass1.issue.id:
+                    brs += brokenrule(
+                        'Duplicate programmer and '
+                        'issue associtation', 
+                        'id', 
+                        'valid',
+                        self,
+                    )
+                    break
+            else:
+                continue
+            break
+
+        return brs
+
+class programmer_issue(orm.association):
+    programmer = programmer
+    issue = issue
+    programmer_issuerole = programmer_issuerole
+
+    def getbrokenrules(self, *args, **kwargs):
+        brs = super().getbrokenrules(*args, **kwargs)
+        if not self.programmer.ismaintenance:
+            brs += brokenrule(
+                'Only maintenance programmers can be assigned to issues', 
+                'ismaintenance', 
+                'valid',
+                self
+            )
+
+        return brs
+
+class timelog(orm.entity):
+    hours = dec
+
+    @property
+    def brokenrules(self):
+        brs = super().brokenrules
+        if '@' not in self.author:
+            brs += brokenrule(
+                'Author email address has no @', 
+                'author', 
+                'valid'
+            )
+
+        return brs
 
 class artist_artists(orm.associations):
     pass
@@ -3669,6 +3814,14 @@ class test_orm(tester):
         self.chronicles = db.chronicles()
         db.chronicler.getinstance().chronicles.onadd += self._chronicler_onadd
 
+        orm.orm.recreate(
+            artists,
+            presentations,
+            issues,
+            programmer_issues,
+            programmers,
+            programmer_issuerole,
+        )
         artist.orm.recreate(recursive=True)
         comment.orm.recreate()
 
@@ -3723,9 +3876,10 @@ class test_orm(tester):
                     if not self._test(e, 'create'):
                         test_orm._failures += failure()
 
-            def retrieved(self, e):
-                if not self._test(e, 'retrieve'):
-                    test_orm._failures += failure()
+            def retrieved(self, *es):
+                for e in es:
+                    if not self._test(e, 'retrieve'):
+                        test_orm._failures += failure()
 
             def updated(self, *es):
                 for e in es:
@@ -4775,6 +4929,192 @@ class test_orm(tester):
 
         migrate(cat, expect)
 
+    def it_calls_entity_on_brokenrule(self):
+        iss = issue.getvalid()
+
+        # Break a declaritive rule
+        iss.name = str() # break
+        self.one(iss.brokenrules)
+        self.is_(iss, iss.brokenrules.first.entity)
+
+        # Break an imperative rule
+        iss.assignee = 'jessehogan0ATgmail.com' # break
+        self.two(iss.brokenrules)
+        self.is_(iss, iss.brokenrules.first.entity)
+        self.is_(iss, iss.brokenrules.second.entity)
+
+        # Break constituent
+        iss.comments += comment.getvalid()
+        iss.comments.last.author = 'jessehogan0ATgmail.com' # break
+        self.three(iss.brokenrules)
+
+        es = [x.entity for x in iss.brokenrules]
+        self.true(es.count(iss) == 2)
+        self.true(es.count(iss.comments.first) == 1)
+
+        prog = programmer()
+
+        # Programmer names can only be 20 characters long
+        prog.name = 'x' * 21  # break
+        prog.ismaintenance = True  # Ensure ismaintenance is valid
+
+        iss.programmer_issues += programmer_issue(
+            programmer = prog
+        )
+
+        self.four(iss.brokenrules)
+        es = [x.entity for x in iss.brokenrules]
+        self.true(es.count(iss) == 2)
+        self.true(es.count(iss.comments.first) == 1)
+        self.true(es.count(iss.programmer_issues.first.programmer) == 1)
+
+        ''' Break an association-level rule '''
+
+        # Only maintenance programmers can be associated with an issue
+        prog.ismaintenance = False  # Break
+        es = [x.entity for x in iss.brokenrules]
+        self.five(iss.brokenrules)
+        self.true(es.count(iss) == 2)
+        self.true(es.count(iss.comments.first) == 1)
+        self.true(es.count(iss.programmer_issues.first.programmer) == 1)
+        self.true(es.count(iss.programmer_issues.first) == 1)
+
+        ''' Break an associations-level rule '''
+
+        # A given programmer can't be associated with the same issue
+        # more than once.
+        iss.programmer_issues += programmer_issue(
+            programmer = prog
+        )
+
+        es = [x.entity for x in iss.brokenrules]
+        self.seven(iss.brokenrules)
+        self.true(es.count(iss) == 2)
+        self.true(es.count(iss.comments.first) == 1)
+        self.true(es.count(iss.programmer_issues.first.programmer) == 1)
+        self.true(es.count(iss.programmer_issues.first) == 1)
+        self.true(es.count(iss.programmer_issues) == 1)
+
+    def it_calls_imperative_brokenrules(self):
+        ''' Break on entity '''
+        iss = issue.getvalid()
+
+        # Break a declaritive rule to ensure these are still being
+        # collected
+        iss.name = str() # break
+
+        self.one(iss.brokenrules)
+        self.broken(iss, 'name', 'fits')
+
+        # Break an imperative rule
+        iss.assignee = 'jessehogan0ATgmail.com' # break
+
+        self.two(iss.brokenrules)
+        self.broken(iss, 'name', 'fits')
+        self.broken(iss, 'assignee', 'valid')
+
+        ''' Break constituent '''
+        iss.comments += comment.getvalid()
+        iss.comments.last.author = 'jessehogan0ATgmail.com' # break
+        self.three(iss.brokenrules)
+        self.broken(iss, 'name', 'fits')
+        self.broken(iss, 'assignee', 'valid')
+        self.broken(iss, 'author', 'valid')
+
+        # Fix
+        iss.assignee = 'jessehogan0@mail.com'
+        self.two(iss.brokenrules)
+        self.broken(iss, 'name', 'fits')
+        self.broken(iss, 'author', 'valid')
+
+        iss.comments.last.author = 'jessehogan0@gmail.com'
+        self.one(iss.brokenrules)
+        self.broken(iss, 'name', 'fits')
+
+        iss.name = 'My Issue'
+        self.zero(iss.brokenrules)
+
+        ''' Break entities '''
+        # Create a collection. It should start with zero broken rules
+        isss = issues()
+        self.zero(isss.brokenrules)
+
+        # Add existing issue. The existing issue should have no broken
+        # rules.
+        isss += iss  
+        self.zero(isss.brokenrules)
+
+        # Add a new issue with the same name. Duplicate issue names have
+        # been forbidden by an imperitive broken rule at
+        # issues.getbrokenrules
+        isss += issue.getvalid()
+        isss.last.name = iss.name
+
+        self.one(isss.brokenrules)
+        self.broken(isss, 'names', 'valid')
+
+        # Break some more stuff
+        isss.second.assignee = 'jessehogan0ATgmail.com' # break
+        self.two(isss.brokenrules)
+        self.broken(isss, 'names', 'valid')
+        self.broken(isss, 'assignee', 'valid')
+
+        isss.first.name = str() # break
+        isss.second.name = str() # break
+        self.four(isss.brokenrules)
+        self.broken(isss, 'names', 'valid')  
+        self.broken(isss, 'assignee', 'valid')
+        self.broken(isss, 'name', 'fits')  # x2
+
+        isss.first.comments.last.author = 'jhoganATmail.com' # break
+        self.five(isss.brokenrules)
+        self.broken(isss,  'names',     'valid')
+        self.broken(isss,  'assignee',  'valid')
+        self.broken(isss,  'name',      'fits')   #  x2
+        self.broken(isss,  'author',    'valid')
+
+        # Fix everything
+        isss.second.assignee = 'jessehogan0@.com' # break
+        isss.first.name = uuid4().hex
+        isss.second.name = uuid4().hex
+        isss.first.comments.last.author = 'jhogan@mail.com' # break
+        self.zero(isss.brokenrules)
+
+        ''' Test traversing an association to an entity to get a broken
+        rule '''
+        prog = programmer()
+
+        # Programmer names can only be 20 characters long
+        prog.name = 'x' * 21  # break
+        prog.ismaintenance = True
+
+        isss.first.programmer_issues += programmer_issue(
+            programmer = prog
+        )
+
+        self.one(isss.brokenrules)
+        self.broken(isss, 'name', 'fits')
+
+        ''' Break an association-level rule '''
+
+        # Only maintenance programmers can be associated with an issue
+        prog.ismaintenance = False
+        self.two(iss.brokenrules)
+        self.broken(isss, 'name', 'fits')
+        self.broken(isss, 'ismaintenance', 'valid')
+
+        ''' Break an associations-level rule '''
+
+        # A given programmer can't be associated with the same issue
+        # more than once.
+        isss.first.programmer_issues += programmer_issue(
+            programmer = prog
+        )
+
+        self.four(iss.brokenrules)
+        self.broken(isss, 'name', 'fits')
+        self.broken(isss, 'ismaintenance', 'valid')
+        self.broken(isss, 'id', 'valid')
 
     def it_uses_reserved_mysql_words_for_fields(self):
         """ Ensure that the CREATE TABLE statement uses backticks to
@@ -7527,18 +7867,18 @@ class test_orm(tester):
 
         b = bacterium()
         self.is_(b.orm.entities, bacteria)
-        self.eq(b.orm.table, 'test_bacteria')
+        self.eq('main_bacteria', b.orm.table)
 
         # Test implicit entities detection based on naive pluralisation
         art = artist()
         self.is_(art.orm.entities, artists)
-        self.eq(art.orm.table, 'test_artists')
+        self.eq('main_artists', art.orm.table)
 
         # Test implicit entities detection of entities subclass based on naive
         # pluralisation
         s = singer()
         self.is_(s.orm.entities, singers)
-        self.eq(s.orm.table, 'test_singers')
+        self.eq('main_singers', s.orm.table)
 
     def it_calls_id_on_entity(self):
         art = artist.getvalid()
@@ -7611,6 +7951,45 @@ class test_orm(tester):
         uuid = uuid4().hex
         sng.test = uuid
         self.eq(uuid, sng.test)
+
+    def it_allows_for_associations_with_entity_references(self):
+        # It was noticed that reflexive associations have an issue when
+        # an additional entity reference is added. The party.role_role's
+        # ``priority`` entity reference cause an issues since the orm
+        # logic assumed it was part of the reflexive association. THis
+        # was fixed in 40a1451b3c5b265b743424cfc23e6f2485c4bddb. The
+        # following test ensures that there is no problem with having an
+        # entity reference (programmer_issuerole.programmer_issuerole)
+        # alongside the associated reference in programmer_issue
+        # (programmer and issue). No issues had to be fixed after the test
+        # was written. This seems to mean that an association can
+        # associated two or more entities.
+            
+        iss = issue.getvalid()
+        iss.name = 'Fix asset'
+        prog = programmer(name='Cody', ismaintenance=True)
+        rl = programmer_issuerole(name='QA')
+
+        iss.programmer_issues += programmer_issue(
+            programmer = prog,
+            programmer_issuerole = rl
+        )
+        iss.save()
+        iss1 = iss.orm.reloaded()
+
+        pis = iss.programmer_issues.sorted()
+        pis1 = iss1.programmer_issues.sorted()
+
+        self.one(pis)
+        self.one(pis1)
+
+        pi = pis.first
+        pi1 = pis1.first
+
+        self.eq(pi.id, pi1.id)
+        self.eq(pi.programmer.id, pi1.programmer.id)
+        self.eq(pi.issue.id, pi1.issue.id)
+        self.eq(pi.programmer_issuerole.id, pi1.programmer_issuerole.id)
 
     def it_calls_custom_methods_on_subsubentity(self):
         # TODO Currently, concerts and locations entities collections
@@ -8265,8 +8644,6 @@ class test_orm(tester):
         fact = fact.orm.reloaded()
 
         self.eq(Δ * 255, fact.serial)
-
-
 
     def it_calls_text_attr_on_entity(self):
         map = artifact.orm.mappings['comments']
@@ -10688,7 +11065,8 @@ class test_orm(tester):
                 self.eq(getattr(loc2, 'description'), getattr(loc1, 'description'))
 
     def it_updates_subsubentitys_subsubentities_constituents_properties(
-        self):
+        self
+    ):
 
         rpr = rapper.getvalid()
 
@@ -10759,10 +11137,12 @@ class test_orm(tester):
         with self._chrontest() as t:
             t.run(rpr1.save)
             for btl in rpr1.battles:
+                # FIXME We never get here
                 t.updated(btl)
                 t.updated(btl.orm.super)
                 for loc in btl.locations:
                     t.updated(loc)
+
 
         rpr2 = rapper(rpr.id)
         btls = (rpr.battles, rpr1.battles, rpr2.battles)
@@ -10922,7 +11302,6 @@ class test_orm(tester):
         # presentation object.
         self.eq(loc2.presentation.name, name)
         self.eq(loc2.presentation.artist.presentations.first.name, name)
-
 
     def it_saves_and_loads_subsubentity_constituent(self):
         # Make sure the constituent is None for new composites
@@ -11540,7 +11919,7 @@ class test_orm(tester):
         # Test constituents
         sng.presentations += presentation.getvalid()
         sng.concerts      += concert.getvalid()
-        
+
         for i in range(2):
             chrons.clear()
             sng.save()
@@ -16942,10 +17321,6 @@ class gem_party_party_type(tester):
             typ1.party_types.first.type.id
         )
 
-    def it_updates(self):
-        # TODO
-        pass
-
 class party_party_role(tester):
     def __init__(self):
         super().__init__()
@@ -16991,6 +17366,7 @@ class gem_party_role_role(tester):
             party.communications,
             party.priority,
             party.role_role_status,
+            party.role_roles,
         )
 
     def it_creates(self):
@@ -17026,9 +17402,6 @@ class gem_party_role_role(tester):
                               'organization units, over time.',
             ),
 
-            # FIXME `subject` need not be set here
-            subject = sub.roles.last, 
-
             object = rent.roles.last,
 
             # This is a "high" priority relationship.
@@ -17036,7 +17409,6 @@ class gem_party_role_role(tester):
 
             # This is an active relationship.
             status = act,
-
         )
 
         sub.roles.last.role_roles.last.communications += \
@@ -17508,7 +17880,6 @@ class gem_party_company(tester):
         # TODO:afa4ffc9 Rewrite the below to use the role_role
         # association to associate persons to departments and divisions.
 
-
         jb = gem_party_job.getvalid()
         com = gem_party_company.getvalid()
         pers = gem_party_person.getvalid() + gem_party_person.getvalid()
@@ -17885,10 +18256,6 @@ class gem_party_contactmechanism(tester):
             else:
                 part, name = cls(), part
                 if cls is party.person:
-                    # FIXME:d7f877ef person.name does not exist yet and I
-                    # was having a hard time getting it to work so I
-                    # used person.first instead. NOTE that this will
-                    # break if party.roles is uncommented. See 297f8176.
                     part.first = name
                 part.name = name
                 parts += part
@@ -18331,7 +18698,6 @@ class gem_party_communication(tester):
         abc   =  party.company(name='ABC Corporation')
         acme  =  party.company(name='ACME Corporation')
 
-
         # Will Jones has an Account Management role
         will.roles += party.role(
             begin          =  primative.datetime('2016-02-12'),
@@ -18350,7 +18716,6 @@ class gem_party_communication(tester):
         # Martinez's role as Customer Contact.
         will.roles.first.role_roles += party.role_role(
             begin   =  primative.datetime('2017-11-12'),
-            subject =  will.roles.last, # FIXME We shouldn't have to do this
             object  =  marc.roles.last,
         )
 
@@ -18365,51 +18730,12 @@ class gem_party_communication(tester):
         css = party.objectivetype(name='Customer satisfacton survey')
 
         # The role_role association between Will Jones and Marc Martinez
-        # has four ``communication`` events.
+        # will have four ``communication`` events.
         comms = will.roles.first.role_roles.last.communications
 
         comms += party.inperson(
             begin = primative.datetime('Jan 12, 2001, 3PM'),
-
-            # FIXME This assignment fails. The ``objective`` object
-            # retain an fk of <undef>. It should point to the
-            # `communication`'s ID
-            # objectives += \
-            #             party.objective(name='Initial sales call') + \
-            #             party.objective(
-            #                 name='Initial product demontration'
-            #             )
-
         )
-
-        # FIXME I noticed that before the below line is executed,
-        # calling
-        #
-        #     comms.last.communicationstatus
-        #
-        # Results in an AttributeError. It would appear that composites
-        # defined at super class level raise this error when called by
-        # subclasses, i.e., :
-        #
-        #     try:
-        #          party.communication().communicationstatus
-        #     except Exception:
-        #         assert False
-        #     else:
-        #         assert True
-        #
-        # The above works as expected. But if we use a subclass of
-        # ``communication`` (``inperson``), we get an AttributeError.
-        #
-        #     try:
-        #          party.inperson().communicationstatus
-        #     except AttributeError:
-        #         assert True
-        #     else:
-        #         assert False
-        #
-        # This should be fixed because it leads to unexpected behavior
-        # by developers using the ORM.
 
         comms.last.communicationstatus = \
                 party.communicationstatus(name='Completed')
@@ -18464,16 +18790,7 @@ class gem_party_communication(tester):
             objectivetype = css
         )
 
-        # FIXME We shouldn't have to save
-        # `will.roles.first.role_roles.last.communications`. Note that
-        # adding this only became necessary when we appended suptypes of
-        # ``communication`` above. If we append instance of
-        # ``communication`` itself, it worked correctly.
-        will.save(
-            marc, 
-            john,
-            will.roles.first.role_roles.last.communications,
-        )
+        will.save(marc, john)
 
         will1 = will.orm.reloaded()
         marc1 = marc.orm.reloaded()
@@ -18500,30 +18817,6 @@ class gem_party_communication(tester):
                 comm.communicationstatus.name, 
                 comm1.communicationstatus.name
             )
-
-            # FIXME comm1 is a ``communication``
-            #
-            #     assert type(comm1) is party.communication
-            #
-            # However, it has no `objectives` attributes. If I downcast
-            # it, (see the lines immediaetly below) I am able to see the
-            # ``objectives`` attribute. This is very strange because the
-            # ``objectives`` attribute is defined in the
-            # ``communication`` class. We shouldn't be able to remove
-            # the downcast logic when this is fixed. (Also, comm1 should
-            # be loaded as it's most downcasted version, but that is a
-            # seperate issue.)
-            cast = party.inperson.orm.cast(comm1)
-
-            if not cast:
-                cast = party.webinar.orm.cast(comm1)
-
-            if not cast:
-                cast = party.phonecall.orm.cast(comm1)
-
-            assert cast is not None
-
-            comm1 = cast
 
             objs  = comm.objectives.sorted()
             objs1 = comm1.objectives.sorted()
@@ -18612,6 +18905,48 @@ class gem_party_region(tester):
         reg1 = addr1.address_regions.first.region
 
         self.eq(reg.name, reg1.name)
+
+class gem_party_skills(tester):
+    def __init__(self):
+        super().__init__()
+        orm.orm.recreate(
+            party.persons,
+            party.skills,
+            party.skilltypes,
+        )
+
+    def it_creates(self):
+        per = party.person(first='John', last='Smith')
+
+        per.skills += party.skill(
+            years = 20,
+            rating = 10,
+            skilltype = party.skilltype(name='Project management')
+        )
+
+        per.skills += party.skill(
+            years = 5,
+            rating = 6,
+            skilltype = party.skilltype(name='Marketing')
+        )
+
+        per.save()
+
+        per1 = per.orm.reloaded()
+
+        self.eq(per.id, per1.id)
+
+        sks = per.skills.sorted()
+        sks1 = per1.skills.sorted()
+
+        self.two(sks)
+        self.two(sks1)
+
+        for ks, ks1 in zip(sks, sks1):
+            self.eq(ks.id, ks1.id)
+            self.eq(ks.years, ks1.years)
+            self.eq(ks.rating, ks1.rating)
+            self.eq(ks.skilltype.id, ks1.skilltype.id)
 
 class gem_product_product(tester):
     def __init__(self):
@@ -18758,13 +19093,7 @@ class gem_product_product(tester):
         # This product is sold in reams
         paper.measure = product.measure(name='ream')
 
-        # TODO:018aca88 The composite `measure` for paper doesn't get
-        # set probably because `paper` is a `good` which is a subentity
-        # of `product` which has a reference to `measure (see
-        # `measure.products`). Strangely, the `measure` is saved anyway,
-        # though paper has to be loaded as a `product` instead of a
-        # `good`. See the TODO below with the same ID (018aca88).
-        # self.eq('ream', paper.measure.name)
+        self.eq('ream', paper.measure.name)
 
         # Add dimension of 8½
         dim = product.dimension(number=8.5)
@@ -18779,12 +19108,24 @@ class gem_product_product(tester):
 
         paper1 = product.good(paper)
 
-        # TODO:018aca88 The composite `measure` for `paper` nor `paper1`
-        # gets set. However, when loading paper as a product (see
-        # below), we are able to verify the `measure` got saved.
-        # self.eq('ream', paper1.measure.name)
-        # self.eq('ream', product.good(paper).measure.name)
+        self.eq('ream', paper1.measure.name)
+        self.one(paper.measure.products)
+        self.one(paper1.measure.products)
+
+        self.eq(
+            paper.measure.products.first.id, 
+            paper1.measure.products.first.id
+        )
+
         self.eq('ream', product.product(paper).measure.name)
+
+        self.one(paper.measure.products)
+        self.one(product.product(paper).measure.products)
+
+        self.eq(
+            paper.measure.products.first.id,
+            product.product(paper).measure.products.first.id
+        )
 
         pfs = paper.product_features.sorted()
         pfs1 = paper1.product_features.sorted()
@@ -18988,12 +19329,13 @@ class gem_product_product(tester):
             name = "6' by 6' warehouse pallets"
         )
 
+        # Create companies
         abc = gem_party_company.getvalid(
             name = 'ABC Corporation'
         )
 
         joes = gem_party_company.getvalid(
-            name = "Joe's Stationery"
+            name = "Joe's Stationary"
         )
 
         mikes = gem_party_company.getvalid(
@@ -19021,52 +19363,44 @@ class gem_product_product(tester):
         sps += product.supplier_product(
             supplier  =  abc,
             product   =  paper,
-            lead      =  2
+            lead      =  2,
+            priority  = first,
         )
-
-        # TODO:28a4a305 There is a one-to-many relationship between
-        # priority and supplier_product. However, the
-        # supplier_product.priority composite is not available. I
-        # believe this would work for orm.entity, but this is an
-        # orm.association so I guess that feature was not added.
-        #sps.last.priority.ordinal = 0
-
-        first.supplier_products += sps.last
 
         sps += product.supplier_product(
             supplier  =  joes,
             product   =  paper,
-            lead      =  3
+            lead      =  3,
+            priority  = second,
         )
-        second.supplier_products += sps.last
 
         sps += product.supplier_product(
             supplier  =  mikes,
             product   =  paper,
-            lead      =  4
+            lead      =  4,
+            priority  =  third,
         )
-        third.supplier_products += sps.last
 
         sps += product.supplier_product(
             supplier  =  greggs,
             product   =  pallet,
-            lead      =  2
+            lead      =  2,
+            priority  =  first,
         )
-        first.supplier_products += sps.last
 
         sps += product.supplier_product(
             supplier  =  palletinc,
             product   =  pallet,
-            lead      =  3
+            lead      =  3,
+            priority  =  second,
         )
-        second.supplier_products += sps.last
 
         sps += product.supplier_product(
             supplier  =  warehousecomp,
             product   =  pallet,
-            lead      =  5
+            lead      =  5,
+            priority  =  third,
         )
-        third.supplier_products += sps.last
 
         paper.save(pallet, sps, first, second, third)
 
@@ -19078,7 +19412,7 @@ class gem_product_product(tester):
 
         sps = paper1.supplier_products.sorted('supplier.name')
         self.eq('ABC Corporation',      sps.first.supplier.name)
-        self.eq("Joe's Stationery",     sps.second.supplier.name)
+        self.eq("Joe's Stationary",     sps.second.supplier.name)
         self.eq("Mike's Office Supply", sps.third.supplier.name)
 
         sps = pallet1.supplier_products.sorted('supplier.name')
@@ -19086,22 +19420,17 @@ class gem_product_product(tester):
         self.eq('Pallets Incorporated',     sps.second.supplier.name)
         self.eq('The Warehouse Company',    sps.third.supplier.name)
 
-        # TODO:167d775b We get an issue with calling the supplier_products
-        # constituent of priority. This is likely due to the fact that
-        # a one-to-many relationship between an entity and an
-        # association has not been implement. 
-        #
-        # sps = first.supplier_products.sorted()
-        # self.eq('ABC Corporation',      sps.first.supplier.name)
-        # self.eq("Gregg's Pallet Shop",  sps.first.supplier.name)
-        #
-        # sps = second.supplier_products.sorted()
-        # self.eq("Joe's Stationery",     sps.second.supplier.name)
-        # self.eq('Pallets Incorporated', sps.second.supplier.name)
-        #
-        # sps = second.supplier_products.sorted()
-        # self.eq("Mike's Office Supply", sps.third.supplier.name)
-        # self.eq('The Warehouse Company', sps.third.supplier.name)
+        sps = first.supplier_products.sorted('supplier.name')
+        self.eq('ABC Corporation',      sps.first.supplier.name)
+        self.eq("Gregg's Pallet Shop",  sps.second.supplier.name)
+        
+        sps = second.supplier_products.sorted('supplier.name')
+        self.eq("Joe's Stationary",     sps.first.supplier.name)
+        self.eq('Pallets Incorporated', sps.second.supplier.name)
+        
+        sps = third.supplier_products.sorted('supplier.name')
+        self.eq("Mike's Office Supply", sps.first.supplier.name)
+        self.eq('The Warehouse Company', sps.second.supplier.name)
     
     def it_creates_guildlines(self):
         # Service products will not have guidelines
@@ -19312,9 +19641,9 @@ class gem_product_item(tester):
 
         self.eq(abccorp.id, copieritm.facility.id)
 
-        # TODO It would be nice if `paperitm.orm.super.facility`
-        # returned the same value as
-        # `paperitm.orm.super.container.facility. However, I do not
+        # TODO:1e7dd1dd It would be nice if
+        # `paperitm1.orm.super.facility` returned the same value as
+        # `paperitm1.orm.super.container.facility. However, I do not
         # believe that at the moment, it is possible to override a
         # composite attribute. This would be a great nice-to-have,
         # though.
@@ -19474,8 +19803,31 @@ class gem_product_item(tester):
 class gem_product_categories(tester):
     def __init__(self):
         super().__init__()
-        product.products.orm.recreate(recursive=True)
-        product.categories.orm.recreate(recursive=True)
+        orm.orm.recreate(
+            product.bases,                     product.billings,
+            product.brands,                    product.categories,
+            product.category_classifications,  product.category_types,
+            product.colors,                    product.containers,
+            product.containertypes,            product.dimensions,
+            product.discounts,                 product.estimates,
+            product.estimatetypes,             product.feature_features,
+            product.features,                  product.goods,
+            product.guidelines,                product.hardwares,
+            product.items,                     product.lots,
+            product.measure_measures,          product.measures,
+            product.nonserials,                product.onetimes,
+            product.prices,                    product.priorities,
+            product.product_features,          product.product_products,
+            product.products,                  product.qualities,
+            product.quantitybreaks,            product.ratings,
+            product.reasons,                   product.recurrings,
+            product.salestypes,                product.serials,
+            product.services,                  product.sizes,
+            product.softwares,                 product.statuses,
+            product.suggesteds,                product.supplier_products,
+            product.surcharges,                product.utilizations,
+            product.values,                    product.variances,
+        )
 
     def it_creates(self):
         ''' Simple, non-recursive test '''
@@ -19674,6 +20026,8 @@ class gem_product_categories(tester):
         checks the database to ensure a product is associated with only
         one category as primary. 
         """
+
+        ''' Test category_classifications.getbrokenrules '''
         cat = product.category()
         cat.name = uuid4().hex
 
@@ -19688,8 +20042,9 @@ class gem_product_categories(tester):
         # Save and reload. Another brokenrule will be added by
         # category_classifications.brokenrules to ensure that it does
         # not contain a product set as primary in two different
-        # categories (currently not working (1c409d9d)). See below.
+        # categories.
         cat.save()
+
         cat = product.category(cat.id)
 
         cc = product.category_classification()
@@ -19701,36 +20056,24 @@ class gem_product_categories(tester):
         cc.isprimary = True  # Ensure isprimary is True
         cat.category_classifications += cc
 
-        # TODO:a082d2a9 `cat.brokenrules` doesn't recurse into
-        # `category_classification.brokenrules'
-        # self.one(cat.brokenrules);
+        self.one(cat.brokenrules);
+        self.broken(cat, 'isprimary', 'valid')
 
         self.expect(BrokenRulesError, lambda: cat.save())
 
-        ''' Ensure category_classifications disallows saving a product
-        to multple caterories as primary. NOTE Currently not working
-        (a082d2a9).'''
-        return
-
-        cat = product.category()
-        cat.name = uuid4().hex
-
-        prod = gem_product.getvalid()
-        cc = product.category_classification()
-        cc.product = prod
-        cc.begin = primative.datetime.utcnow(days=-50)
-        cc.product = prod
-        cc.isprimary = True
-        cat.category_classifications += cc
-
+        ''' Test category_classification.getbrokenrules '''
+        cat = product.category(cat.id)
         cc = product.category_classification()
         cc.product = prod
         cc.begin = primative.datetime.utcnow(days=-25)
         cc.comment = uuid4().hex * 1000
         cc.product = prod
-        cc.isprimary = True
-        cat.category_classifications += cc
-        cat.save()
+        cc.category = cat
+        self.true(cc.isvalid)
+        cc.isprimary = True  # Ensure isprimary is True
+        self.one(cc.brokenrules)
+        self.broken(cc, 'isprimary', 'valid')
+
 
 class gem_product_category_types(tester):
     def __init__(self):
@@ -20405,6 +20748,7 @@ class gem_case(tester):
             party.communications,
             party.parties,
             party.case_party,
+            party.caseroletype,
             party.casestatuses,
             party.statuses,
         )
@@ -20414,9 +20758,6 @@ class gem_case(tester):
         self.expect(None, lambda: party.casestatus(name='Active'))
 
     def it_associates_case_to_party(self):
-        # NOTE Names don't work if party.roles exist. This is due to
-        # 297f8176. If `party.roles` needs to be restored, remove the
-        # kwargs.
         jerry = party.person(first="Jerry", last="Red")
 
         # Create case
@@ -20431,13 +20772,9 @@ class gem_case(tester):
             case = cs,
         )
 
-        # FIXME:566e96a9 The caseroletype is not a real attribute
-        # because there is no caseroletype composite map in case_party.
-        # We can save or test caseroletype at the moment.
-        #
-        # jerry.case_parties.last.caseroletype = party.caseroletype(
-        #    name = 'Resolution lead'
-        #)
+        jerry.case_parties.last.caseroletype = party.caseroletype(
+           name = 'Resolution lead'
+        )
 
         jerry.save()
 
@@ -20452,18 +20789,18 @@ class gem_case(tester):
         self.eq(cps.first.id,       cps1.first.id)
         self.eq(jerry.id,           cps1.first.party.id)
         self.eq(cps.first.case.id,  cps1.first.case.id)
+        self.eq(cps.first.caseroletype.id,  cps1.first.caseroletype.id)
 
         self.eq(
             cps.first.case.casestatus.id,
             cps1.first.case.casestatus.id
         )
 
-        # FIXME:566e96a9
-        # self.eq(cps.first.caseroletype.id,  cps1.first.caseroletype.id)
-        # self.eq(
-        #     cps.first.caseroletype.name,
-        #     cps1.first.caseroletype.name
-        # )
+        self.eq(cps.first.caseroletype.id,  cps1.first.caseroletype.id)
+        self.eq(
+            cps.first.caseroletype.name,
+            cps1.first.caseroletype.name
+        )
 
     def it_appends_communications(self):
         # Create work effort
@@ -20555,10 +20892,6 @@ class gem_case(tester):
             self.eq(comm.id, comm1.id)
             self.eq(comm.begin, comm1.begin)
 
-            # FIXME When associations can be constituents,
-            # `comm1.communication_efforts` should be available and we
-            # can remove the ``continue`` below.
-            continue
             ces = comm.communication_efforts
             ces1 = comm1.communication_efforts
 
@@ -21379,39 +21712,40 @@ class gem_order_order(tester):
             iis1.first.object.id,
         )
 
-class gem_ship(tester):
+class gem_shipment(tester):
     def __init__(self):
         super().__init__()
         orm.orm.recreate(
-            ship.shipments,
-            ship.items,
-            ship.statuses,
-            ship.statustypes,
-            ship.item_features,
-            ship.packages,
-            ship.item_packages,
-            ship.roletypes,
-            ship.roles,
-            ship.receipts,
-            ship.reasons,
-            ship.issuances,
-            ship.picklists,
-            ship.picklistitems,
-            ship.issuanceroles,
-            ship.issuanceroletypes,
-            ship.documents,
-            ship.documenttypes,
-            ship.bols,
-            ship.slips,
-            ship.exports,
-            ship.manifests,
-            ship.portcharges,
-            ship.taxandtarrifs,
-            ship.hazardouses,
+            shipment.shipitem_orderitem,
+            shipment.shipments,
+            shipment.items,
+            shipment.statuses,
+            shipment.statustypes,
+            shipment.item_features,
+            shipment.packages,
+            shipment.item_packages,
+            shipment.roletypes,
+            shipment.roles,
+            shipment.receipts,
+            shipment.reasons,
+            shipment.issuances,
+            shipment.picklists,
+            shipment.picklistitems,
+            shipment.issuanceroles,
+            shipment.issuanceroletypes,
+            shipment.documents,
+            shipment.documenttypes,
+            shipment.bols,
+            shipment.slips,
+            shipment.exports,
+            shipment.manifests,
+            shipment.portcharges,
+            shipment.taxandtarrifs,
+            shipment.hazardouses,
         )
 
     def it_creates(self):
-        sh = ship.shipment(
+        sh = shipment.shipment(
             estimatedshipat = primative.date('May 6, 2001'),
             estimatedarriveat = primative.date('May 8, 2001'),
             shipto = party.company(name='ACME Corporation'),
@@ -21439,7 +21773,7 @@ class gem_ship(tester):
         self.eq(sh.shipfromusing.id, sh1.shipfromusing.id)
 
     def it_creates_items(self):
-        sh = ship.shipment(
+        sh = shipment.shipment(
             estimatedshipat = primative.date('May 6, 2001'),
             estimatedarriveat = primative.date('May 8, 2001'),
             shipto = party.company(name='ACME Corporation'),
@@ -21454,23 +21788,20 @@ class gem_ship(tester):
             ),
         )
 
-        sh.items += ship.item(
+        sh.items += shipment.item(
             quantity = 1000,
             good = product.good(name='Henry #2 Pencil'),
         )
 
-        sh.items += ship.item(
+        sh.items += shipment.item(
             quantity = 1000,
             good = product.good(name='Goldstein Elite pens'),
         )
 
-        sh.items += ship.item(
+        sh.items += shipment.item(
             quantity = 100,
+            contents = 'Boxes of HD diskettes',
         )
-
-        # FIXME Setting `contents` here should be done in the constructor
-        # but can't because of a bug.
-        sh.items.last.contents = 'Boxes of HD diskettes',
 
         sh.save()
 
@@ -21493,7 +21824,7 @@ class gem_ship(tester):
                 self.eq(itm.contents, itm1.contents)
 
     def it_handles_statuses(self):
-        sh = ship.shipment(
+        sh = shipment.shipment(
             estimatedshipat = primative.date('May 6, 2001'),
             estimatedarriveat = primative.date('May 8, 2001'),
             shipto = party.company(name='ACME Corporation'),
@@ -21508,23 +21839,23 @@ class gem_ship(tester):
             ),
         )
 
-        sh.statuses += ship.status(
+        sh.statuses += shipment.status(
             begin=primative.datetime('May 6, 2001'),
-            statustype = ship.statustype(
+            statustype = shipment.statustype(
                 name = 'scheduled'
             )
         )
 
-        sh.statuses += ship.status(
+        sh.statuses += shipment.status(
             begin = primative.datetime('May 7, 2001'),
-            statustype = ship.statustype(
+            statustype = shipment.statustype(
                 name = 'in route'
             )
         )
 
-        sh.statuses += ship.status(
+        sh.statuses += shipment.status(
             begin = primative.datetime('May 8, 2001'),
-            statustype = ship.statustype(
+            statustype = shipment.statustype(
                 name = 'delivered'
             )
         )
@@ -21579,51 +21910,51 @@ class gem_ship(tester):
         )
 
         # Create shipments
-        sh9000 = ship.shipment()
+        sh9000 = shipment.shipment()
 
-        sh9000.items += ship.item(
+        sh9000.items += shipment.item(
             good = pencil,
             quantity = 1000,
         )
 
-        sh9000.items += ship.item(
+        sh9000.items += shipment.item(
             good = pen,
             quantity = 1000,
         )
 
-        sh9000.items += ship.item(
+        sh9000.items += shipment.item(
             good = box,
             quantity = 100,
         )
 
         # Create another shipment
-        sh9200 = ship.shipment()
+        sh9200 = shipment.shipment()
 
-        sh9200.items += ship.item(
+        sh9200.items += shipment.item(
             good = erase,
             quantity = 350,
         )
 
-        sh9200.items += ship.item(
+        sh9200.items += shipment.item(
             good = box,
             quantity = 100,
         )
 
-        sh9200.items += ship.item(
+        sh9200.items += shipment.item(
             good = pen,
             quantity = 1500,
         )
 
         # Create the final shipment
-        sh9400 = ship.shipment()
+        sh9400 = shipment.shipment()
 
-        sh9400.items += ship.item(
+        sh9400.items += shipment.item(
             good = pen,
             quantity = 500,
         )
 
         # Create shipitem_orderitem associations
-        shipitem_orderitem = ship.shipitem_orderitem
+        shipitem_orderitem = shipment.shipitem_orderitem
 
         so100.items.first.shipitem_orderitems += shipitem_orderitem(
             shipitem = sh9000.items.first,
@@ -21686,14 +22017,14 @@ class gem_ship(tester):
 
         so.items.last.items += order.salesitem(feature=blue)
 
-        sh = ship.shipment()
+        sh = shipment.shipment()
 
-        sh.items += ship.item(
+        sh.items += shipment.item(
             good = pen,
             quantity = 1000,
         )
 
-        sh.items.last.item_features += ship.item_feature(
+        sh.items.last.item_features += shipment.item_feature(
             feature = blue
         )
 
@@ -21710,24 +22041,24 @@ class gem_ship(tester):
         pencil = product.good(name='Jones #2 pencils')
 
         # Create an incoming shipment from a supplier
-        sh1146 = ship.shipment()
+        sh1146 = shipment.shipment()
 
-        sh1146.items += ship.item(
+        sh1146.items += shipment.item(
             good = pencil,
             quantity = 2000,
         )
 
-        pkg = ship.package(
+        pkg = shipment.package(
             created = primative.datetime('Jun 23 22:08:16 UTC 2020'),
             packageid = uuid4().hex
         )
 
-        sh1146.items.last.item_packages += ship.item_package(
+        sh1146.items.last.item_packages += shipment.item_package(
             quantity=1000,
             package = pkg,
         )
 
-        pkg.receipts += ship.receipt(
+        pkg.receipts += shipment.receipt(
             receivedat = primative.datetime('Jun 23 22:19:37 2020'),
             quantity = 1000,
         )
@@ -21757,24 +22088,24 @@ class gem_ship(tester):
         pencil = product.good(name='Jones #2 pencils')
 
         # Create shipments
-        sh = ship.shipment()
+        sh = shipment.shipment()
 
-        sh.items += ship.item(
+        sh.items += shipment.item(
             good = pencil,
             quantity = 1000,
         )
 
-        pkg = ship.package(
+        pkg = shipment.package(
             created = primative.datetime('Jun 23 22:08:16 UTC 2020'),
             packageid = uuid4().hex
         )
 
-        sh.items.last.item_packages += ship.item_package(
+        sh.items.last.item_packages += shipment.item_package(
             quantity=1000,
             package = pkg,
         )
 
-        sh.items.last.issuances += ship.issuance(
+        sh.items.last.issuances += shipment.issuance(
             issued = primative.datetime('Thu Jun 25 22:18:40 UTC 2020'),
             quantity = 1000,
         )
@@ -21794,14 +22125,14 @@ class gem_ship(tester):
         )
 
     def it_creates_documents(self):
-        sh = ship.shipment()
-        sh.documents += ship.hazardous(
+        sh = shipment.shipment()
+        sh.documents += shipment.hazardous(
             description = 'Not really sure what to put here'
         )
 
-        sh.documents += ship.document(
+        sh.documents += shipment.document(
             description = 'Not really sure what to put here, either',
-            documenttype = ship.documenttype(
+            documenttype = shipment.documenttype(
                 name = 'Dangerous goods form'
             )
         )
@@ -21829,21 +22160,53 @@ class gem_effort(tester):
     def __init__(self):
         super().__init__()
         orm.orm.recreate(
-            effort.roles,
-            effort.roletypes,
-            order.requirement,
-            order.requirementtype,
+            effort.types,
+            effort.assetstandards,
+            effort.goodstandards,
+            apriori.requirement,
+            party.asset_parties,
+            party.asset_partystatustype,
+            asset.types,
+            asset.asset,
+            effort.activities,
+            effort.asset_efforts,
+            effort.asset_effortstatus,
+            effort.deliverables,
+            effort.effort,
+            effort.effort_effort_dependencies,
+            effort.effort_effort_precedency,
+            effort.effort_efforts,
+            effort.effort_inventoryitems,
+            effort.effort_parties,
+            effort.effort_partytype,
+            effort.effort_requirements,
+            effort.item_requirements,
+            effort.items,
+            effort.jobs,
+            effort.productionrun,
             effort.requirement,
             effort.requirementtype,
-            effort.effort,
-            product.product,
+            effort.roles,
+            effort.roletypes,
+            effort.status,
+            effort.statustype,
+            effort.times,
+            effort.timesheet,
+            effort.timesheetroles,
+            effort.timesheetroletypes,
+            order.requirementtype,
+            party.contractor,
+            party.employee,
+            party.rate,
+            party.ratetypes,
+            party.worker,
             product.good,
-            effort.deliverables,
-            ship.asset,
+            product.product,
+            shipment.asset,
         )
 
     def it_creates_requirements(self):
-        req = order.requirement(
+        req = apriori.requirement(
             requirementtype = order.requirementtype(
                 name='Production run'
             ),
@@ -21884,7 +22247,7 @@ class gem_effort(tester):
 
         deliv = effort.deliverable(name='2001 Sales/Marketing Plan')
 
-        ass = ship.asset(name='Engraving machine')
+        ass = shipment.asset(name='Engraving machine')
 
         # Create requirements
 
@@ -21969,5 +22332,1245 @@ class gem_effort(tester):
         self.eq(req.roles.first.begin, req1.roles.first.begin)
         self.none(req1.roles.first.end)
 
+    def it_associates_effort_with_requirment(self):
+        ''' Associate using effort_requirement '''
+        req50985 = effort.requirement(
+           description = self.dedent('''
+           Anticipated demand of 2,000 custom-engraved black pens
+           with gold trim
+           ''')
+        )
 
+        req51245 = effort.requirement(
+           description = self.dedent('''
+           Anticipated demand of 1,500 custom-engraved black pens
+           with gold trim
+           ''')
+        )
+
+        eff28045 = effort.productionrun(
+            scheduledbegin = 'June 1, 2000',
+            name = 'Production run',
+            description = self.dedent('''
+            Production run of 3,500 pencils
+            '''),
+        )
+
+        eff28045.effort_requirements += effort.effort_requirement(
+            requirement = req50985,
+        )
+
+        eff28045.effort_requirements += effort.effort_requirement(
+            requirement = req51245,
+        )
+
+        eff28045.save()
+
+        eff28045_1 = eff28045.orm.reloaded()
+
+        ers = eff28045.effort_requirements.sorted()
+        ers1 = eff28045_1.effort_requirements.sorted()
+
+        self.two(ers)
+        self.two(ers1)
+
+        for er, er1 in zip(ers, ers1):
+            self.eq(er.id, er1.id)
+            self.eq(er.requirement.id, er1.requirement.id)
+            self.eq(er.requirement.id, er1.requirement.id)
+
+        ''' Associate using effort.item '''
+
+        # Create efforts
+        eff29534 = effort.productionrun(
+            name = 'Production run #1 of pens',
+            scheduledbegin = 'Feb 23, 2001',
+        )
+
+        eff29874 = effort.productionrun(
+            name = 'Production run #2 of pens',
+            scheduledbegin = 'Mar 23, 2001',
+        )
+
+        # Create requirement
+        req = effort.requirement(
+            description = 'Need for customized pens'
+        )
+
+        # Create work order item
+        itm = effort.item(
+            description = self.dedent('''
+            Sales Order Item to produce 2,500 customized engraved pens.
+            ''')
+        )
+
+        # Link requirement to work order item
+        req.item_requirements += effort.item_requirement(
+            item = itm 
+        )
+
+        # Link work order item to efforts
+        itm.effort_items += effort.effort_item(
+            effort = eff29874
+        )
+
+        itm.effort_items += effort.effort_item(
+            effort = eff29534
+        )
+
+        req.save()
+
+        req1 = req.orm.reloaded()
+
+        self.eq(req.id, req1.id)
+
+        self.one(req.item_requirements)
+        self.one(req1.item_requirements)
+
+        ir = req.item_requirements.first
+        ir1 = req1.item_requirements.first
+
+        self.eq(ir.id, ir1.id)
+
+        self.eq(ir.item.id, ir1.item.id)
+
+        eis = ir.item.effort_items.sorted()
+        eis1 = ir1.item.effort_items.sorted()
+
+        self.two(eis)
+        self.two(eis1)
+
+        for ei, ei1 in zip(eis, eis1):
+            self.eq(ei.id, ei1.id)
+            self.eq(ei.effort.id, ei1.effort.id)
+
+    def it_associates_efforts_with_efforts(self):
+        job28045 = effort.job(
+            name = 'Production run #1'
+        )
+
+        act120001 = effort.activity(name='Set up production line')
+        act120002 = effort.activity(name='Operate machinery')
+        act120003 = effort.activity(name='Clean up machinery')
+        act120004 = effort.activity(name='Quality assure goods produced')
+
+        for act in (act120001, act120002, act120003, act120004):
+            job28045.effort_efforts += effort.effort_effort(
+                object = act
+            )
+
+
+        job28045.save()
+
+        job28045_1 = job28045.orm.reloaded()
+
+        ees = job28045.effort_efforts.sorted()
+        ees1 = job28045_1.effort_efforts.sorted()
+
+        self.eq(job28045.id, job28045_1.id)
+
+        self.four(ees)
+        self.four(ees1)
+
+        for ee, ee1 in zip(ees, ees1):
+            self.eq(ee.id, ee1.id)
+            self.eq(ee.subject.id, ee1.subject.id)
+            self.eq(ee.object.id, ee1.object.id)
+
+    def it_associates_preceding_efforts_with_efforts(self):
+        job28045 = effort.job(
+            name = 'Production run #1'
+        )
+
+        act120001 = effort.activity(name='Set up production line')
+        act120002 = effort.activity(name='Operate machinery')
+        act120003 = effort.activity(name='Clean up machinery')
+        act120004 = effort.activity(name='Quality assure goods produced')
+
+        for act in (act120001, act120002, act120003, act120004):
+            job28045.effort_efforts += effort.effort_effort(
+                object = act
+            )
+
+        # Declare that "Operate machinery" activity (act120002) depends
+        # on the completion of the "Set up production line' activity
+        # (act120001).
+
+        act120001.effort_efforts += \
+            effort.effort_effort_precedency(
+                object = act120002
+            )
+
+        job28045.save()
+
+        job28045_1 = job28045.orm.reloaded()
+
+        ees = job28045.effort_efforts.sorted()
+        ees1 = job28045_1.effort_efforts.sorted()
+
+        self.eq(job28045.id, job28045_1.id)
+
+        self.four(ees)
+        self.four(ees1)
+
+        for ee, ee1 in zip(ees, ees1):
+            self.eq(ee.id, ee1.id)
+            self.eq(ee.subject.id, ee1.subject.id)
+            self.eq(ee.object.id, ee1.object.id)
+
+            if ee1.object.id == act120001.id:
+                ees1 = ee1.object.effort_efforts
+                self.one(ees1)
+                self.eq(ees1.first.subject.id, act120001.id)
+                self.eq(ees1.first.object.id, act120002.id)
+
+    def it_associates_effort_to_party(self):
+        # Create effort
+        eff = effort.effort(name='Develop a sales and marketing plan')
+
+        # Create persons
+        dick  =  party.person(first='Dick',  last='Jones')
+        bob   =  party.person(first='Bob',   last='Jenkins')
+        john  =  party.person(first='John',  last='Smith')
+        jane  =  party.person(first='Jane',  last='Smith')
+
+        # Create role types
+        manager = effort.effort_partytype(name='Project manager')
+        admin   = effort.effort_partytype(name='Project administrator')
+        member  = effort.effort_partytype(name='Team member')
+
+        eff.effort_parties += effort.effort_party(
+            party = dick,
+            effort_partytype = manager,
+            begin = 'Jan 2, 2001',
+            end = 'Sept 15, 2001',
+        )
+
+        eff.effort_parties += effort.effort_party(
+            party = bob,
+            effort_partytype = admin,
+        )
+
+
+        eff.effort_parties += effort.effort_party(
+            party = john,
+            effort_partytype = member,
+            begin = 'Mar 5, 2001',
+            end = 'Aug 6, 2001',
+            comment = 'Leaving for three-week vacation on Aug 7, 2001'
+        )
+
+
+        eff.effort_parties += effort.effort_party(
+            party = john,
+            effort_partytype = member,
+            begin = 'Sept 1, 2001',
+            end = 'Dec 2, 2001',
+        )
+
+        eff.effort_parties += effort.effort_party(
+            party = jane,
+            effort_partytype = member,
+            begin = 'Aug 6, 2000',
+            end = 'Sept 15, 2001',
+        )
+
+        eff.save()
+
+        eff1 = eff.orm.reloaded()
+
+        eps = eff.effort_parties.sorted()
+        eps1 = eff1.effort_parties.sorted()
+
+        self.five(eps)
+        self.five(eps1)
+
+        for ep, ep1 in zip(eps, eps1):
+            self.eq(ep.id, ep1.id)
+            self.eq(ep.effort_partytype.id, ep1.effort_partytype.id)
+            self.eq(ep.begin, ep1.begin)
+            self.eq(ep.end, ep1.end)
+
+    def it_creates_status(self):
+        act = effort.activity(
+            name='Set up production line',
+        )
+
+        act.statuses += effort.status(
+            begin = 'Jun 2 2000, 1pm',
+            statustype = effort.statustype(name='Started'),
+        )
+
+        act.statuses += effort.status(
+            begin = 'Jun 2 2000, 2pm',
+            statustype = effort.statustype(name='Completed'),
+        )
+
+        act.save()
+        act1 = act.orm.reloaded()
+
+        self.eq(act.id, act1.id)
+
+        sts = act.statuses.sorted()
+        sts1 = act1.statuses.sorted()
+
+        self.two(sts)
+        self.two(sts1)
+
+        for st, st1 in zip(sts, sts1):
+            self.eq(st.id, st1.id)
+            self.eq(st.begin, st1.begin)
+            self.eq(st.statustype.id, st1.statustype.id)
+            self.eq(st.statustype.name, st1.statustype.name)
+
+    def it_creates_time_entries(self):
+        # Create efforts
+        eff29000 = effort.effort(
+            name = 'Develop a sales and marketing plan'
+        )
+
+        eff29005 = effort.effort(
+            name = 'Develop a sales and marketing plan'
+        )
+
+        # Create party
+        dick = party.person(first='Dick',  last='Jones')
+
+        # Create a role for the party to log time as
+        emp = party.employee()
+
+        dick.roles += emp
+
+        # Create a timeship
+        ts = effort.timesheet(
+            begin = 'Jan 1, 2001',
+            end   = 'Jan 15, 2001',
+        )
+
+        # Assign the timesheet to the role's timesheet collection
+        ts.worker = emp
+
+        # Add `time`` entries to the timesheet for each of the efforts
+        ts.times += effort.time(
+            begin = 'Jan 2, 2001',
+            end   = 'Jan 4, 2001',
+            hours = 13,
+            effort = eff29000,
+        )
+
+        ts.times += effort.time(
+            begin = 'Jan 5, 2001',
+            end   = 'Jan 6, 2001',
+            hours = 7,
+            effort = eff29005,
+        )
+
+        # Save and reload
+        dick.save(ts)
+        dict1 = dick.orm.reloaded()
+
+        # Get the employee role
+        emp1 = dick.roles.first
+
+        self.eq(emp.id, emp1.id)
+
+        # Use the employee role to get its collection of timesheets.
+
+        # TODO:9b700e9a We should be able to call ``emp1.timesheets``
+        # but the ORM doesn't suppert that yet. We are in a situation
+        # wher employee can't have a reference to ``timesheets`` as a
+        # collection because due to the circular reference it would
+        # cause.
+        ts1 = effort.timesheets('worker__workerid', emp1.id).first
+
+        self.eq(ts.id, ts1.id)
+
+        times = ts.times.sorted()
+        times1 = ts1.times.sorted()
+
+        self.two(times)
+        self.two(times1)
+
+        for t, t1 in zip(times, times1):
+            self.eq(t.id, t1.id)
+            self.eq(t.begin, t1.begin)
+            self.eq(t.end, t1.end)
+            self.eq(t.hours, t1.hours)
+            self.eq(t.comment, t1.comment)
+
+    def it_creates_rates(self):
+        # Create work effort (task)
+        tsk = effort.task(name='Develop accounting programm')
+
+        # Create types of rates
+        rgbill  =  party.ratetype(name='Regular billing')
+        otbill  =  party.ratetype(name='Overtime billing')
+        rgpay   =  party.ratetype(name='Regular pay')
+        otpay   =  party.ratetype(name='Overtime pay')
+
+        # Create a party
+        gary = party.person(first='Gary', last='Smith')
+
+        # Associate party to work effort
+        ep = effort.effort_party(
+            effort = tsk,
+        )
+
+        ep.party = gary
+
+        # Add rates to the association between effort and party
+        ep.rates += party.rate(
+            begin    = 'May 15, 2000',
+            end      = 'May 14, 2001',
+            rate     = 65,
+            ratetype = rgbill,
+        )
+
+        ep.rates += party.rate(
+            begin    = 'May 15, 2000',
+            end      = 'May 14, 2001',
+            rate     = 70,
+            ratetype = otbill,
+        )
+
+        ep.rates += party.rate(
+            begin    = 'May 15, 2000',
+            end      = 'May 14, 2001',
+            rate     = 40,
+            ratetype = rgpay,
+        )
+        ep.rates += party.rate(
+            begin    = 'May 15, 2000',
+            end      = 'May 14, 2001',
+            rate     = 43,
+            ratetype = otpay,
+        )
+        ep.rates += party.rate(
+            begin    = 'May 15, 2000',
+            rate     = 45,
+            ratetype = rgpay,
+        )
+        ep.rates += party.rate(
+            begin    = 'May 15, 2000',
+            rate     = 45,
+            ratetype = otpay,
+        )
+        ep.save()
+        ep1 = ep.orm.reloaded()
+
+        self.eq(ep.id, ep1.id)
+
+        rts = ep.rates.sorted()
+        rts1 = ep1.rates.sorted()
+
+        self.six(rts)
+        self.six(rts1)
+
+        for rt, rt1 in zip(rts, rts1):
+            self.eq(rt.begin, rt1.begin)
+            self.eq(rt.end, rt1.end)
+            self.eq(rt.rate, rt1.rate)
+            self.eq(rt.ratetype.id, rt1.ratetype.id)
+            self.eq(rt.ratetype.name, rt1.ratetype.name)
+
+    def it_associates_effort_with_inventory_items(self):
+        # Create work effort
+        tsk = effort.task(name='Assemble pencil components')
+
+        # Create goods
+        cartridge = gem_product_product.getvalid(product.good, comment=1)
+        cartridge.name = 'Pencil cartridges'
+
+        eraser = gem_product_product.getvalid(product.good, comment=1)
+        eraser.name = 'Pencil eraser'
+
+        label = gem_product_product.getvalid(product.good, comment=1)
+        label.name = 'Pencil label'
+
+        # Create inventory item
+        cartridge.items += product.serial(number=100020)
+        cartridge = cartridge.items.last
+
+        eraser.items += product.serial(number=100021)
+        eraser = eraser.items.last
+
+        label.items += product.serial(number=100022)
+        label = label.items.last
+
+        # Associate work effort with inventory items
+        for itm in (cartridge, eraser, label):
+            tsk.effort_inventoryitems += effort.effort_inventoryitem(
+                quantity = 100,
+                item = itm
+            )
+
+        tsk.save()
+
+        tsk1 = tsk.orm.reloaded()
+
+        eis = tsk.effort_inventoryitems.sorted()
+        eis1 = tsk1.effort_inventoryitems.sorted()
+
+        self.three(eis)
+        self.three(eis1)
+
+        for ei, ei1 in zip(eis, eis1):
+            self.eq(ei.id, ei1.id)
+            self.eq(ei.quantity, ei1.quantity)
+            self.eq(ei.item.id, ei1.item.id)
+
+    def it_creates_fixed_assets(self):
+        ass = asset.asset(
+            name='Pencil labeler #1',
+            type = asset.type(name='Pencil-making machine'),
+            acquired = 'Jun 12, 2000',
+            serviced = 'Jun 12, 2000',
+            nextserviced = 'Jun 12, 2001',
+            capacity = 1_000_000,
+            measure = product.measure(name='Pens/day')
+        )
+
+        ass.save()
+        ass1 = ass.orm.reloaded()
+        attrs = (
+            'name', 'acquired', 'serviced', 'nextserviced',
+            'capacity', 'measure.id', 'measure.name', 'type.id',
+            'type.name'
+        )
+
+        for attr in attrs:
+            self.eq(getattr(ass, attr), getattr(ass1, attr))
+    
+    def it_creates_assettypes_recursively(self):
+        eq = asset.type(name='Equipment')
+        eq.types += asset.type(name='Pencil-making machine')
+        eq.types += asset.type(name='Pen-making machine')
+        eq.types += asset.type(name='Paper-making machine')
+
+        eq.save()
+        eq1 = eq.orm.reloaded()
+
+        self.three(eq.types)
+        self.three(eq1.types)
+
+        for typ, typ1 in zip(eq.types.sorted(), eq1.types.sorted()):
+            self.eq(typ.id, typ1.id)
+            self.eq(typ.name, typ1.name)
+
+    def it_associates_effort_with_asset(self):
+        eff = effort.effort(name='Label pencils')
+        ass = asset.asset(name='Pencile labeler #1')
+
+        eff.asset_efforts += effort.asset_effort(
+            begin = 'Jun 12, 2000',
+            end   = 'Jun 15, 2000',
+        )
+
+        eff.save()
+        eff1 = eff.orm.reloaded()
+
+        self.eq(eff.id, eff1.id)
+
+        aes = eff.asset_efforts.sorted()
+        aes1 = eff1.asset_efforts.sorted()
+
+        self.one(aes)
+        self.one(aes1)
+
+        for ae, ae1 in zip(aes, aes1):
+            self.eq(ae.id, ae1.id)
+            self.eq(ae.begin, ae1.begin)
+            self.eq(ae.end, ae1.end)
+
+    def it_creates_asset_to_party_assignments(self):
+        john = party.person(first='John', last='Smith')
+        car = asset.asset(name='Car #25')
+
+        john.asset_parties += party.asset_party(
+            begin = 'Jan 1, 2000',
+            end   = 'Jan 1, 2001',
+            asset_partystatustype = party.asset_partystatustype(
+                name = 'Active'
+            )
+        )
+
+        john.save()
+        john1 = john.orm.reloaded()
+
+        self.eq(john.id, john1.id)
+
+        aps = john.asset_parties.sorted()
+        aps1 = john1.asset_parties.sorted()
+
+        self.one(aps)
+        self.one(aps1)
+
+        ap = aps.first
+        ap1 = aps1.first
+
+        self.eq(ap.id, ap1.id)
+        self.eq(primative.date('Jan 1, 2000'), ap1.begin)
+        self.eq(primative.date('Jan 1, 2001'), ap1.end)
+        self.eq('Active', ap1.asset_partystatustype.name)
+
+    def it_creates_standards(self):
+        ''' Test good standard '''
+        # Create effort type
+        pencil = effort.type(name='Large production run of pencils')
+
+        # Create a good
+        eraser = gem_product_product.getvalid(product.good, comment=1)
+        eraser.name = 'Pencil eraser'
+
+        # Add a goods standard to the 'Large production run of pencils'
+        # effort type
+        pencil.goodstandards += effort.goodstandard(
+            quantity = 1_000,
+            cost = 2_500,
+            good = eraser,
+        )
+
+        # Save, reload and test
+        pencil.save()
+
+        pencil1 = pencil.orm.reloaded()
+
+        sts = pencil.goodstandards.sorted()
+        sts1 = pencil1.goodstandards.sorted()
+
+        st = sts.first
+        st1 = sts1.first
+
+        self.eq(st.id, st1.id)
+        self.eq(1_000, st1.quantity)
+        self.eq(2_500, st1.cost)
+        self.eq(st.good.id, st1.good.id)
+        self.eq(st.good.name, st1.good.name)
+
+        ''' Test asset standard '''
+        labeler = asset.type(name='Pencil labeler')
+
+        pencil.assetstandards += effort.assetstandard(
+            quantity = 1,
+            duration = 10,
+            asset = labeler,
+        )
+
+        pencil.save()
+
+        pencil1 = pencil.orm.reloaded()
+
+        sts = pencil.assetstandards
+        sts1 = pencil1.assetstandards
+
+        self.one(sts)
+        self.one(sts1)
+
+        st = sts.first
+        st1 = sts1.first
+
+        self.eq(st.id, st1.id)
+        self.eq(1, st1.quantity)
+        self.eq(10, st1.duration)
+        self.eq(st.asset.id, st1.asset.id)
+        self.eq(st.asset.name, st1.asset.name)
+
+class gem_invoice(tester):
+    def __init__(self):
+        super().__init__()
+        orm.orm.recreate(
+            invoice.invoice_payments,
+            invoice.payments,
+            invoice.invoiceitem_shipmentitems,
+            invoice.invoiceitem_orderitems,
+            invoice.purchaseitem,
+            invoice.invoice,
+            invoice.term,
+            invoice.termtype,
+            invoice.statustype,
+            invoice.status,
+            invoice.salesinvoice,
+            invoice.items,
+            invoice.salesitems,
+            invoice.account_roletype,
+            invoice.accounts,
+            invoice.account_role,
+        )
+
+    def it_creates_items(self):
+        # Create products
+        paper = product.good(name='Johnson fine grade 8½ by 11 paper')
+
+        # Create product feature
+        glossy = product.quality(name='Extra glossy finish')
+
+        # Create invoice
+        inv = invoice.salesinvoice(name='inv-30002')
+
+        # Add product as item to invoice
+        inv.items += invoice.salesitem(
+            product    =  paper,
+            quantity   =  10,
+            istaxable  =  True,
+        )
+
+        # Add feature as nested invoice item to indicate that the
+        # feature is for the product ('Johnson fine grade 8½ by 11
+        # paper' was solf with the "Extra glassy finish'.
+        inv.items.last.items += invoice.item(
+            feature = glossy,
+            istaxable = True,
+        )
+
+        inv.save()
+
+        inv1 = inv.orm.reloaded()
+
+        self.eq(inv.id, inv1.id)
+
+        itms = inv.items
+        itms1 = inv1.items
+
+        self.one(itms)
+        self.one(itms1)
+
+        itm = itms.first
+        itm1 = itms1.first
+
+        self.eq(itm.id,    itm1.id)
+        self.eq(paper.id,  itm1.product.id)
+        self.eq(10,        itm1.quantity)
+
+        self.true(itm1.istaxable)
+
+        itms = itm.items
+        itms1 = itm1.items
+
+        self.one(itms)
+        self.one(itms1)
+
+        itm = itms.first
+        itm1 = itms1.first
+
+        self.eq(itm.id,    itm1.id)
+        self.eq(glossy.id,  itm1.feature.id)
+        self.true(itm1.istaxable)
+
+    def it_creates_roles_and_contactmechanisms(self):
+        # Create invoice
+        inv = invoice.salesinvoice(name='inv-30002')
+        inv.created = 'May 25, 2001'
+
+        # Create billed-to party
+        inv.buyer = party.company(name='ACME Corporation')
+        inv.seller = party.company(name='ACME Subsidiary')
+
+        # Create contactmechanisms
+        inv.source = party.address(
+            address1 = '100 Bridge Street',
+            address2 = None,
+        )
+
+        inv.destination = party.address(
+            address1 = '123 Main Street',
+            address2 = None,
+        )
+
+        inv.save()
+
+        inv1 = inv.orm.reloaded()
+
+        self.eq(inv.id, inv1.id)
+        self.eq(primative.date('May 25, 2001'), inv1.created)
+
+        # TODO We shouldn't have to down cast entitymappings
+        self.eq(
+            '100 Bridge Street', 
+            inv1.source.orm.cast(party.address).address1
+        )
+
+        self.eq(
+            '123 Main Street', 
+            inv1.destination.orm.cast(party.address).address1
+        )
+
+        self.eq(
+            'ACME Subsidiary', 
+            inv1.seller.orm.cast(party.company).name
+        )
+
+        self.eq(
+            'ACME Subsidiary', 
+            inv1.seller.orm.cast(party.company).name
+        )
+
+    def it_creates_a_billing_account(self):
+        # Create party
+        com = party.company(name='ACME Corporation')
+
+        # Create contactmechanisms
+        addr = party.address(
+            address1 = '123 Main Street',
+            address2 = 'New York, New York', 
+        )
+
+        acct = invoice.account(
+            contactmechanism = addr,
+            description = 'All charges for office supplies',
+        )
+
+        art = invoice.account_roletype(
+            name = 'Primary payer'
+        )
+
+        ar = invoice.account_role(
+            begin = 'Apr 15, 2000',
+            party = com,
+            account = acct,
+            account_roletype = art,
+        )
+
+        ar.save()
+
+
+        acct1 = acct.orm.reloaded()
+
+        self.eq(acct.id, acct1.id)
+        self.eq('All charges for office supplies', acct1.description) 
+
+        self.eq(acct.contactmechanism.id, acct1.contactmechanism.id)
+        self.eq(
+            '123 Main Street', 
+            acct1.contactmechanism.orm.cast(party.address).address1
+        )
+
+        ars = acct.account_roles
+        ars1 = acct1.account_roles
+
+        self.one(ars)
+        self.one(ars1)
+
+        ar = ars.first
+        ar1 = ars1.first
+
+        self.eq(ar.id, ar1.id)
+        self.eq(primative.date('Apr 15, 2000'), ar1.begin)
+        self.eq(art.id, ar1.account_roletype.id)
+        self.eq('Primary payer', ar1.account_roletype.name)
+
+    def it_creates_statuses(self):
+        inv = invoice.invoice()
+        inv.statuses += invoice.status(
+            assigned = 'May 25, 2001',
+            statustype = invoice.statustype(name='Approved')
+        )
+        inv.statuses += invoice.status(
+            assigned = 'May 30, 2001',
+            statustype = invoice.statustype(name='Sent')
+        )
+
+        inv.save()
+
+        inv1 = inv.orm.reloaded()
+
+        self.eq(inv.id, inv1.id)
+
+        sts = inv.statuses.sorted('assigned')
+        sts1 = inv1.statuses.sorted('assigned')
+
+        self.two(sts)
+        self.two(sts1)
+
+        st = sts1.first
+        self.eq(primative.datetime('May 25, 2001'), st.assigned)
+        self.eq('Approved', st.statustype.name)
+
+        st = sts1.second
+        self.eq(primative.datetime('May 30, 2001'), st.assigned)
+        self.eq('Sent', st.statustype.name)
+
+    def it_creates_term(self):
+        inv = invoice.invoice()
+
+        paper = product.good(name='Johnson fine grade 8½ by 11 paper')
+        # Add product as item to invoice
+        inv.items += invoice.salesitem(
+            product    =  paper,
+            quantity   =  10,
+            istaxable  =  True,
+        )
+
+        inv.items.last.terms += invoice.term(
+            value = None,
+            termtype = invoice.termtype(
+                name='Non-returnable sales item'
+            )
+        )
+
+        inv.terms += invoice.term(
+            value = 30,
+            termtype = invoice.termtype(
+                name='Payment-net days'
+            )
+        )
+
+        inv.terms += invoice.term(
+            value = 2,
+            termtype = invoice.termtype(
+                name='Late fee-percent'
+            )
+        )
+
+        inv.terms += invoice.term(
+            value = 5,
+            termtype = invoice.termtype(
+                name='Penalty for collection agency-percent'
+            )
+        )
+
+
+        inv.save()
+        inv1 = inv.orm.reloaded()
+
+        self.eq(inv.id, inv1.id)
+
+        trm1 = inv1.items.first.terms.first
+        self.eq(None, trm1.value)
+        self.eq('Non-returnable sales item', trm1.termtype.name)
+
+        trms1 = inv1.terms.sorted('value')
+
+        self.three(trms1)
+
+        trm1 = trms1.first
+        self.eq(2, trm1.value)
+        self.eq('Late fee-percent', trm1.termtype.name)
+
+        trm1 = trms1.second
+        self.eq(5, trm1.value)
+        self.eq(
+            'Penalty for collection agency-percent', 
+            trm1.termtype.name
+        )
+
+        trm1 = trms1.third
+        self.eq(30, trm1.value)
+        self.eq('Payment-net days', trm1.termtype.name)
+
+    def it_associates_shipmentitem_with_invoiceitem(self):
+        sh = shipment.shipment()
+        sh.items += shipment.item()
+
+        inv = invoice.invoice()
+        inv.items += invoice.salesitem(quantity=1000)
+
+        itm = sh.items.first
+        itm.invoiceitem_shipmentitems +=  \
+            invoice.invoiceitem_shipmentitem(
+                invoiceitem = inv.items.first
+            )
+
+        sh.save()
+
+        sh1 = sh.orm.reloaded()
+
+        iisis = sh.items.first.invoiceitem_shipmentitems
+        iisis1 = sh1.items.first.invoiceitem_shipmentitems
+
+        self.one(iisis)
+        self.one(iisis1)
+
+        iisi = iisis.first
+        iisi1 = iisis1.first
+
+        self.eq(iisi.id, iisi1.id)
+        self.eq(1000, iisi1.invoiceitem.quantity)
+        self.eq(inv.items.first.id, iisi1.invoiceitem.id)
+        self.eq(sh.items.first.id, iisi1.shipmentitem.id)
+
+    def it_associates_order_items_to_invoice_items(self):
+        # Create order.purchaseitem
+        po = order.purchaseorder()
+        po.items += order.purchaseitem(
+            quantity  =  40,
+            price     =  60
+        )
+
+        # Create invoice.purchaseitem
+        inv = invoice.invoice()
+        inv.items += invoice.purchaseitem(quantity=100)
+
+        # Associate the items
+        po.items.last.invoiceitem_orderitems += \
+            invoice.invoiceitem_orderitem(
+                invoiceitem = inv.items.last
+            )
+
+        # Save, reload and test
+        po.save()
+
+        po1 = po.orm.reloaded()
+
+        self.eq(po.id, po1.id)
+
+        iiois = po.items.last.invoiceitem_orderitems
+        iiois1 = po1.items.last.invoiceitem_orderitems
+
+        self.one(iiois)
+        self.one(iiois1)
+
+        iioi = iiois.first
+        iioi1 = iiois1.first
+
+        self.eq(iioi.invoiceitem.id, iioi1.invoiceitem.id)
+        self.eq(iioi.orderitem.id, iioi1.orderitem.id)
+
+    def it_associates_invoice_with_payment(self):
+        inv = invoice.invoice()
+
+        inv.invoice_payments += invoice.invoice_payment(
+            amount = 182.20,
+            payment = invoice.payment(
+                amount = 182.20
+            )
+        )
+
+        inv.save()
+
+        inv1 = inv.orm.reloaded()
+
+        ips = inv.invoice_payments
+        ips1 = inv1.invoice_payments
+
+        self.one(ips)
+        self.one(ips1)
+
+        ip = inv.invoice_payments.first
+        ip1 = inv1.invoice_payments.first
+
+        self.eq(ip.id, ip1.id)
+        self.eq(dec('182.20'), ip1.amount)
+        self.eq(dec('182.20'), ip1.payment.amount)
+
+class gem_account(tester):
+    def __init__(self):
+        super().__init__()
+        orm.orm.recreate(
+            account.account,
+            account.type,
+            account.periodtypes,
+            account.account_organizations,
+            account.periods,
+            account.depreciation,
+            account.transactions,
+            account.internals,
+            account.sales,
+            account.obligation,
+            account.external,
+            account.other,
+            account.item,
+        )
+
+    def it_creates_accounts(self):
+        accts = account.accounts()
+
+        # Cash
+        accts += account.account(
+            number = 110,
+            name   = 'Cash',
+            description = 'Liquid amounts of money available',
+            type = account.type(
+                name = 'Asset'
+            )
+        )
+
+        # Accounts receivable
+        accts += account.account(
+            number = 120,
+            name   = 'Accounts receivable',
+            description = 'Total amount of moneys due from all sources',
+            type = account.type(
+                name = 'Asset'
+            )
+        )
+
+        # Notes Payable
+        accts += account.account(
+            number = 240,
+            name   = 'Notes Payable',
+            description = (
+                'Amounts due in the form of written '
+                'contractual promissory notes'
+            ),
+            type = account.type(
+                name = 'Liability'
+            )
+        )
+
+        accts.save()
+
+        accts1 = accts.orm.all.sorted()
+        accts.sort()
+
+        self.three(accts)
+        self.three(accts1)
+
+        for acct, acct1 in zip(accts, accts1):
+            self.eq(acct.id, acct1.id)
+            self.eq(acct.name, acct1.name)
+            self.eq(acct.description, acct1.description)
+            self.eq(acct.type.name, acct1.type.name)
+
+    def it_associates_organizations_to_accounts(self):
+        com = party.company(name='ACME Corporation')
+        sub = party.company(name='ACME Subsidiary')
+
+        for org in (com, sub):
+            account.period(
+                begin = 'Jan 1, 2001',
+                end   = 'Dec 31, 2001',
+                periodtype = account.periodtype(name='Fiscal Year'),
+                organization = com,
+            ).save()
+
+
+        cash = account.account(
+            name = 'Cash', 
+            type = account.type(name='Asset'),
+            number = '100',
+        )
+
+        com.account_organizations += account.account_organization(
+            account = cash
+        )
+
+        com.save()
+
+        com1 = com.orm.reloaded()
+        self.eq(com.id, com1.id)
+
+        aos = com.account_organizations.sorted()
+        aos1 = com1.account_organizations.sorted()
+
+        self.one(aos)
+        self.one(aos1)
+
+        for ao, ao1 in zip(aos, aos1):
+            self.eq(ao.account.id,         ao1.account.id)
+            self.eq(ao.account.name,       ao1.account.name)
+            self.eq(ao.account.number,     ao1.account.number)
+
+            self.eq(ao.organization.id,    ao1.organization.id)
+            self.eq(ao.organization.name,  ao1.organization.name)
+
+    def it_posts_accounting_transactions(self):
+        account.transaction.orm.truncate()
+
+        com  = party.company(name='ACME Company')
+
+        corp = party.company(name='ABC Corporation')
+        corp.roles += party.internal()
+
+        txs = account.transactions()
+
+        txs += account.depreciation(
+            transacted  = 'Jan 1, 2000',
+            description = 'Depreciation on pen engraver',
+            internal = corp.roles.last
+        )
+
+        txs += account.sale(
+            transacted  = 'Jan 1, 2000',
+            description = 'Invoiced amount due',
+            sender = corp,
+            receiver = com,
+        )
+
+        txs.save()
+        txs.sort()
+
+        txs1 = txs.orm.all.sorted()
+
+        self.two(txs)
+        self.two(txs1)
+
+        for tx, tx1 in zip(txs, txs1):
+            dep = tx1.orm.cast(account.depreciation)
+            if dep:
+                tx1 = dep
+            else:
+                tx1 = tx1.orm.cast(account.sale)
+
+            self.eq(tx.id, tx1.id)
+            self.eq(tx.transacted, tx1.transacted)
+            self.eq(tx.description, tx1.description)
+
+            if isinstance(tx1, account.external):
+                self.eq(tx.sender.id, tx1.sender.id)
+                self.eq(tx.receiver.id, tx1.receiver.id)
+            elif isinstance(tx1, account.internal):
+                self.eq(tx.internal.id, tx1.internal.id)
+            else:
+                self.fail()
+    
+    def it_creates_transaction_details(self):
+        account.transaction.orm.truncate()
+
+        corp = party.company(name='ABC Corporation')
+        corp.roles += party.internal()
+
+        txs = account.transactions()
+
+        txs += account.depreciation(
+            description='Depreciation on equipment',
+            internal = corp.roles.last
+        )
+
+        txs.last.items += account.item(
+            amount = -200,  # A debit?
+            account = account.account(
+                name = 'Depreciation expense',
+                number = 100,
+            ),
+        )
+
+        txs.last.items += account.item(
+            amount = 200,  # A credit?
+            account = account.account(
+                name = 'Accumulated depreciation for equipment',
+                number = 200,
+            ),
+        )
+
+        txs.save()
+
+        txs1 = account.transactions.orm.all
+
+        self.one(txs)
+        self.one(txs1)
+
+        for tx, tx1 in zip(txs, txs1):
+            tx1 = tx1.orm.cast(account.depreciation)
+            self.eq(tx.id, tx1.id)
+            self.eq(
+                tx.description,
+                tx1.description,
+            )
+
+            self.eq(
+                tx.internal.id, 
+                tx1.internal.id, 
+            )
+
+            itms = tx.items
+            itms1 = tx.items
+
+            self.eq(itms.count, itms1.count)
+
+            for itm, itm1 in zip(itms, itms1):
+                self.eq(itm.amount, itm1.amount)
+                self.eq(itm.account.id, itm1.account.id)
+                self.eq(itm.account.name, itm1.account.name)
+
+        
 cli().run()

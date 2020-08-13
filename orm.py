@@ -11,12 +11,19 @@
 "Simplicity is complexity resolved." 
     # Constantin Brancusi, Romanian Sculptor
 
-""" This file contains all classes related to object-relational mapping.
+""" This module contains all classes related to object-relational
+mapping.
+
+Todo:
+    TODO: s/explicit attribute/imperitive attribute/
+
+    TODO Add automatic pluralisation of entities
+    
 """
 
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
 from collections.abc import Iterable
-from contextlib import suppress
+from contextlib import suppress, contextmanager
 from datetime import datetime, date
 from dbg import B
 from difflib import SequenceMatcher
@@ -92,6 +99,38 @@ from difflib import SequenceMatcher
 # text (field names like description, comment, instructions, etc. should
 # by default be optional.)
 
+# TODO:9b700e9a When an entity reference exist, we should create an
+# entities collection on the referent. For example, given:
+#
+#     class party(orm.entity):
+#         pass
+#
+#     class timesheets:
+#         party = party.party
+#
+# we should be able to access ``timesheets`` off a party instance:
+#
+#     for ts in party(id).timesheets:
+#         ...
+
+# TODO:abf324b4 Do we really need pseudocollections? In the ~200 classes
+# so far in the GEM, none have really needed or would seem to benefit
+# from pseudocollections. Let's reflect on how valuable they are going
+# forward. If after the code has been in production serving web pages
+# for some while, and pseudocollections have not proven themselves to be
+# worthy, I think we should rip out the pseudocollection logic. This
+# logic is tedious to maintain and may be slowing down execution time.
+
+# TODO:In the GEM, change all date and datetime attributes to past
+# tense, e.g., s/acquiredat/acquired/
+
+# TODO There should be a standard for association class names that makes
+# them predictable. Perhaps the should be alphabetical. For example,
+# given an association that associates an ``effort`` and an ``item``,
+# the name should be ``effort_item`` instead of ``item_effort``, since
+# the former is alphabetized. This would help to locate them faster and
+# to use them in code more efficiently.
+
 @unique
 class types(Enum):
     """
@@ -121,19 +160,19 @@ class text(alias):
 
             str, 1, 65535
 
-        Many entity objects in the GEM simply want what would be
-        equivalent to a MySQL ``text`` date type. This alias allows a
-        GEM author to say::
+    Many entity objects in the GEM simply want what would be
+    equivalent to a MySQL ``text`` date type. This alias allows a
+    GEM author to say::
 
-            class person(orm.entity):
-                name = str
-                bio = orm.text
+        class person(orm.entity):
+            name = str
+            bio = orm.text
 
-        instead of::
+    instead of::
 
-            class person(orm.entity):
-                name = str
-                bio = str, 1, 65535
+        class person(orm.entity):
+            name = str
+            bio = str, 1, 65535
 
     """
     type = str
@@ -1965,26 +2004,32 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
     @property
     def brokenrules(self):
-        return self._getbrokenrules()
+        return self.getbrokenrules()
 
-    def _getbrokenrules(self, guestbook=None, followentitymapping=True):
+    def getbrokenrules(self, gb=None):
         brs = entitiesmod.brokenrules()
 
-        if guestbook is None:
-            guestbook = list()
-        else:
-            # This test corrects a fairly deep issue that has only come
-            # up with subentity-superassociation-subentity
-            # relationships. We use the below logic to return
-            # immediately when an association's (self) collection has any
-            # constituents that have already been visited. See the
-            # brokenrule collections being tested at the bottom of
-            # it_loads_and_saves_reflexive_associations_of_subentity_objects
-            # for more clarifications.
-            for e in self:
-                if e in guestbook:
-                    return brs
+        # This test corrects a fairly deep issue that has only come
+        # up with subentity-superassociation-subentity
+        # relationships. We use the below logic to return
+        # immediately when an association's (self) collection has any
+        # constituents that have already been visited. See the
+        # brokenrule collections being tested at the bottom of
+        # it_loads_and_saves_reflexive_associations_of_subentity_objects
+        # for more clarifications.
 
+        if gb is None:
+            gb = list()
+
+        if self in gb:
+            return
+
+        gb.append(self)
+            
+        if any(x in gb for x in self):
+            return brs
+
+        # Replace with any() - see above.
         for e in self:
             if not isinstance(e, self.orm.entity):
                 prop = type(self).__name__
@@ -1992,7 +2037,12 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 msg %= (prop, type(e).__name__)
                 brs += entitiesmod.brokenrule(msg, prop, 'valid')
                 
-            brs += e._getbrokenrules(guestbook, followentitymapping=followentitymapping)
+            # TODO If an ORM users creates a brokenrules property and
+            # forgets to return anything, it will lead to a strange
+            # error message here. Instead, we should chek the return
+            # value of e.brokenrules and, if its None, raise a more
+            # informative error message.
+            brs += e.getbrokenrules(gb=gb)
 
         return brs
 
@@ -2279,7 +2329,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
     def __init__(self, o=None, **kwargs):
         try:
             self.orm = self.orm.clone()
-            self.orm.initing = True # change to `isiniting`
+            self.orm.initing = True # TODO change to `isiniting`
             self.orm.instance = self
 
             self.onbeforesave       =  entitiesmod.event()
@@ -2314,6 +2364,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                 self.orm.populate(res)
 
+            # TODO If k is not in self.orm.mappings, we should throw a
+            # ValueError.
             # Set attributes via keyword arguments:
             #     per = person(first='Jesse', last='Hogan')
             for k, v in kwargs.items():
@@ -2546,7 +2598,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                                     = (False,) * 2
                 # Raise event
                 self.onaftersave(self, eargs)
-            else:
                 # If there is no sql, then the entity isn't new, dirty
                 # or marked for deletion. In that case, don't save.
                 # However, allow any constituents to be saved.
@@ -2559,6 +2610,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             for map in self.orm.mappings:
 
                 if type(map) is entitymapping:
+                    # TODO The below comments should probably be
+                    # deleted; followentitiesmapping isn't used any more:
+                    # ...
                     # Call the entity constituent's save method. Setting
                     # followentitiesmapping to false here prevents it's
                     # child/entitiesmapping constituents from being
@@ -2629,6 +2683,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                 if crud == 'delete':
                                     e.orm.ismarkedfordeletion = True
 
+                                # TODO The below comments should
+                                # probably be deleted;
+                                # followentitymapping isn't used any
+                                # more:
                                 # If the previous operation on self was
                                 # a delete, don't ascend back to self
                                 # (followentitymapping == False). Doing
@@ -2779,25 +2837,23 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         
     @property
     def brokenrules(self):
-        return self._getbrokenrules()
+        return self.getbrokenrules()
 
-    def _getbrokenrules(self, guestbook=None, followentitymapping=True, followentitiesmapping=True):
+    def getbrokenrules(self, gb=None):
         brs = entitiesmod.brokenrules()
 
-        # This "guestbook" logic prevents infinite recursion and duplicated
-        # brokenrules.
-        guestbook = [] if guestbook is None else guestbook
-        if self in guestbook:
-            return brs
-        else:
-            guestbook += self,
+        if gb is None:
+            gb = list()
 
+        if self in gb:
+            return brs
+
+        gb.append(self)
+            
+        # TODO s/super/sup/
         super = self.orm._super
         if super:
-            brs += super._getbrokenrules(
-                guestbook, 
-                followentitymapping=followentitymapping
-            )
+            brs += super.getbrokenrules(gb=gb)
 
         for map in self.orm.mappings:
             if type(map) is fieldmapping:
@@ -2868,37 +2924,39 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # want to add (as one would expect) the `followentitiesmapping`
             # flag here as well.
             elif type(map) is entitiesmapping:
-                # Currently, map.value will not load the entities on invocation
-                # so we get None for es. This is good because we don't want to
-                # needlessly load an object to see if it has broken rules.
-                # However, if this changes, we will want to make sure that we
-                # don't needlessy load this. This could lead to infinite
-                # h (see it_entity_constituents_break_entity)
+                # NOTE Currently, map.value will not load the entities
+                # on invocation so we get None for es. This is good
+                # because we don't want to needlessly load an object to
+                # see if it has broken rules.  However, if this changes,
+                # we will want to make sure that we don't needlessy load
+                # this. This could lead to infinite recursion (see
+                # it_entity_constituents_break_entity)
                 es = map.value
                 if es:
                     if not isinstance(es, map.entities):
                         msg = "'%s' attribute is wrong type: %s"
                         msg %= (map.name, type(es))
                         brs += entitiesmod.brokenrule(msg, map.name, 'valid')
-                    brs += es._getbrokenrules(guestbook, 
-                        followentitymapping=followentitymapping
-                    )
+                    brs += es.getbrokenrules(gb=gb)
 
-            elif followentitymapping and type(map) is entitymapping:
+            elif type(map) is entitymapping:
                 if map.isloaded:
                     if not isinstance(map.value, map.entity):
                         msg = "'%s' attribute is wrong type: %s"
                         msg %= (map.name, type(map.value))
                         args = msg, map.name, 'valid'
                         brs += entitiesmod.brokenrule(*args)
-                    brs += map.value._getbrokenrules(guestbook, 
-                        followentitymapping=followentitymapping,
-                        followentitiesmapping=False
-                    )
 
-            elif followentitiesmapping and type(map) is associationsmapping:
+                    # If the ORM user has overridden `getbrokenrules`,
+                    # check if the entity has already been processed by
+                    # seeing if `map.value` is in the guestbook.
+                    if map.value not in gb:
+                        # Get entities brokenrules
+                        brs += map.value.getbrokenrules(gb=gb)
+
+            elif type(map) is associationsmapping:
                 if map.isloaded:
-                    brs += map.value._getbrokenrules(guestbook)
+                    brs += map.value.getbrokenrules(gb=gb)
 
         return brs
 
@@ -3200,7 +3258,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             if type(map) in (entitiesmapping, associationsmapping):
                                 es = v
                                 if es:
-                                    brs = es._getbrokenrules(
+                                    brs = es.getbrokenrules(
                                         guestbook=None, 
                                         followentitymapping=False
                                     )
@@ -3619,6 +3677,9 @@ class mapping(entitiesmod.entity):
         the entitymeta.
         """
         return self.name in ('id', 'createdat', 'updatedat')
+
+    def isdefined(self):
+        return self._value is not undef
 
     @property
     def name(self):
@@ -4719,6 +4780,63 @@ class orm:
 
         exec()
         
+    def default(self, attr, v, dict=None):
+        """ Sets an attribute to a default value. ``default`` is
+        intended to be called by an entity's constructor after the
+        call to ``super().__init__(*args, **kwargs)`` has been made. 
+
+        Before setting the attribute to ``v``, however, the kwargs dict
+        in the entity's constructor is inspected to determine if the
+        user instantiating the entity wants to set the attribute to a
+        non-default value. For example, the ``artist`` class in test.py
+        defaults the ``style`` attribute to the string "classicism":
+
+            art = artist()
+            assert art.style == 'classicism'
+
+        The ``kwargs`` argument can be used to overide this default::
+
+            art = artist(style='cubism')
+            assert art.style == 'cubism'
+
+        The kwargs arguments is will be discoverd through inspection,
+        though the ``dict`` parameter  can be used instead if the kwargs
+        argument isn't available for some reason.
+        
+        :param: attr str: The attribute/map to be set
+        :param: v object: The value to set the attribute to
+        :param: dict dict: A replacment dict if the calling method
+        (usually __init__) doesn't have a **kwargs parameter.
+        """
+
+        # Only set defaults if the entity is new, i.e., not in the
+        # database yet.
+        if not self.isnew:
+            return
+
+        # Get the **kwargs dict from the calling method unless the
+        # ``dict` argument was passed in.
+            st = inspect.stack()
+            try:
+                dict = st[1].frame.f_locals['kwargs']
+            except Exception as ex:
+                raise ValueError(
+                    'Failed finding `kwargs`. '
+                    'Call `default` from `__init__` with **kwargs '
+                    'or set `dict`. ' + repr(ex)
+
+                )
+        # If the kwargs parameter from the calling method has a key for
+        # attr, use it. Otherwise use the value from the ``v``.
+        try:
+            if dict:
+                v = dict[attr]
+        except KeyError:
+            pass
+
+        # Set the attribute
+        setattr(self.instance, attr, v)
+            
     @property
     def table(self):
         mod = inspect.getmodule(self.entities)
@@ -4727,6 +4845,8 @@ class orm:
                 mod = os.path.splitext(
                     os.path.basename(mod.__file__)
                 )[0]
+                if mod == 'test':
+                    mod = 'main'
             else:
                 mod = 'main'
         else:
@@ -5108,6 +5228,8 @@ class orm:
                 with pool.take() as conn:
                     conn.query(sql)
         except _mysql_exceptions.OperationalError as ex:
+            # TODO There should be an alternative block here that calls
+            # `raise`
             if ex.args[0] == TABLE_EXISTS_ERROR:
                 if not ignore:
                     raise
@@ -6413,44 +6535,56 @@ class associations(entities):
         # objects.
         comp = self.orm.composite
         if isinstance(obj, association):
-            for map in obj.orm.mappings.entitymappings:
-                # TODO We probably should be using the association's
-                # (self) mappings collection to test the composites
-                # names. The name that matters is on the LHS of the map
-                # when being defined in the association class.
-                if self.orm.isreflexive:
-                    if map.issubjective:
-                        # NOTE self.orm.composite can be None when the
-                        # association is new. Calling 
-                        #
-                        #     settattr(obj, map.name, None)
-                        #
-                        # results in an error. The alternative block
-                        # avoided this because the following will
-                        # always be False. TODO We need to only run this
-                        # code `if self.orm.composite`
-                        #     self.name == type(None).__name__ 
-                        #
-                        # Or we could make the setattr() call accept a
-                        # composite of None.
-                        if comp is not None:
-                            
-                            # TODO map.name will always be 'subject'
-                            # here. Don't we want it to be
-                            #
-                            #     `self.orm.composite.__class__.__name__` 
-                            #
-                            # Unfortately, when this is corrected,
-                            # several issues result when running the
-                            # tests.
-                            setattr(obj, map.name, comp)
-                            break
-                elif isinstance(comp, map.entity):
-                    setattr(obj, map.name, comp)
-                    break
+            # Backup obj so we can use it to ascend inheritance tree
+            obj1 = obj 
 
-            # TODO This is the second interation of the entitymappings
-            # collection. We should consolodate these into one loop.
+            # We will continue up the inheritance tree until we find a
+            # map that corresponds to the composite. We will set the
+            # map's value to the composite.
+            while obj:
+                for map in obj.orm.mappings.entitymappings:
+                    # TODO We probably should be using the association's
+                    # (self) mappings collection to test the composites
+                    # names. The name that matters is on the LHS of the map
+                    # when being defined in the association class.
+                    if self.orm.isreflexive:
+                        if map.issubjective:
+                            # NOTE self.orm.composite can be None when the
+                            # association is new. Calling 
+                            #
+                            #     settattr(obj, map.name, None)
+                            #
+                            # results in an error. The alternative block
+                            # avoided this because the following will
+                            # always be False. TODO We need to only run this
+                            # code `if self.orm.composite`
+                            #     self.name == type(None).__name__ 
+                            #
+                            # Or we could make the setattr() call accept a
+                            # composite of None.
+                            if comp is not None:
+                                
+                                # TODO map.name will always be 'subject'
+                                # here. Don't we want it to be
+                                #
+                                #     `self.orm.composite.__class__.__name__` 
+                                #
+                                # Unfortately, when this is corrected,
+                                # several issues result when running the
+                                # tests.
+                                setattr(obj, map.name, comp)
+                                break
+                    elif isinstance(comp, map.entity):
+                        setattr(obj, map.name, comp)
+                        break
+                else:
+                    obj = obj.orm.super  # Ascend
+                    continue
+                break
+
+            # Restore `obj` to its original reference
+            obj = obj1
+
             for map in obj.orm.mappings.entitymappings:
                 if not map.isloaded:
                     continue
@@ -6458,6 +6592,32 @@ class associations(entities):
                 # self.orm.composite will not exist when loading the
                 # association.
                 if not comp:
+                    continue
+
+                # When a reflexive association has an entitymap other
+                # than `object` (this could be `subject` or some
+                # arbitrary entity map such as `myassociationstype`, an
+                # attempt to get the pseudocollection will result in an
+                # AttributeError below. We want to skip this map
+                # entirely. TODO Note that this raise the
+                # issue of what happens when a non-reflexive association
+                # has an entity map that isn't a part of the
+                # association:
+                #
+                #    class person_movie(association):
+                #        person = person
+                #        movie  = movie
+                #        genre  = genre 
+                # 
+                # At the moment, it's not clear how `genre` would not
+                # get included in this loop. We would expect an
+                # AttributeError if we did this:
+                #
+                #     pms += person_movie(
+                #         person=per, movie=mov, genre=gen
+                #     )
+
+                if self.orm.isreflexive and not map.isobjective:
                     continue
 
                 compsups = [comp.orm.entity] \
@@ -6473,6 +6633,7 @@ class associations(entities):
                             self, 
                             map.value.orm.entities.__name__
                         )
+
                     except AttributeError:
                         # If the object stored in map.value is the wrong
                         # type, use the map.entity reference. This is
@@ -6481,8 +6642,8 @@ class associations(entities):
                         # error, instead prefering that the error is
                         # discovered in the broken rules collection. See
                         # it_doesnt_raise_exception_on_invalid_attr_values
-                        # where a location object is being appended to
-                        # an artifact's pseudocollection.
+                        # where a `location` object is being appended to
+                        # an `artifact`'s pseudocollection.
                         es = getattr(
                             self, 
                             map.entity.orm.entities.__name__
@@ -6728,11 +6889,12 @@ class associations(entities):
             comp = comp.orm.super
 
         try:
-            # Returned a memoized constituent. These are created in the
+            # Return a memoized constituent. These are created in the
             # `except KeyError` block.
             return self.orm.constituents[attr]
         except KeyError:
             for map in self.orm.mappings.entitymappings:
+                # TODO Remove paranthesis
                 if (self.orm.isreflexive and not map.isobjective):
                     continue
 
@@ -6755,8 +6917,8 @@ class associations(entities):
                 for es in ess:
                     if es.__name__ == attr:
                         # Create a pseudocollection for the associations
-                        # collection object (self). Append it to the self's
-                        # _constituents collection.
+                        # collection object (self). Append it to the self.orm's
+                        # `constituents` collection.
                         es = es()
                         es.onadd    += self.entities_onadd
                         es.onremove += self.entities_onremove
@@ -6796,6 +6958,7 @@ class associations(entities):
                         x.orm.entities.__name__ 
                         for x in e.orm.subentities
                     ]
+
                     if attr in subs:
                         try:
                             e = es.orm.entity(e.id)
