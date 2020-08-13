@@ -28,6 +28,9 @@ import ship
 import tempfile
 import textwrap
 
+# TODO Rename crust.py to crust. This would better meet the expectation
+# of a shell user who simply wants to run a program.
+
 def dbg(code):
     try:
         exec(code)
@@ -123,27 +126,52 @@ class command:
         return eargs.response
 
 class migration(command):
+    """ A command to interactively walk a user through the migration
+    process. It first scans the database table and compares them to all 
+    orm.entity models. DDL is generated and presented to the user for
+    each of the tables that need to be CREATed, ALTERed or DROPed. The
+    user then reviews the DDL, is given the option of editing the DDL,
+    then ask if the DDL should be executed by the database.
+    """
+
     class migrants(entities.entities):
+        """ A collection of ``migrant`` objects.
+        """
+
         @staticmethod
         def _key(mig):
-            """ Defines the sort order:
-                    0 - Tables that must be dropped (D)
-                    1 - Tables that must be altered (A)
+            """ Defines the sort order of the migrant:
+                    0 - Tables that must be altered (A)
+                    1 - Tables that must be dropped (D)
                     2 - Tables that must be created (C)
             """
             e = mig.entity
             if isinstance(e, db.table):
-                return 0
+                return 1
             else:
-                return 1 if e.orm.dbtable else 2
+                return 0 if e.orm.dbtable else 2
 
         def sort(self):
+            """ Sorts the migrants using migrants._key.
+            """
             super().sort(key=self._key)
 
-        def sort(self):
+        def sorted(self):
+            """ Returns a sorted collection of migrants using
+            migrants._key.
+            """
             return super().sorted(key=self._key)
 
     class migrant(entities.entity):
+        """ An entity that needs to be migrated. The entity may be a
+        db.table object or an orm.entity. The main purpose of this class
+        is to make working with db.table and orm.entity objects
+        polymorphic. For instance, we can call the ``migraant.name``
+        property to get the name of the entity which would be different
+        depending on whether or not the entity is a db.table or a
+        orm.entity (see the ``name`` property for more clarity).
+        """
+
         def __init__(self, e, *args, **kwargs):
             super().__init__(*args, **kwargs)
             self.entity = e
@@ -164,8 +192,18 @@ class migration(command):
             else:
                 return f'{e.__module__}.{e.__name__}'
 
+        def __repr__(self):
+            return f'{self.operation} {self.name}'
+
         @property
         def operation(self):
+            """ The DDL operation that should be performed on the
+            migrant::
+                
+                D = DROP
+                A = ALTER
+                C = CREATE
+            """
             if self.istable:
                 return 'D'
             else:
@@ -173,6 +211,9 @@ class migration(command):
 
         @property
         def ddl(self):
+            """ The DDL required to migrate the migrant.
+            """
+
             if self.istable:
                 return f'DROP TABLE `{self.name}`;'
             else:
@@ -185,14 +226,16 @@ class migration(command):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self._todo      =  migration.migrants()
         self._done      =  migration.migrants()
         self._skipped   =  migration.migrants()
         self._failed    =  migration.migrants()
-        self._todo      =  migration.migrants()
         self._isscaned  =  False
         self._tmp       =  None
 
         try:
+            # Call self which initiates the process starting with a scan
+            # of the orm entities and database tables.
             self()
         except command.Abort:
             pass
@@ -202,8 +245,15 @@ class migration(command):
             self.destructor()
 
     def counts(self, e=None):
+        """ Print out the status the todo, done, skipped and failed
+        migrants. If ``e`` is set, that migrant will get an arrow beside
+        it to indicate it is the entity currently being subjected to
+        the migration process.
+        """
         self.print()
         def show(es):
+            """ Print out information about the migration collection (``es``).
+            """
             self.print(f'({es.count})', end='')
             if es.count:
                 self.print(':')
@@ -223,6 +273,8 @@ class migration(command):
 
             self.print()
 
+        # Show status information for todo, done, skipped and failed
+        # migrants.
         todo    =  self.todo
         done    =  self.done
         skipped =  self.skipped
@@ -241,22 +293,36 @@ class migration(command):
         show(failed)
     
     def destructor(self):
+        """ Clean up resources of the ``migration`` command.
+        """
+
+        # If there is a tmp file, delete it.
         if self._tmp is not None:
             os.remove(self._tmp)
 
     @property
     def tmp(self):
-        # Create a tmp file
+        """ Create a tmp file file in the file system and return a
+        reference. 
+        """
+
+        # Memoize so we only have to worry about one tmp file throughout
+        # the whole process.
         if not self._tmp:
             _, self._tmp = tempfile.mkstemp()
         return self._tmp
 
     @property
     def editor(self):
-        # Get an editor that the user likes
-        return os.getenv('EDITOR') or '/usr/bin/vim'
+        """ Return a path to an editor. Default to Vim.
+        """
+        return os.getenv('EDITOR', '/usr/bin/vim')
 
     def exec(self, e=None, ddl=None):
+        """ Send the DDL to the database for execution. If there is an
+        exception during the execution, offer the user the option of
+        editing the DDL.
+        """
         while True:
             try:
                 ddl = ddl or e.ddl
@@ -277,29 +343,15 @@ class migration(command):
             else:
                 return
 
-    def exec_edited_alter_table(self, e):
-        at = None
-        while True:
-            # Execute the edited ALTER TABLE statement
-            at = self.edit(e, at)
+    def all(self):
+        """ Concatenate the DDL from all the ``todo`` migrants into one
+        DDL script, print out the script (usually to stdout), apply the
+        DDL or allow the user the option of editing.
+        """
 
-            try:
-                orm.orm.exec(at)
-            except Exception as ex:
-                self.print(f'\n{ex}\n\n')
-                res = self.ask(
-                    'Press [e]dit, [i]gnore or [q]uit...',
-                    edit='e', ignore='i', quit='q'
-                )
-                if res == 'ignore':
-                    return
-                elif res == 'quit':
-                    raise command.Abort()
-            else:
-                break
-
-    def process_all(self):
         def usage():
+            """ Print help information.
+            """
             self.print(textwrap.dedent("""
             y - yes, apply DDL
             n - no, do not apply DDL
@@ -309,11 +361,16 @@ class migration(command):
             """))
 
         def abort():
+            """ Ignoring an exception from *all** implies that the user
+            wants to abort the process, so add all the todo's to
+            skipped, print out the counts and end the command.
+            """
             self.print('You have chosen to ignore. Bye.')
             self.skipped += self.todo
             self.counts()
             raise self.Abort()
 
+        # Concatenate DDL from each of the migrants into one DDL string.
         ddls = str()
         for mig in self.todo:
             e = mig.entity
@@ -325,6 +382,7 @@ class migration(command):
 
             ddls += ddl
 
+        # Print to stdout
         self.print(ddls, lang='sql')
 
         ddl = ddls.strip()
@@ -363,9 +421,14 @@ class migration(command):
                 usage()
 
     def edit(self, e=None, ddl=None):
+    """ Put the DDL from `e` or the DDL rom `ddl` into an editor for the
+    user to make changes. Return the edited DDL.
+    """
         if not ddl:
             ddl = e.ddl
 
+            # Add a commented-out comparison table to the DDL for the
+            # user's convenience.
             if ddl.startswith('ALTER'):
                 tbl = e.orm.migration.table
                 ddl += f'\n\n/* Model-to-table comparison: \n{tbl}\n*/'
@@ -374,6 +437,7 @@ class migration(command):
         with open(self.tmp, 'w') as f:
             f.write(ddl)
 
+        # Add syntax highlighting if the editor is Vim.
         flags = ''
         basename = os.path.basename(self.editor)
         if basename in ('vi', 'vim'):
@@ -381,6 +445,7 @@ class migration(command):
         if flags:
             flags = f' {flags} '
 
+        # Run the editor.
         os.system(f'{self.editor}{flags}{self.tmp}')
 
         # Read back in the edited file
@@ -390,6 +455,9 @@ class migration(command):
         return ddl
 
     def scan(self):
+        """ Scan for orm entities and add them as migrants to the
+        ``todo`` list.
+        """
         if not self._isscaned:
             self.print('Scanning for entities to migrate ...\n')
 
@@ -417,13 +485,23 @@ class migration(command):
 
     @property
     def todo(self):
+        """ Return a list of migrants that have yet to be processe"""
+
+        # Make sure we've scanned and collected all the migrants.
         self.scan()
+
+        # The returned todo migration won't include migrants that have
+        # been done, failed or skipped.
         es = self._todo - self.done - self.failed - self.skipped
+
+        # Ensure todo migrants are sorted (see migratants.sort)
         es.sort()
         return es
 
     @property
     def done(self):
+        """ Migrants that have been successfully migrated.
+        """
         return self._done
 
     @done.setter
@@ -432,6 +510,8 @@ class migration(command):
         
     @property
     def skipped(self):
+        """ Migrants that were skipped.
+        """
         return self._skipped
 
     @skipped.setter
@@ -440,6 +520,9 @@ class migration(command):
 
     @property
     def failed(self):
+        """ Migrants that failed, likely because of a syntax error in
+        the DDL.
+        """
         return self._failed
 
     @failed.setter
@@ -447,12 +530,14 @@ class migration(command):
         self._failed = v
 
     def __call__(self):
+        """ Start the processes .
+        """
         def usage():
             print(textwrap.dedent("""
             y - yes, apply DDL
             n - no, do not apply DDL
             q - quit migration
-            a - apply this DDL and all later DLL
+            a - apply this DDL and all later DDL
             e - manually edit the current DDL
             s - show current DDL
             c - show counts
@@ -462,10 +547,12 @@ class migration(command):
         self.scan()
 
         def show(mig):
+            """ Show the DDL and comarison table of the migrant (mig).
+            """
             e = mig.entity
             ddl = mig.ddl
             if ddl.startswith('ALTER'):
-                self.print(f'\n{e.orm.migration.table!s}')
+                self.print(f'\n{e.orm.migration.table1!s}')
             else:
                 self.print()
 
@@ -474,10 +561,16 @@ class migration(command):
             return ddl
 
         es = self.todo
+
+        # Work through each of the migrants in the todo list
         for i, e in es.enumerate():
             ddl = show(e)
 
             while True:
+                # Offer the user to apply the migrant's DDL (y), show
+                # the DDL, show information about the process (c), show
+                # usage (h), concatenate the DDLs (a), quit the process
+                # (q) or edit the current DDL (e).
                 res = self.ask(
                     'Apply this DDL [y,n,q,a,e,s,c,h]?', yesno=True, 
                     quit='q', all='a', edit='e', show='s', help='h',
@@ -491,7 +584,7 @@ class migration(command):
                 elif res == 'counts':
                     self.counts(e)
                 else:
-                    if res in ('yes', 'no', 'all', 'edit'):
+                    if res in ('yes', 'no', 'quit', 'all', 'edit'):
                         break
 
             if res == 'yes':
@@ -509,7 +602,7 @@ class migration(command):
                 raise command.Abort()
             elif res == 'all':
                 try:
-                    res = self.process_all()
+                    res = self.all()
                 except self.Abort:
                     raise
                 except Exception as ex:
@@ -532,6 +625,9 @@ class migration(command):
 # A user-friendly alias
 mig = migration
 
+'''
+Show environmental information on startup
+'''
 cfg = config()
 acct = db.connections.getinstance().default.account
 
@@ -555,4 +651,4 @@ print("""
                acct.database,
                acct.port)
 )
-mig()
+
