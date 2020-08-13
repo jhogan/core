@@ -421,9 +421,9 @@ class migration(command):
                 usage()
 
     def edit(self, e=None, ddl=None):
-    """ Put the DDL from `e` or the DDL rom `ddl` into an editor for the
-    user to make changes. Return the edited DDL.
-    """
+        """ Put the DDL from `e` or the DDL rom `ddl` into an editor for the
+        user to make changes. Return the edited DDL.
+        """
         if not ddl:
             ddl = e.ddl
 
