@@ -3780,7 +3780,7 @@ class test_orm(tester):
             
         self.eq(t.count, cnt, msg)
 
-    def it_migrates_new_field(self):
+    def it_migrates(self):
         def migrate(cat, expect):
             actual = cat.orm.altertable
             self.eq(expect, actual)
@@ -3818,6 +3818,7 @@ class test_orm(tester):
             ADD `whiskers` int
                 AFTER `name`;
         ''')
+
 
         migrate(cat, expect)
 
@@ -4046,16 +4047,292 @@ class test_orm(tester):
 
         migrate(cat, expect)
 
+        ''' Move attributes/columns '''
+
+        # Recreate class
+        class cat(orm.entity):
+            dob       =  date
+            name      =  str
+            shedder   =  bool
+            skittish  =  bool
+            lives     =  int
+
+        cat.orm.recreate()
+        self.none(cat.orm.altertable)
+
+        class cat(orm.entity):
+            name      =  str
+            shedder   =  bool
+            skittish  =  bool
+            lives     =  int
+            dob       =  date  # Move dob from beginning to end
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            CHANGE COLUMN `dob` `dob` date
+                AFTER `lives`;
+        ''')
+
+        migrate(cat, expect)
+
+        self.eq(
+            [
+                'id',       'createdat',  'updatedat',  'name',
+                'shedder',  'skittish',   'lives',      'dob',
+            ],
+            [x.name for x in cat.orm.dbtable.columns]
+        )
+
+        class cat(orm.entity):
+            dob       =  date  # Move dob from end to beginning
+            name      =  str
+            shedder   =  bool
+            skittish  =  bool
+            lives     =  int
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            CHANGE COLUMN `dob` `dob` date
+                AFTER `updatedat`;
+        ''')
+
+        migrate(cat, expect)
+
+        self.eq(
+            [
+                'id',    'createdat',  'updatedat',  'dob',
+                'name',  'shedder',    'skittish',   'lives',
+            ],
+            [x.name for x in cat.orm.dbtable.columns]
+        )
+
+        class cat(orm.entity):
+            shedder   =  bool
+            skittish  =  bool
+            lives     =  int
+            dob       =  date  # Move from first postiton
+            name      =  str   # Move from second position
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            CHANGE COLUMN `dob` `dob` date
+                AFTER `lives`,
+            CHANGE COLUMN `name` `name` varchar(255)
+                AFTER `dob`;
+        ''')
+
+        migrate(cat, expect)
+
+        self.eq(
+            [
+                'id',        'createdat',  'updatedat',  'shedder',
+                'skittish',  'lives',      'dob',        'name',
+            ],
+            [x.name for x in cat.orm.dbtable.columns]
+        )
+
+        class cat(orm.entity):
+            dob       =  date 
+            name      =  str
+            shedder   =  bool  # Move from first position
+            skittish  =  bool  # Move from second position
+            lives     =  int   # Move from third position
+
+        # I thought I was moving shedder-lives to the end, but
+        # SequenceMatcher interpreted this as me moving dob-name to the
+        # beginning.
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            CHANGE COLUMN `dob` `dob` date
+                AFTER `updatedat`,
+            CHANGE COLUMN `name` `name` varchar(255)
+                AFTER `dob`;
+        ''')
+
+        migrate(cat, expect)
+
+        self.eq(
+            [
+                'id',    'createdat',  'updatedat',  'dob',
+                'name',  'shedder',    'skittish',   'lives',
+            ],
+            [x.name for x in cat.orm.dbtable.columns]
+        )
+
+        class cat(orm.entity):
+            shedder   =  bool
+            skittish  =  bool
+            dob       =  date  # Move from first position
+            name      =  str   # Move from second position
+            lives     =  int
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            CHANGE COLUMN `shedder` `shedder` bit
+                AFTER `updatedat`,
+            CHANGE COLUMN `skittish` `skittish` bit
+                AFTER `shedder`;
+        ''')
+
+        migrate(cat, expect)
+
+        self.eq(
+            [
+                'id',        'createdat',  'updatedat',  'shedder',
+                'skittish',  'dob',        'name',       'lives',
+            ],
+            [x.name for x in cat.orm.dbtable.columns]
+        )
+
+        class cat(orm.entity):
+            shedder   =  bool
+            skittish  =  bool
+            name      =  str   # Switch with dob
+            dob       =  date  # Swith with name
+            lives     =  int
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            CHANGE COLUMN `name` `name` varchar(255)
+                AFTER `skittish`;
+        ''')
+
+        migrate(cat, expect)
+
+        self.eq(
+            [
+                'id',        'createdat',  'updatedat',  'shedder',
+                'skittish',  'name',       'dob',        'lives',
+            ],
+            [x.name for x in cat.orm.dbtable.columns]
+        )
+
+        class cat(orm.entity):
+            name      =  str   # Move from third position
+            dob       =  date  # Move from fourth position
+            lives     =  int   # Move from fifth position
+            shedder   =  bool
+            skittish  =  bool
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            CHANGE COLUMN `shedder` `shedder` bit
+                AFTER `lives`,
+            CHANGE COLUMN `skittish` `skittish` bit
+                AFTER `shedder`;
+        ''')
+
+        migrate(cat, expect)
+
+        self.eq(
+            [
+                'id',   'createdat',  'updatedat',  'name',
+                'dob',  'lives',      'shedder',    'skittish'
+            ],
+            [x.name for x in cat.orm.dbtable.columns]
+        )
+
+        ''' Rename a column '''
+        class cat(orm.entity):
+            name       =  str
+            birthed    =  date  # Rename
+            lives      =  int
+            shedder    =  bool
+            skittish   =  bool
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            CHANGE COLUMN `dob` `birthed` date;
+        ''')
+
+        migrate(cat, expect)
+
+        self.eq(
+            [
+                'id',       'createdat',  'updatedat',  'name',
+                'birthed',  'lives',      'shedder',    'skittish'
+            ],
+            [x.name for x in cat.orm.dbtable.columns]
+        )
+
+        class cat(orm.entity):
+            name       =  str
+            dob        =  date  # Rename
+            lifecount  =  int   # Rename
+            shedder    =  bool
+            skittish   =  bool
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            CHANGE COLUMN `birthed` `dob` date,
+            CHANGE COLUMN `lives` `lifecount` int;
+        ''')
+
+        migrate(cat, expect)
+
+        self.eq(
+            [
+                'id',   'createdat',  'updatedat',  'name',
+                'dob',  'lifecount',  'shedder',    'skittish'
+            ],
+            [x.name for x in cat.orm.dbtable.columns]
+        )
+
+        class cat(orm.entity):
+            dob        =  date  # swap(dob,name)
+            name       =  str
+            lifecount  =  int
+            shedder    =  bool
+            skittish   =  bool
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            CHANGE COLUMN `dob` `dob` date
+                AFTER `updatedat`;
+        ''')
+
+        migrate(cat, expect)
+
+        class cat(orm.entity):
+            dob        =  date 
+            name       =  str
+            shedder    =  bool # swap(shedder,lifecount)
+            lifecount  =  int
+            skittish   =  bool
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            CHANGE COLUMN `shedder` `shedder` bit
+                AFTER `name`;
+        ''')
+
+        migrate(cat, expect)
+
+        class cat(orm.entity):
+            dob        =  date 
+            name       =  str
+            shedder    =  bool
+            skittish   =  bool # swap(skittish,lifecount)
+            lifecount  =  int
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            CHANGE COLUMN `skittish` `skittish` bit
+                AFTER `shedder`;
+        ''')
+
+        migrate(cat, expect)
+
         '''
         Test Modifications
         '''
         # Recreate class
         class cat(orm.entity):
-            dob = date
-            name = str
-            shedder = bool
-            skittish = bool
-            lives = int
+            dob       =  date
+            name      =  str
+            shedder   =  bool
+            skittish  =  bool
+            lives     =  int
 
         cat.orm.recreate()
         self.none(cat.orm.altertable)
@@ -4181,64 +4458,322 @@ class test_orm(tester):
 
         migrate(cat, expect)
 
-        ''' Move attributes/columns '''
-
-        # Recreate class
         class cat(orm.entity):
-            dob       =  date
-            name      =  str
-            shedder   =  bool
-            skittish  =  bool
-            lives     =  int
-
-        cat.orm.recreate()
-        self.none(cat.orm.altertable)
-
-        class cat(orm.entity):
-            name      =  str
-            shedder   =  bool
-            skittish  =  bool
-            lives     =  int
-            dob       =  date  # Move dob from beginning to end
+            dob       =  date  # change
+            name      =  datetime
+            shedder   =  datetime 
+            skittish  =  datetime
+            lives     =  date  # change
 
         expect = self.dedent('''
         ALTER TABLE `test_cats`
-            CHANGE COLUMN `dob` `dob` date
+            MODIFY COLUMN `dob` date,
+            MODIFY COLUMN `lives` date;
+        ''')
+
+        migrate(cat, expect)
+
+        ''' The next tests will be attempts to confuse the
+        algorithm by mixing different columns to be added, dropped, renamed,
+        moved at the same time.
+        '''
+
+        ''' ADD and DROP '''
+        class cat(orm.entity):
+            #dob      =  date      #  drop
+            name      =  datetime
+            shedder   =  datetime
+            skittish  =  datetime
+            lives     =  date
+            birthed   =  date      #  add
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            DROP COLUMN `dob`,
+            ADD `birthed` date
                 AFTER `lives`;
         ''')
 
         migrate(cat, expect)
 
-        self.eq(
-            [
-                'id',       'createdat',  'updatedat',  'name',
-                'shedder',  'skittish',   'lives',      'dob',
-            ],
-            [x.name for x in cat.orm.dbtable.columns]
-        )
-
         class cat(orm.entity):
-            dob       =  date  # Move dob from end to beginning
-            name      =  str
-            shedder   =  bool
-            skittish  =  bool
-            lives     =  int
+            dob       =  date      #  add
+            name      =  datetime
+            shedder   =  datetime
+            skittish  =  datetime
+            lives     =  date
+            #birthed  =  date      #  drop
 
         expect = self.dedent('''
         ALTER TABLE `test_cats`
-            CHANGE COLUMN `dob` `dob` date
+            ADD `dob` date
                 AFTER `updatedat`,
+            DROP COLUMN `birthed`;
         ''')
 
         migrate(cat, expect)
 
-        self.eq(
+        class cat(orm.entity):
+            add1       =  str       #  add
+            add2       =  str       #  add
+            dob        =  date
+            name       =  datetime
+            shedder    =  datetime
+            #skittish  =  datetime  #  drop
+            #lives     =  date      #  drop
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            ADD `add1` varchar(255)
+                AFTER `updatedat`,
+            ADD `add2` varchar(255)
+                AFTER `add1`,
+            DROP COLUMN `skittish`,
+            DROP COLUMN `lives`;
+        ''')
+
+        migrate(cat, expect)
+
+        class cat(orm.entity):
+            #add1     =  str       #  drop
+            #add2     =  str       #  drop
+            dob       =  date
+            name      =  datetime
+            shedder   =  datetime
+            skittish  =  datetime  #  add
+            lives     =  date      #  add
+
+        expect = self.dedent('''
+        ALTER TABLE `test_cats`
+            DROP COLUMN `add1`,
+            DROP COLUMN `add2`,
+            ADD `skittish` datetime(6)
+                AFTER `shedder`,
+            ADD `lives` date
+                AFTER `skittish`;
+        ''')
+
+        migrate(cat, expect)
+
+        # Though the intention might be a drop and an add, the algorithm
+        # will make the assumption that this is a rename (CHANGE
+        # COLUMN). This would be the safer option, even if incorrect.
+        # This is one of the migration situations that makes human intervention
+        # necessary.
+        class cat(orm.entity):
+            dob       =  date
+            name      =  datetime
+            #shedder  =  datetime  #  drop
+            add1      =  datetime  #  add
+            skittish  =  datetime
+            lives     =  date
+
+        expect = self.dedent('''
+            ALTER TABLE `test_cats`
+                CHANGE COLUMN `shedder` `add1` datetime(6);
+        ''')
+
+        migrate(cat, expect)
+
+        ''' Add, drop and rename '''
+
+        class cat(orm.entity):
+            #dob      =  date      #  drop
+            name      =  datetime
+            shedder   =  datetime  #  Rename add1 to shedder
+            #add1     =  datetime
+            skittish  =  datetime
+            lives     =  date
+            birthed   =  datetime  #  add
+
+        expect = self.dedent('''
+            ALTER TABLE `test_cats`
+                DROP COLUMN `dob`,
+                CHANGE COLUMN `add1` `shedder` datetime(6),
+                ADD `birthed` datetime(6)
+                    AFTER `lives`;
+        ''')
+
+        migrate(cat, expect)
+
+        ''' Add, drop, move '''
+        # Add, move
+        class cat(orm.entity):
+            dob       =  date      #  add
+            name      =  datetime
+            shedder   =  datetime 
+            lives     =  date
+            #skittish  =  datetime  # move-from
+            birthed   =  datetime
+            skittish  =  datetime  # move-to
+
+        expect = self.dedent('''
+            ALTER TABLE `test_cats`
+                ADD `dob` date
+                    AFTER `updatedat`,
+                CHANGE COLUMN `skittish` `skittish` datetime(6)
+                    AFTER `birthed`;
+        ''')
+
+        migrate(cat, expect)
+
+        ''' Add and move/swap '''
+        class cat(orm.entity):
+            add1      =  date      #  add
+            dob       =  date
+            name      =  datetime
+            shedder   =  datetime
+            lives     =  date
+            skittish  =  datetime  #  swap(skittish,birthed)
+            birthed   =  datetime
+
+        expect = self.dedent('''
+            ALTER TABLE `test_cats`
+                ADD `add1` date
+                    AFTER `updatedat`,
+                CHANGE COLUMN `skittish` `skittish` datetime(6)
+                    AFTER `lives`;
+        ''')
+
+        migrate(cat, expect)
+
+        # This causes confusion. See `except` block for more.
+        class cat(orm.entity):
+            add0      =  date  # Add
+            dob       =  date  # swap(dob, add1)
+            add1      =  date 
+            name      =  datetime
+            shedder   =  datetime
+            lives     =  date
+            skittish  =  datetime
+            birthed   =  datetime
+
+        expect = self.dedent('''
+            ALTER TABLE `test_cats`
+                ADD `add0` date
+                    AFTER `updatedat`,
+                ADD `dob` date
+                    AFTER `add0`,
+                DROP COLUMN `dob`;
+        ''')
+
+        try:
+            migrate(cat, expect)
+        except orm.ConfusionError:
+            # FIXME: SequenceMatcher wants to 'insert' (ADD) `add1` and `dob` after
+            # `updatedat` because they are a continous block.
+
+            # The opcodes generated by SequenceMatcher
             [
-                'id',       'createdat',  'updatedat',  'dob',
-                'shedder',  'skittish',   'lives',      'name',
-            ],
-            [x.name for x in cat.orm.dbtable.columns]
-        )
+                ['equal', 0, 3, 0, 3], 
+                ['insert', 3, 3, 3, 5], # This adds add0 and dob
+                ['equal', 3, 4, 5, 6], 
+                ['delete', 4, 5, 6, 6], # This causes DROP COLUMN dob
+                ['equal', 5, 10, 6, 11]
+            ]
+
+            # The ALTER TABLE that is built up before ConfusionError is
+            # raise.
+            '''
+            ALTER TABLE `test_cats`
+                ADD `add0` date
+                    AFTER `updatedat`,
+                ADD `dob` date
+                    AFTER `add0`,
+                DROP COLUMN `dob`;
+            '''
+        else:
+            self.fail(
+                'ConfusionError is no longer raised???'
+            )
+ 
+        class cat(orm.entity):
+            dob       =  date      #  swap(dob,add1)
+            add1      =  date
+            name      =  datetime
+            shedder   =  datetime
+            lives     =  date
+            skittish  =  datetime
+            birthed   =  datetime
+            add2      =  datetime  #  add
+
+        expect = self.dedent('''
+            ALTER TABLE `test_cats`
+                CHANGE COLUMN `dob` `dob` date
+                    AFTER `updatedat`,
+                ADD `add2` datetime(6)
+                    AFTER `birthed`;
+        ''')
+
+        migrate(cat, expect)
+
+        # This currently generates bad DDL. The problem appears to mev
+        # in the delete-to-move logic in `altertable`. We need to
+        # account for the fact that multiple columns may be deleted by
+        # by the opcode, and also that multiple column can be inserted.
+        # Notice the following line in `altertable`:
+        #
+        #      cols[i1:i2] == attrs[ix]:
+        #
+        # In this case, 
+        #
+        #      assert cols[i1:i2] == 'dob' 
+        #      assert attrs[ix] == ['dob', 'add3']
+        # 
+        # We need to accound for the fact that attrs[ix] can be multiple
+        # attrs, like above. The fact that the first element is 'dob' is
+        # what needs to be detected so the op can be converted to a
+        # 'move'. I think that would fix the below. It may also have
+        # consequences for the ConfusionError above.
+        #
+        # Also, we need to account for the fact that cols[i1:i2] can
+        # have multiple elements. We would need to write a test for it
+        # which would look like this:
+        #
+        #
+        #     class cat(orm.entity):
+        #         name      =  datetime
+        #         shedder   =  datetime
+        #         lives     =  date
+        #         skittish  =  datetime
+        #         birthed   =  datetime
+        #         add2      =  datetime
+        #         dob       =  date      #  move  (cols[i1:i2][0])
+        #         add1      =  date      #  move  (cols[i1:i2][1])
+        #         add3      =  date      #  add
+        #
+        # The key thing to notice above is that (I believe):
+        # 
+        #     assert cols[i1:i2] == ['dob', 'add1']
+        #
+
+        class cat(orm.entity):
+            add1      =  date
+            name      =  datetime
+            shedder   =  datetime
+            lives     =  date
+            skittish  =  datetime
+            birthed   =  datetime
+            add2      =  datetime
+            dob       =  date      #  move
+            add3      =  date      #  add
+
+        expect = self.dedent('''
+            ALTER TABLE `test_cats`
+                DROP COLUMN `dob`,
+                ADD `dob` date
+                    AFTER `add2`,    
+                ADD `add3` date        
+                    AFTER `dob`;
+
+            ALTER TABLE `test_cats`
+                CHANGE COLUMN `dob` `dob` date
+                    AFTER `add2`,
+                ADD `add2` date
+                    AFTER `dob`;
+        ''')
+
+        migrate(cat, expect)
 
 
     def it_uses_reserved_mysql_words_for_fields(self):

@@ -20,10 +20,10 @@ from dbg import B
 from config import config
 import accounts
 
-# Some errors in MySQL are classified as "warnings" (such as 'SELECT 0/0').
-# This means that no exception is raised; just an error message is printed to
-# stderr. We want these warnings to be proper exceptions so they
-# won't go unnoticed. The below code does just that.
+# Some errors in MySQL are classified as "warnings" (such as 'SELECT
+# 0/0').  This means that no exception is raised; just an error message
+# is printed to stderr. We want these warnings to be proper exceptions
+# so they won't go unnoticed. The below code does just that.
 warnings.filterwarnings('error', category=MySQLdb.Warning)
 
 class dbentities(entities):
@@ -35,10 +35,10 @@ class dbentities(entities):
             for res in ress:
                 self += self.dbentity(res)
 
-        # The collection may have been added to above. If that is the case, the
-        # _isdirty flag will be set to True in the _self_onadd event handler.
-        # Set it back to False since we are just __init__'ing the object; it
-        # shouldn't be dirty at this point.
+        # The collection may have been added to above. If that is the
+        # case, the _isdirty flag will be set to True in the _self_onadd
+        # event handler.  Set it back to False since we are just
+        # __init__'ing the object; it shouldn't be dirty at this point.
 
         self._isdirty = False
 
@@ -718,16 +718,21 @@ class tables(entities):
             tbl.drop()
 
 class table(entity):
-    def __init__(self, name, ress=None):
+    def __init__(self, name=None, ress=None, load=True):
         self.name = name
-        self.columns = columns(tbl=self, ress=ress)
+        self.columns = columns(tbl=self, ress=ress, load=load)
+
+    def clone(self):
+        tbl = table(name=self.name, load=False)
+        tbl.columns += self.columns.clone(self)
+        return tbl
 
     def __repr__(self):
         r = 'CREATE TABLE %s (\n'
         for i, col in self.columns.enumerate():
             if not i.first:
                 r += ',\n'
-            r += '    %s' % repr(col)
+            r += '    %s' % str(col)
         r += '\n)'
         return r % self.name
 
@@ -735,13 +740,15 @@ class table(entity):
         exec(f'DROP TABLE `{self.name}`')
 
 class columns(entities):
-    def __init__(self, tbl=None, ress=None, *args, **kwargs):
+    def __init__(self, 
+            tbl=None, ress=None, load=False, *args, **kwargs):
+
         super().__init__(*args, **kwargs)
         self.table = tbl
 
         # Don't load if there is no ``table``. We probably just want to
         # use ``columns`` for collecting ``column`` objects
-        if self.table and ress is None:
+        if load:
             pl = pool.getdefault()
             with pl.take() as conn:
 
@@ -765,29 +772,94 @@ class columns(entities):
         if ress is not None:
             for res in ress:
                 self += column(res)
-    
+
+    def clone(self, tbl):
+        cols = columns(tbl=tbl, load=False)
+        for col in self:
+            cols += col.clone()
+
+        return cols
+
 class column(entity):
+    _attrs = (
+        'name',  'ordinal',  'type',       'max',
+        'key',   'type',     'precision',  'scale',
+    )
+
     def __init__(self, res=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if res:
             self.populate(res)
 
+    def clone(self):
+        col = column()
+
+        for attr in self._attrs:
+            setattr(col, attr, getattr(self, attr))
+
+        return col
+
     def populate(self, res):
-        flds = res.fields
-        self.name = flds['COLUMN_NAME'].value
-        self.ordinal = flds['ORDINAL_POSITION'].value
-        self.type = flds['DATA_TYPE'].value
-        self.max = flds['CHARACTER_MAXIMUM_LENGTH'].value
-        self.key = flds['COLUMN_KEY'].value
-        if self.type == 'datetime':
-            self.precision = flds['DATETIME_PRECISION'].value
-        else:
-            self.precision = flds['NUMERIC_PRECISION'].value
-        self.scale = flds['NUMERIC_SCALE'].value
+        if isinstance(res, dbresult):
+            flds = res.fields
+            self.name = flds['COLUMN_NAME'].value
+            self.ordinal = flds['ORDINAL_POSITION'].value
+            self.type = flds['DATA_TYPE'].value
+            self.max = flds['CHARACTER_MAXIMUM_LENGTH'].value
+            self.key = flds['COLUMN_KEY'].value
+            if self.type == 'datetime':
+                self.precision = flds['DATETIME_PRECISION'].value
+            else:
+                self.precision = flds['NUMERIC_PRECISION'].value
+            self.scale = flds['NUMERIC_SCALE'].value
+        elif res is not None:
+            # If res looks like a column, we can use the column class`s
+            # attributes (``column._attrs``)
+
+            for attr in self._attrs:
+                try:
+                    v = getattr(res, attr)
+                except AttributeError:
+                    if attr != 'key':
+                        raise
+                else:
+                    # NOTE orm.mapping has a dbtype property that returns a
+                    # string version of the type, which is what we want.
+                    # I believe this is slated to be corrected, so we
+                    # may want to move this conditional when
+                    # mapping.type returns a string version.
+                    if attr == 'type' and not isinstance(v, str):
+                        v = res.dbtype
+
+                    # mapping.ordinal means something different than
+                    # column.ordinal, so lets just set it to None
+                    if attr == 'ordinal':
+                        v = None
+
+                    setattr(self, attr, v)
+
+            if not hasattr(self, 'key'):
+                if self.name == 'id':
+                    self.key = 'pri'
+                else:
+                    self.key = None
+
+    def __repr__(self):
+        r = 'column(' 
+        for i, attr in enumerate(self._attrs):
+            if not i.first:
+                r += ', '
+            r += f'{attr}={getattr(self, attr)}'
+        r += ')'
+        return r
+
+    def __str__(self):
+        return '%s %s' % (self.name, self.definition)
+
 
     @property
     def isprimary(self):
-        return self.key.lower() == 'pri'
+        return self.key and self.key.lower() == 'pri'
 
     @property
     def definition(self):
@@ -811,7 +883,3 @@ class column(entity):
             r += ' primary key'
 
         return r
-
-    def __repr__(self):
-       return '%s %s' % (self.name, self.definition)
-

@@ -14,17 +14,21 @@
 """ This file contains all classes related to object-relational mapping.
 """
 
+from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
 from collections.abc import Iterable
 from contextlib import suppress
 from datetime import datetime, date
 from dbg import B
+from difflib import SequenceMatcher
 from enum import Enum, unique
-from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
+from func import enumerate
 from pprint import pprint
 from shlex import shlex
 from table import table
 from types import ModuleType
 from uuid import uuid4, UUID
+import MySQLdb
+import _mysql_exceptions
 import builtins
 import dateutil
 import db
@@ -34,8 +38,6 @@ import func
 import gc
 import inspect
 import itertools
-import MySQLdb
-import _mysql_exceptions
 import os
 import primative
 import re
@@ -3612,6 +3614,13 @@ class mapping(entitiesmod.entity):
         self.isderived = isderived
 
     @property
+    def isstandard(self):
+        """ Returns True if this is a standard field mapping applied by
+        the entitymeta.
+        """
+        return self.name in ('id', 'createdat', 'updatedat')
+
+    @property
     def name(self):
         return self._name
 
@@ -4050,6 +4059,10 @@ class fieldmapping(mapping):
 
     @property
     def column(self):
+        # NOTE This should probably be rewritten like this:
+        #
+        #     return db.column(self)
+
         col = db.column()
         col.name = self.name
         col.dbtype = self.definition
@@ -4172,8 +4185,11 @@ class fieldmapping(mapping):
 
     @property
     def precision(self):
-        if not (self.isfloat or self.isdecimal):
+        if not (self.isfloat or self.isdecimal, self.isdatetime):
             return None
+
+        if self.isdatetime:
+            return 6
 
         if self._precision is None:
             return 12
@@ -5105,7 +5121,6 @@ class orm:
 
     @property
     def altertable(self):
-        maps = self.mappings
         tbl = self.dbtable
 
         # If there is no table in the database, there can be no ALTER
@@ -5114,88 +5129,147 @@ class orm:
         if not tbl:
             return None
 
-        cols   =  tbl.columns
-        adds   =  db.columns()
-        drops  =  db.columns()
-        mods   =  db.columns()
-        mvs    =  db.columns()
-        colsoffset = 0
-        mapsoffset = 0
+        # Create a clone of the table to track changes that would be
+        # made to the real table if the altertable statement were
+        # applied to it.
+        altered = tbl.clone()
 
-        for i in range(maps.count):
-            map = maps[i + mapsoffset]
+        maps = mappings(
+            initial=(
+                x for x in self.mappings 
+                if isinstance(x, fieldmapping)
+            )
+        )
 
-            if not isinstance(map, fieldmapping):
-                continue
+        attrs = [x.name for x in maps]
+        cols = [x.name for x in tbl.columns]
 
-            try:
-                col = cols[i + colsoffset]
-            except IndexError:
-                if map.name != col.name:
-                    adds += map
-            else:
-                if map.name == col.name:
-                    if map.definition != col.definition:
-                        mods += map
-                else:
-                    if col.name in maps:
-                        if map.name in cols:
-                            mvs += maps[col.name]
+        opcodes = SequenceMatcher(a=cols, b=attrs).get_opcodes()
+        print(opcodes)
 
-                            getindex = maps.getindex
-                            if getindex(maps[col.name]) > getindex(map):
-                                mapsoffset -= 1
-                            else:
-                                colsoffset -= 1
-                        else:
-                            colsoffset -= 1
-                            adds += map
-                    else:
-                        mapsoffset -= 1
-                        drops += col
+        # listify tuples so they are mutable
+        opcodes = [list(x) for x in opcodes]
+        rms = list()
+        for i, (tag, i1, i2, j1, j2) in enumerate(opcodes):
+            if tag == 'delete':
+                inserts = [x for x in opcodes if x[0] == 'insert']
+                for insert in inserts:
+                    ix = slice(*insert[3:])
+                    if cols[i1:i2] == attrs[ix]:
+                        rms.append(opcodes.index(insert))
+                        opcodes[i][0] = 'move'
+                        insert[0] = 'after'
+                        opcodes[i].append(insert)
 
+        for rm in rms:
+            del opcodes[rm]
 
-        drops += cols[maps.count + drops.count:]
-
-        if not len(adds + drops + mods + mvs):
-            return None
+        # If there are no differences, return None; there is nothing to
+        # ALTER.
+        isdiff = any([x for x in opcodes if x[0] != 'equal'])
 
         I = ' ' * 4
-        r = f'ALTER TABLE `{self.table}`\n'
+        at1 = str()
+        hdr = f'ALTER TABLE `{self.table}`\n'
+        if isdiff:
 
-        for i, mv in mvs.enumerate():
-            r += f'{I}CHANGE COLUMN `{mv.name}` `{mv.name}` ' + \
-                 f'{mv.definition}'
-            r += f'\n{I * 2}AFTER `{maps.getprevious(mv).name}`'
-            if not i.last:
-                r += ',\n'
-            
-        # ADD <column-name> <definition>
-        for i, add in adds.enumerate():
-            if i.first:
-                r += '    ADD '
-            else:
-                r += ',\n    ADD '
+            for tag, i1, i2, j1, j2, *after in  opcodes:
 
-            r += f'`{add.name}` {add.definition}'
+                if tag not in ('insert', 'delete', 'move', 'replace'):
+                    continue
 
-            r += f'\n{I * 2}AFTER `{maps.getprevious(add).name}`'
+                if tag == 'insert':
+                    # ADD <column-name> <definition>
+                    for i, attr in enumerate(attrs[j1:j2]):
+                        map = maps[attr]
+                        after = maps.getprevious(map)
+                        after = altered.columns[after.name]
 
-        # DROP COLUMN <column-name>
-        for i, drop in drops.enumerate():
-            r += f'{I}DROP COLUMN `{drop.name}`'
-            if not i.last:
-                r += ',\n'
+                        if at1: at1 += ',\n'
 
-        # MODIFY COLUMN <column-name> <column-definition>
-        for i, mod in mods.enumerate():
-            r += f'{I}MODIFY COLUMN `{mod.name}` {mod.definition}'
-            if not i.last:
-                r += ',\n'
+                        # TODO s/ADD/ADD COLUMN/ for clarity and
+                        # consistancy (because we use DROP COLUMN and
+                        # MODIFY COLUMN)
+                        at1 += f'{I}ADD `{map.name}` {map.definition}'
 
-        r += ';'
-                
-        return r
+                        at1 += f'\n{I*2}AFTER `{after.name}`'
+
+                        col = db.column(map)
+                        ix = altered.columns.getindex(after.name)
+                        altered.columns.insertafter(ix, col)
+
+                elif tag == 'move':
+                    # CHANGE COLUMN <name> <-name> <-definition> 
+                    #     AFTER <after>
+
+                    ix = after[0][1] - 1
+
+                    after = tbl.columns[ix]
+                    for col in cols[i1:i2]:
+                        map = maps[col]
+
+                        if at1: at1 += ',\n'
+
+                        at1 += f'{I}CHANGE COLUMN `{col}` ' + \
+                             f'`{col}` {map.definition}'  + \
+                             f'\n{I * 2}AFTER `{after.name}`'
+
+                        ix = altered.columns.getindex(after.name)
+                        col = altered.columns[col]
+                        altered.columns.moveafter(ix, col)
+
+                        after = map
+
+                elif tag == 'delete':
+                    for i, col in enumerate(cols[i1:i2]):
+                        if at1: at1 += ',\n'
+
+                        at1 += f'{I}DROP COLUMN `{col}`'
+
+                        altered.columns.remove(col)
+
+                elif tag == 'replace':
+                    for col, map in zip(cols[i1:i2], maps[j1:j2]):
+                        if at1: at1 += ',\n'
+                        at1 += (
+                            f'{I}CHANGE COLUMN `{col}` `{map.name}` '
+                            f'{map.definition}'
+                        )
+                        altered.columns[col].name = map.name
+
+            at1 = f'{hdr}{at1};'
+
+        if maps.count != altered.columns.count:
+            raise ConfusionError(
+                'mappings:%s columns:%s' % 
+                    (maps.count, altered.columns.count)
+            )
+
+        at2 = str()
+        for map, col in zip(maps, altered.columns):
+            if col.name != map.name:
+                raise ConfusionError(
+                    f'Mapping error: {map.name} != {col.name}'
+                )
+
+            if col.definition == map.definition:
+                continue
+
+            if at2: at2 += ',\n'
+            at2 += f'{I}MODIFY COLUMN `{col.name}` {map.definition}';
+
+        if at2:
+            at2 = f'ALTER TABLE `{self.table}`\n{at2};'
+
+        r = str()
+        if at1:
+            r = at1
+
+        if at2:
+            if r: r += '\n\n'
+            r += at2
+
+        return r or None
 
     @property
     def createtable(self):
@@ -6910,15 +6984,8 @@ class migration:
 
         return f'{self.table}\n{self.entity.orm.altertable}'
             
-
-
-            
-
-
-            
-        
-
 # ORM Exceptions
 class InvalidColumn(ValueError): pass
 class InvalidStream(ValueError): pass
+class ConfusionError(ValueError): pass
 
