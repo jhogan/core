@@ -21,10 +21,11 @@ import os
 import party
 import pathlib
 import product
+import invoice
 import pygments
 import pygments.formatters
 import pygments.lexers
-import ship
+import shipment
 import tempfile
 import textwrap
 
@@ -395,6 +396,7 @@ class migration(command):
             if res == 'yes':
                 try:
                     self.exec(ddl=ddl)
+                    return
                 except self.Abort:
                     raise
                 except:
@@ -608,6 +610,12 @@ class migration(command):
                 except Exception as ex:
                     self.print(f'\nException: {ex}')
                     self.failed += self.todo
+                else:
+                    self.done += e
+                    self.print(
+                        'All were applied successfully. Bye.'
+                    )
+                    self.counts()
             elif res == 'edit':
                 ddl = self.edit(ddl=ddl)
                 try:

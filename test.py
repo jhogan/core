@@ -3968,7 +3968,7 @@ class test_orm(tester):
         # altertable should now be an ALTER TABLE statement to add the
         # new column.
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             ADD `whiskers` int
                 AFTER `name`;
         ''')
@@ -3994,7 +3994,7 @@ class test_orm(tester):
         # altertable should now be an ALTER TABLE statement to add the
         # new column AFTER name.
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             ADD `lives` int
                 AFTER `name`;
         ''')
@@ -4010,7 +4010,7 @@ class test_orm(tester):
             whiskers = int
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             ADD `dob` date
                 AFTER `updatedat`;
         ''')
@@ -4030,7 +4030,7 @@ class test_orm(tester):
             name = str
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             ADD `dob` date
                 AFTER `updatedat`,
             ADD `name` varchar(255)
@@ -4047,7 +4047,7 @@ class test_orm(tester):
             whiskers = int
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             ADD `lives` int
                 AFTER `name`,
             ADD `whiskers` int
@@ -4066,7 +4066,7 @@ class test_orm(tester):
             whiskers = int
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             ADD `shedder` bit
                 AFTER `name`,
             ADD `skittish` bit
@@ -4094,7 +4094,7 @@ class test_orm(tester):
             lives = int
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             DROP COLUMN `dob`;
         ''')
 
@@ -4107,7 +4107,7 @@ class test_orm(tester):
             skittish = bool
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             DROP COLUMN `lives`;
         ''')
 
@@ -4119,7 +4119,7 @@ class test_orm(tester):
             skittish = bool
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             DROP COLUMN `shedder`;
         ''')
 
@@ -4145,7 +4145,7 @@ class test_orm(tester):
             lives = int
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             DROP COLUMN `dob`,
             DROP COLUMN `name`;
         ''')
@@ -4157,7 +4157,7 @@ class test_orm(tester):
             shedder = bool
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             DROP COLUMN `skittish`,
             DROP COLUMN `lives`;
         ''')
@@ -4181,7 +4181,7 @@ class test_orm(tester):
             lives = int
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             DROP COLUMN `name`,
             DROP COLUMN `shedder`;
         ''')
@@ -4193,7 +4193,7 @@ class test_orm(tester):
             pass
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             DROP COLUMN `dob`,
             DROP COLUMN `skittish`,
             DROP COLUMN `lives`;
@@ -4222,7 +4222,7 @@ class test_orm(tester):
             dob       =  date  # Move dob from beginning to end
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             CHANGE COLUMN `dob` `dob` date
                 AFTER `lives`;
         ''')
@@ -4245,7 +4245,7 @@ class test_orm(tester):
             lives     =  int
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             CHANGE COLUMN `dob` `dob` date
                 AFTER `updatedat`;
         ''')
@@ -4268,7 +4268,7 @@ class test_orm(tester):
             name      =  str   # Move from second position
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             CHANGE COLUMN `dob` `dob` date
                 AFTER `lives`,
             CHANGE COLUMN `name` `name` varchar(255)
@@ -4296,7 +4296,7 @@ class test_orm(tester):
         # SequenceMatcher interpreted this as me moving dob-name to the
         # beginning.
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             CHANGE COLUMN `dob` `dob` date
                 AFTER `updatedat`,
             CHANGE COLUMN `name` `name` varchar(255)
@@ -4321,7 +4321,7 @@ class test_orm(tester):
             lives     =  int
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             CHANGE COLUMN `shedder` `shedder` bit
                 AFTER `updatedat`,
             CHANGE COLUMN `skittish` `skittish` bit
@@ -4346,7 +4346,7 @@ class test_orm(tester):
             lives     =  int
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             CHANGE COLUMN `name` `name` varchar(255)
                 AFTER `skittish`;
         ''')
@@ -4369,7 +4369,7 @@ class test_orm(tester):
             skittish  =  bool
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             CHANGE COLUMN `shedder` `shedder` bit
                 AFTER `lives`,
             CHANGE COLUMN `skittish` `skittish` bit
@@ -4395,7 +4395,7 @@ class test_orm(tester):
             skittish   =  bool
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             CHANGE COLUMN `dob` `birthed` date;
         ''')
 
@@ -4417,7 +4417,7 @@ class test_orm(tester):
             skittish   =  bool
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             CHANGE COLUMN `birthed` `dob` date,
             CHANGE COLUMN `lives` `lifecount` int;
         ''')
@@ -4440,7 +4440,7 @@ class test_orm(tester):
             skittish   =  bool
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             CHANGE COLUMN `dob` `dob` date
                 AFTER `updatedat`;
         ''')
@@ -4455,7 +4455,7 @@ class test_orm(tester):
             skittish   =  bool
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             CHANGE COLUMN `shedder` `shedder` bit
                 AFTER `name`;
         ''')
@@ -4470,7 +4470,7 @@ class test_orm(tester):
             lifecount  =  int
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             CHANGE COLUMN `skittish` `skittish` bit
                 AFTER `shedder`;
         ''')
@@ -4499,7 +4499,7 @@ class test_orm(tester):
             lives     =  int
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             MODIFY COLUMN `dob` datetime(6);
         ''')
 
@@ -4524,7 +4524,7 @@ class test_orm(tester):
             lives     =  int
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             MODIFY COLUMN `name` date;
         ''')
 
@@ -4549,7 +4549,7 @@ class test_orm(tester):
             lives     =  int
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             MODIFY COLUMN `shedder` int;
         ''')
 
@@ -4574,7 +4574,7 @@ class test_orm(tester):
             lives     =  int
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             MODIFY COLUMN `skittish` varchar(255);
         ''')
 
@@ -4589,7 +4589,7 @@ class test_orm(tester):
             lives     =  int
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             MODIFY COLUMN `dob` datetime(6),
             MODIFY COLUMN `name` datetime(6),
             MODIFY COLUMN `shedder` datetime(6);
@@ -4605,7 +4605,7 @@ class test_orm(tester):
             lives     =  datetime  # change
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             MODIFY COLUMN `skittish` datetime(6),
             MODIFY COLUMN `lives` datetime(6);
         ''')
@@ -4620,7 +4620,7 @@ class test_orm(tester):
             lives     =  date  # change
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             MODIFY COLUMN `dob` date,
             MODIFY COLUMN `lives` date;
         ''')
@@ -4642,7 +4642,7 @@ class test_orm(tester):
             birthed   =  date      #  add
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             DROP COLUMN `dob`,
             ADD `birthed` date
                 AFTER `lives`;
@@ -4659,7 +4659,7 @@ class test_orm(tester):
             #birthed  =  date      #  drop
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             ADD `dob` date
                 AFTER `updatedat`,
             DROP COLUMN `birthed`;
@@ -4677,7 +4677,7 @@ class test_orm(tester):
             #lives     =  date      #  drop
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             ADD `add1` varchar(255)
                 AFTER `updatedat`,
             ADD `add2` varchar(255)
@@ -4698,7 +4698,7 @@ class test_orm(tester):
             lives     =  date      #  add
 
         expect = self.dedent('''
-        ALTER TABLE `test_cats`
+        ALTER TABLE `main_cats`
             DROP COLUMN `add1`,
             DROP COLUMN `add2`,
             ADD `skittish` datetime(6)
@@ -4723,7 +4723,7 @@ class test_orm(tester):
             lives     =  date
 
         expect = self.dedent('''
-            ALTER TABLE `test_cats`
+            ALTER TABLE `main_cats`
                 CHANGE COLUMN `shedder` `add1` datetime(6);
         ''')
 
@@ -4741,7 +4741,7 @@ class test_orm(tester):
             birthed   =  datetime  #  add
 
         expect = self.dedent('''
-            ALTER TABLE `test_cats`
+            ALTER TABLE `main_cats`
                 DROP COLUMN `dob`,
                 CHANGE COLUMN `add1` `shedder` datetime(6),
                 ADD `birthed` datetime(6)
@@ -4762,7 +4762,7 @@ class test_orm(tester):
             skittish  =  datetime  # move-to
 
         expect = self.dedent('''
-            ALTER TABLE `test_cats`
+            ALTER TABLE `main_cats`
                 ADD `dob` date
                     AFTER `updatedat`,
                 CHANGE COLUMN `skittish` `skittish` datetime(6)
@@ -4782,7 +4782,7 @@ class test_orm(tester):
             birthed   =  datetime
 
         expect = self.dedent('''
-            ALTER TABLE `test_cats`
+            ALTER TABLE `main_cats`
                 ADD `add1` date
                     AFTER `updatedat`,
                 CHANGE COLUMN `skittish` `skittish` datetime(6)
@@ -4803,7 +4803,7 @@ class test_orm(tester):
             birthed   =  datetime
 
         expect = self.dedent('''
-            ALTER TABLE `test_cats`
+            ALTER TABLE `main_cats`
                 ADD `add0` date
                     AFTER `updatedat`,
                 ADD `dob` date
@@ -4829,7 +4829,7 @@ class test_orm(tester):
             # The ALTER TABLE that is built up before ConfusionError is
             # raise.
             '''
-            ALTER TABLE `test_cats`
+            ALTER TABLE `main_cats`
                 ADD `add0` date
                     AFTER `updatedat`,
                 ADD `dob` date
@@ -4852,7 +4852,7 @@ class test_orm(tester):
             add2      =  datetime  #  add
 
         expect = self.dedent('''
-            ALTER TABLE `test_cats`
+            ALTER TABLE `main_cats`
                 CHANGE COLUMN `dob` `dob` date
                     AFTER `updatedat`,
                 ADD `add2` datetime(6)
@@ -4913,14 +4913,14 @@ class test_orm(tester):
             add3      =  date      #  add
 
         expect = self.dedent('''
-            ALTER TABLE `test_cats`
+            ALTER TABLE `main_cats`
                 DROP COLUMN `dob`,
                 ADD `dob` date
                     AFTER `add2`,    
                 ADD `add3` date        
                     AFTER `dob`;
 
-            ALTER TABLE `test_cats`
+            ALTER TABLE `main_cats`
                 CHANGE COLUMN `dob` `dob` date
                     AFTER `add2`,
                 ADD `add2` date
@@ -16906,16 +16906,10 @@ Test General Entities Model (GEM)
 class gem_party_person(tester):
     def __init__(self):
         super().__init__()
-        orm.orm.recreate(
-            party.party,
-            party.nametypes,
-            party.characteristictypes,
-            party.gendertypes,
-            party.position,
-            party.marital,
-            party.name,
-            party.citizenships,
-        )
+        es = orm.orm.getentitys(includeassociations=True)
+        for e in es:
+            if e.__module__ == 'party':
+                e.orm.recreate()
 
 
     @staticmethod
@@ -17281,10 +17275,10 @@ class gem_party_person(tester):
 class gem_party_party_type(tester):
     def __init__(self):
         super().__init__()
-        orm.orm.recreate(
-            party.party,
-            party.type,
-        )
+        es = orm.orm.getentitys(includeassociations=True)
+        for e in es:
+            if e.__module__ == 'party':
+                e.orm.recreate()
 
     def it_creates(self):
         typ = party.type()
@@ -21715,34 +21709,10 @@ class gem_order_order(tester):
 class gem_shipment(tester):
     def __init__(self):
         super().__init__()
-        orm.orm.recreate(
-            shipment.shipitem_orderitem,
-            shipment.shipments,
-            shipment.items,
-            shipment.statuses,
-            shipment.statustypes,
-            shipment.item_features,
-            shipment.packages,
-            shipment.item_packages,
-            shipment.roletypes,
-            shipment.roles,
-            shipment.receipts,
-            shipment.reasons,
-            shipment.issuances,
-            shipment.picklists,
-            shipment.picklistitems,
-            shipment.issuanceroles,
-            shipment.issuanceroletypes,
-            shipment.documents,
-            shipment.documenttypes,
-            shipment.bols,
-            shipment.slips,
-            shipment.exports,
-            shipment.manifests,
-            shipment.portcharges,
-            shipment.taxandtarrifs,
-            shipment.hazardouses,
-        )
+        es = orm.orm.getentitys(includeassociations=True)
+        for e in es:
+            if e.__module__ in ('shipment',):
+                e.orm.recreate()
 
     def it_creates(self):
         sh = shipment.shipment(

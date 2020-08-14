@@ -4816,16 +4816,17 @@ class orm:
 
         # Get the **kwargs dict from the calling method unless the
         # ``dict` argument was passed in.
-            st = inspect.stack()
-            try:
-                dict = st[1].frame.f_locals['kwargs']
-            except Exception as ex:
-                raise ValueError(
-                    'Failed finding `kwargs`. '
-                    'Call `default` from `__init__` with **kwargs '
-                    'or set `dict`. ' + repr(ex)
+        st = inspect.stack()
+        try:
+            dict = st[1].frame.f_locals['kwargs']
+        except Exception as ex:
+            raise ValueError(
+                'Failed finding `kwargs`. '
+                'Call `default` from `__init__` with **kwargs '
+                'or set `dict`. ' + repr(ex)
 
-                )
+            )
+
         # If the kwargs parameter from the calling method has a key for
         # attr, use it. Otherwise use the value from the ``v``.
         try:
