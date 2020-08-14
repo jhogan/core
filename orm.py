@@ -5268,7 +5268,6 @@ class orm:
         cols = [x.name for x in tbl.columns]
 
         opcodes = SequenceMatcher(a=cols, b=attrs).get_opcodes()
-        print(opcodes)
 
         # listify tuples so they are mutable
         opcodes = [list(x) for x in opcodes]
@@ -7111,7 +7110,6 @@ class migration:
         )
 
         opcodes = SequenceMatcher(None, coldefs, mapdefs).get_opcodes()
-        print(opcodes)
 
         for tag, i1, i2, j1, j2 in opcodes:
             if tag == 'equal':

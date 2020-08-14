@@ -16833,7 +16833,7 @@ class crust_migration(tester):
 
         # TODO When things are more predictable, we should set up the
         # database environment such that we are certain we know what
-        # will be in the DLL that's being edited. Right now, we are
+        # will be in the DDL that's being edited. Right now, we are
         # making the assumption that it starts with ALTER TABLE.
 
         _, tmp = tempfile.mkstemp()
@@ -16890,7 +16890,7 @@ class crust_migration(tester):
             y - yes, apply DDL
             n - no, do not apply DDL
             q - quit migration
-            a - apply this DDL and all later DLL
+            a - apply this DDL and all later DDL
             e - manually edit the current DDL
             s - show current DDL
             c - show counts
