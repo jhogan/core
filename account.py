@@ -115,7 +115,7 @@ class type(orm.entity):
 
 class account_organization(orm.association):
     """ Each internal organization (``party.organization``) may
-    be using many GL ``accounts``, and ech GL ``account`` may be
+    be using many GL ``accounts``, and each GL ``account`` may be
     associated with more than one internal organization. This
     association resolves this many-to-many relationship.
 
@@ -145,6 +145,23 @@ class account_organization(orm.association):
     # organization's chart of accounts and for what period of time they
     # were valid.
     span = timespan
+
+    # A recursive relationship to track subsidiary accounts.
+    accounts = accounts
+
+    # Subsidary accounts may be related to supplier organizanional roles
+    supplier = party.supplier
+
+    # Subsidary accounts may be related to billto customer roles
+    billto = party.billto
+
+    # Accounts may be related to a product category to track
+    # the revenue to from that category.
+    category = product.category
+
+    # Accounts may be related to a product in order to track
+    # the revenues produces by a specific product.
+    product = product.product
 
 class period(orm.entity):
     """ Represents an accounting period, i.e., the periods of time that
@@ -265,9 +282,19 @@ class item(orm.entity):
     # The currency (e.g., dollar) amount of the transaction ``item``.
     # If the ``amount`` is negative, the item is considered a *debit*,
     # otherwise it's considered a *credit*. Although,
-    # counter-intuitively, it might be the other way around. TODO Get
+    # counter-intuitively, it might b he other way around. TODO Get
     # confirmation on this.
     amount = dec
+
+
+    # A recursive relationship provides the capability to track which
+    # accouting transaction ``items`` are accociated with other
+    # transaction ``items``. This allows the enterprise to answer such
+    # questions as "Which invoices have been paid off through which
+    # payments, and which invoices are still outstanding?; Which
+    # invoices have been reduced via credit memos issued to customers?;
+    # etc."
+
 
 class transactiontype(orm.entity):
     """ Provides a specific low-level categorization of each
