@@ -9,10 +9,12 @@
 # Set conditional break points
 from IPython.core.debugger import Tracer; 
 import sys
+import pdb
 
 # Set conditional break points
 def B(x=True):
     if x: 
-        #Pdb().set_trace(sys._getframe().f_back)
+        pdb.Pdb().set_trace(sys._getframe().f_back)
+        return
         from IPython.core.debugger import Tracer; 
         Tracer().debugger.set_trace(sys._getframe().f_back)

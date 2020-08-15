@@ -14,19 +14,14 @@ import entities
 import orm
 import party
 import primative
+import apriori
+import asset
 
 class products(orm.entities): pass
 
 class category_classifications(orm.associations):
-    # TODO:1c409d9d The ORM does not call orm.entities.brokenrules when
-    # saving.
-
-    # TODO:a082d2a9 Some work needs to be done to ensure that entity and
-    # entities objects can override brokenrules correctely.
-    '''
-    @property
-    def brokenrules(self):
-        brs = entities.brokenrules()
+    def getbrokenrules(self, *args, **kwargs):
+        brs = super().getbrokenrules(*args, **kwargs)
 
         # Ensure that no product can be put two different categories
         # with a primary flag.
@@ -37,18 +32,23 @@ class category_classifications(orm.associations):
                     if cc1.isprimary:
                         if primary:
                             brs += entities.brokenrule(
-                                'The product "%s" already is set to '
+                                'The product "%s" is already set to '
                                 'primary in category "%s".' 
                                     % (
                                         cc1.product.name,
                                         cc.category.name
-                                )
+                                ),
+                                'isprimary',
+                                'valid',
                             )
+                            break
                         else:
                             primary = cc.category
+            else:
+                continue
+            break
                 
         return brs
-    '''
 
 class categories(orm.entities):            pass
 class goods(products):                     pass
@@ -80,6 +80,7 @@ class containertypes(orm.entities):        pass
 class statuses(orm.entities):              pass
 class variances(orm.entities):             pass
 class reasons(orm.entities):               pass
+class requirements(apriori.requirements):          pass
 
 class prices(orm.entities):
     def getprice(self, org, regs=None, pts=None, qty=None):
@@ -254,18 +255,13 @@ class product(orm.entity):
     """
 
     def __init__(self, *args, **kwargs):
-        # TODO Do not allow the GEM user to instantiate this class;
-        # product.__init__ should only be called by product.good and
-        # product.services. Those subclasses can pass in an override
-        # flags to bypass the NotImplementedError.
         super().__init__(*args, **kwargs)
-        if self.orm.isnew:
-            self.manufacturerno  =  None
-            self.sku             =  None
-            self.upca            =  None
-            self.upce            =  None
-            self.isbn            =  None
-            self.comment         =  None
+        attrs = (
+            'manufacturerno', 'sku', 'upca', 
+            'upce', 'comment', 'isbn'
+        )
+        for attr in attrs:
+            self.orm.default(attr, None)
 
     # A description of a product.
     name = str
@@ -411,7 +407,6 @@ class category(orm.entity):
 
         return cats
 
-
 class category_classification(orm.association):
     """ An association linking a product witha a category.
     """
@@ -440,21 +435,23 @@ class category_classification(orm.association):
     def brokenrules(self):
         brs = super().brokenrules
 
-        # TODO Only one "primary" association can exist between a given
-        # product and a category. See the "isprimary" column.
-        pid = self.product.id
-        cc = category_classifications(
-            product__productid=pid,
-            isprimary=True
-        )
-        if cc.ispopulated:
-            brs += entities.brokenrule(
-                'The product "%s" already is set to primary in '
-                'category "%s".' % (
-                                        self.product.name,
-                                        self.category.name
-                                    )
-                )
+        if self.isprimary:
+            pid = self.product.id
+            cc = category_classifications(
+                product__productid=pid,
+                isprimary=True
+            )
+
+            if cc.ispopulated:
+                brs += entities.brokenrule(
+                    'The product "%s" is alredy set to primary in '
+                    'category "%s" in the database.' % (
+                                            self.product.name,
+                                            self.category.name
+                                        ),
+                        'isprimary',
+                        'valid'
+                    )
         return brs
 
 class good(product):
@@ -534,13 +531,8 @@ class dimension(feature):
     """
 
     def __init__(self, *args, **kwargs):
-        # TODO Do not allow the GEM user to instantiate this class;
-        # product.__init__ should only be called by product.good and
-        # product.services. Those subclasses can pass in an override
-        # flags to bypass the NotImplementedError.
         super().__init__(*args, **kwargs)
-        if self.orm.isnew:
-            self.name = None
+        self.orm.default('name', None)
 
     number = dec
 
@@ -612,10 +604,12 @@ class measure(orm.entity):
     dimensions  =  dimensions
     products    =  products
 
+    assets = asset.assets
+
+    # TODO Move __init__ to top
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.orm.isnew:
-            self.abbr = None
+        self.orm.default('abbr', None)
 
     def convert(self, meas, dir=False, _selfonly=None, _measonly=None):
         """ Convert from the current unit of measure (``self``) to the
@@ -930,13 +924,8 @@ class rating(orm.entity):
             # exist and are accessable via the construct with no fuss.
             self.save()
 
-        
-    @property
-    def brokenrules(self):
-        # TODO I think this needs to be changed to
-        # _getbrokenrules(guestbook) so the guestbook can be pased to
-        # the super object.
-        brs = super().brokenrules
+    def getbrokenrules(self, *args, **kwargs):
+        brs = super().getbrokenrules(*args, **kwargs)
         valid = (
             rating.Outstanding,
             rating.Good,
@@ -990,7 +979,6 @@ class guideline(orm.entity):
 
     # TODO This should be internalorganization, but that does not exist
     # yet in the party module.
-    # The internal organization the guideline is for
     organization = party.organization
 
 class item(orm.entity):
@@ -1152,14 +1140,8 @@ class price(orm.entity):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        # TODO:a95ef3d8
-        if self.orm.isnew:
-            for prop in ('comment', 'percent', 'price'):
-                try:
-                    kwargs[prop]
-                except KeyError:
-                    setattr(self, prop, None)
+        for attr in ('comment', 'percent', 'price'):
+            self.orm.default(attr, None)
 
     # NOTE "The Data Model Resource Book" specifies each of the
     # subentity objects. However, it also says, "These represents the
@@ -1389,19 +1371,16 @@ class product_product(orm.association):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.orm.isnew:
-            props = 'comment', 'instruction', 'reason', 'quantity'
-            for prop in props:
-                try:
-                    kwargs[prop]
-                except KeyError:
-                    setattr(self, prop, None)
+        attrs = 'comment', 'instruction', 'reason', 'quantity'
+        for attr in attrs:
+            self.orm.default(attr, None)
 
-    # TODO When subassociations are supported, it will be more elegant
-    # to use subtypes instead of a ``type`` property attribute since the
-    # subassociations have different properties from each other. As it
-    # stands, some entries will always have None values for some
-    # attributes if the type does not support a given attribute.
+    # TODO:314b9645 When subassociations are supported, it will be more
+    # elegant to use subtypes instead of a ``type`` property attribute
+    # since the subassociations have different properties from each
+    # other. As it stands, some entries will always have None values for
+    # some attributes if the type does not support a given attribute.
+
     # TODO Validation rules will have to be writen to support these
     # constraints. See the type constants below for more information.
 
@@ -1508,3 +1487,23 @@ class product_product(orm.association):
 
     subject = product
     object  = product
+
+class requirement(apriori.requirement):
+    """ A ``requirement`` for a product (its manufacture, etc.)
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.orm.isnew:
+            self.reason = None
+
+    # IMPLEMENTATION NOTE: The Ordering Product chapter of "The Data
+    # Model Resource Book" presents a optional "Requirements" model for
+    # requirements related to order ``items``. **This data model has not
+    # been implemented here yet**. This single class has only been
+    # implemented here to function as a superentity to
+    # ``effort.requirement``.
+
+    # Defines the need of the requirement. ``description`` allows for a
+    # full explanation and comments for the requirment.
+    description = text
+

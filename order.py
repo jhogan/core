@@ -18,10 +18,10 @@ Examples:
 Todo:
     TODO: So far, the most common order entities have been declared. The
     second section of the "Ordering Products" chapter, called "Optional
-    Order Model", offers data models to track order requirements,
-    requests, quotes and agreements (the book calls these entities
-    REQUIREMENTs, REQUESTs, QUOTEs and AGREEMENTs respectively). These
-    can be implemented when needed.
+    Order Model", offers data models to track order requirements
+    (partially implemented), requests, quotes and agreements (the book
+    calls these entities REQUIREMENTs, REQUESTs, QUOTEs and AGREEMENTs
+    respectively). These can be implemented when needed.
 """
 
 from datetime import datetime, date
@@ -33,10 +33,11 @@ import orm
 import party
 import primative
 import product
+import apriori
 
 class orders(orm.entities):  pass
 
-# TODO Write validation rule to disallow instance of `item`. Only alow
+# TODO Write validation rule to disallow instance of `item`. Only allow
 # subtypes of `item` like `salesitem` and `purchaseitem` entity objects.
 # If the composite is a `purchase`, then only `purchaseitem` should be
 # allowed. Likewise when the composite is a salesorder entitiy objects.
@@ -61,6 +62,8 @@ class statustypes(orm.entities):           pass
 class terms(orm.entities):                 pass
 class termtypes(orm.entities):             pass
 class item_items(orm.associations):         pass
+class requirementtypes(orm.entities):         pass
+class requirement_items(orm.associations): pass
 
 class order(orm.entity):
     """ The generic, abstract order class from with the `salesorder` and
@@ -551,3 +554,28 @@ class item_item(orm.association):
 
     # The other item being linked
     object = item
+
+class requirementtype(orm.entity):
+    """ Defines the possible categories for the requirements.
+
+    Possible requirement types include "project", "maintenance" and
+    "production run".
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    name = str
+
+    # A collection of ``requirements`` that correspond to this type
+    requirements = apriori.requirements
+
+class requirement_item(orm.association):
+    # TODO
+    """
+    Note that this entity was originally called ORDER REQUIRMENT
+    COMMITMENT "The Data Model Resource Book".
+    """
+
+    quantity = dec

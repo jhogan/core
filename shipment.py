@@ -152,13 +152,8 @@ class item(orm.entity):
     """
 
     def __init__(self, *args, **kwargs):
-        # TODO Do not allow the GEM user to instantiate this class;
-        # product.__init__ should only be called by product.good and
-        # product.services. Those subclasses can pass in an override
-        # flags to bypass the NotImplementedError.
         super().__init__(*args, **kwargs)
-        if self.orm.isnew:
-            self.contents = None
+        self.orm.default('contents', None)
 
     # TODO Write a validation rule to ensure that one of either
     # `contents` or `good` is set but not both.
@@ -227,6 +222,7 @@ class statustype(orm.entity):
     # status type.
     statuses = statuses
 
+# TODO Rename to `shipmentitem_orderitem`
 class shipitem_orderitem(orm.association):
     """ This association links a shipment item (``ship.item``) with an
     order item (``order.item``). This many-to-many relationship this
@@ -580,9 +576,18 @@ class asset(orm.entity):
     """
     name = str
 
-# FIXME For some reason, the mear existance of this class causes a
-# maximum recursion exception.
-'''
+    # The date the asset was acquired
+    acquired = date
+
+    # The date on which the asset was last serviced
+    serviced = date
+
+    # The next date the asset is scheduled to be serviced
+    next = date
+
+    # The asset's production capacity
+    capacity = dec
+
 class vehical(orm.entity):
     """ Optionally, the ``vehicle`` involved in a shipment ``route``
     segment may be tracked. This is usually done in circumstances where
@@ -605,8 +610,3 @@ class vehical(orm.entity):
     # The shipment ``route`` segments that this vehical is involved in
     # to transport the given ``shipment``.
     # routes = routes
-'''
-
-
-
-

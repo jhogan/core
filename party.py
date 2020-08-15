@@ -17,15 +17,17 @@
 #   objects.
 #   https://www.hr360.com/Resource-Center/HR-Terms.aspx
 
+
 from datetime import datetime
 from dbg import B
 from decimal import Decimal as dec
 from orm import text, datespan, timespan
+import asset
 import builtins
+import hashlib
 import orm
 import os
 import primative
-import hashlib
 
 ''' Parties '''
 
@@ -34,11 +36,14 @@ class users(orm.entities):                                   pass
 class parties(orm.entities):                                 pass
 class types(orm.entities):                                   pass
 class roles(orm.entities):                                   pass
+class workers(roles):                                        pass
+class employees(workers):                                    pass
+class contractors(workers):                                  pass
 class role_role_types(orm.entities):                         pass
 class statuses(orm.entities):                                pass
 class role_role_statuses(statuses):                          pass
 class priorities(orm.entities):                              pass
-class role_roles(orm.entities):                              pass
+class role_roles(orm.associations):                          pass
 class personals(roles):                                      pass
 class organizationals(roles):                                pass
 class suppliers(organizationals):                            pass
@@ -108,6 +113,14 @@ class case_parties(orm.associations):                        pass
 class caseroletypes(roletypes):                              pass
 class casestatuses(statuses):                                pass
 class communication_efforts(orm.associations):               pass
+class skills(orm.entities):                                  pass
+class skilltypes(orm.entities):                              pass
+class rates(orm.entities):                                   pass
+class ratetypes(orm.entities):                               pass
+class positionrates(orm.entities):                           pass
+class positiontypes(orm.entities):                           pass
+class asset_parties(orm.associations):                       pass
+class asset_partystatustypes(orm.entities):                  pass
 
 ''' Parties '''
 
@@ -203,14 +216,10 @@ class party(orm.entity):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.orm.default('nationalids', None)
+        self.orm.default('isicv4', None)
+        self.orm.default('dun', None)
 
-        # TODO:a95ef3d8
-        if self.orm.isnew:
-            for prop in ('nationalids', 'isicv4', 'dun'):
-                try:
-                    kwargs[prop]
-                except KeyError:
-                    setattr(self, prop, None)
     entities = parties
     
     # A party may have 0 or more national id numbers. For example, an
@@ -230,10 +239,11 @@ class party(orm.entity):
     # organization, business person, or place.
     isicv4 = str, 1, 1
 
-    # Removing this constituent declaration. For some reason it causes
-    # 297f8176 to happen. TODO:297f8176 Uncomment when 297f8176 is
-    # fixed.
+    # A collection of party roles this party plays.
     roles = roles
+
+    # A collection of skills belonging to this party
+    skills = skills
 
 class organization(party):
     """ An abstract class representing a group of people with a common
@@ -306,8 +316,7 @@ class department(unit):
 class legalorganization(organization):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.orm.isnew:
-            self.ein = None
+        self.orm.default('ein', None)
 
     # The Employer Identification Number (EIN), also known as the
     # Federal Employer Identification Number (FEIN) or the Federal Tax
@@ -488,14 +497,8 @@ class person(party):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        # TODO:a95ef3d8
-        if self.orm.isnew:
-            for prop in ('maiden', 'comment', 'social'):
-                try:
-                    kwargs[prop]
-                except KeyError:
-                    setattr(self, prop, None)
+        for prop in ('maiden', 'comment', 'social'):
+            self.orm.default(prop, None)
 
     # The person's birth date
     birthedat = datetime
@@ -705,13 +708,6 @@ class region(orm.entity):
     Country       =  8
 
     def __init__(self, *args, **kwargs):
-        # TODO::a95ef3d8 abbreviation is a standard string but we want
-        # to default it to None. This should be done in the constructor,
-        # however, the advent of the kwargs parameter for entities makes
-        # this expression "default 'abbreviation' to None" a bit cryptic
-        # and hard to remember. We need to devise an easier way to
-        # default attributes.
-
         # TODO The constructor should be rewritten so that it is modeled
         # after product.rating. The constructor should check to see if
         # the requested region is in the database already. If it's not,
@@ -724,11 +720,7 @@ class region(orm.entity):
         # can call to perform these steps.
 
         super().__init__(*args, **kwargs)
-        if self.orm.isnew:
-            try:
-                kwargs['abbreviation']
-            except KeyError:
-                self.abbreviation = None
+        self.orm.default('abbreviation', None)
                 
     @staticmethod
     def create(*args):
@@ -958,7 +950,7 @@ class phone(contactmechanism):
     # The area code as defined by the North American Numbering Plan.
     # This should probably be None for phone numbers outside of North
     # America and the Caribean. NOTE many of the numbers within the 200,
-    # 999 range are currently considered invalid. The should probably
+    # 999 range are currently considered invalid. They should probably
     # result in `brokenrules` if given. See
     # https://en.wikipedia.org/wiki/List_of_North_American_Numbering_Plan_area_codes
     area = int, 200, 999
@@ -1009,8 +1001,7 @@ class party_contactmechanism(orm.association):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.orm.isnew:
-            self.extension = None
+        self.orm.default('extension', None)
 
     # TODO These should probably just be constants.
     class roles:
@@ -1109,6 +1100,7 @@ class address(contactmechanism):
     # TODO Automatically pluralize
     entities = addresses
 
+    # TODO s/address(\d)/line\1/
     # Address line 1
     address1 = str
 
@@ -1188,8 +1180,7 @@ class party_party(orm.association):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.orm.isnew:
-            self.role = None
+        self.orm.default('role', None)
 
     span = datespan
 
@@ -1281,6 +1272,9 @@ class role_role_type(orm.entity):
     # organization".
     description = text
 
+# TODO Since ``status`` is a universal concept in data modeling, the
+# main status class should probably go in the apriori.py file. The same
+# may be true of ``statustype``
 class status(orm.entity):
     """ Throughout the GEM, there are many statuses for many
     entity objects (e.g., orders status, shipment status, work effort
@@ -1456,16 +1450,36 @@ class parent(organizationalunit):
     ``subsidiary(organizationalunit)`` entity).
     """
 
+class worker(personal):
+    """ Represents the role of anyone who performs work. May be an
+    ``employee`` or ``contractor``.
+    """
+
+class employee(worker):
+    """ A party role implying legal employment with an enterprise.
+    """
+
+class contractor(worker):
+    """ A worker role implying a contractor.
+    """
+
+
 # TODO Add subtypes of ``organizational``: (distribution) ``channel``,
 # ``partner``, ``competitor``, ``household`, (regulatory) ``agency`` and
 # ``association``.
 
+# TODO Since roletype is used as a base class in many other places in
+# the GEM, we may consider moving it to apriori.py.
 class roletype(orm.entity):
     """ Stores a name for a role type.
 
     Note that this is modeled after the ROLE TYPE entity in "The
     Data Model Resource Book".
     """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
 
     # Stores available values for role types.
     name = str
@@ -1490,12 +1504,7 @@ class partyroletype(roletype):
     # that relationship type is not currently supported. 
     # party_contactmechanisms = party_contactmechanisms
 
-class employee(personal):
-    """ A party role implying legal employment with an enterprise.
-    """
-
-# TODO Add ``contractor``, ``familial`` and ``contact`` subtypes to
-# personal(role).
+# TODO Add ``familial`` and ``contact`` subtypes to personal(role).
 
 class customer(role):
     """ A role indicating a party that has purchased, been shipped, or
@@ -1590,8 +1599,7 @@ class facility(orm.entity):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.orm.isnew:
-            self.footage = None
+        self.orm.default('footage', None)
             
     # NOTE These values can't change because they are persisted to the
     # database.
@@ -1623,8 +1631,8 @@ class facility(orm.entity):
     facilities = facilities
 
     # TODO There should probably be brokenrules to ensure commonsense
-    # notions such as: A `Room` may be within a `Floor`, but a `Floor` may not
-    # be within a `Room`.
+    # notions such as: A `Room` may be within a `Floor`, but a `Floor`
+    # may not be within a `Room`.
 
 class facilityroletype(orm.entity):
     """ The role being played between a party and a facility. For
@@ -1710,8 +1718,7 @@ class objective(orm.entity):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.orm.isnew:
-            self.name = None
+        self.orm.default('name', None)
 
     # The name or description of the `communication`'s objective such as
     # "This is a critical sales call that must turn client around"
@@ -1873,7 +1880,7 @@ class case(orm.entity):
     """
 
     # NOTE ``case`` and its subsideries may need to be moved into
-    # the work effor module. Although, maybe not if it is mearly a
+    # the work effort module. Although, maybe not if it is mearly a
     # collection of ``communication`` events -- ``communication`` events
     # happy to be in the party module.
     
@@ -1924,7 +1931,6 @@ class case_party(orm.association):
     Note that this is modeled after the CASE ROLE entity in "The Data
     ModeModel Resource Book".
     """
-
     entities = case_parties
 
     # The case being associated to the party
@@ -1973,3 +1979,143 @@ class communication_effort(orm.association):
 
     # The communication event being associated to the ``effort``
     communication = communication
+
+class skill(orm.entity):
+    """ A skill a party has along with the years of experience in that
+    skill.
+
+    Note that this entity was originally called SKILL in "The Data Model
+    Resource Book" and was introduced in the Work Effort chapter rather
+    than the People and Organizations chapter.
+    """
+
+    # The *years of experience* tells how many years that the person or
+    # organization has been involved in this skill.
+    years = dec
+
+    # The rating indicates how proficient the party is in the skill.
+    rating = dec
+
+class skilltype(orm.entity):
+    """ Describes the ``skill``.
+
+    Note that this entity was originally called SKILL TYPE in
+    "The Data Model Resource Book" and was introduced in the Work Effort
+    chapter rather than the People and Organizations chapter.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    name = str
+
+    # The collection of skills matching this skill type
+    skills = skills
+
+class rate(orm.entity):
+    """ The ``rate`` entity may store a rate, overtime rate, cost, or
+    other type of rate depending on the needs of the organization. The
+    ``party.ratetype`` would indicate which rate is being specified. 
+
+    Note that this is modeled after the WORK EFFORT ASSIGNMENT RATE
+    entity in "The Data Model Resource Book".
+    """
+    span = datespan
+    rate = dec
+
+class ratetype(orm.entity):
+    """ Provides the ability to classify the various types of rates to
+    alllow the flexibility to capture different types of rates such as
+    billing rates, payroll rates (amount that needs to be paid to the
+    worker), costs, overtime rates, and so on.
+
+    Note that this entity was originally called RATE TYPE in
+    "The Data Model Resource Book" and was introduced in the Work Effort
+    chapter rather than the People and Organizations chapter.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    # The name of the rate type. For example, a ``name`` of "biling
+    # rate" establishes how much is billed and whether it is to be
+    # billed to an external or internal organization. A ``name`` of cost
+    # determines how much will be used as the cost basis to calculate
+    # how much the work is costing.
+    name = str
+
+    # The collection of rates matching this rates type
+    rates = rates
+
+class positionrate(orm.entity):
+    """ The ``positionrate`` may store a rate, overtime rate, cost, or
+    other type of rate depending on the needs of the organization. The
+    ``positiontype`` would indicate which rate is being specified. 
+
+    Note that this is modeled after the POSITION TYPE RATE entity in
+    "The Data Model Resource Book".
+    """
+    span = datespan
+    rate = dec
+
+class positiontype(orm.entity):
+    """ Categorizes positions by type.
+
+    Note that this is modeled after the POSITION TYPE entity in "The
+    Data Model Resource Book".
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    name = str
+
+    positionrates = positionrates
+
+class asset_party(orm.association):
+    """ Represents the assignment or *checking out* of a fixed asset
+    (``asset.asset``) to a ``party``.
+
+    Note that this is modeled after the PARTY ASSET ASSIGNMENT
+    TYPE entity in "The Data Model Resource Book".
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.orm.isnew:
+            self.comment = None
+
+    entities = asset_parties
+
+    # The ``party`` side of the association.
+    party = party
+
+    # The ``asset`` side of the association.
+    asset = asset.asset
+
+    # The time frame for the assignment or check out 
+    span = datespan
+
+    # The allocated cost of the assignment
+    cost = dec
+
+    # A comment
+    comment = text
+
+class asset_partystatustype(orm.entity):
+    """ Provides information about the assignment (``asset_party``) of a
+    fixed asset (``asset.asset``) to a ``party.
+
+    Note that this is modeled after the PARTY ASSET ASSIGN STATUS
+    TYPE entity in "The Data Model Resource Book".
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    name = str
+
+    # The collection of asset-to-party assignments that this status type
+    # represents.
+    asset_parties = asset_parties
+

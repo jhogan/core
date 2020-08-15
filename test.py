@@ -8,30 +8,36 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2020                 #
 ########################################################################
 
+from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
+from auth import jwt
 from configfile import configfile
 from contextlib import contextmanager
 from datetime import timezone, datetime, date
 from entities import BrokenRulesError
 from func import enumerate, getattr, B
-from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
 from pprint import pprint
 from random import randint, uniform, random
 from table import *
 from tester import *
 from uuid import uuid4
+import MySQLdb
+import _mysql_exceptions
+import account
+import apriori
+import asset
 import auth
 import codecs
 import dateutil
 import db
 import decimal; dec=decimal.Decimal
 import dom
+import effort
 import exc
 import functools
+import invoice
 import io
 import jwt as pyjwt
 import math
-import MySQLdb
-import _mysql_exceptions
 import order
 import orm
 import party
@@ -41,9 +47,8 @@ import primative
 import product
 import pytz
 import re
-import ship
+import shipment
 import textwrap
-import effort
 
 # We will use basic and supplementary multilingual plane UTF-8
 # characters when testing str attributes to ensure unicode is being
@@ -2071,7 +2076,8 @@ class test_entity(tester):
 
     def it_gets_brokenrules(self):
         """ This functionality is tested in
-        test_entities.it_gets_brokenrules."""
+        test_entities.it_gets_brokenrules.
+        """
         pass
 
 class test_table(tester):
@@ -3150,15 +3156,27 @@ class comments(orm.entities):
     pass
 
 class comment(orm.entity):
-    title = str
-    body = str
-    comments = comments
+    title     =  str
+    body      =  str
+    comments  =  comments
+    author    =  str
+
+    def getbrokenrules(self, *args, **kwargs):
+        brs = super().getbrokenrules(*args, **kwargs)
+        if '@' not in self.author:
+            brs += brokenrule(
+                'Author email address has no @', 
+                'author', 'valid', self,
+            )
+
+        return brs
 
     @staticmethod
     def getvalid():
         com = comment()
         com.title = uuid4().hex
         com.body = '%s\n%s' % (uuid4().hex, uuid4().hex)
+        com.author = '%s@%s.com' % (uuid4().hex, uuid4().hex)
         return com
 
 class locations(orm.entities):
@@ -3188,6 +3206,9 @@ class artifacts(orm.entities):
 class artists(orm.entities):
     pass
 
+class timelogs(orm.entities):
+    pass
+
 class location(orm.entity):
     address     = str
     description = str
@@ -3207,6 +3228,7 @@ class presentation(orm.entity):
     components   =  components
     title        =  str,        orm.fulltext('title_desc',0)
     description1 =  str,        orm.fulltext('title_desc',1)
+    author       =  str,
 
     @staticmethod
     def getvalid():
@@ -3215,6 +3237,7 @@ class presentation(orm.entity):
         pres.description   =  uuid4().hex
         pres.description1  =  uuid4().hex
         pres.title         =  uuid4().hex
+        pres.author        =  'jessehogan0@gmail.com'
         return pres
 
 class concert(presentation):
@@ -3227,6 +3250,7 @@ class concert(presentation):
         conc.title = pres.title
         conc.description = pres.description
         conc.description1 = pres.description1
+        conc.author = pres.author
         return conc
     
     record = orm.fieldmapping(str)
@@ -3259,6 +3283,7 @@ class exhibition(presentation):
         exh.title = pres.title
         exh.description = pres.description
         exh.description1 = pres.description1
+        exh.author = pres.author
         return exh
 
 class unveiling(exhibition):
@@ -3271,6 +3296,7 @@ class unveiling(exhibition):
         unv.title         =  exh.title
         unv.description   =  exh.description
         unv.description1  =  exh.description1
+        unv.author        =  exh.author
         return unv
 
 class battle(concert):
@@ -3418,14 +3444,13 @@ class artist(orm.entity):
         self.orm.mappings('phone').value = v
     """
 
-    def __init__(self, o=None):
-        super().__init__(o)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-        if self.orm.isnew:
-            self.lifeform = 'organic'
-            self.bio = None
-            self.style = 'classicism'
-            self._processing = False
+        self.orm.default('lifeform', 'organic')
+        self.orm.default('bio', None)
+        self.orm.default('style', 'classicism')
+        self.orm.default('_processing', False)
 
     def clear(self):
         self.locations.clear()
@@ -3445,7 +3470,7 @@ class artist(orm.entity):
 
     def __str__(self):
         return self.fullname
-        
+
 class artist_artifacts(orm.associations):
     pass
 
@@ -3582,11 +3607,10 @@ class rapper(singer):
     stagename = str
     battles = battles
 
-    def __init__(self, o=None):
-        super().__init__(o)
-        if self.orm.isnew:
-            self.nice = 10
-            self._elevating = False
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.default('nice', 10)
+        self.orm.default('_elevating', False)
 
     @staticmethod
     def getvalid():
@@ -3625,12 +3649,135 @@ class rapper(singer):
         return str(attr()) if attr() else attr(str(bs()))
 
 class issues(orm.entities):
-    pass
+    def getbrokenrules(self, *args, **kwargs):
+        brs = super().getbrokenrules(*args, **kwargs)
+        names = self.pluck('name')
+        dups = set(x for x in names if names.count(x) > 1)
+
+        if dups:
+            brs += brokenrule(
+                'Duplicate names found %s' % dups,
+                'names',
+                'valid',
+                self,
+
+            )
+        return brs
 
 class issue(orm.entity):
+    name      =  str
+    assignee  =  str
+    timelogs  =  timelogs
+    comments  =  comments
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.raise_ = True
+
+    @staticmethod
+    def getvalid():
+        iss = issue()
+        iss.name = uuid4().hex
+        iss.assignee  = '%s@mail.com' % uuid4().hex
+        iss.raise_ = False
+        return iss
+
     @orm.attr(str)
     def raiseAttributeError(self):
-        raise AttributeError()
+        if self.raise_:
+            raise AttributeError()
+
+    def getbrokenrules(self, *args, **kwargs):
+        brs = super().getbrokenrules(*args, **kwargs)
+        if '@' not in self.assignee:
+            brs += brokenrule(
+                'Assignee email address has no @', 
+                'assignee', 
+                'valid',
+                self,
+            )
+
+        return brs
+
+class programmers(orm.entities):
+    pass
+
+class programmer(orm.entity):
+    name = str
+    ismaintenance = bool
+
+    def getbrokenrules(self, *args, **kwargs):
+        brs = super().getbrokenrules(*args, **kwargs)
+        if len(self.name) > 20:
+            brs += brokenrule(
+                'Programmer name must be less than 20 chars', 
+                'name', 
+                'fits',
+                self,
+            )
+
+        return brs
+
+class programmer_issueroles(orm.entities):
+    pass
+class programmer_issuerole(orm.entity):
+    name = str
+
+class programmer_issues(orm.associations):
+    def getbrokenrules(self, *args, **kwargs):
+        brs = super().getbrokenrules(*args, **kwargs)
+
+        for ass in self:
+            for ass1 in self:
+                if ass.id == ass1.id: continue
+
+                if ass.programmer.id == ass1.programmer.id \
+                    and ass.issue.id == ass1.issue.id:
+                    brs += brokenrule(
+                        'Duplicate programmer and '
+                        'issue associtation', 
+                        'id', 
+                        'valid',
+                        self,
+                    )
+                    break
+            else:
+                continue
+            break
+
+        return brs
+
+class programmer_issue(orm.association):
+    programmer = programmer
+    issue = issue
+    programmer_issuerole = programmer_issuerole
+
+    def getbrokenrules(self, *args, **kwargs):
+        brs = super().getbrokenrules(*args, **kwargs)
+        if not self.programmer.ismaintenance:
+            brs += brokenrule(
+                'Only maintenance programmers can be assigned to issues', 
+                'ismaintenance', 
+                'valid',
+                self
+            )
+
+        return brs
+
+class timelog(orm.entity):
+    hours = dec
+
+    @property
+    def brokenrules(self):
+        brs = super().brokenrules
+        if '@' not in self.author:
+            brs += brokenrule(
+                'Author email address has no @', 
+                'author', 
+                'valid'
+            )
+
+        return brs
 
 class artist_artists(orm.associations):
     pass
@@ -3672,6 +3819,14 @@ class test_orm(tester):
         self.chronicles = db.chronicles()
         db.chronicler.getinstance().chronicles.onadd += self._chronicler_onadd
 
+        orm.orm.recreate(
+            artists,
+            presentations,
+            issues,
+            programmer_issues,
+            programmers,
+            programmer_issuerole,
+        )
         artist.orm.recreate(recursive=True)
         comment.orm.recreate()
 
@@ -3726,9 +3881,10 @@ class test_orm(tester):
                     if not self._test(e, 'create'):
                         test_orm._failures += failure()
 
-            def retrieved(self, e):
-                if not self._test(e, 'retrieve'):
-                    test_orm._failures += failure()
+            def retrieved(self, *es):
+                for e in es:
+                    if not self._test(e, 'retrieve'):
+                        test_orm._failures += failure()
 
             def updated(self, *es):
                 for e in es:
@@ -3782,6 +3938,193 @@ class test_orm(tester):
             cnt += int(chron.op not in ('reconnect',))
             
         self.eq(t.count, cnt, msg)
+
+    def it_calls_entity_on_brokenrule(self):
+        iss = issue.getvalid()
+
+        # Break a declaritive rule
+        iss.name = str() # break
+        self.one(iss.brokenrules)
+        self.is_(iss, iss.brokenrules.first.entity)
+
+        # Break an imperative rule
+        iss.assignee = 'jessehogan0ATgmail.com' # break
+        self.two(iss.brokenrules)
+        self.is_(iss, iss.brokenrules.first.entity)
+        self.is_(iss, iss.brokenrules.second.entity)
+
+        # Break constituent
+        iss.comments += comment.getvalid()
+        iss.comments.last.author = 'jessehogan0ATgmail.com' # break
+        self.three(iss.brokenrules)
+
+        es = [x.entity for x in iss.brokenrules]
+        self.true(es.count(iss) == 2)
+        self.true(es.count(iss.comments.first) == 1)
+
+        prog = programmer()
+
+        # Programmer names can only be 20 characters long
+        prog.name = 'x' * 21  # break
+        prog.ismaintenance = True  # Ensure ismaintenance is valid
+
+        iss.programmer_issues += programmer_issue(
+            programmer = prog
+        )
+
+        self.four(iss.brokenrules)
+        es = [x.entity for x in iss.brokenrules]
+        self.true(es.count(iss) == 2)
+        self.true(es.count(iss.comments.first) == 1)
+        self.true(es.count(iss.programmer_issues.first.programmer) == 1)
+
+        ''' Break an association-level rule '''
+
+        # Only maintenance programmers can be associated with an issue
+        prog.ismaintenance = False  # Break
+        es = [x.entity for x in iss.brokenrules]
+        self.five(iss.brokenrules)
+        self.true(es.count(iss) == 2)
+        self.true(es.count(iss.comments.first) == 1)
+        self.true(es.count(iss.programmer_issues.first.programmer) == 1)
+        self.true(es.count(iss.programmer_issues.first) == 1)
+
+        ''' Break an associations-level rule '''
+
+        # A given programmer can't be associated with the same issue
+        # more than once.
+        iss.programmer_issues += programmer_issue(
+            programmer = prog
+        )
+
+        es = [x.entity for x in iss.brokenrules]
+        self.seven(iss.brokenrules)
+        self.true(es.count(iss) == 2)
+        self.true(es.count(iss.comments.first) == 1)
+        self.true(es.count(iss.programmer_issues.first.programmer) == 1)
+        self.true(es.count(iss.programmer_issues.first) == 1)
+        self.true(es.count(iss.programmer_issues) == 1)
+
+    def it_calls_imperative_brokenrules(self):
+        ''' Break on entity '''
+        iss = issue.getvalid()
+
+        # Break a declaritive rule to ensure these are still being
+        # collected
+        iss.name = str() # break
+
+        self.one(iss.brokenrules)
+        self.broken(iss, 'name', 'fits')
+
+        # Break an imperative rule
+        iss.assignee = 'jessehogan0ATgmail.com' # break
+
+        self.two(iss.brokenrules)
+        self.broken(iss, 'name', 'fits')
+        self.broken(iss, 'assignee', 'valid')
+
+        ''' Break constituent '''
+        iss.comments += comment.getvalid()
+        iss.comments.last.author = 'jessehogan0ATgmail.com' # break
+        self.three(iss.brokenrules)
+        self.broken(iss, 'name', 'fits')
+        self.broken(iss, 'assignee', 'valid')
+        self.broken(iss, 'author', 'valid')
+
+        # Fix
+        iss.assignee = 'jessehogan0@mail.com'
+        self.two(iss.brokenrules)
+        self.broken(iss, 'name', 'fits')
+        self.broken(iss, 'author', 'valid')
+
+        iss.comments.last.author = 'jessehogan0@gmail.com'
+        self.one(iss.brokenrules)
+        self.broken(iss, 'name', 'fits')
+
+        iss.name = 'My Issue'
+        self.zero(iss.brokenrules)
+
+        ''' Break entities '''
+        # Create a collection. It should start with zero broken rules
+        isss = issues()
+        self.zero(isss.brokenrules)
+
+        # Add existing issue. The existing issue should have no broken
+        # rules.
+        isss += iss  
+        self.zero(isss.brokenrules)
+
+        # Add a new issue with the same name. Duplicate issue names have
+        # been forbidden by an imperitive broken rule at
+        # issues.getbrokenrules
+        isss += issue.getvalid()
+        isss.last.name = iss.name
+
+        self.one(isss.brokenrules)
+        self.broken(isss, 'names', 'valid')
+
+        # Break some more stuff
+        isss.second.assignee = 'jessehogan0ATgmail.com' # break
+        self.two(isss.brokenrules)
+        self.broken(isss, 'names', 'valid')
+        self.broken(isss, 'assignee', 'valid')
+
+        isss.first.name = str() # break
+        isss.second.name = str() # break
+        self.four(isss.brokenrules)
+        self.broken(isss, 'names', 'valid')  
+        self.broken(isss, 'assignee', 'valid')
+        self.broken(isss, 'name', 'fits')  # x2
+
+        isss.first.comments.last.author = 'jhoganATmail.com' # break
+        self.five(isss.brokenrules)
+        self.broken(isss,  'names',     'valid')
+        self.broken(isss,  'assignee',  'valid')
+        self.broken(isss,  'name',      'fits')   #  x2
+        self.broken(isss,  'author',    'valid')
+
+        # Fix everything
+        isss.second.assignee = 'jessehogan0@.com' # break
+        isss.first.name = uuid4().hex
+        isss.second.name = uuid4().hex
+        isss.first.comments.last.author = 'jhogan@mail.com' # break
+        self.zero(isss.brokenrules)
+
+        ''' Test traversing an association to an entity to get a broken
+        rule '''
+        prog = programmer()
+
+        # Programmer names can only be 20 characters long
+        prog.name = 'x' * 21  # break
+        prog.ismaintenance = True
+
+        isss.first.programmer_issues += programmer_issue(
+            programmer = prog
+        )
+
+        self.one(isss.brokenrules)
+        self.broken(isss, 'name', 'fits')
+
+        ''' Break an association-level rule '''
+
+        # Only maintenance programmers can be associated with an issue
+        prog.ismaintenance = False
+        self.two(iss.brokenrules)
+        self.broken(isss, 'name', 'fits')
+        self.broken(isss, 'ismaintenance', 'valid')
+
+        ''' Break an associations-level rule '''
+
+        # A given programmer can't be associated with the same issue
+        # more than once.
+        isss.first.programmer_issues += programmer_issue(
+            programmer = prog
+        )
+
+        self.four(iss.brokenrules)
+        self.broken(isss, 'name', 'fits')
+        self.broken(isss, 'ismaintenance', 'valid')
+        self.broken(isss, 'id', 'valid')
 
     def it_uses_reserved_mysql_words_for_fields(self):
         """ Ensure that the CREATE TABLE statement uses backticks to
@@ -6545,18 +6888,18 @@ class test_orm(tester):
 
         b = bacterium()
         self.is_(b.orm.entities, bacteria)
-        self.eq(b.orm.table, 'test_bacteria')
+        self.eq('main_bacteria', b.orm.table)
 
         # Test implicit entities detection based on naive pluralisation
         art = artist()
         self.is_(art.orm.entities, artists)
-        self.eq(art.orm.table, 'test_artists')
+        self.eq('main_artists', art.orm.table)
 
         # Test implicit entities detection of entities subclass based on naive
         # pluralisation
         s = singer()
         self.is_(s.orm.entities, singers)
-        self.eq(s.orm.table, 'test_singers')
+        self.eq('main_singers', s.orm.table)
 
     def it_calls_id_on_entity(self):
         art = artist.getvalid()
@@ -6629,6 +6972,45 @@ class test_orm(tester):
         uuid = uuid4().hex
         sng.test = uuid
         self.eq(uuid, sng.test)
+
+    def it_allows_for_associations_with_entity_references(self):
+        # It was noticed that reflexive associations have an issue when
+        # an additional entity reference is added. The party.role_role's
+        # ``priority`` entity reference cause an issues since the orm
+        # logic assumed it was part of the reflexive association. THis
+        # was fixed in 40a1451b3c5b265b743424cfc23e6f2485c4bddb. The
+        # following test ensures that there is no problem with having an
+        # entity reference (programmer_issuerole.programmer_issuerole)
+        # alongside the associated reference in programmer_issue
+        # (programmer and issue). No issues had to be fixed after the test
+        # was written. This seems to mean that an association can
+        # associated two or more entities.
+            
+        iss = issue.getvalid()
+        iss.name = 'Fix asset'
+        prog = programmer(name='Cody', ismaintenance=True)
+        rl = programmer_issuerole(name='QA')
+
+        iss.programmer_issues += programmer_issue(
+            programmer = prog,
+            programmer_issuerole = rl
+        )
+        iss.save()
+        iss1 = iss.orm.reloaded()
+
+        pis = iss.programmer_issues.sorted()
+        pis1 = iss1.programmer_issues.sorted()
+
+        self.one(pis)
+        self.one(pis1)
+
+        pi = pis.first
+        pi1 = pis1.first
+
+        self.eq(pi.id, pi1.id)
+        self.eq(pi.programmer.id, pi1.programmer.id)
+        self.eq(pi.issue.id, pi1.issue.id)
+        self.eq(pi.programmer_issuerole.id, pi1.programmer_issuerole.id)
 
     def it_calls_custom_methods_on_subsubentity(self):
         # TODO Currently, concerts and locations entities collections
@@ -7283,8 +7665,6 @@ class test_orm(tester):
         fact = fact.orm.reloaded()
 
         self.eq(Δ * 255, fact.serial)
-
-
 
     def it_calls_text_attr_on_entity(self):
         map = artifact.orm.mappings['comments']
@@ -9706,7 +10086,8 @@ class test_orm(tester):
                 self.eq(getattr(loc2, 'description'), getattr(loc1, 'description'))
 
     def it_updates_subsubentitys_subsubentities_constituents_properties(
-        self):
+        self
+    ):
 
         rpr = rapper.getvalid()
 
@@ -9777,10 +10158,12 @@ class test_orm(tester):
         with self._chrontest() as t:
             t.run(rpr1.save)
             for btl in rpr1.battles:
+                # FIXME We never get here
                 t.updated(btl)
                 t.updated(btl.orm.super)
                 for loc in btl.locations:
                     t.updated(loc)
+
 
         rpr2 = rapper(rpr.id)
         btls = (rpr.battles, rpr1.battles, rpr2.battles)
@@ -9940,7 +10323,6 @@ class test_orm(tester):
         # presentation object.
         self.eq(loc2.presentation.name, name)
         self.eq(loc2.presentation.artist.presentations.first.name, name)
-
 
     def it_saves_and_loads_subsubentity_constituent(self):
         # Make sure the constituent is None for new composites
@@ -10558,7 +10940,7 @@ class test_orm(tester):
         # Test constituents
         sng.presentations += presentation.getvalid()
         sng.concerts      += concert.getvalid()
-        
+
         for i in range(2):
             chrons.clear()
             sng.save()
@@ -22070,6 +22452,22 @@ class gem_account(tester):
                 tx.description,
                 tx1.description,
             )
+
+            self.eq(
+                tx.internal.id, 
+                tx1.internal.id, 
+            )
+
+            itms = tx.items
+            itms1 = tx.items
+
+            self.eq(itms.count, itms1.count)
+
+            for itm, itm1 in zip(itms, itms1):
+                self.eq(itm.amount, itm1.amount)
+                self.eq(itm.account.id, itm1.account.id)
+                self.eq(itm.account.name, itm1.account.name)
+
 ########################################################################
 # Test dom                                                             #
 ########################################################################
