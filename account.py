@@ -26,6 +26,8 @@ import orm
 import party
 import product
 import invoice
+import invoice
+import asset
 
 class accounts(orm.entities): pass
 class types(orm.entities): pass
@@ -53,6 +55,8 @@ class creditlines(obligations): pass
 class payments(externals): pass
 class receipts(payments): pass
 class disbursements(payments): pass
+class depreciationmethods(orm.entities): pass
+class asset_depreciationmethods(orm.entities): pass
 
 class account(orm.entity):
     """ Represents a type of financial reporting bucket to which
@@ -457,3 +461,40 @@ class disbursement(payment):
     Note that this entity was originally called DISBURSMENT ACCTG TRANS in
     "The Data Model Resource Book".
     """
+
+class depreciationmethod(orm.entity):
+    """ A fixed asset (``asset.asset``) may be depreciated using
+    depreciation methods.
+
+    Note that this entity was originally called DEPRECIATION METHOD in
+    "The Data Model Resource Book".
+    """
+
+    # Specifies the type of depreciation such as "straight line
+    # depreciation" or "double declining balance depreciation".
+    name = str
+
+    # The formula for calculating depreciation, e.g.,:
+    #
+    #     "(Purchase cost - salvage cost) * (1 / estimated life in years of the asset) * 2"
+    formula = str
+
+class asset_depreciationmethod(orm.association):
+    """ Associates fixed assets (``asset.asset``) to be associated with
+    depreciation methods in a many-to-many relationship. This
+    association documents which depreciation method was used on each
+    fixed assed during various periods of time.
+
+    Note that this entity was originally called FIXED ASSET DEPRECIATION
+    METHOD in "The Data Model Resource Book".
+    """
+
+    # The asset side of the association
+    asset = asset.asset
+
+    # The depreciation method side of the association
+    method = depreciationmethod
+
+    # The datespan for which the depreciationmethod is used
+    span = datespan
+
