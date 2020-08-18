@@ -15,10 +15,13 @@
 mapping.
 
 Todo:
-    TODO: s/explicit attribute/imperitive attribute/
+    TODO s/explicit attribute/imperitive attribute/
 
     TODO Add automatic pluralisation of entities
-    
+
+    TODO Raise error if a subclass of ``association`` does not have a
+    subclass of ``associations``. Strange bugs happen when this mistake
+    is made.
 """
 
 from collections.abc import Iterable
