@@ -388,7 +388,7 @@ class migration(command):
         ddls = str()
         for mig in self.todo:
             e = mig.entity
-            ddl = mig.ddl
+            ddl = f'{mig.ddl}\n'
             if ddl.startswith('ALTER'):
                 ddls += f'\n/*\n{e.orm.migration.table!s}*/\n\n'
             else:
@@ -559,7 +559,6 @@ class migration(command):
             h - print help
             """))
 
-        self.scan()
 
         def show(mig):
             """ Show the DDL and comarison table of the migrant (mig).
@@ -567,7 +566,7 @@ class migration(command):
             e = mig.entity
             ddl = mig.ddl
             if ddl.startswith('ALTER'):
-                self.print(f'\n{e.orm.migration.table1!s}')
+                self.print(f'\n{e.orm.migration.table!s}')
             else:
                 self.print()
 
@@ -575,7 +574,12 @@ class migration(command):
 
             return ddl
 
+        self.scan()
         es = self.todo
+
+        if not es.count:
+            self.print('Model matches database. Bye.\n')
+            raise self.Abort()
 
         # Work through each of the migrants in the todo list
         for i, e in es.enumerate():
@@ -624,11 +628,12 @@ class migration(command):
                     self.print(f'\nException: {ex}')
                     self.failed += self.todo
                 else:
-                    self.done += e
+                    self.done += self.todo
                     self.print(
                         'All were applied successfully. Bye.'
                     )
                     self.counts()
+                    break
             elif res == 'edit':
                 ddl = self.edit(ddl=ddl)
                 try:
