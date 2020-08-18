@@ -782,12 +782,14 @@ class columns(entities):
 
 class column(entity):
     _attrs = (
-        'name',  'ordinal',  'type',       'max',
-        'key',   'type',     'precision',  'scale',
+        'name',       'ordinal',  'type',       'max',
+        'key',        'type',     'precision',  'scale',
+        'columntype'
     )
 
     def __init__(self, res=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.columntype = None
         if res:
             self.populate(res)
 
@@ -799,6 +801,29 @@ class column(entity):
 
         return col
 
+    @property
+    def issigned(self):
+        ints = (
+            'tinyint',
+            'smallint',
+            'mediumint',
+            'int',
+            'bigint',
+        )
+
+        if self.type not in ints:
+            return None
+
+        if self.columntype:
+            t = self.columntype
+        else:
+            t = self.type
+
+        if ' unsigned' in t:
+            return False
+        else:
+            return True
+            
     def populate(self, res):
         if isinstance(res, dbresult):
             flds = res.fields
@@ -807,6 +832,7 @@ class column(entity):
             self.type = flds['DATA_TYPE'].value
             self.max = flds['CHARACTER_MAXIMUM_LENGTH'].value
             self.key = flds['COLUMN_KEY'].value
+            self.columntype = flds['COLUMN_TYPE'].value
             if self.type == 'datetime':
                 self.precision = flds['DATETIME_PRECISION'].value
             else:
@@ -870,6 +896,14 @@ class column(entity):
             ADD mybit BIT   -- "mybit BIT' is the definition
                 ---------
         """
+        ints = (
+            'tinyint',
+            'smallint',
+            'mediumint',
+            'int',
+            'bigint',
+        )
+
         r = self.type
 
         if self.type == 'datetime':
@@ -878,6 +912,9 @@ class column(entity):
             r += f'({self.precision}, {self.scale})'
         elif self.type in ('binary', 'varchar', 'char'):
             r += f'({self.max})'
+        elif self.type in ints:
+            if not self.issigned:
+                r += f" {'' if self.issigned else 'unsigned'}"
 
         if self.isprimary:
             r += ' primary key'
