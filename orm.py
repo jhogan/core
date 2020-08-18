@@ -50,7 +50,6 @@ import primative
 import re
 import sys
 import textwrap
-from difflib import SequenceMatcher
 
 # TODO Research making these constants the same as their function
 # equivalent.
