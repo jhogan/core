@@ -56,7 +56,7 @@ class payments(externals): pass
 class receipts(payments): pass
 class disbursements(payments): pass
 class depreciationmethods(orm.entities): pass
-class asset_depreciationmethods(orm.entities): pass
+class asset_depreciationmethods(orm.associations): pass
 
 class account(orm.entity):
     """ Represents a type of financial reporting bucket to which

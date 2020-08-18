@@ -22239,6 +22239,8 @@ class gem_account(tester):
             account.external,
             account.other,
             account.item,
+            account.asset_depreciationmethods,
+            account.depreciationmethod,
         )
 
     def it_creates_accounts(self):
@@ -22441,6 +22443,52 @@ class gem_account(tester):
                 self.eq(itm.amount, itm1.amount)
                 self.eq(itm.account.id, itm1.account.id)
                 self.eq(itm.account.name, itm1.account.name)
+
+    def it_depreciates(self):
+        ass = asset.asset(name='Pen Engraver')
+
+        ass.asset_depreciationmethods += account.asset_depreciationmethod(
+            method = account.depreciationmethod(
+               name = 'Double-declining balance depreciation',
+               formula = (
+                '(Purchase cost - salvage cost) *'
+                '(1 / estemated life in years of the asset) * 2'
+               )
+            ),
+            begin = 'Jan 1, 1999',
+            end   = 'Dec 31, 1999',
+        )
+
+        ass.asset_depreciationmethods += account.asset_depreciationmethod(
+            method = account.depreciationmethod(
+               name = 'Straight-line depreciation',
+               formula = (
+                '(Purchase cost - salvage cost) *'
+                '(1 / estemated life in years of the asset)'
+               )
+            ),
+            begin = 'Jan 1, 2000',
+        )
+
+        ass.save()
+
+        ass1 = ass.orm.reloaded()
+
+        assmeths = ass.asset_depreciationmethods.sorted()
+        assmeths1 = ass1.asset_depreciationmethods.sorted()
+
+        self.two(assmeths)
+        self.two(assmeths1)
+
+        for assmeth, assmeth1 in zip(assmeths, assmeths1):
+            self.eq(assmeth.id,     assmeth1.id)
+            self.eq(assmeth.begin,  assmeth1.begin)
+            self.eq(assmeth.end,    assmeth1.end)
+
+            self.eq(assmeth.method.id,       assmeth1.method.id)
+            self.eq(assmeth.method.name,     assmeth1.method.name)
+            self.eq(assmeth.method.formula,  assmeth1.method.formula)
+
 
         
 cli().run()
