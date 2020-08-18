@@ -7,6 +7,7 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
+from MySQLdb.constants.CR import COMMANDS_OUT_OF_SYNC
 from config import config
 from configfile import configfile
 from dbg import B
@@ -329,6 +330,18 @@ class migration(command):
                 ddl = ddl or e.ddl
                 orm.orm.exec(ddl)
             except Exception as ex:
+                if type(ex) is _mysql_exceptions.ProgrammingError:
+                    if ex.args[0] == COMMANDS_OUT_OF_SYNC:
+                        # This exception happens when the `commit`
+                        # method is called afte we send multiple DDL
+                        # statements to MySQL at once (typically by
+                        # selecting [a]ll).  The DDL operations are
+                        # performed correctly so we can just return.
+                        # It's as if MySQL is saying, "You can't commit
+                        # multiple DDLs because transactional support
+                        # isn't implemented for them at the moment".
+                        return
+                
                 self.print(f'\n{ex}\n\n')
                 res = self.ask(
                     'Press [e]dit, [i]gnore or [q]uit...',
