@@ -57,6 +57,18 @@ class receipts(payments): pass
 class disbursements(payments): pass
 class depreciationmethods(orm.entities): pass
 class asset_depreciationmethods(orm.associations): pass
+class budgetstatuses(orm.entities): pass
+class budgetitems(orm.entities): pass
+class budgets(orm.entities): pass
+class operatings(budgets): pass
+class capitals(budgets): pass
+class budgettypes(orm.entities): pass
+class budgetstatustypes(orm.entities): pass
+class budgetitemtypes(orm.entities): pass
+class budgetroles(orm.entities): pass
+class budgetroletypes(orm.entities): pass
+class standardtimeperiods(orm.entities): pass
+class standardtimeperiodtypes(orm.entities): pass
 
 class account(orm.entity):
     """ Represents a type of financial reporting bucket to which
@@ -498,3 +510,135 @@ class asset_depreciationmethod(orm.association):
     # The datespan for which the depreciationmethod is used
     span = datespan
 
+class budget(orm.entity):
+    """ Describes the information about the amounts of moneys need for a
+    group of expens items over a certain period of time.
+
+    Each ``budget`` must be composed of one or more ``budgetitems``.
+
+    Note that this entity was originally called BUDGET in "The
+    Data Model Resource Book".
+    """
+    comment = text
+
+    statuses = budgetstatuses
+
+    items = budgetitems
+
+class operating(budget):
+    """ A budget subtype for expense items.
+
+    Note that this entity was originally called OPERATING BUDGET in "The
+    Data Model Resource Book".
+    """
+
+class capital(budget):
+    """ A budget subtype for fixed assets and long-term items.
+
+    Note that this entity was originally called CAPITAL BUDGET in "The
+    Data Model Resource Book".
+    """
+
+class budgettype(orm.entity):
+    """  Allows for the categorizationg of other types of ``budget``s
+    according to the needs of the organization.
+
+    Note that this entity was originally called BUDGET TYPE in "The
+    Data Model Resource Book".
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    name = str
+
+    budgets = budgets
+
+class budgetstatus(orm.entity):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    entered = date
+
+    entities = budgetstatuses
+
+    name = str
+
+class budgetstatustype(orm.entity):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    name = str
+
+    statuses = budgetstatuses
+
+class budgetitem(orm.entity):
+    """ 
+
+    ``budgetitem``s may be recursively related to other ``budgetitem``s
+    allowing for a hierarchy of budget item rollups (see the items
+    attribute).
+
+    Note that this entity was originally called BUDGET ITEM in
+    "The Data Model Resource Book".
+    """
+ 
+    amount = dec
+    purpose = str
+    justification = text
+
+    # ``budgetitem``s may be recursively related to other ``budgetitem``s
+    # allowing for a hierarchy of budget item rollup.
+    items = budgetitems
+
+class budgetitemtype(orm.entity):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    name = str
+
+    items = budgetitems
+
+# TODO Is ``party.role`` the correct base type?
+class budgetrole(party.role):
+    """ Each ``budget`` may have many parties (``party.parties``)
+    involved in various ``bugetroles``. Budget roles for parties (which
+    may be a person (``party.person``) or organization
+    (``party.organization``)) include the initiator of the budget
+    request, the party for whom the budget is requestd, the reviewer(s)
+    of a budget, and the approver of the budget.
+
+    Note that this entity was originally called BUDGET ROLE in
+    "The Data Model Resource Book".
+    """
+    budgets = budgets
+    
+class budgetroletype(orm.entity):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    name = str
+
+    roles = budgetroles
+
+class standardtimeperiod(orm.entity):
+    """  Maintains possible time periods for which ``budgets`` could be
+    allocated.
+
+    Note that this entity was originally called STANDARD TIME PERIOD in
+    "The Data Model Resource Book".
+    """
+    span = datespan
+
+class standardtimeperiodtype(orm.entity):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    name = str
+
+    periods = standardtimeperiods
