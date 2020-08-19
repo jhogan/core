@@ -33,6 +33,7 @@ import decimal; dec=decimal.Decimal
 import dom
 import effort
 import exc
+import file
 import functools
 import invoice
 import io
@@ -23000,7 +23001,8 @@ class pom_page(tester):
     def __init__(self):
         super().__init__()
         orm.orm.recreate(
-            party.user
+            party.user,
+            file.files,
         )
 
     def it_calls__init__(self):
@@ -23629,13 +23631,52 @@ class pom_page(tester):
         self.eq('Lang: es', (res['main p'].first.text))
         return
 
-        # Ensure it defauls to Engilsh
+        # Ensure it defauls to English
         # TODO Remove return
         res = tab.get('/lang', ws)
 
         self.one(res['main[data-path="/lang"]'])
         self.eq('Lang: en', (res['main p'].first.text))
 
+    def it_lists_files(self):
+        class files(pom.page):
+            def main(self):
+                self.main += dom.h1('Here are your files')
+
+                self.main += dom.ul()
+                ul = self.main.last
+                for f in file.files.orm.all:
+                    li = dom.li()
+                    ul += li
+                    li += dom.a(f)
+
+        file.files.orm.truncate()
+
+        fls = file.files()
+
+        fls += file.file(
+            path = '/etc/motd',
+            body = 'Hello everybody'
+       )
+
+        fls.first.save()
+
+        # Set up site
+        ws = foonet()
+        ws.pages += files()
+
+        # GET the /en/files page
+        tab = self.browser().tab()
+        res = tab.get('/en/files', ws)
+
+        self.status(200, res)
+        as_ = res['main a']
+
+        self.one(as_)
+
+        self.eq('/etc/motd', as_.first.href)
+        self.eq('motd', as_.first.text)
+            
     def it_authenticates(self):
         jwt = None
         class authenticate(pom.page):
