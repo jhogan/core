@@ -216,8 +216,15 @@ class period(orm.entity):
     organization = party.organization
 
 class periodtype(orm.entity):
-    """ Each accounting period is of a ``periodtype`` such as "fiscal year",
+    """Identifies the particular type used by each defined both
+    accounting period (``periods``) and ``standardtimeperiods`` used by
+    ``budget``.
+
+    Each accounting period is of a ``periodtype`` such as "fiscal year",
     "calendar year", "fiscal quarter", and so on.
+
+    In `standardtimeperiod``, common period types are "month",
+    "quarter", and "year".
 
     Note that this entity was originally called PERIOD TYPE in "The Data
     Model Resource Book".
@@ -228,7 +235,11 @@ class periodtype(orm.entity):
 
     name = str
 
+    # The collection of accounting ``periods``.
     periods = periods
+
+    # The collection of standardtimeperiods (used for budgeting).
+    standardtimeperiods = standardtimeperiods
 
 ''' Transactions '''
 
@@ -511,8 +522,15 @@ class asset_depreciationmethod(orm.association):
     span = datespan
 
 class budget(orm.entity):
-    """ Describes the information about the amounts of moneys need for a
-    group of expens items over a certain period of time.
+    """ Describes the information about the amounts of moneys needed for
+    a group of expense items over a certain period of time.
+
+    ``budget`` are mechanism for planning the spending of money.
+
+    A ``budget`` has a many-to-one relationship, and thus an implicit
+    attribute for, the ``standardtimeperiod``, which identifies the time
+    period for which the budget applies. This may represent different
+    time periods for different enterprises.
 
     Each ``budget`` must be composed of one or more ``budgetitems``.
 
@@ -635,6 +653,16 @@ class standardtimeperiod(orm.entity):
     span = datespan
 
 class standardtimeperiodtype(orm.entity):
+    """ Identifies the particular type used by each defined period.
+    Common period types are "month", "quarter", and "year".
+
+    Note that this entity was originally called PERIOD TYPE in "The Data
+    Model Resource Book".
+    """
+
+    # NOTE The book actualy uses the existing class ``periodtype`` for
+    # this. However, using that class would :sp
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.orm.ensure(expects=('name',), **kwargs)
