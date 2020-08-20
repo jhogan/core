@@ -3738,6 +3738,16 @@ class scripts(elements):
     pass
 
 class script(element):
+    def __init__(self, res=None, *args, **kwargs):
+        # If a file.resource was given
+        if res:
+            self.src = res.url
+
+            self.integrity = res.integrity
+            self.crossorigin = res.crossorigin
+            
+        super().__init__(*args, **kwargs)
+
     @property
     def crossorigin(self):
         return self.attributes['crossorigin'].value
