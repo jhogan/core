@@ -5028,9 +5028,8 @@ class orm:
         guestbook += [self]
 
         try: 
-            if cur:
-                conn = None
-            else:
+            conn = None
+            if not cur:
                 # TODO Use executioner
                 pool = db.pool.getdefault()
                 conn = pool.pull()

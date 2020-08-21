@@ -23931,9 +23931,11 @@ class dom_files(tester):
         orm.orm.recreate(
             party.user,
             file.files,
+            file.resources,
         )
 
     def it_links_to_js_files(self):
+        file.file.orm.truncate()
         class index(pom.page):
             def main(self):
                 head = self['html head'].first
@@ -23994,8 +23996,85 @@ class dom_files(tester):
             'https://cdnjs.cloudflare.com/ajax/libs/vega/5.14.0/vega.min.js',
             scripts.third.src
         )
+
         self.eq(None, scripts.third.integrity)
         self.eq('use-credentials', scripts.third.crossorigin)
+
+        fs = file.resources(
+            url = 'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js'
+        )
+
+        self.one(fs)
+
+
+
+    def it_caches_to_js_files(self):
+        class index(pom.page):
+            def main(self):
+                head = self['html head'].first
+
+                head += dom.script(
+                    file.resource(
+                        url = 'https://code.jquery.com/jquery-3.5.1.js',
+                        cache = True
+                    )
+                )
+
+                head += dom.script(
+                    file.resource(
+                        url = 'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js',
+                        integrity = 'sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw==',
+                        cache = True
+                    )
+                )
+
+                head += dom.script(
+                    file.resource(
+                        url = 'https://cdnjs.cloudflare.com/ajax/libs/vega/5.14.0/vega.min.js',
+                        crossorigin = 'use-credentials',
+                        cache = True,
+                    )
+                )
+
+                self.main += dom.h1('Home page')
+
+        # Set up site
+        ws = foonet()
+        ws.pages += index()
+
+        # GET the /en/files page
+        tab = self.browser().tab()
+        res = tab.get('/en/index', ws)
+
+        self.status(200, res)
+
+        scripts = res['html head script']
+        self.three(scripts)
+
+        self.eq(
+            'https://code.jquery.com/jquery-3.5.1.js',
+            scripts.first.src
+        )
+        self.eq(None, scripts.first.integrity)
+        self.eq('anonymous', scripts.first.crossorigin)
+
+        self.eq(
+            'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js',
+            scripts.second.src
+        )
+        self.eq(
+            'sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw==',
+            scripts.second.integrity
+        )
+        self.eq('anonymous', scripts.second.crossorigin)
+
+        self.eq(
+            'https://cdnjs.cloudflare.com/ajax/libs/vega/5.14.0/vega.min.js',
+            scripts.third.src
+        )
+        self.eq(None, scripts.third.integrity)
+        self.eq('use-credentials', scripts.third.crossorigin)
+
 
 
     def it_lists_files(self):
