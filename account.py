@@ -15,7 +15,9 @@ chapter of "The Data Model Resource Book".
 Examples:
     See test.py for examples. 
 
-Todo:
+TODO:
+    
+    - Move the budget object model to a new module (budget.py).
 """
 
 from datetime import datetime, date
