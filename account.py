@@ -537,11 +537,25 @@ class budget(orm.entity):
     Note that this entity was originally called BUDGET in "The
     Data Model Resource Book".
     """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.default('comment', None)
+
     comment = text
 
     statuses = budgetstatuses
 
     items = budgetitems
+
+    # TODO Change this to 
+    #
+    #     roles = budgetroles
+    #
+    # FIXME However, doing so cause a maximum recursion error to occur
+    # when a ``budgetrole`` is append to the collection.
+    budgetroles = budgetroles
+
+    periods = standardperiods
 
 class operating(budget):
     """ A budget subtype for expense items.

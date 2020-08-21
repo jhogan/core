@@ -22241,6 +22241,10 @@ class gem_account(tester):
             account.item,
             account.asset_depreciationmethods,
             account.depreciationmethod,
+            account.budgettype,
+            account.standardperiods,
+            account.budget,
+            account.budgetrole,
         )
 
     def it_creates_accounts(self):
@@ -22489,6 +22493,54 @@ class gem_account(tester):
             self.eq(assmeth.method.name,     assmeth1.method.name)
             self.eq(assmeth.method.formula,  assmeth1.method.formula)
 
+    def it_creates_budget(self):
+        # Create a budget and assign it a bugettype
+        bud = account.budget(
+            budgettype = account.budgettype(
+                name = 'Operating budget'
+            )
+        )
+
+        # Add a timeperiod to the budget
+        bud.periods += account.standardperiod(
+            begin = '1/1/2001',
+            end   = '12/31/2001',
+        )
+
+        # Create a department(party)
+        dep = party.department(name='Marketing department')
+
+        # Create a budgetary role for the department
+        rl = account.budgetrole()
+        dep.roles += rl
+
+        # Associate the budgetary role to the budget
+        bud.budgetroles += rl
+
+        bud.save()
+
+        bud1 = bud.orm.reloaded()
+
+        self.eq(bud.id, bud1.id)
+        self.eq(bud.budgettype.id, bud1.budgettype.id)
+
+        # Periods
+        pers = bud.periods
+        pers1 = bud1.periods
+
+        self.one(pers)
+        self.one(pers1)
+
+        self.eq(pers.first.begin, pers1.first.begin)
+        self.eq(pers.first.end, pers1.first.end)
+
+        # Roles
+        rls = bud.budgetroles
+        rls1 = bud1.budgetroles
+
+        self.one(rls)
+        self.one(rls1)
+        self.eq(rls.first.party.id, rls1.first.party.id)
 
         
 cli().run()
