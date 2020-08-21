@@ -65,9 +65,9 @@ class capitals(budgets): pass
 class budgettypes(orm.entities): pass
 class budgetstatustypes(orm.entities): pass
 class budgetitemtypes(orm.entities): pass
-class budgetroles(orm.entities): pass
+class budgetroles(party.roles): pass
 class budgetroletypes(orm.entities): pass
-class standardtimeperiods(orm.entities): pass
+class standardperiods(orm.entities): pass
 class standardtimeperiodtypes(orm.entities): pass
 
 class account(orm.entity):
@@ -217,13 +217,13 @@ class period(orm.entity):
 
 class periodtype(orm.entity):
     """Identifies the particular type used by each defined both
-    accounting period (``periods``) and ``standardtimeperiods`` used by
+    accounting period (``periods``) and ``standardperiods`` used by
     ``budget``.
 
     Each accounting period is of a ``periodtype`` such as "fiscal year",
     "calendar year", "fiscal quarter", and so on.
 
-    In `standardtimeperiod``, common period types are "month",
+    In `standardperiod``, common period types are "month",
     "quarter", and "year".
 
     Note that this entity was originally called PERIOD TYPE in "The Data
@@ -238,8 +238,8 @@ class periodtype(orm.entity):
     # The collection of accounting ``periods``.
     periods = periods
 
-    # The collection of standardtimeperiods (used for budgeting).
-    standardtimeperiods = standardtimeperiods
+    # The collection of standardperiods (used for budgeting).
+    standardperiods = standardperiods
 
 ''' Transactions '''
 
@@ -528,7 +528,7 @@ class budget(orm.entity):
     ``budget`` are mechanism for planning the spending of money.
 
     A ``budget`` has a many-to-one relationship, and thus an implicit
-    attribute for, the ``standardtimeperiod``, which identifies the time
+    attribute for, the ``standardperiod``, which identifies the time
     period for which the budget applies. This may represent different
     time periods for different enterprises.
 
@@ -643,7 +643,7 @@ class budgetroletype(orm.entity):
 
     roles = budgetroles
 
-class standardtimeperiod(orm.entity):
+class standardperiod(orm.entity):
     """  Maintains possible time periods for which ``budgets`` could be
     allocated.
 
@@ -651,22 +651,3 @@ class standardtimeperiod(orm.entity):
     "The Data Model Resource Book".
     """
     span = datespan
-
-class standardtimeperiodtype(orm.entity):
-    """ Identifies the particular type used by each defined period.
-    Common period types are "month", "quarter", and "year".
-
-    Note that this entity was originally called PERIOD TYPE in "The Data
-    Model Resource Book".
-    """
-
-    # NOTE The book actualy uses the existing class ``periodtype`` for
-    # this. However, using that class would :sp
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    name = str
-
-    periods = standardtimeperiods
