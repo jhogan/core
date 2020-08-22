@@ -24000,13 +24000,10 @@ class dom_files(tester):
         self.eq(None, scripts.third.integrity)
         self.eq('use-credentials', scripts.third.crossorigin)
 
-        fs = file.resources(
-            url = 'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js'
-        )
-
-        self.one(fs)
-
-
+        for script in scripts:
+            # We aren't caching these resources so we should expect any to
+            # be in the database
+            self.zero(file.resources(url=script.src))
 
     def it_caches_to_js_files(self):
         class index(pom.page):
@@ -24016,7 +24013,7 @@ class dom_files(tester):
                 head += dom.script(
                     file.resource(
                         url = 'https://code.jquery.com/jquery-3.5.1.js',
-                        cache = True
+                        local = True
                     )
                 )
 
@@ -24024,7 +24021,7 @@ class dom_files(tester):
                     file.resource(
                         url = 'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js',
                         integrity = 'sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw==',
-                        cache = True
+                        local = True
                     )
                 )
 
@@ -24032,7 +24029,7 @@ class dom_files(tester):
                     file.resource(
                         url = 'https://cdnjs.cloudflare.com/ajax/libs/vega/5.14.0/vega.min.js',
                         crossorigin = 'use-credentials',
-                        cache = True,
+                        local = True,
                     )
                 )
 

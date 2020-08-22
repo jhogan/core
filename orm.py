@@ -2329,6 +2329,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             self.onbeforereconnect  =  entitiesmod.event()
             self.onafterreconnect   =  entitiesmod.event()
 
+            self.onbeforesave      +=  self._self_onbeforesave
             self.onaftersave       +=  self._self_onaftersave
             self.onafterload       +=  self._self_onafterload
             self.onafterreconnect  +=  self._self_onafterreconnect
@@ -2408,6 +2409,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
     def _self_onafterload(self, src, eargs):
         self._add2chronicler(eargs)
+
+    def _self_onbeforesave(self, src, eargs):
+        # At the moment, this only here in case a client want's to
+        # override it.
+        pass
 
     def _self_onaftersave(self, src, eargs):
         self._add2chronicler(eargs)
