@@ -908,9 +908,9 @@ class column(entity):
 
         if self.type == 'datetime':
             r += f'({self.precision})'
-        elif self.type == 'decimal':
-            r += f'({self.precision}, {self.scale})'
-        elif self.type in ('binary', 'varchar', 'char'):
+        elif self.type in ('double', 'decimal'):
+            r += f'{(self.precision, self.scale)}'
+        elif self.type in ('binary', 'varchar', 'char', 'varbinary'):
             r += f'({self.max})'
         elif self.type in ints:
             if not self.issigned:
