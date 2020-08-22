@@ -16776,8 +16776,6 @@ class orm_migration(tester):
 
         mig = orm.migration(e=cat)
 
-        print(mig.table1)
-
 class crust_migration(tester):
     def it_shows_migrants(self):
         # Drop all table in db
