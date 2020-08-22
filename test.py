@@ -43,6 +43,7 @@ import re
 import shipment
 import textwrap
 import account
+import budget
 
 # We will use basic and supplementary multilingual plane UTF-8
 # characters when testing str attributes to ensure unicode is being
@@ -22241,10 +22242,6 @@ class gem_account(tester):
             account.item,
             account.asset_depreciationmethods,
             account.depreciationmethod,
-            account.budgettype,
-            account.standardperiods,
-            account.budget,
-            account.budgetrole,
         )
 
     def it_creates_accounts(self):
@@ -22493,16 +22490,26 @@ class gem_account(tester):
             self.eq(assmeth.method.name,     assmeth1.method.name)
             self.eq(assmeth.method.formula,  assmeth1.method.formula)
 
-    def it_creates_budget(self):
+class gem_budget(tester):
+    def __init__(self):
+        super().__init__()
+        orm.orm.recreate(
+            budget.type,
+            budget.period,
+            budget.budget,
+            budget.role,
+        )
+
+    def it_creates(self):
         # Create a budget and assign it a bugettype
-        bud = account.budget(
-            budgettype = account.budgettype(
+        bud = budget.budget(
+            type = budget.type(
                 name = 'Operating budget'
             )
         )
 
         # Add a timeperiod to the budget
-        bud.periods += account.standardperiod(
+        bud.periods += budget.period(
             begin = '1/1/2001',
             end   = '12/31/2001',
         )
@@ -22511,18 +22518,18 @@ class gem_account(tester):
         dep = party.department(name='Marketing department')
 
         # Create a budgetary role for the department
-        rl = account.budgetrole()
+        rl = budget.role()
         dep.roles += rl
 
         # Associate the budgetary role to the budget
-        bud.budgetroles += rl
+        bud.roles += rl
 
         bud.save()
 
         bud1 = bud.orm.reloaded()
 
         self.eq(bud.id, bud1.id)
-        self.eq(bud.budgettype.id, bud1.budgettype.id)
+        self.eq(bud.type.id, bud1.type.id)
 
         # Periods
         pers = bud.periods
@@ -22535,12 +22542,11 @@ class gem_account(tester):
         self.eq(pers.first.end, pers1.first.end)
 
         # Roles
-        rls = bud.budgetroles
-        rls1 = bud1.budgetroles
+        rls = bud.roles
+        rls1 = bud1.roles
 
         self.one(rls)
         self.one(rls1)
         self.eq(rls.first.party.id, rls1.first.party.id)
 
-        
 cli().run()
