@@ -893,8 +893,8 @@ class column(entity):
         would define a column::
 
         ALTER TABLE mytable
-            ADD mybit BIT   -- "mybit BIT' is the definition
-                ---------
+            ADD id int primary key   -- "int primary key' is the definition
+                   --------------
         """
         ints = (
             'tinyint',

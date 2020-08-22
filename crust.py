@@ -29,6 +29,7 @@ import pygments.lexers
 import shipment
 import tempfile
 import textwrap
+import account
 
 # TODO Rename crust.py to crust. This would better meet the expectation
 # of a shell user who simply wants to run a program.
