@@ -14,10 +14,6 @@ class accounts(entities):
         accts = self.where(smtpaccount)
         return smtpaccounts(accts)
 
-    @property
-    def mysqlaccounts(self):
-        return self.where(mysqlaccount)
-
 class smtpaccounts(accounts):
     @property
     def transactional(self):
@@ -28,18 +24,11 @@ class smtpaccounts(accounts):
         return self.where(lambda x: x.type == 'marketing')
                 
 class account(entity):
-    def __init__(self, arr):
-        self._uid      = arr['uid']
-        self._pwd      = arr['pwd']
-        self._host     = arr['host']
-        self._port     = arr['port']
-
-    @staticmethod
-    def create(arr):
-        cls = arr['type'] + 'account'
-        cls = getattr(sys.modules['accounts'], cls)
-        acct = cls(arr)
-        return acct
+    def __init__(self, username, password, host, port):
+        self._uid   =  username
+        self._pwd   =  password
+        self._host  =  host
+        self._port  =  port
 
     @property
     def username(self):
@@ -49,6 +38,10 @@ class account(entity):
     def password(self):
         return self._pwd
 
+    @password.setter
+    def password(self, v):
+        self._pwd = v
+
     @property
     def host(self):
         return self._host
@@ -56,6 +49,8 @@ class account(entity):
     @property
     def port(self):
         return self._port
+
+
 
     def __str__(self):
         user = str(self.username)
@@ -75,17 +70,26 @@ class smtpaccount(account):
     def type(self):
         return self._type
 
-class mysqlaccount(account):
-    
-    def __init__(self, arr):
-        super().__init__(arr)
-        self._db = arr['db']
+class mysql(account):
+    def __init__(self, database, port=3306, *args, **kwargs):
+        super().__init__(port=port, *args, **kwargs)
+        self._db = database
 
     @property
     def database(self):
         return self._db
 
-    # Transactional or marketing
+    def __repr__(self):
+        return self.url
+
+    def __str__(self):
+        return self.url
+
     @property
-    def type(self):
-        return self._type
+    def url(self):
+        if self.port == 3306:
+            args = self.username, self.host, self.database
+            return 'mysql://%s@%s/%s' % args
+
+        args = self.username, self.host, self.port, self.database
+        return 'mysql://%s@%s:%s/%s' % args

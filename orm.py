@@ -24,17 +24,21 @@ Todo:
     is made.
 """
 
+from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
 from collections.abc import Iterable
 from contextlib import suppress, contextmanager
 from datetime import datetime, date
 from dbg import B
+from difflib import SequenceMatcher
 from enum import Enum, unique
-from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
+from func import enumerate
 from pprint import pprint
 from shlex import shlex
 from table import table
 from types import ModuleType
 from uuid import uuid4, UUID
+import MySQLdb
+import _mysql_exceptions
 import builtins
 import dateutil
 import db
@@ -44,8 +48,6 @@ import func
 import gc
 import inspect
 import itertools
-import MySQLdb
-import _mysql_exceptions
 import os
 import primative
 import re
@@ -588,7 +590,7 @@ class joins(entitiesmod.entities):
     """ A collection of ``join`` classes.
     """
     def __init__(self, initial=None, es=None):
-        # NOTE In order to conform to the entitymod.entities.__init__'s
+        # NOTE In order to conform to the entitiesmod.entities.__init__'s
         # signature, we have to make es=None by default. However, we actually
         # don't want es to have a default, so we simulate the behavior here.
         if es is None:
@@ -597,6 +599,7 @@ class joins(entitiesmod.entities):
         self.entities = es
         super().__init__(initial=initial)
 
+    # TODO:1d1e17dc s/table/tablename
     @property
     def table(self):
         """
@@ -1379,7 +1382,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             if not hasattr(type(self), 'orm'):
                 raise NotImplementedError(
                     '"orm" attribute not found for "%s". '
-                    'Check that the entity is inherting from the '
+                    'Check that the entity inherits from the '
                     'correct base class.' % type(self).__name__
                 )
             try:
@@ -2538,17 +2541,18 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # Create an executioner object with the above save() callable
         exec = db.executioner(save)
 
-        # Register reconnect events of then executioner so they can be re-raised
+        # Register reconnect events of then executioner so they can be
+        # issued
         exec.onbeforereconnect += \
             lambda src, eargs: self.onbeforereconnect(src, eargs)
         exec.onafterreconnect  += \
             lambda src, eargs: self.onafterreconnect(src, eargs)
 
-        # Call then executioner's exec methed which will call the exec() callable
-        # above. executioner.execute will take care of dead, pooled connection,
-        # and atomicity.
+        # Call then executioner's exec methed which will call the exec()
+        # callable above. executioner.execute will take care of dead,
+        # pooled connection, and atomicity.
         exec.execute()
-        
+
     def _save(self, cur=None, guestbook=None):
 
         if guestbook is None:
@@ -3670,6 +3674,12 @@ class mapping(entitiesmod.entity):
         self.isderived = isderived
 
     @property
+    def isstandard(self):
+        """ Returns True if this is a standard field mapping applied by
+        the entitymeta.
+        """
+        return self.name in ('id', 'createdat', 'updatedat')
+
     def isdefined(self):
         return self._value is not undef
 
@@ -4110,6 +4120,17 @@ class fieldmapping(mapping):
 
         super().__init__(name, isderived)
 
+    @property
+    def column(self):
+        # NOTE This should probably be rewritten like this:
+        #
+        #     return db.column(self)
+
+        col = db.column()
+        col.name = self.name
+        col.dbtype = self.definition
+        return col
+
     def clone(self):
         ix = self.index
 
@@ -4227,8 +4248,11 @@ class fieldmapping(mapping):
 
     @property
     def precision(self):
-        if not (self.isfloat or self.isdecimal):
+        if not (self.isfloat or self.isdecimal, self.isdatetime):
             return None
+
+        if self.isdatetime:
+            return 6
 
         if self._precision is None:
             return 12
@@ -4302,8 +4326,72 @@ class fieldmapping(mapping):
     @property
     def dbtype(self):
         """ Returns a string representing the MySQL data type
+        corresponding to this field mapping e.g., 'varchar',
+        'datetime', 'bit', 'tinyint', 'smallint unsigned', etc.
+
+        This is similar to the ``definition`` property, however dbtype
+        only returns the name of the database type in string form. The
+        precision, scale and size are not included.
+        """
+        if self.isstr:
+            if self.max <= 4000:
+                if self.isfixed:
+                    return 'char'
+                else:
+                    return 'varchar'
+            else:
+                return 'longtext'
+
+        elif self.isint:
+            if self.min < 0:
+                if    self.min  >=  -128         and  self.max  <=  127:
+                    return 'tinyint'
+                elif  self.min  >=  -32768       and  self.max  <=  32767:
+                    return 'smallint'
+                elif  self.min  >=  -8388608     and  self.max  <=  8388607:
+                    return 'mediumint'
+                elif  self.min  >=  -2147483648  and  self.max  <=  2147483647:
+                    return 'int'
+                elif  self.min  >=  -2**63       and  self.max  <=  2**63-1:
+                    return 'bigint'
+                else:
+                    raise ValueError()
+            else:
+                if self.max  <=  255:
+                    return 'tinyint unsigned'
+                elif self.max  <=  65535:
+                    return 'smallint unsigned'
+                elif self.max  <=  16777215:
+                    return 'mediumint unsigned'
+                elif self.max  <=  4294967295:
+                    return 'int unsigned'
+                elif self.max  <=  (2 ** 64) - 1:
+                    return 'bigint unsigned'
+                else:
+                    raise ValueError()
+        elif self.isdatetime:
+            return 'datetime'
+        elif self.isdate:
+            return 'date'
+        elif self.isbool:
+            return 'bit'
+        elif self.isfloat:
+            return 'double'
+        elif self.isdecimal:
+            return 'decimal'
+        elif self.isbytes:
+            if self.isfixed:
+                return 'binary'
+            else:
+                return 'varbinary'
+        else:
+            raise ValueError()
+
+    @property
+    def definition(self):
+        """ Returns a string representing the MySQL data type
         corresponding to this field mapping e.g., varchar(255),
-        datetime(6) bit, tinyint, etc.
+        datetime(6) bit, tinyint, etc. 
         """
         if self.isstr:
             # However, setting the varchar max to 16,383 can cause
@@ -4501,6 +4589,10 @@ class foreignkeyfieldmapping(fieldmapping):
 
     @property
     def dbtype(self):
+        return 'binary'
+
+    @property
+    def definition(self):
         return 'binary(16)'
 
     @property
@@ -4527,6 +4619,10 @@ class primarykeyfieldmapping(fieldmapping):
 
     @property
     def dbtype(self):
+        return 'binary'
+
+    @property
+    def definition(self):
         return 'binary(16) primary key'
 
     @property
@@ -4612,9 +4708,13 @@ class ormclasswrapper(entitiesmod.entity):
 
     def __getattr__(self, attr):
         """ A proxy to any of the wrapped entity's attributes not
-        imlemented here.
+        implemented here.
         """
         return getattr(self.entity, attr)
+
+    @property
+    def __module__(self):
+        return self.entity.__module__
 
     @property
     def orm(self):
@@ -4674,6 +4774,14 @@ class orm:
 
         self.recreate = self._recreate
 
+    @staticmethod
+    def exec(sql, args=None):
+        exec = db.executioner(
+            lambda cur: cur.execute(sql, args)
+        )
+
+        exec()
+        
     def default(self, attr, v, dict=None):
         """ Sets an attribute to a default value. ``default`` is
         intended to be called by an entity's constructor after the
@@ -4710,17 +4818,17 @@ class orm:
 
         # Get the **kwargs dict from the calling method unless the
         # ``dict` argument was passed in.
-        if dict is None:
-            st = inspect.stack()
-            try:
-                dict = st[1].frame.f_locals['kwargs']
-            except Exception as ex:
-                raise ValueError(
-                    'Failed finding `kwargs`. '
-                    'Call `default` from `__init__` with **kwargs '
-                    'or set `dict`. ' + repr(ex)
+        st = inspect.stack()
+        try:
+            dict = st[1].frame.f_locals['kwargs']
+        except Exception as ex:
+            raise ValueError(
+                'Failed finding `kwargs`. '
+                'Call `default` from `__init__` with **kwargs '
+                'or set `dict`. ' + repr(ex)
 
-                )
+            )
+
         # If the kwargs parameter from the calling method has a key for
         # attr, use it. Otherwise use the value from the ``v``.
         try:
@@ -5081,9 +5189,28 @@ class orm:
                 if cur:
                     cur.close()
 
-    def drop(self, cur=None):
+    def drop(self, cur=None, ignore=False):
         # TODO Use executioner
         sql = 'drop table `%s`;' % self.table
+
+        try:
+            if cur:
+                cur.execute(sql)
+            else:
+                pool = db.pool.getdefault()
+                with pool.take() as conn:
+                    conn.query(sql)
+        except _mysql_exceptions.OperationalError as ex:
+            if ex.args[0] == BAD_TABLE_ERROR:
+                if not ignore:
+                    raise
+    
+    def migrate(self, cur=None):
+        # TODO Use executioner
+        sql = self.altertable
+
+        if not sql:
+            return
 
         if cur:
             cur.execute(sql)
@@ -5091,7 +5218,7 @@ class orm:
             pool = db.pool.getdefault()
             with pool.take() as conn:
                 conn.query(sql)
-    
+
     def create(self, cur=None, ignore=False):
         # TODO Use executioner
         sql = self.createtable
@@ -5109,6 +5236,164 @@ class orm:
             if ex.args[0] == TABLE_EXISTS_ERROR:
                 if not ignore:
                     raise
+    @property
+    def ismigrated(self):
+        return not bool(self.altertable)
+
+    @property
+    def migration(self):
+        return migration(self.entity)
+
+    @property
+    def altertable(self):
+        tbl = self.dbtable
+
+        # If there is no table in the database, there can be no ALTER
+        # TABLE. We would need a CREATE TABLE, obviously, so return
+        # None.
+        if not tbl:
+            return None
+
+        # Create a clone of the table to track changes that would be
+        # made to the real table if the altertable statement were
+        # applied to it.
+        altered = tbl.clone()
+
+        maps = mappings(
+            initial=(
+                x for x in self.mappings 
+                if isinstance(x, fieldmapping)
+            )
+        )
+
+        attrs = [x.name for x in maps]
+        cols = [x.name for x in tbl.columns]
+
+        opcodes = SequenceMatcher(a=cols, b=attrs).get_opcodes()
+
+        # listify tuples so they are mutable
+        opcodes = [list(x) for x in opcodes]
+        rms = list()
+        for i, (tag, i1, i2, j1, j2) in enumerate(opcodes):
+            if tag == 'delete':
+                inserts = [x for x in opcodes if x[0] == 'insert']
+                for insert in inserts:
+                    ix = slice(*insert[3:])
+                    if cols[i1:i2] == attrs[ix]:
+                        rms.append(opcodes.index(insert))
+                        opcodes[i][0] = 'move'
+                        insert[0] = 'after'
+                        opcodes[i].append(insert)
+
+        for rm in rms:
+            del opcodes[rm]
+
+        # If there are no differences, return None; there is nothing to
+        # ALTER.
+        isdiff = any([x for x in opcodes if x[0] != 'equal'])
+
+        I = ' ' * 4
+        at1 = str()
+        hdr = f'ALTER TABLE `{self.table}`\n'
+        if isdiff:
+
+            for tag, i1, i2, j1, j2, *after in  opcodes:
+
+                if tag not in ('insert', 'delete', 'move', 'replace'):
+                    continue
+
+                if tag == 'insert':
+                    # ADD <column-name> <definition>
+                    for i, attr in enumerate(attrs[j1:j2]):
+                        map = maps[attr]
+                        after = maps.getprevious(map)
+                        after = altered.columns[after.name]
+
+                        if at1: at1 += ',\n'
+
+                        # TODO s/ADD/ADD COLUMN/ for clarity and
+                        # consistancy (because we use DROP COLUMN and
+                        # MODIFY COLUMN)
+                        at1 += f'{I}ADD `{map.name}` {map.definition}'
+
+                        at1 += f'\n{I*2}AFTER `{after.name}`'
+
+                        col = db.column(map)
+                        ix = altered.columns.getindex(after.name)
+                        altered.columns.insertafter(ix, col)
+
+                elif tag == 'move':
+                    # CHANGE COLUMN <name> <-name> <-definition> 
+                    #     AFTER <after>
+
+                    ix = after[0][1] - 1
+
+                    after = tbl.columns[ix]
+                    for col in cols[i1:i2]:
+                        map = maps[col]
+
+                        if at1: at1 += ',\n'
+
+                        at1 += f'{I}CHANGE COLUMN `{col}` ' + \
+                             f'`{col}` {map.definition}'  + \
+                             f'\n{I * 2}AFTER `{after.name}`'
+
+                        ix = altered.columns.getindex(after.name)
+                        col = altered.columns[col]
+                        altered.columns.moveafter(ix, col)
+
+                        after = map
+
+                elif tag == 'delete':
+                    for i, col in enumerate(cols[i1:i2]):
+                        if at1: at1 += ',\n'
+
+                        at1 += f'{I}DROP COLUMN `{col}`'
+
+                        altered.columns.remove(col)
+
+                elif tag == 'replace':
+                    for col, map in zip(cols[i1:i2], maps[j1:j2]):
+                        if at1: at1 += ',\n'
+                        at1 += (
+                            f'{I}CHANGE COLUMN `{col}` `{map.name}` '
+                            f'{map.definition}'
+                        )
+                        altered.columns[col].name = map.name
+
+            at1 = f'{hdr}{at1};'
+
+        if maps.count != altered.columns.count:
+            raise ConfusionError(
+                'mappings:%s columns:%s' % 
+                    (maps.count, altered.columns.count)
+            )
+
+        at2 = str()
+        for map, col in zip(maps, altered.columns):
+            if col.name != map.name:
+                raise ConfusionError(
+                    f'Mapping error: {map.name} != {col.name}'
+                )
+
+            if col.definition == map.definition:
+                continue
+
+            if at2: at2 += ',\n'
+            at2 += f'{I}MODIFY COLUMN `{col.name}` {map.definition}';
+
+        if at2:
+            at2 = f'ALTER TABLE `{self.table}`\n{at2};'
+
+        r = str()
+        if at1:
+            r = at1
+
+        if at2:
+            if r: r += '\n\n'
+            r += at2
+
+        return r or None
 
     @property
     def createtable(self):
@@ -5124,7 +5409,7 @@ class orm:
             r += '    `%s`' % map.name
 
             if isinstance(map, fieldmapping):
-                r += ' ' + map.dbtype
+                r += ' ' + map.definition
 
         for ix in self.mappings.aggregateindexes:
             r += ',\n    ' + str(ix)
@@ -5163,6 +5448,29 @@ class orm:
             # will proceed with an attempt to load.
             self.isloaded = False
             self.collect(orderby, limit, offset)
+
+    def query(self, sql):
+        ress = None
+        def exec(cur):
+            nonlocal ress
+            cur.execute(sql)
+            ress = db.dbresultset(cur)
+
+        exec = db.executioner(exec)
+
+        exec.execute()
+
+        return res
+
+    # TODO:1d1e17dc s/dbtable/table
+    @property
+    def dbtable(self):
+        try:
+            return db.table(self.table)
+        except _mysql_exceptions.OperationalError as ex:
+            if ex.args[0] == BAD_TABLE_ERROR:
+                return None
+            raise
 
     def load(self, id):
         sql = 'SELECT * FROM {} WHERE id = _binary %s'
@@ -6111,12 +6419,15 @@ class orm:
 
     # TODO s/getentitys/getentityclasses/
     @staticmethod
-    def getentitys():
+    def getentitys(includeassociations=False):
         r = []
         for e in orm.getsubclasses(of=entity):
-            if association not in e.mro():
-                if e is not association:
-                    r += [e]
+            if includeassociations:
+                r += [e]
+            else:
+                if association not in e.mro():
+                    if e is not association:
+                        r += [e]
         return r
 
     @staticmethod
@@ -6679,7 +6990,166 @@ class associations(entities):
 class association(entity):
     pass
 
+class migration:
+    def __init__(self, e=None):
+        self.entity = e
+
+    @property
+    def entities(self):
+        r = entitiesmod.entities()
+        es = orm.getentitys(includeassociations=True)
+        tbls = db.catelog().tables
+
+        for e in es:
+            if not tbls(e.orm.table):
+                # The model `e` has no corresponding table, so it should
+                # probably be CREATEd
+                r += ormclasswrapper(e)
+
+        for tbl in tbls:
+            for e in es:
+                if e.orm.table == tbl.name:
+                    break
+            else:
+                # `tbl` exist in database but not in model, so should
+                # probably be DROPped.
+                r += tbl 
+                continue
+
+            if not e.orm.ismigrated:
+                # The ``e`` entity has an corresponding table, but the
+                # table is not "migrated" (it differs from the model),
+                # so it should probably be ALTERed.
+                r += ormclasswrapper(e)
+
+        return r
+
+    @property
+    def table(self):
+        tbl = table()
+
+        row = tbl.newrow()
+
+        e = self.entity
+
+        maps = mappings(
+            initial=(
+                x for x in e.orm.mappings 
+                if isinstance(x, fieldmapping)
+            )
+        )
+
+        cols = e.orm.dbtable.columns
+
+        cnt = max(maps.count, cols.count)
+
+        row.newfields(
+            f'Model: {e.__module__}.{e.__name__}', str(), 
+            f'Table: {e.orm.table}', str()
+        )
+
+        for i in range(cnt):
+            map = maps(i)
+
+            if not isinstance(map, fieldmapping):
+                continue
+
+            col = cols(i)
+
+            if map.name == col.name:
+                row = tbl.newrow()
+                row.newfields(
+                    map.name, map.definition, 
+                    col.name, col.definition
+                )
+
+        return tbl
+
+    @property
+    def table1(self):
+        tbl = table()
+
+        row = tbl.newrow()
+
+        e = self.entity
+
+        maps = mappings(
+            initial=(
+                x for x in e.orm.mappings 
+                if isinstance(x, fieldmapping)
+            )
+        )
+
+        cols = e.orm.dbtable.columns
+
+        row.newfields(
+            f'Model: {e.__module__}.{e.__name__}', str(), 
+            f'Table: {e.orm.table}', str()
+        )
+
+        mapdefs = [f'{x.name} {x.definition}' for x in maps]
+        coldefs = [f'{x.name} {x.definition}' for x in cols]
+
+
+        # TODO REMOVE ME
+
+        mapdefs = (
+            'id primary key',
+            'middle varchar(255)',
+            'last varchar(255)',
+            'first varchar(255)',
+            'email varchar(255)',
+            'dob date',
+        )
+
+        coldefs = (
+            'id int',
+            'first varchar(255)',
+            'middle varchar(255)',
+            'last varchar(255)',
+            'email varchar(255)',
+            'dob date',
+        )
+
+        opcodes = SequenceMatcher(None, coldefs, mapdefs).get_opcodes()
+
+        for tag, i1, i2, j1, j2 in opcodes:
+            if tag == 'equal':
+                gen = zip(mapdefs[j1:j2], coldefs[i1:i2])
+
+                for mapdef, coldef in gen:
+                    row = tbl.newrow()
+                    row.newfields(mapdef, coldef)
+
+            elif tag == 'delete':
+                for coldef in coldefs[i1:i2]:
+                    row = tbl.newrow()
+                    row.newfields('', coldef)
+            elif tag == 'insert':
+                for mapdef in mapdefs[j1:j2]:
+                    row = tbl.newrow()
+                    row.newfields(mapdef, '')
+            elif tag == 'replace':
+                gen = zip(mapdefs[j1:j2], coldefs[i1:i2])
+
+                for mapdef, coldef in gen:
+                    row = tbl.newrow()
+                    row.newfields(mapdef, coldef)
+            else:
+                raise ValueError()
+
+
+        return tbl
+
+
+    def __repr__(self):
+        if self.entity.orm.ismigrated:
+            return str()
+
+        return f'{self.table}\n{self.entity.orm.altertable}'
+            
 # ORM Exceptions
 class InvalidColumn(ValueError): pass
 class InvalidStream(ValueError): pass
+class ConfusionError(ValueError): pass
 

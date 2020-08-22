@@ -7,21 +7,23 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
 # TODO Add Tests
-from configfile import configfile
 from entities import *
 from MySQLdb.constants.ER import BAD_TABLE_ERROR
-from table import table
+import _mysql_exceptions
+import table as tblmod
 import MySQLdb
 import warnings
 import uuid
 import func
 from contextlib import contextmanager
 from dbg import B
+from config import config
+import accounts
 
-# Some errors in MySQL are classified as "warnings" (such as 'SELECT 0/0').
-# This means that no exception is raised; just an error message is printed to
-# stderr. We want these warnings to be proper exceptions so they
-# won't go unnoticed. The below code does just that.
+# Some errors in MySQL are classified as "warnings" (such as 'SELECT
+# 0/0').  This means that no exception is raised; just an error message
+# is printed to stderr. We want these warnings to be proper exceptions
+# so they won't go unnoticed. The below code does just that.
 warnings.filterwarnings('error', category=MySQLdb.Warning)
 
 class dbentities(entities):
@@ -33,10 +35,10 @@ class dbentities(entities):
             for res in ress:
                 self += self.dbentity(res)
 
-        # The collection may have been added to above. If that is the case, the
-        # _isdirty flag will be set to True in the _self_onadd event handler.
-        # Set it back to False since we are just __init__'ing the object; it
-        # shouldn't be dirty at this point.
+        # The collection may have been added to above. If that is the
+        # case, the _isdirty flag will be set to True in the _self_onadd
+        # event handler.  Set it back to False since we are just
+        # __init__'ing the object; it shouldn't be dirty at this point.
 
         self._isdirty = False
 
@@ -162,7 +164,7 @@ class dbentities(entities):
                 return None
             return functools.reduce(rgetattr, [obj] + attr.split('.'))
 
-        tbl = table()
+        tbl = tblmod.table()
 
         if props:
             props = ('ix', 'id') + tuple(props)
@@ -270,14 +272,13 @@ class dbentity(entity):
         return ress.rowcount
 
 class connections(entities):
-
     _instance = None
     def __init__(self):
         super().__init__()
-        cfg = configfile.getinstance()
-        accts = cfg.accounts.mysqlaccounts
-        for acct in accts:
-            self += connection(acct)
+        cfg = config()
+        for acct in cfg.accounts:
+            if isinstance(acct, accounts.mysql):
+                self += connection(acct)
 
     @classmethod
     def getinstance(cls):
@@ -300,6 +301,10 @@ class connection(entity):
     @property
     def account(self):
         return self._account
+
+    def __repr__(self):
+        conn = self._connection
+        return '%s (Open: %s)' % (self.account.url, str(bool(conn.open)))
 
     @property
     def _connection(self):
@@ -376,6 +381,7 @@ class connection(entity):
                 else:
                     raise
 
+
 # TODO The 'db' prefix on these class names are redundant.
 class dbresultset(entities):
     """ Represents a collections of rows returned from a db query. """
@@ -399,7 +405,7 @@ class dbresultset(entities):
         return self.first
 
     def __repr__(self):
-        tbl = table()
+        tbl = tblmod.table()
 
         for i, res in func.enumerate(self):
             if i.first:
@@ -602,6 +608,7 @@ class chronicle(entity):
     def clone(self):
         return chronicle(self.entity, self.op, self.sql, self.args)
 
+# TODO s/executioner/executor/
 class executioner(entity):
     def __init__(self, exec, max=2):
         self._execute = exec
@@ -609,6 +616,9 @@ class executioner(entity):
         self.onbeforereconnect  =  event()
         self.onafterreconnect   =  event()
     
+    def __call__(self, es=None):
+        self.execute(es)
+
     def execute(self, es=None):
         pl = pool.getdefault()
         for i in range(self.max):
@@ -657,3 +667,256 @@ class executioner(entity):
                 cur.close()
                 pl.push(conn)
 
+def exec(sql, args=None):
+    exec = executioner(
+        lambda cur: cur.execute(sql, args)
+    )
+
+    exec()
+
+class catelogs(entities):
+    pass
+
+class catelog(entity):
+    @property
+    def tables(self):
+        return tables()
+
+class tables(entities):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        with pool.getdefault().take() as conn:
+            sql = '''
+            select *
+            from information_schema.columns
+            where table_schema = %s;
+            '''
+
+            ress = conn.query(sql, (conn.account.database,))
+
+            # TODO The below could be unindented to allow the pool the
+            # recover its connection.
+            tbls = dict()
+            for res in ress:
+
+                fld = res.fields['TABLE_NAME']
+                name = fld.value
+
+                try:
+                    ress1 = tbls[name]
+                except KeyError:
+                    ress1 = list()
+                    tbls[name] = ress1
+
+                ress1.append(res) 
+
+            for name, ress in tbls.items():
+                self += table(name=name, ress=ress)
+
+    def drop(self):
+        for tbl in self:
+            tbl.drop()
+
+class table(entity):
+    def __init__(self, name=None, ress=None, load=True):
+        self.name = name
+        self.columns = columns(tbl=self, ress=ress, load=load)
+
+    def clone(self):
+        tbl = table(name=self.name, load=False)
+        tbl.columns += self.columns.clone(self)
+        return tbl
+
+    def __repr__(self):
+        r = 'CREATE TABLE %s (\n'
+        for i, col in self.columns.enumerate():
+            if not i.first:
+                r += ',\n'
+            r += '    %s' % str(col)
+        r += '\n)'
+        return r % self.name
+
+    def drop(self):
+        exec(f'DROP TABLE `{self.name}`')
+
+class columns(entities):
+    def __init__(self, 
+            tbl=None, ress=None, load=False, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
+        self.table = tbl
+
+        # Don't load if there is no ``table``. We probably just want to
+        # use ``columns`` for collecting ``column`` objects
+        if load:
+            pl = pool.getdefault()
+            with pl.take() as conn:
+
+                sql = '''select *
+                from information_schema.columns
+                where table_schema = %s
+                    and table_name = %s
+                '''
+                ress = conn.query(
+                    sql, (conn.account.database, tbl.name)
+                )
+
+            if not ress.count:
+                # If no columns were returned then tbl.name doesn't
+                # exist in the database, so throw the kind of
+                # exception MySQLdb would.
+                raise _mysql_exceptions.OperationalError(
+                    BAD_TABLE_ERROR, 'Table not found'
+                )
+
+        if ress is not None:
+            for res in ress:
+                self += column(res)
+
+    def clone(self, tbl):
+        cols = columns(tbl=tbl, load=False)
+        for col in self:
+            cols += col.clone()
+
+        return cols
+
+class column(entity):
+    _attrs = (
+        'name',       'ordinal',  'type',       'max',
+        'key',        'type',     'precision',  'scale',
+        'columntype'
+    )
+
+    def __init__(self, res=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.columntype = None
+        if res:
+            self.populate(res)
+
+    def clone(self):
+        col = column()
+
+        for attr in self._attrs:
+            setattr(col, attr, getattr(self, attr))
+
+        return col
+
+    @property
+    def issigned(self):
+        ints = (
+            'tinyint',
+            'smallint',
+            'mediumint',
+            'int',
+            'bigint',
+        )
+
+        if self.type not in ints:
+            return None
+
+        if self.columntype:
+            t = self.columntype
+        else:
+            t = self.type
+
+        if ' unsigned' in t:
+            return False
+        else:
+            return True
+            
+    def populate(self, res):
+        if isinstance(res, dbresult):
+            flds = res.fields
+            self.name = flds['COLUMN_NAME'].value
+            self.ordinal = flds['ORDINAL_POSITION'].value
+            self.type = flds['DATA_TYPE'].value
+            self.max = flds['CHARACTER_MAXIMUM_LENGTH'].value
+            self.key = flds['COLUMN_KEY'].value
+            self.columntype = flds['COLUMN_TYPE'].value
+            if self.type == 'datetime':
+                self.precision = flds['DATETIME_PRECISION'].value
+            else:
+                self.precision = flds['NUMERIC_PRECISION'].value
+            self.scale = flds['NUMERIC_SCALE'].value
+        elif res is not None:
+            # If res looks like a column, we can use the column class`s
+            # attributes (``column._attrs``)
+
+            for attr in self._attrs:
+                try:
+                    v = getattr(res, attr)
+                except AttributeError:
+                    if attr not in ('key', 'columntype'):
+                        raise
+                else:
+                    # NOTE orm.mapping has a dbtype property that returns a
+                    # string version of the type, which is what we want.
+                    # I believe this is slated to be corrected, so we
+                    # may want to move this conditional when
+                    # mapping.type returns a string version.
+                    if attr == 'type' and not isinstance(v, str):
+                        v = res.dbtype
+
+                    # mapping.ordinal means something different than
+                    # column.ordinal, so lets just set it to None
+                    if attr == 'ordinal':
+                        v = None
+
+                    setattr(self, attr, v)
+
+            if not hasattr(self, 'key'):
+                if self.name == 'id':
+                    self.key = 'pri'
+                else:
+                    self.key = None
+
+    def __repr__(self):
+        r = 'column(' 
+        for i, attr in enumerate(self._attrs):
+            if not i.first:
+                r += ', '
+            r += f'{attr}={getattr(self, attr)}'
+        r += ')'
+        return r
+
+    def __str__(self):
+        return '%s %s' % (self.name, self.definition)
+
+
+    @property
+    def isprimary(self):
+        return self.key and self.key.lower() == 'pri'
+
+    @property
+    def definition(self):
+        """ The portion of a CREATE TABLE or ALTER TABLE statement that
+        would define a column::
+
+        ALTER TABLE mytable
+            ADD id int primary key   -- "int primary key' is the definition
+                   --------------
+        """
+        ints = (
+            'tinyint',
+            'smallint',
+            'mediumint',
+            'int',
+            'bigint',
+        )
+
+        r = self.type
+
+        if self.type == 'datetime':
+            r += f'({self.precision})'
+        elif self.type in ('double', 'decimal'):
+            r += f'{(self.precision, self.scale)}'
+        elif self.type in ('binary', 'varchar', 'char', 'varbinary'):
+            r += f'({self.max})'
+        elif self.type in ints:
+            if not self.issigned:
+                r += f" {'' if self.issigned else 'unsigned'}"
+
+        if self.isprimary:
+            r += ' primary key'
+
+        return r

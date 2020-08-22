@@ -15,7 +15,7 @@ from pprint import pprint
 from functools import total_ordering
 import decimal
 import string
-from func import getattr
+from func import getattr, enumerate
 from dbg import B
 
 class entities(object):
@@ -398,11 +398,14 @@ class entities(object):
             rms = [e]
         elif callable(e) and not isinstance(self, event):
             rms = self.where(e)
-        elif type(e) == int:
+        elif isinstance(e, int):
             rm = self._ls[e]
             del self._ls[e]
             self.onremove(self, entityremoveeventargs(rm))
             return
+        elif isinstance(e, str):
+            ix = self.getindex(e)
+            return self.remove(ix)
         else:
             rms = [e]
 
@@ -453,6 +456,15 @@ class entities(object):
         if self.isempty: return None
         return self.count - 1
 
+    def move(self, ix, e):
+        """ Insert `e` *before* the element at position `ix`.
+        """
+        raise NotImplementedError('TODO')
+
+    def moveafter(self, ix, e):
+        self.remove(e)
+        self.insertafter(ix, e)
+
     def insert(self, ix, e):
         self.insertbefore(ix, e)
 
@@ -477,8 +489,8 @@ class entities(object):
         self += e
 
     def give(self, es):
-        """ Move the elements self to es. Clear es. A slice parameter can be used
-        to limit what is moved. """
+        """ Move the elements self to es. Clear es. A slice parameter
+        can be used to limit what is moved. """
 
         # TODO: Write test
         es += self
@@ -523,7 +535,9 @@ class entities(object):
                     self.append(t, r=r)
             return r
         else: 
-            raise ValueError('Unsupported object appended: ' + str(type(obj)))
+            raise ValueError(
+                'Unsupported object appended: ' + str(type(obj))
+            )
 
         if uniq and self.has(t):
             return r
@@ -661,6 +675,10 @@ class entities(object):
             raise IndexError(str(ex))
 
         return self[ix]
+
+    def getprevious(self, e):
+        ix = self.getindex(e)
+        return self(ix - 1)
 
     def getindex(self, e):
         """ Return the first index of e in the collection.
@@ -821,8 +839,8 @@ class entity():
     @property
     def log(self):
         # Defer import to avoid circular dependency
-        from configfile import configfile
-        return configfile.getinstance().logs.default
+        from config import config
+        return config().logs.default
 
     def _setvalue(self, field, new, prop, setattr=setattr, cmp=True):
         # TODO: It's nice to strip any string because that's vitually

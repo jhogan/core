@@ -8,8 +8,9 @@
 
 from entities import entities, entity, brokenrules, brokenrule
 from datetime import datetime, timedelta
-from configfile import configfile
+from config import config
 import json
+from dbg import B
 import jwt as pyjwt
 
 
@@ -48,7 +49,7 @@ class jwt(entity):
                 if v is not None:
                     d[prop] = v
 
-            secret = configfile.getinstance()['jwt-secret']
+            secret = config().jwtsecret
             enc = pyjwt.encode(d, secret)
             self._token = enc.decode('utf-8')
         return self._token
@@ -57,7 +58,7 @@ class jwt(entity):
         v = getattr(self, '_' + k)
         if v is None:
             if self.token:
-                secret = configfile.getinstance()['jwt-secret']
+                secret = config().jwtsecret
                 d = pyjwt.decode(self.token, secret)
                 try:
                     return d[k]
