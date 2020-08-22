@@ -46,12 +46,7 @@ class configuration:
             )
         return self._logs
 
-    class jwt:
-        @property
-        def secret(self):
-            raise NotImplementedError('Must override')
-
     @property
-    def jwt(self):
-        return type(self)._jwt()
+    def jwtsecret(self):
+        raise NotImplementedError('Must override')
 

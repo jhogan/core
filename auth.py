@@ -49,7 +49,7 @@ class jwt(entity):
                 if v is not None:
                     d[prop] = v
 
-            secret = config().jwt.secret
+            secret = config().jwtsecret
             enc = pyjwt.encode(d, secret)
             self._token = enc.decode('utf-8')
         return self._token
@@ -58,7 +58,7 @@ class jwt(entity):
         v = getattr(self, '_' + k)
         if v is None:
             if self.token:
-                secret = config().jwt.secret
+                secret = config().jwtsecret
                 d = pyjwt.decode(self.token, secret)
                 try:
                     return d[k]

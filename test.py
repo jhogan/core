@@ -3033,7 +3033,7 @@ class test_jwt(tester):
     def it_calls_token(self):
         t = jwt()
         token = t.token
-        secret = config().jwt.secret
+        secret = config().jwtsecret
 
         d = pyjwt.decode(token, secret)
 
