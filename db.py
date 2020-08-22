@@ -846,7 +846,7 @@ class column(entity):
                 try:
                     v = getattr(res, attr)
                 except AttributeError:
-                    if attr != 'key':
+                    if attr not in ('key', 'columntype'):
                         raise
                 else:
                     # NOTE orm.mapping has a dbtype property that returns a
