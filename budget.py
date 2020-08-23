@@ -41,9 +41,10 @@ class periodtypes(orm.entities): pass
 
 class budget(orm.entity):
     """ Describes the information about the amounts of moneys needed for
-    a group of expense items over a certain period of time.
-
-    ``budget`` are mechanism for planning the spending of money.
+    a group of expense items over a certain period of time.  ``budget``
+    are mechanism for planning the spending of money. Each ``budget``
+    must be composed of one or mun budget ``item``, which stores the
+    details of what exactly is being budgeted.
 
     A ``budget`` has a many-to-one relationship, and thus an implicit
     attribute for, the ``period``, which identifies the time
@@ -99,6 +100,15 @@ class type(orm.entity):
     budgets = budgets
 
 class status(orm.entity):
+    """ Each ``budget`` generally moves through various stages as the
+    budget process unfolds. A ``budget`` is typically created ona a
+    certain date, reviewed, submitted for approval, then accepted,
+    rejected, or sent back to the submitter for modifications.
+
+    Note that this entity was originally called BUDGET STATUS in
+    "The Data Model Resource Book".
+    """
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.orm.ensure(expects=('name',), **kwargs)
@@ -119,7 +129,9 @@ class statustype(orm.entity):
     statuses = statuses
 
 class item(orm.entity):
-    """ 
+    """ Each ``budget`` must be composed of one or more budget
+    ``item``s. A budget ``item`` stores the details of exactly what is
+    being budgeted.
 
     ``item``s may be recursively related to other ``item``s
     allowing for a hierarchy of budget item rollups (see the items
@@ -128,9 +140,18 @@ class item(orm.entity):
     Note that this entity was originally called BUDGET ITEM in
     "The Data Model Resource Book".
     """
+
+    # NOTE There is an implicit ``itemtype`` attribute that indicates
+    # the ``item``'s type.
  
+    # Defines the total amount of funds required for the item within the
+    # time period.
     amount = dec
+
+    # Identifies why the items are need
     purpose = str
+
+    # Describes why the budgeted ``amount`` of money should be expended.
     justification = text
 
     # ``item``s may be recursively related to other ``item``s
@@ -138,6 +159,12 @@ class item(orm.entity):
     items = items
 
 class itemtype(orm.entity):
+    """ Classifies the budegtary ``item``s into types so that common
+    budget item descriptions can be reused.
+
+    Note that this entity was originally called BUDGET ITEM TYPE in
+    "The Data Model Resource Book".
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.orm.ensure(expects=('name',), **kwargs)
