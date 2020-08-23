@@ -16790,8 +16790,7 @@ class crust_migration(tester):
         es = orm.orm.getentitys(includeassociations=True)
         es = [x for x in es if x.__name__ != 'cat']
         for e in es:
-            e.orm.recreate()
-
+            e.orm.create()
 
         # Ensure entities count matches table count
         self.eq(len(es), db.tables().count)
