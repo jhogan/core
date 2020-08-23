@@ -4915,6 +4915,12 @@ class orm:
             # The record isn't new or dirty so set all peristance state
             # variables to false.
             self.persistencestate = (False,) * 3
+
+            # Repeat for all the super that were loaded
+            sup = self.instance.orm._super
+            while sup:
+                sup.orm.persistencestate = (False,) * 3
+                sup = sup.orm._super
         else:
             # Save immediately. There is no need for the user to save
             # manually because there are only several rating objects
