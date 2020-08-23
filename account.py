@@ -31,15 +31,16 @@ import invoice
 import invoice
 import asset
 import budget
+import apriori
 
 class accounts(orm.entities): pass
-class types(orm.entities): pass
+class types(apriori.types): pass
 class account_organizations(orm.associations): pass
 class periods(orm.entities): pass
-class periodtypes(orm.entities): pass
+class periodtypes(apriori.types): pass
 class transactions(orm.entities): pass
 class items(orm.entities): pass
-class transactiontypes(orm.entities): pass
+class transactiontypes(apriori.types): pass
 class internals(transactions): pass
 class depreciations(internals): pass
 class capitalizations(internals): pass
@@ -96,7 +97,7 @@ class account(orm.entity):
     # The collection of  "journal entry line items" for this account
     items = items
 
-class type(orm.entity):
+class type(apriori.type):
     """ Each general ledger ``account`` may be categorized by one and only one
     general ledger account type (``type``) to specify the
     ``account``. Valid classifications include:  "asset", "liability",
@@ -111,12 +112,6 @@ class type(orm.entity):
     Note that this entity was originally called GENERAL LEDGER ACCOUNT
     TYPE in "The Data Model Resource Book".
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    name = str
-
     # All the accounts that are categorized by this object
     accounts = accounts
 
@@ -206,7 +201,7 @@ class period(orm.entity):
     # reporting.
     organization = party.organization
 
-class periodtype(orm.entity):
+class periodtype(apriori.type):
     """Identifies the particular type used by ``accounts``.
 
     Each accounting period is of a ``periodtype`` such as "fiscal year",
@@ -215,13 +210,7 @@ class periodtype(orm.entity):
     Note that this entity was originally called PERIOD TYPE in "The Data
     Model Resource Book".
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
 
-    name = str
-
-    # The collection of accounting ``periods``.
     periods = periods
 
 ''' Transactions '''
@@ -306,7 +295,7 @@ class item(orm.entity):
     # etc."
 
 
-class transactiontype(orm.entity):
+class transactiontype(apriori.type):
     """ Provides a specific low-level categorization of each
     transaction. ``transactiontypes`` may include further breakdowns of
     the subentities such as "Payment Recept for Asset Sale" or "Payment
@@ -315,12 +304,6 @@ class transactiontype(orm.entity):
     Note that this entity was originally called ACCOUNTING TRANSACTION
     TYPE In "The Data Model Resource Book".
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    name = str
-
     transactions = transactions
 
 class internal(transaction):

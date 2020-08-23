@@ -63,3 +63,65 @@ class requirement(orm.entity):
 
     # Explains why there is a need for the requirements
     reason = text
+
+class types(orm.entities):
+    pass
+
+class type(orm.entity):
+    """  An abstract entity to describe the type of another class. This
+    class is used when a entity needs a many-to-one class that
+    classifies the entity. For example, say there is an entity called
+    party::
+        
+        class parties(orm.entities):
+            ...
+
+        class party(orm.entity):
+            ...
+
+    we can use a use a subtype of ``apriori.type`` to classify ``party``
+    entities into types::
+        
+        class partytype(apriori.type):
+            # A collection of parties. This declaration links
+            # ``partytype`` to ``party``.
+            parties = parties
+
+    The ``name`` attribute of type, along with the subtype itself, form
+    a unique key to distinguish each ``type`` subentity.
+
+    An import note about type entity objects is that they are
+    self-ensuring. That means that, upon intantiation, there saved to
+    the database unless they already exist. See the example below.
+
+        # Example of how to use the `partytype` mentioned above.
+
+        part = party.party(name='My party of three')
+
+        # NOTE Upon instantiation, party.type will ensure that a 'Dinner
+        # party` entry exist in the database.
+        #
+        # Also note that the ``type``'s ''name'' attribute is used as
+        # the key to the type.
+
+        part.partytype = party.type(name='Dinner party')
+
+        # Now we save party and its association with party.type. Note
+        # that this will not save the ``partytype`` compostie entity
+        # because that was done during instantiation above.
+        part.save()
+
+        # The party.type can be loaded iterated over to get all the
+        # entities classified by it. It only has one in the database at
+        # this point, so we will assert that it has classified `part` as
+        # a "Dinner party".
+        assert part.id == party.type(name='Dinner party').first.id
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    # The name of the type. This is used as a key that the contructor
+    # will use when it ensure the record exists.
+    name = str

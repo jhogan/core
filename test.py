@@ -23629,7 +23629,9 @@ class gem_budget(tester):
     def __init__(self):
         super().__init__()
         orm.orm.recreate(
+            apriori.type,
             budget.type,
+            budget.itemtype,
             budget.period,
             budget.budget,
             budget.role,
