@@ -16788,7 +16788,13 @@ class crust_migration(tester):
 
         # Recreate all tables
         es = orm.orm.getentitys(includeassociations=True)
+
+        # NOTE Because the cat entity is currently involved in migration
+        # testing, it causes issue when determining whether or not it
+        # should be migrated. We can remove for now and restore it after
+        # migration-script generation is working correctly.
         es = [x for x in es if x.__name__ != 'cat']
+
         for e in es:
             e.orm.create()
 
@@ -16799,6 +16805,8 @@ class crust_migration(tester):
             # Ensure the list of entities to migrate (.todo) is zero
             # since we just recreated all the tables.
             #self.zero(src.todo)
+
+            # NOTE See above note on cat entity
             self.zero(
                 [x for x in src.todo if x.name != '__main__.cat']
             )
@@ -16808,12 +16816,12 @@ class crust_migration(tester):
             eargs.response = 'quit'
 
         # Redirect stdout to /dev/null (so to speak)
-        #with redirect_stdout(None):
+        with redirect_stdout(None):
             # Instatiate the migration command passing in `onask` as a
             # handler for the migration.onask event. This has to be done
             # in the constructor because crust.migration.__init__ waists
             # no time interacting with the user.
-        mig = crust.migration(onask=onask)
+            mig = crust.migration(onask=onask)
 
     def it_calls_editor(self):
         def onask(src, eargs):
