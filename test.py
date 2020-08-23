@@ -23631,6 +23631,7 @@ class gem_budget(tester):
     def it_creates(self):
         # Create a budget and assign it a bugettype
         bud = budget.budget(
+            name = 'Marketing budget',
             type = budget.type(
                 name = 'Operating budget'
             )
@@ -23676,5 +23677,58 @@ class gem_budget(tester):
         self.one(rls)
         self.one(rls1)
         self.eq(rls.first.party.id, rls1.first.party.id)
+
+    def it_creates_items(self):
+        
+        bud = budget.budget(name='Marketing budget')
+
+        bud.items += budget.item(
+            itemtype = budget.itemtype(name='Trade shows'),
+            amount   = 20_000,
+            purpose = 'Connect directly with various markets',
+            justification = self.dedent('''
+                Last year, this amount was spent and it resulted in
+                three new clients.
+            ''')
+        )
+
+        bud.items += budget.item(
+            itemtype = budget.itemtype(name='Advertising'),
+            amount   = 30_000,
+            purpose = 'Create public awareness of products',
+            justification = self.dedent('''
+                Competition demands product recognition
+            ''')
+        )
+
+        bud.items += budget.item(
+            itemtype = budget.itemtype(name='Direct mail'),
+            amount   = 15_000,
+            purpose = 'To generate sales leads',
+            justification = self.dedent('''
+                Experience predicts that one can expect 50 leads for
+                every $5,000 expended
+            ''')
+        )
+
+        bud.save()
+
+        bud1 = bud.orm.reloaded()
+
+        self.eq(bud.id, bud1.id)
+
+        itms = bud.items.sorted()
+        itms1 = bud1.items.sorted()
+
+        self.three(itms)
+        self.three(itms1)
+
+        for itm, itm1 in zip(itms, itms1):
+            self.eq(itm.id,             itm1.id)
+            self.eq(itm.amount,         itm1.amount)
+            self.eq(itm.purpose,        itm1.purpose)
+            self.eq(itm.justification,  itm1.justification)
+            self.eq(itm.itemtype.id,    itm1.itemtype.id)
+            self.eq(itm.itemtype.name,  itm1.itemtype.name)
 
 cli().run()

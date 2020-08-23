@@ -58,9 +58,8 @@ class budget(orm.entity):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.orm.default('comment', None)
 
-    comment = text
+    name = str
 
     statuses = statuses
 
