@@ -6428,6 +6428,21 @@ class orm:
                 if association not in e.mro():
                     if e is not association:
                         r += [e]
+
+        # Collect duplicates
+        tbls = set()
+        dups = list()
+        for e in r:
+            if e.orm.table in tbls:
+                dups.append(e)
+                continue
+
+            tbls.add(e.orm.table)
+
+        # Remove duplicates
+        for dup in dups:
+            r.remove(dup)
+
         return r
 
     @staticmethod
