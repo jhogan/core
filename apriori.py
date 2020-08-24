@@ -13,7 +13,7 @@ For example, the the ``requirement`` class should be in the order.py.
 However, product.py wants a ``requirment`` class that subclasses
 ``order.requirement``; and this cannot be, because product.py can't
 ``import`` order.py because it would create a circular reference
-(order.py ``import``s product.py). The ``apriory.py`` module imports no
+(order.py ``import``s product.py). The ``apriori.py`` module imports no
 GEM class and can therefore house classes that any and all GEM classes
 may depend on.
 
