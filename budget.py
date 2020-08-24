@@ -110,13 +110,13 @@ class status(orm.entity):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    entered = date
+        self.orm.default('comment', None)
 
     entities = statuses
 
-    name = str
+    entered = date
+
+    comment = text
 
 class statustype(orm.entity):
     def __init__(self, *args, **kwargs):

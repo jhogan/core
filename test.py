@@ -23630,6 +23630,9 @@ class gem_budget(tester):
         super().__init__()
         orm.orm.recreate(
             budget.type,
+            budget.itemtype,
+            budget.status,
+            budget.statustype,
             budget.period,
             budget.budget,
             budget.role,
@@ -23737,5 +23740,56 @@ class gem_budget(tester):
             self.eq(itm.justification,  itm1.justification)
             self.eq(itm.itemtype.id,    itm1.itemtype.id)
             self.eq(itm.itemtype.name,  itm1.itemtype.name)
+
+    def it_creates_statuses(self):
+        bud = budget.budget(name='My Budget')
+
+        bud.statuses += budget.status(
+            entered = 'Oct 15, 2000',
+            statustype=budget.statustype(name='Created')
+        )
+
+        bud.statuses += budget.status(
+            entered = 'Nov 1, 2000',
+            statustype=budget.statustype(name='Submitted')
+        )
+
+        bud.statuses += budget.status(
+            entered = 'Nov 15, 2000',
+            statustype=budget.statustype(
+                name='Sent back for modification'
+            ),
+            comment = self.dedent('''
+                Management agreed with the types of items budgeted;
+                however, it asked that all amounts be lowered.
+            ''')
+        )
+
+        bud.statuses += budget.status(
+            entered = 'Nov 20, 2000',
+            statustype=budget.statustype(name='Submitted')
+        )
+
+        bud.statuses += budget.status(
+            entered = 'Nov 30, 2000',
+            statustype=budget.statustype(name='Approved')
+        )
+
+        bud.save()
+
+        bud1 = bud.orm.reloaded()
+
+        sts = bud.statuses.sorted('entered')
+        sts1 = bud1.statuses.sorted('entered')
+
+        self.five(sts)
+        self.five(sts1)
+
+        for st, st1 in zip(sts, sts1):
+            self.eq(st.id,               st1.id)
+            self.eq(st.entered,          st1.entered)
+            self.eq(st.comment,          st1.comment)
+            self.eq(st.statustype.id,    st1.statustype.id)
+            self.eq(st.statustype.name,  st1.statustype.name)
 
 cli().run()
