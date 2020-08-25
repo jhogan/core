@@ -16939,14 +16939,13 @@ class crust_migration(tester):
 Test General Entities Model (GEM)
 '''
 
-class gem_party_person(tester):
+class gem_party(tester):
     def __init__(self):
         super().__init__()
         es = orm.orm.getentitys(includeassociations=True)
         for e in es:
             if e.__module__ == 'party':
                 e.orm.recreate()
-
 
     @staticmethod
     def getvalid(first=None, last=None):

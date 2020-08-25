@@ -17,25 +17,26 @@
 #   objects.
 #   https://www.hr360.com/Resource-Center/HR-Terms.aspx
 
-import orm
-from orm import text, datespan, timespan
-import primative
 from datetime import datetime
 from dbg import B
-import builtins
 from decimal import Decimal as dec
+from orm import text, datespan, timespan
+import apriori
 import asset
+import builtins
+import orm
+import primative
 
 ''' Parties '''
 
 ''' orm.entities classes '''
 class parties(orm.entities):                                 pass
-class types(orm.entities):                                   pass
+class types(apriori.types):                                  pass
 class roles(orm.entities):                                   pass
 class workers(roles):                                        pass
 class employees(workers):                                    pass
 class contractors(workers):                                  pass
-class role_role_types(orm.entities):                         pass
+class role_role_types(apriori.types):                        pass
 class statuses(orm.entities):                                pass
 class role_role_statuses(statuses):                          pass
 class priorities(orm.entities):                              pass
@@ -47,7 +48,7 @@ class organizationalunits(organizationals):                  pass
 class internals(organizationals):                            pass
 class subsidiaries(organizationalunits):                     pass
 class parents(organizationalunits):                          pass
-class roletypes(orm.entities):                               pass
+class roletypes(apriori.types):                              pass
 class partyroletypes(roletypes):                             pass
 class employees(personals):                                  pass
 class customers(personals):                                  pass
@@ -72,10 +73,10 @@ class party_addresses(orm.associations):                     pass
 class maritals(parties):                                     pass
 class names(parties):                                        pass
 class genders(parties):                                      pass
-class gendertypes(parties):                                  pass
+class gendertypes(apriori.types):                            pass
 class characteristics(parties):                              pass
-class characteristictypes(parties):                          pass
-class nametypes(parties):                                    pass
+class characteristictypes(apriori.types):                    pass
+class nametypes(apriori.types):                              pass
 class persons(parties):                                      pass
 class address_regions(orm.associations):                     pass
 class regions(orm.entities):                                 pass
@@ -88,14 +89,14 @@ class emails(contactmechanisms):                             pass
 class websites(contactmechanisms):                           pass
 class party_contactmechanisms(orm.associations):             pass
 class purposes(orm.entities):                                pass
-class purposetypes(orm.entities):                            pass
+class purposetypes(apriori.types):                           pass
 class addresses(contactmechanisms):                          pass
 class facilities(orm.entities):                              pass
-class facilityroletypes(orm.entities):                       pass
+class facilityroletypes(apriori.types):                      pass
 class facility_contactmechanisms(orm.associations):          pass
 class party_facilities(orm.entities):                        pass
 class objectives(orm.entities):                              pass
-class objectivetypes(orm.entities):                          pass
+class objectivetypes(apriori.types):                         pass
 class communications(orm.entities):                          pass
 class party_communications(orm.associations):                pass
 class inpersons(communications):                             pass
@@ -110,13 +111,13 @@ class caseroletypes(roletypes):                              pass
 class casestatuses(statuses):                                pass
 class communication_efforts(orm.associations):               pass
 class skills(orm.entities):                                  pass
-class skilltypes(orm.entities):                              pass
+class skilltypes(apriori.types):                             pass
 class rates(orm.entities):                                   pass
-class ratetypes(orm.entities):                               pass
+class ratetypes(apriori.types):                              pass
 class positionrates(orm.entities):                           pass
-class positiontypes(orm.entities):                           pass
+class positiontypes(apriori.types):                          pass
 class asset_parties(orm.associations):                       pass
-class asset_partystatustypes(orm.entities):                  pass
+class asset_partystatustypes(apriori.types):                 pass
 
 ''' Parties '''
 class party(orm.entity):
@@ -334,14 +335,7 @@ class gender(orm.entity):
     # The span of time this gender was assigend to a person
     assigned = datespan
 
-class gendertype(orm.entity):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-    
-    # The name or description of this gender type, i.e., "male",
-    # "female", "nonbinary", etc.
-    name = str
-
+class gendertype(apriori.type):
     # A collection of genders corresponding to this type
     genders = genders
 
@@ -364,33 +358,23 @@ class characteristic(orm.entity):
     # 6'1.
     value = str
 
-class characteristictype(orm.entity):
-    """ The details of a characteristic are stored here. 
+class characteristictype(apriori.type):
+    """ The details of a characteristic are stored here.   The ``name``
+    of the characteristic would include values such as "height",
+    "weight' or "blood preasure".
 
     Note that this entity is based on the PHYSICAL CHARACTERISTIC TYPE
     entity in "The Data Model Resource Book".
     """
 
-    # The name of the characteristic such as "height", "weight' or
-    # "blood preasure".
-    name = str
-
     # A collection of characteristics matich this type
     characteristics = characteristics
 
-class nametype(orm.entity):
+class nametype(apriori.type):
     """ This entity maintains the type of name stored in the ``name``
     class. Typical types of names include 'first', 'middle', 'last',
     'prefix', 'suffix', 'nickname', etc.
     """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    # The name or descripton of the name type, e.g., 'first', 'middle',
-    # 'last'.
-    name = str
 
     # The collection of `name` entity objects that are assigned this
     # name type.
@@ -990,18 +974,11 @@ class purpose(orm.entity):
     """
     span = datespan
 
-class purposetype(orm.entity):
+class purposetype(apriori.type):
     """ ``purposetype`` has a one-to-many relationship with ``purpose``.
     The ``purposetype`` class allows for the ability to describe the
     purpose of contact mechanism purposes (``purpose``).
     """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    # The name or description of the purpose.
-    name = str
 
     # The purposes that match this purposetype.
     purposes = purposes
@@ -1117,7 +1094,7 @@ class party_party(orm.association):
     # TODO Write brokenrules @property that ensures valid roles are
     # selected (among other things)
 
-class type(orm.entity):
+class type(apriori.type):
     """ A type of party. Examples of party types include:
             Minority-owned business
             Manufacturer
@@ -1140,8 +1117,8 @@ class type(orm.entity):
         Note that this is modeled after the PARTY TYPE entity in "The
         Data Model Resource Book".
     """
+    # TODO I think there should be a `parties = parties` line here
 
-    name = str
 
 class classification:
     """ ``party`` entity objects are classifiend into various categories
@@ -1175,16 +1152,13 @@ class role(orm.entity):
     # dependent on (and can be derived from) the (party) relationship. 
     span = datespan
 
-class role_role_type(orm.entity):
+class role_role_type(apriori.type):
     """ Describe the type of relationship a role_role association
     declares.
 
     Note that this is modeled after the PARTY RELATIONSHIP TYPE entity
     in "The Data Model Resource Book".
     """
-    # The name of the role_role associtaion type. For example,
-    # "customer relationship".
-    name = str
 
     # Describes in more detail the meaning behind this type of
     # relationship. For example, assuming the the `name` attribute is
@@ -1391,19 +1365,12 @@ class contractor(worker):
 
 # TODO Since roletype is used as a base class in many other places in
 # the GEM, we may consider moving it to apriori.py.
-class roletype(orm.entity):
+class roletype(apriori.type):
     """ Stores a name for a role type.
 
     Note that this is modeled after the ROLE TYPE entity in "The
     Data Model Resource Book".
     """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    # Stores available values for role types.
-    name = str
 
 class partyroletype(roletype):
     """ Each party role (the classes that inherit from ``party.role``)
@@ -1555,7 +1522,7 @@ class facility(orm.entity):
     # notions such as: A `Room` may be within a `Floor`, but a `Floor`
     # may not be within a `Room`.
 
-class facilityroletype(orm.entity):
+class facilityroletype(apriori.type):
     """ The role being played between a party and a facility. For
     instance, certain parties may *use* the facility, *lease* the
     facility, *rent* the faculity, or *own* the facility. This entity
@@ -1565,14 +1532,6 @@ class facilityroletype(orm.entity):
     Note that this is modeled after the FACILITY ROLE TYPE entity in
     "The Data Model Resource Book".
     """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    # The name or description of the role being played between a party
-    # and a facility. 
-    name = str
 
 class facility_contactmechanism(orm.association):
     """ This class associates a facility with a contact mechanism. It shows
@@ -1645,15 +1604,9 @@ class objective(orm.entity):
     # "This is a critical sales call that must turn client around"
     name = str
 
-class objectivetype(orm.entity):
+class objectivetype(apriori.type):
     """ Indicates the ``communication``'s ``objective`` type.
     """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    name = str
 
     objectives = objectives
 
@@ -1917,18 +1870,13 @@ class skill(orm.entity):
     # The rating indicates how proficient the party is in the skill.
     rating = dec
 
-class skilltype(orm.entity):
+class skilltype(apriori.type):
     """ Describes the ``skill``.
 
     Note that this entity was originally called SKILL TYPE in
     "The Data Model Resource Book" and was introduced in the Work Effort
     chapter rather than the People and Organizations chapter.
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    name = str
 
     # The collection of skills matching this skill type
     skills = skills
@@ -1944,26 +1892,22 @@ class rate(orm.entity):
     span = datespan
     rate = dec
 
-class ratetype(orm.entity):
+class ratetype(apriori.type):
     """ Provides the ability to classify the various types of rates to
     alllow the flexibility to capture different types of rates such as
     billing rates, payroll rates (amount that needs to be paid to the
     worker), costs, overtime rates, and so on.
 
+    Regrading the ``name`` attribute a ``name`` of "biling rate"
+    establishes how much is billed and whether it is to be billed to an
+    external or internal organization. A ``name`` of "cost" determines
+    how much will be used as the cost basis to calculate how much the
+    work is costing.
+
     Note that this entity was originally called RATE TYPE in
     "The Data Model Resource Book" and was introduced in the Work Effort
     chapter rather than the People and Organizations chapter.
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    # The name of the rate type. For example, a ``name`` of "biling
-    # rate" establishes how much is billed and whether it is to be
-    # billed to an external or internal organization. A ``name`` of cost
-    # determines how much will be used as the cost basis to calculate
-    # how much the work is costing.
-    name = str
 
     # The collection of rates matching this rates type
     rates = rates
@@ -1979,17 +1923,12 @@ class positionrate(orm.entity):
     span = datespan
     rate = dec
 
-class positiontype(orm.entity):
+class positiontype(apriori.type):
     """ Categorizes positions by type.
 
     Note that this is modeled after the POSITION TYPE entity in "The
     Data Model Resource Book".
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    name = str
 
     positionrates = positionrates
 
@@ -2022,19 +1961,13 @@ class asset_party(orm.association):
     # A comment
     comment = text
 
-class asset_partystatustype(orm.entity):
+class asset_partystatustype(apriori.type):
     """ Provides information about the assignment (``asset_party``) of a
     fixed asset (``asset.asset``) to a ``party.
 
     Note that this is modeled after the PARTY ASSET ASSIGN STATUS
     TYPE entity in "The Data Model Resource Book".
     """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    name = str
 
     # The collection of asset-to-party assignments that this status type
     # represents.
