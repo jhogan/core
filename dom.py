@@ -3741,7 +3741,10 @@ class script(element):
     def __init__(self, res=None, *args, **kwargs):
         # If a file.resource was given
         if res:
-            self.src = res.url
+            if res.local:
+                self.src = res.public
+            else:
+                self.src = res.url
 
             self.integrity = res.integrity
             self.crossorigin = res.crossorigin

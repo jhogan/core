@@ -6,10 +6,10 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2020
 
-""" TODO
+""" This module contains class to help deal with files in a web context. 
 
 Examples:
-    TODO
+    See test.py:dom_files for examples.
 
 Todo:
 """
@@ -18,8 +18,11 @@ from datetime import datetime, date
 from dbg import B
 import orm
 import os.path
-import textwrap
 import pathlib
+import textwrap
+import urllib.request
+import shutil
+import contextlib
 
 class files(orm.entities):
     pass
@@ -28,8 +31,6 @@ class resources(files):
     pass
 
 class file(orm.entity):
-    path = str
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.body = None
@@ -49,24 +50,63 @@ class file(orm.entity):
                 f'and given the appropriate permissions ({ex})'
             )
 
+    # FIXME This should be a static property
     @property
     def directory(self):
         # TODO Make this configurable
         #dir = config().filestore
-        dir = '/var/www/development/'
+        dir = '/var/www/development'
 
-        dirs = textwrap.wrap(self.id.hex, 2)
-
-        dirs.pop()
-
-        dir = dir + '/'.join(dirs)
+        pathlib.Path(dir).mkdir(
+            parents=True, exist_ok=True
+        )
         return dir
+
+    @property 
+    def store(self):
+        dir = f'{self.directory}/file/store'
+        pathlib.Path(dir).mkdir(
+            parents=True, exist_ok=True
+        )
+        return dir
+
+    @property
+    def file(self):
+        return f'{self.store}/{self.id.hex}'
+
+    # FIXME This should be a static property
+    @property
+    def publicdir(self):
+        # TODO:52612d8d Make this configurable
+        #dir = config().public
+        dir = '/var/www/development/public'
+
+        try:
+            pathlib.Path(dir).mkdir(
+                parents=True, exist_ok=True
+            )
+        except PermissionError as ex:
+            raise PermissionError(
+                f'The public directory ({dir}) needs to be created '
+                'for the environment and given the appropriate '
+                f'permissions ({ex})'
+            )
+        return dir
+
+    @property
+    def symlink(self):
+        return f'{self.publicdir}/{os.path.basename(self.url)}'
+
+    @property
+    def public(self):
+        return self.symlink
 
 class resource(file):
     def __init__(self, local=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.orm.default('crossorigin', 'anonymous')
         self.orm.default('integrity', None)
+        self.local = local
 
         if local:
             self.save()
@@ -85,20 +125,54 @@ class resource(file):
     #     have the credentials flag set to 'include'.
     crossorigin  =  str
 
-    def _self_onbeforesave(self, *args, **kwargs):
-        import sys
-        '''
-        l = sys.path[0]
-        del sys.path[0]
-        del sys.modules['http']
-        '''
+    def _self_onaftersave(self, *args, **kwargs):
+        """ After the ``resource`` has been saved to the database, write
+        the resource file to the file system along with a symlink. If
+        there is an Exception caused during the file system interaction,
+        the Exception will be allowed to bubble up - causing the the
+        database transaction to be rolled back.
+        """
 
-        import urllib.request
-        url = 'https://code.jquery.com/jquery-3.5.1.js'
-        with urllib.request.urlopen(url) as f:
-            print(f.read(200))
+        # Get the file and the symlink
+        file = self.file
+        ln = self.symlink
+
+        try:
+            try:
+                # Write the file to the file system
+                urlopen = urllib.request.urlopen
+                with urlopen(self.url) as req, open(file, 'wb') as f:
+                    # TODO Test integrity before saving
+                    shutil.copyfileobj(req, f)
+
+            except urllib.error.HTTPError as ex:
+                # We won't be able to cache, but that shouldn't be a show
+                # stopper. We may want to log, though.
+                pass
+            else:
+                # Delete the symlink if it exists
+                with contextlib.suppress(FileNotFoundError):
+                    os.unlink(ln)
+
+                # Create the symlink
+                os.symlink(self.file, ln)
+        except Exception as ex:
+            # Remove the file and symlink if there was an exception
+            with contextlib.suppress(Exception):
+                os.remove(file)
+                os.remove(ln)
+            
+            # Allow the exception to bubble up to the ORM's persistence
+            # logic - allowing it to rollback the transaction.
+            raise
+
+        super()._self_onaftersave(*args, **kwargs)
 
 
-        super()._self_onbeforesave(*args, **kwargs)
+
+
+
+
+
 
 
