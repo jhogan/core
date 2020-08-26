@@ -14,7 +14,7 @@ import datetime
 import dom
 import entities
 import exc
-import http
+import www
 import inspect
 import primative
 import textwrap
@@ -687,7 +687,7 @@ class page(dom.html):
                         str_flattened = ', '.join(flattened)
 
                         if arg not in flattened:
-                            raise http.UnprocessableEntityError(
+                            raise www.UnprocessableEntityError(
                                 'Query string parameter '
                                 '"%s" must be one of the '
                                 'following: %s' % (k, str_flattened)
@@ -697,7 +697,7 @@ class page(dom.html):
                     try:
                         v = primative.datetime(arg)
                     except Exception as ex:
-                        raise http.UnprocessableEntityError(
+                        raise www.UnprocessableEntityError(
                             'Query string parameter '
                             '"%s" must be a datetime.' % (k,)
                         )
@@ -715,7 +715,7 @@ class page(dom.html):
                         v = v.annotation(arg)
                     except Exception as ex:
                         t = v.annotation.__name__
-                        raise http.UnprocessableEntityError(
+                        raise www.UnprocessableEntityError(
                             'Query string parameter '
                             '"%s" must be of type "%s".' % (k, t)
                         )
@@ -762,10 +762,10 @@ class page(dom.html):
 
                 # Inject global variables into main()
                 globs = self._mainfunc.__func__.__globals__
-                globs['req'] = http.request
-                globs['res'] = http.response
-                if http.request:
-                    globs['usr'] = http.request.user
+                globs['req'] = www.request
+                globs['res'] = www.response
+                if www.request:
+                    globs['usr'] = www.request.user
 
                 # Call pages main function
                 self._mainfunc(**self._arguments)
@@ -1028,7 +1028,7 @@ class traceback(dom.article):
             div  +=  dom.span(tb.name,    class_='name')
 
 class _404(page):
-    def main(self, ex: http.NotFoundError):
+    def main(self, ex: www.NotFoundError):
         self.title = 'Page Not Found'
         self.main += dom.h1('Page Not Found')
 
