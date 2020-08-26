@@ -23880,7 +23880,7 @@ class home(pom.page):
 class google(pom.page):
     def main(self, **kwargs):
         # HTTP 302 Found (i.e., redirect)
-        raise http.FoundException(location="https://www.google.com")
+        raise www.FoundException(location="https://www.google.com")
 
 class blogs(pom.page):
     def __init__(self):
@@ -23935,7 +23935,7 @@ class pom_menu_item(tester):
         self.eq(expect, itm.html)
 
 class _404(pom.page):
-    def main(self, ex: http.NotFoundError):
+    def main(self, ex: www.NotFoundError):
         self.title = 'Page Not Found'
         self.main += dom.h1('Page Not Found')
         self.main += dom.h2('Foobar apologizes', class_="apology")
@@ -24733,7 +24733,7 @@ class pom_page(tester):
                 # Ensure we have access to the request object from page.
                 self.main +=  dom.p('''
                     Query string from request: %s
-                    ''', http.request.qs
+                    ''', www.request.qs
                 )
 
         ws = foonet()
@@ -24784,8 +24784,8 @@ class pom_page(tester):
                     options = [(x, x) for x in tzs],
                     selected = ['US/Arizona']
                 )
-                if http.request.ispost:
-                    frm.post = http.request.payload
+                if www.request.ispost:
+                    frm.post = www.request.payload
 
         ws = foonet()
         pg = time()
@@ -24835,7 +24835,7 @@ class pom_page(tester):
 
                 pot = get_pot()
                 if not pot.iscoffee:
-                    raise http.ImATeapotError(
+                    raise www.ImATeapotError(
                         'Appearently, I am a tea pot'
                     )
 
@@ -24901,7 +24901,7 @@ class pom_page(tester):
     def it_calls_language(self):
         class lang(pom.page):
             def main(self):
-                lang = http.request.language
+                lang = www.request.language
                 self.main += dom.p('''
                 Lang: %s
                 ''' % lang)
@@ -24972,13 +24972,13 @@ class pom_page(tester):
                     exp = primative.datetime.utcnow().add(days=1)
                     exp = exp.strftime('%a, %d %b %Y %H:%M:%I GMT')
                     hdrs = res.headers
-                    hdrs += http.header('Set-Cookie', (
+                    hdrs += www.header('Set-Cookie', (
                         'token=%s; path=/; '
                         'expires=%s'
                         ) % (str(t), exp)
                     )
                 else:
-                    raise http.UnauthorizedError(flash='Try again')
+                    raise www.UnauthorizedError(flash='Try again')
 
         class whoami(pom.page):
             """ A page to report on authenticated users.
@@ -24992,7 +24992,7 @@ class pom_page(tester):
 
                     self.main += dom.span(usr.name, class_='username')
                 else:
-                    raise http.UnauthorizedError(flash='Unauthorized')
+                    raise www.UnauthorizedError(flash='Unauthorized')
 
         class logout(pom.page):
             def main(self):
@@ -25002,7 +25002,7 @@ class pom_page(tester):
                 # https://stackoverflow.com/questions/5285940/correct-way-to-delete-cookies-server-side
 
                 hdrs = res.headers
-                hdrs += http.header('Set-Cookie', (
+                hdrs += www.header('Set-Cookie', (
                     'token=; path=/; '
                     'expires=Thu, 01 Jan 1970 00:00:00 GMT'
                     )
@@ -25087,15 +25087,15 @@ class pom_page(tester):
     def it_can_accesses_injected_variables(self):
         class lang(pom.page):
             def main(self):
-                assert req is http.request
-                assert res is http.response
+                assert req is www.request
+                assert res is www.response
                 assert usr is None
 
-                # Use req instead of http.request
+                # Use req instead of www.request
                 lang = req.language
                 self.main += dom.span(lang, lang="lang")
 
-                # Use res instead of http.response
+                # Use res instead of www.response
                 res.status = 418
 
         ws = foonet()
@@ -25206,7 +25206,7 @@ class pom_page(tester):
         class murphy(pom.page):
             def main(self):
                 self.main += dom.h1('Checking brew type...')
-                raise http.ImATeapotError(flash='Invalid brew type')
+                raise www.ImATeapotError(flash='Invalid brew type')
 
         ws = foonet()
         ws.pages += murphy()
