@@ -24050,15 +24050,20 @@ class dom_files(tester):
         scripts = res['html head script']
         self.three(scripts)
 
+        # TODO:52612d8d Make a configuration option
+
+        #dir = config().public
+        dir = '/var/www/development/public'
+
         self.eq(
-            'https://code.jquery.com/jquery-3.5.1.js',
+            f'{dir}/jquery-3.5.1.js',
             scripts.first.src
         )
         self.eq(None, scripts.first.integrity)
         self.eq('anonymous', scripts.first.crossorigin)
 
         self.eq(
-            'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js',
+            f'{dir}/shell.min.js',
             scripts.second.src
         )
         self.eq(
@@ -24068,7 +24073,7 @@ class dom_files(tester):
         self.eq('anonymous', scripts.second.crossorigin)
 
         self.eq(
-            'https://cdnjs.cloudflare.com/ajax/libs/vega/5.14.0/vega.min.js',
+            f'{dir}/vega.min.js',
             scripts.third.src
         )
         self.eq(None, scripts.third.integrity)
