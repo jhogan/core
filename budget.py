@@ -38,6 +38,8 @@ class roles(party.roles): pass
 class roletypes(orm.entities): pass
 class periods(orm.entities): pass
 class periodtypes(orm.entities): pass
+class revisions(orm.entities): pass
+class item_revisions(orm.associations): pass
 
 class budget(orm.entity):
     """ Describes the information about the amounts of moneys needed for
@@ -156,6 +158,9 @@ class item(orm.entity):
     Note that this entity was originally called BUDGET ITEM in
     "The Data Model Resource Book".
     """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.default('justification', None)
 
     # NOTE There is an implicit ``itemtype`` attribute that indicates
     # the ``item``'s type.
@@ -239,7 +244,7 @@ class periodtype(orm.entity):
 
     name = str
 
-    # The collection of budetary ``periods``.
+    # The collection of budgetary ``periods``.
     periods = periods
 
 class revision(orm.entity):
@@ -248,7 +253,7 @@ class revision(orm.entity):
     ``revision`` may affect more than one budget ``item`` and vice
     versa, thus resulting in the many-to-many relationship between
     budget ``items`` and budget ``revisions``, resolved by the budget
-    revision ``impacts``, which is an associative entity.
+    revision ``item_revisions``, which is an associative entity.
 
     Note that this entity was originally called BUDGET REVISION in "The Data
     Model Resource Book".
@@ -257,9 +262,12 @@ class revision(orm.entity):
     # The date the budget was revised
     revised = date
 
-class impact(orm.association):
+    # The version number
+    number = str
+
+class item_revision(orm.association):
     """  Each budget ``item`` may be affected by one or more budget
-    revision ``impacts``. 
+    revision ``item_revisions``. 
 
     Note that this entity was originally called BUDGET REVISION IMPACT
     in "The Data Model Resource Book".
@@ -275,9 +283,11 @@ class impact(orm.association):
     # of a budgeted ``item``.
     amount = dec
 
-    # Indicates the item has been added to the budet by the budget
+    # Indicates the item has been added to the budget by the budget
     # revision.  If the bool is False, the item would be considered
-    # ``issubtractive``.
+    # ``issubtractive``. If the bool is None, it means that the item has
+    # neither been added or substracted, but rather the amount has
+    # changed.
     #
     # Note that the book calls this the **add delete flag**
     # added or deleted according to the budget ``revision``.

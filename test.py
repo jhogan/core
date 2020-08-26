@@ -23630,6 +23630,8 @@ class gem_budget(tester):
         super().__init__()
         orm.orm.recreate(
             budget.type,
+            budget.revision,
+            budget.item_revisions,
             budget.itemtype,
             budget.status,
             budget.statustype,
@@ -23791,5 +23793,56 @@ class gem_budget(tester):
             self.eq(st.comment,          st1.comment)
             self.eq(st.statustype.id,    st1.statustype.id)
             self.eq(st.statustype.name,  st1.statustype.name)
+
+    def it_creates_revisions(self):
+        # Create a budget
+        bud = budget.budget(name='Marketing budget')
+
+        # Add a few items
+        for i in range(3):
+            bud.items += budget.item(purpose=f'item {i}')
+
+        # Create revision 1.1
+        bud.revisions += budget.revision(number='1.1')
+
+        # Create an impact association indicating that item 2's
+        # (bud.items.second) amount was diminished.
+        bud.revisions.last.item_revisions += budget.item_revision(
+            item        =  bud.items.second,
+            isadditive  =  None,
+            amount      =  10_000,
+            reason      = 'Needed to substantially cut advertising',
+        )
+
+        bud.save()
+
+        bud1 = bud.orm.reloaded()
+
+        self.eq(bud.id, bud1.id)
+
+        revs = bud.revisions.sorted()
+        revs1 = bud1.revisions.sorted()
+
+        self.one(revs)
+        self.one(revs1)
+
+        for rev, rev1 in zip(revs, revs1):
+            self.eq(rev.id, rev1.id)
+            self.eq(rev.number, rev1.number)
+
+            irs = rev.item_revisions
+            irs1 = rev1.item_revisions
+
+            self.one(irs)
+            self.one(irs1)
+
+            for ir, ir1 in zip(irs, irs1):
+                self.eq(ir.id,          ir1.id)
+                self.eq(ir.item.id,     ir1.item.id)
+                self.eq(ir.isadditive,  ir1.isadditive)
+                self.eq(ir.amount,      ir1.amount)
+                self.eq(ir.reason,      ir1.reason)
+                print(repr(ir1))
+
 
 cli().run()
