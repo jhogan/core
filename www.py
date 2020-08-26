@@ -372,7 +372,7 @@ class _request:
 
         if self.isget or self.ishead:
             if not len(self.path):
-                raise http.BadRequestError('No path was given.')
+                raise www.BadRequestError('No path was given.')
             
         elif self.ispost:
             if len(self.payload) == 0:
@@ -385,7 +385,7 @@ class _request:
             try:
                 post = self.post
             except json.JSONDecodeError as ex:
-                raise http.BadRequestError(str(ex))
+                raise www.BadRequestError(str(ex))
 
             try:
                 cls = post['_class']
@@ -398,7 +398,7 @@ class _request:
                 raise ValueError('The method value was not supplied')
 
             if meth[0] == '_':
-                raise http.ForbiddenError('Invalid method.')
+                raise www.ForbiddenError('Invalid method.')
 
             try:
                 import ctrl
@@ -617,7 +617,7 @@ class controller:
         try:
             return args[arg]
         except KeyError:
-            raise http.UnprocessableEntityError(
+            raise www.UnprocessableEntityError(
                 'Argument not supplied: ' + arg
             )
 
