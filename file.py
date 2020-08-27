@@ -74,6 +74,10 @@ class file(orm.entity):
     def file(self):
         return f'{self.store}/{self.id.hex}'
 
+    @property
+    def exists(self):
+        return os.path.isfile(self.file)
+
     # FIXME This should be a static property
     @property
     def publicdir(self):
@@ -102,15 +106,6 @@ class file(orm.entity):
         return self.symlink
 
 class resource(file):
-    def __init__(self, local=False, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.default('crossorigin', 'anonymous')
-        self.orm.default('integrity', None)
-        self.local = local
-
-        if local:
-            self.save()
-
     url        =  str
     integrity  =  str
 
@@ -125,6 +120,18 @@ class resource(file):
     #     have the credentials flag set to 'include'.
     crossorigin  =  str
 
+    def __init__(self, local=False, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.default('crossorigin', 'anonymous')
+        self.orm.default('integrity', None)
+        self.local = local
+
+        if local:
+            if self.orm.isnew:
+                self.save()
+            elif not self.exists:
+                self.write()
+                
     def _self_onaftersave(self, *args, **kwargs):
         """ After the ``resource`` has been saved to the database, write
         the resource file to the file system along with a symlink. If
@@ -132,7 +139,10 @@ class resource(file):
         the Exception will be allowed to bubble up - causing the the
         database transaction to be rolled back.
         """
+        self.write()
+        super()._self_onaftersave(*args, **kwargs)
 
+    def write(self):
         # Get the file and the symlink
         file = self.file
         ln = self.symlink
@@ -165,14 +175,4 @@ class resource(file):
             # Allow the exception to bubble up to the ORM's persistence
             # logic - allowing it to rollback the transaction.
             raise
-
-        super()._self_onaftersave(*args, **kwargs)
-
-
-
-
-
-
-
-
 

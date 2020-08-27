@@ -3742,7 +3742,10 @@ class script(element):
         # If a file.resource was given
         if res:
             if res.local:
-                self.src = res.public
+                if res.exists:
+                    self.src = res.public
+                else:
+                    self.src = res.url
             else:
                 self.src = res.url
 

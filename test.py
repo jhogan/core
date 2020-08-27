@@ -24007,7 +24007,34 @@ class dom_files(tester):
             # be in the database
             self.zero(file.resources(url=script.src))
 
-    def it_caches_to_js_files(self):
+    def it_posts_file_in_a_partys_file_system(self):
+        class avatar(pom.page):
+            def main(self):
+                if req.isget:
+                    return
+
+                # Populate the form with data from the request's payload
+                frm.post = req.payload
+
+                dir = usr.filesystems['default']
+
+                dir = dir.mkdir('/var/avatars/', parents=True)
+                avatar = dir.touch('default')
+
+                avatar.write(imgdata)
+
+
+        usr = party.user(name='luser')
+
+        fss = usr.filesystems
+        if fss.isempty:
+            usr.filesytems.system(name='default')
+
+
+
+        
+    def it_caches_js_files(self):
+        file.resource.orm.truncate()
         class index(pom.page):
             def main(self):
                 head = self['html head'].first
@@ -24035,6 +24062,20 @@ class dom_files(tester):
                     )
                 )
 
+                # This url will 404 so it can't be saved locally.
+                # dom.script will nevertheless use the external url for
+                # the `src` attribute instead of the local url. This
+                # should happen any time there is an issue downloading
+                # an external resource.
+                head += dom.script(
+                    file.resource(
+                        url =
+                        'https://cdnjs.cloudflare.com/ajax/libs/55439c02/1.1/idontexit.min.js',
+                        crossorigin = 'use-credentials',
+                        local = True,
+                    )
+                )
+
                 self.main += dom.h1('Home page')
 
         # Set up site
@@ -24048,10 +24089,9 @@ class dom_files(tester):
         self.status(200, res)
 
         scripts = res['html head script']
-        self.three(scripts)
+        self.four(scripts)
 
         # TODO:52612d8d Make a configuration option
-
         #dir = config().public
         dir = '/var/www/development/public'
 
@@ -24079,7 +24119,45 @@ class dom_files(tester):
         self.eq(None, scripts.third.integrity)
         self.eq('use-credentials', scripts.third.crossorigin)
 
+        self.eq(
+            'https://cdnjs.cloudflare.com/ajax/libs/55439c02/1.1/idontexit.min.js',
+            scripts.fourth.src
+        )
+        self.none(scripts.fourth.integrity)
+        self.eq('use-credentials', scripts.fourth.crossorigin)
 
+        self.four(file.resources.orm.all)
+
+        rcs = file.resources(
+            'url', 'https://code.jquery.com/jquery-3.5.1.js'
+        )
+        self.one(rcs)
+        self.none(rcs.first.integrity)
+        self.eq('anonymous', rcs.first.crossorigin)
+
+        rcs = file.resources(
+            'url', 'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js'
+        )
+        self.one(rcs)
+        self.eq('sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw==', rcs.first.integrity)
+        self.eq('anonymous', rcs.first.crossorigin)
+
+        rcs = file.resources(
+            'url', 'https://cdnjs.cloudflare.com/ajax/libs/vega/5.14.0/vega.min.js'
+        )
+
+        self.one(rcs)
+        self.none(rcs.first.integrity)
+        self.eq('use-credentials', rcs.first.crossorigin)
+
+        rcs = file.resources(
+            'url', 'https://cdnjs.cloudflare.com/ajax/libs/55439c02/1.1/idontexit.min.js'
+        )
+
+        self.one(rcs)
+        self.none(rcs.first.integrity)
+        self.eq('use-credentials', rcs.first.crossorigin)
+        self.false(rcs.first.exists)
 
     def it_lists_files(self):
         class files(pom.page):
