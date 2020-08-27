@@ -295,3 +295,37 @@ class item_revision(orm.association):
 
     # Shows why each budgeted item needed to be changed.
     reason = text
+
+class review(orm.entity):
+    """ Provides the information about which parties were involved in
+    the review process via the relationship from ``review`` to party.
+
+    Note that this entity was originally called BUDGET REVIEW in "The
+    Data Model Resource Book".
+    """
+
+    # Identifies when the ``party`` was involved in the review.
+    reviewed = date
+
+    # The ``party`` involved in the review.
+    party = party.party
+
+# TODO Make this inherit from apriori.type when that branch has been
+# merged in.
+class reviewtype(orm.entity)
+    """ Indicates each ``party``'s decision regarding the budget
+    ``review``.
+    
+    Note that this entity was originally called BUDGET REVIEW RESULT
+    TYPE in "The Data Model Resource Book".
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+        self.orm.default('comment', None)
+
+    name = str
+
+    # Allows any personal opinions about the riview to be document.
+    comment = text
+    

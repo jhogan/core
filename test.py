@@ -23842,7 +23842,6 @@ class gem_budget(tester):
                 self.eq(ir.isadditive,  ir1.isadditive)
                 self.eq(ir.amount,      ir1.amount)
                 self.eq(ir.reason,      ir1.reason)
-                print(repr(ir1))
 
 
 cli().run()
