@@ -23628,17 +23628,9 @@ class gem_account(tester):
 class gem_budget(tester):
     def __init__(self):
         super().__init__()
-        orm.orm.recreate(
-            budget.type,
-            budget.revision,
-            budget.item_revisions,
-            budget.itemtype,
-            budget.status,
-            budget.statustype,
-            budget.period,
-            budget.budget,
-            budget.role,
-        )
+        for e in orm.orm.getentitys(includeassociations=True):
+            if e.__module__ == 'budget':
+                e.orm.recreate()
 
     def it_creates(self):
         # Create a budget and assign it a bugettype
@@ -23843,5 +23835,68 @@ class gem_budget(tester):
                 self.eq(ir.amount,      ir1.amount)
                 self.eq(ir.reason,      ir1.reason)
 
+    def it_creates_reviews(self):
+        # Create a budget
+        bud = budget.budget(name='Marketing budget')
+
+        # Create parties
+        susan = party.person(first='Susan', last='Jones')
+        john  = party.person(first='John',  last='Smith')
+
+        bud.reviews += budget.review(
+            reviewed = 'Nov 10, 2000',
+            party = susan,
+            reviewtype = budget.reviewtype(
+                name='Accepted',
+                comment = 'Budget seems resonable'
+            )
+        )
+
+        bud.reviews += budget.review(
+            reviewed = 'Nov 15, 2000',
+            party = john,
+            reviewtype = budget.reviewtype(
+                name='Rejected',
+                comment = 'Budgeted amount is too high'
+            )
+        )
+
+        bud.reviews += budget.review(
+            reviewed = 'Nov 22, 2000',
+            party = susan,
+            reviewtype = budget.reviewtype(
+                name='Accepted',
+                comment = 'Budget is OK'
+            )
+        )
+
+        bud.reviews += budget.review(
+            reviewed = 'Nov 30, 2000',
+            party = john,
+            reviewtype = budget.reviewtype(
+                name='Accepted',
+                comment = 'Budget is OK'
+            )
+        )
+
+        bud.save()
+
+        bud1 = bud.orm.reloaded()
+
+        rvw = bud.reviews.sorted()
+        rvw1 = bud1.reviews.sorted()
+
+        self.four(rvw)
+        self.four(rvw1)
+
+        for rvw, rvw1 in zip(rvw, rvw1):
+            self.eq(rvw.id,                  rvw1.id)
+            self.eq(rvw.reviewed,            rvw1.reviewed)
+            self.eq(rvw.party.id,            rvw1.party.id)
+            self.eq(rvw.reviewtype.id,       rvw1.reviewtype.id)
+            self.eq(rvw.reviewtype.name,     rvw1.reviewtype.name)
+            self.eq(rvw.reviewtype.comment,  rvw1.reviewtype.comment)
+
+        
 
 cli().run()

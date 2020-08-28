@@ -40,6 +40,8 @@ class periods(orm.entities): pass
 class periodtypes(orm.entities): pass
 class revisions(orm.entities): pass
 class item_revisions(orm.associations): pass
+class reviews(orm.entities): pass
+class reviewtypes(orm.entities): pass
 
 class budget(orm.entity):
     """ Describes the information about the amounts of moneys needed for
@@ -87,6 +89,9 @@ class budget(orm.entity):
 
     # A collection of budget revisions
     revisions = revisions
+
+    # A collection of reviews
+    reviews = reviews
 
 class operating(budget):
     """ A budget subtype for expense items.
@@ -310,22 +315,26 @@ class review(orm.entity):
     # The ``party`` involved in the review.
     party = party.party
 
-# TODO Make this inherit from apriori.type when that branch has been
-# merged in.
-class reviewtype(orm.entity)
+class reviewtype(orm.entity):
     """ Indicates each ``party``'s decision regarding the budget
     ``review``.
     
     Note that this entity was originally called BUDGET REVIEW RESULT
     TYPE in "The Data Model Resource Book".
     """
+
+    # NOTE Counterintuitivly, this should not be a subentity of
+    # apriori.type because it allowes for a ``comment`` given by the
+    # ``review.party``.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
         self.orm.default('comment', None)
 
     name = str
 
-    # Allows any personal opinions about the riview to be document.
+    # Allows any personal opinions about the review to be document.
     comment = text
+
+    # The collection of reviews classified by this review type
+    reviews = reviews
     
