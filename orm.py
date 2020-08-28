@@ -4680,6 +4680,30 @@ class orm:
 
         self.recreate = self._recreate
 
+    def collectivize(self):
+        """ If called on an instance of orm.entity, returns an
+        orm.entities instance (of the corresponding type) with the
+        orm.entity within it. If called on an orm.entities, simply
+        return a reference to the orm.entities::
+
+            per = person(name='John Doe')
+            pers = per.orm.collectivize()
+
+            assert isinstance(pers, persons)
+            assert pers.count == 1
+            assert per in pers
+
+            # Not much happens if done on an orm.entities
+            assert pers is pers.orm.collectivize()
+        """
+
+        if isinstance(self.instance, self.entities):
+            return self.instance
+
+        es = self.entities()
+        es += self.instance
+        return es
+
     def default(self, attr, v, dict=None):
         """ Sets an attribute to a default value. ``default`` is
         intended to be called by an entity's constructor after the
