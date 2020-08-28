@@ -121,13 +121,17 @@ class tester(entity):
             def get(self, pg, ws):
                 return self._request(pg=pg, ws=ws, meth='GET')
 
-            def post(self, pg, ws, frm):
-                return self._request(pg=pg, ws=ws, frm=frm, meth='POST')
+            def post(self, pg, ws, frm=None, files=None):
+                files = files.orm.collectivize()
+
+                return self._request(
+                    pg=pg, ws=ws, frm=frm, files=files, meth='POST'
+                )
 
             def head(self, pg, ws):
                 return self._request(pg=pg, ws=ws, meth='HEAD')
 
-            def _request(self, pg, ws, frm=None, meth='GET'):
+            def _request(self, pg, ws, frm=None, files=None, meth='GET'):
                 if not isinstance(pg, str):
                     raise TypeError('pg parameter must be a str')
 
@@ -185,12 +189,45 @@ class tester(entity):
                 pg and pg.clear()
 
                 if meth == 'POST':
-                    inp = io.BytesIO(frm.post)
+                    if files and files.count:
+                        boundry = uuid.uuid4().hex
+                        env = create_environ({
+                            'content_type':  (
+                                'multipart/form-data; '
+                                'boundry=----{boundry}'
+                            )
+                        })
 
-                    env = create_environ({
-                        'content_length':  len(frm.post),
-                        'wsgi.input':      inp,
-                    })
+                        inp = io.BytesIO()
+
+                        boundry = f'{"-"*6}{boundry}\n'
+                        for file in files:
+                            inp.write(bytes(
+                            f'{boundry}\n'
+                            'Content-Disposition: form-data;'
+                            'form-data;'
+                            f'name={file.name};'
+                            f'filename={file.name}\n'
+                            'Content-Type:application/x-object\n\n',
+                            'utf-8'
+                            ))
+                            B()
+                            inp.write(file.body)
+
+                            
+                            
+
+                        env['content_length'] = len(frm.post),
+                        env['wsgi.input'] = inp,
+                    else:
+                        inp = io.BytesIO(frm.post)
+                        B()
+
+                        env = create_environ({
+                            'content_length':  len(frm.post),
+                            'wsgi.input':      inp,
+                        })
+                        B()
 
 
                 else: 

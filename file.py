@@ -31,6 +31,7 @@ class resources(files):
     pass
 
 class file(orm.entity):
+    body = bytes
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.body = None

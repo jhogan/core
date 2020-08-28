@@ -24023,12 +24023,33 @@ class dom_files(tester):
 
                 avatar.write(imgdata)
 
+        # Set up site
+        ws = foonet()
+        ws.pages += avatar()
+
+        tab = self.browser().tab()
+        f = file.file(name='my-avatar')
+
+        # 1x1 pixel GIF
+        f.body = (
+            'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+        )
+        res = tab.post('/en/avatar', ws, files=f)
+        self.status(200, res)
 
         usr = party.user(name='luser')
+        usr.save()
+
+        tab = self.browser().tab()
+
+        return
+
 
         fss = usr.filesystems
         if fss.isempty:
             usr.filesytems.system(name='default')
+
+
 
 
 
