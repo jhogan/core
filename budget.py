@@ -133,8 +133,6 @@ class status(orm.entity):
         super().__init__(*args, **kwargs)
         self.orm.default('comment', None)
 
-    entities = statuses
-
     entered = date
 
     comment = text

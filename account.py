@@ -390,7 +390,6 @@ class note(obligation):
 class tax(obligation):
     """ An ``obligation`` to pay taxes to government agencies.
     """
-    entities = taxes
 
 class otherobligation(obligation):
     pass

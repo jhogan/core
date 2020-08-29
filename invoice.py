@@ -329,8 +329,6 @@ class status(party.status):
     Model Resource Book".
     """
 
-    entities = statuses
-
     # TODO ``assigned`` is a pretty good name for this concept. Ensure
     # that other status classes use this name; or, better yet, use
     # ``assigned`` in the base class (``party.status``)
@@ -557,7 +555,6 @@ class financialaccount_party(orm.association):
     Note that this entity was originally called FINANCIAL ACCOUNT ROLE
     in "The Data Model Resource Book".
     """
-    entities = financialaccount_parties
 
     span = datespan
 

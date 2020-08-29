@@ -57,7 +57,7 @@ class effort_requirements(orm.associations):                   pass
 class effort_efforts(orm.associations):                        pass
 class effort_effort_dependencies(effort_efforts):              pass
 class effort_effort_precedencies(effort_effort_dependencies):  pass
-class effort_effort_concurrency(effort_effort_dependencies):   pass
+class effort_effort_concurrencies(effort_effort_dependencies):   pass
 class effort_parties(orm.associations):                        pass
 class effort_partytypes(party.types):                          pass
 class statuses(orm.entities):                                  pass
@@ -232,7 +232,7 @@ class task(effort):
     pass
 
 class activity(effort): 
-    entities = activities
+    pass
 
 class job(effort):
     pass
@@ -264,7 +264,7 @@ class workflow(productionrun):
     pass
 
 class research(productionrun): 
-    entities = researches
+    pass
 
 class deliverable(orm.entity):
     """ For ``requirements`` that have a type of "internal project", the
@@ -452,7 +452,6 @@ class effort_effort_dependency(effort_effort):
     Note that this entity was originally called WORK EFFORT DEPENDENCY
     in "The Data Model Resource Book".
     """
-    entities = effort_effort_dependencies
 
 class effort_effort_precedency(effort_effort_dependency):
     """ A subassociation of ``effort_effort``, this entity declares that
@@ -461,7 +460,6 @@ class effort_effort_precedency(effort_effort_dependency):
     Note that this entity was originally called WORK EFFORT PRECEDENCY
     in "The Data Model Resource Book".
     """
-    entities = effort_effort_precedencies
 
 class effort_effort_concurrency(effort_effort_dependency):
     """ A subassociation of ``effort_effort``, this entity declares that
@@ -471,7 +469,6 @@ class effort_effort_concurrency(effort_effort_dependency):
     Note that this entity was originally called WORK EFFORT CONCURRENCY
     in "The Data Model Resource Book".
     """
-    entities = effort_effort_concurrency
 
 class effort_party(orm.association):
     """ This association between ``effort`` and ``party`` entities
@@ -502,8 +499,6 @@ class effort_party(orm.association):
         super().__init__(*args, **kwargs)
         if self.orm.isnew:
             self.comment = None
-
-    entities = effort_parties
 
     # The effort and party being associated
     effort = effort
@@ -555,7 +550,6 @@ class status(orm.entity):
     Note that this entity was originally called WORK EFFORT STATUS in
     "The Data Model Resource Book".
     """
-    entities = statuses
 
     begin = datetime
 
@@ -797,5 +791,4 @@ class breakdown(type_type):
 class dependency(type_type):
     """
     """
-    entities = dependencies
 
