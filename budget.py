@@ -25,19 +25,20 @@ from decimal import Decimal as dec
 from orm import text, timespan, datespan
 import orm
 import party
+import apriori
 
 class statuses(orm.entities): pass
 class items(orm.entities): pass
 class budgets(orm.entities): pass
 class operatings(budgets): pass
 class capitals(budgets): pass
-class types(orm.entities): pass
-class statustypes(orm.entities): pass
-class itemtypes(orm.entities): pass
+class types(apriori.types): pass
+class statustypes(apriori.types): pass
+class itemtypes(apriori.types): pass
 class roles(party.roles): pass
-class roletypes(orm.entities): pass
+class roletypes(apriori.types): pass
 class periods(orm.entities): pass
-class periodtypes(orm.entities): pass
+class periodtypes(apriori.types): pass
 class revisions(orm.entities): pass
 class item_revisions(orm.associations): pass
 class reviews(orm.entities): pass
@@ -107,19 +108,13 @@ class capital(budget):
     Data Model Resource Book".
     """
 
-class type(orm.entity):
+class type(apriori.type):
     """  Allows for the categorizationg of other types of ``budget``s
     according to the needs of the organization.
 
     Note that this entity was originally called BUDGET TYPE in "The
     Data Model Resource Book".
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    name = str
-
     budgets = budgets
 
 class status(orm.entity):
@@ -142,13 +137,7 @@ class status(orm.entity):
 
     comment = text
 
-class statustype(orm.entity):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    name = str
-
+class statustype(apriori.type):
     statuses = statuses
 
 class item(orm.entity):
@@ -187,19 +176,13 @@ class item(orm.entity):
     # A collection of budget revisions
     revisions = revisions
 
-class itemtype(orm.entity):
+class itemtype(apriori.type):
     """ Classifies the budegtary ``item``s into types so that common
     budget item descriptions can be reused.
 
     Note that this entity was originally called BUDGET ITEM TYPE in
     "The Data Model Resource Book".
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    name = str
-
     items = items
 
 # TODO Is ``party.role`` the correct base type?
@@ -216,13 +199,7 @@ class role(party.role):
     """
     budgets = budgets
     
-class roletype(orm.entity):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    name = str
-
+class roletype(apriori.type):
     roles = roles
 
 class period(orm.entity):
@@ -234,7 +211,7 @@ class period(orm.entity):
     """
     span = datespan
 
-class periodtype(orm.entity):
+class periodtype(apriori.type):
     """Identifies the particular type used by ``budget``.
 
     In `standardperiod``, common period types are "month",
@@ -243,12 +220,6 @@ class periodtype(orm.entity):
     Note that this entity was originally called PERIOD TYPE in "The Data
     Model Resource Book".
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    name = str
-
     # The collection of budgetary ``periods``.
     periods = periods
 
