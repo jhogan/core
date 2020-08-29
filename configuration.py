@@ -11,6 +11,35 @@ from dbg import B
 from logs import *
 
 class configuration:
+    """ This is the base configuration class. It contains configuration
+    datt that can and should be stored in version-control system.
+    However, it is never instantiated directly by application code. A
+    subclass of ``configuration``, which is conventionally called
+    ``config``, subclasses ``configuration`` to provide sensitive
+    information to ``configuration``'s values.  ``config`` is the class
+    that is used by application code despite never being versioned. A
+    typical implementation of ``config`` might look like::
+
+        from configuration import configuration
+
+        class config(configuration):
+            @property
+            def accounts(self):
+                ''' Override the accounts property to set the
+                password for the accounts.
+                '''
+
+                accts = super().accounts
+                for acct in accts:
+                    
+                    # All the passwords happen to be
+                    # 'my-super-secret-password'
+                    acct.password = 'my-super-secret-password'
+
+                return accts
+
+
+    """
     recaptcha_key = '<RECAPTCHA-KEY>'
     environment = 'development'
 

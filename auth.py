@@ -7,7 +7,6 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2020
 
 from config import config
-from configfile import configfile
 from datetime import datetime, timedelta
 from dbg import B
 from entities import entities, entity, brokenrules, brokenrule
@@ -97,7 +96,7 @@ class jwt(entity):
         brs = brokenrules()
 
         try:
-            secret = configfile.getinstance()['jwt-secret']
+            secret = config().jwtsecret
             pyjwt.decode(self.token, secret)
         except pyjwt.exceptions.DecodeError as ex:
             brs += brokenrule('Invaild token.', 'token', 'valid')
