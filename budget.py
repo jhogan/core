@@ -338,3 +338,71 @@ class reviewtype(orm.entity):
     # The collection of reviews classified by this review type
     reviews = reviews
     
+class scenario(orm.entity):
+    """ Budgeted ``items`` frequently have different figures associated
+    with them based on various scenarios. For example, there may be
+    different moneys allocated to a budegeted ``item`` depending on
+    whether the market conditieons are excellent, fair or poor. 
+
+    Variations on the amounts budgeted are based on different budget
+    ``scenarios``. Each ``scenario`` has a ``name`` that stores the type
+    of scenario such as "excellent market condition", "poor market
+    conditions", "worst case", "best case", "major deal signed", "no
+    major deal signed". This allows maintaining multiple budgeted
+    figures based on these conditions.
+
+    Note that this entity was originally called BUDGET SCENARIO in "The
+    Data Model Resource Book".
+    """
+
+    # Each ``scenario`` has a ``name`` that stores the type of scenario
+    # such as "excellent market condition", "poor market conditions",
+    # "worst case", "best case", "major deal signed", "no major deal
+    # signed". This allows maintaining multiple budgeted figures based
+    # on these conditions.
+    name = str
+
+class budget_scenario(orm.associations):
+    """ An association between a budget ``item`` or a ``budget`` and a
+    budget ``scenario``. ``budget_scenarios``. Each ``budget`` or budget
+    ``item`` may have several associations with ``scenarios``which store
+    either an ammount change or a percentage change for each budget
+    ``scenario``.
+
+    Note that this entity was originally called BUDGET SCENARIO
+    APPLICATION in "The Data Model Resource Book".
+    """
+
+    # Maintains the dollar amount of the change that is applied to each
+    # budget ``item`` amount
+    amount = dec
+
+    # Maintains the percentage of the change that is applied to each
+    # budget ``item`` amount
+    percent = dec
+
+    # The budget side of the association
+    budget = budget 
+
+    # The budget `item` side of the association (as an alternative to
+    # ``budget`` - see above)
+    item = item
+
+    # The scenario side of the association
+    scenario = scenario
+
+class rule(orm.entity):
+    """ The budget scenario ``rule`` stores the standard **percentage
+    change** or **amount change** with which to raise or lower the
+    amounts or percentages for standard budget ``itemtypes``. These
+    rules may be the default amounts or percentages tied to the budget
+    item ``scenarios``; however, they may be different than the values
+    for specific budgeted items because more might be known at budgeting
+    time.
+
+    Note that this entity was originally called BUDGET STANDARD RULE in
+    "The Data Model Resource Book".
+    """
+
+    amount = dec
+    percent = dec
