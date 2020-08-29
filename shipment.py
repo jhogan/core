@@ -198,7 +198,6 @@ class status(orm.entity):
     Note that this entity was originally called SHIPMENT STATUS in "The
     Data Model Resource Book".
     """
-    entities = statuses
     
     # The date and time at which a ``shipment`` entered into this status
     begin = datetime
@@ -503,7 +502,6 @@ class hazardous(document):
     Note that this entity was originally called HAZARDOUS MATERIALS
     DOCUMENT in "The Data Model Resource Book".
     """
-    entities = hazardouses
 
 class route(orm.entity):
     """ Maintains information about each leg of the journey for a

@@ -6,7 +6,7 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
-# TODO Checkout http://wiki.goodrelations-vocabulary.org/Quickstart for
+# NOTE Checkout http://wiki.goodrelations-vocabulary.org/Quickstart for
 # an standard for ecommerce markup when marking up parties, places, etc.
 
 # References:
@@ -220,8 +220,6 @@ class party(orm.entity):
         self.orm.default('isicv4', None)
         self.orm.default('dun', None)
 
-    entities = parties
-    
     # A party may have 0 or more national id numbers. For example, an
     # organization may have one or more Federal Taxpayer Identification
     # Numbers. A person could have an SSN number and/or other related
@@ -343,8 +341,6 @@ class company(legalorganization):
     # all companies are corporations. See the following link for the
     # differences between companies and corporations:
     # https://www.upcounsel.com/difference-between-corporation-and-company
-
-    entities = companies
 
     # TODO:afa4ffc9 Now that we are using role_role to associates
     # parties with each other, the entity objects `department` will no
@@ -815,9 +811,6 @@ class region(orm.entity):
     # so on.
     regions = regions
 
-    # TODO Automatically pluralize
-    entities = regions
-
     # The main string representation of the region. For postal codes, it
     # will be the postal code itself, e.g., "86225". For countries, the
     # name will be the name of the country, e.g., "United States".
@@ -1073,9 +1066,6 @@ class address(contactmechanism):
         if self.orm.isnew:
             self.directions = None
 
-    # TODO Automatically pluralize
-    entities = addresses
-
     # TODO s/address(\d)/line\1/
     # Address line 1
     address1 = str
@@ -1149,7 +1139,6 @@ class party_address(orm.association):
     span      =  datespan
 
 class party_party(orm.association):
-    entities = party_parties
     subject  =  party
     object   =  party
     role     =  str
@@ -1258,8 +1247,6 @@ class status(orm.entity):
     Model Resource Book".
     """
 
-    entities = statuses
-
     # NOTE Given that this abstract class can be used in many different
     # modules of the GEM, we may need to consider a centralized place
     # for these more "global" types. However, up to this moment, I have
@@ -1298,8 +1285,6 @@ class priority(orm.entity):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.orm.ensure(expects=('name',), **kwargs)
-
-    entities = priorities
 
     name = str
 
@@ -1415,7 +1400,6 @@ class subsidiary(organizationalunit):
     """ An organizational unit role a company plays to indicate that
     they are owned by a parent organization.
     """
-    entities = subsidiaries
 
 class parent(organizationalunit):
     """ An organizational unit role a company plays to indicate that
@@ -1486,6 +1470,8 @@ class billto(customer):
     Note that this entity was originally called BILL TO CUSTOMER in "The
     Data Model Resource Book".
     """ 
+    entities = billtos
+
 
 class placing(customer):
     """ A role indicating a party that has places an order to another
@@ -1532,6 +1518,7 @@ class shipto(customer):
     Note that this entity was originally called SHIP TO CUSTOMER in "The
     Data Model Resource Book".
     """
+    entities = shiptos
 
 class party_type(orm.association):
     """ An association between `party` and `type`. 
@@ -1577,8 +1564,6 @@ class facility(orm.entity):
     Floor      =  4
     Office     =  5
     Room       =  6
-
-    entities = facilities
 
     # The name of the facility
     name = str
@@ -1641,8 +1626,6 @@ class party_facility(orm.association):
     Note that this is modeled after the FACILITY ROLE entity in
     "The Data Model Resource Book".
     """
-
-    entities = party_facilities
 
     # The party being associated to a facility
     party = party
@@ -1883,7 +1866,6 @@ class case_party(orm.association):
     Note that this is modeled after the CASE ROLE entity in "The Data
     ModeModel Resource Book".
     """
-    entities = case_parties
 
     # The case being associated to the party
     case = case
@@ -2021,8 +2003,6 @@ class asset_party(orm.association):
         super().__init__(*args, **kwargs)
         if self.orm.isnew:
             self.comment = None
-
-    entities = asset_parties
 
     # The ``party`` side of the association.
     party = party

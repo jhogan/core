@@ -321,7 +321,6 @@ class order_party(orm.association):
     Note that this association was originally called ORDER ROLE in "The
     Data Model Resource Book".
     """
-    entities = order_parties
 
     # The order in this association
     order = order
@@ -387,8 +386,6 @@ class tax(adjustment):
     Model Resource Book".
     """
 
-    entities = taxes
-
 class shipping(adjustment):
     """ Short for "shipping and handling charge", add this adjustment to
     an ``order``'s or an ``item``'s ``adjustments`` collection to apply
@@ -408,8 +405,6 @@ class miscellaneous(adjustment):
     Note that this entity was originally called MISCELLANEOUS CHARGE in
     "The Data Model Resource Book".
     """
-
-    entities = miscellaneouses
 
 class discount(adjustment):
     """ Add this adjustment to an ``order``'s or an ``item``'s
@@ -464,7 +459,6 @@ class status(orm.entity):
     Note that this entity was originally called ORDER STATUS in "The
     Data Model Resource Book".
     """
-    entities = statuses
 
     # The date and time when the order transitioned in to the given
     # status.

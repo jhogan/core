@@ -348,7 +348,6 @@ class category(orm.entity):
     Note that this entity was originally called PRODUCT CATEGORY in "The
     Data Model Resource Book".
     """
-    entities = categories
 
     # The category's name
     name = str
@@ -514,7 +513,6 @@ class quality(feature):
     "grade B".  For service products, such as a consutant, this may
     represent "expert" or "junior". 
     """
-    entities = qualities
 
 class color(feature):
     """ A feature that describes the color of a good. A good may have
@@ -842,7 +840,6 @@ class priority(orm.entity):
     Note that the original name for this class from "The Data Model
     Resource Book was called PREFERENCE TYPE.
     """
-    entities = priorities
 
     # TODO Since there is a finite number of priorities, we should
     # following the model of the `product.rating` type which autosaves
@@ -1075,8 +1072,6 @@ class status(orm.entity):
     Note that this entity was originally called
     INVENTORY ITEM STATUS TYPE in "The Data Model Resource Book".
     """
-
-    entities = statuses
 
     # The name of the status, i.e., "good", "being
     # repaired", "slighly damaged", "defective", "scrap"

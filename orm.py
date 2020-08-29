@@ -17,8 +17,6 @@ mapping.
 Todo:
     TODO s/explicit attribute/imperitive attribute/
 
-    TODO Add automatic pluralisation of entities
-
     TODO Raise error if a subclass of ``association`` does not have a
     subclass of ``associations``. Strange bugs happen when this mistake
     is made.
@@ -30,6 +28,7 @@ from contextlib import suppress, contextmanager
 from datetime import datetime, date
 from dbg import B
 from difflib import SequenceMatcher
+from entities import classproperty
 from enum import Enum, unique
 from func import enumerate
 from pprint import pprint
@@ -44,9 +43,9 @@ import dateutil
 import db
 import decimal
 import entities as entitiesmod
-from entities import classproperty
 import func
 import gc
+import inflect
 import inspect
 import itertools
 import os
@@ -2121,8 +2120,12 @@ class entitymeta(type):
             # subclass of `orm.entities` looking for one whose name is
             # the plural of this class's name. When found, assign it to
             # this class's `entities`.
+            flect = inflect.engine(); flect.classical(); 
+            flect.defnoun('status', 'statuses')
+
+            names = flect.plural(name)
             for sub in orm_.getsubclasses(of=entities):
-                if sub.__name__   == name + 's' and \
+                if sub.__name__   == names and \
                    sub.__module__ == body['__module__']:
 
                     body['entities'] = sub
