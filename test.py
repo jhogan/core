@@ -17285,7 +17285,7 @@ class gem_party(tester):
         
     def it_creates_association_to_company(self):
         per = self.getvalid()
-        com = self.getvalidcompany()
+        com = gem_party.getvalidcompany()
 
         pp = party.party_party()
         pp.object = com
@@ -19289,27 +19289,27 @@ class gem_product(tester):
         )
 
         # Create companies
-        abc = self.getvalidcompany(
+        abc = gem_party.getvalidcompany(
             name = 'ABC Corporation'
         )
 
-        joes = self.getvalidcompany(
+        joes = gem_party.getvalidcompany(
             name = "Joe's Stationary"
         )
 
-        mikes = self.getvalidcompany(
+        mikes = gem_party.getvalidcompany(
             name = "Mike's Office Supply"
         )
 
-        greggs = self.getvalidcompany(
+        greggs = gem_party.getvalidcompany(
             name = "Gregg's Pallet Shop"
         )
 
-        palletinc = self.getvalidcompany(
+        palletinc = gem_party.getvalidcompany(
             name = 'Pallets Incorporated'
         )
 
-        warehousecomp = self.getvalidcompany(
+        warehousecomp = gem_party.getvalidcompany(
             name = 'The Warehouse Company'
         )
 
@@ -19397,10 +19397,10 @@ class gem_product(tester):
         self.false(hasattr(serv, 'guidelines'))
 
         good = gem_product.getvalid(product.good, comment=1)
-        reg = self.getvalidregion()
+        reg = gem_party.getvalidregion()
         fac = party.facility(name='Area 51', footage=100000)
         fac.save()
-        org = self.getvalidcompany()
+        org = gem_party.getvalidcompany()
 
         cnt = 2
         for i in range(cnt):
@@ -20202,11 +20202,11 @@ class gem_product(tester):
 
     def it_creates_prices(self):
         # Create organizations
-        abc = self.getvalidcompany(
+        abc = gem_party.getvalidcompany(
             name = 'ABC Corporation'
         )
 
-        joes = self.getvalidcompany(
+        joes = gem_party.getvalidcompany(
             name = "Joe's Stationary"
         )
 
@@ -21065,7 +21065,7 @@ class gem_order(tester):
         authorizer   =  order.order_partytype(name='Authorizer')
 
         # Create parties
-        person = self.getvalid
+        person = gem_party.getvalid
         johnjones  =  person(first='John',   last='Jones')
         nancy      =  person(first='Nancy',  last='Barker')
         frank      =  person(first='Frank',  last='Parks')
@@ -23468,7 +23468,7 @@ class gem_budget(tester):
     def __init__(self):
         super().__init__()
         for e in orm.orm.getentitys(includeassociations=True):
-            if e.__module__ == 'budget':
+            if e.__module__ in ('apriori', 'budget'):
                 e.orm.recreate()
 
     def it_creates(self):

@@ -43,6 +43,8 @@ class revisions(orm.entities): pass
 class item_revisions(orm.associations): pass
 class reviews(orm.entities): pass
 class reviewtypes(orm.entities): pass
+class scenarios(orm.entities): pass
+class rules(orm.entities): pass
 
 class budget(orm.entity):
     """ Describes the information about the amounts of moneys needed for
