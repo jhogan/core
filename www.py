@@ -390,7 +390,7 @@ class _request:
             try:
                 cls = post['_class']
             except KeyError:
-                raise htt.NotFoundError('The class value was not supplied')
+                raise NotFoundError('The class value was not supplied')
 
             try:
                 meth = self.postmethod

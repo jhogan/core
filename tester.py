@@ -16,7 +16,7 @@ from timer import stopwatch
 from types import FunctionType
 import argparse
 import dom
-import http
+import www
 import inspect
 import io
 import json
@@ -94,14 +94,14 @@ class testers(entities):
         return self._tostr(str, includeHeader=False)
 
 class tester(entity):
-    class _browsers(http.browsers):
+    class _browsers(www.browsers):
         pass
 
-    class _browser(http.browser):
+    class _browser(www.browser):
         def __init__(self, t, *args, **kwargs):
             self.tester = t
 
-        class _tabs(http.browser._tabs):
+        class _tabs(www.browser._tabs):
             def __init__(self, brw, *args, **kwargs):
                 super().__init__(*args, **kwargs)
                 self.browser = brw
@@ -111,7 +111,7 @@ class tester(entity):
                 self += t
                 return t
 
-        class _tab(http.browser._tab):
+        class _tab(www.browser._tab):
             def __init__(self, tabs):
                 self.tabs = tabs
 
@@ -170,7 +170,7 @@ class tester(entity):
                         for k, v in env.items():
                             d[k] = v
                     
-                    return http.headers(d)
+                    return www.headers(d)
 
                 st, hdrs = None, None
                 
@@ -204,10 +204,10 @@ class tester(entity):
                 env['request_method']  =  meth
 
                 # Create WSGI app
-                app = http.application()
+                app = www.application()
 
                 # Create request. Associate with app.
-                req = http._request(app)
+                req = www._request(app)
 
                 app.breakonexception = \
                     self.browser.tester.testers.breakonexception
@@ -216,12 +216,12 @@ class tester(entity):
 
                 # NOTE PEP 0333 insist that the environment variables
                 # passed in must be a dict so we convert `env` which is
-                # an http.headers object.
+                # an www.headers object.
                 iter = app(dict(env.list), start_response)
 
-                res = http._response(req) 
+                res = www._response(req) 
                 res._status = st
-                res._headers = http.headers(hdrs)
+                res._headers = www.headers(hdrs)
                 res.payload = next(iter)
 
                 # Deal with the set-cookie header
