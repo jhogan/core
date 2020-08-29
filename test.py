@@ -28,6 +28,7 @@ import account
 import apriori
 import asset
 import auth
+import base64
 import codecs
 import dateutil
 import db
@@ -24028,12 +24029,14 @@ class dom_files(tester):
         ws.pages += avatar()
 
         tab = self.browser().tab()
-        f = file.file(name='my-avatar')
+        f = file.file(name='my-avatar.gif')
 
         # 1x1 pixel GIF
-        f.body = (
+        f.body = base64.decodebytes(
             'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+                .encode('ascii')
         )
+
         res = tab.post('/en/avatar', ws, files=f)
         self.status(200, res)
 

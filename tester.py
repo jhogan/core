@@ -122,7 +122,8 @@ class tester(entity):
                 return self._request(pg=pg, ws=ws, meth='GET')
 
             def post(self, pg, ws, frm=None, files=None):
-                files = files.orm.collectivize()
+                if files:
+                    files = files.orm.collectivize()
 
                 return self._request(
                     pg=pg, ws=ws, frm=frm, files=files, meth='POST'
@@ -191,45 +192,39 @@ class tester(entity):
                 if meth == 'POST':
                     if files and files.count:
                         boundry = uuid.uuid4().hex
+                        inp = io.BytesIO()
+
+                        boundry = f'--{boundry}\n'
+                        for file in files:
+                            inp.write(bytes(
+                            f'{boundry}\r\n'
+                            'Content-Disposition: form-data;'
+                            'form-data;'
+                            f'name=file;'
+                            f'filename={file.name}\r\n'
+                            'Content-Type:application/octet-stream\r\n\r\n',
+                            'utf-8'
+                            ))
+
+                            inp.write(file.body)
+
+                        inp.seek(0)
+
                         env = create_environ({
                             'content_type':  (
                                 'multipart/form-data; '
-                                'boundry=----{boundry}'
-                            )
+                                f'boundry={boundry}'
+                            ),
+                            'content_length': len(inp.getvalue()),
+                            'wsgi.input': inp,
                         })
-
-                        inp = io.BytesIO()
-
-                        boundry = f'{"-"*6}{boundry}\n'
-                        for file in files:
-                            inp.write(bytes(
-                            f'{boundry}\n'
-                            'Content-Disposition: form-data;'
-                            'form-data;'
-                            f'name={file.name};'
-                            f'filename={file.name}\n'
-                            'Content-Type:application/x-object\n\n',
-                            'utf-8'
-                            ))
-                            B()
-                            inp.write(file.body)
-
-                            
-                            
-
-                        env['content_length'] = len(frm.post),
-                        env['wsgi.input'] = inp,
                     else:
                         inp = io.BytesIO(frm.post)
-                        B()
 
                         env = create_environ({
                             'content_length':  len(frm.post),
                             'wsgi.input':      inp,
                         })
-                        B()
-
-
                 else: 
                     env = create_environ()
 

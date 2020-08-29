@@ -307,7 +307,13 @@ class _request:
         if self._payload is None:
             sz = self.size
             inp = self.environment['wsgi.input']
-            self._payload = inp.read(sz).decode('utf-8')
+            if self.ismultipart:
+                self._payload = inp.read(sz)
+            else:
+                # TODO What would the mime type (content-type) be here?
+                # (text/html?) Let's turn this else into an elif with
+                # that information.
+                self._payload = inp.read(sz).decode('utf-8')
         return self._payload
 
     @property
@@ -366,6 +372,18 @@ class _request:
     def content_type(self):
         return self.environment['content_type']
 
+    @property
+    def mime(self):
+        return self.content_type.split(';')[0].strip().lower()
+
+    @property
+    def ismultipart(self):
+        return self.mime.split('/')[0] == 'multipart'
+
+    @property
+    def istext(self):
+        return self.mime.split('/')[0] == 'text'
+
     def demand(self):
         if not request.page:
             raise NotFoundError(self.path)
@@ -375,8 +393,15 @@ class _request:
                 raise www.BadRequestError('No path was given.')
             
         elif self.ispost:
-            if len(self.payload) == 0:
+            if self.istexthtml and len(self.payload) == 0:
                 raise BadRequestError('No data in body of request message.')
+
+            if self.ismultipart:
+                if self.files.isempty:
+                    raise BadRequestError(
+                        'No files given in multipart form.'
+                    )
+                    
 
             # The remaining demands will be for XHR requests only
             if not self.isxhr:
@@ -645,7 +670,6 @@ class HttpError(HttpException):
             msg0 += ' - ' + msg
 
         super().__init__(msg0)
-
 
 class MultipleChoicesException(HttpException):
     status = 300
