@@ -19,7 +19,6 @@ import html as htmlmod
 import json
 import os
 import pdb
-import pom
 import re
 import sys
 import textwrap
@@ -256,6 +255,10 @@ class _request:
             # that we are in a test environment before accepting this
             # variable to prevent against tampering.
             ws = self.environment['server_site']
+
+            # Prevent circular importing by importing pom here instead
+            # of at the top
+            import pom
             if isinstance(ws, pom.site):
                 return ws
         except KeyError:
