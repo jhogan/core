@@ -5284,15 +5284,31 @@ class orm:
         opcodes = [list(x) for x in opcodes]
         rms = list()
         for i, (tag, i1, i2, j1, j2) in enumerate(opcodes):
-            if tag == 'delete':
-                inserts = [x for x in opcodes if x[0] == 'insert']
-                for insert in inserts:
-                    ix = slice(*insert[3:])
-                    if cols[i1:i2] == attrs[ix]:
-                        rms.append(opcodes.index(insert))
-                        opcodes[i][0] = 'move'
-                        insert[0] = 'after'
-                        opcodes[i].append(insert)
+            if tag != 'delete':
+                continue
+
+            inserts = [x for x in opcodes if x[0] == 'insert']
+
+            for insert in inserts:
+                ix = slice(*insert[3:])
+                for attr in attrs[ix]:
+                    for col in cols[i1:i2]:
+                        if col != attr:
+                            continue
+
+                        if opcodes[i][0] == 'delete':
+                            opcodes[i][0] = 'move'
+                            after = insert.copy()
+                            after[0] = 'after'
+                            opcodes[i].append(after)
+                            after[4] = after[3]
+
+                        after[4] += 1
+
+                        if insert[3] + 1 == insert[4]:
+                            rms.append(opcodes.index(insert))
+                        else:
+                            insert[3] += 1
 
         for rm in rms:
             del opcodes[rm]
