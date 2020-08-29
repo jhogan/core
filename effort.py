@@ -45,14 +45,14 @@ class maintenences(productionruns):                            pass
 class workflows(productionruns):                               pass
 class researches(productionruns):                              pass
 class deliverables(orm.entities):                              pass
-class deliverabletypes(orm.entities):                          pass
+class deliverabletypes(apriori.types):                         pass
 class roles(party.roles):                                      pass
 class roletypes(party.roletypes):                              pass
 class items(order.items):                                      pass
 class item_requirements(orm.associations):                     pass
 class effort_items(orm.associations):                          pass
-class types(orm.entities):                                     pass
-class effortpurposetypes(orm.entities):                        pass
+class types(apriori.types):                                    pass
+class effortpurposetypes(apriori.types):                       pass
 class effort_requirements(orm.associations):                   pass
 class effort_efforts(orm.associations):                        pass
 class effort_effort_dependencies(effort_efforts):              pass
@@ -61,11 +61,11 @@ class effort_effort_concurrency(effort_effort_dependencies):   pass
 class effort_parties(orm.associations):                        pass
 class effort_partytypes(party.types):                          pass
 class statuses(orm.entities):                                  pass
-class statustypes(orm.entities):                               pass
+class statustypes(apriori.types):                              pass
 class times(orm.entities):                                     pass
 class timesheets(orm.entities):                                pass
 class timesheetroles(orm.entities):                            pass
-class timesheetroletypes(orm.entities):                        pass
+class timesheetroletypes(apriori.types):                       pass
 class effort_inventoryitems(orm.associations):                 pass
 class asset_efforts(orm.associations):                         pass
 class asset_effortstatuses(orm.entities):                      pass
@@ -288,21 +288,11 @@ class deliverable(orm.entity):
     # its deliverable.
     requirements = requirements
 
-class deliverabletype(orm.entity):
+class deliverabletype(apriori.type):
     """ Categorizes ``deliverables`` by their type. Possible types
     include "management report", "project plan", "presentation", "market
     analysis".
     """
-
-    # TODO So many entity objects follow this pattern: An entity called
-    # myentity is created, followed by myentitytype that categorizes
-    # myentity. The constructor for myentitytype uses the orm.ensure
-    # method to ensure a record exists for the type identifiable by
-    # name.  We should have a generic ``type`` class that does this and
-    # from which all these other type classes can derive.
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
 
     deliverables = deliverables
 
@@ -391,18 +381,12 @@ class effort_product_item(orm.association):
     # item is said to be a product of the associated work ``effort``.
     item = item
 
-class type(orm.entity):
+class type(apriori.type):
     """ Catagorizes the ``effort``.
 
     Note that this entity was originally called WORK EFFORT TYPE in "The
     Data Model Resource Book".
     """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    name = str
 
     # The standard number of work hours for this effort type. This is an
     # estimate of how many hours it would normally take to complete this
@@ -424,7 +408,7 @@ class type(orm.entity):
     # that this work effort ``type`` requires.
     assetstandards = assetstandards
 
-class effortpurposetype(orm.entity):
+class effortpurposetype(apriori.type):
     """ A work ``effort`` tracks the work to fix or produce something
     for manufacturing and involves the allocation of resources: people
     (labor), parts (inventory), and fixed assets (eqipment). Therefore,
@@ -435,12 +419,6 @@ class effortpurposetype(orm.entity):
     Note that this entity was originally called WORK EFFORT PURPOSE TYPE
     in "The Data Model Resource Book".
     """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    name = str
 
     # A collection of work ``efforts` that match this type.
     efforts = efforts
@@ -581,15 +559,9 @@ class status(orm.entity):
 
     begin = datetime
 
-class statustype(orm.entity):
+class statustype(apriori.type):
     """ Describes a ``status`` entity.
     """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    name = str
 
     # The collection of status entities that this entity describes.
     statuses = statuses
@@ -655,16 +627,10 @@ class timesheetrole(orm.entity):
     ``timesheetroles`` categorized by ``timesheetroletype``.
     """
 
-class timesheetroletype(orm.entity):
+class timesheetroletype(apriori.type):
     """ Categorizes ``timesheeroles``. Examples include "approver",
     "manager", and "enterer".
     """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    name = str
 
     # A collection of timesheetroles that match this type.
     timesheetroles = timesheetroles

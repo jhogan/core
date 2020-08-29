@@ -21,6 +21,7 @@ from datetime import datetime, date
 from dbg import B
 from decimal import Decimal as dec
 from orm import text, timespan, datespan
+import apriori
 import entities
 import order
 import orm
@@ -31,7 +32,7 @@ import product
 class shipments(orm.entities):                pass
 class items(orm.entities):                    pass
 class statuses(orm.entities):                 pass
-class statustypes(orm.entities):              pass
+class statustypes(apriori.types):             pass
 class shipitem_orderitems(orm.associations):  pass
 class item_features(orm.associations):        pass
 class packages(orm.entities):                 pass
@@ -46,7 +47,7 @@ class picklistitems(orm.entities):            pass
 class issuanceroles(party.roles):             pass
 class issuanceroletypes(party.roletypes):     pass
 class documents(orm.entities):                pass
-class documenttypes(orm.entities):            pass
+class documenttypes(apriori.types):           pass
 class bols(documents):                        pass
 class slips(documents):                       pass
 class exports(documents):                     pass
@@ -55,7 +56,7 @@ class portcharges(documents):                 pass
 class taxandtarrifs(documents):               pass
 class hazardouses(documents):                 pass
 class routes(orm.entities):                   pass
-class types(orm.entities):                    pass
+class types(apriori.types):                   pass
 class carriers(party.organizationals):        pass
 class assets(orm.entities):                   pass
 class vehicals(orm.entities):                 pass
@@ -202,7 +203,7 @@ class status(orm.entity):
     # The date and time at which a ``shipment`` entered into this status
     begin = datetime
 
-class statustype(orm.entity):
+class statustype(apriori.type):
     """ This entity describes a shipment's ``status``. It has a
     one-to-many relationship with ``status``.
 
@@ -212,11 +213,6 @@ class statustype(orm.entity):
     Note that this entity was originally called SHIPMENT STATUS TYPE in
     "The Data Model Resource Book".
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    name = str
 
     # The collection of status entities that belong that have this
     # status type.
@@ -441,15 +437,13 @@ class document(orm.entity):
 
     description = str
 
-class documenttype(orm.entity):
+class documenttype(apriori.type):
     """ Provides for other types of documents than the standard ones
     (the subentities of ``document``).
 
     Note that this entity was originally called DOCUMENT TYPE in
     "The Data Model Resource Book".
     """
-
-    name = str
 
     # The collection of documents that this class describes
     documents = documents
@@ -539,17 +533,13 @@ class route(orm.entity):
     # The destination facility to which this route terminates
     destination = party.facility
 
-class type(orm.entity):
+class type(apriori.type):
     """ A type of shipment method such as ground, first-class air,
     train, truck, cargo ship or air.
 
     Note that this entity was originally called SHIPMENT METHOD TYPE in
     "The Data Model Resource Book".
     """
-
-    # The name of the shipment method, e.g., 'ground', 'cargo ship', or
-    # 'air'.
-    name = str
 
     # The shipment ``route`` segments that this type describes.
     routes = routes

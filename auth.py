@@ -6,6 +6,7 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2020
 
+from config import config
 from configfile import configfile
 from datetime import datetime, timedelta
 from dbg import B
@@ -72,7 +73,7 @@ class jwt(entity):
                 if v is not None:
                     d[prop] = v
 
-            secret = configfile.getinstance()['jwt-secret']
+            secret = config().jwtsecret
             enc = pyjwt.encode(d, secret)
             self._token = enc.decode('utf-8')
         return self._token
@@ -81,7 +82,7 @@ class jwt(entity):
         v = getattr(self, '_' + k)
         if v is None:
             if self.token:
-                secret = configfile.getinstance()['jwt-secret']
+                secret = config().jwtsecret
                 d = pyjwt.decode(self.token, secret)
                 try:
                     return d[k]

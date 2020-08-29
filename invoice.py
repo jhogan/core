@@ -33,6 +33,7 @@ import party
 import shipment
 import effort
 import order
+import apriori
 
 class invoices(orm.entities):                       pass
 class salesinvoices(invoices):                      pass
@@ -40,21 +41,21 @@ class purchaseinvoices(invoices):                   pass
 class items(orm.entities):                          pass
 class salesitems(items):                            pass
 class purchaseitems(items):                         pass
-class types(orm.entities):                          pass
+class types(apriori.types):                         pass
 class roles(orm.entities):                          pass
-class roletypes(orm.entities):                      pass
+class roletypes(apriori.types):                     pass
 class accounts(orm.entities):                       pass
 class account_roles(orm.associations):              pass
-class account_roletypes(orm.entities):              pass
+class account_roletypes(apriori.types):             pass
 class statuses(party.statuses):                     pass
-class statustypes(orm.entities):                    pass
+class statustypes(apriori.types):                   pass
 class terms(orm.entities):                          pass
-class termtypes(orm.entities):                      pass
+class termtypes(apriori.types):                     pass
 class invoiceitem_shipmentitems(orm.associations):  pass
 class effort_items(orm.associations):               pass
 class invoiceitem_orderitems(orm.associations):     pass
 class payments(orm.entities):                       pass
-class paymenttypes(orm.entities):                   pass
+class paymenttypes(apriori.types):                  pass
 class receipts(payments):                           pass
 class disbursements(payments):                      pass
 class invoice_payments(orm.associations):           pass
@@ -63,11 +64,11 @@ class withdrawals(transactions):                    pass
 class deposits(transactions):                       pass
 class adjustments(transactions):                    pass
 class financialaccounts(orm.entities):              pass
-class financialaccounttypes(orm.entities):          pass
+class financialaccounttypes(apriori.types):         pass
 class investmentaccounts(financialaccounts):        pass
 class bankaccounts(financialaccounts):              pass
 class financialaccount_parties(orm.associations):   pass
-class financialaccount_partytypes(orm.entities):    pass
+class financialaccount_partytypes(apriori.types):   pass
 
 class invoice(orm.entity):
     """ The ``invoice`` maintains header information abut the
@@ -223,7 +224,7 @@ class purchaseitem(item):
     Note that this entity was originally called PURCHASE INVOICE ITEM in
     "The Data Model Resource Book".
     """
-class type(orm.entity):
+class type(apriori.type):
     """ Each invoice ``item`` may be categorized by an invoice item
     ``type``. The value for the ``name`` attribute  could include values
     such as "invoice adjustment", "invoice item adjustment", "invoice
@@ -233,11 +234,6 @@ class type(orm.entity):
     "discount adujustment", "shipping and handling charges", "surchange
     adujustment", and "fee".
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    name = str
     items = items
 
 class role(orm.entity):
@@ -251,7 +247,7 @@ class role(orm.entity):
     datetime = datetime
     percent = dec
 
-class roletype(orm.entity):
+class roletype(apriori.type):
     """ A type of ``role``. 
     
     Examples of role include "entered by", "approver", "sender" and
@@ -307,7 +303,7 @@ class account_role(orm.association):
     # ``account``.
     span = datespan
 
-class account_roletype(orm.entity):
+class account_roletype(apriori.type):
     """ The billing account role (``account_role``) allows each
     ``party`` to play a billing ``account`` role type
     (``account_roletype``) in the ``account``. Roles could include
@@ -321,12 +317,6 @@ class account_roletype(orm.entity):
     Note that this is modeled after the BILLING ACCOUNT ROLE TYPE entity
     in "The Data Model Resource Book".
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    name = str
-
     account_roles = account_roles
 
 class status(party.status):
@@ -348,17 +338,12 @@ class status(party.status):
     assigned = datetime
 
 # TODO I guess there isn't a party.statustype at the moment.
-class statustype(orm.entity):
+class statustype(apriori.type):
     """ Categorizes ``statuses``.
 
     Note that this is modeled after the INVOICE STATUS TYPE in "The Data
     Model Resource Book".
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    name = str
 
     # The collection of invoice statuses categorized by this status type
     statuses = statuses
@@ -372,17 +357,12 @@ class term(orm.entity):
     """
     value = dec
 
-class termtype(orm.entity):
+class termtype(apriori.type):
     """ Categorizes a term.
 
     Note that this is modeled after the INVOICE TERM in "The Data Model
     Resource Book".
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    name = str
 
     # The collection of ``terms`` categorized by this ``termtype``.
     terms = terms
@@ -467,7 +447,7 @@ class payment(orm.entity):
 
     party = party
 
-class paymenttype(orm.entity):
+class paymenttype(apriori.type):
     """ Identifies the kind of payment being tracked by the ``payment``
     entity. As such, there is a one-to-many relationship between
     ``paymenttype`` and ``payment``. Examples of payment types include
@@ -477,7 +457,6 @@ class paymenttype(orm.entity):
     Note that this entity was originally called PAYMENT METHOD TYPE in
     "The Data Model Resource Book".
     """
-    name = str
     payments = payments
 
 class receipt(payment):
@@ -557,7 +536,7 @@ class financialaccount(orm.entity):
     """
     name = str
 
-class financialaccounttype(orm.entity):
+class financialaccounttype(apriori.type):
     """ ``financialaccounttype` can be used to stores tyess of
     ``financialaccounts`` such as "checking", "savings", "IRA", "mutual
     funds", and so on.
@@ -582,7 +561,7 @@ class financialaccount_party(orm.association):
 
     span = datespan
 
-class financialaccount_partytype(orm.entity):
+class financialaccount_partytype(apriori.type):
     """
     Note that this entity was originally called FINANCIAL ACCOUNT ROLE
     TYPE in "The Data Model Resource Book".

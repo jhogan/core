@@ -4,7 +4,9 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2020
 
+from config import config
 from configfile import configfile
+from contextlib import contextmanager
 from contextlib import contextmanager, suppress
 from dbg import B
 from entities import *
@@ -14,14 +16,14 @@ from timer import stopwatch
 from types import FunctionType
 import argparse
 import dom
+import http
 import inspect
+import io
 import json
 import pdb
 import pom
-import http
 import pprint
 import primative
-import io
 import sys
 import textwrap
 import urllib
@@ -50,8 +52,7 @@ class testers(entities):
 
         testclass, testmethod, *_ = tu.split('.') + [None] if tu else [None] * 2
 
-        cfg = configfile.getinstance()
-        if cfg.isloaded and cfg.inproduction:
+        if config().inproduction:
             raise Exception("Won't run in production environment.")
 
         for subcls in self.testerclasses:

@@ -76,7 +76,7 @@ class serials(items):                      pass
 class nonserials(items):                   pass
 class lots(orm.entities):                  pass
 class containers(orm.entities):            pass
-class containertypes(orm.entities):        pass
+class containertypes(apriori.types):       pass
 class statuses(orm.entities):              pass
 class variances(orm.entities):             pass
 class reasons(orm.entities):               pass
@@ -204,9 +204,9 @@ class recurrings(prices):                  pass
 class utilizations(prices):                pass
 class quantitybreaks(prices):              pass
 class values(prices):                      pass
-class salestypes(prices):                  pass
+class salestypes(apriori.types):           pass
 class estimates(prices):                   pass
-class estimatetypes(prices):               pass
+class estimatetypes(apriori.types):        pass
 class product_products(orm.associations):  pass
 
 class product(orm.entity):
@@ -1060,12 +1060,9 @@ class container(orm.entity):
     # The facility in which the container is currently located. 
     facility = party.facility
 
-class containertype(orm.entity):
+class containertype(apriori.type):
     """ This class allows for the definition of containers.
     """
-
-    # The name of the container type
-    name = str
 
     # Instances of containers matching this type.
     containers = containers
@@ -1295,7 +1292,7 @@ class value(orm.entity):
     # dependent on this order value.
     prices = prices
 
-class salestype(orm.entity):
+class salestype(apriori.type):
     """ This classs allows different pricing based on different methods
     of selling; for instance, Internet-based sales may have a different
     price than retail-based salse or catalog-based sales.
@@ -1303,9 +1300,6 @@ class salestype(orm.entity):
     Note that this entity was originally called SALES TYPE in "The Data
     Model Resource Book".
     """
-
-    # The name or description for this sales type
-    name = str
 
     # These price components (`prices`) are associated with and
     # dependent on this sales type.
@@ -1345,15 +1339,12 @@ class estimate(orm.entity):
     # relationship to an organization composite.
     organization = party.organization
 
-class estimatetype(orm.entity):
+class estimatetype(apriori.type):
     """ This entity specifies what tpo of cost an ``estimate`` is.
 
     Note that this entity was originally called COST COMPONENT TYPE
     in "The Data Model Resource Book".
     """
-
-    # The name or description of the estimate type
-    name = str
 
     # The collection of estimates declared to be of this entity object's
     # type.

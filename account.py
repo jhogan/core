@@ -6,16 +6,18 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2020
 
-""" This module contains ``orm.entity`` objects related to the tracking of
-accounting and budgeting data.
+""" This module contains ``orm.entity`` objects related to the tracking
+of accounting data. 
 
-These entity objects are based on the "Accounting and Budgetting"
+Note that for the budgeting model, see budget.py.
+
+These entity objects are based on the "Accounting and Budgeting"
 chapter of "The Data Model Resource Book".
 
 Examples:
     See test.py for examples. 
 
-Todo:
+    - Move the budget object model to a new module (budget.py).
 """
 
 from datetime import datetime, date
@@ -26,15 +28,19 @@ import orm
 import party
 import product
 import invoice
+import invoice
+import asset
+import budget
+import apriori
 
 class accounts(orm.entities): pass
-class types(orm.entities): pass
+class types(apriori.types): pass
 class account_organizations(orm.associations): pass
 class periods(orm.entities): pass
-class periodtypes(orm.entities): pass
+class periodtypes(apriori.types): pass
 class transactions(orm.entities): pass
 class items(orm.entities): pass
-class transactiontypes(orm.entities): pass
+class transactiontypes(apriori.types): pass
 class internals(transactions): pass
 class depreciations(internals): pass
 class capitalizations(internals): pass
@@ -53,6 +59,8 @@ class creditlines(obligations): pass
 class payments(externals): pass
 class receipts(payments): pass
 class disbursements(payments): pass
+class depreciationmethods(orm.entities): pass
+class asset_depreciationmethods(orm.associations): pass
 
 class account(orm.entity):
     """ Represents a type of financial reporting bucket to which
@@ -89,7 +97,7 @@ class account(orm.entity):
     # The collection of  "journal entry line items" for this account
     items = items
 
-class type(orm.entity):
+class type(apriori.type):
     """ Each general ledger ``account`` may be categorized by one and only one
     general ledger account type (``type``) to specify the
     ``account``. Valid classifications include:  "asset", "liability",
@@ -104,12 +112,6 @@ class type(orm.entity):
     Note that this entity was originally called GENERAL LEDGER ACCOUNT
     TYPE in "The Data Model Resource Book".
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    name = str
-
     # All the accounts that are categorized by this object
     accounts = accounts
 
@@ -199,18 +201,15 @@ class period(orm.entity):
     # reporting.
     organization = party.organization
 
-class periodtype(orm.entity):
-    """ Each accounting period is of a ``periodtype`` such as "fiscal year",
+class periodtype(apriori.type):
+    """Identifies the particular type used by ``accounts``.
+
+    Each accounting period is of a ``periodtype`` such as "fiscal year",
     "calendar year", "fiscal quarter", and so on.
 
     Note that this entity was originally called PERIOD TYPE in "The Data
     Model Resource Book".
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    name = str
 
     periods = periods
 
@@ -296,7 +295,7 @@ class item(orm.entity):
     # etc."
 
 
-class transactiontype(orm.entity):
+class transactiontype(apriori.type):
     """ Provides a specific low-level categorization of each
     transaction. ``transactiontypes`` may include further breakdowns of
     the subentities such as "Payment Recept for Asset Sale" or "Payment
@@ -305,12 +304,6 @@ class transactiontype(orm.entity):
     Note that this entity was originally called ACCOUNTING TRANSACTION
     TYPE In "The Data Model Resource Book".
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    name = str
-
     transactions = transactions
 
 class internal(transaction):
@@ -457,3 +450,40 @@ class disbursement(payment):
     Note that this entity was originally called DISBURSMENT ACCTG TRANS in
     "The Data Model Resource Book".
     """
+
+class depreciationmethod(orm.entity):
+    """ A fixed asset (``asset.asset``) may be depreciated using
+    depreciation methods.
+
+    Note that this entity was originally called DEPRECIATION METHOD in
+    "The Data Model Resource Book".
+    """
+
+    # Specifies the type of depreciation such as "straight line
+    # depreciation" or "double declining balance depreciation".
+    name = str
+
+    # The formula for calculating depreciation, e.g.,:
+    #
+    #     "(Purchase cost - salvage cost) * (1 / estimated life in years of the asset) * 2"
+    formula = str
+
+class asset_depreciationmethod(orm.association):
+    """ Associates fixed assets (``asset.asset``) to be associated with
+    depreciation methods in a many-to-many relationship. This
+    association documents which depreciation method was used on each
+    fixed assed during various periods of time.
+
+    Note that this entity was originally called FIXED ASSET DEPRECIATION
+    METHOD in "The Data Model Resource Book".
+    """
+
+    # The asset side of the association
+    asset = asset.asset
+
+    # The depreciation method side of the association
+    method = depreciationmethod
+
+    # The datespan for which the depreciationmethod is used
+    span = datespan
+

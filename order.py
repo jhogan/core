@@ -41,29 +41,29 @@ class orders(orm.entities):  pass
 # subtypes of `item` like `salesitem` and `purchaseitem` entity objects.
 # If the composite is a `purchase`, then only `purchaseitem` should be
 # allowed. Likewise when the composite is a salesorder entitiy objects.
-class items(orm.entities):                 pass
-class salesitems(items):                   pass
-class purchaseitems(items):                pass
-class salesorders(orders):                 pass
-class purchaseorders(orders):              pass
-class order_parties(orm.associations):     pass
-class order_partytypes(orm.associations):  pass
-class adjustments(orm.entities):           pass
-class adjustmenttypes(orm.entities):       pass
-class taxes(adjustments):                  pass
-class shippings(adjustments):              pass
-class miscellaneouses(adjustments):        pass
-class discounts(adjustments):              pass
-class surcharges(adjustments):             pass
-class fees(adjustments):                   pass
-class rates(orm.associations):             pass
-class statuses(orm.entities):              pass
-class statustypes(orm.entities):           pass
-class terms(orm.entities):                 pass
-class termtypes(orm.entities):             pass
+class items(orm.entities):                  pass
+class salesitems(items):                    pass
+class purchaseitems(items):                 pass
+class salesorders(orders):                  pass
+class purchaseorders(orders):               pass
+class order_parties(orm.associations):      pass
+class order_partytypes(apriori.types):      pass
+class adjustments(orm.entities):            pass
+class adjustmenttypes(apriori.types):       pass
+class taxes(adjustments):                   pass
+class shippings(adjustments):               pass
+class miscellaneouses(adjustments):         pass
+class discounts(adjustments):               pass
+class surcharges(adjustments):              pass
+class fees(adjustments):                    pass
+class rates(orm.associations):              pass
+class statuses(orm.entities):               pass
+class statustypes(apriori.types):           pass
+class terms(orm.entities):                  pass
+class termtypes(apriori.types):             pass
 class item_items(orm.associations):         pass
-class requirementtypes(orm.entities):         pass
-class requirement_items(orm.associations): pass
+class requirementtypes(apriori.types):      pass
+class requirement_items(orm.associations):  pass
 
 class order(orm.entity):
     """ The generic, abstract order class from with the `salesorder` and
@@ -296,19 +296,13 @@ class purchaseorder(order):
     # party.address.
     billtousing = party.contactmechanism
 
-class order_partytype(orm.entity):
+class order_partytype(apriori.type):
     """ Each role is described by a roletype entity. 
+
+    Example include: 'salesperson', 'processor', 'reviewer',
+    'authorizer'.
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
     order_parties = order_parties
-
-    # The name of the role being played between the party and the order.
-    # Expamples include: 'salesperson', 'processor', 'reviewer',
-    # 'authorizer'.
-    name = str
 
 class order_party(orm.association):
     """ In additional to the key order relationships (i.e., `placing`,
@@ -373,7 +367,7 @@ class adjustment(orm.entity):
 
         return amt
  
-class adjustmenttype(orm.entity):
+class adjustmenttype(apriori.type):
     """ Provides the ability to classify the various types of
     adjustments into detailed categories.
 
@@ -381,18 +375,8 @@ class adjustmenttype(orm.entity):
     "The Data Model Resource Book".
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    # The name attribute defines the possible values tha may be related
-    # to adjustments.
-    name = str
-
     # The adjustments that belong to this adjustment type
     adjustments = adjustments
-
-           
 
 class tax(adjustment):
     """ Add this adjustment to an ``order``'s or an ``item``'s
@@ -486,19 +470,13 @@ class status(orm.entity):
     # status.
     begin = datetime
 
-class statustype(orm.entity):
-    """ Records the type of status.
+class statustype(apriori.type):
+    """ Records the type of status. Typical values for the ``name``
+    attribute include: "received", "approved" and "canceled".
 
     Note that this entity was originally called ORDER STATUS TYPE in
     "The Data Model Resource Book".
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    # The name of the status type, such as "received", "approved" or
-    # "canceled".
-    name = str
 
     # The collection of statuses belonging to this type
     statuses = statuses
@@ -516,15 +494,12 @@ class term(orm.entity):
     # terms, an its meaning is dependent hon the type of term.
     value = dec
 
-class termtype(orm.entity):
+class termtype(apriori.type):
     """ The ``termtype`` class categorizes ``term`` entity objects.
 
     Note that this entity was originally called TERM TYPE in
     "The Data Model Resource Book".
     """
-
-    # The name or description of the term type
-    name = str
 
     # The collection of term entity objects that belong to this
     # termtype.
@@ -555,18 +530,12 @@ class item_item(orm.association):
     # The other item being linked
     object = item
 
-class requirementtype(orm.entity):
+class requirementtype(apriori.type):
     """ Defines the possible categories for the requirements.
 
     Possible requirement types include "project", "maintenance" and
     "production run".
     """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
-
-    name = str
 
     # A collection of ``requirements`` that correspond to this type
     requirements = apriori.requirements
