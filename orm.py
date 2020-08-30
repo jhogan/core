@@ -22,8 +22,8 @@ TODOs:
     TODO Add bytes(n) as datatype. Having to type `bytes, 16, 16` is not
     fun.
     
-    TODO:d7f877ef  A need was found to create mutators for explicit
-    fields. A person's name property should be able to parse a name
+    TODO:d7f877ef  A need was found to create mutators for imperitive
+    attributes. A person's name property should be able to parse a name
     before saving to its `names` collection.
     
         per = party.person()
@@ -4055,7 +4055,7 @@ class attr:
                 return self.fget(e)
             except AttributeError as ex:
                 # If it raises an AttributeError, wrap it. If the call
-                # from e.__getattribute__ sees a regural AttributeError,
+                # from e.__getattribute__ sees a regular AttributeError,
                 # it will ignore it because it will assume its caller is
                 # requesting the value of a mapping object.
                 raise sys.modules['orm'].attr.AttributeErrorWrapper(ex)
