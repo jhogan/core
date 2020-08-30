@@ -22557,7 +22557,7 @@ class gem_effort(tester):
 
         # TODO:9b700e9a We should be able to call ``emp1.timesheets``
         # but the ORM doesn't suppert that yet. We are in a situation
-        # wher employee can't have a reference to ``timesheets`` as a
+        # where employee can't have a reference to ``timesheets`` as a
         # collection because due to the circular reference it would
         # cause.
         ts1 = effort.timesheets('worker__workerid', emp1.id).first
