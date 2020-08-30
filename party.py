@@ -243,6 +243,8 @@ class party(orm.entity):
     # A collection of skills belonging to this party
     skills = skills
 
+    name = str
+
 class organization(party):
     """ An abstract class representing a group of people with a common
     purpose. Subtypes may include schools, NGOs, clubs, corporations,
@@ -578,6 +580,36 @@ class person(party):
             self.names += name(name=v)
             self.names.last.nametype = type
             self.names.last.metanym = 'default'
+
+        self.orm.super.name = self.name
+
+    @property
+    def name(self):
+        names = (self.first, self.middle, self.last)
+
+        # Convert None's to ''
+        names = [x if x else str() for x in names]
+
+        if not any(names):
+            return str()
+
+        return ' '.join(names).strip()
+
+    @name.setter
+    def name(self, v):
+        names = v.split()
+
+        len = builtins.len(names)
+
+        if len:
+            self.first = names[0]
+
+        if len == 2:
+            self.last = names[1]
+        elif len > 2:
+            self.middle = names[1]
+            self.last = ' '.join(names[2:])
+            
 
     # A collection of citizenship history entity objcets for this
     # person.

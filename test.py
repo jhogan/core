@@ -17202,6 +17202,21 @@ class gem_party(tester):
         self.true('middle' in names)
         self.true('last' in names)
 
+        ''' It uses ``name`` attribute`` '''
+        per = party.person()
+        per.dun = None
+        per.isicv4 = None
+        per.nationalids = None
+        per.name = 'Guido van Rossum'
+        self.eq('Guido', per.first)
+        self.eq('van', per.middle)
+        self.eq('Rossum', per.last)
+        self.eq('Guido van Rossum', per.name)
+        
+
+
+
+
     def it_adds_citizenships(self):
         per = party.person()
 
