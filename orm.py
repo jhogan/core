@@ -15,8 +15,6 @@
 mapping.
 
 Todo:
-    TODO s/explicit attribute/imperitive attribute/
-
     TODO Raise error if a subclass of ``association`` does not have a
     subclass of ``associations``. Strange bugs happen when this mistake
     is made.
@@ -2266,7 +2264,7 @@ class entitymeta(type):
                     raise ValueError() # Shouldn't happen
             else:
                 if type(v) is ormmod.attr.wrap:
-                    # `v` represents an explicit attribute. It will
+                    # `v` represents an imperitive attribute. It will
                     # contain its own mapping object so just assign
                     # reference. See the `attr` class.
                     map = v.mapping
@@ -2294,7 +2292,7 @@ class entitymeta(type):
                 # this class in orm.mappings, we can delete them.
                 prop = body[map.name]
 
-                # Delete attribute if it is not an explicit attribute.
+                # Delete attribute if it is not an imperitive attribute.
                 if type(prop) is not ormmod.attr.wrap:
                     del body[map.name]
             except KeyError:
@@ -2436,7 +2434,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
     def __dir__(self):
         ls = super().__dir__() + self.orm.properties
 
-        # Remove duplicates. If an entity has an explicit attribute, the name
+        # Remove duplicates. If an entity has an imperitive attribute, the name
         # of the attribute will come in from the call to super().__dir__()
         # while the name of its associated map will come in through
         # self.orm.properties
@@ -4016,7 +4014,7 @@ class attr:
         def __init__(self, ex):
             self.inner = ex
 
-    """ A decorator to make a method an explicit attribute. """
+    """ A decorator to make a method an imperitive attribute. """
     class wrap:
         def __init__(self, *args, **kwargs):
             args = list(args)
@@ -4037,7 +4035,7 @@ class attr:
                 """ Sets the map's value to ``v``. Returns the mapped
                 value.
 
-                This function is injected into explicit attributes to
+                This function is injected into imperitive attributes to
                 provide easy access to the the attributes mapping value.
                 """
                 if v is undef:
@@ -4054,11 +4052,11 @@ class attr:
                     e.__setattr__(name, v, cmp=False)
                     return v
 
-            # Inject into explicit attribute
+            # Inject into imperitive attribute
             self.fget.__globals__['attr'] = attr
 
             try:
-                # Invoke the explicit attribute
+                # Invoke the imperitive attribute
                 return self.fget(e)
             except AttributeError as ex:
                 # If it raises an AttributeError, wrap it. If the call
