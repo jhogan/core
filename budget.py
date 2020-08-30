@@ -45,6 +45,7 @@ class reviews(orm.entities): pass
 class reviewtypes(orm.entities): pass
 class scenarios(orm.entities): pass
 class rules(orm.entities): pass
+class budget_scenarios(orm.associations): pass
 
 class budget(orm.entity):
     """ Describes the information about the amounts of moneys needed for
@@ -155,6 +156,7 @@ class item(orm.entity):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.orm.default('justification', None)
+        self.orm.default('purpose', None)
 
     # NOTE There is an implicit ``itemtype`` attribute that indicates
     # the ``item``'s type.
@@ -175,6 +177,9 @@ class item(orm.entity):
 
     # A collection of budget revisions
     revisions = revisions
+
+    # A collection of budget ``scenarios`` for this budget ``item``
+    scenarios = scenarios
 
 class itemtype(apriori.type):
     """ Classifies the budegtary ``item``s into types so that common
@@ -333,6 +338,15 @@ class scenario(orm.entity):
     # on these conditions.
     name = str
 
+    # A collection of budget scenario ``rules`` for this budget
+    # ``scenario``.
+    rules = rules
+
+    # FIXME:8cf51c58 This causes problems for some reason. 
+    # A collection of budget scenario applications for this budget
+    # ``scenario``.
+    # budget_scenarios = budget_scenarios
+
 class budget_scenario(orm.associations):
     """ An association between a budget ``item`` or a ``budget`` and a
     budget ``scenario``. ``budget_scenarios``. Each ``budget`` or budget
@@ -353,7 +367,7 @@ class budget_scenario(orm.associations):
     percent = dec
 
     # The budget side of the association
-    budget = budget 
+    #budget = budget 
 
     # The budget `item` side of the association (as an alternative to
     # ``budget`` - see above)

@@ -23769,6 +23769,74 @@ class gem_budget(tester):
             self.eq(rvw.reviewtype.id,       rvw1.reviewtype.id)
             self.eq(rvw.reviewtype.name,     rvw1.reviewtype.name)
             self.eq(rvw.reviewtype.comment,  rvw1.reviewtype.comment)
+
+    def it_creates_scenarios(self):
+        # Create a budget
+        bud = budget.budget(name='Marketing budget')
+
+        bud.items += budget.item(
+            itemtype = budget.itemtype(name='Trade shows'),
+            amount   = 20_000,
+        )
+
+        bud.items.last.scenarios += budget.scenario(
+            name = 'Excellent marketing condition',
+        )
+
+        bud.items.last.scenarios.last.rules += budget.rule(
+            percent = 20
+        )
+
+        # FIXME:8cf51c58 budget scenario applications (budget_scenarios)
+        # doesn't work at the moment.
+        '''
+        bud.items.last.scenarios.last.budget_scenarios += \
+            budget.budget_scenario(
+                percent = 20
+            )
+        '''
+
+        bud.items.last.scenarios += budget.scenario(
+            name = 'Poor marketing condition',
+        )
+
+        bud.items.last.scenarios.last.rules += budget.rule(
+            percent = -15
+        )
+
+        bud.save()
+
+        bud1 = bud.orm.reloaded()
+
+        itms = bud.items.sorted()
+        itms1 = bud1.items.sorted()
+
+        self.one(itms)
+        self.one(itms1)
+
+        for itm, itm1 in zip(itms, itms1):
+            arios = itm.scenarios.sorted()
+            arios1 = itm1.scenarios.sorted()
+
+            self.two(arios)
+            self.two(arios1)
+
+            for ario, ario1 in zip(arios, arios1):
+                self.eq(ario.id, ario1.id)
+                self.eq(ario.name, ario1.name)
+
+                rls = ario.rules.sorted()
+                rls1 = ario1.rules.sorted()
+
+                self.one(rls)
+                self.one(rls1)
+
+                for rl, rl1 in zip(rls, rls1):
+                    self.eq(rl.id, rl1.id)
+                    self.eq(rl.percent, rl1.percent)
+                    self.eq(rl.amount,  rl1.amount)
+
+
 ########################################################################
 # Test dom                                                             #
 ########################################################################
@@ -25625,7 +25693,7 @@ class dom_element(tester):
         
         # TODO Test inserting elements in the middle of an elements
         # collection. Currently this would result in an Append but that
-        # would put it in the wrong order when applyinga.
+        # would put it in the wrong order when applying.
 
         ''' A simple append patch '''
         p = dom.paragraph()
