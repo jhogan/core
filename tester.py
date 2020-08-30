@@ -29,10 +29,20 @@ import textwrap
 import urllib
 import uuid
 
-# TODO Ensure tester.py won't run in non-dev environment
+""" This module provides unit testing framework.
 
-# TODO When creating the file API, consider
-# wsgiref.util.FileWrapper(filelike, blksize)
+TODOs:
+    TODO Ensure tester.py won't run in non-dev environment
+    
+    TODO When creating the file API, consider
+    wsgiref.util.FileWrapper(filelike, blksize)
+
+    TODO Add option to randomize tests. Test should be executed in a
+    random order by default. This had previously been the case prior to
+    Python 3.6 and we were able to catch certain types of bugs due to
+    this.
+"""
+
 
 class invoketesteventargs(eventargs):
     def __init__(self, cls, meth):

@@ -14,10 +14,83 @@
 """ This module contains all classes related to object-relational
 mapping.
 
-Todo:
+TODOs:
     TODO Raise error if a subclass of ``association`` does not have a
     subclass of ``associations``. Strange bugs happen when this mistake
     is made.
+
+    TODO Add bytes(n) as datatype. Having to type `bytes, 16, 16` is not
+    fun.
+    
+    TODO:d7f877ef  A need was found to create mutators for explicit
+    fields. A person's name property should be able to parse a name
+    before saving to its `names` collection.
+    
+        per = party.person()
+        per.name = 'Jesse Hogan'
+        assert per.first == 'Jesse'
+        assert per.last  == 'Hogan'
+    
+    FIXME:1de11dc0 There is an issue with the way superentities
+    collections are accessed as attributes of orm.entity object. 
+    
+    The issue can be seen in the differente ways `rapper` (from test.py)
+    and `product.measuer` access their superentities attributes. For
+    example: `rapper` is able to access the `concerts` attribute because
+    `rapper`'s superentity is `singer` and `singer` has a `concerts`
+    attribute. 
+    
+    So far so good, but in the case of `product.measure`, which has a
+    constituents collection `dimensions`, we would expect to be able to
+    access a `features` attribute of `product.measure` because
+    `dimensions` is a subentity of `features`. However, since
+    `product.measure` has no superentity, we can not arrive at the
+    `feature` attribute because of the way the ORM code is written. We
+    instead get an AttributeError.
+    
+    This may or may not be important. So far, the need to access
+    superentities attributes has not come up. However, if the need arises,
+    we will want to correct this.
+    
+    TODO I think text attributes should be None by default and this
+    should not be a validation error. We can create a
+    fieldmapping.istextalias to determine if the attribute field would
+    be created as a longtext in the database. If so, allow None to be be
+    a value. This is just a hunch at the moment. It just seems like a
+    lot of fields that are of type text (field names like description,
+    comment, instructions, etc.) should by default be optional.)
+    
+    TODO:9b700e9a When an entity reference exist, we should create an
+    entities collection on the referent. For example, given:
+    
+        class party(orm.entity):
+            pass
+    
+        class timesheets:
+            party = party.party
+    
+    we should be able to access ``timesheets`` off a party instance:
+    
+        for ts in party(id).timesheets:
+            ...
+    
+    TODO:abf324b4 Do we really need pseudocollections? In the ~200 classes
+    so far in the GEM, none have really needed or would seem to benefit
+    from pseudocollections. Let's reflect on how valuable they are going
+    forward. If after the code has been in production serving web pages
+    for some while, and pseudocollections have not proven themselves to be
+    worthy, I think we should rip out the pseudocollection logic. This
+    logic is tedious to maintain and may be slowing down execution time.
+    
+    TODO:In the GEM, change all date and datetime attributes to past
+    tense, e.g., s/acquiredat/acquired/
+    
+    TODO There should be a standard for association class names that makes
+    them predictable. Perhaps the should be alphabetical. For example,
+    given an association that associates an ``effort`` and an ``item``,
+    the name should be ``effort_item`` instead of ``item_effort``, since
+    the former is alphabetized. This would help to locate them faster and
+    to use them in code more efficiently.
 """
 
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
@@ -52,84 +125,6 @@ import re
 import sys
 import textwrap
 
-# TODO Research making these constants the same as their function
-# equivalent.
-# i.e., s/2/str; s/3/int/, etc.
-
-# TODO Add bytes(n) as datatype. Having to type `bytes, 16, 16` is not
-# fun.
-
-# TODO Prefix each table name with the name of the module.
-
-# TODO:d7f877ef  A need was found to create mutators for explicit
-# fields. A person's name property should be able to parse a name
-# before saving to its `names` collection.
-#
-#     per = party.person()
-#     per.name = 'Jesse Hogan'
-#     assert per.first == 'Jesse'
-#     assert per.last  == 'Hogan'
-
-# FIXME:1de11dc0 There is an issue with the way superentities
-# collections are accessed as attributes of orm.entity object. 
-#
-# The issue can be seen in the differente ways `rapper` (from test.py)
-# and `product.measuer` access their superentities attributes. For
-# example: `rapper` is able to access the `concerts` attribute because
-# `rapper`'s superentity is `singer` and `singer` has a `concerts`
-# attribute. 
-#
-# So far so good, but in the case of `product.measure`, which has a
-# constituents collection `dimensions`, we would expect to be able to
-# access a `features` attribute of `product.measure` because
-# `dimensions` is a subentity of `features`. However, since
-# `product.measure` has no superentity, we can not arrive at the
-# `feature` attribute because of the way the ORM code is written. We
-# instead get an AttributeError.
-#
-# This may or may not be important. So far, the need to access
-# superentities attributes has not come up. However, if the need arises,
-# we will want to correct this.
-
-# TODO I think text attributes should be None by default and this should
-# not be a validation error. We can create a fieldmapping.istextalias to
-# determine if the attribute field would be created as a longtext in
-# the database. If so, allow None to be be a value. This is just a hunch
-# at the moment. It just seems like a lot of fields that are of type
-# text (field names like description, comment, instructions, etc. should
-# by default be optional.)
-
-# TODO:9b700e9a When an entity reference exist, we should create an
-# entities collection on the referent. For example, given:
-#
-#     class party(orm.entity):
-#         pass
-#
-#     class timesheets:
-#         party = party.party
-#
-# we should be able to access ``timesheets`` off a party instance:
-#
-#     for ts in party(id).timesheets:
-#         ...
-
-# TODO:abf324b4 Do we really need pseudocollections? In the ~200 classes
-# so far in the GEM, none have really needed or would seem to benefit
-# from pseudocollections. Let's reflect on how valuable they are going
-# forward. If after the code has been in production serving web pages
-# for some while, and pseudocollections have not proven themselves to be
-# worthy, I think we should rip out the pseudocollection logic. This
-# logic is tedious to maintain and may be slowing down execution time.
-
-# TODO:In the GEM, change all date and datetime attributes to past
-# tense, e.g., s/acquiredat/acquired/
-
-# TODO There should be a standard for association class names that makes
-# them predictable. Perhaps the should be alphabetical. For example,
-# given an association that associates an ``effort`` and an ``item``,
-# the name should be ``effort_item`` instead of ``item_effort``, since
-# the former is alphabetized. This would help to locate them faster and
-# to use them in code more efficiently.
 
 @unique
 class types(Enum):

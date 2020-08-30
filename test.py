@@ -5627,7 +5627,7 @@ class test_orm(tester):
         with self._chrontest() as t:
             t.run(f)
 
-    def it_receives_AttributeError_from_explicit_attributes(self):
+    def it_receives_AttributeError_from_imperitive_attributes(self):
         # An issue was discovered in the former entities.__getattr__.
         # When an imperitive attribute raised an AttributeError, the
         # __getttr__ was invoked (this is the reason it gets invoke in
@@ -8275,7 +8275,7 @@ class test_orm(tester):
         self.three(art.brokenrules)
         self.broken(art, 'artifact', 'valid')
         
-    def it_calls_explicit_attr_on_subentity(self):
+    def it_calls_imperitive_attr_on_subentity(self):
         # Test inherited attr (phone)
         sng = singer()
         sng.firstname = uuid4().hex
@@ -8336,7 +8336,7 @@ class test_orm(tester):
         art2 = singer(art1.id)
         self.eq(art1.register, art2.register)
 
-    def it_calls_explicit_attr_on_subsubentity(self):
+    def it_calls_imperitive_attr_on_subsubentity(self):
         # Test inherited attr (artist.phone)
         rpr = rapper()
         rpr.firstname = uuid4().hex
@@ -8423,7 +8423,7 @@ class test_orm(tester):
 
         self.eq(rpr.abilities, rapper(rpr.id).abilities)
 
-    def it_calls_explicit_attr_on_association(self):
+    def it_calls_imperitive_attr_on_association(self):
         art = artist.getvalid()
 
         art.artist_artifacts += artist_artifact.getvalid()
@@ -8575,7 +8575,7 @@ class test_orm(tester):
         fact.abstract = None
         self.zero(fact.brokenrules)
 
-    def it_calls_explicit_str_attr_on_entity(self):
+    def it_calls_imperitive_str_attr_on_entity(self):
         def saveok(e, attr):
             getattr(e, 'save')()
             e1 = type(e)(e.id)
@@ -8845,7 +8845,7 @@ class test_orm(tester):
             art.bio = None
             self.true(saveok(art, 'bio'))
 
-    def it_calls_explicit_float_attr_on_entity(self):
+    def it_calls_imperitive_float_attr_on_entity(self):
         def saveok(e, attr):
             getattr(e, 'save')()
             e1 = builtins.type(e)(e.id)
@@ -8863,7 +8863,7 @@ class test_orm(tester):
 
         saveok(comp, 'width')
 
-    def it_calls_explicit_int_attr_on_entity(self):
+    def it_calls_imperitive_int_attr_on_entity(self):
         def saveok(e, attr):
             getattr(e, 'save')()
             e1 = builtins.type(e)(e.id)
