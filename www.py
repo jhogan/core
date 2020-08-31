@@ -376,14 +376,6 @@ class _request:
     def mime(self):
         return self.content_type.split(';')[0].strip().lower()
 
-    @property
-    def ismultipart(self):
-        return self.mime.split('/')[0] == 'multipart'
-
-    @property
-    def istext(self):
-        return self.mime.split('/')[0] == 'text'
-
     def demand(self):
         if not request.page:
             raise NotFoundError(self.path)
@@ -393,10 +385,11 @@ class _request:
                 raise www.BadRequestError('No path was given.')
             
         elif self.ispost:
-            if self.istexthtml and len(self.payload) == 0:
+            if self.mime == 'text/html' and len(self.payload) == 0:
                 raise BadRequestError('No data in body of request message.')
 
-            if self.ismultipart:
+            if self.mime == 'multipart/form-data':
+                B()
                 if self.files.isempty:
                     raise BadRequestError(
                         'No files given in multipart form.'
