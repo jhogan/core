@@ -23502,7 +23502,7 @@ class gem_budget(tester):
     def __init__(self):
         super().__init__()
         for e in orm.orm.getentitys(includeassociations=True):
-            if e.__module__ in ('apriori', 'budget'):
+            if e.__module__ in ('apriori', 'budget', 'party'):
                 e.orm.recreate()
 
     def it_creates(self):
