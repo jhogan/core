@@ -17,7 +17,6 @@ chapter of "The Data Model Resource Book".
 Examples:
     See test.py for examples. 
 
-    - Move the budget object model to a new module (budget.py).
 """
 
 from datetime import datetime, date
