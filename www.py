@@ -26,6 +26,7 @@ import textwrap
 import traceback
 import urllib
 import party
+import file
 
 # NOTE Use the following diagram as a guide to determine what status
 # code to respond with:
@@ -195,6 +196,90 @@ class _request:
             hdrs += header(k[5:], v)
 
         return hdrs
+
+    @property
+    def files(self):
+        Size = 1000
+        fs = file.files()
+
+        if self.mime != 'multipart/form-data':
+            # Currently, we will only have file in the request if we are
+            # using a multipart mime type. This will change once
+            # event-based input is complete.
+            return fs
+
+        content_type = self.content_type.split(';')
+
+        if len(content_type) < 2:
+            raise BadRequestError(
+                "Can't find 'boundry' in Content-Type"
+            )
+
+        try:
+            boundry = bytes(content_type[1].split('=')[1], 'utf-8')
+        except Exception as ex:
+            raise BadRequestError(
+                f"Can't parse boundry ({ex})"
+            )
+
+        inp = self.environment['wsgi.input']
+
+        bs = inp.read()
+
+        boundry = '--' + boundry.decode('utf')
+        offset = 0
+        f = None
+
+        offset = None
+        content_type = None
+        inp.seek(0)
+        empty = bytes()
+        while True:
+            ln = inp.readline()
+
+            if not ln:
+                break
+
+            ln = ln.rstrip(b'\n\r')
+
+            if not content_type:
+                ln = ln.decode('utf-8')
+
+            
+            if content_type and ln == bytes(boundry, 'utf-8'):
+                if offset is not None:
+
+                    tell = inp.tell()
+                    size = tell - offset
+                    size -= len(boundry) + len('\r\n\r\n')
+                    inp.seek(offset)
+                    fs += file.file()
+                    fs.last.buffer = inp.read(size)
+                    content_type = content_disposition = offset = None
+                    inp.seek(tell)
+
+            elif isinstance(ln, bytes):
+                continue
+
+            elif ln.startswith('Content-Disposition'):
+                parts = ln.split(';')
+                content_disposition = parts[0].split(':')[1].strip()
+                name = parts[1].split('=')[1].strip()
+                filename = parts[2].split('=')[1].strip()
+            elif ln.startswith('Content-Type'):
+                content_type = ln.split(':')[1].strip()
+                ln = inp.readline()
+                if ln.strip(b'\n\r'):
+                    raise BadRequestError(
+                        'Missing empty line'
+                    )
+                offset = inp.tell()
+        B()
+        return fs
+
+                
+
+
 
     @property
     def cookies(self):
@@ -370,11 +455,12 @@ class _request:
 
     @property
     def content_type(self):
-        return self.environment['content_type']
+        return self.environment['content_type'].strip()
 
     @property
     def mime(self):
         return self.content_type.split(';')[0].strip().lower()
+
 
     def demand(self):
         if not request.page:
@@ -389,7 +475,6 @@ class _request:
                 raise BadRequestError('No data in body of request message.')
 
             if self.mime == 'multipart/form-data':
-                B()
                 if self.files.isempty:
                     raise BadRequestError(
                         'No files given in multipart form.'

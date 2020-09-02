@@ -194,12 +194,11 @@ class tester(entity):
                         boundry = uuid.uuid4().hex
                         inp = io.BytesIO()
 
-                        boundry = f'--{boundry}\n'
+                        boundry = f'--{boundry}'
                         for file in files:
                             inp.write(bytes(
-                            f'{boundry}\r\n'
+                            f'--{boundry}\r\n'
                             'Content-Disposition: form-data;'
-                            'form-data;'
                             f'name=file;'
                             f'filename={file.name}\r\n'
                             'Content-Type:application/octet-stream\r\n\r\n',
@@ -207,6 +206,8 @@ class tester(entity):
                             ))
 
                             inp.write(file.body)
+
+                        inp.write(bytes(f'\r\n\r\n--{boundry}', 'utf-8'))
 
                         inp.seek(0)
 
