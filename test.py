@@ -23836,6 +23836,34 @@ class gem_budget(tester):
                     self.eq(rl.percent, rl1.percent)
                     self.eq(rl.amount,  rl1.amount)
 
+    def it_associates_itemtypes_with_gl_accounts(self):
+        # Create budget item types
+        os = budget.itemtype(name='Office supplier')
+
+        # Create GL account
+        ose = account.account(name='Office Supplies Expense', number=100)
+
+        # Associate GL account with budget item type
+        os.itemtype_accounts += budget.itemtype_account(
+            account = ose,
+            percent = 100,
+            begin = 'Jan 1, 2001',
+        )
+
+        os.save()
+        os1 = os.orm.reloaded()
+
+        self.eq(os.id, os1.id)
+
+        itas = os.itemtype_accounts
+        itas1 = os1.itemtype_accounts
+
+        self.one(itas)
+        self.one(itas1)
+
+        for ita, ita1 in zip(itas, itas1):
+            self.eq(ita.id, ita1.id)
+            self.eq(ita.percent, ita1.percent)
 
 ########################################################################
 # Test dom                                                             #

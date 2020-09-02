@@ -30,7 +30,6 @@ import product
 import invoice
 import invoice
 import asset
-import budget
 import apriori
 
 class accounts(orm.entities): pass

@@ -28,28 +28,30 @@ import invoice
 import order
 import orm
 import party
+import account
 
-class statuses(orm.entities): pass
-class items(orm.entities): pass
-class budgets(orm.entities): pass
-class operatings(budgets): pass
-class capitals(budgets): pass
-class types(apriori.types): pass
-class statustypes(apriori.types): pass
-class itemtypes(apriori.types): pass
-class roles(party.roles): pass
-class roletypes(apriori.types): pass
-class periods(orm.entities): pass
-class periodtypes(apriori.types): pass
-class revisions(orm.entities): pass
-class item_revisions(orm.associations): pass
-class reviews(orm.entities): pass
-class reviewtypes(orm.entities): pass
-class scenarios(orm.entities): pass
-class rules(orm.entities): pass
-class budget_scenarios(orm.associations): pass
-class item_requirements(orm.associations): pass
-class item_payments(orm.associations): pass
+class statuses(orm.entities):               pass
+class items(orm.entities):                  pass
+class budgets(orm.entities):                pass
+class operatings(budgets):                  pass
+class capitals(budgets):                    pass
+class types(apriori.types):                 pass
+class statustypes(apriori.types):           pass
+class itemtypes(apriori.types):             pass
+class roles(party.roles):                   pass
+class roletypes(apriori.types):             pass
+class periods(orm.entities):                pass
+class periodtypes(apriori.types):           pass
+class revisions(orm.entities):              pass
+class item_revisions(orm.associations):     pass
+class reviews(orm.entities):                pass
+class reviewtypes(orm.entities):            pass
+class scenarios(orm.entities):              pass
+class rules(orm.entities):                  pass
+class budget_scenarios(orm.associations):   pass
+class item_requirements(orm.associations):  pass
+class item_payments(orm.associations):      pass
+class itemtype_accounts(orm.associations):  pass
 
 class budget(orm.entity):
     """ Describes the information about the amounts of moneys needed for
@@ -437,4 +439,25 @@ class item_payment(orm.association):
     payment = invoice.payment
 
     amount = dec
+
+class itemtype_account(orm.association):
+    """ Associates a general ledger account (``account.account``) to a
+    budget item type (``itemtype``).
+
+    Note that this entity was originally called GL BUDGET XREF in "The
+    Data Model Resource Book".
+    """
+
+    # The budget item type (``itemtype``) side of the association
+    itemtype = itemtype
+
+    # The general ledger account side of the assoociation
+    account = account.account
+
+    # The rules for how budget items map to general ledger accounts may
+    # change over time. This datespanallows different mappings over
+    # time.
+    span = datespan
+
+    percent = dec
 
