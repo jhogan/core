@@ -91,6 +91,25 @@ TODOs:
     the name should be ``effort_item`` instead of ``item_effort``, since
     the former is alphabetized. This would help to locate them faster and
     to use them in code more efficiently.
+
+    TODO datespans and timespans that refer to a timeframe for which an
+    association is valid should be name 'valid':
+        
+        s/span = (time|date)span/valid = \1span/
+
+    Change all associations such that their names are alphabetized::
+        
+        Substitute:
+            class item_account(orm.association):
+                item     =  item
+                account  =  account
+
+        With:
+            class account_item(orm.association):
+                account  =  account
+                item     =  item
+            
+
 """
 
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
