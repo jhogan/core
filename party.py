@@ -53,6 +53,8 @@ class subsidiaries(organizationalunits):                     pass
 class parents(organizationalunits):                          pass
 class roletypes(apriori.types):                              pass
 class partyroletypes(roletypes):                             pass
+
+# FIXME This is a duplicate of a previously declared classe
 class employees(personals):                                  pass
 class customers(personals):                                  pass
 class billtos(customers):                                    pass
@@ -1297,12 +1299,12 @@ class priority(orm.entity):
 class role_role(orm.association):
     """ This class associates a party's role with the role of another
     party. This association allows a party to be related to other
-    parties and maintains the respective roles in the relatioship.
+    parties and maintains the respective roles in the relationship.
 
     This association has a role_role_type composite that describes the
     type of role-to-role association being declared.
 
-    The grammer of this association can be understood with the following
+    The grammar of this association can be understood with the following
     example:
     
         The ``company`` "ABC Subsidiary" has a ``role`` called
