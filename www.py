@@ -178,6 +178,7 @@ class _request:
         self.app._request  =  self
         self._payload      =  None
         self._user         =  None
+        self._files        =  None
 
     @property
     def headers(self):
@@ -199,7 +200,23 @@ class _request:
 
     @property
     def files(self):
-        Size = 1000
+        """ Return a collection of files that were uploaded in the
+        request.
+
+        Note that currently, a very rough implementation of a
+        multipart/form-data parser is implemented. This is used for
+        tests but hasn't been tried with real world POSTs (the kind an
+        actual browser would send). 
+
+        A future version will parse out the file data that is sent in
+        JSON format. This will be the normal way to transfer files to
+        the web server from a browser. The multipart/form-data parser is
+        just an ad hoc way that some tests are currently using to send
+        file data.
+        """
+        if self._files is not None:
+            return self._files
+
         fs = file.files()
 
         if self.mime != 'multipart/form-data':
@@ -222,18 +239,10 @@ class _request:
                 f"Can't parse boundry ({ex})"
             )
 
-        inp = self.environment['wsgi.input']
-
-        bs = inp.read()
-
         boundry = '--' + boundry.decode('utf')
-        offset = 0
-        f = None
-
-        offset = None
-        content_type = None
+        offset = content_type = None
+        inp = self.environment['wsgi.input']
         inp.seek(0)
-        empty = bytes()
         while True:
             ln = inp.readline()
 
@@ -245,16 +254,15 @@ class _request:
             if not content_type:
                 ln = ln.decode('utf-8')
 
-            
             if content_type and ln == bytes(boundry, 'utf-8'):
                 if offset is not None:
-
                     tell = inp.tell()
                     size = tell - offset
                     size -= len(boundry) + len('\r\n\r\n')
                     inp.seek(offset)
                     fs += file.file()
-                    fs.last.buffer = inp.read(size)
+                    fs.last.name = filename
+                    fs.last.body = inp.read(size)
                     content_type = content_disposition = offset = None
                     inp.seek(tell)
 
@@ -266,6 +274,7 @@ class _request:
                 content_disposition = parts[0].split(':')[1].strip()
                 name = parts[1].split('=')[1].strip()
                 filename = parts[2].split('=')[1].strip()
+
             elif ln.startswith('Content-Type'):
                 content_type = ln.split(':')[1].strip()
                 ln = inp.readline()
@@ -274,12 +283,9 @@ class _request:
                         'Missing empty line'
                     )
                 offset = inp.tell()
-        B()
+
+            self._files = fs
         return fs
-
-                
-
-
 
     @property
     def cookies(self):
@@ -392,8 +398,17 @@ class _request:
         if self._payload is None:
             sz = self.size
             inp = self.environment['wsgi.input']
-            if self.ismultipart:
-                self._payload = inp.read(sz)
+            if self.mime == 'multipart/form-data':
+                # Normally, the client won't need to get the payload for
+                # multipart data; it will usually just use
+                # `request.files`. Either way, return whan we have. We
+                # probably shouldn't memoize it since it could be
+                # holding a lot of file data.
+
+                # TODO We could move this outside the consequence block
+                inp.seek(0)
+
+                return inp.read(sz)
             else:
                 # TODO What would the mime type (content-type) be here?
                 # (text/html?) Let's turn this else into an elif with

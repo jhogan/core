@@ -24015,7 +24015,24 @@ class dom_files(tester):
                     return
 
                 # Populate the form with data from the request's payload
-                frm.post = req.payload
+
+                if req.files.isempty:
+                    raise BadRequestError(
+                        'No avatar image file provided'
+                    )
+
+                if not req.files.hasone:
+                    raise BadRequestError(
+                        'Multiple avatar images were given'
+                    )
+                
+                f = req.files.first
+                B()
+
+
+                    
+
+
 
                 dir = usr.filesystems['default']
 
@@ -24032,9 +24049,8 @@ class dom_files(tester):
         f = file.file(name='my-avatar.gif')
 
         # 1x1 pixel GIF
-        f.body = base64.decodebytes(
+        f.body = base64.b64decode(
             'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
-                .encode('ascii')
         )
 
         res = tab.post('/en/avatar', ws, files=f)

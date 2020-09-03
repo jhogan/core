@@ -24,7 +24,16 @@ import urllib.request
 import shutil
 import contextlib
 
-class files(orm.entities):
+class inodes(orm.entites):
+    pass
+
+class inode(orm.entity):
+    name = str
+
+class files(orm.inodes):
+    pass
+
+class file(orm.inode):
     pass
 
 class resources(files):
@@ -32,6 +41,7 @@ class resources(files):
 
 class file(orm.entity):
     body = bytes
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.body = None
