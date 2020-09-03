@@ -23,28 +23,35 @@ from datetime import datetime, date
 from dbg import B
 from decimal import Decimal as dec
 from orm import text, timespan, datespan
+import apriori
+import invoice
+import order
 import orm
 import party
-import apriori
+import account
 
-class statuses(orm.entities): pass
-class items(orm.entities): pass
-class budgets(orm.entities): pass
-class operatings(budgets): pass
-class capitals(budgets): pass
-class types(apriori.types): pass
-class statustypes(apriori.types): pass
-class itemtypes(apriori.types): pass
-class roles(party.roles): pass
-class roletypes(apriori.types): pass
-class periods(orm.entities): pass
-class periodtypes(apriori.types): pass
-class revisions(orm.entities): pass
-class item_revisions(orm.associations): pass
-class reviews(orm.entities): pass
-class reviewtypes(orm.entities): pass
-class scenarios(orm.entities): pass
-class rules(orm.entities): pass
+class statuses(orm.entities):               pass
+class items(orm.entities):                  pass
+class budgets(orm.entities):                pass
+class operatings(budgets):                  pass
+class capitals(budgets):                    pass
+class types(apriori.types):                 pass
+class statustypes(apriori.types):           pass
+class itemtypes(apriori.types):             pass
+class roles(party.roles):                   pass
+class roletypes(apriori.types):             pass
+class periods(orm.entities):                pass
+class periodtypes(apriori.types):           pass
+class revisions(orm.entities):              pass
+class item_revisions(orm.associations):     pass
+class reviews(orm.entities):                pass
+class reviewtypes(orm.entities):            pass
+class scenarios(orm.entities):              pass
+class rules(orm.entities):                  pass
+class budget_scenarios(orm.associations):   pass
+class item_requirements(orm.associations):  pass
+class item_payments(orm.associations):      pass
+class itemtype_accounts(orm.associations):  pass
 
 class budget(orm.entity):
     """ Describes the information about the amounts of moneys needed for
@@ -155,6 +162,7 @@ class item(orm.entity):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.orm.default('justification', None)
+        self.orm.default('purpose', None)
 
     # NOTE There is an implicit ``itemtype`` attribute that indicates
     # the ``item``'s type.
@@ -175,6 +183,15 @@ class item(orm.entity):
 
     # A collection of budget revisions
     revisions = revisions
+
+    # A collection of budget ``scenarios`` for this budget ``item``
+    scenarios = scenarios
+
+    # Each ``order.item`` may be authorized via and allocated to a
+    # specific budget ``item``. This relationship establishes what
+    # commitments (and dollar amounts) have been made to various
+    # budget ``items``.
+    orderitems = order.items
 
 class itemtype(apriori.type):
     """ Classifies the budegtary ``item``s into types so that common
@@ -333,6 +350,15 @@ class scenario(orm.entity):
     # on these conditions.
     name = str
 
+    # A collection of budget scenario ``rules`` for this budget
+    # ``scenario``.
+    rules = rules
+
+    # FIXME:8cf51c58 This causes problems for some reason. 
+    # A collection of budget scenario applications for this budget
+    # ``scenario``.
+    # budget_scenarios = budget_scenarios
+
 class budget_scenario(orm.associations):
     """ An association between a budget ``item`` or a ``budget`` and a
     budget ``scenario``. ``budget_scenarios``. Each ``budget`` or budget
@@ -353,7 +379,7 @@ class budget_scenario(orm.associations):
     percent = dec
 
     # The budget side of the association
-    budget = budget 
+    #budget = budget 
 
     # The budget `item` side of the association (as an alternative to
     # ``budget`` - see above)
@@ -377,3 +403,61 @@ class rule(orm.entity):
 
     amount = dec
     percent = dec
+
+class item_requirement(orm.association):
+    """ An association between a budget ``item`` and a ``requirement``
+    (``apriori.requirement``). A ``requirement`` may be funded via many
+    budget ``items`` and vice versa through this association. This
+    relationship provides information about the outstanding needs for
+    the use of budgets.
+
+    Note that this entity was originally called REQUIREMENT BUDGET
+    ALLOCATION in "The Data Model Resource Book".
+    """
+    # The item side of the association
+    item = item
+
+    # The requirement side of the association
+    requirement = apriori.requirement
+
+    amount = dec
+
+class item_payment(orm.association):
+    """ This association allows for a many-to-many relationship between
+    budget ``items`` and ``invoice.payments``. It records both
+    disbursements and receipts against budget items, but only for
+    disbursements that *do not have* a corresponding order associated
+    with them.
+
+    Note that this entity was originally called PAYMENT BUDGET
+    ALLOCATION in "The Data Model Resource Book".
+    """
+    # The item side of the association
+    item = item
+
+    # The payment side of the association
+    payment = invoice.payment
+
+    amount = dec
+
+class itemtype_account(orm.association):
+    """ Associates a general ledger account (``account.account``) to a
+    budget item type (``itemtype``).
+
+    Note that this entity was originally called GL BUDGET XREF in "The
+    Data Model Resource Book".
+    """
+
+    # The budget item type (``itemtype``) side of the association
+    itemtype = itemtype
+
+    # The general ledger account side of the assoociation
+    account = account.account
+
+    # The rules for how budget items map to general ledger accounts may
+    # change over time. This datespanallows different mappings over
+    # time.
+    span = datespan
+
+    percent = dec
+

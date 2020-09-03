@@ -22557,7 +22557,7 @@ class gem_effort(tester):
 
         # TODO:9b700e9a We should be able to call ``emp1.timesheets``
         # but the ORM doesn't suppert that yet. We are in a situation
-        # wher employee can't have a reference to ``timesheets`` as a
+        # where employee can't have a reference to ``timesheets`` as a
         # collection because due to the circular reference it would
         # cause.
         ts1 = effort.timesheets('worker__workerid', emp1.id).first
@@ -23502,7 +23502,7 @@ class gem_budget(tester):
     def __init__(self):
         super().__init__()
         for e in orm.orm.getentitys(includeassociations=True):
-            if e.__module__ in ('apriori', 'budget'):
+            if e.__module__ in ('apriori', 'budget', 'party'):
                 e.orm.recreate()
 
     def it_creates(self):
@@ -23769,6 +23769,102 @@ class gem_budget(tester):
             self.eq(rvw.reviewtype.id,       rvw1.reviewtype.id)
             self.eq(rvw.reviewtype.name,     rvw1.reviewtype.name)
             self.eq(rvw.reviewtype.comment,  rvw1.reviewtype.comment)
+
+    def it_creates_scenarios(self):
+        # Create a budget
+        bud = budget.budget(name='Marketing budget')
+
+        bud.items += budget.item(
+            itemtype = budget.itemtype(name='Trade shows'),
+            amount   = 20_000,
+        )
+
+        bud.items.last.scenarios += budget.scenario(
+            name = 'Excellent marketing condition',
+        )
+
+        bud.items.last.scenarios.last.rules += budget.rule(
+            percent = 20
+        )
+
+        # FIXME:8cf51c58 budget scenario applications (budget_scenarios)
+        # doesn't work at the moment.
+        '''
+        bud.items.last.scenarios.last.budget_scenarios += \
+            budget.budget_scenario(
+                percent = 20
+            )
+        '''
+
+        bud.items.last.scenarios += budget.scenario(
+            name = 'Poor marketing condition',
+        )
+
+        bud.items.last.scenarios.last.rules += budget.rule(
+            percent = -15
+        )
+
+        bud.save()
+
+        bud1 = bud.orm.reloaded()
+
+        itms = bud.items.sorted()
+        itms1 = bud1.items.sorted()
+
+        self.one(itms)
+        self.one(itms1)
+
+        for itm, itm1 in zip(itms, itms1):
+            arios = itm.scenarios.sorted()
+            arios1 = itm1.scenarios.sorted()
+
+            self.two(arios)
+            self.two(arios1)
+
+            for ario, ario1 in zip(arios, arios1):
+                self.eq(ario.id, ario1.id)
+                self.eq(ario.name, ario1.name)
+
+                rls = ario.rules.sorted()
+                rls1 = ario1.rules.sorted()
+
+                self.one(rls)
+                self.one(rls1)
+
+                for rl, rl1 in zip(rls, rls1):
+                    self.eq(rl.id, rl1.id)
+                    self.eq(rl.percent, rl1.percent)
+                    self.eq(rl.amount,  rl1.amount)
+
+    def it_associates_itemtypes_with_gl_accounts(self):
+        # Create budget item types
+        os = budget.itemtype(name='Office supplier')
+
+        # Create GL account
+        ose = account.account(name='Office Supplies Expense', number=100)
+
+        # Associate GL account with budget item type
+        os.itemtype_accounts += budget.itemtype_account(
+            account = ose,
+            percent = 100,
+            begin = 'Jan 1, 2001',
+        )
+
+        os.save()
+        os1 = os.orm.reloaded()
+
+        self.eq(os.id, os1.id)
+
+        itas = os.itemtype_accounts
+        itas1 = os1.itemtype_accounts
+
+        self.one(itas)
+        self.one(itas1)
+
+        for ita, ita1 in zip(itas, itas1):
+            self.eq(ita.id, ita1.id)
+            self.eq(ita.percent, ita1.percent)
+
 ########################################################################
 # Test dom                                                             #
 ########################################################################
@@ -25625,7 +25721,7 @@ class dom_element(tester):
         
         # TODO Test inserting elements in the middle of an elements
         # collection. Currently this would result in an Append but that
-        # would put it in the wrong order when applyinga.
+        # would put it in the wrong order when applying.
 
         ''' A simple append patch '''
         p = dom.paragraph()
