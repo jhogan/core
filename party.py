@@ -71,8 +71,6 @@ class units(organizations):                                  pass
 class departments(units):                                    pass
 class divisions(units):                                      pass
 class jobs(orm.entities):                                    pass
-class positions(orm.entities):                               pass
-class position_fulfillments(orm.associations):               pass
 class party_parties(orm.associations):                       pass
 class party_addresses(orm.associations):                     pass
 class maritals(parties):                                     pass
@@ -119,8 +117,6 @@ class skills(orm.entities):                                  pass
 class skilltypes(apriori.types):                             pass
 class rates(orm.entities):                                   pass
 class ratetypes(apriori.types):                              pass
-class positionrates(orm.entities):                           pass
-class positiontypes(apriori.types):                          pass
 class asset_parties(orm.associations):                       pass
 class asset_partystatustypes(apriori.types):                 pass
 
@@ -290,21 +286,6 @@ class job(orm.entity):
 
     # A collection of positions generated from this job
     positions = positions
-
-class position(orm.entity):
-    """ A position is a job slot in an enterprise. 
-    """
-
-    # The datespan an organization expects the job to begin and end
-    estimated = datespan(prefix='estimated')
-
-    # The actual datespan the position slot is filled, as opposed to the
-    # `estimated` datespan.
-    filled = datespan
-
-    salary = bool
-
-    fulltime = bool
 
 class department(unit):
     # TODO:afa4ffc9 Now that we are using role_role to associates
@@ -637,32 +618,6 @@ class person(party):
                 return gen
 
         return None
-
-class position_fulfillment(orm.association):
-    """
-    The `position_fulfilments` association links a position to a person.
-    When a postion is associatied with a person, the position is said to
-    be "fulfilled', i.e., the person has been employed by the
-    organization (i.e., company) to fulfill the job duties of the
-    position.
-
-    Since this is an `orm.association`, multiple person entities can be
-    associated with a given position. Different person entities may be
-    associated to the same position over time. This allows for the
-    tracking persons who occupied a given position in an organization
-    over various timespans.  The begin and end dates record the
-    occupation's timespan.
-    
-    Additionally, multiple persons can be associated to the same
-    `position` within the same timespan implying that the persons
-    occupy the position as part-time or half-time employees.
-    """
-
-    person    =  person
-    position  =  position
-
-    # The timespan of the occumation
-    span = datespan
 
 class region(orm.entity):
     """ This class represents geographical regions such as a postal code,
@@ -1973,26 +1928,6 @@ class ratetype(apriori.type):
 
     # The collection of rates matching this rates type
     rates = rates
-
-class positionrate(orm.entity):
-    """ The ``positionrate`` may store a rate, overtime rate, cost, or
-    other type of rate depending on the needs of the organization. The
-    ``positiontype`` would indicate which rate is being specified. 
-
-    Note that this is modeled after the POSITION TYPE RATE entity in
-    "The Data Model Resource Book".
-    """
-    span = datespan
-    rate = dec
-
-class positiontype(apriori.type):
-    """ Categorizes positions by type.
-
-    Note that this is modeled after the POSITION TYPE entity in "The
-    Data Model Resource Book".
-    """
-
-    positionrates = positionrates
 
 class asset_party(orm.association):
     """ Represents the assignment or *checking out* of a fixed asset
