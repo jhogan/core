@@ -264,29 +264,6 @@ class unit(organization):
         self.nationalids  =  None
         self.isicv4       =  None
 
-class division(unit):
-    # TODO:afa4ffc9 Is this how divisions are related to position in the
-    # book.
-    positions = positions
-
-class job(orm.entity):
-    """ Maintains information associated the actual `positions` an
-    employee may take. 
-    
-    Note that in the "The Data Model Resource Book", this entity is
-    refered to as the POSTITION TYPE entity. "job" was chosen for its
-    name since "job" is only one word and "POSTITION TYPE" is obviously
-    two words.
-    """
-    title = str
-    description = str, 1, 65535
-    
-    # The below was noted in the book but is currently not implemented.
-    # benefit_percentage = dec
-
-    # A collection of positions generated from this job
-    positions = positions
-
 class department(unit):
     # TODO:afa4ffc9 Now that we are using role_role to associates
     # parties with each other, the entity objects `divisions` will no
@@ -309,9 +286,6 @@ class legalorganization(organization):
     # specific to the USA.
     ein = str, 9, 9
 
-    # A collection of job positions the legalorganization has.
-    positions = positions
-    
 class company(legalorganization):
     """ A business entity that conducts a value of exchange of goods or
     services with customers. The end goal of a company is to produce a

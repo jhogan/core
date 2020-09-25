@@ -53,6 +53,7 @@ import re
 import shipment
 import tempfile
 import textwrap
+import hr
 
 # Import crust. Ensure that stdout is suppressed because it will print
 # out status information on startup.
@@ -17843,32 +17844,7 @@ class gem_party(tester):
     def it_appends_divisions_to_departments(self):
         # TODO:afa4ffc9 Rewrite the below to use the role_role
         # association to associate persons to departments and divisions.
-        com = self.getvalidcompany()
-
-        dep = party.department(name='web')
-        com.departments += dep
-
-        div = party.division(name='core')
-        dep.divisions += div
-        com.save()
-
-        com1 = party.company(com)
-
-        self.one(com1.departments)
-        self.one(com1.departments.first.divisions)
-
-        self.eq('web', com1.departments.first.name)
-        self.eq('core', com1.departments.first.divisions.first.name)
-
-        self.eq(
-            com.departments.first.id,
-            com1.departments.first.id
-        )
-
-        self.eq(
-            com.departments.first.divisions.first.id,
-            com1.departments.first.divisions.first.id
-        )
+        pass
 
     def it_creates_positions_within_company(self):
         # TODO:afa4ffc9 Rewrite the below to use the role_role
@@ -17876,7 +17852,7 @@ class gem_party(tester):
 
         # TODO We should be able to create a position in any
         # party.legalorganization such as a non-profit.
-        jb = self.getvalidjob()
+        postyp = self.getvalidpositiontype()
         com = self.getvalidcompany()
 
         # Create positions based on the job
@@ -17890,12 +17866,12 @@ class gem_party(tester):
 
         div.positions += poss
 
-        jb.positions += poss
+        postyp.positions += poss
 
         com.positions += poss
 
         # INSERT company (it's supers), its department and division, the
-        # two positions and jb (jb is a composite of the positions so it
+        # two positions and postyp (postyp is a composite of the positions so it
         # gets saved as well).
         com.save()
 
@@ -17908,8 +17884,8 @@ class gem_party(tester):
         self.true(com.positions.first.id in ids)
         self.true(com.positions.second.id in ids)
 
-        self.eq(com1.positions.first.job.id, jb.id)
-        self.eq(com1.positions.second.job.id, jb.id)
+        self.eq(com1.positions.first.job.id, postyp.id)
+        self.eq(com1.positions.second.job.id, postyp.id)
 
         self.true(com1.positions.first.job.positions.first.id in ids)
         self.true(com1.positions.first.job.positions.second.id in ids)
@@ -17926,7 +17902,7 @@ class gem_party(tester):
         # TODO:afa4ffc9 Rewrite the below to use the role_role
         # association to associate persons to departments and divisions.
 
-        jb = self.getvalidjob()
+        postyp = self.getvalidpositiontype()
         com = self.getvalidcompany()
         pers = self.getvalid() + self.getvalid()
 
@@ -17939,7 +17915,7 @@ class gem_party(tester):
         com.departments.last.divisions += div
 
         div.positions += pos
-        jb.positions += pos
+        postyp.positions += pos
         com.positions += pos
 
         #self.true(pos.isfulfilled)
@@ -18436,9 +18412,9 @@ class gem_party(tester):
             self.eq(getattr(pos1, prop), getattr(pos2, prop))
 
     @staticmethod
-    def getvalidjob():
-        jb = party.job()
-        jb.description = tester.dedent('''
+    def getvalidpositiontype():
+        postyp = hr.positiontype()
+        postyp.description = tester.dedent('''
         As Machine Learning and Signal Processing Engineer you are going
         to lead the effort to bring signal processing algorithms into
         production which condition and extract rich morphological
@@ -18450,32 +18426,32 @@ class gem_party(tester):
         tweaking, optimizing, deploying, and monitoring these algorithms
         in a commercial environment.
         ''')
-        jb.title = "Machine Learning and Signal Processing Engineer"
-        jb.description = jb.description.replace('\n', '')
-        return jb
+        postyp.title = "Machine Learning and Signal Processing Engineer"
+        postyp.description = postyp.description.replace('\n', '')
+        return postyp
 
-    def it_creates_job(self):
-        jb = self.getvalidjob()
-        jb.save()
+    def it_creates_positiontype(self):
+        postyp = self.getvalidpositiontype()
+        postyp.save()
 
-        jb1 = party.job(jb.id)
-        self.eq(jb.title, jb1.title)
-        self.eq(jb.description, jb1.description)
-        self.eq(jb.id, jb1.id)
+        postyp1 = party.job(postyp.id)
+        self.eq(postyp.title, postyp1.title)
+        self.eq(postyp.description, postyp1.description)
+        self.eq(postyp.id, postyp1.id)
 
-    def it_updates_job(self):
-        jb = self.getvalidjob()
-        jb.save()
+    def it_updates_positiontype(self):
+        postyp = self.getvalidpositiontype()
+        postyp.save()
 
-        jb1 = party.job(jb.id)
-        jb1.description += '. This is a fast pace work environment.'
-        jb1.title = 'NEEDED FAST!!! ' + jb1.title
-        jb1.save()
+        postyp1 = party.job(postyp.id)
+        postyp1.description += '. This is a fast pace work environment.'
+        postyp1.title = 'NEEDED FAST!!! ' + postyp1.title
+        postyp1.save()
 
-        jb2 = party.job(jb.id)
-        self.eq(jb1.title, jb2.title)
-        self.eq(jb1.description, jb2.description)
-        self.eq(jb1.id, jb2.id)
+        postype2 = party.job(postyp.id)
+        self.eq(postyp1.title, postype2.title)
+        self.eq(postyp1.description, postype2.description)
+        self.eq(postyp1.id, postype2.id)
 
     @staticmethod
     def getvalidaddress():

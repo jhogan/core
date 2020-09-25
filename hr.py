@@ -32,6 +32,9 @@ class positions(orm.entities):          pass
 class positiontypes(apriori.types):                          pass
 class positionrates(orm.entities):                           pass
 class position_fulfillments(orm.associations):               pass
+class responsibilities(orm.entities):                           pass
+class responsibilitytypes(apriori.types):                           pass
+class validresponsibilities(apriori.types):                           pass
 
 class employeement(party.role_role):
     """ Maintains employment information. ``employeement`` is a
@@ -48,14 +51,22 @@ class position(orm.entity):
     this may be referred to as an FTE or full-time equivalent.
     """
 
-    # The datespan an organization expects the job to begin and end
+    # The datespan an organization expects the position to begin and
+    # end. If the position is for an indefinate period, the ``end``
+    # would be None.
     estimated = datespan(prefix='estimated')
 
     # The actual datespan the position slot is filled, as opposed to the
     # `estimated` datespan.
     filled = datespan
 
+    # True if the person filling the position is sallaried, False if he
+    # or she is hourly.
     salary = bool
+
+    # True if the position is exempt under the Fair Labor Standards Act
+    # (FLSA).
+    exempt = bool
 
     fulltime = bool
 
@@ -77,13 +88,15 @@ class positiontype(apriori.type):
     # ``positiontype``.
     positions = positions
 
+    description = text
+
     positionrates = positionrates
 
 class responsibility(orm.entity):
     span = datespan
     comment = text
 
-class responsibilitytype(apriori.type)
+class responsibilitytype(apriori.type):
     responsibilities = responsibilities
 
 class validresponsibility(orm.entity):
@@ -121,7 +134,7 @@ class position_fulfillment(orm.association):
     occupy the position as part-time or half-time employees.
     """
 
-    person    =  person
+    person    =  party.person
     position  =  position
 
     # The timespan of the occumation
