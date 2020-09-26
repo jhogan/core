@@ -1740,6 +1740,17 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             elif isinstance(key, entity):
                 return self[key.id]
 
+            elif isinstance(key, str):
+                if 'name' in self.orm.mappings:
+                    for e in self:
+                        if e.name == key:
+                            return e
+                    else:
+                        raise IndexError(
+                            f'{self.orm.entity} '
+                            f"not found with name: '{key}'"
+                        )
+                        
             e = super().__getitem__(key)
 
             # NOTE The below code original tested wheher or not
