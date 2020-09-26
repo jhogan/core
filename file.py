@@ -24,22 +24,26 @@ import urllib.request
 import shutil
 import contextlib
 
-class inodes(orm.entites):
+class inodes(orm.entities):
     pass
 
 class inode(orm.entity):
     name = str
+    inodes = inodes
 
-class files(orm.inodes):
+class files(inodes):
     pass
 
-class file(orm.inode):
+class file(inode):
+    # TODO Ensure a call to inodes results in an AttributeError
     pass
 
 class resources(files):
     pass
 
 class file(orm.entity):
+
+    # TODO Override __repr__ such that it truncates the body attribute
     body = bytes
 
     def __init__(self, *args, **kwargs):
@@ -186,4 +190,54 @@ class resource(file):
             # Allow the exception to bubble up to the ORM's persistence
             # logic - allowing it to rollback the transaction.
             raise
+
+class directories(inodes):
+    pass
+
+class directory(inode):
+    # TODO Remove below line when the branch is merged back into ev orm
+    # master. This line was written before inflect's pluralization was
+    # introduced.
+    entities = directories
+
+    def __getitem__(self, key):
+        return self.inodes[key]
+
+    def file(self, name):
+        nd = self(name)
+        if not nd:
+            f = file(name=name)
+            self += f
+            return f
+
+        # NOTE The code below is untested
+        try:
+            f = file(nd)
+        except RecordNotFoundError:
+            return directory(nd)
+        else:
+            return f
+
+    def directory(self, name):
+        # TODO Implement `parents` and test
+        nds = self.inodes
+        for dir in name.split('/'):
+            if not dir:
+                continue
+
+            try:
+                nd = nds[dir]
+                # TODO Ensure that if `dir` happens to be a `file`, an
+                # appropriate Exception is raised.
+            except IndexError:
+                nd = directory(name=dir)
+                nds += nd
+            
+            nds = nd.inodes
+
+        return nd
+
+
+
+            
 

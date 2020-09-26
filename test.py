@@ -23935,6 +23935,8 @@ class dom_files(tester):
             party.user,
             file.files,
             file.resources,
+            file.directory,
+            file.inodes,
         )
 
     def it_links_to_js_files(self):
@@ -24010,7 +24012,7 @@ class dom_files(tester):
 
     def it_posts_file_in_a_partys_file_system(self):
         class avatar(pom.page):
-            def main(self):
+            def main(self, uid: uuid.UUID):
                 if req.isget:
                     return
 
@@ -24026,20 +24028,15 @@ class dom_files(tester):
                         'Multiple avatar images were given'
                     )
                 
+                usr = party.user(uid)
                 f = req.files.first
-                B()
 
-
-                    
-
-
-
-                dir = usr.filesystems['default']
-
-                dir = dir.mkdir('/var/avatars/', parents=True)
-                avatar = dir.touch('default')
-
-                avatar.write(imgdata)
+                dir = usr.directory
+                avatars = dir.directory('/var/avatars/')
+                default = avatars.file('default.jpg')
+                default.body = f.body
+                usr.directory.save()
+                print('derp')
 
         # Set up site
         ws = foonet()
@@ -24053,11 +24050,12 @@ class dom_files(tester):
             'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
         )
 
-        res = tab.post('/en/avatar', ws, files=f)
-        self.status(200, res)
-
         usr = party.user(name='luser')
         usr.save()
+
+        res = tab.post(f'/en/avatar?uid={usr.id}', ws, files=f)
+        self.status(200, res)
+
 
         tab = self.browser().tab()
 

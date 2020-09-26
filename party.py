@@ -28,6 +28,7 @@ import hashlib
 import orm
 import os
 import primative
+import file
 
 ''' Parties '''
 
@@ -124,8 +125,13 @@ class asset_partystatustypes(orm.entities):                  pass
 
 ''' Parties '''
 
+B()
 class user(orm.entity):
-    name     =  str
+    name      =  str
+
+    @orm.attr(file.directory)
+    def directory(self):
+        B()
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
