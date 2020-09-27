@@ -56,14 +56,10 @@ class files(inodes):
     pass
 
 class file(inode):
-    # TODO Override __repr__ such that it truncates the body attribute
     # TODO Ensure a call to inodes results in an AttributeError
-    body = bytes
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.body = None
-
+        self._body = None
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -80,6 +76,19 @@ class file(inode):
         self.head
         B()
 
+    @property
+    def body(self):
+        path = self.path
+        if self._body is None and os.path.isfile(path):
+            with open(path, 'rb') as f:
+                self._body = f.read()
+        
+        return self._body
+
+    @body.setter
+    def body(self, v):
+        self._body = v
+        
     # FIXME This should be a static property
     @property
     def head(self):
