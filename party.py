@@ -132,7 +132,7 @@ class user(orm.entity):
     def directory(self):
         dir = attr()
         if dir is None:
-            dir = file.directory(name=self.id)
+            dir = file.directory(name=self.id.hex)
             attr(dir)
         return dir
     
