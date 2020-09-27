@@ -25,7 +25,21 @@ import shutil
 import contextlib
 
 class inodes(orm.entities):
-    pass
+    def __getitem__(self, key):
+        if isinstance(key, str):
+            if '/' in key:
+                nds = self
+                for name in key.split('/'):
+                    try:
+                        nd = nds[name]
+                    except IndexError:
+                        raise IndexError(
+                            "Can't find node: {name}"
+                        )
+                    else:
+                        nds = nd.inodes
+                return nd
+        return super().__getitem__(key)
 
 class inode(orm.entity):
     name = str
