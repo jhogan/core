@@ -142,14 +142,8 @@ class file(inode):
         return f"{dir}/{'/'.join(reversed(dirs))}"
 
     @property
-    def tail(self):
-        """ A string representing the file name portion of the path.
-
-        Note this property would have been called `file`. However,
-        the ORM wants to use `directory` for something else so we
-        terminology borrowed from os.path.split()
-        return os.path.basename(self.path)
-        """
+    def path(self):
+        return os.path.join(self.head, self.name)
 
     @property 
     def store(self):
