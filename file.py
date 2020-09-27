@@ -73,8 +73,16 @@ class file(inode):
             )
 
     def _self_onaftersave(self, src, eargs):
-        self.head
-        B()
+        try:
+            pathlib.Path(self.head).mkdir(parents=True, exist_ok=True)
+        except PermissionError as ex:
+            raise PermissionError(
+                'The file store needs to be created for the environment '
+                f'and given the appropriate permissions ({ex})'
+            )
+
+        with open(self.path, 'wb') as f:
+            f.write(self.body)
 
     @property
     def body(self):
