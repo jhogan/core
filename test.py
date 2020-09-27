@@ -24010,7 +24010,7 @@ class dom_files(tester):
             # be in the database
             self.zero(file.resources(url=script.src))
 
-    def it_posts_file_in_a_partys_file_system(self):
+    def it_posts_file_in_a_users_file_system(self):
         class avatar(pom.page):
             def main(self, uid: uuid.UUID):
                 if req.isget:
@@ -24033,30 +24033,38 @@ class dom_files(tester):
 
                 dir = usr.directory
                 avatars = dir.mkdir('/var/avatars/')
-                default = avatars.file('default.jpg')
+                default = avatars.file('default.gif')
                 default.body = f.body
-                usr.directory.save()
+                usr.save()
+                res.status = 201
 
         # Set up site
         ws = foonet()
         ws.pages += avatar()
 
+        # Get a browser tab
         tab = self.browser().tab()
+
+        # Create a file called my-avatar to POST to server
         f = file.file(name='my-avatar.gif')
 
-        # 1x1 pixel GIF
+        # Assign 1x1 pixel GIF to the file's body property
         f.body = base64.b64decode(
             'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
         )
 
+        # Create a save a user
         usr = party.user(name='luser')
         usr.save()
 
-        res = tab.post(f'/en/avatar?uid={usr.id}', ws, files=f)
-        self.status(200, res)
+        # Post the file. Reference the user's id in the URL.
+        res1 = tab.post(f'/en/avatar?uid={usr.id}', ws, files=f)
+        self.status(201, res1)
 
-
-        tab = self.browser().tab()
+        usr = usr.orm.reloaded()
+        f1 = usr.directory['var/avatars/default.gif']
+        f1 = f1.orm.cast(file.file)
+        self.eq(f.body, f1.body)
 
     def it_caches_js_files(self):
         file.resource.orm.truncate()
