@@ -45,12 +45,68 @@ class inode(orm.entity):
     name = str
     inodes = inodes
 
+    def __init__(self, *args, **kwargs):
+        try:
+            path = kwargs['path']
+        except KeyError:
+            super().__init__(*args, **kwargs)
+        else:
+            del kwargs['path']
+            # TODO:61b43c12 Implement code that for `path` variables
+            # that contain  '/':
+            #
+            #      /var/my/path
+
+            super().__init__(*args, **kwargs)
+
+            nds = inodes('name = %s and inodeid = %s', (path, 'null'))
+
+            if nds.hasone:
+                # TODO The below code is completely untested
+                nd = nds.first
+                self.id = nd.id
+
+                for k, v in kwargs.items():
+                    setattr(self.instance, k, getattr(nd, k))
+
+                # The record isn't new or dirty so set all peristance state
+                # variables to false.
+                self.persistencestate = (False,) * 3
+            else:
+                # TODO:61b43c12
+                self.name = path
+
+
     def __getitem__(self, key):
         return self.inodes[key]
 
     def __iadd__(self, e):
         self.inodes.append(e)
         return self
+
+    @property
+    def head(self):
+        """ A string representing the directory portion of the path.
+
+        Note this property would have been called `directory`. However,
+        the ORM wants to use `directory` for something else so we
+        terminology borrowed from os.path.split()
+        """
+        # TODO Make this configurable
+        #dir = config().filestore
+        dir = '/var/www/development'
+
+        dirs = list()
+        nd = self
+        while nd:
+            if nd is not self:
+                dirs.append(nd.name)
+            nd = nd.inode
+        return f"{dir}/{'/'.join(reversed(dirs))}"
+
+    @property
+    def path(self):
+        return os.path.join(self.head, self.name)
 
 class files(inodes):
     pass
@@ -60,17 +116,6 @@ class file(inode):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._body = None
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        dir = self.head
-        try:
-            pathlib.Path(dir).mkdir(parents=True, exist_ok=True)
-        except PermissionError as ex:
-            raise PermissionError(
-                'The file store needs to be created for the environment '
-                f'and given the appropriate permissions ({ex})'
-            )
 
     def _self_onaftersave(self, src, eargs):
         try:
@@ -83,6 +128,8 @@ class file(inode):
 
         with open(self.path, 'wb') as f:
             f.write(self.body)
+
+        super()._self_onaftersave(src, eargs)
 
     @property
     def body(self):
@@ -97,53 +144,6 @@ class file(inode):
     def body(self, v):
         self._body = v
         
-    # FIXME This should be a static property
-    @property
-    def head(self):
-        # TODO The head proprety was rewritten below. This implemenation
-        # seems wrong because it creates a physical directory (shouldn't
-        # happen in a property) and doesn't use the parent of the inode
-        # to build up the path. The two versions will need to be
-        # reconciled.
-        """ A string representing the directory portion of the path.
-
-        Note this property would have been called `directory`. However,
-        the ORM wants to use `directory` for something else so we
-        terminology borrowed from os.path.split()
-        """
-        # TODO Make this configurable
-        #dir = config().filestore
-        dir = '/var/www/development'
-
-        pathlib.Path(dir).mkdir(
-            parents=True, exist_ok=True
-        )
-
-        return dir
-
-    @property
-    def head(self):
-        """ A string representing the directory portion of the path.
-
-        Note this property would have been called `directory`. However,
-        the ORM wants to use `directory` for something else so we
-        terminology borrowed from os.path.split()
-        """
-        # TODO Make this configurable
-        #dir = config().filestore
-        dir = '/var/www/development'
-        dirs = list()
-        nd = self
-        while nd:
-            if nd is not self:
-                dirs.append(nd.name)
-            nd = nd.inode
-        return f"{dir}/{'/'.join(reversed(dirs))}"
-
-    @property
-    def path(self):
-        return os.path.join(self.head, self.name)
-
     @property 
     def store(self):
         dir = f'{self.head}/file/store'
@@ -212,11 +212,23 @@ class resource(file):
         self.local = local
 
         if local:
+            urlparts = urllib.parse.urlsplit(self.url)
+            dirs = [x for x in urlparts.path.split('/') if x]
+            self.name = dirs.pop()
+            path = os.path.join(
+                urlparts.netloc, *dirs
+            )
+
+            res = directory(path='resources')
+            dir = res.mkdir(path)
+            dir += self
+                
+
             if self.orm.isnew:
-                self.save()
+                res.save()
             elif not self.exists:
                 self.write()
-                
+
     def _self_onaftersave(self, *args, **kwargs):
         """ After the ``resource`` has been saved to the database, write
         the resource file to the file system along with a symlink. If
@@ -224,19 +236,21 @@ class resource(file):
         the Exception will be allowed to bubble up - causing the the
         database transaction to be rolled back.
         """
-        self.write()
+
+        self._write()
         super()._self_onaftersave(*args, **kwargs)
 
-    def write(self):
+    def _write(self):
         # Get the file and the symlink
-        file = self.file
+        path = self.path
         ln = self.symlink
 
         try:
+            os.makedirs(self.head, exist_ok=True)
             try:
                 # Write the file to the file system
                 urlopen = urllib.request.urlopen
-                with urlopen(self.url) as req, open(file, 'wb') as f:
+                with urlopen(self.url) as req, open(path, 'wb') as f:
                     # TODO Test integrity before saving
                     shutil.copyfileobj(req, f)
 
@@ -250,11 +264,11 @@ class resource(file):
                     os.unlink(ln)
 
                 # Create the symlink
-                os.symlink(self.file, ln)
+                os.symlink(path, ln)
         except Exception as ex:
             # Remove the file and symlink if there was an exception
             with contextlib.suppress(Exception):
-                os.remove(file)
+                os.remove(path)
                 os.remove(ln)
             
             # Allow the exception to bubble up to the ORM's persistence
