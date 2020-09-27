@@ -134,7 +134,6 @@ class file(inode):
         dir = '/var/www/development'
         dirs = list()
         nd = self
-        B()
         while nd:
             if nd is not self:
                 dirs.append(nd.name)
