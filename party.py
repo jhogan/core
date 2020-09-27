@@ -125,13 +125,16 @@ class asset_partystatustypes(orm.entities):                  pass
 
 ''' Parties '''
 
-B()
 class user(orm.entity):
     name      =  str
 
     @orm.attr(file.directory)
     def directory(self):
-        B()
+        dir = attr()
+        if dir is None:
+            dir = file.directory(name=self.id)
+            attr(dir)
+        return dir
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
