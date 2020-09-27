@@ -18,6 +18,11 @@ Todo:
     TODO: s/explicit attribute/imperitive attribute/
 
     TODO Add automatic pluralisation of entities
+
+    TODO: When querying for a null value, None should be interpreted as
+    null. The following two lines should be equivalent::
+        nds = inodes('name = %s and inodeid = %s', (path, 'null'))
+        nds = inodes('name = %s and inodeid = %s', (path, None))
     
 """
 

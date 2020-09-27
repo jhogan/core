@@ -19075,7 +19075,7 @@ class gem_product_measure(tester):
         # Associate each with smallbox
         each.measure_measures += mm
 
-        # A large box is equivelent to 2 small boxes. Note the
+        # A large box is equivalent to 2 small boxes. Note the
         # association beteen `each` and `largebox` is not created. We
         # will rely on product.measure_measure to work issues like this
         # out automatically via transitive logic.
