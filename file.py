@@ -31,32 +31,29 @@ class inode(orm.entity):
     name = str
     inodes = inodes
 
+    def __getitem__(self, key):
+        return self.inodes[key]
+
+    def __iadd__(self, e):
+        self.inodes.append(e)
+        return self
+
 class files(inodes):
     pass
 
 class file(inode):
-    # TODO Ensure a call to inodes results in an AttributeError
-    pass
-
-class resources(files):
-    pass
-
-class file(orm.entity):
-
     # TODO Override __repr__ such that it truncates the body attribute
+    # TODO Ensure a call to inodes results in an AttributeError
     body = bytes
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.body = None
 
-    @property
-    def basename(self):
-        return os.path.basename(self.path)
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        dir = self.directory
+        dir = self.head
         try:
             pathlib.Path(dir).mkdir(parents=True, exist_ok=True)
         except PermissionError as ex:
@@ -65,9 +62,24 @@ class file(orm.entity):
                 f'and given the appropriate permissions ({ex})'
             )
 
+    def _self_onaftersave(self, src, eargs):
+        self.head
+        B()
+
     # FIXME This should be a static property
     @property
-    def directory(self):
+    def head(self):
+        # TODO The head proprety was rewritten below. This implemenation
+        # seems wrong because it creates a physical directory (shouldn't
+        # happen in a property) and doesn't use the parent of the inode
+        # to build up the path. The two versions will need to be
+        # reconciled.
+        """ A string representing the directory portion of the path.
+
+        Note this property would have been called `directory`. However,
+        the ORM wants to use `directory` for something else so we
+        terminology borrowed from os.path.split()
+        """
         # TODO Make this configurable
         #dir = config().filestore
         dir = '/var/www/development'
@@ -75,11 +87,42 @@ class file(orm.entity):
         pathlib.Path(dir).mkdir(
             parents=True, exist_ok=True
         )
+
         return dir
+
+    @property
+    def head(self):
+        """ A string representing the directory portion of the path.
+
+        Note this property would have been called `directory`. However,
+        the ORM wants to use `directory` for something else so we
+        terminology borrowed from os.path.split()
+        """
+        # TODO Make this configurable
+        #dir = config().filestore
+        dir = '/var/www/development'
+        dirs = list()
+        nd = self
+        B()
+        while nd:
+            if nd is not self:
+                dirs.append(nd.name)
+            nd = nd.inode
+        return f"{dir}/{'/'.join(reversed(dirs))}"
+
+    @property
+    def tail(self):
+        """ A string representing the file name portion of the path.
+
+        Note this property would have been called `file`. However,
+        the ORM wants to use `directory` for something else so we
+        terminology borrowed from os.path.split()
+        return os.path.basename(self.path)
+        """
 
     @property 
     def store(self):
-        dir = f'{self.directory}/file/store'
+        dir = f'{self.head}/file/store'
         pathlib.Path(dir).mkdir(
             parents=True, exist_ok=True
         )
@@ -119,6 +162,9 @@ class file(orm.entity):
     @property
     def public(self):
         return self.symlink
+
+class resources(files):
+    pass
 
 class resource(file):
     url        =  str
@@ -200,9 +246,6 @@ class directory(inode):
     # introduced.
     entities = directories
 
-    def __getitem__(self, key):
-        return self.inodes[key]
-
     def file(self, name):
         nd = self(name)
         if not nd:
@@ -218,7 +261,7 @@ class directory(inode):
         else:
             return f
 
-    def directory(self, name):
+    def mkdir(self, name):
         # TODO Implement `parents` and test
         nds = self.inodes
         for dir in name.split('/'):

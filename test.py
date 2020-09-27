@@ -24032,11 +24032,10 @@ class dom_files(tester):
                 f = req.files.first
 
                 dir = usr.directory
-                avatars = dir.directory('/var/avatars/')
+                avatars = dir.mkdir('/var/avatars/')
                 default = avatars.file('default.jpg')
                 default.body = f.body
                 usr.directory.save()
-                print('derp')
 
         # Set up site
         ws = foonet()
@@ -24059,18 +24058,6 @@ class dom_files(tester):
 
         tab = self.browser().tab()
 
-        return
-
-
-        fss = usr.filesystems
-        if fss.isempty:
-            usr.filesytems.system(name='default')
-
-
-
-
-
-        
     def it_caches_js_files(self):
         file.resource.orm.truncate()
         class index(pom.page):
