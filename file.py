@@ -252,9 +252,23 @@ class resource(file):
         try:
             os.makedirs(self.head, exist_ok=True)
             try:
-                # Write the file to the file system
                 urlopen = urllib.request.urlopen
-                with urlopen(self.url) as req, open(path, 'wb') as f:
+
+                # Create a request that has a spoofed user-agent. Some
+                # CDN's will return a 403 Forbidden if they think Python
+                # is making the request.
+                req = urllib.request.Request(
+                    self.url, 
+                    headers={
+                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel '
+                        'Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, '
+                        'like Gecko) Chrome/35.0.1916.47 '
+                        'Safari/537.36'
+                    }
+                )
+
+                # Write the file to the file system
+                with urlopen(req) as req, open(path, 'wb') as f:
                     # TODO Test integrity before saving
                     shutil.copyfileobj(req, f)
 
