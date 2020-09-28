@@ -162,7 +162,7 @@ class file(inode):
 
     @property
     def exists(self):
-        return os.path.isfile(self.file)
+        return os.path.isfile(self.path)
 
     # FIXME This should be a static property
     @property
