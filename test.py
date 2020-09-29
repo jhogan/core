@@ -17029,7 +17029,6 @@ class gem_party(tester):
 
         return cm
 
-
     def it_saves_physical_characteristics(self):
         hr = party.characteristictype(name='Heart rate')
         sys = party.characteristictype(name='Systolic blood preasure')
@@ -17798,26 +17797,8 @@ class gem_party(tester):
 
             self.eq(str(reg), str(reg1))
 
-    def it_appends_department(self):
-        # TODO:afa4ffc9 Rewrite the below to use the role_role
-        # association to associate persons to departments and divisions.
-        com = self.getvalidcompany()
-        self.zero(com.departments)
-        dep = party.department(name='web')
-        com.departments += dep
-        self.is_(com, dep.company)
-        com.save()
-
-        com1 = party.company(com.id)
-        self.eq(com.id, com1.id)
-
-        self.one(com1.departments)
-
-        self.eq(com.departments.first.id, com1.departments.first.id)
-        self.eq('web', com1.departments.first.name)
-
     def it_updates_department(self):
-        # TODO:afa4ffc9 Rewrite the below to use the role_role
+        # todo:afa4ffc9 rewrite the below to use the role_role
         # association to associate persons to departments and divisions.
         com = self.getvalidcompany()
         self.zero(com.departments)
@@ -17845,141 +17826,6 @@ class gem_party(tester):
         # TODO:afa4ffc9 Rewrite the below to use the role_role
         # association to associate persons to departments and divisions.
         pass
-
-    def it_creates_positions_within_company(self):
-        # TODO:afa4ffc9 Rewrite the below to use the role_role
-        # association to associate persons to departments and divisions.
-
-        # TODO We should be able to create a position in any
-        # party.legalorganization such as a non-profit.
-        postyp = self.getvalidpositiontype()
-        com = self.getvalidcompany()
-
-        # Create positions based on the job
-        poss = party.positions()
-        poss += self.getvalidposition()
-        poss += self.getvalidposition()
-
-        com.departments += party.department(name='it')
-        div = party.division(name='ml')
-        com.departments.last.divisions += div
-
-        div.positions += poss
-
-        postyp.positions += poss
-
-        com.positions += poss
-
-        # INSERT company (it's supers), its department and division, the
-        # two positions and postyp (postyp is a composite of the positions so it
-        # gets saved as well).
-        com.save()
-
-        ''' Test that rather large save '''
-        com1 = party.company(com.id)
-        self.eq(com.id, com1.id)
-        self.two(com1.positions)
-
-        ids = com1.positions.pluck('id')
-        self.true(com.positions.first.id in ids)
-        self.true(com.positions.second.id in ids)
-
-        self.eq(com1.positions.first.job.id, postyp.id)
-        self.eq(com1.positions.second.job.id, postyp.id)
-
-        self.true(com1.positions.first.job.positions.first.id in ids)
-        self.true(com1.positions.first.job.positions.second.id in ids)
-        self.ne(
-            com1.positions.first.job.positions.first.id,
-            com1.positions.first.job.positions.second.id
-        )
-
-        self.one(com1.departments)
-        self.one(com1.departments.first.divisions)
-        self.two(com1.departments.first.divisions.first.positions)
-
-    def it_fulfills_postition_within_company(self):
-        # TODO:afa4ffc9 Rewrite the below to use the role_role
-        # association to associate persons to departments and divisions.
-
-        postyp = self.getvalidpositiontype()
-        com = self.getvalidcompany()
-        pers = self.getvalid() + self.getvalid()
-
-        # Create positions based on the job
-        pos = self.getvalidposition()
-
-        dep = party.department(name='it')
-        com.departments += dep
-        div = party.division(name='ml')
-        com.departments.last.divisions += div
-
-        div.positions += pos
-        postyp.positions += pos
-        com.positions += pos
-
-        #self.true(pos.isfulfilled)
-
-        for per in pers:
-            ful = party.position_fulfillment(
-                person = per,
-                begin  = date.today(),
-                end    = None,
-            )
-
-            pos.position_fulfillments += ful
-
-            self.is_(per, pos.position_fulfillments.last.person)
-
-            self.is_(ful, pos.position_fulfillments.last)
-
-            self.is_(
-                div,
-                pos.position_fulfillments.last.position.division
-            )
-
-            self.is_(
-                dep,
-                pos.position_fulfillments.last
-                    .position.division.department
-            )
-
-            self.is_(
-                com,
-                pos.position_fulfillments.last
-                    .position.division.department.company
-            )
-
-        self.two(pos.position_fulfillments)
-        self.two(pos.persons)
-
-        com.save()
-
-        com1 = party.company(com.id)
-
-        self.one(com1.positions)
-
-        ids = com.positions.first.position_fulfillments.pluck('id')
-        self.two(ids)
-
-        for ful1 in com1.positions.first.position_fulfillments:
-            self.true(ful1.id in ids)
-            ful = com.positions.first.position_fulfillments[ful1.id]
-            self.eq(ful.person.id, ful1.person.id)
-            self.eq(ful.position.id, ful1.position.id)
-            self.eq(ful.begin, ful1.begin)
-            self.none(ful1.end)
-
-        for per in pers:
-            per1 = party.person(per.id)
-            self.one(per1.positions)
-            self.one(per1.position_fulfillments)
-            self.eq(div.id, per1.positions.first.division.id)
-            self.eq(dep.id, per1.positions.first.division.department.id)
-            self.eq(
-                com.id,
-                per1.positions.first.division.department.company.id
-            )
 
     def it_links_contactmechanisms(self):
         # Create contact mechanisms
@@ -18374,84 +18220,6 @@ class gem_party(tester):
                     r.newfield(pur.purposetype.name)
 
         print(tbl1)
-
-    @staticmethod
-    def getvalidposition():
-        pos = party.position()
-        pos.estimated.begin = primative.datetime.utcnow()
-
-        pos.estimated.end = pos.estimated.begin.add(days=365)
-
-        pos.begin = primative.date.today()
-        pos.end = pos.begin.add(days=365)
-        return pos
-
-    def it_creates_position(self):
-        pos = self.getvalidposition()
-        pos.save()
-
-        pos1 = party.position(pos.id)
-        for map in pos.orm.mappings.fieldmappings:
-            prop = map.name
-            self.eq(getattr(pos, prop), getattr(pos1, prop), prop)
-
-    def it_updates_position(self):
-        pos = self.getvalidposition()
-        pos.save()
-
-        pos1 = party.position(pos.id)
-        pos1.estimated.begin  =  pos1.estimated.begin.add(days=1)
-        pos1.estimated.end    =  pos1.estimated.end.add(days=1)
-        pos1.begin            =  pos1.begin.add(days=1)
-        pos1.end              =  pos1.end.add(days=1)
-        pos1.save()
-
-        pos2 = party.position(pos.id)
-        for map in pos.orm.mappings.fieldmappings:
-            prop = map.name
-            self.eq(getattr(pos1, prop), getattr(pos2, prop))
-
-    @staticmethod
-    def getvalidpositiontype():
-        postyp = hr.positiontype()
-        postyp.description = tester.dedent('''
-        As Machine Learning and Signal Processing Engineer you are going
-        to lead the effort to bring signal processing algorithms into
-        production which condition and extract rich morphological
-        features from our unique respiratory sensor. In addition, you
-        will bring machine learning models, which predict changes in a
-        patient's disease state, into production for both streaming and
-        batch mode use cases. You will collaborate closely with the
-        research and data science teams and become the expert on
-        tweaking, optimizing, deploying, and monitoring these algorithms
-        in a commercial environment.
-        ''')
-        postyp.title = "Machine Learning and Signal Processing Engineer"
-        postyp.description = postyp.description.replace('\n', '')
-        return postyp
-
-    def it_creates_positiontype(self):
-        postyp = self.getvalidpositiontype()
-        postyp.save()
-
-        postyp1 = party.job(postyp.id)
-        self.eq(postyp.title, postyp1.title)
-        self.eq(postyp.description, postyp1.description)
-        self.eq(postyp.id, postyp1.id)
-
-    def it_updates_positiontype(self):
-        postyp = self.getvalidpositiontype()
-        postyp.save()
-
-        postyp1 = party.job(postyp.id)
-        postyp1.description += '. This is a fast pace work environment.'
-        postyp1.title = 'NEEDED FAST!!! ' + postyp1.title
-        postyp1.save()
-
-        postype2 = party.job(postyp.id)
-        self.eq(postyp1.title, postype2.title)
-        self.eq(postyp1.description, postype2.description)
-        self.eq(postyp1.id, postype2.id)
 
     @staticmethod
     def getvalidaddress():
@@ -23840,6 +23608,231 @@ class gem_budget(tester):
         for ita, ita1 in zip(itas, itas1):
             self.eq(ita.id, ita1.id)
             self.eq(ita.percent, ita1.percent)
+
+class gem_hr(tester):
+    def __init__(self):
+        super().__init__()
+        es = orm.orm.getentitys(includeassociations=True)
+        for e in es:
+            if e.__module__ in ('party', 'hr'):
+                e.orm.recreate()
+
+    def it_creates_positions_within_company(self):
+        # TODO:afa4ffc9 Rewrite the below to use the role_role
+        # association to associate persons to departments and divisions.
+        return
+
+        # TODO We should be able to create a position in any
+        # party.legalorganization such as a non-profit.
+        postyp = self.getvalidpositiontype()
+        com = gem_party.getvalidcompany()
+
+        # Create positions based on the job
+        poss = hr.positions()
+        poss += self.getvalidposition()
+        poss += self.getvalidposition()
+
+        com.departments += party.department(name='it')
+        div = party.division(name='ml')
+        com.departments.last.divisions += div
+
+        div.positions += poss
+
+        postyp.positions += poss
+
+        com.positions += poss
+
+        # INSERT company (it's supers), its department and division, the
+        # two positions and postyp (postyp is a composite of the positions so it
+        # gets saved as well).
+        com.save()
+
+        ''' Test that rather large save '''
+        com1 = party.company(com.id)
+        self.eq(com.id, com1.id)
+        self.two(com1.positions)
+
+        ids = com1.positions.pluck('id')
+        self.true(com.positions.first.id in ids)
+        self.true(com.positions.second.id in ids)
+
+        self.eq(com1.positions.first.job.id, postyp.id)
+        self.eq(com1.positions.second.job.id, postyp.id)
+
+        self.true(com1.positions.first.job.positions.first.id in ids)
+        self.true(com1.positions.first.job.positions.second.id in ids)
+        self.ne(
+            com1.positions.first.job.positions.first.id,
+            com1.positions.first.job.positions.second.id
+        )
+
+        self.one(com1.departments)
+        self.one(com1.departments.first.divisions)
+        self.two(com1.departments.first.divisions.first.positions)
+
+    def it_fulfills_postition_within_company(self):
+        # TODO:afa4ffc9 Rewrite the below to use the role_role
+        # association to associate persons to departments and divisions.
+        return
+
+        postyp = self.getvalidpositiontype()
+        com = gem_party.getvalidcompany()
+        pers = gem_party.getvalid() + gem_party.getvalid()
+
+        # Create positions based on the job
+        pos = self.getvalidposition()
+
+        dep = party.department(name='it')
+        com.departments += dep
+        div = party.division(name='ml')
+        com.departments.last.divisions += div
+
+        div.positions += pos
+        postyp.positions += pos
+        com.positions += pos
+
+        #self.true(pos.isfulfilled)
+
+        for per in pers:
+            ful = hr.position_fulfillment(
+                person = per,
+                begin  = date.today(),
+                end    = None,
+            )
+
+            pos.position_fulfillments += ful
+
+            self.is_(per, pos.position_fulfillments.last.person)
+
+            self.is_(ful, pos.position_fulfillments.last)
+
+            self.is_(
+                div,
+                pos.position_fulfillments.last.position.division
+            )
+
+            self.is_(
+                dep,
+                pos.position_fulfillments.last
+                    .position.division.department
+            )
+
+            self.is_(
+                com,
+                pos.position_fulfillments.last
+                    .position.division.department.company
+            )
+
+        self.two(pos.position_fulfillments)
+        self.two(pos.persons)
+
+        com.save()
+
+        com1 = party.company(com.id)
+
+        self.one(com1.positions)
+
+        ids = com.positions.first.position_fulfillments.pluck('id')
+        self.two(ids)
+
+        for ful1 in com1.positions.first.position_fulfillments:
+            self.true(ful1.id in ids)
+            ful = com.positions.first.position_fulfillments[ful1.id]
+            self.eq(ful.person.id, ful1.person.id)
+            self.eq(ful.position.id, ful1.position.id)
+            self.eq(ful.begin, ful1.begin)
+            self.none(ful1.end)
+
+        for per in pers:
+            per1 = party.person(per.id)
+            self.one(per1.positions)
+            self.one(per1.position_fulfillments)
+            self.eq(div.id, per1.positions.first.division.id)
+            self.eq(dep.id, per1.positions.first.division.department.id)
+            self.eq(
+                com.id,
+                per1.positions.first.division.department.company.id
+            )
+
+    @staticmethod
+    def getvalidposition():
+        pos = hr.position()
+        pos.estimated.begin = primative.datetime.utcnow()
+
+        pos.estimated.end = pos.estimated.begin.add(days=365)
+
+        pos.begin = primative.date.today()
+        pos.end = pos.begin.add(days=365)
+        return pos
+
+    def it_creates_position(self):
+        pos = self.getvalidposition()
+        pos.save()
+
+        pos1 = hr.position(pos.id)
+        for map in pos.orm.mappings.fieldmappings:
+            prop = map.name
+            self.eq(getattr(pos, prop), getattr(pos1, prop), prop)
+
+    def it_updates_position(self):
+        pos = self.getvalidposition()
+        pos.save()
+
+        pos1 = hr.position(pos.id)
+        pos1.estimated.begin  =  pos1.estimated.begin.add(days=1)
+        pos1.estimated.end    =  pos1.estimated.end.add(days=1)
+        pos1.begin            =  pos1.begin.add(days=1)
+        pos1.end              =  pos1.end.add(days=1)
+        pos1.save()
+
+        pos2 = hr.position(pos.id)
+        for map in pos.orm.mappings.fieldmappings:
+            prop = map.name
+            self.eq(getattr(pos1, prop), getattr(pos2, prop))
+
+    @staticmethod
+    def getvalidpositiontype():
+        postyp = hr.positiontype()
+        postyp.description = tester.dedent('''
+        As Machine Learning and Signal Processing Engineer you are going
+        to lead the effort to bring signal processing algorithms into
+        production which condition and extract rich morphological
+        features from our unique respiratory sensor. In addition, you
+        will bring machine learning models, which predict changes in a
+        patient's disease state, into production for both streaming and
+        batch mode use cases. You will collaborate closely with the
+        research and data science teams and become the expert on
+        tweaking, optimizing, deploying, and monitoring these algorithms
+        in a commercial environment.
+        ''')
+        postyp.description = postyp.description.replace('\n', ' ')
+
+        postyp.name = "Machine Learning and Signal Processing Engineer"
+        return postyp
+
+    def it_creates_positiontype(self):
+        postyp = self.getvalidpositiontype()
+        postyp.save()
+
+        postyp1 = hr.positiontype(postyp.id)
+        self.eq(postyp.name, postyp1.name)
+        self.eq(postyp.description, postyp1.description)
+        self.eq(postyp.id, postyp1.id)
+
+    def it_updates_positiontype(self):
+        postyp = self.getvalidpositiontype()
+        postyp.save()
+
+        postyp1 = hr.positiontype(postyp.id)
+        postyp1.description += '. This is a fast pace work environment.'
+        postyp1.name = 'NEEDED FAST!!! ' + postyp1.name
+        postyp1.save()
+
+        postype2 = hr.positiontype(postyp.id)
+        self.eq(postyp1.name, postype2.name)
+        self.eq(postyp1.description, postype2.description)
+        self.eq(postyp1.id, postype2.id)
+
 
 ########################################################################
 # Test dom                                                             #

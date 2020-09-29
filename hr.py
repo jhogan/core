@@ -115,10 +115,9 @@ class positionrate(orm.entity):
     rate = dec
 
 class position_fulfillment(orm.association):
-    """
-    The `position_fulfilments` association links a position to a person.
-    When a postion is associatied with a person, the position is said to
-    be "fulfilled', i.e., the person has been employed by the
+    """ The `position_fulfilments` association links a position to a
+    person.  When a postion is associatied with a person, the position
+    is said to be "fulfilled', i.e., the person has been employed by the
     organization (i.e., company) to fulfill the job duties of the
     position.
 

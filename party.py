@@ -264,12 +264,15 @@ class unit(organization):
         self.nationalids  =  None
         self.isicv4       =  None
 
+class division(unit):
+    pass
+
 class department(unit):
     # TODO:afa4ffc9 Now that we are using role_role to associates
     # parties with each other, the entity objects `divisions` will no
     # longer have a many-to-one relationship with `department`;
     # `departments` will have a relationships with `divisions`.
-    divisions = divisions
+	pass
 
 class legalorganization(organization):
     def __init__(self, *args, **kwargs):
