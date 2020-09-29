@@ -45,6 +45,10 @@ class inode(orm.entity):
     name = str
     inodes = inodes
 
+    # TODO Make this configurable
+    #store = config().filestore
+    store = '/var/www/development'
+
     def __init__(self, *args, **kwargs):
         try:
             path = kwargs['path']
@@ -76,7 +80,6 @@ class inode(orm.entity):
                 # TODO:61b43c12
                 self.name = path
 
-
     def __getitem__(self, key):
         return self.inodes[key]
 
@@ -92,9 +95,7 @@ class inode(orm.entity):
         the ORM wants to use `directory` for something else so we
         terminology borrowed from os.path.split()
         """
-        # TODO Make this configurable
-        #dir = config().filestore
-        dir = '/var/www/development'
+        dir = self.store
 
         dirs = list()
         nd = self
@@ -102,7 +103,15 @@ class inode(orm.entity):
             if nd is not self:
                 dirs.append(nd.name)
             nd = nd.inode
-        return f"{dir}/{'/'.join(reversed(dirs))}"
+
+        dirs = '/'.join(reversed(dirs))
+
+        if dirs:
+            r = os.path.join(dir, dirs)
+        else:
+            r = dir
+        
+        return r
 
     @property
     def path(self):
@@ -112,10 +121,33 @@ class files(inodes):
     pass
 
 class file(inode):
+    @orm.attr(str)
+    def mime(self):
+        if not attr():
+            if isinstance(self._body, str):
+                attr('text/plain')
+            elif isinstance(self._body, bytes):
+                attr('application/octet-stream')
+        return attr()
+
+
     # TODO Ensure a call to inodes results in an AttributeError
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._body = None
+
+    @property
+    def mimetype(self):
+        """ Returns the **type** portion of the mime string. For
+        example, if ``self.mime`` is:
+                
+            image/jpeg
+
+        only the string 'image' will be returned.
+        """
+        # TODO Implemente a complimentary `mimesubtype` property 
+
+        return self.mime.split('/')[0]
 
     def _self_onaftersave(self, src, eargs):
         if self._body:
@@ -130,7 +162,12 @@ class file(inode):
                     f'permissions ({ex})'
                 )
 
-            with open(self.path, 'wb') as f:
+            if self.mimetype == 'text':
+                mode = 'wt'
+            else:
+                mode = 'wb'
+
+            with open(self.path, mode) as f:
                 f.write(self.body)
 
         super()._self_onaftersave(src, eargs)
@@ -139,7 +176,8 @@ class file(inode):
     def body(self):
         path = self.path
         if self._body is None and os.path.isfile(path):
-            with open(path, 'rb') as f:
+            mode = 'rt' if self.mimetype == 'text' else 'rb'
+            with open(path, mode) as f:
                 self._body = f.read()
         
         return self._body
@@ -148,18 +186,6 @@ class file(inode):
     def body(self, v):
         self._body = v
         
-    @property 
-    def store(self):
-        dir = f'{self.head}/file/store'
-        pathlib.Path(dir).mkdir(
-            parents=True, exist_ok=True
-        )
-        return dir
-
-    @property
-    def file(self):
-        return f'{self.store}/{self.id.hex}'
-
     @property
     def exists(self):
         return os.path.isfile(self.path)
@@ -167,9 +193,7 @@ class file(inode):
     # FIXME This should be a static property
     @property
     def publicdir(self):
-        # TODO:52612d8d Make this configurable
-        #dir = config().public
-        dir = '/var/www/development/public'
+        dir = os.path.join(self.store, 'public')
 
         try:
             pathlib.Path(dir).mkdir(
@@ -225,6 +249,7 @@ class resource(file):
 
             res = directory(path='resources')
             dir = res.mkdir(path)
+            self.mime = 'text/plain'
             dir += self
                 
 

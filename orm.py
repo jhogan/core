@@ -1843,6 +1843,17 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
     def sorted(self, key=None, reverse=None):
         key = 'id' if key is None else key
         if self.orm.isstreaming:
+            # TODO:4a7eb575 Sorting a stream does not work when the
+            # `key` being sorted on is in an inherited (super) class.
+            # For example, to sort files by name, we would like to do
+            # this:
+            #
+            #    file.file.orm.all.sorted('name'):
+            #
+            # However, the `name` property belongs to `file`'s
+            # superentity `inode`, and is in the `file_inodes` table,
+            # but the ORDER BY is applied to the `file_files` table,
+            # resulting in a MySQL error.
             key = '%s %s' % (key, 'DESC' if reverse else 'ASC')
             self.orm.stream.orderby = key
             return self
