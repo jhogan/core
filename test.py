@@ -23617,6 +23617,22 @@ class gem_hr(tester):
             if e.__module__ in ('party', 'hr'):
                 e.orm.recreate()
 
+    def it_creates_position(self):
+        pos = self.getvalidposition()
+        pos.save()
+
+        pos1 = pos.orm.reloaded()
+
+        self.eq(pos.estimated.begin, pos1.estimated.begin)
+        self.eq(pos.estimated.end, pos1.estimated.end)
+        self.eq(pos.begin, pos1.begin)
+        self.eq(pos.end, pos1.end)
+
+        self.eq(pos.salary, pos1.salary)
+        self.eq(pos.fulltime, pos1.fulltime)
+        self.none(pos1.item)
+        self.zero(pos1.responsibilities)
+
     def it_creates_positions_within_company(self):
         # TODO:afa4ffc9 Rewrite the below to use the role_role
         # association to associate persons to departments and divisions.
@@ -23764,15 +23780,6 @@ class gem_hr(tester):
         pos.begin = primative.date.today()
         pos.end = pos.begin.add(days=365)
         return pos
-
-    def it_creates_position(self):
-        pos = self.getvalidposition()
-        pos.save()
-
-        pos1 = hr.position(pos.id)
-        for map in pos.orm.mappings.fieldmappings:
-            prop = map.name
-            self.eq(getattr(pos, prop), getattr(pos1, prop), prop)
 
     def it_updates_position(self):
         pos = self.getvalidposition()

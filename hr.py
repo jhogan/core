@@ -70,8 +70,14 @@ class position(orm.entity):
 
     fulltime = bool
 
+    temp = bool
+
     # The budget item provides a possible means of athorizing a job
-    # slot.
+    # slot. One budget item may approve or fund one or more positions.
+    # If a position is tied to a budget, then the position is considered
+    # "authorized" when the ``budget.status`` for the budget
+    # (``budget.budget``) that affects the ``budget.item`` has been
+    # approved.
     item = budget.item
 
     responsibilities = responsibilities
@@ -84,13 +90,23 @@ class positiontype(apriori.type):
     Data Model Resource Book".
     """
 
+    # NOTE The ``name`` attribute inherited from apriori.type serves as
+    # the ``title`` described in the book. This attribute is the
+    # standard job title such a "Business Analyst" or "Accounting
+    # Clerk".
+
     # The collection of ``positions`` categorized by this
     # ``positiontype``.
     positions = positions
 
+    # A brief description of the position type
     description = text
 
     positionrates = positionrates
+
+    # The *benefit percent* records the percentage of benefits that an
+    # enterprise willl pay for a particular type of position.
+    percent = dec
 
 class responsibility(orm.entity):
     span = datespan
