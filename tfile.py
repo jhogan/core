@@ -230,7 +230,7 @@ class dom_files(tester.tester):
 
         # TODO:52612d8d Make a configuration option
         #dir = config().public
-        dir = '/var/www/development/public'
+        dir = os.path.join(file.file.store, 'public')
 
         self.eq(
             f'{dir}/jquery-3.5.1.js',
@@ -299,6 +299,25 @@ class dom_files(tester.tester):
 class file_file(tester.tester):
     def __init__(self):
         super().__init__()
+        store = file.file.store
+
+        # Make sure `store` is a directory underneath /var/www/core. We
+        # don't want `store` to be something else (like '') because we
+        # may end up deleting things we don't want.
+        assert store.startswith('/var/www/core') 
+        assert len([x for x in store.split('/') if x]) > 3
+        assert 'production' not in store
+
+        # Delete the contents of the store directory, but not the
+        # directory itself. There doesn't seem to be an easy way to do
+        # this in Python so we just shell out:
+        #
+        #    rm -rf /var/www/core/development/*
+        ret = os.system('rm -rf ' + os.path.join(store, '*'))
+
+        # Make sure `rm` was successful
+        assert ret == 0
+
         orm.orm.recreate(
             party.user,
             file.files,
@@ -308,7 +327,6 @@ class file_file(tester.tester):
         )
 
     def it_creates_empty_file(self):
-
         ''' Instatiate file '''
         f = file.file(name='myfile')
         self.eq(f.store, f.head)
@@ -319,6 +337,7 @@ class file_file(tester.tester):
         self.none(f.inode)
         self.zero(f.inodes)
         self.none(f.body)
+        self.none(f.mime)
 
         ''' Saving the file with no body set '''
         f.save()
@@ -334,6 +353,7 @@ class file_file(tester.tester):
         self.none(f.inode)
         self.zero(f.inodes)
         self.none(f.body)
+        self.none(f.mime)
 
         f1 = f.orm.reloaded()
         self.eq(f.store, f1.store)
@@ -349,6 +369,7 @@ class file_file(tester.tester):
         self.none(f1.inode)
         self.zero(f1.inodes)
         self.none(f1.body)
+        self.none(f.mime)
 
     def it_creates_text_file(self):
         ''' Instatiate file '''
@@ -361,12 +382,16 @@ class file_file(tester.tester):
 
         f.body = body
         self.eq(body, f.body)
+        self.eq('text/plain', f.mime)
+        self.true(isinstance(f.body, str))
 
-        ''' Saving the file with no body set '''
+        ''' Saving the file with '''
         f.save()
         self.eq(f.path, os.path.join(f.store, 'myfile'))
         self.true(f.exists)
         self.true(os.path.exists(f.path))
+        self.true(isinstance(f.body, str))
+        self.eq('text/plain', f.mime)
 
         self.eq('myfile', f.name)
         self.none(f.inode)
@@ -375,8 +400,126 @@ class file_file(tester.tester):
 
         f1 = f.orm.reloaded()
         self.eq(f.body, f1.body)
+        self.true(isinstance(f1.body, str))
+        self.eq('text/plain', f1.mime)
         self.true(f1.exists)
         self.true(os.path.exists(f1.path))
+
+    def it_creates_binary_file(self):
+        ''' Instatiate file '''
+        f = file.file(name='myfile')
+
+        body = base64.b64decode(
+            'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+        )
+
+        f.body = body
+        self.eq(body, f.body)
+        self.eq('application/octet-stream', f.mime)
+        self.true(isinstance(f.body, bytes))
+
+        ''' Saving the file '''
+        f.save()
+        self.eq(f.path, os.path.join(f.store, 'myfile'))
+        self.true(f.exists)
+        self.true(os.path.exists(f.path))
+        self.eq('application/octet-stream', f.mime)
+        self.true(isinstance(f.body, bytes))
+
+        self.eq('myfile', f.name)
+        self.none(f.inode)
+        self.zero(f.inodes)
+        self.eq(body, f.body)
+
+        f1 = f.orm.reloaded()
+        self.eq(f.body, f1.body)
+        self.eq('application/octet-stream', f.mime)
+        self.true(isinstance(f.body, bytes))
+        self.true(f1.exists)
+        self.true(os.path.exists(f1.path))
+
+    def it_creates_within_a_directory(self):
+        ''' Instatiate file with `path` off root '''
+
+        path = 'myotherfile'
+
+        # This will create the file off the root
+        f = file.file(path=path)
+
+        body = self.dedent('''
+        Line 1
+        Line 2
+        ''')
+
+        f.body = body
+        self.eq(body, f.body)
+
+        f.save()
+        self.eq(f.path, os.path.join(f.store, path))
+        self.true(f.exists)
+        self.true(os.path.exists(f.path))
+
+        self.eq(path, f.name)
+        self.none(f.inode)
+        self.eq(body, f.body)
+
+        f1 = f.orm.reloaded()
+        self.eq(f.body, f1.body)
+        self.true(f1.exists)
+        self.true(os.path.exists(f1.path))
+
+        ''' Instatiate file with `path` off within a new directory '''
+
+        # TODO --------------------------
+        return
+
+        path = '/var/db/my.db'
+
+        # This will create the file off the root
+        f = file.file(path=path)
+
+        body = self.dedent('''
+        Line 1
+        Line 2
+        ''')
+
+        f.body = body
+        self.eq(body, f.body)
+
+        f.save()
+        self.eq(f.path, os.path.join(f.store, path))
+        self.true(f.exists)
+        self.true(os.path.exists(f.path))
+
+        self.eq(path, f.name)
+        self.none(f.inode)
+        self.eq(body, f.body)
+
+        f1 = f.orm.reloaded()
+        self.eq(f.body, f1.body)
+        self.true(f1.exists)
+        self.true(os.path.exists(f1.path))
+
+    def it_loads_within_a_directory(self):
+        ''' Create file in root '''
+
+        path = 't.txt'
+
+        # This will create the file off the root
+        f = file.file(path=path)
+
+        body = self.dedent('''
+        Line 1
+        Line 2
+        ''')
+
+        f.body = body
+        f.save()
+
+        B()
+        f1 = file.file(path=path)
+        self.eq(body, f1.body)
+
 
 if __name__ == '__main__':
     tester.cli().run()

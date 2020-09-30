@@ -47,7 +47,7 @@ class inode(orm.entity):
 
     # TODO Make this configurable
     #store = config().filestore
-    store = '/var/www/development'
+    store = '/var/www/core/development'
 
     def __init__(self, *args, **kwargs):
         try:
@@ -63,12 +63,19 @@ class inode(orm.entity):
 
             super().__init__(*args, **kwargs)
 
-            nds = inodes('name = %s and inodeid = %s', (path, 'null'))
+            nds = inodes('name = %s and inodeid is %s', path, None)
 
             if nds.hasone:
                 # TODO The below code is completely untested
                 nd = nds.first
                 self.id = nd.id
+                self.name = nd.name
+                try:
+                    f = file(nd.id)
+                except RecordNotFoundError:
+                    pass
+                else:
+                    self.mime = f.mime
 
                 for k, v in kwargs.items():
                     setattr(self.instance, k, getattr(nd, k))
@@ -128,8 +135,9 @@ class file(inode):
                 attr('text/plain')
             elif isinstance(self._body, bytes):
                 attr('application/octet-stream')
+            elif self._body is None:
+                attr(None)
         return attr()
-
 
     # TODO Ensure a call to inodes results in an AttributeError
     def __init__(self, *args, **kwargs):
