@@ -16,6 +16,11 @@ Examples:
     See test.py for examples. 
 
 TODO:
+    
+    TODO An option extention to this object model would be to include
+    the POSITION TYPE CLASS and POSITION CLASSIFICATION TYPE to provide
+    further classification options for positions. See figure 9.4 from
+    the book.
 """
 
 from datetime import datetime, date
@@ -108,14 +113,39 @@ class positiontype(apriori.type):
     # enterprise willl pay for a particular type of position.
     percent = dec
 
+    validresponsibilities = validresponsibilities
+
 class responsibility(orm.entity):
+    """ Represents a job responsibility.
+
+    Note that this is modeled after the POSITION RESPONSIBILITY entity
+    in "The Data Model Resource Book".
+    """
+
+    # A datespan that allows the enterprise to assign and track
+    # historically changing responsibilities of jobs and positions. In
+    # this way, very specific and detailed job descriptions can be
+    # developed, while at the same time allowing for ongonig changes.
     span = datespan
     comment = text
 
 class responsibilitytype(apriori.type):
     responsibilities = responsibilities
+    validresponsibilities = validresponsibilities
 
 class validresponsibility(orm.entity):
+    """ Represents a valid ``responsibility`` for a given position type.
+
+    Validation rules (brokenrules) could be developed to ensure that, if
+    a certain ``responsibilitytype`` is assigned as a position
+    ``responsibility``, it is first identified as a
+    ``validresponsibility`` for the ``responsibility`` with which the
+    ``position`` is associated.
+    """
+    # A datespan that allows the enterprise to assign and track
+    # historically changing responsibilities of jobs and positions. In
+    # this way, very specific and detailed job descriptions can be
+    # developed, while at the same time allowing for ongonig changes.
     span = datespan
     comment = text
 
