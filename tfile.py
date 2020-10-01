@@ -29,7 +29,7 @@ class foonet(pom.site):
         self.lang = 'es'
         self.charset = 'iso-8859-1'
 
-class dom_files(tester.tester):
+class dom_file(tester.tester):
     """ Test interoperability between DOM objects and the ``file``
     entity.
     """
@@ -516,10 +516,51 @@ class file_file(tester.tester):
         f.body = body
         f.save()
 
-        B()
+        # Reload using `path`
         f1 = file.file(path=path)
         self.eq(body, f1.body)
 
+        ''' Create file within new directory '''
+        path = '/var/db/my.db'
+        f = file.file(path=path)
+        f.body = body
+        self.eq('my.db', f.name)
+        self.eq(os.path.join(f.store, 'var/db/my.db'), f.path)
+        self.false(f.exists)
+        self.eq((True, False, False), f.orm.persistencestate)
+
+        dir = f.inode
+        self.eq('db', dir.name)
+        self.eq(os.path.join(dir.store, 'var/db'), dir.path)
+        self.false(dir.exists)
+        self.eq((True, False, False), dir.orm.persistencestate)
+
+        dir = dir.inode
+        self.eq('var', dir.name)
+        self.eq(os.path.join(dir.store, 'var'), dir.path)
+        self.false(dir.exists)
+        self.eq((True, False, False), dir.orm.persistencestate)
+        self.none(dir.inode)
+
+        f.save()
+
+        self.eq('my.db', f.name)
+        self.eq(os.path.join(f.store, 'var/db/my.db'), f.path)
+        self.true(f.exists)
+        self.eq((False, False, False), f.orm.persistencestate)
+
+        dir = f.inode
+        self.eq('db', dir.name)
+        self.eq(os.path.join(dir.store, 'var/db'), dir.path)
+        self.true(dir.exists)
+        self.eq((False, False, False), dir.orm.persistencestate)
+
+        dir = dir.inode
+        self.eq('var', dir.name)
+        self.eq(os.path.join(dir.store, 'var'), dir.path)
+        self.true(dir.exists)
+        self.eq((False, False, False), dir.orm.persistencestate)
+        self.none(dir.inode)
 
 if __name__ == '__main__':
     tester.cli().run()

@@ -16,13 +16,15 @@ Todo:
 
 from datetime import datetime, date
 from dbg import B
+import contextlib
+import db
 import orm
 import os.path
 import pathlib
+import shutil
 import textwrap
 import urllib.request
-import shutil
-import contextlib
+from func import enumerate, getattr, B
 
 class inodes(orm.entities):
     def __getitem__(self, key):
@@ -62,6 +64,15 @@ class inode(orm.entity):
             #      /var/my/path
 
             super().__init__(*args, **kwargs)
+            head, tail = os.path.split(path)
+            names = [x for x in head.split('/') if x]
+
+            for i, name in enumerate(names):
+                if i.first:
+                    dir = directory(name=name)
+                else:
+                    dir.inodes += directory(name=name)
+                    dir = dir.inodes.last
 
             nds = inodes('name = %s and inodeid is %s', path, None)
 
@@ -72,7 +83,7 @@ class inode(orm.entity):
                 self.name = nd.name
                 try:
                     f = file(nd.id)
-                except RecordNotFoundError:
+                except db.RecordNotFoundError:
                     pass
                 else:
                     self.mime = f.mime
@@ -82,10 +93,16 @@ class inode(orm.entity):
 
                 # The record isn't new or dirty so set all peristance state
                 # variables to false.
-                self.persistencestate = (False,) * 3
+                e = self
+                while e:
+                    e.orm.persistencestate = (False,) * 3
+                    e = e.orm._super
             else:
                 # TODO:61b43c12
-                self.name = path
+                self.name = tail
+
+            if head:
+                dir += self
 
     def __getitem__(self, key):
         return self.inodes[key]
@@ -124,6 +141,10 @@ class inode(orm.entity):
     def path(self):
         return os.path.join(self.head, self.name)
 
+    @property
+    def exists(self):
+        return os.path.exists(self.path)
+
 class files(inodes):
     pass
 
@@ -141,8 +162,8 @@ class file(inode):
 
     # TODO Ensure a call to inodes results in an AttributeError
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self._body = None
+        super().__init__(*args, **kwargs)
 
     @property
     def mimetype(self):
@@ -194,10 +215,6 @@ class file(inode):
     def body(self, v):
         self._body = v
         
-    @property
-    def exists(self):
-        return os.path.isfile(self.path)
-
     # FIXME This should be a static property
     @property
     def publicdir(self):
@@ -259,7 +276,6 @@ class resource(file):
             dir = res.mkdir(path)
             self.mime = 'text/plain'
             dir += self
-                
 
             if self.orm.isnew:
                 res.save()
