@@ -19,10 +19,8 @@ Todo:
 
     TODO Add automatic pluralisation of entities
 
-    TODO: When querying for a null value, None should be interpreted as
-    null. The following two lines should be equivalent::
-        nds = inodes('name = %s and inodeid = %s', (path, 'null'))
-        nds = inodes('name = %s and inodeid = %s', (path, None))
+    TODO:349f4355 Support saving recursive entites with subentities.
+    grep for 349f4355 for clarification.
     
 """
 

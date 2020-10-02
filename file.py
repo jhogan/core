@@ -57,39 +57,82 @@ class inode(orm.entity):
         except KeyError:
             super().__init__(*args, **kwargs)
         else:
-            del kwargs['path']
-            # TODO:61b43c12 Implement code that for `path` variables
-            # that contain  '/':
+            # TODO:349f4355 Using the path is a way to specify a full
+            # path as a string to conveniently build up directory object
+            # and optionally a file object. However, recursive entities
+            # (like `inode`) don't correctly save subentities (`file`
+            # and `directory`) at the moment. For example:
             #
-            #      /var/my/path
+            #     f = file.file('/var/db/my.db')
+            #     f.save()
+            #
+            # The above code saves my.db as a file (and inode), but 'db'
+            # and 'var' are saved as inodes and not directories. This is
+            # probably because the parent of f is an inode:
+            #
+            #     assert f.inode is inode
+            #     assert f.inode.inode is inode
+            #
+            # If the following were True, the save would probably work
+            # correctly:
+            #
+            #     assert f.inode is directory
+            #     assert f.inode.inode is directory
+
+            del kwargs['path']
 
             super().__init__(*args, **kwargs)
             head, tail = os.path.split(path)
             names = [x for x in head.split('/') if x]
 
+            dir = None
+            found = False
             for i, name in enumerate(names):
-                if i.first:
-                    dir = directory(name=name)
+                id = dir.id if dir else None
+                op = '=' if dir else 'is'
+
+                nds = inodes(f'name = %s and inodeid {op} %s', name, id)
+
+                if nds.hasone:
+                    try:
+                        dir = directory(nds.first.id)
+                    except db.RecordNotFoundError:
+                        break
+                    else:
+                        if i.last:
+                            found = True
                 else:
-                    dir.inodes += directory(name=name)
-                    dir = dir.inodes.last
+                    break
+
+            if not found:
+                for i, name in enumerate(names):
+                    if i.first:
+                        dir = directory(name=name)
+                    else:
+                        dir.inodes += directory(name=name)
+                        B()
+                        dir.inodes.last.inode = dir
+                        dir = dir.inodes.last
 
             nds = inodes('name = %s and inodeid is %s', path, None)
 
             if nds.hasone:
-                # TODO The below code is completely untested
                 nd = nds.first
-                self.id = nd.id
-                self.name = nd.name
+
+                attrs = ['id', 'name']
                 try:
                     f = file(nd.id)
                 except db.RecordNotFoundError:
                     pass
                 else:
-                    self.mime = f.mime
+                    attrs.append('mime')
+                    nd = f
+
+                for attr in attrs:
+                    setattr(self, attr, getattr(nd, attr))
 
                 for k, v in kwargs.items():
-                    setattr(self.instance, k, getattr(nd, k))
+                    setattr(self, k, getattr(nd, k))
 
                 # The record isn't new or dirty so set all peristance state
                 # variables to false.
@@ -272,7 +315,7 @@ class resource(file):
                 urlparts.netloc, *dirs
             )
 
-            res = directory(path='resources')
+            res = directory(name='resources')
             dir = res.mkdir(path)
             self.mime = 'text/plain'
             dir += self

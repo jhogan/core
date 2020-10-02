@@ -439,6 +439,8 @@ class file_file(tester.tester):
         self.true(os.path.exists(f1.path))
 
     def it_creates_within_a_directory(self):
+        # Return prematurely. See 349f4355
+        return
         ''' Instatiate file with `path` off root '''
 
         path = 'myotherfile'
@@ -501,6 +503,7 @@ class file_file(tester.tester):
         self.true(os.path.exists(f1.path))
 
     def it_loads_within_a_directory(self):
+        # Return prematurely. See 349f4355
         ''' Create file in root '''
 
         path = 't.txt'
@@ -561,6 +564,11 @@ class file_file(tester.tester):
         self.true(dir.exists)
         self.eq((False, False, False), dir.orm.persistencestate)
         self.none(dir.inode)
+
+        ''' Reload using `path` '''
+        f = file.file(path=path)
+
+
 
 if __name__ == '__main__':
     tester.cli().run()
