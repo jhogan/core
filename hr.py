@@ -32,14 +32,14 @@ import party
 import budget
 import apriori
 
-class employeements(party.role_roles):  pass
-class positions(orm.entities):          pass
-class positiontypes(apriori.types):                          pass
-class positionrates(orm.entities):                           pass
-class position_fulfillments(orm.associations):               pass
-class responsibilities(orm.entities):                           pass
-class responsibilitytypes(apriori.types):                           pass
-class validresponsibilities(apriori.types):                           pass
+class employeements(party.role_roles):          pass
+class positions(orm.entities):                  pass
+class positiontypes(apriori.types):             pass
+class positionrates(orm.entities):              pass
+class fulfillment_positions(orm.associations):  pass
+class responsibilities(orm.entities):           pass
+class responsibilitytypes(apriori.types):       pass
+class validresponsibilities(apriori.types):     pass
 
 class employeement(party.role_role):
     """ Maintains employment information. ``employeement`` is a
@@ -160,7 +160,7 @@ class positionrate(orm.entity):
     span = datespan
     rate = dec
 
-class position_fulfillment(orm.association):
+class fulfillment_position(orm.association):
     """ The `position_fulfilments` association links a position to a
     person.  When a postion is associatied with a person, the position
     is said to be "fulfilled', i.e., the person has been employed by the

@@ -23686,89 +23686,56 @@ class gem_hr(tester):
         self.one(com1.departments.first.divisions)
         self.two(com1.departments.first.divisions.first.positions)
 
-    def it_fulfills_postition_within_company(self):
-        # TODO:afa4ffc9 Rewrite the below to use the role_role
-        # association to associate persons to departments and divisions.
-        return
+    def it_fulfills_postition(self):
+        per = gem_party.getvalid(first='Mike', last='Johnson')
 
-        postyp = self.getvalidpositiontype()
-        com = gem_party.getvalidcompany()
-        pers = gem_party.getvalid() + gem_party.getvalid()
+        postype = hr.positiontype(name='Mail Clerk', description=None)
+        clerk = hr.position()
+        postype.positions += clerk
 
-        # Create positions based on the job
-        pos = self.getvalidposition()
+        postype = hr.positiontype(name='CEO', description=None)
+        ceo = hr.position()
+        postype.positions += ceo
 
-        dep = party.department(name='it')
-        com.departments += dep
-        div = party.division(name='ml')
-        com.departments.last.divisions += div
+        per.fulfillment_positions += hr.fulfillment_position(
+            begin = 'May 31, 1980',
+            end = 'Jun 1, 1980',
+            position = clerk
+        )
 
-        div.positions += pos
-        postyp.positions += pos
-        com.positions += pos
+        per.fulfillment_positions += hr.fulfillment_position(
+            begin = 'Jun 1, 1996',
+            end = None,
+            position = ceo
+        )
 
-        #self.true(pos.isfulfilled)
+        per.save()
 
-        for per in pers:
-            ful = hr.position_fulfillment(
-                person = per,
-                begin  = date.today(),
-                end    = None,
-            )
+        per1 = per.orm.reloaded()
 
-            pos.position_fulfillments += ful
+        fps = per.fulfillment_positions.sorted()
+        fps1 = per1.fulfillment_positions.sorted()
 
-            self.is_(per, pos.position_fulfillments.last.person)
+        self.two(fps)
+        self.two(fps1)
 
-            self.is_(ful, pos.position_fulfillments.last)
+        for fp, fp1 in zip(fps, fps1):
+            self.eq(fp.id,     fp1.id)
+            self.eq(fp.begin,  fp1.begin)
+            self.eq(fp.end,    fp1.end)
 
-            self.is_(
-                div,
-                pos.position_fulfillments.last.position.division
-            )
+            self.eq(fp.position.id, fp1.position.id)
 
-            self.is_(
-                dep,
-                pos.position_fulfillments.last
-                    .position.division.department
-            )
-
-            self.is_(
-                com,
-                pos.position_fulfillments.last
-                    .position.division.department.company
-            )
-
-        self.two(pos.position_fulfillments)
-        self.two(pos.persons)
-
-        com.save()
-
-        com1 = party.company(com.id)
-
-        self.one(com1.positions)
-
-        ids = com.positions.first.position_fulfillments.pluck('id')
-        self.two(ids)
-
-        for ful1 in com1.positions.first.position_fulfillments:
-            self.true(ful1.id in ids)
-            ful = com.positions.first.position_fulfillments[ful1.id]
-            self.eq(ful.person.id, ful1.person.id)
-            self.eq(ful.position.id, ful1.position.id)
-            self.eq(ful.begin, ful1.begin)
-            self.none(ful1.end)
-
-        for per in pers:
-            per1 = party.person(per.id)
-            self.one(per1.positions)
-            self.one(per1.position_fulfillments)
-            self.eq(div.id, per1.positions.first.division.id)
-            self.eq(dep.id, per1.positions.first.division.department.id)
             self.eq(
-                com.id,
-                per1.positions.first.division.department.company.id
+                fp.position.positiontype.id, 
+                fp1.position.positiontype.id
             )
+
+            self.eq(
+                fp.position.positiontype.name, 
+                fp1.position.positiontype.name
+            )
+            
 
     @staticmethod
     def getvalidposition():
@@ -23780,22 +23747,6 @@ class gem_hr(tester):
         pos.begin = primative.date.today()
         pos.end = pos.begin.add(days=365)
         return pos
-
-    def it_updates_position(self):
-        pos = self.getvalidposition()
-        pos.save()
-
-        pos1 = hr.position(pos.id)
-        pos1.estimated.begin  =  pos1.estimated.begin.add(days=1)
-        pos1.estimated.end    =  pos1.estimated.end.add(days=1)
-        pos1.begin            =  pos1.begin.add(days=1)
-        pos1.end              =  pos1.end.add(days=1)
-        pos1.save()
-
-        pos2 = hr.position(pos.id)
-        for map in pos.orm.mappings.fieldmappings:
-            prop = map.name
-            self.eq(getattr(pos1, prop), getattr(pos2, prop))
 
     @staticmethod
     def getvalidpositiontype():
@@ -23816,6 +23767,23 @@ class gem_hr(tester):
 
         postyp.name = "Machine Learning and Signal Processing Engineer"
         return postyp
+
+
+    def it_updates_position(self):
+        pos = self.getvalidposition()
+        pos.save()
+
+        pos1 = hr.position(pos.id)
+        pos1.estimated.begin  =  pos1.estimated.begin.add(days=1)
+        pos1.estimated.end    =  pos1.estimated.end.add(days=1)
+        pos1.begin            =  pos1.begin.add(days=1)
+        pos1.end              =  pos1.end.add(days=1)
+        pos1.save()
+
+        pos2 = hr.position(pos.id)
+        for map in pos.orm.mappings.fieldmappings:
+            prop = map.name
+            self.eq(getattr(pos1, prop), getattr(pos2, prop))
 
     def it_creates_positiontype(self):
         postyp = self.getvalidpositiontype()
