@@ -439,8 +439,6 @@ class file_file(tester.tester):
         self.true(os.path.exists(f1.path))
 
     def it_creates_within_a_directory(self):
-        # Return prematurely. See 349f4355
-        return
         ''' Instatiate file with `path` off root '''
 
         path = 'myotherfile'
@@ -503,7 +501,6 @@ class file_file(tester.tester):
         self.true(os.path.exists(f1.path))
 
     def it_loads_within_a_directory(self):
-        # Return prematurely. See 349f4355
         ''' Create file in root '''
 
         path = 't.txt'
@@ -567,8 +564,62 @@ class file_file(tester.tester):
 
         ''' Reload using `path` '''
         f = file.file(path=path)
+        self.eq(body, f.body)
+        self.eq('my.db', f.name)
+        self.eq(os.path.join(f.store, 'var/db/my.db'), f.path)
+        self.true(f.exists)
+        self.eq((False, False, False), f.orm.persistencestate)
 
+        dir = f.inode
+        self.eq('db', dir.name)
+        self.eq(os.path.join(dir.store, 'var/db'), dir.path)
+        self.true(dir.exists)
+        self.eq((False, False, False), dir.orm.persistencestate)
 
+        dir = dir.inode
+        self.eq('var', dir.name)
+        self.eq(os.path.join(dir.store, 'var'), dir.path)
+        self.true(dir.exists)
+        self.eq((False, False, False), dir.orm.persistencestate)
+        self.none(dir.inode)
+
+    def it_sets_mime(self):
+        ''' Text file '''
+        f = file.file(name='index.html')
+        f.body = self.dedent('''
+        <html>
+            <head>
+                <title>Some HTML</title>
+            </head>
+            <body>
+                <p>
+                    Herp Derp
+                </p>
+            </body>
+        </html>
+        ''')
+        f.mime = 'text/html'
+        self.eq('text/html', f.mime)
+        self.eq('text', f.mimetype)
+
+        f.save()
+        f = f.orm.reloaded()
+        self.eq('text/html', f.mime)
+        self.eq('text', f.mimetype)
+
+        ''' Binary file '''
+        f = file.file(name='my.gif')
+        f.body = base64.b64decode(
+            'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+        )
+        f.mime = 'image/gif'
+        self.eq('image/gif', f.mime)
+        self.eq('image', f.mimetype)
+
+        f.save()
+        f = f.orm.reloaded()
+        self.eq('image/gif', f.mime)
+        self.eq('image', f.mimetype)
 
 if __name__ == '__main__':
     tester.cli().run()

@@ -57,28 +57,6 @@ class inode(orm.entity):
         except KeyError:
             super().__init__(*args, **kwargs)
         else:
-            # TODO:349f4355 Using the path is a way to specify a full
-            # path as a string to conveniently build up directory object
-            # and optionally a file object. However, recursive entities
-            # (like `inode`) don't correctly save subentities (`file`
-            # and `directory`) at the moment. For example:
-            #
-            #     f = file.file('/var/db/my.db')
-            #     f.save()
-            #
-            # The above code saves my.db as a file (and inode), but 'db'
-            # and 'var' are saved as inodes and not directories. This is
-            # probably because the parent of f is an inode:
-            #
-            #     assert f.inode is inode
-            #     assert f.inode.inode is inode
-            #
-            # If the following were True, the save would probably work
-            # correctly:
-            #
-            #     assert f.inode is directory
-            #     assert f.inode.inode is directory
-
             del kwargs['path']
 
             super().__init__(*args, **kwargs)
@@ -89,7 +67,7 @@ class inode(orm.entity):
             found = False
             for i, name in enumerate(names):
                 id = dir.id if dir else None
-                op = '=' if dir else 'is'
+                op = '=' if id else 'is'
 
                 nds = inodes(f'name = %s and inodeid {op} %s', name, id)
 
@@ -110,11 +88,20 @@ class inode(orm.entity):
                         dir = directory(name=name)
                     else:
                         dir.inodes += directory(name=name)
-                        B()
+                        # FIXME:349f4355 The below assignment is a hack
+                        # to work around the fact tha currently, `inode`
+                        # (the recursive parent) loads as an inode
+                        # instead of downcasting to its most specialized
+                        # class.  When this is corrected in the ORM, we
+                        # can remove this assignment.
                         dir.inodes.last.inode = dir
                         dir = dir.inodes.last
 
-            nds = inodes('name = %s and inodeid is %s', path, None)
+            name = tail if head else path
+            id = dir.id if found else None
+            op = '=' if id else 'is'
+
+            nds = inodes(f'name = %s and inodeid {op} %s', name, id)
 
             if nds.hasone:
                 nd = nds.first
@@ -134,18 +121,19 @@ class inode(orm.entity):
                 for k, v in kwargs.items():
                     setattr(self, k, getattr(nd, k))
 
+            else:
+                self.name = name
+
+            if head:
+                dir += self
+
+            if nds.hasone:
                 # The record isn't new or dirty so set all peristance state
                 # variables to false.
                 e = self
                 while e:
                     e.orm.persistencestate = (False,) * 3
                     e = e.orm._super
-            else:
-                # TODO:61b43c12
-                self.name = tail
-
-            if head:
-                dir += self
 
     def __getitem__(self, key):
         return self.inodes[key]
