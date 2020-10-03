@@ -185,4 +185,25 @@ class fulfillment_position(orm.association):
     # The timespan of the occumation
     span = datespan
 
+# TODO This should inherit from apriori.status which currently doesn't
+# exist.
+class positionstatus(party.status):
+    """ Identifies the current state of a ``position``. 
+    
+    When a position is first identified, it is in a state of "palnned
+    for". When the enterprise decides to pursue fulfillment of the
+    position, it may then change to a state of "active " or "open". If
+    the enterprise then decides that it no longer needs that position,
+    the status may be "inactive" or "closed". A "fulfilled" status would
+    not be a value because this infromation can be derived from the
+    fulfillment_position entity.
 
+    Note that this is modeled after the POSITION STATUS TYPE entity in
+    "The Data Model Resource Book".
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('name',), **kwargs)
+
+    name = str
+    positions = positions
