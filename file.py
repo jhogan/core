@@ -60,7 +60,12 @@ class inode(orm.entity):
             del kwargs['path']
 
             super().__init__(*args, **kwargs)
-            head, tail = os.path.split(path)
+
+            if isinstance(self, file):
+                head, tail = os.path.split(path)
+            else:
+                head, tail = path, None
+
             names = [x for x in head.split('/') if x]
 
             dir = None
@@ -96,6 +101,29 @@ class inode(orm.entity):
                         # can remove this assignment.
                         dir.inodes.last.inode = dir
                         dir = dir.inodes.last
+
+            if isinstance(self, directory):
+                while True:
+                    if dir.inode:
+                        dir = dir.inode
+                    else:
+                        break
+
+                for attr in ('id', 'name'):
+                    setattr(self, attr, getattr(dir, attr))
+
+                for nd in dir.inodes:
+                    st = nd.orm.persistencestate
+                    self.inodes += nd
+                    self.inodes.last.orm.persistencestate = st
+                    
+
+                e = self
+                while e:
+                    e.orm.persistencestate = dir.orm.persistencestate
+                    e = e.orm._super
+
+                return
 
             name = tail if head else path
             id = dir.id if found else None
