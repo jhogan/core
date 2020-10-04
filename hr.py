@@ -40,6 +40,8 @@ class fulfillment_positions(orm.associations):  pass
 class responsibilities(orm.entities):           pass
 class responsibilitytypes(apriori.types):       pass
 class validresponsibilities(apriori.types):     pass
+class positionstatusus(party.statuses):         pass
+class position_positions(orm.associations):     pass
 
 class employeement(party.role_role):
     """ Maintains employment information. ``employeement`` is a
@@ -201,9 +203,38 @@ class positionstatus(party.status):
     Note that this is modeled after the POSITION STATUS TYPE entity in
     "The Data Model Resource Book".
     """
+    entities = positionstatusus
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.orm.ensure(expects=('name',), **kwargs)
 
     name = str
     positions = positions
+
+class position_position(orm.association):
+    """ A reflexive association between two ``positions`` intended to
+    illustrate the way two positions are related to each other in a
+    reporting structure.
+
+    Note that this is modeled after the POSITION REPORTING STRUCTURE
+    entity in "The Data Model Resource Book".
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.default('comment', None)
+
+    # Allow for tracking organizational changes through time
+    span = datespan
+    comment = text
+
+    # Used to help model felxible, matrix-type reporting structures. In
+    # thes cases, certain positions may report to more than one position
+    # at the same time. This indicator allows the enterprise to indicate
+    # which reporting relationship is the overriding one.
+    isprimary = bool
+
+    # The manager of the direct ``report``
+    manager = position
+
+    # The direct report
+    report = position
