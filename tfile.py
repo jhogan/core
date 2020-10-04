@@ -19,6 +19,7 @@ import dom
 import uuid
 import base64
 import os.path
+import entities
 from func import enumerate, getattr, B
 
 def clean():
@@ -623,6 +624,151 @@ class file_file(tester.tester):
         f = f.orm.reloaded()
         self.eq('image/gif', f.mime)
         self.eq('image', f.mimetype)
+
+    def it_cant_save_duplicate_file_name(self):
+        f = file.file(name='dup.txt')
+        self.expect(None, lambda: f.save())
+
+        f = file.file(name='dup.txt')
+        self.expect(entities.BrokenRulesError, lambda: f.save())
+
+class file_directory(tester.tester):
+    def __init__(self):
+        super().__init__()
+        clean()
+
+        orm.orm.recreate(
+            party.user, file.files, file.resources,
+            file.directory, file.inodes,
+        )
+
+    def it_creates_off_root(self):
+        dir = file.directory(name='mydir')
+        self.eq('mydir', dir.name)
+        self.none(dir.inode)
+        self.zero(dir.inodes)
+        self.eq((True, False, False), dir.orm.persistencestate)
+
+        dir.save()
+        self.eq('mydir', dir.name)
+        self.none(dir.inode)
+        self.zero(dir.inodes)
+        self.eq((False, False, False), dir.orm.persistencestate)
+
+        dir = dir.orm.reloaded()
+        self.eq('mydir', dir.name)
+        self.none(dir.inode)
+        self.zero(dir.inodes)
+        self.eq((False, False, False), dir.orm.persistencestate)
+
+    def it_creates_nested_directories(self):
+        dir0 = file.directory(name='abc')
+        dir1 = file.directory(name='def')
+        dir2 = file.directory(name='ghi')
+
+        dir0 += dir1
+        dir1 += dir2
+
+        join = os.path.join
+        self.eq(dir0.path, join(dir0.store, 'abc'))
+        self.eq(dir1.path, join(dir0.store, 'abc/def'))
+        self.eq(dir2.path, join(dir0.store, 'abc/def/ghi'))
+
+        self.eq(dir0.name, dir1.inode.name)
+        self.eq(dir1.name, dir2.inode.name)
+
+        for dir in (dir0, dir1, dir2):
+            self.eq((True, False, False), dir.orm.persistencestate)
+            self.false(dir.exists)
+
+        dir0.save()
+
+        dir = dir0.orm.reloaded()
+
+        # We haven't created a file in this directory yet, so there is
+        # no reason it should `exists` on the HDD.
+        self.false(dir.exists)
+        self.none(dir.inode)
+        self.eq(dir.path, join(dir.store, 'abc'))
+        self.one(dir.inodes)
+
+        dir = dir.inodes.first
+        self.false(dir.exists)
+        self.eq(dir0.id, dir.inode.id)
+        self.eq(dir.path, join(dir.store, 'abc/def'))
+        self.one(dir.inodes)
+
+        dir = dir.inodes.first
+        self.false(dir.exists)
+        self.eq(dir1.id, dir.inode.id)
+        self.eq(dir.path, join(dir.store, 'abc/def/ghi'))
+        self.zero(dir.inodes)
+
+    def it_creates_using_path(self):
+        join = os.path.join
+
+        # TODO Test using one directory (file.directory(path='/tmp'))
+        dir = file.directory(path='/tmp/test')
+
+        tmp = dir
+
+        self.eq('tmp', dir.name)
+        self.type(file.directory, dir)
+        self.false(dir.exists)
+        self.none(dir.inode)
+        self.eq(dir.path, join(dir.store, 'tmp'))
+        self.one(dir.inodes)
+        self.eq((True, False, False), dir.orm.persistencestate)
+
+        dir = dir.inodes.first
+        self.type(file.directory, dir)
+        self.false(dir.exists)
+        self.eq('tmp', dir.inode.name)
+        self.eq(dir.path, join(dir.store, 'tmp/test'))
+        self.zero(dir.inodes)
+        self.eq((True, False, False), dir.orm.persistencestate)
+
+        dir = tmp
+
+        dir.save()
+
+        self.eq('tmp', dir.name)
+        self.false(dir.exists)
+        self.none(dir.inode)
+        self.eq(dir.path, join(dir.store, 'tmp'))
+        self.one(dir.inodes)
+        self.eq((False, False, False), dir.orm.persistencestate)
+
+        dir = dir.inodes.first
+        self.false(dir.exists)
+        self.eq('tmp', dir.inode.name)
+        self.eq(dir.path, join(dir.store, 'tmp/test'))
+        self.zero(dir.inodes)
+        self.eq((False, False, False), dir.orm.persistencestate)
+
+        ''' Load existing directory '''
+        dir = file.directory(path='/tmp/test')
+
+        self.eq('tmp', dir.name)
+        self.type(file.directory, dir)
+        self.false(dir.exists)
+        self.none(dir.inode)
+        self.eq(dir.path, join(dir.store, 'tmp'))
+        self.one(dir.inodes)
+        self.eq((False, False, False), dir.orm.persistencestate)
+
+        dir = dir.inodes.first
+        self.false(dir.exists)
+        self.eq('tmp', dir.inode.name)
+        self.eq(dir.path, join(dir.store, 'tmp/test'))
+        self.zero(dir.inodes)
+        self.eq((False, False, False), dir.orm.persistencestate)
+
+
+    def it_updates_with_file(self):
+        """ TODO Test creating a directory then later adding multiple files
+        to it.
+        """
 
 if __name__ == '__main__':
     tester.cli().run()
