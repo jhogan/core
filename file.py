@@ -204,6 +204,19 @@ class inode(orm.entity):
     def exists(self):
         return os.path.exists(self.path)
 
+    def getbrokenrules(self, *args, **kwargs):
+        brs = super().getbrokenrules(*args, **kwargs)
+        id = self.inode.id if self.inode else None
+        op = '=' if id else 'is'
+        nds = inodes(f'name = %s and inodeid {op} %s', self.name, id)
+
+        if nds.ispopulated and self.id != nds.first.id:
+            msg = f'Cannot create file {self.name}: File exist'
+
+            if msg not in brs.pluck('message'):
+                brs += msg
+        return brs
+
 class files(inodes):
     pass
 
