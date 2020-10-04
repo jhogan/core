@@ -339,17 +339,22 @@ class resource(file):
         self.local = local
 
         if local:
+            B()
             urlparts = urllib.parse.urlsplit(self.url)
-            dirs = [x for x in urlparts.path.split('/') if x]
+            dirs = ['resources', urlparts.netloc]
+            dirs.extend([x for x in urlparts.path.split('/') if x])
             self.name = dirs.pop()
-            path = os.path.join(
-                urlparts.netloc, *dirs
-            )
+            path = '/'.join(dirs)
 
-            res = directory(name='resources')
-            dir = res.mkdir(path)
+            res = directory(path=path)
+
+            # TODO:545a5261 When mimetypes is used, we can let it
+            # determine the mimetype.
             self.mime = 'text/plain'
-            dir += self
+
+
+            last = res['/'.join(dirs[1:])]
+            last += self
 
             if self.orm.isnew:
                 res.save()
