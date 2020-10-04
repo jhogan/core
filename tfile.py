@@ -377,7 +377,7 @@ class file_file(tester.tester):
 
     def it_creates_text_file(self):
         ''' Instatiate file '''
-        f = file.file(name='myfile')
+        f = file.file(name='myfile.txt')
 
         body = self.dedent('''
         Line 1
@@ -391,13 +391,13 @@ class file_file(tester.tester):
 
         ''' Saving the file with '''
         f.save()
-        self.eq(f.path, os.path.join(f.store, 'myfile'))
+        self.eq(f.path, os.path.join(f.store, 'myfile.txt'))
         self.true(f.exists)
         self.true(os.path.exists(f.path))
         self.true(isinstance(f.body, str))
         self.eq('text/plain', f.mime)
 
-        self.eq('myfile', f.name)
+        self.eq('myfile.txt', f.name)
         self.none(f.inode)
         self.zero(f.inodes)
         self.eq(body, f.body)
@@ -411,7 +411,7 @@ class file_file(tester.tester):
 
     def it_creates_binary_file(self):
         ''' Instatiate file '''
-        f = file.file(name='myfile')
+        f = file.file(name='myfile.bin')
 
         body = base64.b64decode(
             'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
@@ -424,13 +424,13 @@ class file_file(tester.tester):
 
         ''' Saving the file '''
         f.save()
-        self.eq(f.path, os.path.join(f.store, 'myfile'))
+        self.eq(f.path, os.path.join(f.store, 'myfile.bin'))
         self.true(f.exists)
         self.true(os.path.exists(f.path))
         self.eq('application/octet-stream', f.mime)
         self.true(isinstance(f.body, bytes))
 
-        self.eq('myfile', f.name)
+        self.eq('myfile.bin', f.name)
         self.none(f.inode)
         self.zero(f.inodes)
         self.eq(body, f.body)
