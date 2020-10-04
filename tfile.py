@@ -21,6 +21,26 @@ import base64
 import os.path
 from func import enumerate, getattr, B
 
+def clean():
+    store = file.file.store
+
+    # Make sure `store` is a directory underneath /var/www/core. We
+    # don't want `store` to be something else (like '') because we
+    # may end up deleting things we don't want.
+    assert store.startswith('/var/www/core') 
+    assert len([x for x in store.split('/') if x]) > 3
+    assert 'production' not in store
+
+    # Delete the contents of the store directory, but not the
+    # directory itself. There doesn't seem to be an easy way to do
+    # this in Python so we just shell out:
+    #
+    #    rm -rf /var/www/core/development/*
+    ret = os.system('rm -rf ' + os.path.join(store, '*'))
+
+    # Make sure `rm` was successful
+    assert ret == 0
+
 class foonet(pom.site):
     def __init__(self, host='foo.net'):
         super().__init__(host)
@@ -299,24 +319,7 @@ class dom_file(tester.tester):
 class file_file(tester.tester):
     def __init__(self):
         super().__init__()
-        store = file.file.store
-
-        # Make sure `store` is a directory underneath /var/www/core. We
-        # don't want `store` to be something else (like '') because we
-        # may end up deleting things we don't want.
-        assert store.startswith('/var/www/core') 
-        assert len([x for x in store.split('/') if x]) > 3
-        assert 'production' not in store
-
-        # Delete the contents of the store directory, but not the
-        # directory itself. There doesn't seem to be an easy way to do
-        # this in Python so we just shell out:
-        #
-        #    rm -rf /var/www/core/development/*
-        ret = os.system('rm -rf ' + os.path.join(store, '*'))
-
-        # Make sure `rm` was successful
-        assert ret == 0
+        clean()
 
         orm.orm.recreate(
             party.user,
