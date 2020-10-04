@@ -21,6 +21,9 @@ Todo:
 
     TODO:349f4355 Support saving recursive entites with subentities.
     grep for 349f4355 for clarification.
+
+    TODO Create orm.reload() to complement orm.reloaded(). It should
+    reload the data from the db into self.
     
 """
 

@@ -423,6 +423,12 @@ class directory(inode):
     # introduced.
     entities = directories
 
+    def files(self):
+        raise NotImplementedError('TODO')
+
+    def directories(self):
+        raise NotImplementedError('TODO')
+
     def file(self, name):
         nd = self(name)
         if not nd:
