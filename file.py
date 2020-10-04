@@ -211,7 +211,7 @@ class inode(orm.entity):
         nds = inodes(f'name = %s and inodeid {op} %s', self.name, id)
 
         if nds.ispopulated and self.id != nds.first.id:
-            msg = f'Cannot create file {self.name}: File exist'
+            msg = f'Cannot create "{self.name}": File exist'
 
             if msg not in brs.pluck('message'):
                 brs += msg
@@ -223,6 +223,8 @@ class files(inodes):
 class file(inode):
     @orm.attr(str)
     def mime(self):
+        # TODO:545a5261 Use Pythons mimetypes library to guess based on
+        # path/url/extension
         if not attr():
             if isinstance(self._body, str):
                 attr('text/plain')
