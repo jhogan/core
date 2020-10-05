@@ -61,46 +61,7 @@ class inode(orm.entity):
 
             super().__init__(*args, **kwargs)
 
-            if isinstance(self, file):
-                head, tail = os.path.split(path)
-            else:
-                head, tail = path, None
-
-            names = [x for x in head.split('/') if x]
-
-            dir = None
-            found = False
-            for i, name in enumerate(names):
-                id = dir.id if dir else None
-                op = '=' if id else 'is'
-
-                nds = inodes(f'name = %s and inodeid {op} %s', name, id)
-
-                if nds.hasone:
-                    try:
-                        dir = directory(nds.first.id)
-                    except db.RecordNotFoundError:
-                        break
-                    else:
-                        if i.last:
-                            found = True
-                else:
-                    break
-
-            if not found:
-                for i, name in enumerate(names):
-                    if i.first:
-                        dir = directory(name=name)
-                    else:
-                        dir.inodes += directory(name=name)
-                        # FIXME:349f4355 The below assignment is a hack
-                        # to work around the fact tha currently, `inode`
-                        # (the recursive parent) loads as an inode
-                        # instead of downcasting to its most specialized
-                        # class.  When this is corrected in the ORM, we
-                        # can remove this assignment.
-                        dir.inodes.last.inode = dir
-                        dir = dir.inodes.last
+            dir = self._getdirectory(path=path)
 
             if isinstance(self, directory):
                 while True:
@@ -115,53 +76,130 @@ class inode(orm.entity):
                 for nd in dir.inodes:
                     st = nd.orm.persistencestate
                     self.inodes += nd
-                    self.inodes.last.orm.persistencestate = st
-                    
+                    e = nd
+                    while e:
+                        e.orm.persistencestate = st
+                        e = e.orm._super
 
                 e = self
                 while e:
                     e.orm.persistencestate = dir.orm.persistencestate
                     e = e.orm._super
 
-                return
+            if isinstance(self, file):
+                _, name = os.path.split(path)
+                f = self._getfile(name=name, dir=dir)
+                if f:
+                    for attr in ('id', 'name', 'mime'):
+                        setattr(self, attr, getattr(f, attr))
 
-            name = tail if head else path
-            id = dir.id if found else None
-            op = '=' if id else 'is'
-
-            nds = inodes(f'name = %s and inodeid {op} %s', name, id)
-
-            if nds.hasone:
-                nd = nds.first
-
-                attrs = ['id', 'name']
-                try:
-                    f = file(nd.id)
-                except db.RecordNotFoundError:
-                    pass
+                    # The record isn't new or dirty so set all peristance state
+                    # variables to false.
+                    st = f.orm.persistencestate
                 else:
-                    attrs.append('mime')
-                    nd = f
+                    st = self.orm.persistencestate
+                    self.name = name
 
-                for attr in attrs:
-                    setattr(self, attr, getattr(nd, attr))
+                if dir:
+                    dir += self
 
-                for k, v in kwargs.items():
-                    setattr(self, k, getattr(nd, k))
-
-            else:
-                self.name = name
-
-            if head:
-                dir += self
-
-            if nds.hasone:
-                # The record isn't new or dirty so set all peristance state
-                # variables to false.
                 e = self
                 while e:
-                    e.orm.persistencestate = (False,) * 3
+                    e.orm.persistencestate = st
                     e = e.orm._super
+
+    def _getfile(self, name, dir=None):
+        id = dir.id if dir else None
+        op = '=' if id else 'is'
+
+        nds = inodes(f'name = %s and inodeid {op} %s', name, id)
+
+        if nds.hasone:
+            nd = nds.first
+            return file(nd.id)
+
+        return None
+
+    def _getdirectory(self, path):
+        if isinstance(self, file):
+            head, tail = os.path.split(path)
+        else:
+            head, tail = path, None
+
+        names = [x for x in head.split('/') if x]
+
+        dir = None
+
+        # Iterate over each directory name
+        search = True
+        for i, name in enumerate(names):
+            id = dir.id if dir else None
+            op = '=' if id else 'is'
+
+            if search:
+                # Search for the inode record of the directory
+                nds = inodes(
+                    f'name = %s and inodeid {op} %s', name, id
+                )
+
+                if nds.hasone:
+                    # Downcast the inode to a directory
+                    try:
+                        dir1 = directory(nds.first.id)
+                    except db.RecordNotFoundError:
+                        # inode exists but directory doesn't. Unless
+                        # there is a data integrity issue, the user
+                        # is attempting to create a `directory`
+                        # where a `file` already exists. Add a new
+                        # `file` entity and depend on the validation
+                        # logic to report this issue.
+
+                        # TODO Add validation logic to catch entries in
+                        # a file's `inodes` collection.
+                        dir1 = file(nds.first.id)
+                elif nds.isempty:
+                    # If the directory couldn't be found, stop
+                    # searching and begin creating new ones.
+                    search = False
+                    dir1 = directory(name=name)
+
+                else:
+                    raise ValueError(
+                        f'Name matches multiple inodes: {name}'
+                    )
+            else:
+                dir1 = directory(name=name)
+
+            if dir:
+                # Maintain one directory tree by setting/appending
+                # the new/existing directory to the parent trees
+                # inodes collection.
+                for i, nd in enumerate(dir.inodes):
+                    if nd.name == dir1.name:
+                        dir.inodes[i] = dir1
+                        break
+                else:
+                    dir.inodes += dir1
+                # FIXME:349f4355 The below assignment is a
+                # hack to work around the fact tha
+                # currently, `inode` (the recursive parent)
+                # loads as an inode instead of downcasting
+                # to its most specialized class.  When this
+                # is corrected in the ORM, we can remove
+                # this assignment.
+                st = dir1.orm.persistencestate
+                dir1.inode = dir
+                e = dir1
+                while e:
+                    e.orm.persistencestate = st
+                    e = e.orm._super
+            else:
+                if not search:
+                    dir1 = directory(name=name)
+
+            dir = dir1
+
+        return dir
 
     def __getitem__(self, key):
         return self.inodes[key]
@@ -339,7 +377,6 @@ class resource(file):
         self.local = local
 
         if local:
-            B()
             urlparts = urllib.parse.urlsplit(self.url)
             dirs = ['resources', urlparts.netloc]
             dirs.extend([x for x in urlparts.path.split('/') if x])
