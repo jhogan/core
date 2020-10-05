@@ -764,6 +764,31 @@ class file_directory(tester.tester):
         self.zero(dir.inodes)
         self.eq((False, False, False), dir.orm.persistencestate)
 
+        ''' Create new directory under existing directory '''
+        dir = file.directory(path='/tmp/test1')
+
+        self.eq('tmp', dir.name)
+        self.type(file.directory, dir)
+        self.false(dir.exists)
+        self.none(dir.inode)
+        self.eq(dir.path, join(dir.store, 'tmp'))
+        self.two(dir.inodes)
+        self.eq((False, False, False), dir.orm.persistencestate)
+
+        for dir in dir.inodes:
+            self.false(dir.exists)
+            self.eq('tmp', dir.inode.name)
+            self.zero(dir.inodes)
+            if dir.name == 'test':
+                self.eq(dir.path, join(dir.store, 'tmp/test'))
+                self.eq((False, False, False), dir.orm.persistencestate)
+            elif dir.name == 'test1':
+                self.eq(dir.path, join(dir.store, 'tmp/test1'))
+                self.eq((True, False, False), dir.orm.persistencestate)
+            else:
+                assert False
+
+
 
     def it_updates_with_file(self):
         """ TODO Test creating a directory then later adding multiple files
