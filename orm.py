@@ -108,8 +108,21 @@ TODOs:
             class account_item(orm.association):
                 account  =  account
                 item     =  item
-            
 
+    TODO Reflexive associations currently can currently be loaded only
+    by the subject-side of the association. For example, if the
+    'director' hr.position has direct reports (accessible through
+    hr.position_position), we can discover them like this::
+
+        assert director.position_positions.ispopulated
+
+    However, the inverse is not true::
+
+        direct_report = director.position_positions.first
+
+        # This will fail; we can't discover who the manager of the
+        # direct_report is.
+        assert direct_report.position_positions.ispopulated
 """
 
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR

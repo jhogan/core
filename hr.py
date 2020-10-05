@@ -223,18 +223,19 @@ class position_position(orm.association):
         super().__init__(*args, **kwargs)
         self.orm.default('comment', None)
 
-    # Allow for tracking organizational changes through time
+    # Allows for tracking organizational changes through time
     span = datespan
+
     comment = text
 
-    # Used to help model felxible, matrix-type reporting structures. In
-    # thes cases, certain positions may report to more than one position
+    # Used to help model flexible, matrix-type reporting structures. In
+    # these cases, certain positions may report to more than one position
     # at the same time. This indicator allows the enterprise to indicate
     # which reporting relationship is the overriding one.
     isprimary = bool
 
     # The manager of the direct ``report``
-    manager = position
+    subject = position
 
     # The direct report
-    report = position
+    object = position
