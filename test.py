@@ -23808,6 +23808,87 @@ class gem_hr(tester):
         self.eq(postyp1.description, postype2.description)
         self.eq(postyp1.id, postype2.id)
 
+    def it_creates_reporting_structure(self):
+        # Create 'Director of Business Information Systems'
+        postyp = hr.positiontype(
+            name = 'Directory of Business Information Systems',
+            description = None
+        )
+
+        postyp.positions += self.getvalidposition()
+        dir = postyp.positions.last
+
+        # Create 'Business Analyst'
+        postyp = hr.positiontype(
+            name = 'Business Analyst',
+            description = None
+        )
+
+        postyp.positions += self.getvalidposition()
+        anal = postyp.positions.last
+
+        # Create 'Systems Administrator'
+        postyp = hr.positiontype(
+            name = 'Systems Administrator',
+            description = None
+        )
+
+        postyp.positions += self.getvalidposition()
+        sysadmin = postyp.positions.last
+
+        # Make the business analyst (`anal`) the direct report
+        # (`object`) of the 'Director of Business Information Systems'
+        # (`dir`).
+        dir.position_positions += hr.position_position(
+            begin = 'Jan 1, 2000',
+            end = 'Dec 30, 2000',
+            isprimary = True,
+            object = anal
+        )
+
+        # Make the System Adminstrator (`sysadmin`) the direct report
+        # (`object`) of the 'Director of Business Information Systems'
+        # (`dir`).
+        dir.position_positions += hr.position_position(
+            begin = 'Jan 1, 2000',
+            end = 'Dec 31, 2000',
+            isprimary = True,
+            object = sysadmin
+        )
+
+        dir.save()
+
+        dir1 = dir.orm.reloaded()
+
+        pps = dir.position_positions.sorted()
+        pps1 = dir1.position_positions.sorted()
+
+        self.two(pps)
+        self.two(pps1)
+
+        for pp, pp1 in zip(pps, pps1):
+            self.eq(pp.id,          pp1.id)
+            self.eq(pp.begin,       pp1.begin)
+            self.eq(pp.end,         pp1.end)
+            self.eq(pp.isprimary,   pp1.isprimary)
+            self.eq(pp.subject.id,  pp1.subject.id)
+            self.eq(pp.object.id,   pp1.object.id)
+            self.eq(
+                pp.subject.positiontype.id,
+                pp1.subject.positiontype.id
+            )
+            self.eq(
+                pp.object.positiontype.id,
+                pp1.object.positiontype.id
+            )
+            self.eq(
+                pp.subject.positiontype.name,
+                pp1.subject.positiontype.name
+            )
+            self.eq(
+                pp.object.positiontype.name,
+                pp1.object.positiontype.name
+            )
 
 ########################################################################
 # Test dom                                                             #
