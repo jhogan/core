@@ -52,7 +52,7 @@ import pytz
 import re
 import shipment
 import textwrap
-import Tfile
+import tfile
 
 # We will use basic and supplementary multilingual plane UTF-8
 # characters when testing str attributes to ensure unicode is being
