@@ -288,7 +288,10 @@ class file(inode):
         """
         # TODO Implemente a complimentary `mimesubtype` property 
 
-        return self.mime.split('/')[0]
+        mime = self.mime
+        if mime:
+            return mime.split('/')[0]
+        return None
 
     def _self_onaftersave(self, src, eargs):
         if self._body:
