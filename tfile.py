@@ -626,11 +626,22 @@ class file_file(tester.tester):
         self.eq('image', f.mimetype)
 
     def it_cant_save_duplicate_file_name(self):
+        ''' Try to create duplicate by name '''
         f = file.file(name='dup.txt')
         self.expect(None, lambda: f.save())
 
         f = file.file(name='dup.txt')
         self.expect(entities.BrokenRulesError, lambda: f.save())
+
+        ''' Try to create duplicate by path '''
+        f = file.directory(path='/my/dir/dup.txt')
+        self.expect(None, lambda: f.save())
+
+        my = file.directory(path='/my/dir')
+        dir = my['dir']
+        f = file.file(name='dup.txt')
+        dir += f
+        self.expect(entities.BrokenRulesError, lambda: my.save())
 
 class file_directory(tester.tester):
     def __init__(self):
