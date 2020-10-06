@@ -42,6 +42,7 @@ class responsibilitytypes(apriori.types):       pass
 class validresponsibilities(apriori.types):     pass
 class positionstatusus(party.statuses):         pass
 class position_positions(orm.associations):     pass
+class periodtypes(apriori.types):     pass
 
 class employeement(party.role_role):
     """ Maintains employment information. ``employeement`` is a
@@ -159,8 +160,23 @@ class positionrate(orm.entity):
     Note that this is modeled after the POSITION TYPE RATE entity in
     "The Data Model Resource Book".
     """
+
+    # NOTE The implicit composite `periodtype` allows an enterprise to
+    # define various pay period types for which rates can be recorded.
+    # Examples of periodtypes include "per year", "per week", "per
+    # month" and so on.
+
+    # A datespan is included so that a history of these standard positon
+    # rates can be kept. 
     span = datespan
     rate = dec
+
+    # Provides the ability to record reference information such as
+    # "highest pay rate", "lowest pay rate", "average pay rate", and
+    # "standard pay rate". This would indicate such things as the upper
+    # limit, average amount paid, lower limit, and the default, standard
+    # amount of pay for a type of position.
+    ratetype = party.ratetype
 
 class fulfillment_position(orm.association):
     """ The `position_fulfilments` association links a position to a
@@ -239,3 +255,12 @@ class position_position(orm.association):
 
     # The direct report
     object = position
+
+class periodtype(apriori.type):
+    """
+
+    Note that this is modeled after the PERIOD TYPE entity in "The Data
+    Model Resource Book".
+    """
+
+    positionrates = positionrates
