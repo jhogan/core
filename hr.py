@@ -169,7 +169,9 @@ class positionrate(orm.entity):
     # A datespan is included so that a history of these standard positon
     # rates can be kept. 
     span = datespan
-    rate = dec
+
+    # The rate for the position (the book calls this ``rate``)
+    amount = dec
 
     # Provides the ability to record reference information such as
     # "highest pay rate", "lowest pay rate", "average pay rate", and

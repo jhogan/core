@@ -23890,6 +23890,93 @@ class gem_hr(tester):
                 pp1.object.positiontype.name
             )
 
+    def it_creates_position_type_rates(self):
+        # Create 'Programmer'
+        postyp = hr.positiontype(
+            name = 'Programmer',
+            description = None
+        )
+
+        avg = hr.positionrate(
+            amount = 45_000,
+            ratetype = party.ratetype(
+                name = 'Average pay rate',
+            ),
+            periodtype = hr.periodtype(
+                name = 'per year'
+            ),
+
+            begin = 'Jan 1, 1990',
+            end = 'Dec 31, 1999',
+        )
+
+        postyp.positionrates += avg
+
+        high = hr.positionrate(
+            amount = 70_000,
+            ratetype = party.ratetype(
+                name = 'Highest pay rate',
+            ),
+            periodtype = hr.periodtype(
+                name = 'per year'
+            ),
+
+            begin = 'Jan 1, 1990',
+            end = 'Dec 31, 1999',
+        )
+
+        postyp.positionrates += high
+
+        avg = hr.positionrate(
+            amount = 55_000,
+            ratetype = party.ratetype(
+                name = 'Average pay rate',
+            ),
+            periodtype = hr.periodtype(
+                name = 'per year'
+            ),
+
+            begin = 'Jan 1, 2000',
+            end = 'Dec 31, 2000',
+        )
+
+        postyp.positionrates += avg
+
+        high = hr.positionrate(
+            amount = 90_000,
+            ratetype = party.ratetype(
+                name = 'Highest pay rate',
+            ),
+            periodtype = hr.periodtype(
+                name = 'per year'
+            ),
+
+            begin = 'Jan 1, 2000',
+            end = 'Dec 31, 2000',
+        )
+
+        postyp.positionrates += high
+
+        postyp.save()
+
+        postyp1 = postyp.orm.reloaded()
+
+        prs = postyp.positionrates.sorted()
+        prs1 = postyp1.positionrates.sorted()
+
+        self.four(prs)
+        self.four(prs1)
+
+        for pr, pr1 in zip(prs, prs1):
+            self.eq(pr.id, pr1.id)
+            self.eq(pr.amount, pr1.amount)
+            self.eq(pr.begin, pr1.begin)
+            self.eq(pr.end, pr1.end)
+            self.eq(pr.ratetype.id, pr1.ratetype.id)
+            self.eq(pr.ratetype.name, pr1.ratetype.name)
+            self.eq(pr.periodtype.id, pr1.periodtype.id)
+            self.eq(pr.periodtype.name, pr1.periodtype.name)
+
 ########################################################################
 # Test dom                                                             #
 ########################################################################
