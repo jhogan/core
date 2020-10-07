@@ -3666,7 +3666,8 @@ WHERE id = %s;
                 if type(map) in keymaps and isinstance(map.value, UUID):
                     r.append(map.value.bytes)
                 else:
-                    v = map.value if map.value is not undef else None
+                    v = getattr(self.orm.instance, map.name)
+                    v = None if v is undef else v
                     if v is not None:
                         if map.isdatetime:
                             v = v.replace(tzinfo=None)
