@@ -2882,10 +2882,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         gb.append(self)
             
-        # TODO s/super/sup/
-        super = self.orm._super
-        if super:
-            brs += super.getbrokenrules(gb=gb)
+        sup = self.orm._super
+        if sup:
+            brs += sup.getbrokenrules(gb=gb)
 
         for map in self.orm.mappings:
             if type(map) is fieldmapping:
