@@ -249,7 +249,7 @@ class inode(orm.entity):
         nds = inodes(f'name = %s and inodeid {op} %s', self.name, id)
 
         if nds.ispopulated and self.id != nds.first.id:
-            msg = f'Cannot create "{self.name}": File exist'
+            msg = f'Cannot create "{self.name}": inode exist'
 
             if msg not in brs.pluck('message'):
                 brs += msg
@@ -391,7 +391,6 @@ class resource(file):
             # TODO:545a5261 When mimetypes is used, we can let it
             # determine the mimetype.
             self.mime = 'text/plain'
-
 
             last = res['/'.join(dirs[1:])]
             last += self

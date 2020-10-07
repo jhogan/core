@@ -473,11 +473,7 @@ class file_file(tester.tester):
         self.true(os.path.exists(f1.path))
 
         ''' Instatiate file with `path` off within a new directory '''
-
-        # TODO --------------------------
-        return
-
-        path = '/var/db/my.db'
+        path = '/usr/share/file'
 
         # This will create the file off the root
         f = file.file(path=path)
@@ -491,12 +487,14 @@ class file_file(tester.tester):
         self.eq(body, f.body)
 
         f.save()
+        path = path.lstrip('/')
         self.eq(f.path, os.path.join(f.store, path))
         self.true(f.exists)
         self.true(os.path.exists(f.path))
 
-        self.eq(path, f.name)
-        self.none(f.inode)
+        self.eq(os.path.split(path)[1], f.name)
+        self.eq('share', f.inode.name)
+        self.eq('usr', f.inode.inode.name)
         self.eq(body, f.body)
 
         f1 = f.orm.reloaded()
@@ -631,6 +629,7 @@ class file_file(tester.tester):
         self.expect(None, lambda: f.save())
 
         f = file.file(name='dup.txt')
+        self.one(f.brokenrules)
         self.expect(entities.BrokenRulesError, lambda: f.save())
 
         ''' Try to create duplicate by path '''
@@ -641,6 +640,7 @@ class file_file(tester.tester):
         dir = my['dir']
         f = file.file(name='dup.txt')
         dir += f
+        self.one(my.brokenrules)
         self.expect(entities.BrokenRulesError, lambda: my.save())
 
 class file_directory(tester.tester):
@@ -718,7 +718,27 @@ class file_directory(tester.tester):
     def it_creates_using_path(self):
         join = os.path.join
 
-        # TODO Test using one directory (file.directory(path='/tmp'))
+        ''' Test using one directory off the root '''
+        dir = file.directory(path='/etc')
+
+        self.eq('etc', dir.name)
+        self.type(file.directory, dir)
+        self.false(dir.exists)
+        self.none(dir.inode)
+        self.eq(dir.path, join(dir.store, 'etc'))
+        self.zero(dir.inodes)
+        self.eq((True, False, False), dir.orm.persistencestate)
+
+        dir.save()
+
+        self.eq('etc', dir.name)
+        self.false(dir.exists)
+        self.none(dir.inode)
+        self.eq(dir.path, join(dir.store, 'etc'))
+        self.zero(dir.inodes)
+        self.eq((False, False, False), dir.orm.persistencestate)
+
+        ''' Testing using two directories '''
         dir = file.directory(path='/tmp/test')
 
         tmp = dir
@@ -799,12 +819,28 @@ class file_directory(tester.tester):
             else:
                 assert False
 
-
-
     def it_updates_with_file(self):
         """ TODO Test creating a directory then later adding multiple files
         to it.
         """
+
+    def it_cant_save_duplicate_directory_name(self):
+        ''' Try to create duplicate by name '''
+        dir = file.directory(name='dup')
+        self.expect(None, lambda: dir.save())
+
+        dir = file.directory(name='dup')
+        self.one(dir.brokenrules)
+        self.expect(entities.BrokenRulesError, lambda: dir.save())
+
+        ''' Try to create duplicate by path '''
+        dir = file.directory(path='/herp/derp')
+        self.expect(None, lambda: dir.save())
+
+        dir = file.directory(path='/herp')
+        dir += file.directory(name='derp')
+        self.one(dir.brokenrules)
+        self.expect(entities.BrokenRulesError, lambda: dir.save())
 
 if __name__ == '__main__':
     tester.cli().run()
