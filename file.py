@@ -396,7 +396,22 @@ class file(inode):
                 attr(None)
         return attr()
 
-    # TODO Ensure a call to inodes results in an AttributeError
+    @property
+    def inodes(self):
+        """ Raise an AttributeError because a file would obviously never
+        have files or directories underneath it. 
+        
+        Note we are using the `orm` modules version of AttributeError
+        because there are issues raising builtins.AttributeError from
+        ORM attributes (see orm.py for more). Also note that the calling
+        code will receive a regular builtins.AttributeError and not an
+        orm.AttributeError so the client code doesn't have to deal with
+        this awkwardness.
+        """
+        raise orm.AttributeError(
+            "file entities don't have inodes"
+        )
+
     def __init__(self, *args, **kwargs):
         """ Init a file entity.
         """
