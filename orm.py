@@ -98,7 +98,7 @@ import textwrap
 # `dimensions` is a subentity of `features`. However, since
 # `product.measure` has no superentity, we can not arrive at the
 # `feature` attribute because of the way the ORM code is written. We
-# instead get an AttributeError.
+# instead get an builtins.AttributeError.
 #
 # This may or may not be important. So far, the need to access
 # superentities attributes has not come up. However, if the need arises,
@@ -143,6 +143,10 @@ import textwrap
 # the name should be ``effort_item`` instead of ``item_effort``, since
 # the former is alphabetized. This would help to locate them faster and
 # to use them in code more efficiently.
+
+class AttributeError(builtins.AttributeError):
+    def __init__(self, msg):
+        self.inner = builtins.AttributeError(msg)
 
 @unique
 class types(Enum):
@@ -1386,7 +1390,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 )
             try:
                 self.orm = self.orm.clone()
-            except AttributeError:
+            except builtins.AttributeError:
                 msg = (
                     "Can't instantiate abstract orm.entities. "
                     "Use entities.entities for a generic entities collection "
@@ -1803,7 +1807,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             if attr in nonos:
                 msg = "'%s's' attribute '%s' is not available "
                 msg += 'while streaming'
-                raise AttributeError(msg % (self.__class__.__name__, attr))
+                raise builtins.AttributeError(msg % (self.__class__.__name__, attr))
         else:
             load = True
 
@@ -2159,7 +2163,7 @@ class entitymeta(type):
                     body['entities'] = sub
                     break
             else:
-                raise AttributeError(
+                raise builtins.AttributeError(
                     'Entities class for "%s" couldn\'t be found. '
                     'Either specify one or define one with a '
                     'predictable name' % name
@@ -2417,7 +2421,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         if type(args) is str:
             try:
                 return getattr(self, args)
-            except AttributeError as ex:
+            except builtins.AttributeError as ex:
                 raise IndexError(str(ex))
 
         vals = []
@@ -3015,6 +3019,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         except sys.modules['orm'].attr.AttributeErrorWrapper as ex:
             raise ex.inner
         except AttributeError as ex:
+            raise ex.inner
+        except builtins.AttributeError as ex:
             pass
 
         self_orm = self.orm
@@ -3249,7 +3255,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # Get the superentities collection
         try:
             es = getattr(self, sup.__name__)
-        except AttributeError:
+        except builtins.AttributeError:
             # `self` won't have the attribute `sup.__name__` if the
             # constituent class is a superentity.
             #
@@ -4094,7 +4100,7 @@ class attr:
             try:
                 # Invoke the explicit attribute
                 return self.fget(e)
-            except AttributeError as ex:
+            except builtins.AttributeError as ex:
                 # If it raises an AttributeError, wrap it. If the call
                 # from e.__getattribute__ sees a regural AttributeError,
                 # it will ignore it because it will assume its caller is
@@ -6085,7 +6091,7 @@ class orm:
                     if not isinstance(e, entity):
                         msg = "'super' is not an attribute of %s"
                         msg %= str(type(e))
-                        raise AttributeError(msg)
+                        raise builtins.AttributeError(msg)
                     if e.id is not undef:
                         self._super = base(e.id)
 
@@ -6398,7 +6404,7 @@ class associations(entities):
                             map.value.orm.entities.__name__
                         )
 
-                    except AttributeError:
+                    except builtins.AttributeError:
                         # If the object stored in map.value is the wrong
                         # type, use the map.entity reference. This is
                         # for situations where the user appends the
@@ -6618,7 +6624,7 @@ class associations(entities):
             """
             msg = "'%s' object has no attribute '%s'"
             msg %= self.__class__.__name__, attr
-            raise AttributeError(msg)
+            raise builtins.AttributeError(msg)
 
         # TODO Use the mappings collection to get __name__'s value.
 
