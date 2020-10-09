@@ -385,7 +385,10 @@ class file(inode):
         # TODO:545a5261 Use Pythons mimetypes library to guess based on
         # path/url/extension
         if not attr():
-            if isinstance(self._body, str):
+            mime = mimetypes.guess_type(self.path, strict=False)[0]
+            if mime is not None:
+                attr(mime)
+            elif isinstance(self._body, str):
                 attr('text/plain')
             elif isinstance(self._body, bytes):
                 attr('application/octet-stream')
