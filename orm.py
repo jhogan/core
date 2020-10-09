@@ -24,7 +24,16 @@ Todo:
 
     TODO Create orm.reload() to complement orm.reloaded(). It should
     reload the data from the db into self.
-    
+
+    TODO entitymappings should eager- and lazy-load most specialized
+    type. This should work for recursive entity objects as well::
+
+        f = files.orm.all
+        assert type(f.inodes.first) is file
+        assert type(f.inodes.second) is directory
+
+    FIXME:acad30cc Broken rules currently has an issue. grep acad30cc
+    for more clarification.
 """
 
 from collections.abc import Iterable
@@ -4029,6 +4038,7 @@ class fulltext(index):
         return name
 
 class attr:
+    # TODO We could probably use orm.AttributeError for this instead.
     class AttributeErrorWrapper(Exception):
         """ An AttributeError wrapper. """
         def __init__(self, ex):
