@@ -339,7 +339,7 @@ class file_file(tester.tester):
         self.false(os.path.exists(f.path))
         self.eq('myfile', f.name)
         self.none(f.inode)
-        self.zero(f.inodes)
+        self.expect(AttributeError, lambda: f.inodes)
         self.none(f.body)
         self.none(f.mime)
 
@@ -355,7 +355,7 @@ class file_file(tester.tester):
 
         self.eq('myfile', f.name)
         self.none(f.inode)
-        self.zero(f.inodes)
+        self.expect(AttributeError, lambda: f.inodes)
         self.none(f.body)
         self.none(f.mime)
 
@@ -371,7 +371,7 @@ class file_file(tester.tester):
 
         self.eq('myfile', f1.name)
         self.none(f1.inode)
-        self.zero(f1.inodes)
+        self.expect(AttributeError, lambda: f.inodes)
         self.none(f1.body)
         self.none(f.mime)
 
@@ -399,7 +399,7 @@ class file_file(tester.tester):
 
         self.eq('myfile.txt', f.name)
         self.none(f.inode)
-        self.zero(f.inodes)
+        self.expect(AttributeError, lambda: f.inodes)
         self.eq(body, f.body)
 
         f1 = f.orm.reloaded()
@@ -432,7 +432,7 @@ class file_file(tester.tester):
 
         self.eq('myfile.bin', f.name)
         self.none(f.inode)
-        self.zero(f.inodes)
+        self.expect(AttributeError, lambda: f.inodes)
         self.eq(body, f.body)
 
         f1 = f.orm.reloaded()
@@ -642,6 +642,10 @@ class file_file(tester.tester):
         dir += f
         self.one(my.brokenrules)
         self.expect(entities.BrokenRulesError, lambda: my.save())
+
+    def it_raises_AttributeError_on_file_inodes(self):
+        f = file.file(path='/850cad31/498c/4584')
+        self.expect(AttributeError, lambda: f.inodes)
 
 class file_directory(tester.tester):
     def __init__(self):
