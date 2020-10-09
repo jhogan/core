@@ -578,13 +578,17 @@ class resource(file):
     #     have the credentials flag set to 'include'.
     crossorigin  =  str
 
-    def __init__(self, local=False, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.orm.default('crossorigin', 'anonymous')
         self.orm.default('integrity', None)
-        self.local = local
 
-        if local:
+        try:
+            self.local = kwargs['local']
+        except KeyError:
+            self.local = False
+
+        if self.local:
             urlparts = urllib.parse.urlsplit(self.url)
             dirs = ['resources', urlparts.netloc]
             dirs.extend([x for x in urlparts.path.split('/') if x])
