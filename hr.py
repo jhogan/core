@@ -42,7 +42,9 @@ class responsibilitytypes(apriori.types):       pass
 class validresponsibilities(apriori.types):     pass
 class positionstatusus(party.statuses):         pass
 class position_positions(orm.associations):     pass
-class periodtypes(apriori.types):     pass
+class periodtypes(apriori.types):               pass
+class steps(orm.entities):                      pass
+class grades(orm.entities):                     pass
 
 class employeement(party.role_role):
     """ Maintains employment information. ``employeement`` is a
@@ -259,10 +261,35 @@ class position_position(orm.association):
     object = position
 
 class periodtype(apriori.type):
-    """
+    """ Classifies ``positionrates``. Examples of ``periodtype``'s
+    ``name`` attribute include "per year", "per week", "per month" and
+    so on.
 
     Note that this is modeled after the PERIOD TYPE entity in "The Data
     Model Resource Book".
     """
 
     positionrates = positionrates
+
+class step(orm.entity):
+    """ 
+    Note that this is modeled after the SALARY STEP entity in "The Data
+    Model Resource Book".
+    """
+    ordinal = int
+    amount = dec
+    modified = datetime
+    positionrates = positionrates
+
+class grade(orm.entity):
+    """ 
+    Note that this is modeled after the PAY GRADE entity in "The Data
+    Model Resource Book".
+    """
+    name = str
+    comment = text
+    steps = steps
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.default('comment', None)

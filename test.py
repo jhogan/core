@@ -23977,6 +23977,38 @@ class gem_hr(tester):
             self.eq(pr.periodtype.id, pr1.periodtype.id)
             self.eq(pr.periodtype.name, pr1.periodtype.name)
 
+    def it_creates_pay_grades(self):
+        gr = hr.grade(
+            name = 'GG-1'
+        )
+
+        amts = (10_000, 10_200, 10_400, 10_500, 10_800)
+
+        for i, amt in enumerate(amts):
+            gr.steps += hr.step(
+                ordinal = i + 1,
+                amount = amt
+            )
+
+        gr.save()
+
+        gr1 = gr.orm.reloaded()
+
+        self.eq(gr.id, gr1.id)
+        self.eq('GG-1', gr1.name)
+
+        steps = gr.steps.sorted('ordinal')
+        steps1 = gr1.steps.sorted('ordinal')
+
+        self.five(steps)
+        self.five(steps1)
+
+        for i, amt in enumerate(amts):
+            step1 = steps1[i]
+            self.eq(amt, step1.amount)
+            self.eq(i + 1, step1.ordinal)
+            print(repr(step1))
+
 ########################################################################
 # Test dom                                                             #
 ########################################################################
