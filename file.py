@@ -713,6 +713,12 @@ class directory(inode):
 
         return nd
 
+    def __iter__(self):
+        for nd in self.inodes:
+            yield nd
+
+        
+
 
 
             
