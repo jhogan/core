@@ -633,7 +633,7 @@ class file_file(tester.tester):
         self.expect(entities.BrokenRulesError, lambda: f.save())
 
         ''' Try to create duplicate by path '''
-        f = file.directory(path='/my/dir/dup.txt')
+        f = file.file(path='/my/dir/dup.txt')
         self.expect(None, lambda: f.save())
 
         my = file.directory(path='/my/dir')
@@ -845,6 +845,28 @@ class file_directory(tester.tester):
         dir += file.directory(name='derp')
         self.one(dir.brokenrules)
         self.expect(entities.BrokenRulesError, lambda: dir.save())
+
+    def it_calls__iter__(self):
+        dir = file.directory(path='/lib/dir100')
+        dir += file.directory(name='dir200')
+        dir += file.file(name='f100')
+        dir += file.file(name='f200')
+
+        for i, nd in enumerate(dir):
+            if i == 0:
+                self.eq('dir100', nd.name)
+            elif i == 1:
+                self.eq('dir200', nd.name)
+            elif i == 2:
+                self.eq('f100', nd.name)
+            elif i == 3:
+                self.eq('f200', nd.name)
+            else:
+                assert False
+                
+                
+            
+        
 
 if __name__ == '__main__':
     tester.cli().run()
