@@ -45,6 +45,7 @@ class position_positions(orm.associations):     pass
 class periodtypes(apriori.types):               pass
 class steps(orm.entities):                      pass
 class grades(orm.entities):                     pass
+class histories(orm.entities):                  pass
 
 class employeement(party.role_role):
     """ Maintains employment information. ``employeement`` is a
@@ -55,6 +56,11 @@ class employeement(party.role_role):
     organizations as well, then this entity can be between
     ``party.employee`` and ``party.employeer``.
     """
+    
+    # A collection a payment histories for this employment. These
+    # histories record the pay the employment provided to the
+    # employeement for a given period (``periodtype``).
+    histories = histories
 
 class position(orm.entity):
     """ A position is a job slot in an enterprise. In some enterprises,
@@ -271,6 +277,8 @@ class periodtype(apriori.type):
 
     positionrates = positionrates
 
+    histories = histories
+
 class step(orm.entity):
     """ 
     Note that this is modeled after the SALARY STEP entity in "The Data
@@ -293,3 +301,23 @@ class grade(orm.entity):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.orm.default('comment', None)
+
+class history(orm.entity):
+    """ An entries in an ``employments`` collection of ``histories``.
+    Each entry represents the salary of the given employeed for a given
+    time period.
+
+    Note that this is modeled after the PAY HISTORY entity in "The Data
+    Model Resource Book".
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.default('comment', None)
+
+    # The datespan when the salary was in effect
+    span = datespan
+
+    # The salary itself
+    amount = dec
+
+    comment = text

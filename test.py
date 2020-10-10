@@ -24007,7 +24007,79 @@ class gem_hr(tester):
             step1 = steps1[i]
             self.eq(amt, step1.amount)
             self.eq(i + 1, step1.ordinal)
-            print(repr(step1))
+
+    def it_creates_payment_history(self):
+        # Create company
+        com = party.company(name='ABC Corporation')
+
+        # Create an interanal organization role
+        int = party.internal()
+
+        # Add it to the company's roles
+        com.roles += int
+
+        # Create person (employee)
+        per = party.person(first='John', last='Smith')
+
+        # Create employee role
+        emp = party.employee()
+
+        # Assign the employment role to the person
+        per.roles += emp
+
+        # Associate the emp role with int role, creating the employment
+        # relationship
+        emp.role_roles += hr.employeement(
+            object = int
+        )
+
+        # Get the employeement association
+        employeement = emp.role_roles.last
+
+        employeement.histories += hr.history(
+            begin = 'Jan 1, 1995',
+            end   = 'Dec 31, 1997',
+            amount = 45_000,
+            periodtype = hr.periodtype(name='per year')
+        )
+
+        employeement.histories += hr.history(
+            begin = 'Jan 1, 1998',
+            end   = 'Dec 31, 2000',
+            amount = 55_000,
+            periodtype = hr.periodtype(name='per year')
+        )
+
+        employeement.histories += hr.history(
+            begin = 'Jan 1, 2001',
+            end   = None,
+            amount = 62_500,
+            periodtype = hr.periodtype(name='per year')
+        )
+
+        emp.save()
+
+        employeement1 = emp.orm.reloaded().role_roles.first
+        employeement1 = employeement1.orm.cast(hr.employeement)
+
+        hists = employeement.histories.sorted()
+        hists1 = employeement1.histories.sorted()
+
+        self.three(hists)
+        self.three(hists1)
+
+        for hist, hist1 in zip(hists, hists1):
+            self.eq(hist.id, hist1.id)
+            self.eq(hist.begin, hist1.begin)
+            self.eq(hist.end, hist1.end)
+            self.eq(
+                hr.periodtype(name='per year').id, 
+                hist1.periodtype.id
+            )
+
+
+
+
 
 ########################################################################
 # Test dom                                                             #
