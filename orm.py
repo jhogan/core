@@ -2462,6 +2462,22 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
             if attr not in maps:
                 return object.__setattr__(self, attr, v)
+
+            # If there is a setter property (non-mapping) directly on
+            # `self`, call it directly. This makes it possible to
+            # override mappings with regular @property's. See how the
+            # @property `person.name` updates the mapping `party.name`.
+            #
+            # TODO There currently isn't a use case for this, but we
+            # will probably want to ascend the inheritance tree here.
+            # For example, if we wanted to extend the `person` entity
+            # with a new class `alien`, we would want `alien` to inherit
+            # the functionality of `person.name`. Currently, that
+            # probably wouldn't work.
+            for name, var in vars(type(self)).items():
+                if name == attr and isinstance(var, property):
+                    if var.fset:
+                        return object.__setattr__(self, attr, v)
                 
             self.orm.super.__setattr__(attr, v, cmp)
         else:

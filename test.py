@@ -17173,11 +17173,8 @@ class gem_party(tester):
             self.eq(gen.end, gen1.end)
             self.eq(gen.gendertype.id, gen1.gendertype.id)
 
-    def it_calls_name_properties(self):
+    def it_calls_person_name_properties(self):
         per = party.person()
-        per.dun = None
-        per.isicv4 = None
-        per.nationalids = None
 
         per.first = 'Joey'
         self.eq('Joey', per.first)
@@ -17204,17 +17201,100 @@ class gem_party(tester):
 
         ''' It uses ``name`` attribute`` '''
         per = party.person()
-        per.dun = None
-        per.isicv4 = None
-        per.nationalids = None
         per.name = 'Guido van Rossum'
         self.eq('Guido', per.first)
         self.eq('van', per.middle)
         self.eq('Rossum', per.last)
         self.eq('Guido van Rossum', per.name)
-        
+        self.eq('Guido van Rossum', per.orm._super.name)
 
+        per.save()
 
+        # `party.name` should equal whatever `person.name` ends up
+        # being.
+        part = party.party(per.id)
+        self.eq('Guido van Rossum', part.name)
+
+    def it_calls_first_middle_and_last(self):
+        ''' First name '''
+        per = party.person()
+        per.first = 'Guido'
+        self.eq('Guido', per.name)
+        self.eq('Guido', per.first)
+        self.eq('Guido', per.orm._super.name)
+
+        per.save()
+
+        per = per.orm.reloaded()
+        self.eq('Guido', per.name)
+        self.eq('Guido', per.orm.super.name)
+        self.eq('Guido', per.first)
+        self.eq('Guido', party.party(per).name)
+
+        ''' Update first name '''
+        per.first = 'Jesse'
+        self.eq('Jesse', per.name)
+        self.eq('Jesse', per.first)
+        self.eq('Jesse', per.orm._super.name)
+
+        per.save()
+
+        per = per.orm.reloaded()
+        self.eq('Jesse', per.name)
+        self.eq('Jesse', per.first)
+        self.eq('Jesse', per.orm.super.name)
+        self.eq('Jesse', party.party(per).name)
+
+        ''' Update middle name '''
+        per.middle = 'James'
+        self.eq('Jesse James', per.name)
+        self.eq('Jesse', per.first)
+        self.eq('James', per.middle)
+        self.eq('Jesse James', per.orm._super.name)
+
+        per.save()
+
+        per = per.orm.reloaded()
+        self.eq('Jesse James', per.name)
+        self.eq('Jesse', per.first)
+        self.eq('James', per.middle)
+        self.eq('Jesse James', party.party(per).name)
+
+        ''' Update last name '''
+        per.last = 'Hogan'
+        self.eq('Jesse James Hogan', per.name)
+        self.eq('Jesse', per.first)
+        self.eq('James', per.middle)
+        self.eq('Hogan', per.last)
+        self.eq('Jesse James Hogan', per.orm._super.name)
+
+        per.save()
+
+        per = per.orm.reloaded()
+        self.eq('Jesse James Hogan', per.name)
+        self.eq('Jesse', per.first)
+        self.eq('James', per.middle)
+        self.eq('Hogan', per.last)
+        self.eq('Jesse James Hogan', party.party(per).name)
+
+    def it_updates_person_name_from_super(self):
+        #TODO
+        return
+        per = party.person()
+        per.name = 'Guido van Rossum'
+        per.save()
+
+        part = party.party(per)
+
+        part.name = 'Jesse James Hogan'
+        self.eq(part.name, 'Jesse James Hogan')
+
+        per = per.orm.reloaded()
+        self.eq('Jesse', per.first)
+        self.eq('James', per.middle)
+        self.eq('Hogan', per.last)
+        self.eq(per.name, 'Jesse James Hogan')
+        self.eq(per.orm.super.name, 'Jesse James Hogan')
 
 
     def it_adds_citizenships(self):

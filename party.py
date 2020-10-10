@@ -609,8 +609,8 @@ class person(party):
         elif len > 2:
             self.middle = names[1]
             self.last = ' '.join(names[2:])
-            
 
+            
     # A collection of citizenship history entity objcets for this
     # person.
     citizenships = citizenships
