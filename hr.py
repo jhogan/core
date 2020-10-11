@@ -46,6 +46,8 @@ class periodtypes(apriori.types):               pass
 class steps(orm.entities):                      pass
 class grades(orm.entities):                     pass
 class histories(orm.entities):                  pass
+class benefits(orm.entities):                   pass
+class benefittypes(apriori.types):              pass
 
 class employeement(party.role_role):
     """ Maintains employment information. ``employeement`` is a
@@ -61,6 +63,8 @@ class employeement(party.role_role):
     # histories record the pay the employment provided to the
     # employeement for a given period (``periodtype``).
     histories = histories
+
+    benefits = benefits
 
 class position(orm.entity):
     """ A position is a job slot in an enterprise. In some enterprises,
@@ -279,6 +283,8 @@ class periodtype(apriori.type):
 
     histories = histories
 
+    benefits = benefits
+
 class step(orm.entity):
     """ 
     Note that this is modeled after the SALARY STEP entity in "The Data
@@ -321,3 +327,32 @@ class history(orm.entity):
     amount = dec
 
     comment = text
+
+class benefit(orm.entity):
+    """ 
+    Note that this is modeled after the PARTY BENEFIT entity in "The
+    Data Model Resource Book".
+    """
+
+    # Allows the tracking of the benefit through time.
+    span = datespan
+
+    # The actual cost of the benefit (the book calls this the ``cost``).
+    amount = dec
+
+    # The actual employeer paid percentage (the book calls this the
+    # ``actual employer paid percentage``). With this datum, it is
+    # possible to calculate the cost not only to the employee but to the
+    # enterprise as well.
+    percent = dec
+
+    # Tracks the alowable time off such as vacation and sick leave (the
+    # book calls this ``available time``).
+    time = int
+
+class benefittype(apriori.type):
+    description = text
+    percent = dec
+
+    benefits = benefits
+    
