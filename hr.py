@@ -310,8 +310,8 @@ class grade(orm.entity):
 
 class history(orm.entity):
     """ An entries in an ``employments`` collection of ``histories``.
-    Each entry represents the salary of the given employeed for a given
-    time period.
+    Each entry represents the salary of the given ``employment`` for a given
+    time period. 
 
     Note that this is modeled after the PAY HISTORY entity in "The Data
     Model Resource Book".
