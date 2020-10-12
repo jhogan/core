@@ -2426,7 +2426,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # self.orm.properties
         return list(set(ls))
 
-    def __setattr__(self, attr, v, cmp=True):
+    def __setattr__(self, attr, v, cmp=True, imp=False):
         """ Set the value of `v` to the attribute (`attr`) of the
         `entity`. Attribute usually refer to the ORM mapping attributes
         (those defined in the header of a class). However, standard
@@ -2472,6 +2472,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 
             self.orm.super.__setattr__(attr, v, cmp)
         else:
+            if isinstance(map, fieldmapping):
+                if map.issetter and not imp:
+                    return object.__setattr__(self, attr, v)
+
             # Call entity._setvalue to take advantage of its event raising
             # code. Pass in a custom setattr function for it to call. Use
             # underscores for the paramenters since we already have the values
@@ -4020,14 +4024,37 @@ class attr:
     class wrap:
         def __init__(self, *args, **kwargs):
             args = list(args)
-            self.fget = args.pop()
+            self.fget = self.fset = None
+
+            # Get the setter/getter method
+            f = args.pop()
+
+            # Get the methods paramter list
+
+            params = f.__code__.co_varnames
+            params = params[:f.__code__.co_argcount]
+
+            # If a 'v' parameter is one of the parameters:
+            if 'v' in params:
+                # ... then it must be a setter. The 'v' argument
+                # contains the *value* that will be assigned to the
+                # attribute.
+                self.fset = f
+            else:
+                # ... then it must be a getter.
+                self.fget = f
+
             self.args = args
             self.kwargs = kwargs
 
         @property
         def mapping(self):
             map = fieldmapping(*self.args, **self.kwargs)
+            # TODO Make isexplicit a @property. It's now redundant with
+            # isgetter and issetter.
             map.isexplicit = True
+            map.isgetter = bool(self.fget)
+            map.issetter = bool(self.fset)
             return map
 
         def __get__(self, e, etype=None):
@@ -4052,7 +4079,7 @@ class attr:
                         if super:
                             return getattr(super, name)
                 else:
-                    e.__setattr__(name, v, cmp=False)
+                    e.__setattr__(name, v, cmp=False, imp=True)
                     return v
 
             # Inject into imperitive attribute
@@ -4061,6 +4088,43 @@ class attr:
             try:
                 # Invoke the imperitive attribute
                 return self.fget(e)
+            except AttributeError as ex:
+                # If it raises an AttributeError, wrap it. If the call
+                # from e.__getattribute__ sees a regular AttributeError,
+                # it will ignore it because it will assume its caller is
+                # requesting the value of a mapping object.
+                raise sys.modules['orm'].attr.AttributeErrorWrapper(ex)
+
+        def __set__(self, e, v):
+            name = self.fset.__name__
+
+            def attr(v=undef):
+                """ Sets the map's value to ``v``. Returns the mapped
+                value.
+
+                This function is injected into imperitive attributes to
+                provide easy access to the the attributes mapping value.
+                """
+                if v is undef:
+                    try:
+                        return e.orm.mappings[name].value
+                    except IndexError:
+                        # If it's not in the subentity's mapping
+                        # collection, make a regular getattr() call on
+                        # e's super. 
+                        super = e.orm.super # :=
+                        if super:
+                            return getattr(super, name)
+                else:
+                    e.__setattr__(name, v, cmp=False, imp=True)
+                    return v
+
+            # Inject into imperitive attribute
+            self.fset.__globals__['attr'] = attr
+
+            try:
+                # Invoke the imperitive attribute
+                return self.fset(e, v)
             except AttributeError as ex:
                 # If it raises an AttributeError, wrap it. If the call
                 # from e.__getattribute__ sees a regular AttributeError,
@@ -4091,6 +4155,8 @@ class fieldmapping(mapping):
                        ix=None,    # Database index
                        isderived=False,
                        isexplicit=False,
+                       isgetter=False,
+                       issetter=False,
                        span=None):
 
         if hasattr(type, 'mro') and alias in type.mro():
@@ -4109,6 +4175,8 @@ class fieldmapping(mapping):
         self._precision  =  m
         self._scale      =  d
         self.isexplicit  =  isexplicit
+        self.isgetter    =  isgetter
+        self.issetter    =  issetter
         self._span       =  span
 
         # TODO Currently, a field is limited to being part of only one
@@ -4153,6 +4221,8 @@ class fieldmapping(mapping):
             ix,
             self.isderived,
             self.isexplicit,
+            self.isgetter,
+            self.issetter,
             self.span,
         )
 

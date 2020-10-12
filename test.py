@@ -3402,6 +3402,7 @@ class artist(orm.entity):
         art.email     = 'username@domain.tld'
         art.bio1      = '11'
         art.bio2      = '2'
+        art.gender    = None
 
         return art
 
@@ -3429,20 +3430,13 @@ class artist(orm.entity):
     def email(self):
         return attr().lower()
 
-    # Though it seems logical that there would be mutator analog to the
-    # accessor logic (used above for the 'phone' attr), there doesn't
-    # seem to be a need for this. Conversions should be done in the
-    # accessor (as in the 'phone' accessor above).  If functionality
-    # needs to run when a mutator is called, this can be handled in an
-    # onaftervaluechange handler (though this seems rare).  Since at the
-    # moment, no use-case can be imagined for mutator @attr's, we should
-    # leave this unimplemented. If a use-case presents itself, the
-    # below, commented-out code approximates how it should look.  The
-    # 'setter' method in the 'Property' class here
-    # https://docs.python.org/3/howto/descriptor.html#properties hints
-    # at how this may be implemented in orm.attr.
-
-    # Update to the above comment. See d7f877ef
+    @orm.attr(str)
+    def gender(self, v):
+        if v == 'm':
+            v = 'male'
+        elif v == 'f':
+            v = 'female'
+        attr(v)
 
     """
     @phone.setter(str)
@@ -8288,6 +8282,7 @@ class test_orm(tester):
         sng.email     = 'username@domain.tld'
         sng.bio1      = uuid4().hex
         sng.bio2      = uuid4().hex
+        sng.gender    = 'm'
         self.eq(int(), sng.phone)
 
         sng.phone = '1' * 7
@@ -8318,6 +8313,7 @@ class test_orm(tester):
         sng.email     = 'username@domain.tld'
         sng.bio1      = uuid4().hex
         sng.bio2      = uuid4().hex
+        sng.gender    = 'm'
         self.is_(str(), sng.register)
 
         sng.register = 'Vocal Fry'
@@ -8350,6 +8346,7 @@ class test_orm(tester):
         rpr.email     = 'username@domain.tld'
         rpr.bio1      = uuid4().hex
         rpr.bio2      = uuid4().hex
+        rpr.gender    = 'f'
         self.eq(int(), rpr.phone)
 
         rpr.phone = '1' * 7
@@ -8380,6 +8377,7 @@ class test_orm(tester):
         rpr.email     = 'username@domain.tld'
         rpr.bio1      = uuid4().hex
         rpr.bio2      = uuid4().hex
+        rpr.gender    = 'f'
         self.is_(str(), rpr.register)
 
         rpr.register = 'Vocal Fry'
@@ -8413,6 +8411,7 @@ class test_orm(tester):
         abilities     = "['endless rhymes', 'delivery', 'money']"
         rpr.bio1      = uuid4().hex
         rpr.bio2      = uuid4().hex
+        rpr.gender    = 'f'
         self.eq(abilities, rpr.abilities)
 
         rpr.abilities = abilities = ['being wack']
@@ -8507,6 +8506,7 @@ class test_orm(tester):
         art.email = 'username@domain.tld'
         art.bio1  = uuid4().hex
         art.bio2  = uuid4().hex
+        art.gender = 'm'
         map = art.orm.mappings['password']
 
         # Make sure the password field hasn't been tampered with
@@ -8576,6 +8576,11 @@ class test_orm(tester):
         self.zero(fact.brokenrules)
 
     def it_calls_imperitive_str_attr_on_entity(self):
+        ''' SETTER '''
+        art = artist()
+        art.gender = 'm'
+
+        ''' GETTER '''
         def saveok(e, attr):
             getattr(e, 'save')()
             e1 = type(e)(e.id)
@@ -8620,6 +8625,7 @@ class test_orm(tester):
             art.email = (Δ * (min - 1))
             self.one(art.brokenrules)
             self.broken(art, 'email', 'fits')
+
 
     def it_calls_chr_attr_on_entity(self):
         map = artifact.orm.mappings['type']
@@ -8718,6 +8724,7 @@ class test_orm(tester):
             art.email     = 'username@domain.tld'
             art.bio1      = 'herp'
             art.bio2      = 'derp'
+            art.gender    = 'm'
             if type(art) is singer:
                 art.voice     = uuid4().hex
                 art.register  = 'laryngealization'
@@ -8783,6 +8790,7 @@ class test_orm(tester):
             # unicode character - not just numeric characters. So lets user a roman
             # numeral V.
             art.ssn = V * map.max
+            art.gender = 'm'
             self.true(saveok(art, 'ssn'))
 
             art.ssn = V * (map.max + 1)
@@ -8822,6 +8830,7 @@ class test_orm(tester):
             art.ssn       = V * 11
             art.bio1      = 'herp'
             art.bio2      = 'derp'
+            art.gender    = 'm'
             if type(art) is singer:
                 art.voice     = uuid4().hex
                 art.register  = 'laryngealization'
@@ -9622,6 +9631,7 @@ class test_orm(tester):
         art.firstname = uuid4().hex
         art.lastname  = uuid4().hex
         art.lifeform  = uuid4().hex
+        art.gender    = 'm'
 
         self.true(art.orm.isnew)
         self.false(art.orm.isdirty)
@@ -9664,6 +9674,7 @@ class test_orm(tester):
         art1.title      = uuid4().hex[0]
         art1.phone2     = uuid4().hex[0]
         art1.email_1    = uuid4().hex[0]
+        art1.gender     = 'f'
 
         self.false(art1.orm.isnew)
         self.true(art1.orm.isdirty)
@@ -12212,6 +12223,7 @@ class test_orm(tester):
         rpr1.nice      = rpr.nice + 1
         rpr1.stagename = uuid4().hex
         rpr1.abilities = list('wackness')
+        rpr1.gender    = 'f'
 
         self.eq((False, True, False), rpr1.orm.persistencestate)
 
