@@ -22,15 +22,6 @@ TODOs:
     TODO Add bytes(n) as datatype. Having to type `bytes, 16, 16` is not
     fun.
     
-    TODO:d7f877ef  A need was found to create mutators for imperitive
-    attributes. A person's name property should be able to parse a name
-    before saving to its `names` collection.
-    
-        per = party.person()
-        per.name = 'Jesse Hogan'
-        assert per.first == 'Jesse'
-        assert per.last  == 'Hogan'
-    
     FIXME:1de11dc0 There is an issue with the way superentities
     collections are accessed as attributes of orm.entity object. 
     
@@ -2463,7 +2454,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             if attr not in maps:
                 return object.__setattr__(self, attr, v)
 
-            # If there is a setter property (non-mapping) directly on
+            # If there is a setter @property (non-mapping) directly on
             # `self`, call it directly. This makes it possible to
             # override mappings with regular @property's. See how the
             # @property `person.name` updates the mapping `party.name`.
@@ -4056,6 +4047,7 @@ class attr:
                         # If it's not in the subentity's mapping
                         # collection, make a regular getattr() call on
                         # e's super. 
+                        # TODO s/super/sup
                         super = e.orm.super # :=
                         if super:
                             return getattr(super, name)
