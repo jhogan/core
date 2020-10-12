@@ -24077,6 +24077,128 @@ class gem_hr(tester):
                 hist1.periodtype.id
             )
 
+    def it_creates_benefits(self):
+        # Create company
+        com = party.company(name='ABC Corporation')
+
+        # Create an interanal organization role
+        int = party.internal()
+
+        # Add it to the company's roles
+        com.roles += int
+
+        # Create person (employee)
+        per = party.person(first='John', last='Smith')
+
+        # Create employee role
+        emp = party.employee()
+
+        # Assign the employment role to the person
+        per.roles += emp
+
+        # Associate the emp role with int role, creating the employment
+        # relationship
+        emp.role_roles += hr.employeement(
+            object = int
+        )
+
+        # Get the employeement association
+        employeement = emp.role_roles.last
+
+        # $1,200 per year for a health benefit
+        employeement.benefits += hr.benefit(
+            begin = 'Jan 1. 1998',
+            end   = 'Dec 31. 2000',
+            amount = 1_200,
+            percent = 50,
+            periodtype = hr.periodtype(
+                name = 'per year'
+            ),
+            benefittype = hr.benefittype(
+                name = 'Health',
+                description = None,
+            ),
+        )
+
+        # $1,500 per year for a health benefit (current)
+        employeement.benefits += hr.benefit(
+            begin = 'Jan 1. 2000',
+            end   = None,
+            amount = 1_500,
+            percent = 60,
+            periodtype = hr.periodtype(
+                name = 'per year'
+            ),
+            benefittype = hr.benefittype(
+                name = 'Health',
+                description = None,
+            ),
+        )
+
+        # 15 days of vacation 
+        employeement.benefits += hr.benefit(
+            percent = 100,
+            time = 10,
+            periodtype = hr.periodtype(
+                name = 'days'
+            ),
+            benefittype = hr.benefittype(
+                name = 'Vacation',
+                description = None,
+            ),
+        )
+
+        # 10 days of sick leave
+        employeement.benefits += hr.benefit(
+            percent = 100,
+            time = 10,
+            periodtype = hr.periodtype(
+                name = 'days'
+            ),
+            benefittype = hr.benefittype(
+                name = 'Sick leave',
+                description = None,
+            ),
+        )
+
+        # $50 per year for 401k
+        employeement.benefits += hr.benefit(
+            begin = 'Jan 1, 2001',
+            percent = 100,
+            amount = 50,
+            periodtype = hr.periodtype(
+                name = 'per year'
+            ),
+            benefittype = hr.benefittype(
+                name = '401k',
+                description = None,
+            ),
+        )
+
+        employeement.save()
+        employeement1 = employeement.orm.reloaded()
+
+        benes = employeement.benefits.sorted()
+        benes1 = employeement1.benefits.sorted()
+
+        self.five(benes)
+        self.five(benes1)
+
+        for bene, bene1 in zip(benes, benes1):
+            self.eq(bene.id, bene1.id)
+            self.eq(bene.begin, bene1.begin)
+            self.eq(bene.end, bene1.end)
+            self.eq(bene.percent, bene1.percent)
+            self.eq(bene.time, bene1.time)
+            self.eq(
+                bene.periodtype.id,
+                bene1.periodtype.id
+            )
+            self.eq(
+                bene.benefittype.id,
+                bene1.benefittype.id
+            )
+        
 
 ########################################################################
 # Test dom                                                             #
