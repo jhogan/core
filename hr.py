@@ -351,8 +351,33 @@ class benefit(orm.entity):
     time = int
 
 class benefittype(apriori.type):
+    """ Lists the various types of benefit types. The ``name``
+    attribute (inherited from ``apriori.type``) stores values such as
+    "Health", "Vacation", "Sick leave", and "401k".
+    """
     description = text
+
+    # The standard employeer paid percentage. Can be used to calculate
+    # costs related to all employees with a particular benefit. Note
+    # that the book refers to this as ``employeer paid percentage``.
     percent = dec
 
     benefits = benefits
+
+class paycheck(invoice.disbursement):
+    """ A payment from an internal organization
+    (``party.internalorganization``) to an employee
+    (``party.employee``).
+
+    Note that a paycheck is a subentity of ``invoice.disbursement``
+    which itself is a subentity of ``invoice.payment`` since a paycheck
+    is essentially type of payment.
+    """
+
+    # The employee role of a ``party.person`` which receives the
+    # paycheck.
+    employee = party.employee
+
+    # The internal organization role which issues the paycheck
+    internalorganization = party.internalorganization
     
