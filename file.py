@@ -384,8 +384,6 @@ class file(inode):
         accessor will try to guess what it should be given the ``body``
         attribute and the ``file.name``.
         """
-        # TODO:545a5261 Use Pythons mimetypes library to guess based on
-        # path/url/extension
         if not attr():
             mime = mimetypes.guess_type(self.path, strict=False)[0]
             if mime is not None:
@@ -410,6 +408,8 @@ class file(inode):
         orm.AttributeError so the client code doesn't have to deal with
         this awkwardness.
         """
+        # TODO We need to find a better way to do this. The user should
+        # not have to us a specialized AttributeError.
         raise orm.AttributeError(
             "file entities don't have inodes"
         )
@@ -622,6 +622,9 @@ class resource(file):
 
     def _write(self):
         # Get the file and the symlink
+
+        # TODO If self.local is False, we can't save so raise an
+        # exception.
         path = self.path
         ln = self.symlink
 
