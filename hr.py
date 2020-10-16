@@ -380,4 +380,56 @@ class paycheck(invoice.disbursement):
 
     # The internal organization role which issues the paycheck
     internalorganization = party.internalorganization
-    
+
+class methodtype(apriori.type):
+    """ The payment method type used to pay an employee. The inherited
+    ``name`` attribute can be values such as "cash", "check" or
+    "electronic".
+
+    Note that this entity was originally called PAYMENT METHOD TYPE in
+    "The Data Model Resource Book".
+    """
+
+class preference(orm.entity):
+    """ The preferences an employee will have for their paycheck. This
+    includes deduction amounts, payment method types, bank name, routing
+    number and account number, etc.
+
+    Each ``preferences`` may be defined for a certain ``periodtype``.
+    For example, a particular standard deduction that is desired may be
+    specified for pay ``periodtypes`` of "per year", "per month", or
+    "weekely".
+
+    Note that this entity was originally called PAYROLE PREFERENCE in
+    "The Data Model Resource Book".
+    """
+
+    # A span allows the tracking of preferences over time.
+    span = datespan
+
+    # Percentage of pay the employee wants designated to a particular
+    # payment method type (``methodtype``) or designated for certain
+    # recurring deductions that are maintained through the relationship
+    # with ``deductiontype``.
+    percent = dec
+
+    # The flat amount of pay the employee wants designated to a
+    # particular payment method type (``methodtype``) or designated for
+    # certain recurring deductions that are maintained through the
+    # relationship with ``deductiontype``. Note the book calls this the
+    # ``flat amount``.
+    amount = dec
+
+    # If the implict attribute ``methodtype.name`` equals "electronic",
+    # the ``routing`` number, ``account`` number and ``bank`` name may be used
+    # to successfully complete the transaction.
+
+    # The bank's routing number
+    routing = int
+
+    # The account number
+    account = int
+
+    # The name of the bank
+    bank = str
+
