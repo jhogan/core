@@ -66,6 +66,8 @@ import pathlib
 import shutil
 import textwrap
 import urllib.request
+import hashlib
+import base64
 
 class inodes(orm.entities):
     """ Represents a collection of ``inode`` entities.
@@ -427,8 +429,6 @@ class file(inode):
 
         only the string 'image' will be returned.
         """
-        # TODO Implemente a complimentary `mimesubtype` property 
-
         mime = self.mime
         if mime:
             return mime.split('/')[0]
@@ -644,9 +644,21 @@ class resource(file):
                 )
 
                 # Write the file to the file system
-                with urlopen(req) as req, open(path, 'wb') as f:
+                with urlopen(req) as req:
                     # TODO Test integrity before saving
-                    shutil.copyfileobj(req, f)
+                    body = req.read()
+                    algo, digest = self.integrity.split('-')
+                    digest = base64.b64decode(digest)
+                    algo = getattr(hashlib, algo.lower())()
+                    algo.update(body)
+                    if algo.digest() != digest:
+                        raise IntegrityError(
+                            f'Invalid digest: {self.url}'
+                        )
+
+                # TODO Use the correct mode based on mimetype
+                with open(path, 'wb') as f:
+                    f.write(body)
 
             except urllib.error.HTTPError as ex:
                 # We won't be able to cache, but that shouldn't be a show
@@ -717,9 +729,6 @@ class directory(inode):
         for nd in self.inodes:
             yield nd
 
-        
-
-
-
-            
+class IntegrityError(ValueError):
+    pass
 

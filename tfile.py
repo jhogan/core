@@ -18,6 +18,7 @@ import pom
 import dom
 import uuid
 import base64
+import hashlib
 import os.path
 import entities
 from func import enumerate, getattr, B
@@ -863,10 +864,58 @@ class file_directory(tester.tester):
                 self.eq('f200', nd.name)
             else:
                 assert False
-                
-                
-            
-        
+
+class file_resource(tester.tester):
+    def __init__(self):
+        super().__init__()
+        clean()
+
+        orm.orm.recreate(
+            party.user, file.files, file.resources,
+            file.directory, file.inodes,
+        )
+
+    def it_passes_integrity_check(self):
+        def get():
+            file.resource(
+                url='https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js',
+                integrity = 'sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw==',
+                local = True
+            )
+
+        self.expect(None, get)
+
+    def it_fails_integrity_check(self):
+        tegridy = hashlib.sha512()
+        tegridy.update(
+            b"If you're gonna fight for your tegridy, don't forget "
+            b'to bring a towel.'
+        )
+        tegridy = base64.b64encode(tegridy.digest()).decode('ascii')
+        tegridy = f'sha512-{tegridy}'
+        integrity = 'sha512-9h1vJw44WPVSKRzUsjHzwVatBzphLo8dd4Hj1xxgr3xBO3Wbs2Z2y8dDXQCOMIBzs9qT6n8HcVvnxWKJj4uWyQ=='
+
+        path = os.path.join(
+            file.inode.store, 
+            'resources/cdnjs.cloudflare.com/ajax/libs/mathjs/7.5.1/math.js'
+        )
+
+        def get(integrity):
+            return file.resource(
+                url = 'https://cdnjs.cloudflare.com/ajax/libs/mathjs/7.5.1/math.js',
+                integrity = integrity,
+                local = True
+            )
+
+        # `get()` with `tegridy`. We should get an IntegrityError
+        # because `tegridy` is the wrong digest.
+        res = self.expect(file.IntegrityError, lambda : get(tegridy))
+        self.false(os.path.exists(path))
+
+        # `get()` with `integrity`. We should get no errors because
+        # `integrity` is the correct digest.
+        self.expect(None, lambda : get(integrity))
+        self.false(os.path.exists(path))
 
 if __name__ == '__main__':
     tester.cli().run()
