@@ -157,9 +157,7 @@ class dom_file(tester.tester):
                 usr = party.user(uid)
                 f = req.files.first
 
-                dir = usr.directory
-                avatars = dir.mkdir('/var/avatars/')
-                default = avatars.file('default.gif')
+                default = usr.directory.file('/var/avatars/default.gif')
                 default.body = f.body
                 usr.save()
                 res.status = 201

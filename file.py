@@ -686,38 +686,37 @@ class directory(inode):
     # introduced.
     entities = directories
 
-    def file(self, name):
-        nd = self(name)
-        if not nd:
-            f = file(name=name)
-            self += f
-            return f
-
-        # NOTE The code below is untested
-        try:
-            f = file(nd)
-        except RecordNotFoundError:
-            return directory(nd)
-        else:
-            return f
-
-    def mkdir(self, name):
-        # TODO Implement `parents` and test
-        nds = self.inodes
-        for dir in name.split('/'):
-            if not dir:
-                continue
-
-            try:
-                nd = nds[dir]
-                # TODO Ensure that if `dir` happens to be a `file`, an # appropriate Exception is raised.
-            except IndexError:
-                nd = directory(name=dir)
-                nds += nd
+    def file(self, path):
+        """ Create a new file underneath `self` in the hierarchy and
+        return the file:
             
-            nds = nd.inodes
+            etc = directory(path='/etc')
+            passwd = etc.file('passwd')
 
-        return nd
+
+        Above, we used the name 'passwd' for the file name, but we could
+        have specified a whole path::
+
+            my = directory(path='/my')
+            txt = my.file('path/to/file.txt')
+
+        Now, txt represents the file::
+
+            {self.store}/my/path/to/file.txt
+
+        """
+        f = file(path=path)
+
+        dir = f.inode
+        while dir.inode:
+            dir = dir.inode
+
+        if dir:
+            self += dir
+        else:
+            self += f
+
+        return f
 
     def __iter__(self):
         """ Allows us it iterate over the ``directory`` object insteaf
