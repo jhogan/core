@@ -2509,6 +2509,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             self._setvalue(attr, v, attr, setattr0, cmp=cmp)
 
             if type(map) is entitymapping:
+                # FIXME `v` can be None. When this is the case, we get a
+                # null reference exception.
+                
                 e = v.orm.entity
                 while True:
                     for map in self.orm.mappings.foreignkeymappings:
