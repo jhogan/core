@@ -457,14 +457,20 @@ class file(inode):
                 )
 
             # Decide on the mode
+            modes = 'wb', 'wt'
             if self.mimetype == 'text':
-                mode = 'wt'
-            else:
-                mode = 'wb'
+                modes = reversed(modes)
 
             # Write the data
-            with open(self.path, mode) as f:
-                f.write(self.body)
+            for i, mode in enumerate(modes):
+                try:
+                    with open(self.path, mode) as f:
+                        f.write(self.body)
+                except TypeError as ex:
+                    if not i.first:
+                        raise ex
+                else:
+                    break
 
         # Ensure the event handler at orm.entity is called.
         super()._self_onaftersave(src, eargs)
