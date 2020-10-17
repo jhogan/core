@@ -513,13 +513,11 @@ class file(inode):
         """
         self._setvalue('_body', v, '_body', strip=False)
         
-    # FIXME This should be a static property
     @property
-    def publicdir(self):
-        dir = os.path.join(self.store, 'public')
-
+    def symlink(self):
+        public = os.path.join(self.store, 'public')
         try:
-            pathlib.Path(dir).mkdir(
+            pathlib.Path(public).mkdir(
                 parents=True, exist_ok=True
             )
         except PermissionError as ex:
@@ -528,18 +526,8 @@ class file(inode):
                 'for the environment and given the appropriate '
                 f'permissions ({ex})'
             )
-        return dir
 
-    @property
-    def symlink(self):
-        # TODO This should use self.store, not self.publicdir.
-        # ``publicdir`` can be removed.
-        return f'{self.publicdir}/{os.path.basename(self.url)}'
-
-    @property
-    def public(self):
-        # TODO Investigate whether we should be using symlinks
-        return self.symlink
+        return f'{public}/{os.path.basename(self.url)}'
 
 class resources(files):
     """ Represents a collection of ``resource`` entities.
