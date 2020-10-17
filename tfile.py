@@ -646,6 +646,49 @@ class file_file(tester.tester):
         f = file.file(path='/850cad31/498c/4584')
         self.expect(AttributeError, lambda: f.inodes)
 
+    def it_becomes_dirty_when_body_is_changed(self):
+        f = file.file(name='minecraft.dat')
+        f.body = '1 2 3'
+
+        self.true(f.orm.isnew)
+        self.false(f.orm.isdirty)
+
+        f.save()
+
+        self.false(f.orm.isnew)
+        self.false(f.orm.isdirty)
+
+        f.body = '4 5 6'
+
+        self.false(f.orm.isnew)
+        self.true(f.orm.isdirty)
+
+        f.save()
+
+        self.false(f.orm.isnew)
+        self.false(f.orm.isdirty)
+
+        f = f.orm.reloaded()
+        self.eq('4 5 6', f.body)
+
+    def it_body_doesnt_get_trimmed(self):
+        # TODO What mode should we save and load files as. An .bat file
+        # is considered an application/x-msdos-program, not a text/*
+        # mimetype. But an application/* suggests binary.
+        body = '    @ECHO\nOFF\nCLS\nDATE\nTIME\nVER    '
+        f = file.file(name='autoexec.bat')
+        f.body = body
+
+        self.eq(body, f.body)
+
+        f.save()
+
+        self.eq(body, f.body)
+
+        f = f.orm.reloaded()
+
+        self.eq(body, f.body.decode('ascii'))
+
 class file_directory(tester.tester):
     def __init__(self):
         super().__init__()
@@ -913,7 +956,7 @@ class file_resource(tester.tester):
         # `get()` with `integrity`. We should get no errors because
         # `integrity` is the correct digest.
         self.expect(None, lambda : get(integrity))
-        self.false(os.path.exists(path))
+        self.true(os.path.exists(path))
 
 if __name__ == '__main__':
     tester.cli().run()
