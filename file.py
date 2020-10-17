@@ -89,7 +89,7 @@ class inodes(orm.entities):
                         nd = nds[name]
                     except IndexError:
                         raise IndexError(
-                            "Can't find node: {name}"
+                            f"Can't find node: {name}"
                         )
                     else:
                         nds = nd.inodes
@@ -647,8 +647,11 @@ class resource(file):
 
                 # Write the file to the file system
                 with urlopen(req) as req:
-                    # TODO Test integrity before saving
                     body = req.read()
+
+                    # Raise exception if the file downloaded does have
+                    # the same digest as the one stored in
+                    # `self.integrity`. 
                     algo, digest = self.integrity.split('-')
                     digest = base64.b64decode(digest)
                     algo = getattr(hashlib, algo.lower())()
@@ -686,7 +689,6 @@ class resource(file):
 class directories(inodes):
     """ Represents a collection of ``directory`` entities.
     """
-    pass
 
 class directory(inode):
     # TODO Remove below line when the branch is merged back into ev orm
@@ -728,9 +730,21 @@ class directory(inode):
         return nd
 
     def __iter__(self):
+        """ Allows us it iterate over the ``directory`` object insteaf
+        of its ``inodes`` collection::
+
+            dir = directory(name='/etc')
+            
+            # Print contents of /etc
+            for nd in dir:
+                print(nd.name)
+        """
         for nd in self.inodes:
             yield nd
 
 class IntegrityError(ValueError):
-    pass
+    """ An exception that indicates there was an error comparing the
+    digest stored in the database with the digest computer from a file's
+    contents (``file.body``). 
+    """
 
