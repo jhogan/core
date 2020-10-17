@@ -505,8 +505,7 @@ class file(inode):
             # The reloaded entity contains the same body text
             assert f.body == f1.body
         """
-        # TODO Changing the `body` should make the file `isdirty`
-        self._body = v
+        self._setvalue('_body', v, '_body', strip=False)
         
     # FIXME This should be a static property
     @property
