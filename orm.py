@@ -2439,6 +2439,14 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         :param: bool cmp: Determines whether `entities._setvalue` should
         compare the old value of the attribute to the new value. See the
         `cmp` variable in that method for more.
+
+        :param: bool imp: If True, indicates that __setattr__ is being
+        called by an imperitive setter. If this is the case, we want to
+        avoid infinite recursion by not calling the setter. Instead, we
+        allow the normal behavior of finding the ``mapping`` object
+        associated with the setter and setting its ``value`` attribute
+        to the ``v`` argument. By default, it is False, because this is
+        only necessary for imperitive setters.
         """
         
         # Need to handle 'orm' first, otherwise the code below that
