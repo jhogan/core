@@ -590,10 +590,6 @@ class resource(file):
 
             res = directory(path=path)
 
-            # TODO:545a5261 When mimetypes is used, we can let it
-            # determine the mimetype.
-            self.mime = 'text/plain'
-
             last = res['/'.join(dirs[1:])]
             last += self
 
