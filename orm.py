@@ -4023,6 +4023,28 @@ class fulltext(index):
         return name
 
 class attr:
+    def attr(v=undef):
+        """ Sets the map's value to ``v``. Returns the mapped
+        value.
+
+        This function is injected into imperitive attributes to
+        provide easy access to the the attributes mapping value.
+        """
+        if v is undef:
+            try:
+                return e.orm.mappings[name].value
+            except IndexError:
+                # If it's not in the subentity's mapping
+                # collection, make a regular getattr() call on
+                # e's super. 
+                # TODO s/super/sup
+                super = e.orm.super # :=
+                if super:
+                    return getattr(super, name)
+        else:
+            e.__setattr__(name, v, cmp=False, imp=True)
+            return v
+
     class AttributeErrorWrapper(Exception):
         """ An AttributeError wrapper. """
         def __init__(self, ex):
@@ -4065,33 +4087,46 @@ class attr:
             map.issetter = bool(self.fset)
             return map
 
-        def __get__(self, e, etype=None):
+        def _getset(self, instance, owner=None, value=undef):
+            isget = value is undef
+            isset = not isget
+                
+            if isget:
+                meth = self.fget
+            elif isset: 
+                meth = self.fset
+
+            # Inject global variable values into the attr() function
+            attr.attr.__globals__['name']  =  meth.__name__
+            attr.attr.__globals__['e']     =  instance
+
+            # Inject attr() reference into user-level imperitive attribute
+            meth.__globals__['attr'] = attr.attr
+
+            try:
+                # Invoke the imperitive attribute
+                if isget:
+                    return meth(instance)
+                elif isset:
+                    return meth(instance, value)
+
+            except AttributeError as ex:
+                # If it raises an AttributeError, wrap it. If the call
+                # from e.__getattribute__ sees a regular AttributeError,
+                # it will ignore it because it will assume its caller is
+                # requesting the value of a mapping object.
+                raise sys.modules['orm'].attr.AttributeErrorWrapper(ex)
+            
+        def __get__(self, instance, owner=None):
+            return self._getset(instance=instance, owner=owner)
+
             name = self.fget.__name__
 
-            def attr(v=undef):
-                """ Sets the map's value to ``v``. Returns the mapped
-                value.
-
-                This function is injected into imperitive attributes to
-                provide easy access to the the attributes mapping value.
-                """
-                if v is undef:
-                    try:
-                        return e.orm.mappings[name].value
-                    except IndexError:
-                        # If it's not in the subentity's mapping
-                        # collection, make a regular getattr() call on
-                        # e's super. 
-                        # TODO s/super/sup
-                        super = e.orm.super # :=
-                        if super:
-                            return getattr(super, name)
-                else:
-                    e.__setattr__(name, v, cmp=False, imp=True)
-                    return v
+            attr.attr.__globals__['e'] = e
+            attr.attr.__globals__['name'] = name
 
             # Inject into imperitive attribute
-            self.fget.__globals__['attr'] = attr
+            self.fget.__globals__['attr'] = attr.attr
 
             try:
                 # Invoke the imperitive attribute
@@ -4103,32 +4138,15 @@ class attr:
                 # requesting the value of a mapping object.
                 raise sys.modules['orm'].attr.AttributeErrorWrapper(ex)
 
-        def __set__(self, e, v):
+        def __set__(self, instance, value):
+            return self._getset(instance=instance, value=value)
             name = self.fset.__name__
 
-            def attr(v=undef):
-                """ Sets the map's value to ``v``. Returns the mapped
-                value.
-
-                This function is injected into imperitive attributes to
-                provide easy access to the the attributes mapping value.
-                """
-                if v is undef:
-                    try:
-                        return e.orm.mappings[name].value
-                    except IndexError:
-                        # If it's not in the subentity's mapping
-                        # collection, make a regular getattr() call on
-                        # e's super. 
-                        super = e.orm.super # :=
-                        if super:
-                            return getattr(super, name)
-                else:
-                    e.__setattr__(name, v, cmp=False, imp=True)
-                    return v
+            attr.attr.__globals__['e'] = e
+            attr.attr.__globals__['name'] = name
 
             # Inject into imperitive attribute
-            self.fset.__globals__['attr'] = attr
+            self.fset.__globals__['attr'] = attr.attr
 
             try:
                 # Invoke the imperitive attribute
