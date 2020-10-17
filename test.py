@@ -24198,7 +24198,105 @@ class gem_hr(tester):
                 bene.benefittype.id,
                 bene1.benefittype.id
             )
-        
+
+    def it_creates_paycheck_preferences(self):
+        ''' First, create an employeement '''
+        # Create company
+        com = party.company(name='ABC Corporation')
+
+        # Create an interanal organization role
+        int = party.internal()
+
+        # Add it to the company's roles
+        com.roles += int
+
+        # Create person (employee)
+        per = party.person(first='John', last='Smith')
+
+        # Create employee role
+        emp = party.employee()
+
+        # Assign the employment role to the person
+        per.roles += emp
+
+        # Associate the emp role with int role, creating the employment
+        # relationship
+        emp.role_roles += hr.employeement(
+            object = int
+        )
+
+        # Get the employeement association
+        employeement = emp.role_roles.last
+
+        prefs = hr.preferences()
+        prefs += hr.preference(
+            methodtype = hr.methodtype(name='electronic'),
+            employee = emp,
+            begin = 'Jan 1, 1995',
+            end   = 'Nov 1, 1999',
+            percent = 50,
+            routing = '99986-99',
+            account = 30984098,
+            bank = 'Some bank',
+        )
+
+        prefs += hr.preference(
+            methodtype = hr.methodtype(name='electronic'),
+            employee = emp,
+            begin = 'Jan 1, 1995',
+            end   = None,
+            percent = 50,
+            routing = '99986-99',
+            account = 9348599,
+            bank = 'Some bank',
+        )
+
+        prefs += hr.preference(
+            methodtype = hr.methodtype(name='electronic'),
+            employee = emp,
+            begin = 'Nov 2, 1999',
+            end   = None,
+            percent = 50,
+            routing = '11111-22',
+            account = 67567676,
+            bank = 'Some other bank',
+        )
+
+        prefs += hr.preference(
+            employee = emp,
+            begin = 'Nov 2, 1999',
+            end   = None,
+            percent = None,
+            amount = 125,
+            periodtype = hr.periodtype(name='per month'),
+            deductiontype = hr.deductiontype(name='Insurance')
+        )
+
+        prefs.orm.truncate()
+
+        prefs.save()
+        prefs.sort()
+        prefs1 = prefs.orm.all.sorted()
+
+        self.four(prefs)
+        self.four(prefs1)
+
+        for pref, pref1 in zip(prefs, prefs1):
+            if pref.methodtype:
+                self.eq(
+                    hr.methodtype(name='electronic').id, 
+                    pref1.methodtype.id
+                )
+            else:
+                B()
+
+            self.eq(pref.employee.id,  pref1.employee.id)
+            self.eq(pref.begin,        pref1.begin)
+            self.eq(pref.end,          pref1.end)
+            self.eq(pref.percent,      pref1.percent)
+            self.eq(pref.routing,      pref1.routing)
+            self.eq(pref.account,      pref1.account)
+            self.eq(pref.bank,         pref1.bank)
 
 ########################################################################
 # Test dom                                                             #

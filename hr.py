@@ -31,6 +31,7 @@ import orm
 import party
 import budget
 import apriori
+import invoice
 
 class employeements(party.role_roles):          pass
 class positions(orm.entities):                  pass
@@ -48,6 +49,11 @@ class grades(orm.entities):                     pass
 class histories(orm.entities):                  pass
 class benefits(orm.entities):                   pass
 class benefittypes(apriori.types):              pass
+class paychecks(invoice.disbursements):         pass
+class preferences(orm.entities):                pass
+class methodtypes(apriori.types):               pass
+class deductions(orm.entities):                 pass
+class deductiontypes(apriori.types):            pass
 
 class employeement(party.role_role):
     """ Maintains employment information. ``employeement`` is a
@@ -285,6 +291,8 @@ class periodtype(apriori.type):
 
     benefits = benefits
 
+    preferences = preferences
+
 class step(orm.entity):
     """ 
     Note that this is modeled after the SALARY STEP entity in "The Data
@@ -379,7 +387,7 @@ class paycheck(invoice.disbursement):
     employee = party.employee
 
     # The internal organization role which issues the paycheck
-    internalorganization = party.internalorganization
+    internal = party.internal
 
 class methodtype(apriori.type):
     """ The payment method type used to pay an employee. The inherited
@@ -389,6 +397,10 @@ class methodtype(apriori.type):
     Note that this entity was originally called PAYMENT METHOD TYPE in
     "The Data Model Resource Book".
     """
+
+    # A collection of payment ``preferences`` that this payment
+    # ``methodtype`` applies to.
+    preferences = preferences
 
 class preference(orm.entity):
     """ The preferences an employee will have for their paycheck. This
@@ -403,6 +415,10 @@ class preference(orm.entity):
     Note that this entity was originally called PAYROLE PREFERENCE in
     "The Data Model Resource Book".
     """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.default('routing', None)
+        self.orm.default('bank', None)
 
     # A span allows the tracking of preferences over time.
     span = datespan
@@ -425,7 +441,7 @@ class preference(orm.entity):
     # to successfully complete the transaction.
 
     # The bank's routing number
-    routing = int
+    routing = str
 
     # The account number
     account = int
@@ -433,3 +449,12 @@ class preference(orm.entity):
     # The name of the bank
     bank = str
 
+    # The `employee` role that the preference belongs to
+    employee = party.employee
+
+class deduction(orm.entity):
+    amount = dec
+
+class deductiontype(apriori.type):
+    deductions = deductions
+    preferences = preferences
