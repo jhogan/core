@@ -4120,43 +4120,8 @@ class attr:
         def __get__(self, instance, owner=None):
             return self._getset(instance=instance, owner=owner)
 
-            name = self.fget.__name__
-
-            attr.attr.__globals__['e'] = e
-            attr.attr.__globals__['name'] = name
-
-            # Inject into imperitive attribute
-            self.fget.__globals__['attr'] = attr.attr
-
-            try:
-                # Invoke the imperitive attribute
-                return self.fget(e)
-            except AttributeError as ex:
-                # If it raises an AttributeError, wrap it. If the call
-                # from e.__getattribute__ sees a regular AttributeError,
-                # it will ignore it because it will assume its caller is
-                # requesting the value of a mapping object.
-                raise sys.modules['orm'].attr.AttributeErrorWrapper(ex)
-
         def __set__(self, instance, value):
             return self._getset(instance=instance, value=value)
-            name = self.fset.__name__
-
-            attr.attr.__globals__['e'] = e
-            attr.attr.__globals__['name'] = name
-
-            # Inject into imperitive attribute
-            self.fset.__globals__['attr'] = attr.attr
-
-            try:
-                # Invoke the imperitive attribute
-                return self.fset(e, v)
-            except AttributeError as ex:
-                # If it raises an AttributeError, wrap it. If the call
-                # from e.__getattribute__ sees a regular AttributeError,
-                # it will ignore it because it will assume its caller is
-                # requesting the value of a mapping object.
-                raise sys.modules['orm'].attr.AttributeErrorWrapper(ex)
 
     def __init__(self, *args, **kwargs):
         self.args = list(args)
