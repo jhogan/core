@@ -3359,6 +3359,14 @@ class artifact(orm.entity):
     serial       =  chr(255)
 
 class artist(orm.entity):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.orm.default('lifeform', 'organic')
+        self.orm.default('bio', None)
+        self.orm.default('style', 'classicism')
+        self.orm.default('_processing', False)
+
     firstname      =  str, orm.index('fullname', 1)
     lastname       =  str, orm.index('fullname', 0)
     lifeform       =  str
@@ -3436,21 +3444,9 @@ class artist(orm.entity):
             v = 'male'
         elif v == 'f':
             v = 'female'
+
         attr(v)
 
-    """
-    @phone.setter(str)
-    def phone(self,)
-        self.orm.mappings('phone').value = v
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.orm.default('lifeform', 'organic')
-        self.orm.default('bio', None)
-        self.orm.default('style', 'classicism')
-        self.orm.default('_processing', False)
 
     def clear(self):
         self.locations.clear()
@@ -3513,6 +3509,11 @@ class singers(artists):
     pass
 
 class singer(artist):
+    def __init__(self, o=None, **kwargs):
+        self._transmitting = False
+        super().__init__(o)
+        self.orm.default('threats', None)
+
     voice    = str
     concerts = concerts
 
@@ -3541,9 +3542,14 @@ class singer(artist):
             return 'whistle'
         return v
 
-    def __init__(self, o=None):
-        self._transmitting = False
-        super().__init__(o)
+    @orm.attr(str)
+    def threats(self, v):
+        if hasattr(v, '__iter__'):
+            if len(v) > 3:
+                raise ValueError('No more than three threats')
+            attr(' '.join(v))
+        elif isinstance(v, str) or isinstance(v, type(None)):
+            attr(v)
 
     def clear(self):
         super().clear()
@@ -8285,21 +8291,32 @@ class test_orm(tester):
         sng.gender    = 'm'
         self.eq(int(), sng.phone)
 
+        # sng.phone is a getter
         sng.phone = '1' * 7
         self.type(int, sng.phone)
 
+        # sng.gender is a setter
+        sng.gender = 'm'
+        self.eq('male', sng.gender)
+
         sng.save()
 
-        art1 = singer(sng.id)
-        self.eq(sng.phone, art1.phone)
+        sng1 = singer(sng.id)
+        self.eq(sng.phone, sng1.phone)
 
-        art1.phone = '1' * 7
-        self.type(int, art1.phone)
+        self.eq('male', sng1.gender)
+        sng1.gender = 'f'
+        self.eq('female', sng1.gender)
 
-        art1.save()
+        sng1.phone = '1' * 7
+        self.type(int, sng1.phone)
 
-        art2 = singer(art1.id)
-        self.eq(art1.phone, art2.phone)
+        sng1.save()
+
+        sng2 = singer(sng1.id)
+        self.eq(sng1.phone, sng2.phone)
+
+        self.eq('female', sng2.gender)
 
         # Test non-inherited attr (register)
         sng = singer()
@@ -8319,18 +8336,32 @@ class test_orm(tester):
         sng.register = 'Vocal Fry'
         self.eq('vocal fry', sng.register)
 
+        # sng.threats is a setter
+        sng.threats = 'acting', 'singing', 'dancing'
+        self.type(str, sng.threats)
+        self.eq('acting singing dancing', sng.threats)
+
         sng.save()
 
-        art1 = singer(sng.id)
-        self.eq(sng.register, art1.register)
+        sng1 = singer(sng.id)
+        self.eq(sng.register, sng1.register)
 
-        art1.register = 'flute'
-        self.eq('whistle', art1.register)
+        self.eq('acting singing dancing', sng1.threats)
+        sng1.threats = 'acting', 'singing'
+        self.eq('acting singing', sng1.threats)
+        self.type(str, sng1.threats)
 
-        art1.save()
 
-        art2 = singer(art1.id)
-        self.eq(art1.register, art2.register)
+        sng1.register = 'flute'
+        self.eq('whistle', sng1.register)
+
+        sng1.save()
+
+        sng2 = singer(sng1.id)
+        self.eq(sng1.register, sng2.register)
+
+        self.eq('acting singing', sng2.threats)
+        self.type(str, sng2.threats)
 
     def it_calls_imperitive_attr_on_subsubentity(self):
         # Test inherited attr (artist.phone)
@@ -8352,6 +8383,8 @@ class test_orm(tester):
         rpr.phone = '1' * 7
         self.type(int, rpr.phone)
 
+        self.eq('female', rpr.gender)
+
         rpr.save()
 
         rpr1 = rapper(rpr.id)
@@ -8360,9 +8393,15 @@ class test_orm(tester):
         rpr1.phone = '1' * 7
         self.type(int, rpr1.phone)
 
+        rpr1.gender = 'm'
+        self.type(str, rpr1.gender)
+        self.eq('male', rpr1.gender)
+
         rpr1.save()
 
         self.eq(rpr1.phone, rapper(rpr1.id).phone)
+
+        self.eq(rpr1.gender, rapper(rpr1.id).gender)
 
         # Test inherited attr from super (singer.register)
         rpr = rapper()
@@ -8383,18 +8422,26 @@ class test_orm(tester):
         rpr.register = 'Vocal Fry'
         self.eq('vocal fry', rpr.register)
 
+        rpr.threats = 'acting', 'dancing'
+        self.eq('acting dancing', rpr.threats)
+
         rpr.save()
 
         rpr1 = rapper(rpr.id)
         self.eq(rpr.register, rpr1.register)
+        self.eq('acting dancing', rpr1.threats)
 
         rpr1.register = 'flute'
         self.eq('whistle', rpr1.register)
+
+        rpr1.threats = 'acting', 'dancing', 'singing'
+        self.eq('acting dancing singing', rpr1.threats)
 
         rpr1.save()
 
         rpr2 = rapper(rpr1.id)
         self.eq(rpr1.register, rpr2.register)
+        self.eq(rpr1.threats, rpr2.threats)
 
         # Test non-inherited attr from rapper
         rpr = rapper()
@@ -8576,16 +8623,12 @@ class test_orm(tester):
         self.zero(fact.brokenrules)
 
     def it_calls_imperitive_str_attr_on_entity(self):
-        ''' SETTER '''
-        art = artist()
-        art.gender = 'm'
-
-        ''' GETTER '''
         def saveok(e, attr):
             getattr(e, 'save')()
             e1 = type(e)(e.id)
             return getattr(e, attr) == getattr(e1, attr)
 
+        ''' GETTER '''
         # Ensure that a non-str gets converted to a str
         for o in int(1), float(3.14), dec(1.99), datetime.now(), True:
             art = artist()
@@ -8626,6 +8669,59 @@ class test_orm(tester):
             self.one(art.brokenrules)
             self.broken(art, 'email', 'fits')
 
+        ''' SETTER '''
+        art = artist()
+
+        # Ensure that a non-str gets converted to a str
+        for o in int(1), float(3.14), dec(1.99), datetime.now(), True:
+            art = artist.getvalid()
+            art.gender = o
+            self.type(str, art.gender)
+            self.eq(str(o), art.gender)
+            self.true(saveok(art, 'gender'))
+
+        for art in (artist(), singer()):
+            map = art.orm.mappings('gender')
+
+            if not map:
+                map = art.orm.super.orm.mappings['gender']
+
+            self.true(hasattr(art, 'gender'))
+            self.eq(str(), art.gender)
+            self.eq((1, 255), (map.min, map.max))
+
+            art.gender = 'm'
+            self.eq('male', art.gender)
+
+            art.gender = 'f'
+            self.eq('female', art.gender)
+
+            art.gender = '\n\t nonbinary \n\t '
+            self.eq('nonbinary', art.gender)
+
+            if type(art) is artist:
+                art1 = artist.getvalid()
+            else:
+                art1 = singer.getvalid()
+
+            for prop in art1.orm.properties:
+                setattr(art, prop, getattr(art1, prop))
+
+            min, max = map.min, map.max
+
+            art.gender = Δ * map.max
+            self.true(saveok(art, 'gender'))
+
+            art.gender += Δ
+            self.one(art.brokenrules)
+            self.broken(art, 'gender', 'fits')
+
+            art.gender = Δ * min
+            self.true(saveok(art, 'gender'))
+
+            art.gender = (Δ * (min - 1))
+            self.one(art.brokenrules)
+            self.broken(art, 'gender', 'fits')
 
     def it_calls_chr_attr_on_entity(self):
         map = artifact.orm.mappings['type']
