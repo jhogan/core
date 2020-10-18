@@ -82,6 +82,38 @@ TODOs:
     the name should be ``effort_item`` instead of ``item_effort``, since
     the former is alphabetized. This would help to locate them faster and
     to use them in code more efficiently.
+
+    TODO We should have a @property of the ``orm`` called ``sub``.
+    ``sub`` would be antonymous to ``orm.super``. It should do the
+    following:
+
+        * Lazy-load and return the immediate subentity of the current
+        entity::
+            
+            art = artist(sng.id)
+            assert type(art.orm.sub) is singer
+
+        * If called on a class, should return an AttributeError::
+
+            try:
+                artist.orm.sub
+            except AttributeError:
+                assert True
+            else:
+                assert False
+        
+        We could have an attribute called ``subs`` for this since an
+        entity class can have zero or more subentity classes::
+
+            subs = file.inodes.subs.sorted('__class__.__name__')
+            assert subs.first is file.directory
+            assert subs.second is file.file
+
+        * The sub should be connected as much possible to the graph so
+        * that ``.save()`` and ``.brokenrules`` work as expected::
+
+            art.orm.super.orm.sub is art
+            art.orm.sub.orm.super is art
 """
 
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
@@ -115,7 +147,6 @@ import primative
 import re
 import sys
 import textwrap
-
 
 @unique
 class types(Enum):
