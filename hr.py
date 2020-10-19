@@ -382,12 +382,29 @@ class paycheck(invoice.disbursement):
     is essentially type of payment.
     """
 
+    # NOTE The ``realized`` attribute (aka the **effective date**)
+    # (inherited from ``invoice.payment``) is the actual date the
+    # payrole disbursement was issued. In the case of electronic
+    # deposits, this may or may not correspond to the bank posting date. 
+
+    # NOTE The ``amount`` attribute (inherited from
+    # ``invoice.payment``) is the gross amount of pay.
+
     # The employee role of a ``party.person`` which receives the
     # paycheck.
     employee = party.employee
 
     # The internal organization role which issues the paycheck
     internal = party.internal
+
+    @property
+    def net(self)
+        """ The net amount of the paycheck.
+        """
+        # The net amount of the paycheck can be calculated by
+        # subtracting from the ``paycheck.amount``, the amounts recorded
+        # in the associated instances of the ``deduction`` entity.
+        raise NotImplementedError('TODO')
 
 class methodtype(apriori.type):
     """ The payment method type used to pay an employee. The inherited
