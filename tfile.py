@@ -43,13 +43,20 @@ def clean():
     # Make sure `rm` was successful
     assert ret == 0
 
+class foonets(pom.sites): pass
 class foonet(pom.site):
-    def __init__(self, host='foo.net'):
-        super().__init__(host)
+    def __init__(self, host='foo.net', *args, **kwargs):
+        super().__init__(host, *args, **kwargs)
 
         ''' Metadata '''
         self.lang = 'es'
         self.charset = 'iso-8859-1'
+
+        self.resources += file.resource(
+            url = 'https://code.jquery.com/jquery-3.5.1.js',
+            local = True
+        )
+
 
 class dom_file(tester.tester):
     """ Test interoperability between DOM objects and the ``file``
@@ -96,6 +103,7 @@ class dom_file(tester.tester):
         # Set up site
         ws = foonet()
         ws.pages += index()
+        ws.save()
 
         # GET the /en/files page
         tab = self.browser().tab()
@@ -165,6 +173,7 @@ class dom_file(tester.tester):
         # Set up site
         ws = foonet()
         ws.pages += avatar()
+        ws.save()
 
         # Get a browser tab
         tab = self.browser().tab()
@@ -195,13 +204,6 @@ class dom_file(tester.tester):
         class index(pom.page):
             def main(self):
                 head = self['html head'].first
-
-                head += dom.script(
-                    file.resource(
-                        url = 'https://code.jquery.com/jquery-3.5.1.js',
-                        local = True
-                    )
-                )
 
                 head += dom.script(
                     file.resource(
@@ -238,6 +240,13 @@ class dom_file(tester.tester):
         # Set up site
         ws = foonet()
         ws.pages += index()
+        B()
+        ws.resources += file.resource(
+            url = 'https://code.jquery.com/jquery-3.5.1.js',
+            local = True
+        )
+
+        ws.save()
 
         # GET the /en/files page
         tab = self.browser().tab()

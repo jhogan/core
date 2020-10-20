@@ -545,6 +545,43 @@ class resource(file):
     need for a developer to manually manage the resource file on the
     hard drive.
     """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.default('crossorigin', 'anonymous')
+        self.orm.default('integrity', None)
+
+        try:
+            self.local = kwargs['local']
+        except KeyError:
+            self.local = False
+
+    # TODO Currently, all resources are put in the /resources folder.
+    # However, this should be within a the website's 'resources' folder. 
+    # We should:
+    # 
+    # 1. Alter pom.site to inherit from asset.asset (or some subentity
+    # thereof).
+    #
+    # 2. Add a file.resources collection to pom.site:
+    #
+    #     class site(asset.asset):
+    #         resources = file.resources
+    #
+    # # If a ``resource`` has a ``site`` composite (``resource.site is
+    # not None``), we use that for the directory it saves to in
+    # resource.__init__
+    #
+    # 3. ``dom.script`` can set the resource site::
+    #
+    #     class script(dom.element):
+    #         def __init__(self, res):
+    #             res.site = self.site
+    #     
+    # Actually, this would mean `resource`` shouldn't auto-save.
+    # dom.script should be able to set the site (see above) so it can
+    # alter `res.site` before resource's are saved.
+
+
 
     # The external location of the resources.
     url        =  str
@@ -571,32 +608,6 @@ class resource(file):
     #     have the credentials flag set to 'include'.
     crossorigin  =  str
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.orm.default('crossorigin', 'anonymous')
-        self.orm.default('integrity', None)
-
-        try:
-            self.local = kwargs['local']
-        except KeyError:
-            self.local = False
-
-        if self.local:
-            urlparts = urllib.parse.urlsplit(self.url)
-            dirs = ['resources', urlparts.netloc]
-            dirs.extend([x for x in urlparts.path.split('/') if x])
-            self.name = dirs.pop()
-            path = '/'.join(dirs)
-
-            res = directory(path=path)
-
-            last = res['/'.join(dirs[1:])]
-            last += self
-
-            if self.orm.isnew:
-                res.save()
-            elif not self.exists:
-                self.write()
 
     def _self_onaftersave(self, *args, **kwargs):
         """ After the ``resource`` has been saved to the database, write

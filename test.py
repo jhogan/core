@@ -22476,6 +22476,7 @@ class gem_account(tester):
 ########################################################################
 # Test dom                                                             #
 ########################################################################
+class foonets(pom.sites): pass
 class foonet(pom.site):
     def __init__(self, host='foo.net'):
         super().__init__(host)
