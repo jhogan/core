@@ -398,13 +398,16 @@ class paycheck(invoice.disbursement):
     internal = party.internal
 
     @property
-    def net(self)
+    def net(self):
         """ The net amount of the paycheck.
         """
         # The net amount of the paycheck can be calculated by
         # subtracting from the ``paycheck.amount``, the amounts recorded
         # in the associated instances of the ``deduction`` entity.
         raise NotImplementedError('TODO')
+    
+    # The collection of deductions applied to this paycheck
+    deductions = deductions
 
 class methodtype(apriori.type):
     """ The payment method type used to pay an employee. The inherited
@@ -470,8 +473,20 @@ class preference(orm.entity):
     employee = party.employee
 
 class deduction(orm.entity):
+    """ The ``deduction`` entity stores information about the various
+    deductions that occur on a particular ``paycheck``.  
+    """
     amount = dec
 
 class deductiontype(apriori.type):
+    """ The ``deductiontype`` entity contains a list of the valid types of
+    deductions that are allowed by the enterprise or are required by
+    law. Some of these include: "federal tax", "FICA", "state tax",
+    "401k", "retirement", "insurance", or "cafeteria plan."
+
+    ``deductiontypes`` can be applied to ``paychecks``. They can also be
+    applied to the standard deductions that employees want on an ongoing
+    basis.
+    """
     deductions = deductions
     preferences = preferences

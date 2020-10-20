@@ -123,6 +123,11 @@ TODOs:
         # This will fail; we can't discover who the manager of the
         # direct_report is.
         assert direct_report.position_positions.ispopulated
+
+    TODO Instead of ``decimal``, we may want to create a ``currency``
+    datatype. Currently, it's assumed that the values stored in decimal
+    attributes are dollars, but obviously this will not always be the
+    case.
 """
 
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
@@ -156,7 +161,6 @@ import primative
 import re
 import sys
 import textwrap
-
 
 @unique
 class types(Enum):

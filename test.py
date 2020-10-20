@@ -24298,6 +24298,92 @@ class gem_hr(tester):
             self.eq(pref.account,      pref1.account)
             self.eq(pref.bank,         pref1.bank)
 
+    def it_applies_deductions_from_paycheck(self):
+        ''' First, create an employeement '''
+        # Create company
+        com = party.company(name='ABC Corporation')
+
+        # Create an interanal organization role
+        int = party.internal()
+
+        # Add it to the company's roles
+        com.roles += int
+
+        # Create person (employee)
+        per = party.person(first='John', last='Smith')
+
+        # Create employee role
+        emp = party.employee()
+
+        # Assign the employment role to the person
+        per.roles += emp
+
+        # Associate the emp role with int role, creating the employment
+        # relationship
+        emp.role_roles += hr.employeement(
+            object = int
+        )
+
+        # Get the employeement association
+        employeement = emp.role_roles.last
+
+        chk = hr.paycheck(
+           employee = emp,
+           internal = int,
+           realized = 'Jan 1, 2001',
+           amount   = 2_000,
+        )
+
+        chk.deductions += hr.deduction(
+            deductiontype = hr.deductiontype(
+                name = 'Federal Tax',
+            ),
+            amount = 200,
+        )
+
+        chk.deductions += hr.deduction(
+            deductiontype = hr.deductiontype(
+                name = 'FICA',
+            ),
+            amount = 54.50,
+        )
+
+        chk.deductions += hr.deduction(
+            deductiontype = hr.deductiontype(
+                name = 'State tax',
+            ),
+            amount = 80,
+        )
+
+        chk.deductions += hr.deduction(
+            deductiontype = hr.deductiontype(
+                name = 'Federal Tax',
+            ),
+            amount = 125,
+        )
+
+        chk.save()
+
+        chk1 = chk.orm.reloaded()
+
+        self.eq(chk.id, chk1.id)
+        self.eq(chk.employee.id, chk1.employee.id)
+        self.eq(chk.internal.id, chk1.internal.id)
+        self.eq(chk.amount, chk1.amount)
+
+        ducts = chk.deductions.sorted()
+        ducts1 = chk1.deductions.sorted()
+
+        self.four(ducts)
+        self.four(ducts1)
+
+        for duct, duct1 in zip(ducts, ducts1):
+            self.eq(duct.id, duct1.id)
+            self.eq(duct.deductiontype.id, duct1.deductiontype.id)
+            self.eq(duct.deductiontype.name, duct1.deductiontype.name)
+            self.eq(duct.amount, duct1.amount)
+
+
 ########################################################################
 # Test dom                                                             #
 ########################################################################
