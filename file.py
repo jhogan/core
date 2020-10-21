@@ -636,8 +636,7 @@ class resource(file):
     def _write(self):
         # Get the file and the symlink
 
-        # TODO If self.local is False, we can't save so raise an
-        # exception.
+        # TODO If self.local is False, don't write.
         path = self.path
         ln = self.symlink
 
@@ -666,6 +665,9 @@ class resource(file):
                     # Raise exception if the file downloaded does have
                     # the same digest as the one stored in
                     # `self.integrity`. 
+
+                    # TODO self.integrity can be None. If that is the
+                    # case, we should skip integrity checks.
                     algo, digest = self.integrity.split('-')
                     digest = base64.b64decode(digest)
                     algo = getattr(hashlib, algo.lower())()
