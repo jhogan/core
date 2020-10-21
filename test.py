@@ -22478,8 +22478,9 @@ class gem_account(tester):
 ########################################################################
 class foonets(pom.sites): pass
 class foonet(pom.site):
-    def __init__(self, host='foo.net'):
-        super().__init__(host)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.host = 'foo.net'
 
         ''' Pages '''
         self.pages += home()
@@ -22797,8 +22798,8 @@ class pom_site(tester):
         self.eq(main.items.pretty, mnu.items.pretty)
         
     def it_calls__repr__(self):
-        self.eq('site()', repr(pom.site('foo.bar')))
-        self.eq('site()', str(pom.site('foo.bar')))
+        self.eq('site()', repr(pom.site()))
+        self.eq('site()', str(pom.site()))
 
         self.eq('foonet()', repr(foonet()))
         self.eq('foonet()', str(foonet()))
@@ -22820,7 +22821,7 @@ class pom_site(tester):
         self.expect(IndexError, lambda: ws[dom.p()])
 
     def it_calls_html(self):
-        ws = pom.site('foo.bar')
+        ws = pom.site()
         self.type(dom.html, ws.html)
         self.eq('en', ws.html.lang)
 
@@ -22858,7 +22859,7 @@ class pom_site(tester):
         self.one(titles)
         self.eq(title, titles.first.text)
 
-        ws = pom.site('foo.bar')
+        ws = pom.site()
         hd = ws.head
         self.one(hd.children['meta[charset=utf-8]'])
 
@@ -22893,7 +22894,7 @@ class pom_site(tester):
         self.one(navs['[aria-label=Main]'])
 
     def it_calls_main_menu(self):
-        ws = pom.site('foo.bar')
+        ws = pom.site()
         mnu = ws.header.menu
         self.zero(mnu.items)
 
@@ -23190,7 +23191,7 @@ class pom_page(tester):
         self.isnot(pg.head,          ws.head)
 
     def it_calls_site(self):
-        ws = foonet(host='foo.net')
+        ws = foonet(name='foo.net')
         self.is_(ws, ws['/en/blogs'].site)
         self.is_(ws, ws['/en/blogs/comments'].site)
         self.is_(ws, ws['/en/blogs/comments/rejected'].site)
@@ -23562,9 +23563,11 @@ class pom_page(tester):
         self.one(res['main[data-path="/error"]'])
 
     def it_raises_404(self):
+        class derpnets(pom.sites): pass
         class derpnet(pom.site):
-            def __init__(self, host='derp.net'):
-                super().__init__(host)
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.host = 'derp.net'
 
         ws = derpnet()
         tab = self.browser().tab()

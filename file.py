@@ -555,6 +555,17 @@ class resource(file):
         except KeyError:
             self.local = False
 
+        # TODO When imperitive setters are available (currently being
+        # developed in parallel), we can make the `url` attribute a
+        # setter that sets `self.name`
+        try:
+            url = kwargs['url']
+        except KeyError:
+            pass
+        else:
+            self.name = os.path.basename(url)
+
+
     # TODO Currently, all resources are put in the /resources folder.
     # However, this should be within a the website's 'resources' folder. 
     # We should:
@@ -608,6 +619,8 @@ class resource(file):
     #     have the credentials flag set to 'include'.
     crossorigin  =  str
 
+    def __str__(self):
+        return self.url
 
     def _self_onaftersave(self, *args, **kwargs):
         """ After the ``resource`` has been saved to the database, write

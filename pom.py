@@ -31,11 +31,7 @@ import www
 class sites(asset.assets): pass
 
 class site(asset.asset):
-    # TODO Remove `host` from paramter list now that ``site`` is an orm
-    # entity. orm.super wants to instantiate it correctely but can't
-    # because it doesn't know how to pass in host. To see what I mean,
-    # make the ``host`` param non-option (remove =None).
-    def __init__(self, host=None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.index = None
         self._pages = None
@@ -49,7 +45,6 @@ class site(asset.asset):
         self.sidebars = sidebars()
 
         self._title = type(self).__name__.replace('_', '-')
-        self._host = host
 
         # TODO Replace with `file` object when it is created. NOTE that
         # the file object will need to have an integrity property to
@@ -62,6 +57,7 @@ class site(asset.asset):
         self.stylesheets = list()
         self._header = None
 
+    host = str
     resources = file.resources
 
     @property
@@ -97,10 +93,6 @@ class site(asset.asset):
             return self.pages[path]
         except IndexError:
             return None
-
-    @property
-    def host(self):
-        return self._host
 
     @property
     def lang(self):

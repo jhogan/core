@@ -3741,11 +3741,9 @@ class script(element):
     def __init__(self, res=None, *args, **kwargs):
         # If a file.resource was given
         if res:
-           
             self.site.resources &= res
             self.src = res.url
             if res.local:
-                B()
                 res.save()
                 if res.exists:
                     self.src = res.public

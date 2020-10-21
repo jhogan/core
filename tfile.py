@@ -10,18 +10,19 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2020                 #
 ########################################################################
 
-import tester
+from func import enumerate, getattr, B
+import asset
+import base64
+import dom
+import entities
 import file
+import hashlib
 import orm
+import os.path
 import party
 import pom
-import dom
+import tester
 import uuid
-import base64
-import hashlib
-import os.path
-import entities
-from func import enumerate, getattr, B
 
 def clean():
     store = file.file.store
@@ -45,18 +46,15 @@ def clean():
 
 class foonets(pom.sites): pass
 class foonet(pom.site):
-    def __init__(self, host='foo.net', *args, **kwargs):
-        super().__init__(host, *args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         ''' Metadata '''
         self.lang = 'es'
         self.charset = 'iso-8859-1'
 
-        self.resources += file.resource(
-            url = 'https://code.jquery.com/jquery-3.5.1.js',
-            local = True
-        )
-
+        self.host = 'foo.net'
+        self.name = 'foo.net'
 
 class dom_file(tester.tester):
     """ Test interoperability between DOM objects and the ``file``
@@ -65,15 +63,50 @@ class dom_file(tester.tester):
     def __init__(self):
         super().__init__()
         orm.orm.recreate(
-            party.user,
-            file.files,
-            file.resources,
-            file.directory,
-            file.inodes,
+            party.user,      file.files,   file.resources,
+            file.directory,  file.inodes,  pom.site, foonet, asset.asset
         )
 
-    def it_links_to_js_files(self):
-        file.file.orm.truncate()
+    def it_adds_js_files_to_site(self):
+        for e in ('inode', 'resource', 'resource'):
+            getattr(file, e, 'orm.truncate')()
+
+        ws = foonet()
+
+        ws.resources += file.resource(
+            url = 'https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/xterm.min.js',
+            integrity = 'sha512-2PRgAav8Os8vLcOAh1gSaDoNLe1fAyq8/G3QSdyjFFD+OqNjLeHE/8q4+S4MEZgPsuo+itHopj+hJvqS8XUQ8A==',
+            local = True,
+        )
+
+        ws.resources += file.resource(
+            url = 'https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/addons/attach/attach.min.js',
+            integrity = 'sha512-43J76SR5UijcuJTzs73z8NpkyWon8a8EoV+dX6obqXW7O26Yb268H2vP6EiJjD7sWXqxS3G/YOqPyyLF9fmqgA==',
+            local = True,
+        )
+
+
+        ws.save()
+
+        ws1 = ws.orm.reloaded()
+
+        self.eq(ws.id, ws1.id)
+
+        ress = ws.resources.sorted()
+        ress1 = ws1.resources.sorted()
+
+        self.two(ress)
+        self.two(ress1)
+
+        for res, res1 in zip(ress, ress1):
+            self.eq(res.id, res1.id)
+            self.eq(res.url, res1.url)
+            self.eq(res.integrity, res1.integrity)
+
+    def it_adds_js_files_to_page(self):
+        for e in ('inode', 'resource', 'resource'):
+            getattr(file, e, 'orm.truncate')()
+
         class index(pom.page):
             def main(self):
                 head = self['html head'].first
