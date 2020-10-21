@@ -108,6 +108,9 @@ class position(orm.entity):
 
     responsibilities = responsibilities
 
+    # A collection of ``applications`` entities for this ``position``.
+    applications = applications
+
 class positiontype(apriori.type):
     """ Provides information for further defining and categorizing a
     job.
@@ -488,5 +491,37 @@ class deductiontype(apriori.type):
     applied to the standard deductions that employees want on an ongoing
     basis.
     """
+    # The collection of ``deductions`` represented by this
+    # ``deductiontype``.
     deductions = deductions
     preferences = preferences
+
+class application(orm.entity):
+    """ An application a person (``party.person``) may make for a
+    ``position``.
+    """
+    applied = date
+
+    # The person applying for the position
+    person = party.person
+
+class applicationstatustype(apriori.type):
+    """ A ``position`` may have  a status associated with it represented
+    by the ``applicationstatustype`` entity. Valid values for the
+    ``name`` attribute are "received", "reviewed", "filed", "rejected",
+    "notified candidate of non-interest", and so on. 
+
+    Note that this is modeled after the EMPLOYMENT APPLICATION STATUS
+    TYPE entity in "The Data Model Resource Book".
+    """
+    applications = applications
+
+class applicationsourcetype(apriori.type):
+    ''' Represents the source of the application. Valid values for the
+    ``name`` attribute are "newspaper," "personal referral," "Internet,"
+    and so on.
+
+    Note that this is modeled after the EMPLOYMENT APPLICATION SOURCE
+    TYPE entity in "The Data Model Resource Book".
+    """
+    applications = applications
