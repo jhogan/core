@@ -54,6 +54,18 @@ class preferences(orm.entities):                pass
 class methodtypes(apriori.types):               pass
 class deductions(orm.entities):                 pass
 class deductiontypes(apriori.types):            pass
+class applications(orm.entities):               pass
+class applicationstatustypes(apriori.types):    pass
+class applicationsourcetypes(apriori.types):    pass
+class qualifications(orm.entities):             pass
+class degrees(qualifications):                  pass
+class certifications(qualifications):           pass
+class qualificationtypes(apriori.types):        pass
+class skills(orm.entities):                     pass
+class skilltypes(apriori.types):                pass
+class trainingtypes(apriori.types):             pass
+class trainings(orm.entities):                  pass
+class resumes(orm.entities):                    pass
 
 class employeement(party.role_role):
     """ Maintains employment information. ``employeement`` is a
@@ -517,7 +529,7 @@ class applicationstatustype(apriori.type):
     applications = applications
 
 class applicationsourcetype(apriori.type):
-    ''' Represents the source of the application. Valid values for the
+    """ Represents the source of the application. Valid values for the
     ``name`` attribute are "newspaper," "personal referral," "Internet,"
     and so on.
 
@@ -525,3 +537,76 @@ class applicationsourcetype(apriori.type):
     TYPE entity in "The Data Model Resource Book".
     """
     applications = applications
+
+class qualification(orm.entity):
+    """
+    Note that this is modeled after the PARTY QUALIFICATION entity in
+    "The Data Model Resource Book".
+    """
+
+    span = datespan
+
+    party = party.party
+
+class degree(qualification):
+    """ A degree qualification
+    """
+
+class certification(qualification):
+    """ A certificate qualification
+    """
+
+class qualificationtype(apriori.type):
+    """ 
+    Note that this is modeled after the QUALIFICATION TYPE entity in
+    "The Data Model Resource Book".
+    """
+    qualifications = qualifications
+
+class skill(orm.entity):
+    """ 
+    Note that this is modeled after the PARTY SKILL entity in
+    "The Data Model Resource Book".
+    """
+
+    party = party.party
+
+    # (Note that the book calls this the ``STARTED USING DATE``.)
+    started = date
+
+    # (Note that the book calls this the ``YEARS EXPERIENCE``.)
+    experience = dec
+
+    # (Note that the book calls this the ``SKILL LEVEL  ``.)
+    level = dec
+
+class skilltype(apriori.type):
+    """ 
+    Note that this is modeled after the SKILL TYPE entity in
+    "The Data Model Resource Book".
+    """
+    skills = skills
+
+class training(orm.entity):
+    """ 
+    Note that this is modeled after the PERSON TRAINING entity in
+    "The Data Model Resource Book".
+    """
+    span = datespan
+
+    person = party.person
+
+class trainingtype(apriori.type):
+    """ 
+    Note that this is modeled after the TRAINING CLASS TYPE entity in
+    "The Data Model Resource Book".
+    """
+    trainings = trainings
+
+class resume(orm.entity):
+    """ Represents a resume.
+    """
+    date = date
+    text = text
+
+    party = party.party

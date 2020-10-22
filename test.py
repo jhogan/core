@@ -24287,8 +24287,6 @@ class gem_hr(tester):
                     hr.methodtype(name='electronic').id, 
                     pref1.methodtype.id
                 )
-            else:
-                B()
 
             self.eq(pref.employee.id,  pref1.employee.id)
             self.eq(pref.begin,        pref1.begin)
