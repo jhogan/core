@@ -667,17 +667,15 @@ class resource(file):
                     # Raise exception if the file downloaded does have
                     # the same digest as the one stored in
                     # `self.integrity`. 
-
-                    # TODO self.integrity can be None. If that is the
-                    # case, we should skip integrity checks.
-                    algo, digest = self.integrity.split('-')
-                    digest = base64.b64decode(digest)
-                    algo = getattr(hashlib, algo.lower())()
-                    algo.update(body)
-                    if algo.digest() != digest:
-                        raise IntegrityError(
-                            f'Invalid digest: {self.url}'
-                        )
+                    if self.integrity:
+                        algo, digest = self.integrity.split('-')
+                        digest = base64.b64decode(digest)
+                        algo = getattr(hashlib, algo.lower())()
+                        algo.update(body)
+                        if algo.digest() != digest:
+                            raise IntegrityError(
+                                f'Invalid digest: {self.url}'
+                            )
 
                 # TODO Use the correct mode based on mimetype
                 with open(path, 'wb') as f:
