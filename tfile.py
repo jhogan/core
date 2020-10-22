@@ -24,6 +24,8 @@ import pom
 import tester
 import uuid
 
+# TODO Enuser that integrity can be None
+
 def clean():
     store = file.file.store
 
@@ -84,7 +86,6 @@ class dom_file(tester.tester):
             integrity = 'sha512-43J76SR5UijcuJTzs73z8NpkyWon8a8EoV+dX6obqXW7O26Yb268H2vP6EiJjD7sWXqxS3G/YOqPyyLF9fmqgA==',
             local = True,
         )
-
 
         ws.save()
 
