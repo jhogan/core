@@ -111,24 +111,19 @@ class dom_file(tester.tester):
             def main(self):
                 head = self['html head'].first
 
-                head += dom.script(
-                    file.resource(
-                        url='https://code.jquery.com/jquery-3.5.1.js',
-                    )
+                # Add page-level resources
+                self.resources += file.resource(
+                    url='https://code.jquery.com/jquery-3.5.1.js',
                 )
 
-                head += dom.script(
-                    file.resource(
-                        url='https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js',
-                        integrity='sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw=='
-                    )
+                self.resources += file.resource(
+                    url='https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js',
+                    integrity='sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw=='
                 )
 
-                head += dom.script(
-                    file.resource(
-                        url='https://cdnjs.cloudflare.com/ajax/libs/vega/5.14.0/vega.min.js',
-                        crossorigin='use-credentials',
-                    )
+                self.resources += file.resource(
+                    url='https://cdnjs.cloudflare.com/ajax/libs/vega/5.14.0/vega.min.js',
+                    crossorigin='use-credentials',
                 )
 
                 self.main += dom.h1('Home page')
@@ -136,7 +131,12 @@ class dom_file(tester.tester):
         # Set up site
         ws = foonet()
         ws.pages += index()
-        ws.save()
+
+        # Add site-wide resources
+        ws.resources += file.resource(
+            url = 'https://cdnjs.cloudflare.com/ajax/libs/unicorn.js/1.0/unicorn.min.js',
+            integrity = 'sha512-PSVbJjLAriVtAeinCUpiDFbFIP3T/AztPw27wu6MmtuKJ+uQo065EjpQTELjfbSqwOsrA1MRhp3LI++G7PEuDg==',
+        )
 
         # GET the /en/files page
         tab = self.browser().tab()
@@ -145,36 +145,48 @@ class dom_file(tester.tester):
         self.status(200, res)
 
         scripts = res['html head script']
-        self.three(scripts)
+        self.four(scripts)
 
+        # Test site-level resource
         self.eq(
-            'https://code.jquery.com/jquery-3.5.1.js',
+            'https://cdnjs.cloudflare.com/ajax/libs/unicorn.js/1.0/unicorn.min.js',
             scripts.first.src
         )
-        self.eq(None, scripts.first.integrity)
+        self.eq(
+            'sha512-PSVbJjLAriVtAeinCUpiDFbFIP3T/AztPw27wu6MmtuKJ+uQo065EjpQTELjfbSqwOsrA1MRhp3LI++G7PEuDg==', 
+            scripts.first.integrity
+        )
         self.eq('anonymous', scripts.first.crossorigin)
 
+        # Test page-level resources
         self.eq(
-            'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js',
+            'https://code.jquery.com/jquery-3.5.1.js',
             scripts.second.src
         )
-        self.eq(
-            'sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw==',
-            scripts.second.integrity
-        )
+        self.eq(None, scripts.second.integrity)
         self.eq('anonymous', scripts.second.crossorigin)
 
         self.eq(
-            'https://cdnjs.cloudflare.com/ajax/libs/vega/5.14.0/vega.min.js',
+            'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js',
             scripts.third.src
         )
+        self.eq(
+            'sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw==',
+            scripts.third.integrity
+        )
+        self.eq('anonymous', scripts.third.crossorigin)
 
-        self.eq(None, scripts.third.integrity)
-        self.eq('use-credentials', scripts.third.crossorigin)
+        self.eq(
+            'https://cdnjs.cloudflare.com/ajax/libs/vega/5.14.0/vega.min.js',
+            scripts.fourth.src
+        )
+
+        self.eq(None, scripts.fourth.integrity)
+        self.eq('use-credentials', scripts.fourth.crossorigin)
 
         for script in scripts:
-            # We aren't caching these resources so we should expect any to
-            # be in the database
+            # We aren't caching these resources (`local = True`) so we
+            # should expect any to be in the database
             self.zero(file.resources(url=script.src))
 
     def it_posts_file_in_a_users_file_system(self):
@@ -236,22 +248,16 @@ class dom_file(tester.tester):
         file.resource.orm.truncate()
         class index(pom.page):
             def main(self):
-                head = self['html head'].first
-
-                head += dom.script(
-                    file.resource(
-                        url = 'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js',
-                        integrity = 'sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw==',
-                        local = True
-                    )
+                self.resources += file.resource(
+                    url = 'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js',
+                    integrity = 'sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw==',
+                    local = True
                 )
 
-                head += dom.script(
-                    file.resource(
-                        url = 'https://cdnjs.cloudflare.com/ajax/libs/vega/5.14.0/vega.min.js',
-                        crossorigin = 'use-credentials',
-                        local = True,
-                    )
+                self.resources += file.resource(
+                    url = 'https://cdnjs.cloudflare.com/ajax/libs/vega/5.14.0/vega.min.js',
+                    crossorigin = 'use-credentials',
+                    local = True,
                 )
 
                 # This url will 404 so it can't be saved locally.
@@ -259,21 +265,19 @@ class dom_file(tester.tester):
                 # the `src` attribute instead of the local url. This
                 # should happen any time there is an issue downloading
                 # an external resource.
-                head += dom.script(
-                    file.resource(
-                        url =
-                        'https://cdnjs.cloudflare.com/ajax/libs/55439c02/1.1/idontexit.min.js',
-                        crossorigin = 'use-credentials',
-                        local = True,
-                    )
+                self.resources += file.resource(
+                    url = 'https://cdnjs.cloudflare.com/ajax/libs/55439c02/1.1/idontexit.min.js',
+                    crossorigin = 'use-credentials',
+                    local = True,
                 )
+
+                self.resources.save()
 
                 self.main += dom.h1('Home page')
 
         # Set up site
         ws = foonet()
         ws.pages += index()
-        B()
         ws.resources += file.resource(
             url = 'https://code.jquery.com/jquery-3.5.1.js',
             local = True
@@ -292,11 +296,11 @@ class dom_file(tester.tester):
 
         # TODO:52612d8d Make a configuration option
         #dir = config().public
-        dir = os.path.join(file.file.store, 'public')
+        dir = file.file.store
 
         self.eq(
             f'{dir}/jquery-3.5.1.js',
-            scripts.first.src
+            scripts.second.src
         )
         self.eq(None, scripts.first.integrity)
         self.eq('anonymous', scripts.first.crossorigin)

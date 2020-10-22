@@ -163,13 +163,13 @@ class site(asset.asset):
         for stylesheet in self.stylesheets:
             self._head += dom.link(rel="stylesheet", href=stylesheet)
 
+        # TODO Consolidate with page.head
         for res in self.resources:
-            B()
-            if res.mimetype == 'text/javascript':
-                el  = dom.script(
+            if res.mime == 'application/javascript':
+                el = dom.script(
                     integrity = res.integrity, 
                     crossorigin = res.crossorigin,
-                    src = el.url,
+                    src = res.path if res.local else res.url,
                 )
             elif res.mimetype == 'text/css':
                 raise NotImplementedError('TODO')
@@ -564,6 +564,8 @@ class page(dom.html):
         self._header       =  None
         self._sidebars     =  None
         self._args         =  dict()
+        self.resources    =  file.resources()
+
         try:
             self._mainfunc = self.main
         except AttributeError:
@@ -620,6 +622,26 @@ class page(dom.html):
                 self._head = self.site.head
             else:
                 self._head = dom.head()
+
+        for res in self.resources:
+            if res.mime == 'application/javascript':
+                src = res.path if res.local else res.url
+
+                if src in self._head['script'].pluck('src'):
+                    continue
+
+                el = dom.script(
+                    integrity = res.integrity, 
+                    crossorigin = res.crossorigin,
+                    src = src
+                )
+            elif res.mimetype == 'text/css':
+                raise NotImplementedError('TODO')
+            else:
+                raise TypeError(f'Invalid mime type: {res.mimetype}')
+
+            self._head += el
+
 
         return self._head
     

@@ -595,7 +595,9 @@ class resource(file):
 
 
     # The external location of the resources.
-    url        =  str
+    @orm.attr(str)
+    def url(self):
+        return attr().lower()
 
     # A cryptigraphic hash that the external resource is assumed to
     # have. This will often match the hash found in a <script>'s
