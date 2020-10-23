@@ -38,6 +38,7 @@ class types(apriori.types):                                  pass
 class roles(orm.entities):                                   pass
 class workers(roles):                                        pass
 class employees(workers):                                    pass
+class managers(workers):                                     pass
 class contractors(workers):                                  pass
 class role_role_types(apriori.types):                        pass
 class statuses(orm.entities):                                pass
@@ -1346,6 +1347,9 @@ class worker(personal):
     ``employee`` or ``contractor``.
     """
 
+class manager(personal):
+    """ A party role representing a manager.
+    """
 class employee(worker):
     """ A party role implying legal employment with an enterprise.
     """

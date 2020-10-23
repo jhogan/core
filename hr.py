@@ -66,6 +66,12 @@ class skilltypes(apriori.types):                pass
 class trainingtypes(apriori.types):             pass
 class trainings(orm.entities):                  pass
 class resumes(orm.entities):                    pass
+class reviews(orm.entities):                    pass
+class reviewitems(orm.entities):                pass
+class reviewitemtypes(apriori.types):           pass
+class ratingtypes(apriori.types):               pass
+class notes(orm.entities):                      pass
+class performancenotetypes(apriori.types):      pass
 
 class employeement(party.role_role):
     """ Maintains employment information. ``employeement`` is a
@@ -122,6 +128,8 @@ class position(orm.entity):
 
     # A collection of ``applications`` entities for this ``position``.
     applications = applications
+
+    reviews = reviews
 
 class positiontype(apriori.type):
     """ Provides information for further defining and categorizing a
@@ -351,6 +359,8 @@ class history(orm.entity):
 
     comment = text
 
+    reviews = reviews
+
 class benefit(orm.entity):
     """ 
     Note that this is modeled after the PARTY BENEFIT entity in "The
@@ -423,6 +433,8 @@ class paycheck(invoice.disbursement):
     
     # The collection of deductions applied to this paycheck
     deductions = deductions
+
+    reviews = reviews
 
 class methodtype(apriori.type):
     """ The payment method type used to pay an employee. The inherited
@@ -610,3 +622,66 @@ class resume(orm.entity):
     text = text
 
     party = party.party
+
+class review(orm.entity):
+    """ 
+    Note that this is modeled after the PERFORMANCE REVIEW entity in
+    "The Data Model Resource Book".
+    """
+
+    span = datespan
+
+    # Note the book has relationships for party.manager and
+    # party.worker, but I think the more general role, party.personal,
+    # because we don't have to have two properties; we can just reuse
+    # this.
+    personal = party.personal
+
+    comment = text
+
+    reviewitems = reviewitems
+
+class reviewitem(orm.entity):
+    """ 
+    Note that this is modeled after the PERFORMANCE REVIEW ITEM entity
+    in "The Data Model Resource Book".
+    """
+    comment = text
+
+class reviewitemtype(apriori.type):
+    """ 
+    Note that this is modeled after the PERF REVIEW ITEM entity in "The
+    Data Model Resource Book".
+    """
+
+    reviewitems = reviewitems
+
+class ratingtype(apriori.type):
+    """ 
+    Note that this is modeled after the RATING TYPE entity in "The Data
+    Model Resource Book".
+    """
+
+    reviewitems = reviewitems
+
+class note(orm.entity):
+    """ 
+    Note that this is modeled after the PERFORMANCE NOTE entity in "The
+    Data Model Resource Book".
+    """
+    span = datespan
+
+    communicated = date
+
+    comment = text
+
+class performancenotetype(apriori.type):
+    """ 
+    Note that this is modeled after the **other** PERFORMANCE NOTE
+    entity in "The Data Model Resource Book". I say "other" because this
+    appears to be a typo in the book. I assume it should have been
+    PERFORMANCE NOTE TYPE.
+    """
+
+    reviewitems = reviewitems
+
