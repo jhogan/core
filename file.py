@@ -616,8 +616,16 @@ class resource(file):
         except KeyError:
             pass
         else:
-            self.name = os.path.basename(url)
-
+            dirs = list()
+            urlparts = urllib.parse.urlsplit(self.url)
+            dirs.append(urlparts.netloc)
+            dirs.extend([x for x in urlparts.path.split(os.sep) if x])
+            self.name = dirs.pop()
+            dir = directory(path=os.sep.join(dirs))
+            path = os.sep.join(dirs[1:])
+            if path:
+                dir = dir.inodes[path]
+            dir += self
 
     # TODO Currently, all resources are put in the /resources folder.
     # However, this should be within a the website's 'resources' folder. 
