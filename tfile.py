@@ -300,7 +300,7 @@ class dom_file(tester.tester):
         dir = file.file.store
 
         self.eq(
-            f'{dir}/jquery-3.5.1.js',
+            f'/{ws.id.hex}/cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js',
             scripts.second.src
         )
         self.eq(None, scripts.first.integrity)

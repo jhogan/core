@@ -165,11 +165,14 @@ class site(asset.asset):
 
         # TODO Consolidate with page.head
         for res in self.resources:
+
+            src = res.relative if res.local else res.url
+
             if res.mime == 'application/javascript':
                 el = dom.script(
                     integrity = res.integrity, 
                     crossorigin = res.crossorigin,
-                    src = res.path if res.local else res.url,
+                    src = src
                 )
             elif res.mimetype == 'text/css':
                 raise NotImplementedError('TODO')
@@ -625,7 +628,7 @@ class page(dom.html):
 
         for res in self.resources:
             if res.mime == 'application/javascript':
-                src = res.path if res.local else res.url
+                src = res.relative if res.local else res.url
 
                 if src in self._head['script'].pluck('src'):
                     continue
