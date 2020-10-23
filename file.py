@@ -439,6 +439,16 @@ class file(inode):
                 attr(None)
         return attr()
 
+    # TODO All recursive entities should have a root
+    @property
+    def root(self):
+        dir = self
+        while True:
+            if dir.inode:
+                dir = dir.inode
+            else:
+                return dir
+
     @property
     def inodes(self):
         """ Raise an AttributeError because a file would obviously never
