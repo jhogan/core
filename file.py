@@ -57,8 +57,10 @@ See tfile.py for more examples.
 from datetime import datetime, date
 from dbg import B
 from func import enumerate, getattr, B
+import base64
 import contextlib
 import db
+import hashlib
 import mimetypes
 import orm
 import os.path
@@ -66,8 +68,7 @@ import pathlib
 import shutil
 import textwrap
 import urllib.request
-import hashlib
-import base64
+import uuid
 
 class inodes(orm.entities):
     """ Represents a collection of ``inode`` entities.
@@ -340,6 +341,21 @@ class inode(orm.entity):
         """ Return the path the file is (or would be) on the HDD.
         """
         return os.path.join(self.head, self.name)
+
+    @property
+    def relative(self):
+        """ The path of the file with the ``store`` portion remove.
+        """
+        names = list()
+        names.append(self.name)
+
+        dir = self.inode
+
+        while dir:
+            names.append(dir.name)
+            dir = dir.inode
+
+        return '/' + '/'.join(reversed(names))
 
     @property
     def exists(self):
