@@ -387,7 +387,34 @@ class inode(orm.entity):
 class files(inodes):
     """ Represents a collection of ``file`` objects.
     """
-    pass
+    def append(self, e, *args, **kwargs):
+        comp = ws = path = None
+        try:
+            ws = self.site
+        except AttributeError:
+            pass
+        else:
+            comp = self.site
+
+        if comp:
+            path = f'/{comp.id.hex}'
+            try:
+                uuid.UUID(hex=e.root.name)
+            except ValueError as ex:
+                # The root directory's name is not a UUID
+                pass
+            else:
+                # If the root name and the composite's name are the
+                # same, then set `path` to None so the directory isn't
+                # prepended below.
+                if e.root.name == comp.id.hex:
+                    path = None
+
+        if path:
+            dir = directory(path=path)
+            dir += e.root
+
+        super().append(obj=e, *args, **kwargs)
 
 class file(inode):
     """ Represents a file in the DB and on the HDD.
