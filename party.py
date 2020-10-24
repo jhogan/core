@@ -219,6 +219,7 @@ class party(orm.entity):
         self.orm.default('nationalids', None)
         self.orm.default('isicv4', None)
         self.orm.default('dun', None)
+        self._updateperson = True
 
     # A party may have 0 or more national id numbers. For example, an
     # organization may have one or more Federal Taxpayer Identification
@@ -243,8 +244,25 @@ class party(orm.entity):
     # A collection of skills belonging to this party
     skills = skills
 
-    name = str
-
+    @orm.attr(str)
+    def name(self, v):
+        attr(v)
+        if self._updateperson:
+            try:
+                per = person(self)
+            except db.RecordNotFoundError:
+                pass
+            else:
+                per.name = v
+                per.save()
+    
+    def _setname(self, v):
+        try:
+            self._updateperson = False
+            self.name = v
+        finally:
+            self._updateperson = True
+        
 class organization(party):
     """ An abstract class representing a group of people with a common
     purpose. Subtypes may include schools, NGOs, clubs, corporations,
@@ -581,7 +599,7 @@ class person(party):
             self.names.last.nametype = type
             self.names.last.metanym = 'default'
 
-        self.orm.super.name = self.name
+        self.orm.super._setname(self.name)
 
     @property
     def name(self):

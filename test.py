@@ -17386,15 +17386,33 @@ class gem_party(tester):
         self.eq('Jesse James Hogan', party.party(per).name)
 
     def it_updates_person_name_from_super(self):
-        #TODO
-        return
+        """ Changing a person's super's (party) name property should
+        change the persons default name (first, middle and last).
+        """
+
+        # Set the person's name an the ``person`` level
         per = party.person()
         per.name = 'Guido van Rossum'
+
+        # FYI This will update the super's (party) name, however this
+        # unit test is to ensure the reverse happens.
+        self.eq(per.name, per.orm.super.name)
+
         per.save()
 
         part = party.party(per)
 
+        # The party will have persisted the name when
+        # person.save() was called.
+        self.eq(per.name, part.name)
+
+        # Now, we want to go the other way around. Set the party.name
+        # property. The person.name property should be changed as a
+        # result. It will allso be saved by the party.name setter.
         part.name = 'Jesse James Hogan'
+
+        # Make sure nothing behind the scenes mutates party.name when
+        # it's being set.
         self.eq(part.name, 'Jesse James Hogan')
 
         per = per.orm.reloaded()
@@ -17403,6 +17421,18 @@ class gem_party(tester):
         self.eq('Hogan', per.last)
         self.eq(per.name, 'Jesse James Hogan')
         self.eq(per.orm.super.name, 'Jesse James Hogan')
+
+
+        per.orm.super.name = 'Delia Maria Lythgoe'
+
+        # TODO Setting super's name property does not update the
+        # in-memory person objects property. This is because super
+        # (party) doesn't have access to the thing it's supre to (per).
+        # When we add orm.sub, super will have that access and be able
+        # to update the per object while it's in memory.
+        self.ne('Delia', per.first)
+        self.ne('Maria', per.middle)
+        self.ne('Lythgo', per.last)
 
 
     def it_adds_citizenships(self):
