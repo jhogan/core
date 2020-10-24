@@ -21,6 +21,7 @@ from datetime import datetime
 from dbg import B
 from decimal import Decimal as dec
 from orm import text, datespan, timespan
+from db import RecordNotFoundError
 import apriori
 import asset
 import builtins
@@ -219,6 +220,7 @@ class party(orm.entity):
         self.orm.default('nationalids', None)
         self.orm.default('isicv4', None)
         self.orm.default('dun', None)
+        self._updateperson = True
 
     # A party may have 0 or more national id numbers. For example, an
     # organization may have one or more Federal Taxpayer Identification
@@ -235,7 +237,12 @@ class party(orm.entity):
     # The International Standard of Industrial Classification of All
     # Economic Activities (ISIC), Revision 4 code for a particular
     # organization, business person, or place.
-    isicv4 = str, 1, 1
+
+    # FIXME Change to isicv4 = chr(1). grep for other areas where this
+    # was left unchanged:
+    #
+    #     grep ' = str, ' *
+    isicv4 = str, 1, 1 
 
     # A collection of party roles this party plays.
     roles = roles
@@ -243,6 +250,25 @@ class party(orm.entity):
     # A collection of skills belonging to this party
     skills = skills
 
+    @orm.attr(str)
+    def name(self, v):
+        attr(v)
+        if self._updateperson:
+            try:
+                per = person(self)
+            except RecordNotFoundError:
+                pass
+            else:
+                per.name = v
+                per.save()
+    
+    def _setname(self, v):
+        try:
+            self._updateperson = False
+            self.name = v
+        finally:
+            self._updateperson = True
+        
 class organization(party):
     """ An abstract class representing a group of people with a common
     purpose. Subtypes may include schools, NGOs, clubs, corporations,
@@ -250,7 +276,6 @@ class organization(party):
     organizanitions. More informal organizations may include teams,
     families, etc.
     """
-    name = str
 
 class unit(organization):
     """ This abstract class represents business unit of a
@@ -579,6 +604,36 @@ class person(party):
             self.names.last.nametype = type
             self.names.last.metanym = 'default'
 
+        self.orm.super._setname(self.name)
+
+    @property
+    def name(self):
+        names = (self.first, self.middle, self.last)
+
+        # Convert None's to ''
+        names = [x if x else str() for x in names]
+
+        if not any(names):
+            return str()
+
+        return ' '.join(names).strip()
+
+    @name.setter
+    def name(self, v):
+        names = v.split()
+
+        len = builtins.len(names)
+
+        if len:
+            self.first = names[0]
+
+        if len == 2:
+            self.last = names[1]
+        elif len > 2:
+            self.middle = names[1]
+            self.last = ' '.join(names[2:])
+
+            
     # A collection of citizenship history entity objcets for this
     # person.
     citizenships = citizenships

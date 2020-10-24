@@ -22,15 +22,6 @@ TODOs:
     TODO Add bytes(n) as datatype. Having to type `bytes, 16, 16` is not
     fun.
     
-    TODO:d7f877ef  A need was found to create mutators for explicit
-    fields. A person's name property should be able to parse a name
-    before saving to its `names` collection.
-    
-        per = party.person()
-        per.name = 'Jesse Hogan'
-        assert per.first == 'Jesse'
-        assert per.last  == 'Hogan'
-    
     FIXME:1de11dc0 There is an issue with the way superentities
     collections are accessed as attributes of orm.entity object. 
     
@@ -91,6 +82,38 @@ TODOs:
     the name should be ``effort_item`` instead of ``item_effort``, since
     the former is alphabetized. This would help to locate them faster and
     to use them in code more efficiently.
+
+    TODO:8cc3bfdc We should have a @property of the ``orm`` called
+    ``sub``.  ``sub`` would be antonymous to ``orm.super``. It should do
+    the following:
+
+        * Lazy-load and return the immediate subentity of the current
+        entity::
+            
+            art = artist(sng.id)
+            assert type(art.orm.sub) is singer
+
+        * If called on a class, should return an AttributeError::
+
+            try:
+                artist.orm.sub
+            except AttributeError:
+                assert True
+            else:
+                assert False
+        
+        We could have an attribute called ``subs`` for this since an
+        entity class can have zero or more subentity classes::
+
+            subs = file.inodes.subs.sorted('__class__.__name__')
+            assert subs.first is file.directory
+            assert subs.second is file.file
+
+        * The sub should be connected as much possible to the graph so
+        * that ``.save()`` and ``.brokenrules`` work as expected::
+
+            art.orm.super.orm.sub is art
+            art.orm.sub.orm.super is art
 """
 
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
@@ -124,7 +147,6 @@ import primative
 import re
 import sys
 import textwrap
-
 
 @unique
 class types(Enum):
@@ -2435,7 +2457,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # self.orm.properties
         return list(set(ls))
 
-    def __setattr__(self, attr, v, cmp=True):
+    def __setattr__(self, attr, v, cmp=True, imp=False):
         """ Set the value of `v` to the attribute (`attr`) of the
         `entity`. Attribute usually refer to the ORM mapping attributes
         (those defined in the header of a class). However, standard
@@ -2448,6 +2470,14 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         :param: bool cmp: Determines whether `entities._setvalue` should
         compare the old value of the attribute to the new value. See the
         `cmp` variable in that method for more.
+
+        :param: bool imp: If True, indicates that __setattr__ is being
+        called by an imperitive setter. If this is the case, we want to
+        avoid infinite recursion by not calling the setter. Instead, we
+        allow the normal behavior of finding the ``mapping`` object
+        associated with the setter and setting its ``value`` attribute
+        to the ``v`` argument. By default, it is False, because this is
+        only necessary for imperitive setters.
         """
         
         # Need to handle 'orm' first, otherwise the code below that
@@ -2462,9 +2492,29 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
             if attr not in maps:
                 return object.__setattr__(self, attr, v)
+
+            # If there is a setter @property (non-mapping) directly on
+            # `self`, call it directly. This makes it possible to
+            # override mappings with regular @property's. See how the
+            # @property `person.name` updates the mapping `party.name`.
+            #
+            # TODO There currently isn't a use case for this, but we
+            # will probably want to ascend the inheritance tree here.
+            # For example, if we wanted to extend the `person` entity
+            # with a new class `alien`, we would want `alien` to inherit
+            # the functionality of `person.name`. Currently, that
+            # probably wouldn't work.
+            for name, var in vars(type(self)).items():
+                if name == attr and isinstance(var, property):
+                    if var.fset:
+                        return object.__setattr__(self, attr, v)
                 
             self.orm.super.__setattr__(attr, v, cmp)
         else:
+            if isinstance(map, fieldmapping):
+                if map.issetter and not imp:
+                    return object.__setattr__(self, attr, v)
+
             # Call entity._setvalue to take advantage of its event raising
             # code. Pass in a custom setattr function for it to call. Use
             # underscores for the paramenters since we already have the values
@@ -4004,6 +4054,28 @@ class fulltext(index):
         return name
 
 class attr:
+    def attr(v=undef):
+        """ Sets the map's value to ``v``. Returns the mapped
+        value.
+
+        This function is injected into imperitive attributes to
+        provide easy access to the the attributes mapping value.
+        """
+        if v is undef:
+            try:
+                return e.orm.mappings[name].value
+            except IndexError:
+                # If it's not in the subentity's mapping
+                # collection, make a regular getattr() call on
+                # e's super. 
+                # TODO s/super/sup
+                super = e.orm.super # :=
+                if super:
+                    return getattr(super, name)
+        else:
+            e.__setattr__(name, v, cmp=False, imp=True)
+            return v
+
     class AttributeErrorWrapper(Exception):
         """ An AttributeError wrapper. """
         def __init__(self, ex):
@@ -4013,52 +4085,74 @@ class attr:
     class wrap:
         def __init__(self, *args, **kwargs):
             args = list(args)
-            self.fget = args.pop()
+            self.fget = self.fset = None
+
+            # Get the setter/getter method
+            f = args.pop()
+
+            # Get the methods paramter list
+
+            params = f.__code__.co_varnames
+            params = params[:f.__code__.co_argcount]
+
+            # If a 'v' parameter is one of the parameters:
+            if 'v' in params:
+                # ... then it must be a setter. The 'v' argument
+                # contains the *value* that will be assigned to the
+                # attribute.
+                self.fset = f
+            else:
+                # ... then it must be a getter.
+                self.fget = f
+
             self.args = args
             self.kwargs = kwargs
 
         @property
         def mapping(self):
             map = fieldmapping(*self.args, **self.kwargs)
+            # TODO Make isexplicit a @property. It's now redundant with
+            # isgetter and issetter.
             map.isexplicit = True
+            map.isgetter = bool(self.fget)
+            map.issetter = bool(self.fset)
             return map
 
-        def __get__(self, e, etype=None):
-            name = self.fget.__name__
+        def _getset(self, instance, owner=None, value=undef):
+            isget = value is undef
+            isset = not isget
+                
+            if isget:
+                meth = self.fget
+            elif isset: 
+                meth = self.fset
 
-            def attr(v=undef):
-                """ Sets the map's value to ``v``. Returns the mapped
-                value.
+            # Inject global variable values into the attr() function
+            attr.attr.__globals__['name']  =  meth.__name__
+            attr.attr.__globals__['e']     =  instance
 
-                This function is injected into imperitive attributes to
-                provide easy access to the the attributes mapping value.
-                """
-                if v is undef:
-                    try:
-                        return e.orm.mappings[name].value
-                    except IndexError:
-                        # If it's not in the subentity's mapping
-                        # collection, make a regular getattr() call on
-                        # e's super. 
-                        super = e.orm.super # :=
-                        if super:
-                            return getattr(super, name)
-                else:
-                    e.__setattr__(name, v, cmp=False)
-                    return v
-
-            # Inject into imperitive attribute
-            self.fget.__globals__['attr'] = attr
+            # Inject attr() reference into user-level imperitive attribute
+            meth.__globals__['attr'] = attr.attr
 
             try:
                 # Invoke the imperitive attribute
-                return self.fget(e)
+                if isget:
+                    return meth(instance)
+                elif isset:
+                    return meth(instance, value)
+
             except AttributeError as ex:
                 # If it raises an AttributeError, wrap it. If the call
-                # from e.__getattribute__ sees a regural AttributeError,
+                # from e.__getattribute__ sees a regular AttributeError,
                 # it will ignore it because it will assume its caller is
                 # requesting the value of a mapping object.
                 raise sys.modules['orm'].attr.AttributeErrorWrapper(ex)
+            
+        def __get__(self, instance, owner=None):
+            return self._getset(instance=instance, owner=owner)
+
+        def __set__(self, instance, value):
+            return self._getset(instance=instance, value=value)
 
     def __init__(self, *args, **kwargs):
         self.args = list(args)
@@ -4083,6 +4177,8 @@ class fieldmapping(mapping):
                        ix=None,    # Database index
                        isderived=False,
                        isexplicit=False,
+                       isgetter=False,
+                       issetter=False,
                        span=None):
 
         if hasattr(type, 'mro') and alias in type.mro():
@@ -4101,6 +4197,8 @@ class fieldmapping(mapping):
         self._precision  =  m
         self._scale      =  d
         self.isexplicit  =  isexplicit
+        self.isgetter    =  isgetter
+        self.issetter    =  issetter
         self._span       =  span
 
         # TODO Currently, a field is limited to being part of only one
@@ -4145,6 +4243,8 @@ class fieldmapping(mapping):
             ix,
             self.isderived,
             self.isexplicit,
+            self.isgetter,
+            self.issetter,
             self.span,
         )
 

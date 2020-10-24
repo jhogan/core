@@ -3359,6 +3359,14 @@ class artifact(orm.entity):
     serial       =  chr(255)
 
 class artist(orm.entity):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.orm.default('lifeform', 'organic')
+        self.orm.default('bio', None)
+        self.orm.default('style', 'classicism')
+        self.orm.default('_processing', False)
+
     firstname      =  str, orm.index('fullname', 1)
     lastname       =  str, orm.index('fullname', 0)
     lifeform       =  str
@@ -3402,6 +3410,7 @@ class artist(orm.entity):
         art.email     = 'username@domain.tld'
         art.bio1      = '11'
         art.bio2      = '2'
+        art.gender    = None
 
         return art
 
@@ -3429,34 +3438,15 @@ class artist(orm.entity):
     def email(self):
         return attr().lower()
 
-    # Though it seems logical that there would be mutator analog to the
-    # accessor logic (used above for the 'phone' attr), there doesn't
-    # seem to be a need for this. Conversions should be done in the
-    # accessor (as in the 'phone' accessor above).  If functionality
-    # needs to run when a mutator is called, this can be handled in an
-    # onaftervaluechange handler (though this seems rare).  Since at the
-    # moment, no use-case can be imagined for mutator @attr's, we should
-    # leave this unimplemented. If a use-case presents itself, the
-    # below, commented-out code approximates how it should look.  The
-    # 'setter' method in the 'Property' class here
-    # https://docs.python.org/3/howto/descriptor.html#properties hints
-    # at how this may be implemented in orm.attr.
+    @orm.attr(str)
+    def gender(self, v):
+        if v == 'm':
+            v = 'male'
+        elif v == 'f':
+            v = 'female'
 
-    # Update to the above comment. See d7f877ef
+        attr(v)
 
-    """
-    @phone.setter(str)
-    def phone(self,)
-        self.orm.mappings('phone').value = v
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.orm.default('lifeform', 'organic')
-        self.orm.default('bio', None)
-        self.orm.default('style', 'classicism')
-        self.orm.default('_processing', False)
 
     def clear(self):
         self.locations.clear()
@@ -3519,6 +3509,11 @@ class singers(artists):
     pass
 
 class singer(artist):
+    def __init__(self, o=None, **kwargs):
+        self._transmitting = False
+        super().__init__(o)
+        self.orm.default('threats', None)
+
     voice    = str
     concerts = concerts
 
@@ -3547,9 +3542,14 @@ class singer(artist):
             return 'whistle'
         return v
 
-    def __init__(self, o=None):
-        self._transmitting = False
-        super().__init__(o)
+    @orm.attr(str)
+    def threats(self, v):
+        if hasattr(v, '__iter__'):
+            if len(v) > 3:
+                raise ValueError('No more than three threats')
+            attr(' '.join(v))
+        elif isinstance(v, str) or isinstance(v, type(None)):
+            attr(v)
 
     def clear(self):
         super().clear()
@@ -8288,23 +8288,35 @@ class test_orm(tester):
         sng.email     = 'username@domain.tld'
         sng.bio1      = uuid4().hex
         sng.bio2      = uuid4().hex
+        sng.gender    = 'm'
         self.eq(int(), sng.phone)
 
+        # sng.phone is a getter
         sng.phone = '1' * 7
         self.type(int, sng.phone)
 
+        # sng.gender is a setter
+        sng.gender = 'm'
+        self.eq('male', sng.gender)
+
         sng.save()
 
-        art1 = singer(sng.id)
-        self.eq(sng.phone, art1.phone)
+        sng1 = singer(sng.id)
+        self.eq(sng.phone, sng1.phone)
 
-        art1.phone = '1' * 7
-        self.type(int, art1.phone)
+        self.eq('male', sng1.gender)
+        sng1.gender = 'f'
+        self.eq('female', sng1.gender)
 
-        art1.save()
+        sng1.phone = '1' * 7
+        self.type(int, sng1.phone)
 
-        art2 = singer(art1.id)
-        self.eq(art1.phone, art2.phone)
+        sng1.save()
+
+        sng2 = singer(sng1.id)
+        self.eq(sng1.phone, sng2.phone)
+
+        self.eq('female', sng2.gender)
 
         # Test non-inherited attr (register)
         sng = singer()
@@ -8318,23 +8330,38 @@ class test_orm(tester):
         sng.email     = 'username@domain.tld'
         sng.bio1      = uuid4().hex
         sng.bio2      = uuid4().hex
+        sng.gender    = 'm'
         self.is_(str(), sng.register)
 
         sng.register = 'Vocal Fry'
         self.eq('vocal fry', sng.register)
 
+        # sng.threats is a setter
+        sng.threats = 'acting', 'singing', 'dancing'
+        self.type(str, sng.threats)
+        self.eq('acting singing dancing', sng.threats)
+
         sng.save()
 
-        art1 = singer(sng.id)
-        self.eq(sng.register, art1.register)
+        sng1 = singer(sng.id)
+        self.eq(sng.register, sng1.register)
 
-        art1.register = 'flute'
-        self.eq('whistle', art1.register)
+        self.eq('acting singing dancing', sng1.threats)
+        sng1.threats = 'acting', 'singing'
+        self.eq('acting singing', sng1.threats)
+        self.type(str, sng1.threats)
 
-        art1.save()
 
-        art2 = singer(art1.id)
-        self.eq(art1.register, art2.register)
+        sng1.register = 'flute'
+        self.eq('whistle', sng1.register)
+
+        sng1.save()
+
+        sng2 = singer(sng1.id)
+        self.eq(sng1.register, sng2.register)
+
+        self.eq('acting singing', sng2.threats)
+        self.type(str, sng2.threats)
 
     def it_calls_imperitive_attr_on_subsubentity(self):
         # Test inherited attr (artist.phone)
@@ -8350,10 +8377,13 @@ class test_orm(tester):
         rpr.email     = 'username@domain.tld'
         rpr.bio1      = uuid4().hex
         rpr.bio2      = uuid4().hex
+        rpr.gender    = 'f'
         self.eq(int(), rpr.phone)
 
         rpr.phone = '1' * 7
         self.type(int, rpr.phone)
+
+        self.eq('female', rpr.gender)
 
         rpr.save()
 
@@ -8363,9 +8393,15 @@ class test_orm(tester):
         rpr1.phone = '1' * 7
         self.type(int, rpr1.phone)
 
+        rpr1.gender = 'm'
+        self.type(str, rpr1.gender)
+        self.eq('male', rpr1.gender)
+
         rpr1.save()
 
         self.eq(rpr1.phone, rapper(rpr1.id).phone)
+
+        self.eq(rpr1.gender, rapper(rpr1.id).gender)
 
         # Test inherited attr from super (singer.register)
         rpr = rapper()
@@ -8380,23 +8416,32 @@ class test_orm(tester):
         rpr.email     = 'username@domain.tld'
         rpr.bio1      = uuid4().hex
         rpr.bio2      = uuid4().hex
+        rpr.gender    = 'f'
         self.is_(str(), rpr.register)
 
         rpr.register = 'Vocal Fry'
         self.eq('vocal fry', rpr.register)
 
+        rpr.threats = 'acting', 'dancing'
+        self.eq('acting dancing', rpr.threats)
+
         rpr.save()
 
         rpr1 = rapper(rpr.id)
         self.eq(rpr.register, rpr1.register)
+        self.eq('acting dancing', rpr1.threats)
 
         rpr1.register = 'flute'
         self.eq('whistle', rpr1.register)
+
+        rpr1.threats = 'acting', 'dancing', 'singing'
+        self.eq('acting dancing singing', rpr1.threats)
 
         rpr1.save()
 
         rpr2 = rapper(rpr1.id)
         self.eq(rpr1.register, rpr2.register)
+        self.eq(rpr1.threats, rpr2.threats)
 
         # Test non-inherited attr from rapper
         rpr = rapper()
@@ -8413,6 +8458,7 @@ class test_orm(tester):
         abilities     = "['endless rhymes', 'delivery', 'money']"
         rpr.bio1      = uuid4().hex
         rpr.bio2      = uuid4().hex
+        rpr.gender    = 'f'
         self.eq(abilities, rpr.abilities)
 
         rpr.abilities = abilities = ['being wack']
@@ -8507,6 +8553,7 @@ class test_orm(tester):
         art.email = 'username@domain.tld'
         art.bio1  = uuid4().hex
         art.bio2  = uuid4().hex
+        art.gender = 'm'
         map = art.orm.mappings['password']
 
         # Make sure the password field hasn't been tampered with
@@ -8581,6 +8628,7 @@ class test_orm(tester):
             e1 = type(e)(e.id)
             return getattr(e, attr) == getattr(e1, attr)
 
+        ''' GETTER '''
         # Ensure that a non-str gets converted to a str
         for o in int(1), float(3.14), dec(1.99), datetime.now(), True:
             art = artist()
@@ -8620,6 +8668,60 @@ class test_orm(tester):
             art.email = (Δ * (min - 1))
             self.one(art.brokenrules)
             self.broken(art, 'email', 'fits')
+
+        ''' SETTER '''
+        art = artist()
+
+        # Ensure that a non-str gets converted to a str
+        for o in int(1), float(3.14), dec(1.99), datetime.now(), True:
+            art = artist.getvalid()
+            art.gender = o
+            self.type(str, art.gender)
+            self.eq(str(o), art.gender)
+            self.true(saveok(art, 'gender'))
+
+        for art in (artist(), singer()):
+            map = art.orm.mappings('gender')
+
+            if not map:
+                map = art.orm.super.orm.mappings['gender']
+
+            self.true(hasattr(art, 'gender'))
+            self.eq(str(), art.gender)
+            self.eq((1, 255), (map.min, map.max))
+
+            art.gender = 'm'
+            self.eq('male', art.gender)
+
+            art.gender = 'f'
+            self.eq('female', art.gender)
+
+            art.gender = '\n\t nonbinary \n\t '
+            self.eq('nonbinary', art.gender)
+
+            if type(art) is artist:
+                art1 = artist.getvalid()
+            else:
+                art1 = singer.getvalid()
+
+            for prop in art1.orm.properties:
+                setattr(art, prop, getattr(art1, prop))
+
+            min, max = map.min, map.max
+
+            art.gender = Δ * map.max
+            self.true(saveok(art, 'gender'))
+
+            art.gender += Δ
+            self.one(art.brokenrules)
+            self.broken(art, 'gender', 'fits')
+
+            art.gender = Δ * min
+            self.true(saveok(art, 'gender'))
+
+            art.gender = (Δ * (min - 1))
+            self.one(art.brokenrules)
+            self.broken(art, 'gender', 'fits')
 
     def it_calls_chr_attr_on_entity(self):
         map = artifact.orm.mappings['type']
@@ -8718,6 +8820,7 @@ class test_orm(tester):
             art.email     = 'username@domain.tld'
             art.bio1      = 'herp'
             art.bio2      = 'derp'
+            art.gender    = 'm'
             if type(art) is singer:
                 art.voice     = uuid4().hex
                 art.register  = 'laryngealization'
@@ -8783,6 +8886,7 @@ class test_orm(tester):
             # unicode character - not just numeric characters. So lets user a roman
             # numeral V.
             art.ssn = V * map.max
+            art.gender = 'm'
             self.true(saveok(art, 'ssn'))
 
             art.ssn = V * (map.max + 1)
@@ -8822,6 +8926,7 @@ class test_orm(tester):
             art.ssn       = V * 11
             art.bio1      = 'herp'
             art.bio2      = 'derp'
+            art.gender    = 'm'
             if type(art) is singer:
                 art.voice     = uuid4().hex
                 art.register  = 'laryngealization'
@@ -9622,6 +9727,7 @@ class test_orm(tester):
         art.firstname = uuid4().hex
         art.lastname  = uuid4().hex
         art.lifeform  = uuid4().hex
+        art.gender    = 'm'
 
         self.true(art.orm.isnew)
         self.false(art.orm.isdirty)
@@ -9664,6 +9770,7 @@ class test_orm(tester):
         art1.title      = uuid4().hex[0]
         art1.phone2     = uuid4().hex[0]
         art1.email_1    = uuid4().hex[0]
+        art1.gender     = 'f'
 
         self.false(art1.orm.isnew)
         self.true(art1.orm.isdirty)
@@ -12113,6 +12220,8 @@ class test_orm(tester):
         sng1.title     = uuid4().hex[0]
         sng1.phone2    = uuid4().hex[0]
         sng1.email_1   = uuid4().hex[0]
+        sng1.threats   = 'dancing',
+        sng1.gender    = 'm'
 
         self.eq((False, True, False), sng1.orm.persistencestate)
 
@@ -12212,6 +12321,8 @@ class test_orm(tester):
         rpr1.nice      = rpr.nice + 1
         rpr1.stagename = uuid4().hex
         rpr1.abilities = list('wackness')
+        rpr1.gender    = 'f'
+        rpr1.threats   = 'dancing',
 
         self.eq((False, True, False), rpr1.orm.persistencestate)
 
@@ -17028,7 +17139,6 @@ class gem_party(tester):
 
         return cm
 
-
     def it_saves_physical_characteristics(self):
         hr = party.characteristictype(name='Heart rate')
         sys = party.characteristictype(name='Systolic blood preasure')
@@ -17173,11 +17283,8 @@ class gem_party(tester):
             self.eq(gen.end, gen1.end)
             self.eq(gen.gendertype.id, gen1.gendertype.id)
 
-    def it_calls_name_properties(self):
+    def it_calls_person_name_properties(self):
         per = party.person()
-        per.dun = None
-        per.isicv4 = None
-        per.nationalids = None
 
         per.first = 'Joey'
         self.eq('Joey', per.first)
@@ -17202,8 +17309,135 @@ class gem_party(tester):
         self.true('middle' in names)
         self.true('last' in names)
 
-    def it_adds_citizenships(self):
+        ''' It uses ``name`` attribute`` '''
         per = party.person()
+        per.name = 'Guido van Rossum'
+        self.eq('Guido', per.first)
+        self.eq('van', per.middle)
+        self.eq('Rossum', per.last)
+        self.eq('Guido van Rossum', per.name)
+        self.eq('Guido van Rossum', per.orm._super.name)
+
+        per.save()
+
+        # `party.name` should equal whatever `person.name` ends up
+        # being.
+        part = party.party(per.id)
+        self.eq('Guido van Rossum', part.name)
+
+    def it_calls_first_middle_and_last(self):
+        ''' First name '''
+        per = party.person()
+        per.first = 'Guido'
+        self.eq('Guido', per.name)
+        self.eq('Guido', per.first)
+        self.eq('Guido', per.orm._super.name)
+
+        per.save()
+
+        per = per.orm.reloaded()
+        self.eq('Guido', per.name)
+        self.eq('Guido', per.orm.super.name)
+        self.eq('Guido', per.first)
+        self.eq('Guido', party.party(per).name)
+
+        ''' Update first name '''
+        per.first = 'Jesse'
+        self.eq('Jesse', per.name)
+        self.eq('Jesse', per.first)
+        self.eq('Jesse', per.orm._super.name)
+
+        per.save()
+
+        per = per.orm.reloaded()
+        self.eq('Jesse', per.name)
+        self.eq('Jesse', per.first)
+        self.eq('Jesse', per.orm.super.name)
+        self.eq('Jesse', party.party(per).name)
+
+        ''' Update middle name '''
+        per.middle = 'James'
+        self.eq('Jesse James', per.name)
+        self.eq('Jesse', per.first)
+        self.eq('James', per.middle)
+        self.eq('Jesse James', per.orm._super.name)
+
+        per.save()
+
+        per = per.orm.reloaded()
+        self.eq('Jesse James', per.name)
+        self.eq('Jesse', per.first)
+        self.eq('James', per.middle)
+        self.eq('Jesse James', party.party(per).name)
+
+        ''' Update last name '''
+        per.last = 'Hogan'
+        self.eq('Jesse James Hogan', per.name)
+        self.eq('Jesse', per.first)
+        self.eq('James', per.middle)
+        self.eq('Hogan', per.last)
+        self.eq('Jesse James Hogan', per.orm._super.name)
+
+        per.save()
+
+        per = per.orm.reloaded()
+        self.eq('Jesse James Hogan', per.name)
+        self.eq('Jesse', per.first)
+        self.eq('James', per.middle)
+        self.eq('Hogan', per.last)
+        self.eq('Jesse James Hogan', party.party(per).name)
+
+    def it_updates_person_name_from_super(self):
+        """ Changing a person's super's (party) name property should
+        change the persons default name (first, middle and last).
+        """
+
+        # Set the person's name an the ``person`` level
+        per = party.person()
+        per.name = 'Guido van Rossum'
+
+        # FYI This will update the super's (party) name, however this
+        # unit test is to ensure the reverse happens.
+        self.eq(per.name, per.orm.super.name)
+
+        per.save()
+
+        part = party.party(per)
+
+        # The party will have persisted the name when
+        # person.save() was called.
+        self.eq(per.name, part.name)
+
+        # Now, we want to go the other way around. Set the party.name
+        # property. The person.name property should be changed as a
+        # result. It will allso be saved by the party.name setter.
+        part.name = 'Jesse James Hogan'
+
+        # Make sure nothing behind the scenes mutates party.name when
+        # it's being set.
+        self.eq(part.name, 'Jesse James Hogan')
+
+        per = per.orm.reloaded()
+        self.eq('Jesse', per.first)
+        self.eq('James', per.middle)
+        self.eq('Hogan', per.last)
+        self.eq(per.name, 'Jesse James Hogan')
+        self.eq(per.orm.super.name, 'Jesse James Hogan')
+
+
+        per.orm.super.name = 'Delia Maria Lythgoe'
+
+        # TODO:8cc3bfdc Setting super's name property does not update
+        # the in-memory person objects property. This is because super
+        # (party) doesn't have access to the thing it's super to (per).
+        # When we add orm.sub, super will have that access and be able
+        # to update the per object while it's in memory.
+        self.ne('Delia', per.first)
+        self.ne('Maria', per.middle)
+        self.ne('Lythgo', per.last)
+
+    def it_adds_citizenships(self):
+        per = party.person(name='Jesse Hogan')
 
         au = party.region(
             name = 'Austria',
@@ -18682,9 +18916,9 @@ class gem_party(tester):
         # Create parties
         
         ## Persons
-        will  =  party.person()
-        marc  =  party.person()
-        john  =  party.person()
+        will  =  party.person(name='Will')
+        marc  =  party.person(name='Mark')
+        john  =  party.person(name='John')
 
         ## Companies
         abc   =  party.company(name='ABC Corporation')
