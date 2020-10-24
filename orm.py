@@ -83,9 +83,9 @@ TODOs:
     the former is alphabetized. This would help to locate them faster and
     to use them in code more efficiently.
 
-    TODO We should have a @property of the ``orm`` called ``sub``.
-    ``sub`` would be antonymous to ``orm.super``. It should do the
-    following:
+    TODO:8cc3bfdc We should have a @property of the ``orm`` called
+    ``sub``.  ``sub`` would be antonymous to ``orm.super``. It should do
+    the following:
 
         * Lazy-load and return the immediate subentity of the current
         entity::

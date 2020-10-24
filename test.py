@@ -17139,7 +17139,6 @@ class gem_party(tester):
 
         return cm
 
-
     def it_saves_physical_characteristics(self):
         hr = party.characteristictype(name='Heart rate')
         sys = party.characteristictype(name='Systolic blood preasure')
@@ -17428,9 +17427,9 @@ class gem_party(tester):
 
         per.orm.super.name = 'Delia Maria Lythgoe'
 
-        # TODO Setting super's name property does not update the
-        # in-memory person objects property. This is because super
-        # (party) doesn't have access to the thing it's supre to (per).
+        # TODO:8cc3bfdc Setting super's name property does not update
+        # the in-memory person objects property. This is because super
+        # (party) doesn't have access to the thing it's super to (per).
         # When we add orm.sub, super will have that access and be able
         # to update the per object while it's in memory.
         self.ne('Delia', per.first)

@@ -236,7 +236,12 @@ class party(orm.entity):
     # The International Standard of Industrial Classification of All
     # Economic Activities (ISIC), Revision 4 code for a particular
     # organization, business person, or place.
-    isicv4 = str, 1, 1
+
+    # FIXME Change to isicv4 = chr(1). grep for other areas where this
+    # was left unchanged:
+    #
+    #     grep ' = str, ' *
+    isicv4 = str, 1, 1 
 
     # A collection of party roles this party plays.
     roles = roles
