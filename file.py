@@ -418,6 +418,7 @@ class files(inodes):
 
         if path:
             dir = directory(path=path)
+            # TODO: 34080104
             dir += e.root
 
         super().append(obj=e, *args, **kwargs)
@@ -451,6 +452,7 @@ class file(inode):
         dir = self
         while True:
             if dir.inode:
+                # TODO: 34080104
                 dir = dir.inode
             else:
                 return dir
