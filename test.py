@@ -12220,6 +12220,8 @@ class test_orm(tester):
         sng1.title     = uuid4().hex[0]
         sng1.phone2    = uuid4().hex[0]
         sng1.email_1   = uuid4().hex[0]
+        sng1.threats   = 'dancing',
+        sng1.gender    = 'm'
 
         self.eq((False, True, False), sng1.orm.persistencestate)
 
@@ -12320,6 +12322,7 @@ class test_orm(tester):
         rpr1.stagename = uuid4().hex
         rpr1.abilities = list('wackness')
         rpr1.gender    = 'f'
+        rpr1.threats   = 'dancing',
 
         self.eq((False, True, False), rpr1.orm.persistencestate)
 
