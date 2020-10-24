@@ -21,6 +21,7 @@ from datetime import datetime
 from dbg import B
 from decimal import Decimal as dec
 from orm import text, datespan, timespan
+from db import RecordNotFoundError
 import apriori
 import asset
 import builtins
@@ -255,7 +256,7 @@ class party(orm.entity):
         if self._updateperson:
             try:
                 per = person(self)
-            except db.RecordNotFoundError:
+            except RecordNotFoundError:
                 pass
             else:
                 per.name = v
@@ -275,7 +276,6 @@ class organization(party):
     organizanitions. More informal organizations may include teams,
     families, etc.
     """
-    name = str
 
 class unit(organization):
     """ This abstract class represents business unit of a

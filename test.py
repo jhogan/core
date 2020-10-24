@@ -17436,9 +17436,8 @@ class gem_party(tester):
         self.ne('Maria', per.middle)
         self.ne('Lythgo', per.last)
 
-
     def it_adds_citizenships(self):
-        per = party.person()
+        per = party.person(name='Jesse Hogan')
 
         au = party.region(
             name = 'Austria',
@@ -18917,9 +18916,9 @@ class gem_party(tester):
         # Create parties
         
         ## Persons
-        will  =  party.person()
-        marc  =  party.person()
-        john  =  party.person()
+        will  =  party.person(name='Will')
+        marc  =  party.person(name='Mark')
+        john  =  party.person(name='John')
 
         ## Companies
         abc   =  party.company(name='ABC Corporation')
