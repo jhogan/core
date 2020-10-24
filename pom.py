@@ -567,7 +567,8 @@ class page(dom.html):
         self._header       =  None
         self._sidebars     =  None
         self._args         =  dict()
-        self.resources    =  file.resources()
+        self.resources     =  file.resources()
+        self.resources.page = self
 
         try:
             self._mainfunc = self.main

@@ -389,12 +389,18 @@ class files(inodes):
     """
     def append(self, e, *args, **kwargs):
         comp = ws = path = None
+
         try:
             ws = self.site
         except AttributeError:
-            pass
+            try:
+                ws = self.page.site
+            except AttributeError:
+                pass
+            else:
+                comp = ws
         else:
-            comp = self.site
+            comp = ws
 
         if comp:
             path = f'/{comp.id.hex}'
