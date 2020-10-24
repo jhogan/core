@@ -5341,6 +5341,9 @@ class orm:
             if ex.args[0] == TABLE_EXISTS_ERROR:
                 if not ignore:
                     raise
+            else:
+                raise
+                
     @property
     def ismigrated(self):
         return not bool(self.altertable)

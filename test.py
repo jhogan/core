@@ -21043,45 +21043,13 @@ class gem_case(tester):
 class gem_order(tester):
     def __init__(self):
         super().__init__()
-        orm.orm.recreate(
-            order.adjustments,
-            order.adjustmenttypes,
-            order.discounts,
-            order.fees,
-            order.item_items,
-            order.items,
-            order.miscellaneouses,
-            order.order,
-            order.order_party,
-            order.order_partytype,
-            order.purchaseitems,
-            order.purchaseorders,
-            order.rates,
-            order.salesitems,
-            order.salesorders,
-            order.shippings,
-            order.status,
-            order.statustypes,
-            order.surcharges,
-            order.taxes,
-            order.term,
-            order.termtypes,
-            party.billto,
-            party.billtopurchaser,
-            party.company,
-            party.customer,
-            party.internal,
-            party.party,
-            party.partyroletype,
-            party.placing,
-            party.placingbuyer,
-            party.region,
-            party.role,
-            party.shipto,
-            party.shiptobuyer,
-            product.categories,
-            product.products,
-        )
+        for e in orm.orm.getentitys(includeassociations=True):
+            if e.__module__ in ('order', 'party', 'product',):
+                # FIXME order.item has two itemid attributes for some
+                # reason so it cannot be recreated.
+                if e is order.item:
+                    continue
+                e.orm.recreate()
 
     def it_creates_salesorder(self):
         ''' Create products '''
