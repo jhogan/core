@@ -1,2 +1,4 @@
 python3-mistune
 python3-inflect
+python3-mysqldb
+mysql-server
