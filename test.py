@@ -21045,10 +21045,6 @@ class gem_order(tester):
         super().__init__()
         for e in orm.orm.getentitys(includeassociations=True):
             if e.__module__ in ('order', 'party', 'product',):
-                # FIXME order.item has two itemid attributes for some
-                # reason so it cannot be recreated.
-                if e is order.item:
-                    continue
                 e.orm.recreate()
 
     def it_creates_salesorder(self):

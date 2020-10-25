@@ -114,6 +114,9 @@ TODOs:
 
             art.orm.super.orm.sub is art
             art.orm.sub.orm.super is art
+
+    TODO:055e5c02 make FK name's fully qualified. grep 055e5c02 for
+    more.
 """
 
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
@@ -4656,6 +4659,9 @@ class fieldmapping(mapping):
 
 class foreignkeyfieldmapping(fieldmapping):
     def __init__(self, e, fkname=None, isderived=False):
+        # TODO Rename fkname to name, and _fkname to _name. Note that
+        # _name already exists; it's inherited from `mapping`, but I
+        # don't think that's a probably for the rename.
         self.entity = e
         self._fkname = fkname
         self.value = None
@@ -4667,6 +4673,9 @@ class foreignkeyfieldmapping(fieldmapping):
 
     @property
     def name(self):
+        # TODO:055e5c02 make FK name's fully qualified. grep 055e5c02
+        # for more.
+
         if self._fkname:
             return '%s__%s' \
                 % (self._fkname, self.entity.__name__ + 'id')

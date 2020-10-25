@@ -191,7 +191,14 @@ class item(orm.entity):
     # specific budget ``item``. This relationship establishes what
     # commitments (and dollar amounts) have been made to various
     # budget ``items``.
-    orderitems = order.items
+
+    # FIXME:055e5c02 Before this line can be uncommented, a bug in the
+    # way FKs are named by the ORM needs to be addressed. When this line
+    # is uncommented, order.item.orm.mappings has two FKs named
+    # `itemid`.  One of the foreign keys is for this line, the other is
+    # for order.item itself since its recursive. Foreign key names
+    # should be fully qualified.
+    # orderitems = order.items
 
 class itemtype(apriori.type):
     """ Classifies the budegtary ``item``s into types so that common
