@@ -21816,9 +21816,8 @@ class gem_order(tester):
 class gem_shipment(tester):
     def __init__(self):
         super().__init__()
-        es = orm.orm.getentitys(includeassociations=True)
-        for e in es:
-            if e.__module__ in ('shipment',):
+        for e in orm.orm.getentitys(includeassociations=True):
+            if e.__module__ in ('shipment', 'order'):
                 e.orm.recreate()
 
     def it_creates(self):
@@ -22236,51 +22235,11 @@ class gem_shipment(tester):
 class gem_effort(tester):
     def __init__(self):
         super().__init__()
-        orm.orm.recreate(
-            effort.types,
-            effort.assetstandards,
-            effort.goodstandards,
-            apriori.requirement,
-            party.asset_parties,
-            party.asset_partystatustype,
-            asset.types,
-            asset.asset,
-            effort.activities,
-            effort.asset_efforts,
-            effort.asset_effortstatus,
-            effort.deliverables,
-            effort.effort,
-            effort.effort_effort_dependencies,
-            effort.effort_effort_precedency,
-            effort.effort_efforts,
-            effort.effort_inventoryitems,
-            effort.effort_parties,
-            effort.effort_partytype,
-            effort.effort_requirements,
-            effort.item_requirements,
-            effort.items,
-            effort.jobs,
-            effort.productionrun,
-            effort.requirement,
-            effort.requirementtype,
-            effort.roles,
-            effort.roletypes,
-            effort.status,
-            effort.statustype,
-            effort.times,
-            effort.timesheet,
-            effort.timesheetroles,
-            effort.timesheetroletypes,
-            order.requirementtype,
-            party.contractor,
-            party.employee,
-            party.rate,
-            party.ratetypes,
-            party.worker,
-            product.good,
-            product.product,
-            shipment.asset,
-        )
+        for e in orm.orm.getentitys(includeassociations=True):
+            if e.__module__ in (
+                'effort', 'apriori', 'party', 'asset', 'order'
+            ):
+                e.orm.recreate()
 
     def it_creates_requirements(self):
         req = apriori.requirement(
@@ -23055,24 +23014,10 @@ class gem_effort(tester):
 class gem_invoice(tester):
     def __init__(self):
         super().__init__()
-        orm.orm.recreate(
-            invoice.invoice_payments,
-            invoice.payments,
-            invoice.invoiceitem_shipmentitems,
-            invoice.invoiceitem_orderitems,
-            invoice.purchaseitem,
-            invoice.invoice,
-            invoice.term,
-            invoice.termtype,
-            invoice.statustype,
-            invoice.status,
-            invoice.salesinvoice,
-            invoice.items,
-            invoice.salesitems,
-            invoice.account_roletype,
-            invoice.accounts,
-            invoice.account_role,
-        )
+
+        for e in orm.orm.getentitys(includeassociations=True):
+            if e.__module__ in ('invoice',):
+                e.orm.recreate()
 
     def it_creates_items(self):
         # Create products
