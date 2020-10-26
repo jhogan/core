@@ -1493,6 +1493,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         chron = db.chronicler.getinstance()
         chron += db.chronicle(eargs.entity, eargs.op, eargs.sql, eargs.args)
 
+    # TODO The *join methods should be in the ``orm`` class.
     def innerjoin(self, *args):
         for es in args:
             self.join(es, join.Inner)
@@ -1525,7 +1526,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         objects stored in its ``joins`` property. These can be chained
         together. Together, with the ``where`` property of the
         ``orm.entities`` collection objects, complex SELECT statements
-        can be expessed using the ORMs API. For example::
+        can be expessed using the ORM's API. For example::
 
             arts = artists('weight BETWEEN 0 AND 1', ()).join(
                         artifacts('weight BETWEEN 10 AND 11, ())
@@ -5699,7 +5700,7 @@ class orm:
 
         try:
             self.isloading = True
-
+                    
             # Get SQL and SQL parameters/args
             sql, args = self.sql
 
