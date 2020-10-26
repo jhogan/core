@@ -624,25 +624,33 @@ class resume(orm.entity):
     party = party.party
 
 class review(orm.entity):
-    """ 
+    """ A performance review. Each employee (party.employee) may be the
+    receiver of one or more reviews. A review is composed of
+    one or more ``reviewitems`` (see ``reviewitem`` for more).
+
     Note that this is modeled after the PERFORMANCE REVIEW entity in
     "The Data Model Resource Book".
     """
 
     span = datespan
 
-    # Note the book has relationships for party.manager and
-    # party.worker, but I think the more general role, party.personal,
-    # because we don't have to have two properties; we can just reuse
-    # this.
-    personal = party.personal
+    # The employee role receiving the review
+    employee = party.employee
+
+    # The manager role issueing the review
+    manager = party.manager
 
     comment = text
 
     reviewitems = reviewitems
 
 class reviewitem(orm.entity):
-    """ 
+    """ An item on a performance review (see ``review``). 
+
+    A ``reviewitem`` represents the various questions that may be asked
+    on a performance ``review``. An example of this is "Rate employee's
+    promptness" or "Describe employee's teamwork style".
+
     Note that this is modeled after the PERFORMANCE REVIEW ITEM entity
     in "The Data Model Resource Book".
     """
@@ -657,7 +665,8 @@ class reviewitemtype(apriori.type):
     reviewitems = reviewitems
 
 class ratingtype(apriori.type):
-    """ 
+    """ The rating component of a ``review``.
+
     Note that this is modeled after the RATING TYPE entity in "The Data
     Model Resource Book".
     """
@@ -665,7 +674,14 @@ class ratingtype(apriori.type):
     reviewitems = reviewitems
 
 class note(orm.entity):
-    """ 
+    """ Performance ``notes`` is a mechanism for documenting an
+    employee's (``party.employee``) performance. 
+    
+    An example is that there may be a ``note`` on particular
+    communication date (``communicated``) on January 20,2001, with a
+    ``comment`` of "Hal Smith was insubordinate and refused to listen to
+    the direction of his manager."
+
     Note that this is modeled after the PERFORMANCE NOTE entity in "The
     Data Model Resource Book".
     """
