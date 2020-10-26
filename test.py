@@ -7645,6 +7645,36 @@ class test_orm(tester):
             for pres in art.presentations:
                 self.is_(art, pres.artist)
 
+    def it_loads_and_saves_entities_constituents_with_subentities(self):
+        # TODO Write another unit test to load a collection by itself:
+        #
+        #     press = presentation(name='derp')
+        #     self.type(concert, type(press.first))
+
+        # TODO Test with streaming
+        
+        art = artist.getvalid()
+
+        art.presentations += presentation.getvalid()
+        art.presentations += concert.getvalid()
+        art.presentations += exhibition.getvalid()
+
+        art.save()
+
+        art1 = art.orm.reloaded()
+
+        press = art.presentations.sorted()
+        with db.chronicler.snapshot():
+            press1 = art1.presentations.sorted()
+
+        for pres, pres1 in zip(press, press1):
+            self.eq(pres.id, pres1.id)
+            self.type(type(pres), pres1)
+
+
+
+
+
     def it_updates_entity_constituents_properties(self):
         chrons = self.chronicles
         art = artist.getvalid()

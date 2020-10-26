@@ -1471,6 +1471,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
                 return
 
+            self.orm.joinsubentities()
+
+
             super().__init__(initial=initial)
 
         finally:
@@ -5200,6 +5203,14 @@ class orm:
             es = es.join(sup, inferassociation=False)
             es = sup
 
+    def joinsubentities(self):
+        clss = orm.getsubclasses(
+            of=type(self.instance), recursive=False
+        )
+
+        for cls in clss:
+            self.instance.innerjoin(cls)
+
     def truncate(self, cur=None):
         # TODO Use executioner
         sql = 'TRUNCATE TABLE %s;' % self.table
@@ -6497,7 +6508,7 @@ class orm:
         return self._subclasses
 
     @staticmethod
-    def getsubclasses(of):
+    def getsubclasses(of, recursive=True):
         """ Return all subclasses of ``of`` as a list. 
 
         Subclasses obviously represent a tree structure, however this
@@ -6521,8 +6532,9 @@ class orm:
             if sub not in (associations, association):
                 r.append(sub)
 
-        for sub in of.__subclasses__():
-            r.extend(orm.getsubclasses(sub))
+        if recursive:
+            for sub in of.__subclasses__():
+                r.extend(orm.getsubclasses(sub))
 
         return r
 
