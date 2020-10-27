@@ -3436,11 +3436,10 @@ class mappings(entitiesmod.entities):
                     foreignkeyfieldmapping(e, isderived=True)
                 )
 
-
             ''' Add FK mapings to association objects '''
             # For association objects, look for entity mappings and add
-            # a foreign key mapping (e.g., For artist_artifact, add an
-            # FK called artistid and artifactid.
+            # a foreign key mapping (e.g., For artist_artifact, add a
+            # FK called artistid and artifactid).
             for map in self.entitymappings:
                 maps.append(
                     foreignkeyfieldmapping(
