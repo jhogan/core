@@ -1478,6 +1478,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 if hasattr(self, 'orm'):
                     self.orm.initing = False
 
+    def isauthorized(self):
+        "TODO"
+
     def clone(self, to=None):
         if not to:
             raise NotImplementedError()
@@ -3414,6 +3417,13 @@ class mappings(entitiesmod.entities):
             # Create a list to store mapping objects to be appended to
             # `self` later.
             maps = list()
+
+            if 'proprietor' not in self:
+                from party import party
+                self += entitymapping('proprietor', party, isderived=True)
+            else:
+                print('We need this test')
+                B()
 
             def add_fk_and_entity_map(e):
                 # Add an entity mapping for the composite
