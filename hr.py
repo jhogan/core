@@ -12,6 +12,13 @@ of human resource data.
 These entity objects are based on the "Human Resources" chapter of "The
 Data Model Resource Book".
 
+Alternative performance object model
+====================================
+Note that there is an alternative model to the performance-oriented
+classes (those that are oriented around the ``review`` class) documented
+in the book. See the "Employee Performance" section of the "Human
+Resource" chapter for a description of this alternative model.
+
 Examples:
     See test.py for examples. 
 
@@ -129,6 +136,9 @@ class position(orm.entity):
     # A collection of ``applications`` entities for this ``position``.
     applications = applications
 
+    # A ``position`` may be influenced by a performance ``review``, as
+    # the ``review`` may lead to a promotion or demotion if it is
+    # related to a certain ``position``.
     reviews = reviews
 
 class positiontype(apriori.type):
@@ -359,6 +369,11 @@ class history(orm.entity):
 
     comment = text
 
+    # Raises, bonuses, promotions, and demotions are important pieces of
+    # information that may arise from a performance ``review``.
+    # Therefore, the pay ``history`` entity is related to the review.
+    # Raises or cuts in salary are maintained within instances of pay
+    # ``history`` and may be affected by a performance ``reviews``. 
     reviews = reviews
 
 class benefit(orm.entity):
@@ -434,6 +449,8 @@ class paycheck(invoice.disbursement):
     # The collection of deductions applied to this paycheck
     deductions = deductions
 
+    # Bonuses would be maintained as a ``paycheck`` and may arise from
+    # a performance ``review``.
     reviews = reviews
 
 class methodtype(apriori.type):
