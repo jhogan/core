@@ -3825,6 +3825,16 @@ class test_orm(tester):
         self.chronicles = db.chronicles()
         db.chronicler.getinstance().chronicles.onadd += self._chronicler_onadd
 
+        es = orm.orm.getentitys(includeassociations=True)
+
+        # Since orm entities now depends on `party` (someone
+        # circularly), we need to ensure the party classes have updated
+        # tables definitions in the database. `party` is dependent on
+        # `apriori`.
+        for e in es:
+            if e.__module__ in ('party', 'apriori'):
+                e.orm.recreate()
+
         orm.orm.recreate(
             artists,
             presentations,
@@ -3944,6 +3954,162 @@ class test_orm(tester):
             cnt += int(chron.op not in ('reconnect',))
             
         self.eq(t.count, cnt, msg)
+
+    def it_adds_proprietor_to_entity(self):
+        ''' Test class (static attribute)'''
+
+        # Test the map
+        map = artist.orm.mappings['proprietor']
+        self.eq('proprietor', map.name)
+        self.type(orm.entitymapping, map)
+
+        # Ensure only one
+        self.one([
+            x for x in artist.orm.mappings 
+            if x.name == 'proprietor'
+        ])
+
+        # proprietor should be a `party`
+        self.is_(party.party, map.entity)
+
+        ''' Test object '''
+        art = artist.getvalid()
+
+        map = art.orm.mappings['proprietor']
+        self.eq('proprietor', map.name)
+        self.isnot(
+            artist.orm.mappings['proprietor'],
+            map
+        )
+        self.type(orm.entitymapping, map)
+
+        # Ensure only one
+        self.one([
+            x for x in art.orm.mappings 
+            if x.name == 'proprietor'
+        ])
+
+        self.none(art.proprietor)
+
+        proprietor = party.person(name='Malcolm McLaren')
+
+        art.proprietor = proprietor
+
+        art.save()
+
+        art1 = art.orm.reloaded()
+
+        self.eq(art.id, art1.id)
+        self.eq(art.proprietor.id, art1.proprietor.id)
+
+    def it_adds_proprietor_to_subentity(self):
+        ''' Test class (static attribute)'''
+
+        # Test the map
+        map = singer.orm.mappings['proprietor']
+        self.eq('proprietor', map.name)
+        self.type(orm.entitymapping, map)
+
+        # Ensure only one
+        self.one([
+            x for x in singer.orm.mappings 
+            if x.name == 'proprietor'
+        ])
+
+        # proprietor should be a `party`
+        self.is_(party.party, map.entity)
+
+        ''' Test object '''
+        sng = singer.getvalid()
+
+        map = sng.orm.mappings['proprietor']
+        self.eq('proprietor', map.name)
+        self.isnot(
+            singer.orm.mappings['proprietor'],
+            map
+        )
+        self.type(orm.entitymapping, map)
+
+        # Ensure only one
+        self.one([
+            x for x in sng.orm.mappings 
+            if x.name == 'proprietor'
+        ])
+
+        self.none(sng.proprietor)
+
+        proprietor = party.person(name='Malcolm McLaren')
+
+        sng.proprietor = proprietor
+
+        sng.save()
+
+        sng1 = sng.orm.reloaded()
+
+        self.eq(sng.id, sng1.id)
+        self.eq(sng.proprietor.id, sng1.proprietor.id)
+
+        # NOTE The super's proprietor is None. This is inaccurate and
+        # probably would be for almost any given situation. I'm not sure
+        # what to do about it at the moment. Maybe `proprietor` should
+        # be an @orm.attr getter that looks up and down the graph for a
+        # proprietor.
+        self.none(sng.orm.super.proprietor)
+
+    def it_adds_proprietor_to_subsubentity(self):
+        ''' Test class (static attribute)'''
+
+        # Test the map
+        map = rapper.orm.mappings['proprietor']
+        self.eq('proprietor', map.name)
+        self.type(orm.entitymapping, map)
+
+        # Ensure only one
+        self.one([
+            x for x in rapper.orm.mappings 
+            if x.name == 'proprietor'
+        ])
+
+        # proprietor should be a `party`
+        self.is_(party.party, map.entity)
+
+        ''' Test object '''
+        rpr = rapper.getvalid()
+
+        map = rpr.orm.mappings['proprietor']
+        self.eq('proprietor', map.name)
+        self.isnot(
+            rapper.orm.mappings['proprietor'],
+            map
+        )
+        self.type(orm.entitymapping, map)
+
+        # Ensure only one
+        self.one([
+            x for x in rpr.orm.mappings 
+            if x.name == 'proprietor'
+        ])
+
+        self.none(rpr.proprietor)
+
+        proprietor = party.person(name='Malcolm McLaren')
+
+        rpr.proprietor = proprietor
+
+        rpr.save()
+
+        rpr1 = rpr.orm.reloaded()
+
+        self.eq(rpr.id, rpr1.id)
+        self.eq(rpr.proprietor.id, rpr1.proprietor.id)
+
+        # NOTE The super's proprietor is None. This is inaccurate and
+        # probably would be for almost any given situation. I'm not sure
+        # what to do about it at the moment. Maybe `proprietor` should
+        # be an @orm.attr getter that looks up and down the graph for a
+        # proprietor.
+        self.none(rpr.orm.super.proprietor)
+        self.none(rpr.orm.super.orm.super.proprietor)
 
     def it_migrates(self):
         def migrate(cat, expect):
