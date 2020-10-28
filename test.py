@@ -1401,7 +1401,7 @@ class test_entities(tester):
             self.assertFail('getindex should have raised a ValueError.')
 
     def it_gets_the_ordinals(self):
-        """ The "ordinals" are propreties like "first", "second", and
+        """ The "ordinals" are properties like "first", "second", and
         "last"."""
 
         ks = knights().createthe4()
@@ -6529,12 +6529,12 @@ class test_orm(tester):
 
     def it_adds_subentity_to_superentities_collection(self):
         """ Ensure that entity objects (concert) added to collection
-        propreties (concerts) are availibale in the superentities
+        properties (concerts) are availibale in the superentities
         collection properties (presentations) before and after save.
         """
 
         # Add concert to concerts property and ensure it exists in
-        # presentations propreties
+        # presentations properties
         sng = singer.getvalid()
         sng.concerts += concert.getvalid()
 
