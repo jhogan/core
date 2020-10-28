@@ -9,6 +9,14 @@
 """ This module contains ``orm.entity`` objects related to the tracking
 of human resource data.
 
+The object models allow enterprises to more efficiently track positions
+and assignments associated with its employees and contractors.  In
+addition, the models contain elements for position classifications,
+reporting structures, determining pay rates, tracking the salary history
+of those people associated with the enterprise, benefits tracking,
+payroll information, employment applications, employee skills, employee
+performance, and employee termination.  
+
 These entity objects are based on the "Human Resources" chapter of "The
 Data Model Resource Book".
 
@@ -88,6 +96,11 @@ class employeement(party.role_role):
     enterprise is interested in tracking employees of external
     organizations as well, then this entity can be between
     ``party.employee`` and ``party.employeer``.
+
+    When the ``employment`` ends, the ``end`` date of the
+    `party.role_role`` entity stores the date of termination. On
+    termination, the ``role_role_status`` instance of "terminated" is
+    now used to signify that the employment has ended.
     """
     
     # A collection a payment histories for this employment. These
@@ -718,3 +731,44 @@ class performancenotetype(apriori.type):
 
     reviewitems = reviewitems
 
+class terminationtype(apriori.type):
+    """ Stores what kind of termination happened, such as "resignation",
+    "firing" or "retirement". 
+
+    Note that this is modeled after the TERMINATION TYPE entity in "The
+    Data Model Resource Book".
+    """
+    employeements = employeements
+
+class terminationreason(orm.entity):
+    """ Maintains the description explaining the circumstances and cause
+    of the termination. Examples include "insubordination", "took new
+    job", "non-performance", "moved", and so on.
+
+    Note that this is modeled after the TERMINATION REASON entity in
+    "The Data Model Resource Book".
+    """
+    employeements = employeements
+
+class claim(orm.entity):
+    """ Maintains information about unemployment claims that may be
+    related to terminations of employees. The claim date shows what date
+    the unemployment claim was filed. The description provides
+    information on the background of the claim.
+
+    Note that this is modeled after the UNEMPLOYEEMENT CLAIM entity in
+    "The Data Model Resource Book".
+    """
+
+    date = date
+
+    description = text
+
+class claimstatustype(apriori.type):
+    """ Stores whether the ``claim`` was "filed", "pending", "accepted",
+    "rejected", or any other important status. 
+
+    Note that this is modeled after the UNEMPLOYEEMENT CLAIM STATUS TYPE
+    entity in "The Data Model Resource Book".
+    """
+    claims = claims

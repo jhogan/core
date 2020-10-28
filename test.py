@@ -23614,7 +23614,7 @@ class gem_hr(tester):
         super().__init__()
         es = orm.orm.getentitys(includeassociations=True)
         for e in es:
-            if e.__module__ in ('party', 'hr'):
+            if e.__module__ in ('party', 'hr', 'apriori', 'invoice'):
                 e.orm.recreate()
 
     def it_creates_position(self):
