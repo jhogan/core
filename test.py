@@ -23823,7 +23823,7 @@ class gem_budget(tester):
                 e.orm.recreate()
 
     def it_creates(self):
-        # Create a budget and assign it a bugettype
+        # Create a budget and assign it a budgettype
         bud = budget.budget(
             name = 'Marketing budget',
             type = budget.type(
