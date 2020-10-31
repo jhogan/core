@@ -5210,7 +5210,7 @@ class orm:
         )
 
         for cls in clss:
-            self.instance.innerjoin(cls)
+            self.instance.join(cls, inferassociation=False)
 
     def truncate(self, cur=None):
         # TODO Use executioner
