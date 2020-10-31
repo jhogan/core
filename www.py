@@ -25,6 +25,7 @@ import textwrap
 import traceback
 import urllib
 import party
+import file
 
 # NOTE Use the following diagram as a guide to determine what status
 # code to respond with:
@@ -176,6 +177,7 @@ class _request:
         self.app._request  =  self
         self._payload      =  None
         self._user         =  None
+        self._files        =  None
 
     @property
     def headers(self):
@@ -194,6 +196,95 @@ class _request:
             hdrs += header(k[5:], v)
 
         return hdrs
+
+    @property
+    def files(self):
+        """ Return a collection of files that were uploaded in the
+        request.
+
+        Note that currently, a very rough implementation of a
+        multipart/form-data parser is implemented. This is used for
+        tests but hasn't been tried with real world POSTs (the kind an
+        actual browser would send). 
+
+        A future version will parse out the file data that is sent in
+        JSON format. This will be the normal way to transfer files to
+        the web server from a browser. The multipart/form-data parser is
+        just an ad hoc way that some tests are currently using to send
+        file data.
+        """
+        if self._files is not None:
+            return self._files
+
+        fs = file.files()
+
+        if self.mime != 'multipart/form-data':
+            # Currently, we will only have file in the request if we are
+            # using a multipart mime type. This will change once
+            # event-based input is complete.
+            return fs
+
+        content_type = self.content_type.split(';')
+
+        if len(content_type) < 2:
+            raise BadRequestError(
+                "Can't find 'boundry' in Content-Type"
+            )
+
+        try:
+            boundry = bytes(content_type[1].split('=')[1], 'utf-8')
+        except Exception as ex:
+            raise BadRequestError(
+                f"Can't parse boundry ({ex})"
+            )
+
+        boundry = '--' + boundry.decode('utf')
+        offset = content_type = None
+        inp = self.environment['wsgi.input']
+        inp.seek(0)
+        while True:
+            ln = inp.readline()
+
+            if not ln:
+                break
+
+            ln = ln.rstrip(b'\n\r')
+
+            if not content_type:
+                ln = ln.decode('utf-8')
+
+            if content_type and ln == bytes(boundry, 'utf-8'):
+                if offset is not None:
+                    tell = inp.tell()
+                    size = tell - offset
+                    size -= len(boundry) + len('\r\n\r\n')
+                    inp.seek(offset)
+                    fs += file.file()
+                    fs.last.name = filename
+                    fs.last.body = inp.read(size)
+                    content_type = content_disposition = offset = None
+                    inp.seek(tell)
+
+            elif isinstance(ln, bytes):
+                continue
+
+            elif ln.startswith('Content-Disposition'):
+                parts = ln.split(';')
+                content_disposition = parts[0].split(':')[1].strip()
+                name = parts[1].split('=')[1].strip()
+                filename = parts[2].split('=')[1].strip()
+
+            elif ln.startswith('Content-Type'):
+                content_type = ln.split(':')[1].strip()
+                ln = inp.readline()
+                if ln.strip(b'\n\r'):
+                    raise BadRequestError(
+                        'Missing empty line'
+                    )
+                offset = inp.tell()
+
+            self._files = fs
+        return fs
 
     @property
     def cookies(self):
@@ -310,7 +401,22 @@ class _request:
         if self._payload is None:
             sz = self.size
             inp = self.environment['wsgi.input']
-            self._payload = inp.read(sz).decode('utf-8')
+            if self.mime == 'multipart/form-data':
+                # Normally, the client won't need to get the payload for
+                # multipart data; it will usually just use
+                # `request.files`. Either way, return whan we have. We
+                # probably shouldn't memoize it since it could be
+                # holding a lot of file data.
+
+                # TODO We could move this outside the consequence block
+                inp.seek(0)
+
+                return inp.read(sz)
+            else:
+                # TODO What would the mime type (content-type) be here?
+                # (text/html?) Let's turn this else into an elif with
+                # that information.
+                self._payload = inp.read(sz).decode('utf-8')
         return self._payload
 
     @property
@@ -367,7 +473,12 @@ class _request:
 
     @property
     def content_type(self):
-        return self.environment['content_type']
+        return self.environment['content_type'].strip()
+
+    @property
+    def mime(self):
+        return self.content_type.split(';')[0].strip().lower()
+
 
     def demand(self):
         if not request.page:
@@ -375,11 +486,18 @@ class _request:
 
         if self.isget or self.ishead:
             if not len(self.path):
-                raise http.BadRequestError('No path was given.')
+                raise www.BadRequestError('No path was given.')
             
         elif self.ispost:
-            if len(self.payload) == 0:
+            if self.mime == 'text/html' and len(self.payload) == 0:
                 raise BadRequestError('No data in body of request message.')
+
+            if self.mime == 'multipart/form-data':
+                if self.files.isempty:
+                    raise BadRequestError(
+                        'No files given in multipart form.'
+                    )
+                    
 
             # The remaining demands will be for XHR requests only
             if not self.isxhr:
@@ -388,7 +506,7 @@ class _request:
             try:
                 post = self.post
             except json.JSONDecodeError as ex:
-                raise http.BadRequestError(str(ex))
+                raise www.BadRequestError(str(ex))
 
             try:
                 cls = post['_class']
@@ -401,7 +519,7 @@ class _request:
                 raise ValueError('The method value was not supplied')
 
             if meth[0] == '_':
-                raise http.ForbiddenError('Invalid method.')
+                raise www.ForbiddenError('Invalid method.')
 
             try:
                 import ctrl
@@ -620,7 +738,7 @@ class controller:
         try:
             return args[arg]
         except KeyError:
-            raise http.UnprocessableEntityError(
+            raise www.UnprocessableEntityError(
                 'Argument not supplied: ' + arg
             )
 
@@ -648,7 +766,6 @@ class HttpError(HttpException):
             msg0 += ' - ' + msg
 
         super().__init__(msg0)
-
 
 class MultipleChoicesException(HttpException):
     status = 300

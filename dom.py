@@ -16,6 +16,7 @@ from html.parser import HTMLParser
 from mistune import Markdown
 from textwrap import dedent, indent
 import entities
+import file
 import html as htmlmod
 import operator
 import orm
@@ -1925,6 +1926,13 @@ class as_(elements):
     pass
 
 class a(element):
+    def __init__(self, body=None, *args, **kwargs):
+        if isinstance(body, file.file):
+            self.href = body.path
+            body = body.basename
+
+        super().__init__(body, *args, **kwargs)
+
     @property
     def referrerpolicy(self):
         return self.attributes['referrerpolicy'].value
@@ -3730,6 +3738,21 @@ class scripts(elements):
     pass
 
 class script(element):
+    def __init__(self, res=None, *args, **kwargs):
+        # If a file.resource was given
+        if res:
+            self.site.resources &= res
+            self.src = res.url
+            if res.local:
+                res.save()
+                if res.exists:
+                    self.src = res.public
+
+            self.integrity = res.integrity
+            self.crossorigin = res.crossorigin
+            
+        super().__init__(*args, **kwargs)
+
     @property
     def crossorigin(self):
         return self.attributes['crossorigin'].value

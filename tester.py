@@ -16,7 +16,6 @@ from timer import stopwatch
 from types import FunctionType
 import argparse
 import dom
-import www
 import inspect
 import io
 import json
@@ -28,6 +27,7 @@ import sys
 import textwrap
 import urllib
 import uuid
+import www
 
 """ This module provides unit testing framework.
 
@@ -132,13 +132,18 @@ class tester(entity):
             def get(self, pg, ws):
                 return self._request(pg=pg, ws=ws, meth='GET')
 
-            def post(self, pg, ws, frm):
-                return self._request(pg=pg, ws=ws, frm=frm, meth='POST')
+            def post(self, pg, ws, frm=None, files=None):
+                if files:
+                    files = files.orm.collectivize()
+
+                return self._request(
+                    pg=pg, ws=ws, frm=frm, files=files, meth='POST'
+                )
 
             def head(self, pg, ws):
                 return self._request(pg=pg, ws=ws, meth='HEAD')
 
-            def _request(self, pg, ws, frm=None, meth='GET'):
+            def _request(self, pg, ws, frm=None, files=None, meth='GET'):
                 if not isinstance(pg, str):
                     raise TypeError('pg parameter must be a str')
 
@@ -196,14 +201,42 @@ class tester(entity):
                 pg and pg.clear()
 
                 if meth == 'POST':
-                    inp = io.BytesIO(frm.post)
+                    if files and files.count:
+                        boundry = uuid.uuid4().hex
+                        inp = io.BytesIO()
 
-                    env = create_environ({
-                        'content_length':  len(frm.post),
-                        'wsgi.input':      inp,
-                    })
+                        boundry = f'--{boundry}'
+                        for file in files:
+                            inp.write(bytes(
+                            f'--{boundry}\r\n'
+                            'Content-Disposition: form-data;'
+                            f'name=file;'
+                            f'filename={file.name}\r\n'
+                            'Content-Type:application/octet-stream\r\n\r\n',
+                            'utf-8'
+                            ))
 
+                            inp.write(file.body)
 
+                        inp.write(bytes(f'\r\n\r\n--{boundry}', 'utf-8'))
+
+                        inp.seek(0)
+
+                        env = create_environ({
+                            'content_type':  (
+                                'multipart/form-data; '
+                                f'boundry={boundry}'
+                            ),
+                            'content_length': len(inp.getvalue()),
+                            'wsgi.input': inp,
+                        })
+                    else:
+                        inp = io.BytesIO(frm.post)
+
+                        env = create_environ({
+                            'content_length':  len(frm.post),
+                            'wsgi.input':      inp,
+                        })
                 else: 
                     env = create_environ()
 

@@ -27,6 +27,7 @@ import account
 import apriori
 import asset
 import auth
+import base64
 import budget
 import codecs
 import dateutil
@@ -53,6 +54,7 @@ import re
 import shipment
 import tempfile
 import textwrap
+import tfile
 
 # Import crust. Ensure that stdout is suppressed because it will print
 # out status information on startup.
@@ -3142,6 +3144,7 @@ class test_date(tester):
         actual = primative.date(*args)
         self.eq(expect, actual)
 
+# TODO Can we remove this?
 class mycli(cli):
     def registertraceevents(self):
         ts = self.testers
@@ -20338,7 +20341,7 @@ class gem_product(tester):
         # Associate each with smallbox
         each.measure_measures += mm
 
-        # A large box is equivelent to 2 small boxes. Note the
+        # A large box is equivalent to 2 small boxes. Note the
         # association beteen `each` and `largebox` is not created. We
         # will rely on product.measure_measure to work issues like this
         # out automatically via transitive logic.
@@ -24011,9 +24014,11 @@ class gem_budget(tester):
 ########################################################################
 # Test dom                                                             #
 ########################################################################
+class foonets(pom.sites): pass
 class foonet(pom.site):
-    def __init__(self, host='foo.net'):
-        super().__init__(host)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.host = 'foo.net'
 
         ''' Pages '''
         self.pages += home()
@@ -24331,8 +24336,8 @@ class pom_site(tester):
         self.eq(main.items.pretty, mnu.items.pretty)
         
     def it_calls__repr__(self):
-        self.eq('site()', repr(pom.site('foo.bar')))
-        self.eq('site()', str(pom.site('foo.bar')))
+        self.eq('site()', repr(pom.site()))
+        self.eq('site()', str(pom.site()))
 
         self.eq('foonet()', repr(foonet()))
         self.eq('foonet()', str(foonet()))
@@ -24354,7 +24359,7 @@ class pom_site(tester):
         self.expect(IndexError, lambda: ws[dom.p()])
 
     def it_calls_html(self):
-        ws = pom.site('foo.bar')
+        ws = pom.site()
         self.type(dom.html, ws.html)
         self.eq('en', ws.html.lang)
 
@@ -24392,7 +24397,7 @@ class pom_site(tester):
         self.one(titles)
         self.eq(title, titles.first.text)
 
-        ws = pom.site('foo.bar')
+        ws = pom.site()
         hd = ws.head
         self.one(hd.children['meta[charset=utf-8]'])
 
@@ -24427,7 +24432,7 @@ class pom_site(tester):
         self.one(navs['[aria-label=Main]'])
 
     def it_calls_main_menu(self):
-        ws = pom.site('foo.bar')
+        ws = pom.site()
         mnu = ws.header.menu
         self.zero(mnu.items)
 
@@ -24537,12 +24542,6 @@ class pom_site(tester):
         self.zero(mnu[sels])
 
 class pom_page(tester):
-    def __init__(self):
-        super().__init__()
-        orm.orm.recreate(
-            party.user
-        )
-
     def it_calls__init__(self):
         name = uuid4().hex
         pg = pom.page()
@@ -24730,7 +24729,7 @@ class pom_page(tester):
         self.isnot(pg.head,          ws.head)
 
     def it_calls_site(self):
-        ws = foonet(host='foo.net')
+        ws = foonet(name='foo.net')
         self.is_(ws, ws['/en/blogs'].site)
         self.is_(ws, ws['/en/blogs/comments'].site)
         self.is_(ws, ws['/en/blogs/comments/rejected'].site)
@@ -25102,9 +25101,11 @@ class pom_page(tester):
         self.one(res['main[data-path="/error"]'])
 
     def it_raises_404(self):
+        class derpnets(pom.sites): pass
         class derpnet(pom.site):
-            def __init__(self, host='derp.net'):
-                super().__init__(host)
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.host = 'derp.net'
 
         ws = derpnet()
         tab = self.browser().tab()
@@ -25169,7 +25170,7 @@ class pom_page(tester):
         self.eq('Lang: es', (res['main p'].first.text))
         return
 
-        # Ensure it defauls to Engilsh
+        # Ensure it defauls to English
         # TODO Remove return
         res = tab.get('/lang', ws)
 
