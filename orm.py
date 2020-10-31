@@ -1473,7 +1473,6 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
             self.orm.joinsubentities()
 
-
             super().__init__(initial=initial)
 
         finally:
@@ -1564,6 +1563,12 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         return es1
         
     def _join(self, es=None, type=None, inferassociation=True):
+        # NOTE that this method is the instance method that will replace
+        # the `entities.join` @classmethod when an `entities` object is
+        # instantiated. Also NOTE that this method contains the logic
+        # that will be called by ``entities.join`` when it is called as
+        # a @classmethod. See the documentation for ``entities.join``
+        # for more.
         type1, type = type, builtins.type
         if join.Outer == type1:
             msg = 'LEFT OUTER JOINs are not currently implemented'
@@ -6109,6 +6114,9 @@ class orm:
                 # will both always be 'id'
                 id = joiner.entities.orm.mappings.primarykeymapping.name
                 pk = join.entities.orm.mappings.primarykeymapping.name
+            elif joiner.entities.orm.issuperentity(of=join.entities):
+                id = join.entities.orm.mappings.primarykeymapping.name
+                pk = joiner.entities.orm.mappings.primarykeymapping.name
             else:
                 if associations in joiner.entities.mro():
                     pk = join.entities.orm.mappings.primarykeymapping.name
