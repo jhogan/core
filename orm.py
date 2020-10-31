@@ -3420,7 +3420,9 @@ class mappings(entitiesmod.entities):
 
             if 'proprietor' not in self:
                 from party import party
-                self += entitymapping('proprietor', party, isderived=True)
+                self += entitymapping(
+                    'proprietor', party, isderived=True
+                )
             else:
                 print('We need this test')
                 B()
@@ -3844,6 +3846,7 @@ class associationsmapping(mapping):
                         maps += map
 
             if maps.isempty:
+                B()
                 raise ValueError('Foreign key not found')
 
             # Create the where clause by disjunctivly joining the
@@ -5156,7 +5159,10 @@ class orm:
     @property
     def isreflexive(self):
         maps = self.mappings.entitymappings
-        types = [x.entity for x in maps]
+        types = [
+            x.entity for x in maps
+            if x.name != 'proprietor'
+        ]
 
         return bool(len(types)) and len(types) > len(set(types))
         
@@ -6621,6 +6627,8 @@ class orm:
             for ass in self.getassociations():
                 maps = list(ass.orm.mappings.entitymappings)
                 for i, map in enumerate(maps):
+                    if map.name == 'proprietor':
+                        continue
                     if orm.issub(map.entity, self.entity):
                         if ass.orm.isreflexive:
                             if map.issubjective:
@@ -6861,7 +6869,7 @@ class associations(entities):
 
             if cond:
                 e = map.value
-                if not e.orm.ismarkedfordeletion:
+                if e and not e.orm.ismarkedfordeletion:
                     # Get the pseudocollection
                     es = getattr(self, e.orm.entities.__name__)
                     es.remove(e)

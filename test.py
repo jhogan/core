@@ -4410,10 +4410,15 @@ class test_orm(tester):
 
         migrate(cat, expect)
 
+        initial = (
+            'id',         'proprietor__partyid',
+            'createdat',  'updatedat'
+        )
+
         self.eq(
             [
-                'id',       'createdat',  'updatedat',  'name',
-                'shedder',  'skittish',   'lives',      'dob',
+                *initial,   'name',
+                'shedder',  'skittish',  'lives',  'dob',
             ],
             [x.name for x in cat.orm.dbtable.columns]
         )
@@ -4435,7 +4440,7 @@ class test_orm(tester):
 
         self.eq(
             [
-                'id',    'createdat',  'updatedat',  'dob',
+                *initial,  'dob',
                 'name',  'shedder',    'skittish',   'lives',
             ],
             [x.name for x in cat.orm.dbtable.columns]
@@ -4460,7 +4465,7 @@ class test_orm(tester):
 
         self.eq(
             [
-                'id',        'createdat',  'updatedat',  'shedder',
+                *initial,  'shedder',
                 'skittish',  'lives',      'dob',        'name',
             ],
             [x.name for x in cat.orm.dbtable.columns]
@@ -4488,7 +4493,7 @@ class test_orm(tester):
 
         self.eq(
             [
-                'id',    'createdat',  'updatedat',  'dob',
+                *initial,  'dob',
                 'name',  'shedder',    'skittish',   'lives',
             ],
             [x.name for x in cat.orm.dbtable.columns]
@@ -4513,7 +4518,7 @@ class test_orm(tester):
 
         self.eq(
             [
-                'id',        'createdat',  'updatedat',  'shedder',
+                *initial,  'shedder',
                 'skittish',  'dob',        'name',       'lives',
             ],
             [x.name for x in cat.orm.dbtable.columns]
@@ -4536,7 +4541,7 @@ class test_orm(tester):
 
         self.eq(
             [
-                'id',        'createdat',  'updatedat',  'shedder',
+                *initial,  'shedder',
                 'skittish',  'name',       'dob',        'lives',
             ],
             [x.name for x in cat.orm.dbtable.columns]
@@ -4561,7 +4566,7 @@ class test_orm(tester):
 
         self.eq(
             [
-                'id',   'createdat',  'updatedat',  'name',
+                *initial,  'name',
                 'dob',  'lives',      'shedder',    'skittish'
             ],
             [x.name for x in cat.orm.dbtable.columns]
@@ -4584,7 +4589,7 @@ class test_orm(tester):
 
         self.eq(
             [
-                'id',       'createdat',  'updatedat',  'name',
+                *initial,  'name',
                 'birthed',  'lives',      'shedder',    'skittish'
             ],
             [x.name for x in cat.orm.dbtable.columns]
@@ -4607,7 +4612,7 @@ class test_orm(tester):
 
         self.eq(
             [
-                'id',   'createdat',  'updatedat',  'name',
+                *initial,  'name',
                 'dob',  'lifecount',  'shedder',    'skittish'
             ],
             [x.name for x in cat.orm.dbtable.columns]
@@ -9937,6 +9942,7 @@ class test_orm(tester):
         art1.phone2     = uuid4().hex[0]
         art1.email_1    = uuid4().hex[0]
         art1.gender     = 'f'
+        art1.proprietor = party.person(name='Jesse Hogan')
 
         self.false(art1.orm.isnew)
         self.true(art1.orm.isdirty)
@@ -12388,6 +12394,7 @@ class test_orm(tester):
         sng1.email_1   = uuid4().hex[0]
         sng1.threats   = 'dancing',
         sng1.gender    = 'm'
+        sng1.proprietor = party.person(name='Jesse Hogan')
 
         self.eq((False, True, False), sng1.orm.persistencestate)
 
@@ -12489,6 +12496,7 @@ class test_orm(tester):
         rpr1.abilities = list('wackness')
         rpr1.gender    = 'f'
         rpr1.threats   = 'dancing',
+        rpr1.proprietor   = party.person(name='Herp Derp')
 
         self.eq((False, True, False), rpr1.orm.persistencestate)
 
@@ -23182,7 +23190,7 @@ class gem_invoice(tester):
         super().__init__()
 
         for e in orm.orm.getentitys(includeassociations=True):
-            if e.__module__ in ('invoice',):
+            if e.__module__ in ('invoice', 'party', 'apriori'):
                 e.orm.recreate()
 
     def it_creates_items(self):
