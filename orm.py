@@ -4205,7 +4205,7 @@ class attr:
                 elif isset:
                     return meth(instance, value)
 
-            except AttributeError as ex:
+            except builtins.AttributeError as ex:
                 # If it raises an AttributeError, wrap it. If the call
                 # from e.__getattribute__ sees a regular AttributeError,
                 # it will ignore it because it will assume its caller is
