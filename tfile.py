@@ -24,7 +24,7 @@ import pom
 import tester
 import uuid
 
-# TODO Enuser that integrity can be None
+# TODO Ensure that integrity can be None
 
 def clean():
     store = file.file.store
