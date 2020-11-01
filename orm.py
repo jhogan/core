@@ -5827,6 +5827,7 @@ class orm:
                         args.append(self.dequote(op))
     
     def populate(self, ress):
+        # Create an entities dict
         edict = dict()
         skip = False
 
@@ -5841,6 +5842,7 @@ class orm:
             raise ValueError('Invalid type of `ress`')
 
         for res in ress:
+            # TODO s/func.//
             for i, f in func.enumerate(res.fields):
                 alias, _, col = f.name.rpartition('.')
 
@@ -5865,17 +5867,17 @@ class orm:
 
                         maps = e.orm.mappings
 
-                        # During e's __init__'ing, a new instance of a super
-                        # entity may be created (e.g., because an __init__ sets
-                        # an attribute that is only in a super). Since we are
-                        # loading here, we want to make sure this super set to
-                        # None. 
+                        # During e's __init__'ing, a new instance of a
+                        # super entity may be created (e.g., because an
+                        # __init__ sets an attribute that is only in a
+                        # super). Since we are loading here, we want to
+                        # make sure this `super` set to None. 
                         #
                         # The result will be that the super will either
-                        # be lazy-loaded when needed, or, if we have the supers
-                        # record from the database here somewhere in `ress`,
-                        # e.orm.super will be set by orm.link() to that
-                        # super entity.
+                        # be lazy-loaded when needed, or, if we have the
+                        # super's record from the database here
+                        # somewhere in `ress`, e.orm.super will be set
+                        # by orm.link() to that superentity.
                         
                         e.orm.super = None
 

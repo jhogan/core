@@ -64,7 +64,6 @@ with redirect_stdout(None):
 # supported.
 
 # A two byte character from the Basic Multilingual Plane
-
 Δ = bytes("\N{GREEK CAPITAL LETTER DELTA}", 'utf-8').decode()
 
 # A three byte character
