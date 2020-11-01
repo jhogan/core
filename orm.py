@@ -4167,7 +4167,14 @@ class attr:
 
         @property
         def mapping(self):
-            map = fieldmapping(*self.args, **self.kwargs)
+            if entity in self.args[0].mro():
+                map = entitymapping(self.fget.__name__, self.args[0])
+            elif entities in self.args[0].mro():
+                # NOTE Untested
+                map = entitiesmapping(k, v)
+            else:
+                map = fieldmapping(*self.args, **self.kwargs)
+
             # TODO Make isexplicit a @property. It's now redundant with
             # isgetter and issetter.
             map.isexplicit = True
