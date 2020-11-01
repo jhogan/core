@@ -137,6 +137,43 @@ TODOs:
     for more clarification.
 
     TODO Prefix each table name with the name of the module.
+
+    TODO datespans and timespans that refer to a timeframe for which an
+    association is valid should be name 'valid':
+        
+        s/span = (time|date)span/valid = \1span/
+
+    Change all associations such that their names are alphabetized::
+        
+        Substitute:
+            class item_account(orm.association):
+                item     =  item
+                account  =  account
+
+        With:
+            class account_item(orm.association):
+                account  =  account
+                item     =  item
+
+    TODO Reflexive associations currently can currently be loaded only
+    by the subject-side of the association. For example, if the
+    'director' hr.position has direct reports (accessible through
+    hr.position_position), we can discover them like this::
+
+        assert director.position_positions.ispopulated
+
+    However, the inverse is not true::
+
+        direct_report = director.position_positions.first
+
+        # This will fail; we can't discover who the manager of the
+        # direct_report is.
+        assert direct_report.position_positions.ispopulated
+
+    TODO Instead of ``decimal``, we may want to create a ``currency``
+    datatype. Currently, it's assumed that the values stored in decimal
+    attributes are dollars, but obviously this will not always be the
+    case.
 """
 
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
@@ -2582,6 +2619,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             self._setvalue(attr, v, attr, setattr0, cmp=cmp)
 
             if type(map) is entitymapping:
+                # FIXME `v` can be None. When this is the case, we get a
+                # null reference exception.
+                
                 e = v.orm.entity
                 while True:
                     for map in self.orm.mappings.foreignkeymappings:
@@ -3513,7 +3553,7 @@ class mappings(entitiesmod.entities):
             # method is called). This is probably okay, however, since
             # it seems unlikely it will ever get so big it becomes a
             # problem.
-            sys.setrecursionlimit(2000)
+            sys.setrecursionlimit(3000)
 
             ''' Add composite and constituent mappings '''
             # For each class that inherits from `orm.entity`
