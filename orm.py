@@ -150,6 +150,7 @@ import primative
 import re
 import sys
 import textwrap
+import sec
 
 @unique
 class types(Enum):
@@ -3418,11 +3419,38 @@ class mappings(entitiesmod.entities):
             # `self` later.
             maps = list()
 
+            # TODO Remove this test
             if 'proprietor' not in self:
                 from party import party
-                self += entitymapping(
-                    'proprietor', party, isderived=True
-                )
+
+                if False:
+                    @attr(party)
+                    def proprietor(self):
+                        return attr()
+
+                    self += proprietor.mapping
+                    self.last.isderived = True
+                    self.orm.entity.proprietor = proprietor
+                else:
+                    @property
+                    def proprietor(self):
+                        map = self.orm.mappings['proprietor']
+                        if self.orm.isnew:
+                            if not map._value:
+                                self.__setattr__(
+                                    'proprietor', sec.proprietor, 
+                                    cmp=False,    imp=True
+                                )
+
+                            
+                        return map.value
+
+                    # TODO Do we need isderived=True
+                    self += entitymapping(
+                        'proprietor', party, isderived=True
+                    )
+                    self.orm.entity.proprietor = proprietor
+
             else:
                 print('We need this test')
                 B()
@@ -4125,7 +4153,14 @@ class attr:
 
         @property
         def mapping(self):
-            map = fieldmapping(*self.args, **self.kwargs)
+            if entity in self.args[0].mro():
+                map = entitymapping(self.fget.__name__, self.args[0])
+            elif entities in self.args[0].mro():
+                # NOTE Untested
+                map = entitiesmapping(k, v)
+            else:
+                map = fieldmapping(*self.args, **self.kwargs)
+
             # TODO Make isexplicit a @property. It's now redundant with
             # isgetter and issetter.
             map.isexplicit = True
