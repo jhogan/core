@@ -2390,7 +2390,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         'constructor, ensure that you are including'
                         'the keys as well.'
                     )
-                    
 
                 self.orm.populate(res)
 
@@ -2486,6 +2485,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         to the ``v`` argument. By default, it is False, because this is
         only necessary for imperitive setters.
         """
+
+        # TODO Document the `imp` parameter
         
         # Need to handle 'orm' first, otherwise the code below that
         # calls self.orm won't work.
@@ -2522,12 +2523,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 if map.issetter and not imp:
                     return object.__setattr__(self, attr, v)
 
-            # Call entity._setvalue to take advantage of its event raising
-            # code. Pass in a custom setattr function for it to call. Use
-            # underscores for the paramenters since we already have the values
-            # it would pass in in this method's scope - except for the v
-            # which, may have been processed (i.e, if it is a str, it will
-            # have been strip()ed. 
+            # Call entity._setvalue to take advantage of its event
+            # raising code. Pass in a custom setattr function for it to
+            # call. Use underscores for the paramenters since we already
+            # have the values it would pass in in this method's scope -
+            # except for the v which, may have been processed (i.e, if
+            # it is a str, it will have been strip()ed. 
             def setattr0(_, __, v):
                 map.value = v
 
@@ -2555,13 +2556,13 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         if e:
                             continue
                         else:
-                            # If we have gotten here, no FK was found in self
-                            # that match the composite object passed in. This
-                            # is probably because the wrong type of composite
-                            # was given. The user/programmers has made a
-                            # mistake. However, the brokenrules logic will
-                            # detect this issue and alert the user to the
-                            # issue.
+                            # If we have gotten here, no FK was found in
+                            # self that matches the composite object
+                            # passed in. This is probably because the
+                            # wrong type of composite was given. The
+                            # user/programmers has made a mistake.
+                            # However, the brokenrules logic will detect
+                            # this and alert the user to the issue.
                             pass
                     break
 
@@ -3874,7 +3875,6 @@ class associationsmapping(mapping):
                         maps += map
 
             if maps.isempty:
-                B()
                 raise ValueError('Foreign key not found')
 
             # Create the where clause by disjunctivly joining the
@@ -4097,6 +4097,15 @@ class fulltext(index):
         return name
 
 class attr:
+    def __init__(self, *args, **kwargs):
+        self.args = list(args)
+        self.kwargs = kwargs
+
+    def __call__(self, meth):
+        self.args.append(meth)
+        w = attr.wrap(*self.args, **self.kwargs)
+        return w
+
     def attr(v=undef):
         """ Sets the map's value to ``v``. Returns the mapped
         value.
@@ -4203,15 +4212,6 @@ class attr:
 
         def __set__(self, instance, value):
             return self._getset(instance=instance, value=value)
-
-    def __init__(self, *args, **kwargs):
-        self.args = list(args)
-        self.kwargs = kwargs
-
-    def __call__(self, meth):
-        self.args.append(meth)
-        w = attr.wrap(*self.args, **self.kwargs)
-        return w
 
 class fieldmapping(mapping):
     """ Represents mapping between Python types and MySQL types.
