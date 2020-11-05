@@ -15,6 +15,9 @@
 mapping.
 
 TODOs:
+    FIXME:6028ce62 Allow entitymappings to be set to None (see 6028ce62
+    for more.)
+
     TODO Raise error if a subclass of ``association`` does not have a
     subclass of ``associations``. Strange bugs happen when this mistake
     is made.
@@ -2538,6 +2541,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             self._setvalue(attr, v, attr, setattr0, cmp=cmp)
 
             if type(map) is entitymapping:
+                # FIXME:6028ce62 An entitymapping attribute could be set
+                # to None.  However, that would mean `v` would be None
+                # here, so accesing its attributes causes an error. We
+                # need to allow `v` to be None and find a different way
+                # of getting the attributes it's getting
                 e = v.orm.entity
                 while True:
                     for map in self.orm.mappings.foreignkeymappings:
@@ -2570,7 +2578,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     break
 
                 # If self is a subentity (i.e., concert), we will want to set
-                # the superentity's (i.e, presentation) composite map to it's
+                # the superentity's (i.e, presentation) composite map to its
                 # composite class (i.e., artist) value. 
                 selfsuper = self.orm.super
                 attrsuper = self.orm.mappings(attr).value.orm.super
@@ -3459,9 +3467,9 @@ class mappings(entitiesmod.entities):
                     )
                 )
 
-            # Set the recursion limit to a value a little higher than
-            # the default (1000). This method is highly recursive
-            # because of the calls to ``orm.getentitys`` and
+            # Set the recursion limit to a value a higher than the
+            # default (1000). This method is highly recursive because of
+            # the calls to ``orm.getentitys`` and
             # ''orm.getassociations``. This recursion is necessary for
             # the algorithm. 
             #
@@ -4688,6 +4696,7 @@ class foreignkeyfieldmapping(fieldmapping):
         # TODO Rename fkname to name, and _fkname to _name. Note that
         # _name already exists; it's inherited from `mapping`, but I
         # don't think that's a probably for the rename.
+
         self.entity = e
         self._fkname = fkname
         self.value = None

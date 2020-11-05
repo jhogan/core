@@ -19,10 +19,6 @@ class engineer(orm.entity):
     @classmethod
     def getvalid(cls):
         return cls()
-
-    @orm.attr(str)
-    def name(self):
-        return 'derp'
         
 class hackers(engineers):
     pass
