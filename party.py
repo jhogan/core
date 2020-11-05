@@ -1458,6 +1458,13 @@ class partyroletype(roletype):
 
 # TODO Add ``familial`` and ``contact`` subtypes to personal(role).
 
+class consumer(role):
+    """
+    Note that this is modeled after the CONSUMER entity in "The
+    Data Model Resource Book Volume 2".
+    """
+
+
 class customer(role):
     """ A role indicating a party that has purchased, been shipped, or
     used products from an enterprise. Subtypes of the customer role
