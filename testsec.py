@@ -223,5 +223,68 @@ class proprietor(tester.tester):
         eng = eng.orm.reloaded()
         self.eq(malcolm.id, eng.proprietor.id)
 
+    def it_propgates_proprietor_to_supers(self):
+        """ When an subentity is newly created, it's supers should have
+        the same proprietor.
+        """
+        tsla = party.company(name='Tesla')
+        sec.proprietor = tsla
+
+        # Test without saving.
+        phr = phreak()
+        self.eq(tsla.id, phr.orm.super.orm.super.proprietor.id)
+        self.eq(tsla.id, phr.orm.super.proprietor.id)
+
+        # Save immediatly then test
+        phr = phreak()
+        phr.save()
+
+        eng = engineer(phr)
+        self.eq(tsla.id, eng.proprietor.id)
+
+        hckr = hacker(phr)
+        self.eq(tsla.id, hckr.proprietor.id)
+
+        # TODO If eng's or hckr's proprietor were changed at this point,
+        # it's supers and subs should be updated with the new
+        # proprietor. Let's wait to see if this is an actual need. The
+        # ui developer could do this manually if it ever comes
+        # up; though I'm not really sure what's best at this point.
+
+    def it_filters_based_on_proprietor(self):
+        """ By default, queries should only be able to return records 
+        belonging to the proprietor as defined by sec.proprietor.
+        """
+
+        # Create som proprietors
+        tsla = party.company(name='Tesla')
+        ms = party.company(name='Microsoft')
+
+        # If sec.proprietor is None, no filtering should take place.
+        # This shouldn't be allowed except for system administration
+        # tasks.
+        sec.proprietor = tsla
+
+        # Save an engineer record whose proprietor is Tesla
+        eng = engineer()
+        eng.save()
+
+        # Set sec.proprietor is None. We should be able to query this
+        # engineer without RecordNotFoundError being thrown. We sort of
+        # have "root" access because sec.proprietor is None.
+        sec.proprietor = None
+        self.expect(None, lambda: engineer(eng.id))
+
+        # Set the sec.proprietor to tsla. Still no problems getting
+        # the Tesla engineer because the sec.proprietor is Tesla.
+        sec.proprietor = tsla
+        engineer(eng.id)
+        self.expect(None, lambda: engineer(eng.id))
+
+        # Now that the sec.proprietor is Microsoft, we should not be
+        # able to access the engineer record owned by Tesla.
+        sec.proprietor = ms
+        self.expect(db.RecordNotFoundError, lambda: engineer(eng.id))
+
 if __name__ == '__main__':
     tester.cli().run()

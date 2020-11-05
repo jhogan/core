@@ -4717,6 +4717,11 @@ class foreignkeyfieldmapping(fieldmapping):
 
         return self.entity.__name__ + 'id'
 
+    @property
+    def fkname(self):
+        """ Return the name of the entity that this map corresponds. """
+        return self._fkname
+
     def clone(self):
         return foreignkeyfieldmapping(self.entity, self._fkname, self.isderived)
 
@@ -5644,10 +5649,17 @@ class orm:
             raise
 
     def load(self, id):
-        sql = 'SELECT * FROM {} WHERE id = _binary %s'
-        sql = sql.format(self.table)
+        sql = f'SELECT * FROM {self.table} WHERE id = _binary %s'
 
-        args = id.bytes,
+        args = [id.bytes]
+
+        if sec.proprietor:
+            for map in self.mappings.foreignkeymappings:
+                if map.fkname == 'proprietor':
+                    sql += f' AND {map.name} = _binary %s'
+                    args.append(sec.proprietor.id.bytes)
+                    break
+
 
         ress = None
         def exec(cur):
