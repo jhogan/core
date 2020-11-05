@@ -9,7 +9,7 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2020                 #
 ########################################################################
 
-import orm, tester, party, sec
+import orm, tester, party, sec, db
 from func import B
 
 class engineers(orm.entities):
@@ -32,6 +32,12 @@ class phreaks(hackers):
 class phreak(hacker):
     pass
 
+class systems(orm.entities):
+    pass
+
+class system(orm.entity):
+    pass
+
 class proprietor(tester.tester):
     def __init__(self):
         super().__init__()
@@ -42,6 +48,7 @@ class proprietor(tester.tester):
 
     def it_adds_proprietor_to_entity(self):
         ''' Test class (static attribute)'''
+        sec.proprietor = None
 
         # Test the map
         map = engineer.orm.mappings['proprietor']
@@ -89,6 +96,7 @@ class proprietor(tester.tester):
 
     def it_adds_proprietor_to_subentity(self):
         ''' Test class (static attribute)'''
+        sec.proprietor = None
 
         # Test the map
         map = hacker.orm.mappings['proprietor']
@@ -143,6 +151,7 @@ class proprietor(tester.tester):
 
     def it_adds_proprietor_to_subsubentity(self):
         ''' Test class (static attribute)'''
+        sec.proprietor = None
 
         # Test the map
         map = phreak.orm.mappings['proprietor']
