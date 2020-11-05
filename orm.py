@@ -2369,6 +2369,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 self.orm.isnew = True
                 self.orm.isdirty = False
                 self.id = uuid4()
+                import sec
+                if sec.proprietor:
+                    self.proprietor = sec.proprietor
             else:
                 if isinstance(o, str):
                     # See if we can convert str identifier to UUID. 
@@ -3424,34 +3427,10 @@ class mappings(entitiesmod.entities):
             if 'proprietor' not in self:
                 from party import party
 
-                if False:
-                    @attr(party)
-                    def proprietor(self):
-                        return attr()
-
-                    self += proprietor.mapping
-                    self.last.isderived = True
-                    self.orm.entity.proprietor = proprietor
-                else:
-                    @property
-                    def proprietor(self):
-                        map = self.orm.mappings['proprietor']
-                        if self.orm.isnew:
-                            if not map._value:
-                                self.__setattr__(
-                                    'proprietor', sec.proprietor, 
-                                    cmp=False,    imp=True
-                                )
-
-                            
-                        return map.value
-
-                    # TODO Do we need isderived=True
-                    self += entitymapping(
-                        'proprietor', party, isderived=True
-                    )
-                    self.orm.entity.proprietor = proprietor
-
+                # TODO Do we need isderived=True
+                self += entitymapping(
+                    'proprietor', party, isderived=True
+                )
             else:
                 print('We need this test')
                 B()
