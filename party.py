@@ -1459,7 +1459,10 @@ class partyroletype(roletype):
 # TODO Add ``familial`` and ``contact`` subtypes to personal(role).
 
 class consumer(role):
-    """
+    """ A party who may be or has been involved in the purchase of the
+    enterprise's services. Thi could include `ecommerce.subscriber`,
+    `ecommerce.visitor`, `ecommerce.customer` or `ecommerce.prospect`.
+
     Note that this is modeled after the CONSUMER entity in "The
     Data Model Resource Book Volume 2".
     """
