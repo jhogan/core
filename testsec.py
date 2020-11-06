@@ -16,10 +16,11 @@ class engineers(orm.entities):
     pass
 
 class engineer(orm.entity):
+    name = str
     @classmethod
     def getvalid(cls):
         return cls()
-        
+
 class hackers(engineers):
     pass
 
@@ -260,40 +261,95 @@ class proprietor(tester.tester):
         # ui developer could do this manually if it ever comes
         # up; though I'm not really sure what's best at this point.
 
-    def it_filters_based_on_proprietor(self):
+    def it_filters_entity_based_on_proprietor(self):
         """ By default, queries should only be able to return records 
-        belonging to the proprietor as defined by sec.proprietor.
+        belonging to the proprietor as defined by orm.orm.proprietor.
         """
 
-        # Create som proprietors
+        # Create some proprietors
         tsla = party.company(name='Tesla')
         ms = party.company(name='Microsoft')
 
-        # If sec.proprietor is None, no filtering should take place.
+        # If orm.orm.proprietor is None, no filtering should take place.
         # This shouldn't be allowed except for system administration
         # tasks.
-        sec.proprietor = tsla
+        orm.orm.setproprietor(tsla)
 
         # Save an engineer record whose proprietor is Tesla
         eng = engineer()
         eng.save()
 
-        # Set sec.proprietor is None. We should be able to query this
+        # Set orm.orm.proprietor is None. We should be able to query this
         # engineer without RecordNotFoundError being thrown. We sort of
-        # have "root" access because sec.proprietor is None.
-        sec.proprietor = None
+        # have "root" access because orm.orm.proprietor is None.
+        orm.orm.setproprietor(None)
         self.expect(None, lambda: engineer(eng.id))
 
-        # Set the sec.proprietor to tsla. Still no problems getting
-        # the Tesla engineer because the sec.proprietor is Tesla.
-        sec.proprietor = tsla
+        # Set the orm.orm.proprietor to tsla. Still no problems getting
+        # the Tesla engineer because the orm.orm.proprietor is Tesla.
+        orm.orm.setproprietor(tsla)
         engineer(eng.id)
         self.expect(None, lambda: engineer(eng.id))
 
-        # Now that the sec.proprietor is Microsoft, we should not be
+        # Now that the orm.orm.proprietor is Microsoft, we should not be
         # able to access the engineer record owned by Tesla.
-        sec.proprietor = ms
+        orm.orm.setproprietor(ms)
         self.expect(db.RecordNotFoundError, lambda: engineer(eng.id))
 
+    def it_filters_entities_based_on_proprietor(self):
+        engineers.orm.truncate()
+        # Create some proprietors
+        tsla = party.company(name='Tesla')
+        ms = party.company(name='Microsoft')
+
+        # Create some Tesla engineers
+        orm.orm.setproprietor(tsla)
+        engs = engineers()
+        for i in range(3):
+            engs += engineer(name=f'Tesla engineer {i}')
+        engs.save()
+
+        # Create some Microsoft engineers
+        orm.orm.setproprietor(ms)
+        for i in range(3):
+            engs += engineer(name=f'Microsoft engineer {i}')
+        engs.save()
+
+        # Proprietor is currently set to Microsoft. We should be able to
+        # query for all the Microsoft engineers
+        engs = engineers("name LIKE %s", '%engineer%')
+        self.three(engs)
+        for eng in engs:
+            self.true(eng.name.startswith('Microsoft engineer'))
+
+        # TODO Change proprietor to Tesla then retry above test
+
+
+    def it_makes_proprietors_self_owning(self):
+        orm.orm.setproprietor(None)
+
+        tsla = party.company(name='Tesla')
+
+        # At this point, tsla will not have a record proprietor
+        self.none(tsla.proprietor)
+
+        orm.orm.setproprietor(tsla)
+
+        # After setting tsla as the proprietor, tlsa, and its supers,
+        # will have tsla as their proprietors.
+        sup = tsla
+        while sup:
+            self.is_(tsla, sup.proprietor)
+            sup = sup.orm.super
+
+        tsla.save()
+
+        sup = tsla.orm.reloaded()
+
+        while sup:
+            self.eq(tsla.id, sup.proprietor.id)
+            sup = sup.orm.super
+
+        
 if __name__ == '__main__':
     tester.cli().run()
