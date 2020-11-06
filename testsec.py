@@ -9,7 +9,7 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2020                 #
 ########################################################################
 
-import orm, tester, party, sec, db
+import orm, tester, party, db
 from func import B
 
 class engineers(orm.entities):
@@ -48,7 +48,7 @@ class proprietor(tester.tester):
 
     def it_adds_proprietor_to_entity(self):
         ''' Test class (static attribute)'''
-        sec.proprietor = None
+        orm.orm.setproprietor(None)
 
         # Test the map
         map = engineer.orm.mappings['proprietor']
@@ -96,7 +96,7 @@ class proprietor(tester.tester):
 
     def it_adds_proprietor_to_subentity(self):
         ''' Test class (static attribute)'''
-        sec.proprietor = None
+        orm.orm.setproprietor(None)
 
         # Test the map
         map = hacker.orm.mappings['proprietor']
@@ -151,7 +151,7 @@ class proprietor(tester.tester):
 
     def it_adds_proprietor_to_subsubentity(self):
         ''' Test class (static attribute)'''
-        sec.proprietor = None
+        orm.orm.setproprietor(None)
 
         # Test the map
         map = phreak.orm.mappings['proprietor']
@@ -209,7 +209,7 @@ class proprietor(tester.tester):
         """
         """
         tsla = party.company(name='Tesla')
-        sec.proprietor = tsla
+        orm.orm.setproprietor(tsla)
 
         ''' Test object '''
         eng = engineer.getvalid()
@@ -237,7 +237,7 @@ class proprietor(tester.tester):
         the same proprietor.
         """
         tsla = party.company(name='Tesla')
-        sec.proprietor = tsla
+        orm.orm.setproprietor(tsla)
 
         # Test without saving.
         phr = phreak()

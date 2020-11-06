@@ -153,7 +153,6 @@ import primative
 import re
 import sys
 import textwrap
-import sec
 
 @unique
 class types(Enum):
@@ -2372,9 +2371,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 self.orm.isnew = True
                 self.orm.isdirty = False
                 self.id = uuid4()
-                import sec
-                if sec.proprietor:
-                    self.proprietor = sec.proprietor
+                if orm.proprietor:
+                    self.proprietor = orm.proprietor
             else:
                 if isinstance(o, str):
                     # See if we can convert str identifier to UUID. 
@@ -4892,8 +4890,35 @@ class constituent(ormclasswrapper):
     pass
 
 class orm:
-    _abbrdict            =  dict()
-    _namedict            =  dict()
+    _abbrdict    =  dict()
+    _namedict    =  dict()
+    _proprietor  =  None
+
+    # TODO Change these to @classproperties. Currently,
+    # enitties.classproperty provides a way to get class property but no
+    # way to set one. For possible implementations, see:
+    # https://stackoverflow.com/questions/5189699/how-to-make-a-class-property/38810649
+    @classmethod
+    def setproprietor(cls, v):
+        cls._proprietor = v
+
+        # The proprietor of the proprietor must be the proprietor:
+        #    
+        #    assert v.proprietor is v
+        #
+        # Propogate this up the inheritance hierarchy.
+        sup = v
+        while sup:
+            sup.proprietor = v
+            sup = sup.orm.super
+
+    @classmethod
+    def getproprietor(cls):
+        return cls._proprietor
+
+    @classproperty
+    def proprietor(cls):
+        return cls.getproprietor()
 
     def __init__(self):
         self.mappings             =  None
@@ -5653,11 +5678,11 @@ class orm:
 
         args = [id.bytes]
 
-        if sec.proprietor:
+        if orm.proprietor:
             for map in self.mappings.foreignkeymappings:
                 if map.fkname == 'proprietor':
                     sql += f' AND {map.name} = _binary %s'
-                    args.append(sec.proprietor.id.bytes)
+                    args.append(orm.proprietor.id.bytes)
                     break
 
 
