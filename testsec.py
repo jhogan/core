@@ -296,7 +296,7 @@ class proprietor(tester.tester):
         orm.orm.setproprietor(ms)
         self.expect(db.RecordNotFoundError, lambda: engineer(eng.id))
 
-    def it_filters_entities_based_on_proprietor(self):
+    def it_queries_entities_based_on_proprietor(self):
         engineers.orm.truncate()
         # Create some proprietors
         tsla = party.company(name='Tesla')

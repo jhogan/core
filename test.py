@@ -14528,7 +14528,6 @@ class test_orm(tester):
             self.eq("col IN (_binary %s, _binary %s)", str(pred))
 
     def it_saves_recursive_entity(self):
-
         def recurse(com1, com2, expecteddepth, curdepth=0):
             with self._chrontest() as t:
                 t.run(lambda: com2.comments)

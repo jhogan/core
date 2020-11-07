@@ -710,24 +710,21 @@ class where(entitiesmod.entity):
     def __init__(self, es, pred, args):
         """ Sets the initial propreties for the ``where`` object. 
         
-        :param:  entities  es:          The ``entities`` collection
-                                        associated with this ``where``
-                                        object.
+        :param:  entities  es: The ``entities`` collection
+        associated with this ``where`` object.
 
         :param:  str or predicate pred: A str or ``predicate`` object
-                                        associated with this ``where``
-                                        object
+        associated with this ``where`` object
 
         :param:  list      args:        A list of arguments associated
-                                        with this ``where`` object.
+        with this ``where`` object.
         """
 
         self.entities     =  es
         self.predicate    =  None
 
         if not pred:
-            msg = 'where objects must have predicates'
-            raise ValueError(msg)
+            raise ValueError('where objects must have predicates')
 
         if isinstance(pred, predicate):
             self.predicate = pred
@@ -1388,7 +1385,6 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
     def __init__(self, initial=None, _p2=None, *args, **kwargs):
         try:
-
             if not hasattr(type(self), 'orm'):
                 raise NotImplementedError(
                     '"orm" attribute not found for "%s". '
@@ -1400,8 +1396,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             except AttributeError:
                 msg = (
                     "Can't instantiate abstract orm.entities. "
-                    "Use entities.entities for a generic entities collection "
-                    "class."
+                    "Use entities.entities for a generic entities "
+                    "collection class."
                 )
                 raise NotImplementedError(msg)
 
@@ -1409,13 +1405,13 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
             self.orm.initing = True # change to isiniting
 
-            self.orm.isloaded = False
-            self.orm.isloading = False
-            self.orm.stream = None
-            self.orm.where = None
-            self.orm.ischunk = False
-            self.orm.joins = joins(es=self)
-            self.join = self._join
+            self.orm.isloaded   =  False
+            self.orm.isloading  =  False
+            self.orm.stream     =  None
+            self.orm.where      =  None
+            self.orm.ischunk    =  False
+            self.orm.joins      =  joins(es=self)
+            self.join           =  self._join
 
             self.onbeforereconnect  =  entitiesmod.event()
             self.onafterreconnect   =  entitiesmod.event()
@@ -4895,7 +4891,7 @@ class orm:
     _proprietor  =  None
 
     # TODO Change these to @classproperties. Currently,
-    # enitties.classproperty provides a way to get class property but no
+    # entities.classproperty provides a way to get class property but no
     # way to set one. For possible implementations, see:
     # https://stackoverflow.com/questions/5189699/how-to-make-a-class-property/38810649
     @classmethod
@@ -5685,7 +5681,6 @@ class orm:
                     args.append(orm.proprietor.id.bytes)
                     break
 
-
         ress = None
         def exec(cur):
             nonlocal ress
@@ -6232,7 +6227,7 @@ class orm:
             wh = self.where.clone()
             alias(wh)
 
-            # Append the cloned `where` object and args to be return
+            # Append the cloned `where` object and args to be returned
             # later
             whs.append(wh)
             args += wh.args

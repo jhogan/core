@@ -33,7 +33,6 @@ class classproperty(property):
         obj = cls if cls else owner
         return classmethod(self.fget).__get__(None, obj)()
 
-
 # TODO I think we can remove `object` as the `entities`' parent.
 class entities(object):
     def __init__(self, initial=None):
