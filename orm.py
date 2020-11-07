@@ -1460,6 +1460,21 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 super().__init__()
 
                 _p1 = '' if initial is None else initial
+
+                # TODO Why would initial be None. What should be done
+                # about the `proprietor` when it is None.
+                B(not _p1)
+
+                if orm.proprietor:
+                    if _p1:
+                        _p1 += ' AND '
+
+                    for map in self.orm.mappings.foreignkeymappings:
+                        if map.fkname == 'proprietor':
+                            _p1 += f'{map.name} = _binary %s'
+                            args.append(orm.proprietor.id.bytes)
+                            break
+
                 self._preparepredicate(_p1, _p2, *args, **kwargs)
 
                 # Create joins to superentities where necessary if not in

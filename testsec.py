@@ -21,6 +21,8 @@ class engineer(orm.entity):
     def getvalid(cls):
         return cls()
 
+    skills = str
+
 class hackers(engineers):
     pass
 
@@ -306,18 +308,51 @@ class proprietor(tester.tester):
         orm.orm.setproprietor(tsla)
         engs = engineers()
         for i in range(3):
-            engs += engineer(name=f'Tesla engineer {i}')
+            engs += engineer(
+                name   = f'Tesla engineer {i}',
+                skills = 'c++'
+            )
+
         engs.save()
 
         # Create some Microsoft engineers
         orm.orm.setproprietor(ms)
         for i in range(3):
-            engs += engineer(name=f'Microsoft engineer {i}')
+            engs += engineer(
+                name   = f'Microsoft engineer {i}',
+                skills = 'c++'
+            )
+
         engs.save()
 
         # Proprietor is currently set to Microsoft. We should be able to
         # query for all the Microsoft engineers
         engs = engineers("name LIKE %s", '%engineer%')
+        self.three(engs)
+        for eng in engs:
+            self.true(eng.name.startswith('Microsoft engineer'))
+
+        # Use a non-parameterized query
+        # TODO This doesn't work because parameterizepredicate gets
+        # confused by the mixed use of literal arguments and placeholder
+        # argunments. It has to deal with:
+        #
+        #     engineers(
+        #         'name LIKE 'c++' AND proprietor__partyid = _binary %s' 
+        #         [pk.id.bytes]
+        #
+        # Mixing placeholders and literals should be supported in
+        # general, especially now that the 'proprietor__partyid =
+        # _binary %s' is appended by the ORM.
+
+        if False:
+            engs = engineers("skills = 'c++'", ())
+            self.three(engs)
+            for eng in engs:
+                self.true(eng.name.startswith('Microsoft engineer'))
+
+        B()
+        engs = engineers('skills', 'c++')
         self.three(engs)
         for eng in engs:
             self.true(eng.name.startswith('Microsoft engineer'))
