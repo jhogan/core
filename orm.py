@@ -1499,9 +1499,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         for es in args:
             self.join(es, join.Inner)
 
-    def outerjoin(self, *args):
+    def outerjoin(self, *args, **kwargs):
         for es in args:
-            self.join(es, join.Outer)
+            self.join(es, join.Outer, **kwargs)
 
     @classmethod
     def join(cls, es, type=None):
@@ -1572,9 +1572,6 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         # a @classmethod. See the documentation for ``entities.join``
         # for more.
         type1, type = type, builtins.type
-        if join.Outer == type1:
-            msg = 'LEFT OUTER JOINs are not currently implemented'
-            raise NotImplementedError(msg)
 
         # Streaming entities can't contain joins
         if self.orm.isstreaming:
@@ -5219,7 +5216,7 @@ class orm:
         )
 
         for cls in clss:
-            self.instance.join(cls, inferassociation=False)
+            self.instance.outerjoin(cls, inferassociation=False)
 
     def truncate(self, cur=None):
         # TODO Use executioner
