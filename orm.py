@@ -680,12 +680,11 @@ class join(entitiesmod.entity):
 
     @property
     def keywords(self):
-        """ Get the SQL keyword for the join type. """
+        """ Get the SQL keyword for the join type. 
+        """
         if self.type == join.Inner:
             return 'INNER JOIN'
         elif self.type == join.Outer:
-            msg = 'Left outer joins are not currently implemented'
-            raise NotImplementedError(msg)
             return 'LEFT OUTER JOIN'
         else:
             raise ValueError('Invalid join type')
@@ -1420,8 +1419,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
             self.onafterload       +=  self._self_onafterload
 
-            # If a stream or eager is found in the first or second argument,
-            # move it to args
+            # If a stream or eager is found in the first or second
+            # argument, move it to args
             args = list(args)
             if  isinstance(initial, (stream, eager)):
                 args.append(initial)
@@ -1433,9 +1432,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 args.append(_p2)
                 _p2 = None
 
-            # Look in *args for stream class or a stream object. If found, ensure
-            # the element is an instantiated stream and set it to self._stream.
-            # Delete the stream from *args.
+            # Look in *args for stream class or a stream object. If
+            # found, ensure the element is an instantiated stream and
+            # set it to self._stream.  Delete the stream from *args.
             for i, e in enumerate(args):
                 if e is stream:
                     self.orm.stream = stream()
@@ -1449,11 +1448,11 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                     e.join(to=self)
                     del args[i]
 
-            # The parameters express a conditional (predicate) if the first is
-            # a str, or the args and kwargs are not empty. Otherwise, the first
-            # parameter, `initial`, means an initial set of values that the
-            # collections should be set to.  The other parameters will be empty
-            # in that case.
+            # The parameters express a conditional (predicate) if the
+            # first is a str, or the args and kwargs are not empty.
+            # Otherwise, the first parameter, `initial`, means an
+            # initial set of values that the collections should be set
+            # to.  The other parameters will be empty in that case.
             iscond = type(initial) is str
             iscond = iscond or (initial is None and (_p2 or bool(args) or bool(kwargs)))
 
@@ -1463,9 +1462,13 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 _p1 = '' if initial is None else initial
                 self._preparepredicate(_p1, _p2, *args, **kwargs)
 
-                # Create joins to superentities where necessary if not in
-                # streaming mode. (Streaming does not support (and can't
-                # support) joins.)
+                # Create joins to superentities and subentities where
+                # necessary if not in streaming mode. (Streaming does
+                # not support (and can't support) joins). Note that we
+                # only want to create joins if the user has given us a
+                # conditional. Unconditional entities objects imply
+                # nothing needs to be loaded from the database, so don't
+                # add joins.
                 if not self.orm.isstreaming:
                     self.orm.joinsupers()
 
@@ -1576,7 +1579,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
         # Streaming entities can't contain joins
         if self.orm.isstreaming:
-            raise InvalidStream('Streaming entities cannot contain joins')
+            raise InvalidStream(
+                'Streaming entities cannot contain joins'
+            )
 
         if type(es) is entitiesmeta:
             es = es()
@@ -1820,21 +1825,22 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             # Don't load if joining or attr == 'load'
             load &= attr not in ('innerjoin', 'join', 'load')
 
-            # Don't load if attr = '__class__'. This is typically an attempt
-            # to test the instance type using isinstance().
+            # Don't load if attr = '__class__'. This is typically an
+            # attempt to test the instance type using isinstance().
             load &= attr != '__class__'
 
             # Don't load if the entities collection is __init__'ing
             load &= not self.orm.initing
 
-            # Don't load if the entities collection is currently being loading
+            # Don't load if the entities collection is currently being
+            # loading
             load &= not self.orm.isloading
 
             # Don't load if self has already been loaded
             load &= not self.orm.isloaded
 
-            # Don't load an entiity object is being removed from an entities
-            # collection
+            # Don't load an entiity object is being removed from an
+            # entities collection
             load &= not self.orm.isremoving
 
             # Don't load unless self has joins or self has a where
@@ -5181,7 +5187,6 @@ class orm:
                     artists
                 )
             )
-        
         '''
         
         top = None
@@ -5209,7 +5214,7 @@ class orm:
             es = es.join(sup, inferassociation=False)
             es = sup
 
-    def joinsubentities(self):
+    def joinsubs(self):
         clss = orm.getsubclasses(
             of=type(self.instance), recursive=False
         )
@@ -5679,24 +5684,24 @@ class orm:
     
     def collect(self, orderby=None, limit=None, offset=None):
         """
-        Loads data from the database into the collection. The SQL used 
+        Loads data from the database into the collection. The SQL used
         to load the data is generated mostly from arguments passed to
         the entities collection's contructor.
 
-        Note that an ORM user typically doesn't call ``load`` explicitly. The
-        call to ``load`` is usually made by the ORM after the entities
-        collection has been instantiated and during the invocation of one of
-        the collection's properties or methods. See
-        ``entities.__getattribute__``.
+        Note that an ORM user typically doesn't call ``load``
+        explicitly. The call to ``load`` is usually made by the ORM
+        after the entities collection has been instantiated and during
+        the invocation of one of the collection's properties or methods.
+        See ``entities.__getattribute__``.
 
-        :param: str orderby: The list of columns to be passed to the ``ORDER
-                             BY`` clause. Used only streaming mode.
+        :param: str orderby: The list of columns to be passed to the
+        ``ORDER BY`` clause. Used only streaming mode.
 
-        :param: int limit:   An integer value to pass to the ``LIMIT`` keyword.
-                             Used only in streaming mode.
+        :param: int limit:  An integer value to pass to the ``LIMIT``
+        keyword.  Used only in streaming mode.
 
         :param: int offset:  An integer value to pass to the ``OFFSET``
-                             keyword.  Used only in streaming mode.
+        keyword.  Used only in streaming mode.
         """
 
         # Don't attemt to load if already loaded.
@@ -5718,8 +5723,8 @@ class orm:
                 offset = 0 if offset is None else offset
                 sql += ' LIMIT %s OFFSET %s' % (limit, offset)
 
-            # Set up a function to be called by the database's executioner to
-            # populate `ress` with the resultset
+            # Set up a function to be called by the database's
+            # executioner to populate `ress` with the resultset
             ress = None
             def exec(cur):
                 nonlocal ress
@@ -5735,19 +5740,29 @@ class orm:
 
             # Connect the executioner's *reconnect events to self's
             exec.onbeforereconnect += \
-                lambda src, eargs: self.instance.onbeforereconnect(src, eargs)
-            exec.onafterreconnect  += \
-                lambda src, eargs: self.instance.onafterreconnect(src, eargs)
+                lambda src, eargs: self.instance.onbeforereconnect(
+                    src, eargs
+                )
 
-            # Execute the query. `ress` will be populated with the results.
+            exec.onafterreconnect  += \
+                lambda src, eargs: self.instance.onafterreconnect(
+                    src, eargs
+                )
+
+            # Execute the query. `ress` will be populated with the
+            # results.
             exec.execute()
 
             # Raise self's onafterload event
-            eargs = db.operationeventargs(self.instance, 'retrieve', sql, args)
+            eargs = db.operationeventargs(
+                self.instance, 'retrieve', sql, args
+            )
+
             self.instance.onafterload(self, eargs)
 
-            # Use the resultset to populate the entities collection (self) and
-            # link the entities together (linking is done in `orm.link()`).
+            # Use the resultset to populate the entities collection
+            # (self) and link the entities together (linking is done in
+            # `orm.link()`).
             self.populate(ress)
 
         finally:
@@ -5827,11 +5842,27 @@ class orm:
                         args.append(self.dequote(op))
     
     def populate(self, ress):
+        """ Given a resultsets collection (from a SELECT statement with
+        the specific table and field alias notation), populate the
+        `entities` object.
+
+        This method first collects all the data from the resultset and
+        creates objects of the appropriate type and assigns them an
+        entry in the entities dict (`edict`). The ``link`` method will
+        then be called to link all the individual objects in ``edict``
+        into the graph (see ``orm.link`` for more).
+
+        :param: db.resultset(s) ress: A ``resultset`` or ``resultsets``
+        instance containing the results of the SELECT for this entities
+        collection. See (orm.sql) to see how the SELECT is generated.
+        """
+
         # Create an entities dict
         edict = dict()
         skip = False
 
         es = self.instance
+
         if type(ress) is db.dbresult:
             ress = [ress]
             simple = True
@@ -5839,11 +5870,13 @@ class orm:
         elif type(ress) is db.dbresultset:
             simple = False
         else:
-            raise ValueError('Invalid type of `ress`')
+            raise TypeError('Invalid type of `ress`')
 
+        # Iterate records
         for res in ress:
-            # TODO s/func.//
-            for i, f in func.enumerate(res.fields):
+
+            # Iterate over the record's fields
+            for i, f in func.enumerate(res.fields):    # TODO s/func.//
                 alias, _, col = f.name.rpartition('.')
 
                 if not simple and (not skip or col == 'id'):
@@ -5851,20 +5884,38 @@ class orm:
                         id = f.value
 
                         _, _, abbr = alias.rpartition('.')
+
+                        # Get entities class reference from abbreviation
                         eclass = orm.getentity(abbr=abbr)
 
+                        # The key for `edict` based on the UUID and the
+                        # entities class.
                         key = (id, eclass)
+
+                        # If an entry for this id already exists in
+                        # edict, skip. The object has already been taken
+                        # care of and this is just a duplicate from the
+                        # resultset.
                         skip = key in edict
                         if skip:
                             continue
 
+                        # Instantiate an object from entity class.
                         e = eclass()
 
+                        # Add to entity dict
                         edict[key]= e
 
+                        # If first field, add to self (self.instance).
+                        # If we are on the 'id' column of and its the
+                        # first column, the record must be for the
+                        # self collection.
                         if i.first:
                             es += e
 
+                        # Grab the mappings collection for the new
+                        # entity while we are in the id column. The
+                        # mapping values will be set later.
                         maps = e.orm.mappings
 
                         # During e's __init__'ing, a new instance of a
@@ -5886,8 +5937,12 @@ class orm:
                 if skip:
                     continue
 
+                # Assign field's value mapping objects. `maps` will be
+                # the new entity's ``mappings`` or self.mappings;  see
+                # above for which.
                 maps[col]._value = f.value
 
+        # Link the entity objects in edict together into the graph
         orm.link(edict)
 
     @staticmethod
