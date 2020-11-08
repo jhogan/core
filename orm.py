@@ -5878,6 +5878,9 @@ class orm:
                 if not simple and (not skip or col == 'id'):
                     if col == 'id':
                         id = f.value
+                        if not id:
+                            B()
+                            continue
 
                         _, _, abbr = alias.rpartition('.')
 

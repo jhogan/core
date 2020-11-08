@@ -7663,16 +7663,20 @@ class test_orm(tester):
         art1 = art.orm.reloaded()
 
         press = art.presentations.sorted()
+
         with db.chronicler.snapshot():
+            B()
             press1 = art1.presentations.sorted()
+
+        self.three(press)
+        self.three(press1)
+        print(press1.count)
+        return
 
         for pres, pres1 in zip(press, press1):
             self.eq(pres.id, pres1.id)
+            print(type(pres))
             self.type(type(pres), pres1)
-
-
-
-
 
     def it_updates_entity_constituents_properties(self):
         chrons = self.chronicles
