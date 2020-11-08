@@ -1467,11 +1467,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             if self.orm.stream or iscond:
                 super().__init__()
 
+                # `initial` would be None when doing kwarg based
+                # queries, i.e.: entities(col = 'value')
                 _p1 = '' if initial is None else initial
-
-                # TODO Why would initial be None. What should be done
-                # about the `proprietor` when it is None.
-                B(not _p1)
 
                 if orm.proprietor:
                     if _p1:

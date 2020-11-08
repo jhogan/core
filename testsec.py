@@ -345,12 +345,6 @@ class proprietor(tester.tester):
         # general, especially now that the 'proprietor__partyid =
         # _binary %s' is appended by the ORM.
 
-        if False:
-            engs = engineers("skills = 'c++'", ())
-            self.three(engs)
-            for eng in engs:
-                self.true(eng.name.startswith('Microsoft engineer'))
-
         B()
         engs = engineers('skills', 'c++')
         self.three(engs)
@@ -358,6 +352,7 @@ class proprietor(tester.tester):
             self.true(eng.name.startswith('Microsoft engineer'))
 
         # TODO Change proprietor to Tesla then retry above test
+        # TODO Test kwargs-based queries
 
 
     def it_makes_proprietors_self_owning(self):
