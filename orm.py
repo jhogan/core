@@ -1115,6 +1115,14 @@ class predicate(entitiesmod.entity):
 
         return tok.upper() in predicate.Constants
 
+    @staticmethod
+    def isplaceholder(tok):
+        for intro in predicate.Introducers:
+            if tok == f'{intro} %s':
+                return True
+
+        return tok == '%s'
+
     class Match():
         re_isnatural = re.compile(
             r'^\s*in\s+natural\s+language\s+mode\s*$', \
@@ -2008,7 +2016,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         if p1:
             self.orm.where = where(self, p1, args)
             self.orm.where.demandvalid()
-            self.orm.parameterizepredicate(args)
+            self.orm.where.args = self.orm.parameterizepredicate(args)
 
     def clear(self):
         """
@@ -5883,17 +5891,34 @@ class orm:
         return s
 
     def parameterizepredicate(self, args):
+        # Then number of args should be the same number of placeholders
+        # that we find when iterating over the predicates.
+        placeholders = len(args)
+        placeholders1 = int()
+        r = list()
+
         for pred in self.instance.orm.where.predicate:
             if pred.match:
                 if not pred.match.searchstringisplaceholder:
-                    args.append(pred.match.searchstring)
+                    r.append(pred.match.searchstring)
                     pred.match.searchstring = '%s';
             else:
                 for i, op in enumerate(pred.operands):
                     if predicate.isliteral(op):
                         pred.operands[i] = '%s'
-                        args.append(self.dequote(op))
-    
+                        r.append(self.dequote(op))
+                    elif predicate.isplaceholder(op):
+                        r.append(args.pop(0))
+                        placeholders1 += 1
+
+        if placeholders != placeholders1:
+            raise ValueError(
+                'Mismatch between the number of placeholders and the '
+                'number of arguments given'
+            )
+
+        return r
+                        
     def populate(self, ress):
         edict = dict()
         skip = False
