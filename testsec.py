@@ -346,6 +346,11 @@ class proprietor(tester.tester):
         # _binary %s' is appended by the ORM.
 
         B()
+        engs = engineers("skills = 'c++'", ())
+        self.three(engs)
+        for eng in engs:
+            self.true(eng.name.startswith('Microsoft engineer'))
+
         engs = engineers('skills', 'c++')
         self.three(engs)
         for eng in engs:
