@@ -1471,10 +1471,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 # add joins.
                 if not self.orm.isstreaming:
                     self.orm.joinsupers()
+                    self.orm.joinsubs()
 
                 return
-
-            self.orm.joinsubentities()
 
             super().__init__(initial=initial)
 
