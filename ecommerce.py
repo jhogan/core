@@ -99,3 +99,65 @@ class hostservervisitor(party.role_role):
     """ The relationship betwenn the visitor and the server that is
     hosting the site.
     """
+
+class content(orm.entity):
+    """ Represents pieces of information that are on the internet.
+
+    Note that this entity is based on the WEB CONTENT entity in "The
+    Data Model Resource Book".
+    """
+    # Summarizes what is stored.
+    description = text
+
+    # Stores the path name for the actual file that stores the web
+    # content.
+    path = str
+
+    contentroles = contentroles
+
+class content_content(orm.association):
+    """ Associates one web ``content`` with another.
+    Web ``content`` is often related to other web ``content``. For
+    instance, a textual web-based product description ``content`` may be
+    related to severeral ``content`` images, which are used within the
+    product description.
+
+    Note that this entity is based on the WEB CONTENT entity in "The
+    Data Model Resource Book".
+    """
+
+    subject = content
+    object  = content
+
+class contenttype(apriori.status):
+    """ Categorizes the types of web ``contents`` that exist such as
+    "articles", "product descriptions", "company information", and so
+    on.
+
+    Note that this entity is based on the WEB CONTENT TYPE entity
+    in "The Data Model Resource Book".
+    """
+    contents = contents
+
+class contentrole(orm.entity):
+    """ Web ``content`` entities may have many web ``contentroles`` of a
+    web ``contentroletype``. For instance, the party that createh the
+    web ``content`` would be the "author", the party that was
+    responsible for putting the content on the web is usually the
+    "webmaster" and the party that updates the content may be state as
+    "updater".
+
+    Note that this entity is based on the WEB CONTENT ROLE entity in
+    "The Data Model Resource Book".
+    """
+
+    span = datespan
+
+class contentstatustype(apriori.status):
+    """ Indicates whether the content is currently on the site, pending,
+    or was peviously stored on a site.
+
+    Note that this entity is based on the WEB CONTENT STATUS TYPE entity
+    in "The Data Model Resource Book".
+    """
+    contents = contents
