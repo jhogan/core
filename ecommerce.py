@@ -161,3 +161,44 @@ class contentstatustype(apriori.status):
     in "The Data Model Resource Book Volume 2".
     """
     contents = contents
+
+class user(orm.entity)::
+    """ Represents the login account a ``party.party`` uses to log in to
+    a website.
+
+    Note that this entity is based on the USER LOGIN entity
+    in "The Data Model Resource Book Volume 2".
+    """
+    name = str
+    hash = bytes(32)
+
+    party = party.party
+
+    histories = histories
+
+class history(orm.entity):
+    """ Used to store a history of the logins and passwords.
+
+    Note that this entity is based on the LOGIN ACCOUNT HISTORY entity
+    in "The Data Model Resource Book Volume 2".
+    """
+    span = timespan
+    name = str
+    hash = bytes(32)
+    
+class preference(orm.entity):
+    """ ``user`` logins have zero or more user ``preferences`` of
+    ``proferencetype`` in order to provide customized services for each
+    user login.
+
+    Note that this entity is based on the WEB USER PREFERENCE entity in
+    "The Data Model Resource Book Volume 2".
+    """
+    
+class address(orm.entity):
+    """ Represents a URL which itself represents a website.
+
+    Note that this entity is based on the WEB ADDRESS entity in
+    "The Data Model Resource Book Volume 2".
+    """
+
