@@ -325,6 +325,15 @@ class proprietor(tester.tester):
 
         engs.save()
 
+        ids = engs.pluck('id')
+        self.six(ids)
+
+        # Test IN operator
+        engs = engineers(f"id in ({','.join(['%s'] * len(ids))})", ids)
+        self.three(engs)
+        for eng in engs:
+            self.true(eng.name.startswith('Microsoft engineer'))
+
         # Proprietor is currently set to Microsoft. We should be able to
         # query for all the Microsoft engineers
         engs = engineers("name LIKE %s", '%engineer%')
@@ -332,26 +341,30 @@ class proprietor(tester.tester):
         for eng in engs:
             self.true(eng.name.startswith('Microsoft engineer'))
 
-        # Use a non-parameterized query
-        # TODO This doesn't work because parameterizepredicate gets
-        # confused by the mixed use of literal arguments and placeholder
-        # argunments. It has to deal with:
+        # Use a non-parameterized query. Note that this results in a
+        # mixed query; i.e., partially parameterized and partially not::
         #
-        #     engineers(
-        #         'name LIKE 'c++' AND proprietor__partyid = _binary %s' 
-        #         [pk.id.bytes]
-        #
-        # Mixing placeholders and literals should be supported in
-        # general, especially now that the 'proprietor__partyid =
-        # _binary %s' is appended by the ORM.
-
-        B()
+        #   engs = engineers(
+        #     "skills = 'c++', proprietor__partyid = %s", ['88c0710...']
+        #  )
         engs = engineers("skills = 'c++'", ())
         self.three(engs)
         for eng in engs:
             self.true(eng.name.startswith('Microsoft engineer'))
 
         engs = engineers('skills', 'c++')
+        self.three(engs)
+        for eng in engs:
+            self.true(eng.name.startswith('Microsoft engineer'))
+
+        wh = "name LIKE %s AND skills = %s"
+        engs = engineers(wh, ('%engineer%',), 'c++')
+        self.three(engs)
+        for eng in engs:
+            self.true(eng.name.startswith('Microsoft engineer'))
+
+        wh = "name LIKE %s AND skills = %s"
+        engs = engineers(wh, ('%engineer%', 'c++'))
         self.three(engs)
         for eng in engs:
             self.true(eng.name.startswith('Microsoft engineer'))
