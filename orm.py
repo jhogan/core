@@ -1471,16 +1471,6 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 # queries, i.e.: entities(col = 'value')
                 _p1 = '' if initial is None else initial
 
-                if orm.proprietor:
-                    if _p1:
-                        _p1 += ' AND '
-
-                    for map in self.orm.mappings.foreignkeymappings:
-                        if map.fkname == 'proprietor':
-                            _p1 += f'{map.name} = _binary %s'
-                            args.append(orm.proprietor.id.bytes)
-                            break
-
                 self._preparepredicate(_p1, _p2, *args, **kwargs)
 
                 # Create joins to superentities where necessary if not in
@@ -2010,6 +2000,16 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 args = list(p2) + args
 
         args = [x.bytes if type(x) is UUID else x for x in args]
+
+        if orm.proprietor:
+            if p1:
+                p1 += ' AND '
+
+            for map in self.orm.mappings.foreignkeymappings:
+                if map.fkname == 'proprietor':
+                    p1 += f'{map.name} = _binary %s'
+                    args.append(orm.proprietor.id.bytes)
+                    break
 
         if p1:
             self.orm.where = where(self, p1, args)
