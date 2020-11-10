@@ -104,7 +104,7 @@ class content(orm.entity):
     """ Represents pieces of information that are on the internet.
 
     Note that this entity is based on the WEB CONTENT entity in "The
-    Data Model Resource Book".
+    Data Model Resource Book Volume 2".
     """
     # Summarizes what is stored.
     description = text
@@ -123,7 +123,7 @@ class content_content(orm.association):
     product description.
 
     Note that this entity is based on the WEB CONTENT entity in "The
-    Data Model Resource Book".
+    Data Model Resource Book Volume 2".
     """
 
     subject = content
@@ -135,7 +135,7 @@ class contenttype(apriori.status):
     on.
 
     Note that this entity is based on the WEB CONTENT TYPE entity
-    in "The Data Model Resource Book".
+    in "The Data Model Resource Book Volume 2".
     """
     contents = contents
 
@@ -148,7 +148,7 @@ class contentrole(orm.entity):
     "updater".
 
     Note that this entity is based on the WEB CONTENT ROLE entity in
-    "The Data Model Resource Book".
+    "The Data Model Resource Book Volume 2".
     """
 
     span = datespan
@@ -158,6 +158,6 @@ class contentstatustype(apriori.status):
     or was peviously stored on a site.
 
     Note that this entity is based on the WEB CONTENT STATUS TYPE entity
-    in "The Data Model Resource Book".
+    in "The Data Model Resource Book Volume 2".
     """
     contents = contents
