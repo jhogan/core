@@ -371,6 +371,8 @@ class proprietor(tester.tester):
 
         # TODO Change proprietor to Tesla then retry above test
         # TODO Test kwargs-based queries
+        # TODO Test streaming queries
+        # TODO Test eager loaded queries (I think)
 
 
     def it_makes_proprietors_self_owning(self):
