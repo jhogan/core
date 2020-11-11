@@ -24,7 +24,29 @@ from datetime import datetime, date
 from dbg import B
 from decimal import Decimal as dec
 from orm import text, timespan, datespan
-import party
+import orm
+import party, apriori
+
+class agents(party.parties):                   pass
+class webmasters(party.personals):             pass
+class isps(party.organizationals):             pass
+class visitors(party.consumers):               pass
+class subscribers(party.consumers):            pass
+class referrers(party.roles):                  pass
+class agentroles(party.roles):                 pass
+class hostingservers(agentroles):              pass
+class webmasterassignments(party.role_roles):  pass
+class visitorisps(party.role_roles):           pass
+class hostservervisitors(party.role_roles):    pass
+class contents(orm.entities):                  pass
+class content_contents(orm.associations):      pass
+class contenttypes(apriori.types):          pass
+class contentroles(orm.entities):              pass
+class contentstatustypes(apriori.types):       pass
+class users(orm.entities):                     pass
+class histories(orm.entities):                 pass
+class preferences(orm.entities):               pass
+class addresses(orm.entities):                pass
 
 class agent(party.party):
     """ Tracks the activities of automated entities such as spiders, web
@@ -129,7 +151,7 @@ class content_content(orm.association):
     subject = content
     object  = content
 
-class contenttype(apriori.status):
+class contenttype(apriori.type):
     """ Categorizes the types of web ``contents`` that exist such as
     "articles", "product descriptions", "company information", and so
     on.
@@ -153,7 +175,7 @@ class contentrole(orm.entity):
 
     span = datespan
 
-class contentstatustype(apriori.status):
+class contentstatustype(apriori.type):
     """ Indicates whether the content is currently on the site, pending,
     or was peviously stored on a site.
 
@@ -162,7 +184,7 @@ class contentstatustype(apriori.status):
     """
     contents = contents
 
-class user(orm.entity)::
+class user(orm.entity):
     """ Represents the login account a ``party.party`` uses to log in to
     a website.
 
@@ -175,6 +197,7 @@ class user(orm.entity)::
     party = party.party
 
     histories = histories
+    preferences = preferences
 
 class history(orm.entity):
     """ Used to store a history of the logins and passwords.
@@ -194,6 +217,8 @@ class preference(orm.entity):
     Note that this entity is based on the WEB USER PREFERENCE entity in
     "The Data Model Resource Book Volume 2".
     """
+    key = str
+    value = str
     
 class address(orm.entity):
     """ Represents a URL which itself represents a website.
@@ -201,4 +226,7 @@ class address(orm.entity):
     Note that this entity is based on the WEB ADDRESS entity in
     "The Data Model Resource Book Volume 2".
     """
+    url = str
+
+    users = users
 

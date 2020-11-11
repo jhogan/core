@@ -122,6 +122,7 @@ class rates(orm.entities):                                   pass
 class ratetypes(apriori.types):                              pass
 class asset_parties(orm.associations):                       pass
 class asset_partystatustypes(apriori.types):                 pass
+class consumers(roles):                                      pass
 
 ''' Parties '''
 
@@ -1466,7 +1467,6 @@ class consumer(role):
     Note that this is modeled after the CONSUMER entity in "The
     Data Model Resource Book Volume 2".
     """
-
 
 class customer(role):
     """ A role indicating a party that has purchased, been shipped, or
