@@ -27,13 +27,13 @@ class hackers(engineers):
     pass
 
 class hacker(engineer):
-    pass
+    handle = str
 
 class phreaks(hackers):
     pass
 
 class phreak(hacker):
-    pass
+    boxes = str
 
 class systems(orm.entities):
     pass
@@ -298,7 +298,7 @@ class proprietor(tester.tester):
         orm.orm.setproprietor(ms)
         self.expect(db.RecordNotFoundError, lambda: engineer(eng.id))
 
-    def it_queries_entities_based_on_proprietor(self):
+    def it_searches_entities_based_on_proprietor(self):
         engineers.orm.truncate()
         # Create some proprietors
         tsla = party.company(name='Tesla')
@@ -328,52 +328,308 @@ class proprietor(tester.tester):
         ids = engs.pluck('id')
         self.six(ids)
 
-        # Test IN operator
-        engs = engineers(f"id in ({','.join(['%s'] * len(ids))})", ids)
-        self.three(engs)
-        for eng in engs:
-            self.true(eng.name.startswith('Microsoft engineer'))
+        # Set proprietor and run the same query. Make sure only the the
+        # entities that the proprietor ows are returned
+        for com in (tsla, ms):
+            orm.orm.setproprietor(com)
 
-        # Proprietor is currently set to Microsoft. We should be able to
-        # query for all the Microsoft engineers
-        engs = engineers("name LIKE %s", '%engineer%')
-        self.three(engs)
-        for eng in engs:
-            self.true(eng.name.startswith('Microsoft engineer'))
+            # Test IN operator
+            engs = engineers(
+                f"id in ({','.join(['%s'] * len(ids))})", ids
+            )
+            self.three(engs)
+            for eng in engs:
+                self.true(
+                    eng.name.startswith(f'{com.name} engineer')
+                )
 
-        # Use a non-parameterized query. Note that this results in a
-        # mixed query; i.e., partially parameterized and partially not::
-        #
-        #   engs = engineers(
-        #     "skills = 'c++', proprietor__partyid = %s", ['88c0710...']
-        #  )
-        engs = engineers("skills = 'c++'", ())
-        self.three(engs)
-        for eng in engs:
-            self.true(eng.name.startswith('Microsoft engineer'))
+            # Proprietor is currently set to {com.name}. We should be
+            # able to query for all the {com.name} engineers
+            engs = engineers("name LIKE %s", '%engineer%')
+            self.three(engs)
+            for eng in engs:
+                self.true(eng.name.startswith(f'{com.name} engineer'))
 
-        engs = engineers('skills', 'c++')
-        self.three(engs)
-        for eng in engs:
-            self.true(eng.name.startswith('Microsoft engineer'))
+            # Use a non-parameterized query. Note that this results in a
+            # mixed query; i.e., partially parameterized and partially
+            # not::
+            #
+            #   engs = engineers(
+            #     "skills = 'c++', proprietor__partyid = %s", ['c70...']
+            #  )
+            engs = engineers("skills = 'c++'", ())
+            self.three(engs)
+            for eng in engs:
+                self.true(eng.name.startswith(f'{com.name} engineer'))
 
-        wh = "name LIKE %s AND skills = %s"
-        engs = engineers(wh, ('%engineer%',), 'c++')
-        self.three(engs)
-        for eng in engs:
-            self.true(eng.name.startswith('Microsoft engineer'))
+            # Test two-value query (equality)
+            engs = engineers('skills', 'c++')
+            self.three(engs)
+            for eng in engs:
+                self.true(eng.name.startswith(f'{com.name} engineer'))
 
-        wh = "name LIKE %s AND skills = %s"
-        engs = engineers(wh, ('%engineer%', 'c++'))
-        self.three(engs)
-        for eng in engs:
-            self.true(eng.name.startswith('Microsoft engineer'))
+            # Test with *args
+            wh = "name LIKE %s AND skills = %s"
+            engs = engineers(wh, ('%engineer%',), 'c++')
+            self.three(engs)
+            for eng in engs:
+                self.true(eng.name.startswith(f'{com.name} engineer'))
 
-        # TODO Change proprietor to Tesla then retry above test
-        # TODO Test kwargs-based queries
-        # TODO Test streaming queries
-        # TODO Test eager loaded queries (I think)
+            # Test conjunctive
+            wh = "name LIKE %s AND skills = %s"
+            engs = engineers(wh, ('%engineer%', 'c++'))
+            self.three(engs)
+            for eng in engs:
+                self.true(eng.name.startswith(f'{com.name} engineer'))
 
+            # kwargs query
+            engs = engineers(skills = 'c++')
+            self.three(engs)
+            for eng in engs:
+                self.true(eng.name.startswith(f'{com.name} engineer'))
+
+            # Literal with kwargs
+            engs = engineers(
+                "name LIKE '%engineer%'", (), skills = 'c++'
+            )
+            self.three(engs)
+            for eng in engs:
+                self.true(eng.name.startswith(f'{com.name} engineer'))
+
+    def it_searches_subentities_based_on_proprietor(self):
+        engineers.orm.truncate()
+        hackers.orm.truncate()
+
+        # Create some proprietors
+        tsla = party.company(name='Tesla')
+        ms = party.company(name='Microsoft')
+
+        # Create some Tesla hackers
+        orm.orm.setproprietor(tsla)
+        hckrs = hackers()
+        for i in range(3):
+            hckrs += hacker(
+                name   = f'Tesla hacker {i}',
+                skills = 'c++',
+                handle = 'Neo',
+            )
+
+        hckrs.save()
+
+        # Create some Microsoft engineers
+        orm.orm.setproprietor(ms)
+        for i in range(3):
+            hckrs += hacker(
+                name   = f'Microsoft hacker {i}',
+                skills = 'c++',
+                handle = 'Neo',
+            )
+
+        hckrs.save()
+
+        ids = hckrs.pluck('id')
+        self.six(ids)
+
+        for com in (tsla, ms):
+            orm.orm.setproprietor(com)
+
+            # Test IN operator
+            hckrs = hackers(
+                f"id in ({','.join(['%s'] * len(ids))})", ids
+            )
+            self.three(hckrs)
+            for hckr in hckrs:
+                self.true(
+                    hckr.name.startswith(f'{com.name} hacker')
+                )
+
+            
+            # Proprietor is currently set to {com.name}. We should be
+            # able to query for all the {com.name} hackers
+            hckrs = hackers("name LIKE %s", '%hacker%')
+            self.three(hckrs)
+            for hckr in hckrs:
+                self.true(hckr.name.startswith(f'{com.name} hacker'))
+
+            # Use a non-parameterized query. Note that this results in a
+            # mixed query; i.e., partially parameterized and partially
+            # not::
+            #
+            #   hckrs = hackers(
+            #     "skills = 'c++', proprietor__partyid = %s", ['c70...']
+            #  )
+            hckrs = hackers("skills = 'c++'", ())
+            self.three(hckrs)
+            for hckr in hckrs:
+                self.true(hckr.name.startswith(f'{com.name} hacker'))
+
+            # Test two-value query (equality)
+            hckrs = hackers('skills', 'c++')
+            self.three(hckrs)
+            for hckr in hckrs:
+                self.true(hckr.name.startswith(f'{com.name} hacker'))
+
+            # Test with *args
+            wh = "name LIKE %s AND skills = %s"
+            hckrs = hackers(wh, ('%hacker%',), 'c++')
+            self.three(hckrs)
+            for hckr in hckrs:
+                self.true(hckr.name.startswith(f'{com.name} hacker'))
+
+            # Test conjunctive
+            wh = "name LIKE %s AND skills = %s"
+            hckrs = hackers(wh, ('%hacker%', 'c++'))
+            self.three(hckrs)
+            for hckr in hckrs:
+                self.true(hckr.name.startswith(f'{com.name} hacker'))
+
+            # kwargs query
+            hckrs = hackers(skills = 'c++')
+            self.three(hckrs)
+            for hckr in hckrs:
+                self.true(hckr.name.startswith(f'{com.name} hacker'))
+
+            # Literal with kwargs
+            hckrs = hackers(
+                "name LIKE '%hacker%'", (), skills = 'c++'
+            )
+            self.three(hckrs)
+            for hckr in hckrs:
+                self.true(hckr.name.startswith(f'{com.name} hacker'))
+
+            # Test query with subentity column
+            hckrs = hackers(handle = 'Neo')
+            self.three(hckrs)
+            for hckr in hckrs:
+                self.true(hckr.name.startswith(f'{com.name} hacker'))
+
+            # Test query with subentity column and superentity column
+            hckrs = hackers(handle = 'Neo', skills = 'c++')
+            self.three(hckrs)
+            for hckr in hckrs:
+                self.true(hckr.name.startswith(f'{com.name} hacker'))
+
+    def it_searches_subsubentities_based_on_proprietor(self):
+        engineers.orm.truncate()
+        hackers.orm.truncate()
+        phreaks.orm.truncate()
+
+        # Create some proprietors
+        tsla = party.company(name='Tesla')
+        ms = party.company(name='Microsoft')
+
+        # Create some Tesla phreaks
+        orm.orm.setproprietor(tsla)
+        phrs = phreaks()
+        for i in range(3):
+            phrs += phreak(
+                name   = f'Tesla phreak {i}',
+                skills = 'DTMF',
+                handle = 'Captain Crunch',
+                boxes = 'blue',
+            )
+
+        phrs.save()
+
+        # Create some Microsoft engineers
+        orm.orm.setproprietor(ms)
+        for i in range(3):
+            phrs += phreak(
+                name   = f'Microsoft phreak {i}',
+                skills = 'DTMF',
+                handle = 'Captain Crunch',
+                boxes = 'blue',
+            )
+
+        phrs.save()
+
+        ids = phrs.pluck('id')
+        self.six(ids)
+
+        for com in (tsla, ms):
+            orm.orm.setproprietor(com)
+
+            # Test IN operator
+            phrs = phreaks(
+                f"id in ({','.join(['%s'] * len(ids))})", ids
+            )
+            self.three(phrs)
+            for phr in phrs:
+                self.true(
+                    phr.name.startswith(f'{com.name} phreak')
+                )
+
+            # Proprietor is currently set to {com.name}. We should be
+            # able to query for all the {com.name} phreaks
+            phrs = phreaks("name LIKE %s", '%phreak%')
+            self.three(phrs)
+            for phr in phrs:
+                self.true(phr.name.startswith(f'{com.name} phreak'))
+
+            # Use a non-parameterized query. Note that this results in a
+            # mixed query; i.e., partially parameterized and partially
+            # not::
+            #
+            #   phrs = phreaks(
+            #     "skills = 'c++', proprietor__partyid = %s", ['c70...']
+            #  )
+            phrs = phreaks("skills = 'DTMF'", ())
+            self.three(phrs)
+            for phr in phrs:
+                self.true(phr.name.startswith(f'{com.name} phreak'))
+
+            # Test two-value query (equality)
+            phrs = phreaks('skills', 'DTMF')
+            self.three(phrs)
+            for phr in phrs:
+                self.true(phr.name.startswith(f'{com.name} phreak'))
+
+            # Test with *args
+            wh = "name LIKE %s AND skills = %s"
+            phrs = phreaks(wh, ('%phreak%',), 'DTMF')
+            self.three(phrs)
+            for phr in phrs:
+                self.true(phr.name.startswith(f'{com.name} phreak'))
+
+            # Test conjunctive
+            wh = "name LIKE %s AND skills = %s"
+            phrs = phreaks(wh, ('%phreak%', 'DTMF'))
+            self.three(phrs)
+            for phr in phrs:
+                self.true(phr.name.startswith(f'{com.name} phreak'))
+
+            # kwargs query
+            phrs = phreaks(skills = 'DTMF')
+            self.three(phrs)
+            for phr in phrs:
+                self.true(phr.name.startswith(f'{com.name} phreak'))
+
+            # Literal with kwargs
+            phrs = phreaks(
+                "name LIKE '%phreak%'", (), skills = 'DTMF'
+            )
+            self.three(phrs)
+            for phr in phrs:
+                self.true(phr.name.startswith(f'{com.name} phreak'))
+
+            # Test query with subsubentity column
+            phrs = phreaks(boxes = 'blue')
+            self.three(phrs)
+            for phr in phrs:
+                self.true(phr.name.startswith(f'{com.name} phreak'))
+
+
+            # Test query with subentity column
+            phrs = phreaks(handle = 'Captain Crunch')
+            self.three(phrs)
+            for phr in phrs:
+                self.true(phr.name.startswith(f'{com.name} phreak'))
+
+            # Test query with entity column.
+            phrs = phreaks(skills='DTMF')
+            self.three(phrs)
+            for phr in phrs:
+                self.true(phr.name.startswith(f'{com.name} phreak'))
 
     def it_makes_proprietors_self_owning(self):
         orm.orm.setproprietor(None)

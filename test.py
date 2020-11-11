@@ -6869,16 +6869,22 @@ class test_orm(tester):
 
         # Force user to supply an empty args list
         self.expect(ValueError, fn)
-        arts = artists('id = id', (), firstname = fname, lastname = lname)
+        arts = artists(
+            'id = id', (), firstname = fname, lastname = lname
+        )
         self.one(arts1)
         arts.first
         self.eq(arts1.first.id, arts.first.id)
 
-        arts = artists('id = %s', (id,), firstname = fname, lastname = lname)
+        arts = artists(
+            'id = %s', (id,), firstname = fname, lastname = lname
+        )
         self.one(arts1)
         self.eq(arts1.first.id, arts.first.id)
 
-        arts = artists('id = %s', (id,), firstname = fname, lastname = lname)
+        arts = artists(
+            'id = %s', (id,), firstname = fname, lastname = lname
+        )
         self.one(arts1)
         self.eq(arts1.first.id, arts.first.id)
 
