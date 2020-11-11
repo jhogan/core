@@ -9,6 +9,14 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2020                 #
 ########################################################################
 
+# TODO Test streaming queries
+# TODO Test match/full-text queries
+# TODO Test eager loaded queries (I think)
+# TODO Make sure testsec is being imported by test.py
+# TODO Test updating records
+# TODO Test deleting records
+# TODO Test loading constituents, composites and associations
+
 import orm, tester, party, db
 from func import B
 
