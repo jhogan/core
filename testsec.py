@@ -12,10 +12,10 @@
 # TODO Test streaming queries
 # TODO Test match/full-text queries
 # TODO Test eager loaded queries (I think)
-# TODO Make sure testsec is being imported by test.py
-# TODO Test updating records
 # TODO Test deleting records
 # TODO Test loading constituents, composites and associations
+# TODO Make it possible to create, retrieve, update and delete any
+# record with an override.
 
 import orm, tester, party, db
 from func import B
@@ -306,8 +306,112 @@ class proprietor(tester.tester):
         orm.orm.setproprietor(ms)
         self.expect(db.RecordNotFoundError, lambda: engineer(eng.id))
 
+    def it_updates_entity_objects(self):
+        engineers.orm.truncate()
+
+        # Create some proprietors
+        tsla = party.company(name='Tesla')
+        ms = party.company(name='Microsoft')
+
+        # Create some Tesla engineers
+        orm.orm.setproprietor(tsla)
+        engs = engineers()
+        for i in range(3):
+            engs += engineer(
+                name   = f'Tesla engineer {i}',
+                skills = 'c++'
+            )
+
+        engs.save()
+
+        # Create some Microsoft engineers
+        orm.orm.setproprietor(ms)
+        for i in range(3):
+            engs += engineer(
+                name   = f'Microsoft engineer {i}',
+                skills = 'c++'
+            )
+
+        engs.save()
+
+        orm.orm.setproprietor(tsla)
+
+        # Load the thre Tesla engineers
+        engs = engineers("name LIKE %s", '%engineer%')
+
+        # Double check that we only have Tesla's engineers
+        self.three(engs)
+        for eng in engs:
+            self.true(eng.name.startswith(f'Tesla engineer'))
+
+        for eng in engs:
+            # Swith proprietors to Microsoft and try updating Tesla's
+            # engineers. 
+            orm.orm.setproprietor(ms)
+
+            eng.skills = 'VB.NET'
+            # We would expect Microsoft to get an error if they changed
+            # Tesla's engineer records.
+            self.expect(orm.ProprietorError, eng.save)
+
+            # Reload the engineer to make sure it wasn't saved despite
+            # the exception.
+            orm.orm.setproprietor(tsla)
+            self.eq('c++', eng.orm.reloaded().skills)
+
+        # Switching the proprietor to Tesla should fix the problem.
+        orm.orm.setproprietor(tsla)
+        for eng in engs:
+            eng.skills = 'VB.NET'
+            # We would expect Microsoft to get an error if they changed
+            # Tesla's engineer records.
+            self.expect(None, eng.save)
+
+            self.eq('VB.NET', eng.orm.reloaded().skills)
+
+        orm.orm.setproprietor(ms)
+
+        # Load the thre Microsoft engineers
+        engs = engineers("name LIKE %s", '%engineer%')
+
+        # Ensure they haven't been changed
+        self.three(engs)
+        for eng in engs:
+            self.true(eng.name.startswith(f'Microsoft engineer'))
+            self.eq('c++', eng.skills)
+            eng.skills = 'python' # Make a change
+
+        # Change proprietor
+        orm.orm.setproprietor(tsla)
+
+        # This time, save the collection
+        self.expect(orm.ProprietorError, engs.save)
+
+        # Correct proprietor
+        orm.orm.setproprietor(ms)
+
+        # Ensure no changes were made
+        engs = engineers("name LIKE %s", '%engineer%')
+        for eng in engs:
+            self.true(eng.name.startswith(f'Microsoft engineer'))
+            self.eq('c++', eng.skills)
+            eng.skills = 'python' # Make a change
+
+        # This time, save the collection
+        self.expect(None, engs.save)
+
+        # Ensure no changes were made
+        engs = engineers("name LIKE %s", '%engineer%')
+        for eng in engs:
+            self.true(eng.name.startswith(f'Microsoft engineer'))
+            self.eq('python', eng.skills)
+
+
+
+
     def it_searches_entities_based_on_proprietor(self):
         engineers.orm.truncate()
+
         # Create some proprietors
         tsla = party.company(name='Tesla')
         ms = party.company(name='Microsoft')

@@ -2664,6 +2664,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             crud = None
             sql, args = (None,) * 2
 
+        if crud in ('update',):
+            if self.proprietor.id != orm.proprietor.id:
+                raise ProprietorError(self.proprietor)
+
         try:
             # Take snapshot of before state
             st = self.orm.persistencestate
@@ -7410,4 +7414,27 @@ class migration:
 class InvalidColumn(ValueError): pass
 class InvalidStream(ValueError): pass
 class ConfusionError(ValueError): pass
+
+class ProprietorError(ValueError):
+    def __init__(self, actual, expected=None):
+        self.actual = actual
+        self._expected = expected
+
+    @property
+    def expected(self):
+        if not self._expected:
+            return orm.proprietor
+        return self._expected
+
+    def __str__(self):
+        expected = self.expected.id.hex if self.expected else None
+        return (
+            f'The expected proprietor did not match the actual '
+            f'proprietor; actual {self.actual.id.hex}, expected: '
+            f'{expected}'
+        )
+
+    def __repr__(self):
+        return str(self)
+        
 
