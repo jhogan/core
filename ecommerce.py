@@ -47,6 +47,7 @@ class users(orm.entities):                     pass
 class histories(orm.entities):                 pass
 class preferences(orm.entities):               pass
 class addresses(orm.entities):                pass
+class objects(orm.entities):                pass
 
 class agent(party.party):
     """ Tracks the activities of automated entities such as spiders, web
@@ -230,3 +231,56 @@ class address(orm.entity):
 
     users = users
 
+class object(orm.entity):
+    """ Stores electronic images, such as ``text`` (i.e. an HTML
+    document), ``image`` (graphical electronic represenation),
+    and ``other``, such as appletes, sound file, video clips, and
+    so on.
+    """
+    name = str
+    path = str
+
+class text(object):
+    """ An electronic, textual image.
+
+    Note that this is modeled after the ELECTRONIC TEXT entity in "The
+    Data Model Resource Book Volume 2".
+    """
+    text = str
+
+class images(object):
+    """ An electronic, textual image.
+
+    Note that this is modeled after the IMAGE OBJECT entity in "The Data
+    Model Resource Book Volume 2".
+    """
+    body = bytes
+
+class other(object):
+    """ Miscallanious object types such as applets, sound files video
+    clips and so on.
+
+    Note that this is modeled after the OTHER OBJECT entity in "The
+    Data Model Resource Book Volume 2".
+    """
+    body = bytes
+
+class product_object(orm.association):
+    """ Associates a ``product`` with an ``object``.
+
+    Note that this is modeled after the PRODUCT OBJECT entity in "The
+    Data Model Resource Book Volume 2".
+    """
+
+    product = product.product
+    object = object
+    
+class feature_object(orm.association):
+    """ Associates a product ``feature`` with an ``object``.
+
+    Note that this is modeled after the FEATURE OBJECT entity in "The
+    Data Model Resource Book Volume 2".
+    """
+
+    feature = product.feature
+    object = object
