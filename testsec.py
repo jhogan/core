@@ -12,8 +12,10 @@
 # TODO Test streaming queries
 # TODO Test match/full-text queries
 # TODO Test eager loaded queries (I think)
-# TODO Test deleting records
 # TODO Test loading constituents, composites and associations
+# TODO Test updating constituents, composites and associations
+# TODO Test deleting constituents, composites and associations
+# TODO Test creating constituents, composites and associations
 # TODO Make it possible to create, retrieve, update and delete any
 # record with an override.
 
