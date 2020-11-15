@@ -7664,18 +7664,19 @@ class test_orm(tester):
 
         press = art.presentations.sorted()
 
-        with db.chronicler.snapshot():
+        with self._chrontest() as t:
+            press1 = t.run(lambda: art1.presentations)
             B()
-            press1 = art1.presentations.sorted()
+            t.retrieved(art1)
+
+        
+        press1.sort()
 
         self.three(press)
         self.three(press1)
-        print(press1.count)
-        return
 
         for pres, pres1 in zip(press, press1):
             self.eq(pres.id, pres1.id)
-            print(type(pres))
             self.type(type(pres), pres1)
 
     def it_updates_entity_constituents_properties(self):
