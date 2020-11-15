@@ -284,3 +284,50 @@ class feature_object(orm.association):
 
     feature = product.feature
     object = object
+
+class party_object(orm.association):
+    """ Associates a product ``product`` with an ``object``.
+
+    Note that this is modeled after the PARTY OBJECT entity in "The
+    Data Model Resource Book Volume 2".
+    """
+
+    party = party.party
+    object = object
+
+class content_usage(orm.association):
+    """ Associates a product web ``content`` with an ``object``.
+
+    Note that this is modeled after the OBJECT USAGE entity in "The Data
+    Model Resource Book Volume 2".
+    """
+
+    span = date
+    content = content
+    object = object
+
+class purposetype(apriori.type):
+    """ The purpose of an ``object``.
+
+    Note that this is modeled after the PURPOSE TYPE entity in "The Data
+    Model Resource Book Volume 2".
+    """
+
+class object_purpose(orm.association):
+    """ Associates an ``object`` with a ``purposetype``.
+
+    Note that this is modeled after the OBJECT PURPOSE entity in "The
+    Data Model Resource Book Volume 2".
+    """
+
+    purposetype = purposetype
+    object = object
+
+class objecttype(apriori.type):
+    """ Each object may be of a particular type, such a "HTML document",
+    "JPEG image", "GIF", "streaming video", "sound clip", 'JAVA applet",
+    and so on.
+
+    Note that this is modeled after the OBJECT PURPOSE entity in "The
+    Data Model Resource Book Volume 2".
+    """
