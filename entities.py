@@ -913,6 +913,15 @@ class entity():
                 eargs = entityvaluechangeeventargs(self, prop)
                 self.onbeforevaluechange(self, eargs)
 
+            # TODO If we were able to, I think we should pass cmp into
+            # the call to setattr so __setattr__ would receive it.  In
+            # the orm, when ascending the inheritance tree, we may call
+            # _setvalue multiple times before we get to the destination
+            # entity.  Unless we pass cmp, we may be needlessly loading
+            # objects for comparison. However, we can only pass three
+            # args to the default setattr(), so we need a way to work
+            # around this limition (perhaps pass in a custom `setattr`
+            # function).
             setattr(self, field, new)
 
             if hasattr(self, 'onaftervaluechange'):

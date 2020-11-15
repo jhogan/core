@@ -2561,13 +2561,13 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         if e:
                             continue
                         else:
-                            # If we have gotten here, no FK was found in self
-                            # that match the composite object passed in. This
-                            # is probably because the wrong type of composite
-                            # was given. The user/programmers has made a
-                            # mistake. However, the brokenrules logic will
-                            # detect this issue and alert the user to the
-                            # issue.
+                            # If we have gotten here, no FK was found in
+                            # self that match the composite object
+                            # passed in. This is probably because the
+                            # wrong type of composite was given. The
+                            # user/programmers has made a mistake.
+                            # However, the brokenrules logic will detect
+                            # this issue and inform the user.
                             pass
                     break
 
@@ -3024,6 +3024,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         return brs
 
+    # TODO Since this is only one line, it should probably be turned
+    # into a lambda and passed in directly to e._setvalue
     @staticmethod
     def _setattr(e, attr, v):
         e.orm.mappings[attr].value = v
@@ -3082,9 +3084,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     else:
                         raise ValueError('FK map not found for entity')
 
-                    # NOTE Though we've switch to implicit loading for
-                    # entities and associations, we should still
-                    # explicitly load here for the sake of
+                    # NOTE Though we've switch to deferred loading for
+                    # entities and associations, we should still force
+                    # an immediately load here for the sake of
                     # predictability.
                     es = map_entities(map1.name, self.id)
                     es.orm.collect()
@@ -3861,10 +3863,10 @@ class associationsmapping(mapping):
             # composite is new, there would be no existing associations
             # for it to load.
             if not self.composite.orm.isnew:
-                # NOTE Currently, we implitly load entities and
+                # NOTE Currently, we defer loading entities and
                 # association.  However, we will want to continue
-                # explitly loading this association here for the sake of
-                # predictablity.
+                # immediate loading this association here for the sake
+                # of predictablity.
                 asses.orm.collect()
 
             # Make sure the associations collection knows it's composite
