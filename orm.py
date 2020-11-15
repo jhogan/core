@@ -5886,7 +5886,9 @@ class orm:
                     if col == 'id':
                         id = f.value
                         if not id:
-                            B()
+                            # Continue iterating through fields until we
+                            # reach an id field
+                            skip = True
                             continue
 
                         _, _, abbr = alias.rpartition('.')
@@ -5912,12 +5914,7 @@ class orm:
                         # Add to entity dict
                         edict[key]= e
 
-                        # If first field, add to self (self.instance).
-                        # If we are on the 'id' column of and its the
-                        # first column, the record must be for the
-                        # self collection.
-                        if i.first:
-                            es += e
+                        es += e
 
                         # Grab the mappings collection for the new
                         # entity while we are in the id column. The
@@ -5947,6 +5944,27 @@ class orm:
                 # the new entity's ``mappings`` or self.mappings;  see
                 # above for which.
                 maps[col]._value = f.value
+
+        if not simple:
+            ids = set([x[0] for x in edict])
+
+            for id in ids:
+                lowest = None
+
+                for id1, eclass in edict:
+                    if id == id1:
+                        if lowest:
+                            if lowest.orm.issuperentity(of=eclass):
+                                lowest = eclass
+                        else:
+                            lowest = eclass
+
+                e = edict[id, lowest]
+
+                for (id1, eclass), e in edict.items():
+                    if id == id1:
+                        if eclass.orm.issuperentity(of=lowest):
+                            es.remove(e)
 
         # Link the entity objects in edict together into the graph
         orm.link(edict)
