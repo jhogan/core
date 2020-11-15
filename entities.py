@@ -894,14 +894,15 @@ class entity():
         if cmp:
             old = getattr(self, field)
 
-            # old and new are not equal if they are of different type - unless
-            # one of those types is NoneType. In other words, setting a
-            # previously None value to a non-None value should count as a value
-            # change - and vice-versa. However, if neither value is None, a
-            # difference in type and equality should exist to count as value
-            # change. For example, if old is int(0) and new is bool(False), a
-            # value change is happening even though the equality (according to
-            # Python) is the same (falsey).
+            # old and new are not equal if they are of different type -
+            # unless one of those types is NoneType. In other words,
+            # setting a previously None value to a non-None value should
+            # count as a value change - and vice-versa. However, if
+            # neither value is None, a difference in type and equality
+            # should exist to count as value change. For example, if old
+            # is int(0) and new is bool(False), a value change is
+            # happening even though the equality (according to Python)
+            # is the same (falsey).
             if old is None or new is None:
                 ne = old != new
             else:

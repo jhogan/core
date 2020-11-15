@@ -1990,8 +1990,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             if p2isscaler:
                 if self.re_alphanum_.match(p1):
                     # If p1 looks like a simple column name (alphanums,
-                    # underscores, no operators) assume the user is doing a
-                    # simple equailty test (p1 == p2)
+                    # underscores, no operators) assume the user is
+                    # doing a simple equailty test (p1 == p2)
                     p1 += ' = %s'
                 args = [p2] + args
             else: # tuple, list, etc
@@ -2005,13 +2005,12 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             self.orm.parameterizepredicate(args)
 
     def clear(self):
-        """
-        Remove all elements from the entities collection.
+        """ Remove all elements from the entities collection.
         """
         try:
-            # Set isremoving to True so entities.__getattribute__ doesn't
-            # attempt to load whenever the removing logic calls an attibute on
-            # the entities collection.
+            # Set isremoving to True so entities.__getattribute__
+            # doesn't attempt to load whenever the removing logic calls
+            # an attibute on the entities collection.
             self.orm.isremoving = True
             super().clear()
         finally:
@@ -2019,9 +2018,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
     def remove(self, *args, **kwargs):
         try:
-            # Set isremoving to True so entities.__getattribute__ doesn't
-            # attempt to load whenever the removing logic calls an attibute on
-            # the entities collection.
+            # Set isremoving to True so entities.__getattribute__
+            # doesn't attempt to load whenever the removing logic calls
+            # an attibute on the entities collection.
             self.orm.isremoving = True
             super().remove(*args, **kwargs)
         finally:
@@ -2034,12 +2033,12 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
     def getbrokenrules(self, gb=None):
         brs = entitiesmod.brokenrules()
 
-        # This test corrects a fairly deep issue that has only come
-        # up with subentity-superassociation-subentity
-        # relationships. We use the below logic to return
-        # immediately when an association's (self) collection has any
-        # constituents that have already been visited. See the
-        # brokenrule collections being tested at the bottom of
+        # This test corrects a fairly deep issue that has only come up
+        # with subentity-superassociation-subentity relationships. We
+        # use the below logic to return immediately when an
+        # association's (self) collection has any constituents that have
+        # already been visited. See the brokenrule collections being
+        # tested at the bottom of
         # it_loads_and_saves_reflexive_associations_of_subentity_objects
         # for more clarifications.
 
@@ -3102,8 +3101,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         # for comparison when __setattr__ calls
                         # _setvalue.  However, the composite doesn't
                         # need to be loaded from the database.
-                        e._setvalue(attr, self, attr, cmp=False, 
-                                    setattr=self._setattr)
+                        e._setvalue(
+                            attr, self, attr, 
+                            cmp=False, setattr=self._setattr
+                        )
 
                         # Since we just set e's composite, e now thinks its
                         # dirty.  Correct that here.
@@ -5860,10 +5861,14 @@ class orm:
         es = self.instance
 
         if type(ress) is db.dbresult:
+            # If we are given one resultset, we are probably loading an
+            # a single entity by id, i.e., ent = entity(id).
             ress = [ress]
             simple = True
             maps = self.mappings
         elif type(ress) is db.dbresultset:
+            # Multiple resultsets imply that we are loading an entities
+            # collection, i.e, ents = entities(field = 'value')
             simple = False
         else:
             raise TypeError('Invalid type of `ress`')
@@ -5876,6 +5881,8 @@ class orm:
                 alias, _, col = f.name.rpartition('.')
 
                 if not simple and (not skip or col == 'id'):
+                    # If we are loading an entities colleciion we are at
+                    # an id field
                     if col == 'id':
                         id = f.value
                         if not id:
@@ -5983,14 +5990,13 @@ class orm:
         # For each entity in edict
         for e in edict.values():
             
-            # Does `e` have a foreign key that is the id of another entity in
-            # edict, i.e., is `e` a child (or constituent) of other entity in
-            # edict.
+            # Does `e` have a foreign key that is the id of another
+            # entity in edict, i.e., is `e` a child (or constituent) of
+            # another entity in edict.
             for map in e.orm.mappings.foreignkeymappings:
                 if not map.value:
                     continue
 
-                # map.entity.orm.subentities.first.entity.__class__]
                 clss = [map.entity]
                 clss += [x.entity for x in map.entity.orm.subentities]
                 comp = None
@@ -6013,14 +6019,14 @@ class orm:
                     # will have been loaded.
                     continue
                     
-                # If we are here, a composite was found
+                # If we are here, a composite was found.
 
                 # Chain the composite's entitiesmappings and
                 # associationsmappings collection into `maps`. 
                 #
                 # Note we need to ascend the inheritance tree to include
-                # all the superentities as well. This for loading
-                # subentity objects join to super entity association:
+                # all the superentities as well. This is for loading
+                # subentity objects joined to super entity association:
                 #
                 #   singers.join(
                 #       artist_artists('role = 'sng-art_art-role-0')
