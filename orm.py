@@ -3103,9 +3103,26 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         # for comparison when __setattr__ calls
                         # _setvalue.  However, the composite doesn't
                         # need to be loaded from the database.
+
+                        # XXX I removed the assignment to setattr to
+                        # support loading subentity elements. All
+                        # self._setattr does is set the mapping
+                        # directly. If the `setattr` parameter is not
+                        # set here, the normal __setattr__ method is
+                        # called. Since we are trying to set the
+                        # composite of a subentity, what we are trying
+                        # to get at is its super's entitymappings for
+                        # the composite. (For example, `exhibition`
+                        # doesn't have an 'artist' entitymapping but its
+                        # super, `presentation`, does). Use the normal
+                        # __setattr__ goes up the inheritance tree and
+                        # finds the super with the entitymapping. I'm
+                        # not sure why I used self._setattr in the first
+                        # place. It might have been a mistake in
+                        # retrospect.
                         e._setvalue(
                             attr, self, attr, 
-                            cmp=False, setattr=self._setattr
+                            cmp=False, # XXX setattr=self._setattr
                         )
 
                         # Since we just set e's composite, e now thinks its
