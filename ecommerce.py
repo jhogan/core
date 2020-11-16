@@ -25,7 +25,7 @@ from dbg import B
 from decimal import Decimal as dec
 from orm import text, timespan, datespan
 import orm
-import party, apriori
+import party, apriori, product
 
 class agents(party.parties):                   pass
 class webmasters(party.personals):             pass
@@ -48,6 +48,16 @@ class histories(orm.entities):                 pass
 class preferences(orm.entities):               pass
 class addresses(orm.entities):                pass
 class objects(orm.entities):                pass
+class texts(objects):                pass
+class images(objects):                pass
+class others(objects):                pass
+class object_products(orm.associations):                pass
+class feature_objects(orm.associations):                pass
+class party_objects(orm.associations):                pass
+class content_objects(orm.associations):                pass
+class purposetypes(apriori.types):                pass
+class object_purposes(orm.associations):                pass
+class objecttypes(apriori.types):                pass
 
 class agent(party.party):
     """ Tracks the activities of automated entities such as spiders, web
@@ -248,7 +258,7 @@ class text(object):
     """
     text = str
 
-class images(object):
+class image(object):
     """ An electronic, textual image.
 
     Note that this is modeled after the IMAGE OBJECT entity in "The Data
@@ -265,7 +275,7 @@ class other(object):
     """
     body = bytes
 
-class product_object(orm.association):
+class object_product(orm.association):
     """ Associates a ``product`` with an ``object``.
 
     Note that this is modeled after the PRODUCT OBJECT entity in "The
@@ -295,14 +305,14 @@ class party_object(orm.association):
     party = party.party
     object = object
 
-class content_usage(orm.association):
+class content_object(orm.association):
     """ Associates a product web ``content`` with an ``object``.
 
     Note that this is modeled after the OBJECT USAGE entity in "The Data
     Model Resource Book Volume 2".
     """
 
-    span = date
+    span = datespan
     content = content
     object = object
 
@@ -331,3 +341,4 @@ class objecttype(apriori.type):
     Note that this is modeled after the OBJECT PURPOSE entity in "The
     Data Model Resource Book Volume 2".
     """
+    objects = objects
