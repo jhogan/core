@@ -2023,3 +2023,38 @@ class asset_partystatustype(apriori.type):
     # represents.
     asset_parties = asset_parties
 
+class need(orm.entity):
+    """ Party ``needs`` are specific needs of the ``consumer`` with the
+    date that the need was identified (``identified``) and the
+    description (``name``) of the need. Each product need may be for a
+    ``consumer`` and may be for a product (``product.product``) or
+    ``product.category``, of a product, categorized by the ``needtype``,
+    and discovered via a server ``hit`` or via a ``communication`` event.
+
+    Note that this is modeled after the PARTY NEED entity in "The Data
+    Model Resource Book Volume 2".
+    """
+
+    identified = date
+    name = str
+
+class needtype(apriori.type):
+    """ Categorizes party ``needs``.
+
+    Note that this is modeled after the NEED TYPE entity in "The Data
+    Model Resource Book Volume 2".
+    """
+
+    needs = needs
+
+class hit(orm.entity):
+    """ Represents any click on the web site that may be relate to
+    web ``content``, such as when the ``consumer`` clicks on a graphic
+    image, hyperlink to another page, or ``other`` ``object`` on the
+    site.
+
+    Note that this is modeled after the SERVER HIT entity in "The Data
+    Model Resource Book Volume 2".
+    """
+    
+    datetime = datetime
