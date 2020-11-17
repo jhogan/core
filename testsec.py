@@ -12,26 +12,43 @@
 # TODO Test streaming queries
 # TODO Test match/full-text queries
 # TODO Test eager loaded queries (I think)
-# TODO Test loading constituents, composites and associations
-# TODO Test updating constituents, composites and associations
+# TODO Test loading composites and associations
+# TODO Test updating composites and associations
 # TODO Test deleting constituents, composites and associations
-# TODO Test creating constituents, composites and associations
+# TODO Test creating composites and associations
 # TODO Make it possible to create, retrieve, update and delete any
 # record with an override.
 
 import orm, tester, party, db
 from func import B
 
+class systems(orm.entities):
+    pass
+
+class system(orm.entity):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.default('name', None)
+
+    name = str
+
 class engineers(orm.entities):
     pass
 
 class engineer(orm.entity):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.default('name', None)
+        self.orm.default('skills', None)
+
     name = str
     @classmethod
     def getvalid(cls):
         return cls()
 
     skills = str
+
+    systems = systems
 
 class hackers(engineers):
     pass
@@ -45,16 +62,10 @@ class phreaks(hackers):
 class phreak(hacker):
     boxes = str
 
-class systems(orm.entities):
-    pass
-
-class system(orm.entity):
-    pass
-
 class proprietor(tester.tester):
     def __init__(self):
         super().__init__()
-        orm.orm.recreate(engineer, hacker, phreak)
+        orm.orm.recreate(engineer, hacker, phreak, system)
         for e in orm.orm.getentitys(includeassociations=True):
             if e.__module__ in ('party', 'apriori'):
                 e.orm.recreate()
@@ -507,7 +518,66 @@ class proprietor(tester.tester):
             for eng in engs:
                 self.true(eng.name.startswith(f'{com.name} engineer'))
 
-    def it_searches_subentities_based_on_proprietor(self):
+    def it_loads_constituents(self):
+        engineers.orm.truncate()
+
+        # Create some proprietors
+        tsla = party.company(name='Tesla')
+        ms = party.company(name='Microsoft')
+
+        # Create a Tesla engineers and the `system` s/he administors
+        orm.orm.setproprietor(tsla)
+        eng = engineer()
+        for i in range(3):
+            eng.systems += system(
+                name = f'Tesla system {i}',
+            )
+
+        eng.save()
+
+        # Create some Microsoft engineers
+        orm.orm.setproprietor(ms)
+        eng = engineer()
+        for i in range(3):
+            eng.systems += system(
+                name = f'Microsoft system {i}',
+            )
+
+        eng.save()
+
+        eng1 = eng.orm.reloaded()
+
+        syss = eng1.systems.sorted()
+
+        self.three(syss)
+
+        for sys in syss:
+            self.startswith(f'{ms.name} system', sys.name)
+
+        # Reload engineer as Microsoft
+        eng1 = eng.orm.reloaded()
+
+        # Set proprietor to Tesla
+        orm.orm.setproprietor(tsla)
+
+        # Even though we have Microsoft's engineer (this situation
+        # should never happen unles there was a mistake by a web
+        # developer), we can't load its systems because the proprietor
+        # was set to
+        # Tesla.
+        self.zero(eng1.systems)
+
+        # Load engineer as Microsoft, change the name of a system and
+        # save as Tesla. We would expect "Tesla" to receive a
+        # ProprietorError.
+        orm.orm.setproprietor(ms)
+        eng1 = eng.orm.reloaded()
+        eng1.systems.first.name = 'Tesla system'
+
+        orm.orm.setproprietor(tsla)
+        self.expect(orm.ProprietorError, eng1.save)
+
+    def it_searches_subentities(self):
         engineers.orm.truncate()
         hackers.orm.truncate()
 
