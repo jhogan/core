@@ -6487,6 +6487,7 @@ class orm:
                 if self.entity is not map1.entity:
                     props.append(map1.entity.orm.entities.__name__)
 
+        # TODO s/super/sup/
         super = self.super
         if super:
             props += [x for x in super.orm.properties if x not in props]

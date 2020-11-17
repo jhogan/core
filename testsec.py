@@ -273,7 +273,7 @@ class proprietor(tester.tester):
         # ui developer could do this manually if it ever comes
         # up; though I'm not really sure what's best at this point.
 
-    def it_filters_entity_based_on_proprietor(self):
+    def it_filters_entity(self):
         """ By default, queries should only be able to return records 
         belonging to the proprietor as defined by orm.orm.proprietor.
         """
@@ -408,10 +408,7 @@ class proprietor(tester.tester):
             self.true(eng.name.startswith(f'Microsoft engineer'))
             self.eq('python', eng.skills)
 
-
-
-
-    def it_searches_entities_based_on_proprietor(self):
+    def it_searches_entities(self):
         engineers.orm.truncate()
 
         # Create some proprietors
@@ -623,7 +620,7 @@ class proprietor(tester.tester):
             for hckr in hckrs:
                 self.true(hckr.name.startswith(f'{com.name} hacker'))
 
-    def it_searches_subsubentities_based_on_proprietor(self):
+    def it_searches_subsubentities(self):
         engineers.orm.truncate()
         hackers.orm.truncate()
         phreaks.orm.truncate()
