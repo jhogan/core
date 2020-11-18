@@ -9,9 +9,10 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2020                 #
 ########################################################################
 
+from dbg import B
 import ecommerce, party, product
-import tester
 import orm
+import tester
 
 # TODO Add `import testecommerce` to test.py
 
@@ -118,6 +119,33 @@ class test_ecommerce(tester.tester):
             cos.first.content.description, 
             cos1.first.content.description
         )
+
+    def it_creates_needs(self):
+        per = party.person(name='Web Surfer')
+        prosp = party.prospect()
+
+        per.roles += prosp
+
+        need = party.need(
+            name = None,
+            needtype = party.needtype(
+                name='Information packet requested'
+            ),
+            communication = party.communication(
+                note = 'Web site request for information packet'
+            )
+        )
+
+        need.save()
+
+        need1 = need.orm.reloaded()
+        B()
+
+        self.eq(need.id, need1.id)
+        self.eq(need.needtype.id, need1.needtype.id)
+        self.eq(need.communication.id, need1.communication.id)
+
+
 
 
 if __name__ == '__main__':

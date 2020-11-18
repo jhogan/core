@@ -17,7 +17,7 @@
 #   objects.
 #   https://www.hr360.com/Resource-Center/HR-Terms.aspx
 
-from datetime import datetime
+from datetime import datetime, date
 from dbg import B
 from decimal import Decimal as dec
 from orm import text, datespan, timespan
@@ -123,6 +123,10 @@ class ratetypes(apriori.types):                              pass
 class asset_parties(orm.associations):                       pass
 class asset_partystatustypes(apriori.types):                 pass
 class consumers(roles):                                      pass
+class prospects(consumers):                                  pass
+class needs(orm.entities):                                   pass
+class needtypes(apriori.types):                              pass
+class hits(orm.entities):                                    pass
 
 ''' Parties '''
 
@@ -948,6 +952,8 @@ class email(contactmechanism):
     """
     address = str
 
+# TODO DON'T use this `communication`. There is a duplicate beneath it.
+# Merge its comments in with that one and remove this one.
 class communication(orm.entity):
     """ An object to record any type of contact between parties within a
     relationship (see `role_role`). For example, phone calls, meetings,
@@ -1468,6 +1474,13 @@ class consumer(role):
     Data Model Resource Book Volume 2".
     """
 
+class prospect(consumer):
+    """ 
+    Note that this is modeled after the PROSPECT entity in "The
+    Data Model Resource Book Volume 2".
+    """
+    
+
 class customer(role):
     """ A role indicating a party that has purchased, been shipped, or
     used products from an enterprise. Subtypes of the customer role
@@ -1715,6 +1728,8 @@ class communication(orm.entity):
     note = text
 
     objectives = objectives
+
+    needs = needs
 
 class inperson(communication):
     """ A type of a ``communication`` event where the communication
