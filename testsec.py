@@ -359,6 +359,7 @@ class proprietor(tester.tester):
         self.eq(tsla.id, eng.proprietor.id)
 
         malcolm = party.person(name='Malcolm McLaren')
+        orm.orm.setproprietor(malcolm)
         eng.proprietor = malcolm
 
         self.is_(malcolm, eng.proprietor)
