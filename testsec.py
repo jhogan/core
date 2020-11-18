@@ -54,12 +54,19 @@ class hackers(engineers):
     pass
 
 class hacker(engineer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.default('handle', None)
     handle = str
 
 class phreaks(hackers):
     pass
 
 class phreak(hacker):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.default('boxes', None)
+
     boxes = str
 
 class proprietor(tester.tester):
@@ -69,6 +76,110 @@ class proprietor(tester.tester):
         for e in orm.orm.getentitys(includeassociations=True):
             if e.__module__ in ('party', 'apriori'):
                 e.orm.recreate()
+
+    def it_cant_load_composite(self):
+        engineers.orm.truncate()
+        systems.orm.truncate()
+
+        # Create some proprietors
+        tsla = party.company(name='Tesla')
+        ms = party.company(name='Microsoft')
+
+        # Assign the system to a Telsa engineer
+        orm.orm.setproprietor(tsla)
+        sys = system()
+        sys.engineer = engineer(name='x')
+        sys.save()
+
+        # Reload the system as Tesla
+        sys = sys.orm.reloaded()
+
+        # Try to load the Tesla `engineer` composite as Microsoft. 
+        orm.orm.setproprietor(ms)
+        self.expect(db.RecordNotFoundError, lambda: sys.engineer)
+
+        # Try again to load the Tesla `engineer` composite as Tesla. 
+        orm.orm.setproprietor(tsla)
+        self.notnone(sys.engineer)
+
+    def it_deletes_entity(self):
+        engineers.orm.truncate()
+
+        # Create some proprietors
+        tsla = party.company(name='Tesla')
+        ms = party.company(name='Microsoft')
+
+        # Create a Tesla engineers
+        orm.orm.setproprietor(tsla)
+        eng = engineer(name='Tesla engineer')
+        eng.save()
+
+        # Delete it. We shouldn't get errors.
+        self.expect(None, eng.delete)
+
+        # Ensure the record has been deleted
+        self.expect(db.RecordNotFoundError, eng.orm.reloaded)
+
+        # Create another Tesla engineers
+        eng = engineer(name='Tesla engineer')
+        eng.save()
+
+        # Switch proprietor to Microsoft
+        orm.orm.setproprietor(ms)
+
+        # Delete it. Microsoft shouldn't be able to delete Tesla's
+        # records so we should get errors.
+        self.expect(orm.ProprietorError, eng.delete)
+
+        # Switch proprietor back to Telsa
+        orm.orm.setproprietor(tsla)
+
+        # Ensure the record was not deleted
+        self.expect(None, eng.orm.reloaded)
+
+    def it_deletes_constituents(self):
+        engineers.orm.truncate()
+
+        # Create some proprietors
+        tsla = party.company(name='Tesla')
+        ms = party.company(name='Microsoft')
+
+        # Create a Tesla engineers
+        orm.orm.setproprietor(tsla)
+        eng = engineer(name='Tesla engineer')
+        eng = engineer()
+        for i in range(3):
+            eng.systems += system(
+                name = f'Tesla system {i}',
+            )
+
+        eng.save()
+
+        # Create a Microsoft engineers
+        orm.orm.setproprietor(ms)
+        eng = engineer(name='Microsoft engineer')
+        eng = engineer()
+        for i in range(3):
+            eng.systems += system(
+                name = f'Microsoft system {i}',
+            )
+
+        eng.save()
+
+        # Mark the Microsoft's engineer's last system for deletion.
+        eng.systems.pop()
+
+        # In midstream, set the proprietor to Tesla. This would be a
+        # mistake if a web developer were to do this, but just in case,
+        # make sure that Tesla can't delete a Microsoft system.
+        orm.orm.setproprietor(tsla)
+        self.expect(orm.ProprietorError, eng.save)
+
+        # Set the proprietor back to Microsoft, reload and ensure the
+        # system wasn't deleted.
+        orm.orm.setproprietor(ms)
+        eng = eng.orm.reloaded()
+        self.three(eng.systems)
 
     def it_adds_proprietor_to_entity(self):
         ''' Test class (static attribute)'''

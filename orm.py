@@ -2664,7 +2664,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             crud = None
             sql, args = (None,) * 2
 
-        if crud in ('update',):
+        if crud in ('update', 'delete'):
             if self.proprietor.id != orm.proprietor.id:
                 raise ProprietorError(self.proprietor)
 
