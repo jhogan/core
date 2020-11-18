@@ -3705,6 +3705,7 @@ class mappings(entitiesmod.entities):
 
         set = set[:-2]
 
+        # TODO Use f-string and textwrap to make this nicer
         sql = """UPDATE {}
 SET {}
 WHERE id = %s;

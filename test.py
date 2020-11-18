@@ -6778,11 +6778,11 @@ class test_orm(tester):
         def fn():
             artists("firstname = '%s'" % arts.first.firstname)
 
-        # This should throw an error because we want the user to specify an
-        # empty tuple if they don't want to pass in args. This serves as a
-        # reminder that they are not taking advantage of the
-        # prepared/parameterized statements and may therefore be exposing
-        # themselves to SQL injection attacks.
+        # This should throw an error because we want the user to specify
+        # an empty tuple if they don't want to pass in args. This serves
+        # as a reminder that they are not taking advantage of the
+        # prepared/parameterized statements and may therefore be
+        # exposing themselves to SQL injection attacks.
         self.expect(ValueError, fn)
 
         self.chronicles.clear()
@@ -24599,7 +24599,7 @@ class pom_page(tester):
         # Snapshop of main tag should only include a few elements
         self.five(pg._main_snapshot.all)
 
-        # The snapshop of the page's html will be a full document (i.e.,
+        # The snapshot of the page's html will be a full document (i.e.,
         # it starts with <html>). However, since the page object hasn't
         # been attached to a site object (it will be below), the site
         # specific HTML (the <head> tag and the page <header> can not be

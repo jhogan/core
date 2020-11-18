@@ -14,7 +14,7 @@
 # TODO Test eager loaded queries (I think)
 # TODO Test loading composites and associations
 # TODO Test updating composites and associations
-# TODO Test deleting constituents, composites and associations
+# TODO Test deleting composites and associations
 # TODO Test creating composites and associations
 # TODO Make it possible to create, retrieve, update and delete any
 # record with an override.
@@ -340,7 +340,7 @@ class proprietor(tester.tester):
         self.none(phr.orm.super.proprietor)
         self.none(phr.orm.super.orm.super.proprietor)
 
-    def it_sets_proprietor_from_sec(self):
+    def it_sets_proprietor(self):
         """
         """
         tsla = party.company(name='Tesla')
@@ -430,7 +430,7 @@ class proprietor(tester.tester):
         orm.orm.setproprietor(ms)
         self.expect(db.RecordNotFoundError, lambda: engineer(eng.id))
 
-    def it_updates_entity_objects(self):
+    def it_updates_entity(self):
         engineers.orm.truncate()
 
         # Create some proprietors
