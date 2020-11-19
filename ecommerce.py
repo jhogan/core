@@ -342,3 +342,42 @@ class objecttype(apriori.type):
     Data Model Resource Book Volume 2".
     """
     objects = objects
+
+class subscription(orm.entity):
+    """ A subscription that a subscriber (``party.subscriber``) has
+    concerning a product (``product.product``), ``product.category``, or
+    certain party.needs.
+
+    Subscriptions may be subtyped to ``newsgroup``,
+    ``productinformation``, ``usergroup``, or ``othersubscirption``
+    which would account for additional types as maintained in the
+    ``subscriptiontype`` entity.
+    """
+
+    span = datetime
+    needs = party.needs
+    communication = party.communication
+    contactmechanism = party.contactmechanism
+    subscriber = party.subscriber
+    needtype = party.needtype
+    category = product.category
+    product = product.product
+    items = order.items
+
+class subscriptiontype(apriori.type):
+    """
+    Note that this is modeled after the SUBSCRIBER TYPE entity in "The
+    Data Model Resource Book Volume 2".
+    """
+    subscriptions = subscriptions
+
+class subscriptionactivity(orm.entity):
+    sent = datetime
+    comment = text
+
+class subscription_subscriptionactivity(orm.association)
+    """ Tracks the sending of ongonig information.
+
+    Note that this is modeled after the SUBSCRIPTION FULFILLMENT PIECE
+    entity in "The Data Model Resource Book Volume 2".
+    """
