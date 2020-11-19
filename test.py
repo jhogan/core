@@ -6319,8 +6319,8 @@ class test_orm(tester):
         # would be permenately mutated; meeting the needs of the `sql`
         # property, but not the needs of other clients.
         #
-        # The solution has been fixed, but this test will remain to
-        # ensure the problem dosen't arise again.
+        # The issue has been fixed, but this test will remain to ensure
+        # the problem dosen't arise again.
 
         arts = artists(orm.stream, firstname=uuid4().hex)
 

@@ -11,13 +11,7 @@
 
 # TODO Test streaming queries
 # TODO Test match/full-text queries
-# TODO Test eager loaded queries (I think)
-# TODO Test loading composites and associations
-# TODO Test updating composites and associations
-# TODO Test deleting composites and associations
-# TODO Test creating composites and associations
-# TODO Make it possible to create, retrieve, update and delete any
-# record with an override.
+# TODO Test eager-loaded queries (I think)
 
 import orm, tester, party, db
 from func import B

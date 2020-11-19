@@ -4916,10 +4916,6 @@ class orm:
     _namedict    =  dict()
     _proprietor  =  None
 
-    # TODO Change these to @classproperties. Currently,
-    # entities.classproperty provides a way to get class property but no
-    # way to set one. For possible implementations, see:
-    # https://stackoverflow.com/questions/5189699/how-to-make-a-class-property/38810649
     @classmethod
     def setproprietor(cls, v):
         cls._proprietor = v
