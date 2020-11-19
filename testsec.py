@@ -16,6 +16,12 @@
 import orm, tester, party, db
 from func import B
 
+class projects(orm.entities):
+    pass
+
+class project(orm.entity):
+    pass
+
 class systems(orm.entities):
     pass
 
@@ -63,13 +69,62 @@ class phreak(hacker):
 
     boxes = str
 
+class engineer_projects(orm.associations):
+    pass
+
+class engineer_project(orm.association):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.default('name', None)
+    name = str
+    engineer = engineer
+    project = project
+
 class proprietor(tester.tester):
     def __init__(self):
         super().__init__()
-        orm.orm.recreate(engineer, hacker, phreak, system)
+
+        orm.orm.recreate(
+            engineer,  hacker,   phreak,
+            system,    project,  engineer_project
+        )
+
         for e in orm.orm.getentitys(includeassociations=True):
             if e.__module__ in ('party', 'apriori'):
                 e.orm.recreate()
+
+    def it_creates_associations(self):
+        # Create some proprietors
+        tsla = party.company(name='Tesla')
+        ms = party.company(name='Microsoft')
+
+        orm.orm.setproprietor(tsla)
+        eng = engineer()
+        proj = project()
+        e_p = engineer_project(
+            project = proj
+        )
+
+        eng.engineer_projects += e_p
+
+        self.is_(tsla, e_p.proprietor)
+
+        eng.save()
+
+        eng = eng.orm.reloaded()
+        self.is_(tsla, eng.engineer_projects.last.proprietor)
+
+        proj = proj.orm.reloaded()
+        self.is_(tsla, proj.engineer_projects.last.proprietor)
+
+        self.expect(None, e_p.orm.reloaded)
+
+        orm.orm.setproprietor(ms)
+        self.expect(db.RecordNotFoundError, e_p.orm.reloaded)
+
+        e_p.name = 'x'
+        self.expect(orm.ProprietorError, e_p.save)
+        self.expect(orm.ProprietorError, e_p.delete)
 
     def it_cant_load_composite(self):
         engineers.orm.truncate()
@@ -943,6 +998,55 @@ class proprietor(tester.tester):
             self.eq(tsla.id, sup.proprietor.id)
             sup = sup.orm.super
 
-        
+    def it_streams_entities(self):
+        engineers.orm.truncate()
+
+        # Create some proprietors
+        tsla = party.company(name='Tesla')
+        ms = party.company(name='Microsoft')
+
+        # Create some Tesla engineers
+        orm.orm.setproprietor(tsla)
+        engs = engineers()
+        for i in range(2):
+            engs += engineer(
+                name   = f'Tesla engineer {i}',
+                skills = 'c++'
+            )
+
+        engs.save()
+
+        # Create some Microsoft engineers
+        orm.orm.setproprietor(ms)
+        for i in range(3):
+            engs += engineer(
+                name   = f'Microsoft engineer {i}',
+                skills = 'c++'
+            )
+
+        engs.save()
+
+        # Stream all engineers (normally we would just use
+        # `engineer.orm.all`)
+        engs = engineers(orm.allstream)
+
+        # NOTE It's important to test the count here because orm.count
+        # works different in streaming mode. It creates its own SELECT
+        # statement.
+        self.three(engs)
+
+        for eng in engs:
+            self.startswith(f'Microsoft engineer', eng.name)
+
+
+        orm.orm.setproprietor(tsla)
+
+        engs = engineers(orm.allstream)
+        self.two(engs)
+        for eng in engs:
+            self.startswith(f'Tesla engineer', eng.name)
+
+
+
 if __name__ == '__main__':
     tester.cli().run()
