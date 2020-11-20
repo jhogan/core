@@ -738,6 +738,47 @@ class proprietor(tester.tester):
         orm.orm.setproprietor(tsla)
         self.expect(orm.ProprietorError, eng1.save)
 
+    def it_eager_loads_constituents(self):
+        engineers.orm.truncate()
+
+        # Create some proprietors
+        tsla = party.company(name='Tesla')
+        ms = party.company(name='Microsoft')
+
+        # Create a Tesla engineers and the `system` s/he administors
+        orm.orm.setproprietor(tsla)
+        eng = engineer(name='Tesla engineer')
+        for i in range(3):
+            eng.systems += system(
+                name = f'Tesla system {i}',
+            )
+
+        eng.save()
+
+        # Create a Microsoft engineers and the `system` s/he administors
+        orm.orm.setproprietor(ms)
+        eng = engineer(name='Microsoft engineer')
+        for i in range(3):
+            eng.systems += system(
+                name = f'Microsoft system {i}',
+            )
+
+        eng.save()
+
+        for com in (ms, tsla):
+            orm.orm.setproprietor(com)
+            engs = engineers(
+                'name LIKE %s', '%engineer%', orm.eager('systems')
+            )
+
+            self.one(engs)
+
+            eng = engs.first
+
+            for sys in eng.systems:
+                self.startswith(f'{com.name} system', sys.name)
+
+
     def it_searches_subentities(self):
         engineers.orm.truncate()
         hackers.orm.truncate()
