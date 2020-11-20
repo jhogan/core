@@ -9,9 +9,9 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2020                 #
 ########################################################################
 
-# TODO Test streaming queries
 # TODO Test match/full-text queries
-# TODO Test eager-loaded queries (I think)
+# TODO Run full tests
+# TODO Comment all new changes
 
 import orm, tester, party, db
 from func import B

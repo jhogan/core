@@ -6348,13 +6348,12 @@ class test_orm(tester):
         self.eq(2, arts1.count)
 
     def it_raises_exception_when_innerjoin_stream_entities(self):
-        ''' Streaming and joins don't mix. An error should be thrown
-        if an attempt to stream joins is detected. The proper way 
-        to stream constituents would probably be with a getter, e.g.:
+        ''' Streaming and joins don't mix. An error should be thrown if
+        an attempt to stream joins is detected. The proper way to stream
+        constituents would probably be with a getter, e.g.:
 
             for fact in art.get_artifacts(orm.stream):
                 ...
-
         '''
 
         fns = (
@@ -13875,7 +13874,11 @@ class test_orm(tester):
                 self.notnone(loc1)
             
         # Eager-load two constituents
-        arts1 = artists(orm.eager('presentations.locations', 'presentations.components'))
+        arts1 = artists(
+            orm.eager(
+                'presentations.locations', 'presentations.components')
+            )
+        )
         self.one(arts1.orm.joins)
         self.two(arts1.orm.joins.first.entities.orm.joins)
         presjoins = arts1.orm.joins.first.entities.orm.joins

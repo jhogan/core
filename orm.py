@@ -1117,6 +1117,11 @@ class predicate(entitiesmod.entity):
 
     @staticmethod
     def isplaceholder(tok):
+        """ Returns True if `tok` is a placeholders. Examples of
+        placeholders are '%s' and '_binary %s'.
+
+        :param: str tok: The token to test.
+        """
         for intro in predicate.Introducers:
             if tok == f'{intro} %s':
                 return True
@@ -1440,9 +1445,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 args.append(_p2)
                 _p2 = None
 
-            # Look in *args for stream class or a stream object. If found, ensure
-            # the element is an instantiated stream and set it to self._stream.
-            # Delete the stream from *args.
+            # Look in *args for stream class or a stream object. If
+            # found, ensure the element is an instantiated stream and
+            # set it to self._stream.  Delete the stream from *args.
             for i, e in enumerate(args):
                 if e is stream:
                     self.orm.stream = stream()
@@ -1456,11 +1461,11 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                     e.join(to=self)
                     del args[i]
 
-            # The parameters express a conditional (predicate) if the first is
-            # a str, or the args and kwargs are not empty. Otherwise, the first
-            # parameter, `initial`, means an initial set of values that the
-            # collections should be set to.  The other parameters will be empty
-            # in that case.
+            # The parameters express a conditional (predicate) if the
+            # first is a str, or the args and kwargs are not empty.
+            # Otherwise, the first parameter, `initial`, means an
+            # initial set of values that the collections should be set
+            # to.  The other parameters will be empty in that case.
             iscond = type(initial) is str
             iscond = iscond or (initial is None and (_p2 or bool(args) or bool(kwargs)))
 
@@ -1473,9 +1478,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
                 self._preparepredicate(_p1, _p2, *args, **kwargs)
 
-                # Create joins to superentities where necessary if not in
-                # streaming mode. (Streaming does not support (and can't
-                # support) joins.)
+                # Create joins to superentities where necessary if not
+                # in streaming mode. (Streaming does not support (and
+                # can't support) joins.)
                 if not self.orm.isstreaming:
                     self.orm.joinsupers()
 
@@ -2664,6 +2669,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             crud = None
             sql, args = (None,) * 2
 
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # If we are modifying the record, the orm.proprietor matchs the
+        # record's proprietory. This ensures one party can't modify
+        # another's records.
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         if crud in ('update', 'delete'):
             if self.proprietor.id != orm.proprietor.id:
                 raise ProprietorError(self.proprietor)
@@ -4918,6 +4928,32 @@ class orm:
 
     @classmethod
     def setproprietor(cls, v):
+        """ Set ``v`` to orm's proprietor. Ensure that the propritor
+        entity owns itself.
+
+        Proprietors
+        ***********
+
+        The logic in the ORM's database interface will use the
+        orm.proprietor to provide multitenancy support.
+
+        When a proprietor is set, the ORM will ensure that all records
+        written to the database have their proprietor FK set to
+        orm.proprietor.id, meaning that the records will be the
+        *property* of the orm.proprietor. Only records owned by the
+        orm.proprietor will be read by orm query operations i.e.:
+
+            ent = entity(id)  # SELECT
+
+            (or)
+
+            ent.save()        # INSERT OR UPDATE
+            
+        When updating or deleting a record, the record must be owned by
+        by the orm.proprietor or else a ProprietorError will be raised.
+
+        :param: party.party v: The proprietor entity.
+        """
         cls._proprietor = v
 
         # The proprietor of the proprietor must be the proprietor:
@@ -5692,10 +5728,21 @@ class orm:
             raise
 
     def load(self, id):
+        """ Load an entity by ``id``.
+        """
+
+        # Create the basic SELECT query.
         sql = f'SELECT * FROM {self.table} WHERE id = _binary %s'
 
+        # Search on the `id`'s bytes.
         args = [id.bytes]
 
+        # If the ORM's proprietor has been set, search through self's
+        # foreign key mappings looking for its foreign key to its
+        # proprietor. Restrict the result set to only records where the
+        # proprietor's FK column matches the proprietor set at the ORM
+        # level. This restricts entity records not associated with
+        # orm.proprietor from being loaded.
         if orm.proprietor:
             for map in self.mappings.foreignkeymappings:
                 if map.fkname == 'proprietor':
@@ -5704,18 +5751,23 @@ class orm:
                     break
 
         ress = None
+
+        # Create a callable to execute the SQL
         def exec(cur):
             nonlocal ress
             cur.execute(sql, args)
             ress = db.dbresultset(cur)
 
+        # Create an executioner
         exec = db.executioner(exec)
 
+        # Bubble up the executioner's events
         exec.onbeforereconnect += \
             lambda src, eargs: self.instance.onbeforereconnect(src, eargs)
         exec.onafterreconnect  += \
             lambda src, eargs: self.instance.onafterreconnect(src, eargs)
 
+        # Run the query (this will invoke the `exec` callable above.
         exec.execute()
 
         # TODO We may want to reconsider raising an exception when a
@@ -5743,13 +5795,21 @@ class orm:
         #         if self._recordnotfound: raise RecordNotFoundError()
         #
 
+        # If the `id` exists, we should only get one record back from
+        # the database. If that's not the case, raise a
+        # db.RecordNotFoundError
         ress.demandhasone()
 
+        # We are only interested in the first
         res = ress.first
 
+        # Invoke the `onafterload` on self.instance passing in relevent
+        # arguments
         eargs = db.operationeventargs(self.instance, 'retrieve', sql, args)
         self.instance.onafterload(self.instance, eargs)
 
+        # Give the caller the record so it can populate itself with the
+        # data.
         return res
     
     def collect(self, orderby=None, limit=None, offset=None):
@@ -5890,6 +5950,11 @@ class orm:
         return s
 
     def parameterizepredicate(self, args):
+        """ In the where clause (``self.instance.orm.where``), look for
+        literals (i.e, WHERE COL = 'LITERAL'). Replace the literal with
+        a placeholder (%s) and add the literal value to args. Return the
+        new args.
+        """
         # Then number of args should be the same number of placeholders
         # that we find when iterating over the predicates.
         placeholders = len(args)
@@ -7414,7 +7479,16 @@ class InvalidStream(ValueError): pass
 class ConfusionError(ValueError): pass
 
 class ProprietorError(ValueError):
+    """ An error caused by the proprietor not being set correctly for
+    the given operation.
+
+    """
     def __init__(self, actual, expected=None):
+        """ Initialize the exception.
+
+        :param: paryt.party actual: The proprietor that is being used.
+        :param: paryt.party expected: The proprietor that was expected.
+        """
         self.actual = actual
         self._expected = expected
 
