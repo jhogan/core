@@ -209,6 +209,7 @@ class user(orm.entity):
 
     histories = histories
     preferences = preferences
+    hits = hits
 
 class history(orm.entity):
     """ Used to store a history of the logins and passwords.
@@ -377,7 +378,57 @@ class subscriptionactivity(orm.entity):
 
 class subscription_subscriptionactivity(orm.association)
     """ Tracks the sending of ongonig information.
-
-    Note that this is modeled after the SUBSCRIPTION FULFILLMENT PIECE
+Note that this is modeled after the SUBSCRIPTION FULFILLMENT PIECE
     entity in "The Data Model Resource Book Volume 2".
+    """
+
+class visit(orm.entity):
+    """ A ``visit`` is a session on a web site that consists of
+    a collection of server ``hits`` that ar related vi the information
+    and rules surrounding a ``visit``. 
+
+    A visit may result in one or more orders.
+    """
+
+    # The span of time in which the visit takes place
+    span = datetime
+
+    # A string that helps identify the machine that was used for the
+    # connection.
+    cookie = str
+
+    hits = hits
+
+class hit(orm.entity):
+    """
+    Note that this is modeled after the SERVER HIT entity in "The Data
+    Model Resource Book Volume 2".
+    """
+
+class hitstatustype(apriori.type):
+    """
+    Note that this is modeled after the SERVER HIT STATUS TYPE entity in
+    "The Data Model Resource Book Volume 2".
+    """
+
+class electronicaddress(party.contactmechanism):
+    pass
+
+class ip(electronicaddress):
+    """
+    Note that this is modeled after the IP ADDRESS entity in "The Data
+    Model Resource Book Volume 2".
+    """
+    address = str
+
+class useragent(orm.entity):
+    """
+    Note that this is modeled after the USER AGENT entity in "The Data
+    Model Resource Book Volume 2".
+    """
+
+class useragenttype(apriori.type):
+    """
+    Note that this is modeled after the USER AGENT TYPE entity in "The
+    Data Model Resource Book Volume 2".
     """
