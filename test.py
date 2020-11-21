@@ -13025,14 +13025,16 @@ class test_orm(tester):
 
         arts.save()
 
-        # Query where composite and constituent have one MATCH clase each
+        # Query where composite and constituent have one MATCH clase
+        # each
         arts1 = artists("match(bio) against ('%s')" % artkeywords[0], ()).join(
             artifacts(
                 "match(title, description) against ('%s')" %  factkeywords[0], ()
             )
         )
 
-        # Query where composite and constituent have two MATCH clase each
+        # Query where composite and constituent have two MATCH clauses
+        # each
         artmatch = (
             "MATCH(bio) AGAINST ('%s') OR "
             "MATCH(bio) AGAINST ('%s')"
@@ -13876,7 +13878,7 @@ class test_orm(tester):
         # Eager-load two constituents
         arts1 = artists(
             orm.eager(
-                'presentations.locations', 'presentations.components')
+                'presentations.locations', 'presentations.components'
             )
         )
         self.one(arts1.orm.joins)

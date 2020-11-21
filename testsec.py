@@ -9,7 +9,6 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2020                 #
 ########################################################################
 
-# TODO Test match/full-text queries
 # TODO Run full tests
 # TODO Comment all new changes
 

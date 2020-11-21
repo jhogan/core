@@ -5951,10 +5951,19 @@ class orm:
 
     def parameterizepredicate(self, args):
         """ In the where clause (``self.instance.orm.where``), look for
-        literals (i.e, WHERE COL = 'LITERAL'). Replace the literal with
-        a placeholder (%s) and add the literal value to args. Return the
-        new args.
+        literals, i.e.::
+
+            WHERE COL = 'LITERAL'
+        
+        Replace the literal with a placeholder (%s) and add the literal
+        value to args:: 
+            
+            WHERE COL = '%s'
+            args = ['LITERAL']
+        
+        Return the new args.
         """
+
         # Then number of args should be the same number of placeholders
         # that we find when iterating over the predicates.
         placeholders = len(args)
