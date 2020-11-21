@@ -5972,7 +5972,10 @@ class orm:
 
         for pred in self.instance.orm.where.predicate:
             if pred.match:
-                if not pred.match.searchstringisplaceholder:
+                if pred.match.searchstringisplaceholder:
+                    r.append(args.pop(0))
+                    placeholders1 += 1
+                else:
                     r.append(pred.match.searchstring)
                     pred.match.searchstring = '%s';
             else:

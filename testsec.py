@@ -48,6 +48,8 @@ class engineer(orm.entity):
     skills = str
 
     systems = systems
+    
+    bio = str, orm.fulltext
 
 class hackers(engineers):
     pass
@@ -1086,7 +1088,67 @@ class proprietor(tester.tester):
         for eng in engs:
             self.startswith(f'Tesla engineer', eng.name)
 
+    def it_searches_entities_using_fulltext_index(self):
+        engineers.orm.truncate()
 
+        # Create some proprietors
+        tsla = party.company(name='Tesla')
+        ms = party.company(name='Microsoft')
+
+        # Create some Tesla engineers
+        orm.orm.setproprietor(tsla)
+        engs = engineers()
+        for i in range(3):
+            engs += engineer(
+                name   = f'Tesla engineer {i}',
+                skills = 'c++',
+                bio = self.dedent('''
+                I enjoy  designing digital communication busses
+                (CAN, Ethernet, RS-485, USB, SPI, I2C, etc
+                ''')
+            )
+
+        engs.save()
+
+        # Create some Microsoft engineers
+        orm.orm.setproprietor(ms)
+        for i in range(3):
+            engs += engineer(
+                name   = f'Microsoft engineer {i}',
+                skills = 'c++',
+                bio = self.dedent('''
+                Ability to use machine learning algorithms for
+                classification, regression, forecasting, reinforcement
+                learning, anomaly detection for a user facing
+                product, etc
+                ''')
+            )
+
+        engs.save()
+
+        for com in tsla, ms:
+            orm.orm.setproprietor(com)
+            search = 'machine learning' if com is ms else 'USB'
+            
+            engs = engineers('match(bio) against (%s)', search)
+            self.three(engs)
+
+            # Test conjuction (both bio's have 'etc')
+            engs = engineers(
+                'match(bio) against (%s) and match(bio) against(%s)', 
+                search, 'etc'
+            )
+            self.three(engs)
+
+            engs = engineers(
+                'match(bio) against (%s) and skills = %s',
+                search, 'c++'
+            )
+            self.three(engs)
+
+            search = 'USB' if com is ms else 'machine learning'
+            engs = engineers('match(bio) against (%s)', search)
+            self.zero(engs)
 
 if __name__ == '__main__':
     tester.cli().run()
