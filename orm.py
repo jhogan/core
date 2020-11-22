@@ -5236,6 +5236,9 @@ class orm:
 
         for cls in clss:
             self.instance.outerjoin(cls, inferassociation=False)
+            j = self.instance.orm.joins.last
+
+            j.entities.orm.joinsubs()
 
     def truncate(self, cur=None):
         # TODO Use executioner

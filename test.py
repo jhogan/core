@@ -7662,6 +7662,7 @@ class test_orm(tester):
         art.presentations += presentation.getvalid()
         art.presentations += concert.getvalid()
         art.presentations += exhibition.getvalid()
+        art.presentations += unveiling.getvalid()
 
         art.save()
 
@@ -7671,14 +7672,41 @@ class test_orm(tester):
 
         with self._chrontest() as t:
             press1 = t.run(lambda: art1.presentations)
-            B()
-            t.retrieved(art1)
+            t.retrieved(press1)
 
-        
         press1.sort()
 
-        self.three(press)
-        self.three(press1)
+        self.four(press)
+        self.four(press1)
+
+        for pres, pres1 in zip(press, press1):
+            self.eq(pres.id, pres1.id)
+            self.type(type(pres), pres1)
+
+    def it_loads_specialized_entity_objects(self):
+        press = presentations()
+        press += presentation.getvalid()
+        press += concert.getvalid()
+        press += exhibition.getvalid()
+        press += unveiling.getvalid()
+
+        name = uuid4().hex
+        for pres in press:
+            pres.name = name
+
+        press.save()
+
+        press1 = presentations(name=name)
+
+        with self._chrontest() as t:
+            t(lambda: press1.sort())
+            t.retrieved(press1)
+        
+        press.sort()
+        press1.sort()
+
+        self.four(press)
+        self.four(press1)
 
         for pres, pres1 in zip(press, press1):
             self.eq(pres.id, pres1.id)
