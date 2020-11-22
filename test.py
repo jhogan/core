@@ -7644,13 +7644,18 @@ class test_orm(tester):
             for pres in art.presentations:
                 self.is_(art, pres.artist)
 
-    def it_loads_and_saves_entities_constituents_with_subentities(self):
+    def it_loads_specialized_constiuents(self):
+        """ Ensure that when loading constituents, the most specialized
+        entity objects are made available.
+        """
+
         # TODO Write another unit test to load a collection by itself:
         #
         #     press = presentation(name='derp')
         #     self.type(concert, type(press.first))
 
         # TODO Test with streaming
+
         
         art = artist.getvalid()
 
@@ -7776,7 +7781,7 @@ class test_orm(tester):
         self.ne(art1.id, art.id)
 
         # Test deeply-nested (>2)
-        # Set entity constuents, save, load, test
+        # Set entity constituents, save, load, test
        
         loc = location.getvalid()
         self.none(loc.presentation)
@@ -11392,7 +11397,7 @@ class test_orm(tester):
         self.ne(sng1.id, sng.id)
 
         # Test deeply-nested (>2)
-        # Set entity constuents, save, load, test
+        # Set entity constituents, save, load, test
        
         loc = location.getvalid()
         self.none(loc.presentation)
@@ -11524,7 +11529,7 @@ class test_orm(tester):
         self.ne(rpr1.id, rpr.id)
 
         # Test deeply-nested (>2)
-        # Set entity constuents, save, load, test
+        # Set entity constituents, save, load, test
        
         loc = location.getvalid()
         self.none(loc.presentation)
@@ -11665,7 +11670,7 @@ class test_orm(tester):
         self.ne(sng1.id, sng.id)
 
         # TODO Test deeply-nested (>2)
-        # Set entity constuents, save, load, test
+        # Set entity constituents, save, load, test
 
         # TODO We need to answer the question should loc.concert exist.
         # concert().locations exists, so it would seem that the answer
@@ -24609,7 +24614,7 @@ class pom_page(tester):
         # Snapshop of main tag should only include a few elements
         self.five(pg._main_snapshot.all)
 
-        # The snapshop of the page's html will be a full document (i.e.,
+        # The snapshot of the page's html will be a full document (i.e.,
         # it starts with <html>). However, since the page object hasn't
         # been attached to a site object (it will be below), the site
         # specific HTML (the <head> tag and the page <header> can not be

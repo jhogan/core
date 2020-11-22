@@ -1535,7 +1535,6 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
         will result in a SELECT statement similar to:
 
-
             SELECT *
             FROM artists
             INNER JOIN artist_artifacts AS aa
@@ -6982,12 +6981,12 @@ class associations(entities):
                     # entity to mark it for removal from the database.
                     # However, this would mean that removing an
                     # association from the db would cause the
-                    # constitutent (artifact) object to removed from the
+                    # constituents (artifact) object to removed from the
                     # db (cascading deletes). This is not what we want:
                     # We should be able to delete as association between
                     # two entity object without deleting the entities
                     # themselves.  pop()ing the entity off the trash
-                    # collection will prevent the constitutent from
+                    # collection will prevent the constituents from
                     # being deleted.
 
                     # Commenting out until it_removes_*_associations is
@@ -7057,7 +7056,7 @@ class associations(entities):
 
                         if e and e.id == eargs.entity.id:
                             # eargs.entity already exists as a
-                            # constitutent entity in this collection of
+                            # constituents entity in this collection of
                             # associations. There is no need to add it
                             # again.
                             return
