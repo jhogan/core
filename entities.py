@@ -922,7 +922,22 @@ class entity():
             # args to the default setattr(), so we need a way to work
             # around this limition (perhaps pass in a custom `setattr`
             # function).
-            setattr(self, field, new)
+            # XXX
+            if setattr is builtins.setattr:
+                try:
+                    self.__setattr__(field, new, cmp=cmp)
+                except TypeError as ex:
+                    msg = (
+                        "wrapper __setattr__ doesn't take "
+                        "keyword arguments"
+                    )
+
+                    if ex.args[0] == msg:
+                        setattr(self, field, new)
+                    else:
+                        raise
+            else:
+                setattr(self, field, new)
 
             if hasattr(self, 'onaftervaluechange'):
                 eargs = entityvaluechangeeventargs(self, prop)
