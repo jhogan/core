@@ -6338,6 +6338,7 @@ class test_orm(tester):
             for fact in art.get_artifacts(orm.stream):
                 ...
 
+        However, this has not been implemented.
         '''
 
         fns = (
@@ -6369,19 +6370,20 @@ class test_orm(tester):
                 arts.last.lastname = lastname
                 arts.last.save()
 
-            # Create a streamed artists collection where lastname is the same as
-            # the artists created above. Set chunksize to a very low value of 2 so
-            # the test isn't too slow. Order by id so the iteration test
-            # below can be preformed correctly.
+            # Create a streamed artists collection where lastname is the
+            # same as the artists created above. Set chunksize to a very
+            # low value of 2 so the test isn't too slow. Order by id so
+            # the iteration test below can be preformed correctly.
             stm = orm.stream(chunksize=2)
             arts1 = artists(stm, lastname=lastname).sorted()
 
-            # Ensure streamed collection count matches non-streamed count
+            # Ensure streamed collection count matches non-streamed
+            # count
             self.eq(arts1.count, arts.count)
 
-            # Iterate over the streamed collection and compare it two the
-            # non-streameed artists collections above. Do this twice so we know
-            # __iter__ resets itself correctly.
+            # Iterate over the streamed collection and compare it two
+            # the non-streameed artists collections above. Do this twice
+            # so we know __iter__ resets itself correctly.
             arts.sort()
             for _ in range(2):
                 j = -1
@@ -6391,8 +6393,8 @@ class test_orm(tester):
 
                 self.eq(i, j + 1)
 
-        # Ensure that interation works after fetching an element from a chunk
-        # that comes after the first chunk.
+        # Ensure that interation works after fetching an element from a
+        # chunk that comes after the first chunk.
         arts1[i - 1] # Don't remove
         self.eq(arts1.count, len(list(arts1)))
 
@@ -6666,8 +6668,8 @@ class test_orm(tester):
             arts.last.lastname = lastname
             arts.last.save()
 
-        # Test sorting on None - which means: 'sort on id', since id is the
-        # default.  Then sort on firstname
+        # Test sorting on None - which means: 'sort on id', since id is
+        # the default.  Then sort on firstname
         for sort in None, 'firstname':
             for reverse in None, False, True:
                 arts.sort(sort, reverse)
@@ -7649,14 +7651,6 @@ class test_orm(tester):
         entity objects are made available.
         """
 
-        # TODO Write another unit test to load a collection by itself:
-        #
-        #     press = presentation(name='derp')
-        #     self.type(concert, type(press.first))
-
-        # TODO Test with streaming
-
-        
         art = artist.getvalid()
 
         art.presentations += presentation.getvalid()
@@ -7703,7 +7697,6 @@ class test_orm(tester):
             t.retrieved(press1)
         
         press.sort()
-        press1.sort()
 
         self.four(press)
         self.four(press1)
