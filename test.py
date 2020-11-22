@@ -7705,6 +7705,29 @@ class test_orm(tester):
             self.eq(pres.id, pres1.id)
             self.type(type(pres), pres1)
 
+    def it_streams_specialized_entity_objects(self):
+        press = presentations()
+        press += presentation.getvalid()
+        press += concert.getvalid()
+        press += exhibition.getvalid()
+        press += unveiling.getvalid()
+
+        name = uuid4().hex
+        for pres in press:
+            pres.name = name
+
+        press.save()
+
+        press1 = presentations(orm.stream, name=name)
+
+        self.four(press)
+        self.four(press1)
+
+        for i, pres1 in press1.enumerate():
+            pres = press[pres1.id]
+            self.eq(pres.id, pres1.id)
+            self.type(type(pres), pres1)
+
     def it_updates_entity_constituents_properties(self):
         chrons = self.chronicles
         art = artist.getvalid()
