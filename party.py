@@ -1484,7 +1484,6 @@ class prospect(consumer):
     Data Model Resource Book Volume 2".
     """
     
-
 class customer(role):
     """ A role indicating a party that has purchased, been shipped, or
     used products from an enterprise. Subtypes of the customer role
@@ -1500,7 +1499,6 @@ class billto(customer):
     Data Model Resource Book".
     """ 
     entities = billtos
-
 
 class placing(customer):
     """ A role indicating a party that has places an order to another

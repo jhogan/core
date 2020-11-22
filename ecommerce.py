@@ -148,6 +148,8 @@ class content(orm.entity):
 
     contentroles = contentroles
 
+    hits = hits
+
 class content_content(orm.association):
     """ Associates one web ``content`` with another.
     Web ``content`` is often related to other web ``content``. For
@@ -384,7 +386,7 @@ Note that this is modeled after the SUBSCRIPTION FULFILLMENT PIECE
 
 class visit(orm.entity):
     """ A ``visit`` is a session on a web site that consists of
-    a collection of server ``hits`` that ar related vi the information
+    a collection of server ``hits`` that ar related via the information
     and rules surrounding a ``visit``. 
 
     A visit may result in one or more orders.
@@ -400,35 +402,88 @@ class visit(orm.entity):
     hits = hits
 
 class hit(orm.entity):
-    """
+    """ Records the particular web site page or object that was hit.
     Note that this is modeled after the SERVER HIT entity in "The Data
     Model Resource Book Volume 2".
     """
 
+    # The size, in bytes, of the response. 
+    size = int
+
+    ip = ip
+
+    address = address
+
 class hitstatustype(apriori.type):
-    """
+    """ Records status information about the ``hit`` - for example if a
+    requested file if a server ``hit`` was sucessfully retrieved or if
+    the file was not found.
+
     Note that this is modeled after the SERVER HIT STATUS TYPE entity in
     "The Data Model Resource Book Volume 2".
     """
+    hits = hits
 
 class electronicaddress(party.contactmechanism):
     pass
 
 class ip(electronicaddress):
-    """
+    """ Records the address of a web client.
+
     Note that this is modeled after the IP ADDRESS entity in "The Data
     Model Resource Book Volume 2".
     """
     address = str
 
 class useragent(orm.entity):
-    """
+    """ Describes the mechanism, such as protocol, platform, browser,
+    and operating system, that is used in a server ``hit``.
+
     Note that this is modeled after the USER AGENT entity in "The Data
     Model Resource Book Volume 2".
     """
+    hits = hits
 
 class useragenttype(apriori.type):
     """
     Note that this is modeled after the USER AGENT TYPE entity in "The
     Data Model Resource Book Volume 2".
     """
+    useragents = useragents
+
+class platformtype(apriori.type):
+    """ Defines the version of what operating system the ``useragent``
+    is running on such as "Windows 98", "Windows 2000" or "Unix".
+
+    Note that this is modeled after the PLATFORM TYPE entity in "The
+    Data Model Resource Book Volume 2".
+    """
+    useragents = useragents
+
+class browsertype(apriori.type):
+    """ The ``browsertype`` reveals the name and version of the browser
+    (i.e., Netscape, Internet Explorer, Infobot, etc.). 
+
+    Note that this is modeled after the BROWSER TYPE entity in "The
+    Data Model Resource Book Volume 2".
+    """
+    useragents = useragents
+
+class protocol(apriori.type):
+    """ The protocol used in a server ``hit``. Examples would include
+    HTTP, HTTPS, FTP.
+
+    Note that this is modeled after the PROTOCOL TYPE entity in "The
+    Data Model Resource Book Volume 2".
+    """
+    useragents = useragents
+
+class method(apriori.type):
+    """ The HTTP method used in the server hit. Example include GET,
+    POST and DELETE.
+
+    Note that this is modeled after the USER AGENT METHOD TYPE entity in
+    "The Data Model Resource Book Volume 2".
+    """
+
+    useragents = useragents
