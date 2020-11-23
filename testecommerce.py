@@ -139,14 +139,10 @@ class test_ecommerce(tester.tester):
         need.save()
 
         need1 = need.orm.reloaded()
-        B()
 
         self.eq(need.id, need1.id)
         self.eq(need.needtype.id, need1.needtype.id)
         self.eq(need.communication.id, need1.communication.id)
-
-
-
 
 if __name__ == '__main__':
     tester.cli().run()

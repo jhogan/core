@@ -1465,10 +1465,6 @@ class partyroletype(roletype):
 
 # TODO Add ``familial`` and ``contact`` subtypes to personal(role).
 
-class subscriber(role)
-    """
-    """
-
 class consumer(role):
     """ A party who may be or has been involved in the purchase of the
     enterprise's services. Thi could include `ecommerce.subscriber`,

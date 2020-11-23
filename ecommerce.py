@@ -25,39 +25,54 @@ from dbg import B
 from decimal import Decimal as dec
 from orm import text, timespan, datespan
 import orm
-import party, apriori, product
+import party, apriori, product, order
 
-class agents(party.parties):                   pass
-class webmasters(party.personals):             pass
-class isps(party.organizationals):             pass
-class visitors(party.consumers):               pass
-class subscribers(party.consumers):            pass
-class referrers(party.roles):                  pass
-class agentroles(party.roles):                 pass
-class hostingservers(agentroles):              pass
-class webmasterassignments(party.role_roles):  pass
-class visitorisps(party.role_roles):           pass
-class hostservervisitors(party.role_roles):    pass
-class contents(orm.entities):                  pass
-class content_contents(orm.associations):      pass
-class contenttypes(apriori.types):          pass
-class contentroles(orm.entities):              pass
-class contentstatustypes(apriori.types):       pass
-class users(orm.entities):                     pass
-class histories(orm.entities):                 pass
-class preferences(orm.entities):               pass
-class addresses(orm.entities):                pass
-class objects(orm.entities):                pass
-class texts(objects):                pass
-class images(objects):                pass
-class others(objects):                pass
-class object_products(orm.associations):                pass
-class feature_objects(orm.associations):                pass
-class party_objects(orm.associations):                pass
-class content_objects(orm.associations):                pass
-class purposetypes(apriori.types):                pass
-class object_purposes(orm.associations):                pass
-class objecttypes(apriori.types):                pass
+class agents(party.parties):                                  pass
+class webmasters(party.personals):                            pass
+class isps(party.organizationals):                            pass
+class visitors(party.consumers):                              pass
+class subscribers(party.consumers):                           pass
+class referrers(party.roles):                                 pass
+class agentroles(party.roles):                                pass
+class hostingservers(agentroles):                             pass
+class webmasterassignments(party.role_roles):                 pass
+class visitorisps(party.role_roles):                          pass
+class hostservervisitors(party.role_roles):                   pass
+class contents(orm.entities):                                 pass
+class content_contents(orm.associations):                     pass
+class contenttypes(apriori.types):                            pass
+class contentroles(orm.entities):                             pass
+class contentstatustypes(apriori.types):                      pass
+class users(orm.entities):                                    pass
+class histories(orm.entities):                                pass
+class preferences(orm.entities):                              pass
+class addresses(orm.entities):                                pass
+class objects(orm.entities):                                  pass
+class texts(objects):                                         pass
+class images(objects):                                        pass
+class others(objects):                                        pass
+class object_products(orm.associations):                      pass
+class feature_objects(orm.associations):                      pass
+class party_objects(orm.associations):                        pass
+class content_objects(orm.associations):                      pass
+class purposetypes(apriori.types):                            pass
+class object_purposes(orm.associations):                      pass
+class objecttypes(apriori.types):                             pass
+class subscriptions(orm.entities):                            pass
+class subscriptiontypes(apriori.types):                       pass
+class subscriptionactivities(orm.entities):                   pass
+class subscription_subscriptionactivities(orm.associations):  pass
+class visits(orm.entities):                                   pass
+class hits(orm.entities):                                     pass
+class hitstatustypes(apriori.types):                          pass
+class electronicaddresses(party.contactmechanisms):           pass
+class ips(electronicaddresses):                               pass
+class useragents(orm.entities):                               pass
+class useragenttypes(apriori.types):                          pass
+class platformtypes(apriori.types):                           pass
+class browsertypes(apriori.types):                            pass
+class protocols(apriori.types):                               pass
+class methods(apriori.types):                                 pass
 
 class agent(party.party):
     """ Tracks the activities of automated entities such as spiders, web
@@ -347,7 +362,7 @@ class objecttype(apriori.type):
     objects = objects
 
 class subscription(orm.entity):
-    """ A subscription that a subscriber (``party.subscriber``) has
+    """ A subscription that a subscriber (``subscriber``) has
     concerning a product (``product.product``), ``product.category``, or
     certain party.needs.
 
@@ -361,7 +376,7 @@ class subscription(orm.entity):
     needs = party.needs
     communication = party.communication
     contactmechanism = party.contactmechanism
-    subscriber = party.subscriber
+    subscriber = subscriber
     needtype = party.needtype
     category = product.category
     product = product.product
@@ -378,10 +393,10 @@ class subscriptionactivity(orm.entity):
     sent = datetime
     comment = text
 
-class subscription_subscriptionactivity(orm.association)
-    """ Tracks the sending of ongonig information.
-Note that this is modeled after the SUBSCRIPTION FULFILLMENT PIECE
-    entity in "The Data Model Resource Book Volume 2".
+class subscription_subscriptionactivity(orm.association):
+    """ Tracks the sending of ongonig information.  Note that this is
+    modeled after the SUBSCRIPTION FULFILLMENT PIECE entity in "The Data
+    Model Resource Book Volume 2".
     """
 
 class visit(orm.entity):
@@ -410,8 +425,6 @@ class hit(orm.entity):
     # The size, in bytes, of the response. 
     size = int
 
-    ip = ip
-
     address = address
 
 class hitstatustype(apriori.type):
@@ -434,6 +447,7 @@ class ip(electronicaddress):
     Model Resource Book Volume 2".
     """
     address = str
+    hits = hits
 
 class useragent(orm.entity):
     """ Describes the mechanism, such as protocol, platform, browser,
