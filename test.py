@@ -3850,6 +3850,9 @@ class test_orm(tester):
         artist.orm.recreate(recursive=True)
         comment.orm.recreate()
 
+        com = party.company(name='Carpacian')
+        orm.orm.setproprietor(com)
+        com.save(com)
         # Inject a reference to the self._chrontest context manager into
         # each test method as 'ct'. This will make testing chronicles
         # easier to type.
@@ -17153,6 +17156,10 @@ class gem_party(tester):
             if e.__module__ == 'party':
                 e.orm.recreate()
 
+        com = party.company(name='Carpacian')
+        orm.orm.setproprietor(com)
+        com.save(com)
+
     @staticmethod
     def getvalid(first=None, last=None):
         per = party.person()
@@ -19240,6 +19247,10 @@ class gem_product(tester):
             if e.__module__ in ('product', ):
                 e.orm.recreate()
 
+        com = party.company(name='Carpacian')
+        orm.orm.setproprietor(com)
+        com.save(com)
+
     @staticmethod
     def getvalid(type=None, comment=1000):
         if type is None:
@@ -20951,6 +20962,10 @@ class gem_case(tester):
             party.statuses,
         )
 
+        com = party.company(name='Carpacian')
+        orm.orm.setproprietor(com)
+        com.save(com)
+
     def it_raises_on_invalid_call_of_casesstatus(self):
         self.expect(ValueError, lambda: party.casestatus('Active'))
         self.expect(None, lambda: party.casestatus(name='Active'))
@@ -21107,6 +21122,10 @@ class gem_order(tester):
         for e in orm.orm.getentitys(includeassociations=True):
             if e.__module__ in ('order', 'party', 'product',):
                 e.orm.recreate()
+
+        com = party.company(name='Carpacian')
+        orm.orm.setproprietor(com)
+        com.save(com)
 
     def it_creates_salesorder(self):
         ''' Create products '''
@@ -21881,6 +21900,10 @@ class gem_shipment(tester):
             if e.__module__ in ('shipment', 'order'):
                 e.orm.recreate()
 
+        com = party.company(name='Carpacian')
+        orm.orm.setproprietor(com)
+        com.save(com)
+
     def it_creates(self):
         sh = shipment.shipment(
             estimatedshipat = primative.date('May 6, 2001'),
@@ -22301,6 +22324,10 @@ class gem_effort(tester):
                 'effort', 'apriori', 'party', 'asset', 'order'
             ):
                 e.orm.recreate()
+
+        com = party.company(name='Carpacian')
+        orm.orm.setproprietor(com)
+        com.save(com)
 
     def it_creates_requirements(self):
         req = apriori.requirement(
@@ -23080,6 +23107,10 @@ class gem_invoice(tester):
             if e.__module__ in ('invoice', 'party', 'apriori'):
                 e.orm.recreate()
 
+        com = party.company(name='Carpacian')
+        orm.orm.setproprietor(com)
+        com.save(com)
+
     def it_creates_items(self):
         # Create products
         paper = product.good(name='Johnson fine grade 8½ by 11 paper')
@@ -23456,6 +23487,10 @@ class gem_account(tester):
             account.depreciationmethod,
         )
 
+        com = party.company(name='Carpacian')
+        orm.orm.setproprietor(com)
+        com.save(com)
+
     def it_creates_accounts(self):
         accts = account.accounts()
 
@@ -23708,6 +23743,10 @@ class gem_budget(tester):
         for e in orm.orm.getentitys(includeassociations=True):
             if e.__module__ in ('apriori', 'budget', 'party'):
                 e.orm.recreate()
+
+        com = party.company(name='Carpacian')
+        orm.orm.setproprietor(com)
+        com.save(com)
 
     def it_creates(self):
         # Create a budget and assign it a budgettype
