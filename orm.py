@@ -3461,11 +3461,11 @@ class mappings(entitiesmod.entities):
             # `self` later.
             maps = list()
 
-            # TODO Remove this test
+            # TODO:2b619f6f Remove this test
             if 'proprietor' not in self:
                 from party import party
 
-                # TODO Do we need isderived=True
+                # TODO:f9a3239c Do we need isderived=True
                 self += entitymapping(
                     'proprietor', party, isderived=True
                 )
@@ -3788,6 +3788,7 @@ class mapping(entitiesmod.entity):
         """ Returns True if this is a standard field mapping applied by
         the entitymeta.
         """
+        #  TODO Add 'proprietor'
         return self.name in ('id', 'createdat', 'updatedat')
 
     def isdefined(self):
@@ -4750,7 +4751,8 @@ class foreignkeyfieldmapping(fieldmapping):
 
     @property
     def fkname(self):
-        """ Return the name of the entity that this map corresponds. """
+        """ Return the name of the entity mapping that this map
+        corresponds. """
         return self._fkname
 
     def clone(self):
