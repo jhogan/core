@@ -39,6 +39,7 @@ class engineer(orm.entity):
         super().__init__(*args, **kwargs)
         self.orm.default('name', None)
         self.orm.default('skills', None)
+        self.orm.default('bio', None)
 
     name = str
     @classmethod
