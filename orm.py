@@ -2569,7 +2569,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 e = v.orm.entity
                 while True:
                     for map in self.orm.mappings.foreignkeymappings:
-                        if map.entity is e:
+                        fkname, e1 = map.fkname, map.entity
+                        if e1 is e and (not fkname or attr == fkname):
                             if self.orm.isreflexive:
                                 if map.name.startswith(attr + '__'):
                                     self._setvalue(
