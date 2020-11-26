@@ -3676,6 +3676,9 @@ class issue(orm.entity):
     assignee  =  str
     timelogs  =  timelogs
     comments  =  comments
+    creator1  =  artist
+    creator2  =  artist
+    party     =  party.party
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -3955,6 +3958,35 @@ class test_orm(tester):
             cnt += int(chron.op not in ('reconnect',))
             
         self.eq(t.count, cnt, msg)
+
+    def it_has_two_entity_references_of_same_type(self):
+        # Make sure that issue is still set up to have assignee and
+        # assigener of the same type
+        i = 0
+        for map in issue.orm.mappings.foreignkeymappings:
+            if map.entity is artist:
+                if map.fkname in ('creator1', 'creator2'):
+                    i = i + 1
+        self.eq(2, i)
+
+        i = 0
+        for map in issue.orm.mappings.entitymappings:
+            if map.entity is artist:
+                if map.name in ('creator1', 'creator2'):
+                    i = i + 1
+        self.eq(2, i)
+
+        iss = issue.getvalid()
+        iss.creator1 = artist.getvalid()
+        iss.creator2 = artist.getvalid()
+        iss.party = party.person(name='Party')
+
+        iss.save()
+        iss1 = iss.orm.reloaded()
+
+        self.eq(iss.creator1.id, iss1.creator1.id)
+        self.eq(iss.creator2.id, iss1.creator2.id)
+        self.eq(iss.party.id, iss1.party.id)
 
     def it_migrates(self):
         def migrate(cat, expect):
