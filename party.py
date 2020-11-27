@@ -1221,6 +1221,8 @@ class role(orm.entity):
         # Each (party) role may be described by one and only one
         # `partyroletype`. TODO Write validation rule for this.
         name = builtins.type(self).__name__
+
+        # TODO:9f3a86e4 Remove this
         self.partyroletype = partyroletype(name=name)
 
     # The datespan through which this role is valid. This timespan may
@@ -1424,6 +1426,7 @@ class worker(personal):
 class manager(personal):
     """ A party role representing a manager.
     """
+
 class employee(worker):
     """ A party role implying legal employment with an enterprise.
     """
@@ -1431,7 +1434,6 @@ class employee(worker):
 class contractor(worker):
     """ A worker role implying a contractor.
     """
-
 
 # TODO Add subtypes of ``organizational``: (distribution) ``channel``,
 # ``partner``, ``competitor``, ``household`, (regulatory) ``agency`` and
@@ -1465,6 +1467,8 @@ class partyroletype(roletype):
     # relationship on the party_contactmechanisms association, however
     # that relationship type is not currently supported. 
     # party_contactmechanisms = party_contactmechanisms
+    
+    # TODO:9f3a86e4 Add collection of roles (``roles = roles``)
 
 # TODO Add ``familial`` and ``contact`` subtypes to personal(role).
 

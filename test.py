@@ -3856,7 +3856,7 @@ class test_orm(tester):
 
         com = party.company(name='Carpacian')
         orm.orm.setproprietor(com)
-        com.save(com)
+        com.save()
         # Inject a reference to the self._chrontest context manager into
         # each test method as 'ct'. This will make testing chronicles
         # easier to type.
@@ -23845,6 +23845,10 @@ class gem_hr(tester):
             if e.__module__ in ('party', 'hr', 'apriori', 'invoice'):
                 e.orm.recreate()
 
+        com = party.company(name='Carpacian')
+        orm.orm.setproprietor(com)
+        com.save(com)
+
     def it_creates_position(self):
         pos = self.getvalidposition()
         pos.save()
@@ -24447,8 +24451,8 @@ class gem_hr(tester):
         # Assign the employment role to the person
         per.roles += emp
 
-        # Associate the emp role with int role, creating the employment
-        # relationship
+        # Associate the emp role with internal role (int), creating the
+        # employment relationship
         emp.role_roles += hr.employeement(
             object = int
         )
