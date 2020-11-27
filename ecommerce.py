@@ -9,6 +9,12 @@
 """ This module contains ``orm.entity`` objects related to the tracking
 of ecommerce data.
 
+The object models within this module are focused on the unique data
+model constructs needed to maintain e-commerce specific information.
+Perhaps the most important are those that capture the information
+requirements about the ``visitor``, ``content``, ``user``,
+``subscription``, ``visit``, and server ``hit`` entities.
+
 These entity objects are based on the "E-Commerce Models" chapter of "The
 Data Model Resource Book Volume 2".
 
@@ -453,6 +459,12 @@ class ip(electronicaddress):
     Note that this is modeled after the IP ADDRESS entity in "The Data
     Model Resource Book Volume 2".
     """
+
+    # TODO Write accessor and mutator that allows for saving a an int
+    # but rendering as a string.
+
+    # TODO Use orm.ensure() such that only one ip address records gets
+    # stored per ip address.
     address = str
     hits = hits
 

@@ -1445,8 +1445,16 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
     re_alphanum_ = re.compile('^[a-z_][0-9a-z_]+$', flags=re.IGNORECASE)
 
     def __init__(self, initial=None, _p2=None, *args, **kwargs):
+        # TODO _p2 should default to `undef`. Currently, a query like:
+        #
+        #     ents = artists('name', None)
+        #
+        # should mean WHERE NAME IS NULL, but is interpreted as;
+        #
+        #     ents = artists('name')
+        #
+        # which is meaningless.
         try:
-
             if not hasattr(type(self), 'orm'):
                 raise NotImplementedError(
                     '"orm" attribute not found for "%s". '
