@@ -883,13 +883,15 @@ class entity():
         from config import config
         return config().logs.default
 
-    def _setvalue(self, field, new, prop, setattr=setattr, cmp=True):
+    def _setvalue(
+        self, field, new, prop, setattr=setattr, cmp=True, strip=True
+    ):
         # TODO: It's nice to strip any string because that's vitually
         # always the desired behaviour.  However, at some point, we will
         # want to preserve the whitespace on either side.  Therefore, we
         # should add a parameter (or something) to make it possible to
         # persiste an unstripped string.
-        if type(new) == str:
+        if type(new) == str and strip:
             new = new.strip()
 
         if cmp:

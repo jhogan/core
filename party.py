@@ -29,6 +29,7 @@ import hashlib
 import orm
 import os
 import primative
+import file
 
 ''' Parties '''
 
@@ -39,6 +40,7 @@ class types(apriori.types):                                  pass
 class roles(orm.entities):                                   pass
 class workers(roles):                                        pass
 class employees(workers):                                    pass
+class managers(workers):                                     pass
 class contractors(workers):                                  pass
 class role_role_types(apriori.types):                        pass
 class statuses(orm.entities):                                pass
@@ -54,6 +56,8 @@ class subsidiaries(organizationalunits):                     pass
 class parents(organizationalunits):                          pass
 class roletypes(apriori.types):                              pass
 class partyroletypes(roletypes):                             pass
+
+# FIXME This is a duplicate of a previously declared classe
 class employees(personals):                                  pass
 class customers(personals):                                  pass
 class billtos(customers):                                    pass
@@ -70,8 +74,6 @@ class units(organizations):                                  pass
 class departments(units):                                    pass
 class divisions(units):                                      pass
 class jobs(orm.entities):                                    pass
-class positions(orm.entities):                               pass
-class position_fulfillments(orm.associations):               pass
 class party_parties(orm.associations):                       pass
 class party_addresses(orm.associations):                     pass
 class maritals(parties):                                     pass
@@ -118,15 +120,21 @@ class skills(orm.entities):                                  pass
 class skilltypes(apriori.types):                             pass
 class rates(orm.entities):                                   pass
 class ratetypes(apriori.types):                              pass
-class positionrates(orm.entities):                           pass
-class positiontypes(apriori.types):                          pass
 class asset_parties(orm.associations):                       pass
 class asset_partystatustypes(apriori.types):                 pass
 
 ''' Parties '''
 
 class user(orm.entity):
-    name     =  str
+    name      =  str
+
+    @orm.attr(file.directory)
+    def directory(self):
+        dir = attr()
+        if dir is None:
+            dir = file.directory(name=self.id.hex)
+            attr(dir)
+        return dir
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -298,40 +306,7 @@ class division(unit):
 
     # TODO:afa4ffc9 Is this how divisions are related to position in the
     # book.
-    positions = positions
-
-class job(orm.entity):
-    """ Maintains information associated the actual `positions` an
-    employee may take. 
-    
-    Note that in the "The Data Model Resource Book", this entity is
-    refered to as the POSTITION TYPE entity. "job" was chosen for its
-    name since "job" is only one word and "POSTITION TYPE" is obviously
-    two words.
-    """
-    title = str
-    description = str, 1, 65535
-    
-    # The below was noted in the book but is currently not implemented.
-    # benefit_percentage = dec
-
-    # A collection of positions generated from this job
-    positions = positions
-
-class position(orm.entity):
-    """ A position is a job slot in an enterprise. 
-    """
-
-    # The datespan an organization expects the job to begin and end
-    estimated = datespan(prefix='estimated')
-
-    # The actual datespan the position slot is filled, as opposed to the
-    # `estimated` datespan.
-    filled = datespan
-
-    salary = bool
-
-    fulltime = bool
+    pass
 
 class department(unit):
     # TODO ``department`` must inherit from ``organizationalunit``, not
@@ -342,7 +317,7 @@ class department(unit):
     # parties with each other, the entity objects `divisions` will no
     # longer have a many-to-one relationship with `department`;
     # `departments` will have a relationships with `divisions`.
-    divisions = divisions
+	pass
 
 class legalorganization(organization):
     def __init__(self, *args, **kwargs):
@@ -359,9 +334,6 @@ class legalorganization(organization):
     # specific to the USA.
     ein = str, 9, 9
 
-    # A collection of job positions the legalorganization has.
-    positions = positions
-    
 class company(legalorganization):
     """ A business entity that conducts a value of exchange of goods or
     services with customers. The end goal of a company is to produce a
@@ -698,32 +670,6 @@ class person(party):
                 return gen
 
         return None
-
-class position_fulfillment(orm.association):
-    """
-    The `position_fulfilments` association links a position to a person.
-    When a postion is associatied with a person, the position is said to
-    be "fulfilled', i.e., the person has been employed by the
-    organization (i.e., company) to fulfill the job duties of the
-    position.
-
-    Since this is an `orm.association`, multiple person entities can be
-    associated with a given position. Different person entities may be
-    associated to the same position over time. This allows for the
-    tracking persons who occupied a given position in an organization
-    over various timespans.  The begin and end dates record the
-    occupation's timespan.
-    
-    Additionally, multiple persons can be associated to the same
-    `position` within the same timespan implying that the persons
-    occupy the position as part-time or half-time employees.
-    """
-
-    person    =  person
-    position  =  position
-
-    # The timespan of the occumation
-    span = datespan
 
 class region(orm.entity):
     """ This class represents geographical regions such as a postal code,
@@ -1360,12 +1306,12 @@ class priority(orm.entity):
 class role_role(orm.association):
     """ This class associates a party's role with the role of another
     party. This association allows a party to be related to other
-    parties and maintains the respective roles in the relatioship.
+    parties and maintains the respective roles in the relationship.
 
     This association has a role_role_type composite that describes the
     type of role-to-role association being declared.
 
-    The grammer of this association can be understood with the following
+    The grammar of this association can be understood with the following
     example:
     
         The ``company`` "ABC Subsidiary" has a ``role`` called
@@ -1475,6 +1421,9 @@ class worker(personal):
     ``employee`` or ``contractor``.
     """
 
+class manager(personal):
+    """ A party role representing a manager.
+    """
 class employee(worker):
     """ A party role implying legal employment with an enterprise.
     """
@@ -2034,26 +1983,6 @@ class ratetype(apriori.type):
 
     # The collection of rates matching this rates type
     rates = rates
-
-class positionrate(orm.entity):
-    """ The ``positionrate`` may store a rate, overtime rate, cost, or
-    other type of rate depending on the needs of the organization. The
-    ``positiontype`` would indicate which rate is being specified. 
-
-    Note that this is modeled after the POSITION TYPE RATE entity in
-    "The Data Model Resource Book".
-    """
-    span = datespan
-    rate = dec
-
-class positiontype(apriori.type):
-    """ Categorizes positions by type.
-
-    Note that this is modeled after the POSITION TYPE entity in "The
-    Data Model Resource Book".
-    """
-
-    positionrates = positionrates
 
 class asset_party(orm.association):
     """ Represents the assignment or *checking out* of a fixed asset

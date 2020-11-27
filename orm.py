@@ -120,6 +120,63 @@ TODOs:
 
     TODO:055e5c02 make FK name's fully qualified. grep 055e5c02 for
     more.
+
+    TODO Add automatic pluralisation of entities
+
+    TODO:349f4355 Support saving recursive entites with subentities.
+    grep for 349f4355 for clarification.
+
+    TODO Create orm.reload() to complement orm.reloaded(). It should
+    reload the data from the db into self.
+
+    TODO entitymappings should eager- and lazy-load most specialized
+    type. This should work for recursive entity objects as well::
+
+        f = files.orm.all
+        assert type(f.inodes.first) is file
+        assert type(f.inodes.second) is directory
+
+    FIXME:acad30cc Broken rules currently has an issue. grep acad30cc
+    for more clarification.
+
+    TODO Prefix each table name with the name of the module.
+
+    TODO datespans and timespans that refer to a timeframe for which an
+    association is valid should be name 'valid':
+        
+        s/span = (time|date)span/valid = \1span/
+
+    Change all associations such that their names are alphabetized::
+        
+        Substitute:
+            class item_account(orm.association):
+                item     =  item
+                account  =  account
+
+        With:
+            class account_item(orm.association):
+                account  =  account
+                item     =  item
+
+    TODO Reflexive associations currently can currently be loaded only
+    by the subject-side of the association. For example, if the
+    'director' hr.position has direct reports (accessible through
+    hr.position_position), we can discover them like this::
+
+        assert director.position_positions.ispopulated
+
+    However, the inverse is not true::
+
+        direct_report = director.position_positions.first
+
+        # This will fail; we can't discover who the manager of the
+        # direct_report is.
+        assert direct_report.position_positions.ispopulated
+
+    TODO Instead of ``decimal``, we may want to create a ``currency``
+    datatype. Currently, it's assumed that the values stored in decimal
+    attributes are dollars, but obviously this will not always be the
+    case.
 """
 
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
@@ -153,6 +210,10 @@ import primative
 import re
 import sys
 import textwrap
+
+class AttributeError(builtins.AttributeError):
+    def __init__(self, msg):
+        self.inner = builtins.AttributeError(msg)
 
 @unique
 class types(Enum):
@@ -1406,7 +1467,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 )
             try:
                 self.orm = self.orm.clone()
-            except AttributeError:
+            except builtins.AttributeError:
                 msg = (
                     "Can't instantiate abstract orm.entities. "
                     "Use entities.entities for a generic entities "
@@ -1781,6 +1842,17 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             elif isinstance(key, entity):
                 return self[key.id]
 
+            elif isinstance(key, str):
+                if 'name' in self.orm.mappings:
+                    for e in self:
+                        if e.name == key:
+                            return e
+                    else:
+                        raise IndexError(
+                            f'{self.orm.entity} '
+                            f"not found with name: '{key}'"
+                        )
+                        
             e = super().__getitem__(key)
 
             # NOTE The below code original tested wheher or not
@@ -1818,7 +1890,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             if attr in nonos:
                 msg = "'%s's' attribute '%s' is not available "
                 msg += 'while streaming'
-                raise AttributeError(msg % (self.__class__.__name__, attr))
+                raise builtins.AttributeError(msg % (self.__class__.__name__, attr))
         else:
             load = True
 
@@ -1868,6 +1940,17 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
     def sorted(self, key=None, reverse=None):
         key = 'id' if key is None else key
         if self.orm.isstreaming:
+            # TODO:4a7eb575 Sorting a stream does not work when the
+            # `key` being sorted on is in an inherited (super) class.
+            # For example, to sort files by name, we would like to do
+            # this:
+            #
+            #    file.file.orm.all.sorted('name'):
+            #
+            # However, the `name` property belongs to `file`'s
+            # superentity `inode`, and is in the `file_inodes` table,
+            # but the ORDER BY is applied to the `file_files` table,
+            # resulting in a MySQL error.
             key = '%s %s' % (key, 'DESC' if reverse else 'ASC')
             self.orm.stream.orderby = key
             return self
@@ -2177,7 +2260,7 @@ class entitymeta(type):
                     body['entities'] = sub
                     break
             else:
-                raise AttributeError(
+                raise builtins.AttributeError(
                     'Entities class for "%s" couldn\'t be found. '
                     'Either specify one or define one with a '
                     'predictable name' % name
@@ -2384,6 +2467,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             self.onbeforereconnect  =  entitiesmod.event()
             self.onafterreconnect   =  entitiesmod.event()
 
+            self.onbeforesave      +=  self._self_onbeforesave
             self.onaftersave       +=  self._self_onaftersave
             self.onafterload       +=  self._self_onafterload
             self.onafterreconnect  +=  self._self_onafterreconnect
@@ -2435,7 +2519,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         if type(args) is str:
             try:
                 return getattr(self, args)
-            except AttributeError as ex:
+            except builtins.AttributeError as ex:
                 raise IndexError(str(ex))
 
         vals = []
@@ -2464,6 +2548,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
     def _self_onafterload(self, src, eargs):
         self._add2chronicler(eargs)
+
+    def _self_onbeforesave(self, src, eargs):
+        # At the moment, this only here in case a client want's to
+        # override it.
+        pass
 
     def _self_onaftersave(self, src, eargs):
         self._add2chronicler(eargs)
@@ -2950,10 +3039,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         gb.append(self)
             
-        # TODO s/super/sup/
-        super = self.orm._super
-        if super:
-            brs += super.getbrokenrules(gb=gb)
+        sup = self.orm._super
+        if sup:
+            brs += sup.getbrokenrules(gb=gb)
 
         for map in self.orm.mappings:
             if type(map) is fieldmapping:
@@ -3075,6 +3163,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         except sys.modules['orm'].attr.AttributeErrorWrapper as ex:
             raise ex.inner
         except AttributeError as ex:
+            raise ex.inner
+        except builtins.AttributeError as ex:
             pass
 
         self_orm = self.orm
@@ -3315,7 +3405,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # Get the superentities collection
         try:
             es = getattr(self, sup.__name__)
-        except AttributeError:
+        except builtins.AttributeError:
             # `self` won't have the attribute `sup.__name__` if the
             # constituent class is a superentity.
             #
@@ -3523,7 +3613,7 @@ class mappings(entitiesmod.entities):
             # method is called). This is probably okay, however, since
             # it seems unlikely it will ever get so big it becomes a
             # problem.
-            sys.setrecursionlimit(2000)
+            sys.setrecursionlimit(3000)
 
             ''' Add composite and constituent mappings '''
             # For each class that inherits from `orm.entity`
@@ -3753,7 +3843,8 @@ WHERE id = %s;
                 if type(map) in keymaps and isinstance(map.value, UUID):
                     r.append(map.value.bytes)
                 else:
-                    v = map.value if map.value is not undef else None
+                    v = getattr(self.orm.instance, map.name)
+                    v = None if v is undef else v
                     if v is not None:
                         if map.isdatetime:
                             v = v.replace(tzinfo=None)
@@ -4229,7 +4320,7 @@ class attr:
                 elif isset:
                     return meth(instance, value)
 
-            except AttributeError as ex:
+            except builtins.AttributeError as ex:
                 # If it raises an AttributeError, wrap it. If the call
                 # from e.__getattribute__ sees a regular AttributeError,
                 # it will ignore it because it will assume its caller is
@@ -5022,6 +5113,30 @@ class orm:
 
         exec()
         
+    def collectivize(self):
+        """ If called on an instance of orm.entity, returns an
+        orm.entities instance (of the corresponding type) with the
+        orm.entity within it. If called on an orm.entities, simply
+        return a reference to the orm.entities::
+
+            per = person(name='John Doe')
+            pers = per.orm.collectivize()
+
+            assert isinstance(pers, persons)
+            assert pers.count == 1
+            assert per in pers
+
+            # Not much happens if done on an orm.entities
+            assert pers is pers.orm.collectivize()
+        """
+
+        if isinstance(self.instance, self.entities):
+            return self.instance
+
+        es = self.entities()
+        es += self.instance
+        return es
+
     def default(self, attr, v, dict=None):
         """ Sets an attribute to a default value. ``default`` is
         intended to be called by an entity's constructor after the
@@ -5385,9 +5500,8 @@ class orm:
         guestbook += [self]
 
         try: 
-            if cur:
-                conn = None
-            else:
+            conn = None
+            if not cur:
                 # TODO Use executioner
                 pool = db.pool.getdefault()
                 conn = pool.pull()
@@ -6653,7 +6767,7 @@ class orm:
                     if not isinstance(e, entity):
                         msg = "'super' is not an attribute of %s"
                         msg %= str(type(e))
-                        raise AttributeError(msg)
+                        raise builtins.AttributeError(msg)
                     if e.id is not undef:
                         self._super = base(e.id)
 
@@ -6986,7 +7100,7 @@ class associations(entities):
                             map.value.orm.entities.__name__
                         )
 
-                    except AttributeError:
+                    except builtins.AttributeError:
                         # If the object stored in map.value is the wrong
                         # type, use the map.entity reference. This is
                         # for situations where the user appends the
@@ -7206,7 +7320,7 @@ class associations(entities):
             """
             msg = "'%s' object has no attribute '%s'"
             msg %= self.__class__.__name__, attr
-            raise AttributeError(msg)
+            raise builtins.AttributeError(msg)
 
         # TODO Use the mappings collection to get __name__'s value.
 

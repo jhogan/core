@@ -27,6 +27,7 @@ import account
 import apriori
 import asset
 import auth
+import base64
 import budget
 import codecs
 import dateutil
@@ -36,6 +37,7 @@ import dom
 import effort
 import exc
 import functools
+import hr
 import invoice
 import io
 import jwt as pyjwt
@@ -54,6 +56,7 @@ import shipment
 import tempfile
 import textwrap
 import testsec
+import tfile
 
 # Import crust. Ensure that stdout is suppressed because it will print
 # out status information on startup.
@@ -3143,6 +3146,7 @@ class test_date(tester):
         actual = primative.date(*args)
         self.eq(expect, actual)
 
+# TODO Can we remove this?
 class mycli(cli):
     def registertraceevents(self):
         ts = self.testers
@@ -18080,26 +18084,8 @@ class gem_party(tester):
 
             self.eq(str(reg), str(reg1))
 
-    def it_appends_department(self):
-        # TODO:afa4ffc9 Rewrite the below to use the role_role
-        # association to associate persons to departments and divisions.
-        com = self.getvalidcompany()
-        self.zero(com.departments)
-        dep = party.department(name='web')
-        com.departments += dep
-        self.is_(com, dep.company)
-        com.save()
-
-        com1 = party.company(com.id)
-        self.eq(com.id, com1.id)
-
-        self.one(com1.departments)
-
-        self.eq(com.departments.first.id, com1.departments.first.id)
-        self.eq('web', com1.departments.first.name)
-
     def it_updates_department(self):
-        # TODO:afa4ffc9 Rewrite the below to use the role_role
+        # todo:afa4ffc9 rewrite the below to use the role_role
         # association to associate persons to departments and divisions.
         com = self.getvalidcompany()
         self.zero(com.departments)
@@ -18126,167 +18112,7 @@ class gem_party(tester):
     def it_appends_divisions_to_departments(self):
         # TODO:afa4ffc9 Rewrite the below to use the role_role
         # association to associate persons to departments and divisions.
-        com = self.getvalidcompany()
-
-        dep = party.department(name='web')
-        com.departments += dep
-
-        div = party.division(name='core')
-        dep.divisions += div
-        com.save()
-
-        com1 = party.company(com)
-
-        self.one(com1.departments)
-        self.one(com1.departments.first.divisions)
-
-        self.eq('web', com1.departments.first.name)
-        self.eq('core', com1.departments.first.divisions.first.name)
-
-        self.eq(
-            com.departments.first.id,
-            com1.departments.first.id
-        )
-
-        self.eq(
-            com.departments.first.divisions.first.id,
-            com1.departments.first.divisions.first.id
-        )
-
-    def it_creates_positions_within_company(self):
-        # TODO:afa4ffc9 Rewrite the below to use the role_role
-        # association to associate persons to departments and divisions.
-
-        # TODO We should be able to create a position in any
-        # party.legalorganization such as a non-profit.
-        jb = self.getvalidjob()
-        com = self.getvalidcompany()
-
-        # Create positions based on the job
-        poss = party.positions()
-        poss += self.getvalidposition()
-        poss += self.getvalidposition()
-
-        com.departments += party.department(name='it')
-        div = party.division(name='ml')
-        com.departments.last.divisions += div
-
-        div.positions += poss
-
-        jb.positions += poss
-
-        com.positions += poss
-
-        # INSERT company (it's supers), its department and division, the
-        # two positions and jb (jb is a composite of the positions so it
-        # gets saved as well).
-        com.save()
-
-        ''' Test that rather large save '''
-        com1 = party.company(com.id)
-        self.eq(com.id, com1.id)
-        self.two(com1.positions)
-
-        ids = com1.positions.pluck('id')
-        self.true(com.positions.first.id in ids)
-        self.true(com.positions.second.id in ids)
-
-        self.eq(com1.positions.first.job.id, jb.id)
-        self.eq(com1.positions.second.job.id, jb.id)
-
-        self.true(com1.positions.first.job.positions.first.id in ids)
-        self.true(com1.positions.first.job.positions.second.id in ids)
-        self.ne(
-            com1.positions.first.job.positions.first.id,
-            com1.positions.first.job.positions.second.id
-        )
-
-        self.one(com1.departments)
-        self.one(com1.departments.first.divisions)
-        self.two(com1.departments.first.divisions.first.positions)
-
-    def it_fulfills_postition_within_company(self):
-        # TODO:afa4ffc9 Rewrite the below to use the role_role
-        # association to associate persons to departments and divisions.
-
-        jb = self.getvalidjob()
-        com = self.getvalidcompany()
-        pers = self.getvalid() + self.getvalid()
-
-        # Create positions based on the job
-        pos = self.getvalidposition()
-
-        dep = party.department(name='it')
-        com.departments += dep
-        div = party.division(name='ml')
-        com.departments.last.divisions += div
-
-        div.positions += pos
-        jb.positions += pos
-        com.positions += pos
-
-        #self.true(pos.isfulfilled)
-
-        for per in pers:
-            ful = party.position_fulfillment(
-                person = per,
-                begin  = date.today(),
-                end    = None,
-            )
-
-            pos.position_fulfillments += ful
-
-            self.is_(per, pos.position_fulfillments.last.person)
-
-            self.is_(ful, pos.position_fulfillments.last)
-
-            self.is_(
-                div,
-                pos.position_fulfillments.last.position.division
-            )
-
-            self.is_(
-                dep,
-                pos.position_fulfillments.last
-                    .position.division.department
-            )
-
-            self.is_(
-                com,
-                pos.position_fulfillments.last
-                    .position.division.department.company
-            )
-
-        self.two(pos.position_fulfillments)
-        self.two(pos.persons)
-
-        com.save()
-
-        com1 = party.company(com.id)
-
-        self.one(com1.positions)
-
-        ids = com.positions.first.position_fulfillments.pluck('id')
-        self.two(ids)
-
-        for ful1 in com1.positions.first.position_fulfillments:
-            self.true(ful1.id in ids)
-            ful = com.positions.first.position_fulfillments[ful1.id]
-            self.eq(ful.person.id, ful1.person.id)
-            self.eq(ful.position.id, ful1.position.id)
-            self.eq(ful.begin, ful1.begin)
-            self.none(ful1.end)
-
-        for per in pers:
-            per1 = party.person(per.id)
-            self.one(per1.positions)
-            self.one(per1.position_fulfillments)
-            self.eq(div.id, per1.positions.first.division.id)
-            self.eq(dep.id, per1.positions.first.division.department.id)
-            self.eq(
-                com.id,
-                per1.positions.first.division.department.company.id
-            )
+        pass
 
     def it_links_contactmechanisms(self):
         # Create contact mechanisms
@@ -18681,84 +18507,6 @@ class gem_party(tester):
                     r.newfield(pur.purposetype.name)
 
         print(tbl1)
-
-    @staticmethod
-    def getvalidposition():
-        pos = party.position()
-        pos.estimated.begin = primative.datetime.utcnow()
-
-        pos.estimated.end = pos.estimated.begin.add(days=365)
-
-        pos.begin = primative.date.today()
-        pos.end = pos.begin.add(days=365)
-        return pos
-
-    def it_creates_position(self):
-        pos = self.getvalidposition()
-        pos.save()
-
-        pos1 = party.position(pos.id)
-        for map in pos.orm.mappings.fieldmappings:
-            prop = map.name
-            self.eq(getattr(pos, prop), getattr(pos1, prop), prop)
-
-    def it_updates_position(self):
-        pos = self.getvalidposition()
-        pos.save()
-
-        pos1 = party.position(pos.id)
-        pos1.estimated.begin  =  pos1.estimated.begin.add(days=1)
-        pos1.estimated.end    =  pos1.estimated.end.add(days=1)
-        pos1.begin            =  pos1.begin.add(days=1)
-        pos1.end              =  pos1.end.add(days=1)
-        pos1.save()
-
-        pos2 = party.position(pos.id)
-        for map in pos.orm.mappings.fieldmappings:
-            prop = map.name
-            self.eq(getattr(pos1, prop), getattr(pos2, prop))
-
-    @staticmethod
-    def getvalidjob():
-        jb = party.job()
-        jb.description = tester.dedent('''
-        As Machine Learning and Signal Processing Engineer you are going
-        to lead the effort to bring signal processing algorithms into
-        production which condition and extract rich morphological
-        features from our unique respiratory sensor. In addition, you
-        will bring machine learning models, which predict changes in a
-        patient's disease state, into production for both streaming and
-        batch mode use cases. You will collaborate closely with the
-        research and data science teams and become the expert on
-        tweaking, optimizing, deploying, and monitoring these algorithms
-        in a commercial environment.
-        ''')
-        jb.title = "Machine Learning and Signal Processing Engineer"
-        jb.description = jb.description.replace('\n', '')
-        return jb
-
-    def it_creates_job(self):
-        jb = self.getvalidjob()
-        jb.save()
-
-        jb1 = party.job(jb.id)
-        self.eq(jb.title, jb1.title)
-        self.eq(jb.description, jb1.description)
-        self.eq(jb.id, jb1.id)
-
-    def it_updates_job(self):
-        jb = self.getvalidjob()
-        jb.save()
-
-        jb1 = party.job(jb.id)
-        jb1.description += '. This is a fast pace work environment.'
-        jb1.title = 'NEEDED FAST!!! ' + jb1.title
-        jb1.save()
-
-        jb2 = party.job(jb.id)
-        self.eq(jb1.title, jb2.title)
-        self.eq(jb1.description, jb2.description)
-        self.eq(jb1.id, jb2.id)
 
     @staticmethod
     def getvalidaddress():
@@ -20391,7 +20139,7 @@ class gem_product(tester):
         # Associate each with smallbox
         each.measure_measures += mm
 
-        # A large box is equivelent to 2 small boxes. Note the
+        # A large box is equivalent to 2 small boxes. Note the
         # association beteen `each` and `largebox` is not created. We
         # will rely on product.measure_measure to work issues like this
         # out automatically via transitive logic.
@@ -24089,12 +23837,787 @@ class gem_budget(tester):
             self.eq(ita.id, ita1.id)
             self.eq(ita.percent, ita1.percent)
 
+class gem_hr(tester):
+    def __init__(self):
+        super().__init__()
+        es = orm.orm.getentitys(includeassociations=True)
+        for e in es:
+            if e.__module__ in ('party', 'hr', 'apriori', 'invoice'):
+                e.orm.recreate()
+
+    def it_creates_position(self):
+        pos = self.getvalidposition()
+        pos.save()
+
+        pos1 = pos.orm.reloaded()
+
+        self.eq(pos.estimated.begin, pos1.estimated.begin)
+        self.eq(pos.estimated.end, pos1.estimated.end)
+        self.eq(pos.begin, pos1.begin)
+        self.eq(pos.end, pos1.end)
+
+        self.eq(pos.salary, pos1.salary)
+        self.eq(pos.fulltime, pos1.fulltime)
+        self.none(pos1.item)
+        self.zero(pos1.responsibilities)
+
+    def it_creates_positions_within_company(self):
+        # TODO:afa4ffc9 Rewrite the below to use the role_role
+        # association to associate persons to departments and divisions.
+        return
+
+        # TODO We should be able to create a position in any
+        # party.legalorganization such as a non-profit.
+        postyp = self.getvalidpositiontype()
+        com = gem_party.getvalidcompany()
+
+        # Create positions based on the job
+        poss = hr.positions()
+        poss += self.getvalidposition()
+        poss += self.getvalidposition()
+
+        com.departments += party.department(name='it')
+        div = party.division(name='ml')
+        com.departments.last.divisions += div
+
+        div.positions += poss
+
+        postyp.positions += poss
+
+        com.positions += poss
+
+        # INSERT company (it's supers), its department and division, the
+        # two positions and postyp (postyp is a composite of the positions so it
+        # gets saved as well).
+        com.save()
+
+        ''' Test that rather large save '''
+        com1 = party.company(com.id)
+        self.eq(com.id, com1.id)
+        self.two(com1.positions)
+
+        ids = com1.positions.pluck('id')
+        self.true(com.positions.first.id in ids)
+        self.true(com.positions.second.id in ids)
+
+        self.eq(com1.positions.first.job.id, postyp.id)
+        self.eq(com1.positions.second.job.id, postyp.id)
+
+        self.true(com1.positions.first.job.positions.first.id in ids)
+        self.true(com1.positions.first.job.positions.second.id in ids)
+        self.ne(
+            com1.positions.first.job.positions.first.id,
+            com1.positions.first.job.positions.second.id
+        )
+
+        self.one(com1.departments)
+        self.one(com1.departments.first.divisions)
+        self.two(com1.departments.first.divisions.first.positions)
+
+    def it_fulfills_postition(self):
+        per = gem_party.getvalid(first='Mike', last='Johnson')
+
+        postype = hr.positiontype(name='Mail Clerk', description=None)
+        clerk = hr.position()
+        postype.positions += clerk
+
+        postype = hr.positiontype(name='CEO', description=None)
+        ceo = hr.position()
+        postype.positions += ceo
+
+        per.fulfillment_positions += hr.fulfillment_position(
+            begin = 'May 31, 1980',
+            end = 'Jun 1, 1980',
+            position = clerk
+        )
+
+        per.fulfillment_positions += hr.fulfillment_position(
+            begin = 'Jun 1, 1996',
+            end = None,
+            position = ceo
+        )
+
+        per.save()
+
+        per1 = per.orm.reloaded()
+
+        fps = per.fulfillment_positions.sorted()
+        fps1 = per1.fulfillment_positions.sorted()
+
+        self.two(fps)
+        self.two(fps1)
+
+        for fp, fp1 in zip(fps, fps1):
+            self.eq(fp.id,     fp1.id)
+            self.eq(fp.begin,  fp1.begin)
+            self.eq(fp.end,    fp1.end)
+
+            self.eq(fp.position.id, fp1.position.id)
+
+            self.eq(
+                fp.position.positiontype.id, 
+                fp1.position.positiontype.id
+            )
+
+            self.eq(
+                fp.position.positiontype.name, 
+                fp1.position.positiontype.name
+            )
+            
+
+    @staticmethod
+    def getvalidposition():
+        pos = hr.position()
+        pos.estimated.begin = primative.datetime.utcnow()
+
+        pos.estimated.end = pos.estimated.begin.add(days=365)
+
+        pos.begin = primative.date.today()
+        pos.end = pos.begin.add(days=365)
+        return pos
+
+    @staticmethod
+    def getvalidpositiontype():
+        postyp = hr.positiontype()
+        postyp.description = tester.dedent('''
+        As Machine Learning and Signal Processing Engineer you are going
+        to lead the effort to bring signal processing algorithms into
+        production which condition and extract rich morphological
+        features from our unique respiratory sensor. In addition, you
+        will bring machine learning models, which predict changes in a
+        patient's disease state, into production for both streaming and
+        batch mode use cases. You will collaborate closely with the
+        research and data science teams and become the expert on
+        tweaking, optimizing, deploying, and monitoring these algorithms
+        in a commercial environment.
+        ''')
+        postyp.description = postyp.description.replace('\n', ' ')
+
+        postyp.name = "Machine Learning and Signal Processing Engineer"
+        return postyp
+
+
+    def it_updates_position(self):
+        pos = self.getvalidposition()
+        pos.save()
+
+        pos1 = hr.position(pos.id)
+        pos1.estimated.begin  =  pos1.estimated.begin.add(days=1)
+        pos1.estimated.end    =  pos1.estimated.end.add(days=1)
+        pos1.begin            =  pos1.begin.add(days=1)
+        pos1.end              =  pos1.end.add(days=1)
+        pos1.save()
+
+        pos2 = hr.position(pos.id)
+        for map in pos.orm.mappings.fieldmappings:
+            prop = map.name
+            self.eq(getattr(pos1, prop), getattr(pos2, prop))
+
+    def it_creates_positiontype(self):
+        postyp = self.getvalidpositiontype()
+        postyp.save()
+
+        postyp1 = hr.positiontype(postyp.id)
+        self.eq(postyp.name, postyp1.name)
+        self.eq(postyp.description, postyp1.description)
+        self.eq(postyp.id, postyp1.id)
+
+    def it_updates_positiontype(self):
+        postyp = self.getvalidpositiontype()
+        postyp.save()
+
+        postyp1 = hr.positiontype(postyp.id)
+        postyp1.description += '. This is a fast pace work environment.'
+        postyp1.name = 'NEEDED FAST!!! ' + postyp1.name
+        postyp1.save()
+
+        postype2 = hr.positiontype(postyp.id)
+        self.eq(postyp1.name, postype2.name)
+        self.eq(postyp1.description, postype2.description)
+        self.eq(postyp1.id, postype2.id)
+
+    def it_creates_reporting_structure(self):
+        # Create 'Director of Business Information Systems'
+        postyp = hr.positiontype(
+            name = 'Directory of Business Information Systems',
+            description = None
+        )
+
+        postyp.positions += self.getvalidposition()
+        dir = postyp.positions.last
+
+        # Create 'Business Analyst'
+        postyp = hr.positiontype(
+            name = 'Business Analyst',
+            description = None
+        )
+
+        postyp.positions += self.getvalidposition()
+        anal = postyp.positions.last
+
+        # Create 'Systems Administrator'
+        postyp = hr.positiontype(
+            name = 'Systems Administrator',
+            description = None
+        )
+
+        postyp.positions += self.getvalidposition()
+        sysadmin = postyp.positions.last
+
+        # Make the business analyst (`anal`) the direct report
+        # (`object`) of the 'Director of Business Information Systems'
+        # (`dir`).
+        dir.position_positions += hr.position_position(
+            begin = 'Jan 1, 2000',
+            end = 'Dec 30, 2000',
+            isprimary = True,
+            object = anal
+        )
+
+        # Make the System Adminstrator (`sysadmin`) the direct report
+        # (`object`) of the 'Director of Business Information Systems'
+        # (`dir`).
+        dir.position_positions += hr.position_position(
+            begin = 'Jan 1, 2000',
+            end = 'Dec 31, 2000',
+            isprimary = True,
+            object = sysadmin
+        )
+
+        dir.save()
+
+        dir1 = dir.orm.reloaded()
+
+        pps = dir.position_positions.sorted()
+        pps1 = dir1.position_positions.sorted()
+
+        self.two(pps)
+        self.two(pps1)
+
+        for pp, pp1 in zip(pps, pps1):
+            self.eq(pp.id,          pp1.id)
+            self.eq(pp.begin,       pp1.begin)
+            self.eq(pp.end,         pp1.end)
+            self.eq(pp.isprimary,   pp1.isprimary)
+            self.eq(pp.subject.id,  pp1.subject.id)
+            self.eq(pp.object.id,   pp1.object.id)
+            self.eq(
+                pp.subject.positiontype.id,
+                pp1.subject.positiontype.id
+            )
+            self.eq(
+                pp.object.positiontype.id,
+                pp1.object.positiontype.id
+            )
+            self.eq(
+                pp.subject.positiontype.name,
+                pp1.subject.positiontype.name
+            )
+            self.eq(
+                pp.object.positiontype.name,
+                pp1.object.positiontype.name
+            )
+
+    def it_creates_position_type_rates(self):
+        # Create 'Programmer'
+        postyp = hr.positiontype(
+            name = 'Programmer',
+            description = None
+        )
+
+        avg = hr.positionrate(
+            amount = 45_000,
+            ratetype = party.ratetype(
+                name = 'Average pay rate',
+            ),
+            periodtype = hr.periodtype(
+                name = 'per year'
+            ),
+
+            begin = 'Jan 1, 1990',
+            end = 'Dec 31, 1999',
+        )
+
+        postyp.positionrates += avg
+
+        high = hr.positionrate(
+            amount = 70_000,
+            ratetype = party.ratetype(
+                name = 'Highest pay rate',
+            ),
+            periodtype = hr.periodtype(
+                name = 'per year'
+            ),
+
+            begin = 'Jan 1, 1990',
+            end = 'Dec 31, 1999',
+        )
+
+        postyp.positionrates += high
+
+        avg = hr.positionrate(
+            amount = 55_000,
+            ratetype = party.ratetype(
+                name = 'Average pay rate',
+            ),
+            periodtype = hr.periodtype(
+                name = 'per year'
+            ),
+
+            begin = 'Jan 1, 2000',
+            end = 'Dec 31, 2000',
+        )
+
+        postyp.positionrates += avg
+
+        high = hr.positionrate(
+            amount = 90_000,
+            ratetype = party.ratetype(
+                name = 'Highest pay rate',
+            ),
+            periodtype = hr.periodtype(
+                name = 'per year'
+            ),
+
+            begin = 'Jan 1, 2000',
+            end = 'Dec 31, 2000',
+        )
+
+        postyp.positionrates += high
+
+        postyp.save()
+
+        postyp1 = postyp.orm.reloaded()
+
+        prs = postyp.positionrates.sorted()
+        prs1 = postyp1.positionrates.sorted()
+
+        self.four(prs)
+        self.four(prs1)
+
+        for pr, pr1 in zip(prs, prs1):
+            self.eq(pr.id, pr1.id)
+            self.eq(pr.amount, pr1.amount)
+            self.eq(pr.begin, pr1.begin)
+            self.eq(pr.end, pr1.end)
+            self.eq(pr.ratetype.id, pr1.ratetype.id)
+            self.eq(pr.ratetype.name, pr1.ratetype.name)
+            self.eq(pr.periodtype.id, pr1.periodtype.id)
+            self.eq(pr.periodtype.name, pr1.periodtype.name)
+
+    def it_creates_pay_grades(self):
+        gr = hr.grade(
+            name = 'GG-1'
+        )
+
+        amts = (10_000, 10_200, 10_400, 10_500, 10_800)
+
+        for i, amt in enumerate(amts):
+            gr.steps += hr.step(
+                ordinal = i + 1,
+                amount = amt
+            )
+
+        gr.save()
+
+        gr1 = gr.orm.reloaded()
+
+        self.eq(gr.id, gr1.id)
+        self.eq('GG-1', gr1.name)
+
+        steps = gr.steps.sorted('ordinal')
+        steps1 = gr1.steps.sorted('ordinal')
+
+        self.five(steps)
+        self.five(steps1)
+
+        for i, amt in enumerate(amts):
+            step1 = steps1[i]
+            self.eq(amt, step1.amount)
+            self.eq(i + 1, step1.ordinal)
+
+    def it_creates_payment_history(self):
+        # Create company
+        com = party.company(name='ABC Corporation')
+
+        # Create an interanal organization role
+        int = party.internal()
+
+        # Add it to the company's roles
+        com.roles += int
+
+        # Create person (employee)
+        per = party.person(first='John', last='Smith')
+
+        # Create employee role
+        emp = party.employee()
+
+        # Assign the employment role to the person
+        per.roles += emp
+
+        # Associate the emp role with int role, creating the employment
+        # relationship
+        emp.role_roles += hr.employeement(
+            object = int
+        )
+
+        # Get the employeement association
+        employeement = emp.role_roles.last
+
+        employeement.histories += hr.history(
+            begin = 'Jan 1, 1995',
+            end   = 'Dec 31, 1997',
+            amount = 45_000,
+            periodtype = hr.periodtype(name='per year')
+        )
+
+        employeement.histories += hr.history(
+            begin = 'Jan 1, 1998',
+            end   = 'Dec 31, 2000',
+            amount = 55_000,
+            periodtype = hr.periodtype(name='per year')
+        )
+
+        employeement.histories += hr.history(
+            begin = 'Jan 1, 2001',
+            end   = None,
+            amount = 62_500,
+            periodtype = hr.periodtype(name='per year')
+        )
+
+        emp.save()
+
+        employeement1 = emp.orm.reloaded().role_roles.first
+        employeement1 = employeement1.orm.cast(hr.employeement)
+
+        hists = employeement.histories.sorted()
+        hists1 = employeement1.histories.sorted()
+
+        self.three(hists)
+        self.three(hists1)
+
+        for hist, hist1 in zip(hists, hists1):
+            self.eq(hist.id, hist1.id)
+            self.eq(hist.begin, hist1.begin)
+            self.eq(hist.end, hist1.end)
+            self.eq(
+                hr.periodtype(name='per year').id, 
+                hist1.periodtype.id
+            )
+
+    def it_creates_benefits(self):
+        # Create company
+        com = party.company(name='ABC Corporation')
+
+        # Create an interanal organization role
+        int = party.internal()
+
+        # Add it to the company's roles
+        com.roles += int
+
+        # Create person (employee)
+        per = party.person(first='John', last='Smith')
+
+        # Create employee role
+        emp = party.employee()
+
+        # Assign the employment role to the person
+        per.roles += emp
+
+        # Associate the emp role with int role, creating the employment
+        # relationship
+        emp.role_roles += hr.employeement(
+            object = int
+        )
+
+        # Get the employeement association
+        employeement = emp.role_roles.last
+
+        # $1,200 per year for a health benefit
+        employeement.benefits += hr.benefit(
+            begin = 'Jan 1. 1998',
+            end   = 'Dec 31. 2000',
+            amount = 1_200,
+            percent = 50,
+            periodtype = hr.periodtype(
+                name = 'per year'
+            ),
+            benefittype = hr.benefittype(
+                name = 'Health',
+                description = None,
+            ),
+        )
+
+        # $1,500 per year for a health benefit (current)
+        employeement.benefits += hr.benefit(
+            begin = 'Jan 1. 2000',
+            end   = None,
+            amount = 1_500,
+            percent = 60,
+            periodtype = hr.periodtype(
+                name = 'per year'
+            ),
+            benefittype = hr.benefittype(
+                name = 'Health',
+                description = None,
+            ),
+        )
+
+        # 15 days of vacation 
+        employeement.benefits += hr.benefit(
+            percent = 100,
+            time = 10,
+            periodtype = hr.periodtype(
+                name = 'days'
+            ),
+            benefittype = hr.benefittype(
+                name = 'Vacation',
+                description = None,
+            ),
+        )
+
+        # 10 days of sick leave
+        employeement.benefits += hr.benefit(
+            percent = 100,
+            time = 10,
+            periodtype = hr.periodtype(
+                name = 'days'
+            ),
+            benefittype = hr.benefittype(
+                name = 'Sick leave',
+                description = None,
+            ),
+        )
+
+        # $50 per year for 401k
+        employeement.benefits += hr.benefit(
+            begin = 'Jan 1, 2001',
+            percent = 100,
+            amount = 50,
+            periodtype = hr.periodtype(
+                name = 'per year'
+            ),
+            benefittype = hr.benefittype(
+                name = '401k',
+                description = None,
+            ),
+        )
+
+        employeement.save()
+        employeement1 = employeement.orm.reloaded()
+
+        benes = employeement.benefits.sorted()
+        benes1 = employeement1.benefits.sorted()
+
+        self.five(benes)
+        self.five(benes1)
+
+        for bene, bene1 in zip(benes, benes1):
+            self.eq(bene.id, bene1.id)
+            self.eq(bene.begin, bene1.begin)
+            self.eq(bene.end, bene1.end)
+            self.eq(bene.percent, bene1.percent)
+            self.eq(bene.time, bene1.time)
+            self.eq(
+                bene.periodtype.id,
+                bene1.periodtype.id
+            )
+            self.eq(
+                bene.benefittype.id,
+                bene1.benefittype.id
+            )
+
+    def it_creates_paycheck_preferences(self):
+        ''' First, create an employeement '''
+        # Create company
+        com = party.company(name='ABC Corporation')
+
+        # Create an interanal organization role
+        int = party.internal()
+
+        # Add it to the company's roles
+        com.roles += int
+
+        # Create person (employee)
+        per = party.person(first='John', last='Smith')
+
+        # Create employee role
+        emp = party.employee()
+
+        # Assign the employment role to the person
+        per.roles += emp
+
+        # Associate the emp role with int role, creating the employment
+        # relationship
+        emp.role_roles += hr.employeement(
+            object = int
+        )
+
+        # Get the employeement association
+        employeement = emp.role_roles.last
+
+        prefs = hr.preferences()
+        prefs += hr.preference(
+            methodtype = hr.methodtype(name='electronic'),
+            employee = emp,
+            begin = 'Jan 1, 1995',
+            end   = 'Nov 1, 1999',
+            percent = 50,
+            routing = '99986-99',
+            account = 30984098,
+            bank = 'Some bank',
+        )
+
+        prefs += hr.preference(
+            methodtype = hr.methodtype(name='electronic'),
+            employee = emp,
+            begin = 'Jan 1, 1995',
+            end   = None,
+            percent = 50,
+            routing = '99986-99',
+            account = 9348599,
+            bank = 'Some bank',
+        )
+
+        prefs += hr.preference(
+            methodtype = hr.methodtype(name='electronic'),
+            employee = emp,
+            begin = 'Nov 2, 1999',
+            end   = None,
+            percent = 50,
+            routing = '11111-22',
+            account = 67567676,
+            bank = 'Some other bank',
+        )
+
+        prefs += hr.preference(
+            employee = emp,
+            begin = 'Nov 2, 1999',
+            end   = None,
+            percent = None,
+            amount = 125,
+            periodtype = hr.periodtype(name='per month'),
+            deductiontype = hr.deductiontype(name='Insurance')
+        )
+
+        prefs.orm.truncate()
+
+        prefs.save()
+        prefs.sort()
+        prefs1 = prefs.orm.all.sorted()
+
+        self.four(prefs)
+        self.four(prefs1)
+
+        for pref, pref1 in zip(prefs, prefs1):
+            if pref.methodtype:
+                self.eq(
+                    hr.methodtype(name='electronic').id, 
+                    pref1.methodtype.id
+                )
+
+            self.eq(pref.employee.id,  pref1.employee.id)
+            self.eq(pref.begin,        pref1.begin)
+            self.eq(pref.end,          pref1.end)
+            self.eq(pref.percent,      pref1.percent)
+            self.eq(pref.routing,      pref1.routing)
+            self.eq(pref.account,      pref1.account)
+            self.eq(pref.bank,         pref1.bank)
+
+    def it_applies_deductions_from_paycheck(self):
+        ''' First, create an employeement '''
+        # Create company
+        com = party.company(name='ABC Corporation')
+
+        # Create an interanal organization role
+        int = party.internal()
+
+        # Add it to the company's roles
+        com.roles += int
+
+        # Create person (employee)
+        per = party.person(first='John', last='Smith')
+
+        # Create employee role
+        emp = party.employee()
+
+        # Assign the employment role to the person
+        per.roles += emp
+
+        # Associate the emp role with int role, creating the employment
+        # relationship
+        emp.role_roles += hr.employeement(
+            object = int
+        )
+
+        # Get the employeement association
+        employeement = emp.role_roles.last
+
+        chk = hr.paycheck(
+           employee = emp,
+           internal = int,
+           realized = 'Jan 1, 2001',
+           amount   = 2_000,
+        )
+
+        chk.deductions += hr.deduction(
+            deductiontype = hr.deductiontype(
+                name = 'Federal Tax',
+            ),
+            amount = 200,
+        )
+
+        chk.deductions += hr.deduction(
+            deductiontype = hr.deductiontype(
+                name = 'FICA',
+            ),
+            amount = 54.50,
+        )
+
+        chk.deductions += hr.deduction(
+            deductiontype = hr.deductiontype(
+                name = 'State tax',
+            ),
+            amount = 80,
+        )
+
+        chk.deductions += hr.deduction(
+            deductiontype = hr.deductiontype(
+                name = 'Federal Tax',
+            ),
+            amount = 125,
+        )
+
+        chk.save()
+
+        chk1 = chk.orm.reloaded()
+
+        self.eq(chk.id, chk1.id)
+        self.eq(chk.employee.id, chk1.employee.id)
+        self.eq(chk.internal.id, chk1.internal.id)
+        self.eq(chk.amount, chk1.amount)
+
+        ducts = chk.deductions.sorted()
+        ducts1 = chk1.deductions.sorted()
+
+        self.four(ducts)
+        self.four(ducts1)
+
+        for duct, duct1 in zip(ducts, ducts1):
+            self.eq(duct.id, duct1.id)
+            self.eq(duct.deductiontype.id, duct1.deductiontype.id)
+            self.eq(duct.deductiontype.name, duct1.deductiontype.name)
+            self.eq(duct.amount, duct1.amount)
+
+
 ########################################################################
 # Test dom                                                             #
 ########################################################################
+class foonets(pom.sites): pass
 class foonet(pom.site):
-    def __init__(self, host='foo.net'):
-        super().__init__(host)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.host = 'foo.net'
 
         ''' Pages '''
         self.pages += home()
@@ -24412,8 +24935,8 @@ class pom_site(tester):
         self.eq(main.items.pretty, mnu.items.pretty)
         
     def it_calls__repr__(self):
-        self.eq('site()', repr(pom.site('foo.bar')))
-        self.eq('site()', str(pom.site('foo.bar')))
+        self.eq('site()', repr(pom.site()))
+        self.eq('site()', str(pom.site()))
 
         self.eq('foonet()', repr(foonet()))
         self.eq('foonet()', str(foonet()))
@@ -24435,7 +24958,7 @@ class pom_site(tester):
         self.expect(IndexError, lambda: ws[dom.p()])
 
     def it_calls_html(self):
-        ws = pom.site('foo.bar')
+        ws = pom.site()
         self.type(dom.html, ws.html)
         self.eq('en', ws.html.lang)
 
@@ -24473,7 +24996,7 @@ class pom_site(tester):
         self.one(titles)
         self.eq(title, titles.first.text)
 
-        ws = pom.site('foo.bar')
+        ws = pom.site()
         hd = ws.head
         self.one(hd.children['meta[charset=utf-8]'])
 
@@ -24508,7 +25031,7 @@ class pom_site(tester):
         self.one(navs['[aria-label=Main]'])
 
     def it_calls_main_menu(self):
-        ws = pom.site('foo.bar')
+        ws = pom.site()
         mnu = ws.header.menu
         self.zero(mnu.items)
 
@@ -24618,12 +25141,6 @@ class pom_site(tester):
         self.zero(mnu[sels])
 
 class pom_page(tester):
-    def __init__(self):
-        super().__init__()
-        orm.orm.recreate(
-            party.user
-        )
-
     def it_calls__init__(self):
         name = uuid4().hex
         pg = pom.page()
@@ -24811,7 +25328,7 @@ class pom_page(tester):
         self.isnot(pg.head,          ws.head)
 
     def it_calls_site(self):
-        ws = foonet(host='foo.net')
+        ws = foonet(name='foo.net')
         self.is_(ws, ws['/en/blogs'].site)
         self.is_(ws, ws['/en/blogs/comments'].site)
         self.is_(ws, ws['/en/blogs/comments/rejected'].site)
@@ -25183,9 +25700,11 @@ class pom_page(tester):
         self.one(res['main[data-path="/error"]'])
 
     def it_raises_404(self):
+        class derpnets(pom.sites): pass
         class derpnet(pom.site):
-            def __init__(self, host='derp.net'):
-                super().__init__(host)
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.host = 'derp.net'
 
         ws = derpnet()
         tab = self.browser().tab()
@@ -25250,7 +25769,7 @@ class pom_page(tester):
         self.eq('Lang: es', (res['main p'].first.text))
         return
 
-        # Ensure it defauls to Engilsh
+        # Ensure it defauls to English
         # TODO Remove return
         res = tab.get('/lang', ws)
 

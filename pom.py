@@ -10,23 +10,29 @@
 
 from contextlib import suppress
 from dbg import B
+import asset
 import datetime
 import dom
 import entities
 import exc
-import www
+import file
 import inspect
+import itertools
+import orm
 import primative
 import textwrap
-import itertools
+import www
 
 # References:
 #
 # WAI-ARIA Authoring Practices 1.1
 # https://www.w3.org/TR/wai-aria-practices/
 
-class site(entities.entity):
-    def __init__(self, host):
+class sites(asset.assets): pass
+
+class site(asset.asset):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.index = None
         self._pages = None
         self._html = None
@@ -39,7 +45,6 @@ class site(entities.entity):
         self.sidebars = sidebars()
 
         self._title = type(self).__name__.replace('_', '-')
-        self._host = host
 
         # TODO Replace with `file` object when it is created. NOTE that
         # the file object will need to have an integrity property to
@@ -51,6 +56,9 @@ class site(entities.entity):
 
         self.stylesheets = list()
         self._header = None
+
+    host = str
+    resources = file.resources
 
     @property
     def pages(self):
@@ -85,10 +93,6 @@ class site(entities.entity):
             return self.pages[path]
         except IndexError:
             return None
-
-    @property
-    def host(self):
-        return self._host
 
     @property
     def lang(self):
@@ -158,7 +162,23 @@ class site(entities.entity):
 
         for stylesheet in self.stylesheets:
             self._head += dom.link(rel="stylesheet", href=stylesheet)
-        
+
+        # TODO Consolidate with page.head
+        for res in self.resources:
+
+            src = res.relative if res.local else res.url
+
+            if res.mime == 'application/javascript':
+                el = dom.script(
+                    integrity = res.integrity, 
+                    crossorigin = res.crossorigin,
+                    src = src
+                )
+            elif res.mimetype == 'text/css':
+                raise NotImplementedError('TODO')
+
+            self._head += el
+
         return self._head
 
     @property
@@ -547,6 +567,9 @@ class page(dom.html):
         self._header       =  None
         self._sidebars     =  None
         self._args         =  dict()
+        self.resources     =  file.resources()
+        self.resources.page = self
+
         try:
             self._mainfunc = self.main
         except AttributeError:
@@ -603,6 +626,26 @@ class page(dom.html):
                 self._head = self.site.head
             else:
                 self._head = dom.head()
+
+        for res in self.resources:
+            if res.mime == 'application/javascript':
+                src = res.relative if res.local else res.url
+
+                if src in self._head['script'].pluck('src'):
+                    continue
+
+                el = dom.script(
+                    integrity = res.integrity, 
+                    crossorigin = res.crossorigin,
+                    src = src
+                )
+            elif res.mimetype == 'text/css':
+                raise NotImplementedError('TODO')
+            else:
+                raise TypeError(f'Invalid mime type: {res.mimetype}')
+
+            self._head += el
+
 
         return self._head
     
@@ -776,6 +819,7 @@ class page(dom.html):
     def elements(self):
         els = super().elements
         els.clear()
+        # TODO ``ws`` is never used
         ws = self.site
 
         if self.head:
