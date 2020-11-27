@@ -18,18 +18,21 @@
 #   https://www.hr360.com/Resource-Center/HR-Terms.aspx
 
 from datetime import datetime, date
+from db import RecordNotFoundError
 from dbg import B
 from decimal import Decimal as dec
+from entities import classproperty
 from orm import text, datespan, timespan
-from db import RecordNotFoundError
 import apriori
 import asset
 import builtins
+import db
+import file
 import hashlib
 import orm
 import os
 import primative
-import file
+import uuid
 
 ''' Parties '''
 
@@ -229,11 +232,11 @@ class party(orm.entity):
     may be either an organization or a person.
     """
     def __init__(self, *args, **kwargs):
+        self._updateperson = True
         super().__init__(*args, **kwargs)
         self.orm.default('nationalids', None)
         self.orm.default('isicv4', None)
         self.orm.default('dun', None)
-        self._updateperson = True
 
     # A party may have 0 or more national id numbers. For example, an
     # organization may have one or more Federal Taxpayer Identification
@@ -281,6 +284,20 @@ class party(orm.entity):
             self.name = v
         finally:
             self._updateperson = True
+
+    @classproperty
+    def anonymous(cls):
+        # TODO Ensure that only one party record can have a name of None 
+
+        # TODO Write test to ensure this returns the same party each
+        # time.
+        ents = cls.orm.entities('name is %s', (None,))
+        if ents.isempty:
+            ent = cls(name=None)
+            ent.save()
+            return ent
+
+        return ents.first
         
 class organization(party):
     """ An abstract class representing a group of people with a common
