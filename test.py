@@ -17599,25 +17599,6 @@ class gem_party(tester):
         # Test
         self.eq(newfirstname, per1.first)
         self.ne(oldfirstname, per1.first)
-
-    def it_creates_association_to_person(self):
-        bro = self.getvalid()
-        sis = self.getvalid()
-
-        # TODO Figure out a way to do this:
-        #
-        #     bro.siblings += sis
-        bro.party_parties += party.party_party.sibling(sis)
-
-        self.is_(bro, bro.party_parties.last.subject)
-        self.is_(sis, bro.party_parties.last.object)
-
-        bro.save()
-
-        bro1 = party.person(bro.id)
-
-        self.eq(bro.id, bro1.party_parties.last.subject.id)
-        self.eq(sis.id, bro1.party_parties.last.object.id)
         
     def it_creates_association_to_company(self):
         per = self.getvalid()
