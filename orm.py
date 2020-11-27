@@ -3106,7 +3106,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         e = self_orm.entity
                         while e:
                             if map1.entity is e:
-                                break
+                                if not map1.fkname:
+                                    break
+
+                                if map1.fkname == e.__name__:
+                                    break
 
                             # If not found, go up the inheritance tree
                             # and try again
