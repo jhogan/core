@@ -144,5 +144,40 @@ class test_ecommerce(tester.tester):
         self.eq(need.needtype.id, need1.needtype.id)
         self.eq(need.communication.id, need1.communication.id)
 
+    def it_creates_visits(self):
+        parties = party.parties()
+
+        anon = party.party.anonymous
+        parties += anon
+        visitor = ecommerce.visitor()
+        anon.roles += visitor
+
+        visitor.visits += ecommerce.visit(
+            begin = '12/31/1999 23:50:00',
+            end   = '1/1/2000 00:10:53',
+        )
+
+        visitor.visits.last.hits += ecommerce.hit(
+            datetime = '12/31/1999 23:50:00',
+            size = 100,
+            ip = ecommerce.ip(address='10.10.10.1'),
+            # useragent = 
+            # content = 
+        )
+
+        parties.save()
+
+        for par in parties:
+            vistor = par.roles.first
+            for visit in visitor.visits:
+                visit1 = visit.orm.reloaded()
+                self.eq(visit.begin, visit1.begin)
+                self.eq(visit.end, visit1.end)
+
+                for hit in visit1.hits:
+                    self.eq(hit.datetime, hit.datetime)
+                    self.eq(hit.size, hit.size)
+                    self.eq(hit.ip.id, hit.ip.id)
+
 if __name__ == '__main__':
     tester.cli().run()

@@ -101,6 +101,7 @@ class visitor(party.consumer):
     be a customer``, ``propspect``, or some other subtype of
     ``party.consumer``.
     """
+    visits = visits
 
 class subscriber(party.consumer):
     """ A ``subscriber`` may be a ``party`` who has subscribed to a
@@ -407,8 +408,12 @@ class visit(orm.entity):
     A visit may result in one or more orders.
     """
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.default('cookie', None)
+
     # The span of time in which the visit takes place
-    span = datetime
+    span = timespan
 
     # A string that helps identify the machine that was used for the
     # connection.
@@ -421,6 +426,8 @@ class hit(orm.entity):
     Note that this is modeled after the SERVER HIT entity in "The Data
     Model Resource Book Volume 2".
     """
+
+    datetime = datetime
 
     # The size, in bytes, of the response. 
     size = int
