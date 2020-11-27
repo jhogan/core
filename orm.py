@@ -3217,6 +3217,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 for map in orm.mappings.associationsmappings:
                     maps = map.associations.orm.mappings.entitymappings
                     for map1 in maps:
+                        if map1.isproprietor:
+                            continue
 
                         es = [map1.entity]
                         es.extend([
@@ -3993,6 +3995,10 @@ class entitymapping(mapping):
     def isobjective(self):
         return self.orm.isreflexive \
                and self.name.startswith('object') 
+
+    @property
+    def isproprietor(self):
+        return self.name == 'proprietor'
 
     @property
     def value(self):
