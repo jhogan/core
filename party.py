@@ -292,6 +292,10 @@ class unit(organization):
         self.isicv4       =  None
 
 class division(unit):
+    # TODO ``division`` must inherit from ``organizationalunit``, not
+    # ``unit``. This would make it a ``role`` instead of a ``party``.
+    # Same with ``department``.
+
     # TODO:afa4ffc9 Is this how divisions are related to position in the
     # book.
     positions = positions
@@ -330,6 +334,10 @@ class position(orm.entity):
     fulltime = bool
 
 class department(unit):
+    # TODO ``department`` must inherit from ``organizationalunit``, not
+    # ``unit``. This would make it a ``role`` instead of a ``party``.
+    # Same with ``division``.
+
     # TODO:afa4ffc9 Now that we are using role_role to associates
     # parties with each other, the entity objects `divisions` will no
     # longer have a many-to-one relationship with `department`;

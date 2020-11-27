@@ -3199,7 +3199,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         elif map is None:
             # For each of self's association mappings, look for the
             # one that has entity mapping that matches `attr`. If
-            # found, get the associations collection object from the
+            # found, get the association's collection object from the
             # association mapping.  Then return that collection's
             # `attr` property.
             #
