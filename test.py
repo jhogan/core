@@ -55,6 +55,8 @@ import re
 import shipment
 import tempfile
 import textwrap
+
+import testecommerce
 import tfile
 
 # Import crust. Ensure that stdout is suppressed because it will print

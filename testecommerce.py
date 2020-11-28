@@ -14,8 +14,6 @@ import ecommerce, party, product
 import orm
 import tester
 
-# TODO Add `import testecommerce` to test.py
-
 class test_ecommerce(tester.tester):
     def __init__(self):
         super().__init__()
