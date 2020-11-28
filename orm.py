@@ -214,10 +214,9 @@ class AttributeError(builtins.AttributeError):
 
 @unique
 class types(Enum):
-    """
-    An ``Enum`` contanining members which represent the basic data types
-    supported by the ORM such as ``str``, ``int``, ``datetime`` as well as
-    ``pk`` (primary key) and ``fk`` (foreign key).  
+    """ An ``Enum`` contanining members which represent the basic data
+    types supported by the ORM such as ``str``, ``int``, ``datetime`` as
+    well as ``pk`` (primary key) and ``fk`` (foreign key).  
     """
     pk        =  0
     fk        =  1
@@ -232,6 +231,9 @@ class types(Enum):
     timespan  =  10
 
 class alias:
+    """ An abstract class to create data type aliases. See ``text`` for
+    an concrete implementation.
+    """
     type = None
     min = None
     max = None
@@ -301,9 +303,9 @@ class char():
 class span:
     """ An abstract class for spans of time. 
     
-    Many entities in the GEM require date(time) fields with names like
-    ``begin`` and ``end`` to record the time an entity has been in a
-    certain state. For example::
+    Many entities in the General Entity Model (GEM) require date(time)
+    fields with names like ``begin`` and ``end`` to record the time an
+    entity has been in a certain state. For example::
 
         class user(orm.entity):
             # The date the user became active
@@ -346,6 +348,17 @@ class span:
     """
     
     def __init__(self, prefix=None, suffix=None, e=None):
+        """ Instantiate a (date|time)span.
+
+        :param: prefix str: The prefix of the span attribute.
+
+        :param: suffix str: The suffix of the span attribute.
+
+        :param: suffix orm.entity: The entity corresponding to span.
+        entity.__getattribute__ will pass this into the `.clone` method
+        to make it aware of its entity. This is important for the
+        `.begin` and `.end` methods.
+        """
         self.entity = e
         self._prefix = prefix
         self._suffix = suffix
@@ -363,6 +376,9 @@ class span:
         """ A class method to scan the ``body`` ``dict`` for spans. If
         found, `begin`, `end` and a `span` object are added to the
         ``body`` ``dict``.  
+
+        :param: body dict The dict used by the ``entity``'s metaclass
+        (entitymeta.__new__).
         """
         mods = list()
         for k, v in body.items():
@@ -5363,15 +5379,15 @@ class orm:
         """ Drop and recreate the table for the orm ``self``. 
 
         :param: cur:       The MySQLdb cursor used by this and all
-                           subsequent CREATE and DROPs
+        subsequent CREATE and DROPs
 
         :param: recursive: If True, the constituents and subentities of
-                           ``self`` will be recursively discovered and
-                           their tables recreated. Used internally.
+        ``self`` will be recursively discovered and their tables
+        recreated. Used internally.
 
-        :param: guestbook: A list to keep track of which classes' tables have
-                           been recreated. Used internally to prevent
-                           infinite recursion.
+        :param: guestbook: A list to keep track of which classes' tables
+        have been recreated. Used internally to prevent infinite
+        recursion.
         """
 
         # Prevent infinite recursion
