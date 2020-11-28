@@ -57,7 +57,7 @@ import tempfile
 import textwrap
 
 import testecommerce
-import tfile
+import testfile
 
 # Import crust. Ensure that stdout is suppressed because it will print
 # out status information on startup.
