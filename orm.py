@@ -6695,6 +6695,10 @@ class orm:
         # art.artifacts).
         for map in self.mappings.associationsmappings:
             for map1 in map.associations.orm.mappings.entitymappings:
+
+                if map1.isproprietor:
+                    continue
+
                 if self.entity is not map1.entity:
                     props.append(map1.entity.orm.entities.__name__)
 
