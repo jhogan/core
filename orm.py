@@ -2846,6 +2846,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             # Set the entity's FK to self.id value
                             for map in e.orm.mappings:
                                 if type(map) is foreignkeyfieldmapping:
+                                    
+                                    # Under no circumstance should the
+                                    # proprietor be set here. 
+                                    if map.isproprietor:
+                                        continue
+                                    
                                     if map.entity is self.orm.entity:
                                         # Set map.value to self.id. But
                                         # rather than a direct
@@ -3048,47 +3054,43 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 t = map.type
                 if t == types.str:
                     brs.demand(
-                        self, 
-                        map.name, 
-                        type=str, 
-                        min=map.min, 
-                        max=map.max
+                        self,         map.name,    type=str,
+                        min=map.min,  max=map.max
                    )
 
                 elif t == types.int:
-                    brs.demand(self, map.name, min=map.min, max=map.max, 
-                                     type=int)
+                    brs.demand(
+                        self,         map.name,  min=map.min,
+                        max=map.max,  type=int
+                    )
+
                 elif t == types.bool:
                     brs.demand(self, map.name, type=bool)
 
                 elif t == types.float:
-                    brs.demand(self, map.name, 
-                                     type=float, 
-                                     min=map.min, 
-                                     max=map.max, 
-                                     precision=map.precision,
-                                     scale=map.scale)
+                    brs.demand(self, 
+                        map.name,                 type=float,
+                        min=map.min,              max=map.max,
+                        precision=map.precision,  scale=map.scale
+                    )
 
                 elif t == types.decimal:
-                    brs.demand(self, map.name, 
-                                     type=decimal.Decimal, 
-                                     min=map.max, 
-                                     max=map.min, 
-                                     precision=map.precision,
-                                     scale=map.scale)
+                    brs.demand(
+                        self,                  map.name,
+                        type=decimal.Decimal,  min=map.max,
+                        max=map.min,           precision=map.precision,
+                        scale=map.scale
+                    )
 
                 elif t == types.bytes:
-                    brs.demand(self, 
-                        map.name, 
-                        type=bytes,
-                        max=map.max, 
-                        min=map.min
+                    brs.demand(
+                        self,         map.name,    type=bytes,
+                        max=map.max,  min=map.min
                     )
 
                 elif t == types.date:
-                    brs.demand(self, 
-                        map.name, 
-                        instanceof=date,
+                    brs.demand(
+                        self, map.name, instanceof=date,
                         min=type(self).mindatetime,
                         max=type(self).maxdatetime,
                     )
@@ -3100,17 +3102,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         max=type(self).maxdatetime,
                     )
 
-            # NOTE I added a `followentitiesmapping` flag (7d3bc6ce) which I
-            # only applied to associations (see below) because association are
-            # a subtype of entities. However, I could have added it to the
-            # below line so that it would read:
-            #
-            #     `followentitiesmapping and elif type(map) is entitiesmapping:`
-            #
-            # However, I didn't do it because, at the moment, there is no issue
-            # here with the current logic. However, that may change and we will
-            # want to add (as one would expect) the `followentitiesmapping`
-            # flag here as well.
             elif type(map) is entitiesmapping:
                 # NOTE Currently, map.value will not load the entities
                 # on invocation so we get None for es. This is good
@@ -3145,6 +3136,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             elif type(map) is associationsmapping:
                 if map.isloaded:
                     brs += map.value.getbrokenrules(gb=gb)
+
+            # TODO:378d87b1 Add proprietor check for FK and
+            # entitymappings here and write test
 
         return brs
 
@@ -4849,6 +4843,10 @@ class foreignkeyfieldmapping(fieldmapping):
                 % (self._fkname, self.entity.__name__ + 'id')
 
         return self.entity.__name__ + 'id'
+
+    @property
+    def isproprietor(self):
+        return self.name == 'proprietor__partyid'
 
     @property
     def fkname(self):
@@ -7197,7 +7195,7 @@ class associations(entities):
     def entities_onadd(self, src, eargs):
         """
         An event handler invoked when an entity is added to the
-        association (``self``) through the associations
+        association (``self``) through the association's
         pseudocollection, e.g.::
 
             # Create artist entity
@@ -7207,9 +7205,11 @@ class associations(entities):
             art.artifact += artifact() 
 
         :param: src entities:    The pseudocollection's entities object.
+
         :param: eargs eventargs: The event arguments. Its ``entity``
-                                 property is the entity object being
-                                 added to the pseudocollection.
+        property is the entity object being added to the
+        pseudocollection.
+
         """
         ass = None
 
@@ -7281,6 +7281,11 @@ class associations(entities):
             # (eargs.entity) instead.
             ass = self.orm.entity()
             for map1 in ass.orm.mappings.entitymappings:
+
+                # Ignore if it's the `ass`'s 'proprietor' entitymapping
+                if map1.isproprietor:
+                    continue
+
                 if map1.name != compmap.name:
                     setattr(ass, map1.name, eargs.entity)
 
