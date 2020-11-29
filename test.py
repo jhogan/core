@@ -5585,6 +5585,7 @@ class test_orm(tester):
 
         with self._chrontest() as t:
             t(lambda: sng1.locations)
+            t.retrieved(sng1.locations)
 
             # NOTE Loading locations requires that we load singer's
             # superentity (artist) first because `locations` is a
@@ -5595,13 +5596,10 @@ class test_orm(tester):
             #
             #     assert sng1.location.artists is sng1.orm.super
             #
-            t.retrieved(sng1.locations)
             t.retrieved(sng1.locations.artist)
 
         with self._chrontest() as t:
             t(lambda: sng1.concerts)
-
-
             t.retrieved(sng1.concerts)
 
         with self._chrontest() as t:
