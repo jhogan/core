@@ -6685,17 +6685,24 @@ class orm:
 
         :returns: list A list of all the property names for this entity.
         """
+
+        # Get list of propreties for this class
         props = [x.name for x in self.mappings]
 
+        # Look at all the associations that this entity is envolved in
+        # and add the name of the associated entity to `props`. These
+        # names would be for pseudocollection access (i.e.,
+        # art.artifacts).
         for map in self.mappings.associationsmappings:
             for map1 in map.associations.orm.mappings.entitymappings:
                 if self.entity is not map1.entity:
                     props.append(map1.entity.orm.entities.__name__)
 
-        # TODO s/super/sup/
-        super = self.super
-        if super:
-            props += [x for x in super.orm.properties if x not in props]
+        # Look for properties in the super. Not that this will ascend
+        # the inheritance hierarchy until we reach the root entity.
+        sup = self.super
+        if sup:
+            props += [x for x in sup.orm.properties if x not in props]
 
         return props
 
