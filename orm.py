@@ -2769,7 +2769,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # another's records.
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         if crud in ('update', 'delete'):
-            if self.proprietor.id != orm.proprietor.id:
+            if self.proprietor__partyid != orm.proprietor.id:
                 raise ProprietorError(self.proprietor)
 
         try:
