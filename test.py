@@ -5583,28 +5583,34 @@ class test_orm(tester):
 
         sng1 = singer(sng.id)
 
-        chrons.clear()
+        with self._chrontest() as t:
+            t(lambda: sng1.locations)
+
+            # NOTE Loading locations requires that we load singer's
+            # superentity (artist) first because `locations` is a
+            # constituent of `artist`.  Though this may seem
+            # ineffecient, since the orm has what it needs to load
+            # `locations` without loading `artist`, we would want the
+            # following to work for the sake of predictability:
+            #
+            #     assert sng1.location.artists is sng1.orm.super
+            #
+            t.retrieved(sng1.locations)
+            t.retrieved(sng1.locations.artist)
+
+        with self._chrontest() as t:
+            t(lambda: sng1.concerts)
+
+
+            t.retrieved(sng1.concerts)
+
+        with self._chrontest() as t:
+            t(lambda: sng1.concerts.first.locations)
+            t.retrieved(sng1.concerts.first.locations)
 
         self.eq(sng.locations.first.id, sng1.locations.first.id)
         self.eq(sng.concerts.first.locations.first.id, 
                 sng1.concerts.first.locations.first.id)
-
-        self.five(chrons)
-        self._chrons(sng1.concerts,                  'retrieve')
-        self._chrons(sng1.concerts.first.orm.super,  'retrieve')
-        self._chrons(sng1.concerts.first.locations,  'retrieve')
-        self._chrons(sng1.locations,                 'retrieve')
-
-        # NOTE Loading locations requires that we load singer's
-        # superentity (artist) first because `locations` is a
-        # constituent of `artist`.  Though this may seem ineffecient,
-        # since the orm has what it needs to load `locations` without
-        # loading `artist`, we would want the following to work for the
-        # sake of predictability:
-        #
-        #     assert sng1.locations.artists is sng1.orm.super
-        #
-        self._chrons(sng1.locations.artist,          'retrieve')
 
         chrons.clear()
         self.is_(sng1.locations.artist, sng1.orm.super)
