@@ -413,6 +413,11 @@ class span:
             body[k]     = v
 
     def clone(self, e):
+        """ Clone the ``span`` with an entity (``e``).
+
+        :param: e orm.entity: The entity instance that this span belongs
+        to.
+        """
         return type(self)(
             prefix=self.prefix, 
             suffix=self.suffix, 
@@ -425,6 +430,10 @@ class span:
 
     @property
     def str_begin(self):
+        """ Returns the name of the *begin* method. By default this will
+        be 'begin', however the prefix and suffix will change this if
+        they exist.
+        """
         begin = 'begin'
         if self.prefix:
             begin = self.prefix + begin
@@ -433,9 +442,15 @@ class span:
             begin += self.suffix
 
         return begin
+        # TODO Make this private by adding an underscore. Same with
+        # str_end.
 
     @property
     def str_end(self):
+        """ Returns the name of the *end* method. By default this will
+        be 'end', however the prefix and suffix will change this if
+        they exist.
+        """
         end = 'end'
         if self.prefix:
             end = self.prefix + end
@@ -451,6 +466,8 @@ class span:
 
     @property
     def begin(self):
+        """ Return the date/datetime value for 'begin'.
+        """
         return getattr(self.entity, self.str_begin)
 
     @begin.setter
@@ -459,6 +476,8 @@ class span:
 
     @property
     def end(self):
+        """ Return the date/datetime value for 'end'.
+        """
         return getattr(self.entity, self.str_end)
 
     @end.setter
@@ -466,6 +485,11 @@ class span:
         setattr(self.entity, self.str_end, v)
 
     def __contains__(self, dt):
+        """ Answers the qustion: is ``dt`` within this timespan. If
+        true, return True; False otherwise.
+
+        :param: dt datetime: The datetime in question.
+        """
         if type(self) is timespan:
             dt = primative.datetime(dt)
         elif type(self) is datespan:
@@ -477,6 +501,9 @@ class span:
                (self.end   is None or dt <= self.end)
 
     def iscurrent(self):
+        """ Returns True if the current time, in UTC, is within this
+        timespan.
+        """
         return primative.utcnow in self
 
     def __repr__(self):
@@ -515,11 +542,9 @@ class undef:
     pass
 
 class stream(entitiesmod.entity):
-    """
-    ``stream`` objects are used to configure ``entities``. Passing a ``stream``
-    object to an ``entities`` ``__init__`` method instructs the `entities`
-    object to function in streaming/chunking mode.
-    """
+    """ ``stream`` objects are used to configure ``entities``. Passing a
+    ``stream`` object to an ``entities`` ``__init__`` method instructs
+    the `entities` object to function in streaming/chunking mode.  """
 
     def __init__(self, chunksize=100):
         """ Sets the chunksize of the stream object.
