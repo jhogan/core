@@ -9838,7 +9838,6 @@ class test_orm(tester):
         art1.phone2     = uuid4().hex[0]
         art1.email_1    = uuid4().hex[0]
         art1.gender     = 'f'
-        art1.proprietor = party.person(name='Jesse Hogan')
 
         self.false(art1.orm.isnew)
         self.true(art1.orm.isdirty)
@@ -9849,7 +9848,7 @@ class test_orm(tester):
         for prop in art.orm.properties:
             if prop == 'id':
                 self.eq(getattr(art1, prop), getattr(art, prop), prop)
-            else:
+            elif prop != 'proprietor__partyid':
                 if prop in ('createdat', 'updatedat'):
                     continue
                 self.ne(getattr(art1, prop), getattr(art, prop), prop)
@@ -11794,7 +11793,8 @@ class test_orm(tester):
         """
 
     def it_saves_and_loads_subsubentities_subsubentity_constituent(
-        self):
+        self
+    ):
 
         # Make sure the constituent is None for new composites
         btl = battle.getvalid()
