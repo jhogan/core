@@ -2477,6 +2477,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 self.orm.isnew = True
                 self.orm.isdirty = False
                 self.id = uuid4()
+
+                # Assign the proprietor (the owner of the entity) to the
+                # entity's `proprietor` attribute. This ensure the
+                # proprietor gets saved to the database.
                 if orm.proprietor:
                     self.proprietor = orm.proprietor
             else:
@@ -3555,9 +3559,10 @@ class mappings(entitiesmod.entities):
             if 'proprietor' not in self:
                 from party import party
 
-                # TODO:f9a3239c Do we need isderived=True
+                # Add an entitymapping of the proprietor reference.
                 self += entitymapping(
                     'proprietor', party, isderived=True
+                    # TODO:f9a3239c Do we need isderived=True
                 )
             else:
                 print('We need this test')
@@ -4061,11 +4066,12 @@ class entitymapping(mapping):
         """ Sets the initial values.
 
         :param: str name:       The name of the map
+
         :param: entity e:       The entity class associatied with this
-                                map
+        map
+
         :param: bool isderived: Indicates whether or not the the map was
-                                created/derived by the
-                                mappings._populate() method
+        created/derived by the mappings._populate() method
         """
         self.entity = e
         self._value = None
@@ -5030,7 +5036,7 @@ class orm:
 
     @classmethod
     def setproprietor(cls, v):
-        """ Set ``v`` to orm's proprietor. Ensure that the propritor
+        """ Set ``v`` to orm's proprietor. Ensure that the proprietor
         entity owns itself.
 
         Proprietors
@@ -7625,8 +7631,8 @@ class ConfusionError(ValueError): pass
 class ProprietorError(ValueError):
     """ An error caused by the proprietor not being set correctly for
     the given operation.
-
     """
+
     def __init__(self, actual, expected=None):
         """ Initialize the exception.
 
@@ -7652,5 +7658,3 @@ class ProprietorError(ValueError):
 
     def __repr__(self):
         return str(self)
-        
-
