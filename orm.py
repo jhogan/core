@@ -2764,10 +2764,13 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             sql, args = (None,) * 2
 
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        # If we are modifying the record, the orm.proprietor matchs the
-        # record's proprietory. This ensures one party can't modify
+        # If we are modifying the record, the orm.proprietor must match
+        # the record's proprietor. This ensures one party can't modify
         # another's records.
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+
+        # TODO:ee897843 Don't allow a proprietor to create a record
+        # belonging to a different proprietor.
         if crud in ('update', 'delete'):
             if self.proprietor__partyid != orm.proprietor.id:
                 raise ProprietorError(self.proprietor)
