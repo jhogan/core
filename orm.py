@@ -708,7 +708,8 @@ class stream(entitiesmod.entity):
             return self.start
 
 class joins(entitiesmod.entities):
-    """ A collection of ``join`` classes.
+    """ A collection of ``join`` classes. Join classes are used by
+    ``entities`` to construct INNER and OUTER joins.
     """
     def __init__(self, initial=None, es=None):
         # NOTE In order to conform to the entitiesmod.entities.__init__'s
@@ -733,11 +734,7 @@ class joins(entitiesmod.entities):
 
     @property
     def abbreviation(self):
-        """
-        Returns the entities's abbreviation 
-
-        :rtype: str
-        :returns: Returns the entities's abbreviation 
+        """ Returns the entities' abbreviation 
         """
         return self.entities.orm.abbreviation
 
@@ -753,7 +750,7 @@ class join(entitiesmod.entity):
     portion of its SELECT statement (``entities.orm.sql``).
     """
     
-    # Constants for the types of a join. Currently, noly INNER JOINS are
+    # Constants for the types of a join. Currently, only INNER JOINS are
     # supported.
     Inner = 0
     Outer = 1
@@ -762,13 +759,15 @@ class join(entitiesmod.entity):
         """ Sets the initial properties of the join. 
 
         :param: entities es: The :class:`entities` that this join
-                             corresponds to.
+        corresponds to.
+
         :param: int type: The type of join (e.g., INNER, OUTER, etc.)
         """
 
         if es.orm.isstreaming:
-            msg = 'Entities cannot be joined to streaming entities'
-            raise InvalidStream(msg)
+            raise InvalidStream(
+                'Entities cannot be joined to streaming entities'
+            )
             
         self.entities = es
         self.type = type # inner, outer, etc.
@@ -794,14 +793,14 @@ class join(entitiesmod.entity):
 
     def __repr__(self):
         """ Returns a representation of the ``join`` object useful for
-        debugging. """
+        debugging.
+        """
         name = type(self.entities).__name__
         typ = ['INNER', 'OUTER'][self.type == self.Outer]
         return 'join(%s, %s)' % (name, typ)
 
 class wheres(entitiesmod.entities):
     """ A collection of ``where`` objects """
-    pass
 
 class where(entitiesmod.entity):
     """ Represents a WHERE clause of an SQL statement. """
@@ -810,15 +809,13 @@ class where(entitiesmod.entity):
         """ Sets the initial propreties for the ``where`` object. 
         
         :param:  entities  es:          The ``entities`` collection
-                                        associated with this ``where``
-                                        object.
+        associated with this ``where`` object.
 
         :param:  str or predicate pred: A str or ``predicate`` object
-                                        associated with this ``where``
-                                        object
+        associated with this ``where`` object
 
         :param:  list      args:        A list of arguments associated
-                                        with this ``where`` object.
+        with this ``where`` object.
         """
 
         self.entities     =  es
@@ -908,18 +905,7 @@ class predicate(entitiesmod.entity):
             if isinstance(expr, shlex):
                 lex = expr
             elif expr is not None:
-                # NOTE If developing with a Python version that is <
-                # 3.6, copy shlex.py into main directory to get the
-                # punctuation_chars parameter to work.
-                try:
-                    lex = shlex(expr, posix=False, punctuation_chars='!=<>')
-                except Exception as ex:
-                    # TODO Remove all this when Python <3.6 is
-                    # unsupported
-                    print(ex)
-                    print('Is an updated version of shlex missing. Try:')
-                    print('    wget https://raw.githubusercontent.com/python/cpython/master/Lib/shlex.py')
-                    raise
+                lex = shlex(expr, posix=False, punctuation_chars='!=<>')
 
             self._parse(lex)
         else:
