@@ -1341,6 +1341,44 @@ class pom_page(tester.tester):
                 self.eq('Unauthorized', res['.flash'].text)
                 self.status(401, res)
 
+    def it_floats_transactions(self):
+        jwt = None
+        class person(pom.page):
+
+            def main(self):
+                frm = dom.form()
+
+                self.main += frm
+
+                frm += pom.input(
+                    name = 'name',
+                    type = 'text',
+                    label = 'Name', 
+                    placeholder = 'Enter persons name here',
+                )
+
+                if req.ispost:
+                    frm.post = req.payload
+                    B()
+
+        # Set up site
+        ws = foonet()
+        ws.pages += person()
+
+        # Create a browser tab
+        tab = self.browser().tab()
+
+        # GET the page
+        res = tab.get('/en/person', ws)
+        self.status(200, res)
+        frm = res['form'].first
+
+        # Populate the <form>
+        frm['input[name=name]'].first.value = 'Henry Ford'
+
+        # POST the form back to page
+        res = tab.post('/en/person', ws, frm)
+
     def it_can_accesses_injected_variables(self):
         class lang(pom.page):
             def main(self):

@@ -387,6 +387,7 @@ class _request:
 
     def __call__(self):
         try:
+            self._log()
             self.page(**self.arguments)
         except HttpError as ex:
             if ex.flash:
@@ -394,7 +395,34 @@ class _request:
                 response.status = ex.status
             else:
                 raise
+
         return self.page.html
+
+    def _log(self)
+        import orm
+        usr = orm.user
+
+        if usr:
+            par = usr.party
+
+        if not par
+            par = party.anonymous
+
+        if par.visitors.count:
+            visitor = par.visitors.first
+        else:
+            visitor = ecommerce.visitor()
+            par.visitors += visitor
+
+        visit = visitor.visits.current
+
+        if not visit:
+            visit = ecommerce.visit()
+            visitor.visits += visit
+
+        visit += ecommerce.hit(self)
+                
+        hit = ecommerce.hit()
 
     @property
     def payload(self):

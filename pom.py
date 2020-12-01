@@ -807,14 +807,18 @@ class page(dom.html):
                 globs = self._mainfunc.__func__.__globals__
                 globs['req'] = www.request
                 globs['res'] = www.response
+
                 if www.request:
                     globs['usr'] = www.request.user
+
+                self._log()
 
                 # Call pages main function
                 self._mainfunc(**self._arguments)
                 self._called = True
             finally:
                 self._calling = False
+
     @property
     def elements(self):
         els = super().elements
