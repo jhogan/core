@@ -256,9 +256,9 @@ class tester(entity):
                 
                 # Make WSGI call
 
-                # NOTE PEP 0333 insist that the environment variables
+                # NOTE PEP 0333 insists that the environment variables
                 # passed in must be a dict so we convert `env` which is
-                # an www.headers object.
+                # a `www.headers` object.
                 iter = app(dict(env.list), start_response)
 
                 res = www._response(req) 

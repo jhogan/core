@@ -86,6 +86,7 @@ class application:
                 data = req()
                 if req.isget:
                     res.payload = data
+
             elif req.ispost:
                 if req.isxhr:
                     reqdata = self.request.post
@@ -360,6 +361,9 @@ class _request:
 
     @property
     def page(self):
+        """ Return the page that this request is GETting (POSTing to,
+        etc.) 
+        """
         ws = self.site
         path = self.path
         try:
@@ -374,8 +378,8 @@ class _request:
         '''
 
         try:
-            # TODO When the language code is not given, Accept-Language can
-            # be used to work out the best language.
+            # TODO When the language code is not given, Accept-Language
+            # can be used to work out the best language.
             segs = [x for x in self.path.split('/') if x]
             if len(segs):
                 return segs[0]
@@ -387,7 +391,9 @@ class _request:
 
     def __call__(self):
         try:
+            # Log the beginning of the request
             self._log()
+
             self.page(**self.arguments)
         except HttpError as ex:
             if ex.flash:
@@ -420,9 +426,10 @@ class _request:
             visit = ecommerce.visit()
             visitor.visits += visit
 
-        visit += ecommerce.hit(self)
+        hit = ecommerce.hit(self)
+
+        visit.hits += hit
                 
-        hit = ecommerce.hit()
 
     @property
     def payload(self):
@@ -506,7 +513,6 @@ class _request:
     @property
     def mime(self):
         return self.content_type.split(';')[0].strip().lower()
-
 
     def demand(self):
         if not request.page:

@@ -786,6 +786,10 @@ class page(dom.html):
         self._attemped = False
 
     def __call__(self, *args, **qsargs):
+        """ This method calls into the page's `main` method that the
+        web developer writes.
+        """
+
         self._attemped = True  # A call was attemped
 
         if len(args):
@@ -811,9 +815,8 @@ class page(dom.html):
                 if www.request:
                     globs['usr'] = www.request.user
 
-                self._log()
-
-                # Call pages main function
+                # Call page's main function. It's called `_mainfunc`
+                # here but the web developer will call it `main`.
                 self._mainfunc(**self._arguments)
                 self._called = True
             finally:
