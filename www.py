@@ -1075,6 +1075,7 @@ class headers(entities.entities):
         if not isinstance(ix, str):
             return super().__setitem__(ix)
 
+        # TODO Why can't we overwrite prior values. 
         for hdr in self:
             if hdr.name.casefold() == ix.casefold():
                 break

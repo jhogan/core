@@ -108,6 +108,8 @@ class tester(entity):
         pass
 
     class _browser(www.browser):
+
+        # TODO This appears to be a duplicate and should be removed
         def __init__(self, t, *args, **kwargs):
             self.tester = t
 
