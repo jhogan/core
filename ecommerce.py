@@ -465,8 +465,20 @@ class ip(electronicaddress):
 
     # TODO Use orm.ensure() such that only one ip address records gets
     # stored per ip address.
-    address = str
+
+    @orm.attr(str)
+    def address(self):
+        addr = attr()
+        if isinstance(addr, ip):
+            B()
+            return addr.address
+
+        return addr
+
     hits = hits
+
+    def __str__(self):
+        return self.address
 
 class useragent(orm.entity):
     """ Describes the mechanism, such as protocol, platform, browser,

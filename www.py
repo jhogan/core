@@ -404,14 +404,15 @@ class _request:
 
         return self.page.html
 
-    def _log(self)
+    def _log(self):
         import orm
+        B()
         usr = orm.user
 
         if usr:
             par = usr.party
 
-        if not par
+        if not par:
             par = party.anonymous
 
         if par.visitors.count:
@@ -426,10 +427,11 @@ class _request:
             visit = ecommerce.visit()
             visitor.visits += visit
 
-        hit = ecommerce.hit(self)
+        hit = ecommerce.hit(
+            ip = self.ip
+        )
 
         visit.hits += hit
-                
 
     @property
     def payload(self):
@@ -489,6 +491,10 @@ class _request:
     @property
     def method(self):
         return self.environment['request_method'].upper()
+
+    @property
+    def ip(self):
+        return self.environment['remote_addr']
 
     @property
     def isget(self):

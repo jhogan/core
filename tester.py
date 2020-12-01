@@ -28,6 +28,7 @@ import textwrap
 import urllib
 import uuid
 import www
+import ecommerce
 
 """ This module provides unit testing framework.
 
@@ -159,7 +160,6 @@ class tester(entity):
                         'http_host': '127.0.0.0:8000',
                         'http_user_agent': 'tester/1.0',
                         'raw_uri': '/',
-                        'remote_addr': '52.52.249.177',
                         'remote_port': '43130',
                         'script_name': '',
                         'server_port': '8000',
@@ -244,6 +244,7 @@ class tester(entity):
                 env['server_name']     =  ws.host
                 env['server_site']     =  ws
                 env['request_method']  =  meth
+                env['remote_addr']     =  self.tabs.browser.ip
 
                 # Create WSGI app
                 app = www.application()
@@ -289,22 +290,22 @@ class tester(entity):
 
                 return res
 
-        def __init__(self, tester, *args, **kwargs):
+        def __init__(self, tester, ip=None, *args, **kwargs):
             super().__init__(*args, **kwargs)
             self.tester = tester
             self.tabs = tester._browser._tabs(self)
+            self.ip = ecommerce.ip(address=ip)
 
         def tab(self):
             return self.tabs.tab()
-
 
     def __init__(self):
         self._failures = failures()
         self.testers = None
         self.eventregistrations = eventregistrations()
 
-    def browser(self):
-        return tester._browser(self)
+    def browser(self, *args, **kwargs):
+        return tester._browser(self, *args, **kwargs)
 
     def print(self, *args, **kwargs):
         print(*args, **kwargs)

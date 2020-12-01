@@ -3,7 +3,7 @@ from dbg import B
 from func import enumerate, getattr
 from uuid import uuid4
 import dom, pom, www
-import party
+import party, ecommerce
 import primative
 import pytz
 import re
@@ -1341,7 +1341,7 @@ class pom_page(tester.tester):
                 self.eq('Unauthorized', res['.flash'].text)
                 self.status(401, res)
 
-    def it_floats_transactions(self):
+    def it_logs_transactions(self):
         jwt = None
         class person(pom.page):
 
@@ -1366,7 +1366,8 @@ class pom_page(tester.tester):
         ws.pages += person()
 
         # Create a browser tab
-        tab = self.browser().tab()
+        ip = ecommerce.ip(address='12.34.56.78')
+        tab = self.browser(ip=ip).tab()
 
         # GET the page
         res = tab.get('/en/person', ws)
