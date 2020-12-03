@@ -126,6 +126,32 @@ class tester(entity):
         class _tab(www.browser._tab):
             def __init__(self, tabs):
                 self.tabs = tabs
+                self._referer = None
+
+            @property
+            def referer(self):
+                """ The http_referer associated with the tab. When the
+                tab makes the request, a ``referer`` may be assigned to
+                the tab. After the request has been made, the referrer
+                should be set to the current URL.  
+
+                rtype: ecommerce.url
+                """
+                if self._referer:
+                    if isinstance(self._referer, ecommerce.url):
+                        pass
+                    elif self._referer is None:
+                        pass
+                    else:
+                        self._referer = ecommerce.url(
+                            address=self._referer
+                        )
+
+                return self._referer
+
+            @referer.setter
+            def referer(self, v):
+                self._referer = v
 
             @property
             def browser(self):
@@ -247,6 +273,7 @@ class tester(entity):
                 env['server_site']     =  ws
                 env['request_method']  =  meth
                 env['remote_addr']     =  self.tabs.browser.ip
+                env['http_referer']    =  self.referer
 
                 # Create WSGI app
                 app = www.application()

@@ -30,8 +30,9 @@ from datetime import datetime, date
 from dbg import B
 from decimal import Decimal as dec
 from orm import text, timespan, datespan
-import orm
+import orm, entities
 import party, apriori, product, order
+import ipaddress
 
 class agents(party.parties):                                  pass
 class webmasters(party.personals):                            pass
@@ -52,7 +53,7 @@ class contentstatustypes(apriori.types):                      pass
 class users(orm.entities):                                    pass
 class histories(orm.entities):                                pass
 class preferences(orm.entities):                              pass
-class addresses(orm.entities):                                pass
+class urls(orm.entities):                                     pass
 class objects(orm.entities):                                  pass
 class texts(objects):                                         pass
 class images(objects):                                        pass
@@ -256,15 +257,19 @@ class preference(orm.entity):
     key = str
     value = str
     
-class address(orm.entity):
-    """ Represents a URL which itself represents a website.
+class url(orm.entity):
+    """ Represents a URL.
 
     Note that this entity is based on the WEB ADDRESS entity in
     "The Data Model Resource Book Volume 2".
     """
-    url = str
+
+    address = str
 
     users = users
+
+    # The web `hits` where this ``url`` acts as an http_referer
+    hits = hits
 
 class object(orm.entity):
     """ Stores electronic images, such as ``text`` (i.e. an HTML
@@ -433,12 +438,14 @@ class hit(orm.entity):
     Model Resource Book Volume 2".
     """
 
-    datetime = datetime
+    # NOTE The implicit attribute `url` is the referrer (http_referer)
+    # of the web request.
+
+    # The timespan of the request
+    span = timespan
 
     # The size, in bytes, of the response. 
     size = int
-
-    address = address
 
 class hitstatustype(apriori.type):
     """ Records status information about the ``hit`` - for example if a
@@ -466,16 +473,22 @@ class ip(electronicaddress):
     # TODO Use orm.ensure() such that only one ip address records gets
     # stored per ip address.
 
-    @orm.attr(str)
-    def address(self):
-        addr = attr()
-        if isinstance(addr, ip):
-            B()
-            return addr.address
-
-        return addr
+    address = str
 
     hits = hits
+
+    def getbrokenrules(self, *args, **kwargs):
+        brs = super().getbrokenrules(*args, **kwargs)
+        
+        if self.orm.isnew:
+            addrs = self.orm.entities(address=self.address)
+            if addrs.count:
+                brs += entities.brokenrule(
+                    'IP address already exists in database',
+                    'address', 'valid', self
+                )
+
+        return brs
 
     def __str__(self):
         return self.address

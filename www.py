@@ -24,7 +24,7 @@ import sys
 import textwrap
 import traceback
 import urllib
-import party
+import party, ecommerce
 import file
 
 # NOTE Use the following diagram as a guide to determine what status
@@ -407,6 +407,7 @@ class _request:
     def _log(self):
         import orm
         B()
+        referer = self.referer
         usr = orm.user
 
         if usr:
@@ -428,7 +429,8 @@ class _request:
             visitor.visits += visit
 
         hit = ecommerce.hit(
-            ip = self.ip
+            ip = self.ip,
+            url = self.referer
         )
 
         visit.hits += hit
@@ -494,7 +496,13 @@ class _request:
 
     @property
     def ip(self):
-        return self.environment['remote_addr']
+        ip = str(self.environment['remote_addr'])
+        return ecommerce.ip(address=ip)
+
+    @property
+    def referer(self):
+        url = str(self.environment['http_referer'])
+        return ecommerce.url(address=url)
 
     @property
     def isget(self):

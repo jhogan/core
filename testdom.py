@@ -1370,6 +1370,7 @@ class pom_page(tester.tester):
         tab = self.browser(ip=ip).tab()
 
         # GET the page
+        tab.referer = 'imtherefere.com'
         res = tab.get('/en/person', ws)
         self.status(200, res)
         frm = res['form'].first
@@ -1378,6 +1379,7 @@ class pom_page(tester.tester):
         frm['input[name=name]'].first.value = 'Henry Ford'
 
         # POST the form back to page
+        tab.referer = 'imtherefere.com'
         res = tab.post('/en/person', ws, frm)
 
     def it_can_accesses_injected_variables(self):

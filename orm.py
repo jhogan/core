@@ -2513,10 +2513,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 if type(o) is UUID:
                     res = self.orm.load(o)
                 else:
-                    raise ValueError(
+                    raise TypeError(
                         'Can only load by UUID. '
                         'If you are setting attributes via the '
-                        'constructor, ensure that you are including'
+                        'constructor, ensure that you are including '
                         'the keys as well.'
                     )
                     
