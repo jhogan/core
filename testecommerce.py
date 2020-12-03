@@ -177,15 +177,21 @@ class test_ecommerce(tester.tester):
                     self.eq(hit.size, hit.size)
                     self.eq(hit.ip.id, hit.ip.id)
 
-    def it_wont_save_duplicates_ips(self):
+    def it_ensures_ips(self):
         ip = ecommerce.ip(address='127.0.0.2')
-        ip.save()
+        self.false(ip.orm.isnew)
 
-        ip = ecommerce.ip(address='127.0.0.2')
-        self.one(ip.brokenrules)
-        self.eq('address', ip.brokenrules.first.property)
-        self.eq('valid', ip.brokenrules.first.type)
-        self.eq(ip, ip.brokenrules.first.entity)
+        ip1 = ecommerce.ip(address='127.0.0.2')
+
+        self.eq(ip.id, ip1.id)
+        self.eq('127.0.0.2', ip.address)
+        self.eq('127.0.0.2', ip1.address)
+
+        ip1 = ecommerce.ip(ip1.id)
+
+        self.eq(ip.id, ip1.id)
+        self.eq('127.0.0.2', ip.address)
+
 
     def it_calls__str__(self):
         ip = ecommerce.ip(address='127.0.0.2')

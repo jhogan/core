@@ -461,34 +461,30 @@ class electronicaddress(party.contactmechanism):
     pass
 
 class ip(electronicaddress):
-    """ Records the address of a web client.
+    """ Records the address of a web client. Note that ip addresses are
+    ensured to exist, i.e., they are automatically saved in the
+    database if they don't already exist::
+
+        ip = ip(address='127.0.0.2')
+        assert not ip.orm.isnew
+
+        ip1 = ip(address='127.0.0.2')
+
+        assert ip.id == ip1.id
+        assert 127.0.0.2 == ip.address
+        assert 127.0.0.2 == ip1.address
 
     Note that this is modeled after the IP ADDRESS entity in "The Data
     Model Resource Book Volume 2".
     """
 
-    # TODO Write accessor and mutator that allows for saving a an int
-    # but rendering as a string.
-
-    # TODO Use orm.ensure() such that only one ip address records gets
-    # stored per ip address.
-
     address = str
 
     hits = hits
 
-    def getbrokenrules(self, *args, **kwargs):
-        brs = super().getbrokenrules(*args, **kwargs)
-        
-        if self.orm.isnew:
-            addrs = self.orm.entities(address=self.address)
-            if addrs.count:
-                brs += entities.brokenrule(
-                    'IP address already exists in database',
-                    'address', 'valid', self
-                )
-
-        return brs
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('address', ), **kwargs)
 
     def __str__(self):
         return self.address
