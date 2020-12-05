@@ -177,6 +177,22 @@ class test_ecommerce(tester.tester):
                     self.eq(hit.size, hit.size)
                     self.eq(hit.ip.id, hit.ip.id)
 
+    def it_ensures_url(self):
+        address = 'https://www.thedailywtf.com'
+        url = ecommerce.url(address=address)
+        self.false(url.orm.isnew)
+
+        url1 = ecommerce.url(address=address)
+
+        self.eq(url.id, url1.id)
+        self.eq(address, url.address)
+        self.eq(address, url1.address)
+
+        url1 = ecommerce.url(url1.id)
+
+        self.eq(url.id, url1.id)
+        self.eq(address, url.address)
+
     def it_ensures_ips(self):
         ip = ecommerce.ip(address='127.0.0.2')
         self.false(ip.orm.isnew)

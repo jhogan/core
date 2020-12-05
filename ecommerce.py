@@ -258,18 +258,35 @@ class preference(orm.entity):
     value = str
     
 class url(orm.entity):
-    """ Represents a URL.
+    """ Represents a URL. Note that url addresses are
+    ensured to exist, i.e., they are automatically saved in the
+    database if they don't already exist.
+
+        url = url(address='www.google.com')
+        assert not url.orm.isnew
+
+        url1 = url(address='www.google.com')
+
+        assert url.id == url1.id
+        assert 'www.google.com' == url.address
+        assert 'www.google.com' == url1.address
 
     Note that this entity is based on the WEB ADDRESS entity in
     "The Data Model Resource Book Volume 2".
     """
 
-    address = str
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('address', ), **kwargs)
 
+    address = str
     users = users
 
     # The web `hits` where this ``url`` acts as an http_referer
     hits = hits
+
+    def __str__(self):
+        return self.address
 
 class object(orm.entity):
     """ Stores electronic images, such as ``text`` (i.e. an HTML
