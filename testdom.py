@@ -548,7 +548,7 @@ class pom_page(tester.tester):
         super().__init__()
         es = orm.orm.getentitys(includeassociations=True)
         for e in es:
-            if e.__module__ == 'party':
+            if e.__module__ in ('party', 'ecommerce') :
                 e.orm.recreate()
 
     def it_calls__init__(self):
@@ -1367,11 +1367,21 @@ class pom_page(tester.tester):
 
         # Create a browser tab
         ip = ecommerce.ip(address='12.34.56.78')
-        tab = self.browser(ip=ip).tab()
+        brw = self.browser(
+            ip=ip,
+            useragent = (
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 5_1 like Mac OS X) '
+            'AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 '
+            'Mobile/9B179 Safari/7534.48.3'
+            )
+        )
+
+        tab = brw.tab()
 
         # GET the page
         tab.referer = 'imtherefere.com'
-        res = tab.get('/en/person', ws)
+        
+        es = tab.get('/en/person', ws)
         self.status(200, res)
         frm = res['form'].first
 

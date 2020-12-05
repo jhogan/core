@@ -513,6 +513,51 @@ class useragent(orm.entity):
     Note that this is modeled after the USER AGENT entity in "The Data
     Model Resource Book Volume 2".
     """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._useragent = None
+
+    @orm.attr(str)
+    def string(self, v):
+        import user_agents
+        self._useragent = user_agents.parse(v)
+
+        ua = self._useragent
+        brw = ua.browser
+
+        self.browsertype = browsertype(
+            name = brw.family,
+            version = brw.version,
+        )
+
+    @property
+    def ismobile(self):
+        return self.is_mobile
+
+    @property
+    def istablet(self):
+        return self.is_tablet
+
+    @property
+    def istouch(self):
+        return self.is_touch_compatable
+
+    @property
+    def ispc(self):
+        return self.is_pc
+
+    @property
+    def isbot(self):
+        return self.is_bot
+
+    def __getattr__(self, attr):
+        if not self._useragent:
+            raise ValueError(
+                'No user_agent object has been set'
+            )
+
+        return getattr(self._useragent, attr)
+        
     hits = hits
 
 class useragenttype(apriori.type):
@@ -538,6 +583,28 @@ class browsertype(apriori.type):
     Note that this is modeled after the BROWSER TYPE entity in "The
     Data Model Resource Book Volume 2".
     """
+    def __init__(self, *args, **kwargs):
+        try:
+            ver = kwargs['version']
+        except KeyError:
+            pass
+        else:
+            kwargs['version'] = self._normalize(ver)
+            
+        super().__init__(expects=('name', 'version'), *args, **kwargs)
+
+    @staticmethod
+    def _normalize(ver):
+        """ Convert the version into a standard string format, e.g.,
+        '1.2.3'.
+        """
+        if isinstance(ver, tuple):
+            ver = '.'.join(str(x) for x in ver)
+
+        return ver
+
+    version = str
+
     useragents = useragents
 
 class protocol(apriori.type):

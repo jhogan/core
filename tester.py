@@ -319,11 +319,14 @@ class tester(entity):
 
                 return res
 
-        def __init__(self, tester, ip=None, *args, **kwargs):
+        def __init__(
+            self, tester, ip=None, useragent=None, *args, **kwargs
+        ):
             super().__init__(*args, **kwargs)
             self.tester = tester
             self.tabs = tester._browser._tabs(self)
             self.ip = ecommerce.ip(address=ip)
+            self.useragent = ecommerce.useragent(string=useragent) 
 
         def tab(self):
             return self.tabs.tab()

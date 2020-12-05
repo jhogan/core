@@ -406,7 +406,6 @@ class _request:
 
     def _log(self):
         import orm
-        B()
         referer = self.referer
         usr = orm.user
 
@@ -1183,5 +1182,23 @@ class browser(entities.entity):
 
     def __init__(self):
         self.cookies = self._cookies()
+        self._useragent = None
+
+    @property
+    def useragent(self):
+        if isinstance(self._useragent, ecommerce.useragent):
+            pass
+        elif self._useragent is None:
+            pass
+        else:
+            self._useragent = ecommerce.useragent(
+                string = self._useragent
+            )
+
+        return self._useragent
+
+    @useragent.setter
+    def useragent(self, v):
+        self._useragent = v
 
 app = application()

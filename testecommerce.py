@@ -208,6 +208,23 @@ class test_ecommerce(tester.tester):
         self.eq(ip.id, ip1.id)
         self.eq('127.0.0.2', ip.address)
 
+    def it_ensures_browsertype(self):
+        brw = ecommerce.browsertype(
+            name = 'Mozilla',
+            version = '5.2',
+        )
+        self.false(brw.orm.isnew)
+
+        brw1 = ecommerce.browsertype(
+            name = 'Mozilla',
+            version = '5.2',
+        )
+
+        self.eq(brw.id,       brw1.id)
+        self.eq('Mozilla',    brw1.name)
+        self.eq('5.2',       brw1.version)
+        self.eq(brw.name,     brw1.name)
+        self.eq(brw.version,  brw1.version)
 
     def it_calls__str__(self):
         ip = ecommerce.ip(address='127.0.0.2')
