@@ -119,9 +119,13 @@ class type(orm.entity):
         assert part.id == party.type(name='Dinner party').first.id
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, expects=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
+
+        if not expects:
+            expects = ('name',)
+
+        self.orm.ensure(expects=expects, **kwargs)
 
     # The name of the type. This is used as a key that the contructor
     # will use when it ensure the record exists.
