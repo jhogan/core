@@ -3584,7 +3584,7 @@ class mappings(entitiesmod.entities):
 
             ''' Add FK mapings to association objects '''
             # For association objects, look for entity mappings and add
-            # a foreign key mapping (e.g., For artist_artifact, add a
+            # a foreign key mapping (e.g., For artist_artifact, add an
             # FK called artistid and artifactid).
             for map in self.entitymappings:
                 maps.append(
@@ -5432,25 +5432,39 @@ class orm:
         
         '''
         
+        # The top entity in the tree
         top = None
+
+        # For each predicate
         for pred in self.where.predicate:
 
             # FIXME If multiple columns are supported, fix below
             pred = pred.match or pred
+
+            # Get the column name referenced by the predicate
+            # FIXME If multiple columns are supported, fix below
             col = pred.columns[0]
 
             e = top or self.entity.orm.super
 
             while e: # :=
+
+                # Find the map based on the column name
                 map = e.orm.mappings(col) 
                 if map:
                     top = e.orm.entities
                     break
+
                 e = e.orm.super
 
+        # We never ascended so return without joining
         if not top:
             return
 
+        # Take the current instance and create INNER JOINs on each
+        # superentity until we reach the `top`. With the tables joined,
+        # the query's resultset can be limited to those that have values
+        # that match the columns the user is trying to query.
         es = self.instance
         while type(es) is not top:
             sup = es.orm.entities.orm.super.orm.entities()

@@ -5266,7 +5266,7 @@ class test_orm(tester):
         es = orm.orm.getentitys() + orm.orm.getassociations()
 
         # Create the tables if they don't already exist. This is needed
-        # because in the list comprehension that that instatiates `e`,
+        # because in the list comprehension that instatiates `e`,
         # we will eventually get to an entity's constructor that uses
         # the orm.ensure method. This method queries the table. We
         # create all the tables so that there is no MySQL exception when
@@ -17052,7 +17052,7 @@ class crust_migration(tester):
 
     @staticmethod
     def _alter():
-        """ Ensure that that the database is out-of-sync with model,
+        """ Ensure that the database is out-of-sync with model,
         necessitating a migration.
         """
         es = orm.orm.getentitys()

@@ -1664,6 +1664,7 @@ class party_facility(orm.association):
 
     facilityroletype = facilityroletype
 
+    # TODO This is a duplicate
     party = party
 
 class objective(orm.entity):
