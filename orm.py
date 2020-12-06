@@ -1426,6 +1426,50 @@ class allstream(stream):
     pass
         
 class eager:
+    """ Instances of this class are passed to orm.entities.__init__ to
+    specify constituents to eager-load.
+
+    Normally, constituents are lazy-loaded::
+        
+        # SELECT * FROM ARTISTS WHERE ID = {ARTID}
+        art = artist(artid)
+
+        # SELECT * FROM PRESENTATIONS WHERE ARTISTID = {ARTID}
+        press = art.presentations
+
+    In the above example, two SQL statements are sent to the database.
+    The ``eager`` class would allow only one statement to be sent::
+
+        # SELECT * 
+        # FROM ARTISTS A
+        #     INNER JOIN PRESENTATIONS P /* Eager-load */
+        #         ON A.ID = P.ARTISTID
+        # WHERE ID = {ARTID}
+        art = artist(artid, eager('presentations'))
+
+        # No SQL is sent to load presentations; they've been
+        # eager-lodaed.
+        press = art.presentations
+
+    Multiple constituents can be eager-loaded by passing them as
+    additional arguments to the ``eager`` class::
+
+        art = artist(artid, eager('presentations', 'locations'))
+
+    Nested constituents are denoted by '.' between entity names::
+
+        art = artist(
+            artid, eager(
+                'presentations.locations', 
+                'presentations.components'
+            )
+        )
+
+        # No SQL is issued for the following
+        locs = art.presentations.first.locations
+        components = art.presentations.first.components
+    """
+
     def __init__(self, *graphs):
         self._graphs = graphs
 
