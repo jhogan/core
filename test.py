@@ -5604,6 +5604,10 @@ class test_orm(tester):
 
         with self._chrontest() as t:
             t(lambda: sng1.concerts.first.locations)
+
+            # We need to load concert's super to get to locations
+            t.retrieved(sng1.concerts.first.orm.super)
+
             t.retrieved(sng1.concerts.first.locations)
 
         self.eq(sng.locations.first.id, sng1.locations.first.id)
