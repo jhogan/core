@@ -2662,8 +2662,38 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 e = v.orm.entity
                 while True:
                     for map in self.orm.mappings.foreignkeymappings:
-                        fkname, e1 = map.fkname, map.entity
-                        if e1 is e and (not fkname or attr == fkname):
+
+                        # A flag to determine whether or not we set this
+                        # map's `value` property.
+                        set = False
+
+                        if map.isproprietor and attr == 'proprietor':
+                            # If the FK map is the proprietor FK
+                            # (proprietor__partyid), and the attr is
+                            # 'proprietor' then we want to set this map.
+                            # We sort of make an exception for
+                            # proprietor setting because a proprietor's
+                            # type is `party.party`, though a propietor
+                            # could be a subentity of that, such as
+                            # `party.company`. Normally we want an exact
+                            # type match (see alternative block) for FK
+                            # matching, but here we want to allow
+                            # subentities.
+                            set = True
+                        else:
+                            # If the value's (v) entity is the maps
+                            # entity, this is the  map we are looking
+                            # for.
+
+                            # TODO We may want to remove the fkname, e1 and
+                            # attr tests. These were added for the
+                            # proprietor's fk but that is now handled in
+                            # the consequence block.
+                            fkname, e1 = map.fkname, map.entity
+                            set = e1 is e 
+                            set = set and (not fkname or attr == fkname)
+
+                        if set:
                             if self.orm.isreflexive:
                                 if map.name.startswith(attr + '__'):
                                     self._setvalue(
