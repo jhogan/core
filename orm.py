@@ -5468,7 +5468,7 @@ class orm:
         # For each predicate
         for pred in self.where.predicate:
 
-            # FIXME If multiple columns are supported, fix below
+            # Use the MATCH (fulltext) predicate if it exists
             pred = pred.match or pred
 
             # Get the column name referenced by the predicate
@@ -5481,7 +5481,19 @@ class orm:
 
                 # Find the map based on the column name
                 map = e.orm.mappings(col) 
-                if map:
+
+                # Is map the proprietor FK
+                isfk = isinstance(map, foreignkeyfieldmapping)
+                isproprietor = isfk and map.isproprietor
+
+                # If such a map exists. Ignore the map if it is the
+                # entitiy's proprietor's foreignkeymappings
+                # ('proprietor__partyid') since every entity has a
+                # proprietor foreignkeymappings.
+                if map and not isproprietor:
+
+                    # If we found the map, we found the entity we want
+                    # to query, so assign it to `top` and break.
                     top = e.orm.entities
                     break
 
