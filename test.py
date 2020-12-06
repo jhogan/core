@@ -6122,15 +6122,12 @@ class test_orm(tester):
                 self.isnot(f1, rmfact)
                 self.isnot(f2, rmfact)
 
-            chrons.clear()
-            art.save()
-
-            self.four(chrons)
-            self.four(chrons.where('delete'))
-            self.one(chrons.where('entity', rmcomps.first))
-            self.one(chrons.where('entity', rmcomps.second))
-            self.one(chrons.where('entity', rmfact))
-            self.one(chrons.where('entity', art.artist_artifacts.orm.trash.first))
+            with self._chrontest() as t, db.chronicler.snapshot():
+                t(art.save)
+                t.deleted(rmcomps.first)
+                t.deleted(rmcomps.second)
+                t.deleted(rmfact)
+                t.deleted(art.artist_artifacts.orm.trash.first)
 
             art1 = artist(art.id)
 
