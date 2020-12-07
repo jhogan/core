@@ -1471,9 +1471,25 @@ class eager:
     """
 
     def __init__(self, *graphs):
+        """ Initialize the eager object. The *graphs containes the
+        graphs to be loaded.
+
+        :param: *graphs tuple: A collection of strings representing
+        which parts of the graph to load::
+
+                ('presentations', 'presentations.components')
+        """
         self._graphs = graphs
 
     def join(self, to):
+        """ Create a ``join`` object heirarchy from ``self`` on ``to``
+        where ``to`` is an ``orm.entities`` collection (invoked from
+        ``orm.entities.__init__``). Since eager-loading is accomplished
+        via INNER JOINs, this method is used to establish those JOINs.
+
+        :param: to orm.entities: The collection object to create the
+        INNER JOINs on.
+        """
         graphs = []
 
         for graph in self._graphs:
@@ -1494,15 +1510,24 @@ class eager:
                 parent = e
     
     def __repr__(self):
+        """ Return a representation of the ``eager`` declaration.
+        """
         r = '%s(%s)'
         graphs = ', '.join(["'%s'" % x for x in self._graphs])
         r %= (type(self).__name__, graphs)
         return r
 
     def __str__(self):
+        """ Return a representation of the ``eager`` declaration.
+        """
         return ', '.join(self._graphs)
 
 class entitiesmeta(type):
+    """ An metaclass for the ``orm.entities`` class.
+
+    This class plays a minor role for the ORM, but does permit a few
+    features for the ORM user. 
+    """
     def __and__(self, other):
         self = self()
         self.join(other)
@@ -1510,6 +1535,17 @@ class entitiesmeta(type):
 
     @property
     def count(cls):
+        """ Returns the number of rows in a table given a class name::
+
+            cnt = artists.count
+
+        This is equivelent to::
+            
+            SELECT COUNT(*) FROM ARTISTS;
+
+        Note: A different mechanism is used for instances, i.e.,
+        `arts.count`.
+        """
         return cls.orm.all.count
 
 class entities(entitiesmod.entities, metaclass=entitiesmeta):
