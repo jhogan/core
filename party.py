@@ -263,6 +263,26 @@ class party(orm.entity):
     # A collection of party roles this party plays.
     roles = roles
 
+    @property
+    def visitor(self):
+        """ Return the single visitor role. If it does not exist, create
+        it.
+        """
+        from ecommerce import visitor
+        for rl in self.roles:
+            if isinstance(rl, visitor):
+                break
+
+            rl = rl.cast(visitor)
+            if rl:
+                break
+        else:
+            self.roles += visitor()
+            rl = self.roles.last
+
+        return rl
+
+
     # A collection of skills belonging to this party
     skills = skills
 
