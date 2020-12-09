@@ -119,11 +119,15 @@ class type(orm.entity):
         assert part.id == party.type(name='Dinner party').first.id
     """
 
-    def __init__(self, expects=None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        if not expects:
+        try:
+            expects = kwargs['expects']
+        except KeyError:
             expects = ('name',)
+        else:
+            del kwargs['expects']
 
         self.orm.ensure(expects=expects, **kwargs)
 
