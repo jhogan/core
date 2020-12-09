@@ -5187,12 +5187,12 @@ class orm:
         would call the ``ensure`` method in it's constructor::
 
 
-        class statustype(orm.entity):
-            def __init__(self, *args, **kwargs):
-                super().__init__(*args, **kwargs)
-                self.orm.ensure(expects=('name',), **kwargs)
+            class statustype(orm.entity):
+                def __init__(self, *args, **kwargs):
+                    super().__init__(*args, **kwargs)
+                    self.orm.ensure(expects=('name',), **kwargs)
 
-            name = str
+                name = str
 
         Given the above, anytime we instantiate a new statustype, the
         ``name`` attribute is used as an identifier. The ``ensure``
