@@ -27,6 +27,7 @@ TODO:
 """
 
 from datetime import datetime, date
+import primative
 from dbg import B
 from decimal import Decimal as dec
 from orm import text, timespan, datespan
@@ -440,7 +441,12 @@ class visit(orm.entity):
         super().__init__(*args, **kwargs)
         self.orm.default('cookie', None)
 
-    # The span of time in which the visit takes place
+    # TODO What defines the `end` of the span. Perhaps when the `visit`
+    # is no longer current (`iscurrent`), the last `hit` the `visit` was
+    # involved in will have the `end` datetime that should be the
+    # `visit`'s `end.
+
+    # The span of time in which the visit takes place.
     span = timespan
 
     # A string that helps identify the machine that was used for the

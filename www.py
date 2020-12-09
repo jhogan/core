@@ -15,17 +15,18 @@ import auth
 import dom
 import entities
 import exc
+import file
 import html as htmlmod
 import json
 import os
+import party, ecommerce
 import pdb
+import primative
 import re
 import sys
 import textwrap
 import traceback
 import urllib
-import party, ecommerce
-import file
 
 # NOTE Use the following diagram as a guide to determine what status
 # code to respond with:
@@ -495,11 +496,13 @@ class _request:
 
     @property
     def ip(self):
+        # TODO Memoize
         ip = str(self.environment['remote_addr'])
         return ecommerce.ip(address=ip)
 
     @property
     def referer(self):
+        # TODO Memoize
         url = str(self.environment['http_referer'])
         return ecommerce.url(address=url)
 

@@ -13,6 +13,7 @@ from dbg import B
 import ecommerce, party, product
 import orm
 import tester
+import primative
 
 class test_ecommerce(tester.tester):
     def __init__(self):
