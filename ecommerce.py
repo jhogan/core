@@ -564,6 +564,7 @@ class useragent(orm.entity):
             name = brw.family,
             version = brw.version,
         )
+        attr(v)
 
     @property
     def ismobile(self):
