@@ -230,6 +230,63 @@ class test_ecommerce(tester.tester):
     def it_calls__str__(self):
         ip = ecommerce.ip(address='127.0.0.2')
         self.eq('127.0.0.2', str(ip))
-        
+
+class test_visits(tester.tester):
+
+    def it_calls_current(self):
+        per = party.person(name='Henry Ford')
+
+        visitor = per.visitor
+
+        visits = visitor.visits 
+
+        now = primative.datetime.utcnow()
+        visitor.visits += ecommerce.visit(
+            begin = now.add(hours=-1)
+        )
+
+        self.none(visitor.visits.current)
+
+        visitor.visits += ecommerce.visit(
+            begin = now
+        )
+
+        visit = visitor.visits.current
+
+        self.is_(visitor.visits.last, visit)
+
+class test_visit(tester.tester):
+
+    def it_calls_iscurrent(self):
+        now = primative.datetime.utcnow()
+
+        visit = ecommerce.visit(
+            begin = now.add(minutes=-60),
+            end = None
+        )
+
+        self.false(visit.iscurrent)
+
+        visit = ecommerce.visit(
+            begin = now.add(minutes=-45),
+            end = None
+        )
+
+        self.false(visit.iscurrent)
+
+        visit = ecommerce.visit(
+            begin = now.add(minutes=-25),
+            end = None
+        )
+
+        self.true(visit.iscurrent)
+
+        visit = ecommerce.visit(
+            begin = now.add(minutes=-25),
+            end = now.add(minutes=-15)
+        )
+
+        self.false(visit.iscurrent)
+
 if __name__ == '__main__':
     tester.cli().run()
