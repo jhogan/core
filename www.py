@@ -409,30 +409,30 @@ class _request:
     def _log(self):
         import orm
         referer = self.referer
-        usr = orm.user
 
-        if usr:
-            par = usr.party
-
-        if not par:
-            par = party.anonymous
-
-        if par.visitors.count:
-            visitor = par.visitors.first
+        if self.user:
+            par = self.user.party
         else:
-            visitor = ecommerce.visitor()
-            par.visitors += visitor
+            par = party.party.anonymous
+
+        visitor = par.visitor
 
         visit = visitor.visits.current
 
         if not visit:
-            visit = ecommerce.visit()
+            visit = ecommerce.visit(
+                begin = primative.datetime.utcnow()
+            )
             visitor.visits += visit
 
         hit = ecommerce.hit(
             ip = self.ip,
-            url = self.referer
+            url = self.referer,
+            size = self.size,
+            visitor = visitor,
+            useragent = self.useragent,
         )
+        B()
 
         visit.hits += hit
 
