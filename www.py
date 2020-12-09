@@ -180,6 +180,7 @@ class _request:
         self._payload      =  None
         self._user         =  None
         self._files        =  None
+        self._useragent    =  None
 
     @property
     def headers(self):
@@ -505,6 +506,14 @@ class _request:
         # TODO Memoize
         url = str(self.environment['http_referer'])
         return ecommerce.url(address=url)
+
+    @property
+    def useragent(self):
+        B()
+        if not self._useragent:
+            ua = str(self.environment['user_agent'])
+            self._useragent = ecommerce.useragent(string=ua)
+        return self._useragent
 
     @property
     def isget(self):
