@@ -70,7 +70,20 @@ class subscriptions(orm.entities):                            pass
 class subscriptiontypes(apriori.types):                       pass
 class subscriptionactivities(orm.entities):                   pass
 class subscription_subscriptionactivities(orm.associations):  pass
-class visits(orm.entities):                                   pass
+
+class visits(orm.entities):
+    @property
+    def current(self):
+        """ Return the 
+        """
+        for vis in self:
+            if vis.iscurrent:
+                break
+        else:
+            return None
+
+        return vis
+
 class hits(orm.entities):                                     pass
 class hitstatustypes(apriori.types):                          pass
 class electronicaddresses(party.contactmechanisms):           pass
