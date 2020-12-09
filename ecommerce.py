@@ -596,6 +596,9 @@ class useragent(orm.entity):
         
     hits = hits
 
+    def __str__(self):
+        return self.string
+
 class useragenttype(apriori.type):
     """
     Note that this is modeled after the USER AGENT TYPE entity in "The
