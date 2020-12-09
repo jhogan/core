@@ -468,6 +468,22 @@ class visit(orm.entity):
 
     hits = hits
 
+    @property
+    def iscurrent(self):
+        # The number of seconds that can elapse between the start of the
+        # visit and the current time for the `visit` to be considered
+        # "current".
+        Seconds = 1800  # 30 minute
+
+        if self.end is not None:
+            return False
+
+        now = primative.datetime.utcnow()
+        begin = self.begin
+
+        delta = now - begin
+        return delta.seconds < Seconds
+
 class hit(orm.entity):
     """ Records the particular web site page or object that was hit.
     Note that this is modeled after the SERVER HIT entity in "The Data
