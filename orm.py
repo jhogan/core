@@ -1539,7 +1539,7 @@ class entitiesmeta(type):
 
             cnt = artists.count
 
-        This is equivelent to::
+        This is equivalent to::
             
             SELECT COUNT(*) FROM ARTISTS;
 
@@ -1552,6 +1552,116 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
     re_alphanum_ = re.compile('^[a-z_][0-9a-z_]+$', flags=re.IGNORECASE)
 
     def __init__(self, initial=None, _p2=None, *args, **kwargs):
+        """ Creates a entities collection. Passing in no arguments
+        results in an empty collection. Passing in arguments results in
+        the construction of a query. The query will not be executed
+        here, but will rather be issued at a later time when it is
+        needed - such as upon the invocation of one of the entities'
+        properties or methods, or upon interation on the entities
+        instance.
+
+        Basic Queries
+        -------------
+
+        Given that you have an ``artists`` entities collection, and an
+        ``artist`` entity has a first name property, you can query the
+        artist entity on its firstname attribute as follows:
+
+            arts = artists('firstname = %s', 'Jeff')
+
+        The above is equivalent to the SQL::
+            
+            SELECT * FROM ARTIST WHERE FIRSTNAME = 'Jeff';
+
+        The following constructions are equivalent to the above::
+
+            arts = artists('firstname', 'Jeff')
+
+            arts = artists(firstname='Jeff')
+
+            arts = artists('firstname = %s', ('Jeff',))
+
+        The above queries are parameterized, i.e., the SQL and the
+        values are seperated to protected against SQL injection. It's
+        possible to use unparameterized queries, but the following will
+        result in a ValueError::
+
+            arts = artists("firstname = 'Jeff'")
+
+        The ORM forces you to add an empty tuple so you know you are
+        using an unsafe, unparameterized query::
+
+            arts = artists("firstname = 'Jeff'", ())
+
+        These may be appropriate where the programmer wants to hard-code
+        a value instead of using a varible whose value may have been set
+        by a user.
+
+        Full-text Queries
+        -----------------
+        Given that the ``artist`` entity is declared to have a full-text
+        index, one can query against it using the following syntax::
+
+            # Search for artist bio's with the word 'Cubism' in it.
+            arts = artists('match(bio) against (%s)', 'Cubism')
+
+        Eager-loading
+        -------------
+        Constituents are lazy-loaded by default. Passing in an object of
+        type ``eager`` will cause the constituents to be eager-loaded.
+
+            arts = artists(orm.eager('presentations'))
+
+            # Load artists and presentations here
+            cnt = arts1.count
+
+        This causes the presentations collections to be loaded along
+        with the artists collection in one call to the database.
+
+            # No database call here
+            press = arts1.first.presentations
+
+        See more comments at the ``eager`` class.
+
+        Streaming
+        ---------
+        When there are a lot of records to iterate through, you may pass
+        a ``stream`` class or instance to the entities collection. This
+        is useful for protecting the memory from excessive and
+        unnecessary consumption. 
+
+        Let's say there are about a million artists with the first name
+        of Jeff. The following command will only pull in about a
+        thousand at a time.
+
+            arts = artists(orm.stream, firstname='Jeff')
+
+            # Pull a chunck from the database as needed
+            for art in arts:
+                print(art.firstame, art.lastname)
+
+        See more comments at the ``streaming`` class.
+
+        Defered execution
+        -----------------
+        Queries are only issued when needed. The following line will
+        result in no query being sent to the database::
+
+            arts = artists(firstname='Jeff')
+
+        As soon as we call an attribute, or iterate over the collection,
+        the query is sent::
+
+            # The query be sent when we begin to iterate
+            for art in arts:
+                ...
+
+            # If we start with a property or method invocation then
+            # this will be what sends the query.
+            cnt = arts.count
+
+        """
+        
         # TODO _p2 should default to `undef`. Currently, a query like:
         #
         #     ents = artists('name', None)
