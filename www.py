@@ -393,10 +393,9 @@ class _request:
         return 'en'
 
     def __call__(self):
-        try:
-            # Log the beginning of the request
-            self._log()
+        self.log()
 
+        try:
             self.page(**self.arguments)
         except HttpError as ex:
             if ex.flash:
@@ -404,38 +403,54 @@ class _request:
                 response.status = ex.status
             else:
                 raise
+        finally:
+            self.log()
 
         return self.page.html
 
-    def _log(self):
-        import orm
-        referer = self.referer
+    @property
+    def hit(self):
+        if not self._hit:
+            referer = self.referer
 
-        if self.user:
-            par = self.user.party
-        else:
-            par = party.party.anonymous
+            if self.user:
+                par = self.user.party
+            else:
+                par = party.party.anonymous
 
-        visitor = par.visitor
+            visitor = par.visitor
 
-        visit = visitor.visits.current
+            visit = visitor.visits.current
 
-        if not visit:
-            visit = ecommerce.visit(
-                begin = primative.datetime.utcnow()
+            now = primative.datetime.utcnow()
+
+            if not visit:
+                visit = ecommerce.visit(
+                    begin = now
+                )
+                visitor.visits += visit
+
+            self._hit = ecommerce.hit(
+                ip         =  self.ip,
+                url        =  self.referer,
+                size       =  self.size,
+                visit      =  visit,
+                useragent  =  self.useragent,
             )
-            visitor.visits += visit
 
-        hit = ecommerce.hit(
-            ip = self.ip,
-            url = self.referer,
-            size = self.size,
-            visitor = visitor,
-            useragent = self.useragent,
-        )
-        B()
+        return self._hit
 
-        visit.hits += hit
+    def log(self):
+        hit = self.hit
+        now = primative.datetime.utcnow()
+
+        if hit.inprogress:
+            hit.end = now
+            hit.status = response.status
+        else:
+            hit.begin = now
+
+        hit.save()
 
     @property
     def payload(self):
