@@ -274,7 +274,7 @@ class tester(entity):
                 env['request_method']  =  meth
                 env['remote_addr']     =  self.tabs.browser.ip
                 env['http_referer']    =  self.referer
-                env['user_agent']    =  self.browser.useragent
+                env['user_agent']      =  self.browser.useragent
 
                 # Create WSGI app
                 app = www.application()

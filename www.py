@@ -181,6 +181,7 @@ class _request:
         self._user         =  None
         self._files        =  None
         self._useragent    =  None
+        self._hit          =  None
 
     @property
     def headers(self):
@@ -497,19 +498,19 @@ class _request:
 
     @property
     def ip(self):
-        # TODO Memoize
+        #TODO:8bf4a715 Memoize
         ip = str(self.environment['remote_addr'])
         return ecommerce.ip(address=ip)
 
     @property
     def referer(self):
-        # TODO Memoize
+        #TODO:8bf4a715 Memoize
+
         url = str(self.environment['http_referer'])
         return ecommerce.url(address=url)
 
     @property
     def useragent(self):
-        B()
         if not self._useragent:
             ua = str(self.environment['user_agent'])
             self._useragent = ecommerce.useragent(string=ua)

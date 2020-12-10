@@ -515,6 +515,7 @@ class hitstatustype(apriori.type):
     Note that this is modeled after the SERVER HIT STATUS TYPE entity in
     "The Data Model Resource Book Volume 2".
     """
+
     hits = hits
 
 class electronicaddress(party.contactmechanism):
