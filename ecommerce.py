@@ -558,13 +558,10 @@ class useragent(orm.entity):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._useragent = None
 
     @orm.attr(str)
     def string(self, v):
-        import user_agents
-        self._useragent = user_agents.parse(v)
-
+        attr(v)
         ua = self._useragent
         brw = ua.browser
 
@@ -572,7 +569,10 @@ class useragent(orm.entity):
             name = brw.family,
             version = brw.version,
         )
-        attr(v)
+
+    @property
+    def _useragent(self):
+        return user_agents.parse(self.string)
 
     @property
     def ismobile(self):
@@ -584,7 +584,7 @@ class useragent(orm.entity):
 
     @property
     def istouch(self):
-        return self.is_touch_compatable
+        return self.is_touch_capable
 
     @property
     def ispc(self):
