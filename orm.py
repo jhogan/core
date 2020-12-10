@@ -2653,6 +2653,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
     maxdatetime=primative.datetime('9999-12-31 23:59:59.999999+00:00')
 
     def __init__(self, o=None, **kwargs):
+        
+        # TODO Support eager loading:
+        #
+        #     art = artist(name=name, eager('presentations'))
         try:
             self.orm = self.orm.clone()
             self.orm.initing = True # TODO change to `isiniting`
