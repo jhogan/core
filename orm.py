@@ -1431,11 +1431,11 @@ class eager:
 
     Normally, constituents are lazy-loaded::
         
-        # SELECT * FROM ARTISTS WHERE ID = {ARTID}
-        art = artist(artid)
+        # SELECT * FROM ARTISTS WHERE NAME = {name}
+        arts = artists(name=name)
 
         # SELECT * FROM PRESENTATIONS WHERE ARTISTID = {ARTID}
-        press = art.presentations
+        press = arts.first.presentations
 
     In the above example, two SQL statements are sent to the database.
     The ``eager`` class would allow only one statement to be sent::
@@ -1444,30 +1444,30 @@ class eager:
         # FROM ARTISTS A
         #     INNER JOIN PRESENTATIONS P /* Eager-load */
         #         ON A.ID = P.ARTISTID
-        # WHERE ID = {ARTID}
-        art = artist(artid, eager('presentations'))
+        # WHERE NAME = {name}
+        arts = artists(name=name, eager('presentations'))
 
         # No SQL is sent to load presentations; they've been
         # eager-lodaed.
-        press = art.presentations
+        press = arts.presentations
 
     Multiple constituents can be eager-loaded by passing them as
     additional arguments to the ``eager`` class::
 
-        art = artist(artid, eager('presentations', 'locations'))
+        arts = artists(name=name, eager('presentations', 'locations'))
 
     Nested constituents are denoted by '.' between entity names::
 
-        art = artist(
-            artid, eager(
+        arts = artists(
+            name=name, eager(
                 'presentations.locations', 
                 'presentations.components'
             )
         )
 
         # No SQL is issued for the following
-        locs = art.presentations.first.locations
-        components = art.presentations.first.components
+        locs = arts.presentations.first.locations
+        components = arts.presentations.first.components
     """
 
     def __init__(self, *graphs):
