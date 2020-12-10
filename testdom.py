@@ -1380,9 +1380,24 @@ class pom_page(tester.tester):
 
         # GET the page
         tab.referer = 'imtherefere.com'
-        
-        es = tab.get('/en/person', ws)
+        res = tab.get('/en/person', ws)
         self.status(200, res)
+
+        hit = ecommerce.hits.orm.all.sorted('createdat').last
+        self.notnone(hit.begin)
+        self.notnone(hit.end)
+        self.true(hit.begin < hit.end)
+        self.status(200, hit)
+        self.eq(0, hit.size)
+        self.eq('imtherefere.com', hit.url.address)
+        self.none(hit.user)
+        self.eq(
+            hit.useragent.string, 
+            brw.useragent.string
+        )
+        self.eq(ip.address, hit.ip.address)
+
+
         frm = res['form'].first
 
         # Populate the <form>
