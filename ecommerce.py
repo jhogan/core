@@ -34,6 +34,7 @@ from orm import text, timespan, datespan
 import orm, entities
 import party, apriori, product, order
 import ipaddress
+import user_agents
 
 class agents(party.parties):                                  pass
 class webmasters(party.personals):                            pass
@@ -498,6 +499,13 @@ class hit(orm.entity):
 
     # The size, in bytes, of the response. 
     size = int
+
+    # The HTTP status code
+    status = int
+
+    @property
+    def inprogress(self):
+        return self.begin and not self.end
 
 class hitstatustype(apriori.type):
     """ Records status information about the ``hit`` - for example if a
