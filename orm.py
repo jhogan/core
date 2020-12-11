@@ -544,13 +544,46 @@ class undef:
 class stream(entitiesmod.entity):
     """ ``stream`` objects are used to configure ``entities``. Passing a
     ``stream`` object to an ``entities`` ``__init__`` method instructs
-    the `entities` object to function in streaming/chunking mode.  """
+    the `entities` object to function in streaming/chunking mode. 
+
+    Streaming entities behaves like non-streaming entities for the most
+    part.  Property invocation and iteration behave the same::
+
+        # Create a streaming entity for all male artists
+        arts = artists(orm.stream, gender='male')
+
+        # Executiton of SQL statements begins here - on iteration. 
+        # ``arts``'s __iter__ will fetch only 100 records at a time from
+        # the database to prevent memory over-consumption.
+        for art in arts:
+            ...
+
+        Calling properties and methods have the same, seemless
+        behavior::
+
+        arts = artists(orm.stream, gender='male')
+        
+        # Get the count of male artists form the database
+        cnt = arts.count
+
+    The number of records that are fetched at a time default to 100. To
+    change this, we can pass in a ``chunksize`` value::
+
+            stm = orm.stream(chunksize=10)
+            arts = artists(stm, gender='male')
+
+            # Only 10 artist rows will be pulled from the database at a
+            # time.
+            for art inn arts::
+                ...
+
+    """
 
     def __init__(self, chunksize=100):
         """ Sets the chunksize of the stream object.
 
         :param: int chunksize: The number of records to load (or chunk)
-                at a time.
+        at a time.
         """
         self.cursor = self.cursor(self)
         self.chunksize = chunksize
@@ -592,15 +625,15 @@ class stream(entitiesmod.entity):
                    self.stop  >= slc.stop
 
         def advance(self, slc):
-            """
-            Advance the cursor in accordance with the ``slice`` argument's
-            ``start`` and ``stop`` properties. If the slice calls for data
-            not currently loaded in the ``chunk`` collecion, the ``chunk``
-            is cleared and loaded with new data from the database.
+            """ Advance the cursor in accordance with the ``slice``
+            argument's ``start`` and ``stop`` properties. If the slice
+            calls for data not currently loaded in the ``chunk``
+            collecion, the ``chunk`` is cleared and loaded with new data
+            from the database.
 
-            :param: slice slc: The ``start`` and ``stop`` properties of the
-                               slice indicate which rows in the stream to 
-                               which the cursor should be advanced.
+            :param: slice slc: The ``start`` and ``stop`` properties of
+            the slice indicate which rows in the stream to which the
+            cursor should be advanced.
             """
 
             # Convert int to a slice
