@@ -1482,6 +1482,10 @@ class entitiesmeta(type):
     def count(cls):
         return cls.orm.all.count
 
+    @property
+    def last(cls):
+        return cls.orm.all.sorted('createdat').last
+
 class entities(entitiesmod.entities, metaclass=entitiesmeta):
     re_alphanum_ = re.compile('^[a-z_][0-9a-z_]+$', flags=re.IGNORECASE)
 
