@@ -1341,9 +1341,10 @@ class pom_page(tester.tester):
                 self.eq('Unauthorized', res['.flash'].text)
                 self.status(401, res)
 
-    def it_logs_transactions(self):
-        jwt = None
-        class person(pom.page):
+    def it_logs_hits(self):
+
+        ''' Set up a page that tests the hit/logging facility '''
+        class hitme(pom.page):
 
             def main(self):
                 dev = req.hit.useragent.devicetype
@@ -1368,7 +1369,7 @@ class pom_page(tester.tester):
 
         # Set up site
         ws = foonet()
-        ws.pages += person()
+        ws.pages += hitme()
 
         # Create a browser tab
         ip = ecommerce.ip(address='12.34.56.78')
@@ -1383,19 +1384,28 @@ class pom_page(tester.tester):
 
         tab = brw.tab()
 
-        # GET the page
+        ''' GET page '''
         tab.referer = 'imtherefere.com'
-        res = tab.get('/en/person', ws)
+        res = tab.get('/en/hitme', ws)
         self.status(200, res)
 
-        hit = ecommerce.hits.orm.all.sorted('createdat').last
+        ''' Load the hit and test it '''
+
+        hit = ecommerce.hits.last
+
         self.notnone(hit.begin)
         self.notnone(hit.end)
         self.true(hit.begin < hit.end)
         self.status(200, hit)
         self.eq(0, hit.size)
+
+        # Referer/url
         self.eq('imtherefere.com', hit.url.address)
+
+        # user
         self.none(hit.user)
+
+        # User agent
         self.eq(
             hit.useragent.string, 
             brw.useragent.string
@@ -1431,7 +1441,7 @@ class pom_page(tester.tester):
 
         # POST the form back to page
         tab.referer = 'imtherefere.com'
-        res = tab.post('/en/person', ws, frm)
+        res = tab.post('/en/hitme', ws, frm)
 
     def it_can_accesses_injected_variables(self):
         class lang(pom.page):

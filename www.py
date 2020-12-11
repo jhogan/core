@@ -393,6 +393,8 @@ class _request:
         return 'en'
 
     def __call__(self):
+        # TODO If an exception bubbles up here, it should be logged to
+        # syslog (I think).
         self.log()
 
         try:
