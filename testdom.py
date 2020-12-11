@@ -1346,8 +1346,13 @@ class pom_page(tester.tester):
         class person(pom.page):
 
             def main(self):
-                frm = dom.form()
+                dev = req.hit.useragent.devicetype
 
+                self.main += dom.p(f'''
+                {dev.brand} {dev.name}
+                ''', class_='device')
+
+                frm = dom.form()
                 self.main += frm
 
                 frm += pom.input(
@@ -1395,8 +1400,29 @@ class pom_page(tester.tester):
             hit.useragent.string, 
             brw.useragent.string
         )
+
+        # User agent - browser
+        self.eq('Mobile Safari', hit.useragent.browsertype.name)
+        self.eq('5.1', hit.useragent.browsertype.version)
+
+        # User agent - device
+        self.eq('iPhone', hit.useragent.devicetype.name)
+        self.eq('Apple', hit.useragent.devicetype.brand)
+        self.eq('iPhone', hit.useragent.devicetype.model)
+
+        # User agent - platform
+        self.eq('iOS', hit.useragent.platformtype.name)
+        self.eq('5.1', hit.useragent.platformtype.version)
+
+        # IP address
         self.eq(ip.address, hit.ip.address)
 
+        # Enuser the page has access to the hit object
+        self.eq(
+            'Apple iPhone',
+            res['.device'].first.text
+        )
+        return
 
         frm = res['form'].first
 

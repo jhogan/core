@@ -92,6 +92,7 @@ class ips(electronicaddresses):                               pass
 class useragents(orm.entities):                               pass
 class useragenttypes(apriori.types):                          pass
 class platformtypes(apriori.types):                           pass
+class devicetypes(apriori.types):                             pass
 class browsertypes(apriori.types):                            pass
 class protocols(apriori.types):                               pass
 class methods(apriori.types):                                 pass
@@ -564,11 +565,24 @@ class useragent(orm.entity):
     def string(self, v):
         attr(v)
         ua = self._useragent
-        brw = ua.browser
 
+        brw = ua.browser
         self.browsertype = browsertype(
-            name = brw.family,
+            name    = brw.family,
             version = brw.version,
+        )
+
+        dev = ua.device
+        self.devicetype = devicetype(
+            name  = dev.family,
+            brand = dev.brand,
+            model = dev.model,
+        )
+
+        os = ua.os
+        self.platformtype = platformtype(
+            name  = os.family,
+            version = os.version_string,
         )
 
     @property
@@ -622,7 +636,20 @@ class platformtype(apriori.type):
     Note that this is modeled after the PLATFORM TYPE entity in "The
     Data Model Resource Book Volume 2".
     """
+    version = str
+
     useragents = useragents
+
+class devicetype(apriori.type):
+    useragents = useragents
+    
+    brand = str
+    model = str
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(
+            expects = ('name', 'brand', 'model'), *args, **kwargs
+        )
 
 class browsertype(apriori.type):
     """ The ``browsertype`` reveals the name and version of the browser

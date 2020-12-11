@@ -227,6 +227,26 @@ class test_ecommerce(tester.tester):
         self.eq(brw.name,     brw1.name)
         self.eq(brw.version,  brw1.version)
 
+    def it_ensures_devicetype(self):
+        B()
+        dev = ecommerce.devicetype(
+            name = 'iPhone',
+            brand = 'Apple',
+            model = 'iPhone',
+        )
+        self.false(dev.orm.isnew)
+
+        dev1 = ecommerce.devicetype(
+            name  = 'iPhone',
+            brand = 'Apple',
+            model = 'iPhone',
+        )
+
+        self.eq(dev.id,       dev1.id)
+        self.eq('iPhone',    dev1.name)
+        self.eq('Apple',       dev1.brand)
+        self.eq('iPhone',       dev1.model)
+
     def it_calls__str__(self):
         ip = ecommerce.ip(address='127.0.0.2')
         self.eq('127.0.0.2', str(ip))
