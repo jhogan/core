@@ -180,7 +180,7 @@ class party(orm.entity):
             if isinstance(rl, visitor):
                 break
 
-            rl = rl.cast(visitor)
+            rl = rl.orm.cast(visitor)
             if rl:
                 break
         else:
