@@ -23,16 +23,9 @@ from dbg import B
 from decimal import Decimal as dec
 from entities import classproperty
 from orm import text, datespan, timespan
-import apriori
-import asset
-import builtins
-import db
-import file
-import hashlib
-import orm
-import os
-import primative
-import uuid
+import apriori, asset, file
+import db,orm, primative
+import uuid, builtins
 
 ''' Parties '''
 
@@ -281,7 +274,6 @@ class party(orm.entity):
             rl = self.roles.last
 
         return rl
-
 
     # A collection of skills belonging to this party
     skills = skills

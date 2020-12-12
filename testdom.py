@@ -1273,8 +1273,8 @@ class pom_page(tester.tester):
 
         # Create 10 users, but only save half. Since only half will be
         # in the database, the authenication logic will see them as
-        # valid user. This rest won't be able to log in.
-        usrs = party.users()
+        # valid user. The rest won't be able to log in.
+        usrs = ecommerce.users()
         for i in range(10):
             usrs += party.user()
             usrs.last.name     = uuid4().hex
@@ -1342,7 +1342,6 @@ class pom_page(tester.tester):
                 self.status(401, res)
 
     def it_logs_hits(self):
-
         ''' Set up a page that tests the hit/logging facility '''
         class hitme(pom.page):
 

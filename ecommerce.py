@@ -23,7 +23,8 @@ Examples:
 
 TODO:
     
-    ...
+    TODO Enfore the rule that user.name's must be unique
+
 """
 
 from datetime import datetime, date
@@ -32,9 +33,8 @@ from dbg import B
 from decimal import Decimal as dec
 from orm import text, timespan, datespan
 import orm, entities
-import party, apriori, product, order
-import ipaddress
-import user_agents
+import party, apriori, product, order, file
+import ipaddress, os, user_agents, hashlib
 
 class agents(party.parties):                                  pass
 class webmasters(party.personals):                            pass
@@ -243,6 +243,7 @@ class user(orm.entity):
     Note that this entity is based on the USER LOGIN entity
     in "The Data Model Resource Book Volume 2".
     """
+    
     name = str
     hash = bytes(32)
 
