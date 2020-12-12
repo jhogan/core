@@ -317,7 +317,7 @@ class _request:
 
             # NOTE The JWT's sub property has a hex str
             # represetation of the user's id.
-            self._user = party.user(jwt.sub)
+            self._user = ecommerce.user(jwt.sub)
 
         return self._user
                 

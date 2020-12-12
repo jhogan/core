@@ -253,6 +253,85 @@ class user(orm.entity):
     preferences = preferences
     hits = hits
 
+    @orm.attr(file.directory)
+    def directory(self):
+        dir = attr()
+        if dir is None:
+            dir = file.directory(name=self.id.hex)
+            attr(dir)
+        return dir
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._password = None
+
+    @orm.attr(bytes, 16, 16)
+    def salt(self):
+        self._sethash()
+        return attr()
+
+    @orm.attr(bytes, 32, 32)
+    def hash(self):
+        self._sethash()
+        return attr()
+
+    def _sethash(self):
+        hash = self.orm.mappings['hash']
+        salt = self.orm.mappings['salt']
+
+        if hash.value and salt.value:
+            return
+
+        hash.value, salt.value = self._gethash()
+
+    def _gethash(self, pwd=None):
+        if not pwd:
+            pwd = self.password
+
+        if not pwd:
+            return None, None
+
+        salt = self.orm.mappings['salt'].value
+
+        if not salt:
+            salt = os.urandom(16)
+
+        pwd  = bytes(pwd, 'utf-8')
+        algo = 'sha256'
+        iter = 100000
+        fn   = hashlib.pbkdf2_hmac
+
+        hash = fn(algo, pwd, salt, iter)
+        return hash, salt
+
+    @property
+    def password(self):
+        return self._password
+
+    @password.setter
+    def password(self, v):
+        self.hash = self.salt = None
+        self._password = v
+
+    def ispassword(self, pwd):
+        # Ensure self._salt is set so _gethash doesn't make one up
+        self._sethash()
+        hash, _ = self._gethash(pwd)
+        return hash == self.hash
+
+    @staticmethod
+    def authenticate(name, password):
+        usrs = users(name=name)
+        if usrs.hasplurality:
+            raise ValueError('Multiple users found')
+
+        if usrs.hasone:
+            usr = usrs.first
+            if usr.ispassword(password):
+                return usr
+
+        return None
+
 class history(orm.entity):
     """ Used to store a history of the logins and passwords.
 

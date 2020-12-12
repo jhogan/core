@@ -1206,7 +1206,7 @@ class pom_page(tester.tester):
                 pwd = frm['input[name=password]'].first.value
 
                 # Load an authenticated user
-                usr = party.user.authenticate(uid, pwd)
+                usr = ecommerce.user.authenticate(uid, pwd)
 
                 # If credentials were authenticated
                 if usr:
@@ -1276,7 +1276,8 @@ class pom_page(tester.tester):
         # valid user. The rest won't be able to log in.
         usrs = ecommerce.users()
         for i in range(10):
-            usrs += party.user()
+            usrs += ecommerce.user()
+            usrs.last.party    = party.person(name=f'Person {i}')
             usrs.last.name     = uuid4().hex
             usrs.last.password = uuid4().hex
             if i > 5:
