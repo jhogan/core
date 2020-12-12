@@ -643,6 +643,11 @@ class useragent(orm.entity):
 
     @orm.attr(str)
     def string(self, v):
+        if not v:
+            raise ValueError(
+                'Empty useragent string'
+            )
+
         attr(v)
         ua = self._useragent
 
