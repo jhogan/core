@@ -1356,20 +1356,26 @@ class pom_page(tester.tester):
                 frm = dom.form()
                 self.main += frm
 
-                frm += pom.input(
-                    name = 'name',
-                    type = 'text',
-                    label = 'Name', 
-                    placeholder = 'Enter persons name here',
-                )
+                frm = pom.forms.login()
+
+                if req.isget:
+                    return
 
                 if req.ispost:
-                    frm.post = req.payload
-                    B()
+                    uid = frm['input[name=username]'].first.value
+                    pwd = frm['input[name=password]'].first.value
+
+                    # Load an authenticated user
+                    usr = ecommerce.user.authenticate(uid, pwd)
+
+                    assert user
 
         # Set up site
         ws = foonet()
         ws.pages += hitme()
+
+        ecommerce.user.orm.truncate()
+        ecommerce.user(name='luser', password='123456').save()
 
         # Create a browser tab
         ip = ecommerce.ip(address='12.34.56.78')
@@ -1435,9 +1441,6 @@ class pom_page(tester.tester):
         return
 
         frm = res['form'].first
-
-        # Populate the <form>
-        frm['input[name=name]'].first.value = 'Henry Ford'
 
         # POST the form back to page
         tab.referer = 'imtherefere.com'
