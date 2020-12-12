@@ -326,7 +326,21 @@ class tester(entity):
             super().__init__(*args, **kwargs)
             self.tester = tester
             self.tabs = tester._browser._tabs(self)
+
+            # Assign the browser a default useragent string
+            if not useragent:
+                useragent = (
+                'Mozilla/5.0 (iPhone; CPU iPhone OS 5_1 like Mac OS X) '
+                'AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 '
+                'Mobile/9B179 Safari/7534.48.3'
+                )
+
+            # Assign the test browser a default ip
+            if not ip:
+                ip = ecommerce.ip(address='10.10.10.10')
+
             self.ip = ecommerce.ip(address=ip)
+
             self.useragent = ecommerce.useragent(string=useragent) 
 
         def tab(self):
