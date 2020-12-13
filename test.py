@@ -9847,9 +9847,7 @@ class test_orm(tester):
         for prop in art.orm.properties:
             if prop == 'id':
                 self.eq(getattr(art1, prop), getattr(art, prop), prop)
-            elif prop != 'proprietor__partyid':
-                if prop in ('createdat', 'updatedat'):
-                    continue
+            elif prop not in art.orm.builtins:
                 self.ne(getattr(art1, prop), getattr(art, prop), prop)
 
         self.chronicles.clear()
@@ -12305,11 +12303,10 @@ class test_orm(tester):
                 # relationships
                 continue
 
+            sng.orm.builtins
             if prop == 'id':
                 self.eq(getattr(sng1, prop), getattr(sng, prop), prop)
-            else:
-                if prop in ('createdat', 'updatedat'):
-                    continue
+            elif prop not in sng.orm.builtins:
                 self.ne(getattr(sng1, prop), getattr(sng, prop), prop)
 
         sng1.save()
@@ -12408,9 +12405,7 @@ class test_orm(tester):
 
             if prop == 'id':
                 self.eq(getattr(rpr1, prop), getattr(rpr, prop), prop)
-            else:
-                if prop in ('createdat', 'updatedat'):
-                    continue
+            elif prop not in rpr.orm.builtins:
                 self.ne(getattr(rpr1, prop), getattr(rpr, prop), prop)
     
         rpr1.save()

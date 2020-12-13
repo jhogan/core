@@ -5135,6 +5135,14 @@ class orm:
 
         self.recreate = self._recreate
 
+    @classproperty
+    def builtins(cls):
+        r = ['id', 'updatedat', 'createdat']
+        for map in cls.mappings.foreignkeymappings:
+            if map.isproprietor:
+                r.append(map.name)
+        return r
+
     @staticmethod
     def exec(sql, args=None):
         exec = db.executioner(
