@@ -1455,8 +1455,29 @@ class predicate(entitiesmod.entity):
             msg = super().__str__() + '. ' + msg
             return msg
 
+# TODO We may want to rename this to ``all``. ``all`` has the advantange
+# of being a single word and, at the time of this writing, is not used.
 class allstream(stream):
-    pass
+    """ A subtype of ``stream`` used to retrieve all rows in a
+    table.
+        
+        # Iterate through all the artist entities
+        for art in artists(orm.allstream)
+            ...
+
+    Note that it is usually preferable to use the @classproperty
+    ``all`` instead::
+        
+        for art in artists.orm.all:
+            ...
+    """
+
+    # TODO The orm.entities constructor does not test if the stream
+    # object passed in is an an ``allstream``. It should probably demand
+    # that no additoinal (querying) arguments be passed in if there is
+    # an ``allstream`` and, that if querying arguments are passed in,
+    # the stream must not be an ``allstream`` since that would be a
+    # contridiction.
         
 class eager:
     """ Instances of this class are passed to orm.entities.__init__ to
@@ -1562,6 +1583,19 @@ class entitiesmeta(type):
     features for the ORM user. 
     """
     def __and__(self, other):
+        """ Creates a new instance of ``self`` and joins ``other`` to
+        it.
+
+            arts = artists & presentations
+            assert isinstance(arts, artists)
+
+        The SELECT for ``arts`` (arts.orm.sql) will be something like::
+            
+            SELECT *
+            FROM artists a
+                INNER JOIN presentations p
+                    ON a.id = p.artistsid
+        """
         self = self()
         self.join(other)
         return self
