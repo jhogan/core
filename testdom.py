@@ -1366,21 +1366,17 @@ class pom_page(tester.tester):
                 if req.isget:
                     return
 
-                if req.ispost:
-                    uid = frm['input[name=username]'].first.value
-                    pwd = frm['input[name=password]'].first.value
+                uid = frm['input[name=username]'].first.value
+                pwd = frm['input[name=password]'].first.value
 
-                    # Load an authenticated user
-                    usr = ecommerce.user.authenticate(uid, pwd)
+                # Load an authenticated user
+                usr = ecommerce.user.authenticate(uid, pwd)
 
-                    assert user
+                assert usr
 
         # Set up site
         ws = foonet()
         ws.pages += hitme()
-
-        ecommerce.user.orm.truncate()
-        ecommerce.user(name='luser', password='123456').save()
 
         # Create a browser tab
         ip = ecommerce.ip(address='12.34.56.78')
