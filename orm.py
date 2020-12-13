@@ -3588,18 +3588,11 @@ class mappings(entitiesmod.entities):
             # `self` later.
             maps = list()
 
-            # TODO:2b619f6f Remove this test
-            if 'proprietor' not in self:
-                from party import party
-
-                # Add an entitymapping of the proprietor reference.
-                self += entitymapping(
-                    'proprietor', party, isderived=True
-                    # TODO:f9a3239c Do we need isderived=True
-                )
-            else:
-                print('We need this test')
-                B()
+            # Add an entitymapping of the proprietor reference.
+            from party import party
+            self += entitymapping(
+                'proprietor', party, isderived=True
+            )
 
             def add_fk_and_entity_map(e):
                 # Add an entity mapping for the composite
