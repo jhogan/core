@@ -401,6 +401,7 @@ class file_file(tester.tester):
         super().__init__()
         clean()
 
+        # Recreate tables
         orm.orm.recreate(
             party.user,
             file.files,

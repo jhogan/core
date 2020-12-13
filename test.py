@@ -3854,7 +3854,7 @@ class test_orm(tester):
         artist.orm.recreate(recursive=True)
         comment.orm.recreate()
 
-        com = party.company(name='Carpacian')
+        com = party.company(name='Carapacian')
         orm.orm.setproprietor(com)
         com.save()
         # Inject a reference to the self._chrontest context manager into
@@ -6122,7 +6122,7 @@ class test_orm(tester):
                 self.isnot(f1, rmfact)
                 self.isnot(f2, rmfact)
 
-            with self._chrontest() as t, db.chronicler.snapshot():
+            with self._chrontest() as t:
                 t(art.save)
                 t.deleted(rmcomps.first)
                 t.deleted(rmcomps.second)
@@ -13406,7 +13406,8 @@ class test_orm(tester):
     def it_parameterizes_predicate(self):
         ''' Ensure that the literals in predicates get replaced with
         placeholders and that the literals are moved to the correct 
-        positions in the where.args list. '''
+        positions in the where.args list.
+        '''
 
         # TODO With the addition of this feature, we can remove the
         # requirement that an empty tuple be given as the second
@@ -17161,7 +17162,7 @@ class gem_party(tester):
             if e.__module__ == 'party':
                 e.orm.recreate()
 
-        com = party.company(name='Carpacian')
+        com = party.company(name='Carapacian')
         orm.orm.setproprietor(com)
         com.save(com)
 
@@ -18977,7 +18978,7 @@ class gem_product(tester):
             if e.__module__ in ('product', ):
                 e.orm.recreate()
 
-        com = party.company(name='Carpacian')
+        com = party.company(name='Carapacian')
         orm.orm.setproprietor(com)
         com.save(com)
 
@@ -20692,7 +20693,7 @@ class gem_case(tester):
             party.statuses,
         )
 
-        com = party.company(name='Carpacian')
+        com = party.company(name='Carapacian')
         orm.orm.setproprietor(com)
         com.save(com)
 
@@ -20853,7 +20854,7 @@ class gem_order(tester):
             if e.__module__ in ('order', 'party', 'product',):
                 e.orm.recreate()
 
-        com = party.company(name='Carpacian')
+        com = party.company(name='Carapacian')
         orm.orm.setproprietor(com)
         com.save(com)
 
@@ -21630,7 +21631,7 @@ class gem_shipment(tester):
             if e.__module__ in ('shipment', 'order'):
                 e.orm.recreate()
 
-        com = party.company(name='Carpacian')
+        com = party.company(name='Carapacian')
         orm.orm.setproprietor(com)
         com.save(com)
 
@@ -22055,7 +22056,7 @@ class gem_effort(tester):
             ):
                 e.orm.recreate()
 
-        com = party.company(name='Carpacian')
+        com = party.company(name='Carapacian')
         orm.orm.setproprietor(com)
         com.save(com)
 
@@ -22837,7 +22838,7 @@ class gem_invoice(tester):
             if e.__module__ in ('invoice', 'party', 'apriori'):
                 e.orm.recreate()
 
-        com = party.company(name='Carpacian')
+        com = party.company(name='Carapacian')
         orm.orm.setproprietor(com)
         com.save(com)
 
@@ -23217,7 +23218,7 @@ class gem_account(tester):
             account.depreciationmethod,
         )
 
-        com = party.company(name='Carpacian')
+        com = party.company(name='Carapacian')
         orm.orm.setproprietor(com)
         com.save(com)
 
@@ -23474,7 +23475,7 @@ class gem_budget(tester):
             if e.__module__ in ('apriori', 'budget', 'party'):
                 e.orm.recreate()
 
-        com = party.company(name='Carpacian')
+        com = party.company(name='Carapacian')
         orm.orm.setproprietor(com)
         com.save(com)
 
@@ -23846,7 +23847,7 @@ class gem_hr(tester):
             if e.__module__ in ('party', 'hr', 'apriori', 'invoice'):
                 e.orm.recreate()
 
-        com = party.company(name='Carpacian')
+        com = party.company(name='Carapacian')
         orm.orm.setproprietor(com)
         com.save(com)
 

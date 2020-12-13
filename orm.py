@@ -7222,14 +7222,14 @@ class associations(entities):
         return r
 
     def _self_onremove(self, src, eargs):
-        """ This event handler occures when an association is removed
-        from an assoctions collection. When this happens, we want to
-        remove the association's constituent entity (the non-composite
-        entity) from its pseudocollection class - but only if it hasn't
-        already been marked for deletion (ismarkedfordeletion). If it
-        has been marked for deletion, that means the pseudocollection
-        class is invoking this handler - so removing the constituent
-        would result in infinite recursion.  
+        """ This event handler is called when an ``association`` is
+        removed from an ``assoctions`` collection. When this happens, we
+        want to remove the ``association``'s constituent entity (the
+        non-composite entity) from its pseudocollection class - but only
+        if it hasn't already been marked for deletion
+        (ismarkedfordeletion). If it has been marked for deletion, that
+        means the pseudocollection class is invoking this handler - so
+        removing the constituent would result in infinite recursion.  
         """
         ass = eargs.entity
 

@@ -9,9 +9,6 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2020                 #
 ########################################################################
 
-# TODO Run full tests
-# TODO Comment all new changes
-
 import orm, tester, party, db
 from func import B
 
