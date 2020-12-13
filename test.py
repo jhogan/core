@@ -13438,7 +13438,7 @@ class test_orm(tester):
         self.eq("5678", arts.orm.where.args[1])
         for i, pred in enumerate(arts.orm.where.predicate):
             self.eq("%s", pred.operands[1])
-            self.lt(i, 2)
+            self.lt(i, 3)
 
         expr = (
             "firstname between '1234' and '5678' or "
@@ -13452,7 +13452,7 @@ class test_orm(tester):
         self.eq("6789", arts.orm.where.args[3])
         for i, pred in enumerate(arts.orm.where.predicate):
             self.eq("%s", pred.operands[1])
-            self.lt(i, 2)
+            self.lt(i, 3)
 
     def it_raises_exception_when_a_non_existing_column_is_referenced(self):
         self.expect(orm.InvalidColumn, lambda: artists(notacolumn = 1234))
