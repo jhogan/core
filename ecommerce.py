@@ -578,6 +578,13 @@ class hit(orm.entity):
     # The timespan of the request
     span = timespan
 
+    # The path to the page being requested
+    path = str
+
+    # The language the page is being requested in, i.e., the 'en' in
+    # 'www.mysite.com/en/path/to/page.html'
+    language = str
+
     # The size, in bytes, of the response. 
     size = int
 

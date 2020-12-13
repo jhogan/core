@@ -10,7 +10,7 @@
 
 from contextlib import suppress
 from dbg import B
-import asset
+import asset, ecommerce
 import datetime
 import dom
 import entities
@@ -59,6 +59,7 @@ class site(asset.asset):
 
     host = str
     resources = file.resources
+    hits = ecommerce.hits
 
     @property
     def pages(self):

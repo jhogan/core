@@ -21,6 +21,7 @@ class foonet(pom.site):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.host = 'foo.net'
+        self.name = 'foo.net'
 
         ''' Pages '''
         self.pages += home()
@@ -547,9 +548,13 @@ class pom_page(tester.tester):
     def __init__(self):
         super().__init__()
         es = orm.orm.getentitys(includeassociations=True)
+        mods = 'party', 'ecommerce', 'pom', 'asset', 'apriori'
+
         for e in es:
-            if e.__module__ in ('party', 'ecommerce') :
+            if e.__module__ in  mods:
                 e.orm.recreate()
+
+        foonet.orm.recreate()
 
     def it_calls__init__(self):
         name = uuid4().hex
@@ -1404,6 +1409,15 @@ class pom_page(tester.tester):
         self.true(hit.begin < hit.end)
         self.status(200, hit)
         self.eq(0, hit.size)
+
+        # Page path
+        self.eq('/hitme', hit.path)
+
+        # Site
+        self.eq(ws.id, hit.site.id)
+
+        # Language
+        self.eq('en', hit.language)
 
         # Referer/url
         self.eq('imtherefere.com', hit.url.address)

@@ -433,6 +433,9 @@ class _request:
                 visitor.visits += visit
 
             self._hit = ecommerce.hit(
+                path       =  self.page.path,
+                site       =  self.site,
+                language   =  self.language,
                 ip         =  self.ip,
                 url        =  self.referer,
                 size       =  self.size,
