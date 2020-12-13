@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 from datetime import timezone, datetime, date
 from dbg import B
 from func import enumerate, getattr
