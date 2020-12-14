@@ -572,14 +572,24 @@ class hit(orm.entity):
     Model Resource Book Volume 2".
     """
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.default('qs', None)
+
     # NOTE The implicit attribute `url` is the referrer (http_referer)
     # of the web request.
 
     # The timespan of the request
     span = timespan
 
+    # The query string
+    qs = str
+
     # The path to the page being requested
     path = str
+
+    # The request method (GET, POST, DELETE, etc)
+    method = str
 
     # The language the page is being requested in, i.e., the 'en' in
     # 'www.mysite.com/en/path/to/page.html'

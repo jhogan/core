@@ -1416,6 +1416,12 @@ class pom_page(tester.tester):
         # Language
         self.eq('en', hit.language)
 
+        # Method
+        self.eq('GET', hit.method)
+
+        # Query string
+        self.none(hit.qs)
+
         # Referer/url
         self.eq('imtherefere.com', hit.url.address)
 

@@ -337,7 +337,12 @@ class _request:
 
     @property
     def qs(self):
-        return self.environment['query_string']
+        qs = self.environment['query_string']
+
+        if not qs:
+            qs = None
+
+        return qs
 
     @property
     def site(self):
@@ -436,6 +441,8 @@ class _request:
 
             self._hit = ecommerce.hit(
                 path       =  self.page.path,
+                qs         =  self.qs,
+                method     =  self.method,
                 site       =  self.site,
                 language   =  self.language,
                 ip         =  self.ip,
