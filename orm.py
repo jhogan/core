@@ -3174,9 +3174,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 if map.isloaded:
                     brs += map.value.getbrokenrules(gb=gb)
 
-            # TODO:378d87b1 Add proprietor check for FK and
-            # entitymappings here and write test
-
         return brs
 
     @staticmethod
@@ -3590,9 +3587,7 @@ class mappings(entitiesmod.entities):
 
             # Add an entitymapping of the proprietor reference.
             from party import party
-            self += entitymapping(
-                'proprietor', party, isderived=True
-            )
+            self += entitymapping('proprietor', party, isderived=True)
 
             def add_fk_and_entity_map(e):
                 # Add an entity mapping for the composite
@@ -3904,14 +3899,6 @@ class mapping(entitiesmod.entity):
         mapping.ordinal += 1
         self._ordinal = mapping.ordinal
         self.isderived = isderived
-
-    @property
-    def isstandard(self):
-        """ Returns True if this is a standard field mapping applied by
-        the entitymeta.
-        """
-        #  TODO Add 'proprietor'
-        return self.name in ('id', 'createdat', 'updatedat')
 
     def isdefined(self):
         return self._value is not undef
@@ -4878,6 +4865,9 @@ class foreignkeyfieldmapping(fieldmapping):
 
     @property
     def isproprietor(self):
+        """ Return True if this foreign key mapping references the
+        record's proprietor; False otherwise.
+        """
         return self.name == 'proprietor__partyid'
 
     @property
@@ -5102,10 +5092,14 @@ class orm:
 
     @classmethod
     def getproprietor(cls):
+        """ Return the proprietor entity currently set.
+        """
         return cls._proprietor
 
     @classproperty
     def proprietor(cls):
+        """ Return the proprietor entity currently set.
+        """
         return cls.getproprietor()
 
     def __init__(self):
@@ -5137,6 +5131,10 @@ class orm:
 
     @classproperty
     def builtins(cls):
+        """ Return a list of mapping names that are standard on all
+        entities, vis. 'id', 'updatedat', 'createdat', and
+        'proprietor__partyid'.
+        """
         r = ['id', 'updatedat', 'createdat']
         for map in cls.mappings.foreignkeymappings:
             if map.isproprietor:
@@ -5543,16 +5541,16 @@ class orm:
     def _recreate(self, cur=None, recursive=False, guestbook=None):
         """ Drop and recreate the table for the orm ``self``. 
 
-        :param: cur:       The MySQLdb cursor used by this and all
-                           subsequent CREATE and DROPs
+        :param: cur: The MySQLdb cursor used by this and all subsequent
+        CREATE and DROPs
 
         :param: recursive: If True, the constituents and subentities of
-                           ``self`` will be recursively discovered and
-                           their tables recreated. Used internally.
+        ``self`` will be recursively discovered and their tables
+        recreated. Used internally.
 
-        :param: guestbook: A list to keep track of which classes' tables have
-                           been recreated. Used internally to prevent
-                           infinite recursion.
+        :param: guestbook: A list to keep track of which classes' tables
+        have been recreated. Used internally to prevent infinite
+        recursion.
         """
 
         # Prevent infinite recursion
@@ -7713,8 +7711,8 @@ class ProprietorError(ValueError):
     def __init__(self, actual, expected=None):
         """ Initialize the exception.
 
-        :param: paryt.party actual: The proprietor that is being used.
-        :param: paryt.party expected: The proprietor that was expected.
+        :param: party.party actual: The proprietor that is being used.
+        :param: party.party expected: The proprietor that was expected.
         """
         self.actual = actual
         self._expected = expected
