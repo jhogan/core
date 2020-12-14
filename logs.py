@@ -13,7 +13,6 @@ import logging
 from logging import handlers, Handler
 
 class logs(entities):
-
     _instance = None
 
     def __init__(self):
@@ -65,9 +64,9 @@ class log(entity):
         def __init__(self, rec):
             self.record = rec
 
-    # Use properties to expose the direct logger methods. Doings so allows
-    # %(lineno)d LogRecord attribute to display the line number where the
-    # method was actually invoked.
+    # Use properties to expose the direct logger methods. Doings so
+    # allows %(lineno)d LogRecord attribute to display the line number
+    # where the method was actually invoked.
     @property
     def debug(self):
         return self._logger.debug

@@ -591,6 +591,7 @@ class hit(orm.entity):
     # The HTTP status code
     status = int
 
+
     @property
     def inprogress(self):
         return self.begin and not self.end

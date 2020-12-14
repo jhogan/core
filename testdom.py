@@ -1406,7 +1406,7 @@ class pom_page(tester.tester):
         self.true(hit.begin < hit.end)
         self.status(200, hit)
         self.eq(0, hit.size)
-
+        
         # Page path
         self.eq('/hitme', hit.path)
 

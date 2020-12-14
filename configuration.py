@@ -66,7 +66,7 @@ class configuration:
         if not self._logs:
             self._logs = logs()
             self._logs += log(
-		addr = '/dev/log', 
+                addr = '/dev/log', 
                 fac = 'user',
                 tag = 'CORETEST', 
                 fmt = '[%(process)d]: %(levelname)s '
