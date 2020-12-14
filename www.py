@@ -455,16 +455,40 @@ class _request:
         return self._hit
 
     def log(self):
-        hit = self.hit
-        now = primative.datetime.utcnow()
+        try: 
+            hit = self.hit
+            now = primative.datetime.utcnow()
 
-        if hit.inprogress:
-            hit.end = now
-            hit.status = response.status
-        else:
-            hit.begin = now
+            if hit.inprogress:
+                hit.end = now
+                hit.status = response.status
+            else:
+                hit.begin = now
 
-        hit.save()
+            hit.save()
+        except Exception as ex:
+            # Failing to log a hit shouldn't stop page invocation. We
+            # should log the failure to the syslog.
+            from config import config
+
+            # TODO Fix the logging interface. We shouldn't have to go
+            # through config to get a logging object. Also, it doesn't
+            # make sense to select the first log from a collection of
+            # logs. The collections of logs are actually configurations
+            # of logging facilities. The first here is for
+            # /var/log/syslog (there aren't any others). This is all
+            # really wierd. We shoud just be able to say something like:
+            #
+            #     import log from logger
+            #     log.exception(ex)
+            #
+            # The nature of the core framework is such that we would
+            # normally log stuff to a database table. We wouldn't want
+            # to write anything to a log file unless there was a failure
+            # to write to the database. Log entries in syslog should be
+            # indicate the environment that is making the entry.
+            log = config().logs.first
+            log.exception(ex)
 
     @property
     def payload(self):
