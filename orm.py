@@ -1484,6 +1484,11 @@ class entitiesmeta(type):
 
     @property
     def last(cls):
+        """ Return the last entity created in the database::
+
+            # Get the last hit entity added to the database
+            lasthit = ecommerce.hits.last
+        """
         return cls.orm.all.sorted('createdat').last
 
 class entities(entitiesmod.entities, metaclass=entitiesmeta):

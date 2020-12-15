@@ -402,10 +402,15 @@ class _request:
     def __call__(self):
         # TODO If an exception bubbles up here, it should be logged to
         # syslog (I think).
+
+        # Create the hit log. In the finally block, we will add some
+        # concluding information by calling self.log again, such as the
+        # HTTP status code.
         self.log()
 
         try:
-            self.page(**self.arguments)
+            # Invoke the page
+           self.page(**self.arguments)
         except HttpError as ex:
             if ex.flash:
                 self.page.flash(ex.flash)
@@ -413,32 +418,43 @@ class _request:
             else:
                 raise
         finally:
+            # Finish of the hit log
             self.log()
 
         return self.page.html
 
     @property
     def hit(self):
+        """ Return the ``hit`` entity. If it does not yet exist for this
+        request, create it.
+        """
         if not self._hit:
+            # Get the request's refere url
             referer = self.referer
 
+            # Get the users party. If no user is logged in, use the
+            # anonymous user.
             if self.user:
                 par = self.user.party
             else:
                 par = party.party.anonymous
 
+            # Get the party's visitor role
             visitor = par.visitor
 
+            # Get the party's visitor role's current visit
             visit = visitor.visits.current
 
             now = primative.datetime.utcnow()
 
+            # Create a new ``visit`` if a current one doesn't not exist
             if not visit:
                 visit = ecommerce.visit(
                     begin = now
                 )
                 visitor.visits += visit
 
+            # Create the hit entity. No need to save it at the moment.
             self._hit = ecommerce.hit(
                 path       =  self.page.path,
                 isxhr      =  self.isxhr,
@@ -456,16 +472,25 @@ class _request:
         return self._hit
 
     def log(self):
+        """ Log the hit.
+        """
+
         try: 
+            # Get the request's ``hit`` entity
             hit = self.hit
             now = primative.datetime.utcnow()
 
+            # If the hit is new, the begin date will be None meaning it
+            # is not ``inprogress``. If that's the case, set the begin
+            # date. Otherwise, we can conclude the hit with the end
+            # datetime and HTTP status.
             if hit.inprogress:
                 hit.end = now
                 hit.status = response.status
             else:
                 hit.begin = now
 
+            # Create/update the hit
             hit.save()
         except Exception as ex:
             # Failing to log a hit shouldn't stop page invocation. We
