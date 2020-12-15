@@ -24,11 +24,11 @@ class test_ecommerce(tester.tester):
             if e.__module__ in mods:
                 e.orm.recreate()
 
-    def it_connects_users_to_addresses(self):
+    def it_connects_users_to_urls(self):
         usr = ecommerce.user(name='jsmith')
         usr.party = party.person(name='John Smith')
-        usr.address = ecommerce.address(
-            url='www.travel_bookings_made_very_easy.com'
+        usr.url = ecommerce.url(
+            address='www.travel_bookings_made_very_easy.com'
         )
 
         usr.preferences += ecommerce.preference(
@@ -40,7 +40,7 @@ class test_ecommerce(tester.tester):
         usr1 = usr.orm.reloaded()
 
         self.eq(usr.party.id, usr1.party.id)
-        self.eq(usr.address.id, usr1.address.id)
+        self.eq(usr.url.id, usr1.url.id)
         self.eq(usr.id, usr1.id)
 
         prefs = usr.preferences.sorted()
@@ -157,12 +157,16 @@ class test_ecommerce(tester.tester):
         )
 
         visitor.visits.last.hits += ecommerce.hit(
-            datetime = '12/31/1999 23:50:00',
-            size = 100,
-            ip = ecommerce.ip(address='10.10.10.1'),
-            # useragent = 
-            # content = 
+            begin     = '12/31/1999 23:50:00',
+            end       = '12/31/1999 23:51:00',
+            size      =  100,
+            ip        =  ecommerce.ip(address='10.10.10.1'),
+            method    =  'GET',
+            path      =  '/herp/derp',
+            language  =  'en'
         )
+
+        hit = visitor.visits.last.hits.last
 
         parties.save()
 
@@ -173,10 +177,11 @@ class test_ecommerce(tester.tester):
                 self.eq(visit.begin, visit1.begin)
                 self.eq(visit.end, visit1.end)
 
-                for hit in visit1.hits:
-                    self.eq(hit.datetime, hit.datetime)
-                    self.eq(hit.size, hit.size)
-                    self.eq(hit.ip.id, hit.ip.id)
+                for hit1 in visit1.hits:
+                    self.eq(hit.begin, hit1.begin)
+                    self.eq(hit.end, hit1.end)
+                    self.eq(hit.size, hit1.size)
+                    self.eq(hit.ip.id, hit1.ip.id)
 
     def it_ensures_url(self):
         address = 'https://www.thedailywtf.com'
@@ -228,7 +233,6 @@ class test_ecommerce(tester.tester):
         self.eq(brw.version,  brw1.version)
 
     def it_ensures_devicetype(self):
-        B()
         dev = ecommerce.devicetype(
             name = 'iPhone',
             brand = 'Apple',

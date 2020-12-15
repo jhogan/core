@@ -14,6 +14,7 @@ from func import enumerate, getattr, B
 import asset
 import base64
 import dom
+import ecommerce
 import entities
 import file
 import hashlib
@@ -65,7 +66,7 @@ class dom_file(tester.tester):
     def __init__(self):
         super().__init__()
         orm.orm.recreate(
-            party.user,      file.files,   file.resources,
+            ecommerce.user,      file.files,   file.resources,
             file.directory,  file.inodes,  pom.site, foonet, asset.asset
         )
 
@@ -208,7 +209,7 @@ class dom_file(tester.tester):
                         'Multiple avatar images were given'
                     )
                 
-                usr = party.user(uid)
+                usr = ecommerce.user(uid)
                 f = req.files.first
 
                 default = usr.directory.file('/var/avatars/default.gif')
@@ -233,7 +234,7 @@ class dom_file(tester.tester):
         )
 
         # Create a save a user
-        usr = party.user(name='luser')
+        usr = ecommerce.user(name='luser')
         usr.save()
 
         # Post the file. Reference the user's id in the URL.
@@ -402,7 +403,7 @@ class file_file(tester.tester):
         clean()
 
         orm.orm.recreate(
-            party.user,
+            ecommerce.user,
             file.files,
             file.resources,
             file.directory,
@@ -775,7 +776,7 @@ class file_directory(tester.tester):
         clean()
 
         orm.orm.recreate(
-            party.user, file.files, file.resources,
+            ecommerce.user, file.files, file.resources,
             file.directory, file.inodes,
         )
 
@@ -992,7 +993,7 @@ class file_resource(tester.tester):
         clean()
 
         orm.orm.recreate(
-            party.user, file.files, file.resources,
+            ecommerce.user, file.files, file.resources,
             file.directory, file.inodes,
         )
 
