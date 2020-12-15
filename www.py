@@ -15,17 +15,18 @@ import auth
 import dom
 import entities
 import exc
+import file
 import html as htmlmod
 import json
 import os
+import party, ecommerce
 import pdb
+import primative
 import re
 import sys
 import textwrap
 import traceback
 import urllib
-import party
-import file
 
 # NOTE Use the following diagram as a guide to determine what status
 # code to respond with:
@@ -86,6 +87,7 @@ class application:
                 data = req()
                 if req.isget:
                     res.payload = data
+
             elif req.ispost:
                 if req.isxhr:
                     reqdata = self.request.post
@@ -178,6 +180,10 @@ class _request:
         self._payload      =  None
         self._user         =  None
         self._files        =  None
+        self._useragent    =  None
+        self._hit          =  None
+        self._ip           =  None
+        self._url          =  None  # The refere
 
     @property
     def headers(self):
@@ -313,7 +319,7 @@ class _request:
 
             # NOTE The JWT's sub property has a hex str
             # represetation of the user's id.
-            self._user = party.user(jwt.sub)
+            self._user = ecommerce.user(jwt.sub)
 
         return self._user
                 
@@ -331,7 +337,12 @@ class _request:
 
     @property
     def qs(self):
-        return self.environment['query_string']
+        qs = self.environment['query_string']
+
+        if not qs:
+            qs = None
+
+        return qs
 
     @property
     def site(self):
@@ -360,6 +371,9 @@ class _request:
 
     @property
     def page(self):
+        """ Return the page that this request is GETting (POSTing to,
+        etc.) 
+        """
         ws = self.site
         path = self.path
         try:
@@ -374,8 +388,8 @@ class _request:
         '''
 
         try:
-            # TODO When the language code is not given, Accept-Language can
-            # be used to work out the best language.
+            # TODO When the language code is not given, Accept-Language
+            # can be used to work out the best language.
             segs = [x for x in self.path.split('/') if x]
             if len(segs):
                 return segs[0]
@@ -386,15 +400,121 @@ class _request:
         return 'en'
 
     def __call__(self):
+        # TODO If an exception bubbles up here, it should be logged to
+        # syslog (I think).
+
+        # Create the hit log. In the finally block, we will add some
+        # concluding information by calling self.log again, such as the
+        # HTTP status code.
+        self.log()
+
         try:
-            self.page(**self.arguments)
+            # Invoke the page
+           self.page(**self.arguments)
         except HttpError as ex:
             if ex.flash:
                 self.page.flash(ex.flash)
                 response.status = ex.status
             else:
                 raise
+        finally:
+            # Finish of the hit log
+            self.log()
+
         return self.page.html
+
+    @property
+    def hit(self):
+        """ Return the ``hit`` entity. If it does not yet exist for this
+        request, create it.
+        """
+        if not self._hit:
+            # Get the request's refere url
+            referer = self.referer
+
+            # Get the users party. If no user is logged in, use the
+            # anonymous user.
+            if self.user:
+                par = self.user.party
+            else:
+                par = party.party.anonymous
+
+            # Get the party's visitor role
+            visitor = par.visitor
+
+            # Get the party's visitor role's current visit
+            visit = visitor.visits.current
+
+            now = primative.datetime.utcnow()
+
+            # Create a new ``visit`` if a current one doesn't not exist
+            if not visit:
+                visit = ecommerce.visit(
+                    begin = now
+                )
+                visitor.visits += visit
+
+            # Create the hit entity. No need to save it at the moment.
+            self._hit = ecommerce.hit(
+                path       =  self.page.path,
+                isxhr      =  self.isxhr,
+                qs         =  self.qs,
+                method     =  self.method,
+                site       =  self.site,
+                language   =  self.language,
+                ip         =  self.ip,
+                url        =  self.referer,
+                size       =  self.size,
+                visit      =  visit,
+                useragent  =  self.useragent,
+            )
+
+        return self._hit
+
+    def log(self):
+        """ Log the hit.
+        """
+
+        try: 
+            # Get the request's ``hit`` entity
+            hit = self.hit
+            now = primative.datetime.utcnow()
+
+            # If the hit is new, the begin date will be None meaning it
+            # is not ``inprogress``. If that's the case, set the begin
+            # date. Otherwise, we can conclude the hit with the end
+            # datetime and HTTP status.
+            if hit.inprogress:
+                hit.end = now
+                hit.status = response.status
+            else:
+                hit.begin = now
+
+            # Create/update the hit
+            hit.save()
+        except Exception as ex:
+            # Failing to log a hit shouldn't stop page invocation. We
+            # should log the failure to the syslog.
+            from config import config
+
+            # TODO Fix the logging interface. We shouldn't have to go
+            # through config to get a logging object. Also, it doesn't
+            # make sense to select the first log from a collection of
+            # logs. The collections of logs are actually configurations
+            # of logging facilities. The first here is for
+            # /var/log/syslog (there aren't any others). This is all
+            # really wierd. We shoud just be able to say something like:
+            #
+            #     import log from logger
+            #     log.exception(ex)
+            #
+            # The nature of the core framework is such that we would
+            # normally log stuff to a database table. We wouldn't want
+            # to write anything to a log file unless there was a failure
+            # to write to the database. Log entries in syslog should be
+            # indicate the environment that is making the entry.
+            log = config().logs.first
+            log.exception(ex)
 
     @property
     def payload(self):
@@ -456,6 +576,27 @@ class _request:
         return self.environment['request_method'].upper()
 
     @property
+    def ip(self):
+        if not self._ip:
+            ip = str(self.environment['remote_addr'])
+            self._ip = ecommerce.ip(address=ip)
+        return self._ip
+
+    @property
+    def referer(self):
+        if not self._url:
+            url = str(self.environment['http_referer'])
+            self._url = ecommerce.url(address=url)
+        return self._url
+
+    @property
+    def useragent(self):
+        if not self._useragent:
+            ua = str(self.environment['user_agent'])
+            self._useragent = ecommerce.useragent(string=ua)
+        return self._useragent
+
+    @property
     def isget(self):
         return self.method == 'GET'
 
@@ -478,7 +619,6 @@ class _request:
     @property
     def mime(self):
         return self.content_type.split(';')[0].strip().lower()
-
 
     def demand(self):
         if not request.page:
@@ -1035,6 +1175,7 @@ class headers(entities.entities):
         if not isinstance(ix, str):
             return super().__setitem__(ix)
 
+        # TODO Why can't we overwrite prior values. 
         for hdr in self:
             if hdr.name.casefold() == ix.casefold():
                 break
@@ -1134,5 +1275,23 @@ class browser(entities.entity):
 
     def __init__(self):
         self.cookies = self._cookies()
+        self._useragent = None
+
+    @property
+    def useragent(self):
+        if isinstance(self._useragent, ecommerce.useragent):
+            pass
+        elif self._useragent is None:
+            pass
+        else:
+            self._useragent = ecommerce.useragent(
+                string = self._useragent
+            )
+
+        return self._useragent
+
+    @useragent.setter
+    def useragent(self, v):
+        self._useragent = v
 
 app = application()

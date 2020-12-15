@@ -17093,7 +17093,7 @@ class gem_party(tester):
         super().__init__()
         es = orm.orm.getentitys(includeassociations=True)
         for e in es:
-            if e.__module__ == 'party':
+            if e.__module__ in ('party', 'apriori'):
                 e.orm.recreate()
 
     @staticmethod

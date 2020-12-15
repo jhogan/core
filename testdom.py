@@ -1,9 +1,10 @@
+#!/usr/bin/python3
 from datetime import timezone, datetime, date
 from dbg import B
 from func import enumerate, getattr
 from uuid import uuid4
 import dom, pom, www
-import party
+import party, ecommerce
 import primative
 import pytz
 import re
@@ -21,6 +22,7 @@ class foonet(pom.site):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.host = 'foo.net'
+        self.name = 'foo.net'
 
         ''' Pages '''
         self.pages += home()
@@ -547,9 +549,13 @@ class pom_page(tester.tester):
     def __init__(self):
         super().__init__()
         es = orm.orm.getentitys(includeassociations=True)
+        mods = 'party', 'ecommerce', 'pom', 'asset', 'apriori'
+
         for e in es:
-            if e.__module__ == 'party':
+            if e.__module__ in  mods:
                 e.orm.recreate()
+
+        foonet.orm.recreate()
 
     def it_calls__init__(self):
         name = uuid4().hex
@@ -1206,7 +1212,7 @@ class pom_page(tester.tester):
                 pwd = frm['input[name=password]'].first.value
 
                 # Load an authenticated user
-                usr = party.user.authenticate(uid, pwd)
+                usr = ecommerce.user.authenticate(uid, pwd)
 
                 # If credentials were authenticated
                 if usr:
@@ -1273,10 +1279,11 @@ class pom_page(tester.tester):
 
         # Create 10 users, but only save half. Since only half will be
         # in the database, the authenication logic will see them as
-        # valid user. This rest won't be able to log in.
-        usrs = party.users()
+        # valid user. The rest won't be able to log in.
+        usrs = ecommerce.users()
         for i in range(10):
-            usrs += party.user()
+            usrs += ecommerce.user()
+            usrs.last.party    = party.person(name=f'Person {i}')
             usrs.last.name     = uuid4().hex
             usrs.last.password = uuid4().hex
             if i > 5:
@@ -1340,6 +1347,135 @@ class pom_page(tester.tester):
                 res = tab.get('/en/whoami', ws)
                 self.eq('Unauthorized', res['.flash'].text)
                 self.status(401, res)
+
+    def it_logs_hits(self):
+        ''' Set up a page that tests the hit/logging facility '''
+        class hitme(pom.page):
+
+            def main(self):
+                req.hit.logs.write('Starting main')
+                dev = req.hit.useragent.devicetype
+
+                self.main += dom.p(f'''
+                {dev.brand} {dev.name}
+                ''', class_='device')
+
+                frm = dom.form()
+                self.main += frm
+
+                frm = pom.forms.login()
+
+                req.hit.logs.write('Ending main')
+
+                if req.isget:
+                    return
+
+                uid = frm['input[name=username]'].first.value
+                pwd = frm['input[name=password]'].first.value
+
+                # Load an authenticated user
+                usr = ecommerce.user.authenticate(uid, pwd)
+
+                assert usr
+
+
+        # Set up site
+        ws = foonet()
+        ws.pages += hitme()
+
+        # Create a browser tab
+        ip = ecommerce.ip(address='12.34.56.78')
+        brw = self.browser(
+            ip=ip,
+            useragent = (
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 5_1 like Mac OS X) '
+            'AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 '
+            'Mobile/9B179 Safari/7534.48.3'
+            )
+        )
+
+        tab = brw.tab()
+
+        ''' GET page '''
+        tab.referer = 'imtherefere.com'
+        res = tab.get('/en/hitme', ws)
+        self.status(200, res)
+
+        ''' Load the hit and test it '''
+
+        hit = ecommerce.hits.last
+
+        self.notnone(hit.begin)
+        self.notnone(hit.end)
+        self.true(hit.begin < hit.end)
+        self.status(200, hit)
+        self.eq(0, hit.size)
+        
+        # Page path
+        self.eq('/hitme', hit.path)
+
+        # Site
+        self.eq(ws.id, hit.site.id)
+
+        # Language
+        self.eq('en', hit.language)
+
+        # Method
+        self.eq('GET', hit.method)
+
+        # XHR
+        self.false(hit.isxhr)
+
+        # Query string
+        self.none(hit.qs)
+
+        # Referer/url
+        self.eq('imtherefere.com', hit.url.address)
+
+        # user
+        self.none(hit.user)
+
+        # User agent
+        self.eq(
+            hit.useragent.string, 
+            brw.useragent.string
+        )
+
+        # Logs
+        logs = hit.logs.sorted('datetime')
+        self.two(hit.logs)
+        self.eq('Starting main', logs.first.message)
+        self.eq('Ending main', logs.second.message)
+
+
+        # User agent - browser
+        self.eq('Mobile Safari', hit.useragent.browsertype.name)
+        self.eq('5.1', hit.useragent.browsertype.version)
+
+        # User agent - device
+        self.eq('iPhone', hit.useragent.devicetype.name)
+        self.eq('Apple', hit.useragent.devicetype.brand)
+        self.eq('iPhone', hit.useragent.devicetype.model)
+
+        # User agent - platform
+        self.eq('iOS', hit.useragent.platformtype.name)
+        self.eq('5.1', hit.useragent.platformtype.version)
+
+        # IP address
+        self.eq(ip.address, hit.ip.address)
+
+        # Enuser the page has access to the hit object
+        self.eq(
+            'Apple iPhone',
+            res['.device'].first.text
+        )
+        return
+
+        frm = res['form'].first
+
+        # POST the form back to page
+        tab.referer = 'imtherefere.com'
+        res = tab.post('/en/hitme', ws, frm)
 
     def it_can_accesses_injected_variables(self):
         class lang(pom.page):

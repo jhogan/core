@@ -1615,6 +1615,15 @@ class entitiesmeta(type):
         """
         return cls.orm.all.count
 
+    @property
+    def last(cls):
+        """ Return the last entity created in the database::
+
+            # Get the last hit entity added to the database
+            lasthit = ecommerce.hits.last
+        """
+        return cls.orm.all.sorted('createdat').last
+
 class entities(entitiesmod.entities, metaclass=entitiesmeta):
     re_alphanum_ = re.compile('^[a-z_][0-9a-z_]+$', flags=re.IGNORECASE)
 
@@ -2760,10 +2769,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 if type(o) is UUID:
                     res = self.orm.load(o)
                 else:
-                    raise ValueError(
+                    raise TypeError(
                         'Can only load by UUID. '
                         'If you are setting attributes via the '
-                        'constructor, ensure that you are including'
+                        'constructor, ensure that you are including '
                         'the keys as well.'
                     )
                     
@@ -5425,10 +5434,61 @@ class orm:
         return cls.entities(allstream)
 
     def ensure(self, expects, **kwargs):
+        """ Ensure that a record exists.
+
+        Certain types of ``orm.entity`` objects are defined by a unique
+        identifier, such as a ``name`` attribute. For example, a
+        ``statustype`` orm.entity may have only a ``name`` attribute
+        that could have values such as 'active', 'inactive', etc . We
+        would call the ``ensure`` method in it's constructor::
+
+
+            class statustype(orm.entity):
+                def __init__(self, *args, **kwargs):
+                    super().__init__(*args, **kwargs)
+                    self.orm.ensure(expects=('name',), **kwargs)
+
+                name = str
+
+        Given the above, anytime we instantiate a new statustype, the
+        ``name`` attribute is used as an identifier. The ``ensure``
+        method will ensure that a new record for the ``name`` attribute
+        is created if it does not already exists. If it does exists, the
+        entity will be constructed as that entity::
+
+            # Truncate the table so we are starting anew.
+            statustype.orm.truncate()
+
+            # Instatiate an 'active' status.  The constructor here
+            # ensures that a record is created for the 'active'
+            # statustype.
+            st = statustype(name='active')
+
+            # No need to save the statustype, it was saved by the
+            # constructor
+            ### st.save()
+
+            # Since the record for the 'active' statustype was created
+            # above, additional calls will return a new statustype
+            # instance but to the same entity.
+            st1 = statustype(name='active')
+
+            # Same entity:
+            assert st.id == st1.id
+            assert 'active' == st.name
+            assert 'active' == st1.name
+
+            # Different object of course:
+            assert st is not st1
+        """
+
+        # Query using the **kwargs, e.g., {'name': 'active'}
         rs = self.entities(**kwargs)
 
+        # Get a unique set of from the `expects` tuple passed in
         expects = set(expects)
 
+        # Get a unique set of kwarg keys
         keys = set(kwargs.keys())
 
         if len(expects & keys) != len(expects):
@@ -5436,7 +5496,10 @@ class orm:
             # properties won't be passed in. Just return.
             return
 
+        # If a record was found
         if rs.count:
+            
+            # Use the first record to populate this instance.
             self.instance.id = rs.first.id
             for k, v in kwargs.items():
                 setattr(self.instance, k, getattr(rs.first, k))
@@ -5451,10 +5514,7 @@ class orm:
                 sup.orm.persistencestate = (False,) * 3
                 sup = sup.orm._super
         else:
-            # Save immediately. There is no need for the user to save
-            # manually because there are only several rating objects
-            # that will ever exist. We just pretend like they always
-            # exist and are accessable via the construct with no fuss.
+            # Save immediately.
             self.instance.save()
             
     # TODO This should probably be renamed to `loaded`

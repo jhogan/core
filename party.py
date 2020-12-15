@@ -23,21 +23,10 @@ from dbg import B
 from decimal import Decimal as dec
 from entities import classproperty
 from orm import text, datespan, timespan
-import apriori
-import asset
-import builtins
-import db
-import file
-import hashlib
-import orm
-import os
-import primative
-import uuid
+import apriori, asset, file
+import db,orm, primative
+import uuid, builtins
 
-''' Parties '''
-
-''' orm.entities classes '''
-class users(orm.entities):                                   pass
 class parties(orm.entities):                                 pass
 class types(apriori.types):                                  pass
 class roles(orm.entities):                                   pass
@@ -133,88 +122,6 @@ class hits(orm.entities):                                    pass
 
 ''' Parties '''
 
-class user(orm.entity):
-    name      =  str
-
-    @orm.attr(file.directory)
-    def directory(self):
-        dir = attr()
-        if dir is None:
-            dir = file.directory(name=self.id.hex)
-            attr(dir)
-        return dir
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._password = None
-
-    @orm.attr(bytes, 16, 16)
-    def salt(self):
-        self._sethash()
-        return attr()
-
-    @orm.attr(bytes, 32, 32)
-    def hash(self):
-        self._sethash()
-        return attr()
-
-    def _sethash(self):
-        hash = self.orm.mappings['hash']
-        salt = self.orm.mappings['salt']
-
-        if hash.value and salt.value:
-            return
-
-        hash.value, salt.value = self._gethash()
-
-    def _gethash(self, pwd=None):
-        if not pwd:
-            pwd = self.password
-
-        if not pwd:
-            return None, None
-
-        salt = self.orm.mappings['salt'].value
-
-        if not salt:
-            salt = os.urandom(16)
-
-        pwd  = bytes(pwd, 'utf-8')
-        algo = 'sha256'
-        iter = 100000
-        fn   = hashlib.pbkdf2_hmac
-
-        hash = fn(algo, pwd, salt, iter)
-        return hash, salt
-
-    @property
-    def password(self):
-        return self._password
-
-    @password.setter
-    def password(self, v):
-        self.hash = self.salt = None
-        self._password = v
-
-    def ispassword(self, pwd):
-        # Ensure self._salt is set so _gethash doesn't make one up
-        self._sethash()
-        hash, _ = self._gethash(pwd)
-        return hash == self.hash
-
-    @staticmethod
-    def authenticate(name, password):
-        usrs = users(name=name)
-        if usrs.hasplurality:
-            raise ValueError('Multiple users found')
-
-        if usrs.hasone:
-            usr = usrs.first
-            if usr.ispassword(password):
-                return usr
-
-        return None
-
 class party(orm.entity):
     """ ``party`` is the abstract class under which two important classes
     exists: ``organization`` and ``person``. 
@@ -262,6 +169,25 @@ class party(orm.entity):
 
     # A collection of party roles this party plays.
     roles = roles
+
+    @property
+    def visitor(self):
+        """ Return the single visitor role. If it does not exist, create
+        it.
+        """
+        from ecommerce import visitor
+        for rl in self.roles:
+            if isinstance(rl, visitor):
+                break
+
+            rl = rl.orm.cast(visitor)
+            if rl:
+                break
+        else:
+            self.roles += visitor()
+            rl = self.roles.last
+
+        return rl
 
     # A collection of skills belonging to this party
     skills = skills

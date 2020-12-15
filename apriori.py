@@ -121,7 +121,15 @@ class type(orm.entity):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('name',), **kwargs)
+
+        try:
+            expects = kwargs['expects']
+        except KeyError:
+            expects = ('name',)
+        else:
+            del kwargs['expects']
+
+        self.orm.ensure(expects=expects, **kwargs)
 
     # The name of the type. This is used as a key that the contructor
     # will use when it ensure the record exists.

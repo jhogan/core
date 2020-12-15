@@ -10,7 +10,7 @@
 
 from contextlib import suppress
 from dbg import B
-import asset
+import asset, ecommerce
 import datetime
 import dom
 import entities
@@ -59,6 +59,7 @@ class site(asset.asset):
 
     host = str
     resources = file.resources
+    hits = ecommerce.hits
 
     @property
     def pages(self):
@@ -786,6 +787,10 @@ class page(dom.html):
         self._attemped = False
 
     def __call__(self, *args, **qsargs):
+        """ This method calls into the page's `main` method that the
+        web developer writes.
+        """
+
         self._attemped = True  # A call was attemped
 
         if len(args):
@@ -807,14 +812,17 @@ class page(dom.html):
                 globs = self._mainfunc.__func__.__globals__
                 globs['req'] = www.request
                 globs['res'] = www.response
+
                 if www.request:
                     globs['usr'] = www.request.user
 
-                # Call pages main function
+                # Call page's main function. It's called `_mainfunc`
+                # here but the web developer will call it `main`.
                 self._mainfunc(**self._arguments)
                 self._called = True
             finally:
                 self._calling = False
+
     @property
     def elements(self):
         els = super().elements

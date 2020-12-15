@@ -23,15 +23,18 @@ Examples:
 
 TODO:
     
-    ...
+    TODO Enfore the rule that user.name's must be unique
+
 """
 
 from datetime import datetime, date
+import primative
 from dbg import B
 from decimal import Decimal as dec
 from orm import text, timespan, datespan
-import orm
-import party, apriori, product, order
+import orm, entities
+import party, apriori, product, order, file
+import ipaddress, os, user_agents, hashlib
 
 class agents(party.parties):                                  pass
 class webmasters(party.personals):                            pass
@@ -52,7 +55,7 @@ class contentstatustypes(apriori.types):                      pass
 class users(orm.entities):                                    pass
 class histories(orm.entities):                                pass
 class preferences(orm.entities):                              pass
-class addresses(orm.entities):                                pass
+class urls(orm.entities):                                     pass
 class objects(orm.entities):                                  pass
 class texts(objects):                                         pass
 class images(objects):                                        pass
@@ -68,7 +71,21 @@ class subscriptions(orm.entities):                            pass
 class subscriptiontypes(apriori.types):                       pass
 class subscriptionactivities(orm.entities):                   pass
 class subscription_subscriptionactivities(orm.associations):  pass
-class visits(orm.entities):                                   pass
+
+class visits(orm.entities):
+    @property
+    def current(self):
+        """ Return the first ``visit`` in this collection that is
+        current. If none of the ``visits`` are current, return None.
+        """
+        for vis in self:
+            if vis.iscurrent:
+                break
+        else:
+            return None
+
+        return vis
+
 class hits(orm.entities):                                     pass
 class hitstatustypes(apriori.types):                          pass
 class electronicaddresses(party.contactmechanisms):           pass
@@ -76,9 +93,17 @@ class ips(electronicaddresses):                               pass
 class useragents(orm.entities):                               pass
 class useragenttypes(apriori.types):                          pass
 class platformtypes(apriori.types):                           pass
+class devicetypes(apriori.types):                             pass
 class browsertypes(apriori.types):                            pass
 class protocols(apriori.types):                               pass
 class methods(apriori.types):                                 pass
+
+class logs(orm.entities):
+    def write(self, msg):
+        self += log(
+            datetime = primative.datetime.utcnow(),
+            message = msg,
+        )
 
 class agent(party.party):
     """ Tracks the activities of automated entities such as spiders, web
@@ -226,6 +251,7 @@ class user(orm.entity):
     Note that this entity is based on the USER LOGIN entity
     in "The Data Model Resource Book Volume 2".
     """
+    
     name = str
     hash = bytes(32)
 
@@ -234,6 +260,85 @@ class user(orm.entity):
     histories = histories
     preferences = preferences
     hits = hits
+
+    @orm.attr(file.directory)
+    def directory(self):
+        dir = attr()
+        if dir is None:
+            dir = file.directory(name=self.id.hex)
+            attr(dir)
+        return dir
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._password = None
+
+    @orm.attr(bytes, 16, 16)
+    def salt(self):
+        self._sethash()
+        return attr()
+
+    @orm.attr(bytes, 32, 32)
+    def hash(self):
+        self._sethash()
+        return attr()
+
+    def _sethash(self):
+        hash = self.orm.mappings['hash']
+        salt = self.orm.mappings['salt']
+
+        if hash.value and salt.value:
+            return
+
+        hash.value, salt.value = self._gethash()
+
+    def _gethash(self, pwd=None):
+        if not pwd:
+            pwd = self.password
+
+        if not pwd:
+            return None, None
+
+        salt = self.orm.mappings['salt'].value
+
+        if not salt:
+            salt = os.urandom(16)
+
+        pwd  = bytes(pwd, 'utf-8')
+        algo = 'sha256'
+        iter = 100000
+        fn   = hashlib.pbkdf2_hmac
+
+        hash = fn(algo, pwd, salt, iter)
+        return hash, salt
+
+    @property
+    def password(self):
+        return self._password
+
+    @password.setter
+    def password(self, v):
+        self.hash = self.salt = None
+        self._password = v
+
+    def ispassword(self, pwd):
+        # Ensure self._salt is set so _gethash doesn't make one up
+        self._sethash()
+        hash, _ = self._gethash(pwd)
+        return hash == self.hash
+
+    @staticmethod
+    def authenticate(name, password):
+        usrs = users(name=name)
+        if usrs.hasplurality:
+            raise ValueError('Multiple users found')
+
+        if usrs.hasone:
+            usr = usrs.first
+            if usr.ispassword(password):
+                return usr
+
+        return None
 
 class history(orm.entity):
     """ Used to store a history of the logins and passwords.
@@ -256,15 +361,36 @@ class preference(orm.entity):
     key = str
     value = str
     
-class address(orm.entity):
-    """ Represents a URL which itself represents a website.
+class url(orm.entity):
+    """ Represents a URL. Note that url addresses are
+    ensured to exist, i.e., they are automatically saved in the
+    database if they don't already exist.
+
+        url = url(address='www.google.com')
+        assert not url.orm.isnew
+
+        url1 = url(address='www.google.com')
+
+        assert url.id == url1.id
+        assert 'www.google.com' == url.address
+        assert 'www.google.com' == url1.address
 
     Note that this entity is based on the WEB ADDRESS entity in
     "The Data Model Resource Book Volume 2".
     """
-    url = str
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('address', ), **kwargs)
+
+    address = str
     users = users
+
+    # The web `hits` where this ``url`` acts as an http_referer
+    hits = hits
+
+    def __str__(self):
+        return self.address
 
 class object(orm.entity):
     """ Stores electronic images, such as ``text`` (i.e. an HTML
@@ -418,7 +544,12 @@ class visit(orm.entity):
         super().__init__(*args, **kwargs)
         self.orm.default('cookie', None)
 
-    # The span of time in which the visit takes place
+    # TODO What defines the `end` of the span. Perhaps when the `visit`
+    # is no longer current (`iscurrent`), the last `hit` the `visit` was
+    # involved in will have the `end` datetime that should be the
+    # `visit`'s `end.
+
+    # The span of time in which the visit takes place.
     span = timespan
 
     # A string that helps identify the machine that was used for the
@@ -427,18 +558,100 @@ class visit(orm.entity):
 
     hits = hits
 
+    @property
+    def iscurrent(self):
+        """ Returns True if the ``visit`` is current, False otherwise.
+
+        A ``visit`` is current if it has not ended (``end` datetime is
+        None), and it hasn't been inactive for more than 30 minutes (30
+        minutes have not elapsed between the start of the visit
+        (``begin``) and the current time).
+        """
+        # The number of seconds that can elapse between the start of the
+        # visit and the current time for the `visit` to be considered
+        # "current".
+        Seconds = 1800  # 30 minute
+
+        if self.end is not None:
+            return False
+
+        now = primative.datetime.utcnow()
+        begin = self.begin
+
+        delta = now - begin
+        return delta.seconds < Seconds
+
+class log(orm.entity):
+    """ A log entry a user can add to the hit entity.
+
+        class mypage(pom.page):
+            def main(self):
+                hit.logs += log(message='Started mypage')
+
+                ..
+
+                hit.logs += log(message='Ending mypage')
+
+    """
+
+    # The time the log written
+    datetime = datetime
+
+    # The log message
+    message = str
+
 class hit(orm.entity):
-    """ Records the particular web site page or object that was hit.
+    """ Records details about a web hit such a the path of the page
+    being accessed, the HTTP method being used (GET, POST, etc.), the
+    HTTP status number, and other data related to the HTTP request and
+    response.
+
     Note that this is modeled after the SERVER HIT entity in "The Data
     Model Resource Book Volume 2".
     """
 
-    datetime = datetime
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.default('qs', None)
+
+    # NOTE The implicit attribute `url` is the referrer (http_referer)
+    # of the web request.
+
+    # The timespan of the request
+    span = timespan
+
+    # The query string
+    qs = str
+
+    # The path to the page being requested
+    path = str
+
+    # The request method (GET, POST, DELETE, etc)
+    method = str
+
+    # Whether or not the hit was a traditional HTTP request or an
+    # XHR/AJAX request.
+    isxhr = bool
+
+    # The language the page is being requested in, i.e., the 'en' in
+    # 'www.mysite.com/en/path/to/page.html'
+    language = str
 
     # The size, in bytes, of the response. 
     size = int
 
-    address = address
+    # The HTTP status code
+    status = int
+
+    # The logs the web developer may write for the hit.
+    logs = logs
+
+    @property
+    def inprogress(self):
+        """ Return True if the web ``hit`` has started but has not yet
+        finished.
+        """
+        return self.begin and not self.end
 
 class hitstatustype(apriori.type):
     """ Records status information about the ``hit`` - for example if a
@@ -448,25 +661,40 @@ class hitstatustype(apriori.type):
     Note that this is modeled after the SERVER HIT STATUS TYPE entity in
     "The Data Model Resource Book Volume 2".
     """
+
     hits = hits
 
 class electronicaddress(party.contactmechanism):
     pass
 
 class ip(electronicaddress):
-    """ Records the address of a web client.
+    """ Records the address of a web client. Note that ip addresses are
+    ensured to exist, i.e., they are automatically saved in the
+    database if they don't already exist::
+
+        ip = ip(address='127.0.0.2')
+        assert not ip.orm.isnew
+
+        ip1 = ip(address='127.0.0.2')
+
+        assert ip.id == ip1.id
+        assert 127.0.0.2 == ip.address
+        assert 127.0.0.2 == ip1.address
 
     Note that this is modeled after the IP ADDRESS entity in "The Data
     Model Resource Book Volume 2".
     """
 
-    # TODO Write accessor and mutator that allows for saving a an int
-    # but rendering as a string.
-
-    # TODO Use orm.ensure() such that only one ip address records gets
-    # stored per ip address.
     address = str
+
     hits = hits
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.ensure(expects=('address', ), **kwargs)
+
+    def __str__(self):
+        return self.address
 
 class useragent(orm.entity):
     """ Describes the mechanism, such as protocol, platform, browser,
@@ -475,7 +703,74 @@ class useragent(orm.entity):
     Note that this is modeled after the USER AGENT entity in "The Data
     Model Resource Book Volume 2".
     """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    @orm.attr(str)
+    def string(self, v):
+        if not v:
+            raise ValueError(
+                'Empty useragent string'
+            )
+
+        attr(v)
+        ua = self._useragent
+
+        brw = ua.browser
+        self.browsertype = browsertype(
+            name    = brw.family,
+            version = brw.version,
+        )
+
+        dev = ua.device
+        self.devicetype = devicetype(
+            name  = dev.family,
+            brand = dev.brand,
+            model = dev.model,
+        )
+
+        os = ua.os
+        self.platformtype = platformtype(
+            name  = os.family,
+            version = os.version_string,
+        )
+
+    @property
+    def _useragent(self):
+        return user_agents.parse(self.string)
+
+    @property
+    def ismobile(self):
+        return self.is_mobile
+
+    @property
+    def istablet(self):
+        return self.is_tablet
+
+    @property
+    def istouch(self):
+        return self.is_touch_capable
+
+    @property
+    def ispc(self):
+        return self.is_pc
+
+    @property
+    def isbot(self):
+        return self.is_bot
+
+    def __getattr__(self, attr):
+        if not self._useragent:
+            raise ValueError(
+                'No user_agent object has been set'
+            )
+
+        return getattr(self._useragent, attr)
+        
     hits = hits
+
+    def __str__(self):
+        return self.string
 
 class useragenttype(apriori.type):
     """
@@ -491,7 +786,21 @@ class platformtype(apriori.type):
     Note that this is modeled after the PLATFORM TYPE entity in "The
     Data Model Resource Book Volume 2".
     """
+    version = str
+
     useragents = useragents
+
+class devicetype(apriori.type):
+    """ Defines the type of device of a ``useragent``.
+    """
+    useragents = useragents
+    brand = str
+    model = str
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(
+            expects = ('name', 'brand', 'model'), *args, **kwargs
+        )
 
 class browsertype(apriori.type):
     """ The ``browsertype`` reveals the name and version of the browser
@@ -500,6 +809,29 @@ class browsertype(apriori.type):
     Note that this is modeled after the BROWSER TYPE entity in "The
     Data Model Resource Book Volume 2".
     """
+    def __init__(self, *args, **kwargs):
+        try:
+            ver = kwargs['version']
+        except KeyError:
+            pass
+        else:
+            kwargs['version'] = self._normalize(ver)
+            
+        super().__init__(expects=('name', 'version'), *args, **kwargs)
+
+    @staticmethod
+    def _normalize(ver):
+        """ Convert the version into a standard string format, e.g.,
+        '1.2.3'. (ua-parser will give us a tuple though a str would
+        be preferable).
+        """
+        if isinstance(ver, tuple):
+            ver = '.'.join(str(x) for x in ver)
+
+        return ver
+
+    version = str
+
     useragents = useragents
 
 class protocol(apriori.type):
@@ -509,6 +841,10 @@ class protocol(apriori.type):
     Note that this is modeled after the PROTOCOL TYPE entity in "The
     Data Model Resource Book Volume 2".
     """
+
+    # NOTE This probably won't be used because we will probably always
+    # use HTTPS. If not, we will just use the strings "HTTPS", "HTTP",
+    # etc.
     useragents = useragents
 
 class method(apriori.type):
@@ -518,5 +854,8 @@ class method(apriori.type):
     Note that this is modeled after the USER AGENT METHOD TYPE entity in
     "The Data Model Resource Book Volume 2".
     """
+
+    # NOTE This probably won't be used because its easier to just use
+    # the strings "GET", "POST", etc.
 
     useragents = useragents
