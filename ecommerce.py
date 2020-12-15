@@ -791,8 +791,9 @@ class platformtype(apriori.type):
     useragents = useragents
 
 class devicetype(apriori.type):
+    """ Defines the type of device of a ``useragent``.
+    """
     useragents = useragents
-    
     brand = str
     model = str
 
