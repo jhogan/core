@@ -1423,6 +1423,9 @@ class pom_page(tester.tester):
         # Method
         self.eq('GET', hit.method)
 
+        # XHR
+        self.false(hit.isxhr)
+
         # Query string
         self.none(hit.qs)
 

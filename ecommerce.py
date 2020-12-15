@@ -629,6 +629,10 @@ class hit(orm.entity):
     # The request method (GET, POST, DELETE, etc)
     method = str
 
+    # Whether or not the hit was a traditional HTTP request or an
+    # XHR/AJAX request.
+    isxhr = bool
+
     # The language the page is being requested in, i.e., the 'en' in
     # 'www.mysite.com/en/path/to/page.html'
     language = str

@@ -441,6 +441,7 @@ class _request:
 
             self._hit = ecommerce.hit(
                 path       =  self.page.path,
+                isxhr      =  self.isxhr,
                 qs         =  self.qs,
                 method     =  self.method,
                 site       =  self.site,
