@@ -1375,6 +1375,7 @@ class pom_page(tester.tester):
 
                 assert usr
 
+
         # Set up site
         ws = foonet()
         ws.pages += hitme()

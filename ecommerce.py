@@ -75,7 +75,8 @@ class subscription_subscriptionactivities(orm.associations):  pass
 class visits(orm.entities):
     @property
     def current(self):
-        """ Return the 
+        """ Return the first ``visit`` in this collection that is
+        current. If none of the ``visits`` are current, return None.
         """
         for vis in self:
             if vis.iscurrent:
@@ -552,6 +553,13 @@ class visit(orm.entity):
 
     @property
     def iscurrent(self):
+        """ Returns True if the ``visit`` is current, False otherwise.
+
+        A ``visit`` is current if it has not ended (``end` datetime is
+        None), and it hasn't been inactive for more than 30 minutes (30
+        minutes have not elapsed between the start of the visit
+        (``begin``) and the current time).
+        """
         # The number of seconds that can elapse between the start of the
         # visit and the current time for the `visit` to be considered
         # "current".
@@ -566,8 +574,31 @@ class visit(orm.entity):
         delta = now - begin
         return delta.seconds < Seconds
 
+class log(orm.entity):
+    """ A log entry a user can add to the hit entity.
+
+        class mypage(pom.page):
+            def main(self):
+                hit.logs += log(message='Started mypage')
+
+                ..
+
+                hit.logs += log(message='Ending mypage')
+
+    """
+
+    # The time the log written
+    datetime = datetime
+
+    # The log message
+    message = str
+
 class hit(orm.entity):
-    """ Records the particular web site page or object that was hit.
+    """ Records details about a web hit such a the path of the page
+    being accessed, the HTTP method being used (GET, POST, etc.), the
+    HTTP status number, and other data related to the HTTP request and
+    response.
+
     Note that this is modeled after the SERVER HIT entity in "The Data
     Model Resource Book Volume 2".
     """
@@ -601,9 +632,14 @@ class hit(orm.entity):
     # The HTTP status code
     status = int
 
+    # The logs the web developer may write for the hit.
+    logs = logs
 
     @property
     def inprogress(self):
+        """ Return True if the web ``hit`` has started but has not yet
+        finished.
+        """
         return self.begin and not self.end
 
 class hitstatustype(apriori.type):
@@ -774,7 +810,8 @@ class browsertype(apriori.type):
     @staticmethod
     def _normalize(ver):
         """ Convert the version into a standard string format, e.g.,
-        '1.2.3'.
+        '1.2.3'. (ua-parser will give us a tuple though a str would
+        be preferable).
         """
         if isinstance(ver, tuple):
             ver = '.'.join(str(x) for x in ver)
@@ -792,6 +829,10 @@ class protocol(apriori.type):
     Note that this is modeled after the PROTOCOL TYPE entity in "The
     Data Model Resource Book Volume 2".
     """
+
+    # NOTE This probably won't be used because we will probably always
+    # use HTTPS. If not, we will just use the strings "HTTPS", "HTTP",
+    # etc.
     useragents = useragents
 
 class method(apriori.type):
@@ -801,5 +842,8 @@ class method(apriori.type):
     Note that this is modeled after the USER AGENT METHOD TYPE entity in
     "The Data Model Resource Book Volume 2".
     """
+
+    # NOTE This probably won't be used because its easier to just use
+    # the strings "GET", "POST", etc.
 
     useragents = useragents
