@@ -1353,6 +1353,7 @@ class pom_page(tester.tester):
         class hitme(pom.page):
 
             def main(self):
+                req.hit.logs.write('Starting main')
                 dev = req.hit.useragent.devicetype
 
                 self.main += dom.p(f'''
@@ -1363,6 +1364,8 @@ class pom_page(tester.tester):
                 self.main += frm
 
                 frm = pom.forms.login()
+
+                req.hit.logs.write('Ending main')
 
                 if req.isget:
                     return
@@ -1434,6 +1437,13 @@ class pom_page(tester.tester):
             hit.useragent.string, 
             brw.useragent.string
         )
+
+        # Logs
+        logs = hit.logs.sorted('datetime')
+        self.two(hit.logs)
+        self.eq('Starting main', logs.first.message)
+        self.eq('Ending main', logs.second.message)
+
 
         # User agent - browser
         self.eq('Mobile Safari', hit.useragent.browsertype.name)

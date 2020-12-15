@@ -98,6 +98,13 @@ class browsertypes(apriori.types):                            pass
 class protocols(apriori.types):                               pass
 class methods(apriori.types):                                 pass
 
+class logs(orm.entities):
+    def write(self, msg):
+        self += log(
+            datetime = primative.datetime.utcnow(),
+            message = msg,
+        )
+
 class agent(party.party):
     """ Tracks the activities of automated entities such as spiders, web
     servers, and other automations that are involved in interactin on
