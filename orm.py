@@ -869,6 +869,8 @@ class where(entitiesmod.entity):
         self.args = args
 
     def clone(self):
+        """ Create a clone of the ``where`` object.
+        """
         wh = type(self)(
             self.entities, 
             self.predicate.clone(),
@@ -2502,7 +2504,65 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         return '%s\n%s' % (hdr, tbl)
 
 class entitymeta(type):
+    """ A metaclass of the ``entity`` class. This is where the logic
+    resides that takes a class's data definition and converts the
+    attributes into internal mappings. For example, when the Python
+    interpretor encounters the `class` statement in the following code:
+
+        class myentity(orm.entity):
+            name = str
+            dob = datetime
+            ismale = bool
+
+    the entitymeta.__new__ method below will get called. This will
+    convert the name, dob, and ismale attributes into interal mappings.
+    Once execution of the class statement is complete, the ``myentity``
+    class (as well as objects instantiated from the class) will have
+    internal mappings that make the attributes behave as active record
+    objects which are ready to be saved to the database::
+
+        # The metaclass removes the original declaration that the
+        # ``name`` attribute is a reference to the str type:
+        assert myentity.name is not str
+
+        # We can pier behind the scenes to see the ``name`` attribute
+        # has been added to the interanl mapping collection.
+        assert myentity.orm.mappings['dob'].name == 'dob'
+
+    Because of this magic, more magic is used to make instances of
+    myentity conform to the active record pattern::
+        
+        # Instantiate
+        ent = myentity()
+
+        # DROP and CREATE the database table corresponding to myentity
+        ent.orm.recreate()
+
+        # Set the attributes to the expected types. (The types specified
+        # in the class definition (str and bool) are relevent here but
+        # the details will be left out).
+        ent.name = 'My Name'
+        ent.ismale = False
+
+        # Save the myentity instance to its table in the database
+        ent.save()
+    """
+
     def __new__(cls, name, bases, body):
+        """ __new__ is the powerhouse of the metaclass. See the comments
+        at the class-level of ``entitymeta`` for more.
+
+        :param: cls type: A reference to the metaclass itself.
+
+        :param: name str: The name of the entity.
+
+        :param: bases tuple: A tuple of the base classes from which the
+        class inherits
+
+        :param: body dict: A namespace dictionary containing definitions
+        for the class body
+        """
+
         if name in ('entity', 'association'):
             return super().__new__(cls, name, bases, body)
 
