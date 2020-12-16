@@ -77,6 +77,24 @@ class jwt(entity):
             self._token = enc.decode('utf-8')
         return self._token
 
+    def getcookie(usr, ttl=24):
+        """ Create a JWT for the ``usr`` and return a Set-Cookie header.
+        """
+        t = auth.jwt(ttl=ttl)
+        t.sub = usr.id.hex
+
+        # Increment the expiration date. If the expiration
+        # date is prior to the browser receiving the
+        # set-cookie header, the cookie will be deleted:
+        # https://stackoverflow.com/questions/5285940/correct-way-to-delete-cookies-server-side
+        exp = primative.datetime.utcnow().add(days=1)
+        exp = exp.strftime('%a, %d %b %Y %H:%M:%I GMT')
+        return www.header('Set-Cookie', (
+            'token=%s; path=/; '
+            'expires=%s'
+            ) % (str(t), exp)
+        )
+
     def _getvalue(self, k):
         v = getattr(self, '_' + k)
         if v is None:

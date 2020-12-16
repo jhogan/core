@@ -1360,24 +1360,31 @@ class pom_page(tester.tester):
                 {dev.brand} {dev.name}
                 ''', class_='device')
 
-                frm = dom.form()
-                self.main += frm
-
-                frm = pom.forms.login()
+                self.main += pom.forms.login()
 
                 req.hit.logs.write('Ending main')
 
                 if req.isget:
                     return
 
+                frm.post = req.payload
+
                 uid = frm['input[name=username]'].first.value
                 pwd = frm['input[name=password]'].first.value
 
-                # Load an authenticated user
-                usr = ecommerce.user.authenticate(uid, pwd)
+                # If usr has not been authenicated
+                if not usr:
+                    B()
+                    www.request.user = self.site.authenticate(uid, pwd)
+
+                    res.header += auth.jwt.getcookie(
+                        www.request.user
+                    )
+
+
+                #usr = ecommerce.user.authenticate(uid, pwd)
 
                 assert usr
-
 
         # Set up site
         ws = foonet()
@@ -1447,7 +1454,6 @@ class pom_page(tester.tester):
         self.eq('Starting main', logs.first.message)
         self.eq('Ending main', logs.second.message)
 
-
         # User agent - browser
         self.eq('Mobile Safari', hit.useragent.browsertype.name)
         self.eq('5.1', hit.useragent.browsertype.version)
@@ -1469,7 +1475,6 @@ class pom_page(tester.tester):
             'Apple iPhone',
             res['.device'].first.text
         )
-        return
 
         frm = res['form'].first
 

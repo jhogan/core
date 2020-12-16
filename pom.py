@@ -61,6 +61,29 @@ class site(asset.asset):
     resources = file.resources
     hits = ecommerce.hits
 
+    def isauthenicated(self):
+        # TODO
+        return True
+
+    def authenticate(self, name, pwd):
+        
+        usrs = ecommerce = users(
+            **{
+                name = name,
+                siteid = self.id
+            }
+        )
+
+        if usrs.hasplurality:
+            raise ValueError('Multiple users found')
+
+        if usrs.hasone:
+            usr = usrs.first
+            if usr.ispassword(pwd):
+                return usr
+
+        return None
+
     @property
     def pages(self):
         if not self._pages:

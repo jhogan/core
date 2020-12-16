@@ -327,19 +327,6 @@ class user(orm.entity):
         hash, _ = self._gethash(pwd)
         return hash == self.hash
 
-    @staticmethod
-    def authenticate(name, password):
-        usrs = users(name=name)
-        if usrs.hasplurality:
-            raise ValueError('Multiple users found')
-
-        if usrs.hasone:
-            usr = usrs.first
-            if usr.ispassword(password):
-                return usr
-
-        return None
-
 class history(orm.entity):
     """ Used to store a history of the logins and passwords.
 
