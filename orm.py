@@ -1622,7 +1622,10 @@ class entitiesmeta(type):
             # Get the last hit entity added to the database
             lasthit = ecommerce.hits.last
         """
-        return cls.orm.all.sorted('createdat').last
+        es = cls.orm.all.sorted('createdat')
+        if es.count:
+            return es.last
+        return None
 
 class entities(entitiesmod.entities, metaclass=entitiesmeta):
     re_alphanum_ = re.compile('^[a-z_][0-9a-z_]+$', flags=re.IGNORECASE)

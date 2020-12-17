@@ -251,7 +251,10 @@ class user(orm.entity):
     Note that this entity is based on the USER LOGIN entity
     in "The Data Model Resource Book Volume 2".
     """
-    
+    def __init__(self, *args, **kwargs):
+        self._password = None
+        super().__init__(*args, **kwargs)
+
     name = str
     hash = bytes(32)
 
@@ -269,10 +272,6 @@ class user(orm.entity):
             attr(dir)
         return dir
     
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._password = None
-
     @orm.attr(bytes, 16, 16)
     def salt(self):
         self._sethash()

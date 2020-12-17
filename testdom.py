@@ -1374,15 +1374,10 @@ class pom_page(tester.tester):
 
                 # If usr has not been authenicated
                 if not usr:
-                    B()
                     www.request.user = self.site.authenticate(uid, pwd)
 
-                    res.header += auth.jwt.getcookie(
-                        www.request.user
-                    )
-
-
-                #usr = ecommerce.user.authenticate(uid, pwd)
+                    hdr = auth.jwt.getSet_Cookie( www.request.user)
+                    res.headers += hdr
 
                 assert usr
 
@@ -1478,10 +1473,22 @@ class pom_page(tester.tester):
 
         frm = res['form'].first
 
+        ecommerce.user(
+            name = 'luser',
+            password = 'password1',
+            site = ws,
+        ).save()
+
+        frm['input[name=username]'].first.value = 'luser'
+        frm['input[name=password]'].first.value = 'password1'
+
+
         # POST the form back to page
         tab.referer = 'imtherefere.com'
         res = tab.post('/en/hitme', ws, frm)
 
+        hit = ecommerce.hits.last
+        B()
     def it_can_accesses_injected_variables(self):
         class lang(pom.page):
             def main(self):

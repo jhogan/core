@@ -12,6 +12,8 @@ from dbg import B
 from entities import entities, entity, brokenrules, brokenrule
 import json
 import jwt as pyjwt
+import primative
+import www
 
 class jwt(entity):
     def __init__(self, tok=None, ttl=24):
@@ -77,10 +79,11 @@ class jwt(entity):
             self._token = enc.decode('utf-8')
         return self._token
 
-    def getcookie(usr, ttl=24):
+    @staticmethod
+    def getSet_Cookie(usr, ttl=24):
         """ Create a JWT for the ``usr`` and return a Set-Cookie header.
         """
-        t = auth.jwt(ttl=ttl)
+        t = jwt(ttl=ttl)
         t.sub = usr.id.hex
 
         # Increment the expiration date. If the expiration

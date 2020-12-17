@@ -60,18 +60,20 @@ class site(asset.asset):
     host = str
     resources = file.resources
     hits = ecommerce.hits
-
-    def isauthenicated(self):
-        # TODO
-        return True
+    users = ecommerce.users
 
     def authenticate(self, name, pwd):
         
-        usrs = ecommerce = users(
-            **{
-                name = name,
-                siteid = self.id
-            }
+        for map in ecommerce.users.orm.mappings.foreignkeymappings:
+            if map.entity is site:
+                siteid = map.name
+                break
+        else:
+            raise ValueError('Cannot find site mapping')
+
+        usrs = ecommerce.users(
+            name = name,
+            siteid = self.id
         )
 
         if usrs.hasplurality:

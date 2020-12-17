@@ -322,6 +322,10 @@ class _request:
             self._user = ecommerce.user(jwt.sub)
 
         return self._user
+
+    @user.setter
+    def user(self, v):
+        self._user = v
                 
     @property
     def environment(self):
@@ -432,6 +436,30 @@ class _request:
             # Get the request's refere url
             referer = self.referer
 
+            # Create the hit entity. No need to save it at the moment.
+            self._hit = ecommerce.hit(
+                path       =  self.page.path,
+                isxhr      =  self.isxhr,
+                qs         =  self.qs,
+                method     =  self.method,
+                site       =  self.site,
+                language   =  self.language,
+                ip         =  self.ip,
+                url        =  self.referer,
+                size       =  self.size,
+                useragent  =  self.useragent,
+            )
+
+        return self._hit
+
+    def log(self):
+        """ Log the hit.
+        """
+
+        try: 
+            # Get the request's ``hit`` entity
+            hit = self.hit
+
             # Get the users party. If no user is logged in, use the
             # anonymous user.
             if self.user:
@@ -445,6 +473,7 @@ class _request:
             # Get the party's visitor role's current visit
             visit = visitor.visits.current
 
+            # Get the current time in UTC
             now = primative.datetime.utcnow()
 
             # Create a new ``visit`` if a current one doesn't not exist
@@ -453,32 +482,6 @@ class _request:
                     begin = now
                 )
                 visitor.visits += visit
-
-            # Create the hit entity. No need to save it at the moment.
-            self._hit = ecommerce.hit(
-                path       =  self.page.path,
-                isxhr      =  self.isxhr,
-                qs         =  self.qs,
-                method     =  self.method,
-                site       =  self.site,
-                language   =  self.language,
-                ip         =  self.ip,
-                url        =  self.referer,
-                size       =  self.size,
-                visit      =  visit,
-                useragent  =  self.useragent,
-            )
-
-        return self._hit
-
-    def log(self):
-        """ Log the hit.
-        """
-
-        try: 
-            # Get the request's ``hit`` entity
-            hit = self.hit
-            now = primative.datetime.utcnow()
 
             # If the hit is new, the begin date will be None meaning it
             # is not ``inprogress``. If that's the case, set the begin
@@ -489,6 +492,8 @@ class _request:
                 hit.status = response.status
             else:
                 hit.begin = now
+
+            hit.visit = visit
 
             # Create/update the hit
             hit.save()
