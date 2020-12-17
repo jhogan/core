@@ -2784,11 +2784,60 @@ class entitymeta(type):
         return entity
 
 class entity(entitiesmod.entity, metaclass=entitymeta):
+    """ The base class from which all orm.entity classes inherit.
+    """
+
     # These are the limits of the MySQL datetime type
     mindatetime=primative.datetime('1000-01-01 00:00:00.000000+00:00')
     maxdatetime=primative.datetime('9999-12-31 23:59:59.999999+00:00')
 
     def __init__(self, o=None, **kwargs):
+        """ Constructs an entity. 
+
+        If the ``o`` is not None, the table is queried on the primary
+        key against ``o`` and the object is hydrated with the results::
+
+            # Create the id of the entity
+            id = UUID(hex='66f2ca21e3ee4dd7aa8a14f65d48c4bf')
+
+            # Load entity by ID. The SQL sent to the database will be
+            # something like the following: 
+            #     SELECT * FROM MYENTITY 
+            #     WHERE ID = '66f2ca21e3ee4dd7aa8a14f65d48c4bf'
+            ent = myentity(id)
+
+            assert ent.id.hex == '66f2ca21e3ee4dd7aa8a14f65d48c4bf'
+
+        If o is None, a new entity will be created, ready to be saved to
+        the database once its attributes have been correctly set:
+            
+            ent = myentity()
+            assert ent.orm.isnew
+
+            ent.attr1 = 'a value'
+            ent.attr2 = 'another value'
+
+            # An INSERT saves the new entity to the database
+            ent.save()
+
+            # ent knows it's not new, i.e., it's in the database.
+            assert not ent.orm.isnew
+
+        The **kwargs dict can be used to set attributes during
+        construction. For example, the above ent objct could have been
+        constructed like so::
+
+            ent = myentity(
+                attr1 = 'a value',
+                attr2 = 'another value'
+            )
+
+        :param: o UUID: The id of the entity. If None, then a new entity
+        will be created. 
+
+        :param: kwargs dict: A dict of attribute names as keys mapped to
+        the values the constructor should assign to its attributes.
+        """
         
         # TODO Support eager loading:
         #
