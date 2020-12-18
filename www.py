@@ -457,11 +457,17 @@ class _request:
             # Get the request's ``hit`` entity
             hit = self.hit
 
+            par = None
+
             # Get the users party. If no user is logged in, use the
             # anonymous user.
             if self.user:
                 par = self.user.party
+                hit.user = self.user
             else:
+                par = party.party.anonymous
+
+            if par is None:
                 par = party.party.anonymous
 
             # Get the party's visitor role
@@ -839,6 +845,10 @@ class _response():
         '''
 
         return self._headers
+
+    @headers.setter
+    def headers(self, v):
+        self._headers = v
 
     def __repr__(self, pretty=False):
         r = textwrap.dedent('''

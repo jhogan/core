@@ -1360,9 +1360,12 @@ class pom_page(tester.tester):
                 {dev.brand} {dev.name}
                 ''', class_='device')
 
-                self.main += pom.forms.login()
-
                 req.hit.logs.write('Ending main')
+
+
+        class signon(pom.page):
+            def main(self):
+                self.main += pom.forms.login()
 
                 if req.isget:
                     return
@@ -1372,18 +1375,17 @@ class pom_page(tester.tester):
                 uid = frm['input[name=username]'].first.value
                 pwd = frm['input[name=password]'].first.value
 
-                # If usr has not been authenicated
-                if not usr:
-                    www.request.user = self.site.authenticate(uid, pwd)
+                req.hit.logs.write(f'Authenticating {uid}')
+                www.request.user = self.site.authenticate(uid, pwd)
+                req.hit.logs.write(f'Authenticated {uid}')
 
-                    hdr = auth.jwt.getSet_Cookie( www.request.user)
-                    res.headers += hdr
-
-                assert usr
+                hdr = auth.jwt.getSet_Cookie(www.request.user)
+                res.headers += hdr
 
         # Set up site
         ws = foonet()
         ws.pages += hitme()
+        ws.pages += signon()
 
         # Create a browser tab
         ip = ecommerce.ip(address='12.34.56.78')
@@ -1471,24 +1473,88 @@ class pom_page(tester.tester):
             res['.device'].first.text
         )
 
-        frm = res['form'].first
+        ''' Log the authentication of a user '''
+        # NOTE Authentication hit logging has a bit of a twist because
+        # the request starts out with no JWT or authenticated user, but
+        # it ends up with one on completion of the request. The user that
+        # gets authenticated should be set in the hit entity (hit.user).
+        # Later we will make a request with a JWT cookie, meaning the
+        # hit will start out with an authenticated user.
 
-        ecommerce.user(
+        # Create user
+        usr = ecommerce.user(
             name = 'luser',
             password = 'password1',
             site = ws,
-        ).save()
+        )
 
+        usr.save()
+
+        # Get user/password form
+        res = tab.get('/en/signon', ws)
+        frm = res['form'].first
+
+        # Set credentials
         frm['input[name=username]'].first.value = 'luser'
         frm['input[name=password]'].first.value = 'password1'
 
-
-        # POST the form back to page
-        tab.referer = 'imtherefere.com'
-        res = tab.post('/en/hitme', ws, frm)
+        # POST credentials to log in
+        res = tab.post('/en/signon', ws, frm)
 
         hit = ecommerce.hits.last
-        B()
+
+        # Page path
+        self.eq('/signon', hit.path)
+
+        # Site
+        self.eq(ws.id, hit.site.id)
+
+        # Language
+        self.eq('en', hit.language)
+
+        # Method
+        self.eq('POST', hit.method)
+
+        # XHR
+        self.false(hit.isxhr)
+
+        # Query string
+        self.none(hit.qs)
+
+        # Referer/url
+        self.eq('imtherefere.com', hit.url.address)
+
+        # User
+        self.eq(usr.id, hit.user.id)
+
+        # User agent
+        self.eq(
+            hit.useragent.string, 
+            brw.useragent.string
+        )
+
+        # Logs
+        logs = hit.logs.sorted('datetime')
+        self.two(hit.logs)
+        self.eq(f'Authenticating {usr.name}', logs.first.message)
+        self.eq(f'Authenticated {usr.name}', logs.second.message)
+
+        # User agent - browser
+        self.eq('Mobile Safari', hit.useragent.browsertype.name)
+        self.eq('5.1', hit.useragent.browsertype.version)
+
+        # User agent - device
+        self.eq('iPhone', hit.useragent.devicetype.name)
+        self.eq('Apple', hit.useragent.devicetype.brand)
+        self.eq('iPhone', hit.useragent.devicetype.model)
+
+        # User agent - platform
+        self.eq('iOS', hit.useragent.platformtype.name)
+        self.eq('5.1', hit.useragent.platformtype.version)
+
+        # IP address
+        self.eq(ip.address, hit.ip.address)
+
     def it_can_accesses_injected_variables(self):
         class lang(pom.page):
             def main(self):
