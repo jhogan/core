@@ -2932,17 +2932,32 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         map.value = v
 
     def _self_onafterload(self, src, eargs):
+        """ A method to handle the onafterload method (invoked in
+        (``orm.load``). After the entity is loaded, this handler will
+        add the SQL used to load the entity and related data to the
+        db.chronicler.
+        """
         self._add2chronicler(eargs)
 
     def _self_onbeforesave(self, src, eargs):
-        # At the moment, this only here in case a client want's to
-        # override it.
+        """ An event handler invoked the moment before the entity is
+        saved. This handler does nothing, but is here so subentitty
+        classes can override it.
+        """
         pass
 
     def _self_onaftersave(self, src, eargs):
+        """ A method to handle the onaftersave event (invoked in
+        (``orm._save``). After the entity is loaded, this handler will
+        add the SQL used to save the entity and related data to the
+        db.chronicler.
+        """
         self._add2chronicler(eargs)
 
     def _self_onafterreconnect(self, src, eargs):
+        """ A method to handle the onafterreconnect event. The
+        reconnection data is added to the db.chronicler.
+        """
         self._add2chronicler(eargs)
 
     @staticmethod
