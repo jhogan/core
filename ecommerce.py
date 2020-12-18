@@ -251,6 +251,7 @@ class user(orm.entity):
     Note that this entity is based on the USER LOGIN entity
     in "The Data Model Resource Book Volume 2".
     """
+
     def __init__(self, *args, **kwargs):
         self._password = None
         super().__init__(*args, **kwargs)

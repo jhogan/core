@@ -433,9 +433,6 @@ class _request:
         request, create it.
         """
         if not self._hit:
-            # Get the request's refere url
-            referer = self.referer
-
             # Create the hit entity. No need to save it at the moment.
             self._hit = ecommerce.hit(
                 path       =  self.page.path,
