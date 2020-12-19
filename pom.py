@@ -63,7 +63,6 @@ class site(asset.asset):
     users = ecommerce.users
 
     def authenticate(self, name, pwd):
-        
         for map in ecommerce.users.orm.mappings.foreignkeymappings:
             if map.entity is site:
                 siteid = map.name

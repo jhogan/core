@@ -1471,19 +1471,17 @@ class pom_page(tester.tester):
         # IP address
         self.eq(ip.address, hit.ip.address)
 
-        # Enuser the page has access to the hit object
+        # Ensure the page has access to the hit object
         self.eq(
             'Apple iPhone',
-            res['.device'].first.text
+            res1['.device'].first.text
         )
 
         ''' Log the authentication of a user '''
         # NOTE Authentication hit logging has a bit of a twist because
         # the request starts out with no JWT or authenticated user, but
         # it ends up with one on completion of the request. The user that
-        # gets authenticated should be set in the hit entity (hit.user).
-        # Later we will make a request with a JWT cookie, meaning the
-        # hit will start out with an authenticated user.
+        # gets authenticated should be set in the hit entity (hit.user)
 
         # Create user
         usr = ecommerce.user(
@@ -1495,15 +1493,15 @@ class pom_page(tester.tester):
         usr.save()
 
         # Get user/password form
-        res = tab.get('/en/signon', ws)
-        frm = res['form'].first
+        res1 = tab.get('/en/signon', ws)
+        frm = res1['form'].first
 
         # Set credentials
         frm['input[name=username]'].first.value = 'luser'
         frm['input[name=password]'].first.value = 'password1'
 
         # POST credentials to log in
-        res = tab.post('/en/signon', ws, frm)
+        res1 = tab.post('/en/signon', ws, frm)
 
         hit = ecommerce.hits.last
 
@@ -1970,7 +1968,6 @@ class dom_element(tester.tester):
         self.true(dom.base().isvoid)
 
     def it_calls_id(self):
-        B()
         p = dom.paragraph()
         uuid = uuid4().hex
         p.id = uuid

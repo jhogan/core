@@ -69,6 +69,7 @@ class application:
         global request, response
         res = _response(self.request)
 
+        # Set global www.response
         response = res
 
         break_ = False
