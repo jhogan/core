@@ -1557,6 +1557,139 @@ class pom_page(tester.tester):
         # IP address
         self.eq(ip.address, hit.ip.address)
 
+        ''' GET page as logged in user '''
+        res1 = tab.get('/en/hitme', ws)
+        self.status(200, res1)
+
+        ''' Load the hit and test it '''
+        hit = ecommerce.hits.last
+
+        self.notnone(hit.begin)
+        self.notnone(hit.end)
+        self.true(hit.begin < hit.end)
+        self.status(200, hit)
+        self.eq(0, hit.size)
+        
+        # Page path
+        self.eq('/hitme', hit.path)
+
+        # Site
+        self.eq(ws.id, hit.site.id)
+
+        # Language
+        self.eq('en', hit.language)
+
+        # Method
+        self.eq('GET', hit.method)
+
+        # XHR
+        self.false(hit.isxhr)
+
+        # Query string
+        self.none(hit.qs)
+
+        # Referer/url
+        self.eq('imtherefere.com', hit.url.address)
+
+        # User
+        self.eq(usr.id, hit.user.id)
+
+        # User agent
+        self.eq(
+            hit.useragent.string, 
+            brw.useragent.string
+        )
+
+        # Logs
+        logs = hit.logs.sorted('datetime')
+        self.two(hit.logs)
+        self.eq('Starting main', logs.first.message)
+        self.eq('Ending main', logs.second.message)
+
+        # User agent - browser
+        self.eq('Mobile Safari', hit.useragent.browsertype.name)
+        self.eq('5.1', hit.useragent.browsertype.version)
+
+        # User agent - device
+        self.eq('iPhone', hit.useragent.devicetype.name)
+        self.eq('Apple', hit.useragent.devicetype.brand)
+        self.eq('iPhone', hit.useragent.devicetype.model)
+
+        # User agent - platform
+        self.eq('iOS', hit.useragent.platformtype.name)
+        self.eq('5.1', hit.useragent.platformtype.version)
+
+        # IP address
+        self.eq(ip.address, hit.ip.address)
+
+        # Ensure the page has access to the hit object
+        self.eq(
+            'Apple iPhone',
+            res1['.device'].first.text
+        )
+
+        d = {
+            'exp': primative.datetime.utcnow(hours=24),
+            'sub': ecommerce.user().id.hex,
+        }
+        jwt = pyjwt.encode(d, 'badsecret').decode('utf-8')
+
+        tab.browser.cookies['jwt'].value = str(jwt)
+
+        res1 = tab.get('/en/hitme', ws)
+
+        # Page path
+        self.eq('/hitme', hit.path)
+
+        # Site
+        self.eq(ws.id, hit.site.id)
+
+        # Language
+        self.eq('en', hit.language)
+
+        # Method
+        self.eq('GET', hit.method)
+
+        # XHR
+        self.false(hit.isxhr)
+
+        # Query string
+        self.none(hit.qs)
+
+        # Referer/url
+        self.eq('imtherefere.com', hit.url.address)
+
+        # User
+        self.none(hit.user)
+
+        # User agent
+        self.eq(
+            hit.useragent.string, 
+            brw.useragent.string
+        )
+
+        # Logs
+        logs = hit.logs.sorted('datetime')
+        self.two(hit.logs)
+        self.eq('Starting main', logs.first.message)
+        self.eq('Ending main', logs.second.message)
+
+        # User agent - browser
+        self.eq('Mobile Safari', hit.useragent.browsertype.name)
+        self.eq('5.1', hit.useragent.browsertype.version)
+
+        # User agent - device
+        self.eq('iPhone', hit.useragent.devicetype.name)
+        self.eq('Apple', hit.useragent.devicetype.brand)
+        self.eq('iPhone', hit.useragent.devicetype.model)
+
+        # User agent - platform
+        self.eq('iOS', hit.useragent.platformtype.name)
+        self.eq('5.1', hit.useragent.platformtype.version)
+
+        # IP address
+        self.eq(ip.address, hit.ip.address)
+
     def it_can_accesses_injected_variables(self):
         class lang(pom.page):
             def main(self):
