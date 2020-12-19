@@ -51,11 +51,11 @@ import product
 import re
 import shipment
 import tempfile
-import textwrap
-
+import testdom
 import testecommerce
 import testfile
-import testdom
+import testsec
+import textwrap
 
 # Import crust. Ensure that stdout is suppressed because it will print
 # out status information on startup.
@@ -67,7 +67,6 @@ with redirect_stdout(None):
 # supported.
 
 # A two byte character from the Basic Multilingual Plane
-
 Δ = bytes("\N{GREEK CAPITAL LETTER DELTA}", 'utf-8').decode()
 
 # A three byte character
@@ -1404,7 +1403,7 @@ class test_entities(tester):
             self.assertFail('getindex should have raised a ValueError.')
 
     def it_gets_the_ordinals(self):
-        """ The "ordinals" are propreties like "first", "second", and
+        """ The "ordinals" are properties like "first", "second", and
         "last"."""
 
         ks = knights().createthe4()
@@ -3679,6 +3678,9 @@ class issue(orm.entity):
     assignee  =  str
     timelogs  =  timelogs
     comments  =  comments
+    creator1  =  artist
+    creator2  =  artist
+    party     =  party.party
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -3829,6 +3831,16 @@ class test_orm(tester):
         self.chronicles = db.chronicles()
         db.chronicler.getinstance().chronicles.onadd += self._chronicler_onadd
 
+        es = orm.orm.getentitys(includeassociations=True)
+
+        # Since orm entities now depends on `party` (someone
+        # circularly), we need to ensure the party classes have updated
+        # tables definitions in the database. `party` is dependent on
+        # `apriori`.
+        for e in es:
+            if e.__module__ in ('party', 'apriori'):
+                e.orm.recreate()
+
         orm.orm.recreate(
             artists,
             presentations,
@@ -3840,6 +3852,9 @@ class test_orm(tester):
         artist.orm.recreate(recursive=True)
         comment.orm.recreate()
 
+        com = party.company(name='Carapacian')
+        orm.orm.setproprietor(com)
+        com.save()
         # Inject a reference to the self._chrontest context manager into
         # each test method as 'ct'. This will make testing chronicles
         # easier to type.
@@ -3948,6 +3963,35 @@ class test_orm(tester):
             cnt += int(chron.op not in ('reconnect',))
             
         self.eq(t.count, cnt, msg)
+
+    def it_has_two_entity_references_of_same_type(self):
+        # Make sure that issue is still set up to have assignee and
+        # assigener of the same type
+        i = 0
+        for map in issue.orm.mappings.foreignkeymappings:
+            if map.entity is artist:
+                if map.fkname in ('creator1', 'creator2'):
+                    i = i + 1
+        self.eq(2, i)
+
+        i = 0
+        for map in issue.orm.mappings.entitymappings:
+            if map.entity is artist:
+                if map.name in ('creator1', 'creator2'):
+                    i = i + 1
+        self.eq(2, i)
+
+        iss = issue.getvalid()
+        iss.creator1 = artist.getvalid()
+        iss.creator2 = artist.getvalid()
+        iss.party = party.person(name='Party')
+
+        iss.save()
+        iss1 = iss.orm.reloaded()
+
+        self.eq(iss.creator1.id, iss1.creator1.id)
+        self.eq(iss.creator2.id, iss1.creator2.id)
+        self.eq(iss.party.id, iss1.party.id)
 
     def it_migrates(self):
         def migrate(cat, expect):
@@ -4248,10 +4292,15 @@ class test_orm(tester):
 
         migrate(cat, expect)
 
+        initial = (
+            'id',         'proprietor__partyid',
+            'createdat',  'updatedat'
+        )
+
         self.eq(
             [
-                'id',       'createdat',  'updatedat',  'name',
-                'shedder',  'skittish',   'lives',      'dob',
+                *initial,   'name',
+                'shedder',  'skittish',  'lives',  'dob',
             ],
             [x.name for x in cat.orm.dbtable.columns]
         )
@@ -4273,7 +4322,7 @@ class test_orm(tester):
 
         self.eq(
             [
-                'id',    'createdat',  'updatedat',  'dob',
+                *initial,  'dob',
                 'name',  'shedder',    'skittish',   'lives',
             ],
             [x.name for x in cat.orm.dbtable.columns]
@@ -4298,7 +4347,7 @@ class test_orm(tester):
 
         self.eq(
             [
-                'id',        'createdat',  'updatedat',  'shedder',
+                *initial,  'shedder',
                 'skittish',  'lives',      'dob',        'name',
             ],
             [x.name for x in cat.orm.dbtable.columns]
@@ -4326,7 +4375,7 @@ class test_orm(tester):
 
         self.eq(
             [
-                'id',    'createdat',  'updatedat',  'dob',
+                *initial,  'dob',
                 'name',  'shedder',    'skittish',   'lives',
             ],
             [x.name for x in cat.orm.dbtable.columns]
@@ -4351,7 +4400,7 @@ class test_orm(tester):
 
         self.eq(
             [
-                'id',        'createdat',  'updatedat',  'shedder',
+                *initial,  'shedder',
                 'skittish',  'dob',        'name',       'lives',
             ],
             [x.name for x in cat.orm.dbtable.columns]
@@ -4374,7 +4423,7 @@ class test_orm(tester):
 
         self.eq(
             [
-                'id',        'createdat',  'updatedat',  'shedder',
+                *initial,  'shedder',
                 'skittish',  'name',       'dob',        'lives',
             ],
             [x.name for x in cat.orm.dbtable.columns]
@@ -4399,7 +4448,7 @@ class test_orm(tester):
 
         self.eq(
             [
-                'id',   'createdat',  'updatedat',  'name',
+                *initial,  'name',
                 'dob',  'lives',      'shedder',    'skittish'
             ],
             [x.name for x in cat.orm.dbtable.columns]
@@ -4422,7 +4471,7 @@ class test_orm(tester):
 
         self.eq(
             [
-                'id',       'createdat',  'updatedat',  'name',
+                *initial,  'name',
                 'birthed',  'lives',      'shedder',    'skittish'
             ],
             [x.name for x in cat.orm.dbtable.columns]
@@ -4445,7 +4494,7 @@ class test_orm(tester):
 
         self.eq(
             [
-                'id',   'createdat',  'updatedat',  'name',
+                *initial,  'name',
                 'dob',  'lifecount',  'shedder',    'skittish'
             ],
             [x.name for x in cat.orm.dbtable.columns]
@@ -5215,7 +5264,7 @@ class test_orm(tester):
         es = orm.orm.getentitys() + orm.orm.getassociations()
 
         # Create the tables if they don't already exist. This is needed
-        # because in the list comprehension that that instatiates `e`,
+        # because in the list comprehension that instatiates `e`,
         # we will eventually get to an entity's constructor that uses
         # the orm.ensure method. This method queries the table. We
         # create all the tables so that there is no MySQL exception when
@@ -5532,28 +5581,36 @@ class test_orm(tester):
 
         sng1 = singer(sng.id)
 
-        chrons.clear()
+        with self._chrontest() as t:
+            t(lambda: sng1.locations)
+            t.retrieved(sng1.locations)
+
+            # NOTE Loading locations requires that we load singer's
+            # superentity (artist) first because `locations` is a
+            # constituent of `artist`.  Though this may seem
+            # ineffecient, since the orm has what it needs to load
+            # `locations` without loading `artist`, we would want the
+            # following to work for the sake of predictability:
+            #
+            #     assert sng1.location.artists is sng1.orm.super
+            #
+            t.retrieved(sng1.locations.artist)
+
+        with self._chrontest() as t:
+            t(lambda: sng1.concerts)
+            t.retrieved(sng1.concerts)
+
+        with self._chrontest() as t:
+            t(lambda: sng1.concerts.first.locations)
+
+            # We need to load concert's super to get to locations
+            t.retrieved(sng1.concerts.first.orm.super)
+
+            t.retrieved(sng1.concerts.first.locations)
 
         self.eq(sng.locations.first.id, sng1.locations.first.id)
         self.eq(sng.concerts.first.locations.first.id, 
                 sng1.concerts.first.locations.first.id)
-
-        self.five(chrons)
-        self._chrons(sng1.concerts,                  'retrieve')
-        self._chrons(sng1.concerts.first.orm.super,  'retrieve')
-        self._chrons(sng1.concerts.first.locations,  'retrieve')
-        self._chrons(sng1.locations,                 'retrieve')
-
-        # NOTE Loading locations requires that we load singer's
-        # superentity (artist) first because `locations` is a
-        # constituent of `artist`.  Though this may seem ineffecient,
-        # since the orm has what it needs to load `locations` without
-        # loading `artist`, we would want the following to work for the
-        # sake of predictability:
-        #
-        #     assert sng1.locations.artists is sng1.orm.super
-        #
-        self._chrons(sng1.locations.artist,          'retrieve')
 
         chrons.clear()
         self.is_(sng1.locations.artist, sng1.orm.super)
@@ -6063,15 +6120,12 @@ class test_orm(tester):
                 self.isnot(f1, rmfact)
                 self.isnot(f2, rmfact)
 
-            chrons.clear()
-            art.save()
-
-            self.four(chrons)
-            self.four(chrons.where('delete'))
-            self.one(chrons.where('entity', rmcomps.first))
-            self.one(chrons.where('entity', rmcomps.second))
-            self.one(chrons.where('entity', rmfact))
-            self.one(chrons.where('entity', art.artist_artifacts.orm.trash.first))
+            with self._chrontest() as t:
+                t(art.save)
+                t.deleted(rmcomps.first)
+                t.deleted(rmcomps.second)
+                t.deleted(rmfact)
+                t.deleted(art.artist_artifacts.orm.trash.first)
 
             art1 = artist(art.id)
 
@@ -6307,8 +6361,8 @@ class test_orm(tester):
         # would be permenately mutated; meeting the needs of the `sql`
         # property, but not the needs of other clients.
         #
-        # The solution has been fixed, but this test will remain to
-        # ensure the problem dosen't arise again.
+        # The issue has been fixed, but this test will remain to ensure
+        # the problem dosen't arise again.
 
         arts = artists(orm.stream, firstname=uuid4().hex)
 
@@ -6336,13 +6390,12 @@ class test_orm(tester):
         self.eq(2, arts1.count)
 
     def it_raises_exception_when_innerjoin_stream_entities(self):
-        ''' Streaming and joins don't mix. An error should be thrown
-        if an attempt to stream joins is detected. The proper way 
-        to stream constituents would probably be with a getter, e.g.:
+        ''' Streaming and joins don't mix. An error should be thrown if
+        an attempt to stream joins is detected. The proper way to stream
+        constituents would probably be with a getter, e.g.:
 
             for fact in art.get_artifacts(orm.stream):
                 ...
-
         '''
 
         fns = (
@@ -6533,12 +6586,12 @@ class test_orm(tester):
 
     def it_adds_subentity_to_superentities_collection(self):
         """ Ensure that entity objects (concert) added to collection
-        propreties (concerts) are availibale in the superentities
+        properties (concerts) are availibale in the superentities
         collection properties (presentations) before and after save.
         """
 
         # Add concert to concerts property and ensure it exists in
-        # presentations propreties
+        # presentations properties
         sng = singer.getvalid()
         sng.concerts += concert.getvalid()
 
@@ -6766,11 +6819,11 @@ class test_orm(tester):
         def fn():
             artists("firstname = '%s'" % arts.first.firstname)
 
-        # This should throw an error because we want the user to specify an
-        # empty tuple if they don't want to pass in args. This serves as a
-        # reminder that they are not taking advantage of the
-        # prepared/parameterized statements and may therefore be exposing
-        # themselves to SQL injection attacks.
+        # This should throw an error because we want the user to specify
+        # an empty tuple if they don't want to pass in args. This serves
+        # as a reminder that they are not taking advantage of the
+        # prepared/parameterized statements and may therefore be
+        # exposing themselves to SQL injection attacks.
         self.expect(ValueError, fn)
 
         self.chronicles.clear()
@@ -6857,16 +6910,22 @@ class test_orm(tester):
 
         # Force user to supply an empty args list
         self.expect(ValueError, fn)
-        arts = artists('id = id', (), firstname = fname, lastname = lname)
+        arts = artists(
+            'id = id', (), firstname = fname, lastname = lname
+        )
         self.one(arts1)
         arts.first
         self.eq(arts1.first.id, arts.first.id)
 
-        arts = artists('id = %s', (id,), firstname = fname, lastname = lname)
+        arts = artists(
+            'id = %s', (id,), firstname = fname, lastname = lname
+        )
         self.one(arts1)
         self.eq(arts1.first.id, arts.first.id)
 
-        arts = artists('id = %s', (id,), firstname = fname, lastname = lname)
+        arts = artists(
+            'id = %s', (id,), firstname = fname, lastname = lname
+        )
         self.one(arts1)
         self.eq(arts1.first.id, arts.first.id)
 
@@ -8190,9 +8249,10 @@ class test_orm(tester):
         self.eq(actual, expected)
 
     def it_doesnt_raise_exception_on_invalid_attr_values(self):
-        # For each type of attribute, ensure that any invalid value can be
-        # given. The invalid value should cause a brokenrule but should never
-        # result in a type coercion exception on assignment or retrieval
+        # For each type of attribute, ensure that any invalid value can
+        # be given. The invalid value should cause a brokenrule but
+        # should never result in a type coercion exception on assignment
+        # or retrieval
 
         # datetime
         art = artist.getvalid()
@@ -9785,9 +9845,7 @@ class test_orm(tester):
         for prop in art.orm.properties:
             if prop == 'id':
                 self.eq(getattr(art1, prop), getattr(art, prop), prop)
-            else:
-                if prop in ('createdat', 'updatedat'):
-                    continue
+            elif prop not in art.orm.builtins:
                 self.ne(getattr(art1, prop), getattr(art, prop), prop)
 
         self.chronicles.clear()
@@ -11730,7 +11788,8 @@ class test_orm(tester):
         """
 
     def it_saves_and_loads_subsubentities_subsubentity_constituent(
-        self):
+        self
+    ):
 
         # Make sure the constituent is None for new composites
         btl = battle.getvalid()
@@ -12241,11 +12300,10 @@ class test_orm(tester):
                 # relationships
                 continue
 
+            sng.orm.builtins
             if prop == 'id':
                 self.eq(getattr(sng1, prop), getattr(sng, prop), prop)
-            else:
-                if prop in ('createdat', 'updatedat'):
-                    continue
+            elif prop not in sng.orm.builtins:
                 self.ne(getattr(sng1, prop), getattr(sng, prop), prop)
 
         sng1.save()
@@ -12343,9 +12401,7 @@ class test_orm(tester):
 
             if prop == 'id':
                 self.eq(getattr(rpr1, prop), getattr(rpr, prop), prop)
-            else:
-                if prop in ('createdat', 'updatedat'):
-                    continue
+            elif prop not in rpr.orm.builtins:
                 self.ne(getattr(rpr1, prop), getattr(rpr, prop), prop)
     
         rpr1.save()
@@ -13005,14 +13061,16 @@ class test_orm(tester):
 
         arts.save()
 
-        # Query where composite and constituent have one MATCH clase each
+        # Query where composite and constituent have one MATCH clase
+        # each
         arts1 = artists("match(bio) against ('%s')" % artkeywords[0], ()).join(
             artifacts(
                 "match(title, description) against ('%s')" %  factkeywords[0], ()
             )
         )
 
-        # Query where composite and constituent have two MATCH clase each
+        # Query where composite and constituent have two MATCH clauses
+        # each
         artmatch = (
             "MATCH(bio) AGAINST ('%s') OR "
             "MATCH(bio) AGAINST ('%s')"
@@ -13344,7 +13402,8 @@ class test_orm(tester):
     def it_parameterizes_predicate(self):
         ''' Ensure that the literals in predicates get replaced with
         placeholders and that the literals are moved to the correct 
-        positions in the where.args list. '''
+        positions in the where.args list.
+        '''
 
         # TODO With the addition of this feature, we can remove the
         # requirement that an empty tuple be given as the second
@@ -13377,7 +13436,7 @@ class test_orm(tester):
         self.eq("5678", arts.orm.where.args[1])
         for i, pred in enumerate(arts.orm.where.predicate):
             self.eq("%s", pred.operands[1])
-            self.lt(i, 2)
+            self.lt(i, 3)
 
         expr = (
             "firstname between '1234' and '5678' or "
@@ -13391,7 +13450,7 @@ class test_orm(tester):
         self.eq("6789", arts.orm.where.args[3])
         for i, pred in enumerate(arts.orm.where.predicate):
             self.eq("%s", pred.operands[1])
-            self.lt(i, 2)
+            self.lt(i, 3)
 
     def it_raises_exception_when_a_non_existing_column_is_referenced(self):
         self.expect(orm.InvalidColumn, lambda: artists(notacolumn = 1234))
@@ -13854,7 +13913,11 @@ class test_orm(tester):
                 self.notnone(loc1)
             
         # Eager-load two constituents
-        arts1 = artists(orm.eager('presentations.locations', 'presentations.components'))
+        arts1 = artists(
+            orm.eager(
+                'presentations.locations', 'presentations.components'
+            )
+        )
         self.one(arts1.orm.joins)
         self.two(arts1.orm.joins.first.entities.orm.joins)
         presjoins = arts1.orm.joins.first.entities.orm.joins
@@ -14513,7 +14576,6 @@ class test_orm(tester):
             self.eq("col IN (_binary %s, _binary %s)", str(pred))
 
     def it_saves_recursive_entity(self):
-
         def recurse(com1, com2, expecteddepth, curdepth=0):
             with self._chrontest() as t:
                 t.run(lambda: com2.comments)
@@ -16983,7 +17045,7 @@ class crust_migration(tester):
 
     @staticmethod
     def _alter():
-        """ Ensure that that the database is out-of-sync with model,
+        """ Ensure that the database is out-of-sync with model,
         necessitating a migration.
         """
         es = orm.orm.getentitys()
@@ -17095,6 +17157,10 @@ class gem_party(tester):
         for e in es:
             if e.__module__ in ('party', 'apriori'):
                 e.orm.recreate()
+
+        com = party.company(name='Carapacian')
+        orm.orm.setproprietor(com)
+        com.save(com)
 
     @staticmethod
     def getvalid(first=None, last=None):
@@ -17535,25 +17601,6 @@ class gem_party(tester):
         # Test
         self.eq(newfirstname, per1.first)
         self.ne(oldfirstname, per1.first)
-
-    def it_creates_association_to_person(self):
-        bro = self.getvalid()
-        sis = self.getvalid()
-
-        # TODO Figure out a way to do this:
-        #
-        #     bro.siblings += sis
-        bro.party_parties += party.party_party.sibling(sis)
-
-        self.is_(bro, bro.party_parties.last.subject)
-        self.is_(sis, bro.party_parties.last.object)
-
-        bro.save()
-
-        bro1 = party.person(bro.id)
-
-        self.eq(bro.id, bro1.party_parties.last.subject.id)
-        self.eq(sis.id, bro1.party_parties.last.object.id)
         
     def it_creates_association_to_company(self):
         per = self.getvalid()
@@ -18926,6 +18973,10 @@ class gem_product(tester):
         for e in orm.orm.getentitys(includeassociations=True):
             if e.__module__ in ('product', ):
                 e.orm.recreate()
+
+        com = party.company(name='Carapacian')
+        orm.orm.setproprietor(com)
+        com.save(com)
 
     @staticmethod
     def getvalid(type=None, comment=1000):
@@ -20638,6 +20689,10 @@ class gem_case(tester):
             party.statuses,
         )
 
+        com = party.company(name='Carapacian')
+        orm.orm.setproprietor(com)
+        com.save(com)
+
     def it_raises_on_invalid_call_of_casesstatus(self):
         self.expect(ValueError, lambda: party.casestatus('Active'))
         self.expect(None, lambda: party.casestatus(name='Active'))
@@ -20794,6 +20849,10 @@ class gem_order(tester):
         for e in orm.orm.getentitys(includeassociations=True):
             if e.__module__ in ('order', 'party', 'product',):
                 e.orm.recreate()
+
+        com = party.company(name='Carapacian')
+        orm.orm.setproprietor(com)
+        com.save(com)
 
     def it_creates_salesorder(self):
         ''' Create products '''
@@ -21568,6 +21627,10 @@ class gem_shipment(tester):
             if e.__module__ in ('shipment', 'order'):
                 e.orm.recreate()
 
+        com = party.company(name='Carapacian')
+        orm.orm.setproprietor(com)
+        com.save(com)
+
     def it_creates(self):
         sh = shipment.shipment(
             estimatedshipat = primative.date('May 6, 2001'),
@@ -21988,6 +22051,10 @@ class gem_effort(tester):
                 'effort', 'apriori', 'party', 'asset', 'order'
             ):
                 e.orm.recreate()
+
+        com = party.company(name='Carapacian')
+        orm.orm.setproprietor(com)
+        com.save(com)
 
     def it_creates_requirements(self):
         req = apriori.requirement(
@@ -22764,8 +22831,12 @@ class gem_invoice(tester):
         super().__init__()
 
         for e in orm.orm.getentitys(includeassociations=True):
-            if e.__module__ in ('invoice',):
+            if e.__module__ in ('invoice', 'party', 'apriori'):
                 e.orm.recreate()
+
+        com = party.company(name='Carapacian')
+        orm.orm.setproprietor(com)
+        com.save(com)
 
     def it_creates_items(self):
         # Create products
@@ -23143,6 +23214,10 @@ class gem_account(tester):
             account.depreciationmethod,
         )
 
+        com = party.company(name='Carapacian')
+        orm.orm.setproprietor(com)
+        com.save(com)
+
     def it_creates_accounts(self):
         accts = account.accounts()
 
@@ -23396,8 +23471,12 @@ class gem_budget(tester):
             if e.__module__ in ('apriori', 'budget', 'party'):
                 e.orm.recreate()
 
+        com = party.company(name='Carapacian')
+        orm.orm.setproprietor(com)
+        com.save(com)
+
     def it_creates(self):
-        # Create a budget and assign it a bugettype
+        # Create a budget and assign it a budgettype
         bud = budget.budget(
             name = 'Marketing budget',
             type = budget.type(
@@ -23763,6 +23842,10 @@ class gem_hr(tester):
         for e in es:
             if e.__module__ in ('party', 'hr', 'apriori', 'invoice'):
                 e.orm.recreate()
+
+        com = party.company(name='Carapacian')
+        orm.orm.setproprietor(com)
+        com.save(com)
 
     def it_creates_position(self):
         pos = self.getvalidposition()
@@ -24366,8 +24449,8 @@ class gem_hr(tester):
         # Assign the employment role to the person
         per.roles += emp
 
-        # Associate the emp role with int role, creating the employment
-        # relationship
+        # Associate the emp role with internal role (int), creating the
+        # employment relationship
         emp.role_roles += hr.employeement(
             object = int
         )

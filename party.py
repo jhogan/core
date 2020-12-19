@@ -248,9 +248,19 @@ class unit(organization):
         self.isicv4       =  None
 
 class division(unit):
+    # TODO ``division`` must inherit from ``organizationalunit``, not
+    # ``unit``. This would make it a ``role`` instead of a ``party``.
+    # Same with ``department``.
+
+    # TODO:afa4ffc9 Is this how divisions are related to position in the
+    # book.
     pass
 
 class department(unit):
+    # TODO ``department`` must inherit from ``organizationalunit``, not
+    # ``unit``. This would make it a ``role`` instead of a ``party``.
+    # Same with ``division``.
+
     # TODO:afa4ffc9 Now that we are using role_role to associates
     # parties with each other, the entity objects `divisions` will no
     # longer have a many-to-one relationship with `department`;
@@ -1161,6 +1171,8 @@ class role(orm.entity):
         # Each (party) role may be described by one and only one
         # `partyroletype`. TODO Write validation rule for this.
         name = builtins.type(self).__name__
+
+        # TODO:9f3a86e4 Remove this
         self.partyroletype = partyroletype(name=name)
 
     # The datespan through which this role is valid. This timespan may
@@ -1364,6 +1376,7 @@ class worker(personal):
 class manager(personal):
     """ A party role representing a manager.
     """
+
 class employee(worker):
     """ A party role implying legal employment with an enterprise.
     """
@@ -1371,7 +1384,6 @@ class employee(worker):
 class contractor(worker):
     """ A worker role implying a contractor.
     """
-
 
 # TODO Add subtypes of ``organizational``: (distribution) ``channel``,
 # ``partner``, ``competitor``, ``household`, (regulatory) ``agency`` and
@@ -1405,6 +1417,8 @@ class partyroletype(roletype):
     # relationship on the party_contactmechanisms association, however
     # that relationship type is not currently supported. 
     # party_contactmechanisms = party_contactmechanisms
+    
+    # TODO:9f3a86e4 Add collection of roles (``roles = roles``)
 
 # TODO Add ``familial`` and ``contact`` subtypes to personal(role).
 
@@ -1614,6 +1628,7 @@ class party_facility(orm.association):
 
     facilityroletype = facilityroletype
 
+    # TODO This is a duplicate
     party = party
 
 class objective(orm.entity):

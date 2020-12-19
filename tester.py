@@ -461,6 +461,12 @@ class tester(entity):
     def eq(self, expect, actual, msg=None):
         if expect != actual: self._failures += failure()
 
+    def startswith(self, expect, actual, msg=None):
+        if not actual.startswith(expect): self._failures += failure()
+
+    def endswith(self, expect, actual, msg=None):
+        raise NotImplementedError()
+
     def assertNe(self, expect, actual, msg=None):
         if expect == actual: self._failures += failure()
 

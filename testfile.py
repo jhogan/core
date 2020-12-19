@@ -65,6 +65,12 @@ class dom_file(tester.tester):
     """
     def __init__(self):
         super().__init__()
+        # Proprietor
+        com = party.company(name='Carapacian')
+        orm.orm.setproprietor(com)
+        com.save()
+
+        # Recreate tables
         orm.orm.recreate(
             ecommerce.user,      file.files,   file.resources,
             file.directory,  file.inodes,  pom.site, foonet, asset.asset
@@ -400,8 +406,15 @@ class dom_file(tester.tester):
 class file_file(tester.tester):
     def __init__(self):
         super().__init__()
+        # Proprietor
+        com = party.company(name='Carapacian')
+        orm.orm.setproprietor(com)
+        com.save()
+
+        # Delete files
         clean()
 
+        # Recreate tables
         orm.orm.recreate(
             ecommerce.user,
             file.files,

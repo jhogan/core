@@ -15,6 +15,9 @@
 mapping.
 
 TODOs:
+    FIXME:6028ce62 Allow entitymappings to be set to None (see 6028ce62
+    for more.)
+
     TODO Raise error if a subclass of ``association`` does not have a
     subclass of ``associations``. Strange bugs happen when this mistake
     is made.
@@ -841,8 +844,8 @@ class where(entitiesmod.entity):
     def __init__(self, es, pred, args):
         """ Sets the initial propreties for the ``where`` object. 
         
-        :param:  entities  es:          The ``entities`` collection
-        associated with this ``where`` object.
+        :param:  entities  es: The ``entities`` collection associated
+        with this ``where`` object.
 
         :param:  str or predicate pred: A str or ``predicate`` object
         associated with this ``where`` object
@@ -855,8 +858,7 @@ class where(entitiesmod.entity):
         self.predicate    =  None
 
         if not pred:
-            msg = 'where objects must have predicates'
-            raise ValueError(msg)
+            raise ValueError('where objects must have predicates')
 
         if isinstance(pred, predicate):
             self.predicate = pred
@@ -1237,6 +1239,19 @@ class predicate(entitiesmod.entity):
             return True
 
         return tok.upper() in predicate.Constants
+
+    @staticmethod
+    def isplaceholder(tok):
+        """ Returns True if `tok` is a placeholders. Examples of
+        placeholders are '%s' and '_binary %s'.
+
+        :param: str tok: The token to test.
+        """
+        for intro in predicate.Introducers:
+            if tok == f'{intro} %s':
+                return True
+
+        return tok == '%s'
 
     class Match():
         re_isnatural = re.compile(
@@ -1761,8 +1776,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             except builtins.AttributeError:
                 msg = (
                     "Can't instantiate abstract orm.entities. "
-                    "Use entities.entities for a generic entities collection "
-                    "class."
+                    "Use entities.entities for a generic entities "
+                    "collection class."
                 )
                 raise NotImplementedError(msg)
 
@@ -1770,13 +1785,13 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
             self.orm.initing = True # change to isiniting
 
-            self.orm.isloaded = False
-            self.orm.isloading = False
-            self.orm.stream = None
-            self.orm.where = None
-            self.orm.ischunk = False
-            self.orm.joins = joins(es=self)
-            self.join = self._join
+            self.orm.isloaded   =  False
+            self.orm.isloading  =  False
+            self.orm.stream     =  None
+            self.orm.where      =  None
+            self.orm.ischunk    =  False
+            self.orm.joins      =  joins(es=self)
+            self.join           =  self._join
 
             self.onbeforereconnect  =  entitiesmod.event()
             self.onafterreconnect   =  entitiesmod.event()
@@ -1797,9 +1812,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 args.append(_p2)
                 _p2 = None
 
-            # Look in *args for stream class or a stream object. If found, ensure
-            # the element is an instantiated stream and set it to self._stream.
-            # Delete the stream from *args.
+            # Look in *args for stream class or a stream object. If
+            # found, ensure the element is an instantiated stream and
+            # set it to self._stream.  Delete the stream from *args.
             for i, e in enumerate(args):
                 if e is stream:
                     self.orm.stream = stream()
@@ -1813,23 +1828,26 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                     e.join(to=self)
                     del args[i]
 
-            # The parameters express a conditional (predicate) if the first is
-            # a str, or the args and kwargs are not empty. Otherwise, the first
-            # parameter, `initial`, means an initial set of values that the
-            # collections should be set to.  The other parameters will be empty
-            # in that case.
+            # The parameters express a conditional (predicate) if the
+            # first is a str, or the args and kwargs are not empty.
+            # Otherwise, the first parameter, `initial`, means an
+            # initial set of values that the collections should be set
+            # to.  The other parameters will be empty in that case.
             iscond = type(initial) is str
             iscond = iscond or (initial is None and (_p2 or bool(args) or bool(kwargs)))
 
             if self.orm.stream or iscond:
                 super().__init__()
 
+                # `initial` would be None when doing kwarg based
+                # queries, i.e.: entities(col = 'value')
                 _p1 = '' if initial is None else initial
+
                 self._preparepredicate(_p1, _p2, *args, **kwargs)
 
-                # Create joins to superentities where necessary if not in
-                # streaming mode. (Streaming does not support (and can't
-                # support) joins.)
+                # Create joins to superentities where necessary if not
+                # in streaming mode. (Streaming does not support (and
+                # can't support) joins.)
                 if not self.orm.isstreaming:
                     self.orm.joinsupers()
 
@@ -1841,6 +1859,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             if hasattr(type(self), 'orm'):
                 if hasattr(self, 'orm'):
                     self.orm.initing = False
+
+    def isauthorized(self):
+        "TODO"
 
     def clone(self, to=None):
         if not to:
@@ -2374,10 +2395,20 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
         args = [x.bytes if type(x) is UUID else x for x in args]
 
+        if orm.proprietor:
+            if p1:
+                p1 += ' AND '
+
+            for map in self.orm.mappings.foreignkeymappings:
+                if map.fkname == 'proprietor':
+                    p1 += f'{map.name} = _binary %s'
+                    args.append(orm.proprietor.id.bytes)
+                    break
+
         if p1:
             self.orm.where = where(self, p1, args)
             self.orm.where.demandvalid()
-            self.orm.parameterizepredicate(args)
+            self.orm.where.args = self.orm.parameterizepredicate(args)
 
     def clear(self):
         """
@@ -2863,6 +2894,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 self.orm.isnew = True
                 self.orm.isdirty = False
                 self.id = uuid4()
+
+                # Assign the proprietor (the owner of the entity) to the
+                # entity's `proprietor` attribute. This ensure the
+                # proprietor gets saved to the database.
+                if orm.proprietor:
+                    self.proprietor = orm.proprietor
             else:
                 if isinstance(o, str):
                     # See if we can convert str identifier to UUID. 
@@ -2884,7 +2921,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         'constructor, ensure that you are including '
                         'the keys as well.'
                     )
-                    
 
                 self.orm.populate(res)
 
@@ -3032,6 +3068,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         to the ``v`` argument. By default, it is False, because this is
         only necessary for imperitive setters.
         """
+
+        # TODO Document the `imp` parameter
         
         # Need to handle 'orm' first, otherwise the code below that
         # calls self.orm won't work.
@@ -3068,25 +3106,58 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 if map.issetter and not imp:
                     return object.__setattr__(self, attr, v)
 
-            # Call entity._setvalue to take advantage of its event raising
-            # code. Pass in a custom setattr function for it to call. Use
-            # underscores for the paramenters since we already have the values
-            # it would pass in in this method's scope - except for the v
-            # which, may have been processed (i.e, if it is a str, it will
-            # have been strip()ed. 
+            # Call entity._setvalue to take advantage of its event
+            # raising code. Pass in a custom setattr function for it to
+            # call. Use underscores for the paramenters since we already
+            # have the values it would pass in in this method's scope -
+            # except for the v which, may have been processed (i.e, if
+            # it is a str, it will have been strip()ed. 
             def setattr0(_, __, v):
                 map.value = v
 
             self._setvalue(attr, v, attr, setattr0, cmp=cmp)
 
             if type(map) is entitymapping:
-                # FIXME `v` can be None. When this is the case, we get a
-                # null reference exception.
-                
+                # FIXME:6028ce62 An entitymapping attribute could be set
+                # to None.  However, that would mean `v` would be None
+                # here, so accesing its attributes causes an error. We
+                # need to allow `v` to be None and find a different way
+                # of getting the attributes it's getting
                 e = v.orm.entity
                 while True:
                     for map in self.orm.mappings.foreignkeymappings:
-                        if map.entity is e:
+
+                        # A flag to determine whether or not we set this
+                        # map's `value` property.
+                        set = False
+
+                        if map.isproprietor and attr == 'proprietor':
+                            # If the FK map is the proprietor FK
+                            # (proprietor__partyid), and the attr is
+                            # 'proprietor' then we want to set this map.
+                            # We sort of make an exception for
+                            # proprietor setting because a proprietor's
+                            # type is `party.party`, though a propietor
+                            # could be a subentity of that, such as
+                            # `party.company`. Normally we want an exact
+                            # type match (see alternative block) for FK
+                            # matching, but here we want to allow
+                            # subentities.
+                            set = True
+                        else:
+                            # If the value's (v) entity is the maps
+                            # entity, this is the  map we are looking
+                            # for.
+
+                            # TODO We may want to remove the fkname, e1 and
+                            # attr tests. These were added for the
+                            # proprietor's fk but that is now handled in
+                            # the consequence block.
+                            fkname, e1 = map.fkname, map.entity
+                            set = e1 is e 
+                            set = set and (not fkname or attr == fkname)
+
+                        if set:
                             if self.orm.isreflexive:
                                 if map.name.startswith(attr + '__'):
                                     self._setvalue(
@@ -3104,18 +3175,18 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         if e:
                             continue
                         else:
-                            # If we have gotten here, no FK was found in self
-                            # that match the composite object passed in. This
-                            # is probably because the wrong type of composite
-                            # was given. The user/programmers has made a
-                            # mistake. However, the brokenrules logic will
-                            # detect this issue and alert the user to the
-                            # issue.
+                            # If we have gotten here, no FK was found in
+                            # self that matches the composite object
+                            # passed in. This is probably because the
+                            # wrong type of composite was given. The
+                            # user/programmers has made a mistake.
+                            # However, the brokenrules logic will detect
+                            # this and alert the user to the issue.
                             pass
                     break
 
                 # If self is a subentity (i.e., concert), we will want to set
-                # the superentity's (i.e, presentation) composite map to it's
+                # the superentity's (i.e, presentation) composite map to its
                 # composite class (i.e., artist) value. 
                 selfsuper = self.orm.super
                 attrsuper = self.orm.mappings(attr).value.orm.super
@@ -3185,6 +3256,18 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         else:
             crud = None
             sql, args = (None,) * 2
+
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # If we are modifying the record, the orm.proprietor must match
+        # the record's proprietor. This ensures one party can't modify
+        # another's records.
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+
+        # TODO:ee897843 Don't allow a proprietor to create a record
+        # belonging to a different proprietor.
+        if crud in ('update', 'delete'):
+            if self.proprietor__partyid != orm.proprietor.id:
+                raise ProprietorError(self.proprietor)
 
         try:
             # Take snapshot of before state
@@ -3264,6 +3347,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             # Set the entity's FK to self.id value
                             for map in e.orm.mappings:
                                 if type(map) is foreignkeyfieldmapping:
+                                    
+                                    # Under no circumstance should the
+                                    # proprietor be set here. 
+                                    if map.isproprietor:
+                                        continue
+                                    
                                     if map.entity is self.orm.entity:
                                         # Set map.value to self.id. But
                                         # rather than a direct
@@ -3466,47 +3555,43 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 t = map.type
                 if t == types.str:
                     brs.demand(
-                        self, 
-                        map.name, 
-                        type=str, 
-                        min=map.min, 
-                        max=map.max
+                        self,         map.name,    type=str,
+                        min=map.min,  max=map.max
                    )
 
                 elif t == types.int:
-                    brs.demand(self, map.name, min=map.min, max=map.max, 
-                                     type=int)
+                    brs.demand(
+                        self,         map.name,  min=map.min,
+                        max=map.max,  type=int
+                    )
+
                 elif t == types.bool:
                     brs.demand(self, map.name, type=bool)
 
                 elif t == types.float:
-                    brs.demand(self, map.name, 
-                                     type=float, 
-                                     min=map.min, 
-                                     max=map.max, 
-                                     precision=map.precision,
-                                     scale=map.scale)
+                    brs.demand(self, 
+                        map.name,                 type=float,
+                        min=map.min,              max=map.max,
+                        precision=map.precision,  scale=map.scale
+                    )
 
                 elif t == types.decimal:
-                    brs.demand(self, map.name, 
-                                     type=decimal.Decimal, 
-                                     min=map.max, 
-                                     max=map.min, 
-                                     precision=map.precision,
-                                     scale=map.scale)
+                    brs.demand(
+                        self,                  map.name,
+                        type=decimal.Decimal,  min=map.max,
+                        max=map.min,           precision=map.precision,
+                        scale=map.scale
+                    )
 
                 elif t == types.bytes:
-                    brs.demand(self, 
-                        map.name, 
-                        type=bytes,
-                        max=map.max, 
-                        min=map.min
+                    brs.demand(
+                        self,         map.name,    type=bytes,
+                        max=map.max,  min=map.min
                     )
 
                 elif t == types.date:
-                    brs.demand(self, 
-                        map.name, 
-                        instanceof=date,
+                    brs.demand(
+                        self, map.name, instanceof=date,
                         min=type(self).mindatetime,
                         max=type(self).maxdatetime,
                     )
@@ -3518,17 +3603,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         max=type(self).maxdatetime,
                     )
 
-            # NOTE I added a `followentitiesmapping` flag (7d3bc6ce) which I
-            # only applied to associations (see below) because association are
-            # a subtype of entities. However, I could have added it to the
-            # below line so that it would read:
-            #
-            #     `followentitiesmapping and elif type(map) is entitiesmapping:`
-            #
-            # However, I didn't do it because, at the moment, there is no issue
-            # here with the current logic. However, that may change and we will
-            # want to add (as one would expect) the `followentitiesmapping`
-            # flag here as well.
             elif type(map) is entitiesmapping:
                 # NOTE Currently, map.value will not load the entities
                 # on invocation so we get None for es. This is good
@@ -3614,7 +3688,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         e = self_orm.entity
                         while e:
                             if map1.entity is e:
-                                break
+                                if not map1.fkname:
+                                    break
+
+                                if map1.fkname == e.__name__:
+                                    break
 
                             # If not found, go up the inheritance tree
                             # and try again
@@ -3703,7 +3781,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         elif map is None:
             # For each of self's association mappings, look for the
             # one that has entity mapping that matches `attr`. If
-            # found, get the associations collection object from the
+            # found, get the association's collection object from the
             # association mapping.  Then return that collection's
             # `attr` property.
             #
@@ -3721,6 +3799,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 for map in orm.mappings.associationsmappings:
                     maps = map.associations.orm.mappings.entitymappings
                     for map1 in maps:
+                        if map1.isproprietor:
+                            continue
 
                         es = [map1.entity]
                         es.extend([
@@ -3969,6 +4049,10 @@ class mappings(entitiesmod.entities):
             # `self` later.
             maps = list()
 
+            # Add an entitymapping of the proprietor reference.
+            from party import party
+            self += entitymapping('proprietor', party, isderived=True)
+
             def add_fk_and_entity_map(e):
                 # Add an entity mapping for the composite
                 maps.append(
@@ -3980,11 +4064,10 @@ class mappings(entitiesmod.entities):
                     foreignkeyfieldmapping(e, isderived=True)
                 )
 
-
             ''' Add FK mapings to association objects '''
             # For association objects, look for entity mappings and add
             # a foreign key mapping (e.g., For artist_artifact, add an
-            # FK called artistid and artifactid.
+            # FK called artistid and artifactid).
             for map in self.entitymappings:
                 maps.append(
                     foreignkeyfieldmapping(
@@ -3994,9 +4077,9 @@ class mappings(entitiesmod.entities):
                     )
                 )
 
-            # Set the recursion limit to a value a little higher than
-            # the default (1000). This method is highly recursive
-            # because of the calls to ``orm.getentitys`` and
+            # Set the recursion limit to a value a higher than the
+            # default (1000). This method is highly recursive because of
+            # the calls to ``orm.getentitys`` and
             # ''orm.getassociations``. This recursion is necessary for
             # the algorithm. 
             #
@@ -4213,6 +4296,7 @@ class mappings(entitiesmod.entities):
 
         set = set[:-2]
 
+        # TODO Use f-string and textwrap to make this nicer
         sql = """UPDATE {}
 SET {}
 WHERE id = %s;
@@ -4279,13 +4363,6 @@ class mapping(entitiesmod.entity):
         mapping.ordinal += 1
         self._ordinal = mapping.ordinal
         self.isderived = isderived
-
-    @property
-    def isstandard(self):
-        """ Returns True if this is a standard field mapping applied by
-        the entitymeta.
-        """
-        return self.name in ('id', 'createdat', 'updatedat')
 
     def isdefined(self):
         return self._value is not undef
@@ -4466,11 +4543,12 @@ class entitymapping(mapping):
         """ Sets the initial values.
 
         :param: str name:       The name of the map
+
         :param: entity e:       The entity class associatied with this
-                                map
+        map
+
         :param: bool isderived: Indicates whether or not the the map was
-                                created/derived by the
-                                mappings._populate() method
+        created/derived by the mappings._populate() method
         """
         self.entity = e
         self._value = None
@@ -4485,6 +4563,10 @@ class entitymapping(mapping):
     def isobjective(self):
         return self.orm.isreflexive \
                and self.name.startswith('object') 
+
+    @property
+    def isproprietor(self):
+        return self.name == 'proprietor'
 
     @property
     def value(self):
@@ -4612,6 +4694,15 @@ class fulltext(index):
         return name
 
 class attr:
+    def __init__(self, *args, **kwargs):
+        self.args = list(args)
+        self.kwargs = kwargs
+
+    def __call__(self, meth):
+        self.args.append(meth)
+        w = attr.wrap(*self.args, **self.kwargs)
+        return w
+
     def attr(v=undef):
         """ Sets the map's value to ``v``. Returns the mapped
         value.
@@ -4718,15 +4809,6 @@ class attr:
 
         def __set__(self, instance, value):
             return self._getset(instance=instance, value=value)
-
-    def __init__(self, *args, **kwargs):
-        self.args = list(args)
-        self.kwargs = kwargs
-
-    def __call__(self, meth):
-        self.args.append(meth)
-        w = attr.wrap(*self.args, **self.kwargs)
-        return w
 
 class fieldmapping(mapping):
     """ Represents mapping between Python types and MySQL types.
@@ -5224,6 +5306,7 @@ class foreignkeyfieldmapping(fieldmapping):
         # TODO Rename fkname to name, and _fkname to _name. Note that
         # _name already exists; it's inherited from `mapping`, but I
         # don't think that's a probably for the rename.
+
         self.entity = e
         self._fkname = fkname
         self.value = None
@@ -5243,6 +5326,19 @@ class foreignkeyfieldmapping(fieldmapping):
                 % (self._fkname, self.entity.__name__ + 'id')
 
         return self.entity.__name__ + 'id'
+
+    @property
+    def isproprietor(self):
+        """ Return True if this foreign key mapping references the
+        record's proprietor; False otherwise.
+        """
+        return self.name == 'proprietor__partyid'
+
+    @property
+    def fkname(self):
+        """ Return the name of the entity mapping that this map
+        corresponds. """
+        return self._fkname
 
     def clone(self):
         return foreignkeyfieldmapping(self.entity, self._fkname, self.isderived)
@@ -5414,8 +5510,61 @@ class constituent(ormclasswrapper):
     pass
 
 class orm:
-    _abbrdict            =  dict()
-    _namedict            =  dict()
+    _abbrdict    =  dict()
+    _namedict    =  dict()
+    _proprietor  =  None
+
+    @classmethod
+    def setproprietor(cls, v):
+        """ Set ``v`` to orm's proprietor. Ensure that the proprietor
+        entity owns itself.
+
+        Proprietors
+        ***********
+
+        The logic in the ORM's database interface will use the
+        orm.proprietor to provide multitenancy support.
+
+        When a proprietor is set, the ORM will ensure that all records
+        written to the database have their proprietor FK set to
+        orm.proprietor.id, meaning that the records will be the
+        *property* of the orm.proprietor. Only records owned by the
+        orm.proprietor will be read by orm query operations i.e.:
+
+            ent = entity(id)  # SELECT
+
+            (or)
+
+            ent.save()        # INSERT OR UPDATE
+            
+        When updating or deleting a record, the record must be owned by
+        by the orm.proprietor or else a ProprietorError will be raised.
+
+        :param: party.party v: The proprietor entity.
+        """
+        cls._proprietor = v
+
+        # The proprietor of the proprietor must be the proprietor:
+        #    
+        #    assert v.proprietor is v
+        #
+        # Propogate this up the inheritance hierarchy.
+        sup = v
+        while sup:
+            sup.proprietor = v
+            sup = sup.orm.super
+
+    @classmethod
+    def getproprietor(cls):
+        """ Return the proprietor entity currently set.
+        """
+        return cls._proprietor
+
+    @classproperty
+    def proprietor(cls):
+        """ Return the proprietor entity currently set.
+        """
+        return cls.getproprietor()
 
     def __init__(self):
         self.mappings             =  None
@@ -5443,6 +5592,18 @@ class orm:
         self.initing              =  False
 
         self.recreate = self._recreate
+
+    @classproperty
+    def builtins(cls):
+        """ Return a list of mapping names that are standard on all
+        entities, vis. 'id', 'updatedat', 'createdat', and
+        'proprietor__partyid'.
+        """
+        r = ['id', 'updatedat', 'createdat']
+        for map in cls.mappings.foreignkeymappings:
+            if map.isproprietor:
+                r.append(map.name)
+        return r
 
     @staticmethod
     def exec(sql, args=None):
@@ -5784,7 +5945,10 @@ class orm:
     @property
     def isreflexive(self):
         maps = self.mappings.entitymappings
-        types = [x.entity for x in maps]
+        types = [
+            x.entity for x in maps
+            if x.name != 'proprietor'
+        ]
 
         return bool(len(types)) and len(types) > len(set(types))
         
@@ -5812,25 +5976,51 @@ class orm:
         
         '''
         
+        # The top entity in the tree
         top = None
+
+        # For each predicate
         for pred in self.where.predicate:
 
-            # FIXME If multiple columns are supported, fix below
+            # Use the MATCH (fulltext) predicate if it exists
             pred = pred.match or pred
+
+            # Get the column name referenced by the predicate
+            # FIXME If multiple columns are supported, fix below
             col = pred.columns[0]
 
             e = top or self.entity.orm.super
 
             while e: # :=
+
+                # Find the map based on the column name
                 map = e.orm.mappings(col) 
-                if map:
+
+                # Is map the proprietor FK
+                isfk = isinstance(map, foreignkeyfieldmapping)
+                isproprietor = isfk and map.isproprietor
+
+                # If such a map exists. Ignore the map if it is the
+                # entitiy's proprietor's foreignkeymappings
+                # ('proprietor__partyid') since every entity has a
+                # proprietor foreignkeymappings.
+                if map and not isproprietor:
+
+                    # If we found the map, we found the entity we want
+                    # to query, so assign it to `top` and break.
                     top = e.orm.entities
                     break
+
                 e = e.orm.super
 
+        # We never ascended so return without joining
         if not top:
             return
 
+        # Take the current instance and create INNER JOINs on each
+        # superentity until we reach the `top`. With the tables joined,
+        # the query's resultset can be limited to those that have values
+        # that match the columns the user is trying to query.
         es = self.instance
         while type(es) is not top:
             sup = es.orm.entities.orm.super.orm.entities()
@@ -5866,8 +6056,8 @@ class orm:
     def _recreate(self, cur=None, recursive=False, guestbook=None):
         """ Drop and recreate the table for the orm ``self``. 
 
-        :param: cur:       The MySQLdb cursor used by this and all
-        subsequent CREATE and DROPs
+        :param: cur: The MySQLdb cursor used by this and all subsequent
+        CREATE and DROPs
 
         :param: recursive: If True, the constituents and subentities of
         ``self`` will be recursively discovered and their tables
@@ -6242,24 +6432,46 @@ class orm:
             raise
 
     def load(self, id):
-        sql = 'SELECT * FROM {} WHERE id = _binary %s'
-        sql = sql.format(self.table)
+        """ Load an entity by ``id``.
+        """
 
-        args = id.bytes,
+        # Create the basic SELECT query.
+        sql = f'SELECT * FROM {self.table} WHERE id = _binary %s'
+
+        # Search on the `id`'s bytes.
+        args = [id.bytes]
+
+        # If the ORM's proprietor has been set, search through self's
+        # foreign key mappings looking for its foreign key to its
+        # proprietor. Restrict the result set to only records where the
+        # proprietor's FK column matches the proprietor set at the ORM
+        # level. This restricts entity records not associated with
+        # orm.proprietor from being loaded.
+        if orm.proprietor:
+            for map in self.mappings.foreignkeymappings:
+                if map.fkname == 'proprietor':
+                    sql += f' AND {map.name} = _binary %s'
+                    args.append(orm.proprietor.id.bytes)
+                    break
 
         ress = None
+
+        # Create a callable to execute the SQL
         def exec(cur):
             nonlocal ress
             cur.execute(sql, args)
             ress = db.dbresultset(cur)
 
+        # Create an executioner
         exec = db.executioner(exec)
 
+        # Bubble up the executioner's events
         exec.onbeforereconnect += \
             lambda src, eargs: self.instance.onbeforereconnect(src, eargs)
         exec.onafterreconnect  += \
             lambda src, eargs: self.instance.onafterreconnect(src, eargs)
 
+        # Run the query (this will invoke the `exec` callable above.
         exec.execute()
 
         # TODO We may want to reconsider raising an exception when a
@@ -6287,13 +6499,21 @@ class orm:
         #         if self._recordnotfound: raise RecordNotFoundError()
         #
 
+        # If the `id` exists, we should only get one record back from
+        # the database. If that's not the case, raise a
+        # db.RecordNotFoundError
         ress.demandhasone()
 
+        # We are only interested in the first
         res = ress.first
 
+        # Invoke the `onafterload` on self.instance passing in relevent
+        # arguments
         eargs = db.operationeventargs(self.instance, 'retrieve', sql, args)
         self.instance.onafterload(self.instance, eargs)
 
+        # Give the caller the record so it can populate itself with the
+        # data.
         return res
     
     def collect(self, orderby=None, limit=None, offset=None):
@@ -6434,17 +6654,51 @@ class orm:
         return s
 
     def parameterizepredicate(self, args):
+        """ In the where clause (``self.instance.orm.where``), look for
+        literals, i.e.::
+
+            WHERE COL = 'LITERAL'
+        
+        Replace the literal with a placeholder (%s) and add the literal
+        value to args:: 
+            
+            WHERE COL = '%s'
+            args = ['LITERAL']
+        
+        Return the new args.
+        """
+
+        # Then number of args should be the same number of placeholders
+        # that we find when iterating over the predicates.
+        placeholders = len(args)
+        placeholders1 = int()
+        r = list()
+
         for pred in self.instance.orm.where.predicate:
             if pred.match:
-                if not pred.match.searchstringisplaceholder:
-                    args.append(pred.match.searchstring)
+                if pred.match.searchstringisplaceholder:
+                    r.append(args.pop(0))
+                    placeholders1 += 1
+                else:
+                    r.append(pred.match.searchstring)
                     pred.match.searchstring = '%s';
             else:
                 for i, op in enumerate(pred.operands):
                     if predicate.isliteral(op):
                         pred.operands[i] = '%s'
-                        args.append(self.dequote(op))
-    
+                        r.append(self.dequote(op))
+                    elif predicate.isplaceholder(op):
+                        r.append(args.pop(0))
+                        placeholders1 += 1
+
+        if placeholders != placeholders1:
+            raise ValueError(
+                'Mismatch between the number of placeholders and the '
+                'number of arguments given'
+            )
+
+        return r
+                        
     def populate(self, ress):
         edict = dict()
         skip = False
@@ -6793,7 +7047,7 @@ class orm:
             wh = self.where.clone()
             alias(wh)
 
-            # Append the cloned `where` object and args to be return
+            # Append the cloned `where` object and args to be returned
             # later
             whs.append(wh)
             args += wh.args
@@ -7004,16 +7258,28 @@ class orm:
 
         :returns: list A list of all the property names for this entity.
         """
+
+        # Get list of propreties for this class
         props = [x.name for x in self.mappings]
 
+        # Look at all the associations that this entity is envolved in
+        # and add the name of the associated entity to `props`. These
+        # names would be for pseudocollection access (i.e.,
+        # art.artifacts).
         for map in self.mappings.associationsmappings:
             for map1 in map.associations.orm.mappings.entitymappings:
+
+                if map1.isproprietor:
+                    continue
+
                 if self.entity is not map1.entity:
                     props.append(map1.entity.orm.entities.__name__)
 
-        super = self.super
-        if super:
-            props += [x for x in super.orm.properties if x not in props]
+        # Look for properties in the super. Not that this will ascend
+        # the inheritance hierarchy until we reach the root entity.
+        sup = self.super
+        if sup:
+            props += [x for x in sup.orm.properties if x not in props]
 
         return props
 
@@ -7248,6 +7514,8 @@ class orm:
             for ass in self.getassociations():
                 maps = list(ass.orm.mappings.entitymappings)
                 for i, map in enumerate(maps):
+                    if map.name == 'proprietor':
+                        continue
                     if orm.issub(map.entity, self.entity):
                         if ass.orm.isreflexive:
                             if map.issubjective:
@@ -7467,20 +7735,26 @@ class associations(entities):
         return r
 
     def _self_onremove(self, src, eargs):
-        """ This event handler occures when an association is removed
-        from an assoctions collection. When this happens, we want to
-        remove the association's constituent entity (the non-composite
-        entity) from its pseudocollection class - but only if it hasn't
-        already been marked for deletion (ismarkedfordeletion). If it
-        has been marked for deletion, that means the pseudocollection
-        class is invoking this handler - so removing the constituent
-        would result in infinite recursion.  
+        """ This event handler is called when an ``association`` is
+        removed from an ``assoctions`` collection. When this happens, we
+        want to remove the ``association``'s constituent entity (the
+        non-composite entity) from its pseudocollection class - but only
+        if it hasn't already been marked for deletion
+        (ismarkedfordeletion). If it has been marked for deletion, that
+        means the pseudocollection class is invoking this handler - so
+        removing the constituent would result in infinite recursion.  
         """
         ass = eargs.entity
 
         isreflexive = ass.orm.isreflexive
 
         for i, map in enumerate(ass.orm.mappings.entitymappings):
+
+            # We wouldn't want to delete a proprietor just because we
+            # are deleting one of its association objects.
+            if map.isproprietor:
+                continue
+
             if isreflexive:
                 cond = map.isobjective
             else:
@@ -7488,7 +7762,7 @@ class associations(entities):
 
             if cond:
                 e = map.value
-                if not e.orm.ismarkedfordeletion:
+                if e and not e.orm.ismarkedfordeletion:
                     # Get the pseudocollection
                     es = getattr(self, e.orm.entities.__name__)
                     es.remove(e)
@@ -7517,7 +7791,7 @@ class associations(entities):
     def entities_onadd(self, src, eargs):
         """
         An event handler invoked when an entity is added to the
-        association (``self``) through the associations
+        association (``self``) through the association's
         pseudocollection, e.g.::
 
             # Create artist entity
@@ -7527,9 +7801,11 @@ class associations(entities):
             art.artifact += artifact() 
 
         :param: src entities:    The pseudocollection's entities object.
+
         :param: eargs eventargs: The event arguments. Its ``entity``
-                                 property is the entity object being
-                                 added to the pseudocollection.
+        property is the entity object being added to the
+        pseudocollection.
+
         """
         ass = None
 
@@ -7601,6 +7877,11 @@ class associations(entities):
             # (eargs.entity) instead.
             ass = self.orm.entity()
             for map1 in ass.orm.mappings.entitymappings:
+
+                # Ignore if it's the `ass`'s 'proprietor' entitymapping
+                if map1.isproprietor:
+                    continue
+
                 if map1.name != compmap.name:
                     setattr(ass, map1.name, eargs.entity)
 
@@ -7937,3 +8218,33 @@ class InvalidColumn(ValueError): pass
 class InvalidStream(ValueError): pass
 class ConfusionError(ValueError): pass
 
+class ProprietorError(ValueError):
+    """ An error caused by the proprietor not being set correctly for
+    the given operation.
+    """
+
+    def __init__(self, actual, expected=None):
+        """ Initialize the exception.
+
+        :param: party.party actual: The proprietor that is being used.
+        :param: party.party expected: The proprietor that was expected.
+        """
+        self.actual = actual
+        self._expected = expected
+
+    @property
+    def expected(self):
+        if not self._expected:
+            return orm.proprietor
+        return self._expected
+
+    def __str__(self):
+        expected = self.expected.id.hex if self.expected else None
+        return (
+            f'The expected proprietor did not match the actual '
+            f'proprietor; actual {self.actual.id.hex}, expected: '
+            f'{expected}'
+        )
+
+    def __repr__(self):
+        return str(self)
