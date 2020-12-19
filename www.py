@@ -318,10 +318,14 @@ class _request:
         if jwt:
             jwt = jwt.value
             jwt = auth.jwt(jwt)
+            if not jwt.isvalid:
+                # Bad JWT. No user.
+                return None
 
-            # NOTE The JWT's sub property has a hex str
-            # represetation of the user's id.
-            self._user = ecommerce.user(jwt.sub)
+            else:
+                # NOTE The JWT's sub property has a hex str
+                # represetation of the user's id.
+                self._user = ecommerce.user(jwt.sub)
 
         return self._user
 
