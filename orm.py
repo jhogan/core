@@ -2901,6 +2901,21 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             self.orm.initing = False
 
     def __getitem__(self, args):
+        """ Returns the value of the attribute given, or a tuple of
+        multiple value if multiple arguments are given. 
+
+            myent = myentity()
+
+            # These two statements are equivalent
+            v = myent.attr1    # Standard notation
+            v = myent['attr1'] # __getitem__ notation
+
+            # When indexing multiple values, we get a tuple.  These two
+            # statements are equivalent
+            v1, v2 = myent.attr1, myent.attr2  # Standard notation
+            v1, v2 = myent['attr1', 'attr2']   # __getitem__ notation
+
+        """
         if type(args) is str:
             try:
                 return getattr(self, args)
@@ -2915,6 +2930,23 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         return tuple(vals)
 
     def __call__(self, args):
+        """ Allows for index notation to be used:
+
+            # These two statements are equivalent
+            v = myent.attr1    # Standard notation
+            v = myent('attr1') # __call__ notation
+
+            # When indexing multiple values, we get a tuple.  These two
+            # statements are equivalent
+            v1, v2 = myent.attr1, myent.attr2  # Standard notation
+            v1, v2 = myent('attr1', 'attr2')   # __call__ notation
+
+        See __getitem__ for full description.
+
+        The difference between __call__ and __getitem__ is that __call__
+        returns None if the attribute is not found; __getitem__ raises
+        an IndexError.
+        """
         try:
             return self[args]
         except IndexError:
