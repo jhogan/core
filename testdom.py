@@ -3,6 +3,7 @@ from datetime import timezone, datetime, date
 from dbg import B
 from func import enumerate, getattr
 from uuid import uuid4
+import jwt as pyjwt
 import dom, pom, www
 import party, ecommerce
 import primative
@@ -1400,10 +1401,13 @@ class pom_page(tester.tester):
 
         tab = brw.tab()
 
+        # NOTE The implicit variable `res` in the pages above collide
+        # with the `res` variables I used below, so I change the below
+        # ones to `res1`.
         ''' GET page '''
         tab.referer = 'imtherefere.com'
-        res = tab.get('/en/hitme', ws)
-        self.status(200, res)
+        res1 = tab.get('/en/hitme', ws)
+        self.status(200, res1)
 
         ''' Load the hit and test it '''
 

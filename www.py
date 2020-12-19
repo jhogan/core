@@ -27,6 +27,7 @@ import sys
 import textwrap
 import traceback
 import urllib
+import jwt as pyjwt
 
 # NOTE Use the following diagram as a guide to determine what status
 # code to respond with:
@@ -434,6 +435,13 @@ class _request:
         """
         if not self._hit:
             # Create the hit entity. No need to save it at the moment.
+
+            isjwtvalid  = self.cookies('jwt')
+            if isjwtvalid:
+                isjwtvalid  = auth.jwt(self.cookies('jwt')).isvalid
+            else:
+                isjwtvalid = None
+
             self._hit = ecommerce.hit(
                 path       =  self.page.path,
                 isxhr      =  self.isxhr,
@@ -445,6 +453,7 @@ class _request:
                 url        =  self.referer,
                 size       =  self.size,
                 useragent  =  self.useragent,
+                isjwtvalid  = isjwtvalid,
             )
 
         return self._hit

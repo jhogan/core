@@ -633,6 +633,9 @@ class hit(orm.entity):
     # The logs the web developer may write for the hit.
     logs = logs
 
+    # Was a valid JWT sent
+    isjwtvalid = bool
+
     @property
     def inprogress(self):
         """ Return True if the web ``hit`` has started but has not yet
