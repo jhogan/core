@@ -5743,12 +5743,12 @@ class orm:
 
             # Concatenate the orderby
             if orderby:
-                sql += ' ORDER BY ' + orderby
+                sql += f'\nORDER BY {orderby}'
 
             # Concatenate the LIMIT and OFFSET
             if limit is not None:
                 offset = 0 if offset is None else offset
-                sql += ' LIMIT %s OFFSET %s' % (limit, offset)
+                sql += f'\nLIMIT {limit} OFFSET {offset}'
 
             # Set up a function to be called by the database's
             # executioner to populate `ress` with the resultset
