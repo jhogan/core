@@ -1419,6 +1419,9 @@ class pom_page(tester.tester):
         self.status(200, hit)
         self.eq(0, hit.size)
         
+        # JWT
+        self.none(hit.isjwtvalid)
+
         # Page path
         self.eq('/hitme', hit.path)
 
@@ -1505,6 +1508,9 @@ class pom_page(tester.tester):
 
         hit = ecommerce.hits.last
 
+        # JWT
+        self.none(hit.isjwtvalid)
+
         # Page path
         self.eq('/signon', hit.path)
 
@@ -1570,6 +1576,9 @@ class pom_page(tester.tester):
         self.status(200, hit)
         self.eq(0, hit.size)
         
+        # JWT
+        self.true(hit.isjwtvalid)
+
         # Page path
         self.eq('/hitme', hit.path)
 
@@ -1628,6 +1637,9 @@ class pom_page(tester.tester):
             res1['.device'].first.text
         )
 
+        ''' Create a JWT signed with the wrong password '''
+
+        # We would expect the hit.isjwtvalid to be False
         d = {
             'exp': primative.datetime.utcnow(hours=24),
             'sub': ecommerce.user().id.hex,
@@ -1637,6 +1649,19 @@ class pom_page(tester.tester):
         tab.browser.cookies['jwt'].value = str(jwt)
 
         res1 = tab.get('/en/hitme', ws)
+
+        hit = ecommerce.hits.last
+
+        self.notnone(hit.begin)
+        self.notnone(hit.end)
+        self.true(hit.begin < hit.end)
+
+        # TODO This should be 401, I think, not 200
+        self.status(200, hit)
+        self.eq(0, hit.size)
+
+        # JWT
+        self.false(hit.isjwtvalid)
 
         # Page path
         self.eq('/hitme', hit.path)

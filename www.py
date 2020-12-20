@@ -308,24 +308,35 @@ class _request:
         return r
 
     @property
+    def jwt(self):
+        """ Look in the request's (self's) cookies for a JWT. If found,
+        convert the cookies str value to an auth.jwt objcet and return.
+        If no JWT cookie is found, return None.
+        """
+        jwt = self.cookies('jwt')
+        if jwt:
+            jwt = jwt.value
+            jwt = auth.jwt(jwt)
+
+        return jwt
+    @property
     def user(self):
         """ Return the authenicated user making the request. If there is
         no authenicate user, return None.
         """
 
-        # Get the JWT and convert it to a user 
-        jwt = self.cookies('jwt')
-        if jwt:
-            jwt = jwt.value
-            jwt = auth.jwt(jwt)
-            if not jwt.isvalid:
-                # Bad JWT. No user.
-                return None
-
-            else:
-                # NOTE The JWT's sub property has a hex str
-                # represetation of the user's id.
-                self._user = ecommerce.user(jwt.sub)
+        if not self._user:
+            # Get the JWT and convert it to a user 
+            jwt = self.jwt
+            if jwt:
+                if not jwt.isvalid:
+                    # If the JWT is bad (can't be decoded), return None.
+                    return None
+                else:
+                    # Load user based on JWT's 'sub' value.  NOTE The
+                    # JWT's sub property has a hex str represetation of
+                    # the user's id.
+                    self._user = ecommerce.user(jwt.sub)
 
         return self._user
 
@@ -441,12 +452,6 @@ class _request:
         if not self._hit:
             # Create the hit entity. No need to save it at the moment.
 
-            isjwtvalid  = self.cookies('jwt')
-            if isjwtvalid:
-                isjwtvalid  = auth.jwt(self.cookies('jwt')).isvalid
-            else:
-                isjwtvalid = None
-
             self._hit = ecommerce.hit(
                 path       =  self.page.path,
                 isxhr      =  self.isxhr,
@@ -458,8 +463,12 @@ class _request:
                 url        =  self.referer,
                 size       =  self.size,
                 useragent  =  self.useragent,
-                isjwtvalid  = isjwtvalid,
             )
+
+            if self.jwt:
+                self._hit.isjwtvalid = self.jwt.isvalid
+            else:
+                self._hit.isjwtvalid = None
 
         return self._hit
 
