@@ -1530,7 +1530,7 @@ class pom_page(tester.tester):
         self.none(hit.qs)
 
         # Referer/url
-        self.eq('imtherefere.com', hit.url.address)
+        self.eq('http://foo.net:8000/en/signon', hit.url.address)
 
         # User
         self.eq(usr.id, hit.user.id)
@@ -1598,7 +1598,7 @@ class pom_page(tester.tester):
         self.none(hit.qs)
 
         # Referer/url
-        self.eq('imtherefere.com', hit.url.address)
+        self.eq('http://foo.net:8000/en/signon', hit.url.address)
 
         # User
         self.eq(usr.id, hit.user.id)
@@ -1682,7 +1682,7 @@ class pom_page(tester.tester):
         self.none(hit.qs)
 
         # Referer/url
-        self.eq('imtherefere.com', hit.url.address)
+        self.eq('http://foo.net:8000/en/hitme', hit.url.address)
 
         # User
         self.none(hit.user)

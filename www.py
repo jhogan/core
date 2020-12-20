@@ -628,6 +628,28 @@ class _request:
         return self._useragent
 
     @property
+    def scheme(self):
+        return self.environment['wsgi.url_scheme']
+
+    @property
+    def port(self):
+        return self.environment['server_port']
+
+    @property
+    def url(self):
+        scheme = self.scheme
+        servername = f'{self.servername}:{self.port}'
+        qs = self.qs
+        path = self.path
+
+        if qs:
+            path += "?{qs}"
+
+        return urllib.parse.urlunparse([
+            scheme, servername, path, None, None, None
+        ])
+
+    @property
     def isget(self):
         return self.method == 'GET'
 

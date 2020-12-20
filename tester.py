@@ -318,6 +318,7 @@ class tester(entity):
                         )
                         self.browser.cookies += cookie 
 
+                self.referer = ecommerce.url(address=req.url)
                 return res
 
         def __init__(
