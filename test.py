@@ -6681,6 +6681,7 @@ class test_orm(tester):
                     self.eq(arts[i].id, art1.id)
 
                 # Test sorted()
+                arts1 = artists(orm.stream, lastname=lastname)
                 for i, art1 in enumerate(arts1.sorted(sort, reverse)):
                     self.eq(arts[i].id, art1.id)
 
@@ -7719,6 +7720,9 @@ class test_orm(tester):
         press.save()
 
         press1 = presentations(orm.stream, name=name)
+
+        press.sort()
+        press1.sort()
 
         self.four(press)
         self.four(press1)

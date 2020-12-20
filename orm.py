@@ -1860,8 +1860,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
     def sort(self, key=None, reverse=None):
         key = 'id' if key is None else key
         if self.orm.isstreaming:
+            key = f'`{self.orm.abbreviation}.{key}`'
             key = '%s %s' % (key, 'DESC' if reverse else 'ASC')
-
             self.orm.stream.orderby = key
         else:
             reverse = False if reverse is None else reverse
@@ -1870,6 +1870,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
     def sorted(self, key=None, reverse=None):
         key = 'id' if key is None else key
         if self.orm.isstreaming:
+            key = f'`{self.orm.abbreviation}.{key}`'
             key = '%s %s' % (key, 'DESC' if reverse else 'ASC')
             self.orm.stream.orderby = key
             return self
