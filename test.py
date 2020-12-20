@@ -6685,6 +6685,40 @@ class test_orm(tester):
                 for i, art1 in enumerate(arts1.sorted(sort, reverse)):
                     self.eq(arts[i].id, art1.id)
 
+    def it_raises_when_sort_is_called_while_streaming(self):
+        """ When a streaming entities collection is loaded (it's in or
+        was in the process of streaming, we shouldn't be allowed to call
+        sort() or sorted().
+
+        TODO Implement this (the tests are commented out). After a
+        cursory inspection, this will take a little work to get right
+        because there doesn't seem to be a flag set to indicate that an
+        entities collection is in the process of streaming. The
+        arts.orm.isloaded doesn't get set to true either (not sure if it
+        should anyway). The arts.orm.isstreaming flag indicates that the
+        entities collection is in streaming mode, not activily
+        streaming. I think the arts.orm.isloaded flag would be best
+        because its consistent with the non-streaming interface so would
+        avoid confusion (even though its the chunked entities
+        collections that are actually loaded).
+        
+        It would be nice to have this fixed since the above
+        test (it_calls_sort_and_sorted_on_streamed_entities) suffered
+        from this bug (it has been corrected).
+        """
+
+        arts = artists(orm.stream)
+        arts.sort()
+
+        # Stream
+        for art in arts:
+            ...
+
+        '''
+        self.expect(ValueError, arts.sort)
+        self.expect(ValueError, arts.sorted)
+        '''
+
     def it_calls_all(self):
         arts = artists()
         cnt = 10

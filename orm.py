@@ -490,15 +490,15 @@ class stream(entitiesmod.entity):
                    self.stop  >= slc.stop
 
         def advance(self, slc):
-            """
-            Advance the cursor in accordance with the ``slice`` argument's
-            ``start`` and ``stop`` properties. If the slice calls for data
-            not currently loaded in the ``chunk`` collecion, the ``chunk``
-            is cleared and loaded with new data from the database.
+            """ Advance the cursor in accordance with the ``slice``
+            argument's ``start`` and ``stop`` properties. If the slice
+            calls for data not currently loaded in the ``chunk``
+            collecion, the ``chunk`` is cleared and loaded with new data
+            from the database.
 
-            :param: slice slc: The ``start`` and ``stop`` properties of the
-                               slice indicate which rows in the stream to 
-                               which the cursor should be advanced.
+            :param: slice slc: The ``start`` and ``stop`` properties of
+            the slice indicate which rows in the stream to which the
+            cursor should be advanced.
             """
 
             # Convert int to a slice
