@@ -2988,17 +2988,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         except IndexError:
             return None
 
-    def __setitem__(self, k, v):
-        map = self.orm.mappings(k)
-        if map is None:
-           super = self.orm.super
-           if super:
-               map = super.orm.mappings[k]
-           else:
-               raise IndexError("Map index doesn't exist: %s" % (k,))
-        
-        map.value = v
-
     def _self_onafterload(self, src, eargs):
         """ A method to handle the onafterload method (invoked in
         (``orm.load``). After the entity is loaded, this handler will

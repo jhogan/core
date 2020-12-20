@@ -3482,9 +3482,9 @@ class artist_artifact(orm.association):
     active    =  orm.timespan(prefix='active')
 
     def __init__(self, *args, **kwargs):
-        self['planet'] = 'Earth'
         self._processing = False
         super().__init__(*args, **kwargs)
+        self.planet = 'Earth'
 
     @staticmethod
     def getvalid():
