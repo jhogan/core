@@ -3858,7 +3858,7 @@ class test_orm(tester):
         #B( eargs.entity.entity.__class__ is artist_artifacts)
 
     @contextmanager
-    def _chrontest(self):
+    def _chrontest(self, print=False):
         test_orm = self
         class tester:
             def __init__(self):
@@ -3943,6 +3943,9 @@ class test_orm(tester):
             cnt += int(chron.op not in ('reconnect',))
             
         self.eq(t.count, cnt, msg)
+
+        if print:
+            builtins.print(t.chronicles)
 
     def it_migrates(self):
         def migrate(cat, expect):
