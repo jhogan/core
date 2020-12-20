@@ -3030,14 +3030,49 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
     @staticmethod
     def _add2chronicler(eargs):
+        """ Add SQL and related data from a database operation to the
+        db.chronicler singleton.
+        """
         chron = db.chronicler.getinstance()
         chron += db.chronicle(eargs.entity, eargs.op, eargs.sql, eargs.args)
 
     def _self_onaftervaluechange(self, src, eargs):
+        """ This event handler captures the ``onaftervaluechange`` event for
+        an entity. 
+        
+        This handler is necessary for capturing changes in atttribute
+        values and flagging the entity as dirty. A dirty entity will be
+        UPDATEd by the entity.save() method::
+
+            # Load entity
+            ent = myent(id)
+
+            # Nothing has happend so we aren't dirty
+            assert not ent.orm.isdirty
+
+            # Save does nothing
+            ent.save()
+
+            # Changing an attribute will invoke this handler and dirty
+            # the entity.
+            ent.attr1 = 'new value'
+
+            # Now we are dirty
+            assert ent.orm.isdirty
+
+            # .save() issues an UPDATE
+            ent.save()
+        """
         if not self.orm.isnew:
             self.orm.isdirty = True
 
     def __dir__(self):
+        """ Returns a list of all property names for this entity
+        including those inherited from superentities. __dir__ is called
+        by the Python builtin ``dir()``. This method is also necessary
+        for the autocompletion of attributes to work correctly in
+        debugging tools such ad pdb.
+        """
         ls = super().__dir__() + self.orm.properties
 
         # Remove duplicates. If an entity has an imperitive attribute, the name
@@ -7254,9 +7289,7 @@ class orm:
     @property
     def properties(self):
         """ Returns a list of all property names for this entity
-        including those inherited from super entities.
-
-        :returns: list A list of all the property names for this entity.
+        including those inherited from superentities.
         """
 
         # Get list of propreties for this class
