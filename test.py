@@ -5522,11 +5522,11 @@ class test_orm(tester):
         sng.locations += location.getvalid()
         sng.concerts.first.locations += location.getvalid()
 
-        chrons.clear()
-        sng.save()
-        self.two(chrons)
-        self._chrons(sng.locations.first, 'create')
-        self._chrons(sng.concerts.first.locations.first, 'create')
+        with self._chrontest(print=True) as t:
+            t(sng.save)
+            t.created(sng.locations.first)
+            t.created(sng.concerts.first.locations.first)
+        B()
 
         sng1 = singer(sng.id)
 
