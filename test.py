@@ -5514,6 +5514,14 @@ class test_orm(tester):
         self._chrons(conc.orm.super, 'create')
 
         sng = singer(sng.id)
+
+
+
+        B()
+        sng.concerts.first.orm.super.orm.isdirty
+
+
+
         
         self.zero(sng.concerts.first.locations)
         self.zero(sng.locations)
