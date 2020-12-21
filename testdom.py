@@ -1213,36 +1213,14 @@ class pom_page(tester.tester):
                 pwd = frm['input[name=password]'].first.value
 
                 # Load an authenticated user
-                usr = ecommerce.user.authenticate(uid, pwd)
-
-                # If credentials were authenticated
-                if usr:
-                    # TODO Hours should come from the config file at the
-                    # site "level" of the config file. Given that,
-                    # the site object would have the ability to issue
-                    # jwts instead of using the auth.jwt class itself:
-                    #
-                    #     t = self.site.jwt()
-
-                    # Create a JWT and store it as a cookie
-                    hours = 48
-                    t = auth.jwt(ttl=hours)
-                    t.sub = usr.id.hex
-
-                    # Increment the expiration date. If the expiration
-                    # date is prior to the browser receiving the
-                    # set-cookie header, the cookie will be deleted:
-                    # https://stackoverflow.com/questions/5285940/correct-way-to-delete-cookies-server-side
-                    exp = primative.datetime.utcnow().add(days=1)
-                    exp = exp.strftime('%a, %d %b %Y %H:%M:%I GMT')
-                    hdrs = res.headers
-                    hdrs += www.header('Set-Cookie', (
-                        'token=%s; path=/; '
-                        'expires=%s'
-                        ) % (str(t), exp)
-                    )
-                else:
+                try:
+                    print('page', uid, pwd)
+                    usr = self.site.authenticate(uid, pwd)
+                except pom.site.AuthenticationError:
                     raise www.UnauthorizedError(flash='Try again')
+                else:
+                    hdr = auth.jwt.getSet_Cookie(usr)
+                    res.headers += hdr
 
         class whoami(pom.page):
             """ A page to report on authenticated users.
