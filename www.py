@@ -545,7 +545,19 @@ class _request:
             # to write to the database. Log entries in syslog should be
             # indicate the environment that is making the entry.
             log = config().logs.first
-            log.exception(ex)
+
+            try:
+                ua = str(self.environment['user_agent'])
+            except:
+                ua = str()
+
+            try:
+                ip = str(self.environment['remote_addr'])
+            except:
+                ua = str()
+
+            msg = f'{ex}; ip:{ip}; ua:"{ua}"'
+            log.exception(msg)
 
     @property
     def payload(self):
