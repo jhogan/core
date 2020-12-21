@@ -62,10 +62,13 @@ class site(asset.asset):
     hits = ecommerce.hits
     users = ecommerce.users
 
+    class AuthenicationError(ValueError):
+        pass
+
     def authenticate(self, name, pwd):
         """ Find a user in the site with the user name of ``name``. Test
         that the user's password hashes to the same value as `pwd`. If
-        so, return the user. Otherwise return None.
+        so, return the user. Otherwise we raise an AuthenticationError.
         """
 
         # Get the foreign key column name in users that maps to the
@@ -91,14 +94,16 @@ class site(asset.asset):
             raise ValueError('Multiple users found')
 
         # Good; we found one. Let's test the password and return the
-        # usr.  Otherwise, we will return None to signify nothing was
-        # authenticated.
+        # usr.  Otherwise, we will return raise an exception to signify
+        # authentication failed.
         if usrs.hasone:
             usr = usrs.first
             if usr.ispassword(pwd):
                 return usr
 
-        return None
+        raise self.AuthenticationError(
+            f'Incorrect password for {name} for {self.name}'
+        )
 
     @property
     def pages(self):

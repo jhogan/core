@@ -1377,11 +1377,15 @@ class pom_page(tester.tester):
                 pwd = frm['input[name=password]'].first.value
 
                 req.hit.logs.write(f'Authenticating {uid}')
-                www.request.user = self.site.authenticate(uid, pwd)
-                req.hit.logs.write(f'Authenticated {uid}')
+                try:
+                    www.request.user = self.site.authenticate(uid, pwd)
+                except pom.site.AuthenticationError:
+                    req.hit.logs.write(f'Authenticated failed: {uid}')
+                else:
+                    req.hit.logs.write(f'Authenticated {uid}')
 
-                hdr = auth.jwt.getSet_Cookie(www.request.user)
-                res.headers += hdr
+                    hdr = auth.jwt.getSet_Cookie(www.request.user)
+                    res.headers += hdr
 
         # Set up site
         ws = foonet()
