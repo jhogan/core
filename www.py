@@ -629,14 +629,23 @@ class _request:
 
     @property
     def scheme(self):
-        return self.environment['wsgi.url_scheme']
+        """ Return the scheme for the request, e.g., http, https, etc.
+        """
+        return self.environment['wsgi.url_scheme'].lower()
 
     @property
     def port(self):
-        return self.environment['server_port']
+        """ Return the TCP port for the request, e.g., 80, 8080, 443.
+        """
+        return int(self.environment['server_port'])
 
     @property
     def url(self):
+        """ Return the URL for the request, for example::
+            
+            https://foo.net:8000/en/my/page
+        """
+
         scheme = self.scheme
         servername = f'{self.servername}:{self.port}'
         qs = self.qs

@@ -63,6 +63,16 @@ class site(asset.asset):
     users = ecommerce.users
 
     def authenticate(self, name, pwd):
+        """ Find a user in the site with the user name of ``name``. Test
+        that the user's password hashes to the same value as `pwd`. If
+        so, return the user. Otherwise return None.
+        """
+
+        # Get the foreign key column name in users that maps to the
+        # ``site`` entity (e.g., siteid).
+        # 
+        #     site.get_users(name=name)
+        # STOPGAP: 8210b80c
         for map in ecommerce.users.orm.mappings.foreignkeymappings:
             if map.entity is site:
                 siteid = map.name
@@ -70,14 +80,19 @@ class site(asset.asset):
         else:
             raise ValueError('Cannot find site mapping')
 
+        # Get the user with the given user name
         usrs = ecommerce.users(
             name = name,
             siteid = self.id
         )
 
+        # If there are more that one there is a data integrity issue
         if usrs.hasplurality:
             raise ValueError('Multiple users found')
 
+        # Good; we found one. Let's test the password and return the
+        # usr.  Otherwise, we will return None to signify nothing was
+        # authenticated.
         if usrs.hasone:
             usr = usrs.first
             if usr.ispassword(pwd):
