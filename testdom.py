@@ -1265,6 +1265,7 @@ class pom_page(tester.tester):
             usrs.last.party    = party.person(name=f'Person {i}')
             usrs.last.name     = uuid4().hex
             usrs.last.password = uuid4().hex
+            usrs.last.site     = ws
             if i > 5:
                 usrs.last.save()
 
