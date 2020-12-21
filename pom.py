@@ -857,9 +857,6 @@ class page(dom.html):
                 globs['req'] = www.request
                 globs['res'] = www.response
 
-                if www.request:
-                    globs['usr'] = www.request.user
-
                 # Call page's main function. It's called `_mainfunc`
                 # here but the web developer will call it `main`.
                 self._mainfunc(**self._arguments)
