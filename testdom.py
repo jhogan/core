@@ -1248,7 +1248,7 @@ class pom_page(tester.tester):
             """ A page to report on authenticated users.
             """
             def main(self):
-                global usr
+                usr = req.user
                 jwt = req.cookies('jwt')
 
                 if usr:

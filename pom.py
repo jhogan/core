@@ -62,7 +62,7 @@ class site(asset.asset):
     hits = ecommerce.hits
     users = ecommerce.users
 
-    class AuthenicationError(ValueError):
+    class AuthenticationError(ValueError):
         pass
 
     def authenticate(self, name, pwd):

@@ -83,6 +83,14 @@ class jwt(entity):
     def getSet_Cookie(usr, ttl=24):
         """ Create a JWT for the ``usr`` and return a Set-Cookie header.
         """
+
+        # TODO Hours (ttl) should come from the config file at the
+        # site "level" of the config file. Given that,
+        # the site object would have the ability to issue
+        # jwts instead of using the auth.jwt class itself:
+        #
+        #     t = self.site.jwt()
+
         t = jwt(ttl=ttl)
         t.sub = usr.id.hex
 
