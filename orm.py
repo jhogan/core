@@ -3093,8 +3093,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         only necessary for imperitive setters.
         """
 
-        # TODO Document the `imp` parameter
-        
         # Need to handle 'orm' first, otherwise the code below that
         # calls self.orm won't work.
         if attr == 'orm':
@@ -3227,10 +3225,82 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         setattr(selfsuper, attr.name, attrsuper)
 
     def delete(self):
+        """ Delete an entity's record from the database.
+
+            # Load an existing entity
+            ent = myent(id)
+
+            # Cause a DELETE statement to be issued deleting the record
+            # by its primary key.
+            ent.delet()
+        """
+
+        # To delete a record, mark it for deleting. The save() method
+        # will ensure the record is deleted.
         self.orm.ismarkedfordeletion = True
         self.save()
 
     def save(self, *es):
+        """ Commit the entity's values to the database. The entity is
+        saved recursively and atomically.
+
+        :param: *es list: A list of entity objects that should be saved
+        as well:
+            
+            art = artist()
+            pres = presentation()
+            sng = singer()
+
+            # Insert the artist record as wel as the presentation record
+            # and the singer record all in one transaction.
+            art.save(pres, sng)
+
+        Create, update and delete
+        -------------------------
+        Depending on the state of the entity, three database operations
+        may be performed: INSERT, UPDATE or DELETE::
+
+            # Create a new entity
+            ent = myent()
+            ent.name = 'My Name'.
+
+            # Saving will INSERT the record into the database
+            ent.save()
+
+            # Changing an attributes values will dirty the entity,
+            # therefore an UPDATE will be performed.
+            ent.name = 'My Other Name'
+            ent.save()
+
+            # Marking the entity for deletion will cause the record to
+            # be DELETEd.
+            ent.ismarkedfordeletion = True
+            ent.save()
+
+        Recursive
+        ---------
+        Any entity objects associated with the entity being saved will
+        be found and saved as well. For example, if we want to create a
+        new ``artist`` and assign it a new ``presentation`` objects,
+        calling save() on the artist will also save the presentation
+        object::
+
+            art = artist()
+            art.presentations += presentation()
+
+            # INSERTs for the artist and the presentation will be
+            # performed.
+            art.save()
+
+        Atomicity
+        ---------
+        When save() is called, it creates a transaction (cursor) object.
+        For each of the entity objects it save()s recursively, including
+        the entity objects in *es, the transaction object will be used.
+        When all the entity objects have been save()ed, the transaction
+        will be committed. If an exception is raised at any point in
+        this process, the transaction will be rolled back.
+        """
         # Create a callable to call self._save(cur) and the _save(cur)
         # methods on earch of the objects in *es.
         def save(cur):
