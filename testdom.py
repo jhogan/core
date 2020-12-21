@@ -3,6 +3,7 @@ from datetime import timezone, datetime, date
 from dbg import B
 from func import enumerate, getattr
 from uuid import uuid4
+import jwt as pyjwt
 import dom, pom, www
 import party, ecommerce
 import primative
@@ -1212,42 +1213,20 @@ class pom_page(tester.tester):
                 pwd = frm['input[name=password]'].first.value
 
                 # Load an authenticated user
-                usr = ecommerce.user.authenticate(uid, pwd)
-
-                # If credentials were authenticated
-                if usr:
-                    # TODO Hours should come from the config file at the
-                    # site "level" of the config file. Given that,
-                    # the site object would have the ability to issue
-                    # jwts instead of using the auth.jwt class itself:
-                    #
-                    #     t = self.site.jwt()
-
-                    # Create a JWT and store it as a cookie
-                    hours = 48
-                    t = auth.jwt(ttl=hours)
-                    t.sub = usr.id.hex
-
-                    # Increment the expiration date. If the expiration
-                    # date is prior to the browser receiving the
-                    # set-cookie header, the cookie will be deleted:
-                    # https://stackoverflow.com/questions/5285940/correct-way-to-delete-cookies-server-side
-                    exp = primative.datetime.utcnow().add(days=1)
-                    exp = exp.strftime('%a, %d %b %Y %H:%M:%I GMT')
-                    hdrs = res.headers
-                    hdrs += www.header('Set-Cookie', (
-                        'token=%s; path=/; '
-                        'expires=%s'
-                        ) % (str(t), exp)
-                    )
-                else:
+                try:
+                    print('page', uid, pwd)
+                    usr = self.site.authenticate(uid, pwd)
+                except pom.site.AuthenticationError:
                     raise www.UnauthorizedError(flash='Try again')
+                else:
+                    hdr = auth.jwt.getSet_Cookie(usr)
+                    res.headers += hdr
 
         class whoami(pom.page):
             """ A page to report on authenticated users.
             """
             def main(self):
-                global usr
+                usr = req.user
                 jwt = req.cookies('jwt')
 
                 if usr:
@@ -1286,6 +1265,7 @@ class pom_page(tester.tester):
             usrs.last.party    = party.person(name=f'Person {i}')
             usrs.last.name     = uuid4().hex
             usrs.last.password = uuid4().hex
+            usrs.last.site     = ws
             if i > 5:
                 usrs.last.save()
 
@@ -1360,28 +1340,36 @@ class pom_page(tester.tester):
                 {dev.brand} {dev.name}
                 ''', class_='device')
 
-                frm = dom.form()
-                self.main += frm
-
-                frm = pom.forms.login()
-
                 req.hit.logs.write('Ending main')
+
+
+        class signon(pom.page):
+            def main(self):
+                self.main += pom.forms.login()
 
                 if req.isget:
                     return
 
+                frm.post = req.payload
+
                 uid = frm['input[name=username]'].first.value
                 pwd = frm['input[name=password]'].first.value
 
-                # Load an authenticated user
-                usr = ecommerce.user.authenticate(uid, pwd)
+                req.hit.logs.write(f'Authenticating {uid}')
+                try:
+                    www.request.user = self.site.authenticate(uid, pwd)
+                except pom.site.AuthenticationError:
+                    req.hit.logs.write(f'Authenticated failed: {uid}')
+                else:
+                    req.hit.logs.write(f'Authenticated {uid}')
 
-                assert usr
-
+                    hdr = auth.jwt.getSet_Cookie(www.request.user)
+                    res.headers += hdr
 
         # Set up site
         ws = foonet()
         ws.pages += hitme()
+        ws.pages += signon()
 
         # Create a browser tab
         ip = ecommerce.ip(address='12.34.56.78')
@@ -1396,10 +1384,13 @@ class pom_page(tester.tester):
 
         tab = brw.tab()
 
+        # NOTE The implicit variable `res` in the pages above collide
+        # with the `res` variables I used below, so I change the below
+        # ones to `res1`.
         ''' GET page '''
         tab.referer = 'imtherefere.com'
-        res = tab.get('/en/hitme', ws)
-        self.status(200, res)
+        res1 = tab.get('/en/hitme', ws)
+        self.status(200, res1)
 
         ''' Load the hit and test it '''
 
@@ -1411,6 +1402,9 @@ class pom_page(tester.tester):
         self.status(200, hit)
         self.eq(0, hit.size)
         
+        # JWT
+        self.none(hit.isjwtvalid)
+
         # Page path
         self.eq('/hitme', hit.path)
 
@@ -1447,6 +1441,94 @@ class pom_page(tester.tester):
         self.eq('Starting main', logs.first.message)
         self.eq('Ending main', logs.second.message)
 
+        # User agent - browser
+        self.eq('Mobile Safari', hit.useragent.browsertype.name)
+        self.eq('5.1', hit.useragent.browsertype.version)
+
+        # User agent - device
+        self.eq('iPhone', hit.useragent.devicetype.name)
+        self.eq('Apple', hit.useragent.devicetype.brand)
+        self.eq('iPhone', hit.useragent.devicetype.model)
+
+        # User agent - platform
+        self.eq('iOS', hit.useragent.platformtype.name)
+        self.eq('5.1', hit.useragent.platformtype.version)
+
+        # IP address
+        self.eq(ip.address, hit.ip.address)
+
+        # Ensure the page has access to the hit object
+        self.eq(
+            'Apple iPhone',
+            res1['.device'].first.text
+        )
+
+        ''' Log the authentication of a user '''
+        # NOTE Authentication hit logging has a bit of a twist because
+        # the request starts out with no JWT or authenticated user, but
+        # it ends up with one on completion of the request. The user that
+        # gets authenticated should be set in the hit entity (hit.user)
+
+        # Create user
+        usr = ecommerce.user(
+            name = 'luser',
+            password = 'password1',
+            site = ws,
+        )
+
+        usr.save()
+
+        # Get user/password form
+        res1 = tab.get('/en/signon', ws)
+        frm = res1['form'].first
+
+        # Set credentials
+        frm['input[name=username]'].first.value = 'luser'
+        frm['input[name=password]'].first.value = 'password1'
+
+        # POST credentials to log in
+        res1 = tab.post('/en/signon', ws, frm)
+
+        hit = ecommerce.hits.last
+
+        # JWT
+        self.none(hit.isjwtvalid)
+
+        # Page path
+        self.eq('/signon', hit.path)
+
+        # Site
+        self.eq(ws.id, hit.site.id)
+
+        # Language
+        self.eq('en', hit.language)
+
+        # Method
+        self.eq('POST', hit.method)
+
+        # XHR
+        self.false(hit.isxhr)
+
+        # Query string
+        self.none(hit.qs)
+
+        # Referer/url
+        self.eq('http://foo.net:8000/en/signon', hit.url.address)
+
+        # User
+        self.eq(usr.id, hit.user.id)
+
+        # User agent
+        self.eq(
+            hit.useragent.string, 
+            brw.useragent.string
+        )
+
+        # Logs
+        logs = hit.logs.sorted('datetime')
+        self.two(hit.logs)
+        self.eq(f'Authenticating {usr.name}', logs.first.message)
+        self.eq(f'Authenticated {usr.name}', logs.second.message)
 
         # User agent - browser
         self.eq('Mobile Safari', hit.useragent.browsertype.name)
@@ -1464,18 +1546,157 @@ class pom_page(tester.tester):
         # IP address
         self.eq(ip.address, hit.ip.address)
 
-        # Enuser the page has access to the hit object
+        ''' GET page as logged in user '''
+        res1 = tab.get('/en/hitme', ws)
+        self.status(200, res1)
+
+        ''' Load the hit and test it '''
+        hit = ecommerce.hits.last
+
+        self.notnone(hit.begin)
+        self.notnone(hit.end)
+        self.true(hit.begin < hit.end)
+        self.status(200, hit)
+        self.eq(0, hit.size)
+        
+        # JWT
+        self.true(hit.isjwtvalid)
+
+        # Page path
+        self.eq('/hitme', hit.path)
+
+        # Site
+        self.eq(ws.id, hit.site.id)
+
+        # Language
+        self.eq('en', hit.language)
+
+        # Method
+        self.eq('GET', hit.method)
+
+        # XHR
+        self.false(hit.isxhr)
+
+        # Query string
+        self.none(hit.qs)
+
+        # Referer/url
+        self.eq('http://foo.net:8000/en/signon', hit.url.address)
+
+        # User
+        self.eq(usr.id, hit.user.id)
+
+        # User agent
+        self.eq(
+            hit.useragent.string, 
+            brw.useragent.string
+        )
+
+        # Logs
+        logs = hit.logs.sorted('datetime')
+        self.two(hit.logs)
+        self.eq('Starting main', logs.first.message)
+        self.eq('Ending main', logs.second.message)
+
+        # User agent - browser
+        self.eq('Mobile Safari', hit.useragent.browsertype.name)
+        self.eq('5.1', hit.useragent.browsertype.version)
+
+        # User agent - device
+        self.eq('iPhone', hit.useragent.devicetype.name)
+        self.eq('Apple', hit.useragent.devicetype.brand)
+        self.eq('iPhone', hit.useragent.devicetype.model)
+
+        # User agent - platform
+        self.eq('iOS', hit.useragent.platformtype.name)
+        self.eq('5.1', hit.useragent.platformtype.version)
+
+        # IP address
+        self.eq(ip.address, hit.ip.address)
+
+        # Ensure the page has access to the hit object
         self.eq(
             'Apple iPhone',
-            res['.device'].first.text
+            res1['.device'].first.text
         )
-        return
 
-        frm = res['form'].first
+        ''' Create a JWT signed with the wrong password '''
 
-        # POST the form back to page
-        tab.referer = 'imtherefere.com'
-        res = tab.post('/en/hitme', ws, frm)
+        # We would expect the hit.isjwtvalid to be False
+        d = {
+            'exp': primative.datetime.utcnow(hours=24),
+            'sub': ecommerce.user().id.hex,
+        }
+        jwt = pyjwt.encode(d, 'badsecret').decode('utf-8')
+
+        tab.browser.cookies['jwt'].value = str(jwt)
+
+        res1 = tab.get('/en/hitme', ws)
+
+        hit = ecommerce.hits.last
+
+        self.notnone(hit.begin)
+        self.notnone(hit.end)
+        self.true(hit.begin < hit.end)
+
+        # TODO This should be 401, I think, not 200
+        self.status(200, hit)
+        self.eq(0, hit.size)
+
+        # JWT
+        self.false(hit.isjwtvalid)
+
+        # Page path
+        self.eq('/hitme', hit.path)
+
+        # Site
+        self.eq(ws.id, hit.site.id)
+
+        # Language
+        self.eq('en', hit.language)
+
+        # Method
+        self.eq('GET', hit.method)
+
+        # XHR
+        self.false(hit.isxhr)
+
+        # Query string
+        self.none(hit.qs)
+
+        # Referer/url
+        self.eq('http://foo.net:8000/en/hitme', hit.url.address)
+
+        # User
+        self.none(hit.user)
+
+        # User agent
+        self.eq(
+            hit.useragent.string, 
+            brw.useragent.string
+        )
+
+        # Logs
+        logs = hit.logs.sorted('datetime')
+        self.two(hit.logs)
+        self.eq('Starting main', logs.first.message)
+        self.eq('Ending main', logs.second.message)
+
+        # User agent - browser
+        self.eq('Mobile Safari', hit.useragent.browsertype.name)
+        self.eq('5.1', hit.useragent.browsertype.version)
+
+        # User agent - device
+        self.eq('iPhone', hit.useragent.devicetype.name)
+        self.eq('Apple', hit.useragent.devicetype.brand)
+        self.eq('iPhone', hit.useragent.devicetype.model)
+
+        # User agent - platform
+        self.eq('iOS', hit.useragent.platformtype.name)
+        self.eq('5.1', hit.useragent.platformtype.version)
+
+        # IP address
+        self.eq(ip.address, hit.ip.address)
 
     def it_can_accesses_injected_variables(self):
         class lang(pom.page):
@@ -1888,7 +2109,6 @@ class dom_element(tester.tester):
         self.true(dom.base().isvoid)
 
     def it_calls_id(self):
-        B()
         p = dom.paragraph()
         uuid = uuid4().hex
         p.id = uuid

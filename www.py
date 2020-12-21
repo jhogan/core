@@ -27,6 +27,7 @@ import sys
 import textwrap
 import traceback
 import urllib
+import jwt as pyjwt
 
 # NOTE Use the following diagram as a guide to determine what status
 # code to respond with:
@@ -68,6 +69,7 @@ class application:
         global request, response
         res = _response(self.request)
 
+        # Set global www.response
         response = res
 
         break_ = False
@@ -306,22 +308,41 @@ class _request:
         return r
 
     @property
-    def user(self):
-        """ Return the authenicated user making the request. If there is
-        no authenicate user, return None.
+    def jwt(self):
+        """ Look in the request's (self's) cookies for a JWT. If found,
+        convert the cookies str value to an auth.jwt objcet and return.
+        If no JWT cookie is found, return None.
         """
-
-        # Get the JWT and convert it to a user 
         jwt = self.cookies('jwt')
         if jwt:
             jwt = jwt.value
             jwt = auth.jwt(jwt)
 
-            # NOTE The JWT's sub property has a hex str
-            # represetation of the user's id.
-            self._user = ecommerce.user(jwt.sub)
+        return jwt
+    @property
+    def user(self):
+        """ Return the authenicated user making the request. If there is
+        no authenicate user, return None.
+        """
+
+        if not self._user:
+            # Get the JWT and convert it to a user 
+            jwt = self.jwt
+            if jwt:
+                if not jwt.isvalid:
+                    # If the JWT is bad (can't be decoded), return None.
+                    return None
+                else:
+                    # Load user based on JWT's 'sub' value.  NOTE The
+                    # JWT's sub property has a hex str represetation of
+                    # the user's id.
+                    self._user = ecommerce.user(jwt.sub)
 
         return self._user
+
+    @user.setter
+    def user(self, v):
+        self._user = v
                 
     @property
     def environment(self):
@@ -429,32 +450,8 @@ class _request:
         request, create it.
         """
         if not self._hit:
-            # Get the request's refere url
-            referer = self.referer
-
-            # Get the users party. If no user is logged in, use the
-            # anonymous user.
-            if self.user:
-                par = self.user.party
-            else:
-                par = party.party.anonymous
-
-            # Get the party's visitor role
-            visitor = par.visitor
-
-            # Get the party's visitor role's current visit
-            visit = visitor.visits.current
-
-            now = primative.datetime.utcnow()
-
-            # Create a new ``visit`` if a current one doesn't not exist
-            if not visit:
-                visit = ecommerce.visit(
-                    begin = now
-                )
-                visitor.visits += visit
-
             # Create the hit entity. No need to save it at the moment.
+
             self._hit = ecommerce.hit(
                 path       =  self.page.path,
                 isxhr      =  self.isxhr,
@@ -465,9 +462,13 @@ class _request:
                 ip         =  self.ip,
                 url        =  self.referer,
                 size       =  self.size,
-                visit      =  visit,
                 useragent  =  self.useragent,
             )
+
+            if self.jwt:
+                self._hit.isjwtvalid = self.jwt.isvalid
+            else:
+                self._hit.isjwtvalid = None
 
         return self._hit
 
@@ -478,7 +479,35 @@ class _request:
         try: 
             # Get the request's ``hit`` entity
             hit = self.hit
+
+            par = None
+
+            # Get the users party. If no user is logged in, use the
+            # anonymous user.
+            if self.user:
+                par = self.user.party
+                hit.user = self.user
+            else:
+                par = party.party.anonymous
+
+            if par is None:
+                par = party.party.anonymous
+
+            # Get the party's visitor role
+            visitor = par.visitor
+
+            # Get the party's visitor role's current visit
+            visit = visitor.visits.current
+
+            # Get the current time in UTC
             now = primative.datetime.utcnow()
+
+            # Create a new ``visit`` if a current one doesn't not exist
+            if not visit:
+                visit = ecommerce.visit(
+                    begin = now
+                )
+                visitor.visits += visit
 
             # If the hit is new, the begin date will be None meaning it
             # is not ``inprogress``. If that's the case, set the begin
@@ -489,6 +518,8 @@ class _request:
                 hit.status = response.status
             else:
                 hit.begin = now
+
+            hit.visit = visit
 
             # Create/update the hit
             hit.save()
@@ -514,7 +545,19 @@ class _request:
             # to write to the database. Log entries in syslog should be
             # indicate the environment that is making the entry.
             log = config().logs.first
-            log.exception(ex)
+
+            try:
+                ua = str(self.environment['user_agent'])
+            except:
+                ua = str()
+
+            try:
+                ip = str(self.environment['remote_addr'])
+            except:
+                ua = str()
+
+            msg = f'{ex}; ip:{ip}; ua:"{ua}"'
+            log.exception(msg)
 
     @property
     def payload(self):
@@ -595,6 +638,37 @@ class _request:
             ua = str(self.environment['user_agent'])
             self._useragent = ecommerce.useragent(string=ua)
         return self._useragent
+
+    @property
+    def scheme(self):
+        """ Return the scheme for the request, e.g., http, https, etc.
+        """
+        return self.environment['wsgi.url_scheme'].lower()
+
+    @property
+    def port(self):
+        """ Return the TCP port for the request, e.g., 80, 8080, 443.
+        """
+        return int(self.environment['server_port'])
+
+    @property
+    def url(self):
+        """ Return the URL for the request, for example::
+            
+            https://foo.net:8000/en/my/page
+        """
+
+        scheme = self.scheme
+        servername = f'{self.servername}:{self.port}'
+        qs = self.qs
+        path = self.path
+
+        if qs:
+            path += "?{qs}"
+
+        return urllib.parse.urlunparse([
+            scheme, servername, path, None, None, None
+        ])
 
     @property
     def isget(self):
@@ -837,6 +911,10 @@ class _response():
         '''
 
         return self._headers
+
+    @headers.setter
+    def headers(self, v):
+        self._headers = v
 
     def __repr__(self, pretty=False):
         r = textwrap.dedent('''

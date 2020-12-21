@@ -79,13 +79,6 @@ TODOs:
     TODO:In the GEM, change all date and datetime attributes to past
     tense, e.g., s/acquiredat/acquired/
     
-    TODO There should be a standard for association class names that makes
-    them predictable. Perhaps the should be alphabetical. For example,
-    given an association that associates an ``effort`` and an ``item``,
-    the name should be ``effort_item`` instead of ``item_effort``, since
-    the former is alphabetized. This would help to locate them faster and
-    to use them in code more efficiently.
-
     TODO:8cc3bfdc We should have a @property of the ``orm`` called
     ``sub``.  ``sub`` would be antonymous to ``orm.super``. It should do
     the following:
@@ -121,8 +114,6 @@ TODOs:
     TODO:055e5c02 make FK name's fully qualified. grep 055e5c02 for
     more.
 
-    TODO Add automatic pluralisation of entities
-
     TODO:349f4355 Support saving recursive entites with subentities.
     grep for 349f4355 for clarification.
 
@@ -139,24 +130,17 @@ TODOs:
     FIXME:acad30cc Broken rules currently has an issue. grep acad30cc
     for more clarification.
 
-    TODO Prefix each table name with the name of the module.
-
     TODO datespans and timespans that refer to a timeframe for which an
     association is valid should be name 'valid':
         
         s/span = (time|date)span/valid = \1span/
 
-    Change all associations such that their names are alphabetized::
-        
-        Substitute:
-            class item_account(orm.association):
-                item     =  item
-                account  =  account
-
-        With:
-            class account_item(orm.association):
-                account  =  account
-                item     =  item
+    TODO There should be a standard for association class names that makes
+    them predictable. Perhaps they should be alphabetical. For example,
+    given an association that associates an ``effort`` and an ``item``,
+    the name should be ``effort_item`` instead of ``item_effort``, since
+    the former is alphabetized. This would help to locate them faster and
+    to use them in code more efficiently.
 
     TODO Reflexive associations currently can currently be loaded only
     by the subject-side of the association. For example, if the
@@ -177,6 +161,19 @@ TODOs:
     datatype. Currently, it's assumed that the values stored in decimal
     attributes are dollars, but obviously this will not always be the
     case.
+
+    TODO:8210b80c There should be a way to get at constituents in a
+    configured way:
+
+        # Get the collection of users with the name `name` belonging to
+        # the site `ws`. Iterating over ws.users may take too long
+        # and consume too much RAM because a site can have thousands of
+        # users.
+        usrs = ws.get_users(name=name)
+
+        # Configure the getter with a stream.
+        for usr in ws.get_users(orm.allstream):
+            ...
 """
 
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
@@ -1639,7 +1636,10 @@ class entitiesmeta(type):
             # Get the last hit entity added to the database
             lasthit = ecommerce.hits.last
         """
-        return cls.orm.all.sorted('createdat').last
+        es = cls.orm.all.sorted('createdat')
+        if es.count:
+            return es.last
+        return None
 
 class entities(entitiesmod.entities, metaclass=entitiesmeta):
     re_alphanum_ = re.compile('^[a-z_][0-9a-z_]+$', flags=re.IGNORECASE)

@@ -60,6 +60,50 @@ class site(asset.asset):
     host = str
     resources = file.resources
     hits = ecommerce.hits
+    users = ecommerce.users
+
+    class AuthenticationError(ValueError):
+        pass
+
+    def authenticate(self, name, pwd):
+        """ Find a user in the site with the user name of ``name``. Test
+        that the user's password hashes to the same value as `pwd`. If
+        so, return the user. Otherwise we raise an AuthenticationError.
+        """
+
+        # Get the foreign key column name in users that maps to the
+        # ``site`` entity (e.g., siteid).
+        # 
+        #     site.get_users(name=name)
+        # STOPGAP: 8210b80c
+        for map in ecommerce.users.orm.mappings.foreignkeymappings:
+            if map.entity is site:
+                siteid = map.name
+                break
+        else:
+            raise ValueError('Cannot find site mapping')
+
+        # Get the user with the given user name
+        usrs = ecommerce.users(
+            name = name,
+            siteid = self.id
+        )
+
+        # If there are more that one there is a data integrity issue
+        if usrs.hasplurality:
+            raise ValueError('Multiple users found')
+
+        # Good; we found one. Let's test the password and return the
+        # usr.  Otherwise, we will return raise an exception to signify
+        # authentication failed.
+        if usrs.hasone:
+            usr = usrs.first
+            if usr.ispassword(pwd):
+                return usr
+
+        raise self.AuthenticationError(
+            f'Incorrect password for {name} for {self.name}'
+        )
 
     @property
     def pages(self):
@@ -812,9 +856,6 @@ class page(dom.html):
                 globs = self._mainfunc.__func__.__globals__
                 globs['req'] = www.request
                 globs['res'] = www.response
-
-                if www.request:
-                    globs['usr'] = www.request.user
 
                 # Call page's main function. It's called `_mainfunc`
                 # here but the web developer will call it `main`.

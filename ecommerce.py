@@ -251,7 +251,11 @@ class user(orm.entity):
     Note that this entity is based on the USER LOGIN entity
     in "The Data Model Resource Book Volume 2".
     """
-    
+
+    def __init__(self, *args, **kwargs):
+        self._password = None
+        super().__init__(*args, **kwargs)
+
     name = str
     hash = bytes(32)
 
@@ -269,10 +273,6 @@ class user(orm.entity):
             attr(dir)
         return dir
     
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._password = None
-
     @orm.attr(bytes, 16, 16)
     def salt(self):
         self._sethash()
@@ -326,19 +326,6 @@ class user(orm.entity):
         self._sethash()
         hash, _ = self._gethash(pwd)
         return hash == self.hash
-
-    @staticmethod
-    def authenticate(name, password):
-        usrs = users(name=name)
-        if usrs.hasplurality:
-            raise ValueError('Multiple users found')
-
-        if usrs.hasone:
-            usr = usrs.first
-            if usr.ispassword(password):
-                return usr
-
-        return None
 
 class history(orm.entity):
     """ Used to store a history of the logins and passwords.
@@ -645,6 +632,9 @@ class hit(orm.entity):
 
     # The logs the web developer may write for the hit.
     logs = logs
+
+    # Was a valid JWT sent
+    isjwtvalid = bool
 
     @property
     def inprogress(self):
