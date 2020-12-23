@@ -5434,6 +5434,10 @@ class foreignkeyfieldmapping(fieldmapping):
         )
 
     @property
+    def isowner(self):
+        return self.name == 'owner__userid'
+
+    @property
     def name(self):
         # TODO:055e5c02 make FK name's fully qualified. grep 055e5c02
         # for more.
