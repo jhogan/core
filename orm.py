@@ -3641,6 +3641,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         if self in gb:
             return brs
 
+        from ecommerce import user
+        isroot = isinstance(self, user) and self.isroot
+
         gb.append(self)
             
         sup = self.orm._super
@@ -3730,6 +3733,21 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     if map.value not in gb:
                         # Get entities brokenrules
                         brs += map.value.getbrokenrules(gb=gb)
+
+            elif isinstance(map, foreignkeyfieldmapping):
+                if map.isowner and not isroot:
+                    if not isinstance(map.value, UUID):
+                        msg = 'Owner reference not set correctly'
+                        brs += entitiesmod.brokenrule(
+                            msg, map.name, 'valid', self
+                        )
+                    else:
+                        if self.orm.isnew and orm.owner.id != map.value:
+                            msg = 'Owner id does not match orm id'
+                            B()
+                            brs += entitiesmod.brokenrule(
+                                msg, map.name, 'valid', self
+                            )
 
             elif type(map) is associationsmapping:
                 if map.isloaded:
