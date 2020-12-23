@@ -83,6 +83,94 @@ class engineer_project(orm.association):
     engineer = engineer
     project = project
 
+class owner(tester.tester):
+    def __init__(self):
+        super().__init__()
+
+        orm.orm.recreate(
+            engineer,  
+        )
+
+        for e in orm.orm.getentitys(includeassociations=True):
+            if e.__module__ in ('party', 'apriori', 'ecommerce'):
+                e.orm.recreate()
+
+        own = ecommerce.user(name='hford')
+        root = ecommerce.users.root
+        orm.orm.owner = root
+        own.owner = root
+        own.save()
+
+        orm.orm.owner = own
+        com = party.company(name='Ford Motor Company')
+        com.owner = own
+        com.save()
+
+        orm.orm.setproprietor(com)
+
+    def it_calls_owner(self):
+        own = ecommerce.user(name='owner')
+        orm.orm.owner = own
+
+        ''' New entity gets owner '''
+        eng = engineer()
+        self.eq(own.id, eng.owner.id)
+        eng.save()
+
+        ''' Change orm owner: existing entity preserves owner '''
+        own1 = ecommerce.user(name='owner1')
+        orm.orm.owner = own1
+
+        eng = eng.orm.reloaded()
+        self.eq(own.id, eng.owner.id)
+        self.ne(own1.id, eng.owner.id)
+
+        ''' 
+        Change orm owner: existing entity preserves owner after
+        update
+        '''
+        own2 = ecommerce.user(name='owner1')
+        orm.orm.owner = own2
+
+        eng.name = 'new name'
+        eng.save()
+
+        eng = eng.orm.reloaded()
+
+        self.eq(own.id, eng.owner.id)
+        self.eq('new name', eng.name)
+        self.ne(own2.id, eng.owner.id)
+
+    def it_changes_owner(self):
+        own = ecommerce.user(name='owner')
+        own1 = ecommerce.user(name='owner')
+
+        orm.orm.owner = own
+
+        eng = engineer()
+        eng.save()
+        eng = eng.orm.reloaded()
+
+        self.eq(own.id, eng.owner.id)
+
+        eng.owner = own1
+        self.eq(own1.id, eng.owner.id)
+
+        eng.save()
+
+        eng = eng.orm.reloaded()
+        self.ne(own.id, eng.owner.id)
+        self.eq(own1.id, eng.owner.id)
+
+    def it_cant_save_with_no_owner(self):
+        orm.orm.owner = None
+
+        eng = engineer()
+        eng.save()
+        B()
+
+
+
 class proprietor(tester.tester):
     def __init__(self):
         super().__init__()
