@@ -362,6 +362,11 @@ class user(orm.entity):
         hash, _ = self._gethash(pwd)
         return hash == self.hash
 
+    @property
+    def isroot(self):
+        return self.name == 'root' and self.site is None
+
+
 class history(orm.entity):
     """ Used to store a history of the logins and passwords.
 
