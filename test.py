@@ -4293,8 +4293,11 @@ class test_orm(tester):
         migrate(cat, expect)
 
         initial = (
-            'id',         'proprietor__partyid',
-            'createdat',  'updatedat'
+            'id',
+            'proprietor__partyid',
+            'owner__userid',
+            'createdat',
+            'updatedat'
         )
 
         self.eq(
