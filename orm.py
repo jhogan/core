@@ -3716,7 +3716,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     if not isinstance(es, map.entities):
                         msg = "'%s' attribute is wrong type: %s"
                         msg %= (map.name, type(es))
-                        brs += entitiesmod.brokenrule(msg, map.name, 'valid')
+                        brs += entitiesmod.brokenrule(
+                            msg, map.name, 'valid'
+                        )
                     brs += es.getbrokenrules(gb=gb)
 
             elif type(map) is entitymapping:

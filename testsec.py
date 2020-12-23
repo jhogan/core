@@ -9,8 +9,12 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2020                 #
 ########################################################################
 
-import orm, tester, party, db
 from func import B
+import db
+import ecommerce
+import orm
+import party
+import tester
 
 class projects(orm.entities):
     pass
