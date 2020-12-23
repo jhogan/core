@@ -2900,6 +2900,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 # proprietor gets saved to the database.
                 if orm.proprietor:
                     self.proprietor = orm.proprietor
+
+                if orm.owner:
+                    self.owner = orm.owner
             else:
                 if isinstance(o, str):
                     # See if we can convert str identifier to UUID. 
