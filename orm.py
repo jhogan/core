@@ -5634,7 +5634,8 @@ class orm:
     _abbrdict    =  dict()
     _namedict    =  dict()
     _proprietor  =  None
-
+    owner = None
+        
     @classmethod
     def setproprietor(cls, v):
         """ Set ``v`` to orm's proprietor. Ensure that the proprietor
