@@ -61,7 +61,33 @@ class content_contents(orm.associations):                     pass
 class contenttypes(apriori.types):                            pass
 class contentroles(orm.entities):                             pass
 class contentstatustypes(apriori.types):                      pass
-class users(orm.entities):                                    pass
+class users(orm.entities):
+    
+    @classproperty
+    def root(cls):
+        if not hasattr(cls, '_root') or not cls._root:
+            from pom import site
+            for map in users.orm.mappings.foreignkeymappings:
+                if map.entity is site:
+                    break
+            else:
+                raise ValueError(
+                    'Could not find site foreign key'
+                )
+                
+            usrs = users(**{'name': 'root', map.name: None})
+
+            if usrs.hasplurality:
+                raise ValueError('Multiple roots found')
+
+            if usrs.hasone:
+                cls._root = usrs.first
+            else:
+                cls._root = user(name='root')
+                cls._root.save()
+
+        return cls._root
+        
 class histories(orm.entities):                                pass
 class preferences(orm.entities):                              pass
 class urls(orm.entities):                                     pass
