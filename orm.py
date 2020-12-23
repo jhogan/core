@@ -4164,9 +4164,11 @@ class mappings(entitiesmod.entities):
             # `self` later.
             maps = list()
 
-            # Add an entitymapping of the proprietor reference.
+            # Add an entitymapping of the proprietor and owner reference.
             from party import party
+            from ecommerce import user
             self += entitymapping('proprietor', party, isderived=True)
+            self += entitymapping('owner', user, isderived=True)
 
             def add_fk_and_entity_map(e):
                 # Add an entity mapping for the composite
