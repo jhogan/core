@@ -28,13 +28,22 @@ TODO:
 """
 
 from datetime import datetime, date
-import primative
 from dbg import B
 from decimal import Decimal as dec
+from entities import classproperty
 from orm import text, timespan, datespan
-import orm, entities
-import party, apriori, product, order, file
-import ipaddress, os, user_agents, hashlib
+import apriori
+import entities
+import file
+import hashlib
+import ipaddress
+import order
+import orm
+import os
+import party
+import primative
+import product
+import user_agents
 
 class agents(party.parties):                                  pass
 class webmasters(party.personals):                            pass
