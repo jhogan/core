@@ -3324,7 +3324,17 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         exec.execute()
 
     def _save(self, cur=None, guestbook=None):
+        """ A private method called by orm.save(). This method is where
+        most of the saving logic actually resides. See the docstring at
+        orm.save for an overview of the the persistence operations.
+        """
 
+        # The guestbook list tracks the entity objects that have been
+        # _save()ed and prevents re-save()ing the same entity. Without
+        # the guestbook list, we would get infinite recursion errors
+        # because to save and entity is to save it and all the entity
+        # objects in its graph - some of which might be linked to each
+        # other.
         if guestbook is None:
             guestbook = list()
         
@@ -3333,9 +3343,15 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         guestbook.append(self)
 
+        # Don't save the entity if it doesn't pass its validation rules
+        # (not self.isvalid). If we are simply deleting the entity, the
+        # the validation rules don't matter.
         if not self.orm.ismarkedfordeletion and not self.isvalid:
             raise db.BrokenRulesError("Can't save invalid object", self)
 
+        # Determine if we are deleting, creating or updating the entity
+        # based on its presistence state. Grab the SQL necessary for
+        # the chosen operation.
         if self.orm.ismarkedfordeletion:
             crud = 'delete'
             sql, args = self.orm.mappings.getdelete()
@@ -3385,7 +3401,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 # If there is no sql, then the entity isn't new, dirty
                 # or marked for deletion. In that case, don't save.
                 # However, allow any constituents to be saved.
-                pass
 
             # For each of the constituent entities classes mapped to
             # self, set the foreignkeyfieldmapping to the id of self,
