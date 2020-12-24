@@ -109,13 +109,20 @@ class owner(tester.tester):
         orm.orm.setproprietor(com)
 
     def it_calls_owner(self):
-        own = ecommerce.user(name='owner')
-        orm.orm.owner = own
+        def create_owner(name):
+            with orm.sudo():
+                own = ecommerce.user(name=name)
+                own.save()
+                return own
+
+        orm.orm.owner = create_owner('owner')
 
         ''' New entity gets owner '''
+        orm.orm.owner = create_owner('owner')
         eng = engineer()
-        self.eq(own.id, eng.owner.id)
+        self.eq(orm.orm.owner.id, eng.owner.id)
         eng.save()
+        return
 
         ''' Change orm owner: existing entity preserves owner '''
         own1 = ecommerce.user(name='owner1')
