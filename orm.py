@@ -5632,6 +5632,26 @@ class constituents(ormclasseswrapper):
 class constituent(ormclasswrapper):
     pass
 
+@contextmanager
+def sudo():
+    own = orm.owner
+    try:
+        from ecommerce import users
+        orm.owner = users.root
+        yield
+    finally:
+        orm.owner = own
+
+@contextmanager
+def su(own):
+    own1 = orm.owner
+    try:
+        from ecommerce import users
+        orm.owner = own
+        yield
+    finally:
+        orm.owner = own1
+
 class orm:
     _abbrdict    =  dict()
     _namedict    =  dict()
