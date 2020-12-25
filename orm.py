@@ -3642,9 +3642,109 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         
     @property
     def brokenrules(self):
+        """ Return the brokenrules collection for this entity. See
+        the getbrokenrules() method for more.
+        """
+
+        # The actual logic for this is in the getbrokenrules() since it
+        # can handle recursion with its optional guestbook (gb)
+        # parameter.
         return self.getbrokenrules()
 
     def getbrokenrules(self, gb=None):
+        """ Return the brokenrules collection for this entity.
+
+        Though the `brokenrules` property can be called for convenience,
+        subclasses should override this method in order to implement
+        their own validation logic. This method uses the `gb`
+        (guestbook) argument to prevent infinite recursion::
+
+            class person(self):
+                def getbrokenrules(self, *args, **kwargs):
+                    
+                    # Call up the inheritance hierarchy to get the
+                    # brokenrules for all the superentity objects
+                    # up to and including orm.entity.getbrokenrules.
+                    brs = super().getbrokenrules(*args, **kwargs)
+
+                    # Add our on validation: ensure emails have @ signs
+                    # in them.
+                    if '@' not in self.email:
+                        brs += brokenrule(
+                            msg = 'Invalid email address',
+                            prop = 'email',
+                            entity = self
+                        )
+
+                    # Return the brokenrules collection
+                    return brs
+
+        Given the above, we can expect the followiwng::
+            
+            per = person()
+
+            # Broken rule
+            per.email = 'jhoganATgmail.com'
+
+            # Assert that the rule is broken
+            assert per.brokenrules.count == 1
+            assert per.brokenrules.first.message == 'Invalid email address'
+            assert not per.isvalid
+
+            # Fix
+            per.email = 'jhogan@gmail.com'
+
+            # Assert that there are now know broken rules
+            assert not per.brokenrules.count
+            assert per.isvalid
+        
+        Subentity classes should override this method to implement
+        centralized versions of their validation logic. When they call
+        up the inheritence hierarchy (see example), this method will
+        eventually be called which adds the standard validation rules
+        for all entity objects, vis. type checking:
+
+            class person(self):
+                age = int
+                def getbrokenrules(self, *args, **kwargs):
+                    brs = super().getbrokenrules(*args, **kwargs)
+
+                    # Add our on validation: ensure emails have @ signs
+                    # in them.
+                    if '@' not in self.email:
+                        brs += brokenrule(
+                            msg = 'Invalid email address',
+                            prop = 'email',
+                            entity = self
+                        )
+
+                    # Return the brokenrules collection
+                    return brs
+
+            per = person()
+
+            # Break the stardard rule and the custom rule
+
+            # Age must be an int or coersable to an int 
+            # (e.g., per.age = 123 or per.age = "123")
+            per.age = 'abcdefg'  
+            per.email = 'jhoganATgmail.com'
+
+            # Now we have two broken rules
+            assert per.brokenrules.count == 2
+            assert per.brokenrules.first.message == 'Invalid email address'
+            assert per.brokenrules.second.message == 'age is wroge type'
+            assert not per.isvalid
+
+            # Fix
+            per.age = 123456
+            per.email = 'jhogan@gmail.com'
+
+            # Assert that there are now know broken rules
+            assert not per.brokenrules.count
+            assert per.isvalid
+        """
+
         brs = entitiesmod.brokenrules()
 
         if gb is None:
@@ -3655,6 +3755,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         gb.append(self)
             
+        # TODO:a4917600 I think we should be calling
+        # `super().getbrokenrules` here.
         sup = self.orm._super
         if sup:
             brs += sup.getbrokenrules(gb=gb)
