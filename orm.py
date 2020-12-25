@@ -3034,12 +3034,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         return brs
 
-    # TODO Since this is only one line, it should probably be turned
-    # into a lambda and passed in directly to e._setvalue
-    @staticmethod
-    def _setattr(e, attr, v):
-        e.orm.mappings[attr].value = v
-
     def __getattribute__(self, attr):
         try:
             v = object.__getattribute__(self, attr)
@@ -3130,9 +3124,33 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         # not sure why I used self._setattr in the first
                         # place. It might have been a mistake in
                         # retrospect.
+                        #
+                        # UPDATE I created setattr1 to replace the
+                        # original self._setattr(). It ascends the
+                        # inheritence tree. By not using a custom
+                        # setattr, we default to the standard
+                        # __setattr__. This does ascend the inheritence
+                        # tree, but causes the constituent to be flagged
+                        # as dirty because when it is assigned its
+                        # composite, this is seen as a change. This
+                        # problem was made clear in
+                        # it_loads_and_saves_multicomposite_subentity.
+                        # I'm not sure yet if this solves the original
+                        # problem, though.
+                        def setattr1(e, attr, v):
+                            sup = e
+                            while sup:
+                                try:
+                                    map = sup.orm.mappings[attr]
+                                except IndexError:
+                                    sup = sup.orm.super
+                                else:
+                                    map.value = v
+                                    break
+
                         e._setvalue(
                             attr, self, attr, 
-                            cmp=False, # XXX setattr=self._setattr
+                            cmp=False, setattr=setattr1
                         )
 
                         # Since we just set e's composite, e now thinks its

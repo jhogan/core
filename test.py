@@ -5504,24 +5504,12 @@ class test_orm(tester):
 
         self.four(chrons)
 
-
-
-
-
         self._chrons(sng, 'create')
         self._chrons(conc, 'create')
         self._chrons(sng.orm.super, 'create')
         self._chrons(conc.orm.super, 'create')
 
         sng = singer(sng.id)
-
-
-
-        B()
-        sng.concerts.first.orm.super.orm.isdirty
-
-
-
         
         self.zero(sng.concerts.first.locations)
         self.zero(sng.locations)
@@ -5530,11 +5518,10 @@ class test_orm(tester):
         sng.locations += location.getvalid()
         sng.concerts.first.locations += location.getvalid()
 
-        with self._chrontest(print=True) as t:
+        with self._chrontest() as t:
             t(sng.save)
-            t.created(sng.locations.first)
+            t.created(sng.locptions.first)
             t.created(sng.concerts.first.locations.first)
-        B()
 
         sng1 = singer(sng.id)
 
