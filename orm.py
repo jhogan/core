@@ -3694,7 +3694,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # Fix
             per.email = 'jhogan@gmail.com'
 
-            # Assert that there are now know broken rules
+            # Assert that there are now no broken rules
             assert not per.brokenrules.count
             assert per.isvalid
         
@@ -3740,7 +3740,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             per.age = 123456
             per.email = 'jhogan@gmail.com'
 
-            # Assert that there are now know broken rules
+            # Assert that there are now no broken rules
             assert not per.brokenrules.count
             assert per.isvalid
         """
@@ -3856,7 +3856,97 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         e.orm.mappings[attr].value = v
 
     def __getattribute__(self, attr):
-        try:
+        """ Implements all attributes accesses for an entity.
+
+        In addition to returning the values for standard @property's,
+        methods and fields declared on the class, the __getattribute__
+        method searches the entity's internal mappings collection for
+        ORM attributes.
+            
+            class person(orm.entity):
+                # A standard field
+                AConstant = 1
+
+                # An ORM attribute
+                name = str
+
+                # A standard method
+                def get_upper_name(self):
+                    return name.upper()
+
+        In the above example, access to the field (AConstant), the ORM
+        attribute (name) and the standard method (get_upper_name) all go
+        through __getattribute__.
+
+        Access to standard fields and methods is simple - a call is
+        simply made to `object.__getattribute__(self, attr)`. The
+        internal mapping collection is scanned for the ORM attribute.
+
+        If the ORM attribute is not found in the given entity, the
+        inheritance hierachy is ascended to find it::
+
+            class party(orm.entity)
+                name = str
+
+            class person(orm.entity):
+                pass
+
+            per = person()
+
+            # The internal mapping for party.name is used since there is
+            # no person.name mapping.
+            per.name = 'Jesse'
+
+            # This can be demostrated by looking at the mapping of the
+            # super (party):
+            assert 'Jesse' == per.orm.super.orm.mappings['name'].value
+
+        In addition to primative ORM mappings (``fieldmappings``),
+        entitymappings, entitiesmappings and associationsmappings are
+        scanned here::
+
+            class persons(orm.entities): pass
+            class users(orm.entities): pass
+
+            class person(orm.entity):
+                # A person has zero or more users, thus a `person` has
+                # an entitiesmapping for the ``users`` collection that
+                # will be lazy-loaded here.
+                users = users
+
+            class user(orm.entity):
+                pass
+
+            per = person()
+
+            # Access the ``users`` collection via __getattribute__.
+            usrs = per.users
+
+        Associations and pseudocollections are also retrieved through
+        this method:::
+            class persons(orm.entities):          pass
+            class jobs(orm.entities):             pass
+            class job_persons(orm.associations):  pass
+
+            class person(orm.entity): pass
+            class job(orm.entity): pass
+
+            # A person can have multiple jobs and a job can be done by
+            # multiple persons
+            class job_person(orm.association):
+                person = person
+                job = job
+
+            # Get the association through __getattribute__
+            per = person()
+            jps = per.job_persons
+
+            # Alternatively, get the jobs collection through
+            # __getattribute__
+            jbs = per.jobs
+        """
+
+        try
             v = object.__getattribute__(self, attr)
             if isinstance(v, span):
                 if v.isstatic:
