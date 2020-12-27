@@ -3946,7 +3946,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             jbs = per.jobs
         """
 
-        try
+        try:
             v = object.__getattribute__(self, attr)
             if isinstance(v, span):
                 if v.isstatic:
@@ -4209,7 +4209,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             es += e
 
     def __repr__(self):
-        """ Return a tabularized list of ``self``'s properties and their
+        """ Return a tabularized list of ``self``'s attributes and their
         corresponding values. Any exceptions that happen to occure will
         be trapped and a string representations of the exception will be
         returned."""
@@ -4288,12 +4288,39 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             return '%s (Exception: %s) ' % (super().__repr__(), str(ex))
 
     def __str__(self):
+        """ Return the value of the entity object's name attribute if
+        there is one. Otherwise, return the entity object's id.
+
+        This is a generic implementation. The author of entity classes
+        should feel free to override this method to return the string
+        that best represents the object in most situation.
+        """
         if hasattr(self, 'name'):
             return '"%s"' % self.name
             
         return str(self.id)
             
 class mappings(entitiesmod.entities):
+    """ A collection of mappings.
+
+    Each entity, whether as a static class or an instance, has a
+    mappings collection. It can be accessed and manipulated from the
+    entity, though usually this should be done by ORM code; not code
+    that uses the ORM (i.e., web code)::
+
+        class person(orm.entities):
+            name = str
+
+        # Access the person's mappings collection to assert that the
+        # "name" mapping is a str.
+        assert person.orm.mappings['name'].type = orm.types.str
+
+        # Same as above but use an instance of person
+        assert person().orm.mappings['name'].type = orm.types.str
+
+    See the docstring for ``mapping`` for more information on mapping
+    objects themselves.
+    """
     def __init__(self, initial=None, orm=None):
         super().__init__(initial)
         self._orm = orm
