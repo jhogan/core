@@ -4322,6 +4322,19 @@ class mappings(entitiesmod.entities):
     objects themselves.
     """
     def __init__(self, initial=None, orm=None):
+        """ Initialize a mappings collection.
+
+        :param: initial sequence: A collection of mappings to initilize
+        this collection with.
+
+        :param: orm orm: A instance of, or reference to, the ``orm``
+        class that this mappings collection corresponds to. This allows
+        code in the mappings collection to access the ``entity`` object
+        it corresponds to::
+            
+            id = self.orm.entity.id
+        """
+
         super().__init__(initial)
         self._orm = orm
         self._populated = False
@@ -4331,17 +4344,43 @@ class mappings(entitiesmod.entities):
         self.oncountchange += self._self_oncountchange
 
     def _self_oncountchange(self, src, eargs):
+        """ When the number of items in this collection changes, set
+        self._populated to False. This ensure the self._populate()
+        method gets run the next time a user tries to access an element
+        (such as when the user iterates over the mappings collection).
+
+        :param: src object: The source object that triggered the event.
+
+        :param: eargs entities.eventargs: The eventargs is only here as
+        a formality, at the moment. (NOTE It seems like this argument
+        should hold the before count and perhaps the after count).
+        """
         self._populated = False
 
     def __getitem__(self, key):
+        """ Given `key`, the map is returned whose name matches the key.
+
+            map = myent.orm.mappings['id']
+            assert map.name == 'id'
+
+        If the map is not found, an IndexError is raised.
+        """
+
+        # Ensure the collection has been properly "populated" before
+        # access its elements.
         self._populate()
 
         if self._nameix is not None and isinstance(key, str):
             try:
                 return self._nameix[key]
             except KeyError as ex:
+                # Convert the KeyError into and IndexError. When an
+                # entities.entities collection is indexed, and the index
+                # is not found, we expect and IndexError. A KeyError is
+                # more appropriate to dict's.
                 raise IndexError(str(ex))
-            
+
+        # If key is not a str, use the default __getitem__
         return super().__getitem__(key)
 
     def __iter__(self):
