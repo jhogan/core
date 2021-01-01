@@ -4351,14 +4351,15 @@ class mappings(entitiesmod.entities):
 
         :param: src object: The source object that triggered the event.
 
-        :param: eargs entities.eventargs: The eventargs is only here as
-        a formality, at the moment. (NOTE It seems like this argument
-        should hold the before count and perhaps the after count).
+        :param: eargs entities.eventargs: The ``eventargs`` is only here
+        as a formality, at the moment. (NOTE It seems like this argument
+        should hold the 'before1 count and perhaps the 'after' count).
         """
         self._populated = False
 
     def __getitem__(self, key):
-        """ Given `key`, the map is returned whose name matches the key.
+        """ Given ``key``, the map is returned whose name matches the
+        key.
 
             map = myent.orm.mappings['id']
             assert map.name == 'id'
@@ -4384,21 +4385,48 @@ class mappings(entitiesmod.entities):
         return super().__getitem__(key)
 
     def __iter__(self):
+        """ Before iterating over the mappings collection (or accessing
+        mappings' elements in any other way), we want to ensure that
+        ``self._populate`` is called. See ``self._populate`` for more.
+        """
         self._populate()
         return super().__iter__()
 
     def __contains__(self, key):
+        """ Test if ``key`` is in the mappings collection.
+
+        For example, instead of writing the following::
+
+            for map in maps:
+                if map.name == 'somemap':
+                    found = True
+                    break
+            else:
+                found = False
+
+        we could just write::
+            
+            found = 'somemap' in maps
+
+        :param: key str: The key to look for.
+        """
         if isinstance(key, str):
             return any(x.name == key for x in self)
         else:
             # NOTE entities.entities should have a __contains__ method.
             # Surprisingly, I couldn't find one.
             raise ValueError('Invalid type')
-            return super().__contains__(key)
 
     def _populate(self):
         """ Reflect on the entities and associations to populate the
         mappings collection with up-to-date mappings values.
+
+        Note that the method will abort if self._populated is True which
+        is typically the case; otherwise it would needlessly populate
+        the collection. self._populated starts out as False and is set
+        to True when this method is complete. It only changes when the
+        the number of maps in the collection changes (see
+        mappings._self._oncountchange).
         """
         # If there is no ._orm, then we are using this class just for
         # collection purposes, so don't try to populate here.
