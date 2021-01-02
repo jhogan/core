@@ -4565,6 +4565,16 @@ class mappings(entitiesmod.entities):
         self._populated = True
 
     def clear(self, derived=False):
+        """ Remove all elements from the mapping collection. If
+        ``derived` is True, only remove the mapping objects whose
+        ``isderived` property is True. Othewise, remove all mapping
+        objects.
+
+        :param: derived bool: If ``derived` is True, only remove the
+        mapping objects whose ``isderived` property is True. Othewise,
+        remove all mapping objects.  (Derived properties are those that
+        are created in the _populate() method).
+        """
         if derived:
             for map in [x for x in self if x.isderived]:
                 self.remove(map)
@@ -4572,11 +4582,34 @@ class mappings(entitiesmod.entities):
             super().clear()
 
     def sort(self):
+        """ Sort the mapping collection such that it is in a typical,
+        predictable order for a collection of table columns. For
+        example, the "id" column is typically the first in a list of
+        table colums followed by foreign keys. For example::
+
+            id                         # Primary Key
+            createdat                  # Builtins
+            updatedat
+            proprietor__partyid
+            owner__userid
+            test__artistid             # Foreign Keys
+            product__productid
+            name                       # Standard fields
+            number
+            slug
+            begin
+            end
+
+        This is done mainly for aesthetics. It might be assumed that
+        INSERTs and UPDATEs rely on this ordering, but that is no longer
+        the case.
+        """
         # Make sure the mappings are sorted in the order they are
         # instantiated
         super().sort('_ordinal')
 
         # Ensure builtins attr's come right after id
+        # TODO We should used orm.builtins for this
         for attr in reversed(('id', 'createdat')):
             try:
                 attr = self.pop(attr)
@@ -4584,6 +4617,7 @@ class mappings(entitiesmod.entities):
                 # attr hasn't been added to self yet
                 pass
             else:
+                # Unshift (insert at the begining) attr into self
                 self << attr
 
         # Insert FK maps right after PK map
