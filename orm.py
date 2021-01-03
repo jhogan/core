@@ -4629,29 +4629,74 @@ class mappings(entitiesmod.entities):
 
     @property
     def foreignkeymappings(self):
+        """ A generator to return all the foreignkeyfieldmapping objects in the
+        collection::
+
+            for map in maps.foreignkeyfieldmapping:
+                assert type(map) is foreignkeyfieldmapping
+        """
         return self._generate(type=foreignkeyfieldmapping)
 
     @property
     def fieldmappings(self):
+        """ A generator to return all the fieldmapping objects in the
+        collection::
+
+            for map in maps.fieldmappings:
+                assert type(map) is fieldmapping
+        """
         return self._generate(type=fieldmapping)
 
     @property
     def primarykeymapping(self):
+        """ Return the primary key mapping from the collection::
+
+            assert maps.primarykeymapping.name == 'id'
+        """
         return list(self._generate(type=primarykeyfieldmapping))[0]
 
     @property
     def entitiesmappings(self):
+        """ A generator to return all the entitiesmapping objects in the
+        collection::
+
+            for map in maps.entitiesmappings:
+                assert type(map) is entitiesmapping
+        """
         return self._generate(type=entitiesmapping)
 
     @property
     def entitymappings(self):
+        """ A generator to return all the entitymapping objects in the
+        collection::
+
+            for map in maps.entitymappings:
+                assert type(map) is entitymapping
+        """
         return self._generate(type=entitymapping)
 
     @property
     def associationsmappings(self):
+        """ A generator to return all the associationsmapping objects in
+        the collection::
+
+            for map in maps.associationsmappings:
+                assert type(map) is associationsmapping
+        """
         return self._generate(type=associationsmapping)
 
     def _generate(self, type):
+        """ A generator to return all the mapping objects of a given
+        type::
+
+            for map in self._generate(type=associationsmapping):
+                assert type(map) is associationsmapping
+
+        :param: type type: The type of mapping object, e.g.,
+        associationsmapping, entitymapping, entitiesmapping,
+        primarykeyfieldmapping, fieldmapping, foreignkeyfieldmapping,
+        etc,
+        """
         for map in self:
             if builtins.type(map) is type:
                 yield map
@@ -4659,7 +4704,8 @@ class mappings(entitiesmod.entities):
     @property
     def all(self):
         ''' Returns a generator of all mapping objects including
-        supermappings.  '''
+        supermappings
+        '''
         for map in self:
             yield map
 
@@ -4668,6 +4714,9 @@ class mappings(entitiesmod.entities):
 
     @property
     def supermappings(self):
+        """ Returns a ``mappings`` collection containing all the
+        mappings found from the superentity objects of ``self``.
+        """
         if not self._supermappings:
             e = self.orm.entity.orm.super
             self._supermappings = mappings()
