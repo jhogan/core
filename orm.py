@@ -4704,7 +4704,7 @@ class mappings(entitiesmod.entities):
     @property
     def all(self):
         ''' Returns a generator of all mapping objects including
-        supermappings
+        supermappings.
         '''
         for map in self:
             yield map
@@ -4729,6 +4729,13 @@ class mappings(entitiesmod.entities):
             
     @property
     def orm(self):
+        """ Returns the ``orm`` instance that this mappings collection
+        corresponds to. This is the bridge between the ``mappings``
+        collection and the entity it's associated with::
+
+            e = self.orm.entity
+            assert e.orm.mappings is self
+        """
         return self._orm
 
     @property
@@ -4746,19 +4753,40 @@ class mappings(entitiesmod.entities):
         return ixs
 
     def getinsert(self):
+        """ Returns a tuple whose first element is an INSERT INTO
+        statement and whose second element is the parameterized
+        arguments for the INSERT INTO. The combination is used by
+        ``orm.entity.save`` to create a record in the database for the
+        entity if one doesn't already exist. 
+        
+        Calling the method does not manipulate any data in the database;
+        it simply returns the INSERT INTO statement and arguments', so
+        it is safe to call for debugging or other, similar purposes.
+        """
+
+        # Get the table name
         tbl = self.orm.table
 
+        # Get a list() of fieldmapping objects for the entity
         maps = [x for x in self if isinstance(x, fieldmapping)]
 
+        # Build the field list of the INSERT INTO string
         flds = ', '.join('`%s`' % x.name for x in maps)
 
+        # Create a string of placeholders (%s) so we can parameterize
+        # the VALUES clause.
         placeholders = ', '.join(['%s'] * len(maps))
 
+        # Build the INSERT INTO stirng including the field names and
+        # VALUES parameters.
         sql = 'INSERT INTO %s (%s) VALUES (%s);'
         sql %= (tbl, flds, placeholders)
 
+        # Get the args. These will be values from the entity's
+        # attributes.
         args = self._getargs()
 
+        # Add MySQL introducers (e.g., _binary) where necessary.
         sql = orm.introduce(sql, args)
 
         return sql, args
@@ -7592,9 +7620,8 @@ class orm:
 
     @staticmethod
     def introduce(sql, args):
-        """
-        Use ``args`` to add introducers ('_binary', et. al.) before the
-        unquoted placeholder tokens (%s) in ``sql``.
+        """ Use ``args`` to add introducers ('_binary', et. al.) before
+        the unquoted placeholder tokens (%s) in ``sql``.
 
         :param: str  sql:  A whole are partial SQL statement.
         :param: list args: Parameters to use with query.
