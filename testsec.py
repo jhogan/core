@@ -15,6 +15,7 @@ import ecommerce
 import orm
 import party
 import tester
+import entities
 
 class projects(orm.entities):
     pass
@@ -115,17 +116,16 @@ class owner(tester.tester):
                 own.save()
                 return own
 
-        orm.orm.owner = create_owner('owner')
-
         ''' New entity gets owner '''
-        orm.orm.owner = create_owner('owner')
+        own = create_owner('owner')
+        orm.orm.owner = own
         eng = engineer()
-        self.eq(orm.orm.owner.id, eng.owner.id)
+        self.is_(orm.orm.owner, eng.owner)
         eng.save()
-        return
+        self.eq(orm.orm.owner.id, eng.owner.id)
 
         ''' Change orm owner: existing entity preserves owner '''
-        own1 = ecommerce.user(name='owner1')
+        own1 = create_owner('owner1')
         orm.orm.owner = own1
 
         eng = eng.orm.reloaded()
@@ -148,35 +148,36 @@ class owner(tester.tester):
         self.eq('new name', eng.name)
         self.ne(own2.id, eng.owner.id)
 
-    def it_changes_owner(self):
-        own = ecommerce.user(name='owner')
-        own1 = ecommerce.user(name='owner')
-
-        orm.orm.owner = own
-
-        eng = engineer()
-        eng.save()
-        eng = eng.orm.reloaded()
-
-        self.eq(own.id, eng.owner.id)
-
-        eng.owner = own1
-        self.eq(own1.id, eng.owner.id)
-
-        eng.save()
-
-        eng = eng.orm.reloaded()
-        self.ne(own.id, eng.owner.id)
-        self.eq(own1.id, eng.owner.id)
-
     def it_cant_save_with_no_owner(self):
+        # Ensure owner is None
         orm.orm.owner = None
 
+        # We should get a validation error when saving
         eng = engineer()
-        eng.save()
-        B()
+        self.expect(entities.BrokenRulesError, eng.save)
+        self.one(eng.brokenrules)
+        self.eq('valid', eng.brokenrules.first.type)
+        self.is_(eng, eng.brokenrules.first.entity)
 
+class root(tester.tester):
+    def __init__(self):
+        super().__init__()
 
+        orm.orm.recreate(
+            ecommerce.user,
+        )
+
+    def it_cannot_create_multiple_root_users(self):
+        ecommerce.user.orm.truncate()
+        root = ecommerce.user(name='root')
+        self.expect(None, root.save)
+
+        root1 = ecommerce.user(name='root')
+        self.expect(entities.BrokenRulesError, root1.save)
+        self.one(root1.brokenrules)
+        br = root1.brokenrules.first
+        self.eq('valid', br.type)
+        self.is_(root1, br.entity)
 
 class proprietor(tester.tester):
     def __init__(self):
