@@ -75,7 +75,9 @@ class users(orm.entities):
                     'Could not find site foreign key'
                 )
                 
-            usrs = users(**{'name': 'root', map.name: None})
+            usrs = users(
+                f'name = %s and {map.name} is %s', 'root', None
+            )
 
             if usrs.hasplurality:
                 raise ValueError('Multiple roots found')
