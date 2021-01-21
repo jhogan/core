@@ -368,6 +368,29 @@ class user(orm.entity):
     def isroot(self):
         return self.name == 'root' and self.site is None
 
+    def getbrokenrules(self, *args, **kwargs):
+        brs = super().getbrokenrules(*args, **kwargs)
+
+        # Get site foreignkey name
+        from pom import site
+        for map in users.orm.mappings.foreignkeymappings:
+            if map.entity is site:
+                break
+        else:
+            raise ValueError(
+                'Could not find site foreign key'
+            )
+
+        if self.orm.isnew and self.isroot:
+            usrs = users(
+                f'name = %s and {map.name} is %s', 'root', None
+            )
+            if usrs.count:
+                brs += entities.brokenrule(
+                    'Root already exists', 'name', 'valid', self
+                )
+
+        return brs
 
 class history(orm.entity):
     """ Used to store a history of the logins and passwords.
