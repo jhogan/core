@@ -4760,7 +4760,7 @@ class mappings(entitiesmod.entities):
         entity if one doesn't already exist. 
         
         Calling the method does not manipulate any data in the database;
-        it simply returns the INSERT INTO statement and arguments', so
+        it simply returns the INSERT INTO statement and arguments, so
         it is safe to call for debugging or other, similar purposes.
         """
 
@@ -4792,6 +4792,15 @@ class mappings(entitiesmod.entities):
         return sql, args
 
     def getupdate(self):
+        """ Returns a tuple whose first element is an UPDATE statement
+        and whose second element is the parameterized arguments for the
+        UPDATE. The combination is used by ``orm.entity.save`` to update
+        the record in the database for the entity if it ``isdirty``.
+        
+        Calling the method does not manipulate any data in the database;
+        it simply returns the UPDATE statement and arguments, so
+        it is safe to call for debugging or other, similar purposes.
+        """
         set = ''
         for map in self:
             if isinstance(map, fieldmapping):
@@ -4808,24 +4817,43 @@ SET {}
 WHERE id = %s;
         """.format(self.orm.table, set)
 
+        # Get the args. These will be values from the entity's
+        # attributes.
         args = self._getargs()
 
         # Move the id value from the bottom to the top
         args.append(args.pop(0))
 
+        # Add MySQL introducers (e.g., _binary) where necessary.
         sql = orm.introduce(sql, args)
+
         return sql, args
 
     def getdelete(self):
+        """ Returns a tuple whose first element is an DELETE statement
+        and whose second element is the parameterized arguments for the
+        DELETE. The combination is used by ``orm.entity.save`` to delete
+        the record in the database for the entity if it
+        ``ismarkedfordeletion``.
+        
+        Calling the method does not manipulate any data in the database;
+        it simply returns the DELETE statement and arguments, so
+        it is safe to call for debugging or other, similar purposes.
+        """
         sql = 'DELETE FROM {} WHERE id = %s;'.format(self.orm.table)
 
         args = self['id'].value.bytes,
 
+        # Add _binary introducer to the id's binary value in the
+        # string.
         sql = orm.introduce(sql, args)
 
         return sql, args
 
     def _getargs(self):
+        """ Collect attribute values for the entity into a list for
+        ``getupdate()`` and ``getinsert()``.
+        """
         r = []
         for map in self:
             if isinstance(map, fieldmapping):
@@ -4844,6 +4872,8 @@ WHERE id = %s;
         return r
 
     def clone(self, orm_):
+        """ Create a clone of the ``mappings`` collection. 
+        """
         r = mappings(orm=orm_)
 
         r._nameix = dict()
