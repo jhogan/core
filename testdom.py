@@ -1216,7 +1216,6 @@ class pom_page(tester.tester):
 
                 # Load an authenticated user
                 try:
-                    print('page', uid, pwd)
                     usr = self.site.authenticate(uid, pwd)
                 except pom.site.AuthenticationError:
                     raise www.UnauthorizedError(flash='Try again')
@@ -1940,7 +1939,6 @@ class dom_element(tester.tester):
 
         expect = 'This is a paragraph with emphasized text.'
         self.eq(expect, p.text)
-        print(p.pretty)
 
     def it_sets_text(self):
         html = dom.html('''
