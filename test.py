@@ -3852,6 +3852,8 @@ class test_orm(tester):
         artist.orm.recreate(recursive=True)
         comment.orm.recreate()
 
+        orm.orm.owner = ecommerce.users.root
+
         com = party.company(name='Carapacian')
         orm.orm.setproprietor(com)
         com.save()
@@ -17161,6 +17163,8 @@ class gem_party(tester):
             if e.__module__ in ('party', 'apriori'):
                 e.orm.recreate()
 
+        orm.orm.owner = ecommerce.users.root
+
         com = party.company(name='Carapacian')
         orm.orm.setproprietor(com)
         com.save(com)
@@ -18977,6 +18981,7 @@ class gem_product(tester):
             if e.__module__ in ('product', ):
                 e.orm.recreate()
 
+        orm.orm.owner = ecommerce.users.root
         com = party.company(name='Carapacian')
         orm.orm.setproprietor(com)
         com.save(com)
@@ -20692,6 +20697,8 @@ class gem_case(tester):
             party.statuses,
         )
 
+        orm.orm.owner = ecommerce.users.root
+
         com = party.company(name='Carapacian')
         orm.orm.setproprietor(com)
         com.save(com)
@@ -20852,6 +20859,8 @@ class gem_order(tester):
         for e in orm.orm.getentitys(includeassociations=True):
             if e.__module__ in ('order', 'party', 'product',):
                 e.orm.recreate()
+
+        orm.orm.owner = ecommerce.users.root
 
         com = party.company(name='Carapacian')
         orm.orm.setproprietor(com)
@@ -21630,6 +21639,8 @@ class gem_shipment(tester):
             if e.__module__ in ('shipment', 'order'):
                 e.orm.recreate()
 
+        orm.orm.owner = ecommerce.users.root
+
         com = party.company(name='Carapacian')
         orm.orm.setproprietor(com)
         com.save(com)
@@ -22054,6 +22065,8 @@ class gem_effort(tester):
                 'effort', 'apriori', 'party', 'asset', 'order'
             ):
                 e.orm.recreate()
+
+        orm.orm.owner = ecommerce.users.root
 
         com = party.company(name='Carapacian')
         orm.orm.setproprietor(com)
@@ -22837,6 +22850,8 @@ class gem_invoice(tester):
             if e.__module__ in ('invoice', 'party', 'apriori'):
                 e.orm.recreate()
 
+        orm.orm.owner = ecommerce.users.root
+
         com = party.company(name='Carapacian')
         orm.orm.setproprietor(com)
         com.save(com)
@@ -23217,6 +23232,8 @@ class gem_account(tester):
             account.depreciationmethod,
         )
 
+        orm.orm.owner = ecommerce.users.root
+
         com = party.company(name='Carapacian')
         orm.orm.setproprietor(com)
         com.save(com)
@@ -23473,6 +23490,8 @@ class gem_budget(tester):
         for e in orm.orm.getentitys(includeassociations=True):
             if e.__module__ in ('apriori', 'budget', 'party'):
                 e.orm.recreate()
+
+        orm.orm.owner = ecommerce.users.root
 
         com = party.company(name='Carapacian')
         orm.orm.setproprietor(com)
@@ -23845,6 +23864,8 @@ class gem_hr(tester):
         for e in es:
             if e.__module__ in ('party', 'hr', 'apriori', 'invoice'):
                 e.orm.recreate()
+
+        orm.orm.owner = ecommerce.users.root
 
         com = party.company(name='Carapacian')
         orm.orm.setproprietor(com)

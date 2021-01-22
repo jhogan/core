@@ -556,6 +556,8 @@ class pom_page(tester.tester):
             if e.__module__ in  mods:
                 e.orm.recreate()
 
+        orm.orm.owner = ecommerce.users.root
+
         foonet.orm.recreate()
 
     def it_calls__init__(self):

@@ -24,6 +24,8 @@ class test_ecommerce(tester.tester):
             if e.__module__ in mods:
                 e.orm.recreate()
 
+        orm.orm.owner = ecommerce.users.root
+
     def it_connects_users_to_urls(self):
         usr = ecommerce.user(name='jsmith')
         usr.party = party.person(name='John Smith')
@@ -256,6 +258,10 @@ class test_ecommerce(tester.tester):
         self.eq('127.0.0.2', str(ip))
 
 class test_visits(tester.tester):
+    def __init__(self):
+        super().__init__()
+
+        orm.orm.owner = ecommerce.users.root
 
     def it_calls_current(self):
         per = party.person(name='Henry Ford')

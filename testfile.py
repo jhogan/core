@@ -65,6 +65,8 @@ class dom_file(tester.tester):
     """
     def __init__(self):
         super().__init__()
+        orm.orm.owner = ecommerce.users.root
+
         # Proprietor
         com = party.company(name='Carapacian')
         orm.orm.setproprietor(com)
@@ -792,6 +794,8 @@ class file_directory(tester.tester):
             ecommerce.user, file.files, file.resources,
             file.directory, file.inodes,
         )
+
+        orm.orm.owner = ecommerce.users.root
 
     def it_creates_off_root(self):
         dir = file.directory(name='mydir')

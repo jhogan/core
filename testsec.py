@@ -192,6 +192,8 @@ class proprietor(tester.tester):
             if e.__module__ in ('party', 'apriori'):
                 e.orm.recreate()
 
+        orm.orm.owner = ecommerce.users.root
+
     def it_creates_associations(self):
         # Create some proprietors
         tsla = party.company(name='Tesla')
