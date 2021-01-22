@@ -4892,15 +4892,53 @@ WHERE id = %s;
         return r
 
 class mapping(entitiesmod.entity):
+    """ An abstract class to map each entity's attributes to database
+    fields.
+
+    Promenent attributes of a ``mapping`` include ``name``, which is the
+    name of the attribute being mapped and ``value`` which is the value
+    of the attribute being mapped. 
+    
+    Concrete implementations include, primarykeyfieldmapping (for the
+    ``id`` attribute/field), and foreignkeyfieldmapping (for foreign key
+    mappings). ``fieldmapping`` maps the scalar attributes of a class to
+    the database. Other classes such as ``entitiesmapping``,
+    ``entitymapping`` and ``associationsmapping`` deal with the
+    relationship between the ``entity`` and other ``entity`` objects and
+    ``entities`` collections.
+    """
+   
+    # A sequential number to indicate the order the mapping was
+    # instatiated.
     ordinal = 0
 
     def __init__(self, name, isderived=False):
+        """ Create a new ``mapping`` object. This is usually done in
+        ``entitymeta.__new__`` or in ``mappings._populate``.
+
+        :param: name str: The name of the mapping. This corresponds to
+        the field name in the database and the attribute name in the
+        entity.
+
+        :param: isderived bool: If True, the mapping was created in the
+        ``mappings._populate`` method. This implies that the mapping
+        was derived from the _populate algorithm instead of being
+        explictly declared by the ORM user.
+        """
         self._name = name
+
+        # Increment and assign the ordinal
         mapping.ordinal += 1
         self._ordinal = mapping.ordinal
         self.isderived = isderived
 
     def isdefined(self):
+        """ Returns True if the value of the ``mapping`` has been set.
+
+        Note that the ``undef`` class is used as the default setting for
+        a ``mapping`` because a value of None represents a ``null``
+        value in the database - which is considered a defined value.
+        """
         return self._value is not undef
 
     @property
