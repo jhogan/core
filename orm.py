@@ -5714,7 +5714,7 @@ class orm:
         self.mappings             =  None
         self.isnew                =  False
         self._isdirty             =  False
-        self.ismarkedfordeletion  =  False
+        self._ismarkedfordeletion  =  False
         self.entities             =  None
         self.entity               =  None
         self._table               =  None
@@ -5736,6 +5736,17 @@ class orm:
         self.initing              =  False
 
         self.recreate = self._recreate
+
+    @property
+    def ismarkedfordeletion(self):
+        return self._ismarkedfordeletion
+
+    @ismarkedfordeletion.setter
+    def ismarkedfordeletion(self, v):
+        if v:
+            print(type(self.instance))
+            B()
+        self._ismarkedfordeletion = v
 
     @classproperty
     def builtins(cls):
