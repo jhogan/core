@@ -4918,7 +4918,7 @@ class orm:
         self.mappings             =  None
         self.isnew                =  False
         self._isdirty             =  False
-        self.ismarkedfordeletion  =  False
+        self._ismarkedfordeletion  =  False
         self.entities             =  None
         self.entity               =  None
         self._table               =  None
@@ -4940,6 +4940,26 @@ class orm:
         self.initing              =  False
 
         self.recreate = self._recreate
+
+    @property
+    def ismarkedfordeletion(self):
+        return self._ismarkedfordeletion
+
+    @ismarkedfordeletion.setter
+    def ismarkedfordeletion(self, v):
+        self._ismarkedfordeletion = v
+
+    @classproperty
+    def builtins(cls):
+        """ Return a list of mapping names that are standard on all
+        entities, vis. 'id', 'updatedat', 'createdat', and
+        'proprietor__partyid'.
+        """
+        r = ['id', 'updatedat', 'createdat']
+        for map in cls.mappings.foreignkeymappings:
+            if map.isproprietor:
+                r.append(map.name)
+        return r
 
     @staticmethod
     def exec(sql, args=None):
