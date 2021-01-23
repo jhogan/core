@@ -408,11 +408,6 @@ class dom_file(tester.tester):
 class file_file(tester.tester):
     def __init__(self):
         super().__init__()
-        # Proprietor
-        com = party.company(name='Carapacian')
-        orm.orm.setproprietor(com)
-        com.save()
-
         # Delete files
         clean()
 
@@ -424,6 +419,13 @@ class file_file(tester.tester):
             file.directory,
             file.inodes,
         )
+
+        # Proprietor
+        com = party.company(name='Carapacian')
+        orm.orm.setproprietor(com)
+        com.save()
+
+        orm.orm.owner = ecommerce.users.root
 
     def it_creates_empty_file(self):
         ''' Instatiate file '''
