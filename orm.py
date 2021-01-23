@@ -3176,8 +3176,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             # entity, this is the  map we are looking
                             # for.
 
-                            # TODO We may want to remove the fkname, e1 and
-                            # attr tests. These were added for the
+                            # TODO We may want to remove the fkname, e1
+                            # and attr tests. These were added for the
                             # proprietor's fk but that is now handled in
                             # the consequence block.
                             fkname, e1 = map.fkname, map.entity
@@ -5749,9 +5749,6 @@ class orm:
 
     @ismarkedfordeletion.setter
     def ismarkedfordeletion(self, v):
-        if v:
-            print(type(self.instance))
-            B()
         self._ismarkedfordeletion = v
 
     @classproperty
@@ -7903,6 +7900,9 @@ class associations(entities):
         means the pseudocollection class is invoking this handler - so
         removing the constituent would result in infinite recursion.  
         """
+
+        # NOTE We seemed to be cascading deletes of association entity
+        # classes. I don't see why that is a good idea.
         ass = eargs.entity
 
         isreflexive = ass.orm.isreflexive
@@ -7948,8 +7948,7 @@ class associations(entities):
         super()._self_onremove(src, eargs)
 
     def entities_onadd(self, src, eargs):
-        """
-        An event handler invoked when an entity is added to the
+        """ An event handler invoked when an entity is added to the
         association (``self``) through the association's
         pseudocollection, e.g.::
 

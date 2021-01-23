@@ -55,7 +55,6 @@ class test_ecommerce(tester.tester):
             self.eq(pref.id, pref1.id)
 
     def it_creates_object(self):
-        
         obj = ecommerce.object(
             name = 'LowRescar.jpeg',
             path = '/usr/share/LowRescar.jpeg'
@@ -158,7 +157,7 @@ class test_ecommerce(tester.tester):
             end   = '1/1/2000 00:10:53',
         )
 
-        visitor.visits.last.hits += ecommerce.hit(
+        hit = ecommerce.hit(
             begin     = '12/31/1999 23:50:00',
             end       = '12/31/1999 23:51:00',
             size      =  100,
@@ -168,7 +167,7 @@ class test_ecommerce(tester.tester):
             language  =  'en'
         )
 
-        hit = visitor.visits.last.hits.last
+        visitor.visits.last.hits += hit
 
         parties.save()
 
