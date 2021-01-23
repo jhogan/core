@@ -220,7 +220,7 @@ class test_entities(tester):
         self.assertTrue(es.isempty)
         
     def it_calls__call__(self):
-        """ Test that the indexer (__call__()) returns the the correct entity
+        """ Test that the indexer (__call__()) returns the correct entity
         or None if the index is invalid. """
         e1, e2 = entity(), entity()
 
@@ -1414,7 +1414,7 @@ class test_entities(tester):
         self.assertIs(ks[1], ks.antepenultimate)
         self.assertIs(ks[0], ks.preantepenultimate)
 
-        # Ordinals should return None if the the value doesn't exist
+        # Ordinals should return None if the value doesn't exist
         self.assertNone(ks.fifth)
         self.assertNone(ks.sixth)
 
@@ -1620,7 +1620,7 @@ class test_entities(tester):
 
     def it_raises_onremove(self):
         """ The onremove event is called whenever an entity is removed from
-        the the collection. """
+        the collection. """
         snare = knights()
 
         # The onremove event handler
@@ -5472,9 +5472,6 @@ class test_orm(tester):
         chrons.clear()
         sng.save()
 
-
-
-
         B(chrons.count != 4)
         # FIXME The below line produced a failure today, but it went
         # away.  Jul 6, 2019
@@ -5520,7 +5517,7 @@ class test_orm(tester):
 
         with self._chrontest() as t:
             t(sng.save)
-            t.created(sng.locptions.first)
+            t.created(sng.locations.first)
             t.created(sng.concerts.first.locations.first)
 
         sng1 = singer(sng.id)
@@ -5641,7 +5638,7 @@ class test_orm(tester):
         # ensure the issue never comes up again. The `issue` entity
         # class was created for this test because adding the
         # `raiseAttributeError` imperitive attribute to other classes
-        # cause an AttributeError to be raise when the the brokenrules
+        # cause an AttributeError to be raise when the brokenrules
         # logic was invoked, which broke a lot of tests.
         #
         # Update 20090814: This issue did arise again when optimizing
@@ -6528,7 +6525,7 @@ class test_orm(tester):
 
     def it_adds_subentity_to_superentities_collection(self):
         """ Ensure that entity objects (concert) added to collection
-        propreties (concerts) are availibale in the superentities
+        properties (concerts) are availibale in the superentities
         collection properties (presentations) before and after save.
         """
 
@@ -6555,7 +6552,7 @@ class test_orm(tester):
 
         self.eq(sng.concerts.first.id, sng1.presentations.first.id)
 
-        # Add another concert, save and reload to ensure the the above
+        # Add another concert, save and reload to ensure the above
         # logic works when using a non-new singer
         sng = sng1
 
@@ -6625,7 +6622,7 @@ class test_orm(tester):
         self.one(rpr1.battles)
         self.eq(btl.id, rpr1.battles.first.id)
 
-        # Add another battle, save and reload to ensure the the above
+        # Add another battle, save and reload to ensure the above
         # logic works when using a non-new rapper
         rpr = rpr1
 
@@ -26057,7 +26054,7 @@ class dom_element(tester):
 
         # Get the index of the last revision of <html> (the document's
         # root) before appending. Note that appending a <title> will
-        # result in the the <title> and the text node within the <title>
+        # result in the <title> and the text node within the <title>
         # being appended so there will be two Append revisions.
         ix = html.first._revisions.ubound + 1
 
