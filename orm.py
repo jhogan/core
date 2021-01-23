@@ -6105,7 +6105,7 @@ class orm:
         maps = self.mappings.entitymappings
         types = [
             x.entity for x in maps
-            if x.name != 'proprietor'
+            if x.name != 'proprietor' and not x.isowner
         ]
 
         return bool(len(types)) and len(types) > len(set(types))
