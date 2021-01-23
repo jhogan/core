@@ -2027,7 +2027,34 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             self.orm.isremoving = False
 
     def remove(self, *args, **kwargs):
+        """ Remove ``e`` from collection. 
+        
+        By default, removing ``e`` will mark e for deletion
+        (ismarkedfordeletion). When the entities collection is saved (or
+        when ``e`` itself is saved), the entity will be removed from the
+        database. Setting the ``trash`` parameter to False will prevent
+        the entity from being removed from the database, but ``e`` will
+        still be removed from the collection.
+
+        :param: e orm.entity: The entity to be removed from the
+        collection.
+
+        :param: trash bool: Determines whether or not to mark the entity
+        for deletion from the database. The defalut is True.
+        """
         try:
+            try:
+                # Do we want to mark for deletion from the database
+                self.orm.dotrash = kwargs['trash']
+            except KeyError:
+                # The trash argument was not given, self.orm.dotrash
+                # will remain True, i.e., we want to mark for deletion.
+                pass
+            else:
+                # Clear the kwarg['trash']; super().remove isn't
+                # expecting it.
+                del kwargs['trash']
+
             # Set isremoving to True so entities.__getattribute__
             # doesn't attempt to load whenever the removing logic calls
             # an attibute on the entities collection.
@@ -2035,6 +2062,12 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             super().remove(*args, **kwargs)
         finally:
             self.orm.isremoving = False
+
+            # After we are done, ensure that dotrash is returned to True
+            # incase it was falsified above. This ensures that by
+            # default, we marke the entity for deletion when we remove()
+            # it.
+            self.orm.dotrash = True
 
     @property
     def brokenrules(self):
@@ -2081,8 +2114,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         return brs
 
     def _self_onremove(self, src, eargs):
-        self.orm.trash += eargs.entity
-        self.orm.trash.last.orm.ismarkedfordeletion = True
+        if self.orm.dotrash:
+            self.orm.trash += eargs.entity
+            self.orm.trash.last.orm.ismarkedfordeletion = True
         super()._self_onremove(src, eargs)
                     
     def getindex(self, e):
@@ -4935,6 +4969,7 @@ class orm:
         self.isloaded             =  False
         self.isloading            =  False
         self.isremoving           =  False
+        self.dotrash              =  True
         self.joins                =  None
         self._abbreviation        =  str()
         self.initing              =  False
@@ -6032,7 +6067,7 @@ class orm:
                 for (id1, eclass), e in edict.items():
                     if id == id1:
                         if eclass.orm.issuperentity(of=lowest):
-                            es.remove(e)
+                            es.remove(e, trash=False)
 
         # Link the entity objects in edict together into the graph
         orm.link(edict)
