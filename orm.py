@@ -3169,7 +3169,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             # matching, but here we want to allow
                             # subentities.
                             set = True
-                        else:
+                        elif map.isowner and attr == 'owner':
+                            set = True
+                        elif attr not in ('owner', 'proprietor'):
                             # If the value's (v) entity is the maps
                             # entity, this is the  map we are looking
                             # for.
@@ -4686,6 +4688,10 @@ class entitymapping(mapping):
     @property
     def isproprietor(self):
         return self.name == 'proprietor'
+
+    @property
+    def isowner(self):
+        return self.name == 'owner'
 
     @property
     def value(self):
