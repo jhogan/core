@@ -7909,9 +7909,9 @@ class associations(entities):
 
         for i, map in enumerate(ass.orm.mappings.entitymappings):
 
-            # We wouldn't want to delete a proprietor just because we
-            # are deleting one of its association objects.
-            if map.isproprietor:
+            # We wouldn't want to delete a proprietor or owner just
+            # because we are deleting one of its association objects.
+            if map.isproprietor or map.isowner:
                 continue
 
             if isreflexive:
