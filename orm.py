@@ -3197,12 +3197,13 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 map.value = es
 
                 # Assign the composite reference to the constituent
+                # collection.
                 #   i.e., art.presentations.artist = art
                 setattr(map.value, self_orm.entity.__name__, self)
 
                 map.value.onadd.append(self.entities_onadd)
 
-        # Is attr in one of the supers' mappings collections. We don't
+        # Is attr in one of the supers' mappings collections? We don't
         # want to start loading super entities from the database unless
         # we know that the attr is actually in one of them.
         elif not map and attr in self_orm.mappings.supermappings:

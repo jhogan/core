@@ -10859,7 +10859,20 @@ class test_orm(tester):
                             getattr(loc1, map.name)
                         )
             
-                self.is_(pres1, loc1.presentation)
+                # NOTE Previously, this was an identity test:
+                #
+                #     self.is_(pres1, loc1.presentation)
+                #
+                # However, now that ``rpr1.presentations`` loads the
+                # presentation entity objects and its subentities (e.g.,
+                # concerts), the location collection will always belong
+                # to presentation and not the subentity concert. So they
+                # will have the same id attribute but not the same
+                # object identity.
+                #
+                # rpr1.presentations[x].locations[x] is 
+                self.eq(pres1.id, loc1.presentation.id)
+                print(type(loc1.presentation))
 
         # Test appending a collection of constituents to a constituents
         # collection. Save, reload and test.
