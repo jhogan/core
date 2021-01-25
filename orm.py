@@ -5965,14 +5965,18 @@ class orm:
         es = self.instance
 
         if type(ress) is db.dbresult:
-            # If we are given one resultset, we are probably loading an
-            # a single entity by id, i.e., ent = entity(id).
+            # If we are given one resultset (simple), we are probably
+            # loading an a single entity by id, i.e.::
+            #
+            #     ent = entity(id).
             ress = [ress]
             simple = True
             maps = self.mappings
         elif type(ress) is db.dbresultset:
-            # Multiple resultsets imply that we are loading an entities
-            # collection, i.e, ents = entities(field = 'value')
+            # Multiple resultsets (`not simple`) imply that we are
+            # loading an entities collection, i.e::
+            # 
+            #     ents = entities(field = 'value')
             simple = False
         else:
             raise TypeError('Invalid type of `ress`')
@@ -6106,7 +6110,7 @@ class orm:
         and type.  Usually, id is enough to distinguish between two
         entities. However, a superentity will have the same id as its
         subentity. In those cases, the class is needed to distinguish
-        between the subentity and the super entity. 
+        between the subentity and the superentity. 
         """
 
         # For each entity in edict

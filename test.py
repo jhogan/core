@@ -10866,13 +10866,18 @@ class test_orm(tester):
                 # However, now that ``rpr1.presentations`` loads the
                 # presentation entity objects and its subentities (e.g.,
                 # concerts), the location collection will always belong
-                # to presentation and not the subentity concert. So they
+                # to the pres1 object if pres1 is a presentation, or
+                # pres1.orm.super if pres1 is a concert. So they
                 # will have the same id attribute but not the same
                 # object identity.
                 #
-                # rpr1.presentations[x].locations[x] is 
+                # However, going forward, we will eventally want
+                # loc1.presentation to be of type concert when pres1 is
+                # concert, i.e., we want composites to be
+                # most-specialized:
+                #
+                # self._is(type(pres1), type(loc1.presentation))
                 self.eq(pres1.id, loc1.presentation.id)
-                print(type(loc1.presentation))
 
         # Test appending a collection of constituents to a constituents
         # collection. Save, reload and test.
