@@ -6022,7 +6022,8 @@ class orm:
                         # Add to entity dict
                         edict[key]= e
 
-                        es += e
+                        if isinstance(e, es.orm.entity):
+                            es += e
 
                         # Grab the mappings collection for the new
                         # entity while we are in the id column. The
