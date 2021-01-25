@@ -4943,41 +4943,68 @@ class mapping(entitiesmod.entity):
 
     @property
     def name(self):
+        """ The name of the ``mapping``
+
+        This is usually the name of the entity's attribute, and forms
+        part of the database's column name.
+        """
         return self._name
 
     @property
     def fullname(self):
+        """ The fully qualified name of the mapping.
+        """
         return '%s.%s' % (self.orm.table, self.name)
 
     @property
     def value(self):
+        """ Returns the value that the mapping object holds.
+
+        For most mappings objects, this will simply be the scalar value
+        of an entity's attribute. For other subtypes, this would be an
+        ``entity`` or ``entities`` object.
+        """
         msg = 'Value should be implemented by the subclass'
         raise NotImplementedError(msg)
 
     @value.setter
     def value(self, v):
+        """ Set's the value of the mapping object.
+        """
         msg = 'Value should be implemented by the subclass'
         raise NotImplementedError(msg)
 
     @property
     def isloaded(self):
+        """ Returns True if the mappings value has already been loaded
+        from the database.
+        """
+
         return self._value not in (None, undef)
 
     def clone(self):
+        """ Clones the ``mapping`` object.
+        """
         raise NotImplementedError('Abstract')
 
     @property
     def _reprargs(self):
+        """ Returns the arguments to represent the mapping.
+        """
         args = 'fullname="%s"'
         args %= self.fullname
         return args
         
     def __repr__(self):
+        """ Return the representation of the mapping.
+        """
         r = '%s(%s)'
         r %= (type(self).__name__, self._reprargs)
         return r
 
     def __str__(self):
+        """ Return the representation of the mapping.
+        """
         return repr(self)
     
 class associationsmapping(mapping):
