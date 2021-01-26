@@ -8038,8 +8038,9 @@ class associations(entities):
             ass = self.orm.entity()
             for map1 in ass.orm.mappings.entitymappings:
 
-                # Ignore if it's the `ass`'s 'proprietor' entitymapping
-                if map1.isproprietor:
+                # Ignore if it's the `ass`'s proprietor's or owner's
+                # entitymapping
+                if map1.isproprietor or map1.isowner:
                     continue
 
                 if map1.name != compmap.name:
