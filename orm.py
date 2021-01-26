@@ -5754,13 +5754,15 @@ class orm:
     @classproperty
     def builtins(cls):
         """ Return a list of mapping names that are standard on all
-        entities, vis. 'id', 'updatedat', 'createdat', and
+        entities, vis. 'id', 'updatedat', 'createdat', owner__userid and
         'proprietor__partyid'.
         """
+
         r = ['id', 'updatedat', 'createdat']
         for map in cls.mappings.foreignkeymappings:
-            if map.isproprietor:
+            if map.isproprietor or map.isowner:
                 r.append(map.name)
+
         return r
 
     @staticmethod
