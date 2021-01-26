@@ -9864,9 +9864,9 @@ class test_orm(tester):
         self.false(art1.orm.isnew)
         self.true(art1.orm.isdirty)
 
-        # Ensure that changing art1's properties don't change art's. This
-        # problem is likely to not reoccure, but did come up in early
-        # development.
+        # Ensure that changing art1's properties don't change art's.
+        # This problem is likely to not reoccur, but did come up in
+        # early development.
         for prop in art.orm.properties:
             if prop == 'id':
                 self.eq(getattr(art1, prop), getattr(art, prop), prop)
