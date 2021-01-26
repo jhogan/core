@@ -556,7 +556,30 @@ class pom_page(tester.tester):
             if e.__module__ in  mods:
                 e.orm.recreate()
 
-        orm.orm.owner = ecommerce.users.root
+        # Create an owner and get the root user
+        own = ecommerce.user(name='hford')
+        root = ecommerce.users.root
+
+        # Save the owner, the root user will be the owner's owner.
+        orm.orm.owner = root
+        own.owner = root
+        own.save()
+
+        # Going forward, `own` will be the owner of all future records
+        # created.
+        orm.orm.owner = own
+
+        # Create a company to be the propritor.
+        com = party.company(name='Ford Motor Company')
+        com.save()
+
+        # Set the company as the proprietory
+        orm.orm.setproprietor(com)
+
+        # Update the owner (hford) so that the company (Ford Motor
+        # Company) is the proprietor.
+        own.proprietor = com
+        own.save()
 
         foonet.orm.recreate()
 
