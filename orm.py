@@ -5008,20 +5008,20 @@ class mapping(entitiesmod.entity):
         return repr(self)
     
 class associationsmapping(mapping):
-    """ Represents a mapping to an entity's associations collection.
+    """ Represents a mapping to an entity's ``associations`` collection.
     """
     def __init__(self, name, ass, isderived=False):
         """ Set initial values.
         """
 
         # Store a reference to the actual association class
-        self.associations = ass
-        self._value = None
-        self._composite = None
+        self.associations  =  ass
+        self._value        =  None
+        self._composite    =  None
         super().__init__(name, isderived)
 
     def clone(self):
-        """ Create a new associationsmapping with same attribute values.
+        """ Return a new associationsmapping with same attribute values.
         """
         return associationsmapping(
             self.name, self.associations, self.isderived
@@ -5029,7 +5029,7 @@ class associationsmapping(mapping):
 
     @property
     def entities(self):
-        """ Returns the associations collection class.
+        """ Returns the association's collection class.
         """
         return self.associations
 
@@ -5052,6 +5052,8 @@ class associationsmapping(mapping):
         """ Load and memoize the associations collection object that the
         this map represents.
         """
+
+        # If self._value isn't set, go about setting it.
         if not self._value:
             maps = mappings()
 
@@ -5091,7 +5093,7 @@ class associationsmapping(mapping):
             # Make sure the associations collection knows it's composite
             asses.orm.composite = self.composite
 
-            # Memoize. Using the setter here ensure that self._setvalue
+            # Memoize. Using the setter here ensures that self._setvalue
             # gets called.
             self.value = asses
 
@@ -5099,7 +5101,7 @@ class associationsmapping(mapping):
 
     @value.setter
     def value(self, v):
-        """ Sets the associations collection object that the this map
+        """ Sets the associations collection object that this mapping
         represents.
         """
         self._setvalue('_value', v, 'value')
@@ -5114,26 +5116,72 @@ class associationsmapping(mapping):
         return args
 
 class entitiesmapping(mapping):
+    """ Represents a mapping to an entity's ``entities`` collection.
+
+    This mapping's value contains the constituents of an entity::
+
+        # Load an artist
+        art = artists(artid)
+
+        # Get the presentations belonging to the ``art`` entity.  The
+        # ``presentations`` are the constituents of ``art``, and the
+        # ``presentations`` collection objects stored in the
+        # ``entitiesmapping```s ``value`` property.
+        press = art.presentations
+    """
+
     def __init__(self, name, es):
+        """ Set the name and the ``entities`` class reference for the
+        mappings.
+
+        :param: name str: The name of the attribute that holds the
+        constituent. For example::
+
+            class presentations(orm.entities):
+                pass
+
+            class artist(orm.entity):
+                presentations = presentations
+
+        The presentation attribute of ``artist`` would be named
+        'presentations' here to reference the collection.
+
+        :param: es type: A reference to the entities class. In the
+        example given for the ``name`` parameter, ``es`` would be a
+        reference to the ``presentations`` class (not a instance of
+        that class).
+        """
         self.entities = es
         self._value = None
         super().__init__(name)
 
     @property
     def value(self):
+        """ Return the entities collection object that this
+        entitiesmapping represents.
+        """
         return self._value
 
     @value.setter
     def value(self, v):
+        """ Set the entities collection object that this entitiesmapping
+        represents.
+        """
         self._setvalue('_value', v, 'value')
 
     @property
     def _reprargs(self):
+        """ Returns the interpolation arguments for this object's
+        __repr__ method. See ``mapping.__repr__``.
+        """
         args = super()._reprargs
         args += ', isloaded=%s' % self.isloaded
         return args
 
     def clone(self):
+        """ Return a new ``entitiesmapping`` with the same values as
+        this one. 
+        """
         return entitiesmapping(self.name, self.entities)
 
 class entitymapping(mapping):
