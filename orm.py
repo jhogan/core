@@ -5287,6 +5287,11 @@ class entitymapping(mapping):
                 # If the given foreign key is mapped to the entity
                 # corresponding to self...
                 if map.entity is self.entity:
+
+                    # The FK must be an owner map if self is an owner
+                    # map.
+                    if map.isowner != self.isowner:
+                        continue
                     
                     # ... and if we have a foreign key value 
                     if map.value not in (undef, None):
