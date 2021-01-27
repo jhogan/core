@@ -5377,7 +5377,8 @@ class index(entitiesmod.entity):
         #
         # Adding the orm.index in the entity declaration ensures we have
         # a database index for this field
-        assert artist.orm.createtable ==  CREATE
+        #
+        # assert artist.orm.createtable ==  CREATE
 
     """
     def __init__(self, name=None, ordinal=None):
