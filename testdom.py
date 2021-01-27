@@ -550,7 +550,7 @@ class pom_page(tester.tester):
     def __init__(self):
         super().__init__()
         es = orm.orm.getentitys(includeassociations=True)
-        mods = 'party', 'ecommerce', 'pom', 'asset', 'apriori'
+        mods = 'party', 'ecommerce', 'pom', 'asset', 'apriori', 'file'
 
         for e in es:
             if e.__module__ in  mods:
@@ -1727,7 +1727,6 @@ class pom_page(tester.tester):
             def main(self):
                 assert req is www.request
                 assert res is www.response
-                assert usr is None
 
                 # Use req instead of www.request
                 lang = req.language

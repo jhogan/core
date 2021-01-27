@@ -2084,7 +2084,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         #   artists.count
         #
         # In this case, we get the all stream and use its count property
-        # because the request is interpreted as "give me the the number of rows
+        # because the request is interpreted as "give me the number of rows
         # in the artists table.
         #
         # If type(cls) is not type, it is being called of an instance::
@@ -2733,7 +2733,7 @@ class entitymeta(type):
 
                 elif ormmod.entity in mro:
                     # if v is a class that inherits from orm.entities,
-                    # create an entitymapping. This is for the the
+                    # create an entitymapping. This is for the
                     # composites of an association.
                     map = entitymapping(k, v)
                 elif isinstance(v, type):
@@ -3329,7 +3329,17 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         exec.execute()
 
     def _save(self, cur=None, guestbook=None):
+        """ A private method called by orm.save(). This method is where
+        most of the saving logic actually resides. See the docstring at
+        orm.save for an overview of the persistence operations.
+        """
 
+        # The guestbook list tracks the entity objects that have been
+        # _save()ed and prevents re-save()ing the same entity. Without
+        # the guestbook list, we would get infinite recursion errors
+        # because to save and entity is to save it and all the entity
+        # objects in its graph - some of which might be linked to each
+        # other.
         if guestbook is None:
             guestbook = list()
         
@@ -3338,9 +3348,15 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         guestbook.append(self)
 
+        # Don't save the entity if it doesn't pass its validation rules
+        # (not self.isvalid). If we are simply deleting the entity, the
+        # the validation rules don't matter.
         if not self.orm.ismarkedfordeletion and not self.isvalid:
             raise db.BrokenRulesError("Can't save invalid object", self)
 
+        # Determine if we are deleting, creating or updating the entity
+        # based on its presistence state. Grab the SQL necessary for
+        # the chosen operation.
         if self.orm.ismarkedfordeletion:
             crud = 'delete'
             sql, args = self.orm.mappings.getdelete()
@@ -3390,7 +3406,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 # If there is no sql, then the entity isn't new, dirty
                 # or marked for deletion. In that case, don't save.
                 # However, allow any constituents to be saved.
-                pass
 
             # For each of the constituent entities classes mapped to
             # self, set the foreignkeyfieldmapping to the id of self,
@@ -3632,9 +3647,109 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         
     @property
     def brokenrules(self):
+        """ Return the brokenrules collection for this entity. See
+        the getbrokenrules() method for more.
+        """
+
+        # The actual logic for this is in the getbrokenrules() since it
+        # can handle recursion with its optional guestbook (gb)
+        # parameter.
         return self.getbrokenrules()
 
     def getbrokenrules(self, gb=None):
+        """ Return the brokenrules collection for this entity.
+
+        Though the `brokenrules` property can be called for convenience,
+        subclasses should override this method in order to implement
+        their own validation logic. This method uses the `gb`
+        (guestbook) argument to prevent infinite recursion::
+
+            class person(self):
+                def getbrokenrules(self, *args, **kwargs):
+                    
+                    # Call up the inheritance hierarchy to get the
+                    # brokenrules for all the superentity objects
+                    # up to and including orm.entity.getbrokenrules.
+                    brs = super().getbrokenrules(*args, **kwargs)
+
+                    # Add our on validation: ensure emails have @ signs
+                    # in them.
+                    if '@' not in self.email:
+                        brs += brokenrule(
+                            msg = 'Invalid email address',
+                            prop = 'email',
+                            entity = self
+                        )
+
+                    # Return the brokenrules collection
+                    return brs
+
+        Given the above, we can expect the followiwng::
+            
+            per = person()
+
+            # Broken rule
+            per.email = 'jhoganATgmail.com'
+
+            # Assert that the rule is broken
+            assert per.brokenrules.count == 1
+            assert per.brokenrules.first.message == 'Invalid email address'
+            assert not per.isvalid
+
+            # Fix
+            per.email = 'jhogan@gmail.com'
+
+            # Assert that there are now no broken rules
+            assert not per.brokenrules.count
+            assert per.isvalid
+        
+        Subentity classes should override this method to implement
+        centralized versions of their validation logic. When they call
+        up the inheritence hierarchy (see example), this method will
+        eventually be called which adds the standard validation rules
+        for all entity objects, vis. type checking:
+
+            class person(self):
+                age = int
+                def getbrokenrules(self, *args, **kwargs):
+                    brs = super().getbrokenrules(*args, **kwargs)
+
+                    # Add our on validation: ensure emails have @ signs
+                    # in them.
+                    if '@' not in self.email:
+                        brs += brokenrule(
+                            msg = 'Invalid email address',
+                            prop = 'email',
+                            entity = self
+                        )
+
+                    # Return the brokenrules collection
+                    return brs
+
+            per = person()
+
+            # Break the stardard rule and the custom rule
+
+            # Age must be an int or coersable to an int 
+            # (e.g., per.age = 123 or per.age = "123")
+            per.age = 'abcdefg'  
+            per.email = 'jhoganATgmail.com'
+
+            # Now we have two broken rules
+            assert per.brokenrules.count == 2
+            assert per.brokenrules.first.message == 'Invalid email address'
+            assert per.brokenrules.second.message == 'age is wroge type'
+            assert not per.isvalid
+
+            # Fix
+            per.age = 123456
+            per.email = 'jhogan@gmail.com'
+
+            # Assert that there are now no broken rules
+            assert not per.brokenrules.count
+            assert per.isvalid
+        """
+
         brs = entitiesmod.brokenrules()
 
         if gb is None:
@@ -3648,6 +3763,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         gb.append(self)
             
+        # TODO:a4917600 I think we should be calling
+        # `super().getbrokenrules` here.
         sup = self.orm._super
         if sup:
             brs += sup.getbrokenrules(gb=gb)
@@ -3764,6 +3881,96 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         e.orm.mappings[attr].value = v
 
     def __getattribute__(self, attr):
+        """ Implements all attributes accesses for an entity.
+
+        In addition to returning the values for standard @property's,
+        methods and fields declared on the class, the __getattribute__
+        method searches the entity's internal mappings collection for
+        ORM attributes.
+            
+            class person(orm.entity):
+                # A standard field
+                AConstant = 1
+
+                # An ORM attribute
+                name = str
+
+                # A standard method
+                def get_upper_name(self):
+                    return name.upper()
+
+        In the above example, access to the field (AConstant), the ORM
+        attribute (name) and the standard method (get_upper_name) all go
+        through __getattribute__.
+
+        Access to standard fields and methods is simple - a call is
+        simply made to `object.__getattribute__(self, attr)`. The
+        internal mapping collection is scanned for the ORM attribute.
+
+        If the ORM attribute is not found in the given entity, the
+        inheritance hierachy is ascended to find it::
+
+            class party(orm.entity)
+                name = str
+
+            class person(orm.entity):
+                pass
+
+            per = person()
+
+            # The internal mapping for party.name is used since there is
+            # no person.name mapping.
+            per.name = 'Jesse'
+
+            # This can be demostrated by looking at the mapping of the
+            # super (party):
+            assert 'Jesse' == per.orm.super.orm.mappings['name'].value
+
+        In addition to primative ORM mappings (``fieldmappings``),
+        entitymappings, entitiesmappings and associationsmappings are
+        scanned here::
+
+            class persons(orm.entities): pass
+            class users(orm.entities): pass
+
+            class person(orm.entity):
+                # A person has zero or more users, thus a `person` has
+                # an entitiesmapping for the ``users`` collection that
+                # will be lazy-loaded here.
+                users = users
+
+            class user(orm.entity):
+                pass
+
+            per = person()
+
+            # Access the ``users`` collection via __getattribute__.
+            usrs = per.users
+
+        Associations and pseudocollections are also retrieved through
+        this method:::
+            class persons(orm.entities):          pass
+            class jobs(orm.entities):             pass
+            class job_persons(orm.associations):  pass
+
+            class person(orm.entity): pass
+            class job(orm.entity): pass
+
+            # A person can have multiple jobs and a job can be done by
+            # multiple persons
+            class job_person(orm.association):
+                person = person
+                job = job
+
+            # Get the association through __getattribute__
+            per = person()
+            jps = per.job_persons
+
+            # Alternatively, get the jobs collection through
+            # __getattribute__
+            jbs = per.jobs
+        """
+
         try:
             v = object.__getattribute__(self, attr)
             if isinstance(v, span):
@@ -4027,7 +4234,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             es += e
 
     def __repr__(self):
-        """ Return a tabularized list of ``self``'s properties and their
+        """ Return a tabularized list of ``self``'s attributes and their
         corresponding values. Any exceptions that happen to occure will
         be trapped and a string representations of the exception will be
         returned."""
@@ -4106,13 +4313,53 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             return '%s (Exception: %s) ' % (super().__repr__(), str(ex))
 
     def __str__(self):
+        """ Return the value of the entity object's name attribute if
+        there is one. Otherwise, return the entity object's id.
+
+        This is a generic implementation. The author of entity classes
+        should feel free to override this method to return the string
+        that best represents the object in most situation.
+        """
         if hasattr(self, 'name'):
             return '"%s"' % self.name
             
         return str(self.id)
             
 class mappings(entitiesmod.entities):
+    """ A collection of mappings.
+
+    Each entity, whether as a static class or an instance, has a
+    mappings collection. It can be accessed and manipulated from the
+    entity, though usually this should be done by ORM code; not code
+    that uses the ORM (i.e., web code)::
+
+        class person(orm.entities):
+            name = str
+
+        # Access the person's mappings collection to assert that the
+        # "name" mapping is a str.
+        assert person.orm.mappings['name'].type = orm.types.str
+
+        # Same as above but use an instance of person
+        assert person().orm.mappings['name'].type = orm.types.str
+
+    See the docstring for ``mapping`` for more information on mapping
+    objects themselves.
+    """
     def __init__(self, initial=None, orm=None):
+        """ Initialize a mappings collection.
+
+        :param: initial sequence: A collection of mappings to initilize
+        this collection with.
+
+        :param: orm orm: A instance of, or reference to, the ``orm``
+        class that this mappings collection corresponds to. This allows
+        code in the mappings collection to access the ``entity`` object
+        it corresponds to::
+            
+            id = self.orm.entity.id
+        """
+
         super().__init__(initial)
         self._orm = orm
         self._populated = False
@@ -4122,35 +4369,89 @@ class mappings(entitiesmod.entities):
         self.oncountchange += self._self_oncountchange
 
     def _self_oncountchange(self, src, eargs):
+        """ When the number of items in this collection changes, set
+        self._populated to False. This ensure the self._populate()
+        method gets run the next time a user tries to access an element
+        (such as when the user iterates over the mappings collection).
+
+        :param: src object: The source object that triggered the event.
+
+        :param: eargs entities.eventargs: The ``eventargs`` is only here
+        as a formality, at the moment. (NOTE It seems like this argument
+        should hold the 'before1 count and perhaps the 'after' count).
+        """
         self._populated = False
 
     def __getitem__(self, key):
+        """ Given ``key``, the map is returned whose name matches the
+        key.
+
+            map = myent.orm.mappings['id']
+            assert map.name == 'id'
+
+        If the map is not found, an IndexError is raised.
+        """
+
+        # Ensure the collection has been properly "populated" before
+        # access its elements.
         self._populate()
 
         if self._nameix is not None and isinstance(key, str):
             try:
                 return self._nameix[key]
             except KeyError as ex:
+                # Convert the KeyError into and IndexError. When an
+                # entities.entities collection is indexed, and the index
+                # is not found, we expect and IndexError. A KeyError is
+                # more appropriate to dict's.
                 raise IndexError(str(ex))
-            
+
+        # If key is not a str, use the default __getitem__
         return super().__getitem__(key)
 
     def __iter__(self):
+        """ Before iterating over the mappings collection (or accessing
+        mappings' elements in any other way), we want to ensure that
+        ``self._populate`` is called. See ``self._populate`` for more.
+        """
         self._populate()
         return super().__iter__()
 
     def __contains__(self, key):
+        """ Test if ``key`` is in the mappings collection.
+
+        For example, instead of writing the following::
+
+            for map in maps:
+                if map.name == 'somemap':
+                    found = True
+                    break
+            else:
+                found = False
+
+        we could just write::
+            
+            found = 'somemap' in maps
+
+        :param: key str: The key to look for.
+        """
         if isinstance(key, str):
             return any(x.name == key for x in self)
         else:
             # NOTE entities.entities should have a __contains__ method.
             # Surprisingly, I couldn't find one.
             raise ValueError('Invalid type')
-            return super().__contains__(key)
 
     def _populate(self):
         """ Reflect on the entities and associations to populate the
         mappings collection with up-to-date mappings values.
+
+        Note that the method will abort if self._populated is True which
+        is typically the case; otherwise it would needlessly populate
+        the collection. self._populated starts out as False and is set
+        to True when this method is complete. It only changes when the
+        the number of maps in the collection changes (see
+        mappings._self._oncountchange).
         """
         # If there is no ._orm, then we are using this class just for
         # collection purposes, so don't try to populate here.
@@ -4291,6 +4592,16 @@ class mappings(entitiesmod.entities):
         self._populated = True
 
     def clear(self, derived=False):
+        """ Remove all elements from the mapping collection. If
+        ``derived` is True, only remove the mapping objects whose
+        ``isderived` property is True. Othewise, remove all mapping
+        objects.
+
+        :param: derived bool: If ``derived` is True, only remove the
+        mapping objects whose ``isderived` property is True. Othewise,
+        remove all mapping objects.  (Derived properties are those that
+        are created in the _populate() method).
+        """
         if derived:
             for map in [x for x in self if x.isderived]:
                 self.remove(map)
@@ -4298,11 +4609,34 @@ class mappings(entitiesmod.entities):
             super().clear()
 
     def sort(self):
+        """ Sort the mapping collection such that it is in a typical,
+        predictable order for a collection of table columns. For
+        example, the "id" column is typically the first in a list of
+        table colums followed by foreign keys. For example::
+
+            id                         # Primary Key
+            createdat                  # Builtins
+            updatedat
+            proprietor__partyid
+            owner__userid
+            test__artistid             # Foreign Keys
+            product__productid
+            name                       # Standard fields
+            number
+            slug
+            begin
+            end
+
+        This is done mainly for aesthetics. It might be assumed that
+        INSERTs and UPDATEs rely on this ordering, but that is no longer
+        the case.
+        """
         # Make sure the mappings are sorted in the order they are
         # instantiated
         super().sort('_ordinal')
 
         # Ensure builtins attr's come right after id
+        # TODO We should used orm.builtins for this
         for attr in reversed(('id', 'createdat')):
             try:
                 attr = self.pop(attr)
@@ -4310,6 +4644,7 @@ class mappings(entitiesmod.entities):
                 # attr hasn't been added to self yet
                 pass
             else:
+                # Unshift (insert at the begining) attr into self
                 self << attr
 
         # Insert FK maps right after PK map
@@ -4321,29 +4656,74 @@ class mappings(entitiesmod.entities):
 
     @property
     def foreignkeymappings(self):
+        """ A generator to return all the foreignkeyfieldmapping objects in the
+        collection::
+
+            for map in maps.foreignkeyfieldmapping:
+                assert type(map) is foreignkeyfieldmapping
+        """
         return self._generate(type=foreignkeyfieldmapping)
 
     @property
     def fieldmappings(self):
+        """ A generator to return all the fieldmapping objects in the
+        collection::
+
+            for map in maps.fieldmappings:
+                assert type(map) is fieldmapping
+        """
         return self._generate(type=fieldmapping)
 
     @property
     def primarykeymapping(self):
+        """ Return the primary key mapping from the collection::
+
+            assert maps.primarykeymapping.name == 'id'
+        """
         return list(self._generate(type=primarykeyfieldmapping))[0]
 
     @property
     def entitiesmappings(self):
+        """ A generator to return all the entitiesmapping objects in the
+        collection::
+
+            for map in maps.entitiesmappings:
+                assert type(map) is entitiesmapping
+        """
         return self._generate(type=entitiesmapping)
 
     @property
     def entitymappings(self):
+        """ A generator to return all the entitymapping objects in the
+        collection::
+
+            for map in maps.entitymappings:
+                assert type(map) is entitymapping
+        """
         return self._generate(type=entitymapping)
 
     @property
     def associationsmappings(self):
+        """ A generator to return all the associationsmapping objects in
+        the collection::
+
+            for map in maps.associationsmappings:
+                assert type(map) is associationsmapping
+        """
         return self._generate(type=associationsmapping)
 
     def _generate(self, type):
+        """ A generator to return all the mapping objects of a given
+        type::
+
+            for map in self._generate(type=associationsmapping):
+                assert type(map) is associationsmapping
+
+        :param: type type: The type of mapping object, e.g.,
+        associationsmapping, entitymapping, entitiesmapping,
+        primarykeyfieldmapping, fieldmapping, foreignkeyfieldmapping,
+        etc,
+        """
         for map in self:
             if builtins.type(map) is type:
                 yield map
@@ -4351,7 +4731,8 @@ class mappings(entitiesmod.entities):
     @property
     def all(self):
         ''' Returns a generator of all mapping objects including
-        supermappings.  '''
+        supermappings.
+        '''
         for map in self:
             yield map
 
@@ -4360,6 +4741,9 @@ class mappings(entitiesmod.entities):
 
     @property
     def supermappings(self):
+        """ Returns a ``mappings`` collection containing all the
+        mappings found from the superentity objects of ``self``.
+        """
         if not self._supermappings:
             e = self.orm.entity.orm.super
             self._supermappings = mappings()
@@ -4372,6 +4756,13 @@ class mappings(entitiesmod.entities):
             
     @property
     def orm(self):
+        """ Returns the ``orm`` instance that this mappings collection
+        corresponds to. This is the bridge between the ``mappings``
+        collection and the entity it's associated with::
+
+            e = self.orm.entity
+            assert e.orm.mappings is self
+        """
         return self._orm
 
     @property
@@ -4389,24 +4780,54 @@ class mappings(entitiesmod.entities):
         return ixs
 
     def getinsert(self):
+        """ Returns a tuple whose first element is an INSERT INTO
+        statement and whose second element is the parameterized
+        arguments for the INSERT INTO. The combination is used by
+        ``orm.entity.save`` to create a record in the database for the
+        entity if one doesn't already exist. 
+        
+        Calling the method does not manipulate any data in the database;
+        it simply returns the INSERT INTO statement and arguments, so
+        it is safe to call for debugging or other, similar purposes.
+        """
+
+        # Get the table name
         tbl = self.orm.table
 
+        # Get a list() of fieldmapping objects for the entity
         maps = [x for x in self if isinstance(x, fieldmapping)]
 
+        # Build the field list of the INSERT INTO string
         flds = ', '.join('`%s`' % x.name for x in maps)
 
+        # Create a string of placeholders (%s) so we can parameterize
+        # the VALUES clause.
         placeholders = ', '.join(['%s'] * len(maps))
 
+        # Build the INSERT INTO stirng including the field names and
+        # VALUES parameters.
         sql = 'INSERT INTO %s (%s) VALUES (%s);'
         sql %= (tbl, flds, placeholders)
 
+        # Get the args. These will be values from the entity's
+        # attributes.
         args = self._getargs()
 
+        # Add MySQL introducers (e.g., _binary) where necessary.
         sql = orm.introduce(sql, args)
 
         return sql, args
 
     def getupdate(self):
+        """ Returns a tuple whose first element is an UPDATE statement
+        and whose second element is the parameterized arguments for the
+        UPDATE. The combination is used by ``orm.entity.save`` to update
+        the record in the database for the entity if it ``isdirty``.
+        
+        Calling the method does not manipulate any data in the database;
+        it simply returns the UPDATE statement and arguments, so
+        it is safe to call for debugging or other, similar purposes.
+        """
         set = ''
         for map in self:
             if isinstance(map, fieldmapping):
@@ -4423,24 +4844,43 @@ SET {}
 WHERE id = %s;
         """.format(self.orm.table, set)
 
+        # Get the args. These will be values from the entity's
+        # attributes.
         args = self._getargs()
 
         # Move the id value from the bottom to the top
         args.append(args.pop(0))
 
+        # Add MySQL introducers (e.g., _binary) where necessary.
         sql = orm.introduce(sql, args)
+
         return sql, args
 
     def getdelete(self):
+        """ Returns a tuple whose first element is an DELETE statement
+        and whose second element is the parameterized arguments for the
+        DELETE. The combination is used by ``orm.entity.save`` to delete
+        the record in the database for the entity if it
+        ``ismarkedfordeletion``.
+        
+        Calling the method does not manipulate any data in the database;
+        it simply returns the DELETE statement and arguments, so
+        it is safe to call for debugging or other, similar purposes.
+        """
         sql = 'DELETE FROM {} WHERE id = %s;'.format(self.orm.table)
 
         args = self['id'].value.bytes,
 
+        # Add _binary introducer to the id's binary value in the
+        # string.
         sql = orm.introduce(sql, args)
 
         return sql, args
 
     def _getargs(self):
+        """ Collect attribute values for the entity into a list for
+        ``getupdate()`` and ``getinsert()``.
+        """
         r = []
         for map in self:
             if isinstance(map, fieldmapping):
@@ -4459,6 +4899,8 @@ WHERE id = %s;
         return r
 
     def clone(self, orm_):
+        """ Create a clone of the ``mappings`` collection. 
+        """
         r = mappings(orm=orm_)
 
         r._nameix = dict()
@@ -4477,71 +4919,136 @@ WHERE id = %s;
         return r
 
 class mapping(entitiesmod.entity):
+    """ An abstract class to map each entity's attributes to database
+    fields.
+
+    Promenent attributes of a ``mapping`` include ``name``, which is the
+    name of the attribute being mapped and ``value`` which is the value
+    of the attribute being mapped. 
+    
+    Concrete implementations include, primarykeyfieldmapping (for the
+    ``id`` attribute/field), and foreignkeyfieldmapping (for foreign key
+    mappings). ``fieldmapping`` maps the scalar attributes of a class to
+    the database. Other classes such as ``entitiesmapping``,
+    ``entitymapping`` and ``associationsmapping`` deal with the
+    relationship between the ``entity`` and other ``entity`` objects and
+    ``entities`` collections.
+    """
+   
+    # A sequential number to indicate the order the mapping was
+    # instatiated.
     ordinal = 0
 
     def __init__(self, name, isderived=False):
+        """ Create a new ``mapping`` object. This is usually done in
+        ``entitymeta.__new__`` or in ``mappings._populate``.
+
+        :param: name str: The name of the mapping. This corresponds to
+        the field name in the database and the attribute name in the
+        entity.
+
+        :param: isderived bool: If True, the mapping was created in the
+        ``mappings._populate`` method. This implies that the mapping
+        was derived from the _populate algorithm instead of being
+        explictly declared by the ORM user.
+        """
         self._name = name
+
+        # Increment and assign the ordinal
         mapping.ordinal += 1
         self._ordinal = mapping.ordinal
         self.isderived = isderived
 
     def isdefined(self):
+        """ Returns True if the value of the ``mapping`` has been set.
+
+        Note that the ``undef`` class is used as the default setting for
+        a ``mapping`` because a value of None represents a ``null``
+        value in the database - which is considered a defined value.
+        """
         return self._value is not undef
 
     @property
     def name(self):
+        """ The name of the ``mapping``
+
+        This is usually the name of the entity's attribute, and forms
+        part of the database's column name.
+        """
         return self._name
 
     @property
     def fullname(self):
+        """ The fully qualified name of the mapping.
+        """
         return '%s.%s' % (self.orm.table, self.name)
 
     @property
     def value(self):
+        """ Returns the value that the mapping object holds.
+
+        For most mappings objects, this will simply be the scalar value
+        of an entity's attribute. For other subtypes, this would be an
+        ``entity`` or ``entities`` object.
+        """
         msg = 'Value should be implemented by the subclass'
         raise NotImplementedError(msg)
 
     @value.setter
     def value(self, v):
+        """ Set's the value of the mapping object.
+        """
         msg = 'Value should be implemented by the subclass'
         raise NotImplementedError(msg)
 
     @property
     def isloaded(self):
+        """ Returns True if the mappings value has already been loaded
+        from the database.
+        """
+
         return self._value not in (None, undef)
 
     def clone(self):
+        """ Clones the ``mapping`` object.
+        """
         raise NotImplementedError('Abstract')
 
     @property
     def _reprargs(self):
+        """ Returns the arguments to represent the mapping.
+        """
         args = 'fullname="%s"'
         args %= self.fullname
         return args
         
     def __repr__(self):
+        """ Return the representation of the mapping.
+        """
         r = '%s(%s)'
         r %= (type(self).__name__, self._reprargs)
         return r
 
     def __str__(self):
+        """ Return the representation of the mapping.
+        """
         return repr(self)
     
 class associationsmapping(mapping):
-    """ Represents a mapping to an entity's associations collection.
+    """ Represents a mapping to an entity's ``associations`` collection.
     """
     def __init__(self, name, ass, isderived=False):
         """ Set initial values.
         """
 
         # Store a reference to the actual association class
-        self.associations = ass
-        self._value = None
-        self._composite = None
+        self.associations  =  ass
+        self._value        =  None
+        self._composite    =  None
         super().__init__(name, isderived)
 
     def clone(self):
-        """ Create a new associationsmapping with same attribute values.
+        """ Return a new associationsmapping with same attribute values.
         """
         return associationsmapping(
             self.name, self.associations, self.isderived
@@ -4549,7 +5056,7 @@ class associationsmapping(mapping):
 
     @property
     def entities(self):
-        """ Returns the associations collection class.
+        """ Returns the association's collection class.
         """
         return self.associations
 
@@ -4572,6 +5079,8 @@ class associationsmapping(mapping):
         """ Load and memoize the associations collection object that the
         this map represents.
         """
+
+        # If self._value isn't set, go about setting it.
         if not self._value:
             maps = mappings()
 
@@ -4611,7 +5120,7 @@ class associationsmapping(mapping):
             # Make sure the associations collection knows it's composite
             asses.orm.composite = self.composite
 
-            # Memoize. Using the setter here ensure that self._setvalue
+            # Memoize. Using the setter here ensures that self._setvalue
             # gets called.
             self.value = asses
 
@@ -4619,7 +5128,7 @@ class associationsmapping(mapping):
 
     @value.setter
     def value(self, v):
-        """ Sets the associations collection object that the this map
+        """ Sets the associations collection object that this mapping
         represents.
         """
         self._setvalue('_value', v, 'value')
@@ -4634,26 +5143,72 @@ class associationsmapping(mapping):
         return args
 
 class entitiesmapping(mapping):
+    """ Represents a mapping to an entity's ``entities`` collection.
+
+    This mapping's value contains the constituents of an entity::
+
+        # Load an artist
+        art = artists(artid)
+
+        # Get the presentations belonging to the ``art`` entity.  The
+        # ``presentations`` are the constituents of ``art``, and the
+        # ``presentations`` collection objects stored in the
+        # ``entitiesmapping```s ``value`` property.
+        press = art.presentations
+    """
+
     def __init__(self, name, es):
+        """ Set the name and the ``entities`` class reference for the
+        mappings.
+
+        :param: name str: The name of the attribute that holds the
+        constituent. For example::
+
+            class presentations(orm.entities):
+                pass
+
+            class artist(orm.entity):
+                presentations = presentations
+
+        The presentation attribute of ``artist`` would be named
+        'presentations' here to reference the collection.
+
+        :param: es type: A reference to the entities class. In the
+        example given for the ``name`` parameter, ``es`` would be a
+        reference to the ``presentations`` class (not a instance of
+        that class).
+        """
         self.entities = es
         self._value = None
         super().__init__(name)
 
     @property
     def value(self):
+        """ Return the entities collection object that this
+        entitiesmapping represents.
+        """
         return self._value
 
     @value.setter
     def value(self, v):
+        """ Set the entities collection object that this entitiesmapping
+        represents.
+        """
         self._setvalue('_value', v, 'value')
 
     @property
     def _reprargs(self):
+        """ Returns the interpolation arguments for this object's
+        __repr__ method. See ``mapping.__repr__``.
+        """
         args = super()._reprargs
         args += ', isloaded=%s' % self.isloaded
         return args
 
     def clone(self):
+        """ Return a new ``entitiesmapping`` with the same values as
+        this one. 
+        """
         return entitiesmapping(self.name, self.entities)
 
 class entitymapping(mapping):
@@ -4663,12 +5218,11 @@ class entitymapping(mapping):
     def __init__(self, name, e, isderived=False):
         """ Sets the initial values.
 
-        :param: str name:       The name of the map
+        :param: str name: The name of the map
 
-        :param: entity e:       The entity class associatied with this
-        map
+        :param: entity e: The entity class associatied with this map
 
-        :param: bool isderived: Indicates whether or not the the map was
+        :param: bool isderived: Indicates whether or not the map was
         created/derived by the mappings._populate() method
         """
         self.entity = e
@@ -4677,16 +5231,26 @@ class entitymapping(mapping):
 
     @property
     def issubjective(self):
+        """ Returns True if the mapping is for the subjective side of a
+        reflexive association; False otherwise.
+        """
         return self.orm.isreflexive \
                and self.name.startswith('subject') 
 
     @property
     def isobjective(self):
+        """ Returns True if the mapping is for the objective side of a
+        reflexive association; False otherwise.
+        """
         return self.orm.isreflexive \
                and self.name.startswith('object') 
 
     @property
     def isproprietor(self):
+        """ Returns True if the ``entity`` being referenced is the
+        proprietor (``party.party``) object that each ``entity`` object
+        has. Returns False otherwise.
+        """
         return self.name == 'proprietor'
 
     @property
@@ -4710,11 +5274,10 @@ class entitymapping(mapping):
             # load the entity so we will just return None.
             for map in self.orm.mappings.foreignkeymappings:
 
-                # Experimental reflexive logic. Here we are trying to
-                # make sure that the correct map is selected since doing
-                # a simple type test (like the one below) is
-                # insufficient because reflexive maps will have two
-                # mappings with the same type.
+                # Here we are trying to make sure that the correct map
+                # is selected since doing a simple type test (like the
+                # one below) is insufficient because reflexive maps will
+                # have two mappings with the same type.
                 if (
                     self.orm.isreflexive
                     and not map.name.startswith(self.name + '__')
@@ -4741,7 +5304,8 @@ class entitymapping(mapping):
         self._setvalue('_value', v, 'value')
 
     def clone(self):
-        """ Clone the entitymapping object.
+        """ Return a new entitymapping object with the same values as
+        this one.
         """
         return entitymapping(
             self.name, self.entity, isderived=self.isderived
@@ -4749,8 +5313,8 @@ class entitymapping(mapping):
 
     @property
     def _reprargs(self):
-        """ A list of arguments used by the super classes __repr__
-        method.
+        """ Returns the interpolation arguments for this object's
+        __repr__ method. See ``mapping.__repr__``.
         """
         args = super()._reprargs
         args += ', isloaded=%s' % self.isloaded
@@ -4784,9 +5348,38 @@ class aggregateindex(entitiesmod.entity):
         return r
             
 class indexes(entitiesmod.entities):
-    pass
+    """ A collection of indexes. See ``index`` for more.
+    """
 
 class index(entitiesmod.entity):
+    """ The ``index`` class is used by entity declarations to specify
+    that a database index should be applied by the mapping::
+        
+        class artist(orm.entity):
+            ssn = str, orm.index
+
+        CREATE = '''
+            CREATE TABLE `main_artists`(
+                `id` binary(16) primary key,
+                `proprietor__partyid` binary(16),
+                `createdat` datetime(6),
+                `updatedat` datetime(6),
+                `ssn` varchar(255),
+                INDEX proprietor__partyid_ix
+                (proprietor__partyid),
+                INDEX ssn_ix (ssn)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        """
+
+        # Notice that the artist's CREATE TABLE  DDL has the line:
+        #
+        #     INDEX ssn_ix (ssn)
+        #
+        # Adding the orm.index in the entity declaration ensures we have
+        # a database index for this field
+        assert artist.orm.createtable ==  CREATE
+
+    """
     def __init__(self, name=None, ordinal=None):
         self._name = name
         self.ordinal = ordinal
@@ -4833,7 +5426,7 @@ class attr:
         value.
 
         This function is injected into imperitive attributes to
-        provide easy access to the the attributes mapping value.
+        provide easy access to the attributes mapping value.
         """
         if v is undef:
             try:
@@ -7274,9 +7867,8 @@ class orm:
 
     @staticmethod
     def introduce(sql, args):
-        """
-        Use ``args`` to add introducers ('_binary', et. al.) before the
-        unquoted placeholder tokens (%s) in ``sql``.
+        """ Use ``args`` to add introducers ('_binary', et. al.) before
+        the unquoted placeholder tokens (%s) in ``sql``.
 
         :param: str  sql:  A whole are partial SQL statement.
         :param: list args: Parameters to use with query.
