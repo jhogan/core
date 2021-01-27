@@ -5369,7 +5369,6 @@ class index(entitiesmod.entity):
                 (proprietor__partyid),
                 INDEX ssn_ix (ssn)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-        """
 
         # Notice that the artist's CREATE TABLE  DDL has the line:
         #
