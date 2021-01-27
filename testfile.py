@@ -420,12 +420,30 @@ class file_file(tester.tester):
             file.inodes,
         )
 
-        # Proprietor
-        com = party.company(name='Carapacian')
-        orm.orm.setproprietor(com)
+        # Create an owner and get the root user
+        own = ecommerce.user(name='hford')
+        root = ecommerce.users.root
+
+        # Save the owner, the root user will be the owner's owner.
+        orm.orm.owner = root
+        own.owner = root
+        own.save()
+
+        # Going forward, `own` will be the owner of all future records
+        # created.
+        orm.orm.owner = own
+
+        # Create a company to be the propritor.
+        com = party.company(name='Ford Motor Company')
         com.save()
 
-        orm.orm.owner = ecommerce.users.root
+        # Set the company as the proprietory
+        orm.orm.setproprietor(com)
+
+        # Update the owner (hford) so that the company (Ford Motor
+        # Company) is the proprietor.
+        own.proprietor = com
+        own.save()
 
     def it_creates_empty_file(self):
         ''' Instatiate file '''
