@@ -13628,7 +13628,7 @@ class test_orm(tester):
                 join(press, locs, t)
                 join(arts1, artlocs, t)
 
-            self.two(arts1.orm.joins)
+            self.four(arts1.orm.joins)
             self.one(press.orm.joins)
             self.zero(locs.orm.joins)
 
@@ -13684,8 +13684,8 @@ class test_orm(tester):
             join(arts1,  press,    t)
             join(arts1,  artlocs,  t)
 
-            self.two(arts1.orm.joins)
-            self.one(press.orm.joins)
+            self.four(arts1.orm.joins)
+            self.three(press.orm.joins)
             self.zero(locs.orm.joins)
 
             self.one(arts1)
@@ -13741,9 +13741,8 @@ class test_orm(tester):
                 join(arts1, press, t)
                 join(press, locs, t)
                 join(arts1, artlocs, t)
-                
 
-            self.two(arts1.orm.joins)
+            self.four(arts1.orm.joins)
             self.one(press.orm.joins)
             self.zero(locs.orm.joins)
             
