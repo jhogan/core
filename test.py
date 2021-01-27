@@ -13431,15 +13431,6 @@ class test_orm(tester):
 
         self.zero(self.chronicles)
 
-    def it_calls_outerjoin(self):
-        # Outer join artists with presentations; no predicates
-        arts1 = artists()
-        press1 = presentations()
-
-        # I don't currently see the point in OUTER LEFT JOINs in ORMs, so,
-        # until a use case is presented, we will raise a NotImplementedError
-        self.expect(NotImplementedError, lambda: arts1.outerjoin(press1))
-        
     def it_ensures_that_the_match_columns_have_full_text_indexes(self):
         exprs = (
             "match (firstname) against ('keyword') and firstname = 1",
