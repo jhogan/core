@@ -2084,7 +2084,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         #   artists.count
         #
         # In this case, we get the all stream and use its count property
-        # because the request is interpreted as "give me the the number of rows
+        # because the request is interpreted as "give me the number of rows
         # in the artists table.
         #
         # If type(cls) is not type, it is being called of an instance::
@@ -2733,7 +2733,7 @@ class entitymeta(type):
 
                 elif ormmod.entity in mro:
                     # if v is a class that inherits from orm.entities,
-                    # create an entitymapping. This is for the the
+                    # create an entitymapping. This is for the
                     # composites of an association.
                     map = entitymapping(k, v)
                 elif isinstance(v, type):
@@ -3326,7 +3326,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
     def _save(self, cur=None, guestbook=None):
         """ A private method called by orm.save(). This method is where
         most of the saving logic actually resides. See the docstring at
-        orm.save for an overview of the the persistence operations.
+        orm.save for an overview of the persistence operations.
         """
 
         # The guestbook list tracks the entity objects that have been
@@ -5191,12 +5191,11 @@ class entitymapping(mapping):
     def __init__(self, name, e, isderived=False):
         """ Sets the initial values.
 
-        :param: str name:       The name of the map
+        :param: str name: The name of the map
 
-        :param: entity e:       The entity class associatied with this
-        map
+        :param: entity e: The entity class associatied with this map
 
-        :param: bool isderived: Indicates whether or not the the map was
+        :param: bool isderived: Indicates whether or not the map was
         created/derived by the mappings._populate() method
         """
         self.entity = e
@@ -5205,16 +5204,26 @@ class entitymapping(mapping):
 
     @property
     def issubjective(self):
+        """ Returns True if the mapping is for the subjective side of a
+        reflexive association; False otherwise.
+        """
         return self.orm.isreflexive \
                and self.name.startswith('subject') 
 
     @property
     def isobjective(self):
+        """ Returns True if the mapping is for the objective side of a
+        reflexive association; False otherwise.
+        """
         return self.orm.isreflexive \
                and self.name.startswith('object') 
 
     @property
     def isproprietor(self):
+        """ Returns True if the ``entity`` being referenced is the
+        proprietor (``party.party``) object that each ``entity`` object
+        has. Returns False otherwise.
+        """
         return self.name == 'proprietor'
 
     @property
@@ -5234,11 +5243,10 @@ class entitymapping(mapping):
             # load the entity so we will just return None.
             for map in self.orm.mappings.foreignkeymappings:
 
-                # Experimental reflexive logic. Here we are trying to
-                # make sure that the correct map is selected since doing
-                # a simple type test (like the one below) is
-                # insufficient because reflexive maps will have two
-                # mappings with the same type.
+                # Here we are trying to make sure that the correct map
+                # is selected since doing a simple type test (like the
+                # one below) is insufficient because reflexive maps will
+                # have two mappings with the same type.
                 if (
                     self.orm.isreflexive
                     and not map.name.startswith(self.name + '__')
@@ -5265,7 +5273,8 @@ class entitymapping(mapping):
         self._setvalue('_value', v, 'value')
 
     def clone(self):
-        """ Clone the entitymapping object.
+        """ Return a new entitymapping object with the same values as
+        this one.
         """
         return entitymapping(
             self.name, self.entity, isderived=self.isderived
@@ -5273,8 +5282,8 @@ class entitymapping(mapping):
 
     @property
     def _reprargs(self):
-        """ A list of arguments used by the super classes __repr__
-        method.
+        """ Returns the interpolation arguments for this object's
+        __repr__ method. See ``mapping.__repr__``.
         """
         args = super()._reprargs
         args += ', isloaded=%s' % self.isloaded
@@ -5308,9 +5317,38 @@ class aggregateindex(entitiesmod.entity):
         return r
             
 class indexes(entitiesmod.entities):
-    pass
+    """ A collection of indexes. See ``index`` for more.
+    """
 
 class index(entitiesmod.entity):
+    """ The ``index`` class is used by entity declarations to specify
+    that a database index should be applied by the mapping::
+        
+        class artist(orm.entity):
+            ssn = str, orm.index
+
+        CREATE = '''
+            CREATE TABLE `main_artists`(
+                `id` binary(16) primary key,
+                `proprietor__partyid` binary(16),
+                `createdat` datetime(6),
+                `updatedat` datetime(6),
+                `ssn` varchar(255),
+                INDEX proprietor__partyid_ix
+                (proprietor__partyid),
+                INDEX ssn_ix (ssn)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        """
+
+        # Notice that the artist's CREATE TABLE  DDL has the line:
+        #
+        #     INDEX ssn_ix (ssn)
+        #
+        # Adding the orm.index in the entity declaration ensures we have
+        # a database index for this field
+        assert artist.orm.createtable ==  CREATE
+
+    """
     def __init__(self, name=None, ordinal=None):
         self._name = name
         self.ordinal = ordinal
@@ -5357,7 +5395,7 @@ class attr:
         value.
 
         This function is injected into imperitive attributes to
-        provide easy access to the the attributes mapping value.
+        provide easy access to the attributes mapping value.
         """
         if v is undef:
             try:
