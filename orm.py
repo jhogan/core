@@ -5386,12 +5386,20 @@ class index(entitiesmod.entity):
 
     """
     def __init__(self, name=None, ordinal=None):
+        """ Initialize the index.
+
+        :param: name str: The name of the index
+
+        :param: name ordinal: The order the index comes in.
+        """
         self._name = name
         self.ordinal = ordinal
         self.map = None
 
     @property
     def name(self):
+        """ The name of the database index.
+        """
         name = self._name if self._name else self.map.name
 
         name = name if name.endswith('_ix') else name + '_ix'
@@ -5399,17 +5407,27 @@ class index(entitiesmod.entity):
         return name
 
     def __str__(self):
+        """ Strung indexes are the index's name.
+        """
         return self.name
     
     def __repr__(self):
+        """ A string representation of the index.
+        """
         return super().__repr__() + ' ' + self.name
 
 class fulltexts(indexes):
-    pass
+    """ A collection of fulltext objects.
+    """
 
 class fulltext(index):
+    """ Represents a MySQL FULLTEXT index.
+    """
     @property
     def name(self):
+        """ Returns the name of the FULLTEXT index.
+        """
+
         name = self._name if self._name else self.map.name
 
         name = name if name.endswith('_ftix') else name + '_ftix'
