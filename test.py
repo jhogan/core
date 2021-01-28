@@ -7722,6 +7722,18 @@ class test_orm(tester):
 
         press1 = presentations(name=name)
 
+        self.two(press1.orm.joins)
+        self.true(concerts in press1.orm.joins)
+        self.true(exhibitions in press1.orm.joins)
+
+        self.true(concerts in press1.orm.joins)
+        self.true(exhibitions in press1.orm.joins)
+
+        self.one(press1.orm.joins.second.entities.orm.joins)
+        self.true(
+            unveilings in press1.orm.joins.second.entities.orm.joins
+        )
+
         with self._chrontest() as t:
             t(lambda: press1.sort())
             t.retrieved(press1)
@@ -13797,7 +13809,8 @@ class test_orm(tester):
                 join(press,  locs,     t)
 
             # Test join counts
-            self.two(arts1.orm.joins)
+
+            self.four(arts1.orm.joins)
             self.one(press.orm.joins)
             self.zero(locs.orm.joins)
 
