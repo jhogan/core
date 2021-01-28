@@ -6036,7 +6036,7 @@ class orm:
                         # Add to entity dict
                         edict[key]= e
 
-                        if isinstance(e, es.orm.entity):
+                        if isinstance(e, es.orm.entity) and i.first:
                             es += e
 
                         # Grab the mappings collection for the new
