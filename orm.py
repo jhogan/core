@@ -649,6 +649,16 @@ class joins(entitiesmod.entities):
     def wheres(self):
         return wheres(initial=[x.where for x in self if x.where])
 
+    def __contains__(self, key):
+        if entities in key.mro():
+            for j in self:
+                if type(j.entities) is key:
+                    return True
+            else:
+                return False
+
+        return super().__contains__(key)
+
 class join(entitiesmod.entity):
     """ Represents an SQL JOIN clause. 
     
