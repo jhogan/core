@@ -1393,6 +1393,10 @@ class entitiesmeta(type):
     def __and__(self, other):
         self = self()
         self.join(other)
+
+        # XXX I think this will join the association's subassociations;
+        # untested
+        #self.orm.joinsubs()
         return self
 
     @property
