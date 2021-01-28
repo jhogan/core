@@ -1621,7 +1621,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 # standard join.
                 break
         else:
-            # When entity.orm.superjoins() wants to join a super with
+            # When entity.orm.joinsupers() wants to join a super with
             # the subentity, we want to be able to skip the association
             # inference step. Not only is this more effecient, it will
             # also prevent bugs arising from ambiguity. 

@@ -15218,8 +15218,8 @@ class test_orm(tester):
         # NOTE The above will lazy-load aa1.object 16 times
         self.count(16, self.chronicles)
 
-        # Test artists joined with artist_artists where the association has a
-        # conditional
+        # Test artists joined with artist_artists where the association
+        # has a conditional
         arts1 = artists.join(
             artist_artists('role = %s', ('art-art_art-role-0',))
         )
@@ -15259,13 +15259,16 @@ class test_orm(tester):
             else:
                 # Explicitly join artist_artists
                 arts1 = artists
-                arts1 &= artist_artists & artists
+                aa = artist_artists & artists
+                arts1 &= aa
 
             self.one(arts1.orm.joins)
 
             self.type(artist_artists, arts1.orm.joins.first.entities)
             self.one(arts1.orm.joins.first.entities.orm.joins)
-            objarts = arts1.orm.joins.first.entities.orm.joins.first.entities
+            objarts = \
+                arts1.orm.joins.first.entities.orm.joins.first.entities
+
             self.type(artists, objarts)
 
             arts1.sort()
