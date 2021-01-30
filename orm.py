@@ -5435,6 +5435,136 @@ class fulltext(index):
         return name
 
 class attr:
+    """ This class makes imperitive attributes possible. 
+
+    Most attributes for orm.entity classes are declaritive::
+
+        class artist(orm.entity):
+            firstname = str
+
+    The value of ``artist.firstname`` can be set or retrieved. However,
+    there is no getter or setter for the ``firstname`` attribute. 
+
+    Getters
+    -------
+
+    To create a getter, we can use the ``attr`` class like so::
+
+        class artist(orm.entity):
+            @orm.attr(str):
+            def firstname(self):
+                return attr().capitalize()
+
+    The above getter ensures that ``firstname`` will always return a
+    capitalized value::
+
+        art = artist()
+        art.name = 'pablo'
+
+        assert 'Pablo' == art.name
+
+    Note the attr() function within the getter. This function returns
+    the underlying value that the getter or setter is working with. In
+    the above getter, the following is True::
+        
+        assert 'pablo' == attr()
+
+    We can use the attr() function to set the underlying value. For
+    example, the above getter could have been written like this.
+
+        class artist(orm.entity):
+            @orm.attr(str):
+            def firstname(self):
+                # Get the underlying value
+                fname = attr()
+
+                if not fname[0].isupper():
+                    
+                    # Capitalize it.
+                    fname = fname.capitalize()
+
+                    # Set the underlying value to the capitalized
+                    # version. The next time this getter is called, we
+                    # won't have to capitalize the attribute again.
+                    attr(fname)
+
+                # Return the capitalized version
+                return fname
+
+    The attr() Function
+    -------------------
+
+    This is much more verbose, but it illustrates some concepts. The
+    attr() function retrieves the underlying value when no arguments are
+    passed into it. If an argument is passed in, it will change the
+    underlying value to that argument. 
+    
+    Using attr() to set the underlying value may be useful in cases
+    where computing the value is expensive and we only want to do it once.
+    Memoizing the underlying value can allow us to store the computed
+    value for later retrieval. In the above case, we only would have to
+    capitalize fname once. Capitalization is, of course, inexpensize,
+    but if it were expensive, this technique could provide a performance
+    boost.
+
+    Database-friendly getters
+    -------------------------
+
+    Since the attribute returns the value that will be stored in the
+    database, getters can be used to prepare the data for storage. For
+    example, if you have a class that stored IP addresses, you could use
+    the getter to return a byte representation of the IP address for
+    effecient storage in the database::
+
+        class ip(orm.entity{
+            @orm.attr(bytes):
+            def address(self):
+                
+                # Use Python's ipaddress module
+                import ipaddress
+
+                # Use the str value of the ip address to create an
+                # IPv4Address object.
+                ip = ipaddress.IPv4Address(attr())
+
+                # Return the binary representation of this address
+                return ip.packed
+
+        ipv4 = ip()
+        ipv4.address = '127.0.0.1'
+        assert ipv4.address == b'\x7f\x00\x00\x01'
+
+    The above illustrates that th ip.address value returns a binary
+    representation of the IP address. This may be good for the database,
+    but would be awful for the user who would expect a normal, str
+    representation of the IP address when calling the .address
+    attribute. Some more work would need to be done on the above class
+    in order to satisfy the user's expectations while optimizing IP
+    address persistence.
+
+    Setters
+    -------
+    Creating imperitive setters is as easy as creating getters. You only
+    need to specify a `v` as the first argument of the setter to
+    indicate that it is such::
+
+        class artist(orm.entity):
+            @orm.attr(str):
+            def firstname(self, v):
+                v = v.capitalize()
+                attr(v)
+
+    Now the capitalization work is done during the setting of the
+    firstname attribute instead of when getting data from the
+    attribute. The code seems to work the same as the getter code above
+    as far as the user is concerned.
+
+        art = artist()
+        art.name = 'pablo'
+
+        assert 'Pablo' == art.name
+                
+    """
     def __init__(self, *args, **kwargs):
         self.args = list(args)
         self.kwargs = kwargs
