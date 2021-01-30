@@ -6525,7 +6525,7 @@ class test_orm(tester):
 
     def it_adds_subentity_to_superentities_collection(self):
         """ Ensure that entity objects (concert) added to collection
-        properties (concerts) are availibale in the superentities
+        properties (concerts) are available in the superentities
         collection properties (presentations) before and after save.
         """
 
