@@ -6036,8 +6036,16 @@ class orm:
                         # Add to entity dict
                         edict[key]= e
 
-                        if isinstance(e, es.orm.entity) and i.first:
-                            es += e
+                        names = f.name.split('.')
+                        esabbr = es.orm.abbreviation
+
+                        if isinstance(e, es.orm.entity):
+                            if len(names) == 2:
+                                if esabbr == names[0]:
+                                    es += e
+                            if len(names) == 3:
+                                if esabbr == names[1]:
+                                    es += e
 
                         # Grab the mappings collection for the new
                         # entity while we are in the id column. The
