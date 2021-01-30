@@ -6036,15 +6036,19 @@ class orm:
                         # Add to entity dict
                         edict[key]= e
 
-                        names = f.name.split('.')
-                        esabbr = es.orm.abbreviation
-
                         if isinstance(e, es.orm.entity):
-                            if len(names) == 2:
-                                if esabbr == names[0]:
-                                    es += e
-                            if len(names) == 3:
-                                if esabbr == names[1]:
+                            abbrs = list()
+
+                            names = f.name.split('.')
+                            names.pop()
+
+                            sup = e.orm.entity
+                            while sup and names:
+                                if sup.orm.abbreviation != names.pop():
+                                    break
+                                sup = sup.orm.super
+                            else:
+                                if not names and not sup:
                                     es += e
 
                         # Grab the mappings collection for the new
