@@ -6036,20 +6036,60 @@ class orm:
                         # Add to entity dict
                         edict[key]= e
 
+                        # If e meets the criteria, append it to
+                        # self.instance. First, is e an instance of
+                        # self.instance's type.
                         if isinstance(e, es.orm.entity):
-                            abbrs = list()
 
-                            names = f.name.split('.')
-                            names.pop()
+                            # Take the field name (i.e., alias) and
+                            # split it on '.' to create a list of
+                            # abbreviations.
+                            abbrs = f.name.split('.')
 
-                            sup = e.orm.entity
-                            while sup and names:
-                                if sup.orm.abbreviation != names.pop():
-                                    break
-                                sup = sup.orm.super
+                            # Get rid of the actual field name, i.e.,
+                            # 'id'.
+                            abbrs.pop()
+
+                            # If we are at the first field in the result
+                            # set we can just append because this 'id' 
+                            # field will be for the root entity which is
+                            # above any joins from the SELECT.
+                            if i.first:
+                                es += e
                             else:
-                                if not names and not sup:
+                                # If we are here, we must be at an 'id'
+                                # field but not the first one, i.e., one
+                                # from a OUTER JOINed table. The
+                                # following logic looks at the
+                                # inheritance hierarchy and matches it
+                                # with the field name. We want to make
+                                # sure `e` comes from a record that was
+                                # OUTER JOINed in an effort to collect
+                                # subentities (see orm.joinsubs()).
+
+                                # Ascend inheritance tree to create a
+                                # list of abbreviations.
+                                abbrs1 = [
+                                    x.orm.abbreviation
+                                    for x in e.orm.entity.orm.getsupers(
+                                        withself=True
+                                    )
+                                ]
+
+                                abbrs1.reverse()
+
+                                # Remove elements that are not in the
+                                # abbreviation from the field name.
+                                abbrs1 = abbrs1[-len(abbrs):]
+
+                                # If f.name's abbreviations match `e`
+                                # inheritance hierarchy abbreviations,
+                                # we know that `e` came from a record
+                                # that was OUTER JOINed in order to
+                                # collect subentities of self.instance.
+                                if abbrs == abbrs1:
                                     es += e
+
 
                         # Grab the mappings collection for the new
                         # entity while we are in the id column. The
