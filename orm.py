@@ -6725,10 +6725,15 @@ class orm:
 
     @property
     def superentities(self):
-        ''' Returns a list of entity classes or entity objects (depending on
-        whether or not self.isinstance) of which self is a subentity. '''
+        ''' Returns a list of entity classes or entity objects
+        (depending on whether or not self.isinstance) of which self is a
+        subentity.
+        '''
+
+        # TODO Rename to ``supers`` to compliment the ``super`` method.
 
         r = list()
+
         e = self.super
 
         while e:
@@ -6737,7 +6742,7 @@ class orm:
 
         return r
 
-    # TODO This should probably be renamed to `subentities`
+    # TODO This should probably be renamed to `subs`
     @property
     def subentities(self):
         if self._subclasses is None:
