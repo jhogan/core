@@ -6707,6 +6707,22 @@ class orm:
     def isinstance(self):
         return self.instance is not None
 
+    def getsupers(self, withself=False):
+        r = list()
+
+        if withself:
+            if self.isinstance:
+                r.append(self.instance)
+            elif self.isstatic:
+                r.append(self.entity)
+            else:
+                raise ValueError(
+                    'Orm object must be instance or static'
+                )
+
+        r.extend(self.superentities)
+        return r 
+
     @property
     def superentities(self):
         ''' Returns a list of entity classes or entity objects (depending on
