@@ -5566,10 +5566,44 @@ class attr:
                 
     """
     def __init__(self, *args, **kwargs):
+        """ Creates an attr decorator::
+
+            class artist(orm.entity):
+                @orm.attr(str):
+                def name(self):
+                    return attr()
+
+        In the above, the ``str`` class is passed in as ``args[0]``.
+        The above is equivalent to 
+
+            class artist(orm.entity):
+                name = str
+
+        Any ORM type can be passed in just the same way they are
+        notated in a class declaration. For example, the two statements
+        are equivalent::
+
+            class artist(orm.entity):
+                @orm.attr(float, 5, 1)
+                def width(self):
+                    return attr()
+
+        and
+
+            class artist(orm.entity):
+                width = float, 5, 1
+
+        """
         self.args = list(args)
         self.kwargs = kwargs
 
     def __call__(self, meth):
+        """ This method is invoked when the imperitive attribute is
+        called. The ``meth`` argument passed in is the actual getter or
+        setter that must be called. The ``meth`` is first wrapped by
+        attr.wrap and returned to the caller. The caller then invokes
+        the wrapped getter/setter.
+        """
         self.args.append(meth)
         w = attr.wrap(*self.args, **self.kwargs)
         return w
