@@ -1474,7 +1474,6 @@ class contractor(worker):
     """ A worker role implying a contractor.
     """
 
-
 # TODO Add subtypes of ``organizational``: (distribution) ``channel``,
 # ``partner``, ``competitor``, ``household`, (regulatory) ``agency`` and
 # ``association``.

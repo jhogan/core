@@ -22817,7 +22817,7 @@ class gem_effort(tester):
 
         dick.roles += emp
 
-        # Create a timeship
+        # Create a timesheet
         ts = effort.timesheet(
             begin = 'Jan 1, 2001',
             end   = 'Jan 15, 2001',
