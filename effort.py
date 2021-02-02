@@ -57,9 +57,9 @@ class effort_requirements(orm.associations):                   pass
 class effort_efforts(orm.associations):                        pass
 class effort_effort_dependencies(effort_efforts):              pass
 class effort_effort_precedencies(effort_effort_dependencies):  pass
-class effort_effort_concurrencies(effort_effort_dependencies):   pass
+class effort_effort_concurrencies(effort_effort_dependencies): pass
 class effort_parties(orm.associations):                        pass
-class effort_partytypes(party.types):                          pass
+class effort_partytypes(party.roletypes):                      pass
 class statuses(orm.entities):                                  pass
 class statustypes(apriori.types):                              pass
 class times(orm.entities):                                     pass
