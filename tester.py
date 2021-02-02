@@ -16,7 +16,6 @@ from timer import stopwatch
 from types import FunctionType
 import argparse
 import dom
-import www
 import inspect
 import io
 import json
@@ -28,6 +27,8 @@ import sys
 import textwrap
 import urllib
 import uuid
+import www
+import ecommerce
 
 """ This module provides unit testing framework.
 
@@ -42,7 +43,6 @@ TODOs:
     Python 3.6 and we were able to catch certain types of bugs due to
     this.
 """
-
 
 class invoketesteventargs(eventargs):
     def __init__(self, cls, meth):
@@ -108,6 +108,8 @@ class tester(entity):
         pass
 
     class _browser(www.browser):
+
+        # TODO This appears to be a duplicate and should be removed
         def __init__(self, t, *args, **kwargs):
             self.tester = t
 
@@ -124,6 +126,32 @@ class tester(entity):
         class _tab(www.browser._tab):
             def __init__(self, tabs):
                 self.tabs = tabs
+                self._referer = None
+
+            @property
+            def referer(self):
+                """ The http_referer associated with the tab. When the
+                tab makes the request, a ``referer`` may be assigned to
+                the tab. After the request has been made, the referrer
+                should be set to the current URL.  
+
+                rtype: ecommerce.url
+                """
+                if self._referer:
+                    if isinstance(self._referer, ecommerce.url):
+                        pass
+                    elif self._referer is None:
+                        pass
+                    else:
+                        self._referer = ecommerce.url(
+                            address=self._referer
+                        )
+
+                return self._referer
+
+            @referer.setter
+            def referer(self, v):
+                self._referer = v
 
             @property
             def browser(self):
@@ -132,13 +160,18 @@ class tester(entity):
             def get(self, pg, ws):
                 return self._request(pg=pg, ws=ws, meth='GET')
 
-            def post(self, pg, ws, frm):
-                return self._request(pg=pg, ws=ws, frm=frm, meth='POST')
+            def post(self, pg, ws, frm=None, files=None):
+                if files:
+                    files = files.orm.collectivize()
+
+                return self._request(
+                    pg=pg, ws=ws, frm=frm, files=files, meth='POST'
+                )
 
             def head(self, pg, ws):
                 return self._request(pg=pg, ws=ws, meth='HEAD')
 
-            def _request(self, pg, ws, frm=None, meth='GET'):
+            def _request(self, pg, ws, frm=None, files=None, meth='GET'):
                 if not isinstance(pg, str):
                     raise TypeError('pg parameter must be a str')
 
@@ -155,7 +188,6 @@ class tester(entity):
                         'http_host': '127.0.0.0:8000',
                         'http_user_agent': 'tester/1.0',
                         'raw_uri': '/',
-                        'remote_addr': '52.52.249.177',
                         'remote_port': '43130',
                         'script_name': '',
                         'server_port': '8000',
@@ -196,14 +228,42 @@ class tester(entity):
                 pg and pg.clear()
 
                 if meth == 'POST':
-                    inp = io.BytesIO(frm.post)
+                    if files and files.count:
+                        boundry = uuid.uuid4().hex
+                        inp = io.BytesIO()
 
-                    env = create_environ({
-                        'content_length':  len(frm.post),
-                        'wsgi.input':      inp,
-                    })
+                        boundry = f'--{boundry}'
+                        for file in files:
+                            inp.write(bytes(
+                            f'--{boundry}\r\n'
+                            'Content-Disposition: form-data;'
+                            f'name=file;'
+                            f'filename={file.name}\r\n'
+                            'Content-Type:application/octet-stream\r\n\r\n',
+                            'utf-8'
+                            ))
 
+                            inp.write(file.body)
 
+                        inp.write(bytes(f'\r\n\r\n--{boundry}', 'utf-8'))
+
+                        inp.seek(0)
+
+                        env = create_environ({
+                            'content_type':  (
+                                'multipart/form-data; '
+                                f'boundry={boundry}'
+                            ),
+                            'content_length': len(inp.getvalue()),
+                            'wsgi.input': inp,
+                        })
+                    else:
+                        inp = io.BytesIO(frm.post)
+
+                        env = create_environ({
+                            'content_length':  len(frm.post),
+                            'wsgi.input':      inp,
+                        })
                 else: 
                     env = create_environ()
 
@@ -212,6 +272,9 @@ class tester(entity):
                 env['server_name']     =  ws.host
                 env['server_site']     =  ws
                 env['request_method']  =  meth
+                env['remote_addr']     =  self.tabs.browser.ip
+                env['http_referer']    =  self.referer
+                env['user_agent']      =  self.browser.useragent
 
                 # Create WSGI app
                 app = www.application()
@@ -224,9 +287,9 @@ class tester(entity):
                 
                 # Make WSGI call
 
-                # NOTE PEP 0333 insist that the environment variables
+                # NOTE PEP 0333 insists that the environment variables
                 # passed in must be a dict so we convert `env` which is
-                # an www.headers object.
+                # a `www.headers` object.
                 iter = app(dict(env.list), start_response)
 
                 res = www._response(req) 
@@ -255,24 +318,42 @@ class tester(entity):
                         )
                         self.browser.cookies += cookie 
 
+                self.referer = ecommerce.url(address=req.url)
                 return res
 
-        def __init__(self, tester, *args, **kwargs):
+        def __init__(
+            self, tester, ip=None, useragent=None, *args, **kwargs
+        ):
             super().__init__(*args, **kwargs)
             self.tester = tester
             self.tabs = tester._browser._tabs(self)
 
+            # Assign the browser a default useragent string
+            if not useragent:
+                useragent = (
+                'Mozilla/5.0 (iPhone; CPU iPhone OS 5_1 like Mac OS X) '
+                'AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 '
+                'Mobile/9B179 Safari/7534.48.3'
+                )
+
+            # Assign the test browser a default ip
+            if not ip:
+                ip = ecommerce.ip(address='10.10.10.10')
+
+            self.ip = ecommerce.ip(address=ip)
+
+            self.useragent = ecommerce.useragent(string=useragent) 
+
         def tab(self):
             return self.tabs.tab()
-
 
     def __init__(self):
         self._failures = failures()
         self.testers = None
         self.eventregistrations = eventregistrations()
 
-    def browser(self):
-        return tester._browser(self)
+    def browser(self, *args, **kwargs):
+        return tester._browser(self, *args, **kwargs)
 
     def print(self, *args, **kwargs):
         print(*args, **kwargs)
@@ -380,6 +461,12 @@ class tester(entity):
 
     def eq(self, expect, actual, msg=None):
         if expect != actual: self._failures += failure()
+
+    def startswith(self, expect, actual, msg=None):
+        if not actual.startswith(expect): self._failures += failure()
+
+    def endswith(self, expect, actual, msg=None):
+        raise NotImplementedError()
 
     def assertNe(self, expect, actual, msg=None):
         if expect == actual: self._failures += failure()

@@ -10,23 +10,29 @@
 
 from contextlib import suppress
 from dbg import B
+import asset, ecommerce
 import datetime
 import dom
 import entities
 import exc
-import www
+import file
 import inspect
+import itertools
+import orm
 import primative
 import textwrap
-import itertools
+import www
 
 # References:
 #
 # WAI-ARIA Authoring Practices 1.1
 # https://www.w3.org/TR/wai-aria-practices/
 
-class site(entities.entity):
-    def __init__(self, host):
+class sites(asset.assets): pass
+
+class site(asset.asset):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.index = None
         self._pages = None
         self._html = None
@@ -39,7 +45,6 @@ class site(entities.entity):
         self.sidebars = sidebars()
 
         self._title = type(self).__name__.replace('_', '-')
-        self._host = host
 
         # TODO Replace with `file` object when it is created. NOTE that
         # the file object will need to have an integrity property to
@@ -51,6 +56,54 @@ class site(entities.entity):
 
         self.stylesheets = list()
         self._header = None
+
+    host = str
+    resources = file.resources
+    hits = ecommerce.hits
+    users = ecommerce.users
+
+    class AuthenticationError(ValueError):
+        pass
+
+    def authenticate(self, name, pwd):
+        """ Find a user in the site with the user name of ``name``. Test
+        that the user's password hashes to the same value as `pwd`. If
+        so, return the user. Otherwise we raise an AuthenticationError.
+        """
+
+        # Get the foreign key column name in users that maps to the
+        # ``site`` entity (e.g., siteid).
+        # 
+        #     site.get_users(name=name)
+        # STOPGAP: 8210b80c
+        for map in ecommerce.users.orm.mappings.foreignkeymappings:
+            if map.entity is site:
+                siteid = map.name
+                break
+        else:
+            raise ValueError('Cannot find site mapping')
+
+        # Get the user with the given user name
+        usrs = ecommerce.users(
+            name = name,
+            siteid = self.id
+        )
+
+        # If there are more that one there is a data integrity issue
+        if usrs.hasplurality:
+            raise ValueError('Multiple users found')
+
+        # Good; we found one. Let's test the password and return the
+        # usr.  Otherwise, we will return raise an exception to signify
+        # authentication failed.
+        if usrs.hasone:
+            usr = usrs.first
+            if usr.ispassword(pwd):
+                return usr
+
+        raise self.AuthenticationError(
+            f'Incorrect password for {name} for {self.name}'
+        )
 
     @property
     def pages(self):
@@ -85,10 +138,6 @@ class site(entities.entity):
             return self.pages[path]
         except IndexError:
             return None
-
-    @property
-    def host(self):
-        return self._host
 
     @property
     def lang(self):
@@ -158,7 +207,23 @@ class site(entities.entity):
 
         for stylesheet in self.stylesheets:
             self._head += dom.link(rel="stylesheet", href=stylesheet)
-        
+
+        # TODO Consolidate with page.head
+        for res in self.resources:
+
+            src = res.relative if res.local else res.url
+
+            if res.mime == 'application/javascript':
+                el = dom.script(
+                    integrity = res.integrity, 
+                    crossorigin = res.crossorigin,
+                    src = src
+                )
+            elif res.mimetype == 'text/css':
+                raise NotImplementedError('TODO')
+
+            self._head += el
+
         return self._head
 
     @property
@@ -547,6 +612,9 @@ class page(dom.html):
         self._header       =  None
         self._sidebars     =  None
         self._args         =  dict()
+        self.resources     =  file.resources()
+        self.resources.page = self
+
         try:
             self._mainfunc = self.main
         except AttributeError:
@@ -603,6 +671,26 @@ class page(dom.html):
                 self._head = self.site.head
             else:
                 self._head = dom.head()
+
+        for res in self.resources:
+            if res.mime == 'application/javascript':
+                src = res.relative if res.local else res.url
+
+                if src in self._head['script'].pluck('src'):
+                    continue
+
+                el = dom.script(
+                    integrity = res.integrity, 
+                    crossorigin = res.crossorigin,
+                    src = src
+                )
+            elif res.mimetype == 'text/css':
+                raise NotImplementedError('TODO')
+            else:
+                raise TypeError(f'Invalid mime type: {res.mimetype}')
+
+            self._head += el
+
 
         return self._head
     
@@ -743,6 +831,10 @@ class page(dom.html):
         self._attemped = False
 
     def __call__(self, *args, **qsargs):
+        """ This method calls into the page's `main` method that the
+        web developer writes.
+        """
+
         self._attemped = True  # A call was attemped
 
         if len(args):
@@ -764,18 +856,19 @@ class page(dom.html):
                 globs = self._mainfunc.__func__.__globals__
                 globs['req'] = www.request
                 globs['res'] = www.response
-                if www.request:
-                    globs['usr'] = www.request.user
 
-                # Call pages main function
+                # Call page's main function. It's called `_mainfunc`
+                # here but the web developer will call it `main`.
                 self._mainfunc(**self._arguments)
                 self._called = True
             finally:
                 self._calling = False
+
     @property
     def elements(self):
         els = super().elements
         els.clear()
+        # TODO ``ws`` is never used
         ws = self.site
 
         if self.head:

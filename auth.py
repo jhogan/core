@@ -12,6 +12,8 @@ from dbg import B
 from entities import entities, entity, brokenrules, brokenrule
 import json
 import jwt as pyjwt
+import primative
+import www
 
 class jwt(entity):
     def __init__(self, tok=None, ttl=24):
@@ -76,6 +78,33 @@ class jwt(entity):
             enc = pyjwt.encode(d, secret)
             self._token = enc.decode('utf-8')
         return self._token
+
+    @staticmethod
+    def getSet_Cookie(usr, ttl=24):
+        """ Create a JWT for the ``usr`` and return a Set-Cookie header.
+        """
+
+        # TODO Hours (ttl) should come from the config file at the
+        # site "level" of the config file. Given that,
+        # the site object would have the ability to issue
+        # jwts instead of using the auth.jwt class itself:
+        #
+        #     t = self.site.jwt()
+
+        t = jwt(ttl=ttl)
+        t.sub = usr.id.hex
+
+        # Increment the expiration date. If the expiration
+        # date is prior to the browser receiving the
+        # set-cookie header, the cookie will be deleted:
+        # https://stackoverflow.com/questions/5285940/correct-way-to-delete-cookies-server-side
+        exp = primative.datetime.utcnow().add(days=1)
+        exp = exp.strftime('%a, %d %b %Y %H:%M:%I GMT')
+        return www.header('Set-Cookie', (
+            'token=%s; path=/; '
+            'expires=%s'
+            ) % (str(t), exp)
+        )
 
     def _getvalue(self, k):
         v = getattr(self, '_' + k)

@@ -15,16 +15,19 @@ import auth
 import dom
 import entities
 import exc
+import file
 import html as htmlmod
 import json
 import os
+import party, ecommerce
 import pdb
+import primative
 import re
 import sys
 import textwrap
 import traceback
 import urllib
-import party
+import jwt as pyjwt
 
 # NOTE Use the following diagram as a guide to determine what status
 # code to respond with:
@@ -66,6 +69,7 @@ class application:
         global request, response
         res = _response(self.request)
 
+        # Set global www.response
         response = res
 
         break_ = False
@@ -85,6 +89,7 @@ class application:
                 data = req()
                 if req.isget:
                     res.payload = data
+
             elif req.ispost:
                 if req.isxhr:
                     reqdata = self.request.post
@@ -176,6 +181,11 @@ class _request:
         self.app._request  =  self
         self._payload      =  None
         self._user         =  None
+        self._files        =  None
+        self._useragent    =  None
+        self._hit          =  None
+        self._ip           =  None
+        self._url          =  None  # The refere
 
     @property
     def headers(self):
@@ -196,6 +206,95 @@ class _request:
         return hdrs
 
     @property
+    def files(self):
+        """ Return a collection of files that were uploaded in the
+        request.
+
+        Note that currently, a very rough implementation of a
+        multipart/form-data parser is implemented. This is used for
+        tests but hasn't been tried with real world POSTs (the kind an
+        actual browser would send). 
+
+        A future version will parse out the file data that is sent in
+        JSON format. This will be the normal way to transfer files to
+        the web server from a browser. The multipart/form-data parser is
+        just an ad hoc way that some tests are currently using to send
+        file data.
+        """
+        if self._files is not None:
+            return self._files
+
+        fs = file.files()
+
+        if self.mime != 'multipart/form-data':
+            # Currently, we will only have file in the request if we are
+            # using a multipart mime type. This will change once
+            # event-based input is complete.
+            return fs
+
+        content_type = self.content_type.split(';')
+
+        if len(content_type) < 2:
+            raise BadRequestError(
+                "Can't find 'boundry' in Content-Type"
+            )
+
+        try:
+            boundry = bytes(content_type[1].split('=')[1], 'utf-8')
+        except Exception as ex:
+            raise BadRequestError(
+                f"Can't parse boundry ({ex})"
+            )
+
+        boundry = '--' + boundry.decode('utf')
+        offset = content_type = None
+        inp = self.environment['wsgi.input']
+        inp.seek(0)
+        while True:
+            ln = inp.readline()
+
+            if not ln:
+                break
+
+            ln = ln.rstrip(b'\n\r')
+
+            if not content_type:
+                ln = ln.decode('utf-8')
+
+            if content_type and ln == bytes(boundry, 'utf-8'):
+                if offset is not None:
+                    tell = inp.tell()
+                    size = tell - offset
+                    size -= len(boundry) + len('\r\n\r\n')
+                    inp.seek(offset)
+                    fs += file.file()
+                    fs.last.name = filename
+                    fs.last.body = inp.read(size)
+                    content_type = content_disposition = offset = None
+                    inp.seek(tell)
+
+            elif isinstance(ln, bytes):
+                continue
+
+            elif ln.startswith('Content-Disposition'):
+                parts = ln.split(';')
+                content_disposition = parts[0].split(':')[1].strip()
+                name = parts[1].split('=')[1].strip()
+                filename = parts[2].split('=')[1].strip()
+
+            elif ln.startswith('Content-Type'):
+                content_type = ln.split(':')[1].strip()
+                ln = inp.readline()
+                if ln.strip(b'\n\r'):
+                    raise BadRequestError(
+                        'Missing empty line'
+                    )
+                offset = inp.tell()
+
+            self._files = fs
+        return fs
+
+    @property
     def cookies(self):
         r = browser._cookies()
         for hdr in self.headers:
@@ -209,22 +308,41 @@ class _request:
         return r
 
     @property
-    def user(self):
-        """ Return the authenicated user making the request. If there is
-        no authenicate user, return None.
+    def jwt(self):
+        """ Look in the request's (self's) cookies for a JWT. If found,
+        convert the cookies str value to an auth.jwt objcet and return.
+        If no JWT cookie is found, return None.
         """
-
-        # Get the JWT and convert it to a user 
         jwt = self.cookies('jwt')
         if jwt:
             jwt = jwt.value
             jwt = auth.jwt(jwt)
 
-            # NOTE The JWT's sub property has a hex str
-            # represetation of the user's id.
-            self._user = party.user(jwt.sub)
+        return jwt
+    @property
+    def user(self):
+        """ Return the authenicated user making the request. If there is
+        no authenicate user, return None.
+        """
+
+        if not self._user:
+            # Get the JWT and convert it to a user 
+            jwt = self.jwt
+            if jwt:
+                if not jwt.isvalid:
+                    # If the JWT is bad (can't be decoded), return None.
+                    return None
+                else:
+                    # Load user based on JWT's 'sub' value.  NOTE The
+                    # JWT's sub property has a hex str represetation of
+                    # the user's id.
+                    self._user = ecommerce.user(jwt.sub)
 
         return self._user
+
+    @user.setter
+    def user(self, v):
+        self._user = v
                 
     @property
     def environment(self):
@@ -240,7 +358,12 @@ class _request:
 
     @property
     def qs(self):
-        return self.environment['query_string']
+        qs = self.environment['query_string']
+
+        if not qs:
+            qs = None
+
+        return qs
 
     @property
     def site(self):
@@ -269,6 +392,9 @@ class _request:
 
     @property
     def page(self):
+        """ Return the page that this request is GETting (POSTing to,
+        etc.) 
+        """
         ws = self.site
         path = self.path
         try:
@@ -283,8 +409,8 @@ class _request:
         '''
 
         try:
-            # TODO When the language code is not given, Accept-Language can
-            # be used to work out the best language.
+            # TODO When the language code is not given, Accept-Language
+            # can be used to work out the best language.
             segs = [x for x in self.path.split('/') if x]
             if len(segs):
                 return segs[0]
@@ -295,22 +421,165 @@ class _request:
         return 'en'
 
     def __call__(self):
+        # TODO If an exception bubbles up here, it should be logged to
+        # syslog (I think).
+
+        # Create the hit log. In the finally block, we will add some
+        # concluding information by calling self.log again, such as the
+        # HTTP status code.
+        self.log()
+
         try:
-            self.page(**self.arguments)
+            # Invoke the page
+           self.page(**self.arguments)
         except HttpError as ex:
             if ex.flash:
                 self.page.flash(ex.flash)
                 response.status = ex.status
             else:
                 raise
+        finally:
+            # Finish of the hit log
+            self.log()
+
         return self.page.html
+
+    @property
+    def hit(self):
+        """ Return the ``hit`` entity. If it does not yet exist for this
+        request, create it.
+        """
+        if not self._hit:
+            # Create the hit entity. No need to save it at the moment.
+
+            self._hit = ecommerce.hit(
+                path       =  self.page.path,
+                isxhr      =  self.isxhr,
+                qs         =  self.qs,
+                method     =  self.method,
+                site       =  self.site,
+                language   =  self.language,
+                ip         =  self.ip,
+                url        =  self.referer,
+                size       =  self.size,
+                useragent  =  self.useragent,
+            )
+
+            if self.jwt:
+                self._hit.isjwtvalid = self.jwt.isvalid
+            else:
+                self._hit.isjwtvalid = None
+
+        return self._hit
+
+    def log(self):
+        """ Log the hit.
+        """
+
+        try: 
+            # Get the request's ``hit`` entity
+            hit = self.hit
+
+            par = None
+
+            # Get the users party. If no user is logged in, use the
+            # anonymous user.
+            if self.user:
+                par = self.user.party
+                hit.user = self.user
+            else:
+                par = party.party.anonymous
+
+            if par is None:
+                par = party.party.anonymous
+
+            # Get the party's visitor role
+            visitor = par.visitor
+
+            # Get the party's visitor role's current visit
+            visit = visitor.visits.current
+
+            # Get the current time in UTC
+            now = primative.datetime.utcnow()
+
+            # Create a new ``visit`` if a current one doesn't not exist
+            if not visit:
+                visit = ecommerce.visit(
+                    begin = now
+                )
+                visitor.visits += visit
+
+            # If the hit is new, the begin date will be None meaning it
+            # is not ``inprogress``. If that's the case, set the begin
+            # date. Otherwise, we can conclude the hit with the end
+            # datetime and HTTP status.
+            if hit.inprogress:
+                hit.end = now
+                hit.status = response.status
+            else:
+                hit.begin = now
+
+            hit.visit = visit
+
+            # Create/update the hit
+            hit.save()
+        except Exception as ex:
+            # Failing to log a hit shouldn't stop page invocation. We
+            # should log the failure to the syslog.
+            from config import config
+
+            # TODO Fix the logging interface. We shouldn't have to go
+            # through config to get a logging object. Also, it doesn't
+            # make sense to select the first log from a collection of
+            # logs. The collections of logs are actually configurations
+            # of logging facilities. The first here is for
+            # /var/log/syslog (there aren't any others). This is all
+            # really wierd. We shoud just be able to say something like:
+            #
+            #     import log from logger
+            #     log.exception(ex)
+            #
+            # The nature of the core framework is such that we would
+            # normally log stuff to a database table. We wouldn't want
+            # to write anything to a log file unless there was a failure
+            # to write to the database. Log entries in syslog should be
+            # indicate the environment that is making the entry.
+            log = config().logs.first
+
+            try:
+                ua = str(self.environment['user_agent'])
+            except:
+                ua = str()
+
+            try:
+                ip = str(self.environment['remote_addr'])
+            except:
+                ua = str()
+
+            msg = f'{ex}; ip:{ip}; ua:"{ua}"'
+            log.exception(msg)
 
     @property
     def payload(self):
         if self._payload is None:
             sz = self.size
             inp = self.environment['wsgi.input']
-            self._payload = inp.read(sz).decode('utf-8')
+            if self.mime == 'multipart/form-data':
+                # Normally, the client won't need to get the payload for
+                # multipart data; it will usually just use
+                # `request.files`. Either way, return whan we have. We
+                # probably shouldn't memoize it since it could be
+                # holding a lot of file data.
+
+                # TODO We could move this outside the consequence block
+                inp.seek(0)
+
+                return inp.read(sz)
+            else:
+                # TODO What would the mime type (content-type) be here?
+                # (text/html?) Let's turn this else into an elif with
+                # that information.
+                self._payload = inp.read(sz).decode('utf-8')
         return self._payload
 
     @property
@@ -350,6 +619,58 @@ class _request:
         return self.environment['request_method'].upper()
 
     @property
+    def ip(self):
+        if not self._ip:
+            ip = str(self.environment['remote_addr'])
+            self._ip = ecommerce.ip(address=ip)
+        return self._ip
+
+    @property
+    def referer(self):
+        if not self._url:
+            url = str(self.environment['http_referer'])
+            self._url = ecommerce.url(address=url)
+        return self._url
+
+    @property
+    def useragent(self):
+        if not self._useragent:
+            ua = str(self.environment['user_agent'])
+            self._useragent = ecommerce.useragent(string=ua)
+        return self._useragent
+
+    @property
+    def scheme(self):
+        """ Return the scheme for the request, e.g., http, https, etc.
+        """
+        return self.environment['wsgi.url_scheme'].lower()
+
+    @property
+    def port(self):
+        """ Return the TCP port for the request, e.g., 80, 8080, 443.
+        """
+        return int(self.environment['server_port'])
+
+    @property
+    def url(self):
+        """ Return the URL for the request, for example::
+            
+            https://foo.net:8000/en/my/page
+        """
+
+        scheme = self.scheme
+        servername = f'{self.servername}:{self.port}'
+        qs = self.qs
+        path = self.path
+
+        if qs:
+            path += "?{qs}"
+
+        return urllib.parse.urlunparse([
+            scheme, servername, path, None, None, None
+        ])
+
+    @property
     def isget(self):
         return self.method == 'GET'
 
@@ -367,7 +688,11 @@ class _request:
 
     @property
     def content_type(self):
-        return self.environment['content_type']
+        return self.environment['content_type'].strip()
+
+    @property
+    def mime(self):
+        return self.content_type.split(';')[0].strip().lower()
 
     def demand(self):
         if not request.page:
@@ -375,11 +700,18 @@ class _request:
 
         if self.isget or self.ishead:
             if not len(self.path):
-                raise http.BadRequestError('No path was given.')
+                raise www.BadRequestError('No path was given.')
             
         elif self.ispost:
-            if len(self.payload) == 0:
+            if self.mime == 'text/html' and len(self.payload) == 0:
                 raise BadRequestError('No data in body of request message.')
+
+            if self.mime == 'multipart/form-data':
+                if self.files.isempty:
+                    raise BadRequestError(
+                        'No files given in multipart form.'
+                    )
+                    
 
             # The remaining demands will be for XHR requests only
             if not self.isxhr:
@@ -388,7 +720,7 @@ class _request:
             try:
                 post = self.post
             except json.JSONDecodeError as ex:
-                raise http.BadRequestError(str(ex))
+                raise www.BadRequestError(str(ex))
 
             try:
                 cls = post['_class']
@@ -401,7 +733,7 @@ class _request:
                 raise ValueError('The method value was not supplied')
 
             if meth[0] == '_':
-                raise http.ForbiddenError('Invalid method.')
+                raise www.ForbiddenError('Invalid method.')
 
             try:
                 import ctrl
@@ -580,6 +912,10 @@ class _response():
 
         return self._headers
 
+    @headers.setter
+    def headers(self, v):
+        self._headers = v
+
     def __repr__(self, pretty=False):
         r = textwrap.dedent('''
         URL:    %s
@@ -620,7 +956,7 @@ class controller:
         try:
             return args[arg]
         except KeyError:
-            raise http.UnprocessableEntityError(
+            raise www.UnprocessableEntityError(
                 'Argument not supplied: ' + arg
             )
 
@@ -648,7 +984,6 @@ class HttpError(HttpException):
             msg0 += ' - ' + msg
 
         super().__init__(msg0)
-
 
 class MultipleChoicesException(HttpException):
     status = 300
@@ -918,6 +1253,7 @@ class headers(entities.entities):
         if not isinstance(ix, str):
             return super().__setitem__(ix)
 
+        # TODO Why can't we overwrite prior values. 
         for hdr in self:
             if hdr.name.casefold() == ix.casefold():
                 break
@@ -1017,5 +1353,23 @@ class browser(entities.entity):
 
     def __init__(self):
         self.cookies = self._cookies()
+        self._useragent = None
+
+    @property
+    def useragent(self):
+        if isinstance(self._useragent, ecommerce.useragent):
+            pass
+        elif self._useragent is None:
+            pass
+        else:
+            self._useragent = ecommerce.useragent(
+                string = self._useragent
+            )
+
+        return self._useragent
+
+    @useragent.setter
+    def useragent(self, v):
+        self._useragent = v
 
 app = application()

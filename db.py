@@ -361,8 +361,8 @@ class connection(entity):
                 conn.commit()
                 return dbresultset(cur)
             except MySQLdb.OperationalError as ex:
-                # Reconnect if the connection object has timed out and no
-                # longer holds a connection to the database.
+                # Reconnect if the connection object has timed out and
+                # no longer holds a connection to the database.
                 # https://stackoverflow.com/questions/3335342/how-to-check-if-a-mysql-connection-is-closed-in-python
 
                 try:

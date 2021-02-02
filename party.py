@@ -17,26 +17,21 @@
 #   objects.
 #   https://www.hr360.com/Resource-Center/HR-Terms.aspx
 
-from datetime import datetime
+from datetime import datetime, date
+from db import RecordNotFoundError
 from dbg import B
 from decimal import Decimal as dec
+from entities import classproperty
 from orm import text, datespan, timespan
-from db import RecordNotFoundError
-import apriori
-import asset
-import builtins
-import hashlib
-import orm
-import os
-import primative
+import apriori, asset, file
+import db,orm, primative
+import uuid, builtins
 
-''' Parties '''
-
-''' orm.entities classes '''
-class users(orm.entities):                                   pass
 class parties(orm.entities):                                 pass
 class types(apriori.types):                                  pass
 class roles(orm.entities):                                   pass
+class employees(workers):                                    pass
+class managers(workers):                                     pass
 class role_role_types(apriori.types):                        pass
 class statuses(orm.entities):                                pass
 class role_role_statuses(statuses):                          pass
@@ -53,7 +48,6 @@ class subsidiaries(organizationalunits):                     pass
 class parents(organizationalunits):                          pass
 class roletypes(apriori.types):                              pass
 class partyroletypes(roletypes):                             pass
-class employees(workers):                                    pass
 class customers(roles):                                      pass
 class billtos(customers):                                    pass
 class placings(customers):                                   pass
@@ -69,8 +63,6 @@ class units(organizations):                                  pass
 class departments(units):                                    pass
 class divisions(units):                                      pass
 class jobs(orm.entities):                                    pass
-class positions(orm.entities):                               pass
-class position_fulfillments(orm.associations):               pass
 class party_parties(orm.associations):                       pass
 class party_addresses(orm.associations):                     pass
 class maritals(parties):                                     pass
@@ -117,86 +109,15 @@ class skills(orm.entities):                                  pass
 class skilltypes(apriori.types):                             pass
 class rates(orm.entities):                                   pass
 class ratetypes(apriori.types):                              pass
-class positionrates(orm.entities):                           pass
-class positiontypes(apriori.types):                          pass
 class asset_parties(orm.associations):                       pass
 class asset_partystatustypes(apriori.types):                 pass
+class consumers(roles):                                      pass
+class prospects(consumers):                                  pass
+class needs(orm.entities):                                   pass
+class needtypes(apriori.types):                              pass
+class hits(orm.entities):                                    pass
 
 ''' Parties '''
-
-class user(orm.entity):
-    name     =  str
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._password = None
-
-    @orm.attr(bytes, 16, 16)
-    def salt(self):
-        self._sethash()
-        return attr()
-
-    @orm.attr(bytes, 32, 32)
-    def hash(self):
-        self._sethash()
-        return attr()
-
-    def _sethash(self):
-        hash = self.orm.mappings['hash']
-        salt = self.orm.mappings['salt']
-
-        if hash.value and salt.value:
-            return
-
-        hash.value, salt.value = self._gethash()
-
-    def _gethash(self, pwd=None):
-        if not pwd:
-            pwd = self.password
-
-        if not pwd:
-            return None, None
-
-        salt = self.orm.mappings['salt'].value
-
-        if not salt:
-            salt = os.urandom(16)
-
-        pwd  = bytes(pwd, 'utf-8')
-        algo = 'sha256'
-        iter = 100000
-        fn   = hashlib.pbkdf2_hmac
-
-        hash = fn(algo, pwd, salt, iter)
-        return hash, salt
-
-    @property
-    def password(self):
-        return self._password
-
-    @password.setter
-    def password(self, v):
-        self.hash = self.salt = None
-        self._password = v
-
-    def ispassword(self, pwd):
-        # Ensure self._salt is set so _gethash doesn't make one up
-        self._sethash()
-        hash, _ = self._gethash(pwd)
-        return hash == self.hash
-
-    @staticmethod
-    def authenticate(name, password):
-        usrs = users(name=name)
-        if usrs.hasplurality:
-            raise ValueError('Multiple users found')
-
-        if usrs.hasone:
-            usr = usrs.first
-            if usr.ispassword(password):
-                return usr
-
-        return None
 
 class party(orm.entity):
     """ ``party`` is the abstract class under which two important classes
@@ -215,11 +136,11 @@ class party(orm.entity):
     may be either an organization or a person.
     """
     def __init__(self, *args, **kwargs):
+        self._updateperson = True
         super().__init__(*args, **kwargs)
         self.orm.default('nationalids', None)
         self.orm.default('isicv4', None)
         self.orm.default('dun', None)
-        self._updateperson = True
 
     # A party may have 0 or more national id numbers. For example, an
     # organization may have one or more Federal Taxpayer Identification
@@ -246,6 +167,25 @@ class party(orm.entity):
     # A collection of party roles this party plays.
     roles = roles
 
+    @property
+    def visitor(self):
+        """ Return the single visitor role. If it does not exist, create
+        it.
+        """
+        from ecommerce import visitor
+        for rl in self.roles:
+            if isinstance(rl, visitor):
+                break
+
+            rl = rl.orm.cast(visitor)
+            if rl:
+                break
+        else:
+            self.roles += visitor()
+            rl = self.roles.last
+
+        return rl
+
     # A collection of skills belonging to this party
     skills = skills
 
@@ -267,6 +207,20 @@ class party(orm.entity):
             self.name = v
         finally:
             self._updateperson = True
+
+    @classproperty
+    def anonymous(cls):
+        # TODO Ensure that only one party record can have a name of None 
+
+        # TODO Write test to ensure this returns the same party each
+        # time.
+        ents = cls.orm.entities('name is %s', (None,))
+        if ents.isempty:
+            ent = cls(name=None)
+            ent.save()
+            return ent
+
+        return ents.first
         
 class organization(party):
     """ An abstract class representing a group of people with a common
@@ -291,49 +245,24 @@ class unit(organization):
         self.isicv4       =  None
 
 class division(unit):
+    # TODO ``division`` must inherit from ``organizationalunit``, not
+    # ``unit``. This would make it a ``role`` instead of a ``party``.
+    # Same with ``department``.
+
     # TODO:afa4ffc9 Is this how divisions are related to position in the
     # book.
-    positions = positions
-
-class job(orm.entity):
-    """ Maintains information associated the actual `positions` an
-    employee may take. 
-    
-    Note that in the "The Data Model Resource Book", this entity is
-    refered to as the POSTITION TYPE entity. "job" was chosen for its
-    name since "job" is only one word and "POSTITION TYPE" is obviously
-    two words.
-    """
-    title = str
-    description = str, 1, 65535
-    
-    # The below was noted in the book but is currently not implemented.
-    # benefit_percentage = dec
-
-    # A collection of positions generated from this job
-    positions = positions
-
-class position(orm.entity):
-    """ A position is a job slot in an enterprise. 
-    """
-
-    # The datespan an organization expects the job to begin and end
-    estimated = datespan(prefix='estimated')
-
-    # The actual datespan the position slot is filled, as opposed to the
-    # `estimated` datespan.
-    filled = datespan
-
-    salary = bool
-
-    fulltime = bool
+    pass
 
 class department(unit):
+    # TODO ``department`` must inherit from ``organizationalunit``, not
+    # ``unit``. This would make it a ``role`` instead of a ``party``.
+    # Same with ``division``.
+
     # TODO:afa4ffc9 Now that we are using role_role to associates
     # parties with each other, the entity objects `divisions` will no
     # longer have a many-to-one relationship with `department`;
     # `departments` will have a relationships with `divisions`.
-    divisions = divisions
+	pass
 
 class legalorganization(organization):
     def __init__(self, *args, **kwargs):
@@ -350,9 +279,6 @@ class legalorganization(organization):
     # specific to the USA.
     ein = str, 9, 9
 
-    # A collection of job positions the legalorganization has.
-    positions = positions
-    
 class company(legalorganization):
     """ A business entity that conducts a value of exchange of goods or
     services with customers. The end goal of a company is to produce a
@@ -690,32 +616,6 @@ class person(party):
 
         return None
 
-class position_fulfillment(orm.association):
-    """
-    The `position_fulfilments` association links a position to a person.
-    When a postion is associatied with a person, the position is said to
-    be "fulfilled', i.e., the person has been employed by the
-    organization (i.e., company) to fulfill the job duties of the
-    position.
-
-    Since this is an `orm.association`, multiple person entities can be
-    associated with a given position. Different person entities may be
-    associated to the same position over time. This allows for the
-    tracking persons who occupied a given position in an organization
-    over various timespans.  The begin and end dates record the
-    occupation's timespan.
-    
-    Additionally, multiple persons can be associated to the same
-    `position` within the same timespan implying that the persons
-    occupy the position as part-time or half-time employees.
-    """
-
-    person    =  person
-    position  =  position
-
-    # The timespan of the occumation
-    span = datespan
-
 class region(orm.entity):
     """ This class represents geographical regions such as a postal code,
     city, state, province, territory or country. It is a recurive
@@ -1002,6 +902,8 @@ class email(contactmechanism):
     """
     address = str
 
+# TODO DON'T use this `communication`. There is a duplicate beneath it.
+# Merge its comments in with that one and remove this one.
 class communication(orm.entity):
     """ An object to record any type of contact between parties within a
     relationship (see `role_role`). For example, phone calls, meetings,
@@ -1266,6 +1168,8 @@ class role(orm.entity):
         # Each (party) role may be described by one and only one
         # `partyroletype`. TODO Write validation rule for this.
         name = builtins.type(self).__name__
+
+        # TODO:9f3a86e4 Remove this
         self.partyroletype = partyroletype(name=name)
 
     # The datespan through which this role is valid. This timespan may
@@ -1351,12 +1255,12 @@ class priority(orm.entity):
 class role_role(orm.association):
     """ This class associates a party's role with the role of another
     party. This association allows a party to be related to other
-    parties and maintains the respective roles in the relatioship.
+    parties and maintains the respective roles in the relationship.
 
     This association has a role_role_type composite that describes the
     type of role-to-role association being declared.
 
-    The grammer of this association can be understood with the following
+    The grammar of this association can be understood with the following
     example:
     
         The ``company`` "ABC Subsidiary" has a ``role`` called
@@ -1466,6 +1370,10 @@ class worker(personal):
     ``employee`` or ``contractor``.
     """
 
+class manager(personal):
+    """ A party role representing a manager.
+    """
+
 class employee(worker):
     """ A party role implying legal employment with an enterprise.
     """
@@ -1506,9 +1414,26 @@ class partyroletype(roletype):
     # relationship on the party_contactmechanisms association, however
     # that relationship type is not currently supported. 
     # party_contactmechanisms = party_contactmechanisms
+    
+    # TODO:9f3a86e4 Add collection of roles (``roles = roles``)
 
 # TODO Add ``familial`` and ``contact`` subtypes to personal(role).
 
+class consumer(role):
+    """ A party who may be or has been involved in the purchase of the
+    enterprise's services. Thi could include `ecommerce.subscriber`,
+    `ecommerce.visitor`, `ecommerce.customer` or `ecommerce.prospect`.
+
+    Note that this is modeled after the CONSUMER entity in "The
+    Data Model Resource Book Volume 2".
+    """
+
+class prospect(consumer):
+    """ 
+    Note that this is modeled after the PROSPECT entity in "The
+    Data Model Resource Book Volume 2".
+    """
+    
 class customer(role):
     """ A role indicating a party that has purchased, been shipped, or
     used products from an enterprise. Subtypes of the customer role
@@ -1524,7 +1449,6 @@ class billto(customer):
     Data Model Resource Book".
     """ 
     entities = billtos
-
 
 class placing(customer):
     """ A role indicating a party that has places an order to another
@@ -1701,6 +1625,7 @@ class party_facility(orm.association):
 
     facilityroletype = facilityroletype
 
+    # TODO This is a duplicate
     party = party
 
 class objective(orm.entity):
@@ -1756,6 +1681,8 @@ class communication(orm.entity):
     note = text
 
     objectives = objectives
+
+    needs = needs
 
 class inperson(communication):
     """ A type of a ``communication`` event where the communication
@@ -2025,26 +1952,6 @@ class ratetype(apriori.type):
     # The collection of rates matching this rates type
     rates = rates
 
-class positionrate(orm.entity):
-    """ The ``positionrate`` may store a rate, overtime rate, cost, or
-    other type of rate depending on the needs of the organization. The
-    ``positiontype`` would indicate which rate is being specified. 
-
-    Note that this is modeled after the POSITION TYPE RATE entity in
-    "The Data Model Resource Book".
-    """
-    span = datespan
-    rate = dec
-
-class positiontype(apriori.type):
-    """ Categorizes positions by type.
-
-    Note that this is modeled after the POSITION TYPE entity in "The
-    Data Model Resource Book".
-    """
-
-    positionrates = positionrates
-
 class asset_party(orm.association):
     """ Represents the assignment or *checking out* of a fixed asset
     (``asset.asset``) to a ``party``.
@@ -2084,3 +1991,38 @@ class asset_partystatustype(apriori.type):
     # represents.
     asset_parties = asset_parties
 
+class need(orm.entity):
+    """ Party ``needs`` are specific needs of the ``consumer`` with the
+    date that the need was identified (``identified``) and the
+    description (``name``) of the need. Each product need may be for a
+    ``consumer`` and may be for a product (``product.product``) or
+    ``product.category``, of a product, categorized by the ``needtype``,
+    and discovered via a server ``hit`` or via a ``communication`` event.
+
+    Note that this is modeled after the PARTY NEED entity in "The Data
+    Model Resource Book Volume 2".
+    """
+
+    identified = date
+    name = str
+
+class needtype(apriori.type):
+    """ Categorizes party ``needs``.
+
+    Note that this is modeled after the NEED TYPE entity in "The Data
+    Model Resource Book Volume 2".
+    """
+
+    needs = needs
+
+class hit(orm.entity):
+    """ Represents any click on the web site that may be relate to
+    web ``content``, such as when the ``consumer`` clicks on a graphic
+    image, hyperlink to another page, or ``other`` ``object`` on the
+    site.
+
+    Note that this is modeled after the SERVER HIT entity in "The Data
+    Model Resource Book Volume 2".
+    """
+    
+    datetime = datetime

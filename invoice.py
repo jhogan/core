@@ -455,6 +455,11 @@ class paymenttype(apriori.type):
     Note that this entity was originally called PAYMENT METHOD TYPE in
     "The Data Model Resource Book".
     """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.default('description', None)
+    description = text
     payments = payments
 
 class receipt(payment):

@@ -70,7 +70,7 @@ class datetime(stddatetime.datetime):
             )
 
         # TODO Return a datetime for the given local. If tz is None, we
-        # can defalut to the systems timezone.
+        # can default to the system's timezone.
         raise NotImplementedError()
 
     def add(self, **kwargs):
