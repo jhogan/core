@@ -5635,8 +5635,9 @@ class attr:
         def __init__(self, ex):
             self.inner = ex
 
-    """ A decorator to make a method an imperitive attribute. """
     class wrap:
+        """ A decorator to make a method an imperitive attribute. 
+        """
         def __init__(self, *args, **kwargs):
             args = list(args)
             self.fget = self.fset = None
@@ -5645,7 +5646,6 @@ class attr:
             f = args.pop()
 
             # Get the methods paramter list
-
             params = f.__code__.co_varnames
             params = params[:f.__code__.co_argcount]
 
@@ -5664,12 +5664,24 @@ class attr:
 
         @property
         def mapping(self):
+            """ Returns an mapping for the imperitive attribute.
+
+            For example, in the below entity declaration, a
+            ``fieldmapping`` would be returned for the `mime` property.
+
+                class file(inode):
+                    @orm.attr(str)
+                    def mime(self):
+                        return attr()
+
+            """
             if entity in self.args[0].mro():
                 map = entitymapping(self.fget.__name__, self.args[0])
             elif entities in self.args[0].mro():
                 # NOTE Untested
                 map = entitiesmapping(k, v)
             else:
+                B()
                 map = fieldmapping(*self.args, **self.kwargs)
 
             # TODO Make isexplicit a @property. It's now redundant with
@@ -5680,6 +5692,9 @@ class attr:
             return map
 
         def _getset(self, instance, owner=None, value=undef):
+            """ Ultimately invokes the explicity attribute setter or
+            getter.
+            """
             isget = value is undef
             isset = not isget
                 
@@ -5710,9 +5725,17 @@ class attr:
                 raise sys.modules['orm'].attr.AttributeErrorWrapper(ex)
             
         def __get__(self, instance, owner=None):
+            """ Invoked when an explicit attribute is called. The
+            explicit method is then invoked and its value is returned by
+            this function. (See Python descriptors protocol for more.)
+            """
             return self._getset(instance=instance, owner=owner)
 
         def __set__(self, instance, value):
+            """ Invoked when an explicit attribute is set. The
+            explicit method is then invoked and its value is returned by
+            this function. (See Python descriptors protocol for more.)
+            """
             return self._getset(instance=instance, value=value)
 
 class fieldmapping(mapping):
