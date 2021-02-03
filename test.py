@@ -7766,7 +7766,7 @@ class test_orm(tester):
             for pres in art.presentations:
                 self.is_(art, pres.artist)
 
-    def it_loads_specialized_constiuents(self):
+    def it_loads_specialized_constituents(self):
         """ Ensure that when loading constituents, the most specialized
         entity objects are made available.
         """

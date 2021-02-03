@@ -1874,6 +1874,11 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 # add joins.
                 if not self.orm.isstreaming:
                     self.orm.joinsupers()
+
+                    # Create OUTER JOINs so the SELECT statement can
+                    # collect subentity data. This allows orm.populate
+                    # to capture the most specialized version of the
+                    # entity objects we are fetching.
                     self.orm.joinsubs()
 
                 return
@@ -7073,6 +7078,13 @@ class orm:
             es = sup
 
     def joinsubs(self):
+        """ Recursively create OUTER JOIN on subentities.
+
+        This allows the queries to pull subentity data from the database
+        via the JOINs. These data are used to construct subentity
+        objects that can replace its superentity. See the orm.populate
+        method.
+        """
         clss = orm.getsubclasses(
             of=type(self.instance), recursive=False
         )
@@ -7927,13 +7939,32 @@ class orm:
                 # above for which.
                 maps[col]._value = f.value
 
+        ''' At this point, `es` can have multiple entity objects with
+        the same id but with different positions in the class hierarchy.
+        For example, we could have a ``product.product`` entity and a
+        ``product.good`` entity. It's very much preferable to the user
+        that we have the most specialized version of this entity (which
+        would, of course, be ``product.good`, since a good (or service)
+        is a type of product). In this case, the following logic would
+        remove the ``product.product`` from es and keep the
+        ``product.good``.
+        '''
+
+        # If the resultset had multiple records
         if not simple:
+            
+            # Get all the id values edict's keys
             ids = set([x[0] for x in edict])
 
+            # For each of those id...
             for id in ids:
                 lowest = None
 
+                # Iterate over edict
                 for id1, eclass in edict:
+
+                    # Find the most-specialized (lowest) subentity of
+                    # eclass for the current `id`.
                     if id == id1:
                         if lowest:
                             if lowest.orm.issuperentity(of=eclass):
@@ -7941,8 +7972,12 @@ class orm:
                         else:
                             lowest = eclass
 
+                # Get the most specialized object
                 e = edict[id, lowest]
 
+                # For the current `id`, go through each entity in edict.
+                # Remove the objects from `es` if it is not the most
+                # specialized version of that entity.
                 for (id1, eclass), e in edict.items():
                     if id == id1:
                         if eclass.orm.issuperentity(of=lowest):
@@ -8564,6 +8599,15 @@ class orm:
         return self.instance is not None
 
     def getsupers(self, withself=False):
+        """ Returns a list of entity classes or entity objects
+        (depending on whether or not self.isinstance) of which self is a
+        subentity.
+
+        By default this returns the same output as orm.superentities.
+
+        :param: withself bool: If True, ``self`` will be the first
+        element in the list.
+        """
         r = list()
 
         if withself:
@@ -8581,10 +8625,10 @@ class orm:
 
     @property
     def superentities(self):
-        ''' Returns a list of entity classes or entity objects
+        """ Returns a list of entity classes or entity objects
         (depending on whether or not self.isinstance) of which self is a
         subentity.
-        '''
+        """
 
         # TODO Rename to ``supers`` to compliment the ``super`` method.
 
