@@ -1854,7 +1854,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             # initial set of values that the collections should be set
             # to.  The other parameters will be empty in that case.
             iscond = type(initial) is str
-            iscond = iscond or (initial is None and (_p2 or bool(args) or bool(kwargs)))
+            iscond = iscond or (
+                initial is None and (_p2 or bool(args) or bool(kwargs))
+            )
 
             if self.orm.stream or iscond:
                 super().__init__()
@@ -1873,6 +1875,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 # nothing needs to be loaded from the database, so don't
                 # add joins.
                 if not self.orm.isstreaming:
+                    # Create joins between `self` and the superentity
+                    # that the predicate requires be joined based on
+                    # predicate columns being used. 
                     self.orm.joinsupers()
 
                     # Create OUTER JOINs so the SELECT statement can
@@ -8116,6 +8121,7 @@ class orm:
             with suppress(KeyError):
                 e.orm.super = edict[e.id.bytes, e.orm.entity.orm.super]
 
+    # TODO Rename this to `select'
     @property
     def sql(self):
         """ Return a tuple containing the SELECT statement as the first
@@ -8123,6 +8129,7 @@ class orm:
         """
         return self._getsql()
 
+    # TODO Rename this to `getselect'
     def _getsql(self, graph=str(), whstack=None, joiner=None, join=None):
         """ The lower-level private method which bulids and returns the
         SELECT statement for the entities (self.instance) collection
