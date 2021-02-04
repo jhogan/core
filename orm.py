@@ -5681,7 +5681,6 @@ class attr:
                 # NOTE Untested
                 map = entitiesmapping(k, v)
             else:
-                B()
                 map = fieldmapping(*self.args, **self.kwargs)
 
             # TODO Make isexplicit a @property. It's now redundant with
@@ -5740,21 +5739,52 @@ class attr:
 
 class fieldmapping(mapping):
     """ Represents mapping between Python types and MySQL types.
+
+    ``fieldmappings`` represents the standard scalar types that all
+    entity classes have, such as str, int, bool, date, etc. These types,
+    taken with contraints such as the ``min``, ``max``, ``precision``
+    and ``scale`` are used to create the data definitions in MySQL.
     """
+
+    # TODO Capitalize ``types``
     # Permitted types
     types = bool, str, int, float, decimal.Decimal, bytes, datetime, date
-    def __init__(self, type,       # Type of field
-                       min=None,   # Max length or size of field
-                       max=None,   # Min length or size of field
-                       m=None,     # Precision (in decimals and floats)
-                       d=None,     # Scale (in decimals and floats)
-                       name=None,  # Name of the field
-                       ix=None,    # Database index
-                       isderived=False,
-                       isexplicit=False,
-                       isgetter=False,
-                       issetter=False,
-                       span=None):
+
+    def __init__(self, 
+            type,            min=None,         max=None,
+            m=None,          d=None,           name=None,
+            ix=None,         isderived=False,  isexplicit=False,
+            isgetter=False,  issetter=False,   span=None
+    ):
+        """ Creates a fieldmapping.
+
+        :param: type int: The type of the field (str, date, bool, etc)
+
+        :param: min int: The minimum length or size of the field
+
+        :param: max int: The maximum length or size of the field
+
+        :param: m int: The precision (for decimal and float types)
+
+        :param: d int: The scale (for decimal and float types)
+
+        :param: name str: The name of the field.
+
+        :param: ix orm.index: The index object the class corresponds to
+
+        :param: isderived bool: If True, the field was created in
+        ``mappings._populate``. 
+
+        :param: isexplicit bool: <To be removed>
+
+        :param: isgetter bool: Indicates the mapping is for an
+        imperitive getter.
+
+        :param: issetter bool: Indicates the mapping is for an
+        imperitive setter.
+
+        :param: span span: A ``timespan`` or a ``datespan`` reference.
+        """
 
         if hasattr(type, 'mro') and alias in type.mro():
             type, min, max = type()
