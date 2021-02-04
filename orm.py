@@ -2244,8 +2244,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 if self.orm.composite.orm.isnew:
                     load = False
 
-            # Don't load if joining or attr == 'load'
-            load &= attr not in ('outerjoin', 'innerjoin', 'join', 'load')
+            # Don't load if joining, clearing, or attr == 'load'
+            attrs = ('clear', 'outerjoin', 'innerjoin', 'join', 'load')
+            load &= attr not in attrs
 
             # Don't load if attr = '__class__'. This is typically an
             # attempt to test the instance type using isinstance().
