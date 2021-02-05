@@ -590,7 +590,9 @@ class stream(entitiesmod.entity):
         self.orderby = ''
 
     class chunk:
-        pass
+        """ A simple class used to pass to an entites collection to
+        indicate it is a chunk.
+        """
 
     class cursor(entitiesmod.entity):
         def __init__(self, stm, start=0, stop=0):
@@ -607,14 +609,28 @@ class stream(entitiesmod.entity):
         
         @property
         def chunk(self):
+            """ Return an orm.entities collection that represents a
+            chunk of the stream.
+            """
+
+            # Memoize
             if self._chunk is None:
+                
+                # Get the where object from the streaming entities
+                # collection so we can pass it to the chunked entities
+                # collection.
                 wh = self.entities.orm.where
                 if wh: # :=
                     args1 = [str(wh.predicate), wh.args]
                 else:
                     args1 = list()
 
+                # Make the entities collection aware that it is a chunk
                 args1.append(stream.chunk)
+
+                # Instantiate the chunked entities collection passing in
+                # the streaming entities collection's predicate and
+                # arguments.
                 self._chunk = type(self.entities)(*args1)
 
             return self._chunk
@@ -1839,6 +1855,12 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             # Look in *args for stream class or a stream object. If
             # found, ensure the element is an instantiated stream and
             # set it to self._stream.  Delete the stream from *args.
+
+            # TODO We should probably interate over this in reverse so
+            # the `del`etions are reliable, Although, at the moment, I
+            # don't think this is a problem because, for example, you
+            # wouldn't pass `stream` and `chunk` at the same time.
+
             for i, e in enumerate(args):
                 if e is stream:
                     self.orm.stream = stream()
@@ -2446,6 +2468,12 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
         args = [x.bytes if type(x) is UUID else x for x in args]
 
+        # If there is an orm.proprietor and the entities collection is
+        # not a chunk, then add a proprietor filter.
+        #
+        # There is no need to append a proprietor filter to a chunked
+        # entities collection. The streamed entities collection will
+        # pass in its own proprietor filter.
         if orm.proprietor and not self.orm.ischunk:
             if p1:
                 p1 += ' AND '
