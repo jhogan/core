@@ -589,6 +589,9 @@ class stream(entitiesmod.entity):
         self.chunksize = chunksize
         self.orderby = ''
 
+    class chunk:
+        pass
+
     class cursor(entitiesmod.entity):
         def __init__(self, stm, start=0, stop=0):
             self.stream = stm
@@ -607,11 +610,12 @@ class stream(entitiesmod.entity):
             if self._chunk is None:
                 wh = self.entities.orm.where
                 if wh: # :=
-                    args1 = str(wh.predicate), wh.args 
+                    args1 = [str(wh.predicate), wh.args]
                 else:
-                    args1 = tuple()
+                    args1 = list()
+
+                args1.append(stream.chunk)
                 self._chunk = type(self.entities)(*args1)
-                self._chunk.orm.ischunk = True
 
             return self._chunk
 
@@ -1847,6 +1851,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 elif isinstance(e, eager):
                     e.join(to=self)
                     del args[i]
+                elif e is stream.chunk:
+                    self.orm.ischunk = True
+                    del args[i]
 
             # The parameters express a conditional (predicate) if the
             # first is a str, or the args and kwargs are not empty.
@@ -2439,7 +2446,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
         args = [x.bytes if type(x) is UUID else x for x in args]
 
-        if orm.proprietor:
+        if orm.proprietor and not self.orm.ischunk:
             if p1:
                 p1 += ' AND '
 
