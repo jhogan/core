@@ -1649,9 +1649,6 @@ class entitiesmeta(type):
         self = self()
         self.join(other)
 
-        # XXX I think this will join the association's subassociations;
-        # untested
-        #self.orm.joinsubs()
         return self
 
     @property
@@ -4151,42 +4148,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     for e in es:
                         attr = self_orm.entity.__name__
 
-                        # Set cmp to False and use a custom setattr.
-                        # Simply calling setattr(e, attr, self) would
-                        # cause e.attr to be loaded from the database
-                        # for comparison when __setattr__ calls
-                        # _setvalue.  However, the composite doesn't
-                        # need to be loaded from the database.
-
-                        # XXX I removed the assignment to setattr to
-                        # support loading subentity elements. All
-                        # self._setattr does is set the mapping
-                        # directly. If the `setattr` parameter is not
-                        # set here, the normal __setattr__ method is
-                        # called. Since we are trying to set the
-                        # composite of a subentity, what we are trying
-                        # to get at is its super's entitymappings for
-                        # the composite. (For example, `exhibition`
-                        # doesn't have an 'artist' entitymapping but its
-                        # super, `presentation`, does). Use the normal
-                        # __setattr__ goes up the inheritance tree and
-                        # finds the super with the entitymapping. I'm
-                        # not sure why I used self._setattr in the first
-                        # place. It might have been a mistake in
-                        # retrospect.
-                        #
-                        # UPDATE I created setattr1 to replace the
-                        # original self._setattr(). It ascends the
-                        # inheritence tree. By not using a custom
-                        # setattr, we default to the standard
-                        # __setattr__. This does ascend the inheritence
-                        # tree, but causes the constituent to be flagged
-                        # as dirty because when it is assigned its
-                        # composite, this is seen as a change. This
-                        # problem was made clear in
-                        # it_loads_and_saves_multicomposite_subentity.
-                        # I'm not sure yet if this solves the original
-                        # problem, though.
                         def setattr1(e, attr, v):
                             sup = e
                             while sup:
@@ -4198,6 +4159,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                     map.value = v
                                     break
 
+                        # Set cmp to False and use a custom setattr.
+                        # Simply calling setattr(e, attr, self) would
+                        # cause e.attr to be loaded from the database
+                        # for comparison when __setattr__ calls
+                        # _setvalue.  However, the composite doesn't
+                        # need to be loaded from the database.
                         e._setvalue(
                             attr, self, attr, 
                             cmp=False, setattr=setattr1
