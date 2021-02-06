@@ -7863,6 +7863,27 @@ class test_orm(tester):
             self.eq(pres.id, pres1.id)
             self.type(type(pres), pres1)
 
+    def it_loads_specialized_composite(self):
+        sng = singer.getvalid()
+
+        self.type(singer, sng.presentations.singer)
+        self.type(singer, sng.presentations.artist)
+        return
+
+        sng.presentations += presentation.getvalid()
+
+        pres = sng.presentations.first
+
+        self.type(singer, pres.artist)
+
+        sng.save()
+
+        sng = sng.orm.reloaded()
+        pres = sng.presentations.first
+        self.type(singer, pres.artist)
+
+
+
     def it_updates_entity_constituents_properties(self):
         chrons = self.chronicles
         art = artist.getvalid()

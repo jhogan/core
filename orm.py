@@ -4192,6 +4192,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         for e in (es,) +  tuple(es):
                             setattr(e, self_orm_entity__name__, self)
 
+                    setattr(v, sup.orm.entity.__name__, self)
+                    
+
                     if isinstance(v, associations):
                         v.orm.composite = self
                     return v
