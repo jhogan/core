@@ -30,8 +30,6 @@ import uuid, builtins
 class parties(orm.entities):                                 pass
 class types(apriori.types):                                  pass
 class roles(orm.entities):                                   pass
-class employees(workers):                                    pass
-class managers(workers):                                     pass
 class role_role_types(apriori.types):                        pass
 class statuses(orm.entities):                                pass
 class role_role_statuses(statuses):                          pass
@@ -39,6 +37,8 @@ class priorities(orm.entities):                              pass
 class role_roles(orm.associations):                          pass
 class personals(roles):                                      pass
 class workers(personals):                                    pass
+class employees(workers):                                    pass
+class managers(workers):                                     pass
 class contractors(workers):                                  pass
 class organizationals(roles):                                pass
 class suppliers(organizationals):                            pass
@@ -1370,7 +1370,7 @@ class worker(personal):
     ``employee`` or ``contractor``.
     """
 
-class manager(personal):
+class manager(worker):
     """ A party role representing a manager.
     """
 

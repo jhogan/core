@@ -589,6 +589,11 @@ class stream(entitiesmod.entity):
         self.chunksize = chunksize
         self.orderby = ''
 
+    class chunk:
+        """ A simple class used to pass to an entites collection to
+        indicate it is a chunk.
+        """
+
     class cursor(entitiesmod.entity):
         def __init__(self, stm, start=0, stop=0):
             self.stream = stm
@@ -604,14 +609,29 @@ class stream(entitiesmod.entity):
         
         @property
         def chunk(self):
+            """ Return an orm.entities collection that represents a
+            chunk of the stream.
+            """
+
+            # Memoize
             if self._chunk is None:
+                
+                # Get the where object from the streaming entities
+                # collection so we can pass it to the chunked entities
+                # collection.
                 wh = self.entities.orm.where
                 if wh: # :=
-                    args1 = str(wh.predicate), wh.args 
+                    args1 = [str(wh.predicate), wh.args]
                 else:
-                    args1 = tuple()
+                    args1 = list()
+
+                # Make the entities collection aware that it is a chunk
+                args1.append(stream.chunk)
+
+                # Instantiate the chunked entities collection passing in
+                # the streaming entities collection's predicate and
+                # arguments.
                 self._chunk = type(self.entities)(*args1)
-                self._chunk.orm.ischunk = True
 
             return self._chunk
 
@@ -1835,6 +1855,12 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             # Look in *args for stream class or a stream object. If
             # found, ensure the element is an instantiated stream and
             # set it to self._stream.  Delete the stream from *args.
+
+            # TODO We should probably interate over this in reverse so
+            # the `del`etions are reliable, Although, at the moment, I
+            # don't think this is a problem because, for example, you
+            # wouldn't pass `stream` and `chunk` at the same time.
+
             for i, e in enumerate(args):
                 if e is stream:
                     self.orm.stream = stream()
@@ -1847,6 +1873,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 elif isinstance(e, eager):
                     e.join(to=self)
                     del args[i]
+                elif e is stream.chunk:
+                    self.orm.ischunk = True
+                    del args[i]
 
             # The parameters express a conditional (predicate) if the
             # first is a str, or the args and kwargs are not empty.
@@ -1854,7 +1883,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             # initial set of values that the collections should be set
             # to.  The other parameters will be empty in that case.
             iscond = type(initial) is str
-            iscond = iscond or (initial is None and (_p2 or bool(args) or bool(kwargs)))
+            iscond = iscond or (
+                initial is None and (_p2 or bool(args) or bool(kwargs))
+            )
 
             if self.orm.stream or iscond:
                 super().__init__()
@@ -1873,7 +1904,15 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 # nothing needs to be loaded from the database, so don't
                 # add joins.
                 if not self.orm.isstreaming:
+                    # Create joins between `self` and the superentity
+                    # that the predicate requires be joined based on
+                    # predicate columns being used. 
                     self.orm.joinsupers()
+
+                    # Create OUTER JOINs so the SELECT statement can
+                    # collect subentity data. This allows orm.populate
+                    # to capture the most specialized version of the
+                    # entity objects we are fetching.
                     self.orm.joinsubs()
 
                 return
@@ -2234,8 +2273,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 if self.orm.composite.orm.isnew:
                     load = False
 
-            # Don't load if joining or attr == 'load'
-            load &= attr not in ('outerjoin', 'innerjoin', 'join', 'load')
+            # Don't load if joining, clearing, or attr == 'load'
+            attrs = ('clear', 'outerjoin', 'innerjoin', 'join', 'load')
+            load &= attr not in attrs
 
             # Don't load if attr = '__class__'. This is typically an
             # attempt to test the instance type using isinstance().
@@ -2428,7 +2468,13 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
         args = [x.bytes if type(x) is UUID else x for x in args]
 
-        if orm.proprietor:
+        # If there is an orm.proprietor and the entities collection is
+        # not a chunk, then add a proprietor filter.
+        #
+        # There is no need to append a proprietor filter to a chunked
+        # entities collection. The streamed entities collection will
+        # pass in its own proprietor filter.
+        if orm.proprietor and not self.orm.ischunk:
             if p1:
                 p1 += ' AND '
 
@@ -7076,6 +7122,13 @@ class orm:
             es = sup
 
     def joinsubs(self):
+        """ Recursively create OUTER JOIN on subentities.
+
+        This allows the queries to pull subentity data from the database
+        via the JOINs. These data are used to construct subentity
+        objects that can replace its superentity. See the orm.populate
+        method.
+        """
         clss = orm.getsubclasses(
             of=type(self.instance), recursive=False
         )
@@ -7930,13 +7983,32 @@ class orm:
                 # above for which.
                 maps[col]._value = f.value
 
+        ''' At this point, `es` can have multiple entity objects with
+        the same id but with different positions in the class hierarchy.
+        For example, we could have a ``product.product`` entity and a
+        ``product.good`` entity. It's very much preferable to the user
+        that we have the most specialized version of this entity (which
+        would, of course, be ``product.good`, since a good (or service)
+        is a type of product). In this case, the following logic would
+        remove the ``product.product`` from es and keep the
+        ``product.good``.
+        '''
+
+        # If the resultset had multiple records
         if not simple:
+            
+            # Get all the id values edict's keys
             ids = set([x[0] for x in edict])
 
+            # For each of those id...
             for id in ids:
                 lowest = None
 
+                # Iterate over edict
                 for id1, eclass in edict:
+
+                    # Find the most-specialized (lowest) subentity of
+                    # eclass for the current `id`.
                     if id == id1:
                         if lowest:
                             if lowest.orm.issuperentity(of=eclass):
@@ -7944,8 +8016,12 @@ class orm:
                         else:
                             lowest = eclass
 
+                # Get the most specialized object
                 e = edict[id, lowest]
 
+                # For the current `id`, go through each entity in edict.
+                # Remove the objects from `es` if it is not the most
+                # specialized version of that entity.
                 for (id1, eclass), e in edict.items():
                     if id == id1:
                         if eclass.orm.issuperentity(of=lowest):
@@ -8084,6 +8160,7 @@ class orm:
             with suppress(KeyError):
                 e.orm.super = edict[e.id.bytes, e.orm.entity.orm.super]
 
+    # TODO Rename this to `select'
     @property
     def sql(self):
         """ Return a tuple containing the SELECT statement as the first
@@ -8091,6 +8168,7 @@ class orm:
         """
         return self._getsql()
 
+    # TODO Rename this to `getselect'
     def _getsql(self, graph=str(), whstack=None, joiner=None, join=None):
         """ The lower-level private method which bulids and returns the
         SELECT statement for the entities (self.instance) collection
@@ -8567,6 +8645,15 @@ class orm:
         return self.instance is not None
 
     def getsupers(self, withself=False):
+        """ Returns a list of entity classes or entity objects
+        (depending on whether or not self.isinstance) of which self is a
+        subentity.
+
+        By default this returns the same output as orm.superentities.
+
+        :param: withself bool: If True, ``self`` will be the first
+        element in the list.
+        """
         r = list()
 
         if withself:
@@ -8584,10 +8671,10 @@ class orm:
 
     @property
     def superentities(self):
-        ''' Returns a list of entity classes or entity objects
+        """ Returns a list of entity classes or entity objects
         (depending on whether or not self.isinstance) of which self is a
         subentity.
-        '''
+        """
 
         # TODO Rename to ``supers`` to compliment the ``super`` method.
 
