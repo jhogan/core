@@ -1649,9 +1649,6 @@ class entitiesmeta(type):
         self = self()
         self.join(other)
 
-        # XXX I think this will join the association's subassociations;
-        # untested
-        #self.orm.joinsubs()
         return self
 
     @property
@@ -4151,42 +4148,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     for e in es:
                         attr = self_orm.entity.__name__
 
-                        # Set cmp to False and use a custom setattr.
-                        # Simply calling setattr(e, attr, self) would
-                        # cause e.attr to be loaded from the database
-                        # for comparison when __setattr__ calls
-                        # _setvalue.  However, the composite doesn't
-                        # need to be loaded from the database.
-
-                        # XXX I removed the assignment to setattr to
-                        # support loading subentity elements. All
-                        # self._setattr does is set the mapping
-                        # directly. If the `setattr` parameter is not
-                        # set here, the normal __setattr__ method is
-                        # called. Since we are trying to set the
-                        # composite of a subentity, what we are trying
-                        # to get at is its super's entitymappings for
-                        # the composite. (For example, `exhibition`
-                        # doesn't have an 'artist' entitymapping but its
-                        # super, `presentation`, does). Use the normal
-                        # __setattr__ goes up the inheritance tree and
-                        # finds the super with the entitymapping. I'm
-                        # not sure why I used self._setattr in the first
-                        # place. It might have been a mistake in
-                        # retrospect.
-                        #
-                        # UPDATE I created setattr1 to replace the
-                        # original self._setattr(). It ascends the
-                        # inheritence tree. By not using a custom
-                        # setattr, we default to the standard
-                        # __setattr__. This does ascend the inheritence
-                        # tree, but causes the constituent to be flagged
-                        # as dirty because when it is assigned its
-                        # composite, this is seen as a change. This
-                        # problem was made clear in
-                        # it_loads_and_saves_multicomposite_subentity.
-                        # I'm not sure yet if this solves the original
-                        # problem, though.
                         def setattr1(e, attr, v):
                             sup = e
                             while sup:
@@ -4198,6 +4159,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                     map.value = v
                                     break
 
+                        # Set cmp to False and use a custom setattr.
+                        # Simply calling setattr(e, attr, self) would
+                        # cause e.attr to be loaded from the database
+                        # for comparison when __setattr__ calls
+                        # _setvalue.  However, the composite doesn't
+                        # need to be loaded from the database.
                         e._setvalue(
                             attr, self, attr, 
                             cmp=False, setattr=setattr1
@@ -5790,8 +5757,9 @@ class attr:
         def __init__(self, ex):
             self.inner = ex
 
-    """ A decorator to make a method an imperitive attribute. """
     class wrap:
+        """ A decorator to make a method an imperitive attribute. 
+        """
         def __init__(self, *args, **kwargs):
             args = list(args)
             self.fget = self.fset = None
@@ -5800,7 +5768,6 @@ class attr:
             f = args.pop()
 
             # Get the methods paramter list
-
             params = f.__code__.co_varnames
             params = params[:f.__code__.co_argcount]
 
@@ -5819,6 +5786,17 @@ class attr:
 
         @property
         def mapping(self):
+            """ Returns an mapping for the imperitive attribute.
+
+            For example, in the below entity declaration, a
+            ``fieldmapping`` would be returned for the `mime` property.
+
+                class file(inode):
+                    @orm.attr(str)
+                    def mime(self):
+                        return attr()
+
+            """
             if entity in self.args[0].mro():
                 map = entitymapping(self.fget.__name__, self.args[0])
             elif entities in self.args[0].mro():
@@ -5835,6 +5813,9 @@ class attr:
             return map
 
         def _getset(self, instance, owner=None, value=undef):
+            """ Ultimately invokes the explicity attribute setter or
+            getter.
+            """
             isget = value is undef
             isset = not isget
                 
@@ -5865,28 +5846,67 @@ class attr:
                 raise sys.modules['orm'].attr.AttributeErrorWrapper(ex)
             
         def __get__(self, instance, owner=None):
+            """ Invoked when an explicit attribute is called. The
+            explicit method is then invoked and its value is returned by
+            this function. (See Python descriptors protocol for more.)
+            """
             return self._getset(instance=instance, owner=owner)
 
         def __set__(self, instance, value):
+            """ Invoked when an explicit attribute is set. The
+            explicit method is then invoked and its value is returned by
+            this function. (See Python descriptors protocol for more.)
+            """
             return self._getset(instance=instance, value=value)
 
 class fieldmapping(mapping):
     """ Represents mapping between Python types and MySQL types.
+
+    ``fieldmappings`` represents the standard scalar types that all
+    entity classes have, such as str, int, bool, date, etc. These types,
+    taken with contraints such as the ``min``, ``max``, ``precision``
+    and ``scale`` are used to create the data definitions in MySQL.
     """
+
+    # TODO Capitalize ``types``
     # Permitted types
     types = bool, str, int, float, decimal.Decimal, bytes, datetime, date
-    def __init__(self, type,       # Type of field
-                       min=None,   # Max length or size of field
-                       max=None,   # Min length or size of field
-                       m=None,     # Precision (in decimals and floats)
-                       d=None,     # Scale (in decimals and floats)
-                       name=None,  # Name of the field
-                       ix=None,    # Database index
-                       isderived=False,
-                       isexplicit=False,
-                       isgetter=False,
-                       issetter=False,
-                       span=None):
+
+    def __init__(self, 
+            type,            min=None,         max=None,
+            m=None,          d=None,           name=None,
+            ix=None,         isderived=False,  isexplicit=False,
+            isgetter=False,  issetter=False,   span=None
+    ):
+        """ Creates a fieldmapping.
+
+        :param: type int: The type of the field (str, date, bool, etc)
+
+        :param: min int: The minimum length or size of the field
+
+        :param: max int: The maximum length or size of the field
+
+        :param: m int: The precision (for decimal and float types)
+
+        :param: d int: The scale (for decimal and float types)
+
+        :param: name str: The name of the field.
+
+        :param: ix orm.index: The index object the class corresponds to
+
+        :param: isderived bool: If True, the field was created in
+        ``mappings._populate``. 
+
+        :param: isexplicit bool: <To be removed>
+
+        :param: isgetter bool: Indicates the mapping is for an
+        imperitive getter.
+
+        :param: issetter bool: Indicates the mapping is for an
+        imperitive setter.
+
+        :param: span span: A ``timespan`` or a ``datespan`` reference.
+        """
 
         if hasattr(type, 'mro') and alias in type.mro():
             type, min, max = type()
