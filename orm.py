@@ -5754,8 +5754,9 @@ class attr:
         def __init__(self, ex):
             self.inner = ex
 
-    """ A decorator to make a method an imperitive attribute. """
     class wrap:
+        """ A decorator to make a method an imperitive attribute. 
+        """
         def __init__(self, *args, **kwargs):
             args = list(args)
             self.fget = self.fset = None
@@ -5764,7 +5765,6 @@ class attr:
             f = args.pop()
 
             # Get the methods paramter list
-
             params = f.__code__.co_varnames
             params = params[:f.__code__.co_argcount]
 
@@ -5783,6 +5783,17 @@ class attr:
 
         @property
         def mapping(self):
+            """ Returns an mapping for the imperitive attribute.
+
+            For example, in the below entity declaration, a
+            ``fieldmapping`` would be returned for the `mime` property.
+
+                class file(inode):
+                    @orm.attr(str)
+                    def mime(self):
+                        return attr()
+
+            """
             if entity in self.args[0].mro():
                 map = entitymapping(self.fget.__name__, self.args[0])
             elif entities in self.args[0].mro():
@@ -5799,6 +5810,9 @@ class attr:
             return map
 
         def _getset(self, instance, owner=None, value=undef):
+            """ Ultimately invokes the explicity attribute setter or
+            getter.
+            """
             isget = value is undef
             isset = not isget
                 
@@ -5829,28 +5843,67 @@ class attr:
                 raise sys.modules['orm'].attr.AttributeErrorWrapper(ex)
             
         def __get__(self, instance, owner=None):
+            """ Invoked when an explicit attribute is called. The
+            explicit method is then invoked and its value is returned by
+            this function. (See Python descriptors protocol for more.)
+            """
             return self._getset(instance=instance, owner=owner)
 
         def __set__(self, instance, value):
+            """ Invoked when an explicit attribute is set. The
+            explicit method is then invoked and its value is returned by
+            this function. (See Python descriptors protocol for more.)
+            """
             return self._getset(instance=instance, value=value)
 
 class fieldmapping(mapping):
     """ Represents mapping between Python types and MySQL types.
+
+    ``fieldmappings`` represents the standard scalar types that all
+    entity classes have, such as str, int, bool, date, etc. These types,
+    taken with contraints such as the ``min``, ``max``, ``precision``
+    and ``scale`` are used to create the data definitions in MySQL.
     """
+
+    # TODO Capitalize ``types``
     # Permitted types
     types = bool, str, int, float, decimal.Decimal, bytes, datetime, date
-    def __init__(self, type,       # Type of field
-                       min=None,   # Max length or size of field
-                       max=None,   # Min length or size of field
-                       m=None,     # Precision (in decimals and floats)
-                       d=None,     # Scale (in decimals and floats)
-                       name=None,  # Name of the field
-                       ix=None,    # Database index
-                       isderived=False,
-                       isexplicit=False,
-                       isgetter=False,
-                       issetter=False,
-                       span=None):
+
+    def __init__(self, 
+            type,            min=None,         max=None,
+            m=None,          d=None,           name=None,
+            ix=None,         isderived=False,  isexplicit=False,
+            isgetter=False,  issetter=False,   span=None
+    ):
+        """ Creates a fieldmapping.
+
+        :param: type int: The type of the field (str, date, bool, etc)
+
+        :param: min int: The minimum length or size of the field
+
+        :param: max int: The maximum length or size of the field
+
+        :param: m int: The precision (for decimal and float types)
+
+        :param: d int: The scale (for decimal and float types)
+
+        :param: name str: The name of the field.
+
+        :param: ix orm.index: The index object the class corresponds to
+
+        :param: isderived bool: If True, the field was created in
+        ``mappings._populate``. 
+
+        :param: isexplicit bool: <To be removed>
+
+        :param: isgetter bool: Indicates the mapping is for an
+        imperitive getter.
+
+        :param: issetter bool: Indicates the mapping is for an
+        imperitive setter.
+
+        :param: span span: A ``timespan`` or a ``datespan`` reference.
+        """
 
         if hasattr(type, 'mro') and alias in type.mro():
             type, min, max = type()
