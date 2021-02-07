@@ -7962,14 +7962,14 @@ class test_orm(tester):
             self.type(singer, conc.singer)
             self.is_(sng, conc.singer)
 
-        ''' battle.presentations '''
+        ''' rappers.presentations '''
         rpr = rapper.getvalid()
 
         # Test the composites of constiuent collections
-        self.type(rapper, rpr.presentations.rapper)
-        self.type(rapper, rpr.presentations.singer)
-        self.type(rapper, rpr.presentations.artist)
-        return
+
+        self.is_(rpr, rpr.presentations.rapper)
+        self.is_(rpr, rpr.presentations.singer)
+        self.is_(rpr, rpr.presentations.artist)
 
         # Test the composites of constituent elements
         rpr.presentations += presentation.getvalid()
@@ -7977,6 +7977,7 @@ class test_orm(tester):
 
         for pres in rpr.presentations:
             self.is_(rpr, pres.rapper)
+            self.is_(rpr, pres.singer)
             self.is_(rpr, pres.artist)
 
         # Save, reload and test
@@ -7985,14 +7986,79 @@ class test_orm(tester):
         rpr = rpr.orm.reloaded()
         
         # Test the composites of constiuent collections
-        self.type(rapper, rpr.presentations.rapper)
-        self.type(rapper, rpr.presentations.artist)
+        self.is_(rpr, rpr.presentations.rapper)
+        self.is_(rpr, rpr.presentations.singer)
+        self.is_(rpr, rpr.presentations.artist)
 
         self.two(rpr.presentations)
 
         for pres in rpr.presentations:
-            self.type(rapper, pres.rapper)
-            self.type(rapper, pres.artist)
+            self.is_(rpr, pres.rapper)
+            self.is_(rpr, pres.singer)
+            self.is_(rpr, pres.artist)
+
+        ''' rappers.concerts '''
+        self.zero(rpr.concerts)
+
+        self.is_(rpr, rpr.concerts.rapper)
+        self.is_(rpr, rpr.concerts.singer)
+        self.is_(rpr, rpr.concerts.artist)
+
+        rpr.concerts += concert.getvalid()
+        rpr.concerts += concert.getvalid()
+
+        for conc in rpr.concerts:
+            self.is_(rpr, conc.rapper)
+            self.is_(rpr, conc.singer)
+            self.is_(rpr, conc.artist)
+
+        rpr.save()
+
+        rpr = rpr.orm.reloaded()
+        
+        # Test the composites of constiuent collections
+        self.is_(rpr, rpr.concerts.rapper)
+        self.is_(rpr, rpr.concerts.singer)
+        self.is_(rpr, rpr.concerts.artist)
+
+        self.two(rpr.concerts)
+
+        for conc in rpr.concerts:
+            self.is_(rpr, conc.rapper)
+            self.is_(rpr, conc.singer)
+            self.is_(rpr, conc.artist)
+
+        ''' rappers.battles '''
+        self.zero(rpr.battles)
+
+        self.is_(rpr, rpr.battles.rapper)
+        self.is_(rpr, rpr.battles.singer)
+        self.is_(rpr, rpr.battles.artist)
+
+        B()
+        rpr.battles += battle.getvalid()
+        rpr.battles += battle.getvalid()
+
+        for btl in rpr.battles:
+            self.is_(rpr, btl.rapper)
+            self.is_(rpr, btl.singer)
+            self.is_(rpr, btl.artist)
+
+        rpr.save()
+
+        rpr = rpr.orm.reloaded()
+        
+        # Test the composites of constiuent collections
+        self.is_(rpr, rpr.battles.rapper)
+        self.is_(rpr, rpr.battles.singer)
+        self.is_(rpr, rpr.battles.artist)
+
+        self.two(rpr.battles)
+
+        for btl in rpr.battles:
+            self.is_(rpr, btl.rapper)
+            self.is_(rpr, btl.singer)
+            self.is_(rpr, btl.artist)
 
     def it_updates_entity_constituents_properties(self):
         chrons = self.chronicles
