@@ -4182,7 +4182,13 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 # Assign the composite reference to the constituent
                 # collection.
                 #   i.e., art.presentations.artist = art
-                setattr(map.value, self_orm.entity.__name__, self)
+
+                # XXX Ascending the graph here is experimental. It
+                # caused som issues in it_loads_specialized_composite.
+                sup = self_orm.entity
+                while sup:
+                    setattr(map.value, sup.__name__, self)
+                    sup = sup.orm.super
 
                 map.value.onadd.append(self.entities_onadd)
 
