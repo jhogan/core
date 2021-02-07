@@ -4201,11 +4201,36 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     # Assign the composite reference to the constituent
                     #   i.e., sng.presentations.singer = sng
                     if map_type is entitiesmapping:
+
+                        # Assigne v to es to clarify it is an entities
+                        # collecion.
                         es = v
+
+                        # Iterate over each element in the entities
+                        # collection including the entities collecion
+                        # itself as one of the items to iterate over:
+                        #     for e in [es, es[0], es[1], ...]
                         for e in (es,) +  tuple(es):
+                            # Set the composite for type(self) on the
+                            # entity object or entities collection to
+                            # self:
+                            #
+                            #     sng.presentations.singer = sng
+                            #     sng.presentations[0].singer = sng
                             setattr(e, self_orm_entity__name__, self)
 
-                    setattr(v, sup.orm.entity.__name__, self)
+                            # The getattr() call above will set the
+                            # composite of the entities collection to
+                            # the super:
+                            #
+                            #     sng.presentations.artist = sng.orm.super
+                            #
+                            # However, so the user will get the most
+                            # specialized composite, we replace that
+                            # with self:
+                            #
+                            #     sng.presentations.artist = sng
+                            setattr(e, sup_orm.entity.__name__, self)
                     
 
                     if isinstance(v, associations):

@@ -7864,25 +7864,143 @@ class test_orm(tester):
             self.type(type(pres), pres1)
 
     def it_loads_specialized_composite(self):
+        ''' artist '''
+        art = artist.getvalid()
+
+        # Test the composites of constiuent collections
+        self.type(artist, art.presentations.artist)
+
+        # Test the composites of constituent elements
+        art.presentations += presentation.getvalid()
+        art.presentations += presentation.getvalid()
+
+        for pres in art.presentations:
+            self.type(artist, pres.artist)
+
+        # Save, reload and test
+        art.save()
+
+        art = art.orm.reloaded()
+        
+        # Test the composites of constiuent collections
+        self.type(artist, art.presentations.artist)
+
+        self.two(art.presentations)
+
+        for pres in art.presentations:
+            self.type(artist, pres.artist)
+
+
+        ''' singer.presentations '''
         sng = singer.getvalid()
 
+        # Test the composites of constiuent collections
         self.type(singer, sng.presentations.singer)
         self.type(singer, sng.presentations.artist)
-        return
 
+        # Test the composites of constituent elements
+        sng.presentations += presentation.getvalid()
         sng.presentations += presentation.getvalid()
 
-        pres = sng.presentations.first
+        for pres in sng.presentations:
+            self.type(singer, pres.singer)
+            self.type(singer, pres.artist)
+            self.is_(sng, pres.singer)
+            self.is_(sng, pres.artist)
 
-        self.type(singer, pres.artist)
-
+        # Save, reload and test
         sng.save()
 
         sng = sng.orm.reloaded()
-        pres = sng.presentations.first
-        self.type(singer, pres.artist)
+        
+        # Test the composites of constiuent collections
+        self.type(singer, sng.presentations.singer)
+        self.type(singer, sng.presentations.artist)
 
+        self.two(sng.presentations)
 
+        for pres in sng.presentations:
+            self.type(singer, pres.singer)
+            self.type(singer, pres.artist)
+
+        ''' singer.concerts '''
+        self.zero(sng.concerts)
+
+        self.type(singer, sng.concerts.singer)
+
+        # TODO This should probably work instead:
+        #     self.is_(sng, sng.concerts.artist)
+        self.expect(AttributeError, lambda: sng.concerts.artist)
+
+        # Test the composites of constituent elements
+        sng.concerts += concert.getvalid()
+        sng.concerts += concert.getvalid()
+
+        # Test the composites of constiuent collections
+        self.type(singer, sng.concerts.singer)
+        self.is_(sng, sng.concerts.singer)
+
+        # TODO This should probably work instead:
+        #     self.is_(sng, sng.concerts.artist)
+        self.expect(AttributeError, lambda: sng.concerts.artist)
+
+        self.two(sng.concerts)
+        for conc in sng.concerts:
+            self.type(singer, conc.singer)
+            self.is_(sng, conc.singer)
+
+            # TODO conc.artist returns None here. Seems like it should
+            # return the singer.
+            #self.expect(AttributeError, lambda: conc.artist)
+
+        # Save, reload and test
+        sng.save()
+
+        sng = sng.orm.reloaded()
+        
+        # Test the composites of constiuent collections
+        self.type(singer, sng.concerts.singer)
+        self.is_(sng, sng.concerts.singer)
+
+        self.two(sng.concerts)
+
+        for conc in sng.concerts:
+            self.type(singer, conc.singer)
+            self.is_(sng, conc.singer)
+
+        ''' battle.presentations '''
+        rpr = rapper.getvalid()
+
+        # Test the composites of constiuent collections
+        self.type(rapper, rpr.presentations.rapper)
+        self.type(rapper, rpr.presentations.singer)
+        self.type(rapper, rpr.presentations.artist)
+        return
+
+        # Test the composites of constituent elements
+        rpr.presentations += presentation.getvalid()
+        rpr.presentations += presentation.getvalid()
+
+        for pres in rpr.presentations:
+            self.type(rapper, pres.rapper)
+            self.type(rapper, pres.artist)
+            self.is_(rpr, pres.rapper)
+            self.is_(rpr, pres.artist)
+
+        # Save, reload and test
+        rpr.save()
+
+        rpr = rpr.orm.reloaded()
+        
+        # Test the composites of constiuent collections
+        self.type(rapper, rpr.presentations.rapper)
+        self.type(rapper, rpr.presentations.artist)
+
+        self.two(rpr.presentations)
+
+        for pres in rpr.presentations:
+            self.type(rapper, pres.rapper)
+            self.type(rapper, pres.artist)
 
     def it_updates_entity_constituents_properties(self):
         chrons = self.chronicles
