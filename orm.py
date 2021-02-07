@@ -5862,7 +5862,36 @@ class fieldmapping(mapping):
     ``fieldmappings`` represents the standard scalar types that all
     entity classes have, such as str, int, bool, date, etc. These types,
     taken with contraints such as the ``min``, ``max``, ``precision``
-    and ``scale`` are used to create the data definitions in MySQL.
+
+    fieldmappings objects are created on entity declaration and added to
+    the entity's orm.mappings collection::
+
+        class engineer(orm.entity):
+            name = str
+            bio = str, orm.fulltext
+
+        name_map = engineer.orm.mappings['name']
+        bio_map = engineer.orm.mappings['bio']
+
+        assert type(name_map) is fieldmapping
+        assert type(bio_map) is fieldmapping
+
+        assert name_map.name == 'name'
+        assert bio_map.name == 'bio'
+
+    The above example would work the same if with an instance of
+    ``engineer`` rather than a class reference::
+
+        eng = engineer()
+        name_map = eng.orm.mappings['name']
+        bio_map = eng.orm.mappings['bio']
+
+        assert type(name_map) is fieldmapping
+        assert type(bio_map) is fieldmapping
+
+        assert name_map.name == 'name'
+        assert bio_map.name == 'bio'
+
     """
 
     # TODO Capitalize ``types``
@@ -5914,6 +5943,7 @@ class fieldmapping(mapping):
             if max is not None:
                 d, max = max, None
         
+        # Assign arguments to fields 
         self._type       =  type
         self._value      =  undef
         self._min        =  min
@@ -5943,6 +5973,10 @@ class fieldmapping(mapping):
 
     @property
     def column(self):
+        """ Return a database column object for the fieldmapping.
+
+        :rtype: db.column
+        """
         # NOTE This should probably be rewritten like this:
         #
         #     return db.column(self)
@@ -5953,23 +5987,17 @@ class fieldmapping(mapping):
         return col
 
     def clone(self):
+        """ Returns a new fieldmapping with the same attributes as self.
+        """
         ix = self.index
 
         ix = type(ix)(name=ix.name, ordinal=ix.ordinal) if ix else None
 
         map = fieldmapping(
-            self.type,
-            self.min,
-            self.max,
-            self.precision,
-            self.scale,
-            self.name,
-            ix,
-            self.isderived,
-            self.isexplicit,
-            self.isgetter,
-            self.issetter,
-            self.span,
+            self.type,       self.min,        self.max,
+            self.precision,  self.scale,      self.name,
+            ix,              self.isderived,  self.isexplicit,
+            self.isgetter,   self.issetter,   self.span,
         )
 
         if ix:
@@ -5989,6 +6017,9 @@ class fieldmapping(mapping):
 
     @property
     def _reprargs(self):
+        """ Returns the interpolation arguments for this object's
+        __repr__ method. See ``mapping.__repr__``.
+        """
         args = super()._reprargs
         args  +=  ',  type=%s'        %  str(self.type)
         args  +=  ',  ix=%s'          %  str(self.index)
@@ -5997,42 +6028,81 @@ class fieldmapping(mapping):
 
     @property
     def index(self):
+        """ Return the index object associated with this fieldmapping.
+
+        For example, in the following class declaration, the
+        orm.fulltext reference would be the index:
+
+            class engineer(orm.entity):
+                bio = str, orm.fulltext
+
+            map = engineer.orm.mappings['bio']
+            assert map.index is orm.fulltext
+        """
         return self._ix
 
     @property
     def isstr(self):
+        """ Returns True if the mapping represents a str type.
+        """
         return self.type == types.str
 
     @property
     def isdatetime(self):
+        """ Returns True if the mapping represents a datetime type.
+        """
         return self.type == types.datetime
 
     @property
     def isdate(self):
+        """ Returns True if the mapping represents a date type.
+        """
         return self.type == types.date
 
     @property
     def isbool(self):
+        """ Returns True if the mapping represents a bool type.
+        """
         return self.type == types.bool
 
     @property
     def isint(self):
+        """ Returns True if the mapping represents a int type.
+        """
         return self.type == types.int
 
     @property
     def isfloat(self):
+        """ Returns True if the mapping represents a float type.
+        """
         return self.type == types.float
 
     @property
     def isdecimal(self):
+        """ Returns True if the mapping represents a decimal type.
+        """
         return self.type == types.decimal
 
     @property
     def isbytes(self):
+        """ Returns True if the mapping represents a bytes type.
+        """
         return self.type == types.bytes
 
     @property
     def isfixed(self):
+        """ Returns True if the mapping represents a fixed-sized type.
+
+        An example of a fixed-sized type would be a CHAR type in a
+        database::
+
+            CREATE TABLE mytable(
+                phone_number CHAR(10)
+            );
+
+        However, numeric types such as int's floats and decimals are
+        considered fixed-size as well.
+        """
         if self.isint or self.isfloat or self.isdecimal:
             return True
 
