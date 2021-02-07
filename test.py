@@ -7868,14 +7868,14 @@ class test_orm(tester):
         art = artist.getvalid()
 
         # Test the composites of constiuent collections
-        self.type(artist, art.presentations.artist)
+        self.is_(art, art.presentations.artist)
 
         # Test the composites of constituent elements
         art.presentations += presentation.getvalid()
         art.presentations += presentation.getvalid()
 
         for pres in art.presentations:
-            self.type(artist, pres.artist)
+            self.is_(art, pres.artist)
 
         # Save, reload and test
         art.save()
@@ -7883,28 +7883,25 @@ class test_orm(tester):
         art = art.orm.reloaded()
         
         # Test the composites of constiuent collections
-        self.type(artist, art.presentations.artist)
+        self.is_(art, art.presentations.artist)
 
         self.two(art.presentations)
 
         for pres in art.presentations:
-            self.type(artist, pres.artist)
-
+            self.is_(art, pres.artist)
 
         ''' singer.presentations '''
         sng = singer.getvalid()
 
         # Test the composites of constiuent collections
-        self.type(singer, sng.presentations.singer)
-        self.type(singer, sng.presentations.artist)
+        self.is_(sng, sng.presentations.singer)
+        self.is_(sng, sng.presentations.artist)
 
         # Test the composites of constituent elements
         sng.presentations += presentation.getvalid()
         sng.presentations += presentation.getvalid()
 
         for pres in sng.presentations:
-            self.type(singer, pres.singer)
-            self.type(singer, pres.artist)
             self.is_(sng, pres.singer)
             self.is_(sng, pres.artist)
 
@@ -7914,8 +7911,8 @@ class test_orm(tester):
         sng = sng.orm.reloaded()
         
         # Test the composites of constiuent collections
-        self.type(singer, sng.presentations.singer)
-        self.type(singer, sng.presentations.artist)
+        self.is_(sng, sng.presentations.singer)
+        self.is_(sng, sng.presentations.artist)
 
         self.two(sng.presentations)
 
@@ -7926,7 +7923,7 @@ class test_orm(tester):
         ''' singer.concerts '''
         self.zero(sng.concerts)
 
-        self.type(singer, sng.concerts.singer)
+        self.is_(sng, sng.concerts.singer)
 
         # TODO This should probably work instead:
         #     self.is_(sng, sng.concerts.artist)
@@ -7937,7 +7934,6 @@ class test_orm(tester):
         sng.concerts += concert.getvalid()
 
         # Test the composites of constiuent collections
-        self.type(singer, sng.concerts.singer)
         self.is_(sng, sng.concerts.singer)
 
         # TODO This should probably work instead:
@@ -7946,7 +7942,6 @@ class test_orm(tester):
 
         self.two(sng.concerts)
         for conc in sng.concerts:
-            self.type(singer, conc.singer)
             self.is_(sng, conc.singer)
 
             # TODO conc.artist returns None here. Seems like it should
@@ -7959,7 +7954,6 @@ class test_orm(tester):
         sng = sng.orm.reloaded()
         
         # Test the composites of constiuent collections
-        self.type(singer, sng.concerts.singer)
         self.is_(sng, sng.concerts.singer)
 
         self.two(sng.concerts)
@@ -7982,8 +7976,6 @@ class test_orm(tester):
         rpr.presentations += presentation.getvalid()
 
         for pres in rpr.presentations:
-            self.type(rapper, pres.rapper)
-            self.type(rapper, pres.artist)
             self.is_(rpr, pres.rapper)
             self.is_(rpr, pres.artist)
 
