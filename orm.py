@@ -4230,7 +4230,22 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             # with self:
                             #
                             #     sng.presentations.artist = sng
-                            setattr(e, sup_orm.entity.__name__, self)
+                            #
+                            # And we do it by ascending the inheritance
+                            # tree, this works
+                            #
+                            # 
+                            #     assert rpr.presentations.rapper is rpr
+                            #     assert rpr.presentations.singer is rpr
+                            #     assert rpr.presentations.artist is rpr
+                            sups1 = self_orm.entity.orm.getsupers(
+                                withself=True
+                            )
+
+                            for sup1 in sups1:
+                                setattr(
+                                    e, sup1.orm.entity.__name__, self
+                                )
                     
 
                     if isinstance(v, associations):
