@@ -6112,7 +6112,26 @@ class fieldmapping(mapping):
 
     @property
     def min(self):
+        """ Return the min (minimum) value for the fieldmapping.
+
+        The min value is the second argument given in the attribute
+        declaration of an entity::
+
+        Minimum for numeric types refers to the minimum value the
+        attribute can have, while minimum values for str refer to the
+        minimum length allowable.
+
+            class artist(orm.entity):
+                weight  =  int,  0,  1000
+                bio     =  str,  1,  4000
+
+        In the above, the minimum **value** for weight is 0, while the
+        minimum **length** for ``bio`` is 1 character.
+        """
+
         if self.isstr:
+            # By default, a str can have 1 or more characters (and can
+            # be null).
             if self._min is None:
                 return 1
 
@@ -6141,6 +6160,20 @@ class fieldmapping(mapping):
 
     @property
     def precision(self):
+        """ Return the precision value for the fieldmapping.
+
+        For datetime fieldmappings, this is 6 because in MySQL:
+            > A DATETIME or TIMESTAMP value can include a trailing
+            > fractional seconds part in up to microseconds (6 digits)
+            > precision.
+
+        For floats, the precision value is the second argument in an
+        attribute declaration. In the example below, 8 is the precision
+        of float::
+
+            class component(orm.entity):
+                weight  =  float,  8,   7
+        """
         if not (self.isfloat or self.isdecimal, self.isdatetime):
             return None
 
