@@ -2389,7 +2389,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         orm.entities collection, each entity in that collection will be
         appended one-at-a-time.
 
-        :param: bool uniq: Do not append is `obj` is already in the
+        :param: bool uniq: Do not append if `obj` is already in the
         collection.
 
         :param: orm.entities r: The collection of entities that were
@@ -2410,14 +2410,14 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 objcomp = getattr(self, clscomp.__name__)
 
             except Exception as ex:
-                # The self collection won't always have a reference to its
-                # composite.  For example: when the collection is being
-                # lazy-loaded.  The lazy-loading, however, will ensure the obj
-                # being appended will get this reference.
+                # The self collection won't always have a reference to
+                # its composite.  For example: when the collection is
+                # being lazy-loaded.  The lazy-loading, however, will
+                # ensure the obj being appended will get this reference.
                 continue
             else:
-                # Assign the composite reference of this collection to the obj
-                # being appended, i.e.:
+                # Assign the composite reference of this collection to
+                # the obj being appended, i.e.:
                 #    obj.composite = self.composite
                 setattr(obj, clscomp.__name__, objcomp)
 

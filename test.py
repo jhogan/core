@@ -7924,10 +7924,7 @@ class test_orm(tester):
         self.zero(sng.concerts)
 
         self.is_(sng, sng.concerts.singer)
-
-        # TODO This should probably work instead:
-        #     self.is_(sng, sng.concerts.artist)
-        self.expect(AttributeError, lambda: sng.concerts.artist)
+        self.is_(sng, sng.concerts.artist)
 
         # Test the composites of constituent elements
         sng.concerts += concert.getvalid()
@@ -7935,10 +7932,7 @@ class test_orm(tester):
 
         # Test the composites of constiuent collections
         self.is_(sng, sng.concerts.singer)
-
-        # TODO This should probably work instead:
-        #     self.is_(sng, sng.concerts.artist)
-        self.expect(AttributeError, lambda: sng.concerts.artist)
+        self.is_(sng, sng.concerts.artist)
 
         self.two(sng.concerts)
         for conc in sng.concerts:
