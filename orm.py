@@ -6162,6 +6162,13 @@ class fieldmapping(mapping):
     def precision(self):
         """ Return the precision value for the fieldmapping.
 
+        The precision represents the number of significant digits that
+        are stored for values. It is usually paried with a scale (see
+        fieldmapping.scale) which represents the number of digits that
+        can be stored following the decimal point.
+
+        Scale applied to floats, decimal and date types.
+
         For datetime fieldmappings, this is 6 because in MySQL:
             > A DATETIME or TIMESTAMP value can include a trailing
             > fractional seconds part in up to microseconds (6 digits)
@@ -6187,6 +6194,15 @@ class fieldmapping(mapping):
 
     @property
     def scale(self):
+        """ Return the scale of the fieldmapping.
+
+        The scale represents the number of digits that can be stored
+        following the decimal point. It is usually paired with the
+        precision (see fieldmapping.precision) which represents the
+        number of significant digits that are stored for values. 
+
+        Scale applied to floats and decimals.
+        """
         if not (self.isfloat or self.isdecimal):
             return None
 
@@ -6197,6 +6213,10 @@ class fieldmapping(mapping):
         
     @property
     def max(self):
+        """ For str types, returns the maximum number of characters the
+        fieldmapping will allow. For numeric types, returns the highest
+        value the fieldmapping will allow.
+        """
         t = self.type
         if self.isstr:
             if self._max is None:
@@ -6223,6 +6243,11 @@ class fieldmapping(mapping):
 
     @property
     def type(self):
+        """ Returns an integer representing the type (str, bool, etc)
+        for the fieldmapping. The values returned correspond to the
+        ``orm.types`` enum.
+        """
+        
         t = self._type
         if t in (str, types.str):
             return types.str
@@ -6244,6 +6269,10 @@ class fieldmapping(mapping):
 
     @property
     def signed(self):
+        """ Returns True if the numeric fieldmapping is allowed to be a
+        negative (signed) value. If the fieldmapping is non-numeric, a
+        ValueError is raised.
+        """
         if self.type not in (types.int, types.float, types.decimal):
             raise ValueError()
 
