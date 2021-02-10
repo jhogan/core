@@ -16,6 +16,7 @@ import orm
 import party
 import tester
 import entities
+import persistia
 
 class projects(orm.entities):
     pass
@@ -83,6 +84,28 @@ class engineer_project(orm.association):
     name = str
     engineer = engineer
     project = project
+
+class authorization(tester.tester):
+    def __init__(self):
+        super().__init__()
+
+        mods = ('party', 'apriori', 'ecommerce', 'persistia')
+        for e in orm.orm.getentitys(includeassociations=True):
+            if e.__module__ in mods:
+                e.orm.recreate()
+
+        root = ecommerce.users.root
+        orm.orm.owner = root
+
+        com = party.company(name='Ford Motor Company')
+        orm.orm.setproprietor(com)
+
+        dep = persistia.department.erp
+
+        com.save(dep)
+
+    def it_creates_person(self):
+        per = party.person(name='Kelly Spielman')
 
 class owner(tester.tester):
     def __init__(self):
