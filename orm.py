@@ -4778,7 +4778,7 @@ class mappings(entitiesmod.entities):
         """ A generator to return all the foreignkeyfieldmapping objects in the
         collection::
 
-            for map in maps.foreignkeyfieldmapping:
+            for map in maps.foreignkeyfieldmappings:
                 assert type(map) is foreignkeyfieldmapping
         """
         return self._generate(type=foreignkeyfieldmapping)
@@ -6281,8 +6281,8 @@ class fieldmapping(mapping):
     @property
     def dbtype(self):
         """ Returns a string representing the MySQL data type
-        corresponding to this field mapping e.g., 'varchar',
-        'datetime', 'bit', 'tinyint', 'smallint unsigned', etc.
+        corresponding to this field mapping e.g., 'varchar', 'datetime',
+        'bit', 'tinyint', 'smallint unsigned', etc.
 
         This is similar to the ``definition`` property, however dbtype
         only returns the name of the database type in string form. The
@@ -6349,10 +6349,9 @@ class fieldmapping(mapping):
         datetime(6) bit, tinyint, etc. 
         """
         if self.isstr:
-            # However, setting the varchar max to 16,383 can cause
-            # issues for larger strings such as `bio1 = str, 1, 16382`.
-            # The following may be thrown for this string on table
-            # creation:
+            # NOTE Setting the varchar max to 16,383 can cause issues
+            # for larger strings such as `bio1 = str, 1, 16382`.  The
+            # following may be thrown for this string on table creation:
             #
             #     _mysql_exceptions.OperationalError: (1118, 'Row size
             #     too large. The maximum row size for the used table
@@ -6422,6 +6421,10 @@ class fieldmapping(mapping):
 
     @property
     def value(self):
+        """ Return the scalar value held by the fieldmapping object.
+        """
+
+        # If _value hasn't been set, use Pythonic defaults
         if self._value is undef:
             if self.isint:
                 return int()
@@ -6438,6 +6441,8 @@ class fieldmapping(mapping):
             else:
                 return None
         
+        # Ensure the value is coerced to the correct type using standard
+        # Pythonic type coersion, e.g., assert '1.0' == str(1.000)
         if self._value is not None:
             if self.isstr:
                 try:
@@ -6450,6 +6455,9 @@ class fieldmapping(mapping):
 
             elif self.isdatetime:
                 try:
+                    # Favor primative.datetime over Python's default
+                    # datetime since it is our customized override of
+                    # Python's datetime object.
                     if type(self._value) is str:
                         self._value = primative.datetime(self._value) 
                     elif not isinstance(self._value, primative.datetime):
@@ -6474,8 +6482,8 @@ class fieldmapping(mapping):
 
             elif self.isbool:
                 if type(self._value) is bytes:
-                    # Convert the bytes string fromm MySQL's bit type to a
-                    # bool.
+                    # Convert the bytes string from MySQL's byytes type
+                    # to a bool.
                     v = self._value
                     self._value = bool.from_bytes(v, byteorder='little')
 
@@ -6508,10 +6516,24 @@ class fieldmapping(mapping):
 
     @value.setter
     def value(self, v):
+        """ Set the fieldmapping's value property.
+        """
         self._value = v
 
 class foreignkeyfieldmapping(fieldmapping):
+    """ Represents a fieldmapping to a foreign key.
+    """
     def __init__(self, e, fkname=None, isderived=False):
+        """ Create a foreignkeyfieldmapping object.
+
+        :param: e type: A reference to the composite entity class.
+
+        :param: fkname str: The name of the composite class's attribute.
+
+        :param: isderived bool: If True, the mapping was created in the
+        ``mappings._populate`` (it seems this is always the case,
+        actually).
+        """
         # TODO Rename fkname to name, and _fkname to _name. Note that
         # _name already exists; it's inherited from `mapping`, but I
         # don't think that's a probably for the rename.
