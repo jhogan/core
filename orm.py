@@ -3048,6 +3048,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         finally:
             self.orm.initing = False
 
+    def isretrievable(self):
+        return False
+
     def __getitem__(self, args):
         """ Returns the value of the attribute given, or a tuple of
         multiple value if multiple arguments are given. 
