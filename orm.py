@@ -3036,6 +3036,16 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                 self.orm.populate(res)
 
+                if not self.isretrievable():
+                    raise AuthorizationError(
+                        msg = (
+                            f'Cannot access {type(self).__name__}:'
+                            f'{self.id.hex}'
+                        ),
+                        crud = 'r', 
+                        e=self, 
+                    )
+
             # TODO If k is not in self.orm.mappings, we should throw a
             # ValueError.
             # Set attributes via keyword arguments:
@@ -9704,3 +9714,19 @@ class ProprietorError(ValueError):
 
     def __repr__(self):
         return str(self)
+
+class AuthorizationError(PermissionError):
+    def __init__(self, msg, crud, e=None):
+        crud = crud.lower()
+        if crud not in 'crud':
+            raise ValueError(
+                'crud argument must be "c", "r", "u" or "d"'
+            )
+
+        self.message  =  msg
+        self.entity   =  e
+        self.crud     =  crud
+
+        super().__init__(msg)
+
+
