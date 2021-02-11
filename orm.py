@@ -6528,7 +6528,8 @@ class foreignkeyfieldmapping(fieldmapping):
 
         :param: e type: A reference to the composite entity class.
 
-        :param: fkname str: The name of the composite class's attribute.
+        :param: fkname str: The name of the entity mapping that this map
+        corresponds.
 
         :param: isderived bool: If True, the mapping was created in the
         ``mappings._populate`` (it seems this is always the case,
@@ -6549,10 +6550,16 @@ class foreignkeyfieldmapping(fieldmapping):
 
     @property
     def isowner(self):
+        """ Returns True if the mapping is the foreign key referencing
+        the ``owner`` (ecommerce.user) entity.
+        """
+
         return self.name == 'owner__userid'
 
     @property
     def name(self):
+        """ Returns the name of the foreign key column.
+        """
         # TODO:055e5c02 make FK name's fully qualified. grep 055e5c02
         # for more.
 
@@ -6576,58 +6583,110 @@ class foreignkeyfieldmapping(fieldmapping):
         return self._fkname
 
     def clone(self):
+        """ Return a new foreignkeyfieldmapping with the same properties
+        as this foreignkeyfieldmapping.
+        """
         return foreignkeyfieldmapping(self.entity, self._fkname, self.isderived)
 
     @property
     def issubjective(self):
+        """ Return True if this foreignkeymapping references the
+        subjective side of a reflexive ``orm.association``.
+        """
         return self.orm.isreflexive \
                and self.name.startswith('subject__') 
 
     @property
     def isobjective(self):
+        """ Return True if this foreignkeymapping references the
+        objective side of a reflexive ``orm.association``.
+        """
         return self.orm.isreflexive \
                and self.name.startswith('object__') 
 
     @property
     def dbtype(self):
+        """ The type of a foreign key will always be a 16 byte value
+        (the binary representation of a version 4 UUID). Therefore, the
+        database type will be ``binary``.
+        """
         return 'binary'
 
     @property
     def definition(self):
+        """ The type of a foreign key will always be a 16 byte value
+        (the binary representation of a version 4 UUID). Therefore, the
+        database type will be ``binary`` with a fixed-width of 16 bytes.
+        """
         return 'binary(16)'
 
     @property
     def value(self):
+        """ Return a version 4 UUID object representing the foreign
+        key's value.
+        """
         if type(self._value) is bytes:
+            # Coerce the value to a UUID object for convenience.
             self._value = UUID(bytes=self._value)
             
         return self._value
 
     @value.setter
     def value(self, v):
+        """ Set the foreign key's value.
+
+        :param: v bytes|UUID: The value to set the foreign key to.
+        """
         self._value = v
 
 class primarykeyfieldmapping(fieldmapping):
+    """ Represents a fieldmapping to a primary key (the entity's ``id``
+    attribute).
+    """
+
     def __init__(self):
+        """ Instatiate.
+        """
+
+        # Ensure the type is `types.pk` (primary key).
         super().__init__(type=types.pk)
 
     @property
     def name(self):
+        """ Return the database name of the primary key.
+
+        This will always be 'id'.
+        """
         return 'id'
 
     def clone(self):
+        """ Return a new primarykeyfieldmapping with the same properties
+        as this primarykeyfieldmapping.
+        """
         return primarykeyfieldmapping()
 
     @property
     def dbtype(self):
+        """ The type of a primary key will always be a 16 byte value
+        (the binary representation of a version 4 UUID). Therefore, the
+        database type will be ``binary``.
+        """
         return 'binary'
 
     @property
     def definition(self):
+        """ The type of a primary key will always be a 16 byte value
+        (the binary representation of a version 4 UUID). Therefore, the
+        database type will be ``binary`` with a fixed-width of 16 bytes.
+        """
         return 'binary(16) primary key'
 
     @property
     def value(self):
+        """ Return a version 4 UUID object representing the primary
+        key's value.
+        """
+
         # If a super instance exists, use that because we want a
         # subclass and its super class to share the same id. Here we use
         # ._super instead of .super because we don't want to invoke the
@@ -6641,12 +6700,17 @@ class primarykeyfieldmapping(fieldmapping):
             return sup.id
 
         if type(self._value) is bytes:
+            # Coerce the value to a UUID object for convenience.
             self._value = UUID(bytes=self._value)
 
         return self._value
 
     @value.setter
     def value(self, v):
+        """ Set the foreign key's value.
+
+        :param: v bytes|UUID: The value to set the foreign key to.
+        """
         self._value = v
 
         sup = self.orm._super
