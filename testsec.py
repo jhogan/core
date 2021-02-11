@@ -12,11 +12,12 @@
 from func import B
 import db
 import ecommerce
+import entities
 import orm
 import party
-import tester
-import entities
 import persistia
+import tester
+import uuid
 
 class projects(orm.entities):
     pass
@@ -55,6 +56,9 @@ class engineer(orm.entity):
     
     bio = str, orm.fulltext
 
+    def isretrievable(self):
+        return orm.orm.owner.name in ('bgates', 'snadella', 'sballmer')
+
 class hackers(engineers):
     pass
 
@@ -89,7 +93,7 @@ class authorization(tester.tester):
     def __init__(self):
         super().__init__()
 
-        mods = ('party', 'apriori', 'ecommerce', 'persistia')
+        mods = ('party', 'apriori', 'ecommerce')
         for e in orm.orm.getentitys(includeassociations=True):
             if e.__module__ in mods:
                 e.orm.recreate()
@@ -100,12 +104,47 @@ class authorization(tester.tester):
         com = party.company(name='Ford Motor Company')
         orm.orm.setproprietor(com)
 
-        dep = persistia.department.erp
+    def it_accesses_engineer_by_id(self):
+        eng = engineer.getvalid()
+        eng.save()
 
-        com.save(dep)
+        bgates = ecommerce.user(name='bgates')
+        fdrake = ecommerce.user(name='fdrake')
 
-    def it_creates_person(self):
-        per = party.person(name='Kelly Spielman')
+        with orm.su(bgates):
+            try:
+                eng1 = engineer(eng.id)
+            except orm.AuthorizationError:
+                self.fail(f'bgates should be able to access {eng.id}')
+            else:
+                self.eq(eng.id, eng1.id)
+
+        with orm.su(fdrake):
+            self.expect(
+                orm.AuthorizationError, lambda: engineer(eng.id)
+            )
+
+    def it_raises_AuthorizationError(self):
+        eng = engineer.getvalid()
+        eng.save()
+
+        fdrake = ecommerce.user(name='fdrake')
+
+        ''' Access by id '''
+        with orm.su(fdrake):
+            try:
+                eng1 = engineer(eng.id)
+            except orm.AuthorizationError as err:
+                self.type(engineer, err.entity)
+
+                msgs = err.message.split(':')
+                self.eq(err.entity.id.hex, msgs.pop())
+                self.eq('Cannot access engineer', msgs.pop())
+
+                self.eq('r', err.crud)
+                B()
+                print(err)
+
 
 class owner(tester.tester):
     def __init__(self):
