@@ -6730,7 +6730,8 @@ class ormclasseswrapper(entitiesmod.entities):
         elif isinstance(obj, ormclasseswrapper):
             pass
         else:
-            raise ValueError()
+            raise TypeError('obj is of the wrong type')
+
         super().append(obj, uniq, r)
         return r
 
@@ -6756,7 +6757,7 @@ class ormclasswrapper(entitiesmod.entity):
     # added to entities.entities are entities.entity objects.
     def __init__(self, entity):
         """ Sets the wrapped entity.
-        :param: entity The entity to be wrapped.
+        :param: entity orm.entity: The entity to be wrapped.
         """
         self.entity = entity
         super().__init__()
@@ -6779,6 +6780,8 @@ class ormclasswrapper(entitiesmod.entity):
 
     @property
     def __module__(self):
+        """ A proxy to the wrapped entity's __module__ property.
+        """
         return self.entity.__module__
 
     @property
@@ -6794,22 +6797,37 @@ class ormclasswrapper(entitiesmod.entity):
         return self.entity.__name__
     
     def __call__(self, *args, **kwargs):
+        """ Proxies invocations to the wrapped entity.
+        """
         return self.entity(*args, **kwargs)
 
 class composites(ormclasseswrapper):
-    pass
+    """ A collection of wrapped composite classes.
+    """
 
 class composite(ormclasswrapper):
-    pass
+    """ A wrapped composite class.
+    """
 
 class constituents(ormclasseswrapper):
-    pass
+    """ A collection of wrapped constituent classes.
+    """
 
 class constituent(ormclasswrapper):
-    pass
+    """ A wrapped constituent class.
+    """
 
 @contextmanager
 def sudo():
+    """ A context manager that runs any code within it as the orm's root
+    user. Root users aren't restricted by standard authorization rules.
+
+        # Retrieve and update `ent` as root.
+        with orm.sudo():
+            ent = entity(myid)
+            ent.attr = 'my-value'
+            ent.save()
+    """
     own = orm.owner
     try:
         from ecommerce import users
@@ -6820,6 +6838,14 @@ def sudo():
 
 @contextmanager
 def su(own):
+    """ A context manager that temporarily switches the user the ORM is
+    running under.
+
+        usr = ecommerce.users(name='luser').first
+        # Retrieve entity as `usr`
+        with orm.su(usr):
+            ent = entity(myid)
+    """
     own1 = orm.owner
     try:
         from ecommerce import users
