@@ -56,6 +56,7 @@ class engineer(orm.entity):
     
     bio = str, orm.fulltext
 
+    @property
     def isretrievable(self):
         return orm.orm.owner.name in ('bgates', 'snadella', 'sballmer')
 
