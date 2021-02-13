@@ -57,6 +57,15 @@ def enumerate(iterable, start=0):
         @property
         def last(self):
             return len(self.iterable) - 1 == self
+
+        @property
+        def even(self):
+            return self % 2 == 0
+
+        @property
+        def odd(self):
+            return not self.even
+
             
     i = seqint(start, iterable=iterable)
     for e in iterable:
