@@ -9,7 +9,7 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2020                 #
 ########################################################################
 
-from func import B
+from func import B, enumerate
 import db
 import ecommerce
 import entities
@@ -58,7 +58,16 @@ class engineer(orm.entity):
 
     @property
     def isretrievable(self):
-        return orm.orm.owner.name in ('bgates', 'snadella', 'sballmer')
+        usr = orm.orm.owner
+
+        managers = ('bgates', 'sballmer', 'snadella')
+
+        if self.name.startswith('Even'):
+            return usr.name in managers[::2]
+        elif self.name.startswith('Odd'):
+            return usr.name in managers[1::2]
+            
+        return usr.name in managers
 
 class hackers(engineers):
     pass
@@ -145,8 +154,27 @@ class authorization(tester.tester):
                 self.eq(err.entity.id.hex, msgs.pop())
                 self.eq('Cannot access engineer', msgs.pop())
                 self.eq('r', err.crud)
-                B()
-                print(err)
+
+    def it_queries_entities(self):
+        engineers.orm.truncate()
+
+        bgates = ecommerce.user(name='bgates')
+        sballmer = ecommerce.user(name='sballmer')
+
+        for i, _ in enumerate(range(4)):
+            if i.even:
+                engineer(name = f"Even {i}").save()
+            else:
+                engineer(name = f"Odd {i}").save()
+
+        for usr, parity in ( (bgates, 'Even'), (sballmer, 'Odd') ):
+            with orm.su(usr):
+                engs = engineers("skills is %s", (None,))
+
+                self.two(engs)
+
+                for eng in engs:
+                    self.startswith(parity, eng.name)
 
 
 class owner(tester.tester):
