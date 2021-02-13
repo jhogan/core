@@ -104,7 +104,10 @@ class authorization(tester.tester):
         com = party.company(name='Ford Motor Company')
         orm.orm.setproprietor(com)
 
-    def it_accesses_engineer_by_id(self):
+    def it_accesses_aggregate_values_on_classes(self):
+        """ TODO """
+
+    def it_accesses_entity_by_id(self):
         eng = engineer.getvalid()
         eng.save()
 
@@ -124,7 +127,7 @@ class authorization(tester.tester):
                 orm.AuthorizationError, lambda: engineer(eng.id)
             )
 
-    def it_raises_AuthorizationError(self):
+    def it_cant_access_entity_by_id(self):
         eng = engineer.getvalid()
         eng.save()
 
@@ -140,7 +143,6 @@ class authorization(tester.tester):
                 msgs = err.message.split(':')
                 self.eq(err.entity.id.hex, msgs.pop())
                 self.eq('Cannot access engineer', msgs.pop())
-
                 self.eq('r', err.crud)
                 B()
                 print(err)

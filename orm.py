@@ -1921,9 +1921,6 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 if hasattr(self, 'orm'):
                     self.orm.initing = False
 
-    def isauthorized(self):
-        "TODO"
-
     def clone(self, to=None):
         if not to:
             raise NotImplementedError()
@@ -8081,6 +8078,8 @@ class orm:
                             # above any joins from the SELECT.
                             if i.first:
                                 es += e
+                                
+
                             else:
                                 # If we are here, we must be at an 'id'
                                 # field but not the first one, i.e., one
