@@ -6758,6 +6758,12 @@ class orm:
     _proprietor  =  None
     owner = None
         
+    def redact(self):
+        es = self.instance
+        for e in es:
+            if not e.isretrievable:
+                es.remove(e, trash=False)
+
     @classmethod
     def setproprietor(cls, v):
         """ Set ``v`` to orm's proprietor. Ensure that the proprietor
@@ -8187,6 +8193,11 @@ class orm:
                     if id == id1:
                         if eclass.orm.issuperentity(of=lowest):
                             es.remove(e, trash=False)
+
+        #💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # Ensure the user has read access to the entity.
+        es.orm.redact()
+        #💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
 
         # Link the entity objects in edict together into the graph
         orm.link(edict)
