@@ -6855,6 +6855,50 @@ def su(own):
         orm.owner = own1
 
 class orm:
+    """ The ORM class.
+
+    The ORM class bridges the orm.entity and orm.entities classes with
+    lower-level, ORM functionality. Persistence (DML) logic as well as
+    data definition (DDL) logic is encapsulated here. 
+
+    The ORM user will not use most of the attributes in the the ORM
+    class. However, there are many, important exceptions.
+
+    Each orm.entity and orm.entities class has an ``orm`` attribute.
+    Likewise, each **instance** of these classes will also have an
+    ``orm`` attribute.
+
+    Consider the ``good`` class in the product.py module. We can use the
+    ``orm`` attribute to access its collection::
+
+        from product import good
+        assert good.orm.mappings.count == 9
+
+    At the time of this writting, the ``good`` entity has 9 ``mapping``
+    objects. This works for the ``good`` class or a ``good`` object::
+
+        assert good().orm.mappings.count == 9
+
+    Logic in the orm.py module makes extensive use of the orm class and
+    objects behind the ``orm` class (such as the ``mapping`` classes).
+    Occasionally, an ORM user will need to access attributes behind the
+    orm class. For example, to determine if an entity has been saved to
+    the database yet, the ORM user can check the ``orm.isnew`` property
+    on the entity::
+
+        # Create a new good; don't save to database.
+        g = good()
+        assert g.orm.isnew
+
+        # Save to database
+        g.save()
+        assert not g.orm.isnew
+    
+    Attributes like ``isnew` might make more sense if they were directly
+    off the entity (``g.isnew``), however, we don't want to clutter up the
+    entity's attribute namespace so the entity developers can name their
+    attributes without worrying about conflict.
+    """
     _abbrdict    =  dict()
     _namedict    =  dict()
     _proprietor  =  None
