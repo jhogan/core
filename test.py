@@ -3989,6 +3989,145 @@ class test_orm(tester):
         if print:
             builtins.print(t.chronicles)
 
+    def it_calls_sub(self):
+        ''' Test static classes '''
+        # Test 3-levels deap on entity classes
+        for cls in (rapper, singer, artist):
+
+            # sub should raise ValueError when called on class
+            # reference.
+            self.expect(ValueError, lambda: cls.orm.sub)
+
+            # sub should return None on new entity objects
+            obj = cls.getvalid()
+            self.none(obj.orm.sub)
+
+            # sub should return None on entity objects that have no
+            # subentity
+            obj.save()
+            obj = obj.orm.reloaded()
+            self.none(obj.orm.sub)
+
+
+        ''' Test loading sub property '''
+        # Create and save singer. We want to load it as an artist below
+        # to ensure the artist's sub property works.
+        sng = singer.getvalid()
+        sng.save()
+
+        # Load the singer as an artist. We should be able to call the
+        # artist's `sub` property to get the singer entity from the
+        # database.
+        art = artist(sng.id)
+
+        with self._chrontest() as t:
+            sub = t(lambda: art.orm.sub)
+            t.retrieved(sub)
+
+        self.type(singer, sub)
+        self.eq(art.id, sub.id)
+
+        # Ensure art.orm.sub is memoized
+        with self._chrontest() as t:
+            sub = t(lambda: art.orm.sub)
+
+        # Now we will do the same test as above but with rapper instead
+        # of singer. rapper is level 3 deep so it's worth a test.
+
+        # Create and save the rapper
+        rpr = rapper.getvalid()
+        rpr.save()
+
+        # Load the rapper as a singer. We should be able to call the
+        # singer's `sub` property to get the rapper entity from the
+        # database.
+        sng = singer(rpr.id)
+
+        with self._chrontest() as t:
+            sub = t(lambda: sng.orm.sub)
+            t.retrieved(sub)
+
+        self.type(rapper, sub)
+        self.eq(rpr.id, sub.id)
+
+        # Ensure sng.orm.sub is memoized
+        with self._chrontest() as t:
+            sub = t(lambda: sng.orm.sub)
+
+        # Load the rapper as an artist then us `sub` to twice to get to
+        # the rapper object.
+
+        art = artist(rpr.id)
+
+        with self._chrontest() as t:
+            sub = t(lambda: art.orm.sub)
+            t.retrieved(sub)
+
+        self.type(singer, sub)
+        self.eq(rpr.id, sub.id)
+
+        # Ensure art.orm.sub is memoized
+        with self._chrontest() as t:
+            sng = t(lambda: art.orm.sub)
+
+        # Now go from singer to rapper
+        with self._chrontest() as t:
+            sub = t(lambda: sng.orm.sub)
+            t.retrieved(sub)
+
+        self.type(rapper, sub)
+        self.eq(rpr.id, sub.id)
+
+        # Ensure sng's sub is memozied
+        with self._chrontest() as t:
+            sub = t(lambda: sng.orm.sub)
+
+        ''' Test loading super while preserving sub '''
+        sng = singer.getvalid()
+        art = sng.orm.super
+
+        # Ensure the database is not hit. `art.orm.sub` should be
+        # populated by the call to sng.orm.super.
+        with self._chrontest() as t:
+            sub = t(lambda: art.orm.sub)
+
+        # sub and sng should be the same object.
+        self.is_(sub, sng)
+
+        # Ensure art.orm.sub is memoized
+        self.is_(sub, art.orm.sub)
+
+        # Now lets try the above with rapper
+        rpr = rapper.getvalid()
+        sng = rpr.orm.super
+        art = sng.orm.super
+
+        # Ensure the database is not hit. `art.orm.sub` should be
+        # populated by the call to sng.orm.super.
+        with self._chrontest() as t:
+            sub = t(lambda: art.orm.sub)
+
+        # sub and sng should be the same object.
+        self.is_(sub, sng)
+
+        # Ensure art.orm.sub is memoized
+        self.is_(sub, art.orm.sub)
+
+        # Now tha we are at sng, we should be able to take an additional
+        # hop down to rapper via sng.orm.sub
+        sng = sub
+
+        # Ensure the database is not hit. `art.orm.sub` should be
+        # populated by the call to sng.orm.super.
+        with self._chrontest() as t:
+            sub = t(lambda: sng.orm.sub)
+
+        # sub and sng should be the same object.
+        self.is_(sub, rpr)
+
+        # Ensure sng.orm.sub is memoized
+        self.is_(sub, sng.orm.sub)
+
     def it_has_two_entity_references_of_same_type(self):
         # Make sure that issue is still set up to have assignee and
         # assigener of the same type
