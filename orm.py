@@ -8721,6 +8721,10 @@ class orm:
                     if e.id is not undef:
                         self._super = base(e.id)
 
+                # Ensure the super has a reference to the sub
+                # (self.instance).
+                self._super.orm.sub = self.instance
+
                 return self._super
         return None
 
