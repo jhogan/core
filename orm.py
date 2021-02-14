@@ -6743,6 +6743,7 @@ class orm:
         self.joins                =  None
         self._abbreviation        =  str()
         self.initing              =  False
+        self._sub                 =  undef
 
         self.recreate = self._recreate
 
@@ -8645,6 +8646,30 @@ class orm:
 
         return False
 
+    @property
+    def sub(self):
+        if self.isstatic:
+            raise ValueError(
+                'Cannot call sub on static entity'
+            )
+
+        if self._sub is undef:
+            for cls in self.subentities:
+                try:
+                    self._sub = cls(self.instance.id)
+                except db.RecordNotFoundError:
+                    continue
+                else:
+                    break
+            else:
+                self._sub = None
+
+        return self._sub
+
+    @sub.setter
+    def sub(self, v):
+        self._sub = v
+            
     @property
     def super(self):
         """ For orms that have no instance, return the super class of
