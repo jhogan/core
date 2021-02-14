@@ -3321,9 +3321,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             pass
                     break
 
-                # If self is a subentity (i.e., concert), we will want to set
-                # the superentity's (i.e, presentation) composite map to its
-                # composite class (i.e., artist) value. 
+                # If self is a subentity (i.e., concert), we will want
+                # to set the superentity's (i.e, presentation) composite
+                # map to its composite class (i.e., artist) value. 
                 selfsuper = self.orm.super
                 attrsuper = self.orm.mappings(attr).value.orm.super
 
@@ -4184,7 +4184,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 #   i.e., art.presentations.artist = art
 
                 # XXX Ascending the graph here is experimental. It
-                # caused som issues in it_loads_specialized_composite.
+                # caused some issues in it_loads_specialized_composite.
                 sup = self_orm.entity
                 while sup:
                     setattr(map.value, sup.__name__, self)
@@ -4395,7 +4395,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # `self` won't have the attribute `sup.__name__` if the
             # constituent class is a superentity.
             #
-            # We should be able to remove this if 1de11dc0 is fixed.
+            # TODO We should be able to remove this if 1de11dc0 is
+            # fixed.
             pass
         else:
             # Append the entity to that entities collection
