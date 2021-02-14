@@ -3901,6 +3901,7 @@ class test_orm(tester):
 
     @contextmanager
     def _chrontest(self, print=False):
+        # TODO Document functionality
         test_orm = self
         class tester:
             def __init__(self):

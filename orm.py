@@ -8637,6 +8637,7 @@ class orm:
 
         cls1, cls2 = obj1, obj2
 
+        # TODO s/super/sup/
         super = cls2
 
         while super:
@@ -8709,7 +8710,7 @@ class orm:
                     self._super = base()
 
                     # Set the super's id to self's id. Despite the
-                    # fact that self.isnew, its existing is in some
+                    # fact that self.isnew, its existence is in some
                     # cases meaningful and should be preserved.
                     self._super.id = id
                 else:
