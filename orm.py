@@ -3336,7 +3336,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     # will let experience using the ORM determine if we
                     # need to revisit this.
                     if attr:
-                        setattr(selfsuper, attr.name, attrsuper)
+                        setattr(selfsuper, attr.name, v.orm.specialist)
 
     def delete(self):
         """ Delete an entity's record from the database.
@@ -4223,7 +4223,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             #
                             #     sng.presentations.singer = sng
                             #     sng.presentations[0].singer = sng
-                            setattr(e, self_orm_entity__name__, self)
+                            setattr(
+                                e, 
+                                self_orm_entity__name__,
+                                self.orm.specialist
+                            )
 
                             # The getattr() call above will set the
                             # composite of the entities collection to
@@ -4250,7 +4254,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                             for sup1 in sups1:
                                 setattr(
-                                    e, sup1.orm.entity.__name__, self
+                                    e, sup1.orm.entity.__name__, 
+                                    self.orm.specialist
                                 )
                     
 
@@ -6666,6 +6671,26 @@ class orm:
     _proprietor  =  None
     owner = None
         
+    @property
+    def specialist(self):
+        if self.isstatic:
+            # For any given entity, there can be 0 or more specialist
+            # entity class references. If we wanted to get those, we 
+            # should write a ``specialists`` property that returns a
+            # list of those class references.
+            raise ValueError(
+               'specialist cannot be called on a static entity'
+            )
+
+        r = self.instance
+
+        sub = r.orm.sub
+        while sub:
+            r = sub
+            sub = sub.orm.sub
+
+        return r
+            
     @classmethod
     def setproprietor(cls, v):
         """ Set ``v`` to orm's proprietor. Ensure that the proprietor
