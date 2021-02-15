@@ -3346,7 +3346,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
             # Cause a DELETE statement to be issued deleting the record
             # by its primary key.
-            ent.delet()
+            ent.delete()
         """
 
         # To delete a record, mark it for deleting. The save() method
@@ -4213,9 +4213,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         es = v
 
                         # Iterate over each element in the entities
-                        # collection including the entities collecion
-                        # itself as one of the items to iterate over:
+                        # collection including the entities entities
+                        # itself:
+                        #
                         #     for e in [es, es[0], es[1], ...]
+                        #
                         for e in (es,) +  tuple(es):
                             # Set the composite for type(self) on the
                             # entity object or entities collection to

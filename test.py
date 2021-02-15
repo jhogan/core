@@ -8004,7 +8004,7 @@ class test_orm(tester):
             self.type(type(pres), pres1)
 
     def it_loads_specialized_composite(self):
-        ''' artist '''
+        ''' artist.presentations '''
         art = artist.getvalid()
 
         # Test the composites of constiuent collections
