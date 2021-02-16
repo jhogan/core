@@ -6861,12 +6861,12 @@ class orm:
     lower-level, ORM functionality. Persistence (DML) logic as well as
     data definition (DDL) logic is encapsulated here. 
 
-    The ORM user will not use most of the attributes in the the ORM
+    The ORM user will not use most of the attributes in the the ``orm``
     class. However, there are many, important exceptions.
 
-    Each orm.entity and orm.entities class has an ``orm`` attribute.
-    Likewise, each **instance** of these classes will also have an
-    ``orm`` attribute.
+    Each ``orm.entity`` and ``orm.entities`` class has an ``orm``
+    attribute.  Likewise, each **instance** of these classes will also
+    have an ``orm`` attribute.
 
     Consider the ``good`` class in the product.py module. We can use the
     ``orm`` attribute to access its collection::
@@ -6879,12 +6879,12 @@ class orm:
 
         assert good().orm.mappings.count == 9
 
-    Logic in the orm.py module makes extensive use of the orm class and
-    objects behind the ``orm` class (such as the ``mapping`` classes).
-    Occasionally, an ORM user will need to access attributes behind the
-    orm class. For example, to determine if an entity has been saved to
-    the database yet, the ORM user can check the ``orm.isnew`` property
-    on the entity::
+    Logic in the orm.py module makes extensive use of the ``orm`` class
+    and objects behind the ``orm` class (such as the ``mapping``
+    classes).  Occasionally, an ORM user will need to access attributes
+    behind the orm class. For example, to determine if an entity has
+    been saved to the database yet, the ORM user can check the
+    ``orm.isnew`` property on the entity::
 
         # Create a new good; don't save to database.
         g = good()
@@ -6897,11 +6897,22 @@ class orm:
     Attributes like ``isnew` might make more sense if they were directly
     off the entity (``g.isnew``), however, we don't want to clutter up the
     entity's attribute namespace so the entity developers can name their
-    attributes without worrying about conflict.
+    attributes without worry of name collision.
     """
+
+    # A dict to store abbreviation (see orm.getentity())
     _abbrdict    =  dict()
+
+    # A dict to store entity names (see orm.getentity())
     _namedict    =  dict()
+
+    # An internal reference to the current propritor (the legal owner of
+    # a record).
     _proprietor  =  None
+
+    # A reference to the owner, i.e, the user who created a record
+    # and/or who is considered to be the current owner. This is similar
+    # to the owner of a file in a UNIX-like file system.
     owner = None
         
     @classmethod
@@ -6918,8 +6929,9 @@ class orm:
         When a proprietor is set, the ORM will ensure that all records
         written to the database have their proprietor FK set to
         orm.proprietor.id, meaning that the records will be the
-        *property* of the orm.proprietor. Only records owned by the
-        orm.proprietor will be read by orm query operations i.e.:
+        legal *property* of the orm.proprietor. Only records owned by
+        the orm.proprietor will be read or mutated by ORM query
+        operations i.e.:
 
             ent = entity(id)  # SELECT
 
@@ -6938,7 +6950,7 @@ class orm:
         #    
         #    assert v.proprietor is v
         #
-        # Propogate this up the inheritance hierarchy.
+        # Propagate this up the inheritance hierarchy.
         sup = v
         while sup:
             sup.proprietor = v
@@ -6957,39 +6969,47 @@ class orm:
         return cls.getproprietor()
 
     def __init__(self):
-        self.mappings             =  None
-        self.isnew                =  False
-        self._isdirty             =  False
+        self.mappings              =  None
+        self.isnew                 =  False
+        self._isdirty              =  False
         self._ismarkedfordeletion  =  False
-        self.entities             =  None
-        self.entity               =  None
-        self._table               =  None
-        self.composite            =  None  # For association
-        self._composits           =  None
-        self._constituents        =  None
-        self._associations        =  None
-        self._trash               =  None
-        self._subclasses          =  None
-        self._super               =  None
-        self._base                =  undef
-        self.instance             =  None
-        self.stream               =  None
-        self.isloaded             =  False
-        self.isloading            =  False
-        self.isremoving           =  False
-        self.dotrash              =  True
-        self.joins                =  None
-        self._abbreviation        =  str()
-        self.initing              =  False
+        self.entities              =  None
+        self.entity                =  None
+        self._table                =  None
+        self.composite             =  None   #  For association
+        self._composits            =  None
+        self._constituents         =  None
+        self._associations         =  None
+        self._trash                =  None
+        self._subclasses           =  None
+        self._super                =  None
+        self._base                 =  undef
+        self.instance              =  None
+        self.stream                =  None
+        self.isloaded              =  False
+        self.isloading             =  False
+        self.isremoving            =  False
+        self.dotrash               =  True
+        self.joins                 =  None
+        self._abbreviation         =  str()
+        self.initing               =  False
 
         self.recreate = self._recreate
 
     @property
     def ismarkedfordeletion(self):
+        """ Returns True if the entity is marked for deletion. When an
+        entity is marked for deletion, the next call to orm.save will
+        result in a DELETE statement sent to the database to permanently
+        destroy the record.
+        """
         return self._ismarkedfordeletion
 
     @ismarkedfordeletion.setter
     def ismarkedfordeletion(self, v):
+        """ Sets the entity as marked-for-deletion. See the comments at
+        the getter for more.
+        """
         self._ismarkedfordeletion = v
 
     @classproperty
