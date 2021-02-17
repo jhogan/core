@@ -60,7 +60,7 @@ class engineer(orm.entity):
     def isretrievable(self):
         usr = orm.orm.owner
 
-        managers = ('bgates', 'sballmer', 'snadella')
+        managers = 'bgates', 'sballmer', 'snadella'
 
         if self.name.startswith('Even'):
             return usr.name in managers[::2]
@@ -111,13 +111,23 @@ class authorization(tester.tester):
         root = ecommerce.users.root
         orm.orm.owner = root
 
-        com = party.company(name='Ford Motor Company')
+        com = party.company(name='Microsoft')
         orm.orm.setproprietor(com)
+        com.save()
 
-    def it_accesses_aggregate_values_on_classes(self):
+    def it_allows_sudo_to_create_all(self):
+        ''' TODO '''
+    def it_allows_sudo_to_retrieve_all(self):
+        ''' TODO '''
+    def it_allows_sudo_to_update_all(self):
+        ''' TODO '''
+    def it_allows_sudo_to_delete_all(self):
+        ''' TODO '''
+
+    def it_retrieves_aggregate_values_on_classes(self):
         """ TODO """
 
-    def it_accesses_entity_by_id(self):
+    def it_retrieves_entity_by_id(self):
         eng = engineer.getvalid()
         eng.save()
 
@@ -137,7 +147,7 @@ class authorization(tester.tester):
                 orm.AuthorizationError, lambda: engineer(eng.id)
             )
 
-    def it_cant_access_entity_by_id(self):
+    def it_cant_retrieve_entity_by_id(self):
         eng = engineer.getvalid()
         eng.save()
 
@@ -155,17 +165,22 @@ class authorization(tester.tester):
                 self.eq('Cannot access engineer', msgs.pop())
                 self.eq('r', err.crud)
 
-    def it_queries_entities(self):
+    def it_retrieves_entities(self):
         engineers.orm.truncate()
 
         bgates = ecommerce.user(name='bgates')
         sballmer = ecommerce.user(name='sballmer')
 
+        # Create 4 engineers. Two will have 'Even' in their name and two
+        # will have 'Odd' in there name. Due to the contrived
+        # authorization rules for `engineer` (engineer.isretrievable)
+        # bgates will be authorized to retrived the 'Even' ones and
+        # sballmer will be able to retrive the 'Odd' ones.
         for i, _ in enumerate(range(4)):
             if i.even:
-                engineer(name = f"Even {i}").save()
+                engineer(name=f"Even {i}").save()
             else:
-                engineer(name = f"Odd {i}").save()
+                engineer(name=f"Odd {i}").save()
 
         for usr, parity in ( (bgates, 'Even'), (sballmer, 'Odd') ):
             with orm.su(usr):
