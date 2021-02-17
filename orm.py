@@ -3034,7 +3034,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                 self.orm.populate(res)
 
-                if not self.isretrievable:
+                if not orm.owner.isroot and not self.isretrievable:
                     raise AuthorizationError(
                         msg = (
                             f'Cannot access {type(self).__name__}:'
