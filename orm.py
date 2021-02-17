@@ -7027,6 +7027,7 @@ class orm:
 
     @staticmethod
     def exec(sql, args=None):
+        # NOTE This doesn't appear to be used anywhere
         exec = db.executioner(
             lambda cur: cur.execute(sql, args)
         )
@@ -7034,10 +7035,10 @@ class orm:
         exec()
         
     def collectivize(self):
-        """ If called on an instance of orm.entity, returns an
-        orm.entities instance (of the corresponding type) with the
-        orm.entity within it. If called on an orm.entities, simply
-        return a reference to the orm.entities::
+        """ If called on an instance of ``orm.entity``, returns an
+        ``orm.entities`` instance (of the corresponding type) with the
+        orm.entity within it. If called on an ``orm.entities``, simply
+        return a reference to the ``orm.entities``::
 
             per = person(name='John Doe')
             pers = per.orm.collectivize()
@@ -7076,7 +7077,7 @@ class orm:
             art = artist(style='cubism')
             assert art.style == 'cubism'
 
-        The kwargs arguments is will be discoverd through inspection,
+        The kwargs arguments will be discoverd through inspection,
         though the ``dict`` parameter  can be used instead if the kwargs
         argument isn't available for some reason.
         
@@ -7117,6 +7118,16 @@ class orm:
             
     @property
     def table(self):
+        """ Returns the name of the database table name corresponding to
+        the entity::
+
+            >>> party.person.orm.table
+            'party_persons'
+
+        Note that table names consis-t of the module ('party') proceeded
+        by the entities' (not the entity's) name ('persons'). Including
+        the module is necessary to prevent name collisions.
+        """
         mod = inspect.getmodule(self.entities)
         if mod.__name__ == '__main__':
             if hasattr(mod, '__file__'):
@@ -7134,18 +7145,28 @@ class orm:
 
     @table.setter
     def table(self, v):
+        """ Sets the name of the database table corresponding to the
+        entity.
+
+        Note that this want include the module name. The getter prepends
+        the module name automatially::
+
+            >>> party.person.orm.table = 'somename'
+            >>> party.person.orm.table
+            'party_somename'
+        """
         self._table = v
         
     def iscollinear(self, with_):
         """ Return True if self is colinear with ``with_``.
 
-        Collinearity is when the self entity is an instance ``with_``,
+        Collinearity is when the ``self`` entity is an instance ``with_``,
         or an instance of a superentity of ``with_``, or an instance of
         a class that inheritance from ``with_``. It's similar to
         isinstance(), but in addition to ascending the inheritance tree,
         it also descends it. 
         
-        Collinearity in this context it is limited to orm.entity object.
+        Collinearity in this context is limited to orm.entity object.
         For example, ``artist`` is colinear with ``painter`` and
         ``singer`` and vice-versa. However none of these object are
         colinear with ``orm.entity``, ``entities.entity'' or ``object``
