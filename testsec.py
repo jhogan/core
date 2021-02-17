@@ -33,6 +33,19 @@ class system(orm.entity):
         super().__init__(*args, **kwargs)
         self.orm.default('name', None)
 
+    @property
+    def isretrievable(self):
+        usr = orm.orm.owner
+
+        managers = 'bgates', 'sballmer', 'snadella'
+
+        if self.name.startswith('Even'):
+            return usr.name in managers[::2]
+        elif self.name.startswith('Odd'):
+            return usr.name in managers[1::2]
+            
+        return usr.name in managers
+
     name = str
 
 class engineers(orm.entities):
@@ -129,6 +142,7 @@ class authorization(tester.tester):
 
     def it_retrieves_entity_by_id(self):
         eng = engineer.getvalid()
+        eng.name = 'Steve'
         eng.save()
 
         bgates = ecommerce.user(name='bgates')
@@ -149,6 +163,7 @@ class authorization(tester.tester):
 
     def it_cant_retrieve_entity_by_id(self):
         eng = engineer.getvalid()
+        eng.name = 'Steve'
         eng.save()
 
         fdrake = ecommerce.user(name='fdrake')
@@ -190,6 +205,42 @@ class authorization(tester.tester):
 
                 for eng in engs:
                     self.startswith(parity, eng.name)
+
+    def it_retrieves_constituents(self):
+        systems.orm.truncate()
+
+        with orm.sudo():
+            bgates = ecommerce.user(name='bgates')
+            sballmer = ecommerce.user(name='sballmer')
+            bgates.save()
+            sballmer.save()
+
+        with orm.su(bgates):
+            eng = engineer(name='Even')
+            eng.save()
+
+        for i, _ in enumerate(range(4)):
+            if i.even:
+                with orm.su(bgates):
+                    eng.systems += system(name=f"Even {i}")
+                    eng.save()
+            else:
+                with orm.su(sballmer):
+                    eng.systems += system(name=f"Odd {i}")
+                    eng.save()
+
+        for usr, parity in ((bgates, 'Even'), (sballmer, 'Odd')):
+
+            with orm.sudo():
+                eng = eng.orm.reloaded()
+
+            with orm.su(usr):
+                syss = eng.systems
+                self.two(syss)
+
+                for sys in syss:
+                    B(not sys.name.startswith(parity))
+                    self.startswith(parity, sys.name)
 
 
 class owner(tester.tester):
