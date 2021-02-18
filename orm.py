@@ -6673,26 +6673,6 @@ class orm:
     _proprietor  =  None
     owner = None
         
-    @property
-    def specialist(self):
-        if self.isstatic:
-            # For any given entity, there can be 0 or more specialist
-            # entity class references. If we wanted to get those, we 
-            # should write a ``specialists`` property that returns a
-            # list of those class references.
-            raise ValueError(
-               'specialist cannot be called on a static entity'
-            )
-
-        r = self.instance
-
-        sub = r.orm.sub
-        while sub:
-            r = sub
-            sub = sub.orm.sub
-
-        return r
-            
     @classmethod
     def setproprietor(cls, v):
         """ Set ``v`` to orm's proprietor. Ensure that the proprietor
@@ -7083,6 +7063,28 @@ class orm:
         except db.RecordNotFoundError:
             return None
 
+    @property
+    def specialist(self):
+        # TODO:a7f8f87a This is redundant with orm.leaf. I think we
+        # should make the name 'leaf' but use the implementation here.
+        if self.isstatic:
+            # For any given entity, there can be 0 or more specialist
+            # entity class references. If we wanted to get those, we 
+            # should write a ``specialists`` property that returns a
+            # list of those class references.
+            raise ValueError(
+               'specialist cannot be called on a static entity'
+            )
+
+        r = self.instance
+
+        sub = r.orm.sub
+        while sub:
+            r = sub
+            sub = sub.orm.sub
+
+        return r
+            
     @property
     def leaf(self):
         """ Return the lowest subentity in the inheritance tree of the
