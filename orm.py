@@ -6767,7 +6767,7 @@ class orm:
             return
 
         es = self.instance
-        for e in es:
+        for e in es.reversed():
             if not e.isretrievable:
                 es.remove(e, trash=False)
 
