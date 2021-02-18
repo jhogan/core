@@ -128,14 +128,16 @@ class authorization(tester.tester):
         orm.orm.setproprietor(com)
         com.save()
 
-    def it_allows_sudo_to_create_all(self):
+    def it_allows_root_to_create_all(self):
         ''' TODO '''
     def it_allows_sudo_to_retrieve_all(self):
         ''' TODO '''
     def it_allows_sudo_to_update_all(self):
         ''' TODO '''
-    def it_allows_sudo_to_delete_all(self):
+    def it_allows_root_to_delete_all(self):
         ''' TODO '''
+
+
 
     def it_retrieves_aggregate_values_on_classes(self):
         """ TODO """
@@ -239,7 +241,6 @@ class authorization(tester.tester):
                 self.two(syss)
 
                 for sys in syss:
-                    B(not sys.name.startswith(parity))
                     self.startswith(parity, sys.name)
 
 
