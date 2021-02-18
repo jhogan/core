@@ -130,9 +130,37 @@ class authorization(tester.tester):
 
     def it_allows_root_to_create_all(self):
         ''' TODO '''
-    def it_allows_sudo_to_retrieve_all(self):
-        ''' TODO '''
-    def it_allows_sudo_to_update_all(self):
+    def it_allows_root_to_retrieve_all(self):
+        systems.orm.truncate()
+
+        with orm.sudo():
+            bgates = ecommerce.user(name='bgates')
+            bgates.save()
+
+        with orm.su(bgates):
+            engs = engineers()
+
+            for name in ('Even', 'Odd', 'Derp'):
+                engs += engineer(name=name)
+
+                for name in ('Even', 'Odd', 'Derp'):
+                    engs.last.systems += system(name=name)
+
+            engs.save()
+
+            with orm.sudo():
+                for eng in engs:
+                    eng = self.expect(None, eng.orm.reloaded)
+
+                    syss = eng.systems
+
+                    self.three(syss)
+
+                    self.eq(
+                        ['Derp', 'Even', 'Odd'],
+                        sorted(syss.pluck('name'))
+                    )
+    def it_allows_root_to_update_all(self):
         ''' TODO '''
     def it_allows_root_to_delete_all(self):
         ''' TODO '''
