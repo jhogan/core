@@ -7196,10 +7196,9 @@ class orm:
 
         Certain types of ``orm.entity`` objects are defined by a unique
         identifier, such as a ``name`` attribute. For example, a
-        ``statustype`` orm.entity may have only a ``name`` attribute
+        ``statustype`` entity may have only a ``name`` attribute
         that could have values such as 'active', 'inactive', etc . We
         would call the ``ensure`` method in it's constructor::
-
 
             class statustype(orm.entity):
                 def __init__(self, *args, **kwargs):
@@ -7211,7 +7210,7 @@ class orm:
         Given the above, anytime we instantiate a new statustype, the
         ``name`` attribute is used as an identifier. The ``ensure``
         method will ensure that a new record for the ``name`` attribute
-        is created if it does not already exists. If it does exists, the
+        is created if it does not already exist. If it does exists, the
         entity will be constructed as that entity::
 
             # Truncate the table so we are starting anew.
@@ -7243,10 +7242,10 @@ class orm:
         # Query using the **kwargs, e.g., {'name': 'active'}
         rs = self.entities(**kwargs)
 
-        # Get a unique set of from the `expects` tuple passed in
+        # Get a unique set from the `expects` tuple passed in
         expects = set(expects)
 
-        # Get a unique set of kwarg keys
+        # Get a unique set of kwargs keys
         keys = set(kwargs.keys())
 
         if len(expects & keys) != len(expects):
@@ -7266,7 +7265,7 @@ class orm:
             # variables to false.
             self.persistencestate = (False,) * 3
 
-            # Repeat for all the super that were loaded
+            # Repeat for all the supers that were loaded
             sup = self.instance.orm._super
             while sup:
                 sup.orm.persistencestate = (False,) * 3
@@ -7277,10 +7276,29 @@ class orm:
             
     # TODO This should probably be renamed to `loaded`
     def reloaded(self):
+        """ Returns a new instance of an entity freshly loaded from the
+        database::
+
+            # Create an entity and save to database
+            ent = entity()
+            ent.save()
+
+            # Load the entity from the database and assign it to ent1.
+            # Note that nothing happens to ent.
+            ent1 = ent.orm.reloaded()
+
+            # ent1 has the same attribute values as ent, though it is
+            # not the same Python object.
+            assert ent.id == ent1.id
+            assert ent is not ent1
+        """
         return self.entity(self.instance.id)
 
     def exists(self, o):
-        """ Returns true if ``o`` exists in the database.
+        """ Returns True if ``o`` exists in the database.
+
+        :param: o orm.entity|UUID: The entity or entity id to check the
+        existence of.
         """
         return self.cast(o) is not None
 
@@ -7294,8 +7312,8 @@ class orm:
             assert type(hum) is human
 
             # Upcast to mammal super type of human by passing in the
-            # entity instead of the UUID. Note for this, we could also
-            # just do `hum.super`.
+            # entity instead of the UUID. Note for this, we would
+            # canonically just do `hum.super`.
             mam = mammal.orm.cast(hum)
             assert type(mam) is mammal
 
