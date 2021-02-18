@@ -6760,6 +6760,12 @@ class orm:
     owner = None
         
     def redact(self):
+        if not orm.owner:
+            return
+
+        if orm.owner.isroot:
+            return
+
         es = self.instance
         for e in es:
             if not e.isretrievable:
