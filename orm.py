@@ -3034,15 +3034,25 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                 self.orm.populate(res)
 
-                if not orm.owner.isroot and not self.isretrievable:
-                    raise AuthorizationError(
-                        msg = (
-                            f'Cannot access {type(self).__name__}:'
-                            f'{self.id.hex}'
-                        ),
-                        crud = 'r', 
-                        e=self, 
-                    )
+                if not orm.owner.isroot:
+                    isretrievable = self.isretrievable
+                    if type(isretrievable) is bool:
+                        vs = None
+                    elif isinstance(isretrievable, tuple):
+                        isretrievable, vs = isretrievable
+                    else:
+                        raise TypeError(
+                            '`isretrievable` must return bool or tuple'
+                        )
+
+                    if not isretrievable:
+                        raise AuthorizationError(
+                            msg = (
+                                f'Cannot access {type(self).__name__}:'
+                                f'{self.id.hex}'
+                            ),
+                            crud='r', vs=vs, e=self, 
+                        )
 
             # TODO If k is not in self.orm.mappings, we should throw a
             # ValueError.
@@ -6768,7 +6778,16 @@ class orm:
 
         es = self.instance
         for e in es.reversed():
-            if not e.isretrievable:
+            isretrievable = e.isretrievable
+            if type(isretrievable) is bool:
+                vs = None
+            elif isinstance(isretrievable, tuple):
+                isretrievable, vs = isretrievable
+            else:
+                raise TypeError(
+                    '`isretrievable` must return bool or tuple'
+                )
+            if not isretrievable:
                 es.remove(e, trash=False)
 
     @classmethod
@@ -9733,17 +9752,53 @@ class ProprietorError(ValueError):
         return str(self)
 
 class AuthorizationError(PermissionError):
-    def __init__(self, msg, crud, e=None):
+    def __init__(self, msg, crud, vs=None, e=None):
         crud = crud.lower()
         if crud not in 'crud':
             raise ValueError(
                 'crud argument must be "c", "r", "u" or "d"'
             )
 
-        self.message  =  msg
-        self.entity   =  e
-        self.crud     =  crud
+        self.message     =  msg
+        self.crud        =  crud
+        self.violations  =  vs if isinstance(vs, violations) else None
+        self.entity      =  e
 
         super().__init__(msg)
+
+class violations(entitiesmod.entities):
+    def __init__(self, *args, **kwargs):
+        try:
+            e = kwargs['entity']
+        except KeyError:
+            e = None
+        else:
+            del kwargs['entity']
+                
+        super().__init__(*args, **kwargs)
+        self.entity = e
+
+    def __iadd__(self, o):
+        if isinstance(o, str):
+            o = violation(o)
+
+        o.violations = self
+
+        return super().__iadd__(o)
+
+class violation(entitiesmod.entity):
+    def __init__(self, msg, vs=None):
+        self.message = msg
+        self.violations = vs
+
+    @property
+    def entity(self):
+        if self.violations:
+            return self.violations.entity
+
+        return None
+        
+
+        
 
 

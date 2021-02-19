@@ -35,16 +35,27 @@ class system(orm.entity):
 
     @property
     def isretrievable(self):
+        vs = orm.violations(entity=self)
+
         usr = orm.orm.owner
 
         managers = 'bgates', 'sballmer', 'snadella'
 
         if self.name.startswith('Even'):
-            return usr.name in managers[::2]
+            if usr.name not in managers[::2]:
+                vs += (
+                    'Systems that start with "Even" can only be '
+                    'retrieved by bgates and snadella'
+                )
+
         elif self.name.startswith('Odd'):
-            return usr.name in managers[1::2]
+            if usr.name not in managers[1::2]:
+                vs += (
+                    'Systems that start with "Even" can only be '
+                    'retrieved by sballmer'
+                )
             
-        return usr.name in managers
+        return not vs.count, vs
 
     name = str
 
