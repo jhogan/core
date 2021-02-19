@@ -7375,6 +7375,9 @@ class orm:
         return leaf
                 
     def clone(self):
+        """ Returns a new instance of an ``orm`` object with the same
+        attributes of ``self``.
+        """
         r = orm()
 
         props = (
@@ -7390,6 +7393,9 @@ class orm:
         return r
 
     def __repr__(self):
+        """ Returns a string representation of the ``orm`` object
+        including its corresponding instance or entity class.
+        """
         r = 'orm(type=<%s>, %s=True)'
 
         if self.isinstance:
@@ -7403,6 +7409,19 @@ class orm:
 
     @property
     def isreflexive(self):
+        """ Returns True if the association references two different
+        entitymappings of the same type.
+
+        An example if a reflexive association is ``party.party_party``::
+
+            class party_party(orm.association):
+                subject  =  party
+                object   =  party
+                role     =  str
+
+        It associates a ``party`` called 'subject' with a ``party``
+        called object making it a "reflexive" association.
+        """
         maps = self.mappings.entitymappings
         types = [
             x.entity for x in maps
