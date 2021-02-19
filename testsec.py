@@ -141,6 +141,7 @@ class authorization(tester.tester):
 
     def it_allows_root_to_create_all(self):
         ''' TODO '''
+
     def it_allows_root_to_retrieve_all(self):
         systems.orm.truncate()
 
@@ -171,12 +172,11 @@ class authorization(tester.tester):
                         ['Derp', 'Even', 'Odd'],
                         sorted(syss.pluck('name'))
                     )
+
     def it_allows_root_to_update_all(self):
         ''' TODO '''
     def it_allows_root_to_delete_all(self):
         ''' TODO '''
-
-
 
     def it_retrieves_aggregate_values_on_classes(self):
         """ TODO """
