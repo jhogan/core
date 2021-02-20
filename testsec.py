@@ -34,7 +34,7 @@ class system(orm.entity):
         self.orm.default('name', None)
 
     @property
-    def isretrievable(self):
+    def retrievability(self):
         vs = orm.violations(entity=self)
 
         usr = orm.orm.owner
@@ -81,17 +81,27 @@ class engineer(orm.entity):
     bio = str, orm.fulltext
 
     @property
-    def isretrievable(self):
+    def creatability(self):
+        vs = orm.violations(entity=self)
+        if orm.orm.owner.name != 'bgates':
+            vs += "User must be 'bgates'"
+
+        return vs
+
+    @property
+    def retrievability(self):
         usr = orm.orm.owner
 
         managers = 'bgates', 'sballmer', 'snadella'
 
         if self.name.startswith('Even'):
-            return usr.name in managers[::2]
+            isretrievable = usr.name in managers[::2]
         elif self.name.startswith('Odd'):
-            return usr.name in managers[1::2]
-            
-        return usr.name in managers
+            isretrievable = usr.name in managers[1::2]
+        else:
+            isretrievable = usr.name in managers
+
+        return isretrievable, orm.violations()
 
 class hackers(engineers):
     pass

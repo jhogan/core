@@ -3035,15 +3035,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 self.orm.populate(res)
 
                 if not orm.owner.isroot:
-                    isretrievable = self.isretrievable
-                    if type(isretrievable) is bool:
-                        vs = None
-                    elif isinstance(isretrievable, tuple):
-                        isretrievable, vs = isretrievable
-                    else:
-                        raise TypeError(
-                            '`isretrievable` must return bool or tuple'
-                        )
+                    isretrievable, vs = self.retrievability
 
                     if not isretrievable:
                         raise AuthorizationError(
@@ -6778,15 +6770,7 @@ class orm:
 
         es = self.instance
         for e in es.reversed():
-            isretrievable = e.isretrievable
-            if type(isretrievable) is bool:
-                vs = None
-            elif isinstance(isretrievable, tuple):
-                isretrievable, vs = isretrievable
-            else:
-                raise TypeError(
-                    '`isretrievable` must return bool or tuple'
-                )
+            isretrievable, _ = e.retrievability
             if not isretrievable:
                 es.remove(e, trash=False)
 
