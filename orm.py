@@ -3540,6 +3540,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                 # Update new state
                 self.orm.isnew = self.orm.ismarkedfordeletion
+
+                # TODO Don't break the line here; turn into two lines
                 self.orm.isdirty, self.orm.ismarkedfordeletion \
                                                     = (False,) * 2
                 # Raise event
