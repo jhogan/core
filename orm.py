@@ -3058,8 +3058,13 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         finally:
             self.orm.initing = False
 
-    def isretrievable(self):
-        return False
+    @property
+    def retrievability(self):
+        return tuple()
+
+    @property
+    def creatability(self):
+        return tuple()
 
     def __getitem__(self, args):
         """ Returns the value of the attribute given, or a tuple of
@@ -3516,6 +3521,20 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 # Raise event
                 eargs = db.operationeventargs(self, crud, sql, args)
                 self.onbeforesave(self, eargs)
+
+                if crud == 'create':
+                    vs = self.creatability
+                elif crud == 'update':
+                    'TODO'
+                elif crud == 'delete':
+                    'TODO'
+
+                if len(vs):
+                    raise AuthorizationError(
+                        msg=(
+                            f'Cannot {crud} {type(self)}:{self.id.hex}'
+                        ), crud=crud[0], vs=vs, e=self
+                    )
 
                 cur.execute(sql, args)
 

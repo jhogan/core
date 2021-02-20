@@ -149,6 +149,46 @@ class authorization(tester.tester):
         orm.orm.setproprietor(com)
         com.save()
 
+    ''' CREATABILITY '''
+    def it_creates_entity(self):
+        with orm.sudo():
+            bgates = ecommerce.user(name='bgates')
+            bgates.save()
+
+            sballmer = ecommerce.user(name='sballmer')
+            sballmer.save()
+
+        with orm.su(bgates):
+            eng = engineer(name='Steve')
+            self.expect(None, eng.save)
+            self.eq((False, False, False), eng.orm.persistencestate)
+
+        with orm.sudo():
+            eng1 = eng.orm.reloaded()
+            self.eq(eng.id, eng1.id)
+            self.eq(bgates.id, eng1.owner.id)
+
+        with orm.su(sballmer):
+            eng = engineer(name='Steve')
+            try:
+                eng.save()
+            except orm.AuthorizationError as ex:
+                B()
+                self.eq(
+                    "User must be 'bgates'",
+                    ex.violations.first.message
+                )
+            except Exception:
+                self.fail('AuthorizationError not raised')
+                
+            else:
+                self.fail('No exception raised')
+
+            self.eq((True, False, False), eng.orm.persistencestate)
+
+        with orm.sudo():
+            self.expect(db.RecordNotFoundError, eng.orm.reloaded)
+
     def it_allows_root_to_create_all(self):
         ''' TODO '''
 
