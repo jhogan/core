@@ -8736,6 +8736,23 @@ class orm:
         self._sub = v
             
     @property
+    def supers(self):
+        if self.isstatic:
+            return [
+                x for x in self.entity.__mro__[1:]
+                if entity in x.__mro__[1:]
+            ]
+        else:
+            # 1. Create an orm.entities instance for the most general
+            #    type
+            # 2. Add each super starting with self's to the collection
+            # 3. Return the collection
+            raise NotImplementedError(
+                'orm.supers has not yet be implemented when '
+                'orm.isinstance'
+            )
+
+    @property
     def super(self):
         """ For orms that have no instance, return the super class of
         `orm.entity`.  If orm.instance is not None, return an instance of that

@@ -3990,6 +3990,13 @@ class test_orm(tester):
         if print:
             builtins.print(t.chronicles)
 
+    def it_calls_supers(self):
+        self.zero(artist.orm.supers)
+
+        self.eq([artist], singer.orm.supers)
+
+        self.eq([singer, artist], rapper.orm.supers)
+
     def it_calls_sub(self):
         ''' Test static classes '''
         # Test 3-levels deap on entity classes
