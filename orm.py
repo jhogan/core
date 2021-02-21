@@ -4220,7 +4220,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 if map1.isowner or map1.isproprietor:
                     continue
 
-                if attr in [x.__name__ for x in map1.entity.__mro__]:
+                sups = [x.__name__ for x in map1.entity.orm.supers]
+                if attr in sups:
                     return map1.value
 
             # If we are here, we are going to check the super to see if
