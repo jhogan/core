@@ -2740,7 +2740,7 @@ class entitymeta(type):
                 )
 
         # Make sure the `orm` has a reference to the entities collection
-        # class and that the entities collection class has a refernce to
+        # class and that the entities collection class has a referenc to
         # the orm.
         orm_.entities = body['entities']
         orm_.entities.orm = orm_
@@ -6706,6 +6706,36 @@ class orm:
     _namedict    =  dict()
     _proprietor  =  None
     owner = None
+
+    def __init__(self):
+        self.mappings             =  None
+        self.isnew                =  False
+        self._isdirty             =  False
+        self._ismarkedfordeletion  =  False
+        self.entities             =  None
+        self.entity               =  None
+        self._table               =  None
+        self.composite            =  None  # For association
+        self._composits           =  None
+        self._constituents        =  None
+        self._associations        =  None
+        self._trash               =  None
+        self._subclasses          =  None
+        self._super               =  None
+        self._base                =  undef
+        self.instance             =  None
+        self.stream               =  None
+        self.isloaded             =  False
+        self.isloading            =  False
+        self.isremoving           =  False
+        self.dotrash              =  True
+        self.joins                =  None
+        self._abbreviation        =  str()
+        self.initing              =  False
+        self._sub                 =  undef
+
+        self.recreate = self._recreate
+
         
     @classmethod
     def setproprietor(cls, v):
@@ -6758,35 +6788,6 @@ class orm:
         """ Return the proprietor entity currently set.
         """
         return cls.getproprietor()
-
-    def __init__(self):
-        self.mappings             =  None
-        self.isnew                =  False
-        self._isdirty             =  False
-        self._ismarkedfordeletion  =  False
-        self.entities             =  None
-        self.entity               =  None
-        self._table               =  None
-        self.composite            =  None  # For association
-        self._composits           =  None
-        self._constituents        =  None
-        self._associations        =  None
-        self._trash               =  None
-        self._subclasses          =  None
-        self._super               =  None
-        self._base                =  undef
-        self.instance             =  None
-        self.stream               =  None
-        self.isloaded             =  False
-        self.isloading            =  False
-        self.isremoving           =  False
-        self.dotrash              =  True
-        self.joins                =  None
-        self._abbreviation        =  str()
-        self.initing              =  False
-        self._sub                 =  undef
-
-        self.recreate = self._recreate
 
     @property
     def ismarkedfordeletion(self):
