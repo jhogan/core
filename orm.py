@@ -4196,6 +4196,40 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # want to start loading super entities from the database unless
         # we know that the attr is actually in one of them.
         elif not map and attr in self_orm.mappings.supermappings:
+            
+            # First lets check if we are trying to get a composite that
+            # comes from a super. For example, say we are trying to get
+            # the `singer` composite of a battle:
+            #
+            #     btl.singer
+            #
+            # The above would normally go to the btl's super, concert,
+            # and get its composite, singer. However, now that we
+            # specialize composites, the singer we would be getting
+            # would just be the more specialized rapper of the battle::
+            #
+            #     btl.rapper is btl.singer
+            #
+            # In order to not have to load the
+            # `btl.orm.super.orm.concerts`, we can just return the
+            # rapper object by scanning this classes entitymappings and
+            # seeing if the attr is in one of the entitymapping's
+            # entity's base classes.
+            for map1 in self.orm.mappings.entitymappings:
+
+                if map1.isowner or map1.isproprietor:
+                    continue
+
+                if attr in [x.__name__ for x in map1.entity.__mro__]:
+                    return map1.value
+
+            # If we are here, we are going to check the super to see if
+            # it contains a value for attr. The check will automatically
+            # propgate up the entity inheritance tree because the call
+            # to getattr() will cause us to recurse back into this
+            # method for the super, then its super, and so on, as
+            # necessary until we finally find the entity that has the
+            # attribute that we are looking for.
             sup = self_orm.super
             while sup: # :=
                 sup_orm = sup.orm
