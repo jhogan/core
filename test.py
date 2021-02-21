@@ -8204,6 +8204,22 @@ class test_orm(tester):
             self.is_(rpr, btl.singer)
             self.is_(rpr, btl.artist)
 
+        ''' artist.artist_artifacts '''
+        art = artist.getvalid()
+        fact = artifact.getvalid()
+
+        aa = artist_artifact.getvalid()
+        art.artist_artifacts += aa
+
+        self.is_(art, art.artist_artifacts.artist)
+        self.is_(art, art.artist_artifacts.first.artist)
+
+        art.save()
+
+        art = art.orm.reloaded()
+
+        self.is_(art, art.artist_artifacts.artist)
+
     def it_updates_entity_constituents_properties(self):
         chrons = self.chronicles
         art = artist.getvalid()
