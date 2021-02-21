@@ -8169,7 +8169,6 @@ class test_orm(tester):
         self.is_(rpr, rpr.battles.singer)
         self.is_(rpr, rpr.battles.artist)
 
-        B()
         rpr.battles += battle.getvalid()
         rpr.battles += battle.getvalid()
 
@@ -8181,7 +8180,7 @@ class test_orm(tester):
         rpr.save()
 
         rpr = rpr.orm.reloaded()
-        
+
         # Test the composites of constiuent collections
         self.is_(rpr, rpr.battles.rapper)
         self.is_(rpr, rpr.battles.singer)
