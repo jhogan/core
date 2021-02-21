@@ -5752,6 +5752,11 @@ class test_orm(tester):
             t(lambda: sng1.locations)
             t.retrieved(sng1.locations)
 
+            # Since the .artist composite is downcasted to singer,
+            # upcast back to artist for test.
+            sng = sng1.locations.artist
+            art = sng.orm.super
+
             # NOTE Loading locations requires that we load singer's
             # superentity (artist) first because `locations` is a
             # constituent of `artist`.  Though this may seem
@@ -5759,9 +5764,8 @@ class test_orm(tester):
             # `locations` without loading `artist`, we would want the
             # following to work for the sake of predictability:
             #
-            #     assert sng1.location.artists is sng1.orm.super
-            #
-            t.retrieved(sng1.locations.artist)
+            #     assert sng.locations.artist is sng1
+            t.retrieved(art)
 
         with self._chrontest() as t:
             t(lambda: sng1.concerts)
@@ -5780,7 +5784,7 @@ class test_orm(tester):
                 sng1.concerts.first.locations.first.id)
 
         chrons.clear()
-        self.is_(sng1.locations.artist, sng1.orm.super)
+        self.is_(sng1.locations.artist, sng1)
         self.zero(chrons)
 
     def it_loads_and_saves_multicomposite_subsubentity(self):
