@@ -7432,6 +7432,36 @@ class orm:
         
     @property
     def isrecursive(self):
+        """ Returns True if the entity or entities class or object is
+        recursive.
+
+        A recursive entity is one that has constituents of the same type
+        as the composite.
+
+        A good example if recursive entities is the ``inode`` class in
+        file.py. An inode is the superentiy of ``file`` and
+        ``directory``, which compose the framework's "file system". File
+        systems are recursive in that you can create directories within
+        directories indefinately. (Interating over these tree structures
+        is typically done with a **recursive** function, which is why we
+        use the word "recursive" to describe these entity objects.)
+
+            class inodes(orm.entities):
+                pass
+
+            class inode(orm.entity):
+                inodes = inodes
+
+        In the above example, we see that ``inode`` has a collection of
+        ``inodes``, i.e., the composite inode has a constiuent of the
+        same type. This is what makes a entity recursive.
+
+            assert inode.orm.isrecursive
+
+        Other examples of recursive entity objects include party.region,
+        product.category and shipment.item. 
+        """
+
         map = self.mappings(self.entities.__name__)
         return map is not None and map.entities is self.entities
 
