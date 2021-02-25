@@ -7553,6 +7553,9 @@ class orm:
             j.entities.orm.joinsubs()
 
     def truncate(self, cur=None):
+        """ Remove all date in the table that is associated with the
+        entity.
+        """
         # TODO Use executioner
         sql = 'TRUNCATE TABLE %s;' % self.table
 
@@ -7565,15 +7568,15 @@ class orm:
 
     @staticmethod
     def recreate(*args):
-        """ Drop and recreate the table each of the entity class
+        """ Drop and recreate the table for each of the entity class
         references in *args.
-
-        Note that when ``orm`` is an instance (as opposed to mearly a
-        class reference), this method is replace with ``orm._recreate'
-        on initialization. 
         """
 
-        # For each entity class reference in *args
+        # NOTE that when ``orm`` is an instance (as opposed to mearly a
+        # class reference), this method is replace with ``orm._recreate'
+        # on initialization (see orm.__init__).
+
+        # For each entity class references in *args
         for e in args:
             # Delegate to the instance version of ``recreate``
             e.orm.recreate()
@@ -7655,7 +7658,17 @@ class orm:
                     cur.close()
 
     def drop(self, cur=None, ignore=False):
+        """ Removes the table from the database that is mapped to the
+        entity.
+
+        :param: ignore bool: If True, don't raise an error if the table
+        does not exist. The default is False.
+
+        :param: cur: The MySQLdb cursor to use for the database
+        connection.
+        """
         # TODO Use executioner
+        # TODO UPPER CASE 'drop table'
         sql = 'drop table `%s`;' % self.table
 
         try:
@@ -7671,6 +7684,14 @@ class orm:
                     raise
     
     def migrate(self, cur=None):
+        """ Examines the entity's mapping attributes and the table that
+        the entity is mapped to and issues an ALTER TABLE statement to
+        the table in order to make its columns match the entity's
+        attributes.
+
+        :param: cur: The MySQLdb cursor to use for the database
+        connection.
+        """
         # TODO Use executioner
         sql = self.altertable
 
