@@ -3060,7 +3060,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 setattr(self, k, v)
 
             # Post super().__init__() events
-            self.onaftervaluechange  +=  self._self_onaftervaluechange
+            self.onaftervaluechange += self._self_onaftervaluechange
         finally:
             self.orm.initing = False
 
@@ -3523,11 +3523,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             crud = None
             sql, args = (None,) * 2
 
-        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        #💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         # If we are modifying the record, the orm.proprietor must match
         # the record's proprietor. This ensures one party can't modify
         # another's records.
-        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        #💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
 
         # TODO:ee897843 Don't allow a proprietor to create a record
         # belonging to a different proprietor.
@@ -4032,7 +4032,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     else:
                         if self.orm.isnew and security().owner.id != map.value:
                             msg = 'Owner id does not match orm id'
-                            B()
                             brs += entitiesmod.brokenrule(
                                 msg, map.name, 'valid', self
                             )

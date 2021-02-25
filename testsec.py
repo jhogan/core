@@ -9,7 +9,7 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2020                 #
 ########################################################################
 
-from func import B, enumerate
+from func import B, enumerate, PM
 import db
 import ecommerce
 import entities
@@ -248,7 +248,6 @@ class authorization(tester.tester):
             try:
                 eng.save()
             except orm.AuthorizationError as ex:
-                B()
                 self.eq(
                     "User must be 'bgates'",
                     ex.violations.first.message
