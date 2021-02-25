@@ -3037,7 +3037,13 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 if not security().owner.isroot:
                     vs = self.retrievability
 
-                    if not isretrievable:
+                    if not isinstance(vs, violations):
+                        raise TypeError(
+                            "'retrievability' must return a "
+                            '`violations` instance.'
+                        )
+
+                    if vs.ispopulated:
                         raise AuthorizationError(
                             msg = (
                                 f'Cannot access {type(self).__name__}:'
@@ -3060,11 +3066,29 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
     @property
     def retrievability(self):
-        return tuple()
+        return self._getaccessability('retrievability')
 
     @property
     def creatability(self):
-        return tuple()
+        return self._getaccessability('creatability')
+
+    @property
+    def updatability(self):
+        return self._getaccessability('updatability')
+
+    @property
+    def deletability(self):
+        return self._getaccessability('deletability')
+
+    def _getaccessability(self, type):
+        if security().override:
+            return violations()
+
+        raise AuthorizationError(
+            f'{type} not implemented',
+            crud=type[0], vs=None, e=self
+        )
+
 
     def __getitem__(self, args):
         """ Returns the value of the attribute given, or a tuple of
@@ -3525,11 +3549,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 if crud == 'create':
                     vs = self.creatability
                 elif crud == 'update':
-                    'TODO'
+                    vs = self.updatability
                 elif crud == 'delete':
-                    'TODO'
+                    vs = self.deletability
 
-                if len(vs):
+                if not security().issudo and vs.ispopulated:
                     raise AuthorizationError(
                         msg=(
                             f'Cannot {crud} {type(self)}:{self.id.hex}'
@@ -6834,8 +6858,14 @@ class orm:
 
         es = self.instance
         for e in es.reversed():
-            isretrievable, _ = e.retrievability
-            if not isretrievable:
+            vs = e.retrievability
+            if not isinstance(vs, violations):
+                B()
+                raise TypeError(
+                    "'retrievability' must return a "
+                    f'`violations` instance for {type(e)}'
+                )
+            if vs.ispopulated:
                 es.remove(e, trash=False)
 
     @classmethod

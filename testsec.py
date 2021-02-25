@@ -19,6 +19,45 @@ import persistia
 import tester
 import uuid
 
+class uncreatables(orm.entities):
+    pass
+
+class uncreatable(orm.entity):
+    pass
+
+class unretrievables(orm.entities):
+    pass
+
+class unretrievable(orm.entity):
+    @property
+    def creatability(self):
+        return orm.violations()
+
+class unupdatables(orm.entities):
+    pass
+
+class unupdatable(orm.entity):
+    name = str, 0
+    @property
+    def creatability(self):
+        return orm.violations()
+
+    @property
+    def retrievability(self):
+        return orm.violations()
+
+class undeletables(orm.entities):
+    pass
+
+class undeletable(orm.entity):
+    @property
+    def creatability(self):
+        return orm.violations()
+
+    @property
+    def retrievability(self):
+        return orm.violations()
+
 class projects(orm.entities):
     pass
 
@@ -32,6 +71,10 @@ class system(orm.entity):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.orm.default('name', None)
+
+    @property
+    def creatability(self):
+        return orm.violations()
 
     @property
     def retrievability(self):
@@ -55,7 +98,7 @@ class system(orm.entity):
                     'retrieved by sballmer'
                 )
             
-        return not vs.count, vs
+        return vs
 
     name = str
 
@@ -96,13 +139,17 @@ class engineer(orm.entity):
         managers = 'bgates', 'sballmer', 'snadella'
 
         if self.name.startswith('Even'):
-            isretrievable = usr.name in managers[::2]
+            if usr.name not in managers[::2]:
+                vs += 'system must be retrived by bgates or snadella'
+                
         elif self.name.startswith('Odd'):
-            isretrievable = usr.name in managers[1::2]
+            if usr.name not in managers[1::2]:
+                vs += 'system must be retrived by sballmer'
         else:
-            isretrievable = usr.name in managers
+            if usr.name not in managers:
+                vs += 'system must be retrived by a manager'
 
-        return isretrievable, orm.violations()
+        return vs
 
 class hackers(engineers):
     pass
@@ -143,14 +190,41 @@ class authorization(tester.tester):
             if e.__module__ in mods:
                 e.orm.recreate()
 
-        root = ecommerce.users.root
-        orm.orm.owner = root
+        orm.orm.recreate(
+            engineer,     hacker,         phreak,
+            system,       project,        engineer_project,
+            uncreatable,  unretrievable,  unupdatables,
+            undeletable,
+        )
 
-        com = party.company(name='Microsoft')
-        orm.orm.setproprietor(com)
-        com.save()
+        sec = orm.security()
+        with orm.override():
+            root = ecommerce.users.root
+            sec.owner = root
+
+            com = party.company(name='Microsoft')
+            orm.orm.setproprietor(com)
+            com.save()
+
+        with orm.sudo():
+            self.bgates = ecommerce.user(name='bgates')
+            self.bgates.save()
+
+        sec.owner = None
 
     ''' CREATABILITY '''
+    def it_cant_create_entity(self):
+        try:
+            with orm.su(self.bgates):
+                uncreatable().save()
+        except orm.AuthorizationError as ex:
+            self.eq('c', ex.crud)
+            self.type(uncreatable, ex.entity)
+        except Exception as ex:
+            self.fail(f'Wrong exception type: {ex}')
+        else:
+            self.fail('No exception')
+            
     def it_creates_entity(self):
         with orm.sudo():
             bgates = ecommerce.user(name='bgates')
@@ -191,8 +265,34 @@ class authorization(tester.tester):
             self.expect(db.RecordNotFoundError, eng.orm.reloaded)
 
     def it_allows_root_to_create_all(self):
-        ''' TODO '''
+        clss = (
+            engineer, hacker, phreak, system, uncreatable,
+            uncreatable, unretrievable, unupdatable, undeletable
+        )
 
+        with orm.sudo():
+            for cls in clss:
+                e = cls()
+                e.save()
+                e1 = e.orm.reloaded()
+                self.eq(e.id, e1.id)
+
+
+    ''' RETRIEVABILITY '''
+    def it_cant_retrieve_entity(self):
+        with orm.su(self.bgates):
+            un = unretrievable()
+            un.save()
+            try:
+                unretrievable(un.id)
+            except orm.AuthorizationError as ex:
+                self.eq('r', ex.crud)
+                self.type(unretrievable, ex.entity)
+            except Exception as ex:
+                self.fail(f'Wrong exception type: {ex}')
+            else:
+                self.fail('No exception')
+            
     def it_allows_root_to_retrieve_all(self):
         systems.orm.truncate()
 
@@ -233,12 +333,13 @@ class authorization(tester.tester):
         """ TODO """
 
     def it_retrieves_entity_by_id(self):
-        eng = engineer.getvalid()
-        eng.name = 'Steve'
-        eng.save()
-
         bgates = ecommerce.user(name='bgates')
         fdrake = ecommerce.user(name='fdrake')
+
+        with orm.sudo():
+            eng = engineer.getvalid()
+            eng.name = 'Steve'
+            eng.save()
 
         with orm.su(bgates):
             try:
@@ -254,9 +355,10 @@ class authorization(tester.tester):
             )
 
     def it_cant_retrieve_entity_by_id(self):
-        eng = engineer.getvalid()
-        eng.name = 'Steve'
-        eng.save()
+        with orm.sudo():
+            eng = engineer.getvalid()
+            eng.name = 'Steve'
+            eng.save()
 
         fdrake = ecommerce.user(name='fdrake')
 
@@ -283,11 +385,12 @@ class authorization(tester.tester):
         # authorization rules for `engineer` (engineer.isretrievable)
         # bgates will be authorized to retrived the 'Even' ones and
         # sballmer will be able to retrive the 'Odd' ones.
-        for i, _ in enumerate(range(4)):
-            if i.even:
-                engineer(name=f"Even {i}").save()
-            else:
-                engineer(name=f"Odd {i}").save()
+        with orm.sudo():
+            for i, _ in enumerate(range(4)):
+                if i.even:
+                    engineer(name=f"Even {i}").save()
+                else:
+                    engineer(name=f"Odd {i}").save()
 
         for usr, parity in ( (bgates, 'Even'), (sballmer, 'Odd') ):
             with orm.su(usr):
@@ -333,6 +436,59 @@ class authorization(tester.tester):
                 for sys in syss:
                     self.startswith(parity, sys.name)
 
+    ''' UPDATABILITY '''
+    def it_cant_update_entity(self):
+        with orm.su(self.bgates):
+            un = unupdatable()
+            un.name = 'I will not be updated'
+            un.save()
+
+            un = unupdatable(un.id)
+            un.name = 'Will I be updated?'
+            try:
+                un.save()
+            except orm.AuthorizationError as ex:
+                self.eq('u', ex.crud)
+                self.type(unupdatable, ex.entity)
+            except Exception as ex:
+                self.fail(f'Wrong exception type: {ex}')
+            else:
+                self.fail('No exception')
+
+    ''' UPDATABILITY '''
+    def it_cant_update_entity(self):
+        with orm.su(self.bgates):
+            un = unupdatable()
+            un.name = 'I will not be updated'
+            un.save()
+
+            un = unupdatable(un.id)
+            un.name = 'Will I be updated?'
+            try:
+                un.save()
+            except orm.AuthorizationError as ex:
+                self.eq('u', ex.crud)
+                self.type(unupdatable, ex.entity)
+            except Exception as ex:
+                self.fail(f'Wrong exception type: {ex}')
+            else:
+                self.fail('No exception')
+
+    ''' DELETABILITY '''
+    def it_cant_delete_entity(self):
+        with orm.su(self.bgates):
+            un = undeletable()
+            un.save()
+
+            try:
+                un.delete()
+            except orm.AuthorizationError as ex:
+                self.eq('d', ex.crud)
+                self.type(undeletable, ex.entity)
+            except Exception as ex:
+                self.fail(f'Wrong exception type: {ex}')
+            else:
+                self.fail('No exception')
 
 class owner(tester.tester):
     def __init__(self):
