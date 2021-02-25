@@ -37,7 +37,7 @@ class system(orm.entity):
     def retrievability(self):
         vs = orm.violations(entity=self)
 
-        usr = orm.orm.owner
+        usr = orm.security().owner
 
         managers = 'bgates', 'sballmer', 'snadella'
 
@@ -83,14 +83,15 @@ class engineer(orm.entity):
     @property
     def creatability(self):
         vs = orm.violations(entity=self)
-        if orm.orm.owner.name != 'bgates':
+        if orm.security().owner.name != 'bgates':
             vs += "User must be 'bgates'"
 
         return vs
 
     @property
     def retrievability(self):
-        usr = orm.orm.owner
+        vs = orm.violations()
+        usr = orm.security().owner
 
         managers = 'bgates', 'sballmer', 'snadella'
 
@@ -347,11 +348,11 @@ class owner(tester.tester):
 
         own = ecommerce.user(name='hford')
         root = ecommerce.users.root
-        orm.orm.owner = root
+        orm.security().owner = root
         own.owner = root
         own.save()
 
-        orm.orm.owner = own
+        orm.security().owner = own
         com = party.company(name='Ford Motor Company')
         com.owner = own
         com.save()
@@ -367,15 +368,15 @@ class owner(tester.tester):
 
         ''' New entity gets owner '''
         own = create_owner('owner')
-        orm.orm.owner = own
+        orm.security().owner = own
         eng = engineer()
-        self.is_(orm.orm.owner, eng.owner)
+        self.is_(orm.security().owner, eng.owner)
         eng.save()
-        self.eq(orm.orm.owner.id, eng.owner.id)
+        self.eq(orm.security().owner.id, eng.owner.id)
 
         ''' Change orm owner: existing entity preserves owner '''
         own1 = create_owner('owner1')
-        orm.orm.owner = own1
+        orm.security().owner = own1
 
         eng = eng.orm.reloaded()
         self.eq(own.id, eng.owner.id)
@@ -386,7 +387,7 @@ class owner(tester.tester):
         update
         '''
         own2 = ecommerce.user(name='owner1')
-        orm.orm.owner = own2
+        orm.security().owner = own2
 
         eng.name = 'new name'
         eng.save()
@@ -399,7 +400,7 @@ class owner(tester.tester):
 
     def it_cant_save_with_no_owner(self):
         # Ensure owner is None
-        orm.orm.owner = None
+        orm.security().owner = None
 
         # We should get a validation error when saving
         eng = engineer()
@@ -441,7 +442,7 @@ class proprietor(tester.tester):
             if e.__module__ in ('party', 'apriori'):
                 e.orm.recreate()
 
-        orm.orm.owner = ecommerce.users.root
+        orm.security().owner = ecommerce.users.root
 
     def it_creates_associations(self):
         # Create some proprietors

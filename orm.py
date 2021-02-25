@@ -3008,8 +3008,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 if orm.proprietor:
                     self.proprietor = orm.proprietor
 
-                if orm.owner:
-                    self.owner = orm.owner
+                if security().owner:
+                    self.owner = security().owner
             else:
                 if isinstance(o, str):
                     # See if we can convert str identifier to UUID. 
@@ -3034,8 +3034,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                 self.orm.populate(res)
 
-                if not orm.owner.isroot:
-                    isretrievable, vs = self.retrievability
+                if not security().owner.isroot:
+                    vs = self.retrievability
 
                     if not isretrievable:
                         raise AuthorizationError(
@@ -4006,7 +4006,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             msg, map.name, 'valid', self
                         )
                     else:
-                        if self.orm.isnew and orm.owner.id != map.value:
+                        if self.orm.isnew and security().owner.id != map.value:
                             msg = 'Owner id does not match orm id'
                             B()
                             brs += entitiesmod.brokenrule(
@@ -6758,23 +6758,66 @@ class constituent(ormclasswrapper):
 
 @contextmanager
 def sudo():
-    own = orm.owner
+    sec = security()
+    own = sec.owner
     try:
         from ecommerce import users
-        orm.owner = users.root
+        sec.owner = users.root
         yield
     finally:
-        orm.owner = own
+        sec.owner = own
 
 @contextmanager
 def su(own):
-    own1 = orm.owner
+    own1 = security().owner
     try:
         from ecommerce import users
-        orm.owner = own
+        security().owner = own
         yield
     finally:
-        orm.owner = own1
+        security().owner = own1
+
+@contextmanager
+def override():
+    override = security().override
+    try:
+        security().override = True
+        yield
+    finally:
+        security().override = override
+
+class security:
+    _instance = None
+    def __new__(cls):
+        if not cls._instance:
+            cls._instance = super(security, cls).__new__(cls)
+            cls._override = False
+            cls._owner = None
+
+        return cls._instance
+
+    @property
+    def override(self):
+        if self._override:
+            return True
+
+        return self.owner and self.owner.isroot
+
+    @override.setter
+    def override(self, v):
+        self._override = v
+
+    @property
+    def owner(self):
+        return self._owner
+
+    @owner.setter
+    def owner(self, v):
+        self._owner = v
+
+    @property
+    def issudo(self):
+        return self.owner and self.owner.isroot
 
 class orm:
     _abbrdict    =  dict()
@@ -6783,10 +6826,10 @@ class orm:
     owner = None
         
     def redact(self):
-        if not orm.owner:
+        if not security().owner:
             return
 
-        if orm.owner.isroot:
+        if security().owner.isroot:
             return
 
         es = self.instance
