@@ -74,7 +74,11 @@ class system(orm.entity):
 
     @property
     def creatability(self):
-        return orm.violations()
+        vs = orm.violations()
+        usrs = 'bgates', 'sballmer'
+        if orm.security().owner.name not in usrs:
+            vs += f'Only {usrs} can create systems'
+        return vs
 
     @property
     def retrievability(self):
@@ -98,6 +102,21 @@ class system(orm.entity):
                     'retrieved by sballmer'
                 )
             
+        return vs
+
+    @property
+    def updatability(self):
+        vs = orm.violations()
+        usrs = 'bgates', 'sballmer'
+        if orm.security().owner.name not in usrs:
+            vs += f'Only {usrs} can update systems'
+        return vs
+
+    @property
+    def deletability(self):
+        vs = orm.violations()
+        if orm.security().owner.name != 'bgates':
+            vs += f'Only bgates can delete systems'
         return vs
 
     name = str
@@ -151,6 +170,20 @@ class engineer(orm.entity):
 
         return vs
 
+    @property
+    def updatability(self):
+        vs = orm.violations()
+        if orm.security().owner.name != 'bgates':
+            vs += 'Only bgates can update engineer'
+        return vs
+
+    @property
+    def deletability(self):
+        vs = orm.violations()
+        if orm.security().owner.name != 'bgates':
+            vs += 'Only bgates can delete engineer'
+        return vs
+
 class hackers(engineers):
     pass
 
@@ -185,7 +218,7 @@ class authorization(tester.tester):
     def __init__(self):
         super().__init__()
 
-        mods = ('party', 'apriori', 'ecommerce')
+        mods = ('party', 'apriori', 'ecommerce', 'file')
         for e in orm.orm.getentitys(includeassociations=True):
             if e.__module__ in mods:
                 e.orm.recreate()
@@ -209,6 +242,12 @@ class authorization(tester.tester):
         with orm.sudo():
             self.bgates = ecommerce.user(name='bgates')
             self.bgates.save()
+
+            self.sballmer = ecommerce.user(name='sballmer')
+            self.sballmer.save()
+
+            self.snadella = ecommerce.user(name='snadella')
+            self.snadella.save()
 
         sec.owner = None
 
@@ -263,6 +302,28 @@ class authorization(tester.tester):
         with orm.sudo():
             self.expect(db.RecordNotFoundError, eng.orm.reloaded)
 
+    def it_creates_constituents(self):
+        with orm.sudo():
+            eng = engineer()
+            eng.save()
+
+        with orm.su(self.bgates):
+            eng.systems += system(name='Even')
+            eng.save()
+
+        with orm.su(self.snadella):
+            eng.systems += system(name='Even')
+            try:
+                eng.save()
+            except orm.AuthorizationError as ex:
+                self.eq('c', ex.crud)
+                self.one(ex.violations)
+                self.is_(eng.systems.last, ex.entity)
+            except Exception as ex:
+                self.fail(f'Wrong exception type {ex}')
+            else:
+                self.fail('No exception')
+
     def it_allows_root_to_create_all(self):
         clss = (
             engineer, hacker, phreak, system, uncreatable,
@@ -275,7 +336,6 @@ class authorization(tester.tester):
                 e.save()
                 e1 = e.orm.reloaded()
                 self.eq(e.id, e1.id)
-
 
     ''' RETRIEVABILITY '''
     def it_cant_retrieve_entity(self):
@@ -322,11 +382,6 @@ class authorization(tester.tester):
                         ['Derp', 'Even', 'Odd'],
                         sorted(syss.pluck('name'))
                     )
-
-    def it_allows_root_to_update_all(self):
-        ''' TODO '''
-    def it_allows_root_to_delete_all(self):
-        ''' TODO '''
 
     def it_retrieves_aggregate_values_on_classes(self):
         """ TODO """
@@ -413,15 +468,15 @@ class authorization(tester.tester):
             eng = engineer(name='Even')
             eng.save()
 
-        for i, _ in enumerate(range(4)):
-            if i.even:
-                with orm.su(bgates):
-                    eng.systems += system(name=f"Even {i}")
-                    eng.save()
-            else:
-                with orm.su(sballmer):
-                    eng.systems += system(name=f"Odd {i}")
-                    eng.save()
+            for i, _ in enumerate(range(4)):
+                if i.even:
+                    with orm.su(bgates):
+                        eng.systems += system(name=f"Even {i}")
+                        eng.save()
+                else:
+                    with orm.su(sballmer):
+                        eng.systems += system(name=f"Odd {i}")
+                        eng.save()
 
         for usr, parity in ((bgates, 'Even'), (sballmer, 'Odd')):
 
@@ -436,6 +491,23 @@ class authorization(tester.tester):
                     self.startswith(parity, sys.name)
 
     ''' UPDATABILITY '''
+    def it_allows_root_to_update_all(self):
+        clss = (engineer, hacker, phreak, system)
+        with orm.sudo():
+            for cls in clss:
+                e = cls()
+                e.name = 'one'
+                e.save()
+
+                e1 = e.orm.reloaded()
+                e1.name = 'two'
+                e1.save()
+
+                e1 = e1.orm.reloaded()
+
+                self.eq(e.id, e1.id)
+                self.eq('two', e1.name)
+
     def it_cant_update_entity(self):
         with orm.su(self.bgates):
             un = unupdatable()
@@ -454,26 +526,92 @@ class authorization(tester.tester):
             else:
                 self.fail('No exception')
 
-    ''' UPDATABILITY '''
-    def it_cant_update_entity(self):
+    def it_can_update_entity(self):
         with orm.su(self.bgates):
-            un = unupdatable()
-            un.name = 'I will not be updated'
-            un.save()
+            eng = engineer()
+            eng.name = "I should be updatable"
+            eng.save()
 
-            un = unupdatable(un.id)
-            un.name = 'Will I be updated?'
+            eng = eng.orm.reloaded()
+            eng.name = 'I am being updated'
+            eng.save()
+
+        eng.name = 'sballmer should not be able to update me'
+        with orm.su(self.sballmer):
             try:
-                un.save()
+                eng.save()
             except orm.AuthorizationError as ex:
                 self.eq('u', ex.crud)
-                self.type(unupdatable, ex.entity)
+                self.is_(eng, ex.entity)
+                self.one(ex.violations)
+            except Exception as ex:
+                self.fail(f'Wrong exception type: {ex}')
+            else:
+                self.fail('No exception')
+
+    def it_can_update_constituents(self):
+        with orm.sudo():
+            eng = engineer()
+            for _ in range(2):
+                eng.systems += system(name='one')
+            eng.save()
+            eng = eng.orm.reloaded()
+
+        with orm.su(self.bgates):
+            eng.systems.sort()
+            eng.systems.first.name = 'two'
+            eng.save()
+
+        with orm.su(self.snadella):
+            eng.systems.second.name = 'two'
+            try:
+                eng.save()
+            except orm.AuthorizationError as ex:
+                self.eq('u', ex.crud)
+                self.is_(eng.systems.second, ex.entity)
+                self.one(ex.violations)
             except Exception as ex:
                 self.fail(f'Wrong exception type: {ex}')
             else:
                 self.fail('No exception')
 
     ''' DELETABILITY '''
+    def it_allows_root_to_delete_all(self):
+        ''' TODO '''
+
+    def it_can_delete_entity(self):
+        with orm.sudo():
+            eng = engineer()
+            eng.save()
+
+        with orm.su(self.bgates):
+            eng.delete()
+
+        with orm.sudo():
+            self.expect(db.RecordNotFoundError, eng.orm.reloaded)
+
+            eng = engineer()
+            eng.save()
+
+        with orm.su(self.sballmer):
+            try:
+                eng.delete()
+            except orm.AuthorizationError as ex:
+                self.eq('d', ex.crud)
+                self.is_(eng, ex.entity)
+                self.one(ex.violations)
+                self.eq(
+                    'Only bgates can delete engineer',
+                    ex.violations.first.message,
+                )
+            except Exception as ex:
+                self.fail(f'Wrong exception type: {ex}')
+            else:
+                self.fail('No exception')
+
+        with orm.sudo():
+            self.expect(None, eng.orm.reloaded)
+
     def it_cant_delete_entity(self):
         with orm.su(self.bgates):
             un = undeletable()
@@ -488,6 +626,40 @@ class authorization(tester.tester):
                 self.fail(f'Wrong exception type: {ex}')
             else:
                 self.fail('No exception')
+
+    def it_deletes_constituents(self):
+        with orm.sudo():
+            eng = engineer()
+            eng.systems += system()
+            eng.systems += system()
+            eng.save()
+
+        with orm.su(self.bgates):
+            sys = eng.systems.pop()
+            eng.save()
+
+        with orm.sudo():
+            self.expect(db.RecordNotFoundError, sys.orm.reloaded)
+
+        with orm.su(self.sballmer):
+            sys = eng.systems.pop()
+            try:
+                eng.save()
+            except orm.AuthorizationError as ex:
+                self.eq('d', ex.crud)
+                self.is_(sys, ex.entity)
+                self.eq(
+                    'Only bgates can delete systems',
+                    ex.violations.first.message,
+                )
+            except Exception as ex:
+                self.fail(f'Wrong exception type: {ex}')
+            else:
+                self.fail('No exception')
+
+        with orm.sudo():
+            self.expect(db.RecordNotFoundError, sys.orm.reloaded)
+
 
 class owner(tester.tester):
     def __init__(self):
