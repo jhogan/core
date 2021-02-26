@@ -7706,6 +7706,8 @@ class orm:
                 conn.query(sql)
 
     def create(self, cur=None, ignore=False):
+        """ Create a table in the database corresponding to the entity.
+        """
         # TODO Use executioner
         sql = self.createtable
 
@@ -7727,14 +7729,27 @@ class orm:
                 
     @property
     def ismigrated(self):
+        """ Returns True if the attributes in the entity match the
+        columns in the underlying table.
+        """
         return not bool(self.altertable)
 
     @property
     def migration(self):
+        """ Returns a new ``migration`` object for the entity. See the
+        ``migration`` class for more.
+        """
         return migration(self.entity)
 
     @property
     def altertable(self):
+        """ Compares the attributes of the entity with the columns of
+        the entity's underlying table and returns an ALTER TABLE command
+        that, if run against the database, would cause the table to
+        match the entity. If there are no differences between the
+        entity's attributes and the underlying table's columns, or if
+        the table does not exist, None is returned.
+        """
         tbl = self.dbtable
 
         # If there is no table in the database, there can be no ALTER
@@ -7902,6 +7917,10 @@ class orm:
 
     @property
     def createtable(self):
+        """ Returns a CREATE TABLE string which, if issued against the
+        database, would create the entity's underlying table (assuming
+        the table didn't already exist).
+        """
         r = 'CREATE TABLE `%s`(\n' % self.table 
 
         for i, map in enumerate(self.mappings):
@@ -7940,7 +7959,7 @@ class orm:
         """
 
         # TODO To complement orm.reloaded(), we should have an override
-        # of orm.load() that reloads/refreshed an entity object. 
+        # of orm.load() that reloads/refreshes an entity object. 
         try:
             # Remove all elements from collection.
             self.instance.clear()
@@ -7953,6 +7972,7 @@ class orm:
             self.collect(orderby, limit, offset)
 
     def query(self, sql):
+        # NOTE This does not appear to be in use.
         ress = None
         def exec(cur):
             nonlocal ress
@@ -7968,6 +7988,9 @@ class orm:
     # TODO:1d1e17dc s/dbtable/table
     @property
     def dbtable(self):
+        """ Returns a ``db.table`` object representing the entity's
+        underlying database table.
+        """
         try:
             return db.table(self.table)
         except _mysql_exceptions.OperationalError as ex:
@@ -7978,7 +8001,6 @@ class orm:
     def load(self, id):
         """ Load an entity by ``id``.
         """
-
         # Create the basic SELECT query.
         sql = f'SELECT * FROM {self.table} WHERE id = _binary %s'
 
