@@ -3540,26 +3540,27 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             st = self.orm.persistencestate
 
             if sql:
-                # Issue the query
-
                 # Raise event
                 eargs = db.operationeventargs(self, crud, sql, args)
                 self.onbeforesave(self, eargs)
 
-                if crud == 'create':
-                    vs = self.creatability
-                elif crud == 'update':
-                    vs = self.updatability
-                elif crud == 'delete':
-                    vs = self.deletability
+                if not security().issudo:
+                    if crud == 'create':
+                        vs = self.creatability
+                    elif crud == 'update':
+                        vs = self.updatability
+                    elif crud == 'delete':
+                        vs = self.deletability
 
-                if not security().issudo and vs.ispopulated:
-                    raise AuthorizationError(
-                        msg=(
-                            f'Cannot {crud} {type(self)}:{self.id.hex}'
-                        ), crud=crud[0], vs=vs, e=self
-                    )
+                    if vs.ispopulated:
+                        raise AuthorizationError(
+                            msg=(
+                                f'Cannot {crud} '
+                                f'{type(self)}:{self.id.hex}'
+                            ), crud=crud[0], vs=vs, e=self
+                        )
 
+                # Issue the query
                 cur.execute(sql, args)
 
                 # Update new state
