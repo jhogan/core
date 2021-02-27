@@ -3599,7 +3599,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 eargs = db.operationeventargs(self, crud, sql, args)
                 self.onbeforesave(self, eargs)
 
-                if not security().issudo:
+                # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                # Unless override is True, thes the creatability,
+                # updatability or deletability of the entity given the
+                # crud.
+                # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                if not security().override:
                     if crud == 'create':
                         vs = self.creatability
                     elif crud == 'update':
