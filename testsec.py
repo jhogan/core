@@ -598,7 +598,13 @@ class authorization(tester.tester):
 
     ''' DELETABILITY '''
     def it_allows_root_to_delete_all(self):
-        ''' TODO '''
+        with orm.su(self.bgates):
+            eng = engineer()
+            eng.save()
+
+        with orm.sudo():
+            self.expect(None, eng.delete)
+            self.expect(db.RecordNotFoundError, eng.orm.reloaded)
 
     def it_can_delete_entity(self):
         with orm.sudo():
@@ -681,6 +687,38 @@ class authorization(tester.tester):
         with orm.sudo():
             self.expect(db.RecordNotFoundError, sys.orm.reloaded)
 
+    ''' orm.override '''
+    def it_creates_and_retrieves_with_override(self):
+        orm.security.owner = self.bgates
+
+        with orm.override():
+            pr = problem()
+            self.expect(None, pr.save)
+            pr1 = self.expect(None, pr.orm.reloaded)
+
+    def it_updates_with_override(self):
+        with orm.sudo():
+            pr = problem()
+            pr.name = 'old'
+            pr.save()
+            pr = pr.orm.reloaded()
+
+        with orm.override():
+            pr.name = 'new'
+            self.expect(None, pr.save)
+            pr = pr.orm.reloaded()
+            self.eq('new', pr.name)
+
+    def it_deletes_with_override(self):
+        with orm.sudo():
+            pr = problem()
+            pr.name = 'old'
+            pr.save()
+            pr = pr.orm.reloaded()
+
+        with orm.override():
+            self.expect(None, pr.delete)
+            self.expect(db.RecordNotFoundError, pr.orm.reloaded)
 
 class owner(tester.tester):
     def __init__(self):
