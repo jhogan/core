@@ -215,6 +215,10 @@ class engineer_project(orm.association):
     project = project
 
 class authorization(tester.tester):
+    """ Tests the accessibility properties of entities (creatability,
+    retrievability, updatability and deletability).
+    """ 
+
     def __init__(self):
         super().__init__()
 
@@ -227,7 +231,7 @@ class authorization(tester.tester):
             engineer,     hacker,         phreak,
             system,       project,        engineer_project,
             uncreatable,  unretrievable,  unupdatables,
-            undeletable,
+            undeletable,  problem,
         )
 
         sec = orm.security()

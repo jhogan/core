@@ -3002,12 +3002,18 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 self.orm.isdirty = False
                 self.id = uuid4()
 
+                # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                 # Assign the proprietor (the owner of the entity) to the
                 # entity's `proprietor` attribute. This ensure the
                 # proprietor gets saved to the database.
+                # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                 if orm.proprietor:
                     self.proprietor = orm.proprietor
 
+                # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                # If there is an owner, assign the owner to the new
+                # entity so we know which user created the entity.
+                # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                 if security().owner:
                     self.owner = security().owner
             else:
@@ -3034,16 +3040,36 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                 self.orm.populate(res)
 
-                if not security().owner.isroot:
+                # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                # Unless override is True...
+                # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                if not security().override:
+
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # Test the retrievability of the entity tto make
+                    # sure the user can access the entity.
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                     vs = self.retrievability
 
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # Make sure ``retrievability`` returns a
+                    # ``violations`` object since this is up to the orm
+                    # user to get right.
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                     if not isinstance(vs, violations):
                         raise TypeError(
                             "'retrievability' must return a "
                             '`violations` instance.'
                         )
 
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # If there are violations...
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                     if vs.ispopulated:
+
+                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                        # Raise an AuthorizationError
+                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                         raise AuthorizationError(
                             msg = (
                                 f'Cannot access {type(self).__name__}:'
@@ -3066,29 +3092,58 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
     @property
     def retrievability(self):
+        """ 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Return a default implementation of retrievability
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
         return self._getaccessability('retrievability')
 
     @property
     def creatability(self):
+        """ 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Return a default implementation of creatability
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
         return self._getaccessability('creatability')
 
     @property
     def updatability(self):
+        """ 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Return a default implementation of updatability
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
         return self._getaccessability('updatability')
 
     @property
     def deletability(self):
+        """ 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Return a default implementation of deletability
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
         return self._getaccessability('deletability')
 
     def _getaccessability(self, type):
+        """ 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Return a default implementation of accessibility methods
+        (creatability, retrievability, updatability and deletability)
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # If override is True, return an empty violations object
+        # implying that there is no accessibility issue.
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         if security().override:
             return violations()
 
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # Unless override is True, the default implementation of the
+        # accessibility methods is to raise an AuthorizationError.
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         raise AuthorizationError(
             f'{type} not implemented',
             crud=type[0], vs=None, e=self
         )
-
 
     def __getitem__(self, args):
         """ Returns the value of the attribute given, or a tuple of
@@ -3552,6 +3607,10 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     elif crud == 'delete':
                         vs = self.deletability
 
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # If there are violations, raise an
+                    # AuthorizationError
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                     if vs.ispopulated:
                         raise AuthorizationError(
                             msg=(
@@ -6782,6 +6841,20 @@ class constituent(ormclasswrapper):
 
 @contextmanager
 def sudo():
+    """
+    💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    A context manager that runs any code within it as the orm's root
+    user. The root user isn't restricted by standard authorization rules
+    or accessibility restrictions.
+
+        # Retrieve and update `ent` as root.
+        with orm.sudo():
+            ent = entity(myid)
+            ent.attr = 'my-value'
+            ent.save()
+
+    💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    """
     sec = security()
     own = sec.owner
     try:
@@ -6793,6 +6866,18 @@ def sudo():
 
 @contextmanager
 def su(own):
+    """
+    💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    A context manager that temporarily switches the user the ORM is
+    running under.
+
+        usr = ecommerce.users(name='luser').first
+        # Retrieve entity as `usr`
+        with orm.su(usr):
+            ent = entity(myid)
+
+    💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    """
     own1 = security().owner
     try:
         from ecommerce import users
@@ -6811,9 +6896,19 @@ def override():
         security().override = override
 
 class security:
+    """
+    💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    A singleton that stores security related values such as the orm's
+    owner, proprietor, and whether or not the accessibility override is
+    set.
+    💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    """
     _instance = None
     def __new__(cls):
         if not cls._instance:
+            # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            # Implement the singleton pattern.
+            # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
             cls._instance = super(security, cls).__new__(cls)
             cls._override = False
             cls._owner = None
@@ -6822,6 +6917,16 @@ class security:
 
     @property
     def override(self):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Return True if override is set to True or if the owner is root. 
+
+        When override is True, accessibility methods, such as
+        creatability, retrievability, updatability and deletability are
+        ignored. This is useful for unit test developers who want to
+        ignore the accessibility methods for the sake of convenience.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
         if self._override:
             return True
 
@@ -6829,18 +6934,46 @@ class security:
 
     @override.setter
     def override(self, v):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        The setter for security.overide.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
         self._override = v
 
     @property
     def owner(self):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Returns the current owner. The owner is a ``party.user``. When
+        an entity is created, the entity's ``owner`` attribute will be
+        set to the orm's owner. This attribute will be saved along with
+        the entity so it wil always be known who the entity's owner is.
+
+        The owner is important for the accessibility methods because it
+        helps the entity's determine who should be able to do what with
+        the entity. For example, for most entity objects, the user that
+        created the entity should be able to update the entity.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
         return self._owner
 
     @owner.setter
     def owner(self, v):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        The setter for security.owner.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
         self._owner = v
 
     @property
     def issudo(self):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Returns True if the current owner is root.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
         return self.owner and self.owner.isroot
 
 class orm:
@@ -6850,27 +6983,68 @@ class orm:
     owner = None
         
     def redact(self):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Remove entity objects from an entities collection if the
+        entity's retrievability method reports ``violations``. 
+
+        The idea here is to ensure that objects the user is not intended
+        to have read-access to are removed from the collection before
+        they are sent to the user.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # If there is no owner, then we don't care.
+        # 
+        # TODO This can't be right!
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         if not security().owner:
             return
 
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # If the owner is root, redact nothing.
+        # 
+        # TODO We could use ``security().issudo`` for this.
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         if security().owner.isroot:
             return
 
         es = self.instance
+
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # Iterate over the collection in reverse since we may be
+        # removing some elements.
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         for e in es.reversed():
             vs = e.retrievability
             if not isinstance(vs, violations):
-                B()
+                # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                # The ORM user must have returned the wrong type from
+                # their retrievability method.
+                # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                 raise TypeError(
                     "'retrievability' must return a "
                     f'`violations` instance for {type(e)}'
                 )
+
+            # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            # If the violations collection is populated, remove the
+            # entity from the collection. Don't "trash" it, i.e., don't
+            # delete it from the database (that would be crazy).
+            # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
             if vs.ispopulated:
                 es.remove(e, trash=False)
 
+
+    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    # TODO Move setproprietor to security.proprietor
+    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
     @classmethod
     def setproprietor(cls, v):
-        """ Set ``v`` to orm's proprietor. Ensure that the proprietor
+        """ 
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Set ``v`` to orm's proprietor. Ensure that the proprietor
         entity owns itself.
 
         Proprietors
@@ -6895,14 +7069,17 @@ class orm:
         by the orm.proprietor or else a ProprietorError will be raised.
 
         :param: party.party v: The proprietor entity.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
         cls._proprietor = v
 
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         # The proprietor of the proprietor must be the proprietor:
         #    
         #    assert v.proprietor is v
         #
         # Propogate this up the inheritance hierarchy.
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         sup = v
         while sup:
             sup.proprietor = v
