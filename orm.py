@@ -4479,84 +4479,26 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # Append the entity to that entities collection
             es += e
 
+
     def __repr__(self):
-        """ Return a tabularized list of ``self``'s attributes and their
-        corresponding values. Any exceptions that happen to occure will
-        be trapped and a string representations of the exception will be
-        returned."""
-
+        """ Create a string representation of the entity.
+        """
         try:
-            tbl = table()
+            name = self.name
+        except builtins.AttributeError:
+            name = ''
+        else:
+            if name:
+                name = f", name='{self.name}'"
 
-            es = entitiesmod.entities()
-            e = self
-            while e:
-                es += e
-                e = e.orm.super
-
-            for i, e in enumerate(es.reversed()):
-                if i:
-                    r = tbl.newrow()
-                r = tbl.newrow()
-                r.newfield('Class')
-                r.newfield('%s.%s' % (e.__module__, type(e).__name__))
-
-                for map in e.orm.mappings:
-                    r = tbl.newrow()
-                    try:
-                        v = getattr(e, map.name)
-                    except Exception as ex:
-                        v = 'Exception: %s' % str(ex)
-                        
-                    if type(map) in (primarykeyfieldmapping, foreignkeyfieldmapping):
-                        if type(map.value) is UUID:
-                            v = v.hex[:8]
-                        else:
-                            v = str(v)
-                    else:
-                        try:
-                            if type(map) in (entitiesmapping, associationsmapping):
-                                es = v
-                                if es:
-                                    brs = es.getbrokenrules(
-                                        guestbook=None, 
-                                        followentitymapping=False
-                                    )
-                                    args = es.count, brs.count
-                                    v = 'Count: %s; Broken Rules: %s' % args
-                                else:
-                                    v = str(es)
-                            else:
-                                v = str(v)
-                        except Exception as ex:
-                            v = '(%s)' % str(ex)
-
-                    r.newfield(map.name)
-                    r.newfield(v)
-
-            tblbr = table()
-
-            r = tblbr.newrow()
-            r.newfield('Broken Rules')
-            r.newfield('')
-            r.newfield('')
-
-            r = tblbr.newrow()
-            r.newfield('property')
-            r.newfield('type')
-            r.newfield('message')
-
-            for br in self.brokenrules:
-                r = tblbr.newrow()
-                r.newfield(br.property)
-                r.newfield(br.type)
-                r.newfield(br.message)
-                
-            return '%s\n%s\n%s' % (super().__repr__(), 
-                                       str(tbl), 
-                                       str(tblbr))
-        except Exception as ex:
-            return '%s (Exception: %s) ' % (super().__repr__(), str(ex))
+        r = (
+            f'{type(self).__module__}.'
+            f'{type(self).__name__}('
+                f'id={self.id.hex}'
+                f'{name}'
+            ')'
+        )
+        return r
 
     def __str__(self):
         """ Return the value of the entity object's name attribute if
@@ -7046,7 +6988,6 @@ class orm:
             if vs.ispopulated:
                 es.remove(e, trash=False)
 
-
     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
     # TODO Move setproprietor to security.proprietor
     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
@@ -7134,6 +7075,92 @@ class orm:
         self.initing              =  False
 
         self.recreate = self._recreate
+
+    @property
+    def statement(self):
+        """ Return a tabularized list of the entity's attributes and
+        their corresponding values. Any exceptions that happen to occur
+        will be trapped and a string representations of the exception
+        will be returned."""
+
+        try:
+            tbl = table()
+
+            es = entitiesmod.entities()
+            e = self.instance
+            while e:
+                es += e
+                e = e.orm.super
+
+            for i, e in enumerate(es.reversed()):
+                if i:
+                    r = tbl.newrow()
+                r = tbl.newrow()
+                r.newfield('Class')
+                r.newfield('%s.%s' % (e.__module__, type(e).__name__))
+
+                for map in e.orm.mappings:
+                    r = tbl.newrow()
+                    try:
+                        v = getattr(e, map.name)
+                    except Exception as ex:
+                        v = 'Exception: %s' % str(ex)
+                        
+                    if type(map) in (primarykeyfieldmapping, foreignkeyfieldmapping):
+                        if type(map.value) is UUID:
+                            v = v.hex[:8]
+                        else:
+                            v = str(v)
+                    else:
+                        try:
+                            if type(map) in (entitiesmapping, associationsmapping):
+                                es = v
+                                if es:
+                                    brs = es.getbrokenrules(
+                                        guestbook=None, 
+                                        followentitymapping=False
+                                    )
+                                    args = es.count, brs.count
+                                    v = 'Count: %s; Broken Rules: %s' % args
+                                else:
+                                    v = str(es)
+                            else:
+                                v = str(v)
+                        except Exception as ex:
+                            v = '(%s)' % str(ex)
+
+                    r.newfield(map.name)
+                    r.newfield(v)
+
+            tblbr = table()
+
+            r = tblbr.newrow()
+            r.newfield('Broken Rules')
+            r.newfield('')
+            r.newfield('')
+
+            r = tblbr.newrow()
+            r.newfield('property')
+            r.newfield('type')
+            r.newfield('message')
+
+            for br in self.instance.brokenrules:
+                r = tblbr.newrow()
+                r.newfield(br.property)
+                r.newfield(br.type)
+                r.newfield(br.message)
+                
+            sup = self.super
+
+            if sup:
+                stmt = sup.orm.statement
+                return '%s\n%s\n%s' % (stmt,
+                    str(tbl), 
+                    str(tblbr)
+                )
+        except Exception as ex:
+            return 'Exception: %s ' % (str(ex),)
+
 
     @property
     def ismarkedfordeletion(self):
