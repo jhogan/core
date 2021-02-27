@@ -15,9 +15,26 @@ import ecommerce
 import entities
 import orm
 import party
-import persistia
 import tester
 import uuid
+
+class problems(orm.entities):
+    pass
+
+class problem(orm.entity):
+    def creatability(self):
+        raise Exception('I made poopies')
+
+    def retrievability(self):
+        raise Exception('I made poopies')
+
+    def updatability(self):
+        raise Exception('I made poopies')
+
+    def retrievability(self):
+        raise Exception('I made poopies')
+
+    name = str, 0
 
 class uncreatables(orm.entities):
     pass

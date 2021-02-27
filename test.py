@@ -3828,6 +3828,7 @@ class artist_artist(orm.association):
 class test_orm(tester):
     def __init__(self):
         super().__init__()
+        orm.security().override = True
         self.chronicles = db.chronicles()
         db.chronicler.getinstance().chronicles.onadd += self._chronicler_onadd
 
@@ -3857,13 +3858,13 @@ class test_orm(tester):
         root = ecommerce.users.root
 
         # Save the owner, the root user will be the owner's owner.
-        orm.orm.owner = root
-        own.owner = root
-        own.save()
+        with orm.sudo():
+            own.owner = root
+            own.save()
 
         # Going forward, `own` will be the owner of all future records
         # created.
-        orm.orm.owner = own
+        orm.security().owner = own
 
         # Create a company to be the propritor.
         com = party.company(name='Ford Motor Company')
