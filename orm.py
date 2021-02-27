@@ -4095,11 +4095,16 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             msg, map.name, 'valid', self
                         )
                     else:
-                        if self.orm.isnew and security().owner.id != map.value:
-                            msg = 'Owner id does not match orm id'
-                            brs += entitiesmod.brokenrule(
-                                msg, map.name, 'valid', self
-                            )
+                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                        # Make sure the owner's id of the entiy matches
+                        # that of the security singleton.
+                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                        if self.orm.isnew:
+                            if security().owner.id != map.value:
+                                msg = 'Owner id does not match orm id'
+                                brs += entitiesmod.brokenrule(
+                                    msg, map.name, 'valid', self
+                                )
 
             elif type(map) is associationsmapping:
                 if map.isloaded:
