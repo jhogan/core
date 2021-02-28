@@ -63,8 +63,8 @@ class dom_file(tester.tester):
     """ Test interoperability between DOM objects and the ``file``
     entity.
     """
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         orm.orm.owner = ecommerce.users.root
 
         # Proprietor
@@ -406,8 +406,8 @@ class dom_file(tester.tester):
         self.false(rcs.first.exists)
 
 class file_file(tester.tester):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         # Delete files
         clean()
 
@@ -806,8 +806,8 @@ class file_file(tester.tester):
         self.eq(body, f.body.decode('ascii'))
 
 class file_directory(tester.tester):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         clean()
 
         orm.orm.recreate(
@@ -1025,8 +1025,8 @@ class file_directory(tester.tester):
                 assert False
 
 class file_resource(tester.tester):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         clean()
 
         orm.orm.recreate(

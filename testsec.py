@@ -85,8 +85,8 @@ class engineer_project(orm.association):
     project = project
 
 class owner(tester.tester):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         orm.orm.recreate(
             engineer,  
@@ -160,8 +160,8 @@ class owner(tester.tester):
         self.is_(eng, eng.brokenrules.first.entity)
 
 class root(tester.tester):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         orm.orm.recreate(
             ecommerce.user,
@@ -180,8 +180,8 @@ class root(tester.tester):
         self.is_(root1, br.entity)
 
 class proprietor(tester.tester):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         orm.orm.recreate(
             engineer,  hacker,   phreak,

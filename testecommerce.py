@@ -16,8 +16,8 @@ import tester
 import primative
 
 class test_ecommerce(tester.tester):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         es = orm.orm.getentitys(includeassociations=True)
         mods = 'ecommerce', 'apriori', 'party', 'product'
         for e in es:
@@ -257,8 +257,8 @@ class test_ecommerce(tester.tester):
         self.eq('127.0.0.2', str(ip))
 
 class test_visits(tester.tester):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         orm.orm.owner = ecommerce.users.root
 

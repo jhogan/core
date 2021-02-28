@@ -3027,8 +3027,8 @@ class test_logs(tester):
             self.assertCount(6, logs)
 
 class test_jwt(tester):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
     
     def it_calls_exp(self):
         t = auth.jwt()
@@ -3826,31 +3826,32 @@ class artist_artist(orm.association):
         self._processing = v
 
 class test_orm(tester):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.chronicles = db.chronicles()
         db.chronicler.getinstance().chronicles.onadd += self._chronicler_onadd
 
         es = orm.orm.getentitys(includeassociations=True)
 
-        # Since orm entities now depends on `party` (someone
-        # circularly), we need to ensure the party classes have updated
-        # tables definitions in the database. `party` is dependent on
-        # `apriori`.
-        for e in es:
-            if e.__module__ in ('party', 'apriori'):
-                e.orm.recreate()
+        if self.rebuildtables:
+            # Since orm entities now depends on `party` (someone
+            # circularly), we need to ensure the party classes have updated
+            # tables definitions in the database. `party` is dependent on
+            # `apriori`.
+            for e in es:
+                if e.__module__ in ('party', 'apriori'):
+                    e.orm.recreate()
 
-        orm.orm.recreate(
-            artists,
-            presentations,
-            issues,
-            programmer_issues,
-            programmers,
-            programmer_issuerole,
-        )
-        artist.orm.recreate(recursive=True)
-        comment.orm.recreate()
+            orm.orm.recreate(
+                artists,
+                presentations,
+                issues,
+                programmer_issues,
+                programmers,
+                programmer_issuerole,
+            )
+            artist.orm.recreate(recursive=True)
+            comment.orm.recreate()
 
         # Create an owner and get the root user
         own = ecommerce.user(name='hford')
@@ -17641,8 +17642,8 @@ Test General Entities Model (GEM)
 '''
 
 class gem_party(tester):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         es = orm.orm.getentitys(includeassociations=True)
         for e in es:
             if e.__module__ in ('party', 'apriori'):
@@ -19460,8 +19461,8 @@ class gem_party(tester):
             self.eq(ks.skilltype.id, ks1.skilltype.id)
 
 class gem_product(tester):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         for e in orm.orm.getentitys(includeassociations=True):
             if e.__module__ in ('product', ):
                 e.orm.recreate()
@@ -21171,8 +21172,8 @@ class gem_product(tester):
         self.eq(None, pps1.first.quantity)
 
 class gem_case(tester):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         orm.orm.recreate(
             party.communications,
             party.parties,
@@ -21339,8 +21340,8 @@ class gem_case(tester):
                 self.eq(ce.communication.id, ce1.communication.id)
 
 class gem_order(tester):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         for e in orm.orm.getentitys(includeassociations=True):
             if e.__module__ in ('order', 'party', 'product',):
                 e.orm.recreate()
@@ -22118,8 +22119,8 @@ class gem_order(tester):
         )
 
 class gem_shipment(tester):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         for e in orm.orm.getentitys(includeassociations=True):
             if e.__module__ in ('shipment', 'order'):
                 e.orm.recreate()
@@ -22543,8 +22544,8 @@ class gem_shipment(tester):
         self.one([x for x in docs1.pluck('documenttype') if x is not None])
 
 class gem_effort(tester):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         for e in orm.orm.getentitys(includeassociations=True):
             if e.__module__ in (
                 'effort', 'apriori', 'party', 'asset', 'order'
@@ -23328,8 +23329,8 @@ class gem_effort(tester):
         self.eq(st.asset.name, st1.asset.name)
 
 class gem_invoice(tester):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         for e in orm.orm.getentitys(includeassociations=True):
             if e.__module__ in ('invoice', 'party', 'apriori'):
@@ -23697,8 +23698,8 @@ class gem_invoice(tester):
         self.eq(dec('182.20'), ip1.payment.amount)
 
 class gem_account(tester):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         orm.orm.recreate(
             account.account,
             account.type,
@@ -23970,8 +23971,8 @@ class gem_account(tester):
             self.eq(assmeth.method.formula,  assmeth1.method.formula)
 
 class gem_budget(tester):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         for e in orm.orm.getentitys(includeassociations=True):
             if e.__module__ in ('apriori', 'budget', 'party'):
                 e.orm.recreate()
@@ -24343,8 +24344,8 @@ class gem_budget(tester):
             self.eq(ita.percent, ita1.percent)
 
 class gem_hr(tester):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         es = orm.orm.getentitys(includeassociations=True)
         for e in es:
             if e.__module__ in ('party', 'hr', 'apriori', 'invoice'):
