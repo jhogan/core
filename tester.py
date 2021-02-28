@@ -69,7 +69,15 @@ class testers(entities):
             if testclass and subcls.__name__ != testclass:
                 continue
 
-            inst = subcls()
+            try:
+                inst = subcls(self)
+            except TypeError as ex:
+                raise TypeError(
+                    'Be sure pass *args and **kwargs to '
+                    f'super().__init__ from '
+                    f'{subcls.__name__}.__init__: {ex}'
+                )
+
             inst.testers = self
             self += inst
 
@@ -104,6 +112,15 @@ class testers(entities):
         return self._tostr(str, includeHeader=False)
 
 class tester(entity):
+    def __init__(self, testers):
+        self._failures = failures()
+        self.testers = testers
+        self.eventregistrations = eventregistrations()
+
+    @property
+    def rebuildtables(self):
+        return self.testers.rebuildtables
+
     class _browsers(www.browsers):
         pass
 
@@ -346,11 +363,6 @@ class tester(entity):
 
         def tab(self):
             return self.tabs.tab()
-
-    def __init__(self):
-        self._failures = failures()
-        self.testers = None
-        self.eventregistrations = eventregistrations()
 
     def browser(self, *args, **kwargs):
         return tester._browser(self, *args, **kwargs)
@@ -919,11 +931,44 @@ class cli:
 
         ts = self.testers
         p = argparse.ArgumentParser()
-        p.add_argument('testunit',  help='The test class or method to run',  nargs='?')
-        p.add_argument('-b', '--break-on-exception', action='store_true', dest='breakonexception')
+        p.add_argument(
+            'testunit',
+            help=(
+                'The test class and/or method to run. For example: '
+                "'my_tester_class' or 'my_tester_class.my_test_method'"
+            ),
+            nargs='?'
+        )
+        p.add_argument(
+            '-b', 
+            '--break', 
+            action='store_true', 
+            dest='breakonexception',
+            help='break into pdb on uncaught exceptions',
+        )
+
+        p.add_argument(
+            '-t',                 
+            '--rebuild',
+            action='store_true',  
+            dest='rebuildtables',
+            help="rebuild tables (default)",
+        )
+
+        p.add_argument(
+            '-T',                  
+            '--dont-rebuild',
+            action='store_false',  
+            dest='rebuildtables',
+            help="don't rebuild tables"
+        )
+
+        p.set_defaults(rebuildtables=True)
+
         self.args = p.parse_args()
 
         self.testers.breakonexception = self.args.breakonexception
+        self.testers.rebuildtables = self.args.rebuildtables
 
     def registertraceevents(self):
         ts = self.testers

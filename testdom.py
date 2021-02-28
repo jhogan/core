@@ -547,8 +547,8 @@ class pom_site(tester.tester):
         self.zero(mnu[sels])
 
 class pom_page(tester.tester):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         es = orm.orm.getentitys(includeassociations=True)
         mods = 'party', 'ecommerce', 'pom', 'asset', 'apriori', 'file'
 
