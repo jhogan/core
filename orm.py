@@ -9773,5 +9773,4 @@ class ProprietorError(ValueError):
             f'{expected}'
         )
 
-    def __repr__(self):
         return str(self)
