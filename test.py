@@ -10965,11 +10965,11 @@ class test_orm(tester):
 
         for i, rpr1 in enumerate((rpr, rapper(rpr.id))):
             for pres in rpr1.presentations:
-                self.is_(rpr1,                      pres.rapper)
-                self.is_(rpr1,  pres.singer)
-                self.is_(rpr1,                      pres.artist)
-                self.type(artist,         rpr1.orm.super.orm.super)
+                self.is_(rpr1,     pres.rapper)
+                self.is_(rpr1,     pres.singer)
+                self.is_(rpr1,     pres.artist)
 
+                self.type(artist,  rpr1.orm.super.orm.super)
                 locs = rpr.presentations[pres].locations.sorted()
 
                 with self._chrontest() as t:
@@ -10991,12 +10991,11 @@ class test_orm(tester):
             for j, conc in rpr.concerts.enumerate():
                 
                 def f():
-                    self.is_(rpr,            conc.rapper)
-                    self.is_(rpr,            conc.singer)
-                    self.is_(rpr,            conc.artist)
-
-                    self.type(singer,        rpr.orm.super)
-                    self.type(singer,        conc.singer.orm.super)
+                    self.is_(rpr,      conc.rapper)
+                    self.is_(rpr,      conc.singer)
+                    self.is_(rpr,      conc.artist)
+                    self.type(singer,  rpr.orm.super)
+                    self.type(singer,  conc.singer.orm.super)
 
                 with self._chrontest() as t:
                     t.run(f)
