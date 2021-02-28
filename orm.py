@@ -4290,10 +4290,28 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             )
 
                             for sup1 in sups1:
-                                setattr(
-                                    e, sup1.orm.entity.__name__, 
-                                    self.orm.specialist
-                                )
+                                name = sup1.orm.entity.__name__
+                                spec = self.orm.specialist
+                                if isinstance(e, entity):
+                                    sup2 = e
+
+                                    while sup2:
+                                        maps1 = sup2.orm.mappings
+                                        try:
+                                            map1 = maps1[name]
+                                        except IndexError:
+                                            sup2.__dict__[name] = spec
+                                        else:
+                                            map1.value = spec
+                                        
+                                        sup2 = sup2.orm._super
+                                elif isinstance(e, entities):
+                                    setattr(e, name, spec)
+                                else:
+                                    raise TypeError(
+                                        'e must be entity or entities'
+                                    )
+
                     
 
                     if isinstance(v, associations):
