@@ -11010,6 +11010,7 @@ class test_orm(tester):
 
                     if i:
                         t.retrieved(conc.locations)
+                        t.retrieved(conc.orm.super)
 
                     loc, loc1 = locs.first, locs1.first
                     self.one(locs)
