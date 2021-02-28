@@ -11026,15 +11026,9 @@ class test_orm(tester):
         for i, rpr in enumerate((rpr, rapper(rpr.id))):
             for j, btl in rpr.battles.enumerate():
                 def f():
-                    self.is_(rpr,                      btl.rapper)
-
-                    # TODO Accessing btl.singer and btl.artist 
-                    #self.is_(rpr.orm.super,            btl.singer)
-                    #self.is_(rpr.orm.super.orm.super,  btl.artist)
-
-                    self.type(rapper,                  btl.rapper)
-                    #self.type(singer,                  btl.singer)
-                    #self.type(artist,                  btl.artist)
+                    self.is_(rpr,  btl.rapper)
+                    self.is_(rpr,  btl.singer)
+                    self.is_(rpr,  btl.artist)
 
                 with self._chrontest() as t:
                     t.run(f)

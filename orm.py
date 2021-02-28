@@ -4226,7 +4226,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
             # If we are here, we are going to check the super to see if
             # it contains a value for attr. The check will automatically
-            # propgate up the entity inheritance tree because the call
+            # propogate up the entity inheritance tree because the call
             # to getattr() will cause us to recurse back into this
             # method for the super, then its super, and so on, as
             # necessary until we finally find the entity that has the
