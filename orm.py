@@ -4274,7 +4274,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             #
                             # However, so the user will get the most
                             # specialized composite, we replace that
-                            # with self:
+                            # with self.orm.specialized:
                             #
                             #     sng.presentations.artist = sng
                             #
@@ -4289,30 +4289,44 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                 withself=True
                             )
 
+                            # For each super class starting with self
                             for sup1 in sups1:
-                                name = sup1.orm.entity.__name__
-                                spec = self.orm.specialist
-                                if isinstance(e, entity):
-                                    sup2 = e
 
+                                # Get name
+                                name = sup1.orm.entity.__name__
+
+                                # Get most specialized version of self
+                                spec = self.orm.specialist
+
+                                # if e is an entity; not an entities
+                                if isinstance(e, entity):
+
+                                    # Ascend inheritence tree
+                                    sup2 = e
                                     while sup2:
                                         maps1 = sup2.orm.mappings
                                         try:
+                                            # Get super's map
                                             map1 = maps1[name]
                                         except IndexError:
+                                            # Dosen't exist: add to dict
+                                            # (bypass mapping)
                                             sup2.__dict__[name] = spec
                                         else:
+                                            # If exists: add to map
                                             map1.value = spec
                                         
                                         sup2 = sup2.orm._super
                                 elif isinstance(e, entities):
-                                    setattr(e, name, spec)
+                                    # TODO We are already doing this in
+                                    # the outer-outer block above.
+                                    # XXX Commenting out for now
+                                    #setattr(e, name, spec)
+                                    ...
                                 else:
                                     raise TypeError(
                                         'e must be entity or entities'
                                     )
-
-                    
 
                     if isinstance(v, associations):
                         v.orm.composite = self
