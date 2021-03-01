@@ -4260,11 +4260,15 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             #
                             #     sng.presentations.singer = sng
                             #     sng.presentations[0].singer = sng
+                            
+                            # XXX I think we can remove this.
+                            '''
                             setattr(
                                 e, 
                                 self_orm_entity__name__,
                                 self.orm.specialist
                             )
+                            '''
 
                             # The getattr() call above will set the
                             # composite of the entities collection to
@@ -4320,9 +4324,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                 elif isinstance(e, entities):
                                     # TODO We are already doing this in
                                     # the outer-outer block above.
-                                    # XXX Commenting out for now
-                                    #setattr(e, name, spec)
-                                    ...
+                                    setattr(e, name, spec)
                                 else:
                                     raise TypeError(
                                         'e must be entity or entities'
