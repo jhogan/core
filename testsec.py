@@ -236,8 +236,8 @@ class authorization(tester.tester):
     retrievability, updatability and deletability).
     """ 
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         mods = ('party', 'apriori', 'ecommerce', 'file')
         for e in orm.orm.getentitys(includeassociations=True):
