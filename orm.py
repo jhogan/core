@@ -8000,6 +8000,9 @@ class orm:
 
     def load(self, id):
         """ Load an entity by ``id``.
+
+        :param id uuid4: A uuid4 object representing the id of the
+        entity to be loaded.
         """
         # Create the basic SELECT query.
         sql = f'SELECT * FROM {self.table} WHERE id = _binary %s'
@@ -8051,9 +8054,9 @@ class orm:
         #         raise Exception('myentity not found')
         #
         # Hacking __new__ to return None may not be a good idea because
-        # of all the event initialition code is in __init__. However, we
+        # of all the event initialition code in __init__. However, we
         # could set a private boolean to cause the entity's __bool__
-        # method to return False. Then any call to __getattribute__()
+        # method to return False. Then, any call to __getattribute__()
         # could check the private boolean and raise an exception to
         # indicate that entity is as good as None because the id was
         # non-existent:
@@ -8067,7 +8070,7 @@ class orm:
 
         # If the `id` exists, we should only get one record back from
         # the database. If that's not the case, raise a
-        # db.RecordNotFoundError
+        # db.RecordNotFoundError.
         ress.demandhasone()
 
         # We are only interested in the first
@@ -8083,13 +8086,12 @@ class orm:
         return res
     
     def collect(self, orderby=None, limit=None, offset=None):
-        """
-        Loads data from the database into the collection. The SQL used
-        to load the data is generated mostly from arguments passed to
-        the entities collection's contructor.
+        """ Loads data from the database into the collection. The SQL
+        used to load the data is generated mostly from arguments passed
+        to the entities collection's contructor.
 
-        Note that an ORM user typically doesn't call ``load``
-        explicitly. The call to ``load`` is usually made by the ORM
+        Note that an ORM user typically doesn't call ``collect``
+        explicitly. The call to ``collect`` is usually made by the ORM
         after the entities collection has been instantiated and during
         the invocation of one of the collection's properties or methods.
         See ``entities.__getattribute__``.
@@ -8109,6 +8111,7 @@ class orm:
             return
 
         try:
+            # Declare that we are currently loading
             self.isloading = True
                     
             # Get SQL and SQL parameters/args
@@ -8171,6 +8174,12 @@ class orm:
 
     @property
     def abbreviation(self):
+        """ Return a unique abbreviation of the entity. This is useful
+        in table aliasing to keep the size of SELECT statements small
+        (table aliasing can be extremely verbose because of the way
+        aliases are used to keep track of the way data is related to
+        each other.)
+        """
         if not self._abbreviation:
             suffix = str()
 
@@ -8225,6 +8234,10 @@ class orm:
 
     @staticmethod 
     def dequote(s):
+        """ Returns a string with the quotes removed.
+
+        :param: s str: The string to remove the quotes from.
+        """
         if s[0] == "'" and s[-1] == "'":
             return s[1:-1]
         return s
