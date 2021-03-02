@@ -723,6 +723,7 @@ class authorization(tester.tester):
 class owner(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        orm.security().override = True
 
         orm.orm.recreate(
             engineer,  

@@ -65,7 +65,7 @@ class dom_file(tester.tester):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        orm.orm.owner = ecommerce.users.root
+        orm.security().owner = ecommerce.users.root
 
         # Proprietor
         com = party.company(name='Carapacian')
@@ -425,13 +425,13 @@ class file_file(tester.tester):
         root = ecommerce.users.root
 
         # Save the owner, the root user will be the owner's owner.
-        orm.orm.owner = root
+        orm.security().owner = root
         own.owner = root
         own.save()
 
         # Going forward, `own` will be the owner of all future records
         # created.
-        orm.orm.owner = own
+        orm.security().owner = own
 
         # Create a company to be the propritor.
         com = party.company(name='Ford Motor Company')
@@ -815,7 +815,7 @@ class file_directory(tester.tester):
             file.directory, file.inodes,
         )
 
-        orm.orm.owner = ecommerce.users.root
+        orm.security.owner = ecommerce.users.root
 
     def it_creates_off_root(self):
         dir = file.directory(name='mydir')

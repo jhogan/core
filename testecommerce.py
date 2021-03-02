@@ -18,13 +18,16 @@ import primative
 class test_ecommerce(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        es = orm.orm.getentitys(includeassociations=True)
-        mods = 'ecommerce', 'apriori', 'party', 'product'
-        for e in es:
-            if e.__module__ in mods:
-                e.orm.recreate()
+        orm.security().override = True
 
-        orm.orm.owner = ecommerce.users.root
+        if self.rebuildtables:
+            es = orm.orm.getentitys(includeassociations=True)
+            mods = 'ecommerce', 'apriori', 'party', 'product'
+            for e in es:
+                if e.__module__ in mods:
+                    e.orm.recreate()
+
+        orm.security().owner = ecommerce.users.root
 
     def it_connects_users_to_urls(self):
         usr = ecommerce.user(name='jsmith')

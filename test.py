@@ -23651,11 +23651,13 @@ class gem_account(tester):
 class gem_budget(tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for e in orm.orm.getentitys(includeassociations=True):
-            if e.__module__ in ('apriori', 'budget', 'party'):
-                e.orm.recreate()
 
-        orm.orm.owner = ecommerce.users.root
+        if self.rebuildtables:
+            for e in orm.orm.getentitys(includeassociations=True):
+                if e.__module__ in ('apriori', 'budget', 'party'):
+                    e.orm.recreate()
+
+        orm.security().owner = ecommerce.users.root
 
         com = party.company(name='Carapacian')
         orm.orm.setproprietor(com)
@@ -24024,12 +24026,14 @@ class gem_budget(tester):
 class gem_hr(tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        es = orm.orm.getentitys(includeassociations=True)
-        for e in es:
-            if e.__module__ in ('party', 'hr', 'apriori', 'invoice'):
-                e.orm.recreate()
 
-        orm.orm.owner = ecommerce.users.root
+        if self.rebuildtables:
+            es = orm.orm.getentitys(includeassociations=True)
+            for e in es:
+                if e.__module__ in ('party', 'hr', 'apriori', 'invoice'):
+                    e.orm.recreate()
+
+        orm.security().owner = ecommerce.users.root
 
         com = party.company(name='Carapacian')
         orm.orm.setproprietor(com)
