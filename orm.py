@@ -7049,30 +7049,30 @@ class orm:
         return cls.getproprietor()
 
     def __init__(self):
-        self.mappings             =  None
-        self.isnew                =  False
-        self._isdirty             =  False
+        self.mappings              =  None
+        self.isnew                 =  False
+        self._isdirty              =  False
         self._ismarkedfordeletion  =  False
-        self.entities             =  None
-        self.entity               =  None
-        self._table               =  None
-        self.composite            =  None  # For association
-        self._composits           =  None
-        self._constituents        =  None
-        self._associations        =  None
-        self._trash               =  None
-        self._subclasses          =  None
-        self._super               =  None
-        self._base                =  undef
-        self.instance             =  None
-        self.stream               =  None
-        self.isloaded             =  False
-        self.isloading            =  False
-        self.isremoving           =  False
-        self.dotrash              =  True
-        self.joins                =  None
-        self._abbreviation        =  str()
-        self.initing              =  False
+        self.entities              =  None
+        self.entity                =  None
+        self._table                =  None
+        self.composite             =  None   #  For association
+        self._composits            =  None
+        self._constituents         =  None
+        self._associations         =  None
+        self._trash                =  None
+        self._subclasses           =  None
+        self._super                =  None
+        self._base                 =  undef
+        self.instance              =  None
+        self.stream                =  None
+        self.isloaded              =  False
+        self.isloading             =  False
+        self.isremoving            =  False
+        self.dotrash               =  True
+        self.joins                 =  None
+        self._abbreviation         =  str()
+        self.initing               =  False
 
         self.recreate = self._recreate
 
@@ -10044,12 +10044,33 @@ class ProprietorError(ValueError):
         return str(self)
 
 class AuthorizationError(PermissionError):
+    """ An exception that indicates the currently that the current
+    user is unable to create, retrieve, update or delete a record in the
+    database.
+
+    The ORM logic in orm.py will usually through this exception. The
+    ORM user indicates authorization problems in the accessibility
+    properties by return a ``violations`` collection.
+    """
     def __init__(self, msg, crud, vs=None, e=None):
+        """ Initialize the exception.
+
+        :param: msg str: The exception's error message.
+
+        :param: crud str: The type of access. Can be either 'c' (create)
+        'r' (retrieve), 'u' (update) or 'd' (delete).
+
+        :param: vs violations: A ``violations`` collection.
+
+        :param: e entity: The instance of an orm.entity for which the
+        authorization is denined.
+        """
         crud = crud.lower()
         if crud not in 'crud':
             raise ValueError(
                 'crud argument must be "c", "r", "u" or "d"'
             )
+
 
         self.message     =  msg
         self.crud        =  crud
@@ -10059,7 +10080,24 @@ class AuthorizationError(PermissionError):
         super().__init__(msg)
 
 class violations(entitiesmod.entities):
+    """ A collection of accessibility violations. Returned by the
+    accessibility properties of orm.entity to indicate that the there
+    are zero or more problems with the user attempting to persist or
+    retrive an entity and what those problems are.
+    """
     def __init__(self, *args, **kwargs):
+        """ Initialize the violations object.
+
+        :param: entity orm.entity: The instance of an orm.entity on
+        which the the violations collection is reporting. Note, this
+        must be passed in as a kwargs::
+            
+            vs = violations(entity=self)
+
+        """
+
+        # Get the entity reference and delete it so we can pass it to
+        # super().__init__
         try:
             e = kwargs['entity']
         except KeyError:
@@ -10071,20 +10109,53 @@ class violations(entitiesmod.entities):
         self.entity = e
 
     def __iadd__(self, o):
+        """ Add `o` to the violations collection. `o` can be a str or a
+        violation instance::
+
+            @proprety
+            def retrievability(self):
+                vs = violations(entity=self)
+                if hr not in usr.departments:
+                    vs += (
+                        'Only user in hr can retrive this entity'
+                    )
+                return vs
+
+        :param: o str|orm.violation: A str or violation to add to the
+        collection.
+        """
+                
+        # Convert str to violaton
         if isinstance(o, str):
             o = violation(o)
 
+        # Keep track of the collection
         o.violations = self
 
+        # Do the actual appending
         return super().__iadd__(o)
 
 class violation(entitiesmod.entity):
+    """ Records an access violation message. Access violations are
+    created in an entity's accessibility properties.
+    """
     def __init__(self, msg, vs=None):
+        """ Creates a violation.
+
+        :param: msg str: The textual message that explains why access to
+        a particular CRUD operation was denied.
+
+        :param: vs orm.violations: The ``violations`` collection that
+        this violation object is a member of.
+        """
         self.message = msg
         self.violations = vs
 
     @property
     def entity(self):
+        """ The instance of an orm.entity for which the authorization is
+        denined.
+        """
         if self.violations:
             return self.violations.entity
 
