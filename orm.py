@@ -8242,6 +8242,7 @@ class orm:
             return s[1:-1]
         return s
 
+    # TODO s/parameterizepredicate/parameterize/
     def parameterizepredicate(self, args):
         """ In the where clause (``self.instance.orm.where``), look for
         literals, i.e.::
@@ -8642,7 +8643,12 @@ class orm:
         """ The lower-level private method which bulids and returns the
         SELECT statement for the entities (self.instance) collection
         object.
+
         """
+        # Note, since generating the SELECT statement involves
+        # recursion, we need a regular method. The user would rather
+        # call a property (orm.sql), however, so this is a private
+        # method normally accessed through the orm.sql method.
 
         def raise_fk_not_found(joiner, join):
             ''' Raise a ValueError with a FK not found message. '''
@@ -8856,14 +8862,17 @@ class orm:
 
     @staticmethod
     def introduce(sql, args):
-        """ Use ``args`` to add introducers ('_binary', et. al.) before
-        the unquoted placeholder tokens (%s) in ``sql``.
+        """ Use ``args`` to add MySQL introducers ('_binary', et. al.)
+        before the unquoted placeholder tokens (%s) in ``sql``.
 
-        :param: str  sql:  A whole are partial SQL statement.
+        :param: str  sql:  A whole or partial SQL statement.
+
         :param: list args: Parameters to use with query.
+
         :rtype: str
-        :returns: Returns the ``sql`` argument with introducers added where
-                  appropriate
+
+        :returns: Returns the ``sql`` argument with introducers added
+        where appropriate.
         """
 
         # Where the arg is binary (bytearray or bytes), replace '%s' with
@@ -8878,7 +8887,7 @@ class orm:
 
         # Iterate over sql instead of using a simple search-and-replace
         # approach so we don't add introducer to quoted instances of the
-        # placeholder token
+        # placeholder token.
         for s in sql:
             # Detect quotes
             if s == "'":
@@ -8920,13 +8929,36 @@ class orm:
 
     @property
     def isstreaming(self):
+        """ Return True if the entities collection is in streaming mode.
+        Streaming mode implies we are accessing the results from a
+        database queries in discrete chunks. See the docstrings at
+        ``orm.streaming`` for more on streaming.
+        """
         return self.stream is not None
 
     @property
     def isdirty(self):
+        """ Return True if the object is not new (exists in database)
+        but has changed since it was loaded in memory::
+
+            # Load existing entity
+            ent = entity(id)
+            assert not ent.orm.isdirty
+
+            # Dirty the ent by changing a property
+            ent.name += 'xxx'
+            assert ent.orm.isdirty
+
+        The isdirty flag is used internally to determine if an UPDATE
+        statement needs to be issued when the save method is called::
+
+            ent.save()
+        """
         if self._isdirty:
             return True
 
+        # Ascend the inheritence tree to see if any of the loaded supers
+        # are dirty. Note that this call is inherently recursive.
         if self._super:
             return self.super.orm.isdirty
 
