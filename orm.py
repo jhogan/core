@@ -8966,18 +8966,32 @@ class orm:
 
     @isdirty.setter
     def isdirty(self, v):
+        """ Sets the isdirty flag.  See the isdirty getter for more.
+
+        :param: v bool: The value to set isdirty to.
+        """
         self._isdirty = v
 
     @property
     def forentities(self):
+        """ Returns True if this ``orm`` instance corresponds to an
+        orm.entities object rather than an orm.entity object.
+        """
         return isinstance(self.instance, entities)
         
     @property
     def forentity(self):
+        """ Returns True if this ``orm`` instance corresponds to an
+        orm.entity object rather than an orm.entities object.
+        """
         return isinstance(self.instance, entity)
 
     @property
     def persistencestates(self):
+        """ Returns a list of persistencestate tuples for each of the
+        entity objects in the entities collection. Useful for unit tests
+        and debugging. See orm.persistencestate for more.
+        """
         es = self.instance
         if not self.forentities:
             msg = 'Use with entities. For entity, use persistencestate'
@@ -8990,6 +9004,10 @@ class orm:
 
     @persistencestates.setter
     def persistencestates(self, sts):
+        """ Sets the persistencestate tuple to `sts` for each of the
+        entity objects within this collection. See orm.persistencestate
+        for more.
+        """
         es = self.instance
         if not self.forentities:
             msg = 'Use with entities. For entity, use persistencestate'
@@ -9000,6 +9018,18 @@ class orm:
 
     @property
     def persistencestate(self):
+        """ Get the persistencestate tuple for an orm.entity. Useful for
+        debugging and unit testing.
+
+        The persistencestate tuple corresponds to the isnew, isdirty and
+        ismarkedfordeletion flags. The following will always be true::
+
+            # Given an entity at any point in time:
+            st = ent.orm.persistencestate
+            assert  ent.orm.isnew                is  st[0]
+            assert  ent.orm.isdirty              is  st[1]
+            assert  ent.orm.ismarkedfordeletion  is  st[2]
+        """
         es = self.instance
         if not self.forentity:
             msg = 'Use with entity. For entities, use persistencestates'
@@ -9008,6 +9038,9 @@ class orm:
 
     @persistencestate.setter
     def persistencestate(self, v):
+        """ Set the persistencestate for an orm.entity object. See the
+        persistencestate getter for more.
+        """
         es = self.instance
         if not isinstance(es, entity):
             msg = 'Use with entity. For entities, use persistencestates'
