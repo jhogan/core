@@ -800,9 +800,11 @@ class root(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        orm.orm.recreate(
-            ecommerce.user,
-        )
+        orm.security().override = True
+        if self.rebuildtables:
+            orm.orm.recreate(
+                ecommerce.user,
+            )
 
     def it_cannot_create_multiple_root_users(self):
         ecommerce.user.orm.truncate()

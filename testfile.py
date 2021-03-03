@@ -408,17 +408,19 @@ class dom_file(tester.tester):
 class file_file(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        orm.security().override = True
         # Delete files
         clean()
 
-        # Recreate tables
-        orm.orm.recreate(
-            ecommerce.user,
-            file.files,
-            file.resources,
-            file.directory,
-            file.inodes,
-        )
+        if self.rebuildtables:
+            # Recreate tables
+            orm.orm.recreate(
+                ecommerce.user,
+                file.files,
+                file.resources,
+                file.directory,
+                file.inodes,
+            )
 
         # Create an owner and get the root user
         own = ecommerce.user(name='hford')
@@ -808,12 +810,14 @@ class file_file(tester.tester):
 class file_directory(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        orm.security().override = True
         clean()
 
-        orm.orm.recreate(
-            ecommerce.user, file.files, file.resources,
-            file.directory, file.inodes,
-        )
+        if self.rebuildtables:
+            orm.orm.recreate(
+                ecommerce.user, file.files, file.resources,
+                file.directory, file.inodes,
+            )
 
         orm.security.owner = ecommerce.users.root
 
