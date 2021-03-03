@@ -3630,9 +3630,13 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 # Update new state
                 self.orm.isnew = self.orm.ismarkedfordeletion
 
-                # TODO Don't break the line here; turn into two lines
-                self.orm.isdirty, self.orm.ismarkedfordeletion \
-                                                    = (False,) * 2
+                # We must be clean if we just updated the database
+                self.orm.isdirty = False
+
+                # Entity must not be marked for deletion of we just
+                # updated the database
+                self.orm.ismarkedfordeletion = False
+
                 # Raise event
                 self.onaftersave(self, eargs)
                 # If there is no sql, then the entity isn't new, dirty
@@ -6840,6 +6844,10 @@ def su(own):
 
 @contextmanager
 def override():
+    """ A contextmanager to ensures that security().override is True.
+    When the context manager exists, orm.override is reset to whatever
+    it was before the contextmanager was entered.
+    """
     override = security().override
     try:
         security().override = True
