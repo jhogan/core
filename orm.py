@@ -6702,6 +6702,90 @@ class orm:
     _namedict    =  dict()
     _proprietor  =  None
     owner = None
+        
+    @property
+    def issues(self):
+        """ Returns a list of possible issue with an entity, such as
+        issues with the way the data and relationships have been
+        defined.
+        
+        Note that this is intended to help entity modelers debug issues
+        when defining data and relationships of entity objects. It is
+        not use by the ORM to raise exceptions or print warning.
+
+        Also, this is a work-in-progress. As entity modelers discover
+        issues, they can add logic here that would have better detected
+        the issue in the future for the issue they are currently working
+        on.
+        """
+
+        for map in self.mappings:
+            if isinstance(map, entitymapping):
+                es = [
+                    x
+                    for x in self.mappings.entitymappings
+                    if x.entity is map.entity
+                ]
+                if len(es) > 1:
+                    r.append(
+                        f'The map "{map.name}" has a type {map.entity} '
+                        f'which is the duplicate of another mapping'
+                    )
+        return r
+
+    def redact(self):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Remove entity objects from an entities collection if the
+        entity's retrievability method reports ``violations``. 
+
+        The idea here is to ensure that objects the user is not intended
+        to have read-access to are removed from the collection before
+        they are sent to the user.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # If there is no owner, then we don't care.
+        # 
+        # TODO This can't be right!
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        if not security().owner:
+            return
+
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # If the owner is root, redact nothing.
+        # 
+        # TODO We could use ``security().issudo`` for this.
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        if security().owner.isroot:
+            return
+
+        es = self.instance
+
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # Iterate over the collection in reverse since we may be
+        # removing some elements.
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        for e in es.reversed():
+            vs = e.retrievability
+            if not isinstance(vs, violations):
+                # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                # The ORM user must have returned the wrong type from
+                # their retrievability method.
+                # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                raise TypeError(
+                    "'retrievability' must return a "
+                    f'`violations` instance for {type(e)}'
+                )
+
+            # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            # If the violations collection is populated, remove the
+            # entity from the collection. Don't "trash" it, i.e., don't
+            # delete it from the database (that would be crazy).
+            # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            if vs.ispopulated:
+                es.remove(e, trash=False)
 
     def __init__(self):
         self.mappings             =  None
