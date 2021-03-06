@@ -51,6 +51,7 @@ import product
 import re
 import shipment
 import tempfile
+import testbot
 import testdom
 import testecommerce
 import testfile
