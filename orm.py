@@ -7003,6 +7003,35 @@ class orm:
     _proprietor  =  None
     owner = None
         
+    @property
+    def issues(self):
+        """ Returns a list of possible issue with an entity, such as
+        issues with the way the data and relationships have been
+        defined.
+        
+        Note that this is intended to help entity modelers debug issues
+        when defining data and relationships of entity objects. It is
+        not use by the ORM to raise exceptions or print warning.
+
+        Also, this is a work-in-progress. As entity modelers discover
+        issues, they can add logic here that would have better detected
+        the issue in the future for the issue they are currently working
+        on.
+        """
+
+        for map in self.mappings:
+            if isinstance(map, entitymapping):
+                es = [
+                    x
+                    for x in self.mappings.entitymappings
+                    if x.entity is map.entity
+                ]
+                if len(es) > 1:
+                    r.append(
+                        f'The map "{map.name}" has a type {map.entity} '
+                        f'which is the duplicate of another mapping'
+                    )
+        return r
     def redact(self):
         """
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
