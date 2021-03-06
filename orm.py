@@ -11,8 +11,8 @@
 "Simplicity is complexity resolved." 
 # Constantin Brancusi
 
-"Most people overestimate what they can do in one year and underestimate
-what they can do in ten years."
+"Most people overestimate what they can do in one year and "
+"underestimate what they can do in ten years."
 # Bill Gates
 
 """ This module contains all classes related to object-relational
@@ -4856,7 +4856,7 @@ class mappings(entitiesmod.entities):
         """ A generator to return all the foreignkeyfieldmapping objects in the
         collection::
 
-            for map in maps.foreignkeyfieldmapping:
+            for map in maps.foreignkeyfieldmappings:
                 assert type(map) is foreignkeyfieldmapping
         """
         return self._generate(type=foreignkeyfieldmapping)
@@ -6359,8 +6359,8 @@ class fieldmapping(mapping):
     @property
     def dbtype(self):
         """ Returns a string representing the MySQL data type
-        corresponding to this field mapping e.g., 'varchar',
-        'datetime', 'bit', 'tinyint', 'smallint unsigned', etc.
+        corresponding to this field mapping e.g., 'varchar', 'datetime',
+        'bit', 'tinyint', 'smallint unsigned', etc.
 
         This is similar to the ``definition`` property, however dbtype
         only returns the name of the database type in string form. The
@@ -6427,10 +6427,9 @@ class fieldmapping(mapping):
         datetime(6) bit, tinyint, etc. 
         """
         if self.isstr:
-            # However, setting the varchar max to 16,383 can cause
-            # issues for larger strings such as `bio1 = str, 1, 16382`.
-            # The following may be thrown for this string on table
-            # creation:
+            # NOTE Setting the varchar max to 16,383 can cause issues
+            # for larger strings such as `bio1 = str, 1, 16382`.  The
+            # following may be thrown for this string on table creation:
             #
             #     _mysql_exceptions.OperationalError: (1118, 'Row size
             #     too large. The maximum row size for the used table
@@ -6500,6 +6499,10 @@ class fieldmapping(mapping):
 
     @property
     def value(self):
+        """ Return the scalar value held by the fieldmapping object.
+        """
+
+        # If _value hasn't been set, use Pythonic defaults
         if self._value is undef:
             if self.isint:
                 return int()
@@ -6516,6 +6519,8 @@ class fieldmapping(mapping):
             else:
                 return None
         
+        # Ensure the value is coerced to the correct type using standard
+        # Pythonic type coersion, e.g., assert '1.0' == str(1.000)
         if self._value is not None:
             if self.isstr:
                 try:
@@ -6528,6 +6533,9 @@ class fieldmapping(mapping):
 
             elif self.isdatetime:
                 try:
+                    # Favor primative.datetime over Python's default
+                    # datetime since it is our customized override of
+                    # Python's datetime object.
                     if type(self._value) is str:
                         self._value = primative.datetime(self._value) 
                     elif not isinstance(self._value, primative.datetime):
@@ -6552,8 +6560,8 @@ class fieldmapping(mapping):
 
             elif self.isbool:
                 if type(self._value) is bytes:
-                    # Convert the bytes string fromm MySQL's bit type to a
-                    # bool.
+                    # Convert the bytes string from MySQL's byytes type
+                    # to a bool.
                     v = self._value
                     self._value = bool.from_bytes(v, byteorder='little')
 
@@ -6586,10 +6594,25 @@ class fieldmapping(mapping):
 
     @value.setter
     def value(self, v):
+        """ Set the fieldmapping's value property.
+        """
         self._value = v
 
 class foreignkeyfieldmapping(fieldmapping):
+    """ Represents a fieldmapping to a foreign key.
+    """
     def __init__(self, e, fkname=None, isderived=False):
+        """ Create a foreignkeyfieldmapping object.
+
+        :param: e type: A reference to the composite entity class.
+
+        :param: fkname str: The name of the entity mapping that this map
+        corresponds.
+
+        :param: isderived bool: If True, the mapping was created in the
+        ``mappings._populate`` (it seems this is always the case,
+        actually).
+        """
         # TODO Rename fkname to name, and _fkname to _name. Note that
         # _name already exists; it's inherited from `mapping`, but I
         # don't think that's a probably for the rename.
@@ -6605,10 +6628,16 @@ class foreignkeyfieldmapping(fieldmapping):
 
     @property
     def isowner(self):
+        """ Returns True if the mapping is the foreign key referencing
+        the ``owner`` (ecommerce.user) entity.
+        """
+
         return self.name == 'owner__userid'
 
     @property
     def name(self):
+        """ Returns the name of the foreign key column.
+        """
         # TODO:055e5c02 make FK name's fully qualified. grep 055e5c02
         # for more.
 
@@ -6632,58 +6661,110 @@ class foreignkeyfieldmapping(fieldmapping):
         return self._fkname
 
     def clone(self):
+        """ Return a new foreignkeyfieldmapping with the same properties
+        as this foreignkeyfieldmapping.
+        """
         return foreignkeyfieldmapping(self.entity, self._fkname, self.isderived)
 
     @property
     def issubjective(self):
+        """ Return True if this foreignkeymapping references the
+        subjective side of a reflexive ``orm.association``.
+        """
         return self.orm.isreflexive \
                and self.name.startswith('subject__') 
 
     @property
     def isobjective(self):
+        """ Return True if this foreignkeymapping references the
+        objective side of a reflexive ``orm.association``.
+        """
         return self.orm.isreflexive \
                and self.name.startswith('object__') 
 
     @property
     def dbtype(self):
+        """ The type of a foreign key will always be a 16 byte value
+        (the binary representation of a version 4 UUID). Therefore, the
+        database type will be ``binary``.
+        """
         return 'binary'
 
     @property
     def definition(self):
+        """ The type of a foreign key will always be a 16 byte value
+        (the binary representation of a version 4 UUID). Therefore, the
+        database type will be ``binary`` with a fixed-width of 16 bytes.
+        """
         return 'binary(16)'
 
     @property
     def value(self):
+        """ Return a version 4 UUID object representing the foreign
+        key's value.
+        """
         if type(self._value) is bytes:
+            # Coerce the value to a UUID object for convenience.
             self._value = UUID(bytes=self._value)
             
         return self._value
 
     @value.setter
     def value(self, v):
+        """ Set the foreign key's value.
+
+        :param: v bytes|UUID: The value to set the foreign key to.
+        """
         self._value = v
 
 class primarykeyfieldmapping(fieldmapping):
+    """ Represents a fieldmapping to a primary key (the entity's ``id``
+    attribute).
+    """
+
     def __init__(self):
+        """ Instatiate.
+        """
+
+        # Ensure the type is `types.pk` (primary key).
         super().__init__(type=types.pk)
 
     @property
     def name(self):
+        """ Return the database name of the primary key.
+
+        This will always be 'id'.
+        """
         return 'id'
 
     def clone(self):
+        """ Return a new primarykeyfieldmapping with the same properties
+        as this primarykeyfieldmapping.
+        """
         return primarykeyfieldmapping()
 
     @property
     def dbtype(self):
+        """ The type of a primary key will always be a 16 byte value
+        (the binary representation of a version 4 UUID). Therefore, the
+        database type will be ``binary``.
+        """
         return 'binary'
 
     @property
     def definition(self):
+        """ The type of a primary key will always be a 16 byte value
+        (the binary representation of a version 4 UUID). Therefore, the
+        database type will be ``binary`` with a fixed-width of 16 bytes.
+        """
         return 'binary(16) primary key'
 
     @property
     def value(self):
+        """ Return a version 4 UUID object representing the primary
+        key's value.
+        """
+
         # If a super instance exists, use that because we want a
         # subclass and its super class to share the same id. Here we use
         # ._super instead of .super because we don't want to invoke the
@@ -6697,12 +6778,17 @@ class primarykeyfieldmapping(fieldmapping):
             return sup.id
 
         if type(self._value) is bytes:
+            # Coerce the value to a UUID object for convenience.
             self._value = UUID(bytes=self._value)
 
         return self._value
 
     @value.setter
     def value(self, v):
+        """ Set the foreign key's value.
+
+        :param: v bytes|UUID: The value to set the foreign key to.
+        """
         self._value = v
 
         sup = self.orm._super
@@ -6722,7 +6808,8 @@ class ormclasseswrapper(entitiesmod.entities):
         elif isinstance(obj, ormclasseswrapper):
             pass
         else:
-            raise ValueError()
+            raise TypeError('obj is of the wrong type')
+
         super().append(obj, uniq, r)
         return r
 
@@ -6748,7 +6835,7 @@ class ormclasswrapper(entitiesmod.entity):
     # added to entities.entities are entities.entity objects.
     def __init__(self, entity):
         """ Sets the wrapped entity.
-        :param: entity The entity to be wrapped.
+        :param: entity orm.entity: The entity to be wrapped.
         """
         self.entity = entity
         super().__init__()
@@ -6771,6 +6858,8 @@ class ormclasswrapper(entitiesmod.entity):
 
     @property
     def __module__(self):
+        """ A proxy to the wrapped entity's __module__ property.
+        """
         return self.entity.__module__
 
     @property
@@ -6786,19 +6875,25 @@ class ormclasswrapper(entitiesmod.entity):
         return self.entity.__name__
     
     def __call__(self, *args, **kwargs):
+        """ Proxies invocations to the wrapped entity.
+        """
         return self.entity(*args, **kwargs)
 
 class composites(ormclasseswrapper):
-    pass
+    """ A collection of wrapped composite classes.
+    """
 
 class composite(ormclasswrapper):
-    pass
+    """ A wrapped composite class.
+    """
 
 class constituents(ormclasseswrapper):
-    pass
+    """ A collection of wrapped constituent classes.
+    """
 
 class constituent(ormclasswrapper):
-    pass
+    """ A wrapped constituent class.
+    """
 
 @contextmanager
 def sudo():
@@ -6997,11 +7092,89 @@ class security:
         """
         return self.owner and self.owner.isroot
 
+
 class orm:
+    """ The ORM class.
+
+    The ORM class bridges the orm.entity and orm.entities classes with
+    lower-level, ORM functionality. Persistence (DML) logic as well as
+    data definition (DDL) logic is encapsulated here. 
+
+    The ORM user will not use most of the attributes in the the ``orm``
+    class. However, there are many, important exceptions.
+
+    Each ``orm.entity`` and ``orm.entities`` class has an ``orm``
+    attribute.  Likewise, each **instance** of these classes will also
+    have an ``orm`` attribute.
+
+    Consider the ``good`` class in the product.py module. We can use the
+    ``orm`` attribute to access its collection::
+
+        from product import good
+        assert good.orm.mappings.count == 9
+
+    At the time of this writting, the ``good`` entity has 9 ``mapping``
+    objects. This works for the ``good`` class or a ``good`` object::
+
+        assert good().orm.mappings.count == 9
+
+    Logic in the orm.py module makes extensive use of the ``orm`` class
+    and objects behind the ``orm` class (such as the ``mapping``
+    classes).  Occasionally, an ORM user will need to access attributes
+    behind the orm class. For example, to determine if an entity has
+    been saved to the database yet, the ORM user can check the
+    ``orm.isnew`` property on the entity::
+
+        # Create a new good; don't save to database.
+        g = good()
+        assert g.orm.isnew
+
+        # Save to database
+        g.save()
+        assert not g.orm.isnew
+    
+    Attributes like ``isnew` might make more sense if they were directly
+    off the entity (``g.isnew``), however, we don't want to clutter up the
+    entity's attribute namespace so the entity developers can name their
+    attributes without worry of name collision.
+    """
+
+    # A dict to store abbreviation (see orm.getentity())
     _abbrdict    =  dict()
+
+    # A dict to store entity names (see orm.getentity())
     _namedict    =  dict()
+
     _proprietor  =  None
     owner = None
+
+    def __init__(self):
+        self.mappings              =  None
+        self.isnew                 =  False
+        self._isdirty              =  False
+        self._ismarkedfordeletion  =  False
+        self.entities              =  None
+        self.entity                =  None
+        self._table                =  None
+        self.composite             =  None   #  For association
+        self._composits            =  None
+        self._constituents         =  None
+        self._associations         =  None
+        self._trash                =  None
+        self._subclasses           =  None
+        self._super                =  None
+        self._base                 =  undef
+        self.instance              =  None
+        self.stream                =  None
+        self.isloaded              =  False
+        self.isloading             =  False
+        self.isremoving            =  False
+        self.dotrash               =  True
+        self.joins                 =  None
+        self._abbreviation         =  str()
+        self.initing               =  False
+
+        self.recreate = self._recreate
         
     @property
     def issues(self):
@@ -7032,6 +7205,7 @@ class orm:
                         f'which is the duplicate of another mapping'
                     )
         return r
+
     def redact(self):
         """
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
@@ -7085,34 +7259,6 @@ class orm:
             # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
             if vs.ispopulated:
                 es.remove(e, trash=False)
-
-    def __init__(self):
-        self.mappings              =  None
-        self.isnew                 =  False
-        self._isdirty              =  False
-        self._ismarkedfordeletion  =  False
-        self.entities              =  None
-        self.entity                =  None
-        self._table                =  None
-        self.composite             =  None   #  For association
-        self._composits            =  None
-        self._constituents         =  None
-        self._associations         =  None
-        self._trash                =  None
-        self._subclasses           =  None
-        self._super                =  None
-        self._base                 =  undef
-        self.instance              =  None
-        self.stream                =  None
-        self.isloaded              =  False
-        self.isloading             =  False
-        self.isremoving            =  False
-        self.dotrash               =  True
-        self.joins                 =  None
-        self._abbreviation         =  str()
-        self.initing               =  False
-
-        self.recreate = self._recreate
 
     @property
     def statement(self):
@@ -7202,10 +7348,18 @@ class orm:
 
     @property
     def ismarkedfordeletion(self):
+        """ Returns True if the entity is marked for deletion. When an
+        entity is marked for deletion, the next call to orm.save will
+        result in a DELETE statement sent to the database to permanently
+        destroy the record.
+        """
         return self._ismarkedfordeletion
 
     @ismarkedfordeletion.setter
     def ismarkedfordeletion(self, v):
+        """ Sets the entity as marked-for-deletion. See the comments at
+        the getter for more.
+        """
         self._ismarkedfordeletion = v
 
     @classproperty
@@ -7223,6 +7377,7 @@ class orm:
 
     @staticmethod
     def exec(sql, args=None):
+        # NOTE This doesn't appear to be used anywhere
         exec = db.executioner(
             lambda cur: cur.execute(sql, args)
         )
@@ -7230,10 +7385,10 @@ class orm:
         exec()
         
     def collectivize(self):
-        """ If called on an instance of orm.entity, returns an
-        orm.entities instance (of the corresponding type) with the
-        orm.entity within it. If called on an orm.entities, simply
-        return a reference to the orm.entities::
+        """ If called on an instance of ``orm.entity``, returns an
+        ``orm.entities`` instance (of the corresponding type) with the
+        orm.entity within it. If called on an ``orm.entities``, simply
+        return a reference to the ``orm.entities``::
 
             per = person(name='John Doe')
             pers = per.orm.collectivize()
@@ -7272,7 +7427,7 @@ class orm:
             art = artist(style='cubism')
             assert art.style == 'cubism'
 
-        The kwargs arguments is will be discoverd through inspection,
+        The kwargs arguments will be discoverd through inspection,
         though the ``dict`` parameter  can be used instead if the kwargs
         argument isn't available for some reason.
         
@@ -7313,6 +7468,16 @@ class orm:
             
     @property
     def table(self):
+        """ Returns the name of the database table name corresponding to
+        the entity::
+
+            >>> party.person.orm.table
+            'party_persons'
+
+        Note that table names consis-t of the module ('party') proceeded
+        by the entities' (not the entity's) name ('persons'). Including
+        the module is necessary to prevent name collisions.
+        """
         mod = inspect.getmodule(self.entities)
         if mod.__name__ == '__main__':
             if hasattr(mod, '__file__'):
@@ -7330,18 +7495,28 @@ class orm:
 
     @table.setter
     def table(self, v):
+        """ Sets the name of the database table corresponding to the
+        entity.
+
+        Note that this want include the module name. The getter prepends
+        the module name automatially::
+
+            >>> party.person.orm.table = 'somename'
+            >>> party.person.orm.table
+            'party_somename'
+        """
         self._table = v
         
     def iscollinear(self, with_):
         """ Return True if self is colinear with ``with_``.
 
-        Collinearity is when the self entity is an instance ``with_``,
+        Collinearity is when the ``self`` entity is an instance ``with_``,
         or an instance of a superentity of ``with_``, or an instance of
         a class that inheritance from ``with_``. It's similar to
         isinstance(), but in addition to ascending the inheritance tree,
         it also descends it. 
         
-        Collinearity in this context it is limited to orm.entity object.
+        Collinearity in this context is limited to orm.entity object.
         For example, ``artist`` is colinear with ``painter`` and
         ``singer`` and vice-versa. However none of these object are
         colinear with ``orm.entity``, ``entities.entity'' or ``object``
@@ -7371,10 +7546,9 @@ class orm:
 
         Certain types of ``orm.entity`` objects are defined by a unique
         identifier, such as a ``name`` attribute. For example, a
-        ``statustype`` orm.entity may have only a ``name`` attribute
+        ``statustype`` entity may have only a ``name`` attribute
         that could have values such as 'active', 'inactive', etc . We
         would call the ``ensure`` method in it's constructor::
-
 
             class statustype(orm.entity):
                 def __init__(self, *args, **kwargs):
@@ -7386,7 +7560,7 @@ class orm:
         Given the above, anytime we instantiate a new statustype, the
         ``name`` attribute is used as an identifier. The ``ensure``
         method will ensure that a new record for the ``name`` attribute
-        is created if it does not already exists. If it does exists, the
+        is created if it does not already exist. If it does exists, the
         entity will be constructed as that entity::
 
             # Truncate the table so we are starting anew.
@@ -7418,10 +7592,10 @@ class orm:
         # Query using the **kwargs, e.g., {'name': 'active'}
         rs = self.entities(**kwargs)
 
-        # Get a unique set of from the `expects` tuple passed in
+        # Get a unique set from the `expects` tuple passed in
         expects = set(expects)
 
-        # Get a unique set of kwarg keys
+        # Get a unique set of kwargs keys
         keys = set(kwargs.keys())
 
         if len(expects & keys) != len(expects):
@@ -7441,7 +7615,7 @@ class orm:
             # variables to false.
             self.persistencestate = (False,) * 3
 
-            # Repeat for all the super that were loaded
+            # Repeat for all the supers that were loaded
             sup = self.instance.orm._super
             while sup:
                 sup.orm.persistencestate = (False,) * 3
@@ -7452,10 +7626,29 @@ class orm:
             
     # TODO This should probably be renamed to `loaded`
     def reloaded(self):
+        """ Returns a new instance of an entity freshly loaded from the
+        database::
+
+            # Create an entity and save to database
+            ent = entity()
+            ent.save()
+
+            # Load the entity from the database and assign it to ent1.
+            # Note that nothing happens to ent.
+            ent1 = ent.orm.reloaded()
+
+            # ent1 has the same attribute values as ent, though it is
+            # not the same Python object.
+            assert ent.id == ent1.id
+            assert ent is not ent1
+        """
         return self.entity(self.instance.id)
 
     def exists(self, o):
-        """ Returns true if ``o`` exists in the database.
+        """ Returns True if ``o`` exists in the database.
+
+        :param: o orm.entity|UUID: The entity or entity id to check the
+        existence of.
         """
         return self.cast(o) is not None
 
@@ -7469,8 +7662,8 @@ class orm:
             assert type(hum) is human
 
             # Upcast to mammal super type of human by passing in the
-            # entity instead of the UUID. Note for this, we could also
-            # just do `hum.super`.
+            # entity instead of the UUID. Note for this, we would
+            # canonically just do `hum.super`.
             mam = mammal.orm.cast(hum)
             assert type(mam) is mammal
 
@@ -7532,6 +7725,9 @@ class orm:
         return leaf
                 
     def clone(self):
+        """ Returns a new instance of an ``orm`` object with the same
+        attributes of ``self``.
+        """
         r = orm()
 
         props = (
@@ -7547,6 +7743,9 @@ class orm:
         return r
 
     def __repr__(self):
+        """ Returns a string representation of the ``orm`` object
+        including its corresponding instance or entity class.
+        """
         r = 'orm(type=<%s>, %s=True)'
 
         if self.isinstance:
@@ -7560,6 +7759,19 @@ class orm:
 
     @property
     def isreflexive(self):
+        """ Returns True if the association references two different
+        entitymappings of the same type.
+
+        An example if a reflexive association is ``party.party_party``::
+
+            class party_party(orm.association):
+                subject  =  party
+                object   =  party
+                role     =  str
+
+        It associates a ``party`` called 'subject' with a ``party``
+        called object making it a "reflexive" association.
+        """
         maps = self.mappings.entitymappings
         types = [
             x.entity for x in maps
@@ -7570,6 +7782,36 @@ class orm:
         
     @property
     def isrecursive(self):
+        """ Returns True if the entity or entities class or object is
+        recursive.
+
+        A recursive entity is one that has constituents of the same type
+        as the composite.
+
+        A good example if recursive entities is the ``inode`` class in
+        file.py. An inode is the superentiy of ``file`` and
+        ``directory``, which compose the framework's "file system". File
+        systems are recursive in that you can create directories within
+        directories indefinately. (Interating over these tree structures
+        is typically done with a **recursive** function, which is why we
+        use the word "recursive" to describe these entity objects.)
+
+            class inodes(orm.entities):
+                pass
+
+            class inode(orm.entity):
+                inodes = inodes
+
+        In the above example, we see that ``inode`` has a collection of
+        ``inodes``, i.e., the composite inode has a constiuent of the
+        same type. This is what makes a entity recursive.
+
+            assert inode.orm.isrecursive
+
+        Other examples of recursive entity objects include party.region,
+        product.category and shipment.item. 
+        """
+
         map = self.mappings(self.entities.__name__)
         return map is not None and map.entities is self.entities
 
@@ -7661,6 +7903,9 @@ class orm:
             j.entities.orm.joinsubs()
 
     def truncate(self, cur=None):
+        """ Remove all date in the table that is associated with the
+        entity.
+        """
         # TODO Use executioner
         sql = 'TRUNCATE TABLE %s;' % self.table
 
@@ -7673,15 +7918,15 @@ class orm:
 
     @staticmethod
     def recreate(*args):
-        """ Drop and recreate the table each of the entity class
+        """ Drop and recreate the table for each of the entity class
         references in *args.
-
-        Note that when ``orm`` is an instance (as opposed to mearly a
-        class reference), this method is replace with ``orm._recreate'
-        on initialization. 
         """
 
-        # For each entity class reference in *args
+        # NOTE that when ``orm`` is an instance (as opposed to mearly a
+        # class reference), this method is replace with ``orm._recreate'
+        # on initialization (see orm.__init__).
+
+        # For each entity class references in *args
         for e in args:
             # Delegate to the instance version of ``recreate``
             e.orm.recreate()
@@ -7763,7 +8008,17 @@ class orm:
                     cur.close()
 
     def drop(self, cur=None, ignore=False):
+        """ Removes the table from the database that is mapped to the
+        entity.
+
+        :param: ignore bool: If True, don't raise an error if the table
+        does not exist. The default is False.
+
+        :param: cur: The MySQLdb cursor to use for the database
+        connection.
+        """
         # TODO Use executioner
+        # TODO UPPER CASE 'drop table'
         sql = 'drop table `%s`;' % self.table
 
         try:
@@ -7779,6 +8034,14 @@ class orm:
                     raise
     
     def migrate(self, cur=None):
+        """ Examines the entity's mapping attributes and the table that
+        the entity is mapped to and issues an ALTER TABLE statement to
+        the table in order to make its columns match the entity's
+        attributes.
+
+        :param: cur: The MySQLdb cursor to use for the database
+        connection.
+        """
         # TODO Use executioner
         sql = self.altertable
 
@@ -7793,6 +8056,8 @@ class orm:
                 conn.query(sql)
 
     def create(self, cur=None, ignore=False):
+        """ Create a table in the database corresponding to the entity.
+        """
         # TODO Use executioner
         sql = self.createtable
 
@@ -7814,14 +8079,27 @@ class orm:
                 
     @property
     def ismigrated(self):
+        """ Returns True if the attributes in the entity match the
+        columns in the underlying table.
+        """
         return not bool(self.altertable)
 
     @property
     def migration(self):
+        """ Returns a new ``migration`` object for the entity. See the
+        ``migration`` class for more.
+        """
         return migration(self.entity)
 
     @property
     def altertable(self):
+        """ Compares the attributes of the entity with the columns of
+        the entity's underlying table and returns an ALTER TABLE command
+        that, if run against the database, would cause the table to
+        match the entity. If there are no differences between the
+        entity's attributes and the underlying table's columns, or if
+        the table does not exist, None is returned.
+        """
         tbl = self.dbtable
 
         # If there is no table in the database, there can be no ALTER
@@ -7989,6 +8267,10 @@ class orm:
 
     @property
     def createtable(self):
+        """ Returns a CREATE TABLE string which, if issued against the
+        database, would create the entity's underlying table (assuming
+        the table didn't already exist).
+        """
         r = 'CREATE TABLE `%s`(\n' % self.table 
 
         for i, map in enumerate(self.mappings):
@@ -8027,7 +8309,7 @@ class orm:
         """
 
         # TODO To complement orm.reloaded(), we should have an override
-        # of orm.load() that reloads/refreshed an entity object. 
+        # of orm.load() that reloads/refreshes an entity object. 
         try:
             # Remove all elements from collection.
             self.instance.clear()
@@ -8040,6 +8322,7 @@ class orm:
             self.collect(orderby, limit, offset)
 
     def query(self, sql):
+        # NOTE This does not appear to be in use.
         ress = None
         def exec(cur):
             nonlocal ress
@@ -8055,6 +8338,9 @@ class orm:
     # TODO:1d1e17dc s/dbtable/table
     @property
     def dbtable(self):
+        """ Returns a ``db.table`` object representing the entity's
+        underlying database table.
+        """
         try:
             return db.table(self.table)
         except _mysql_exceptions.OperationalError as ex:
@@ -8064,8 +8350,10 @@ class orm:
 
     def load(self, id):
         """ Load an entity by ``id``.
-        """
 
+        :param id uuid4: A uuid4 object representing the id of the
+        entity to be loaded.
+        """
         # Create the basic SELECT query.
         sql = f'SELECT * FROM {self.table} WHERE id = _binary %s'
 
@@ -8116,9 +8404,9 @@ class orm:
         #         raise Exception('myentity not found')
         #
         # Hacking __new__ to return None may not be a good idea because
-        # of all the event initialition code is in __init__. However, we
+        # of all the event initialition code in __init__. However, we
         # could set a private boolean to cause the entity's __bool__
-        # method to return False. Then any call to __getattribute__()
+        # method to return False. Then, any call to __getattribute__()
         # could check the private boolean and raise an exception to
         # indicate that entity is as good as None because the id was
         # non-existent:
@@ -8132,7 +8420,7 @@ class orm:
 
         # If the `id` exists, we should only get one record back from
         # the database. If that's not the case, raise a
-        # db.RecordNotFoundError
+        # db.RecordNotFoundError.
         ress.demandhasone()
 
         # We are only interested in the first
@@ -8148,13 +8436,12 @@ class orm:
         return res
     
     def collect(self, orderby=None, limit=None, offset=None):
-        """
-        Loads data from the database into the collection. The SQL used
-        to load the data is generated mostly from arguments passed to
-        the entities collection's contructor.
+        """ Loads data from the database into the collection. The SQL
+        used to load the data is generated mostly from arguments passed
+        to the entities collection's contructor.
 
-        Note that an ORM user typically doesn't call ``load``
-        explicitly. The call to ``load`` is usually made by the ORM
+        Note that an ORM user typically doesn't call ``collect``
+        explicitly. The call to ``collect`` is usually made by the ORM
         after the entities collection has been instantiated and during
         the invocation of one of the collection's properties or methods.
         See ``entities.__getattribute__``.
@@ -8174,6 +8461,7 @@ class orm:
             return
 
         try:
+            # Declare that we are currently loading
             self.isloading = True
                     
             # Get SQL and SQL parameters/args
@@ -8236,6 +8524,12 @@ class orm:
 
     @property
     def abbreviation(self):
+        """ Return a unique abbreviation of the entity. This is useful
+        in table aliasing to keep the size of SELECT statements small
+        (table aliasing can be extremely verbose because of the way
+        aliases are used to keep track of the way data is related to
+        each other.)
+        """
         if not self._abbreviation:
             suffix = str()
 
@@ -8290,10 +8584,15 @@ class orm:
 
     @staticmethod 
     def dequote(s):
+        """ Returns a string with the quotes removed.
+
+        :param: s str: The string to remove the quotes from.
+        """
         if s[0] == "'" and s[-1] == "'":
             return s[1:-1]
         return s
 
+    # TODO s/parameterizepredicate/parameterize/
     def parameterizepredicate(self, args):
         """ In the where clause (``self.instance.orm.where``), look for
         literals, i.e.::
@@ -8701,7 +9000,12 @@ class orm:
         """ The lower-level private method which bulids and returns the
         SELECT statement for the entities (self.instance) collection
         object.
+
         """
+        # Note, since generating the SELECT statement involves
+        # recursion, we need a regular method. The user would rather
+        # call a property (orm.sql), however, so this is a private
+        # method normally accessed through the orm.sql method.
 
         def raise_fk_not_found(joiner, join):
             ''' Raise a ValueError with a FK not found message. '''
@@ -8915,14 +9219,17 @@ class orm:
 
     @staticmethod
     def introduce(sql, args):
-        """ Use ``args`` to add introducers ('_binary', et. al.) before
-        the unquoted placeholder tokens (%s) in ``sql``.
+        """ Use ``args`` to add MySQL introducers ('_binary', et. al.)
+        before the unquoted placeholder tokens (%s) in ``sql``.
 
-        :param: str  sql:  A whole are partial SQL statement.
+        :param: str  sql:  A whole or partial SQL statement.
+
         :param: list args: Parameters to use with query.
+
         :rtype: str
-        :returns: Returns the ``sql`` argument with introducers added where
-                  appropriate
+
+        :returns: Returns the ``sql`` argument with introducers added
+        where appropriate.
         """
 
         # Where the arg is binary (bytearray or bytes), replace '%s' with
@@ -8937,7 +9244,7 @@ class orm:
 
         # Iterate over sql instead of using a simple search-and-replace
         # approach so we don't add introducer to quoted instances of the
-        # placeholder token
+        # placeholder token.
         for s in sql:
             # Detect quotes
             if s == "'":
@@ -8979,13 +9286,36 @@ class orm:
 
     @property
     def isstreaming(self):
+        """ Return True if the entities collection is in streaming mode.
+        Streaming mode implies we are accessing the results from a
+        database queries in discrete chunks. See the docstrings at
+        ``orm.streaming`` for more on streaming.
+        """
         return self.stream is not None
 
     @property
     def isdirty(self):
+        """ Return True if the object is not new (exists in database)
+        but has changed since it was loaded in memory::
+
+            # Load existing entity
+            ent = entity(id)
+            assert not ent.orm.isdirty
+
+            # Dirty the ent by changing a property
+            ent.name += 'xxx'
+            assert ent.orm.isdirty
+
+        The isdirty flag is used internally to determine if an UPDATE
+        statement needs to be issued when the save method is called::
+
+            ent.save()
+        """
         if self._isdirty:
             return True
 
+        # Ascend the inheritence tree to see if any of the loaded supers
+        # are dirty. Note that this call is inherently recursive.
         if self._super:
             return self.super.orm.isdirty
 
@@ -8993,18 +9323,32 @@ class orm:
 
     @isdirty.setter
     def isdirty(self, v):
+        """ Sets the isdirty flag.  See the isdirty getter for more.
+
+        :param: v bool: The value to set isdirty to.
+        """
         self._isdirty = v
 
     @property
     def forentities(self):
+        """ Returns True if this ``orm`` instance corresponds to an
+        orm.entities object rather than an orm.entity object.
+        """
         return isinstance(self.instance, entities)
         
     @property
     def forentity(self):
+        """ Returns True if this ``orm`` instance corresponds to an
+        orm.entity object rather than an orm.entities object.
+        """
         return isinstance(self.instance, entity)
 
     @property
     def persistencestates(self):
+        """ Returns a list of persistencestate tuples for each of the
+        entity objects in the entities collection. Useful for unit tests
+        and debugging. See orm.persistencestate for more.
+        """
         es = self.instance
         if not self.forentities:
             msg = 'Use with entities. For entity, use persistencestate'
@@ -9017,6 +9361,10 @@ class orm:
 
     @persistencestates.setter
     def persistencestates(self, sts):
+        """ Sets the persistencestate tuple to `sts` for each of the
+        entity objects within this collection. See orm.persistencestate
+        for more.
+        """
         es = self.instance
         if not self.forentities:
             msg = 'Use with entities. For entity, use persistencestate'
@@ -9027,6 +9375,18 @@ class orm:
 
     @property
     def persistencestate(self):
+        """ Get the persistencestate tuple for an orm.entity. Useful for
+        debugging and unit testing.
+
+        The persistencestate tuple corresponds to the isnew, isdirty and
+        ismarkedfordeletion flags. The following will always be true::
+
+            # Given an entity at any point in time:
+            st = ent.orm.persistencestate
+            assert  ent.orm.isnew                is  st[0]
+            assert  ent.orm.isdirty              is  st[1]
+            assert  ent.orm.ismarkedfordeletion  is  st[2]
+        """
         es = self.instance
         if not self.forentity:
             msg = 'Use with entity. For entities, use persistencestates'
@@ -9035,6 +9395,9 @@ class orm:
 
     @persistencestate.setter
     def persistencestate(self, v):
+        """ Set the persistencestate for an orm.entity object. See the
+        persistencestate getter for more.
+        """
         es = self.instance
         if not isinstance(es, entity):
             msg = 'Use with entity. For entities, use persistencestates'
