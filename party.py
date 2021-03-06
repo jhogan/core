@@ -900,7 +900,7 @@ class email(contactmechanism):
     Note that this is modeled after the ELECTRONIC ADDRESS entity in
     "The Data Model Resource Book".
     """
-    address = str
+    name = str
 
 # TODO DON'T use this `communication`. There is a duplicate beneath it.
 # Merge its comments in with that one and remove this one.
