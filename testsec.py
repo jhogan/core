@@ -257,7 +257,7 @@ class authorization(tester.tester):
             sec.owner = root
 
             com = party.company(name='Microsoft')
-            orm.orm.setproprietor(com)
+            orm.security().proprietor = com
             com.save()
 
         with orm.sudo():
@@ -744,7 +744,7 @@ class owner(tester.tester):
         com.owner = own
         com.save()
 
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
 
     def it_calls_owner(self):
         def create_owner(name):
@@ -838,7 +838,7 @@ class proprietor(tester.tester):
         tsla = party.company(name='Tesla')
         ms = party.company(name='Microsoft')
 
-        orm.orm.setproprietor(tsla)
+        orm.security().proprietor = tsla
         eng = engineer()
         proj = project()
         e_p = engineer_project(
@@ -859,7 +859,7 @@ class proprietor(tester.tester):
 
         self.expect(None, e_p.orm.reloaded)
 
-        orm.orm.setproprietor(ms)
+        orm.security().proprietor = ms
         self.expect(db.RecordNotFoundError, e_p.orm.reloaded)
 
         e_p.name = 'x'
@@ -875,7 +875,7 @@ class proprietor(tester.tester):
         ms = party.company(name='Microsoft')
 
         # Assign the system to a Telsa engineer
-        orm.orm.setproprietor(tsla)
+        orm.security().proprietor = tsla
         sys = system()
         sys.engineer = engineer(name='x')
         sys.save()
@@ -884,11 +884,11 @@ class proprietor(tester.tester):
         sys = sys.orm.reloaded()
 
         # Try to load the Tesla `engineer` composite as Microsoft. 
-        orm.orm.setproprietor(ms)
+        orm.security().proprietor = ms
         self.expect(db.RecordNotFoundError, lambda: sys.engineer)
 
         # Try again to load the Tesla `engineer` composite as Tesla. 
-        orm.orm.setproprietor(tsla)
+        orm.security().proprietor = tsla
         self.notnone(sys.engineer)
 
     def it_deletes_entity(self):
@@ -899,7 +899,7 @@ class proprietor(tester.tester):
         ms = party.company(name='Microsoft')
 
         # Create a Tesla engineers
-        orm.orm.setproprietor(tsla)
+        orm.security().proprietor = tsla
         eng = engineer(name='Tesla engineer')
         eng.save()
 
@@ -914,14 +914,14 @@ class proprietor(tester.tester):
         eng.save()
 
         # Switch proprietor to Microsoft
-        orm.orm.setproprietor(ms)
+        orm.security().proprietor = ms
 
         # Delete it. Microsoft shouldn't be able to delete Tesla's
         # records so we should get errors.
         self.expect(orm.ProprietorError, eng.delete)
 
         # Switch proprietor back to Telsa
-        orm.orm.setproprietor(tsla)
+        orm.security().proprietor = tsla
 
         # Ensure the record was not deleted
         self.expect(None, eng.orm.reloaded)
@@ -934,7 +934,7 @@ class proprietor(tester.tester):
         ms = party.company(name='Microsoft')
 
         # Create a Tesla engineers
-        orm.orm.setproprietor(tsla)
+        orm.security().proprietor = tsla
         eng = engineer(name='Tesla engineer')
         eng = engineer()
         for i in range(3):
@@ -945,7 +945,7 @@ class proprietor(tester.tester):
         eng.save()
 
         # Create a Microsoft engineers
-        orm.orm.setproprietor(ms)
+        orm.security().proprietor = ms
         eng = engineer(name='Microsoft engineer')
         eng = engineer()
         for i in range(3):
@@ -961,18 +961,18 @@ class proprietor(tester.tester):
         # In midstream, set the proprietor to Tesla. This would be a
         # mistake if a web developer were to do this, but just in case,
         # make sure that Tesla can't delete a Microsoft system.
-        orm.orm.setproprietor(tsla)
+        orm.security().proprietor = tsla
         self.expect(orm.ProprietorError, eng.save)
 
         # Set the proprietor back to Microsoft, reload and ensure the
         # system wasn't deleted.
-        orm.orm.setproprietor(ms)
+        orm.security().proprietor = ms
         eng = eng.orm.reloaded()
         self.three(eng.systems)
 
     def it_adds_proprietor_to_entity(self):
         ''' Test class (static attribute)'''
-        orm.orm.setproprietor(None)
+        orm.security().proprietor = None
 
         # Test the map
         map = engineer.orm.mappings['proprietor']
@@ -1020,7 +1020,7 @@ class proprietor(tester.tester):
 
     def it_adds_proprietor_to_subentity(self):
         ''' Test class (static attribute)'''
-        orm.orm.setproprietor(None)
+        orm.security().proprietor = None
 
         # Test the map
         map = hacker.orm.mappings['proprietor']
@@ -1075,7 +1075,7 @@ class proprietor(tester.tester):
 
     def it_adds_proprietor_to_subsubentity(self):
         ''' Test class (static attribute)'''
-        orm.orm.setproprietor(None)
+        orm.security().proprietor = None
 
         # Test the map
         map = phreak.orm.mappings['proprietor']
@@ -1133,7 +1133,7 @@ class proprietor(tester.tester):
         """
         """
         tsla = party.company(name='Tesla')
-        orm.orm.setproprietor(tsla)
+        orm.security().proprietor = tsla
 
         ''' Test object '''
         eng = engineer.getvalid()
@@ -1148,7 +1148,7 @@ class proprietor(tester.tester):
         self.eq(tsla.id, eng.proprietor.id)
 
         malcolm = party.person(name='Malcolm McLaren')
-        orm.orm.setproprietor(malcolm)
+        orm.security().proprietor = malcolm
         eng.proprietor = malcolm
 
         self.is_(malcolm, eng.proprietor)
@@ -1162,7 +1162,7 @@ class proprietor(tester.tester):
         the same proprietor.
         """
         tsla = party.company(name='Tesla')
-        orm.orm.setproprietor(tsla)
+        orm.security().proprietor = tsla
 
         # Test without saving.
         phr = phreak()
@@ -1187,37 +1187,37 @@ class proprietor(tester.tester):
 
     def it_filters_entity(self):
         """ By default, queries should only be able to return records 
-        belonging to the proprietor as defined by orm.orm.proprietor.
+        belonging to the proprietor as defined by orm.security().proprietor.
         """
 
         # Create some proprietors
         tsla = party.company(name='Tesla')
         ms = party.company(name='Microsoft')
 
-        # If orm.orm.proprietor is None, no filtering should take place.
+        # If orm.security().proprietor is None, no filtering should take place.
         # This shouldn't be allowed except for system administration
         # tasks.
-        orm.orm.setproprietor(tsla)
+        orm.security().proprietor = tsla
 
         # Save an engineer record whose proprietor is Tesla
         eng = engineer()
         eng.save()
 
-        # Set orm.orm.proprietor is None. We should be able to query this
+        # Set orm.security().proprietor is None. We should be able to query this
         # engineer without RecordNotFoundError being thrown. We sort of
-        # have "root" access because orm.orm.proprietor is None.
-        orm.orm.setproprietor(None)
+        # have "root" access because orm.security().proprietor is None.
+        orm.security().proprietor = None
         self.expect(None, lambda: engineer(eng.id))
 
-        # Set the orm.orm.proprietor to tsla. Still no problems getting
-        # the Tesla engineer because the orm.orm.proprietor is Tesla.
-        orm.orm.setproprietor(tsla)
+        # Set the orm.security().proprietor to tsla. Still no problems getting
+        # the Tesla engineer because the orm.security().proprietor is Tesla.
+        orm.security().proprietor = tsla
         engineer(eng.id)
         self.expect(None, lambda: engineer(eng.id))
 
-        # Now that the orm.orm.proprietor is Microsoft, we should not be
+        # Now that the orm.security().proprietor is Microsoft, we should not be
         # able to access the engineer record owned by Tesla.
-        orm.orm.setproprietor(ms)
+        orm.security().proprietor = ms
         self.expect(db.RecordNotFoundError, lambda: engineer(eng.id))
 
     def it_updates_entity(self):
@@ -1228,7 +1228,7 @@ class proprietor(tester.tester):
         ms = party.company(name='Microsoft')
 
         # Create some Tesla engineers
-        orm.orm.setproprietor(tsla)
+        orm.security().proprietor = tsla
         engs = engineers()
         for i in range(3):
             engs += engineer(
@@ -1239,7 +1239,7 @@ class proprietor(tester.tester):
         engs.save()
 
         # Create some Microsoft engineers
-        orm.orm.setproprietor(ms)
+        orm.security().proprietor = ms
         for i in range(3):
             engs += engineer(
                 name   = f'Microsoft engineer {i}',
@@ -1248,7 +1248,7 @@ class proprietor(tester.tester):
 
         engs.save()
 
-        orm.orm.setproprietor(tsla)
+        orm.security().proprietor = tsla
 
         # Load the thre Tesla engineers
         engs = engineers("name LIKE %s", '%engineer%')
@@ -1261,7 +1261,7 @@ class proprietor(tester.tester):
         for eng in engs:
             # Swith proprietors to Microsoft and try updating Tesla's
             # engineers. 
-            orm.orm.setproprietor(ms)
+            orm.security().proprietor = ms
 
             eng.skills = 'VB.NET'
             # We would expect Microsoft to get an error if they changed
@@ -1270,11 +1270,11 @@ class proprietor(tester.tester):
 
             # Reload the engineer to make sure it wasn't saved despite
             # the exception.
-            orm.orm.setproprietor(tsla)
+            orm.security().proprietor = tsla
             self.eq('c++', eng.orm.reloaded().skills)
 
         # Switching the proprietor to Tesla should fix the problem.
-        orm.orm.setproprietor(tsla)
+        orm.security().proprietor = tsla
         for eng in engs:
             eng.skills = 'VB.NET'
             # We would expect Microsoft to get an error if they changed
@@ -1283,7 +1283,7 @@ class proprietor(tester.tester):
 
             self.eq('VB.NET', eng.orm.reloaded().skills)
 
-        orm.orm.setproprietor(ms)
+        orm.security().proprietor = ms
 
         # Load the thre Microsoft engineers
         engs = engineers("name LIKE %s", '%engineer%')
@@ -1296,13 +1296,13 @@ class proprietor(tester.tester):
             eng.skills = 'python' # Make a change
 
         # Change proprietor
-        orm.orm.setproprietor(tsla)
+        orm.security().proprietor = tsla
 
         # This time, save the collection
         self.expect(orm.ProprietorError, engs.save)
 
         # Correct proprietor
-        orm.orm.setproprietor(ms)
+        orm.security().proprietor = ms
 
         # Ensure no changes were made
         engs = engineers("name LIKE %s", '%engineer%')
@@ -1328,7 +1328,7 @@ class proprietor(tester.tester):
         ms = party.company(name='Microsoft')
 
         # Create some Tesla engineers
-        orm.orm.setproprietor(tsla)
+        orm.security().proprietor = tsla
         engs = engineers()
         for i in range(3):
             engs += engineer(
@@ -1339,7 +1339,7 @@ class proprietor(tester.tester):
         engs.save()
 
         # Create some Microsoft engineers
-        orm.orm.setproprietor(ms)
+        orm.security().proprietor = ms
         for i in range(3):
             engs += engineer(
                 name   = f'Microsoft engineer {i}',
@@ -1354,7 +1354,7 @@ class proprietor(tester.tester):
         # Set proprietor and run the same query. Make sure only the the
         # entities that the proprietor ows are returned
         for com in (tsla, ms):
-            orm.orm.setproprietor(com)
+            orm.security().proprietor = com
 
             # Test IN operator
             engs = engineers(
@@ -1427,7 +1427,7 @@ class proprietor(tester.tester):
         ms = party.company(name='Microsoft')
 
         # Create a Tesla engineers and the `system` s/he administors
-        orm.orm.setproprietor(tsla)
+        orm.security().proprietor = tsla
         eng = engineer()
         for i in range(3):
             eng.systems += system(
@@ -1437,7 +1437,7 @@ class proprietor(tester.tester):
         eng.save()
 
         # Create some Microsoft engineers
-        orm.orm.setproprietor(ms)
+        orm.security().proprietor = ms
         eng = engineer()
         for i in range(3):
             eng.systems += system(
@@ -1459,7 +1459,7 @@ class proprietor(tester.tester):
         eng1 = eng.orm.reloaded()
 
         # Set proprietor to Tesla
-        orm.orm.setproprietor(tsla)
+        orm.security().proprietor = tsla
 
         # Even though we have Microsoft's engineer (this situation
         # should never happen unles there was a mistake by a web
@@ -1471,11 +1471,11 @@ class proprietor(tester.tester):
         # Load engineer as Microsoft, change the name of a system and
         # save as Tesla. We would expect "Tesla" to receive a
         # ProprietorError.
-        orm.orm.setproprietor(ms)
+        orm.security().proprietor = ms
         eng1 = eng.orm.reloaded()
         eng1.systems.first.name = 'Tesla system'
 
-        orm.orm.setproprietor(tsla)
+        orm.security().proprietor = tsla
         self.expect(orm.ProprietorError, eng1.save)
 
     def it_eager_loads_constituents(self):
@@ -1486,7 +1486,7 @@ class proprietor(tester.tester):
         ms = party.company(name='Microsoft')
 
         # Create a Tesla engineers and the `system` s/he administors
-        orm.orm.setproprietor(tsla)
+        orm.security().proprietor = tsla
         eng = engineer(name='Tesla engineer')
         for i in range(3):
             eng.systems += system(
@@ -1496,7 +1496,7 @@ class proprietor(tester.tester):
         eng.save()
 
         # Create a Microsoft engineers and the `system` s/he administors
-        orm.orm.setproprietor(ms)
+        orm.security().proprietor = ms
         eng = engineer(name='Microsoft engineer')
         for i in range(3):
             eng.systems += system(
@@ -1506,7 +1506,7 @@ class proprietor(tester.tester):
         eng.save()
 
         for com in (ms, tsla):
-            orm.orm.setproprietor(com)
+            orm.security().proprietor = com
             engs = engineers(
                 'name LIKE %s', '%engineer%', orm.eager('systems')
             )
@@ -1528,7 +1528,7 @@ class proprietor(tester.tester):
         ms = party.company(name='Microsoft')
 
         # Create some Tesla hackers
-        orm.orm.setproprietor(tsla)
+        orm.security().proprietor = tsla
         hckrs = hackers()
         for i in range(3):
             hckrs += hacker(
@@ -1540,7 +1540,7 @@ class proprietor(tester.tester):
         hckrs.save()
 
         # Create some Microsoft engineers
-        orm.orm.setproprietor(ms)
+        orm.security().proprietor = ms
         for i in range(3):
             hckrs += hacker(
                 name   = f'Microsoft hacker {i}',
@@ -1554,7 +1554,7 @@ class proprietor(tester.tester):
         self.six(ids)
 
         for com in (tsla, ms):
-            orm.orm.setproprietor(com)
+            orm.security().proprietor = com
 
             # Test IN operator
             hckrs = hackers(
@@ -1642,7 +1642,7 @@ class proprietor(tester.tester):
         ms = party.company(name='Microsoft')
 
         # Create some Tesla phreaks
-        orm.orm.setproprietor(tsla)
+        orm.security().proprietor = tsla
         phrs = phreaks()
         for i in range(3):
             phrs += phreak(
@@ -1655,7 +1655,7 @@ class proprietor(tester.tester):
         phrs.save()
 
         # Create some Microsoft engineers
-        orm.orm.setproprietor(ms)
+        orm.security().proprietor = ms
         for i in range(3):
             phrs += phreak(
                 name   = f'Microsoft phreak {i}',
@@ -1670,7 +1670,7 @@ class proprietor(tester.tester):
         self.six(ids)
 
         for com in (tsla, ms):
-            orm.orm.setproprietor(com)
+            orm.security().proprietor = com
 
             # Test IN operator
             phrs = phreaks(
@@ -1755,14 +1755,14 @@ class proprietor(tester.tester):
                 self.true(phr.name.startswith(f'{com.name} phreak'))
 
     def it_makes_proprietors_self_owning(self):
-        orm.orm.setproprietor(None)
+        orm.security().proprietor = None
 
         tsla = party.company(name='Tesla')
 
         # At this point, tsla will not have a record proprietor
         self.none(tsla.proprietor)
 
-        orm.orm.setproprietor(tsla)
+        orm.security().proprietor = tsla
 
         # After setting tsla as the proprietor, tlsa, and its supers,
         # will have tsla as their proprietors.
@@ -1787,7 +1787,7 @@ class proprietor(tester.tester):
         ms = party.company(name='Microsoft')
 
         # Create some Tesla engineers
-        orm.orm.setproprietor(tsla)
+        orm.security().proprietor = tsla
         engs = engineers()
         for i in range(2):
             engs += engineer(
@@ -1798,7 +1798,7 @@ class proprietor(tester.tester):
         engs.save()
 
         # Create some Microsoft engineers
-        orm.orm.setproprietor(ms)
+        orm.security().proprietor = ms
         for i in range(3):
             engs += engineer(
                 name   = f'Microsoft engineer {i}',
@@ -1820,7 +1820,7 @@ class proprietor(tester.tester):
             self.startswith(f'Microsoft engineer', eng.name)
 
 
-        orm.orm.setproprietor(tsla)
+        orm.security().proprietor = tsla
 
         engs = engineers(orm.allstream)
         self.two(engs)
@@ -1835,7 +1835,7 @@ class proprietor(tester.tester):
         ms = party.company(name='Microsoft')
 
         # Create some Tesla engineers
-        orm.orm.setproprietor(tsla)
+        orm.security().proprietor = tsla
         engs = engineers()
         for i in range(3):
             engs += engineer(
@@ -1850,7 +1850,7 @@ class proprietor(tester.tester):
         engs.save()
 
         # Create some Microsoft engineers
-        orm.orm.setproprietor(ms)
+        orm.security().proprietor = ms
         for i in range(3):
             engs += engineer(
                 name   = f'Microsoft engineer {i}',
@@ -1866,7 +1866,7 @@ class proprietor(tester.tester):
         engs.save()
 
         for com in tsla, ms:
-            orm.orm.setproprietor(com)
+            orm.security().proprietor = com
             search = 'machine learning' if com is ms else 'USB'
             
             engs = engineers('match(bio) against (%s)', search)

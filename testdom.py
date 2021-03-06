@@ -577,7 +577,7 @@ class pom_page(tester.tester):
         com.save()
 
         # Set the company as the proprietory
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
 
         # Update the owner (hford) so that the company (Ford Motor
         # Company) is the proprietor.

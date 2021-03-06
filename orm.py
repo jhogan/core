@@ -1683,6 +1683,7 @@ class entitiesmeta(type):
         return None
 
 class entities(entitiesmod.entities, metaclass=entitiesmeta):
+    # TODO Comment this class and all methods and properties
     re_alphanum_ = re.compile('^[a-z_][0-9a-z_]+$', flags=re.IGNORECASE)
 
     def __init__(self, initial=None, _p2=None, *args, **kwargs):
@@ -2467,20 +2468,20 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
         args = [x.bytes if type(x) is UUID else x for x in args]
 
-        # If there is an orm.proprietor and the entities collection is
+        # If there is an security().proprietor and the entities collection is
         # not a chunk, then add a proprietor filter.
         #
         # There is no need to append a proprietor filter to a chunked
         # entities collection. The streamed entities collection will
         # pass in its own proprietor filter.
-        if orm.proprietor and not self.orm.ischunk:
+        if security().proprietor and not self.orm.ischunk:
             if p1:
                 p1 += ' AND '
 
             for map in self.orm.mappings.foreignkeymappings:
                 if map.fkname == 'proprietor':
                     p1 += f'{map.name} = _binary %s'
-                    args.append(orm.proprietor.id.bytes)
+                    args.append(security().proprietor.id.bytes)
                     break
 
         if p1:
@@ -3011,8 +3012,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 # entity's `proprietor` attribute. This ensure the
                 # proprietor gets saved to the database.
                 # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                if orm.proprietor:
-                    self.proprietor = orm.proprietor
+                if security().proprietor:
+                    self.proprietor = security().proprietor
 
                 # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                 # If there is an owner, assign the owner to the new
@@ -3583,15 +3584,15 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             sql, args = (None,) * 2
 
         #💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        # If we are modifying the record, the orm.proprietor must match
-        # the record's proprietor. This ensures one party can't modify
-        # another's records.
+        # If we are modifying the record, the security().proprietor must
+        # match the record's proprietor. This ensures one party can't
+        # modify another's records.
         #💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
 
         # TODO:ee897843 Don't allow a proprietor to create a record
         # belonging to a different proprietor.
         if crud in ('update', 'delete'):
-            if self.proprietor__partyid != orm.proprietor.id:
+            if self.proprietor__partyid != security().proprietor.id:
                 raise ProprietorError(self.proprietor)
 
         try:
@@ -6874,10 +6875,66 @@ class security:
             # Implement the singleton pattern.
             # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
             cls._instance = super(security, cls).__new__(cls)
-            cls._override = False
-            cls._owner = None
+
+            # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            cls._override    =  False
+            cls._owner       =  None
+            cls._proprietor  =  None
 
         return cls._instance
+
+    @property
+    def proprietor(self):
+        """ Return the proprietor entity currently set.
+        """
+        return self._proprietor
+
+    @proprietor.setter
+    def proprietor(self, v):
+        """ 
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Set ``v`` to orm's proprietor. Ensure that the proprietor
+        entity owns itself.
+
+        Proprietors
+        ***********
+
+        The logic in the ORM's database interface will use the
+        security().proprietor to provide multitenancy support.
+
+        When a proprietor is set, the ORM will ensure that all records
+        written to the database have their proprietor FK set to
+        security().proprietor.id, meaning that the records will be the
+        *property* of the security().proprietor. Only records owned by
+        the security().proprietor will be read by orm query operations
+        i.e.:
+
+            ent = entity(id)  # SELECT
+
+            (or)
+
+            ent.save()        # INSERT OR UPDATE
+            
+        When updating or deleting a record, the record must be owned by
+        by the security().proprietor or else a ProprietorError will be
+        raised.
+
+        :param: party.party v: The proprietor entity.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+        self._proprietor = v
+
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # The proprietor of the proprietor must be the proprietor:
+        #    
+        #    assert v.proprietor is v
+        #
+        # Propogate this up the inheritance hierarchy.
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        sup = v
+        while sup:
+            sup.proprietor = v
+            sup = sup.orm.super
 
     @property
     def override(self):
@@ -6999,66 +7056,6 @@ class orm:
             # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
             if vs.ispopulated:
                 es.remove(e, trash=False)
-
-    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-    # TODO Move setproprietor to security.proprietor
-    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-    @classmethod
-    def setproprietor(cls, v):
-        """ 
-        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        Set ``v`` to orm's proprietor. Ensure that the proprietor
-        entity owns itself.
-
-        Proprietors
-        ***********
-
-        The logic in the ORM's database interface will use the
-        orm.proprietor to provide multitenancy support.
-
-        When a proprietor is set, the ORM will ensure that all records
-        written to the database have their proprietor FK set to
-        orm.proprietor.id, meaning that the records will be the
-        *property* of the orm.proprietor. Only records owned by the
-        orm.proprietor will be read by orm query operations i.e.:
-
-            ent = entity(id)  # SELECT
-
-            (or)
-
-            ent.save()        # INSERT OR UPDATE
-            
-        When updating or deleting a record, the record must be owned by
-        by the orm.proprietor or else a ProprietorError will be raised.
-
-        :param: party.party v: The proprietor entity.
-        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        """
-        cls._proprietor = v
-
-        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        # The proprietor of the proprietor must be the proprietor:
-        #    
-        #    assert v.proprietor is v
-        #
-        # Propogate this up the inheritance hierarchy.
-        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        sup = v
-        while sup:
-            sup.proprietor = v
-            sup = sup.orm.super
-
-    @classmethod
-    def getproprietor(cls):
-        """ Return the proprietor entity currently set.
-        """
-        return cls._proprietor
-
-    @classproperty
-    def proprietor(cls):
-        """ Return the proprietor entity currently set.
-        """
-        return cls.getproprietor()
 
     def __init__(self):
         self.mappings              =  None
@@ -8051,12 +8048,12 @@ class orm:
         # proprietor. Restrict the result set to only records where the
         # proprietor's FK column matches the proprietor set at the ORM
         # level. This restricts entity records not associated with
-        # orm.proprietor from being loaded.
-        if orm.proprietor:
+        # security().proprietor from being loaded.
+        if security().proprietor:
             for map in self.mappings.foreignkeymappings:
                 if map.fkname == 'proprietor':
                     sql += f' AND {map.name} = _binary %s'
-                    args.append(orm.proprietor.id.bytes)
+                    args.append(security().proprietor.id.bytes)
                     break
 
         ress = None
@@ -10041,7 +10038,7 @@ class ProprietorError(ValueError):
     @property
     def expected(self):
         if not self._expected:
-            return orm.proprietor
+            return security().proprietor
         return self._expected
 
     def __str__(self):

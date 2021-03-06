@@ -69,7 +69,7 @@ class dom_file(tester.tester):
 
         # Proprietor
         com = party.company(name='Carapacian')
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
         com.save()
 
         # Recreate tables
@@ -440,7 +440,7 @@ class file_file(tester.tester):
         com.save()
 
         # Set the company as the proprietory
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
 
         # Update the owner (hford) so that the company (Ford Motor
         # Company) is the proprietor.

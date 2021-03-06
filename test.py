@@ -3872,7 +3872,7 @@ class test_orm(tester):
         com.save()
 
         # Set the company as the proprietory
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
 
         # Update the owner (hford) so that the company (Ford Motor
         # Company) is the proprietor.
@@ -17334,7 +17334,7 @@ class gem_party(tester):
         orm.security().owner = ecommerce.users.root
 
         com = party.company(name='Carapacian')
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
         com.save(com)
 
     @staticmethod
@@ -19154,7 +19154,7 @@ class gem_product(tester):
 
         orm.security().owner = ecommerce.users.root
         com = party.company(name='Carapacian')
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
         com.save(com)
 
     @staticmethod
@@ -20874,7 +20874,7 @@ class gem_case(tester):
         orm.security().owner = ecommerce.users.root
 
         com = party.company(name='Carapacian')
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
         com.save(com)
 
     def it_raises_on_invalid_call_of_casesstatus(self):
@@ -21040,7 +21040,7 @@ class gem_order(tester):
         orm.security().owner = ecommerce.users.root
 
         com = party.company(name='Carapacian')
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
         com.save(com)
 
     def it_creates_salesorder(self):
@@ -21823,7 +21823,7 @@ class gem_shipment(tester):
         orm.security().owner = ecommerce.users.root
 
         com = party.company(name='Carapacian')
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
         com.save(com)
 
     def it_creates(self):
@@ -22253,7 +22253,7 @@ class gem_effort(tester):
         orm.security().owner = ecommerce.users.root
 
         com = party.company(name='Carapacian')
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
         com.save(com)
 
     def it_creates_requirements(self):
@@ -23040,7 +23040,7 @@ class gem_invoice(tester):
         orm.security().owner = ecommerce.users.root
 
         com = party.company(name='Carapacian')
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
         com.save(com)
 
     def it_creates_items(self):
@@ -23426,7 +23426,7 @@ class gem_account(tester):
         orm.security().owner = ecommerce.users.root
 
         com = party.company(name='Carapacian')
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
         com.save(com)
 
     def it_creates_accounts(self):
@@ -23687,7 +23687,7 @@ class gem_budget(tester):
         orm.security().owner = ecommerce.users.root
 
         com = party.company(name='Carapacian')
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
         com.save(com)
 
     def it_creates(self):
@@ -24063,7 +24063,7 @@ class gem_hr(tester):
         orm.security().owner = ecommerce.users.root
 
         com = party.company(name='Carapacian')
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
         com.save(com)
 
     def it_creates_position(self):
