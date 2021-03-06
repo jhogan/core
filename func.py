@@ -4,7 +4,7 @@
 # Unauthorized copying of this file, via any medium is strictly
 # prohibited
 # Proprietary and confidential
-# Written by Jesse Hogan <jessehogan0@gmail.com>, 2020
+# Written by Jesse Hogan <jessehogan0@gmail.com>, 2021
 
 from functools import reduce
 from pdb import set_trace; B=set_trace
