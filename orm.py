@@ -3321,22 +3321,29 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             pass
                     break
 
-                # If self is a subentity (i.e., concert), we will want
-                # to set the superentity's (i.e, presentation) composite
-                # map to its composite class (i.e., artist) value. 
-                selfsuper = self.orm.super
-                attrsuper = self.orm.mappings(attr).value.orm.super
-
-                if selfsuper and attrsuper:
-                    maps = selfsuper.orm.mappings
-                    attr = maps(attrsuper.__class__.__name__)
-
-                    # NOTE attr could be None for various reasons. It's
-                    # unclear at the moment if this is correct logic. We
-                    # will let experience using the ORM determine if we
-                    # need to revisit this.
-                    if attr:
-                        setattr(selfsuper, attr.name, v.orm.specialist)
+                # Look within the super's mapping collection for an
+                # entitymapping that matches this composite. This will
+                # recurse to the top of the inheritance tree. For
+                # example, if we assige a rapper to a battle's rapper
+                # composite:
+                #
+                #     btl.rapper = rpr
+                # 
+                # we would like that rpr to be the singer and artist of
+                # the battle's super classes: concert and presentations
+                # respectively:
+                #
+                #    conc = btl.orm.super
+                #    assert conc.singer is rpr
+                #
+                #    pres = btl.orm.super.orm.super
+                #    assert pres.artist is rpr
+                sup = self.orm.super
+                if sup:
+                    for map in sup.orm.mappings.entitymappings:
+                        if map.entity in v.orm.entity.orm.supers:
+                            setattr(sup, map.name, v)
+                            break
 
     def delete(self):
         """ Delete an entity's record from the database.
