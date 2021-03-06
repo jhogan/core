@@ -9,7 +9,11 @@
 ########################################################################
 
 "Simplicity is complexity resolved." 
-    # Constantin Brancusi, Romanian Sculptor
+# Constantin Brancusi
+
+"Most people overestimate what they can do in one year and underestimate
+what they can do in ten years."
+# Bill Gates
 
 """ This module contains all classes related to object-relational
 mapping.
