@@ -3901,7 +3901,7 @@ class test_orm(tester):
         #B( eargs.entity.entity.__class__ is artist_artifacts)
 
     @contextmanager
-    def _chrontest(self, print=False):
+    def _chrontest(self, callable=None, print=False):
         # TODO Document functionality
         test_orm = self
         class tester:
@@ -3974,6 +3974,10 @@ class test_orm(tester):
                 return r
 
         t = tester() # :=
+
+        if callable:
+            t(callable)
+
         yield t
 
         # HACK:42decc38 The below gets around the fact that tester.py
@@ -12300,8 +12304,7 @@ class test_orm(tester):
         btl.rapper = rpr
         self.is_(rpr, btl.rapper)
 
-        with self._chrontest() as t:
-            t.run(btl.save)
+        with self._chrontest(btl.save) as t:
             t.created(rpr)
             t.created(rpr.orm.super)
             t.created(rpr.orm.super.orm.super)
@@ -12318,14 +12321,13 @@ class test_orm(tester):
         btl1 = battle(btl.id)
 
         with self._chrontest() as t:
-            t.run(lambda: self.eq(btl1.rapper.id, btl.rapper.id))
+            t.run(lambda: self.eq(btl.rapper.id, btl1.rapper.id))
             t.retrieved(btl1.rapper)
 
         rpr1 = rapper.getvalid()
         btl1.rapper = rpr1
 
-        with self._chrontest() as t:
-            t.run(btl1.save)
+        with self._chrontest(btl1.save) as t:
             t.created(rpr1)
             t.created(rpr1.orm.super)
             t.created(rpr1.orm.super.orm.super)
