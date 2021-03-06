@@ -12303,6 +12303,8 @@ class test_orm(tester):
         rpr = rapper.getvalid()
         btl.rapper = rpr
         self.is_(rpr, btl.rapper)
+        self.is_(rpr, btl.singer)
+        self.is_(rpr, btl.artist)
 
         with self._chrontest(btl.save) as t:
             t.created(rpr)
@@ -12313,7 +12315,7 @@ class test_orm(tester):
             t.created(btl.orm.super.orm.super)
 
         # Load by rapper then lazy-load battles to test
-        rpr1 = rapper(btl.rapper.id)
+        rpr1 = btl.rapper.orm.reloaded()
         self.one(rpr1.battles)
         self.eq(rpr1.battles.first.id, btl.id)
 
