@@ -1638,7 +1638,7 @@ class entitiesmeta(type):
     """
     def __and__(self, other):
         """ Creates a new instance of ``self`` and joins ``other`` to
-        it.
+        it::
 
             arts = artists & presentations
             assert isinstance(arts, artists)
@@ -2169,10 +2169,48 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         return self
 
     def __and__(self, other):
+        """ Creates a new instance of ``self`` and joins ``other`` to
+        it::
+
+            arts = artists() & presentations
+
+        The SELECT for ``arts`` (arts.orm.sql) will be something like::
+            
+            SELECT *
+            FROM artists a
+                INNER JOIN presentations p
+                    ON a.id = p.artistsid
+
+        ...
+
+        Note that the above can work with a class reference instead of
+        an instance::
+
+            arts = artists & presentations
+            assert isinstance(arts, artists)
+
+        The above works by virtue of entitiesmeta.__and__, however.
+
+        :param: other orm.entities: A references or object instances
+        that inherit from orm.entities.
+        """
         self.innerjoin(other)
         return self
 
     def __iand__(self, other):
+        """ Allows the ORM user to use the &= to join entities classes::
+
+        Instead if explicity calling .innerjoin()::
+
+            arts.join(artifacts)
+
+        You can use this more concise form::
+            
+            arts &= artifacts
+
+        :param: other orm.entities: A references or object instances
+        that inherit from orm.entities.
+        """
         self.innerjoin(other)
         return self
     
