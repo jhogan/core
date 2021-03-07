@@ -17642,10 +17642,12 @@ Test General Entities Model (GEM)
 class gem_party(tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        es = orm.orm.getentitys(includeassociations=True)
-        for e in es:
-            if e.__module__ in ('party', 'apriori'):
-                e.orm.recreate()
+
+        if self.rebuildtables:
+            es = orm.orm.getentitys(includeassociations=True)
+            for e in es:
+                if e.__module__ in ('party', 'apriori'):
+                    e.orm.recreate()
 
         orm.orm.owner = ecommerce.users.root
 
