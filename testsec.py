@@ -402,6 +402,10 @@ class proprietor(tester.tester):
 
         map = hckr.orm.mappings['proprietor']
         self.eq('proprietor', map.name)
+
+        # Make sure the proprietor mapping was cloned, i.e., the
+        # object's proprietor mapping is not identical to the class's
+        # proprietor mapping.
         self.isnot(
             hacker.orm.mappings['proprietor'],
             map
