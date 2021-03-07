@@ -23848,12 +23848,6 @@ class gem_account(tester):
         self.two(txs1)
 
         for tx, tx1 in zip(txs, txs1):
-            dep = tx1.orm.cast(account.depreciation)
-            if dep:
-                tx1 = dep
-            else:
-                tx1 = tx1.orm.cast(account.sale)
-
             self.eq(tx.id, tx1.id)
             self.eq(tx.transacted, tx1.transacted)
             self.eq(tx.description, tx1.description)
