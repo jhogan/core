@@ -1683,7 +1683,6 @@ class entitiesmeta(type):
         return None
 
 class entities(entitiesmod.entities, metaclass=entitiesmeta):
-    # TODO Comment this class and all methods and properties
     re_alphanum_ = re.compile('^[a-z_][0-9a-z_]+$', flags=re.IGNORECASE)
 
     def __init__(self, initial=None, _p2=None, *args, **kwargs):
@@ -1927,6 +1926,15 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                     self.orm.initing = False
 
     def clone(self, to=None):
+        """ Clone the entities collection.
+
+        If the ``to`` parameter is provided, the properties of this
+        entities collection will be cloned to ``to`` and nothing will
+        be returned. Note that, at the moment, to must be provide.
+
+        :param es orm.entities: The entities collection into which this
+        entites collection's properties will be "cloned".
+        """
         if not to:
             raise NotImplementedError()
 
@@ -1935,15 +1943,39 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         to.orm.isloaded  =  self.orm.isloaded
 
     def _self_onafterload(self, src, eargs):
+        """ The event handler that is invoked after the entities
+        collection is loaded from the database. It records the database
+        interaction of the load to the db.chronicler singleton.  The
+        onafterload event is raised in orm.collect(). 
+        """
+
+        # Get a reference to the chronicler single ton
         chron = db.chronicler.getinstance()
+
+        # Add a chonicle instance to the chronicler as a way of
+        # recording, in memory, the database interaction (i.e., the SQL
+        # and operation type, that occured.
         chron += db.chronicle(eargs.entity, eargs.op, eargs.sql, eargs.args)
 
-    # TODO The *join methods should be in the ``orm`` class.
     def innerjoin(self, *args):
+        """ Creates an INNER JOIN for each entities collection in
+        *args. This is a thin wrapper around orm.join. More information
+        on joins can be found in that method's docstring.
+
+        :param: *args tuple(<orm.entities>): A tuple of class references
+        or object instances that inherit from orm.entities.
+        """
         for es in args:
             self.join(es, join.Inner)
 
     def outerjoin(self, *args, **kwargs):
+        """ Creates an OUTER JOIN for each entities collection in
+        *args. This is a thin wrapper around orm.join. More information
+        on joins can be found in that method's docstring.
+
+        :param: *args tuple(<orm.entities>): A tuple of class references
+        or object instances that inherit from orm.entities.
+        """
         for es in args:
             self.join(es, join.Outer, **kwargs)
 
