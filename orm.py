@@ -6718,6 +6718,17 @@ class orm:
         the issue in the future for the issue they are currently working
         on.
         """
+        r = list()
+        esup = self.entity.mro()[1]
+        essup = self.entities.mro()[1]
+        if esup.orm.entities is not essup:
+            r.append(
+                f'{self} inherits from a different entity than does '
+                'its entities collection: \n'
+                f'\t{self.entity.__name__}({esup})\n'
+                f'\t{self.entities.__name__}({essup})'
+            )
+
 
         for map in self.mappings:
             if isinstance(map, entitymapping):
