@@ -348,7 +348,7 @@ class other(internal):
     TRANS in "The Data Model Resource Book".
     """
 
-class external(other):
+class external(transaction):
     """ ``external`` models accounting transactions that affect two
     parties. An ``external`` transaction may be either an
     ``obligation`` transaction or a ``payment`` transaction. An
