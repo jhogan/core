@@ -3342,6 +3342,18 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 if sup:
                     for map in sup.orm.mappings.entitymappings:
                         if map.entity in v.orm.entity.orm.supers:
+                            
+                            # Take some extra precautions with
+                            # proprietor mappings. Propogate a
+                            # proprietor map up the inheritence tree
+                            # only if the attr == 'proprietor'.
+                            # Otherwise, the descision to do so would be
+                            # based on type, which is too risky for the
+                            # proprietor.
+                            if attr != 'proprietor':
+                                if map.isproprietor:
+                                    continue
+
                             setattr(sup, map.name, v)
                             break
 

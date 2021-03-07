@@ -424,6 +424,8 @@ class proprietor(tester.tester):
 
         hckr.proprietor = proprietor
 
+        self.notnone(hckr.orm.super.proprietor)
+
         hckr.save()
 
         hckr1 = hckr.orm.reloaded()
@@ -431,12 +433,7 @@ class proprietor(tester.tester):
         self.eq(hckr.id, hckr1.id)
         self.eq(hckr.proprietor.id, hckr1.proprietor.id)
 
-        # NOTE The super's proprietor is None. This is inaccurate and
-        # probably would be for almost any given situation. I'm not sure
-        # what to do about it at the moment. Maybe `proprietor` should
-        # be an @orm.attr getter that looks up and down the graph for a
-        # proprietor.
-        self.none(hckr.orm.super.proprietor)
+        self.notnone(hckr.orm.super.proprietor)
 
     def it_adds_proprietor_to_subsubentity(self):
         ''' Test class (static attribute)'''
@@ -486,13 +483,8 @@ class proprietor(tester.tester):
         self.eq(phr.id, phr1.id)
         self.eq(phr.proprietor.id, phr1.proprietor.id)
 
-        # NOTE The super's proprietor is None. This is inaccurate and
-        # probably would be for almost any given situation. I'm not sure
-        # what to do about it at the moment. Maybe `proprietor` should
-        # be an @orm.attr getter that looks up and down the graph for a
-        # proprietor.
-        self.none(phr.orm.super.proprietor)
-        self.none(phr.orm.super.orm.super.proprietor)
+        self.notnone(phr.orm.super.proprietor)
+        self.notnone(phr.orm.super.orm.super.proprietor)
 
     def it_sets_proprietor(self):
         """
