@@ -2319,9 +2319,38 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 raise ValueError()
     
     def __getattribute__(self, attr):
+        """ Returns the value of an attribute of this entities
+        collection.
+
+        In additon to returning the attribute's value, this is also the
+        method that contains the logic for deferred loading::
+
+            # Instatiate the entities collection, but don't load from
+            # database.
+            ents = myentities(name = 'my-name')
+
+            # Calling an attribute, such as 'count', will cause the
+            # SELECT query defined above to be sent to the database
+            # allowing ents to load itself (via orm.collect()). The
+            # SQL will look something like this::
+            #
+            #     SELECT * FROM myentities where name = 'my-name';
+            #
+            # After the data has been collected into `ents`, the 'count'
+            # property will this be called and can return the number of
+            # myentity objects in `ents`.
+            ents.count
+
+        As a side note, defered loading also works with iteration.
+        """
+
+        # Just return the orm instance of the entities collection if
+        # attr is 'orm'.
         if attr == 'orm':
             return object.__getattribute__(self, attr)
 
+        # Raise exception if we are streaming and one of these nono
+        # attributes is called.
         if self.orm.isstreaming:
             nonos = (
                 'getrandom',    'getrandomized',  'where',    'clear',
@@ -2336,6 +2365,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 msg += 'while streaming'
                 raise builtins.AttributeError(msg % (self.__class__.__name__, attr))
         else:
+            # Determine if we should `load` the entities collection.
             load = True
 
             if self.orm.composite:
@@ -2360,7 +2390,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             # Don't load if self has already been loaded
             load &= not self.orm.isloaded
 
-            # Don't load an entiity object is being removed from an
+            # Don't load if an entity object is being removed from an
             # entities collection
             load &= not self.orm.isremoving
 
@@ -2369,18 +2399,80 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             load &= self.orm.joins.ispopulated or bool(self.orm.where)
 
             if load:
+                # Load the collection based on the parameters defined by
+                # the invocation of the entities's __init__ method.
                 self.orm.collect()
 
         return object.__getattribute__(self, attr)
 
     def sort(self, key=None, reverse=None):
+        """ Sort the entities collection internally by ``key``. If no
+        key is given, we default to the entity object's id::
+
+            # Create a collection
+            gs = product.goods()
+
+            # Add two entity objects to the collection
+            for _ in range(2)
+                gs += product.good()
+
+            # The id's are currently not sorted
+            assert gs.pluck('id') == [
+                UUID('de17eb3a-05b3-44bf-ac56-6fa46c4e7921'), 
+                UUID('d068887b-ed8a-4d51-b874-864e8d1a459d'),
+            ]
+
+            # Internally sort the collection by id in ascending order
+            gs.sort()
+
+            # The entities collection is now sorted
+            assert gs.pluck('id') == [
+                UUID('d068887b-ed8a-4d51-b874-864e8d1a459d'),
+                UUID('de17eb3a-05b3-44bf-ac56-6fa46c4e7921'), 
+            ]
+
+        The ``reverse`` flag sorts the entities in descending order. If
+        not given, the sort order will be ascending.
+
+        Note that sorting works the same (as far as the ORM's user
+        interface is concerned) whether or not we are streaming.
+
+                # Streaming
+                arts = artists(orm.stream, lastname=lastname)
+                arts.sort()
+
+                # Not streaming
+                arts = artists(lastname=lastname)
+                arts.sort()
+
+        Underneath the service, an SQL ORDER BY clause will be used if
+        in streaming mode, otherwise, Python's stardard sorting
+        facilities will be used. This is why defered loading is
+        necessary. The above lines set the parameters for the query.  It
+        isn't until a regular attribute is called that the query is sent
+        to the database.
+
+            # Send SELECT statement here to load arts.
+            print(arts.count)
+        """
+
+        # Default key to 'id' if not given.
         key = 'id' if key is None else key
+
         if self.orm.isstreaming:
+            # If streaming, the key will be an ORDER BY clause. The
+            # `reverse` parameter will become the SQL DESC keyword if
+            # True or ASC if False.
             key = f'`{self.orm.abbreviation}.{key}`'
             key = '%s %s' % (key, 'DESC' if reverse else 'ASC')
             self.orm.stream.orderby = key
-        else:
+        else: 
+            # If not streaming...
+
+            # Ensure `reverse` is a bool
             reverse = False if reverse is None else reverse
+
+            # Use the entites.entities in-memory sort algorithm.
             super().sort(key, reverse)
 
     def sorted(self, key=None, reverse=None):
