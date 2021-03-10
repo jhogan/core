@@ -3833,9 +3833,8 @@ class test_orm(tester):
         self.chronicles = db.chronicles()
         db.chronicler.getinstance().chronicles.onadd += self._chronicler_onadd
 
-        es = orm.orm.getentitys(includeassociations=True)
-
         if self.rebuildtables:
+            es = orm.orm.getentitys(includeassociations=True)
             # Since orm entities now depends on `party` (someone
             # circularly), we need to ensure the party classes have updated
             # tables definitions in the database. `party` is dependent on
