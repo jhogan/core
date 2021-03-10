@@ -55,6 +55,7 @@ import testbot
 import testdom
 import testecommerce
 import testfile
+import testmessage
 import testsec
 import textwrap
 

@@ -1638,7 +1638,7 @@ class entitiesmeta(type):
     """
     def __and__(self, other):
         """ Creates a new instance of ``self`` and joins ``other`` to
-        it.
+        it::
 
             arts = artists & presentations
             assert isinstance(arts, artists)
@@ -1683,7 +1683,6 @@ class entitiesmeta(type):
         return None
 
 class entities(entitiesmod.entities, metaclass=entitiesmeta):
-    # TODO Comment this class and all methods and properties
     re_alphanum_ = re.compile('^[a-z_][0-9a-z_]+$', flags=re.IGNORECASE)
 
     def __init__(self, initial=None, _p2=None, *args, **kwargs):
@@ -1927,6 +1926,15 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                     self.orm.initing = False
 
     def clone(self, to=None):
+        """ Clone the entities collection.
+
+        If the ``to`` parameter is provided, the properties of this
+        entities collection will be cloned to ``to`` and nothing will
+        be returned. Note that, at the moment, to must be provide.
+
+        :param es orm.entities: The entities collection into which this
+        entites collection's properties will be "cloned".
+        """
         if not to:
             raise NotImplementedError()
 
@@ -1935,15 +1943,39 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         to.orm.isloaded  =  self.orm.isloaded
 
     def _self_onafterload(self, src, eargs):
+        """ The event handler that is invoked after the entities
+        collection is loaded from the database. It records the database
+        interaction of the load to the db.chronicler singleton.  The
+        onafterload event is raised in orm.collect(). 
+        """
+
+        # Get a reference to the chronicler single ton
         chron = db.chronicler.getinstance()
+
+        # Add a chonicle instance to the chronicler as a way of
+        # recording, in memory, the database interaction (i.e., the SQL
+        # and operation type, that occured.
         chron += db.chronicle(eargs.entity, eargs.op, eargs.sql, eargs.args)
 
-    # TODO The *join methods should be in the ``orm`` class.
     def innerjoin(self, *args):
+        """ Creates an INNER JOIN for each entities collection in
+        *args. This is a thin wrapper around orm.join. More information
+        on joins can be found in that method's docstring.
+
+        :param: *args tuple(<orm.entities>): A tuple of class references
+        or object instances that inherit from orm.entities.
+        """
         for es in args:
             self.join(es, join.Inner)
 
     def outerjoin(self, *args, **kwargs):
+        """ Creates an OUTER JOIN for each entities collection in
+        *args. This is a thin wrapper around orm.join. More information
+        on joins can be found in that method's docstring.
+
+        :param: *args tuple(<orm.entities>): A tuple of class references
+        or object instances that inherit from orm.entities.
+        """
         for es in args:
             self.join(es, join.Outer, **kwargs)
 
@@ -2137,10 +2169,48 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         return self
 
     def __and__(self, other):
+        """ Creates a new instance of ``self`` and joins ``other`` to
+        it::
+
+            arts = artists() & presentations
+
+        The SELECT for ``arts`` (arts.orm.sql) will be something like::
+            
+            SELECT *
+            FROM artists a
+                INNER JOIN presentations p
+                    ON a.id = p.artistsid
+
+        ...
+
+        Note that the above can work with a class reference instead of
+        an instance::
+
+            arts = artists & presentations
+            assert isinstance(arts, artists)
+
+        The above works by virtue of entitiesmeta.__and__, however.
+
+        :param: other orm.entities: A references or object instances
+        that inherit from orm.entities.
+        """
         self.innerjoin(other)
         return self
 
     def __iand__(self, other):
+        """ Allows the ORM user to use the &= to join entities classes::
+
+        Instead if explicity calling .innerjoin()::
+
+            arts.join(artifacts)
+
+        You can use this more concise form::
+            
+            arts &= artifacts
+
+        :param: other orm.entities: A references or object instances
+        that inherit from orm.entities.
+        """
         self.innerjoin(other)
         return self
     
@@ -2249,9 +2319,38 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 raise ValueError()
     
     def __getattribute__(self, attr):
+        """ Returns the value of an attribute of this entities
+        collection.
+
+        In additon to returning the attribute's value, this is also the
+        method that contains the logic for deferred loading::
+
+            # Instatiate the entities collection, but don't load from
+            # database.
+            ents = myentities(name = 'my-name')
+
+            # Calling an attribute, such as 'count', will cause the
+            # SELECT query defined above to be sent to the database
+            # allowing ents to load itself (via orm.collect()). The
+            # SQL will look something like this::
+            #
+            #     SELECT * FROM myentities where name = 'my-name';
+            #
+            # After the data has been collected into `ents`, the 'count'
+            # property will this be called and can return the number of
+            # myentity objects in `ents`.
+            ents.count
+
+        As a side note, defered loading also works with iteration.
+        """
+
+        # Just return the orm instance of the entities collection if
+        # attr is 'orm'.
         if attr == 'orm':
             return object.__getattribute__(self, attr)
 
+        # Raise exception if we are streaming and one of these nono
+        # attributes is called.
         if self.orm.isstreaming:
             nonos = (
                 'getrandom',    'getrandomized',  'where',    'clear',
@@ -2266,6 +2365,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 msg += 'while streaming'
                 raise builtins.AttributeError(msg % (self.__class__.__name__, attr))
         else:
+            # Determine if we should `load` the entities collection.
             load = True
 
             if self.orm.composite:
@@ -2290,7 +2390,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             # Don't load if self has already been loaded
             load &= not self.orm.isloaded
 
-            # Don't load an entiity object is being removed from an
+            # Don't load if an entity object is being removed from an
             # entities collection
             load &= not self.orm.isremoving
 
@@ -2299,18 +2399,80 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             load &= self.orm.joins.ispopulated or bool(self.orm.where)
 
             if load:
+                # Load the collection based on the parameters defined by
+                # the invocation of the entities's __init__ method.
                 self.orm.collect()
 
         return object.__getattribute__(self, attr)
 
     def sort(self, key=None, reverse=None):
+        """ Sort the entities collection internally by ``key``. If no
+        key is given, we default to the entity object's id::
+
+            # Create a collection
+            gs = product.goods()
+
+            # Add two entity objects to the collection
+            for _ in range(2)
+                gs += product.good()
+
+            # The id's are currently not sorted
+            assert gs.pluck('id') == [
+                UUID('de17eb3a-05b3-44bf-ac56-6fa46c4e7921'), 
+                UUID('d068887b-ed8a-4d51-b874-864e8d1a459d'),
+            ]
+
+            # Internally sort the collection by id in ascending order
+            gs.sort()
+
+            # The entities collection is now sorted
+            assert gs.pluck('id') == [
+                UUID('d068887b-ed8a-4d51-b874-864e8d1a459d'),
+                UUID('de17eb3a-05b3-44bf-ac56-6fa46c4e7921'), 
+            ]
+
+        The ``reverse`` flag sorts the entities in descending order. If
+        not given, the sort order will be ascending.
+
+        Note that sorting works the same (as far as the ORM's user
+        interface is concerned) whether or not we are streaming.
+
+                # Streaming
+                arts = artists(orm.stream, lastname=lastname)
+                arts.sort()
+
+                # Not streaming
+                arts = artists(lastname=lastname)
+                arts.sort()
+
+        Underneath the service, an SQL ORDER BY clause will be used if
+        in streaming mode, otherwise, Python's stardard sorting
+        facilities will be used. This is why defered loading is
+        necessary. The above lines set the parameters for the query.  It
+        isn't until a regular attribute is called that the query is sent
+        to the database.
+
+            # Send SELECT statement here to load arts.
+            print(arts.count)
+        """
+
+        # Default key to 'id' if not given.
         key = 'id' if key is None else key
+
         if self.orm.isstreaming:
+            # If streaming, the key will be an ORDER BY clause. The
+            # `reverse` parameter will become the SQL DESC keyword if
+            # True or ASC if False.
             key = f'`{self.orm.abbreviation}.{key}`'
             key = '%s %s' % (key, 'DESC' if reverse else 'ASC')
             self.orm.stream.orderby = key
-        else:
+        else: 
+            # If not streaming...
+
+            # Ensure `reverse` is a bool
             reverse = False if reverse is None else reverse
+
+            # Use the entites.entities in-memory sort algorithm.
             super().sort(key, reverse)
 
     def sorted(self, key=None, reverse=None):
