@@ -4518,7 +4518,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         that best represents the object in most situation.
         """
         if hasattr(self, 'name'):
-            return '"%s"' % self.name
+            return '%s' % self.name
             
         return str(self.id)
             
