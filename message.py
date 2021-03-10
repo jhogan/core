@@ -47,21 +47,38 @@ class message(orm.entity):
     html = text
     text = text
     postdate = datetime
+    subject = str
+    dispatches = dispatches
+
+    def dispatch(self, *args, **kwargs):
+        dis = dispatch(*args, **kwargs)
+        self.dispatches += dis
+        return dis
+
+    @property
+    def from_(self):
+        for cmm in self.contactmechanism_messages:
+            type = cmm.contactmechanism_messagetype
+            if type.name == 'source':
+                return cmm.contactmechanism
 
     @staticmethod
-    def email(from_, to, html=None, text=None, postdate=None):
+    def email(from_, to, subject=None, html=None, text=None, postdate=None):
         if isinstance(from_, str):
             from_ = party.email(name=from_)
+        elif isinstance(from_, party.email):
+            pass
         else:
-            # TODO
-            raise NotImplementedError()
+            raise TypeError('Invalid type for from_')
 
         if isinstance(to, str):
             tos = party.emails()
             for to in to.split(';'):
                 tos += party.email(name=to)
-        elif isinstance(to, orm.entity):
+        elif isinstance(to, party.email):
             tos = to.orm.collectivize()
+        elif isinstance(to, party.emails):
+            tos = to
         else:
             raise TypeError('Invalid type for `to`')
 
@@ -69,6 +86,7 @@ class message(orm.entity):
             html      =  html,
             text      =  text,
             postdate  =  postdate,
+            subject   =  subject,
         )
 
         src   = contactmechanism_messagetype(name='source')
@@ -90,6 +108,55 @@ class message(orm.entity):
         msg.save()
 
         return msg
+
+    def __str__(self):
+        boundry = uuid4().hex
+
+        tos = party.emails()
+        for cmm in self.contactmechanism_messages:
+            type = cmm.contactmechanism_messagetype
+            cm = cmm.contactmechanism
+            if type.name == 'source':
+                from_ = cm
+            elif type.name == 'destination':
+                tos += cm
+
+        hdr = textwrap.dedent(f'''
+        From: {from_}
+        To: {tos}
+        Subject: {self.subject}
+        Date: {self.createdat or ''}
+        Content-Type: multipart/alternative
+        boundry="=_{boundry}"
+        MIME-Version: 1.0
+        ''')
+
+        r = hdr
+
+        txt = self.text
+        if txt:
+            r += textwrap.dedent(f'''
+            --={boundry}
+            Content-Type: text/plain; charset=UTF-8
+            Content-Transfer-Encoding: quoted-printable
+            {txt}
+            ''')
+
+        html = self.html
+        if html:
+            r += textwrap.dedent(f'''
+            --={boundry}
+            Content-Type: text/plain; charset=UTF-8
+            Content-Transfer-Encoding: quoted-printable
+            {txt}
+            ''')
+            r += f'{html}\n'
+
+        return r.strip()
+        B()
+
+    def __repr__(self):
+        return str(self)
 
 class contactmechanism_messagetype(apriori.type):
     messages = contactmechanism_messages

@@ -35,6 +35,7 @@ class test_message(tester.tester):
 
     def it_creates(self):
         msg = message.message(
+            subject = 'Hello!!!',
             html = '<p>Hello, world</p>',
             text = 'Hello, world',
         )
@@ -168,6 +169,53 @@ class test_message(tester.tester):
             )
 
             compare_messages(msg, msg.orm.reloaded(), 2)
+
+        ''' Multiple `to`'s '''
+        strtos = 'destination1@example.com; destination2@example.com'
+        objtos = party.emails(
+            initial = [
+                party.email(name='destination1@example.com'),
+                party.email(name='destination2@example.com')
+            ]
+        )
+
+        for tos in (strtos, objtos):
+            msg = message.message.email(
+                from_     =  'source@example.com',
+                to        =  tos,
+                html      =  '<p>html</p>',
+                text      =  'text',
+                postdate  =  '2020-02-02 02:02:02',
+            )
+
+            compare_messages(msg, msg.orm.reloaded(), 3)
+
+        ''' party.email as from '''
+        from_ = party.email(name='source@example.com')
+        msg = message.message.email(
+            from_     =  from_,
+            to        =  tos,
+            html      =  '<p>html</p>',
+            text      =  'text',
+            postdate  =  '2020-02-02 02:02:02',
+        )
+        self.eq(from_.name, msg.from_.name)
+
+        compare_messages(msg, msg.orm.reloaded(), 3)
+
+    def it_calls_from_(self):
+        from_ = party.email(name='source@example.com')
+        msg = message.message.email(
+            from_     =  from_,
+            to        =  'destination@example.com',
+            html      =  '<p>html</p>',
+            text      =  'text',
+            postdate  =  '2020-02-02 02:02:02',
+        )
+
+        self.eq(from_.id, msg.from_.id)
+        self.eq(from_.name, msg.from_.name)
+
 
 
                 
