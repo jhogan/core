@@ -2418,8 +2418,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
             # The id's are currently not sorted
             assert gs.pluck('id') == [
-                UUID('de17eb3a-05b3-44bf-ac56-6fa46c4e7921'), 
-                UUID('d068887b-ed8a-4d51-b874-864e8d1a459d'),
+                UUID('fe17eb3a-05b3-44bf-ac56-6fa46c4e7921'), 
+                UUID('a068887b-ed8a-4d51-b874-864e8d1a459d'),
             ]
 
             # Internally sort the collection by id in ascending order
@@ -2427,8 +2427,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
             # The entities collection is now sorted
             assert gs.pluck('id') == [
-                UUID('d068887b-ed8a-4d51-b874-864e8d1a459d'),
-                UUID('de17eb3a-05b3-44bf-ac56-6fa46c4e7921'), 
+                UUID('a068887b-ed8a-4d51-b874-864e8d1a459d'),
+                UUID('fe17eb3a-05b3-44bf-ac56-6fa46c4e7921'), 
             ]
 
         The ``reverse`` flag sorts the entities in descending order. If
@@ -2476,6 +2476,40 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             super().sort(key, reverse)
 
     def sorted(self, key=None, reverse=None):
+        """ Works identically to ``entities.sort``, but instead of
+        internally sorting the collection, a sorted clone of the
+        collection is returned. The original collection is left
+        unaltered::
+
+            # Create a collection
+            gs = product.goods()
+
+            # Add two entity objects to the collection
+            for _ in range(2)
+                gs += product.good()
+
+            # The id's are currently not sorted
+            assert gs.pluck('id') == [
+                UUID('fe17eb3a-05b3-44bf-ac56-6fa46c4e7921'), 
+                UUID('d068887b-ed8a-4d51-b874-864e8d1a459d'),
+            ]
+
+            # Return a sorted version of the collection.
+            gs1 = gs.sorted()
+
+            # This entities collection is now sorted, but the original
+            # is unaltered.
+            assert gs.pluck('id') == [
+                UUID('fe17eb3a-05b3-44bf-ac56-6fa46c4e7921'), 
+                UUID('a068887b-ed8a-4d51-b874-864e8d1a459d'),
+            ]
+
+            assert gs1.pluck('id') == [
+                UUID('a068887b-ed8a-4d51-b874-864e8d1a459d'),
+                UUID('fe17eb3a-05b3-44bf-ac56-6fa46c4e7921'), 
+            ]
+        """
+        
         key = 'id' if key is None else key
         if self.orm.isstreaming:
             key = f'`{self.orm.abbreviation}.{key}`'
@@ -2501,6 +2535,40 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             return r
 
     def save(self, *es):
+        """ Persist the entity to the database as well as all of its
+        constituents (recursive and non-recursive), associations, and
+        composites.
+
+        Simple entity save
+        ------------------
+
+            # Create a goods record
+            g = good()
+            assert not g.orm.isnew
+
+            # Persist (INSERT record)
+            g.save()
+            assert not g.orm.isnew
+
+            # Change property
+            assert not g.orm.isdirty
+            g.name = 'new name'
+            assert g.orm.isdirty
+
+            # Persist (UPDATE record)
+            g.save()
+            assert not g.orm.isdirty
+
+            # Delete
+            g.orm.ismarkedfordeletion = True
+
+            # Persist (DELETE record)
+            g.save()
+
+        Constituents
+        ------------
+            
+        """
         exec = db.executioner(self._save)
         exec.execute(es)
 
