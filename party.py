@@ -83,7 +83,7 @@ class phones(contactmechanisms):                             pass
 
 class emails(contactmechanisms):
     def __str__(self):
-        return '; '.join(str(x) for x in self)
+        return ', '.join(str(x) for x in self)
 
 class websites(contactmechanisms):                           pass
 class party_contactmechanisms(orm.associations):             pass
