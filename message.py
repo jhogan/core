@@ -20,6 +20,7 @@ import apriori
 import orm
 import party
 import textwrap
+import builtins
 from uuid import uuid4
 
 class messages(orm.entities):
@@ -61,6 +62,19 @@ class message(orm.entity):
             type = cmm.contactmechanism_messagetype
             if type.name == 'source':
                 return cmm.contactmechanism
+
+    def gettos(self, type):
+        r = type.orm.entities()
+        for cmm in self.contactmechanism_messages:
+            cm = cmm.contactmechanism
+            if builtins.type(cm) is not type:
+                continue
+
+            type1 = cmm.contactmechanism_messagetype
+            if type1.name == 'destination':
+                r += cmm.contactmechanism
+
+        return r
 
     @staticmethod
     def email(from_, to, subject=None, html=None, text=None, postdate=None):
