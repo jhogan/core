@@ -45,6 +45,8 @@ class dispatchtypes(apriori.types):
     pass
 
 class message(orm.entity):
+    # TODO Add CCs BCCs; change the 'destination' type to 'to' to
+    # distinguish between CCs and BCCs
     html = text
     text = text
     postdate = datetime

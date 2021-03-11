@@ -37,8 +37,6 @@ class configuration:
                     acct.password = 'my-super-secret-password'
 
                 return accts
-
-
     """
     recaptcha_key = '<RECAPTCHA-KEY>'
     environment = 'development'

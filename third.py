@@ -16,6 +16,8 @@ TODOs:
 
 from func import enumerate, B
 import product
+import www
+import json
 
 class internetservices(product.services):
     pass
@@ -42,8 +44,10 @@ class api(internetservice):
         if not self._browser:
             self._browser = www.browser()
 
+            '''
             self.browser.onbeforerequest += \
                 self._browser_onbeforerequest
+            '''
 
         return self._browser
 
