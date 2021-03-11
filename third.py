@@ -33,15 +33,9 @@ class postmarks(mails):
     pass
 
 class api(internetservice):
-    # The secret API KEY
-    key = str
-
-    # Credentials
-    username = str
-    password = str
-
-    host = str
-    port = int
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._browser = None
 
     @property
     def browser(self):
