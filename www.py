@@ -1306,12 +1306,18 @@ class browsers(entities.entities):
 
 class browser(entities.entity):
     class _tabs(entities.entities):
-        pass
+        def tab(self):
+            t = browser._tab(self)
+            self += t
+            return t
 
     class _tab(entities.entity):
         # TODO These methods will eventually be implemented to perform
         # actual HTTP requests. At the time of this writting, however,
         # these will be implemented in the testers.browser subclass
+        def __init__(self, tabs):
+            self.tabs = tabs
+
         def get(self, url):
             self._request(url)
 
@@ -1352,6 +1358,7 @@ class browser(entities.entity):
             self.same_site = same_site
 
     def __init__(self):
+        self.tabs = browser._tabs(self)
         self.cookies = self._cookies()
         self._useragent = None
 
@@ -1371,5 +1378,9 @@ class browser(entities.entity):
     @useragent.setter
     def useragent(self, v):
         self._useragent = v
+
+    def tab(self):
+        return self.tabs.tab()
+
 
 app = application()

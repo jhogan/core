@@ -54,7 +54,7 @@ class api(internetservice):
         return self._browser
 
     def _browser_onbeforerequest(self, src, eargs):
-        B()
+        pass
 
 class mail(api):
     def send(self):

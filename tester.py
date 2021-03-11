@@ -142,7 +142,7 @@ class tester(entity):
 
         class _tab(www.browser._tab):
             def __init__(self, tabs):
-                self.tabs = tabs
+                super().__init__(tabs)
                 self._referer = None
 
             @property
@@ -360,9 +360,6 @@ class tester(entity):
             self.ip = ecommerce.ip(address=ip)
 
             self.useragent = ecommerce.useragent(string=useragent) 
-
-        def tab(self):
-            return self.tabs.tab()
 
     def browser(self, *args, **kwargs):
         return tester._browser(self, *args, **kwargs)
