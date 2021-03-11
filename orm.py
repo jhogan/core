@@ -2535,44 +2535,34 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             return r
 
     def save(self, *es):
-        """ Persist the entity to the database as well as all of its
-        constituents (recursive and non-recursive), associations, and
-        composites.
+        """ Persist each entity in this collection to the database in an
+        atomic commit. The orm.entity and orm.entities objects in the
+        *es tuple will also be persisted in the atomic transaction.  See
+        the docstring at ``entity.save`` for more information on how
+        entity objects are persisted.
 
-        Simple entity save
-        ------------------
+        :param: *es tuple(<orm.entity>|<orm.entities>): A tuple of
+        orm.entity and/or orm.entities objects that the users wish to
+        be persisted within the atomic transaction. This is rarely
+        needed but sometimes comes in handy.
 
-            # Create a goods record
-            g = good()
-            assert not g.orm.isnew
+            # Create an empty items collection
+            itms = product.items()
 
-            # Persist (INSERT record)
-            g.save()
-            assert not g.orm.isnew
+            # Add 2 items to it
+            for i in range(2):
+                itms += product.item()
 
-            # Change property
-            assert not g.orm.isdirty
-            g.name = 'new name'
-            assert g.orm.isdirty
-
-            # Persist (UPDATE record)
-            g.save()
-            assert not g.orm.isdirty
-
-            # Delete
-            g.orm.ismarkedfordeletion = True
-
-            # Persist (DELETE record)
-            g.save()
-
-        Constituents
-        ------------
-            
+            # Both items will be created (INSERTed)
+            itms.save()
         """
         exec = db.executioner(self._save)
         exec.execute(es)
 
     def _save(self, cur, es=None):
+        """ Delegates the persistence operations to the entity objects
+        themselves.
+        """
         for e in self:
             e._save(cur)
 
@@ -3687,41 +3677,78 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         self.save()
 
     def save(self, *es):
-        """ Commit the entity's values to the database. The entity is
-        saved recursively and atomically.
+        """ Persist the entity to the database as well as all of its
+        constituents (recursive and non-recursive), associations, and
+        composites. All entity objects will be persisted in a single
+        MySQL atomic transaction. The orm.entity and orm.entities
+        objects in the *es tuple will also be persisted in the atomic
+        transaction. ``entity`` objects maintain a persistence state
+        (see orm.persistencestate) which save() uses to determine if a
+        CRUD operation is needed and which CRUD operation will be used.
 
-        :param: *es list: A list of entity objects that should be saved
-        as well:
+        :param: *es tuple(<orm.entity>|<orm.entities>): A tuple of
+        orm.entity and/or orm.entities objects that the users wish to
+        be persisted within the atomic transaction. This is rarely
+        needed but sometimes comes in handy::
             
-            art = artist()
-            pres = presentation()
-            sng = singer()
+            # Create two new users
+            usr = ecommercs.user()
+            usr1 = ecommerce.user()
 
-            # Insert the artist record as wel as the presentation record
-            # and the singer record all in one transaction.
-            art.save(pres, sng)
+            # Save (INSERT) usr along with usr1 in a single atomic
+            # transaction
+            usr.save(usr1)
 
-        Create, update and delete
-        -------------------------
-        Depending on the state of the entity, three database operations
-        may be performed: INSERT, UPDATE or DELETE::
+        Simple entity save
+        ------------------
 
-            # Create a new entity
-            ent = myent()
-            ent.name = 'My Name'.
+            # Create a goods record
+            g = good()
+            assert not g.orm.isnew
 
-            # Saving will INSERT the record into the database
-            ent.save()
+            # Persist (INSERT record)
+            g.save()
+            assert not g.orm.isnew
 
-            # Changing an attributes values will dirty the entity,
-            # therefore an UPDATE will be performed.
-            ent.name = 'My Other Name'
-            ent.save()
+            # Change property
+            assert not g.orm.isdirty
+            g.name = 'new name'
+            assert g.orm.isdirty
 
-            # Marking the entity for deletion will cause the record to
-            # be DELETEd.
-            ent.ismarkedfordeletion = True
-            ent.save()
+            # Persist (UPDATE record)
+            g.save()
+            assert not g.orm.isdirty
+
+            # Delete
+            g.orm.ismarkedfordeletion = True
+            # Persist (DELETE record)
+            g.save()
+
+            # Alternatively, this would work:
+            #     
+            #     g.delete()
+
+        Constituents
+        ------------
+
+            # Add item
+            g.items += product.item()
+
+            # Create (INSERT) a new product.item associated with the
+            # good.
+            g.save()
+
+        Composite
+        ---------
+
+            # Load the product.item from the Constituents section above
+            itm = product.item(g.items.first.id)
+
+            # Change the good (composite) that the itm belongs to
+            itm.good.name = 'a newer name'
+
+            # A save of the item will cause the good to be UPDATEd
+            itm.save()
 
         Recursive
         ---------
