@@ -53,12 +53,17 @@ class configuration:
     @property
     def accounts(self):
         return accounts.accounts(
-            accounts.mysql(
-                username = 'epitest',
-                host     = 'localhost',
-                password = None,
-                database = 'epitest',
-            )
+            initial = [
+                accounts.mysql(
+                    username = 'epitest',
+                    host     = 'localhost',
+                    password = None,
+                    database = 'epitest',
+                ),
+                accounts.postmark(
+                    server = 'carapacian.com',
+                )
+            ]
         )
 
     @property
