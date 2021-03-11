@@ -75,6 +75,19 @@ class postmark(mail):
         tab = self.browser.tab()
 
         msg = dis.message
+        import party
+        body = {
+            'From': str(msg.from_),
+            'To': str(msg.gettos(type=party.email)),
+            # TODO Add CC
+            # TODO Add BCC
+            'Subject': msg.subject,
+            'HtmlBody', msg.html,
+            'TextBody', msg.text,
+
+        }
+        print(json.dumps(body))
+        B()
 
         # TODO Convert msg to JSON
 
