@@ -41,21 +41,26 @@ class test_message(tester.tester):
         )
 
         emails = (
-            'source@example.com', 
-            'destination@example.com', 
-            'destination1@example.com'
+            'from@example.com', 
+            'to@example.com', 
+            'to1@example.com',
+            'cc@example.com', 
+            'cc1@example.com',
+            'bcc@example.com', 
+            'bcc1@example.com',
         )
 
-        for i, email in enumerate(emails):
-            if i.first:
-                type = message.contactmechanism_messagetype(
-                    name = 'source'
-                )
-            else:
-                type = message.contactmechanism_messagetype(
-                    name = 'destination'
-                )
+        for email in emails:
+            if email.startswith('from'):
+                name = 'from'
+            elif email.startswith('to'):
+                name = 'to'
+            elif email.startswith('cc'):
+                name = 'cc'
+            elif email.startswith('bcc'):
+                name = 'bcc'
 
+            type = message.contactmechanism_messagetype(name=name)
 
             cm = message.contactmechanism_message(
                 contactmechanism = party.email(name=email),
@@ -78,8 +83,8 @@ class test_message(tester.tester):
         cmms = msg.contactmechanism_messages.sorted()
         cmms1 = msg1.contactmechanism_messages.sorted()
 
-        self.three(cmms)
-        self.three(cmms1)
+        self.seven(cmms)
+        self.seven(cmms1)
 
         for cmm, cmm1 in zip(cmms, cmms1):
             self.eq(cmm.id,                   cmm1.id)
@@ -106,10 +111,10 @@ class test_message(tester.tester):
             self.eq(cm.id, cm1.id)
             self.eq(cm.name, cm1.name)
 
-            if type1.name == 'source':
-                self.startswith('source', cm1.name)
-            elif type1.name == 'destination':
-                self.startswith('destination', cm1.name)
+            if type1.name == 'from':
+                self.startswith('from', cm1.name)
+            elif type1.name == 'to':
+                self.startswith('to', cm1.name)
 
     def it_calls_email(self):
         def compare_messages(msg, msg1, cmmscnt):
@@ -150,18 +155,18 @@ class test_message(tester.tester):
                 self.eq(cm.id, cm1.id)
                 self.eq(cm.name, cm1.name)
 
-                if type1.name == 'source':
-                    self.startswith('source', cm1.name)
-                elif type1.name == 'destination':
-                    self.startswith('destination', cm1.name)
+                if type1.name == 'from':
+                    self.startswith('from', cm1.name)
+                elif type1.name == 'to':
+                    self.startswith('to', cm1.name)
 
         ''' Single `to` '''
-        strto = 'destination@example.com'
-        objto = party.email(name='destination@example.com')
+        strto = 'to@example.com'
+        objto = party.email(name='to@example.com')
 
         for to in (strto, objto):
             msg = message.message.email(
-                from_     =  'source@example.com',
+                from_     =  'from@example.com',
                 to        =  to,
                 html      =  '<p>html</p>',
                 text      =  'text',
@@ -171,17 +176,17 @@ class test_message(tester.tester):
             compare_messages(msg, msg.orm.reloaded(), 2)
 
         ''' Multiple `to`'s '''
-        strtos = 'destination1@example.com; destination2@example.com'
+        strtos = 'to1@example.com; to2@example.com'
         objtos = party.emails(
             initial = [
-                party.email(name='destination1@example.com'),
-                party.email(name='destination2@example.com')
+                party.email(name='to1@example.com'),
+                party.email(name='to2@example.com')
             ]
         )
 
         for tos in (strtos, objtos):
             msg = message.message.email(
-                from_     =  'source@example.com',
+                from_     =  'from@example.com',
                 to        =  tos,
                 html      =  '<p>html</p>',
                 text      =  'text',
@@ -191,7 +196,7 @@ class test_message(tester.tester):
             compare_messages(msg, msg.orm.reloaded(), 3)
 
         ''' party.email as from '''
-        from_ = party.email(name='source@example.com')
+        from_ = party.email(name='from@example.com')
         msg = message.message.email(
             from_     =  from_,
             to        =  tos,
@@ -204,10 +209,10 @@ class test_message(tester.tester):
         compare_messages(msg, msg.orm.reloaded(), 3)
 
     def it_calls_from_(self):
-        from_ = party.email(name='source@example.com')
+        from_ = party.email(name='from@example.com')
         msg = message.message.email(
             from_     =  from_,
-            to        =  'destination@example.com',
+            to        =  'to@example.com',
             html      =  '<p>html</p>',
             text      =  'text',
             postdate  =  '2020-02-02 02:02:02',

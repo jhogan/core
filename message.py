@@ -62,8 +62,17 @@ class message(orm.entity):
     def from_(self):
         for cmm in self.contactmechanism_messages:
             type = cmm.contactmechanism_messagetype
-            if type.name == 'source':
+            if type.name == 'from':
                 return cmm.contactmechanism
+
+    def _getcms(self, name):
+        r = party.contactmechanisms()
+        for cmm in self.contactmechanism_messages:
+            type1 = cmm.contactmechanism_messagetype
+            if type1.name == name:
+                r += cmm.contactmechanism
+
+        return r
 
     def gettos(self, type):
         r = type.orm.entities()
@@ -73,10 +82,18 @@ class message(orm.entity):
                 continue
 
             type1 = cmm.contactmechanism_messagetype
-            if type1.name == 'destination':
+            if type1.name == 'to':
                 r += cmm.contactmechanism
 
         return r
+
+    @property
+    def ccs(self):
+        return self._getcms('cc') 
+
+    @property
+    def bccs(self):
+        return self._getcms('bcc') 
 
     @staticmethod
     def email(from_, to, subject=None, html=None, text=None, postdate=None):
@@ -105,8 +122,8 @@ class message(orm.entity):
             subject   =  subject,
         )
 
-        src   = contactmechanism_messagetype(name='source')
-        dest  = contactmechanism_messagetype(name='destination')
+        src   = contactmechanism_messagetype(name='from')
+        dest  = contactmechanism_messagetype(name='to')
 
         cm = contactmechanism_message(
             contactmechanism              =  from_,
@@ -129,17 +146,34 @@ class message(orm.entity):
         boundry = uuid4().hex
 
         tos = party.emails()
+        ccs = party.emails()
+        bccs = party.emails()
         for cmm in self.contactmechanism_messages:
             type = cmm.contactmechanism_messagetype
             cm = cmm.contactmechanism
-            if type.name == 'source':
+            if type.name == 'from':
                 from_ = cm
-            elif type.name == 'destination':
+            elif type.name == 'to':
                 tos += cm
+            elif type.name == 'cc':
+                ccs += cm
+            elif type.name == 'bcc':
+                bccs += cm
 
         hdr = textwrap.dedent(f'''
         From: {from_}
         To: {tos}
+        ''')
+
+        if ccs.count:
+            hdr += f'CC: {ccs}\n'
+
+        if bccs.count:
+            hdr += f'BCC: {bccs}\n'
+
+        hdr = hdr.strip()
+            
+        hdr += textwrap.dedent(f'''
         Subject: {self.subject}
         Date: {self.createdat or ''}
         Content-Type: multipart/alternative
@@ -169,7 +203,6 @@ class message(orm.entity):
             r += f'{html}\n'
 
         return r.strip()
-        B()
 
     def __repr__(self):
         return str(self)
