@@ -2574,10 +2574,15 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 e._save(cur)
 
     def delete(self):
+        """ Issue a DELETE statement to the database for each entity in
+        the collection.
+        """
         for e in self:
             e.delete()
         
     def give(self, es):
+        """ Give the elements in `es` to this collection.
+        """
         sts = self.orm.persistencestates
         super().give(es)
 
@@ -2766,9 +2771,20 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
     @property
     def brokenrules(self):
+        """ Return the collection of brokenrules for each of the entity
+        objects in this collection. If no rules have been broken, then
+        an empty ``brokenrules`` collection will be returned.
+        """
         return self.getbrokenrules()
 
     def getbrokenrules(self, gb=None):
+        """ Return the collection of brokenrules for each of the entity
+        objects in this collection. If no rules have been broken, then
+        an empty ``brokenrules`` collection will be returned.
+
+        This implementation is used internally. Most users will want to
+        use the ``orm.entities.brokenrules`` property instead.
+        """
         brs = entitiesmod.brokenrules()
 
         # This test corrects a fairly deep issue that has only come up
