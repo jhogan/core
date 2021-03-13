@@ -74,8 +74,8 @@ class postmark(mail):
         entity that we are sending.
         """
         tab = self.browser.tab()
-
         msg = dis.message
+
         import party
         tos = msg.getcontachmechanisms(type=party.email, name='to')
         ccs = msg.getcontachmechanisms(type=party.email, name='cc')

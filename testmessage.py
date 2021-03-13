@@ -246,12 +246,5 @@ class test_message(tester.tester):
         self.eq(from_.id, msg.from_.id)
         self.eq(from_.name, msg.from_.name)
 
-
-
-                
-
-
-        
-
 if __name__ == '__main__':
     tester.cli().run()
