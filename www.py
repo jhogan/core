@@ -176,16 +176,19 @@ class application:
 
 request = None
 class _request:
-    def __init__(self, app):
+    def __init__(self, app=None):
         self.app           =  app
-        self.app._request  =  self
+        if app:
+            self.app._request  =  self
+
         self._payload      =  None
         self._user         =  None
         self._files        =  None
         self._useragent    =  None
         self._hit          =  None
         self._ip           =  None
-        self._url          =  None  # The refere
+        self._url          =  None  # The referer
+        self._headers      =  None
 
     @property
     def headers(self):
@@ -196,14 +199,20 @@ class _request:
         where the keys start with 'http_'.
         """
 
-        hdrs = headers()
-        for k, v in self.environment.items():
-            if not k.lower().startswith('http_'):
-                continue
+        if not self._headers:
+            self._headers = headers()
+            if self.iswsgi:
+                for k, v in self.environment.items():
+                    if not k.lower().startswith('http_'):
+                        continue
 
-            hdrs += header(k[5:], v)
+                    self._headers += header(k[5:], v)
 
-        return hdrs
+        return self._headers
+
+    @headers.setter
+    def headers(self, v):
+        self._headers = v
 
     @property
     def files(self):
@@ -347,6 +356,12 @@ class _request:
     @property
     def environment(self):
         return self.app.environment
+
+    @property
+    def iswsgi(self):
+        """ Returns True if the request is for a WSGI app.
+        """
+        return self.app is not None
 
     @property
     def servername(self):

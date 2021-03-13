@@ -18,6 +18,7 @@ from func import enumerate, B
 import product
 import www
 import json
+import pom
 
 class internetservices(product.services):
     pass
@@ -98,10 +99,16 @@ class postmark(mail):
             body['ReplyTo'] = msg.replyto.name
 
         print(json.dumps(body))
-        B()
 
         # TODO Convert msg to JSON
 
+        ws = pom.site(host='api.postmarkapp.com')
+        pg = pom.page(name='email')
+        req = www._request(app=None)
+        req.headers += 'Accept: application/json'
+        req.headers += 'Content-Type: application/json'
+        req.headers += 'X-Postmark-Server-Token: server token'
+        B()
         res = tab.post()
 
         
