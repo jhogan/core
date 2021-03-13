@@ -41,6 +41,7 @@ class test_message(tester.tester):
         )
 
         emails = (
+            'replyto@example.com', 
             'from@example.com', 
             'to@example.com', 
             'to1@example.com',
@@ -51,6 +52,8 @@ class test_message(tester.tester):
         )
 
         for email in emails:
+            if email.startswith('replyto'):
+                name = 'replyto'
             if email.startswith('from'):
                 name = 'from'
             elif email.startswith('to'):
@@ -83,8 +86,8 @@ class test_message(tester.tester):
         cmms = msg.contactmechanism_messages.sorted()
         cmms1 = msg1.contactmechanism_messages.sorted()
 
-        self.seven(cmms)
-        self.seven(cmms1)
+        self.eight(cmms)
+        self.eight(cmms1)
 
         for cmm, cmm1 in zip(cmms, cmms1):
             self.eq(cmm.id,                   cmm1.id)
@@ -113,8 +116,14 @@ class test_message(tester.tester):
 
             if type1.name == 'from':
                 self.startswith('from', cm1.name)
+            elif type1.name == 'replyto':
+                self.startswith('replyto', cm1.name)
             elif type1.name == 'to':
                 self.startswith('to', cm1.name)
+            elif type1.name == 'ccs':
+                self.startswith('ccs', cm1.name)
+            elif type1.name == 'bcc':
+                self.startswith('bcc', cm1.name)
 
     def it_calls_email(self):
         def compare_messages(msg, msg1, cmmscnt):
@@ -176,7 +185,7 @@ class test_message(tester.tester):
             compare_messages(msg, msg.orm.reloaded(), 2)
 
         ''' Multiple `to`'s '''
-        strtos = 'to1@example.com; to2@example.com'
+        strtos = 'to1@example.com, to2@example.com'
         objtos = party.emails(
             initial = [
                 party.email(name='to1@example.com'),
@@ -207,6 +216,22 @@ class test_message(tester.tester):
         self.eq(from_.name, msg.from_.name)
 
         compare_messages(msg, msg.orm.reloaded(), 3)
+
+
+        ''' party.email with ccs, bcc and replyto'''
+        msg = message.message.email(
+            replyto   = 'replyto@example.com',
+            from_     = 'from@example.com',
+            to        =  tos,
+            cc        = 'ccs@example.com, ccs1@example.com',
+            bcc       = 'bcc@example.com, bcc1@example.com',
+            html      =  '<p>html</p>',
+            text      =  'text',
+            postdate  =  '2020-02-02 02:02:02',
+        )
+        self.eq(from_.name, msg.from_.name)
+
+        compare_messages(msg, msg.orm.reloaded(), 8)
 
     def it_calls_from_(self):
         from_ = party.email(name='from@example.com')

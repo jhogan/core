@@ -76,16 +76,27 @@ class postmark(mail):
 
         msg = dis.message
         import party
-        body = {
-            'From': str(msg.from_),
-            'To': str(msg.gettos(type=party.email)),
-            # TODO Add CC
-            # TODO Add BCC
-            'Subject': msg.subject,
-            'HtmlBody', msg.html,
-            'TextBody', msg.text,
+        tos = msg.getcontachmechanisms(type=party.email, name='to')
+        ccs = msg.getcontachmechanisms(type=party.email, name='cc')
+        bccs = msg.getcontachmechanisms(type=party.email, name='bcc')
 
+        body = {
+            'From':      str(msg.from_),
+            'To':        str(tos),
+            'Subject':   msg.subject,
+            'HtmlBody':  msg.html,
+            'TextBody':  msg.text,
         }
+
+        if ccs.count:
+            body['Cc'] = str(ccs)
+
+        if bccs.count:
+            body['Bcc'] = str(bccs)
+
+        if msg.replyto:
+            body['ReplyTo'] = msg.replyto.name
+
         print(json.dumps(body))
         B()
 

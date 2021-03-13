@@ -59,22 +59,21 @@ class message(orm.entity):
         return dis
 
     @property
+    def replyto(self):
+        replytos = self.getcontachmechanisms(
+            type=party.email,
+            name='replyto'
+        )
+        return replytos(0)
+
+    @property
     def from_(self):
         for cmm in self.contactmechanism_messages:
             type = cmm.contactmechanism_messagetype
             if type.name == 'from':
                 return cmm.contactmechanism
 
-    def _getcms(self, name):
-        r = party.contactmechanisms()
-        for cmm in self.contactmechanism_messages:
-            type1 = cmm.contactmechanism_messagetype
-            if type1.name == name:
-                r += cmm.contactmechanism
-
-        return r
-
-    def gettos(self, type):
+    def getcontachmechanisms(self, type, name):
         r = type.orm.entities()
         for cmm in self.contactmechanism_messages:
             cm = cmm.contactmechanism
@@ -82,39 +81,21 @@ class message(orm.entity):
                 continue
 
             type1 = cmm.contactmechanism_messagetype
-            if type1.name == 'to':
+            if type1.name == name:
                 r += cmm.contactmechanism
 
         return r
 
     @property
-    def ccs(self):
+    def cc(self):
         return self._getcms('cc') 
 
     @property
-    def bccs(self):
+    def bcc(self):
         return self._getcms('bcc') 
 
     @staticmethod
-    def email(from_, to, subject=None, html=None, text=None, postdate=None):
-        if isinstance(from_, str):
-            from_ = party.email(name=from_)
-        elif isinstance(from_, party.email):
-            pass
-        else:
-            raise TypeError('Invalid type for from_')
-
-        if isinstance(to, str):
-            tos = party.emails()
-            for to in to.split(';'):
-                tos += party.email(name=to)
-        elif isinstance(to, party.email):
-            tos = to.orm.collectivize()
-        elif isinstance(to, party.emails):
-            tos = to
-        else:
-            raise TypeError('Invalid type for `to`')
-
+    def email(from_, to, cc=None, bcc=None, replyto=None, subject=None, html=None, text=None, postdate=None):
         msg = message(
             html      =  html,
             text      =  text,
@@ -122,21 +103,28 @@ class message(orm.entity):
             subject   =  subject,
         )
 
-        src   = contactmechanism_messagetype(name='from')
-        dest  = contactmechanism_messagetype(name='to')
+        for k in ('from_', 'to', 'cc', 'bcc', 'replyto'):
+            v = locals()[k]
+            if isinstance(v, str):
+                ems = party.emails()
+                for name in v.split(','):
+                    ems += party.email(name=name)
+            elif isinstance(v, party.email):
+                ems = v.orm.collectivize()
+            elif isinstance(v, party.emails):
+                ems = v
+            elif v is None:
+                continue
+            else:
+                raise TypeError(f'Invalid type for {k}')
 
-        cm = contactmechanism_message(
-            contactmechanism              =  from_,
-            contactmechanism_messagetype  =  src,
-        )
+            type = contactmechanism_messagetype(name=k.rstrip('_'))
 
-        msg.contactmechanism_messages += cm
-
-        for to in tos:
-            msg.contactmechanism_messages += contactmechanism_message(
-                contactmechanism              =  to,
-                contactmechanism_messagetype  =  dest,
-            )
+            for em in ems:
+                msg.contactmechanism_messages += contactmechanism_message(
+                    contactmechanism              =  em,
+                    contactmechanism_messagetype  =  type,
+                )
 
         msg.save()
 
