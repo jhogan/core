@@ -1284,6 +1284,18 @@ class headers(entities.entities):
                 return hdr.value
         return None
 
+    def append(self, obj, uniq=False, r=None):
+        if isinstance(obj, str):
+            kvp = [x.strip() for x in obj.partition(':') if x != ':']
+            if len(kvp) != 2:
+                raise ValueError(
+                    'Headers must be colon seperate KVPs'
+                )
+            return self.append(header(*kvp))
+
+        super().append(obj=obj, uniq=uniq, r=r)
+
+
     @property
     def list(self):
         r = list()
