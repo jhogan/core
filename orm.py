@@ -5,11 +5,15 @@
 # Unauthorized copying of this file, via any medium is strictly
 # prohibited
 # Proprietary and confidential
-# Written by Jesse Hogan <jessehogan0@gmail.com>, 2020
+# Written by Jesse Hogan <jessehogan0@gmail.com>, 2021
 ########################################################################
 
 "Simplicity is complexity resolved." 
-    # Constantin Brancusi, Romanian Sculptor
+# Constantin Brancusi
+
+"Most people overestimate what they can do in one year and "
+"underestimate what they can do in ten years."
+# Bill Gates
 
 """ This module contains all classes related to object-relational
 mapping.
@@ -1634,7 +1638,7 @@ class entitiesmeta(type):
     """
     def __and__(self, other):
         """ Creates a new instance of ``self`` and joins ``other`` to
-        it.
+        it::
 
             arts = artists & presentations
             assert isinstance(arts, artists)
@@ -1921,10 +1925,16 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 if hasattr(self, 'orm'):
                     self.orm.initing = False
 
-    def isauthorized(self):
-        "TODO"
-
     def clone(self, to=None):
+        """ Clone the entities collection.
+
+        If the ``to`` parameter is provided, the properties of this
+        entities collection will be cloned to ``to`` and nothing will
+        be returned. Note that, at the moment, to must be provide.
+
+        :param es orm.entities: The entities collection into which this
+        entites collection's properties will be "cloned".
+        """
         if not to:
             raise NotImplementedError()
 
@@ -1933,15 +1943,39 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         to.orm.isloaded  =  self.orm.isloaded
 
     def _self_onafterload(self, src, eargs):
+        """ The event handler that is invoked after the entities
+        collection is loaded from the database. It records the database
+        interaction of the load to the db.chronicler singleton.  The
+        onafterload event is raised in orm.collect(). 
+        """
+
+        # Get a reference to the chronicler single ton
         chron = db.chronicler.getinstance()
+
+        # Add a chonicle instance to the chronicler as a way of
+        # recording, in memory, the database interaction (i.e., the SQL
+        # and operation type, that occured.
         chron += db.chronicle(eargs.entity, eargs.op, eargs.sql, eargs.args)
 
-    # TODO The *join methods should be in the ``orm`` class.
     def innerjoin(self, *args):
+        """ Creates an INNER JOIN for each entities collection in
+        *args. This is a thin wrapper around orm.join. More information
+        on joins can be found in that method's docstring.
+
+        :param: *args tuple(<orm.entities>): A tuple of class references
+        or object instances that inherit from orm.entities.
+        """
         for es in args:
             self.join(es, join.Inner)
 
     def outerjoin(self, *args, **kwargs):
+        """ Creates an OUTER JOIN for each entities collection in
+        *args. This is a thin wrapper around orm.join. More information
+        on joins can be found in that method's docstring.
+
+        :param: *args tuple(<orm.entities>): A tuple of class references
+        or object instances that inherit from orm.entities.
+        """
         for es in args:
             self.join(es, join.Outer, **kwargs)
 
@@ -2135,10 +2169,48 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         return self
 
     def __and__(self, other):
+        """ Creates a new instance of ``self`` and joins ``other`` to
+        it::
+
+            arts = artists() & presentations
+
+        The SELECT for ``arts`` (arts.orm.sql) will be something like::
+            
+            SELECT *
+            FROM artists a
+                INNER JOIN presentations p
+                    ON a.id = p.artistsid
+
+        ...
+
+        Note that the above can work with a class reference instead of
+        an instance::
+
+            arts = artists & presentations
+            assert isinstance(arts, artists)
+
+        The above works by virtue of entitiesmeta.__and__, however.
+
+        :param: other orm.entities: A references or object instances
+        that inherit from orm.entities.
+        """
         self.innerjoin(other)
         return self
 
     def __iand__(self, other):
+        """ Allows the ORM user to use the &= to join entities classes::
+
+        Instead if explicity calling .innerjoin()::
+
+            arts.join(artifacts)
+
+        You can use this more concise form::
+            
+            arts &= artifacts
+
+        :param: other orm.entities: A references or object instances
+        that inherit from orm.entities.
+        """
         self.innerjoin(other)
         return self
     
@@ -2247,9 +2319,38 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 raise ValueError()
     
     def __getattribute__(self, attr):
+        """ Returns the value of an attribute of this entities
+        collection.
+
+        In additon to returning the attribute's value, this is also the
+        method that contains the logic for deferred loading::
+
+            # Instatiate the entities collection, but don't load from
+            # database.
+            ents = myentities(name = 'my-name')
+
+            # Calling an attribute, such as 'count', will cause the
+            # SELECT query defined above to be sent to the database
+            # allowing ents to load itself (via orm.collect()). The
+            # SQL will look something like this::
+            #
+            #     SELECT * FROM myentities where name = 'my-name';
+            #
+            # After the data has been collected into `ents`, the 'count'
+            # property will this be called and can return the number of
+            # myentity objects in `ents`.
+            ents.count
+
+        As a side note, defered loading also works with iteration.
+        """
+
+        # Just return the orm instance of the entities collection if
+        # attr is 'orm'.
         if attr == 'orm':
             return object.__getattribute__(self, attr)
 
+        # Raise exception if we are streaming and one of these nono
+        # attributes is called.
         if self.orm.isstreaming:
             nonos = (
                 'getrandom',    'getrandomized',  'where',    'clear',
@@ -2264,6 +2365,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 msg += 'while streaming'
                 raise builtins.AttributeError(msg % (self.__class__.__name__, attr))
         else:
+            # Determine if we should `load` the entities collection.
             load = True
 
             if self.orm.composite:
@@ -2288,7 +2390,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             # Don't load if self has already been loaded
             load &= not self.orm.isloaded
 
-            # Don't load an entiity object is being removed from an
+            # Don't load if an entity object is being removed from an
             # entities collection
             load &= not self.orm.isremoving
 
@@ -2297,21 +2399,117 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             load &= self.orm.joins.ispopulated or bool(self.orm.where)
 
             if load:
+                # Load the collection based on the parameters defined by
+                # the invocation of the entities's __init__ method.
                 self.orm.collect()
 
         return object.__getattribute__(self, attr)
 
     def sort(self, key=None, reverse=None):
+        """ Sort the entities collection internally by ``key``. If no
+        key is given, we default to the entity object's id::
+
+            # Create a collection
+            gs = product.goods()
+
+            # Add two entity objects to the collection
+            for _ in range(2)
+                gs += product.good()
+
+            # The id's are currently not sorted
+            assert gs.pluck('id') == [
+                UUID('fe17eb3a-05b3-44bf-ac56-6fa46c4e7921'), 
+                UUID('a068887b-ed8a-4d51-b874-864e8d1a459d'),
+            ]
+
+            # Internally sort the collection by id in ascending order
+            gs.sort()
+
+            # The entities collection is now sorted
+            assert gs.pluck('id') == [
+                UUID('a068887b-ed8a-4d51-b874-864e8d1a459d'),
+                UUID('fe17eb3a-05b3-44bf-ac56-6fa46c4e7921'), 
+            ]
+
+        The ``reverse`` flag sorts the entities in descending order. If
+        not given, the sort order will be ascending.
+
+        Note that sorting works the same (as far as the ORM's user
+        interface is concerned) whether or not we are streaming.
+
+                # Streaming
+                arts = artists(orm.stream, lastname=lastname)
+                arts.sort()
+
+                # Not streaming
+                arts = artists(lastname=lastname)
+                arts.sort()
+
+        Underneath the service, an SQL ORDER BY clause will be used if
+        in streaming mode, otherwise, Python's stardard sorting
+        facilities will be used. This is why defered loading is
+        necessary. The above lines set the parameters for the query.  It
+        isn't until a regular attribute is called that the query is sent
+        to the database.
+
+            # Send SELECT statement here to load arts.
+            print(arts.count)
+        """
+
+        # Default key to 'id' if not given.
         key = 'id' if key is None else key
+
         if self.orm.isstreaming:
+            # If streaming, the key will be an ORDER BY clause. The
+            # `reverse` parameter will become the SQL DESC keyword if
+            # True or ASC if False.
             key = f'`{self.orm.abbreviation}.{key}`'
             key = '%s %s' % (key, 'DESC' if reverse else 'ASC')
             self.orm.stream.orderby = key
-        else:
+        else: 
+            # If not streaming...
+
+            # Ensure `reverse` is a bool
             reverse = False if reverse is None else reverse
+
+            # Use the entites.entities in-memory sort algorithm.
             super().sort(key, reverse)
 
     def sorted(self, key=None, reverse=None):
+        """ Works identically to ``entities.sort``, but instead of
+        internally sorting the collection, a sorted clone of the
+        collection is returned. The original collection is left
+        unaltered::
+
+            # Create a collection
+            gs = product.goods()
+
+            # Add two entity objects to the collection
+            for _ in range(2)
+                gs += product.good()
+
+            # The id's are currently not sorted
+            assert gs.pluck('id') == [
+                UUID('fe17eb3a-05b3-44bf-ac56-6fa46c4e7921'), 
+                UUID('d068887b-ed8a-4d51-b874-864e8d1a459d'),
+            ]
+
+            # Return a sorted version of the collection.
+            gs1 = gs.sorted()
+
+            # This entities collection is now sorted, but the original
+            # is unaltered.
+            assert gs.pluck('id') == [
+                UUID('fe17eb3a-05b3-44bf-ac56-6fa46c4e7921'), 
+                UUID('a068887b-ed8a-4d51-b874-864e8d1a459d'),
+            ]
+
+            assert gs1.pluck('id') == [
+                UUID('a068887b-ed8a-4d51-b874-864e8d1a459d'),
+                UUID('fe17eb3a-05b3-44bf-ac56-6fa46c4e7921'), 
+            ]
+        """
+        
         key = 'id' if key is None else key
         if self.orm.isstreaming:
             key = f'`{self.orm.abbreviation}.{key}`'
@@ -2337,10 +2535,34 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             return r
 
     def save(self, *es):
+        """ Persist each entity in this collection to the database in an
+        atomic commit. The orm.entity and orm.entities objects in the
+        *es tuple will also be persisted in the atomic transaction.  See
+        the docstring at ``entity.save`` for more information on how
+        entity objects are persisted.
+
+        :param: *es tuple(<orm.entity>|<orm.entities>): A tuple of
+        orm.entity and/or orm.entities objects that the users wish to
+        be persisted within the atomic transaction. This is rarely
+        needed but sometimes comes in handy.
+
+            # Create an empty items collection
+            itms = product.items()
+
+            # Add 2 items to it
+            for i in range(2):
+                itms += product.item()
+
+            # Both items will be created (INSERTed)
+            itms.save()
+        """
         exec = db.executioner(self._save)
         exec.execute(es)
 
     def _save(self, cur, es=None):
+        """ Delegates the persistence operations to the entity objects
+        themselves.
+        """
         for e in self:
             e._save(cur)
 
@@ -2352,10 +2574,15 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 e._save(cur)
 
     def delete(self):
+        """ Issue a DELETE statement to the database for each entity in
+        the collection.
+        """
         for e in self:
             e.delete()
         
     def give(self, es):
+        """ Give the elements in `es` to this collection.
+        """
         sts = self.orm.persistencestates
         super().give(es)
 
@@ -2429,11 +2656,12 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
         if p2 is None and p1 != '':
             msg = '''
-                Missing arguments collection.  Be sure to add arguments in the
-                *args portion of the constructor.  If no args are needed for
-                the query, just pass an empty tuple to indicate that none are
-                needed.  Note that this is an opportunity to evaluate whether
-                or not you are opening up an SQL injection attact vector.
+                Missing arguments collection.  Be sure to add arguments
+                in the *args portion of the constructor.  If no args are
+                needed for the query, just pass an empty tuple to
+                indicate that none are needed.  Note that this is an
+                opportunity to evaluate whether or not you are opening
+                up an SQL injection attact vector.
             '''
             raise ValueError(textwrap.dedent(msg).lstrip())
 
@@ -2465,20 +2693,20 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
         args = [x.bytes if type(x) is UUID else x for x in args]
 
-        # If there is an orm.proprietor and the entities collection is
+        # If there is an security().proprietor and the entities collection is
         # not a chunk, then add a proprietor filter.
         #
         # There is no need to append a proprietor filter to a chunked
         # entities collection. The streamed entities collection will
         # pass in its own proprietor filter.
-        if orm.proprietor and not self.orm.ischunk:
+        if security().proprietor and not self.orm.ischunk:
             if p1:
                 p1 += ' AND '
 
             for map in self.orm.mappings.foreignkeymappings:
                 if map.fkname == 'proprietor':
                     p1 += f'{map.name} = _binary %s'
-                    args.append(orm.proprietor.id.bytes)
+                    args.append(security().proprietor.id.bytes)
                     break
 
         if p1:
@@ -2543,9 +2771,20 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
     @property
     def brokenrules(self):
+        """ Return the collection of brokenrules for each of the entity
+        objects in this collection. If no rules have been broken, then
+        an empty ``brokenrules`` collection will be returned.
+        """
         return self.getbrokenrules()
 
     def getbrokenrules(self, gb=None):
+        """ Return the collection of brokenrules for each of the entity
+        objects in this collection. If no rules have been broken, then
+        an empty ``brokenrules`` collection will be returned.
+
+        This implementation is used internally. Most users will want to
+        use the ``orm.entities.brokenrules`` property instead.
+        """
         brs = entitiesmod.brokenrules()
 
         # This test corrects a fairly deep issue that has only come up
@@ -3004,14 +3243,20 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 self.orm.isdirty = False
                 self.id = uuid4()
 
+                # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                 # Assign the proprietor (the owner of the entity) to the
                 # entity's `proprietor` attribute. This ensure the
                 # proprietor gets saved to the database.
-                if orm.proprietor:
-                    self.proprietor = orm.proprietor
+                # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                if security().proprietor:
+                    self.proprietor = security().proprietor
 
-                if orm.owner:
-                    self.owner = orm.owner
+                # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                # If there is an owner, assign the owner to the new
+                # entity so we know which user created the entity.
+                # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                if security().owner:
+                    self.owner = security().owner
             else:
                 if isinstance(o, str):
                     # See if we can convert str identifier to UUID. 
@@ -3036,6 +3281,44 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
                 self.orm.populate(res)
 
+                # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                # Unless override is True...
+                # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                if not security().override:
+
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # Test the retrievability of the entity tto make
+                    # sure the user can access the entity.
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    vs = self.retrievability
+
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # Make sure ``retrievability`` returns a
+                    # ``violations`` object since this is up to the orm
+                    # user to get right.
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    if not isinstance(vs, violations):
+                        raise TypeError(
+                            "'retrievability' must return a "
+                            '`violations` instance.'
+                        )
+
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # If there are violations...
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    if vs.ispopulated:
+
+                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                        # Raise an AuthorizationError
+                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                        raise AuthorizationError(
+                            msg = (
+                                f'Cannot access {type(self).__name__}:'
+                                f'{self.id.hex}'
+                            ),
+                            crud='r', vs=vs, e=self, 
+                        )
+
             # TODO If k is not in self.orm.mappings, we should throw a
             # ValueError.
             # Set attributes via keyword arguments:
@@ -3044,9 +3327,64 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 setattr(self, k, v)
 
             # Post super().__init__() events
-            self.onaftervaluechange  +=  self._self_onaftervaluechange
+            self.onaftervaluechange += self._self_onaftervaluechange
         finally:
             self.orm.initing = False
+
+    @property
+    def retrievability(self):
+        """ 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Return a default implementation of retrievability
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+        return self._getaccessability('retrievability')
+
+    @property
+    def creatability(self):
+        """ 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Return a default implementation of creatability
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+        return self._getaccessability('creatability')
+
+    @property
+    def updatability(self):
+        """ 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Return a default implementation of updatability
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+        return self._getaccessability('updatability')
+
+    @property
+    def deletability(self):
+        """ 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Return a default implementation of deletability
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+        return self._getaccessability('deletability')
+
+    def _getaccessability(self, type):
+        """ 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Return a default implementation of accessibility methods
+        (creatability, retrievability, updatability and deletability)
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # If override is True, return an empty violations object
+        # implying that there is no accessibility issue.
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        if security().override:
+            return violations()
+
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # Unless override is True, the default implementation of the
+        # accessibility methods is to raise an AuthorizationError.
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        raise AuthorizationError(
+            f'{type} not implemented',
+            crud=type[0], vs=None, e=self
+        )
 
     def __getitem__(self, args):
         """ Returns the value of the attribute given, or a tuple of
@@ -3374,41 +3712,78 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         self.save()
 
     def save(self, *es):
-        """ Commit the entity's values to the database. The entity is
-        saved recursively and atomically.
+        """ Persist the entity to the database as well as all of its
+        constituents (recursive and non-recursive), associations, and
+        composites. All entity objects will be persisted in a single
+        MySQL atomic transaction. The orm.entity and orm.entities
+        objects in the *es tuple will also be persisted in the atomic
+        transaction. ``entity`` objects maintain a persistence state
+        (see orm.persistencestate) which save() uses to determine if a
+        CRUD operation is needed and which CRUD operation will be used.
 
-        :param: *es list: A list of entity objects that should be saved
-        as well:
+        :param: *es tuple(<orm.entity>|<orm.entities>): A tuple of
+        orm.entity and/or orm.entities objects that the users wish to
+        be persisted within the atomic transaction. This is rarely
+        needed but sometimes comes in handy::
             
-            art = artist()
-            pres = presentation()
-            sng = singer()
+            # Create two new users
+            usr = ecommercs.user()
+            usr1 = ecommerce.user()
 
-            # Insert the artist record as wel as the presentation record
-            # and the singer record all in one transaction.
-            art.save(pres, sng)
+            # Save (INSERT) usr along with usr1 in a single atomic
+            # transaction
+            usr.save(usr1)
 
-        Create, update and delete
-        -------------------------
-        Depending on the state of the entity, three database operations
-        may be performed: INSERT, UPDATE or DELETE::
+        Simple entity save
+        ------------------
 
-            # Create a new entity
-            ent = myent()
-            ent.name = 'My Name'.
+            # Create a goods record
+            g = good()
+            assert not g.orm.isnew
 
-            # Saving will INSERT the record into the database
-            ent.save()
+            # Persist (INSERT record)
+            g.save()
+            assert not g.orm.isnew
 
-            # Changing an attributes values will dirty the entity,
-            # therefore an UPDATE will be performed.
-            ent.name = 'My Other Name'
-            ent.save()
+            # Change property
+            assert not g.orm.isdirty
+            g.name = 'new name'
+            assert g.orm.isdirty
 
-            # Marking the entity for deletion will cause the record to
-            # be DELETEd.
-            ent.ismarkedfordeletion = True
-            ent.save()
+            # Persist (UPDATE record)
+            g.save()
+            assert not g.orm.isdirty
+
+            # Delete
+            g.orm.ismarkedfordeletion = True
+            # Persist (DELETE record)
+            g.save()
+
+            # Alternatively, this would work:
+            #     
+            #     g.delete()
+
+        Constituents
+        ------------
+
+            # Add item
+            g.items += product.item()
+
+            # Create (INSERT) a new product.item associated with the
+            # good.
+            g.save()
+
+        Composite
+        ---------
+
+            # Load the product.item from the Constituents section above
+            itm = product.item(g.items.first.id)
+
+            # Change the good (composite) that the itm belongs to
+            itm.good.name = 'a newer name'
+
+            # A save of the item will cause the good to be UPDATEd
+            itm.save()
 
         Recursive
         ---------
@@ -3500,16 +3875,16 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             crud = None
             sql, args = (None,) * 2
 
-        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        # If we are modifying the record, the orm.proprietor must match
-        # the record's proprietor. This ensures one party can't modify
-        # another's records.
-        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        #💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # If we are modifying the record, the security().proprietor must
+        # match the record's proprietor. This ensures one party can't
+        # modify another's records.
+        #💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
 
         # TODO:ee897843 Don't allow a proprietor to create a record
         # belonging to a different proprietor.
         if crud in ('update', 'delete'):
-            if self.proprietor__partyid != orm.proprietor.id:
+            if self.proprietor__partyid != security().proprietor.id:
                 raise ProprietorError(self.proprietor)
 
         try:
@@ -3517,18 +3892,48 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             st = self.orm.persistencestate
 
             if sql:
-                # Issue the query
-
                 # Raise event
                 eargs = db.operationeventargs(self, crud, sql, args)
                 self.onbeforesave(self, eargs)
 
+                # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                # Unless override is True, thes the creatability,
+                # updatability or deletability of the entity given the
+                # crud.
+                # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                if not security().override:
+                    if crud == 'create':
+                        vs = self.creatability
+                    elif crud == 'update':
+                        vs = self.updatability
+                    elif crud == 'delete':
+                        vs = self.deletability
+
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # If there are violations, raise an
+                    # AuthorizationError
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    if vs.ispopulated:
+                        raise AuthorizationError(
+                            msg=(
+                                f'Cannot {crud} '
+                                f'{type(self)}:{self.id.hex}'
+                            ), crud=crud[0], vs=vs, e=self
+                        )
+
+                # Issue the query
                 cur.execute(sql, args)
 
                 # Update new state
                 self.orm.isnew = self.orm.ismarkedfordeletion
-                self.orm.isdirty, self.orm.ismarkedfordeletion \
-                                                    = (False,) * 2
+
+                # We must be clean if we just updated the database
+                self.orm.isdirty = False
+
+                # Entity must not be marked for deletion of we just
+                # updated the database
+                self.orm.ismarkedfordeletion = False
+
                 # Raise event
                 self.onaftersave(self, eargs)
                 # If there is no sql, then the entity isn't new, dirty
@@ -3991,12 +4396,16 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             msg, map.name, 'valid', self
                         )
                     else:
-                        if self.orm.isnew and orm.owner.id != map.value:
-                            msg = 'Owner id does not match orm id'
-                            B()
-                            brs += entitiesmod.brokenrule(
-                                msg, map.name, 'valid', self
-                            )
+                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                        # Make sure the owner's id of the entiy matches
+                        # that of the security singleton.
+                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                        if self.orm.isnew:
+                            if security().owner.id != map.value:
+                                msg = 'Owner id does not match orm id'
+                                brs += entitiesmod.brokenrule(
+                                    msg, map.name, 'valid', self
+                                )
 
             elif type(map) is associationsmapping:
                 if map.isloaded:
@@ -4865,7 +5274,7 @@ class mappings(entitiesmod.entities):
         """ A generator to return all the foreignkeyfieldmapping objects in the
         collection::
 
-            for map in maps.foreignkeyfieldmapping:
+            for map in maps.foreignkeyfieldmappings:
                 assert type(map) is foreignkeyfieldmapping
         """
         return self._generate(type=foreignkeyfieldmapping)
@@ -5949,7 +6358,36 @@ class fieldmapping(mapping):
     ``fieldmappings`` represents the standard scalar types that all
     entity classes have, such as str, int, bool, date, etc. These types,
     taken with contraints such as the ``min``, ``max``, ``precision``
-    and ``scale`` are used to create the data definitions in MySQL.
+
+    fieldmappings objects are created on entity declaration and added to
+    the entity's orm.mappings collection::
+
+        class engineer(orm.entity):
+            name = str
+            bio = str, orm.fulltext
+
+        name_map = engineer.orm.mappings['name']
+        bio_map = engineer.orm.mappings['bio']
+
+        assert type(name_map) is fieldmapping
+        assert type(bio_map) is fieldmapping
+
+        assert name_map.name == 'name'
+        assert bio_map.name == 'bio'
+
+    The above example would work the same if with an instance of
+    ``engineer`` rather than a class reference::
+
+        eng = engineer()
+        name_map = eng.orm.mappings['name']
+        bio_map = eng.orm.mappings['bio']
+
+        assert type(name_map) is fieldmapping
+        assert type(bio_map) is fieldmapping
+
+        assert name_map.name == 'name'
+        assert bio_map.name == 'bio'
+
     """
 
     # TODO Capitalize ``types``
@@ -6001,6 +6439,7 @@ class fieldmapping(mapping):
             if max is not None:
                 d, max = max, None
         
+        # Assign arguments to fields 
         self._type       =  type
         self._value      =  undef
         self._min        =  min
@@ -6030,6 +6469,10 @@ class fieldmapping(mapping):
 
     @property
     def column(self):
+        """ Return a database column object for the fieldmapping.
+
+        :rtype: db.column
+        """
         # NOTE This should probably be rewritten like this:
         #
         #     return db.column(self)
@@ -6040,23 +6483,17 @@ class fieldmapping(mapping):
         return col
 
     def clone(self):
+        """ Returns a new fieldmapping with the same attributes as self.
+        """
         ix = self.index
 
         ix = type(ix)(name=ix.name, ordinal=ix.ordinal) if ix else None
 
         map = fieldmapping(
-            self.type,
-            self.min,
-            self.max,
-            self.precision,
-            self.scale,
-            self.name,
-            ix,
-            self.isderived,
-            self.isexplicit,
-            self.isgetter,
-            self.issetter,
-            self.span,
+            self.type,       self.min,        self.max,
+            self.precision,  self.scale,      self.name,
+            ix,              self.isderived,  self.isexplicit,
+            self.isgetter,   self.issetter,   self.span,
         )
 
         if ix:
@@ -6076,6 +6513,9 @@ class fieldmapping(mapping):
 
     @property
     def _reprargs(self):
+        """ Returns the interpolation arguments for this object's
+        __repr__ method. See ``mapping.__repr__``.
+        """
         args = super()._reprargs
         args  +=  ',  type=%s'        %  str(self.type)
         args  +=  ',  ix=%s'          %  str(self.index)
@@ -6084,42 +6524,81 @@ class fieldmapping(mapping):
 
     @property
     def index(self):
+        """ Return the index object associated with this fieldmapping.
+
+        For example, in the following class declaration, the
+        orm.fulltext reference would be the index:
+
+            class engineer(orm.entity):
+                bio = str, orm.fulltext
+
+            map = engineer.orm.mappings['bio']
+            assert map.index is orm.fulltext
+        """
         return self._ix
 
     @property
     def isstr(self):
+        """ Returns True if the mapping represents a str type.
+        """
         return self.type == types.str
 
     @property
     def isdatetime(self):
+        """ Returns True if the mapping represents a datetime type.
+        """
         return self.type == types.datetime
 
     @property
     def isdate(self):
+        """ Returns True if the mapping represents a date type.
+        """
         return self.type == types.date
 
     @property
     def isbool(self):
+        """ Returns True if the mapping represents a bool type.
+        """
         return self.type == types.bool
 
     @property
     def isint(self):
+        """ Returns True if the mapping represents a int type.
+        """
         return self.type == types.int
 
     @property
     def isfloat(self):
+        """ Returns True if the mapping represents a float type.
+        """
         return self.type == types.float
 
     @property
     def isdecimal(self):
+        """ Returns True if the mapping represents a decimal type.
+        """
         return self.type == types.decimal
 
     @property
     def isbytes(self):
+        """ Returns True if the mapping represents a bytes type.
+        """
         return self.type == types.bytes
 
     @property
     def isfixed(self):
+        """ Returns True if the mapping represents a fixed-sized type.
+
+        An example of a fixed-sized type would be a CHAR type in a
+        database::
+
+            CREATE TABLE mytable(
+                phone_number CHAR(10)
+            );
+
+        However, numeric types such as int's floats and decimals are
+        considered fixed-size as well.
+        """
         if self.isint or self.isfloat or self.isdecimal:
             return True
 
@@ -6129,7 +6608,26 @@ class fieldmapping(mapping):
 
     @property
     def min(self):
+        """ Return the min (minimum) value for the fieldmapping.
+
+        The min value is the second argument given in the attribute
+        declaration of an entity::
+
+        Minimum for numeric types refers to the minimum value the
+        attribute can have, while minimum values for str refer to the
+        minimum length allowable.
+
+            class artist(orm.entity):
+                weight  =  int,  0,  1000
+                bio     =  str,  1,  4000
+
+        In the above, the minimum **value** for weight is 0, while the
+        minimum **length** for ``bio`` is 1 character.
+        """
+
         if self.isstr:
+            # By default, a str can have 1 or more characters (and can
+            # be null).
             if self._min is None:
                 return 1
 
@@ -6158,6 +6656,27 @@ class fieldmapping(mapping):
 
     @property
     def precision(self):
+        """ Return the precision value for the fieldmapping.
+
+        The precision represents the number of significant digits that
+        are stored for values. It is usually paried with a scale (see
+        fieldmapping.scale) which represents the number of digits that
+        can be stored following the decimal point.
+
+        Scale applied to floats, decimal and date types.
+
+        For datetime fieldmappings, this is 6 because in MySQL:
+            > A DATETIME or TIMESTAMP value can include a trailing
+            > fractional seconds part in up to microseconds (6 digits)
+            > precision.
+
+        For floats, the precision value is the second argument in an
+        attribute declaration. In the example below, 8 is the precision
+        of float::
+
+            class component(orm.entity):
+                weight  =  float,  8,   7
+        """
         if not (self.isfloat or self.isdecimal, self.isdatetime):
             return None
 
@@ -6171,6 +6690,15 @@ class fieldmapping(mapping):
 
     @property
     def scale(self):
+        """ Return the scale of the fieldmapping.
+
+        The scale represents the number of digits that can be stored
+        following the decimal point. It is usually paired with the
+        precision (see fieldmapping.precision) which represents the
+        number of significant digits that are stored for values. 
+
+        Scale applied to floats and decimals.
+        """
         if not (self.isfloat or self.isdecimal):
             return None
 
@@ -6181,6 +6709,10 @@ class fieldmapping(mapping):
         
     @property
     def max(self):
+        """ For str types, returns the maximum number of characters the
+        fieldmapping will allow. For numeric types, returns the highest
+        value the fieldmapping will allow.
+        """
         t = self.type
         if self.isstr:
             if self._max is None:
@@ -6207,6 +6739,11 @@ class fieldmapping(mapping):
 
     @property
     def type(self):
+        """ Returns an integer representing the type (str, bool, etc)
+        for the fieldmapping. The values returned correspond to the
+        ``orm.types`` enum.
+        """
+        
         t = self._type
         if t in (str, types.str):
             return types.str
@@ -6228,6 +6765,10 @@ class fieldmapping(mapping):
 
     @property
     def signed(self):
+        """ Returns True if the numeric fieldmapping is allowed to be a
+        negative (signed) value. If the fieldmapping is non-numeric, a
+        ValueError is raised.
+        """
         if self.type not in (types.int, types.float, types.decimal):
             raise ValueError()
 
@@ -6236,8 +6777,8 @@ class fieldmapping(mapping):
     @property
     def dbtype(self):
         """ Returns a string representing the MySQL data type
-        corresponding to this field mapping e.g., 'varchar',
-        'datetime', 'bit', 'tinyint', 'smallint unsigned', etc.
+        corresponding to this field mapping e.g., 'varchar', 'datetime',
+        'bit', 'tinyint', 'smallint unsigned', etc.
 
         This is similar to the ``definition`` property, however dbtype
         only returns the name of the database type in string form. The
@@ -6304,10 +6845,9 @@ class fieldmapping(mapping):
         datetime(6) bit, tinyint, etc. 
         """
         if self.isstr:
-            # However, setting the varchar max to 16,383 can cause
-            # issues for larger strings such as `bio1 = str, 1, 16382`.
-            # The following may be thrown for this string on table
-            # creation:
+            # NOTE Setting the varchar max to 16,383 can cause issues
+            # for larger strings such as `bio1 = str, 1, 16382`.  The
+            # following may be thrown for this string on table creation:
             #
             #     _mysql_exceptions.OperationalError: (1118, 'Row size
             #     too large. The maximum row size for the used table
@@ -6377,6 +6917,10 @@ class fieldmapping(mapping):
 
     @property
     def value(self):
+        """ Return the scalar value held by the fieldmapping object.
+        """
+
+        # If _value hasn't been set, use Pythonic defaults
         if self._value is undef:
             if self.isint:
                 return int()
@@ -6393,6 +6937,8 @@ class fieldmapping(mapping):
             else:
                 return None
         
+        # Ensure the value is coerced to the correct type using standard
+        # Pythonic type coersion, e.g., assert '1.0' == str(1.000)
         if self._value is not None:
             if self.isstr:
                 try:
@@ -6405,6 +6951,9 @@ class fieldmapping(mapping):
 
             elif self.isdatetime:
                 try:
+                    # Favor primative.datetime over Python's default
+                    # datetime since it is our customized override of
+                    # Python's datetime object.
                     if type(self._value) is str:
                         self._value = primative.datetime(self._value) 
                     elif not isinstance(self._value, primative.datetime):
@@ -6429,8 +6978,8 @@ class fieldmapping(mapping):
 
             elif self.isbool:
                 if type(self._value) is bytes:
-                    # Convert the bytes string fromm MySQL's bit type to a
-                    # bool.
+                    # Convert the bytes string from MySQL's byytes type
+                    # to a bool.
                     v = self._value
                     self._value = bool.from_bytes(v, byteorder='little')
 
@@ -6463,10 +7012,25 @@ class fieldmapping(mapping):
 
     @value.setter
     def value(self, v):
+        """ Set the fieldmapping's value property.
+        """
         self._value = v
 
 class foreignkeyfieldmapping(fieldmapping):
+    """ Represents a fieldmapping to a foreign key.
+    """
     def __init__(self, e, fkname=None, isderived=False):
+        """ Create a foreignkeyfieldmapping object.
+
+        :param: e type: A reference to the composite entity class.
+
+        :param: fkname str: The name of the entity mapping that this map
+        corresponds.
+
+        :param: isderived bool: If True, the mapping was created in the
+        ``mappings._populate`` (it seems this is always the case,
+        actually).
+        """
         # TODO Rename fkname to name, and _fkname to _name. Note that
         # _name already exists; it's inherited from `mapping`, but I
         # don't think that's a probably for the rename.
@@ -6482,10 +7046,16 @@ class foreignkeyfieldmapping(fieldmapping):
 
     @property
     def isowner(self):
+        """ Returns True if the mapping is the foreign key referencing
+        the ``owner`` (ecommerce.user) entity.
+        """
+
         return self.name == 'owner__userid'
 
     @property
     def name(self):
+        """ Returns the name of the foreign key column.
+        """
         # TODO:055e5c02 make FK name's fully qualified. grep 055e5c02
         # for more.
 
@@ -6509,58 +7079,110 @@ class foreignkeyfieldmapping(fieldmapping):
         return self._fkname
 
     def clone(self):
+        """ Return a new foreignkeyfieldmapping with the same properties
+        as this foreignkeyfieldmapping.
+        """
         return foreignkeyfieldmapping(self.entity, self._fkname, self.isderived)
 
     @property
     def issubjective(self):
+        """ Return True if this foreignkeymapping references the
+        subjective side of a reflexive ``orm.association``.
+        """
         return self.orm.isreflexive \
                and self.name.startswith('subject__') 
 
     @property
     def isobjective(self):
+        """ Return True if this foreignkeymapping references the
+        objective side of a reflexive ``orm.association``.
+        """
         return self.orm.isreflexive \
                and self.name.startswith('object__') 
 
     @property
     def dbtype(self):
+        """ The type of a foreign key will always be a 16 byte value
+        (the binary representation of a version 4 UUID). Therefore, the
+        database type will be ``binary``.
+        """
         return 'binary'
 
     @property
     def definition(self):
+        """ The type of a foreign key will always be a 16 byte value
+        (the binary representation of a version 4 UUID). Therefore, the
+        database type will be ``binary`` with a fixed-width of 16 bytes.
+        """
         return 'binary(16)'
 
     @property
     def value(self):
+        """ Return a version 4 UUID object representing the foreign
+        key's value.
+        """
         if type(self._value) is bytes:
+            # Coerce the value to a UUID object for convenience.
             self._value = UUID(bytes=self._value)
             
         return self._value
 
     @value.setter
     def value(self, v):
+        """ Set the foreign key's value.
+
+        :param: v bytes|UUID: The value to set the foreign key to.
+        """
         self._value = v
 
 class primarykeyfieldmapping(fieldmapping):
+    """ Represents a fieldmapping to a primary key (the entity's ``id``
+    attribute).
+    """
+
     def __init__(self):
+        """ Instatiate.
+        """
+
+        # Ensure the type is `types.pk` (primary key).
         super().__init__(type=types.pk)
 
     @property
     def name(self):
+        """ Return the database name of the primary key.
+
+        This will always be 'id'.
+        """
         return 'id'
 
     def clone(self):
+        """ Return a new primarykeyfieldmapping with the same properties
+        as this primarykeyfieldmapping.
+        """
         return primarykeyfieldmapping()
 
     @property
     def dbtype(self):
+        """ The type of a primary key will always be a 16 byte value
+        (the binary representation of a version 4 UUID). Therefore, the
+        database type will be ``binary``.
+        """
         return 'binary'
 
     @property
     def definition(self):
+        """ The type of a primary key will always be a 16 byte value
+        (the binary representation of a version 4 UUID). Therefore, the
+        database type will be ``binary`` with a fixed-width of 16 bytes.
+        """
         return 'binary(16) primary key'
 
     @property
     def value(self):
+        """ Return a version 4 UUID object representing the primary
+        key's value.
+        """
+
         # If a super instance exists, use that because we want a
         # subclass and its super class to share the same id. Here we use
         # ._super instead of .super because we don't want to invoke the
@@ -6574,12 +7196,17 @@ class primarykeyfieldmapping(fieldmapping):
             return sup.id
 
         if type(self._value) is bytes:
+            # Coerce the value to a UUID object for convenience.
             self._value = UUID(bytes=self._value)
 
         return self._value
 
     @value.setter
     def value(self, v):
+        """ Set the foreign key's value.
+
+        :param: v bytes|UUID: The value to set the foreign key to.
+        """
         self._value = v
 
         sup = self.orm._super
@@ -6599,7 +7226,8 @@ class ormclasseswrapper(entitiesmod.entities):
         elif isinstance(obj, ormclasseswrapper):
             pass
         else:
-            raise ValueError()
+            raise TypeError('obj is of the wrong type')
+
         super().append(obj, uniq, r)
         return r
 
@@ -6625,7 +7253,7 @@ class ormclasswrapper(entitiesmod.entity):
     # added to entities.entities are entities.entity objects.
     def __init__(self, entity):
         """ Sets the wrapped entity.
-        :param: entity The entity to be wrapped.
+        :param: entity orm.entity: The entity to be wrapped.
         """
         self.entity = entity
         super().__init__()
@@ -6648,6 +7276,8 @@ class ormclasswrapper(entitiesmod.entity):
 
     @property
     def __module__(self):
+        """ A proxy to the wrapped entity's __module__ property.
+        """
         return self.entity.__module__
 
     @property
@@ -6663,46 +7293,308 @@ class ormclasswrapper(entitiesmod.entity):
         return self.entity.__name__
     
     def __call__(self, *args, **kwargs):
+        """ Proxies invocations to the wrapped entity.
+        """
         return self.entity(*args, **kwargs)
 
 class composites(ormclasseswrapper):
-    pass
+    """ A collection of wrapped composite classes.
+    """
 
 class composite(ormclasswrapper):
-    pass
+    """ A wrapped composite class.
+    """
 
 class constituents(ormclasseswrapper):
-    pass
+    """ A collection of wrapped constituent classes.
+    """
 
 class constituent(ormclasswrapper):
-    pass
+    """ A wrapped constituent class.
+    """
 
 @contextmanager
 def sudo():
-    own = orm.owner
+    """
+    💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    A context manager that runs any code within it as the orm's root
+    user. The root user isn't restricted by standard authorization rules
+    or accessibility restrictions.
+
+        # Retrieve and update `ent` as root.
+        with orm.sudo():
+            ent = entity(myid)
+            ent.attr = 'my-value'
+            ent.save()
+
+    💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    """
+    sec = security()
+    own = sec.owner
     try:
         from ecommerce import users
-        orm.owner = users.root
+        sec.owner = users.root
         yield
     finally:
-        orm.owner = own
+        sec.owner = own
 
 @contextmanager
 def su(own):
-    own1 = orm.owner
+    """
+    💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    A context manager that temporarily switches the user the ORM is
+    running under.
+
+        usr = ecommerce.users(name='luser').first
+        # Retrieve entity as `usr`
+        with orm.su(usr):
+            ent = entity(myid)
+
+    💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    """
+    own1 = security().owner
     try:
         from ecommerce import users
-        orm.owner = own
+        security().owner = own
         yield
     finally:
-        orm.owner = own1
+        security().owner = own1
+
+@contextmanager
+def override():
+    """ A contextmanager to ensures that security().override is True.
+    When the context manager exists, orm.override is reset to whatever
+    it was before the contextmanager was entered.
+    """
+    override = security().override
+    try:
+        security().override = True
+        yield
+    finally:
+        security().override = override
+
+class security:
+    """
+    💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    A singleton that stores security related values such as the orm's
+    owner, proprietor, and whether or not the accessibility override is
+    set.
+    💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    """
+    _instance = None
+    def __new__(cls):
+        if not cls._instance:
+            # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            # Implement the singleton pattern.
+            # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            cls._instance = super(security, cls).__new__(cls)
+
+            # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            cls._override    =  False
+            cls._owner       =  None
+            cls._proprietor  =  None
+
+        return cls._instance
+
+    @property
+    def proprietor(self):
+        """ Return the proprietor entity currently set.
+        """
+        return self._proprietor
+
+    @proprietor.setter
+    def proprietor(self, v):
+        """ 
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Set ``v`` to orm's proprietor. Ensure that the proprietor
+        entity owns itself.
+
+        Proprietors
+        ***********
+
+        The logic in the ORM's database interface will use the
+        security().proprietor to provide multitenancy support.
+
+        When a proprietor is set, the ORM will ensure that all records
+        written to the database have their proprietor FK set to
+        security().proprietor.id, meaning that the records will be the
+        *property* of the security().proprietor. Only records owned by
+        the security().proprietor will be read by orm query operations
+        i.e.:
+
+            ent = entity(id)  # SELECT
+
+            (or)
+
+            ent.save()        # INSERT OR UPDATE
+            
+        When updating or deleting a record, the record must be owned by
+        by the security().proprietor or else a ProprietorError will be
+        raised.
+
+        :param: party.party v: The proprietor entity.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+        self._proprietor = v
+
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # The proprietor of the proprietor must be the proprietor:
+        #    
+        #    assert v.proprietor is v
+        #
+        # Propogate this up the inheritance hierarchy.
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        sup = v
+        while sup:
+            sup.proprietor = v
+            sup = sup.orm.super
+
+    @property
+    def override(self):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Return True if override is set to True or if the owner is root. 
+
+        When override is True, accessibility methods, such as
+        creatability, retrievability, updatability and deletability are
+        ignored. This is useful for unit test developers who want to
+        ignore the accessibility methods for the sake of convenience.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+        if self._override:
+            return True
+
+        return self.owner and self.owner.isroot
+
+    @override.setter
+    def override(self, v):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        The setter for security.overide.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+        self._override = v
+
+    @property
+    def owner(self):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Returns the current owner. The owner is a ``party.user``. When
+        an entity is created, the entity's ``owner`` attribute will be
+        set to the orm's owner. This attribute will be saved along with
+        the entity so it wil always be known who the entity's owner is.
+
+        The owner is important for the accessibility methods because it
+        helps the entity's determine who should be able to do what with
+        the entity. For example, for most entity objects, the user that
+        created the entity should be able to update the entity.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+        return self._owner
+
+    @owner.setter
+    def owner(self, v):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        The setter for security.owner.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+        self._owner = v
+
+    @property
+    def issudo(self):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Returns True if the current owner is root.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+        return self.owner and self.owner.isroot
+
 
 class orm:
+    """ The ORM class.
+
+    The ORM class bridges the orm.entity and orm.entities classes with
+    lower-level, ORM functionality. Persistence (DML) logic as well as
+    data definition (DDL) logic is encapsulated here. 
+
+    The ORM user will not use most of the attributes in the the ``orm``
+    class. However, there are many, important exceptions.
+
+    Each ``orm.entity`` and ``orm.entities`` class has an ``orm``
+    attribute.  Likewise, each **instance** of these classes will also
+    have an ``orm`` attribute.
+
+    Consider the ``good`` class in the product.py module. We can use the
+    ``orm`` attribute to access its collection::
+
+        from product import good
+        assert good.orm.mappings.count == 9
+
+    At the time of this writting, the ``good`` entity has 9 ``mapping``
+    objects. This works for the ``good`` class or a ``good`` object::
+
+        assert good().orm.mappings.count == 9
+
+    Logic in the orm.py module makes extensive use of the ``orm`` class
+    and objects behind the ``orm` class (such as the ``mapping``
+    classes).  Occasionally, an ORM user will need to access attributes
+    behind the orm class. For example, to determine if an entity has
+    been saved to the database yet, the ORM user can check the
+    ``orm.isnew`` property on the entity::
+
+        # Create a new good; don't save to database.
+        g = good()
+        assert g.orm.isnew
+
+        # Save to database
+        g.save()
+        assert not g.orm.isnew
+    
+    Attributes like ``isnew` might make more sense if they were directly
+    off the entity (``g.isnew``), however, we don't want to clutter up the
+    entity's attribute namespace so the entity developers can name their
+    attributes without worry of name collision.
+    """
+
+    # A dict to store abbreviation (see orm.getentity())
     _abbrdict    =  dict()
+
+    # A dict to store entity names (see orm.getentity())
     _namedict    =  dict()
+
     _proprietor  =  None
     owner = None
-        
+
+    def __init__(self):
+        self.mappings              =  None
+        self.isnew                 =  False
+        self._isdirty              =  False
+        self._ismarkedfordeletion  =  False
+        self.entities              =  None
+        self.entity                =  None
+        self._table                =  None
+        self.composite             =  None   #  For association
+        self._composits            =  None
+        self._constituents         =  None
+        self._associations         =  None
+        self._trash                =  None
+        self._subclasses           =  None
+        self._super                =  None
+        self._base                 =  undef
+        self.instance              =  None
+        self.stream                =  None
+        self.isloaded              =  False
+        self.isloading             =  False
+        self.isremoving            =  False
+        self.dotrash               =  True
+        self.joins                 =  None
+        self._abbreviation         =  str()
+        self.initing               =  False
+        self._sub                  =  undef
+
+        self.recreate = self._recreate
+
     @property
     def issues(self):
         """ Returns a list of possible issue with an entity, such as
@@ -6798,35 +7690,6 @@ class orm:
             if vs.ispopulated:
                 es.remove(e, trash=False)
 
-    def __init__(self):
-        self.mappings             =  None
-        self.isnew                =  False
-        self._isdirty             =  False
-        self._ismarkedfordeletion  =  False
-        self.entities             =  None
-        self.entity               =  None
-        self._table               =  None
-        self.composite            =  None  # For association
-        self._composits           =  None
-        self._constituents        =  None
-        self._associations        =  None
-        self._trash               =  None
-        self._subclasses          =  None
-        self._super               =  None
-        self._base                =  undef
-        self.instance             =  None
-        self.stream               =  None
-        self.isloaded             =  False
-        self.isloading            =  False
-        self.isremoving           =  False
-        self.dotrash              =  True
-        self.joins                =  None
-        self._abbreviation        =  str()
-        self.initing              =  False
-        self._sub                 =  undef
-
-        self.recreate = self._recreate
-
     @property
     def statement(self):
         """ Return a tabularized list of the entity's attributes and
@@ -6912,64 +7775,20 @@ class orm:
         except Exception as ex:
             return 'Exception: %s ' % (str(ex),)
 
-    @classmethod
-    def setproprietor(cls, v):
-        """ Set ``v`` to orm's proprietor. Ensure that the proprietor
-        entity owns itself.
-
-        Proprietors
-        ***********
-
-        The logic in the ORM's database interface will use the
-        orm.proprietor to provide multitenancy support.
-
-        When a proprietor is set, the ORM will ensure that all records
-        written to the database have their proprietor FK set to
-        orm.proprietor.id, meaning that the records will be the
-        *property* of the orm.proprietor. Only records owned by the
-        orm.proprietor will be read by orm query operations i.e.:
-
-            ent = entity(id)  # SELECT
-
-            (or)
-
-            ent.save()        # INSERT OR UPDATE
-            
-        When updating or deleting a record, the record must be owned by
-        by the orm.proprietor or else a ProprietorError will be raised.
-
-        :param: party.party v: The proprietor entity.
-        """
-        cls._proprietor = v
-
-        # The proprietor of the proprietor must be the proprietor:
-        #    
-        #    assert v.proprietor is v
-        #
-        # Propogate this up the inheritance hierarchy.
-        sup = v
-        while sup:
-            sup.proprietor = v
-            sup = sup.orm.super
-
-    @classmethod
-    def getproprietor(cls):
-        """ Return the proprietor entity currently set.
-        """
-        return cls._proprietor
-
-    @classproperty
-    def proprietor(cls):
-        """ Return the proprietor entity currently set.
-        """
-        return cls.getproprietor()
-
     @property
     def ismarkedfordeletion(self):
+        """ Returns True if the entity is marked for deletion. When an
+        entity is marked for deletion, the next call to orm.save will
+        result in a DELETE statement sent to the database to permanently
+        destroy the record.
+        """
         return self._ismarkedfordeletion
 
     @ismarkedfordeletion.setter
     def ismarkedfordeletion(self, v):
+        """ Sets the entity as marked-for-deletion. See the comments at
+        the getter for more.
+        """
         self._ismarkedfordeletion = v
 
     @classproperty
@@ -6987,6 +7806,7 @@ class orm:
 
     @staticmethod
     def exec(sql, args=None):
+        # NOTE This doesn't appear to be used anywhere
         exec = db.executioner(
             lambda cur: cur.execute(sql, args)
         )
@@ -6994,10 +7814,10 @@ class orm:
         exec()
         
     def collectivize(self):
-        """ If called on an instance of orm.entity, returns an
-        orm.entities instance (of the corresponding type) with the
-        orm.entity within it. If called on an orm.entities, simply
-        return a reference to the orm.entities::
+        """ If called on an instance of ``orm.entity``, returns an
+        ``orm.entities`` instance (of the corresponding type) with the
+        orm.entity within it. If called on an ``orm.entities``, simply
+        return a reference to the ``orm.entities``::
 
             per = person(name='John Doe')
             pers = per.orm.collectivize()
@@ -7036,7 +7856,7 @@ class orm:
             art = artist(style='cubism')
             assert art.style == 'cubism'
 
-        The kwargs arguments is will be discoverd through inspection,
+        The kwargs arguments will be discoverd through inspection,
         though the ``dict`` parameter  can be used instead if the kwargs
         argument isn't available for some reason.
         
@@ -7077,6 +7897,16 @@ class orm:
             
     @property
     def table(self):
+        """ Returns the name of the database table name corresponding to
+        the entity::
+
+            >>> party.person.orm.table
+            'party_persons'
+
+        Note that table names consis-t of the module ('party') proceeded
+        by the entities' (not the entity's) name ('persons'). Including
+        the module is necessary to prevent name collisions.
+        """
         mod = inspect.getmodule(self.entities)
         if mod.__name__ == '__main__':
             if hasattr(mod, '__file__'):
@@ -7094,18 +7924,28 @@ class orm:
 
     @table.setter
     def table(self, v):
+        """ Sets the name of the database table corresponding to the
+        entity.
+
+        Note that this want include the module name. The getter prepends
+        the module name automatially::
+
+            >>> party.person.orm.table = 'somename'
+            >>> party.person.orm.table
+            'party_somename'
+        """
         self._table = v
         
     def iscollinear(self, with_):
         """ Return True if self is colinear with ``with_``.
 
-        Collinearity is when the self entity is an instance ``with_``,
+        Collinearity is when the ``self`` entity is an instance ``with_``,
         or an instance of a superentity of ``with_``, or an instance of
         a class that inheritance from ``with_``. It's similar to
         isinstance(), but in addition to ascending the inheritance tree,
         it also descends it. 
         
-        Collinearity in this context it is limited to orm.entity object.
+        Collinearity in this context is limited to orm.entity object.
         For example, ``artist`` is colinear with ``painter`` and
         ``singer`` and vice-versa. However none of these object are
         colinear with ``orm.entity``, ``entities.entity'' or ``object``
@@ -7135,10 +7975,9 @@ class orm:
 
         Certain types of ``orm.entity`` objects are defined by a unique
         identifier, such as a ``name`` attribute. For example, a
-        ``statustype`` orm.entity may have only a ``name`` attribute
+        ``statustype`` entity may have only a ``name`` attribute
         that could have values such as 'active', 'inactive', etc . We
         would call the ``ensure`` method in it's constructor::
-
 
             class statustype(orm.entity):
                 def __init__(self, *args, **kwargs):
@@ -7150,7 +7989,7 @@ class orm:
         Given the above, anytime we instantiate a new statustype, the
         ``name`` attribute is used as an identifier. The ``ensure``
         method will ensure that a new record for the ``name`` attribute
-        is created if it does not already exists. If it does exists, the
+        is created if it does not already exist. If it does exists, the
         entity will be constructed as that entity::
 
             # Truncate the table so we are starting anew.
@@ -7182,10 +8021,10 @@ class orm:
         # Query using the **kwargs, e.g., {'name': 'active'}
         rs = self.entities(**kwargs)
 
-        # Get a unique set of from the `expects` tuple passed in
+        # Get a unique set from the `expects` tuple passed in
         expects = set(expects)
 
-        # Get a unique set of kwarg keys
+        # Get a unique set of kwargs keys
         keys = set(kwargs.keys())
 
         if len(expects & keys) != len(expects):
@@ -7205,7 +8044,7 @@ class orm:
             # variables to false.
             self.persistencestate = (False,) * 3
 
-            # Repeat for all the super that were loaded
+            # Repeat for all the supers that were loaded
             sup = self.instance.orm._super
             while sup:
                 sup.orm.persistencestate = (False,) * 3
@@ -7216,10 +8055,29 @@ class orm:
             
     # TODO This should probably be renamed to `loaded`
     def reloaded(self):
+        """ Returns a new instance of an entity freshly loaded from the
+        database::
+
+            # Create an entity and save to database
+            ent = entity()
+            ent.save()
+
+            # Load the entity from the database and assign it to ent1.
+            # Note that nothing happens to ent.
+            ent1 = ent.orm.reloaded()
+
+            # ent1 has the same attribute values as ent, though it is
+            # not the same Python object.
+            assert ent.id == ent1.id
+            assert ent is not ent1
+        """
         return self.entity(self.instance.id)
 
     def exists(self, o):
-        """ Returns true if ``o`` exists in the database.
+        """ Returns True if ``o`` exists in the database.
+
+        :param: o orm.entity|UUID: The entity or entity id to check the
+        existence of.
         """
         return self.cast(o) is not None
 
@@ -7233,8 +8091,8 @@ class orm:
             assert type(hum) is human
 
             # Upcast to mammal super type of human by passing in the
-            # entity instead of the UUID. Note for this, we could also
-            # just do `hum.super`.
+            # entity instead of the UUID. Note for this, we would
+            # canonically just do `hum.super`.
             mam = mammal.orm.cast(hum)
             assert type(mam) is mammal
 
@@ -7318,6 +8176,9 @@ class orm:
         return leaf
                 
     def clone(self):
+        """ Returns a new instance of an ``orm`` object with the same
+        attributes of ``self``.
+        """
         r = orm()
 
         props = (
@@ -7333,6 +8194,9 @@ class orm:
         return r
 
     def __repr__(self):
+        """ Returns a string representation of the ``orm`` object
+        including its corresponding instance or entity class.
+        """
         r = 'orm(type=<%s>, %s=True)'
 
         if self.isinstance:
@@ -7346,6 +8210,19 @@ class orm:
 
     @property
     def isreflexive(self):
+        """ Returns True if the association references two different
+        entitymappings of the same type.
+
+        An example if a reflexive association is ``party.party_party``::
+
+            class party_party(orm.association):
+                subject  =  party
+                object   =  party
+                role     =  str
+
+        It associates a ``party`` called 'subject' with a ``party``
+        called object making it a "reflexive" association.
+        """
         maps = self.mappings.entitymappings
         types = [
             x.entity for x in maps
@@ -7356,6 +8233,36 @@ class orm:
         
     @property
     def isrecursive(self):
+        """ Returns True if the entity or entities class or object is
+        recursive.
+
+        A recursive entity is one that has constituents of the same type
+        as the composite.
+
+        A good example if recursive entities is the ``inode`` class in
+        file.py. An inode is the superentiy of ``file`` and
+        ``directory``, which compose the framework's "file system". File
+        systems are recursive in that you can create directories within
+        directories indefinately. (Interating over these tree structures
+        is typically done with a **recursive** function, which is why we
+        use the word "recursive" to describe these entity objects.)
+
+            class inodes(orm.entities):
+                pass
+
+            class inode(orm.entity):
+                inodes = inodes
+
+        In the above example, we see that ``inode`` has a collection of
+        ``inodes``, i.e., the composite inode has a constiuent of the
+        same type. This is what makes a entity recursive.
+
+            assert inode.orm.isrecursive
+
+        Other examples of recursive entity objects include party.region,
+        product.category and shipment.item. 
+        """
+
         map = self.mappings(self.entities.__name__)
         return map is not None and map.entities is self.entities
 
@@ -7447,6 +8354,9 @@ class orm:
             j.entities.orm.joinsubs()
 
     def truncate(self, cur=None):
+        """ Remove all date in the table that is associated with the
+        entity.
+        """
         # TODO Use executioner
         sql = 'TRUNCATE TABLE %s;' % self.table
 
@@ -7459,15 +8369,15 @@ class orm:
 
     @staticmethod
     def recreate(*args):
-        """ Drop and recreate the table each of the entity class
+        """ Drop and recreate the table for each of the entity class
         references in *args.
-
-        Note that when ``orm`` is an instance (as opposed to mearly a
-        class reference), this method is replace with ``orm._recreate'
-        on initialization. 
         """
 
-        # For each entity class reference in *args
+        # NOTE that when ``orm`` is an instance (as opposed to mearly a
+        # class reference), this method is replace with ``orm._recreate'
+        # on initialization (see orm.__init__).
+
+        # For each entity class references in *args
         for e in args:
             # Delegate to the instance version of ``recreate``
             e.orm.recreate()
@@ -7549,7 +8459,17 @@ class orm:
                     cur.close()
 
     def drop(self, cur=None, ignore=False):
+        """ Removes the table from the database that is mapped to the
+        entity.
+
+        :param: ignore bool: If True, don't raise an error if the table
+        does not exist. The default is False.
+
+        :param: cur: The MySQLdb cursor to use for the database
+        connection.
+        """
         # TODO Use executioner
+        # TODO UPPER CASE 'drop table'
         sql = 'drop table `%s`;' % self.table
 
         try:
@@ -7565,6 +8485,14 @@ class orm:
                     raise
     
     def migrate(self, cur=None):
+        """ Examines the entity's mapping attributes and the table that
+        the entity is mapped to and issues an ALTER TABLE statement to
+        the table in order to make its columns match the entity's
+        attributes.
+
+        :param: cur: The MySQLdb cursor to use for the database
+        connection.
+        """
         # TODO Use executioner
         sql = self.altertable
 
@@ -7579,6 +8507,8 @@ class orm:
                 conn.query(sql)
 
     def create(self, cur=None, ignore=False):
+        """ Create a table in the database corresponding to the entity.
+        """
         # TODO Use executioner
         sql = self.createtable
 
@@ -7600,14 +8530,27 @@ class orm:
                 
     @property
     def ismigrated(self):
+        """ Returns True if the attributes in the entity match the
+        columns in the underlying table.
+        """
         return not bool(self.altertable)
 
     @property
     def migration(self):
+        """ Returns a new ``migration`` object for the entity. See the
+        ``migration`` class for more.
+        """
         return migration(self.entity)
 
     @property
     def altertable(self):
+        """ Compares the attributes of the entity with the columns of
+        the entity's underlying table and returns an ALTER TABLE command
+        that, if run against the database, would cause the table to
+        match the entity. If there are no differences between the
+        entity's attributes and the underlying table's columns, or if
+        the table does not exist, None is returned.
+        """
         tbl = self.dbtable
 
         # If there is no table in the database, there can be no ALTER
@@ -7775,6 +8718,10 @@ class orm:
 
     @property
     def createtable(self):
+        """ Returns a CREATE TABLE string which, if issued against the
+        database, would create the entity's underlying table (assuming
+        the table didn't already exist).
+        """
         r = 'CREATE TABLE `%s`(\n' % self.table 
 
         for i, map in enumerate(self.mappings):
@@ -7813,7 +8760,7 @@ class orm:
         """
 
         # TODO To complement orm.reloaded(), we should have an override
-        # of orm.load() that reloads/refreshed an entity object. 
+        # of orm.load() that reloads/refreshes an entity object. 
         try:
             # Remove all elements from collection.
             self.instance.clear()
@@ -7826,6 +8773,7 @@ class orm:
             self.collect(orderby, limit, offset)
 
     def query(self, sql):
+        # NOTE This does not appear to be in use.
         ress = None
         def exec(cur):
             nonlocal ress
@@ -7841,6 +8789,9 @@ class orm:
     # TODO:1d1e17dc s/dbtable/table
     @property
     def dbtable(self):
+        """ Returns a ``db.table`` object representing the entity's
+        underlying database table.
+        """
         try:
             return db.table(self.table)
         except _mysql_exceptions.OperationalError as ex:
@@ -7850,8 +8801,10 @@ class orm:
 
     def load(self, id):
         """ Load an entity by ``id``.
-        """
 
+        :param id uuid4: A uuid4 object representing the id of the
+        entity to be loaded.
+        """
         # Create the basic SELECT query.
         sql = f'SELECT * FROM {self.table} WHERE id = _binary %s'
 
@@ -7863,12 +8816,12 @@ class orm:
         # proprietor. Restrict the result set to only records where the
         # proprietor's FK column matches the proprietor set at the ORM
         # level. This restricts entity records not associated with
-        # orm.proprietor from being loaded.
-        if orm.proprietor:
+        # security().proprietor from being loaded.
+        if security().proprietor:
             for map in self.mappings.foreignkeymappings:
                 if map.fkname == 'proprietor':
                     sql += f' AND {map.name} = _binary %s'
-                    args.append(orm.proprietor.id.bytes)
+                    args.append(security().proprietor.id.bytes)
                     break
 
         ress = None
@@ -7902,9 +8855,9 @@ class orm:
         #         raise Exception('myentity not found')
         #
         # Hacking __new__ to return None may not be a good idea because
-        # of all the event initialition code is in __init__. However, we
+        # of all the event initialition code in __init__. However, we
         # could set a private boolean to cause the entity's __bool__
-        # method to return False. Then any call to __getattribute__()
+        # method to return False. Then, any call to __getattribute__()
         # could check the private boolean and raise an exception to
         # indicate that entity is as good as None because the id was
         # non-existent:
@@ -7918,7 +8871,7 @@ class orm:
 
         # If the `id` exists, we should only get one record back from
         # the database. If that's not the case, raise a
-        # db.RecordNotFoundError
+        # db.RecordNotFoundError.
         ress.demandhasone()
 
         # We are only interested in the first
@@ -7934,13 +8887,12 @@ class orm:
         return res
     
     def collect(self, orderby=None, limit=None, offset=None):
-        """
-        Loads data from the database into the collection. The SQL used
-        to load the data is generated mostly from arguments passed to
-        the entities collection's contructor.
+        """ Loads data from the database into the collection. The SQL
+        used to load the data is generated mostly from arguments passed
+        to the entities collection's contructor.
 
-        Note that an ORM user typically doesn't call ``load``
-        explicitly. The call to ``load`` is usually made by the ORM
+        Note that an ORM user typically doesn't call ``collect``
+        explicitly. The call to ``collect`` is usually made by the ORM
         after the entities collection has been instantiated and during
         the invocation of one of the collection's properties or methods.
         See ``entities.__getattribute__``.
@@ -7960,6 +8912,7 @@ class orm:
             return
 
         try:
+            # Declare that we are currently loading
             self.isloading = True
                     
             # Get SQL and SQL parameters/args
@@ -8022,6 +8975,12 @@ class orm:
 
     @property
     def abbreviation(self):
+        """ Return a unique abbreviation of the entity. This is useful
+        in table aliasing to keep the size of SELECT statements small
+        (table aliasing can be extremely verbose because of the way
+        aliases are used to keep track of the way data is related to
+        each other.)
+        """
         if not self._abbreviation:
             suffix = str()
 
@@ -8076,10 +9035,15 @@ class orm:
 
     @staticmethod 
     def dequote(s):
+        """ Returns a string with the quotes removed.
+
+        :param: s str: The string to remove the quotes from.
+        """
         if s[0] == "'" and s[-1] == "'":
             return s[1:-1]
         return s
 
+    # TODO s/parameterizepredicate/parameterize/
     def parameterizepredicate(self, args):
         """ In the where clause (``self.instance.orm.where``), look for
         literals, i.e.::
@@ -8226,6 +9190,8 @@ class orm:
                             # above any joins from the SELECT.
                             if i.first:
                                 es += e
+                                
+
                             else:
                                 # If we are here, we must be at an 'id'
                                 # field but not the first one, i.e., one
@@ -8333,6 +9299,11 @@ class orm:
                     if id == id1:
                         if eclass.orm.issuperentity(of=lowest):
                             es.remove(e, trash=False)
+
+            #💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            # Ensure the user has read access to the entity.
+            es.orm.redact()
+            #💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
 
         # Link the entity objects in edict together into the graph
         orm.link(edict)
@@ -8480,7 +9451,12 @@ class orm:
         """ The lower-level private method which bulids and returns the
         SELECT statement for the entities (self.instance) collection
         object.
+
         """
+        # Note, since generating the SELECT statement involves
+        # recursion, we need a regular method. The user would rather
+        # call a property (orm.sql), however, so this is a private
+        # method normally accessed through the orm.sql method.
 
         def raise_fk_not_found(joiner, join):
             ''' Raise a ValueError with a FK not found message. '''
@@ -8694,14 +9670,17 @@ class orm:
 
     @staticmethod
     def introduce(sql, args):
-        """ Use ``args`` to add introducers ('_binary', et. al.) before
-        the unquoted placeholder tokens (%s) in ``sql``.
+        """ Use ``args`` to add MySQL introducers ('_binary', et. al.)
+        before the unquoted placeholder tokens (%s) in ``sql``.
 
-        :param: str  sql:  A whole are partial SQL statement.
+        :param: str  sql:  A whole or partial SQL statement.
+
         :param: list args: Parameters to use with query.
+
         :rtype: str
-        :returns: Returns the ``sql`` argument with introducers added where
-                  appropriate
+
+        :returns: Returns the ``sql`` argument with introducers added
+        where appropriate.
         """
 
         # Where the arg is binary (bytearray or bytes), replace '%s' with
@@ -8716,7 +9695,7 @@ class orm:
 
         # Iterate over sql instead of using a simple search-and-replace
         # approach so we don't add introducer to quoted instances of the
-        # placeholder token
+        # placeholder token.
         for s in sql:
             # Detect quotes
             if s == "'":
@@ -8758,13 +9737,36 @@ class orm:
 
     @property
     def isstreaming(self):
+        """ Return True if the entities collection is in streaming mode.
+        Streaming mode implies we are accessing the results from a
+        database queries in discrete chunks. See the docstrings at
+        ``orm.streaming`` for more on streaming.
+        """
         return self.stream is not None
 
     @property
     def isdirty(self):
+        """ Return True if the object is not new (exists in database)
+        but has changed since it was loaded in memory::
+
+            # Load existing entity
+            ent = entity(id)
+            assert not ent.orm.isdirty
+
+            # Dirty the ent by changing a property
+            ent.name += 'xxx'
+            assert ent.orm.isdirty
+
+        The isdirty flag is used internally to determine if an UPDATE
+        statement needs to be issued when the save method is called::
+
+            ent.save()
+        """
         if self._isdirty:
             return True
 
+        # Ascend the inheritence tree to see if any of the loaded supers
+        # are dirty. Note that this call is inherently recursive.
         if self._super:
             return self.super.orm.isdirty
 
@@ -8772,18 +9774,32 @@ class orm:
 
     @isdirty.setter
     def isdirty(self, v):
+        """ Sets the isdirty flag.  See the isdirty getter for more.
+
+        :param: v bool: The value to set isdirty to.
+        """
         self._isdirty = v
 
     @property
     def forentities(self):
+        """ Returns True if this ``orm`` instance corresponds to an
+        orm.entities object rather than an orm.entity object.
+        """
         return isinstance(self.instance, entities)
         
     @property
     def forentity(self):
+        """ Returns True if this ``orm`` instance corresponds to an
+        orm.entity object rather than an orm.entities object.
+        """
         return isinstance(self.instance, entity)
 
     @property
     def persistencestates(self):
+        """ Returns a list of persistencestate tuples for each of the
+        entity objects in the entities collection. Useful for unit tests
+        and debugging. See orm.persistencestate for more.
+        """
         es = self.instance
         if not self.forentities:
             msg = 'Use with entities. For entity, use persistencestate'
@@ -8796,6 +9812,10 @@ class orm:
 
     @persistencestates.setter
     def persistencestates(self, sts):
+        """ Sets the persistencestate tuple to `sts` for each of the
+        entity objects within this collection. See orm.persistencestate
+        for more.
+        """
         es = self.instance
         if not self.forentities:
             msg = 'Use with entities. For entity, use persistencestate'
@@ -8806,6 +9826,18 @@ class orm:
 
     @property
     def persistencestate(self):
+        """ Get the persistencestate tuple for an orm.entity. Useful for
+        debugging and unit testing.
+
+        The persistencestate tuple corresponds to the isnew, isdirty and
+        ismarkedfordeletion flags. The following will always be true::
+
+            # Given an entity at any point in time:
+            st = ent.orm.persistencestate
+            assert  ent.orm.isnew                is  st[0]
+            assert  ent.orm.isdirty              is  st[1]
+            assert  ent.orm.ismarkedfordeletion  is  st[2]
+        """
         es = self.instance
         if not self.forentity:
             msg = 'Use with entity. For entities, use persistencestates'
@@ -8814,6 +9846,9 @@ class orm:
 
     @persistencestate.setter
     def persistencestate(self, v):
+        """ Set the persistencestate for an orm.entity object. See the
+        persistencestate getter for more.
+        """
         es = self.instance
         if not isinstance(es, entity):
             msg = 'Use with entity. For entities, use persistencestates'
@@ -9892,7 +10927,7 @@ class ProprietorError(ValueError):
     @property
     def expected(self):
         if not self._expected:
-            return orm.proprietor
+            return security().proprietor
         return self._expected
 
     def __str__(self):
@@ -9903,4 +10938,128 @@ class ProprietorError(ValueError):
             f'{expected}'
         )
 
+    def __repr__(self):
         return str(self)
+
+class AuthorizationError(PermissionError):
+    """ An exception that indicates the currently that the current
+    user is unable to create, retrieve, update or delete a record in the
+    database.
+
+    The ORM logic in orm.py will usually through this exception. The
+    ORM user indicates authorization problems in the accessibility
+    properties by return a ``violations`` collection.
+    """
+    def __init__(self, msg, crud, vs=None, e=None):
+        """ Initialize the exception.
+
+        :param: msg str: The exception's error message.
+
+        :param: crud str: The type of access. Can be either 'c' (create)
+        'r' (retrieve), 'u' (update) or 'd' (delete).
+
+        :param: vs violations: A ``violations`` collection.
+
+        :param: e entity: The instance of an orm.entity for which the
+        authorization is denined.
+        """
+        crud = crud.lower()
+        if crud not in 'crud':
+            raise ValueError(
+                'crud argument must be "c", "r", "u" or "d"'
+            )
+
+
+        self.message     =  msg
+        self.crud        =  crud
+        self.violations  =  vs if isinstance(vs, violations) else None
+        self.entity      =  e
+
+        super().__init__(msg)
+
+class violations(entitiesmod.entities):
+    """ A collection of accessibility violations. Returned by the
+    accessibility properties of orm.entity to indicate that the there
+    are zero or more problems with the user attempting to persist or
+    retrive an entity and what those problems are.
+    """
+    def __init__(self, *args, **kwargs):
+        """ Initialize the violations object.
+
+        :param: entity orm.entity: The instance of an orm.entity on
+        which the the violations collection is reporting. Note, this
+        must be passed in as a kwargs::
+            
+            vs = violations(entity=self)
+
+        """
+
+        # Get the entity reference and delete it so we can pass it to
+        # super().__init__
+        try:
+            e = kwargs['entity']
+        except KeyError:
+            e = None
+        else:
+            del kwargs['entity']
+                
+        super().__init__(*args, **kwargs)
+        self.entity = e
+
+    def __iadd__(self, o):
+        """ Add `o` to the violations collection. `o` can be a str or a
+        violation instance::
+
+            @proprety
+            def retrievability(self):
+                vs = violations(entity=self)
+                if hr not in usr.departments:
+                    vs += (
+                        'Only user in hr can retrive this entity'
+                    )
+                return vs
+
+        :param: o str|orm.violation: A str or violation to add to the
+        collection.
+        """
+                
+        # Convert str to violaton
+        if isinstance(o, str):
+            o = violation(o)
+
+        # Keep track of the collection
+        o.violations = self
+
+        # Do the actual appending
+        return super().__iadd__(o)
+
+class violation(entitiesmod.entity):
+    """ Records an access violation message. Access violations are
+    created in an entity's accessibility properties.
+    """
+    def __init__(self, msg, vs=None):
+        """ Creates a violation.
+
+        :param: msg str: The textual message that explains why access to
+        a particular CRUD operation was denied.
+
+        :param: vs orm.violations: The ``violations`` collection that
+        this violation object is a member of.
+        """
+        self.message = msg
+        self.violations = vs
+
+    @property
+    def entity(self):
+        """ The instance of an orm.entity for which the authorization is
+        denined.
+        """
+        if self.violations:
+            return self.violations.entity
+
+        return None
+        
+
+        
+
+

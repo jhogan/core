@@ -7,7 +7,7 @@
 # Unauthorized copying of this file, via any medium is strictly        #
 # prohibited                                                           #
 # Proprietary and confidential                                         #
-# Written by Jesse Hogan <jessehogan0@gmail.com>, 2020                 #
+# Written by Jesse Hogan <jessehogan0@gmail.com>, 2021                 #
 ########################################################################
 
 from func import enumerate, getattr, B
@@ -65,17 +65,18 @@ class dom_file(tester.tester):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        orm.orm.owner = ecommerce.users.root
+        orm.security().owner = ecommerce.users.root
 
         # Proprietor
         com = party.company(name='Carapacian')
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
         com.save()
 
         # Recreate tables
         orm.orm.recreate(
-            ecommerce.user,      file.files,   file.resources,
-            file.directory,  file.inodes,  pom.site, foonet, asset.asset
+            ecommerce.user,  file.files,   file.resources,
+            file.directory,  file.inodes,  pom.site,
+            foonet,          asset.asset
         )
 
     def it_adds_js_files_to_site(self):
@@ -408,37 +409,41 @@ class dom_file(tester.tester):
 class file_file(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        orm.security().override = True
+
         # Delete files
         clean()
 
-        # Recreate tables
-        orm.orm.recreate(
-            ecommerce.user,
-            file.files,
-            file.resources,
-            file.directory,
-            file.inodes,
-        )
+        if self.rebuildtables:
+            # Recreate tables
+            orm.orm.recreate(
+                ecommerce.user,
+                file.files,
+                file.resources,
+                file.directory,
+                file.inodes,
+            )
 
         # Create an owner and get the root user
         own = ecommerce.user(name='hford')
         root = ecommerce.users.root
 
         # Save the owner, the root user will be the owner's owner.
-        orm.orm.owner = root
+        orm.security().owner = root
         own.owner = root
         own.save()
 
         # Going forward, `own` will be the owner of all future records
         # created.
-        orm.orm.owner = own
+        orm.security().owner = own
 
         # Create a company to be the propritor.
         com = party.company(name='Ford Motor Company')
         com.save()
 
         # Set the company as the proprietory
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
 
         # Update the owner (hford) so that the company (Ford Motor
         # Company) is the proprietor.
@@ -808,14 +813,16 @@ class file_file(tester.tester):
 class file_directory(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        orm.security().override = True
         clean()
 
-        orm.orm.recreate(
-            ecommerce.user, file.files, file.resources,
-            file.directory, file.inodes,
-        )
+        if self.rebuildtables:
+            orm.orm.recreate(
+                ecommerce.user, file.files, file.resources,
+                file.directory, file.inodes,
+            )
 
-        orm.orm.owner = ecommerce.users.root
+        orm.security.owner = ecommerce.users.root
 
     def it_creates_off_root(self):
         dir = file.directory(name='mydir')

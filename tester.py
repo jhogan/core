@@ -2,7 +2,7 @@
 # Unauthorized copying of this file, via any medium is strictly
 # prohibited
 # Proprietary and confidential
-# Written by Jesse Hogan <jessehogan0@gmail.com>, 2020
+# Written by Jesse Hogan <jessehogan0@gmail.com>, 2021
 
 from config import config
 from configfile import configfile
@@ -638,7 +638,9 @@ class tester(entity):
                     'a: ' + type(fn).__name__
                 ))
 
-            fn()
+            # Invoke the calable. If we expect no exception (expect is
+            # None), return the value.
+            return fn()
 
         except Exception as ex:
             if type(ex) is not expect:

@@ -6,7 +6,7 @@
 # Unauthorized copying of this file, via any medium is strictly        #
 # prohibited                                                           #
 # Proprietary and confidential                                         #
-# Written by Jesse Hogan <jessehogan0@gmail.com>, 2020                 #
+# Written by Jesse Hogan <jessehogan0@gmail.com>, 2021                 #
 ########################################################################
 
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
@@ -54,6 +54,7 @@ import tempfile
 import testdom
 import testecommerce
 import testfile
+import testmessage
 import testsec
 import textwrap
 
@@ -3828,6 +3829,7 @@ class artist_artist(orm.association):
 class test_orm(tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        orm.security().override = True
         self.chronicles = db.chronicles()
         db.chronicler.getinstance().chronicles.onadd += self._chronicler_onadd
 
@@ -3858,20 +3860,20 @@ class test_orm(tester):
         root = ecommerce.users.root
 
         # Save the owner, the root user will be the owner's owner.
-        orm.orm.owner = root
-        own.owner = root
-        own.save()
+        with orm.sudo():
+            own.owner = root
+            own.save()
 
         # Going forward, `own` will be the owner of all future records
         # created.
-        orm.orm.owner = own
+        orm.security().owner = own
 
         # Create a company to be the propritor.
         com = party.company(name='Ford Motor Company')
         com.save()
 
         # Set the company as the proprietory
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
 
         # Update the owner (hford) so that the company (Ford Motor
         # Company) is the proprietor.
@@ -17643,16 +17645,18 @@ class gem_party(tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        orm.security().override = True
+
         if self.rebuildtables:
             es = orm.orm.getentitys(includeassociations=True)
             for e in es:
                 if e.__module__ in ('party', 'apriori'):
                     e.orm.recreate()
 
-        orm.orm.owner = ecommerce.users.root
+        orm.security().owner = ecommerce.users.root
 
         com = party.company(name='Carapacian')
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
         com.save(com)
 
     @staticmethod
@@ -17696,7 +17700,7 @@ class gem_party(tester):
             cm.line += str(randint(1000, 9999))
 
         elif type == 'email':
-            cm = party.email(address='bgates@microsoft.com')
+            cm = party.email(name='bgates@microsoft.com')
         else:
             raise TypeError('Type not supported')
 
@@ -18457,12 +18461,12 @@ class gem_party(tester):
     def it_associates_company_to_email_addresses(self):
         com = self.getvalidcompany()
 
-        # Create two email addressess
+        #it_associates_company_to_email_addresses Create two email addressess
         for i in range(2):
 
             # Create email addres
             em = party.email()
-            em.address = 'jimbo%s@foonet.com' % i
+            em.name = 'jimbo%s@foonet.com' % i
             
             # Create party to contact mechanism association
             priv = party.party_contactmechanism.roles.private
@@ -18722,7 +18726,7 @@ class gem_party(tester):
 
             # Create email addres
             em = party.email()
-            em.address = 'jimbo%s@foonet.com' % i
+            em.name = 'jimbo%s@foonet.com' % i
             
             # Create party to contact mechanism association
             priv = party.party_contactmechanism.roles.private
@@ -18887,7 +18891,7 @@ class gem_party(tester):
                 return getattr(cm1, attr) == cm
 
             if  cls  is  party.phone:    attr  =  'line'
-            if  cls  is  party.email:    attr  =  'address'
+            if  cls  is  party.email:    attr  =  'name'
             if  cls  is  party.address:  attr  =  'address1'
             if  cls  is  party.website:  attr  =  'url'
 
@@ -19463,13 +19467,16 @@ class gem_party(tester):
 class gem_product(tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for e in orm.orm.getentitys(includeassociations=True):
-            if e.__module__ in ('product', ):
-                e.orm.recreate()
+        orm.security().override = True
 
-        orm.orm.owner = ecommerce.users.root
+        if self.rebuildtables:
+            for e in orm.orm.getentitys(includeassociations=True):
+                if e.__module__ in ('product', ):
+                    e.orm.recreate()
+
+        orm.security().owner = ecommerce.users.root
         com = party.company(name='Carapacian')
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
         com.save(com)
 
     @staticmethod
@@ -21174,19 +21181,22 @@ class gem_product(tester):
 class gem_case(tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        orm.orm.recreate(
-            party.communications,
-            party.parties,
-            party.case_party,
-            party.caseroletype,
-            party.casestatuses,
-            party.statuses,
-        )
 
-        orm.orm.owner = ecommerce.users.root
+        orm.security().override = True
+        if self.rebuildtables:
+            orm.orm.recreate(
+                party.communications,
+                party.parties,
+                party.case_party,
+                party.caseroletype,
+                party.casestatuses,
+                party.statuses,
+            )
+
+        orm.security().owner = ecommerce.users.root
 
         com = party.company(name='Carapacian')
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
         com.save(com)
 
     def it_raises_on_invalid_call_of_casesstatus(self):
@@ -21342,14 +21352,17 @@ class gem_case(tester):
 class gem_order(tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for e in orm.orm.getentitys(includeassociations=True):
-            if e.__module__ in ('order', 'party', 'product',):
-                e.orm.recreate()
 
-        orm.orm.owner = ecommerce.users.root
+        orm.security().override = True
+        if self.rebuildtables:
+            for e in orm.orm.getentitys(includeassociations=True):
+                if e.__module__ in ('order', 'party', 'product',):
+                    e.orm.recreate()
+
+        orm.security().owner = ecommerce.users.root
 
         com = party.company(name='Carapacian')
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
         com.save(com)
 
     def it_creates_salesorder(self):
@@ -22121,14 +22134,17 @@ class gem_order(tester):
 class gem_shipment(tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for e in orm.orm.getentitys(includeassociations=True):
-            if e.__module__ in ('shipment', 'order'):
-                e.orm.recreate()
+        orm.security().override = True
 
-        orm.orm.owner = ecommerce.users.root
+        if self.rebuildtables:
+            for e in orm.orm.getentitys(includeassociations=True):
+                if e.__module__ in ('shipment', 'order'):
+                    e.orm.recreate()
+
+        orm.security().owner = ecommerce.users.root
 
         com = party.company(name='Carapacian')
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
         com.save(com)
 
     def it_creates(self):
@@ -22546,16 +22562,19 @@ class gem_shipment(tester):
 class gem_effort(tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for e in orm.orm.getentitys(includeassociations=True):
-            if e.__module__ in (
-                'effort', 'apriori', 'party', 'asset', 'order'
-            ):
-                e.orm.recreate()
 
-        orm.orm.owner = ecommerce.users.root
+        orm.security().override = True
+        if self.rebuildtables:
+            for e in orm.orm.getentitys(includeassociations=True):
+                if e.__module__ in (
+                    'effort', 'apriori', 'party', 'asset', 'order'
+                ):
+                    e.orm.recreate()
+
+        orm.security().owner = ecommerce.users.root
 
         com = party.company(name='Carapacian')
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
         com.save(com)
 
     def it_creates_requirements(self):
@@ -23332,14 +23351,17 @@ class gem_invoice(tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        for e in orm.orm.getentitys(includeassociations=True):
-            if e.__module__ in ('invoice', 'party', 'apriori'):
-                e.orm.recreate()
+        orm.security().override = True
 
-        orm.orm.owner = ecommerce.users.root
+        if self.rebuildtables:
+            for e in orm.orm.getentitys(includeassociations=True):
+                if e.__module__ in ('invoice', 'party', 'apriori'):
+                    e.orm.recreate()
+
+        orm.security().owner = ecommerce.users.root
 
         com = party.company(name='Carapacian')
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
         com.save(com)
 
     def it_creates_items(self):
@@ -23700,28 +23722,32 @@ class gem_invoice(tester):
 class gem_account(tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        orm.orm.recreate(
-            account.account,
-            account.type,
-            account.periodtypes,
-            account.account_organizations,
-            account.periods,
-            account.depreciation,
-            account.transactions,
-            account.internals,
-            account.sales,
-            account.obligation,
-            account.external,
-            account.other,
-            account.item,
-            account.asset_depreciationmethods,
-            account.depreciationmethod,
-        )
 
-        orm.orm.owner = ecommerce.users.root
+        orm.security().override = True
+
+        if self.rebuildtables:
+            orm.orm.recreate(
+                account.account,
+                account.type,
+                account.periodtypes,
+                account.account_organizations,
+                account.periods,
+                account.depreciation,
+                account.transactions,
+                account.internals,
+                account.sales,
+                account.obligation,
+                account.external,
+                account.other,
+                account.item,
+                account.asset_depreciationmethods,
+                account.depreciationmethod,
+            )
+
+        orm.security().owner = ecommerce.users.root
 
         com = party.company(name='Carapacian')
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
         com.save(com)
 
     def it_creates_accounts(self):
@@ -23967,14 +23993,15 @@ class gem_account(tester):
 class gem_budget(tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for e in orm.orm.getentitys(includeassociations=True):
-            if e.__module__ in ('apriori', 'budget', 'party'):
-                e.orm.recreate()
+        if self.rebuildtables:
+            for e in orm.orm.getentitys(includeassociations=True):
+                if e.__module__ in ('apriori', 'budget', 'party'):
+                    e.orm.recreate()
 
-        orm.orm.owner = ecommerce.users.root
+        orm.security().owner = ecommerce.users.root
 
         com = party.company(name='Carapacian')
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
         com.save(com)
 
     def it_creates(self):
@@ -24340,15 +24367,16 @@ class gem_budget(tester):
 class gem_hr(tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        es = orm.orm.getentitys(includeassociations=True)
-        for e in es:
-            if e.__module__ in ('party', 'hr', 'apriori', 'invoice'):
-                e.orm.recreate()
+        if self.rebuildtables:
+            es = orm.orm.getentitys(includeassociations=True)
+            for e in es:
+                if e.__module__ in ('party', 'hr', 'apriori', 'invoice'):
+                    e.orm.recreate()
 
-        orm.orm.owner = ecommerce.users.root
+        orm.security().owner = ecommerce.users.root
 
         com = party.company(name='Carapacian')
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
         com.save(com)
 
     def it_creates_position(self):

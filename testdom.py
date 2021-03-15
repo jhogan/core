@@ -549,32 +549,35 @@ class pom_site(tester.tester):
 class pom_page(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        es = orm.orm.getentitys(includeassociations=True)
-        mods = 'party', 'ecommerce', 'pom', 'asset', 'apriori', 'file'
 
-        for e in es:
-            if e.__module__ in  mods:
-                e.orm.recreate()
+        if self.rebuildtables:
+            es = orm.orm.getentitys(includeassociations=True)
+            mods = 'party', 'ecommerce', 'pom', 'asset', 'apriori', 'file'
 
+            for e in es:
+                if e.__module__ in  mods:
+                    e.orm.recreate()
+
+        orm.security().override = True
         # Create an owner and get the root user
         own = ecommerce.user(name='hford')
         root = ecommerce.users.root
 
         # Save the owner, the root user will be the owner's owner.
-        orm.orm.owner = root
+        orm.security().owner = root
         own.owner = root
         own.save()
 
         # Going forward, `own` will be the owner of all future records
         # created.
-        orm.orm.owner = own
+        orm.security().owner = own
 
         # Create a company to be the propritor.
         com = party.company(name='Ford Motor Company')
         com.save()
 
         # Set the company as the proprietory
-        orm.orm.setproprietor(com)
+        orm.security().proprietor = com
 
         # Update the owner (hford) so that the company (Ford Motor
         # Company) is the proprietor.

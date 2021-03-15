@@ -4,7 +4,7 @@
 # Unauthorized copying of this file, via any medium is strictly
 # prohibited
 # Proprietary and confidential
-# Written by Jesse Hogan <jessehogan0@gmail.com>, 2020
+# Written by Jesse Hogan <jessehogan0@gmail.com>, 2021
 
 from functools import reduce
 from pdb import set_trace; B=set_trace
@@ -57,6 +57,15 @@ def enumerate(iterable, start=0):
         @property
         def last(self):
             return len(self.iterable) - 1 == self
+
+        @property
+        def even(self):
+            return self % 2 == 0
+
+        @property
+        def odd(self):
+            return not self.even
+
             
     i = seqint(start, iterable=iterable)
     for e in iterable:
@@ -96,3 +105,8 @@ def B(x=True):
         #Pdb().set_trace(sys._getframe().f_back)
         from IPython.core.debugger import Tracer;
         Tracer().debugger.set_trace(sys._getframe().f_back)
+
+def PM(ex):
+    import pdb
+    pdb.post_mortem(ex.__traceback__)
+
