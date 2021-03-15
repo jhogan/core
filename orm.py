@@ -2825,12 +2825,35 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         return brs
 
     def _self_onremove(self, src, eargs):
+        """ The event handler called whenever an entity is removed from
+        this collection. When called, the entity object is added to the
+        collection's ``trash``. When save() is called on the collection,
+        the entity objects in the ``trash`` will be DELETEd from the
+        database.
+        """
+
+        # By default, we want to trash (DELETE) records when they are
+        # removed from the collection. In that case ``dotrash`` will be
+        # True. Otherwise, the user probably only wants to remove the
+        # item from the collection without DELETing it.
         if self.orm.dotrash:
             self.orm.trash += eargs.entity
             self.orm.trash.last.orm.ismarkedfordeletion = True
         super()._self_onremove(src, eargs)
                     
     def getindex(self, e):
+        """ Returns the index count of the entity within the collection.
+        If the entity is not in the collection, a ValueError is raised::
+
+                    ix = es.getindex(e)
+                    assert es[ix].id == e.id
+
+        :param: e orm.entity|entity.entity: The entity object to look
+        for. If ``e`` is an orm.entity, its ``id`` property will be
+        compared with other orm.entity id's in this collection. If ``e``
+        is an entity.entity, the logic at entities.entities.getindex is
+        used instead.
+        """
         if isinstance(e, entity):
             for ix, e1 in enumerate(self):
                 if e.id == e1.id: return ix
