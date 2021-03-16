@@ -2863,6 +2863,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         super().getindex(e)
 
     def __repr__(self):
+        """ Return a tabular representation of the entity objects
+        contained within this entites collection.
+        """
         hdr = '%s object at %s count: %s' 
         hdr %= type(self), hex(id(self)), self.count
 
@@ -9880,6 +9883,10 @@ class orm:
 
     @property
     def trash(self):
+        """ Return the trash - an entities collection the same type as
+        self but intended to collect entities, but whose entity objects
+        are destined for DELETion.
+        """
         if not self._trash:
             self._trash = self.entities()
         return self._trash
@@ -9919,12 +9926,16 @@ class orm:
         return props
 
     def issuperentity(self, of):
+        """ Returns True if ``self`` is a super entity of ``of``, False
+        otherwise.
+        """
         return self.entity in of.orm.entity.orm.superentities
 
     @staticmethod
     def issub(obj1,  obj2):
         """ Returns true if obj1 is a subentity of obj2, False
         otherwise.
+
             :param: obj1  An entities class
             :param: obj2  An entities class
         """
@@ -9946,6 +9957,30 @@ class orm:
 
     @property
     def sub(self):
+        """ Returns the subentity of ``self``::
+            
+                # Get a good
+                good = product.good(goodid)
+
+                # Get the superentity: a product instance
+                prod = good.orm.super
+
+                # prod's sub is the good
+                assert prod.orm.sub is good
+
+            In the above example, the call to ``sub`` does not result in
+            a call to the database becase the prior call to ``super``
+            stores a reference to the ``good`` object. However, a
+            database call will be made if necessary::
+
+                # Get a product
+                prod = product.product(prodid)
+
+                # A database call will be made here to get the
+                # subentity. If the product is not a good (perhaps it's
+                # a service), a db.RecordNotFoundError will be raised.
+                good = prod.orm.sub
+        """
         if self.isstatic:
             raise ValueError(
                 'Cannot call sub on static entity'
@@ -9966,16 +10001,25 @@ class orm:
 
     @sub.setter
     def sub(self, v):
+        """ Set the subentity. Setting the sub will typically not be
+        done by the ORM user.
+
+        :param: v orm.entity: The orm.entity being assigned as a
+        subentity of self.
+        """
         self._sub = v
             
     @property
     def supers(self):
+        """ Return a list of superentity class references of self.
+        """
         if self.isstatic:
             return [
                 x for x in self.entity.__mro__[1:]
                 if entity in x.__mro__[1:]
             ]
         else:
+            # TODO
             # 1. Create an orm.entities instance for the most general
             #    type
             # 2. Add each super starting with self's to the collection
@@ -9987,13 +10031,14 @@ class orm:
 
     @property
     def super(self):
-        """ For orms that have no instance, return the super class of
-        `orm.entity`.  If orm.instance is not None, return an instance of that
-        object's super class.  A super class here means the base class of an
-        entity class where the base itself is not `entity`, but rather a
-        subclass of `entity`. So if class A inherits directly from entity, it
-        will have a super of None. However if class B inherits from A. class B
-        will have a super of A."""
+        """ For orm's that have no instance, return the super class of
+        ``orm.entity``.  If orm.instance is not None, return an instance
+        of that object's superentity.  A superentity means the base
+        class of an entity class where the base itself is not
+        ``orm.entity``, but rather a subclass of ``orm.entity``. So if
+        class A inherits directly from ``orm.entity``, it will have a
+        superentity of None. However if class B inherits from A. class B
+        will have a superentity of A."""
         if self._super:
             return self._super
 
@@ -10049,10 +10094,26 @@ class orm:
 
     @property
     def isstatic(self):
+        """ Returns True if the ``orm`` instance is being called from a
+        class reference, False if the ``orm`` instance is being called
+        from an instance. The antonym of ``isstatic`` is ``isinstance``.
+
+            assert product.good.orm.isstatic
+            assert not product.good().orm.isstatic
+        """
         return self.instance is None
 
     @property
     def isinstance(self):
+        """ Returns True if the ``orm`` instance is being called from a
+        entity instance, False if the ``orm`` instance is being called
+        from a class reference. The antonym of ``isinstance`` is
+        ``isstatic``.
+
+            assert product.good().orm.isinstance
+            assert not product.good.orm.isinstance
+        """
+
         return self.instance is not None
 
     def getsupers(self, withself=False):
