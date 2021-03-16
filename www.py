@@ -176,19 +176,36 @@ class application:
 
 request = None
 class _request:
-    def __init__(self, app=None):
+    def __init__(self, app=None, url=None):
         self.app           =  app
         if app:
             self.app._request  =  self
 
-        self._payload      =  None
-        self._user         =  None
-        self._files        =  None
-        self._useragent    =  None
-        self._hit          =  None
-        self._ip           =  None
-        self._url          =  None  # The referer
-        self._headers      =  None
+        self._payload    =  None
+        self._user       =  None
+        self._files      =  None
+        self._useragent  =  None
+        self._hit        =  None
+        self._ip         =  None
+        self._referer    =  None  #  The referer
+        self._headers    =  None
+        self._url        =  url
+        self._method     =  None
+        self._useragent  =  None
+
+    def __str__(self):
+        r = textwrap.dedent(f'''
+        Request URL: {self.url}
+        :authority: {self.url}
+        :method: {self.method}
+        :path: {self.path}
+        :scheme: {self.scheme}
+        {self.headers}
+        {self.useragent}
+
+        {self.payload}
+        ''')
+        return r
 
     @property
     def headers(self):
@@ -365,7 +382,10 @@ class _request:
 
     @property
     def servername(self):
-        return self.environment['server_name']
+        if self.iswsgi:
+            return self.environment['server_name']
+
+        return urllib.parse.urlparse(self._url).hostname
 
     @property
     def arguments(self):
@@ -373,12 +393,15 @@ class _request:
 
     @property
     def qs(self):
-        qs = self.environment['query_string']
+        if self.iswsgi:
+            qs = self.environment['query_string']
 
-        if not qs:
-            qs = None
+            if not qs:
+                qs = None
 
-        return qs
+            return qs
+
+        return urllib.parse.urlparse(self._url).query
 
     @property
     def site(self):
@@ -574,8 +597,15 @@ class _request:
             msg = f'{ex}; ip:{ip}; ua:"{ua}"'
             log.exception(msg)
 
+    # TODO The official word for this data is "message body", so we
+    # should probably rename the property to "body".
     @property
     def payload(self):
+        """ Returns the HTTP message body of the request.
+
+        https://en.wikipedia.org/wiki/HTTP_message_body
+        """
+
         if self._payload is None:
             sz = self.size
             inp = self.environment['wsgi.input']
@@ -597,6 +627,10 @@ class _request:
                 self._payload = inp.read(sz).decode('utf-8')
         return self._payload
 
+    @payload.setter
+    def payload(self, v):
+        self._payload = v
+
     @property
     def path(self):
         """ Corresponds to the WSGI PATH_INFO environment variable:
@@ -608,7 +642,10 @@ class _request:
             targets the application root and does not have a trailing
             slash.
         """
-        return self.environment['path_info']
+        if self.iswsgi:
+            return self.environment['path_info']
+
+        return urllib.parse.urlparse(self._url).path
 
     @property
     def size(self):
@@ -631,7 +668,17 @@ class _request:
 
     @property
     def method(self):
-        return self.environment['request_method'].upper()
+        if self.iswsgi:
+            return self.environment['request_method'].upper()
+        
+        if self._method:
+            return self._method.upper()
+
+        return None
+
+    @method.setter
+    def method(self, v):
+        self._method = v
 
     @property
     def ip(self):
@@ -642,10 +689,10 @@ class _request:
 
     @property
     def referer(self):
-        if not self._url:
+        if not self._referer:
             url = str(self.environment['http_referer'])
-            self._url = ecommerce.url(address=url)
-        return self._url
+            self._referer = ecommerce.url(address=url)
+        return self._referer
 
     @property
     def useragent(self):
@@ -658,13 +705,19 @@ class _request:
     def scheme(self):
         """ Return the scheme for the request, e.g., http, https, etc.
         """
-        return self.environment['wsgi.url_scheme'].lower()
+        if self.iswsgi:
+            return self.environment['wsgi.url_scheme'].lower()
+
+        return urllib.parse.urlparse(self._url).scheme
 
     @property
     def port(self):
         """ Return the TCP port for the request, e.g., 80, 8080, 443.
         """
-        return int(self.environment['server_port'])
+        if self.iswsgi:
+            return int(self.environment['server_port'])
+
+        return urllib.parse.urlparse(self._url).port
 
     @property
     def url(self):
@@ -1310,6 +1363,8 @@ class header(entities.entity):
 
     @property
     def name(self):
+        # TODO Why do we need to lower() this. I think we should be
+        # case-preserving here.
         return self._name.lower()
 
     def __str__(self):
@@ -1339,23 +1394,21 @@ class browser(entities.entity):
             return t
 
     class _tab(entities.entity):
-        # TODO These methods will eventually be implemented to perform
-        # actual HTTP requests. At the time of this writting, however,
-        # these will be implemented in the testers.browser subclass
         def __init__(self, tabs):
             self.tabs = tabs
 
         def get(self, url):
             self._request(url)
 
-        def post(self, url):
-            self._request(url)
+        def post(self, url=None, req=None):
+            self._request(meth='POST', url=url, req=req)
 
         def head(self, url):
             self._request(url)
 
-        def _request(self, url):
-            raise NotImplementedError('TODO')
+        def _request(self, meth, url=None, req=None):
+            if url and req:
+                raise ValueError('Either use req or url')
 
     class _cookies(entities.entities):
         @property
