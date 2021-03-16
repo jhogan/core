@@ -98,12 +98,6 @@ class postmark(mail):
         if msg.replyto:
             body['ReplyTo'] = msg.replyto.name
 
-        print(json.dumps(body))
-
-        # TODO Convert msg to JSON
-
-
-
         # XXX Remove
         ws = pom.site(host='api.postmarkapp.com')
         pg = pom.page(name='email')
@@ -114,9 +108,8 @@ class postmark(mail):
         req.headers += 'Accept: application/json'
         req.headers += 'Content-Type: application/json'
         req.headers += 'X-Postmark-Server-Token: server token'
-        req.payload = body
-        print(req)
+        req.payload = json.dumps(body)
 
-        res = tab.post(req=req)
+        res = tab.request(req)
 
         

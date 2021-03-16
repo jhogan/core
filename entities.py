@@ -670,6 +670,7 @@ class entities(object):
             # If we aren't able to enumerate (perhaps the self._ls hasn't been
             # set), just ignore.
             pass
+
         return r
 
     def __setitem__(self, key, item):

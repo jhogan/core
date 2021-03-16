@@ -28,6 +28,7 @@ import textwrap
 import traceback
 import urllib
 import jwt as pyjwt
+import json
 
 # NOTE Use the following diagram as a guide to determine what status
 # code to respond with:
@@ -200,11 +201,26 @@ class _request:
         :method: {self.method}
         :path: {self.path}
         :scheme: {self.scheme}
-        {self.headers}
-        {self.useragent}
-
-        {self.payload}
         ''')
+
+        r = r.rstrip()
+
+        if self.headers.count:
+            r += f'\n{str(self.headers)}'
+
+        ua = self.useragent
+        if ua:
+            r += f'\n{ua}'
+
+        body = self.payload
+        if body:
+            try:
+                body = json.dumps(json.loads(body), indent=2)
+            except:
+                pass
+
+            r += f'\n\n{body}'
+
         return r
 
     @property
@@ -697,8 +713,9 @@ class _request:
     @property
     def useragent(self):
         if not self._useragent:
-            ua = str(self.environment['user_agent'])
-            self._useragent = ecommerce.useragent(string=ua)
+            if self.iswsgi:
+                ua = str(self.environment['user_agent'])
+                self._useragent = ecommerce.useragent(string=ua)
         return self._useragent
 
     @property
@@ -727,7 +744,10 @@ class _request:
         """
 
         scheme = self.scheme
-        servername = f'{self.servername}:{self.port}'
+        servername = self.servername
+        if self.port:
+            servername += ':' + self.port
+
         qs = self.qs
         path = self.path
 
@@ -1348,13 +1368,15 @@ class headers(entities.entities):
 
         super().append(obj=obj, uniq=uniq, r=r)
 
-
     @property
     def list(self):
         r = list()
         for hdr in self:
             r.append(hdr.tuple)
         return r
+
+    def __str__(self):
+        return '\n'.join(str(x) for x in self)
 
 class header(entities.entity):
     def __init__(self, name, v):
@@ -1397,18 +1419,8 @@ class browser(entities.entity):
         def __init__(self, tabs):
             self.tabs = tabs
 
-        def get(self, url):
-            self._request(url)
-
-        def post(self, url=None, req=None):
-            self._request(meth='POST', url=url, req=req)
-
-        def head(self, url):
-            self._request(url)
-
-        def _request(self, meth, url=None, req=None):
-            if url and req:
-                raise ValueError('Either use req or url')
+        def request(self, req):
+            print('reuesting ' + req.url)
 
     class _cookies(entities.entities):
         @property
