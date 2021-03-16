@@ -102,13 +102,21 @@ class postmark(mail):
 
         # TODO Convert msg to JSON
 
+
+
+        # XXX Remove
         ws = pom.site(host='api.postmarkapp.com')
         pg = pom.page(name='email')
-        req = www._request(app=None)
+
+
+        req = www._request(url='https://api.postmarkapp.com/email')
+        req.method = 'POST'
         req.headers += 'Accept: application/json'
         req.headers += 'Content-Type: application/json'
         req.headers += 'X-Postmark-Server-Token: server token'
-        B()
-        res = tab.post()
+        req.payload = body
+        print(req)
+
+        res = tab.post(req=req)
 
         
