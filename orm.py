@@ -10203,14 +10203,31 @@ class orm:
 
     @staticmethod
     def getassociations():
+        """ Returns a list of all association classes, i.e., those
+        classes that inherit from ``orm.association``.
+        """
         return orm.getsubclasses(of=association)
 
     @staticmethod
     def getentity(name=None, abbr=None):
+        """ Search for classes that inherit from ``orm.entity`` that
+        match either ``name`` or ``abbr``. Returns the entity class that
+        matches.
+
+        :param: name str: The name of the entity to search for. This
+        corresponds to the class's ``__name__`` attribute.
+
+        :param: abbr str: The abbreviation of the entity to search for.
+        This corresponds to the class's ``orm.abbreviation`` attribute.
+        (See the ``orm.abbreviation`` getter for more).
+        """
+
+        # Cat the entity classes and the association classes into a
+        # collection.
         es = orm.getentitys() + orm.getassociations()
 
         if name:
-            # Lookup entity/association class by abbreviation.
+            # Lookup entity/association class by name.
             if not orm._namedict:
                 for e in es:
                     orm._namedict[e.__name__] = e
