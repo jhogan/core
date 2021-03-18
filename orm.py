@@ -10163,6 +10163,9 @@ class orm:
     # TODO This should probably be renamed to `subs`
     @property
     def subentities(self):
+        """ Returns a collection all the of class reference that inherit
+        from this class.
+        """
         if self._subclasses is None:
             clss = ormclasseswrapper()
             for sub in orm.getsubclasses(of=self.entity):
@@ -10186,8 +10189,12 @@ class orm:
         childern of `artist`. `rappers` comes third because it is a
         direct child of `singers`.
 
-        :param: entity of The entity for which the subclasses will be
-        returned.
+        :param: of type<orm.entity>: The class reference for which the
+        subclasses will be returned.
+
+        :param: recursive bool: If True, descend the inheritence tree in
+        search of subentities. If False, only collect the immediate
+        subentity class references.
         """
         r = []
 
@@ -10245,6 +10252,14 @@ class orm:
     # TODO s/getentitys/getentityclasses/
     @staticmethod
     def getentitys(includeassociations=False):
+        """ A static method to collect and return all the classes that
+        inherit directly or indirectly from orm.entity. If
+        includeassociations is True, return the classes that inherit
+        from orm.association as well.
+
+        :param: includeassociations bool: If True, include the classes
+        that inherit from orm.association as well.
+        """
         r = []
         for e in orm.getsubclasses(of=entity):
             if includeassociations:
