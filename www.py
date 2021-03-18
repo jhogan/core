@@ -665,10 +665,13 @@ class _request:
 
     @property
     def size(self):
-        try:
-            return int(self.environment.get('content_length', 0))
-        except ValueError:
-            return 0
+        if self.iswsgi:
+            try:
+                return int(self.environment.get('content_length', 0))
+            except ValueError:
+                return 0
+
+        return len(self.payload)
 
     @property
     def class_(self):
