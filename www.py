@@ -1378,6 +1378,13 @@ class headers(entities.entities):
             r.append(hdr.tuple)
         return r
 
+    @property
+    def dict(self):
+        r = dict()
+        for hdr in self:
+            r[hdr.name] = hdr.value
+        return r
+
     def __str__(self):
         return '\n'.join(str(x) for x in self)
 
