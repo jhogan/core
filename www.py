@@ -194,6 +194,9 @@ class _request:
         self._method     =  None
         self._useragent  =  None
 
+    def __repr__(self):
+        return str(self)
+
     def __str__(self):
         r = textwrap.dedent(f'''
         Request URL: {self.url}
@@ -1430,6 +1433,20 @@ class browser(entities.entity):
             self.tabs = tabs
 
         def request(self, req):
+            body = req.payload
+
+            if body:
+                body = body.encode('utf-8')
+
+
+            req1 = urllib.request.Request(
+                req.url, body, req.headers.dict, method=req.method
+            )
+
+            req1.add_header('Content-Length', req.size)
+
+            res = urllib.request.urlopen(req1, body)
+
             print('reuesting ' + req.url)
 
     class _cookies(entities.entities):

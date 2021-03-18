@@ -65,13 +65,31 @@ class test_postmark(tester.tester):
             html     =  '<p>Test message</p>',
         )
 
+
+
+
+
+        msg = message.message.email(
+            from_    =  'from@example.com',
+            replyto  =  'replyto@example.com',
+            to       =  'jessehogan0@gmail.com',
+            subject  =  'Test email',
+            text     =  'Test message',
+            html     =  '<p>Test message</p>',
+        )
+
+
+
         dis = msg.dispatch(
             dispatchtype = message.dispatchtype(name='email')
         )
 
         pm = third.postmark()
 
-        res = pm.send(dis)
+        try:
+            res = pm.send(dis)
+        except Exception as ex:
+            print(ex)
 
 if __name__ == '__main__':
     tester.cli().run()

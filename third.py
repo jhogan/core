@@ -19,6 +19,7 @@ import product
 import www
 import json
 import pom
+from config import config
 
 class internetservices(product.services):
     pass
@@ -54,6 +55,60 @@ class api(internetservice):
 
     def _browser_onbeforerequest(self, src, eargs):
         pass
+
+    class Error(Exception):
+        def __init__(self, ex):
+            self.inner = ex
+            self._code = None
+            self._message = None
+
+        @property
+        def status(self):
+            return self.inner.status
+
+        @property
+        def reason(self):
+            return self.inner.reason
+
+        @property
+        def code(self):
+            # Error code returned by API in response body. Distinct from
+            # the HTTP status code.
+            return self._code
+
+        @code.setter
+        def code(self, v):
+            self._code = v
+
+        @property
+        def message(self):
+            # Error message returned by API in response body. Distinct from
+            # the HTTP status reason/phrase.
+            return self._message
+
+        @message.setter
+        def message(self, v):
+            self._message = v
+
+        def __str__(self):
+            r = str()
+
+            if self.status:
+                r += f'HTTP Status: {self.status}'
+
+            if self.reason:
+                if r: r += ' '
+                r += f'{self.reason}.'
+
+            if self.code:
+                if r: r += ' '
+                r += f'Server Error Code {self.code}'
+
+            if self.message:
+                if r: r += ' - '
+                r += self.message
+
+            return r
 
 class mail(api):
     def send(self):
@@ -107,9 +162,23 @@ class postmark(mail):
         req.method = 'POST'
         req.headers += 'Accept: application/json'
         req.headers += 'Content-Type: application/json'
-        req.headers += 'X-Postmark-Server-Token: server token'
+        
+        key = config().postmark.key
+        req.headers += f'X-Postmark-Server-Token: {key}'
+
         req.payload = json.dumps(body)
 
-        res = tab.request(req)
-
-        
+        import urllib
+        try:
+            res = tab.request(req)
+        except urllib.error.HTTPError as ex:
+            err = api.Error(ex)
+            msg = ex.read()
+            try:
+                msg = json.loads(msg)
+            except:
+                err.message = msg
+            else:
+                err.code    = msg['ErrorCode']
+                err.message = msg['Message']
+            raise err
