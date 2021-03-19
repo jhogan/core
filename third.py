@@ -154,9 +154,6 @@ class postmark(mail):
         if msg.replyto:
             body['ReplyTo'] = msg.replyto.name
 
-        # XXX Remove
-        ws = pom.site(host='api.postmarkapp.com')
-        pg = pom.page(name='email')
         req = www._request(url=self.urls['send'].address)
         req.method = 'POST'
         req.headers += 'Accept: application/json'
