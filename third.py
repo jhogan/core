@@ -107,7 +107,7 @@ class api(internetservice):
 
             if self.message:
                 if r: r += ' - '
-                r += self.message
+                r += self.mesage
 
             return r
 
