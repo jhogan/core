@@ -80,7 +80,7 @@ TODOs:
     worthy, I think we should rip out the pseudocollection logic. This
     logic is tedious to maintain and may be slowing down execution time.
     
-    TODO:In the GEM, change all date and datetime attributes to past
+    TODO In the GEM, change all date and datetime attributes to past
     tense, e.g., s/acquiredat/acquired/
     
     TODO:8cc3bfdc We should have a @property of the ``orm`` called
@@ -124,18 +124,11 @@ TODOs:
     TODO Create orm.reload() to complement orm.reloaded(). It should
     reload the data from the db into self.
 
-    TODO entitymappings should eager- and lazy-load most specialized
-    type. This should work for recursive entity objects as well::
-
-        f = files.orm.all
-        assert type(f.inodes.first) is file
-        assert type(f.inodes.second) is directory
-
     FIXME:acad30cc Broken rules currently has an issue. grep acad30cc
     for more clarification.
 
     TODO datespans and timespans that refer to a timeframe for which an
-    association is valid should be name 'valid':
+    association is valid should be named 'valid':
         
         s/span = (time|date)span/valid = \1span/
 
@@ -10287,7 +10280,10 @@ class orm:
 
     @staticmethod
     def getentities():
-        # NOTE We may want to cache this
+        """ Return all classes that inherit directly or indirectly from
+        ``orm.entities`` as a list. Note that ``orm.associations`` are
+        not included.
+        """
         r = []
         for es in orm.getsubclasses(of=entities):
             if association not in es.mro():
@@ -10297,6 +10293,9 @@ class orm:
 
     @property
     def associations(self):
+        """ Return all association classes for which this entity has
+        attributes.
+        """
         if not self._associations:
             self._associations = ormclasseswrapper()
             for ass in orm.getassociations():
