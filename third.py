@@ -19,6 +19,7 @@ import product
 import www
 import json
 import pom
+import ecommerce
 from config import config
 
 class internetservices(product.services):
@@ -156,9 +157,7 @@ class postmark(mail):
         # XXX Remove
         ws = pom.site(host='api.postmarkapp.com')
         pg = pom.page(name='email')
-
-
-        req = www._request(url='https://api.postmarkapp.com/email')
+        req = www._request(url=self.urls['send'].address)
         req.method = 'POST'
         req.headers += 'Accept: application/json'
         req.headers += 'Content-Type: application/json'
@@ -182,3 +181,13 @@ class postmark(mail):
                 err.code    = msg['ErrorCode']
                 err.message = msg['Message']
             raise err
+
+    @property
+    def urls(self):
+        if not hasattr(self, '_urls'):
+            self._urls = dict()
+            self._urls['send'] = ecommerce.url(
+                address='https://api.postmarkapp.com/email'
+            )
+        return self._urls
+        
