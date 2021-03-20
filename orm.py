@@ -10348,15 +10348,13 @@ class orm:
                         self._constituents += constituent(e)
         return self._constituents
 
-class saveeventargs(entitiesmod.eventargs):
-    def __init__(self, e):
-        self.entity = e
-
 class associations(entities):
-    """ Holds a collection of :class:`.association` objects. """
+    """ Holds a collection of ``orm.association`` objects. 
+    """
 
     def __init__(self, *args, **kwargs):
-        """ Constructs an association collection. """
+        """ Constructs an association collection.
+        """
         super().__init__(*args, **kwargs)
         self.orm.composite = None
 
@@ -10374,13 +10372,15 @@ class associations(entities):
         self.orm._constituents = dict()
 
     def append(self, obj, uniq=False, r=None):
-        """ Adds a :class:`.association` entity to the collection.
+        """ Adds a ``orm.association`` entity to the collection.
 
-            :param: obj   The association object to append.
-            :param: uniq  If True, only adds the object if it does not
-                          already exist.
-            :param: r     An `entities` collection containing the
-                          objects that were added.
+        :param: obj orm.association: The association object to append.
+
+        :param: uniq bool: If True, only adds the object if it does not
+        already exist.
+
+        :param: r list: An `entities` collection containing the objects
+        that were added.
         """
 
         # If `obj` is an `association`, set it's `composite` to the
@@ -10403,8 +10403,9 @@ class associations(entities):
                 for map in obj.orm.mappings.entitymappings:
                     # TODO We probably should be using the association's
                     # (self) mappings collection to test the composites
-                    # names. The name that matters is on the LHS of the map
-                    # when being defined in the association class.
+                    # names. The name that matters is on the
+                    # left-hand-side of the map when being defined in
+                    # the association class.
                     if self.orm.isreflexive:
                         if map.issubjective:
                             # NOTE self.orm.composite can be None when the
@@ -10414,9 +10415,12 @@ class associations(entities):
                             #
                             # results in an error. The alternative block
                             # avoided this because the following will
-                            # always be False. TODO We need to only run this
-                            # code `if self.orm.composite`
-                            #     self.name == type(None).__name__ 
+                            # always be False. 
+
+                            # TODO We need to only run this code:
+                            #    
+                            #     if self.orm.composite
+                            #         self.name == type(None).__name__ 
                             #
                             # Or we could make the setattr() call accept a
                             # composite of None.
@@ -10454,13 +10458,14 @@ class associations(entities):
 
                 # When a reflexive association has an entitymap other
                 # than `object` (this could be `subject` or some
-                # arbitrary entity map such as `myassociationstype`, an
+                # arbitrary entity map such as `myassociationstype`), an
                 # attempt to get the pseudocollection will result in an
                 # AttributeError below. We want to skip this map
-                # entirely. TODO Note that this raise the
-                # issue of what happens when a non-reflexive association
-                # has an entity map that isn't a part of the
-                # association:
+                # entirely. 
+                
+                # TODO Note that this raise the issue of what happens
+                # when a non-reflexive association has an entity map
+                # that isn't a part of the association:
                 #
                 #    class person_movie(association):
                 #        person = person
@@ -10498,7 +10503,7 @@ class associations(entities):
                         # for situations where the user appends the
                         # wrong type, but we don't want to raise an
                         # error, instead prefering that the error is
-                        # discovered in the broken rules collection. See
+                        # discovered in the brokenrules collection. See
                         # it_doesnt_raise_exception_on_invalid_attr_values
                         # where a `location` object is being appended to
                         # an `artifact`'s pseudocollection.
@@ -10526,7 +10531,7 @@ class associations(entities):
                         # Add map's value to pseudocollection
 
                         # NOTE We may want to override __contains__ such
-                        # that `map.value no in es` does the same thing.
+                        # that `map.value not in es` does the same thing.
                         # Currently, identity comparisons will be done.
                         if map.value.id not in [x.id for x in es]:
                             es += map.value
@@ -10540,7 +10545,7 @@ class associations(entities):
 
     def _self_onremove(self, src, eargs):
         """ This event handler is called when an ``association`` is
-        removed from an ``assoctions`` collection. When this happens, we
+        removed from an ``associations`` collection. When this happens, we
         want to remove the ``association``'s constituent entity (the
         non-composite entity) from its pseudocollection class - but only
         if it hasn't already been marked for deletion
@@ -10578,9 +10583,9 @@ class associations(entities):
                     # class, the class will inevitably trash the removed
                     # entity to mark it for removal from the database.
                     # However, this would mean that removing an
-                    # association from the db would cause the
+                    # association from the DB would cause the
                     # constituents (artifact) object to removed from the
-                    # db (cascading deletes). This is not what we want:
+                    # DB (cascading deletes). This is not what we want:
                     # We should be able to delete as association between
                     # two entity object without deleting the entities
                     # themselves.  pop()ing the entity off the trash
@@ -10606,7 +10611,7 @@ class associations(entities):
             # Add artifact entity to the artist's pseudocollection
             art.artifact += artifact() 
 
-        :param: src entities:    The pseudocollection's entities object.
+        :param: src entities: The pseudocollection's entities object.
 
         :param: eargs eventargs: The event arguments. Its ``entity``
         property is the entity object being added to the
@@ -10649,7 +10654,7 @@ class associations(entities):
                         # NOTE that it will be None in cases when the
                         # association does not have the data to find the
                         # entity (such as a null value for the entity's
-                        # id). In this case, ass.invalid == True so we
+                        # id). In this case, ass.invalid is True so we
                         # continue to the next association.
                         e = getattr(ass, map.name)
 
