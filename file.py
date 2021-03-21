@@ -31,7 +31,7 @@ Examples:
     # save will be recursive.
     dir.save()
 
-    # Get my file from dir's indexor
+    # Get my file from dir's indexer
     f = dir['directory/my.file']
 
     # Set the body 
@@ -50,8 +50,7 @@ Examples:
     # Again, the file will exist
     assert os.path.exists(f.path)
 
-
-See tfile.py for more examples.
+See testfile.py for more examples.
 """
 
 from datetime import datetime, date
@@ -108,14 +107,14 @@ class inode(orm.entity):
 
     The name "inode" was chosen after the Unix-style data structure used
     to describe file system object (files and directories).
-    ``filesystemobjects`, though more descriptive,` was considered too
-    long to make a good class name.
+    (``filesystemobjects`, though more descriptive,` was considered too
+    long to make a good class name.)
     """
 
     # The name attribute of the file sytem object
     name = str
 
-    # The collection of inodes each inode will have. This line make
+    # The collection of inodes each inode will have. This line makes
     # inodes recursive (self-referencing).
     inodes = inodes
 
@@ -158,7 +157,7 @@ class inode(orm.entity):
                 for attr in ('id', 'name'):
                     setattr(self, attr, getattr(dir, attr))
 
-                # Move the inode objcet from the root directories'
+                # Move the inode object from the root directories'
                 # inodes collection into that of self's
                 for nd in dir.inodes:
                     st = nd.orm.persistencestate
@@ -260,7 +259,6 @@ class inode(orm.entity):
                     # searching and begin creating new ones.
                     search = False
                     dir1 = directory(name=name)
-
                 else:
                     raise ValueError(
                         f'Name matches multiple inodes: {name}'
@@ -300,8 +298,12 @@ class inode(orm.entity):
         return dir
 
     def __getitem__(self, key):
-        """ Delegate indexing for a directory to inode's indexor.
+        """ Return an (file or directory) underneath this inode by a
+        ``key`` name, if the argument is a str. If ``key`` is not a str,
+        the default behavior is used.
         """
+
+        # Delegate indexing for a directory to inode's indexer.
         return self.inodes[key]
 
     def __iadd__(self, e):
@@ -338,7 +340,8 @@ class inode(orm.entity):
 
     @property
     def path(self):
-        """ Return the path the file is (or would be) on the HDD.
+        """ Return the path of the file as located within the HDD's
+        filesystem.
         """
         return os.path.join(self.head, self.name)
 
@@ -390,6 +393,8 @@ class files(inodes):
     def append(self, e, *args, **kwargs):
         comp = ws = path = None
 
+        # Get the composite (website) of the files collection is there
+        # is one.
         try:
             ws = self.site
         except AttributeError:
