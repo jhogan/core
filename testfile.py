@@ -288,7 +288,6 @@ class dom_file(tester.tester):
         #     assert dir.files.count == 3
         #     assert dir.directories.count == 4
         #     assert dir.resources.count == 3
-        return
 
 
         file.resource.orm.truncate()
@@ -346,14 +345,14 @@ class dom_file(tester.tester):
         dir = file.file.store
 
         self.eq(
-            f'/{ws.id.hex}/cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js',
-            scripts.second.src
+            f'/{ws.id.hex}/code.jquery.com/jquery-3.5.1.js',
+            scripts.first.src
         )
         self.eq(None, scripts.first.integrity)
         self.eq('anonymous', scripts.first.crossorigin)
 
         self.eq(
-            f'{dir}/shell.min.js',
+            f'/{ws.id.hex}/cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js',
             scripts.second.src
         )
         self.eq(
@@ -363,14 +362,14 @@ class dom_file(tester.tester):
         self.eq('anonymous', scripts.second.crossorigin)
 
         self.eq(
-            f'{dir}/vega.min.js',
+            f'/{ws.id.hex}/cdnjs.cloudflare.com/ajax/libs/vega/5.14.0/vega.min.js',
             scripts.third.src
         )
         self.eq(None, scripts.third.integrity)
         self.eq('use-credentials', scripts.third.crossorigin)
 
         self.eq(
-            'https://cdnjs.cloudflare.com/ajax/libs/55439c02/1.1/idontexit.min.js',
+            f'/{ws.id.hex}/cdnjs.cloudflare.com/ajax/libs/55439c02/1.1/idontexit.min.js',
             scripts.fourth.src
         )
         self.none(scripts.fourth.integrity)
@@ -378,6 +377,7 @@ class dom_file(tester.tester):
 
         self.four(file.resources.orm.all)
 
+        # Load and test first: jquery
         rcs = file.resources(
             'url', 'https://code.jquery.com/jquery-3.5.1.js'
         )
@@ -385,13 +385,19 @@ class dom_file(tester.tester):
         self.none(rcs.first.integrity)
         self.eq('anonymous', rcs.first.crossorigin)
 
+        # Load and test second: shell.min.js
+        rcs = file.resources(
         rcs = file.resources(
             'url', 'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js'
         )
         self.one(rcs)
-        self.eq('sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw==', rcs.first.integrity)
+        self.eq(
+            'sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw==', 
+            rcs.first.integrity
+        )
         self.eq('anonymous', rcs.first.crossorigin)
 
+        # Load and test second: vega.min.js
         rcs = file.resources(
             'url', 'https://cdnjs.cloudflare.com/ajax/libs/vega/5.14.0/vega.min.js'
         )
@@ -400,6 +406,7 @@ class dom_file(tester.tester):
         self.none(rcs.first.integrity)
         self.eq('use-credentials', rcs.first.crossorigin)
 
+        # Load and test second: idontexist.min.js
         rcs = file.resources(
             'url', 'https://cdnjs.cloudflare.com/ajax/libs/55439c02/1.1/idontexit.min.js'
         )
@@ -1039,10 +1046,11 @@ class file_resource(tester.tester):
         super().__init__(*args, **kwargs)
         clean()
 
-        orm.orm.recreate(
-            ecommerce.user, file.files, file.resources,
-            file.directory, file.inodes,
-        )
+        if self.rebuildtables:
+            orm.orm.recreate(
+                ecommerce.user, file.files, file.resources,
+                file.directory, file.inodes,
+            )
 
     def it_passes_integrity_check(self):
         def get():
