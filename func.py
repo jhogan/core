@@ -7,7 +7,8 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021
 
 from functools import reduce
-from pdb import set_trace; B=set_trace
+import inspect
+import pdb
 import builtins
 import sys
 
@@ -101,10 +102,11 @@ def getattr(obj, attr, *args):
 def B(x=True):
     if type(x) is str:
         print(x)
+
     if x:
-        #Pdb().set_trace(sys._getframe().f_back)
-        from IPython.core.debugger import Tracer;
-        Tracer().debugger.set_trace(sys._getframe().f_back)
+        pdb.Pdb().set_trace(inspect.currentframe().f_back)
+        #from IPython.core.debugger import Tracer;
+        #Tracer().debugger.set_trace(sys._getframe().f_back)
 
 def PM(ex):
     import pdb
