@@ -145,38 +145,7 @@ class inode(orm.entity):
 
             dir = self._getdirectory(path=path)
 
-            if isinstance(self, directory):
-                # Get the root directory
-                while True:
-                    if dir.inode:
-                        dir = dir.inode
-                    else:
-                        break
-
-                # Set self's attribute to those of the root directory
-                for attr in ('id', 'name'):
-                    setattr(self, attr, getattr(dir, attr))
-
-                # Move the inode object from the root directories'
-                # inodes collection into that of self's
-                for nd in dir.inodes:
-                    st = nd.orm.persistencestate
-                    self.inodes += nd
-                    e = nd
-
-                    # Adjust the persistencestate so self is that of
-                    # what was loaded or created
-                    while e:
-                        e.orm.persistencestate = st
-                        e = e.orm._super
-
-                # Adjust the persistencestate so self is that of
-                # what was loaded or created.
-                e = self
-                while e:
-                    e.orm.persistencestate = dir.orm.persistencestate
-                    e = e.orm._super
-
+            # TODO Move this to file.__init__
             if isinstance(self, file):
                 # Load/create the file
                 _, name = os.path.split(path)
@@ -202,6 +171,15 @@ class inode(orm.entity):
                 while e:
                     e.orm.persistencestate = st
                     e = e.orm._super
+
+    @property
+    def root(self):
+        nd = self
+        while True:
+            if nd.inode:
+                nd = nd.inode
+            else:
+                return nd
 
     def _getfile(self, name, dir=None):
         """ Load and return a file by name which is under ``dir``.
@@ -450,17 +428,6 @@ class file(inode):
             elif self._body is None:
                 attr(None)
         return attr()
-
-    # TODO All recursive entities should have a root
-    @property
-    def root(self):
-        dir = self
-        while True:
-            if dir.inode:
-                # TODO: 34080104
-                dir = dir.inode
-            else:
-                return dir
 
     @property
     def inodes(self):
@@ -785,6 +752,47 @@ class directory(inode):
     # master. This line was written before inflect's pluralization was
     # introduced.
     entities = directories
+
+    def __init__(self, *args, **kwargs):
+        """ Init the ``directory``. If a ``path`` argument is given in
+        ``kwargs``, we can use the path to create or load files and
+        directories::
+
+            f = file(path='/path/to/my/file')
+        """
+        # If a path was given in the kwargs, we can use it to load
+        # or create a the directory.
+        path = kwargs.pop('path', None)
+        super().__init__(*args, **kwargs)
+        if not path:
+            return
+
+        dir = self._getdirectory(path=path)
+        root = dir.root
+
+        # Set self's attribute to those of the root directory
+        for attr in ('id', 'name'):
+            setattr(self, attr, getattr(root, attr))
+
+        # Move the inode object from the root directories'
+        # inodes collection into that of self's
+        for nd in root.inodes:
+            st = nd.orm.persistencestate
+            self.inodes += nd
+            e = nd
+
+            # Adjust the persistencestate so self is that of
+            # what was loaded or created
+            while e:
+                e.orm.persistencestate = st
+                e = e.orm._super
+
+        # Adjust the persistencestate so self is that of
+        # what was loaded or created.
+        e = self
+        while e:
+            e.orm.persistencestate = root.orm.persistencestate
+            e = e.orm._super
 
     def file(self, path):
         """ Create a new file underneath `self` in the hierarchy and
