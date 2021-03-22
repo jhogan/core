@@ -4315,12 +4315,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         gb.append(self)
             
-        # TODO:a4917600 I think we should be calling
-        # `super().getbrokenrules` here.
-        sup = self.orm._super
-        if sup:
-            brs += sup.getbrokenrules(gb=gb)
-
         for map in self.orm.mappings:
             if type(map) is fieldmapping:
                 t = map.type

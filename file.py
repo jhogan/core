@@ -349,19 +349,20 @@ class inode(orm.entity):
         """ Return broken validation rules.
         """
         brs = super().getbrokenrules(*args, **kwargs)
-        id = self.inode.id if self.inode else None
-        op = '=' if id else 'is'
-        nds = inodes(f'name = %s and inodeid {op} %s', self.name, id)
 
-        if nds.ispopulated and self.id != nds.first.id:
-            msg = f'Cannot create "{self.name}": inode exist'
+        if type(self) is file:
+            id = self.inode.id if self.inode else None
+            op = '=' if id else 'is'
+            nds = inodes(f'name = %s and inodeid {op} %s', self.name, id)
+            if nds.ispopulated and self.id != nds.first.id:
+                msg = f'Cannot create "{self.name}": inode exist'
 
-            # FIXME:acad30cc Because of the way brokenrules currently
-            # works, this method ends up getting called multiple times.
-            # Until this is fixed, we have to make sure the rule has not
-            # already been added.
-            if msg not in brs.pluck('message'):
-                brs += msg
+                # FIXME:acad30cc Because of the way brokenrules
+                # currently works, this method ends up getting called
+                # multiple times.  Until this is fixed, we have to make
+                # sure the rule has not already been added.
+                if msg not in brs.pluck('message'):
+                    brs += msg
 
         return brs
 
