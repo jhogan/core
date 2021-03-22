@@ -1062,6 +1062,16 @@ class file_resource(tester.tester):
 
         self.expect(None, get)
 
+    def it_calls_url(self):
+        url = 'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js'
+        resx = file.resource(
+            url = url,
+            integrity = 'sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw==',
+            local = True
+        )
+        self.eq(url, resx.url)
+
+
     def it_fails_integrity_check(self):
         tegridy = hashlib.sha512()
         tegridy.update(
