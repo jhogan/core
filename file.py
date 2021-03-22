@@ -634,14 +634,13 @@ class resource(file):
     # dom.script should be able to set the site (see above) so it can
     # alter `res.site` before resource's are saved.
 
-
-
     # The external location of the resources.
     @orm.attr(str)
     def url(self):
+        # TODO We may want to user ecommerce.url instead of a simple str
         return attr().lower()
 
-    # A cryptigraphic hash that the external resource is assumed to
+    # A cryptographic hash that the external resource is assumed to
     # have. This will often match the hash found in a <script>'s
     # `integrity` attribute:
     #
@@ -828,7 +827,7 @@ class directory(inode):
         return f
 
     def __iter__(self):
-        """ Allows us it iterate over the ``directory`` object insteaf
+        """ Allows us it iterate over the ``directory`` object instead
         of its ``inodes`` collection::
 
             dir = directory(name='/etc')
@@ -845,4 +844,3 @@ class IntegrityError(ValueError):
     digest stored in the database with the digest computer from a file's
     contents (``file.body``). 
     """
-
