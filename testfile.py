@@ -1019,7 +1019,11 @@ class file_directory(tester.tester):
 
         dir = file.directory(path='/herp')
         dir += file.directory(name='derp')
-        self.one(dir.brokenrules)
+
+        # Two 'derp' directories will now be in dir.inodes. The second
+        # one is the duplicate because it has the same name and inodeid
+        # as the first and isn't already in the database.
+        self.one(dir.inodes.second.brokenrules)
         self.expect(entities.BrokenRulesError, lambda: dir.save())
 
     def it_calls__iter__(self):
