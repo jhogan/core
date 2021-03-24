@@ -156,75 +156,32 @@ class inode(orm.entity):
         else:
             head, tail = path, None
 
-        names = [x for x in head.split('/') if x]
-
         dir = None
+        if head:
+            # Create directory
+           
+            names = [x for x in head.split('/') if x]
 
-        # Iterate over each directory name
-        search = True
-        for i, name in enumerate(names):
-            id = dir.id if dir else None
-            op = '=' if id else 'is'
+            name = names.pop(0)
 
-            if search:
-                # Search for the inode record of the directory
-                nds = inodes(
-                    f'name = %s and inodeid {op} %s', name, id
-                )
+            nds = inodes(
+                f'name = %s and inodeid is %s', name, None
+            )
 
-                if nds.hasone:
-                    # Downcast the inode to a directory
+            if nds.hasone:
+                dir = nds.first
+            elif nds.isempty:
+                dir = directory(name=name)
+
+            for name in names:
+                if dir.orm.isnew:
+                    dir += directory(name=name)
+                    dir = dir.inodes.last
+                else:
                     try:
-                        dir1 = directory(nds.first.id)
-                    except db.RecordNotFoundError:
-                        # inode exists but directory doesn't. Unless
-                        # there is a data integrity issue, the user
-                        # is attempting to create a `directory`
-                        # where a `file` already exists. Add a new
-                        # `file` entity and depend on the validation
-                        # logic to report this issue.
-
-                        dir1 = file(nds.first.id)
-                elif nds.isempty:
-                    # If the directory couldn't be found, stop
-                    # searching and begin creating new ones.
-                    search = False
-                    dir1 = directory(name=name)
-                else:
-                    raise ValueError(
-                        f'Name matches multiple inodes: {name}'
-                    )
-            else:
-                dir1 = directory(name=name)
-
-            if dir:
-                # Maintain one directory tree by setting/appending
-                # the new/existing directory to the parent trees
-                # inodes collection.
-                for i, nd in enumerate(dir.inodes):
-                    if nd.name == dir1.name:
-                        dir.inodes[i] = dir1
-                        break
-                else:
-                    dir.inodes += dir1
-                # FIXME:349f4355 The below assignment is a
-                # hack to work around the fact tha
-                # currently, `inode` (the recursive parent)
-                # loads as an inode instead of downcasting
-                # to its most specialized class.  When this
-                # is corrected in the ORM, we can remove
-                # this assignment.
-                st = dir1.orm.persistencestate
-                dir1.inode = dir
-                e = dir1
-                while e:
-                    e.orm.persistencestate = st
-                    e = e.orm._super
-            else:
-                if not search:
-                    dir1 = directory(name=name)
-
-            dir = dir1
+                        dir = dir.inodes[name]
+                    except IndexError:
+                        dir = directory(name=name)
 
         return dir
 
