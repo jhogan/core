@@ -387,7 +387,6 @@ class dom_file(tester.tester):
 
         # Load and test second: shell.min.js
         rcs = file.resources(
-        rcs = file.resources(
             'url', 'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js'
         )
         self.one(rcs)
@@ -756,7 +755,7 @@ class file_file(tester.tester):
     def it_cant_save_duplicate_file_name(self):
         ''' Try to create duplicate by name '''
         f = file.file(name='dup.txt')
-        self.expect(None, lambda: f.save())
+        self.expect(None, f.save)
 
         f = file.file(name='dup.txt')
         self.one(f.brokenrules)
@@ -764,14 +763,14 @@ class file_file(tester.tester):
 
         ''' Try to create duplicate by path '''
         f = file.file(path='/my/dir/dup.txt')
-        self.expect(None, lambda: f.save())
+        self.expect(None, f.save)
 
         my = file.directory(path='/my/dir')
         dir = my['dir']
         f = file.file(name='dup.txt')
         dir += f
-        self.one(my.brokenrules)
-        self.expect(entities.BrokenRulesError, lambda: my.save())
+        self.one(f.brokenrules)
+        self.expect(entities.BrokenRulesError, my.save)
 
     def it_raises_AttributeError_on_file_inodes(self):
         f = file.file(path='/850cad31/498c/4584')
@@ -1008,7 +1007,7 @@ class file_directory(tester.tester):
     def it_cant_save_duplicate_directory_name(self):
         ''' Try to create duplicate by name '''
         dir = file.directory(name='dup')
-        self.expect(None, lambda: dir.save())
+        self.expect(None, dir.save)
 
         dir = file.directory(name='dup')
         self.one(dir.brokenrules)
@@ -1016,7 +1015,7 @@ class file_directory(tester.tester):
 
         ''' Try to create duplicate by path '''
         dir = file.directory(path='/herp/derp')
-        self.expect(None, lambda: dir.save())
+        self.expect(None, dir.save)
 
         dir = file.directory(path='/herp')
         dir += file.directory(name='derp')
