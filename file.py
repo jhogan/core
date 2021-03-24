@@ -125,53 +125,6 @@ class inode(orm.entity):
     # will be stored.
     store = '/var/www/core/development'
 
-    def __init__(self, *args, **kwargs):
-        """ Init the ``inode``. If a ``path`` argument is given in
-        ``kwargs``, we can use the path to create or load files and
-        directories::
-
-            f = file(path='/path/to/my/file')
-        """
-        try:
-            path = kwargs['path']
-        except KeyError:
-            super().__init__(*args, **kwargs)
-        else:
-            del kwargs['path']
-
-            # If a path was given in the kwargs, we can use it to load
-            # or create a path for the directory or file.
-            super().__init__(*args, **kwargs)
-
-            dir = self._getdirectory(path=path)
-
-            # TODO Move this to file.__init__
-            if isinstance(self, file):
-                # Load/create the file
-                _, name = os.path.split(path)
-                f = self._getfile(name=name, dir=dir)
-                if f:
-                    # Set attributes of the file to those of self
-                    for attr in ('id', 'name', 'mime'):
-                        setattr(self, attr, getattr(f, attr))
-
-                    # The record isn't new or dirty so set all peristance state
-                    # variables to false.
-                    st = f.orm.persistencestate
-                else:
-                    st = self.orm.persistencestate
-                    self.name = name
-
-                # If dir was loaded/created above, put self underneath
-                if dir:
-                    dir += self
-
-                # Adjust persistencestate
-                e = self
-                while e:
-                    e.orm.persistencestate = st
-                    e = e.orm._super
-
     @property
     def root(self):
         nd = self
@@ -350,7 +303,7 @@ class inode(orm.entity):
         """
         brs = super().getbrokenrules(*args, **kwargs)
 
-        if type(self) is file:
+        if type(self) in (file, directory):
             id = self.inode.id if self.inode else None
             op = '=' if id else 'is'
             nds = inodes(f'name = %s and inodeid {op} %s', self.name, id)
@@ -449,10 +402,50 @@ class file(inode):
         )
 
     def __init__(self, *args, **kwargs):
-        """ Init a file entity.
+        """ Init the ``inode``. If a ``path`` argument is given in
+        ``kwargs``, we can use the path to create or load files and
+        directories::
+
+            f = file(path='/path/to/my/file')
         """
+
         self._body = None
+
+        path = kwargs.pop('path', None)
+
+        # If a path was given in the kwargs, we can use it to load
+        # or create a path for the file.
         super().__init__(*args, **kwargs)
+
+        if not path:
+            return
+
+        dir = self._getdirectory(path=path)
+
+        # Load/create the file
+        _, name = os.path.split(path)
+        f = self._getfile(name=name, dir=dir)
+        if f:
+            # Set attributes of the file to those of self
+            for attr in ('id', 'name', 'mime'):
+                setattr(self, attr, getattr(f, attr))
+
+            # The record isn't new or dirty so set all peristance state
+            # variables to false.
+            st = f.orm.persistencestate
+        else:
+            st = self.orm.persistencestate
+            self.name = name
+
+        # If dir was loaded/created above, put self underneath
+        if dir:
+            dir += self
+
+        # Adjust persistencestate
+        e = self
+        while e:
+            e.orm.persistencestate = st
+            e = e.orm._super
 
     @property
     def mimetype(self):
