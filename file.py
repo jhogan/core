@@ -181,7 +181,8 @@ class inode(orm.entity):
                     try:
                         dir = dir.inodes[name]
                     except IndexError:
-                        dir = directory(name=name)
+                        dir += directory(name=name)
+                        dir = dir.inodes.last
 
         return dir
 
