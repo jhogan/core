@@ -53,6 +53,7 @@ Examples:
 See testfile.py for more examples.
 """
 
+from config import config
 from datetime import datetime, date
 from dbg import B
 from func import enumerate, getattr, B
@@ -487,7 +488,7 @@ class file(inode):
             f.body = 'My Body'
 
             # A call to save() write the metadata to the database first
-            # then write the ``body`` to the file (stored at f.path.
+            # then write the ``body`` to the file (stored at f.path).
             f.save()
 
             # Reload
@@ -624,7 +625,6 @@ class resource(file):
         the Exception will be allowed to bubble up - causing the the
         database transaction to be rolled back.
         """
-
         self._write()
         super()._self_onaftersave(*args, **kwargs)
 

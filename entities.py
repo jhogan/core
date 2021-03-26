@@ -20,6 +20,8 @@ from dbg import B
 
 # TODO Rename entities.py to ent.py
 
+# TODO This seems misplaced. Maybe we should have a module called dec.py
+# for miscellaneous decorators.
 class classproperty(property):
     ''' Add this decorator to a method and it becomes a class method
     that can be used like a property.'''

@@ -199,8 +199,8 @@ class dom_file(tester.tester):
         self.eq('use-credentials', scripts.fourth.crossorigin)
 
         for script in scripts:
-            # We aren't caching these resources (`local = True`) so we
-            # should expect any to be in the database
+            # We aren't caching these resources (`local is True`) so we
+            # shouldn't expect any to be in the database
             self.zero(file.resources(url=script.src))
 
     def it_posts_file_in_a_users_file_system(self):

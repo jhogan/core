@@ -3245,12 +3245,18 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             self.orm.initing = True # TODO change to `isiniting`
             self.orm.instance = self
 
+            # TODO These should be lazy-loaded in getters
             self.onbeforesave       =  entitiesmod.event()
             self.onaftersave        =  entitiesmod.event()
             self.onafterload        =  entitiesmod.event()
             self.onbeforereconnect  =  entitiesmod.event()
             self.onafterreconnect   =  entitiesmod.event()
 
+            # TODO self._self_onbeforesave has no implementation. It
+            # exists mearly so subentity objects can inherit from it.
+            # Subentity objects should probably subscribe to this event
+            # handler instead. That way, we can lazy load onbeforesave
+            # above.
             self.onbeforesave      +=  self._self_onbeforesave
             self.onaftersave       +=  self._self_onaftersave
             self.onafterload       +=  self._self_onafterload
