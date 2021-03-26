@@ -259,37 +259,6 @@ class dom_file(tester.tester):
         self.eq(f.body, f1.body)
 
     def it_caches_js_files(self):
-        # TODO:34080104 I've decided we need to correct a number of
-        # problems in the ORM before completing this test and
-        # file.resources in general. The problem with this test is that
-        # .append() overrides (see 34080104) want to prepend
-        # ``directory`` entities named after the `pom.site.id`. This is
-        # causing issues because the `inode.inode` returns the general
-        # object (inode) instead of the special object (directory). 
-        #
-        # A similar issue that I have had to work around for this is the
-        # issues where collection attributes load only general objects.
-        # For example:
-        #
-        #     dir = directory(id):
-        #     for nd in dir.inodes:
-        #         assert type(nd) is inode
-        #
-        # The above will always be true, but dir.inodes should only
-        # contain file and directory objects; never `inode` objects
-        # because `inodes` are abstract entities and there are always
-        # more specialized versions.
-        #
-        # It would also be desirable to have `directories` and `files`
-        # attributes in addition to inodes:
-        #
-        #     dir = directory(id):
-        #     assert dir.inodes.count == 10
-        #     assert dir.files.count == 3
-        #     assert dir.directories.count == 4
-        #     assert dir.resources.count == 3
-
-
         file.resource.orm.truncate()
         class index(pom.page):
             def main(self):

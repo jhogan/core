@@ -283,7 +283,7 @@ class files(inodes):
     def append(self, e, *args, **kwargs):
         comp = ws = path = None
 
-        # Get the composite (website) of the files collection is there
+        # Get the composite (website) of the files collection if there
         # is one.
         try:
             ws = self.site
@@ -313,7 +313,6 @@ class files(inodes):
 
         if path:
             dir = directory(path=path)
-            # TODO: 34080104
             dir += e.root
 
         super().append(obj=e, *args, **kwargs)
