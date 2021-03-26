@@ -3910,54 +3910,59 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # Take snapshot of before state
             st = self.orm.persistencestate
 
+            # If there is no sql, then the entity isn't new, dirty or
+            # marked for deletion. In that case, don't save.  However,
+            # allow any constituents to be saved.
             if sql:
                 # Raise event
-                eargs = db.operationeventargs(self, crud, sql, args)
+                eargs = db.operationeventargs(
+                    self, crud, sql, args, 'before'
+                )
+
                 self.onbeforesave(self, eargs)
 
-                # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                # Unless override is True, thes the creatability,
-                # updatability or deletability of the entity given the
-                # crud.
-                # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                if not security().override:
-                    if crud == 'create':
-                        vs = self.creatability
-                    elif crud == 'update':
-                        vs = self.updatability
-                    elif crud == 'delete':
-                        vs = self.deletability
-
+                if not eargs.cancel:
                     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                    # If there are violations, raise an
-                    # AuthorizationError
+                    # Unless override is True, thes the creatability,
+                    # updatability or deletability of the entity given
+                    # the crud.
                     # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-                    if vs.ispopulated:
-                        raise AuthorizationError(
-                            msg=(
-                                f'Cannot {crud} '
-                                f'{type(self)}:{self.id.hex}'
-                            ), crud=crud[0], vs=vs, e=self
-                        )
+                    if not security().override:
+                        if crud == 'create':
+                            vs = self.creatability
+                        elif crud == 'update':
+                            vs = self.updatability
+                        elif crud == 'delete':
+                            vs = self.deletability
 
-                # Issue the query
-                cur.execute(sql, args)
+                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                        # If there are violations, raise an
+                        # AuthorizationError
+                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                        if vs.ispopulated:
+                            raise AuthorizationError(
+                                msg=(
+                                    f'Cannot {crud} '
+                                    f'{type(self)}:{self.id.hex}'
+                                ), crud=crud[0], vs=vs, e=self
+                            )
 
-                # Update new state
-                self.orm.isnew = self.orm.ismarkedfordeletion
+                    # Issue the query
+                    cur.execute(sql, args)
 
-                # We must be clean if we just updated the database
-                self.orm.isdirty = False
+                    # Update new state
+                    self.orm.isnew = self.orm.ismarkedfordeletion
 
-                # Entity must not be marked for deletion of we just
-                # updated the database
-                self.orm.ismarkedfordeletion = False
+                    # We must be clean if we just updated the database
+                    self.orm.isdirty = False
 
-                # Raise event
-                self.onaftersave(self, eargs)
-                # If there is no sql, then the entity isn't new, dirty
-                # or marked for deletion. In that case, don't save.
-                # However, allow any constituents to be saved.
+                    # Entity must not be marked for deletion of we just
+                    # updated the database
+                    self.orm.ismarkedfordeletion = False
+
+                    # Raise event
+                    eargs.preposition = 'after'
+                    self.onaftersave(self, eargs)
 
             # For each of the constituent entities classes mapped to
             # self, set the foreignkeyfieldmapping to the id of self,
@@ -8892,7 +8897,9 @@ class orm:
 
         # Invoke the `onafterload` on self.instance passing in relevent
         # arguments
-        eargs = db.operationeventargs(self.instance, 'retrieve', sql, args)
+        eargs = db.operationeventargs(
+            self.instance, 'retrieve', sql, args, 'after'
+        )
         self.instance.onafterload(self.instance, eargs)
 
         # Give the caller the record so it can populate itself with the
@@ -8972,7 +8979,7 @@ class orm:
 
             # Raise self's onafterload event
             eargs = db.operationeventargs(
-                self.instance, 'retrieve', sql, args
+                self.instance, 'retrieve', sql, args, 'after'
             )
 
             self.instance.onafterload(self, eargs)

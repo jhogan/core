@@ -502,11 +502,32 @@ class pool(entity):
         self.push(conn)
 
 class operationeventargs(eventargs):
-    def __init__(self, e, op, sql, args):
+    def __init__(self, e, op, sql, args, preposition):
         self.entity  =  e
         self.op      =  op
         self.sql     =  sql
         self.args    =  args
+        self.preposition = preposition
+
+        if self.preposition not in ('before', 'after'):
+            raise ValueError(
+                "Preposition must be 'before' or 'after'"
+            )
+
+        self._cancel =  False
+
+    @property
+    def cancel(self):
+        return self._cancel
+
+    @cancel.setter
+    def cancel(self, v):
+        if self.preposition == 'after':
+            raise ValueError(
+                'Cancellations can only be preformed in onbefore '
+                'events handlers'
+            )
+        self._cancel = v
 
 class chronicler(entity):
     _instance = None

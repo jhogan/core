@@ -534,11 +534,9 @@ class resource(file):
         super().__init__(*args, **kwargs)
         self.orm.default('crossorigin', 'anonymous')
         self.orm.default('integrity', None)
+        self.onbeforesave += self._entity_onbeforesave
 
-        try:
-            self.local = kwargs['local']
-        except KeyError:
-            self.local = False
+        self.local = kwargs.get('local', False)
 
         # TODO When imperitive setters are available (currently being
         # developed in parallel), we can make the `url` attribute a
@@ -558,6 +556,9 @@ class resource(file):
             if path:
                 dir = dir.inodes[path]
             dir += self
+
+    def _entity_onbeforesave(self, src, eargs):
+        eargs.cancel = not self.local
 
     # TODO Currently, all resources are put in the /resources folder.
     # However, this should be within a the website's 'resources' folder. 
