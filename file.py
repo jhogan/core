@@ -57,6 +57,7 @@ from config import config
 from datetime import datetime, date
 from dbg import B
 from func import enumerate, getattr, B
+from entities import classproperty
 import base64
 import contextlib
 import db
@@ -119,6 +120,10 @@ class inode(orm.entity):
     # The collection of inodes each inode will have. This line makes
     # inodes recursive (self-referencing).
     inodes = inodes
+
+    @classproperty
+    def store(cls):
+        return config().store
 
     @property
     def root(self):
@@ -204,7 +209,7 @@ class inode(orm.entity):
         the ORM wants to use `directory` for something else so we
         terminology borrowed from os.path.split()
         """
-        dir = config().store
+        dir = inode.store
 
         dirs = list()
         nd = self
@@ -495,7 +500,7 @@ class file(inode):
         
     @property
     def symlink(self):
-        public = os.path.join(config().store, 'public')
+        public = os.path.join(inode.store, 'public')
         try:
             pathlib.Path(public).mkdir(
                 parents=True, exist_ok=True
@@ -756,7 +761,7 @@ class directory(inode):
 
         Now, txt represents the file::
 
-            {config().store}/my/path/to/file.txt
+            {inode.store}/my/path/to/file.txt
 
         """
         f = file(path=path)

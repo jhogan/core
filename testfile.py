@@ -28,7 +28,7 @@ import uuid
 # TODO Ensure that integrity can be None
 
 def clean():
-    store = file.file.store
+    store = file.inode.store
 
     # Make sure `store` is a directory underneath /var/www/core. We
     # don't want `store` to be something else (like '') because we
@@ -339,10 +339,6 @@ class dom_file(tester.tester):
 
         scripts = res['html head script']
         self.four(scripts)
-
-        # TODO:52612d8d Make a configuration option
-        #dir = config().public
-        dir = file.file.store
 
         self.eq(
             f'/{ws.id.hex}/code.jquery.com/jquery-3.5.1.js',
