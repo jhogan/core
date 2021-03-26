@@ -120,13 +120,6 @@ class inode(orm.entity):
     # inodes recursive (self-referencing).
     inodes = inodes
 
-    # TODO Make this configurable
-    #store = config().filestore
-
-    # This is the directory under which all the directories and files
-    # will be stored.
-    store = '/var/www/core/development'
-
     @property
     def root(self):
         nd = self
@@ -211,7 +204,7 @@ class inode(orm.entity):
         the ORM wants to use `directory` for something else so we
         terminology borrowed from os.path.split()
         """
-        dir = self.store
+        dir = config().store
 
         dirs = list()
         nd = self
@@ -502,7 +495,7 @@ class file(inode):
         
     @property
     def symlink(self):
-        public = os.path.join(self.store, 'public')
+        public = os.path.join(config().store, 'public')
         try:
             pathlib.Path(public).mkdir(
                 parents=True, exist_ok=True
@@ -763,7 +756,7 @@ class directory(inode):
 
         Now, txt represents the file::
 
-            {self.store}/my/path/to/file.txt
+            {config().store}/my/path/to/file.txt
 
         """
         f = file(path=path)
