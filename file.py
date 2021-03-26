@@ -93,7 +93,8 @@ class inodes(orm.entities):
                             f"Can't find node: {name}"
                         )
                     else:
-                        nds = nd.inodes
+                        if isinstance(nd, directory):
+                            nds = nd.inodes
                 return nd
         return super().__getitem__(key)
 
