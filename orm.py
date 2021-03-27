@@ -2768,6 +2768,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         objects in this collection. If no rules have been broken, then
         an empty ``brokenrules`` collection will be returned.
         """
+        # TODO This property may become obsolete because
+        # __getattribute__ is currently handling the `'brokenrules' ==
+        # attr` condition.
         return self.getbrokenrules()
 
     def getbrokenrules(self, gb=None):

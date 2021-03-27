@@ -3659,6 +3659,7 @@ class rapper(singer):
         return str(attr()) if attr() else attr(str(bs()))
 
 class issues(orm.entities):
+
     def getbrokenrules(self, *args, **kwargs):
         brs = super().getbrokenrules(*args, **kwargs)
         names = self.pluck('name')
@@ -3706,9 +3707,7 @@ class issue(orm.entity):
         if '@' not in self.assignee:
             brs += brokenrule(
                 'Assignee email address has no @', 
-                'assignee', 
-                'valid',
-                self,
+                'assignee', 'valid', self,
             )
         return brs
 
@@ -3877,6 +3876,7 @@ class test_orm(tester):
                 artists,
                 presentations,
                 issues,
+                bugs,
                 programmer_issues,
                 programmers,
                 programmer_issuerole,
