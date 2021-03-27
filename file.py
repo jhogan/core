@@ -570,24 +570,41 @@ class resource(file):
 
         self.local = kwargs.get('local', False)
 
-        # TODO When imperitive setters are available (currently being
-        # developed in parallel), we can make the `url` attribute a
-        # setter that sets `self.name`
-        try:
-            url = kwargs['url']
-        except KeyError:
-            pass
-        else:
-            dirs = list()
-            urlparts = urllib.parse.urlsplit(self.url)
-            dirs.append(urlparts.netloc)
-            dirs.extend([x for x in urlparts.path.split(os.sep) if x])
-            self.name = dirs.pop()
-            dir = directory(path=os.sep.join(dirs))
-            path = os.sep.join(dirs[1:])
-            if path:
-                dir = dir.inodes[path]
-            dir += self
+        # The following code depends on a url being present
+        if not self.url:
+            return
+
+        # The below comments will assume a url of:
+        # https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js
+
+        # Create list with hostname and all paths, e.g., 
+        #
+        #     [
+        #         'cdnjs.cloudflare.com', 'ajax', 'libs', 
+        #         'shell.js', '1.0.5', 'js', 'shell.min.js'
+        #    ]
+        dirs = [self.url.host, *self.url.paths]
+
+        # The last in the list ('shell.min.js') will be the name of the
+        # resource file (shell.min.js)
+        self.name = dirs.pop()
+
+        # Create a path with the remaining elements then create a
+        # `directory` e.g., 
+        #
+        #     'cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js'
+        path = os.sep.join(dirs)
+        dir = directory(path=path)
+
+        # Get the last directory in the path
+        # (ajax/libs/shell.js/1.0.5/js) and assign it to dir
+        path = os.sep.join(dirs[1:])
+        if path:
+            dir = dir.inodes[path]
+
+        # Add the new `resource` underneath the directory, e.g., add the
+        # shell.min.js resource under the js directory.
+        dir += self
 
     def _entity_onbeforesave(self, src, eargs):
         # Cancel saving resource to database if local is False. See the
