@@ -346,7 +346,6 @@ class dom_file(tester.tester):
             'address', 'https://code.jquery.com/jquery-3.5.1.js'
         ).first.resources
 
-
         self.one(rcs)
         self.none(rcs.first.integrity)
         self.eq('anonymous', rcs.first.crossorigin)

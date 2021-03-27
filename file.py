@@ -517,13 +517,7 @@ class resource(file):
     def __init__(self, *args, **kwargs):
         """ Initialize a resource.
 
-        :param: url str: The URL of the external resource.
-
-        :param: integrity str: A subresource integrity (SRI)
-        base64-encoded cryptographic hash . The SRI is used to validate the
-        authenticity of a file being downloaded. This is the same string
-        you would use for the `integrity` attribute of a <script> or
-        <link> tag in HTML authoring.
+        :param: url str|ecommerce.url: The URL of the external resource.
 
         :param: local bool: If True, persist the resource's metadata in
         the database duing a `resource.save()` call and cache the file
@@ -595,32 +589,6 @@ class resource(file):
         # resource.__init__.
         eargs.cancel = not self.local
 
-    # TODO Currently, all resources are put in the /resources folder.
-    # However, this should be within the website's 'resources' folder. 
-    # We should:
-    # 
-    # 1. Alter pom.site to inherit from asset.asset (or some subentity
-    # thereof).
-    #
-    # 2. Add a file.resources collection to pom.site:
-    #
-    #     class site(asset.asset):
-    #         resources = file.resources
-    #
-    # # If a ``resource`` has a ``site`` composite (``resource.site is
-    # not None``), we use that for the directory it saves to in
-    # resource.__init__
-    #
-    # 3. ``dom.script`` can set the resource site::
-    #
-    #     class script(dom.element):
-    #         def __init__(self, res):
-    #             res.site = self.site
-    #     
-    # Actually, this would mean `resource`` shouldn't auto-save.
-    # dom.script should be able to set the site (see above) so it can
-    # alter `res.site` before resource's are saved.
-
     # A cryptographic hash that the external resource is assumed to
     # have. This will often match the hash found in a <script>'s
     # `integrity` attribute:
@@ -668,6 +636,10 @@ class resource(file):
                 # Create a request that has a spoofed user-agent. Some
                 # CDN's will return a 403 Forbidden if they think Python
                 # is making the request.
+
+
+                # TODO When www.request and www.browser become mature,
+                # let's use that to download files.
                 req = urllib.request.Request(
                     self.url, 
                     headers={
