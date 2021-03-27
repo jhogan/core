@@ -4533,12 +4533,14 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         try:
             if attr == 'brokenrules':
-                brs = object.__getattribute__(self, attr)
-                if not isinstance(brs, entitiesmod.brokenrules):
-                    raise TypeError(
-                        "'brokenrules' must return an instance of"
-                        "'entities.brokenrules'"
-                    )
+                brs = entitiesmod.brokenrules()
+                if 'brokenrules' in self.orm.entity.__dict__:
+                    brs += object.__getattribute__(self, attr)
+                    if not isinstance(brs, entitiesmod.brokenrules):
+                        raise TypeError(
+                            "'brokenrules' must return an instance of"
+                            "'entities.brokenrules'"
+                        )
 
                 brs1 = entity.getbrokenrules(self)
                 brs += brs1

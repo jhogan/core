@@ -5253,6 +5253,19 @@ class test_orm(tester):
         self.broken(bg, 'threat', 'fits')
         self.broken(bg, 'points', 'fits')
 
+    def it_disregards_nonexisting_brokenrule_property(self):
+        # Ensure no one gives artist a brokenrules @property.
+        attrs = artist.__dict__
+        self.false('brokenrules' in attrs)
+
+        art = artist.getvalid()
+        self.zero(art.brokenrules)
+        self.true(art.isvalid)
+
+        # Break declaritive rule
+        art.firstname = str()
+        self.one(art.brokenrules)
+        self.false(art.isvalid)
 
     def it_calls_entity_on_brokenrule(self):
         iss = issue.getvalid()
