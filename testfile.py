@@ -70,9 +70,9 @@ class dom_file(tester.tester):
 
         if self.rebuildtables:
             orm.orm.recreate(
-                ecommerce.user,  file.files,   file.resources,
-                file.directory,  file.inodes,  pom.site,
-                foonet,          asset.asset
+                ecommerce.user,  ecommerce.urls,  file.files,
+                file.resources,  file.directory,  file.inodes,
+                pom.site,        foonet,          asset.asset
             )
 
         orm.security().owner = ecommerce.users.root
@@ -1016,11 +1016,20 @@ class file_resource(tester.tester):
         super().__init__(*args, **kwargs)
         clean()
 
+        orm.security().override = True
+
         if self.rebuildtables:
             orm.orm.recreate(
-                ecommerce.user, file.files, file.resources,
-                file.directory, file.inodes,
+                ecommerce.user,  ecommerce.url,   file.files,
+                file.resources,  file.directory,  file.inodes,
             )
+
+        orm.security().owner = ecommerce.users.root
+
+        # Proprietor
+        com = party.company(name='Carapacian')
+        orm.security().proprietor = com
+        com.save()
 
     def it_passes_integrity_check(self):
         def get():
