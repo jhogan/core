@@ -497,23 +497,6 @@ class file(inode):
         """
         self._setvalue('_body', v, '_body', strip=False)
         
-    @property
-    def symlink(self):
-        public = os.path.join(inode.store, 'public')
-        try:
-            pathlib.Path(public).mkdir(
-                parents=True, exist_ok=True
-            )
-        except PermissionError as ex:
-            raise PermissionError(
-                f'The public directory ({dir}) needs to be created '
-                'for the environment and given the appropriate '
-                f'permissions ({ex})'
-            )
-
-
-        return f'{public}/{os.path.basename(str(self.url))}'
-
 class resources(files):
     """ Represents a collection of ``resource`` entities.
     """
@@ -665,19 +648,17 @@ class resource(file):
 
     def _self_onaftersave(self, *args, **kwargs):
         """ After the ``resource`` has been saved to the database, write
-        the resource file to the file system along with a symlink. If
-        there is an Exception caused during the file system interaction,
-        the Exception will be allowed to bubble up - causing the the
-        database transaction to be rolled back.
+        the resource file to the file system. If there is an Exception
+        caused during the file system interaction, the Exception will be
+        allowed to bubble up - causing the the database transaction to
+        be rolled back.
         """
         self._write()
         super()._self_onaftersave(*args, **kwargs)
 
     def _write(self):
-        # Get the file and the symlink
-
+        # Get the file
         path = self.path
-        ln = self.symlink
 
         try:
             os.makedirs(self.head, exist_ok=True)
@@ -722,18 +703,10 @@ class resource(file):
                 # We won't be able to cache, but that shouldn't be a show
                 # stopper. We may want to log, though.
                 pass
-            else:
-                # Delete the symlink if it exists
-                with contextlib.suppress(FileNotFoundError):
-                    os.unlink(ln)
-
-                # Create the symlink
-                os.symlink(path, ln)
         except Exception as ex:
-            # Remove the file and symlink if there was an exception
+            # Remove the file if there was an exception
             with contextlib.suppress(Exception):
                 os.remove(path)
-                os.remove(ln)
             
             # Allow the exception to bubble up to the ORM's persistence
             # logic - allowing it to rollback the transaction.
