@@ -211,7 +211,7 @@ class site(asset.asset):
         # TODO Consolidate with page.head
         for res in self.resources:
 
-            src = res.relative if res.local else res.url
+            src = res.relative if res.local else str(res.url)
 
             if res.mime == 'application/javascript':
                 el = dom.script(

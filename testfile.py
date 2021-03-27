@@ -114,7 +114,7 @@ class dom_file(tester.tester):
 
         for res, res1 in zip(ress, ress1):
             self.eq(res.id, res1.id)
-            self.eq(res.url, res1.url)
+            self.eq(str(res.url), str(res1.url))
             self.eq(res.integrity, res1.integrity)
 
     def it_adds_js_files_to_page(self):
@@ -201,7 +201,8 @@ class dom_file(tester.tester):
         for script in scripts:
             # We aren't caching these resources (`local is True`) so we
             # shouldn't expect any to be in the database
-            self.zero(file.resources(url=script.src))
+            url = ecommerce.url(address=script.src)
+            self.zero(url.resources)
 
     def it_posts_file_in_a_users_file_system(self):
         class avatar(pom.page):
@@ -343,17 +344,20 @@ class dom_file(tester.tester):
         self.four(file.resources.orm.all)
 
         # Load and test first: jquery
-        rcs = file.resources(
-            'url', 'https://code.jquery.com/jquery-3.5.1.js'
-        )
+        rcs = ecommerce.urls(
+            'address', 'https://code.jquery.com/jquery-3.5.1.js'
+        ).first.resources
+
+
         self.one(rcs)
         self.none(rcs.first.integrity)
         self.eq('anonymous', rcs.first.crossorigin)
 
         # Load and test second: shell.min.js
-        rcs = file.resources(
-            'url', 'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js'
-        )
+        rcs = ecommerce.urls(
+            'address', 'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js'
+        ).first.resources
+
         self.one(rcs)
         self.eq(
             'sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw==', 
@@ -362,18 +366,18 @@ class dom_file(tester.tester):
         self.eq('anonymous', rcs.first.crossorigin)
 
         # Load and test second: vega.min.js
-        rcs = file.resources(
-            'url', 'https://cdnjs.cloudflare.com/ajax/libs/vega/5.14.0/vega.min.js'
-        )
+        rcs = ecommerce.urls(
+            'address', 'https://cdnjs.cloudflare.com/ajax/libs/vega/5.14.0/vega.min.js'
+        ).first.resources
 
         self.one(rcs)
         self.none(rcs.first.integrity)
         self.eq('use-credentials', rcs.first.crossorigin)
 
         # Load and test second: idontexist.min.js
-        rcs = file.resources(
-            'url', 'https://cdnjs.cloudflare.com/ajax/libs/55439c02/1.1/idontexit.min.js'
-        )
+        rcs = ecommerce.urls(
+            'address', 'https://cdnjs.cloudflare.com/ajax/libs/55439c02/1.1/idontexit.min.js'
+        ).first.resources
 
         self.one(rcs)
         self.none(rcs.first.integrity)
@@ -1037,7 +1041,7 @@ class file_resource(tester.tester):
             integrity = 'sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw==',
             local = True
         )
-        self.eq(url, resx.url)
+        self.eq(url, str(resx.url))
 
 
     def it_fails_integrity_check(self):

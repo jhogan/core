@@ -511,7 +511,8 @@ class file(inode):
                 f'permissions ({ex})'
             )
 
-        return f'{public}/{os.path.basename(self.url)}'
+
+        return f'{public}/{os.path.basename(str(self.url))}'
 
 class resources(files):
     """ Represents a collection of ``resource`` entities.
@@ -530,6 +531,15 @@ class resource(file):
     hard drive.
     """
     def __init__(self, *args, **kwargs):
+        try:
+           url = kwargs['url']
+        except KeyError:
+            pass
+        else:
+            if isinstance(url, str):
+                import ecommerce
+                kwargs['url'] = ecommerce.url(address=url)
+            
         super().__init__(*args, **kwargs)
         self.orm.default('crossorigin', 'anonymous')
         self.orm.default('integrity', None)
@@ -584,12 +594,6 @@ class resource(file):
     # Actually, this would mean `resource`` shouldn't auto-save.
     # dom.script should be able to set the site (see above) so it can
     # alter `res.site` before resource's are saved.
-
-    # The external location of the resources.
-    @orm.attr(str)
-    def url(self):
-        # TODO We may want to user ecommerce.url instead of a simple str
-        return attr().lower()
 
     # A cryptographic hash that the external resource is assumed to
     # have. This will often match the hash found in a <script>'s

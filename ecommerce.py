@@ -43,6 +43,7 @@ import os
 import party
 import primative
 import product
+import urllib
 import user_agents
 
 class agents(party.parties):                                  pass
@@ -441,8 +442,26 @@ class url(orm.entity):
     # The web `hits` where this ``url`` acts as an http_referer
     hits = hits
 
+    resources = file.resources
+
     def __str__(self):
         return self.address
+
+    @property
+    def scheme(self):
+        return urllib.parse.urlsplit(self.address).scheme
+
+    @property
+    def host(self):
+        return urllib.parse.urlsplit(self.address).hostname
+
+    @property
+    def path(self):
+        return urllib.parse.urlsplit(self.address).path
+
+    @property
+    def paths(self):
+        return [x for x in self.path.split(os.sep) if x]
 
 class object(orm.entity):
     """ Stores electronic images, such as ``text`` (i.e. an HTML
