@@ -5211,10 +5211,12 @@ class test_orm(tester):
 
     def it_isolates_brokenrules(self):
         iss = issue.getvalid()
+        self.true(iss.isvalid)
 
         # Break imperitive rules
         iss.assignee = 'brokenATexample.com'
         self.broken(iss, 'assignee', 'valid')
+        self.false(iss.isvalid)
 
         # Break declaritive rule. The brokenrules property should have
         # the declaritive and imperative brokenrules.
@@ -5223,19 +5225,23 @@ class test_orm(tester):
         self.two(iss.brokenrules)
         self.broken(iss, 'assignee', 'valid')
         self.broken(iss, 'name', 'fits')
+        self.false(iss.isvalid)
 
         ''' Subentity - Ensure that brokenrules aren't inherited'''
         bg = bug.getvalid()
+        self.true(bg.isvalid)
 
         # Break imperitive rules from the superentity
         bg.assignee = 'brokenATexample.com'
         self.zero(bg.brokenrules)
+        self.true(bg.isvalid)
         self.one(bg.orm.super.brokenrules)
         self.broken(bg.orm.super, 'assignee', 'valid')
 
         # Break declaritive rule on superentity
         bg.name = str()  # Issue names can't be empty str
         self.zero(bg.brokenrules)
+        self.true(bg.isvalid)
         self.two(bg.orm.super.brokenrules)
         self.broken(bg.orm.super, 'assignee', 'valid')
         self.broken(bg.orm.super, 'name', 'fits')
@@ -5244,14 +5250,17 @@ class test_orm(tester):
         bg.threat = str()  # String can't be empty
 
         self.one(bg.brokenrules)
+        self.false(bg.isvalid)
         self.broken(bg, 'threat', 'fits')
 
         # Break imperitive rule on subentity
         bg.points = 4  # Must be Fibonacci
 
         self.two(bg.brokenrules)
+        self.false(bg.isvalid)
         self.broken(bg, 'threat', 'fits')
         self.broken(bg, 'points', 'fits')
+        self.false(bg.isvalid)
 
     def it_disregards_nonexisting_brokenrule_property(self):
         # Ensure no one gives artist a brokenrules @property.
