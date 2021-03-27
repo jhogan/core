@@ -3700,8 +3700,9 @@ class issue(orm.entity):
         if self.raise_:
             raise AttributeError()
 
-    def getbrokenrules(self, *args, **kwargs):
-        brs = super().getbrokenrules(*args, **kwargs)
+    @property
+    def brokenrules(self):
+        brs = brokenrules()
         if '@' not in self.assignee:
             brs += brokenrule(
                 'Assignee email address has no @', 
@@ -3709,7 +3710,35 @@ class issue(orm.entity):
                 'valid',
                 self,
             )
+        return brs
 
+class bugs(issues):
+    pass
+
+class bug(issue):
+    # story points
+    points = int
+    threat = str
+    
+    @staticmethod
+    def getvalid():
+        iss = issue.getvalid()
+        bg = bug()
+        bg.name = iss.name
+        bg.assignee  = iss.assignee
+        bg.orm.super.raise_ = iss.raise_
+        bg.points = 13
+        bg.threat = 'security-threat'
+        return bg
+
+    @property
+    def brokenrules(self):
+        brs = brokenrules()
+        if self.points not in (1, 2, 3, 5, 8, 13):
+            brs += brokenrule(
+                'Story points must be a Fibonacci',
+                'points', 'fits', self
+            )
         return brs
 
 class programmers(orm.entities):
@@ -5179,6 +5208,51 @@ class test_orm(tester):
         ''')
 
         migrate(cat, expect)
+
+    def it_isolates_brokenrules(self):
+        iss = issue.getvalid()
+
+        # Break imperitive rules
+        iss.assignee = 'brokenATexample.com'
+        self.broken(iss, 'assignee', 'valid')
+
+        # Break declaritive rule. The brokenrules property should have
+        # the declaritive and imperative brokenrules.
+        iss.name = str()  # String can't be empty
+
+        self.two(iss.brokenrules)
+        self.broken(iss, 'assignee', 'valid')
+        self.broken(iss, 'name', 'fits')
+
+        ''' Subentity - Ensure that brokenrules aren't inherited'''
+        bg = bug.getvalid()
+
+        # Break imperitive rules from the superentity
+        bg.assignee = 'brokenATexample.com'
+        self.zero(bg.brokenrules)
+        self.one(bg.orm.super.brokenrules)
+        self.broken(bg.orm.super, 'assignee', 'valid')
+
+        # Break declaritive rule on superentity
+        bg.name = str()  # Issue names can't be empty str
+        self.zero(bg.brokenrules)
+        self.two(bg.orm.super.brokenrules)
+        self.broken(bg.orm.super, 'assignee', 'valid')
+        self.broken(bg.orm.super, 'name', 'fits')
+
+        # Break declaritive rule on subentity.
+        bg.threat = str()  # String can't be empty
+
+        self.one(bg.brokenrules)
+        self.broken(bg, 'threat', 'fits')
+
+        # Break imperitive rule on subentity
+        bg.points = 4  # Must be Fibonacci
+
+        self.two(bg.brokenrules)
+        self.broken(bg, 'threat', 'fits')
+        self.broken(bg, 'points', 'fits')
+
 
     def it_calls_entity_on_brokenrule(self):
         iss = issue.getvalid()

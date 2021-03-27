@@ -4529,11 +4529,25 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         """
 
         try:
+            if attr == 'brokenrules':
+                brs = object.__getattribute__(self, attr)
+                if not isinstance(brs, entitiesmod.brokenrules):
+                    raise TypeError(
+                        "'brokenrules' must return an instance of"
+                        "'entities.brokenrules'"
+                    )
+
+                brs1 = entity.getbrokenrules(self)
+                brs += brs1
+                return brs
+
             v = object.__getattribute__(self, attr)
+
             if isinstance(v, span):
                 if v.isstatic:
                     v = v.clone(e=self)
                     setattr(self, attr, v)
+
             return v
         except sys.modules['orm'].attr.AttributeErrorWrapper as ex:
             raise ex.inner
