@@ -123,8 +123,6 @@ class dom_file(tester.tester):
 
         class index(pom.page):
             def main(self):
-                head = self['html head'].first
-
                 # Add page-level resources
                 self.resources += file.resource(
                     url='https://code.jquery.com/jquery-3.5.1.js',

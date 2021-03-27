@@ -353,7 +353,7 @@ class file(inode):
         this awkwardness.
         """
         # TODO We need to find a better way to do this. The user should
-        # not have to us a specialized AttributeError.
+        # not have to use a specialized AttributeError.
         raise orm.AttributeError(
             "file entities don't have inodes"
         )
@@ -530,7 +530,30 @@ class resource(file):
     need for a developer to manually manage the resource file on the
     hard drive.
     """
+
     def __init__(self, *args, **kwargs):
+        """ Initialize a resource.
+
+        :param: url str: The URL of the external resource.
+
+        :param: integrity str: A subresource integrity (SRI)
+        base64-encoded cryptographic hash . The SRI is used to validate the
+        authenticity of a file being downloaded. This is the same string
+        you would use for the `integrity` attribute of a <script> or
+        <link> tag in HTML authoring.
+
+        :param: local bool: If True, persist the resource's metadata in
+        the database duing a `resource.save()` call and cache the file
+        data to the local hard drive located under the `inode.store`
+        directory. 
+        
+        Allowing `local` to default to False causes no persistence to
+        ever happen. This can be useful if you only want to use the
+        ``resource`` object as a data structure for HTML authoring, such
+        as when you want to reference a CDN's URL for a JavaScript or
+        CSS library - causing the user's browser to download the
+        resource from the CDN rather than the webserver.
+        """
         try:
            url = kwargs['url']
         except KeyError:
@@ -567,10 +590,13 @@ class resource(file):
             dir += self
 
     def _entity_onbeforesave(self, src, eargs):
+        # Cancel saving resource to database if local is False. See the
+        # comments for the ``local`` paramenter in the docstring for
+        # resource.__init__.
         eargs.cancel = not self.local
 
     # TODO Currently, all resources are put in the /resources folder.
-    # However, this should be within a the website's 'resources' folder. 
+    # However, this should be within the website's 'resources' folder. 
     # We should:
     # 
     # 1. Alter pom.site to inherit from asset.asset (or some subentity
@@ -633,7 +659,6 @@ class resource(file):
     def _write(self):
         # Get the file and the symlink
 
-        # TODO If self.local is False, don't write.
         path = self.path
         ln = self.symlink
 
@@ -702,11 +727,6 @@ class directories(inodes):
     """
 
 class directory(inode):
-    # TODO Remove below line when the branch is merged back into ev orm
-    # master. This line was written before inflect's pluralization was
-    # introduced.
-    entities = directories
-
     def __init__(self, *args, **kwargs):
         """ Init the ``directory``. If a ``path`` argument is given in
         ``kwargs``, we can use the path to create or load files and

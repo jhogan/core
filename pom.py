@@ -198,7 +198,7 @@ class site(asset.asset):
         # element and within the first 1024 bytes of the HTML as some
         # browsers only look at those bytes before choosing an
         # encoding."
-        #     - https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meta
+        # - https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meta
         self._head += dom.meta(charset=self.charset)
 
         self._head += dom.meta(name="viewport", content=self.viewport)
