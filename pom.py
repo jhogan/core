@@ -672,24 +672,24 @@ class page(dom.html):
             else:
                 self._head = dom.head()
 
-        for res in self.resources:
-            if res.mime == 'application/javascript':
-                src = res.relative if res.local else res.url
+            for res in self.resources:
+                if res.mime == 'application/javascript':
+                    src = res.relative if res.local else str(res.url)
 
-                if src in self._head['script'].pluck('src'):
-                    continue
+                    if src in self._head['script'].pluck('src'):
+                        continue
 
-                el = dom.script(
-                    integrity = res.integrity, 
-                    crossorigin = res.crossorigin,
-                    src = src
-                )
-            elif res.mimetype == 'text/css':
-                raise NotImplementedError('TODO')
-            else:
-                raise TypeError(f'Invalid mime type: {res.mimetype}')
+                    el = dom.script(
+                        integrity = res.integrity, 
+                        crossorigin = res.crossorigin,
+                        src = src
+                    )
+                elif res.mimetype == 'text/css':
+                    raise NotImplementedError('TODO')
+                else:
+                    raise TypeError(f'Invalid mime type: {res.mimetype}')
 
-            self._head += el
+                self._head += el
 
 
         return self._head
