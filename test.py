@@ -3659,19 +3659,16 @@ class rapper(singer):
         return str(attr()) if attr() else attr(str(bs()))
 
 class issues(orm.entities):
-
-    def getbrokenrules(self, *args, **kwargs):
-        brs = super().getbrokenrules(*args, **kwargs)
+    @property
+    def brokenrules(self):
+        brs = brokenrules()
         names = self.pluck('name')
         dups = set(x for x in names if names.count(x) > 1)
 
         if dups:
             brs += brokenrule(
                 'Duplicate names found %s' % dups,
-                'names',
-                'valid',
-                self,
-
+                'name', 'valid', self,
             )
         return brs
 
@@ -3712,7 +3709,18 @@ class issue(orm.entity):
         return brs
 
 class bugs(issues):
-    pass
+    @property
+    def brokenrules(self):
+        brs = super().brokenrules
+        max = 13 + 8
+        if sum(self.pluck('points')) > max:
+            brs += brokenrule(
+                f"Total story points can't exceed {max} "
+                'because it would be too much for the sprint or '
+                'whatever',
+                'names', 'valid', self,
+            )
+        return brs
 
 class bug(issue):
     # story points
@@ -5262,6 +5270,73 @@ class test_orm(tester):
         self.broken(bg, 'points', 'fits')
         self.false(bg.isvalid)
 
+        ''' Entities collection '''
+
+        isss = issues()
+        self.zero(isss.brokenrules)
+
+        # Add issue objects; so far so good
+        isss += issue.getvalid()
+        self.zero(isss.brokenrules)
+
+        # Add another; still good
+        isss += issue.getvalid()
+        self.zero(isss.brokenrules)
+
+        # Give the first and last issue the same name. This will break
+        # the declaritive issues.brokenrules property
+        isss.last.name = isss.first.name
+        self.one(isss.brokenrules)
+        self.is_(isss, isss.brokenrules.first.entity)
+        self.eq('valid', isss.brokenrules.first.type)
+
+        ''' Entities subcollection 
+
+        Unlike entity objects, the brokenrules collections of entities
+        subcollections may choose to inherit the brokenrules from the
+        super collections. entities collections, not being activestate
+        objects, don't need to be isolated (I think), although care may
+        need to be taken to ensure needless calls to the
+        entities.brokenrules properties aren't made and, if they are,
+        they don't needlessly bother the database or some other blocking
+        resources that could slow things down.
+        '''
+        bgs = bugs()
+        self.zero(bgs.brokenrules)
+
+        # --- Break bgs super (issues) ---
+
+        # Add issue objects; so far so good
+        bgs += bug.getvalid()
+        self.zero(bgs.brokenrules)
+
+        # Add another; still good
+        bgs += bug.getvalid()
+
+        # Set to 8 to ensure bugs.brokenrules returns no broken rules
+        for bg in bgs:
+            bg.points = 8
+
+        self.zero(bgs.brokenrules)
+
+        # Give the first and last issue the same name. This shoud break
+        # the declaritive issues.brokenrules property isnec
+        # bugs.brokenrules accesses it.
+        bgs.last.name = bgs.first.name
+        self.one(bgs.brokenrules)
+        self.is_(bgs, bgs.brokenrules.first.entity)
+        self.eq('valid', bgs.brokenrules.first.type)
+
+        # Now break a bugs broken rule
+        for bg in bgs:
+            bg.points = 13 # Too many story points in aggregate
+
+        self.two(bgs.brokenrules)
+        self.is_(bgs, bgs.brokenrules.first.entity)
+        self.eq('valid', bgs.brokenrules.first.type)
+        self.is_(bgs, bgs.brokenrules.second.entity)
+        self.eq('valid', bgs.brokenrules.second.type)
+
     def it_disregards_nonexisting_brokenrule_property(self):
         # Ensure no one gives artist a brokenrules @property.
         attrs = artist.__dict__
@@ -5398,24 +5473,24 @@ class test_orm(tester):
         isss.last.name = iss.name
 
         self.one(isss.brokenrules)
-        self.broken(isss, 'names', 'valid')
+        self.broken(isss, 'name', 'valid')
 
         # Break some more stuff
         isss.second.assignee = 'jessehogan0ATgmail.com' # break
         self.two(isss.brokenrules)
-        self.broken(isss, 'names', 'valid')
+        self.broken(isss, 'name', 'valid')
         self.broken(isss, 'assignee', 'valid')
 
         isss.first.name = str() # break
         isss.second.name = str() # break
         self.four(isss.brokenrules)
-        self.broken(isss, 'names', 'valid')  
+        self.broken(isss, 'name', 'valid')  
         self.broken(isss, 'assignee', 'valid')
         self.broken(isss, 'name', 'fits')  # x2
 
         isss.first.comments.last.author = 'jhoganATmail.com' # break
         self.five(isss.brokenrules)
-        self.broken(isss,  'names',     'valid')
+        self.broken(isss,  'name',     'valid')
         self.broken(isss,  'assignee',  'valid')
         self.broken(isss,  'name',      'fits')   #  x2
         self.broken(isss,  'author',    'valid')
