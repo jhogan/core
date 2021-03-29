@@ -10718,14 +10718,15 @@ class associations(entities):
         self.remove(ass)
 
     def __getattr__(self, attr):
-        """
-        Return a composite object or constituent collection
+        """ Return a composite object or constituent collection
         (pseudocollection) requested by the user.
 
         :param: str attr: The name of the attribute to return.
+
         :rtype: orm.entity or orm.entities
+
         :returns: Returns the composite or pseudocollection being
-                  requested for by ``attr``
+        requested for by ``attr``
         """
 
         def raiseAttributeError():
@@ -10788,7 +10789,7 @@ class associations(entities):
 
                 # Iterate down the inheritance tree until we find an
                 # entity/subentity with the name of the attr.
-                # NOTE For most request, the entity (ess[0]) will be
+                # NOTE For most requests, the entity (ess[0]) will be
                 # what we want. Subentities will be needed when we
                 # request a pseudocollection that is a subtype of the
                 # association's objective entity:
@@ -10796,8 +10797,8 @@ class associations(entities):
                 for es in ess:
                     if es.__name__ == attr:
                         # Create a pseudocollection for the associations
-                        # collection object (self). Append it to the self.orm's
-                        # `constituents` collection.
+                        # collection object (self). Append it to the
+                        # self.orm's `constituents` collection.
                         es = es()
                         es.onadd    += self.entities_onadd
                         es.onremove += self.entities_onremove
@@ -10827,8 +10828,6 @@ class associations(entities):
                     # true:
                     #
                     #     assert artist is type(sng.singers.first)
-
-                    #if e.orm.entities.__name__ != attr:
 
                     # TODO This could use a clean up, e.g.,
                     #     if attr in e.orm.subentities:
@@ -10865,7 +10864,44 @@ class associations(entities):
             raiseAttributeError()
     
 class association(entity):
-    pass
+    """ An entity that holds a reference to two other entity objects.
+
+    Association allow for many-to-many relationships between classes of
+    entity objects but also contain data about the association itself.
+
+    For example, in the party.py module, the ``party_address``
+    association connects a ``party`` (e.g., a person, company, etc.)
+    with a postal ``address``.
+
+        class party_address(orm.association):
+            party     =  party
+            address   =  address
+            span      =  datespan
+
+    This makes it possible for a party to have multiple postal address
+    and a postal address to belong to multiple parties.
+
+        par = party()
+        addr1 = address()
+        addr2 = address()
+
+        par.party_addresses += party_address(
+            address = addr1,
+            begin = '2020-02-02',
+            end   = '2021-02-02',
+        )
+
+        par.party_addresses += party_address(
+            address = addr2,
+            begin = '2020-01-02',
+            end   = '2021-01-02',
+        )
+
+    Above, we associate ``par`` with ``addr1`` and ``addr2``, while
+    indicating the datespan that the association was valid.
+    Additionally, we could associate each address with multiple
+    parties.
+    """
 
 class migration:
     def __init__(self, e=None):
