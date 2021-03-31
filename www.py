@@ -626,24 +626,28 @@ class _request:
         """
 
         if self._payload is None:
-            sz = self.size
-            inp = self.environment['wsgi.input']
-            if self.mime == 'multipart/form-data':
-                # Normally, the client won't need to get the payload for
-                # multipart data; it will usually just use
-                # `request.files`. Either way, return whan we have. We
-                # probably shouldn't memoize it since it could be
-                # holding a lot of file data.
+            # If the payload hasn't been set, we can get it from the
+            # wsgi environment.
+            if self.iswsgi:
+                sz = self.size
+                inp = self.environment['wsgi.input']
+                if self.mime == 'multipart/form-data':
+                    # Normally, the client won't need to get the payload
+                    # for multipart data; it will usually just use
+                    # `request.files`. Either way, return whan we have.
+                    # We probably shouldn't memoize it since it could be
+                    # holding a lot of file data.
 
-                # TODO We could move this outside the consequence block
-                inp.seek(0)
+                    # TODO We could move this outside the consequence
+                    # block
+                    inp.seek(0)
 
-                return inp.read(sz)
-            else:
-                # TODO What would the mime type (content-type) be here?
-                # (text/html?) Let's turn this else into an elif with
-                # that information.
-                self._payload = inp.read(sz).decode('utf-8')
+                    return inp.read(sz)
+                else:
+                    # TODO What would the mime type (content-type) be
+                    # here?  (text/html?) Let's turn this else into an
+                    # elif with that information.
+                    self._payload = inp.read(sz).decode('utf-8')
         return self._payload
 
     @payload.setter
