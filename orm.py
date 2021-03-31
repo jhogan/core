@@ -11082,11 +11082,15 @@ class ProprietorError(ValueError):
 
     @property
     def expected(self):
+        """ The proprietor that was expected.
+        """
         if not self._expected:
             return security().proprietor
         return self._expected
 
     def __str__(self):
+        """ A string representation of the exception.
+        """
         expected = self.expected.id.hex if self.expected else None
         return (
             f'The expected proprietor did not match the actual '
@@ -11095,14 +11099,15 @@ class ProprietorError(ValueError):
         )
 
     def __repr__(self):
+        """ A string representation of the exception.
+        """
         return str(self)
 
 class AuthorizationError(PermissionError):
-    """ An exception that indicates the currently that the current
-    user is unable to create, retrieve, update or delete a record in the
-    database.
+    """ An exception that indicates that the current user is unable to
+    create, retrieve, update or delete a record in the database.
 
-    The ORM logic in orm.py will usually through this exception. The
+    The ORM logic in orm.py will usually raise this exception. The
     ORM user indicates authorization problems in the accessibility
     properties by return a ``violations`` collection.
     """
@@ -11152,6 +11157,7 @@ class violations(entitiesmod.entities):
 
         # Get the entity reference and delete it so we can pass it to
         # super().__init__
+        # TODO Use kwargs.pop()
         try:
             e = kwargs['entity']
         except KeyError:
@@ -11171,7 +11177,8 @@ class violations(entitiesmod.entities):
                 vs = violations(entity=self)
                 if hr not in usr.departments:
                     vs += (
-                        'Only user in hr can retrive this entity'
+                        'Only user in the human resources department '
+                        'can retrive this entity'
                     )
                 return vs
 
@@ -11214,8 +11221,3 @@ class violation(entitiesmod.entity):
             return self.violations.entity
 
         return None
-        
-
-        
-
-
