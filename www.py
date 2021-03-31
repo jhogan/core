@@ -1144,6 +1144,14 @@ class HttpError(HttpException):
 
         super().__init__(msg0)
 
+    @classmethod
+    def create(cls, req, res, ex):
+        for cls in cls.__subclasses__:
+            if cls.status == st:
+                return cls(req=req, res=res, ex=ex)
+
+        return InternalServerError(req=req, res=res, ex=ex)
+
 class MultipleChoicesException(HttpException):
     status = 300
 
