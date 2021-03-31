@@ -49,6 +49,10 @@ class configuration:
         return self.environment == 'production'
 
     @property
+    def indevelopment(self):
+        return self.environment == 'development'
+
+    @property
     def accounts(self):
         return accounts.accounts(
             initial = [
