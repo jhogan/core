@@ -14,13 +14,14 @@ API's.
 TODOs:
 """
 
+from config import config
 from func import enumerate, B
-import product
-import www
+import ecommerce
 import json
 import pom
-import ecommerce
-from config import config
+import product
+import urllib
+import www
 
 class internetservices(product.services):
     pass
@@ -118,12 +119,13 @@ class mail(api):
         )
 
 class postmark(mail):
-    """ A transactional email provider.
+    """ A transactional and broadcast email provider.
 
     URL: https://postmarkapp.com
     """
     def send(self, dis):
-        """
+        """ Send an email via Postmark Email Service
+        (https://postmarkapp.com/).
 
         :param: dis message.delevery: The message delevery entity to
         send. Note that the delivery object will have the actual message
