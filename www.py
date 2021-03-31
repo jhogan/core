@@ -955,12 +955,27 @@ class _response():
 		463: ''
     }
 
-    def __init__(self, req):
+    def __init__(self, req, res=None):
+        """
+        :param: req www._request: The request object that resulted in
+        this response.
+
+        :param: res urllib.response: The response object from
+        urllib.request.urlopen(). This response object (self) will wrap
+        ``res``, making things more convenient for the user of
+        www._response.
+        """
         self._payload = None
         self._status = 200
         self._page = None
         self.request = req
         self._headers = headers()
+        self._response = res
+
+        if res:
+            self.status = res.status
+            self.payload = res.read()
+            self.headers = res.headers
 
     @property
     def status(self):
@@ -976,6 +991,40 @@ class _response():
             return '%i %s' % (self.status, self.Messages[self.status])
         except KeyError:
             return str(self.status)
+
+    @property
+    def contenttype(self):
+        """ The content type of the body.
+        """
+        return self.headers['Content-Type']
+
+    @property
+    def mime(self):
+        """ Returns the **type** and **subtype** portion of the mime.
+        example, if ``self.contenttype`` is:
+                
+            text/html; charset=UTF-8
+
+        only the string 'text/html' will be returned.
+        """
+        ct = self.contenttype
+        if ct:
+            return ct.split(';')[0].lower()
+        return None
+
+    @property
+    def mimetype(self):
+        """ Returns the **type** portion of the mime string. For
+        example, if ``self.mime`` is:
+                
+            image/jpeg
+
+        only the string 'image' will be returned.
+        """
+        mime = self.mime
+        if mime:
+            return mime.split('/')[0]
+        return None
 
     @property
     def payload(self):
@@ -997,6 +1046,11 @@ class _response():
 
     @property
     def headers(self):
+        # If self._headers is not an instance of `headers`, coerse to
+        # the native type.
+        if not isinstance(self._headers, headers):
+            self._headers = headers(self._headers)
+
         clen = len(self.payload) if self.payload else 0
         self._headers['Content-Length'] = clen
         
@@ -1023,11 +1077,18 @@ class _response():
         %s
         ''')
 
+        payload = self.payload
+        if pretty:
+            if self.mime == 'application/json':
+                payload = json.dumps(json.loads(payload), indent=4)
+            elif self.mime == 'text/html':
+                payload = dom.html(self.payload).pretty 
+
         return r % (
             self.request.path,
             self.request.method,
             self.message,
-            dom.html(self.payload).pretty if pretty else self.payload,
+            payload,
         )
 
     def __str__(self):
@@ -1437,21 +1498,34 @@ class browser(entities.entity):
             self.tabs = tabs
 
         def request(self, req):
+            url = req.url
+
             body = req.payload
 
             if body:
                 body = body.encode('utf-8')
 
+            meth = req.method
+
+            hdrs = req.headers.dict
 
             req1 = urllib.request.Request(
-                req.url, body, req.headers.dict, method=req.method
+                url, body, hdrs, method=meth
             )
 
             req1.add_header('Content-Length', req.size)
 
-            res = urllib.request.urlopen(req1, body)
-
-            print('reuesting ' + req.url)
+            try:
+                res = urllib.request.urlopen(req1, body)
+            except Exception as ex:
+                B()
+                res = _response(req=req)
+                res.status = ex.status
+                raise HttpError.create(req=req, res=res, ex=ex)
+            else:
+                # Return a www._response objcet representing the HTTP
+                # response to the HTTP request.
+                return _response(req=req, res=res)
 
     class _cookies(entities.entities):
         @property
