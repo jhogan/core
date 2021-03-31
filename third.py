@@ -161,7 +161,13 @@ class postmark(mail):
         req.headers += 'Accept: application/json'
         req.headers += 'Content-Type: application/json'
         
-        key = config().postmark.key
+        if config().indevelopment:
+            key = 'POSTMARK_API_TEST'
+        elif config().inproduction:
+            key = config().postmark.key
+        else:
+            raise ValueError('Unsupported environment type')
+
         req.headers += f'X-Postmark-Server-Token: {key}'
 
         req.payload = json.dumps(body)
