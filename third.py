@@ -166,7 +166,6 @@ class postmark(mail):
 
         req.payload = json.dumps(body)
 
-        import urllib
         try:
             res = tab.request(req)
         except Exception as ex:
