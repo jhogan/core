@@ -1065,12 +1065,29 @@ class _response():
     def payload(self, v):
         self._payload = v
 
-    def __getitem__(self, sels):
-        return self.html[sels]
+    @property
+    def json(self):
+        """ If the payload is a JSON string, returns a Python list
+        representing the JSON document. An exception will be raised if
+        the payload cannot be deserialized as a JSON document.
+        """
+        return json.loads(self.payload)
 
     @property
     def html(self):
+        """ Returns a dom.html object representing the HTML in the
+        payload.
+        """
+        # TODO If the payload is not HTML (perhaps it's JSON or the
+        # content-type isn't HTML), we should probably raise a
+        # ValueError.
         return dom.html(self.payload)
+
+    def __getitem__(self, sels):
+        if self.mime == 'application/json':
+            return self.json[sels]
+        elif self.mime == 'text/html':
+            return self.html[sels]
 
     @property
     def headers(self):
