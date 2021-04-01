@@ -1168,7 +1168,7 @@ class HttpException(Exception):
     @property
     def phrase(self):
         return '%s %s' % (
-            str(self.status), response.Messages[self.status]
+            str(self.status), _response.Messages[self.status]
         )
 
     @property
