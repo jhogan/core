@@ -965,6 +965,11 @@ class _response():
         urllib.request.urlopen(). This response object (self) will wrap
         ``res``, making things more convenient for the user of
         www._response.
+
+        :param: ex Exception: If the HTTP response is the result of an
+        Exception, ``ex`` can be passed in. If it contains the status
+        code, that status code will be used for the respones's status
+        property.
         """
         self._payload = None
         self._status = 200

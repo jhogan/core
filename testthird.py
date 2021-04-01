@@ -53,7 +53,7 @@ class test_postmark(tester.tester):
         own.proprietor = com
         own.save()
 
-    def it_sends(self):
+    def it_sends_sucessfully(self):
         msg = message.message.email(
             from_    =  'from@example.com',
             replyto  =  'replyto@example.com',
@@ -65,10 +65,6 @@ class test_postmark(tester.tester):
             html     =  '<p>Test message</p>',
         )
 
-
-
-
-
         msg = message.message.email(
             from_    =  'from@example.com',
             replyto  =  'replyto@example.com',
@@ -78,18 +74,29 @@ class test_postmark(tester.tester):
             html     =  '<p>Test message</p>',
         )
 
-
-
         dis = msg.dispatch(
             dispatchtype = message.dispatchtype(name='email')
         )
 
         pm = third.postmark()
+        
+        if pm.key != 'POSTMARK_API_TEST':
+            raise ValueError(
+                'postmark class is not using POSTMARK_API_TEST for '
+                'tests'
+            )
 
-        try:
-            res = pm.send(dis)
-        except Exception as ex:
-            print(ex)
+        res = pm.send(dis)
+        """
+        {'To': 'jessehogan0@gmail.com', 'SubmittedAt':
+        '2021-03-31T23:48:50.8819277Z', 'MessageID':
+        '3ba2e580-43bb-4bab-a72e-312e33ff4cf3', 'ErrorCode': 0,
+        'Message': 'Test job accepted'}
+        """
+
+        self.eq('Test job accepted', res['Message'])
+        self.eq('jessehogan0@gmail.com', res['To'])
+        self.uuid(res['MessageID'])
 
 if __name__ == '__main__':
     tester.cli().run()
