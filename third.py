@@ -162,14 +162,7 @@ class postmark(mail):
         req.headers += 'Accept: application/json'
         req.headers += 'Content-Type: application/json'
         
-        if config().indevelopment:
-            key = 'POSTMARK_API_TEST'
-        elif config().inproduction:
-            key = config().postmark.key
-        else:
-            raise ValueError('Unsupported environment type')
-
-        req.headers += f'X-Postmark-Server-Token: {key}'
+        req.headers += f'X-Postmark-Server-Token: {self.key}'
 
         req.payload = json.dumps(body)
 
@@ -186,11 +179,16 @@ class postmark(mail):
             return res
 
     @property
-    def urls(self):
-        if not hasattr(self, '_urls'):
-            self._urls = dict()
-            self._urls['send'] = ecommerce.url(
-                address='https://api.postmarkapp.com/email'
-            )
-        return self._urls
-        
+    def base(self):
+        if not self._base:
+            self._base = ecommerce.url(address='https://api.postmarkapp.com')
+        return self._base
+
+    @property
+    def key(self):
+        if config().indevelopment:
+            return 'POSTMARK_API_TEST'
+        elif config().inproduction:
+            return config().postmark.key
+        else:
+            raise ValueError('Unsupported environment type')
