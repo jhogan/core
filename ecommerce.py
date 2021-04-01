@@ -44,6 +44,7 @@ import party
 import primative
 import product
 import user_agents
+import urllib.parse
 
 class agents(party.parties):                                  pass
 class webmasters(party.personals):                            pass
@@ -443,6 +444,26 @@ class url(orm.entity):
 
     def __str__(self):
         return self.address
+
+    def __truediv__(self, other):
+        addr = self.address
+        addr = os.path.join(addr, other)
+        import ecommerce
+        return ecommerce.url(address=addr)
+
+    @property
+    def scheme(self):
+        return urllib.parse.urlparse(self.address).scheme
+
+    @property
+    def port(self):
+        """ Return the TCP port for the request, e.g., 80, 8080, 443.
+        """
+        return urllib.parse.urlparse(self.address).port
+
+    @property
+    def path(self):
+        return urllib.parse.urlparse(self.address).path
 
 class object(orm.entity):
     """ Stores electronic images, such as ``text`` (i.e. an HTML

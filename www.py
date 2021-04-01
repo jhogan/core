@@ -202,8 +202,8 @@ class _request:
         Request URL: {self.url}
         :authority: {self.url}
         :method: {self.method}
-        :path: {self.path}
-        :scheme: {self.scheme}
+        :path: {self.url.path}
+        :scheme: {self.url.scheme}
         ''')
 
         r = r.rstrip()
@@ -668,7 +668,6 @@ class _request:
         if self.iswsgi:
             return self.environment['path_info']
 
-        return urllib.parse.urlparse(self._url).path
 
     @property
     def size(self):
@@ -752,6 +751,8 @@ class _request:
             
             https://foo.net:8000/en/my/page
         """
+        if self._url:
+            return self._url
 
         scheme = self.scheme
         servername = self.servername
@@ -955,7 +956,7 @@ class _response():
 		463: ''
     }
 
-    def __init__(self, req, res=None):
+    def __init__(self, req, res=None, ex=None):
         """
         :param: req www._request: The request object that resulted in
         this response.
@@ -977,6 +978,28 @@ class _response():
             self.payload = res.read()
             self.headers = res.headers
 
+        if ex:
+            try:
+                st = ex.status
+            except AttributeError:
+                self.status = 500
+            else:
+                self.status = st
+
+            payload = None
+            try:
+                payload = ex.read()
+            except AttributeError:
+                pass
+            else:
+                self.payload = payload
+
+            try:
+                hdrs = ex.headers
+            except AttributeError:
+                pass
+            else:
+                self.headers = hdrs
     @property
     def status(self):
         return self._status
@@ -1136,8 +1159,9 @@ class HttpException(Exception):
         )
 
 class HttpError(HttpException):
-    def __init__(self, msg=None, flash=None):
+    def __init__(self, msg=None, flash=None, res=None):
         self.flash = flash
+        self.response = res
         msg0 = self.phrase
         if msg:
             msg0 += ' - ' + msg
@@ -1145,12 +1169,12 @@ class HttpError(HttpException):
         super().__init__(msg0)
 
     @classmethod
-    def create(cls, req, res, ex):
-        for cls in cls.__subclasses__:
-            if cls.status == st:
-                return cls(req=req, res=res, ex=ex)
+    def create(cls, res):
+        for cls in cls.__subclasses__():
+            if cls.status == res.status:
+                return cls(res=res)
 
-        return InternalServerError(req=req, res=res, ex=ex)
+        return InternalServerError(res=res)
 
 class MultipleChoicesException(HttpException):
     status = 300
@@ -1526,10 +1550,9 @@ class browser(entities.entity):
             try:
                 res = urllib.request.urlopen(req1, body)
             except Exception as ex:
-                B()
-                res = _response(req=req)
-                res.status = ex.status
-                raise HttpError.create(req=req, res=res, ex=ex)
+                res = _response(req=req, ex=ex)
+                ex = HttpError.create(res=res)
+                raise ex
             else:
                 # Return a www._response objcet representing the HTTP
                 # response to the HTTP request.

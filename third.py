@@ -42,6 +42,7 @@ class api(internetservice):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._browser = None
+        self._base = None  # Base URL
 
     @property
     def browser(self):
@@ -95,20 +96,19 @@ class api(internetservice):
         def __str__(self):
             r = str()
 
-            if self.status:
-                r += f'HTTP Status: {self.status}'
-
-            if self.reason:
-                if r: r += ' '
-                r += f'{self.reason}.'
-
             if self.code:
                 if r: r += ' '
                 r += f'Server Error Code {self.code}'
 
             if self.message:
                 if r: r += ' - '
-                r += self.mesage
+                r += self.message
+
+            res = str(self.inner.response)
+            if res:
+                if r:
+                    r += f'\n\n{"-" * 72}\nResponse:\n'
+                    r += res
 
             return r
 
@@ -156,7 +156,8 @@ class postmark(mail):
         if msg.replyto:
             body['ReplyTo'] = msg.replyto.name
 
-        req = www._request(url=self.urls['send'].address)
+        req = www._request(url=self.base / 'email')
+
         req.method = 'POST'
         req.headers += 'Accept: application/json'
         req.headers += 'Content-Type: application/json'
@@ -175,17 +176,14 @@ class postmark(mail):
         import urllib
         try:
             res = tab.request(req)
-        except urllib.error.HTTPError as ex:
-            err = api.Error(ex)
-            msg = ex.read()
-            try:
-                msg = json.loads(msg)
-            except:
-                err.message = msg
-            else:
-                err.code    = msg['ErrorCode']
-                err.message = msg['Message']
-            raise err
+        except Exception as ex:
+            ex1 = api.Error(ex)
+            payload = json.loads(ex.response.payload)
+            ex1 = payload['ErrorCode']
+            ex1 = payload['Message']
+            raise ex1
+        else:
+            return res
 
     @property
     def urls(self):
