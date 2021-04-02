@@ -1165,6 +1165,16 @@ class controller:
             )
 
 class HttpException(Exception):
+    def __new__(cls, res=None):
+        if res:
+            for sub in cls.__subclasses__():
+                if sub.status == res.status:
+                    cls = super(HttpException, sub).__new__(sub)
+                    return cls
+
+            return InternalServerError(res=res)
+        
+            
     @property
     def phrase(self):
         return '%s %s' % (
@@ -1190,13 +1200,6 @@ class HttpError(HttpException):
 
         super().__init__(msg0)
 
-    @classmethod
-    def create(cls, res):
-        for cls in cls.__subclasses__():
-            if cls.status == res.status:
-                return cls(res=res)
-
-        return InternalServerError(res=res)
 
 class MultipleChoicesException(HttpException):
     status = 300
