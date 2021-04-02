@@ -92,5 +92,44 @@ class test_postmark(tester.tester):
         self.eq('jessehogan0@gmail.com', res['To'])
         self.uuid(res['MessageID'])
 
+        self.uuid(dis.externalid)
+
+        # Ensure the externalid was saved
+        dis = dis.orm.reloaded()
+        self.uuid(dis.externalid)
+
+    def it_sends_to_a_bad_address(self):
+        msg = message.message.email(
+            from_    =  'badfrom@carapacian.com',
+            to       =  'test@blackhole.postmarkapp.com',
+            subject  =  'Test email',
+            text     =  'Test message',
+            html     =  '<p>Test message</p>',
+        )
+
+        dis = msg.dispatch(
+            dispatchtype = message.dispatchtype(name='email')
+        )
+
+        pm = third.postmark()
+        
+        # NOTE Desimulate in order to use the real API to cause a real
+        # bounce. This should be done with care:
+        # https://postmarkapp.com/support/article/1213-best-practices-for-testing-your-emails-through-postmark
+        with pm.exsimulate():
+            res = pm.send(dis)
+
+            self.eq('Test job accepted', res['Message'])
+            self.eq('jessehogan0@gmail.com', res['To'])
+            self.uuid(res['MessageID'])
+
+            self.uuid(dis.externalid)
+
+            # Ensure the externalid was saved
+            dis = dis.orm.reloaded()
+            self.uuid(dis.externalid)
+
+
+
 if __name__ == '__main__':
     tester.cli().run()
