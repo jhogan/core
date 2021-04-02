@@ -46,6 +46,10 @@ class api(internetservice):
         self._browser = None
         self._base = None  # Base URL
 
+        # If we want our tests to use the actual API instead of a
+        # simulated on, we can set _exsimulate to True.
+        self._exsimulate = False
+
     @property
     def browser(self):
         if not self._browser:
@@ -198,8 +202,17 @@ class postmark(mail):
     @property
     def key(self):
         if config().indevelopment:
-            return 'POSTMARK_API_TEST'
+            if self._exsimulate:
+                return config().postmark.key
+            else:
+                return 'POSTMARK_API_TEST'
         elif config().inproduction:
             return config().postmark.key
         else:
             raise ValueError('Unsupported environment type')
+
+    @contextmanager
+    def exsimulate(self):
+        self._exsimulate = True
+        yield
+        self._exsimulate = False
