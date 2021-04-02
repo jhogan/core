@@ -87,12 +87,6 @@ class test_postmark(tester.tester):
             )
 
         res = pm.send(dis)
-        """
-        {'To': 'jessehogan0@gmail.com', 'SubmittedAt':
-        '2021-03-31T23:48:50.8819277Z', 'MessageID':
-        '3ba2e580-43bb-4bab-a72e-312e33ff4cf3', 'ErrorCode': 0,
-        'Message': 'Test job accepted'}
-        """
 
         self.eq('Test job accepted', res['Message'])
         self.eq('jessehogan0@gmail.com', res['To'])

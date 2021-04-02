@@ -22,6 +22,8 @@ import pom
 import product
 import urllib
 import www
+import primative
+from contextlib import contextmanager
 
 class internetservices(product.services):
     pass
@@ -131,10 +133,12 @@ class postmark(mail):
         send. Note that the delivery object will have the actual message
         entity that we are sending.
         """
+        import party
+        import message
+
         tab = self.browser.tab()
         msg = dis.message
 
-        import party
         tos = msg.getcontachmechanisms(type=party.email, name='to')
         ccs = msg.getcontachmechanisms(type=party.email, name='cc')
         bccs = msg.getcontachmechanisms(type=party.email, name='bcc')

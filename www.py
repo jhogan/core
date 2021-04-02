@@ -1573,8 +1573,7 @@ class browser(entities.entity):
                 res = urllib.request.urlopen(req1, body)
             except Exception as ex:
                 res = _response(req=req, ex=ex)
-                ex = HttpError.create(res=res)
-                raise ex
+                raise HttpError(res=res)
             else:
                 # Return a www._response objcet representing the HTTP
                 # response to the HTTP request.
