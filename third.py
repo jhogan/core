@@ -171,10 +171,18 @@ class postmark(mail):
         except Exception as ex:
             ex1 = api.Error(ex)
             payload = json.loads(ex.response.payload)
-            ex1 = payload['ErrorCode']
-            ex1 = payload['Message']
+            ex1.code = payload['ErrorCode']
+            ex1.message = payload['Message']
             raise ex1
         else:
+            dis.statuses += message.status(
+                begin = primative.datetime.utcnow(),
+                statustype = message.statustype(
+                    name = 'dispatched'
+                )
+            )
+            dis.externalid = res['MessageID']
+            dis.save()
             return res
 
     @property

@@ -203,7 +203,15 @@ class contactmechanism_message(orm.association):
     message = message
 
 class dispatch(orm.entity):
+    # The external message id. When a message is dispatched to an
+    # a third party for delivery, the third party may or may not have
+    # its own identifier for the message.
+    externalid = str
     statuses = statuses
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.default('externalid', None)
 
 class dispatchtype(apriori.type):
     """ Email, sms, etc.
@@ -211,12 +219,29 @@ class dispatchtype(apriori.type):
     dispatches = dispatches
     
 class status(orm.entity):
+    """ A status entry for a dispatch. The description for the status is
+    found in the implicit `status.statustype.name` property.
+    """
+
+    # The datetime the event described by the status entity occured.
     begin = datetime
-    dispatches = dispatches
 
 class statustype(apriori.type):
-    """ Records the type of status. Typical values for the ``name``
-    attribute include: "sending", "sent" and "viewed".
+    """ Records the type of status.
+    
+    Values for the ``name`` attribute:
+        
+        * 'dispatched': The message has been dispatched to a third party
+        provider.
+
+        * 'hard-bounce': The dispatch failed and any attempt to
+        dispatch the message again will fail.
+
+        * 'soft-bounce': The dispatch failed, and another dispatch
+        * entity should be created so the message can be attempted again
+        * at a later date.
+
+        * 'viewed' The user has opened the email.
     """
     # The collection of statuses belonging to this type
     statuses = statuses
