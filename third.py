@@ -181,6 +181,26 @@ class postmark(emailer):
             payload = json.loads(ex.response.payload)
             ex1.code = payload['ErrorCode']
             ex1.message = payload['Message']
+
+            # TODO Some work needs to be done here. If the API responds
+            # in a way that implies a hard bounce then we should just
+            # record the status entry as such and raise an error.
+            # However, if it is a soft bounce, we should create a new
+            # status for a soft-bounce. Additionally, for soft-bounces,
+            # we should create a new dispatch. The dispatch should be
+            # scheduled for dispatching at an appropriate time in the
+            # future. Regardless, an api.Error should be raised to let
+            # the client know about any issue: for example, if the
+            # api.Error indicates a network outage, the client can
+            # decide to cease dispatching for the moment.
+            dis.statuses += message.status(
+                begin = primative.datetime.utcnow(),
+                statustype = message.statustype(
+                    name = 'hard-bounce'
+                )
+            )
+            dis.save()
+
             raise ex1
         else:
             dis.statuses += message.status(

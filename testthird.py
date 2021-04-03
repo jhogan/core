@@ -83,13 +83,24 @@ class test_postmark(tester.tester):
         self.eq('jessehogan0@gmail.com', res['To'])
         self.uuid(res['MessageID'])
 
+        self.one(dis.statuses)
+        self.eq(
+            'dispatched',
+            dis.statuses.first.statustype.name
+        )
+
         self.uuid(dis.externalid)
 
         # Ensure the externalid was saved
         dis = dis.orm.reloaded()
         self.uuid(dis.externalid)
+        self.one(dis.statuses)
+        self.eq(
+            'dispatched',
+            dis.statuses.first.statustype.name
+        )
 
-    def it_sends_to_a_bad_address(self):
+    def it_send_from_a_bad_email_address(self):
         msg = message.message.email(
             from_    =  'badfrom@carapacian.com',
             to       =  'test@blackhole.postmarkapp.com',
@@ -103,23 +114,47 @@ class test_postmark(tester.tester):
         )
 
         pm = third.postmark()
+        ex = None
         
-        # NOTE Desimulate in order to use the real API to cause a real
+        # NOTE Exsimulate in order to use the real API to cause a real
         # bounce. This should be done with care:
         # https://postmarkapp.com/support/article/1213-best-practices-for-testing-your-emails-through-postmark
         with pm.exsimulate():
-            res = pm.send(dis)
+            try:
+                pm.send(dis)
+            except third.api.Error as ex:
+                self.type(www.UnprocessableEntityError, ex.inner)
+                self.eq(400, ex.code)
 
-            self.eq('Test job accepted', res['Message'])
-            self.eq('jessehogan0@gmail.com', res['To'])
-            self.uuid(res['MessageID'])
+                msg = (
+                "The 'From' address you supplied "
+                "(badfrom@carapacian.com) is not a Sender Signature on "
+                "your account. Please add and confirm this address in "
+                "order to be able to use it in the 'From' field of "
+                "your messages."
+                )
 
-            self.uuid(dis.externalid)
+                self.status(422, ex.inner)
+                self.eq(msg, ex.message)
+                self.none(dis.externalid)
+                self.one(dis.statuses)
+                self.eq(
+                    'hard-bounce',
+                    dis.statuses.first.statustype.name
+                )
 
-            # Ensure the externalid was saved
-            dis = dis.orm.reloaded()
-            self.uuid(dis.externalid)
-
+                # Ensure the externalid was saved
+                dis = dis.orm.reloaded()
+                self.none(dis.externalid)
+                self.one(dis.statuses)
+                self.eq(
+                    'hard-bounce',
+                    dis.statuses.first.statustype.name
+                )
+            except Exception as ex:
+                self.fail(f'Incorrect exception type {ex}')
+            else:
+                self.fail('No exception was thrown')
 
 
 if __name__ == '__main__':
