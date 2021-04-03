@@ -2240,7 +2240,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                     args = self.orm.where.args if self.orm.where else ()
                         
                     cur.execute(sql, args)
-                    ress = db.dbresultset(cur)
+                    ress = db.resultset(cur)
 
                 db.executioner(exec).execute()
 
@@ -8797,7 +8797,7 @@ class orm:
         def exec(cur):
             nonlocal ress
             cur.execute(sql)
-            ress = db.dbresultset(cur)
+            ress = db.resultset(cur)
 
         exec = db.executioner(exec)
 
@@ -8849,7 +8849,7 @@ class orm:
         def exec(cur):
             nonlocal ress
             cur.execute(sql, args)
-            ress = db.dbresultset(cur)
+            ress = db.resultset(cur)
 
         # Create an executioner
         exec = db.executioner(exec)
@@ -8956,7 +8956,7 @@ class orm:
                 cur.execute(sql, args)
 
                 # Assign ress the resultset
-                ress = db.dbresultset(cur)
+                ress = db.resultset(cur)
 
             # Instantiate the executioner
             exec = db.executioner(exec)
@@ -9131,7 +9131,7 @@ class orm:
 
         es = self.instance
 
-        if type(ress) is db.dbresult:
+        if type(ress) is db.result:
             # If we are given one resultset (simple), we are probably
             # loading an a single entity by id, i.e.::
             #
@@ -9139,7 +9139,7 @@ class orm:
             ress = [ress]
             simple = True
             maps = self.mappings
-        elif type(ress) is db.dbresultset:
+        elif type(ress) is db.resultset:
             # Multiple resultsets (`not simple`) imply that we are
             # loading an entities collection, i.e::
             # 

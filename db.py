@@ -7,7 +7,7 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021
 
 # TODO Add Tests
-from entities import *
+import entities as entitiesmod
 from MySQLdb.constants.ER import BAD_TABLE_ERROR
 import _mysql_exceptions
 import table as tblmod
@@ -26,14 +26,14 @@ import accounts
 # so they won't go unnoticed. The below code does just that.
 warnings.filterwarnings('error', category=MySQLdb.Warning)
 
-class dbentities(entities):
+class entities(entitiesmod.entities):
     def __init__(self, ress=None):
         super().__init__()
         self._isdirty = False
 
         if ress:
             for res in ress:
-                self += self.dbentity(res)
+                self += self.entity(res)
 
         # The collection may have been added to above. If that is the
         # case, the _isdirty flag will be set to True in the _self_onadd
@@ -192,7 +192,7 @@ class dbentities(entities):
     def __str__(self):
         return self._tostr()
 
-class dbentity(entity):
+class entity(entitiesmod.entity):
     # TODO Add Tests
     def __init__(self, id=None):
         super().__init__()
@@ -271,7 +271,7 @@ class dbentity(entity):
 
         return ress.rowcount
 
-class connections(entities):
+class connections(entitiesmod.entities):
     _instance = None
     def __init__(self):
         super().__init__()
@@ -290,7 +290,7 @@ class connections(entities):
     def default(self):
         return self.first
 
-class connection(entity):
+class connection(entitiesmod.entity):
     def __init__(self, acct):
         self._account = acct
         self._conn = None
@@ -350,7 +350,7 @@ class connection(entity):
     def query(self, sql, args=None, cur=None):
         if cur != None:
             cur.execute(sql, args)
-            return dbresultset(cur)
+            return resultset(cur)
 
         for _ in range(2):
             conn = None
@@ -359,7 +359,7 @@ class connection(entity):
                 cur = conn.cursor()
                 cur.execute(sql, args)
                 conn.commit()
-                return dbresultset(cur)
+                return resultset(cur)
             except MySQLdb.OperationalError as ex:
                 # Reconnect if the connection object has timed out and
                 # no longer holds a connection to the database.
@@ -382,13 +382,13 @@ class connection(entity):
                     raise
 
 # TODO The 'db' prefix on these class names are redundant.
-class dbresultset(entities):
+class resultset(entitiesmod.entities):
     """ Represents a collections of rows returned from a db query. """
     def __init__(self, cur):
         super().__init__()
         self._cur = cur
         for r in self._cur:
-            self += dbresult(r, self)
+            self += result(r, self)
 
     @property
     def lastrowid(self):
@@ -421,15 +421,15 @@ class dbresultset(entities):
     def __str__(self):
         return repr(self)
 
-class dbresult(entity):
+class result(entitiesmod.entity):
     """ Represents a row returned from a db query. """
     def __init__(self, row, ress):
         super().__init__()
         self._row = row
         self._ress = ress
-        self.fields = dbresultfields()
+        self.fields = resultfields()
         for i, _ in enumerate(self._row):
-            self.fields += dbresultfield(i, self)
+            self.fields += resultfield(i, self)
 
     def __getitem__(self, i):
         if type(i) is str:
@@ -439,36 +439,36 @@ class dbresult(entity):
             i = [x[0] for x in desc].index(i)
         return self._row[i]
 
-class dbresultfields(entities):
+class resultfields(entitiesmod.entities):
     pass
 
-class dbresultfield(entity):
-    """ Represents a field within a dbresult. """
+class resultfield(entitiesmod.entity):
+    """ Represents a field within a result. """
     def __init__(self, ix, res):
         self.index = ix
-        self.dbresult = res
+        self.result = res
     
     @property
     def name(self):
-        desc = self.dbresult._ress._cur.description
+        desc = self.result._ress._cur.description
         return desc[self.index][0]
 
     @property
     def value(self):
-        return self.dbresult._row[self.index]
+        return self.result._row[self.index]
 
 class RecordNotFoundError(Exception):
     pass
 
-class pool(entity):
+class pool(entitiesmod.entity):
     _default = None
 
     def __init__(self):
         # TODO Currently, connections.__init__() populates itself with
         # connection objects from the config file so we can't use it for
         # collecting connections objects that are in and out of the pool.
-        self._in = entities()
-        self._out = entities()
+        self._in = entitiesmod.entities()
+        self._out = entitiesmod.entities()
 
     @staticmethod
     def getdefault():
@@ -501,14 +501,14 @@ class pool(entity):
 
         self.push(conn)
 
-class operationeventargs(eventargs):
+class operationeventargs(entitiesmod.eventargs):
     def __init__(self, e, op, sql, args):
         self.entity  =  e
         self.op      =  op
         self.sql     =  sql
         self.args    =  args
 
-class chronicler(entity):
+class chronicler(entitiesmod.entity):
     _instance = None
 
     def __init__(self):
@@ -548,7 +548,7 @@ class chronicler(entity):
         self.append(t)
         return self
 
-class chronicles(entities):
+class chronicles(entitiesmod.entities):
     def __init__(self, chronicler=None, initial=None):
         self.chronicler = chronicler
         super().__init__(initial=initial)
@@ -576,7 +576,7 @@ class chronicles(entities):
     def __str__(self):
         return self._tostr(includeHeader=False)
 
-class chronicle(entity):
+class chronicle(entitiesmod.entity):
     def __init__(self, e, op, sql, args):
         self.entity  =  e
         self.op      =  op
@@ -608,12 +608,12 @@ class chronicle(entity):
         return chronicle(self.entity, self.op, self.sql, self.args)
 
 # TODO s/executioner/executor/
-class executioner(entity):
+class executioner(entitiesmod.entity):
     def __init__(self, exec, max=2):
         self._execute = exec
         self.max = max
-        self.onbeforereconnect  =  event()
-        self.onafterreconnect   =  event()
+        self.onbeforereconnect  =  entitiesmod.event()
+        self.onafterreconnect   =  entitiesmod.event()
     
     def __call__(self, es=None):
         self.execute(es)
@@ -673,15 +673,15 @@ def exec(sql, args=None):
 
     exec()
 
-class catelogs(entities):
+class catelogs(entitiesmod.entities):
     pass
 
-class catelog(entity):
+class catelog(entitiesmod.entity):
     @property
     def tables(self):
         return tables()
 
-class tables(entities):
+class tables(entitiesmod.entities):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         with pool.getdefault().take() as conn:
@@ -716,7 +716,7 @@ class tables(entities):
         for tbl in self:
             tbl.drop()
 
-class table(entity):
+class table(entitiesmod.entity):
     def __init__(self, name=None, ress=None, load=True):
         self.name = name
         self.columns = columns(tbl=self, ress=ress, load=load)
@@ -738,7 +738,7 @@ class table(entity):
     def drop(self):
         exec(f'DROP TABLE `{self.name}`')
 
-class columns(entities):
+class columns(entitiesmod.entities):
     def __init__(self, 
             tbl=None, ress=None, load=False, *args, **kwargs):
 
@@ -779,7 +779,7 @@ class columns(entities):
 
         return cols
 
-class column(entity):
+class column(entitiesmod.entity):
     _attrs = (
         'name',       'ordinal',  'type',       'max',
         'key',        'type',     'precision',  'scale',
@@ -824,7 +824,7 @@ class column(entity):
             return True
             
     def populate(self, res):
-        if isinstance(res, dbresult):
+        if isinstance(res, result):
             flds = res.fields
             self.name = flds['COLUMN_NAME'].value
             self.ordinal = flds['ORDINAL_POSITION'].value
