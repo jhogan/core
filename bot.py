@@ -10,6 +10,7 @@
 ########################################################################
 
 import ecommerce
+import message
 
 class bots(ecommerce.agents):
     pass

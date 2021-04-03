@@ -118,13 +118,13 @@ class api(internetservice):
 
             return r
 
-class mail(api):
+class emailer(api):
     def send(self):
         raise NotImplementedError(
             'Must be implemented by a subentity'
         )
 
-class postmark(mail):
+class postmark(emailer):
     """ A transactional and broadcast email provider.
 
     URL: https://postmarkapp.com

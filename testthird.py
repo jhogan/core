@@ -16,6 +16,8 @@ import tester
 import orm
 import ecommerce
 import party
+import third
+import www
 
 class test_postmark(tester.tester):
     def __init__(self, *args, **kwargs):
@@ -54,17 +56,6 @@ class test_postmark(tester.tester):
         own.save()
 
     def it_sends_sucessfully(self):
-        msg = message.message.email(
-            from_    =  'from@example.com',
-            replyto  =  'replyto@example.com',
-            to       =  'to@example.com',
-            cc       =  'cc@example.com',
-            bcc      =  'bcc@example.com',
-            subject  =  'Test email',
-            text     =  'Test message',
-            html     =  '<p>Test message</p>',
-        )
-
         msg = message.message.email(
             from_    =  'from@example.com',
             replyto  =  'replyto@example.com',
