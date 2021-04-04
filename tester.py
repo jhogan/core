@@ -626,6 +626,42 @@ class tester(entity):
         if not ent.brokenrules.contains(prop, rule):
             self._failures += failure()
 
+    @contextmanager
+    def brokentest(self, brs):
+        class tester:
+            def __init__(self, brs):
+                self.brokenrules = brs
+                self.found = brokenrules()
+                self.unfound = list()
+
+            def __call__(self, e, attr, type, msg=None):
+                for br in self.brokenrules:
+                    if br.entity is e:
+                        if br.property == attr:
+                            if br.type == type:
+                                if not msg or br.message == msg:
+                                    self.found += br
+                                    break
+                else:
+                    self.unfound.append(
+                        f'message: "{msg if msg else ""}", '
+                        f'attr: "{attr}", '
+                        f'type: "{type}", '
+                        f'entity: {builtins.type(e)}'
+                    )
+
+
+        t = tester(brs)
+        yield t
+
+        msg = str()
+        for br in t.unfound:
+            msg += f'Cannot find brokenrule for {br}\n'
+
+        if msg:
+            self._failures += failure()
+
+
     def unique(self, ls):
         if len(ls) != len(set(ls)): self._failures += failure()
 
