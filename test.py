@@ -3163,7 +3163,19 @@ class myreserved(orm.entity):
     interval = int
 
 class comments(orm.entities):
-    pass
+    @property
+    def brokenrules(self):
+        brs = brokenrules()
+        bodies = self.pluck('body')
+        if len(bodies) != len(set(bodies)):
+            brs += brokenrule(
+                (
+                    'comments collection cannot have two comments with '
+                    'same body'
+                ),
+                'body', 'unique', self
+            )
+        return brs
 
 class comment(orm.entity):
     title     =  str
@@ -3171,7 +3183,8 @@ class comment(orm.entity):
     comments  =  comments
     author    =  str
 
-    def getbrokenrules(self, *args, **kwargs):
+    @property
+    def brokenrules(self):
         brs = super().getbrokenrules(*args, **kwargs)
         if '@' not in self.author:
             brs += brokenrule(
@@ -5439,6 +5452,12 @@ class test_orm(tester):
         self.two(iss.brokenrules)
         self.broken(iss, 'name', 'fits')
         self.broken(iss, 'assignee', 'valid')
+
+        with self.brokentest(iss.brokenrules) as t:
+            t(iss, 'name', 'fits')
+            t(iss, 'assignee', 'valid')
+            t(iss, 'herp', 'derp')
+        return
 
         ''' Break constituent '''
         iss.comments += comment.getvalid()
