@@ -628,13 +628,30 @@ class tester(entity):
 
     @contextmanager
     def brokentest(self, brs):
+        def test2str(attr, type, e, msg=None):
+            return (
+                f'message: "{msg if msg else ""}", '
+                f'attr: "{attr}", '
+                f'type: "{type}", '
+                f'entity: {builtins.type(e)}'
+            )
+
         class tester:
             def __init__(self, brs):
                 self.brokenrules = brs
                 self.found = brokenrules()
+                self.tested = list()
+                self.dups = list()
                 self.unfound = list()
 
             def __call__(self, e, attr, type, msg=None):
+                test = attr, type, e
+                if test in self.tested:
+                    self.dups.append(test)
+                    return
+
+                self.tested.append(test)
+                
                 for br in self.brokenrules:
                     if br.entity is e:
                         if br.property == attr:
@@ -643,22 +660,46 @@ class tester(entity):
                                     self.found += br
                                     break
                 else:
-                    self.unfound.append(
-                        f'message: "{msg if msg else ""}", '
-                        f'attr: "{attr}", '
-                        f'type: "{type}", '
-                        f'entity: {builtins.type(e)}'
-                    )
-
+                    self.unfound.append(test2str(attr, type, e, msg))
 
         t = tester(brs)
         yield t
 
         msg = str()
         for br in t.unfound:
-            msg += f'Cannot find brokenrule for {br}\n'
+            msg += f'Cannot find brokenrule for: {br}\n'
+
+        for br in t.brokenrules:
+            for br1 in t.found:
+                if br.entity == br1.entity:
+                    if br.property == br1.property:
+                        if br.type == br1.type:
+                            break
+            else:
+                msg += f'Untested: {br!r}\n'
+
+        reported = list()
+        for br in t.brokenrules:
+            cnt = 0
+            for br1 in t.brokenrules:
+                if br.entity == br1.entity:
+                    if br.property == br1.property:
+                        if br.type == br1.type:
+                            cnt = cnt + 1
+            if cnt > 1:
+                tup = br.property, br.property, br.entity
+                if tup not in reported:
+                    reported.append(tup)
+                    msg += f'{cnt - 1} duplicate of {br!r}\n'
+
+        for test in t.dups:
+            msg += f'Duplicate test: {test2str(*test)}\n'
 
         if msg:
+            # HACK:42decc38 The below gets around the fact that
+            # tester.py can't deal with stack offsets at the moment.
+            # TODO Correct the above HACK.
+            msg = f"test in %s at %s\n{msg}" % inspect.stack()[2][2:4]
             self._failures += failure()
 
 
