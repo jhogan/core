@@ -1121,7 +1121,7 @@ class brokenrule(entity):
 
     def __repr__(self):
         e = type(self.entity)
-        e = f'{e.__module__}.{__name__}'
+        e = f'{e.__module__}.{e.__name__}'
         r = f'{type(self).__name__}(\n'
         r += f"    message = '{self.message}',\n"
         r += f"    property = '{self.property}',\n"
