@@ -2808,7 +2808,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         if any(x in gb for x in self):
             return brs
 
-        # Replace with any() - see above.
+        # TODO Replace with any() - see above.
         for e in self:
             if not isinstance(e, self.orm.entity):
                 prop = type(self).__name__

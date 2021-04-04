@@ -5338,6 +5338,11 @@ class test_orm(tester):
         self.eq('valid', bgs.brokenrules.second.type)
 
     def it_disregards_nonexisting_brokenrule_property(self):
+        """ Make sure that it doesn't matter if an entity has a
+        brokenrules property. The entity should still be subjected to
+        the standard declaritive rules.
+        """
+
         # Ensure no one gives artist a brokenrules @property.
         attrs = artist.__dict__
         self.false('brokenrules' in attrs)
