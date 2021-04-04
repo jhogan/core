@@ -1118,6 +1118,17 @@ class brokenrule(entity):
 
     def __str__(self):
         return self.message
+
+    def __repr__(self):
+        e = type(self.entity)
+        e = f'{e.__module__}.{__name__}'
+        r = f'{type(self).__name__}(\n'
+        r += f"    message = '{self.message}',\n"
+        r += f"    property = '{self.property}',\n"
+        r += f"    type = '{self.type}',\n"
+        r += f"    entity = <{e}>,\n"
+        r += ')'
+        return r
     
 class event(entities):
     def __call__(self, src, e):
