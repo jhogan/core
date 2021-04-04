@@ -3185,7 +3185,7 @@ class comment(orm.entity):
 
     @property
     def brokenrules(self):
-        brs = super().getbrokenrules(*args, **kwargs)
+        brs = brokenrules()
         if '@' not in self.author:
             brs += brokenrule(
                 'Author email address has no @', 
@@ -5449,31 +5449,31 @@ class test_orm(tester):
         # Break an imperative rule
         iss.assignee = 'jessehogan0ATgmail.com' # break
 
-        self.two(iss.brokenrules)
-        self.broken(iss, 'name', 'fits')
-        self.broken(iss, 'assignee', 'valid')
-
         with self.brokentest(iss.brokenrules) as t:
             t(iss, 'name', 'fits')
             t(iss, 'assignee', 'valid')
-            t(iss, 'herp', 'derp')
-        return
 
         ''' Break constituent '''
         iss.comments += comment.getvalid()
         iss.comments.last.author = 'jessehogan0ATgmail.com' # break
-        self.three(iss.brokenrules)
-        self.broken(iss, 'name', 'fits')
-        self.broken(iss, 'assignee', 'valid')
-        self.broken(iss, 'author', 'valid')
+
+        B()
+        with self.brokentest(iss.brokenrules) as t:
+            t(iss, 'name', 'fits')
+            t(iss, 'assignee', 'valid')
+            t(iss.comments.last, 'author', 'valid')
+        return
 
         # Fix
         iss.assignee = 'jessehogan0@mail.com'
-        self.two(iss.brokenrules)
-        self.broken(iss, 'name', 'fits')
-        self.broken(iss, 'author', 'valid')
+        with self.brokentest(iss.brokenrules) as t:
+            t(iss, 'name', 'fits')
+            t(iss.comments.last, 'author', 'valid')
 
         iss.comments.last.author = 'jessehogan0@gmail.com'
+        with self.brokentest(iss.brokenrules) as t:
+            t(iss, 'name', 'fits')
+
         self.one(iss.brokenrules)
         self.broken(iss, 'name', 'fits')
 

@@ -2808,6 +2808,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         if any(x in gb for x in self):
             return brs
 
+        if 'brokenrules' in type(self).__dict__:
+            brs += self.brokenrules
+
         # TODO Replace with any() - see above.
         for e in self:
             if not isinstance(e, self.orm.entity):
