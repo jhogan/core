@@ -715,8 +715,8 @@ class tester(entity):
                     'a: ' + type(fn).__name__
                 ))
 
-            # Invoke the calable. If we expect no exception (expect is
-            # None), return the value.
+            # Invoke the callable. If we expect no exception (i.e.,
+            # expect is None), return the value.
             return fn()
 
         except Exception as ex:
