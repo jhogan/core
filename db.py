@@ -381,7 +381,6 @@ class connection(entitiesmod.entity):
                 else:
                     raise
 
-# TODO The 'db' prefix on these class names are redundant.
 class resultset(entitiesmod.entities):
     """ Represents a collections of rows returned from a db query. """
     def __init__(self, cur):
@@ -684,33 +683,32 @@ class catelog(entitiesmod.entity):
 class tables(entitiesmod.entities):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        with pool.getdefault().take() as conn:
-            sql = '''
-            select *
-            from information_schema.columns
-            where table_schema = %s;
-            '''
 
+        sql = '''
+        select *
+        from information_schema.columns
+        where table_schema = %s;
+        '''
+
+        with pool.getdefault().take() as conn:
             ress = conn.query(sql, (conn.account.database,))
 
-            # TODO The below could be unindented to allow the pool the
-            # recover its connection.
-            tbls = dict()
-            for res in ress:
+        tbls = dict()
+        for res in ress:
 
-                fld = res.fields['TABLE_NAME']
-                name = fld.value
+            fld = res.fields['TABLE_NAME']
+            name = fld.value
 
-                try:
-                    ress1 = tbls[name]
-                except KeyError:
-                    ress1 = list()
-                    tbls[name] = ress1
+            try:
+                ress1 = tbls[name]
+            except KeyError:
+                ress1 = list()
+                tbls[name] = ress1
 
-                ress1.append(res) 
+            ress1.append(res) 
 
-            for name, ress in tbls.items():
-                self += table(name=name, ress=ress)
+        for name, ress in tbls.items():
+            self += table(name=name, ress=ress)
 
     def drop(self):
         for tbl in self:
