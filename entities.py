@@ -18,8 +18,6 @@ import string
 from func import getattr, enumerate
 from dbg import B
 
-# TODO Rename entities.py to ent.py
-
 class classproperty(property):
     ''' Add this decorator to a method and it becomes a class method
     that can be used like a property.'''
@@ -33,8 +31,7 @@ class classproperty(property):
         obj = cls if cls else owner
         return classmethod(self.fget).__get__(None, obj)()
 
-# TODO I think we can remove `object` as the `entities`' parent.
-class entities(object):
+class entities:
     def __init__(self, initial=None):
         self._ls = list()
 
@@ -366,7 +363,7 @@ class entities(object):
         return es
 
     @total_ordering
-    class mintype(object):
+    class mintype:
         def __le__(self, e): return True
         def __eq__(self, e): return (self is e)
 
@@ -850,7 +847,7 @@ class entities(object):
     def isvalid(self):
         return self.brokenrules.isempty
 
-class entity():
+class entity:
     def __init__(self):
         self._onaftervaluechange = None
         self._onbeforevaluechange = None
