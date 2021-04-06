@@ -11,6 +11,8 @@
 
 import ecommerce
 import message
+import third
+from func import B
 
 class bots(ecommerce.agents):
     pass
@@ -59,15 +61,6 @@ class sendbot(bot):
             # for the moment.
             except Exception as ex:
                 # TODO Log and continue
-
-
-            
-
-
-
-
-            
-
-
+                ...
 
 

@@ -13,6 +13,9 @@ from func import enumerate, B
 import tester
 import bot
 import message
+import orm
+import ecommerce
+import party
 
 class test_bot(tester.tester):
 
@@ -35,4 +38,4 @@ class test_sendbot(tester.tester):
         )
 
         
-        
+tester.cli().run()

@@ -206,7 +206,7 @@ class postmark(emailer):
             dis.statuses += message.status(
                 begin = primative.datetime.utcnow(),
                 statustype = message.statustype(
-                    name = 'dispatched'
+                    name = 'postmarked'
                 )
             )
             dis.externalid = res['MessageID']

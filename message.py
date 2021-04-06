@@ -95,7 +95,11 @@ class message(orm.entity):
         return self._getcms('bcc') 
 
     @staticmethod
-    def email(from_, to, cc=None, bcc=None, replyto=None, subject=None, html=None, text=None, postdate=None):
+    def email(
+        from_,         to,            cc=None,    bcc=None,
+        replyto=None,  subject=None,  html=None,  text=None,
+        postdate=None
+    ):
         msg = message(
             html      =  html,
             text      =  text,
@@ -231,7 +235,7 @@ class statustype(apriori.type):
     
     Values for the ``name`` attribute:
         
-        * 'dispatched': The message has been dispatched to a third party
+        * 'postmarked': The message has been dispatched to a third party
         provider.
 
         * 'hard-bounce': The dispatch failed and any attempt to

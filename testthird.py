@@ -59,7 +59,7 @@ class test_postmark(tester.tester):
         msg = message.message.email(
             from_    =  'from@example.com',
             replyto  =  'replyto@example.com',
-            to       =  'jessehogan0@gmail.com',
+            to       =  'jhogan@carapacian.com',
             subject  =  'Test email',
             text     =  'Test message',
             html     =  '<p>Test message</p>',
@@ -80,12 +80,12 @@ class test_postmark(tester.tester):
         res = pm.send(dis)
 
         self.eq('Test job accepted', res['Message'])
-        self.eq('jessehogan0@gmail.com', res['To'])
+        self.eq('jhogan@carapacian.com', res['To'])
         self.uuid(res['MessageID'])
 
         self.one(dis.statuses)
         self.eq(
-            'dispatched',
+            'postmarked',
             dis.statuses.first.statustype.name
         )
 
@@ -96,7 +96,7 @@ class test_postmark(tester.tester):
         self.uuid(dis.externalid)
         self.one(dis.statuses)
         self.eq(
-            'dispatched',
+            'postmarked',
             dis.statuses.first.statustype.name
         )
 

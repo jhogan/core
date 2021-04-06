@@ -16,6 +16,8 @@ import party
 import tester
 import orm
 import ecommerce
+import uuid
+import primative
 
 class test_message(tester.tester):
     def __init__(self, *args, **kwargs):
