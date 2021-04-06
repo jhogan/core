@@ -24,18 +24,61 @@ class test_bot(tester.tester):
         ...
 
 class test_sendbot(tester.tester):
-    def it__calls__(self):
-        msg = message.email(
-            type = 'email',
-            from_ = 'from@example.com',
-            to = 'to@example.com',
-            html = self.dedent('''
-            <p>
-                This is a test message.
-            </p>
-            '''),
-            text = 'This is a test message',
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        orm.security().override = True
+
+        if self.rebuildtables:
+            es = orm.orm.getentitys(includeassociations=True)
+            for e in es:
+                if e.__module__ in ('bot'):
+                    e.orm.recreate()
+
+        # Create an owner and get the root user
+        own = ecommerce.user(name='hford')
+        root = ecommerce.users.root
+
+        # Save the owner, the root user will be the owner's owner.
+        with orm.sudo():
+            own.owner = root
+            own.save()
+
+        # Going forward, `own` will be the owner of all future records
+        # created.
+        orm.security().owner = own
+
+        # Create a company to be the propritor.
+        com = party.company(name='Ford Motor Company')
+        com.save()
+
+        # Set the company as the proprietory
+        orm.security().proprietor = com
+
+        # Update the owner (hford) so that the company (Ford Motor
+        # Company) is the proprietor.
+        own.proprietor = com
+        own.save()
+
+    def it_calls__call__(self):
+        message.dispatches.orm.truncate()
+
+        msg = message.message.email(
+            from_    =  'from@example.com',
+            replyto  =  'replyto@example.com',
+            to       =  'jhogan@carapacian.com',
+            subject  =  'Test email',
+            text     =  'Test message',
+            html     =  '<p>Test message</p>',
         )
 
+        dis = msg.dispatch(
+            dispatchtype = message.dispatchtype(name='email')
+        )
+
+        msg.save()
+
+        bot = bot.sendbot()
+        bot()
         
 tester.cli().run()

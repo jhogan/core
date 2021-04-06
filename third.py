@@ -34,10 +34,13 @@ class apis(internetservices):
 class internetservice(product.service):
     pass
 
-class mails(apis):
+class dispatchers(apis):
     pass
 
-class postmarks(mails):
+class emailers(dispatchers):
+    pass
+
+class postmarks(emailers):
     pass
 
 class api(internetservice):
@@ -118,18 +121,41 @@ class api(internetservice):
 
             return r
 
-class emailer(api):
-    def send(self):
+class dispatcher(api):
+    @staticmethod
+    def create(dis):
+        type = dis.dispatchtype.name
+
+        if type == 'email':
+            return emailer.create(dis)
+
+        elif type == 'sms':
+            # TODO 
+            raise NotImplementedError(f'{type} dispatcher not implemented')
+        elif type == 'postal':
+            # TODO
+            raise NotImplementedError(f'{type} dispatcher not implemented')
+
+    def dispatch(self, dis):
         raise NotImplementedError(
-            'Must be implemented by a subentity'
+            'Must be implemented by a concrete class'
         )
+
+
+class emailer(dispatcher):
+    @staticmethod
+    def create(dis):
+        # NOTE In the future, we may want to use additional emailers for
+        # different reasons, but for now, we can stick with postmark.
+        return postmark()
+        
 
 class postmark(emailer):
     """ A transactional and broadcast email provider.
 
     URL: https://postmarkapp.com
     """
-    def send(self, dis):
+    def dispatch(self, dis):
         """ Send an email via Postmark Email Service
         (https://postmarkapp.com/).
 

@@ -29,26 +29,14 @@ class sendbot(bot):
         while True:
             self._dispatch()
 
-    def _dispatch(self)
-        diss = message.dispatches('completed = %s', None)
+    def _dispatch(self):
+        diss = message.dispatches(status = 'queued')
 
         for dis in diss:
-            emailer = third.emailer.create()
-
-            if dis.dispatchtype.name != 'email':
-                # TODO We will want to get an SMS services for
-                # dispatchtypes of SMS. Same for mail, or any other
-                # dispatch type. 
-                
-                # TODO We should probably log when there are unsupported
-                # dispatch types. Sendbot shouldn't press on however.
-
-                continue
-
-            emailer.send(dis)
+            dispacher = third.dispatcher.create(dis)
 
             try:
-                pm.send(dis)
+                dispacher.dispatch(dis)
             except third.api.Error as ex:
                 # Get the emailer service's code and message for the
                 # error. This is distinct from the HTTP status code and
