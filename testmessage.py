@@ -248,5 +248,40 @@ class test_message(tester.tester):
         self.eq(from_.id, msg.from_.id)
         self.eq(from_.name, msg.from_.name)
 
+    def it_calls_status(self):
+        msg = message.message.email(
+            from_    =  'from@example.com',
+            replyto  =  'replyto@example.com',
+            to       =  'jhogan@gmail.com',
+            subject  =  'Test email',
+            text     =  'Test message',
+            html     =  '<p>Test message</p>',
+        )
+
+        dis = msg.dispatch(
+            dispatchtype = message.dispatchtype(name='email')
+        )
+
+        for i in range(2):
+            name = uuid.uuid4().hex
+            dis.statuses += message.status(
+                begin = primative.datetime.utcnow(),
+                statustype = message.statustype(
+                    name = name
+                )
+            )
+            dis.save()
+
+            self.eq(name, dis.status)
+
+            dis = dis.orm.reloaded()
+
+
+
+
+        
+
+
+
 if __name__ == '__main__':
     tester.cli().run()

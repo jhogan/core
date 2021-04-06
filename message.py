@@ -36,8 +36,19 @@ class contactmechanism_messagetypes(apriori.types):
     pass
 
 class statuses(orm.entities):
-    pass
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        try:
+            self.orm.initing = True
+            self.onadd += self._self_onadd 
+        finally:
+            self.orm.initing = False
 
+    def _self_onadd(self, src, eargs):
+        if not self.orm.isloading:
+            st = eargs.entity
+            st.dispatch.status = st.statustype.name
+        
 class statustypes(apriori.types):
     pass
 
@@ -212,10 +223,12 @@ class dispatch(orm.entity):
     # its own identifier for the message.
     externalid = str
     statuses = statuses
+    status = str
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.orm.default('externalid', None)
+        self.orm.default('status', 'queued')
 
 class dispatchtype(apriori.type):
     """ Email, sms, etc.
