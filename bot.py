@@ -9,10 +9,11 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021                 #
 ########################################################################
 
+from func import B
 import ecommerce
 import message
 import third
-from func import B
+import time
 
 class bots(ecommerce.agents):
     pass

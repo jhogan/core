@@ -7867,9 +7867,9 @@ class orm:
     @property
     def leaf(self):
         """ Return the lowest subentity in the inheritance tree of the
-        `orm`'s `instance` property. The database is queried for each
-        subclass, the database is queried. If there are no subclasess,
-        `self.instance` is returned.
+        ``orm``'s ``instance`` property. The database is queried for
+        each subclass. If there are no subclasess, `self.instance` is
+        returned.
         """
 
         leaf = self.instance

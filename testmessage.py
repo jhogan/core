@@ -276,12 +276,5 @@ class test_message(tester.tester):
 
             dis = dis.orm.reloaded()
 
-
-
-
-        
-
-
-
 if __name__ == '__main__':
     tester.cli().run()

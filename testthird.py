@@ -77,7 +77,7 @@ class test_postmark(tester.tester):
                 'tests'
             )
 
-        res = pm.send(dis)
+        res = pm.dispatch(dis)
 
         self.eq('Test job accepted', res['Message'])
         self.eq('jhogan@carapacian.com', res['To'])
@@ -121,7 +121,7 @@ class test_postmark(tester.tester):
         # https://postmarkapp.com/support/article/1213-best-practices-for-testing-your-emails-through-postmark
         with pm.exsimulate():
             try:
-                pm.send(dis)
+                pm.dispatch(dis)
             except third.api.Error as ex:
                 self.type(www.UnprocessableEntityError, ex.inner)
                 self.eq(400, ex.code)

@@ -169,10 +169,10 @@ class postmark(emailer):
         tab = self.browser.tab()
         msg = dis.message
 
-        tos = msg.getcontachmechanisms(type=party.email, name='to')
-        ccs = msg.getcontachmechanisms(type=party.email, name='cc')
-        bccs = msg.getcontachmechanisms(type=party.email, name='bcc')
-
+        tos = msg.getcontactmechanisms(type=party.email, name='to')
+        ccs = msg.getcontactmechanisms(type=party.email, name='cc')
+        bccs = msg.getcontactmechanisms(type=party.email, name='bcc')
+        
         body = {
             'From':      str(msg.from_),
             'To':        str(tos),

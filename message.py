@@ -71,7 +71,7 @@ class message(orm.entity):
 
     @property
     def replyto(self):
-        replytos = self.getcontachmechanisms(
+        replytos = self.getcontactmechanisms(
             type=party.email,
             name='replyto'
         )
@@ -84,7 +84,7 @@ class message(orm.entity):
             if type.name == 'from':
                 return cmm.contactmechanism
 
-    def getcontachmechanisms(self, type, name):
+    def getcontactmechanisms(self, type, name):
         r = type.orm.entities()
         for cmm in self.contactmechanism_messages:
             cm = cmm.contactmechanism

@@ -32,7 +32,7 @@ class test_sendbot(tester.tester):
         if self.rebuildtables:
             es = orm.orm.getentitys(includeassociations=True)
             for e in es:
-                if e.__module__ in ('bot'):
+                if e.__module__ in ('bot', 'message'):
                     e.orm.recreate()
 
         # Create an owner and get the root user

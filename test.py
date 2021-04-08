@@ -52,6 +52,7 @@ import re
 import shipment
 import tempfile
 import testbot
+import testthird
 import testdom
 import testecommerce
 import testfile
@@ -7828,7 +7829,7 @@ class test_orm(tester):
         )
 
         with self._chrontest() as t:
-            t(lambda: press1.sort())
+            t(press1.sort)
             t.retrieved(press1)
         
         press.sort()
