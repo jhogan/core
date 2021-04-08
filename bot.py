@@ -25,30 +25,44 @@ class sendbots(bots):
     pass
 
 class sendbot(bot):
-    def __call__(self):
+    def __call__(self, iterations=None, exsimulate=False):
+        i = 0
         while True:
-            self._dispatch()
+            self._dispatch(exsimulate=exsimulate)
+            time.sleep(.001)
 
-    def _dispatch(self):
-        diss = message.dispatches(status = 'queued')
+            if iterations is None:
+                continue
+
+            i = i + 1
+
+            if i == iterations:
+                break
+
+    def _dispatch(self, exsimulate=False):
+        diss = message.dispatches(status='queued')
 
         for dis in diss:
-            dispacher = third.dispatcher.create(dis)
+            dispatcher = third.dispatcher.create(dis)
 
             try:
-                dispacher.dispatch(dis)
+                if exsimulate:
+                    with dispatcher.exsimulate():
+                        dispatcher.dispatch(dis)
+                else:
+                    dispatcher.dispatch(dis)
             except third.api.Error as ex:
-                # Get the emailer service's code and message for the
-                # error. This is distinct from the HTTP status code and
-                # reason/phrase.
-                code = ex.code
-                msg  = ex.message
+                # NOTE The dispatcher will log the error as a
+                # ``message.status`` in ``dis.statuses``.
+
+                # TODO Log
+                continue
 
             # TODO We may want to catch network errors here. For
             # example, if the network is down, we may want to give up
             # for the moment.
             except Exception as ex:
-                # TODO Log and continue
-                ...
+                # TODO Log
+                continue
 
 

@@ -78,7 +78,43 @@ class test_sendbot(tester.tester):
 
         msg.save()
 
-        bot = bot.sendbot()
-        bot()
+        sb = bot.sendbot()
+        sb(iterations=1)
+
+        dis = dis.orm.reloaded()
+
+        self.eq('postmarked', dis.status)
+
+        sts = dis.statuses
+
+        self.one(sts)
+        self.eq('postmarked', sts.last.statustype.name)
+
+        ''' Send a bad email '''
+        msg = message.message.email(
+            from_    =  'badfrom@carapacian.com',
+            to       =  'test@blackhole.postmarkapp.com',
+            subject  =  'Test email',
+            text     =  'Test message',
+            html     =  '<p>Test message</p>',
+        )
+
+        dis = msg.dispatch(
+            dispatchtype = message.dispatchtype(name='email')
+        )
         
-tester.cli().run()
+        msg.save()
+
+        sb(iterations=1, exsimulate=True)
+
+        dis = dis.orm.reloaded()
+        self.none(dis.externalid)
+        self.one(dis.statuses)
+        self.eq('hard-bounce', dis.status)
+        self.eq(
+            'hard-bounce',
+            dis.statuses.first.statustype.name
+        )
+
+if __name__ == '__main__':
+    tester.cli().run()
