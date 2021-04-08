@@ -319,28 +319,23 @@ class internal(transaction):
     internal = party.internal
 
 class depreciation(internal):
-    """
-    Note that this entity was originally called DEPRECIATION in
-    "The Data Model Resource Book".
+    """ Note that this entity was originally called DEPRECIATION in "The
+    Data Model Resource Book".
     """
 
 class capitalization(internal):
-    """
-    Note that this entity was originally called CAPITALIZATION in
+    """ Note that this entity was originally called CAPITALIZATION in
     "The Data Model Resource Book".
     """
 
 class amortization(internal):
-    """
-    Note that this entity was originally called CAPITALIZATION in
+    """ Note that this entity was originally called CAPITALIZATION in
     "The Data Model Resource Book".
     """
 
 class variance(internal):
-    """
-    Note that this entity was originally called ITEM VARIANCE ACCTG
-    TRANS in "The Data Model Resource Book".
-    """
+    """ Note that this entity was originally called ITEM VARIANCE ACCTG
+    TRANS in "The Data Model Resource Book".  """
 
     # The product.variance from which this entity originated.
     variance = product.variance
@@ -353,7 +348,7 @@ class other(internal):
     TRANS in "The Data Model Resource Book".
     """
 
-class external(other):
+class external(transaction):
     """ ``external`` models accounting transactions that affect two
     parties. An ``external`` transaction may be either an
     ``obligation`` transaction or a ``payment`` transaction. An

@@ -30,7 +30,9 @@ import uuid
 import www
 import ecommerce
 
-""" This module provides unit testing framework.
+""" 
+This module provides unit testing for the core framework, web pages, and
+any other code in the core repository.
 
 TODOs:
     TODO Ensure tester.py won't run in non-dev environment

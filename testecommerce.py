@@ -18,8 +18,8 @@ import primative
 class test_ecommerce(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        orm.security().override = True
 
+        orm.security().override = True
         if self.rebuildtables:
             es = orm.orm.getentitys(includeassociations=True)
             mods = 'ecommerce', 'apriori', 'party', 'product'
@@ -263,6 +263,7 @@ class test_visits(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        orm.security().override = True
         orm.orm.owner = ecommerce.users.root
 
     def it_calls_current(self):

@@ -80,7 +80,7 @@ TODOs:
     worthy, I think we should rip out the pseudocollection logic. This
     logic is tedious to maintain and may be slowing down execution time.
     
-    TODO:In the GEM, change all date and datetime attributes to past
+    TODO In the GEM, change all date and datetime attributes to past
     tense, e.g., s/acquiredat/acquired/
     
     TODO:8cc3bfdc We should have a @property of the ``orm`` called
@@ -124,18 +124,11 @@ TODOs:
     TODO Create orm.reload() to complement orm.reloaded(). It should
     reload the data from the db into self.
 
-    TODO entitymappings should eager- and lazy-load most specialized
-    type. This should work for recursive entity objects as well::
-
-        f = files.orm.all
-        assert type(f.inodes.first) is file
-        assert type(f.inodes.second) is directory
-
     FIXME:acad30cc Broken rules currently has an issue. grep acad30cc
     for more clarification.
 
     TODO datespans and timespans that refer to a timeframe for which an
-    association is valid should be name 'valid':
+    association is valid should be named 'valid':
         
         s/span = (time|date)span/valid = \1span/
 
@@ -2247,7 +2240,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                     args = self.orm.where.args if self.orm.where else ()
                         
                     cur.execute(sql, args)
-                    ress = db.dbresultset(cur)
+                    ress = db.resultset(cur)
 
                 db.executioner(exec).execute()
 
@@ -2418,8 +2411,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
             # The id's are currently not sorted
             assert gs.pluck('id') == [
-                UUID('de17eb3a-05b3-44bf-ac56-6fa46c4e7921'), 
-                UUID('d068887b-ed8a-4d51-b874-864e8d1a459d'),
+                UUID('fe17eb3a-05b3-44bf-ac56-6fa46c4e7921'), 
+                UUID('a068887b-ed8a-4d51-b874-864e8d1a459d'),
             ]
 
             # Internally sort the collection by id in ascending order
@@ -2427,8 +2420,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
             # The entities collection is now sorted
             assert gs.pluck('id') == [
-                UUID('d068887b-ed8a-4d51-b874-864e8d1a459d'),
-                UUID('de17eb3a-05b3-44bf-ac56-6fa46c4e7921'), 
+                UUID('a068887b-ed8a-4d51-b874-864e8d1a459d'),
+                UUID('fe17eb3a-05b3-44bf-ac56-6fa46c4e7921'), 
             ]
 
         The ``reverse`` flag sorts the entities in descending order. If
@@ -2476,6 +2469,40 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             super().sort(key, reverse)
 
     def sorted(self, key=None, reverse=None):
+        """ Works identically to ``entities.sort``, but instead of
+        internally sorting the collection, a sorted clone of the
+        collection is returned. The original collection is left
+        unaltered::
+
+            # Create a collection
+            gs = product.goods()
+
+            # Add two entity objects to the collection
+            for _ in range(2)
+                gs += product.good()
+
+            # The id's are currently not sorted
+            assert gs.pluck('id') == [
+                UUID('fe17eb3a-05b3-44bf-ac56-6fa46c4e7921'), 
+                UUID('d068887b-ed8a-4d51-b874-864e8d1a459d'),
+            ]
+
+            # Return a sorted version of the collection.
+            gs1 = gs.sorted()
+
+            # This entities collection is now sorted, but the original
+            # is unaltered.
+            assert gs.pluck('id') == [
+                UUID('fe17eb3a-05b3-44bf-ac56-6fa46c4e7921'), 
+                UUID('a068887b-ed8a-4d51-b874-864e8d1a459d'),
+            ]
+
+            assert gs1.pluck('id') == [
+                UUID('a068887b-ed8a-4d51-b874-864e8d1a459d'),
+                UUID('fe17eb3a-05b3-44bf-ac56-6fa46c4e7921'), 
+            ]
+        """
+        
         key = 'id' if key is None else key
         if self.orm.isstreaming:
             key = f'`{self.orm.abbreviation}.{key}`'
@@ -2501,10 +2528,34 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             return r
 
     def save(self, *es):
+        """ Persist each entity in this collection to the database in an
+        atomic commit. The orm.entity and orm.entities objects in the
+        *es tuple will also be persisted in the atomic transaction.  See
+        the docstring at ``entity.save`` for more information on how
+        entity objects are persisted.
+
+        :param: *es tuple(<orm.entity>|<orm.entities>): A tuple of
+        orm.entity and/or orm.entities objects that the users wish to
+        be persisted within the atomic transaction. This is rarely
+        needed but sometimes comes in handy.
+
+            # Create an empty items collection
+            itms = product.items()
+
+            # Add 2 items to it
+            for i in range(2):
+                itms += product.item()
+
+            # Both items will be created (INSERTed)
+            itms.save()
+        """
         exec = db.executioner(self._save)
         exec.execute(es)
 
     def _save(self, cur, es=None):
+        """ Delegates the persistence operations to the entity objects
+        themselves.
+        """
         for e in self:
             e._save(cur)
 
@@ -2516,10 +2567,15 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 e._save(cur)
 
     def delete(self):
+        """ Issue a DELETE statement to the database for each entity in
+        the collection.
+        """
         for e in self:
             e.delete()
         
     def give(self, es):
+        """ Give the elements in `es` to this collection.
+        """
         sts = self.orm.persistencestates
         super().give(es)
 
@@ -2553,7 +2609,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         orm.entities collection, each entity in that collection will be
         appended one-at-a-time.
 
-        :param: bool uniq: Do not append is `obj` is already in the
+        :param: bool uniq: Do not append if `obj` is already in the
         collection.
 
         :param: orm.entities r: The collection of entities that were
@@ -2574,14 +2630,14 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 objcomp = getattr(self, clscomp.__name__)
 
             except Exception as ex:
-                # The self collection won't always have a reference to its
-                # composite.  For example: when the collection is being
-                # lazy-loaded.  The lazy-loading, however, will ensure the obj
-                # being appended will get this reference.
+                # The self collection won't always have a reference to
+                # its composite.  For example: when the collection is
+                # being lazy-loaded.  The lazy-loading, however, will
+                # ensure the obj being appended will get this reference.
                 continue
             else:
-                # Assign the composite reference of this collection to the obj
-                # being appended, i.e.:
+                # Assign the composite reference of this collection to
+                # the obj being appended, i.e.:
                 #    obj.composite = self.composite
                 setattr(obj, clscomp.__name__, objcomp)
 
@@ -2708,9 +2764,20 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
 
     @property
     def brokenrules(self):
+        """ Return the collection of brokenrules for each of the entity
+        objects in this collection. If no rules have been broken, then
+        an empty ``brokenrules`` collection will be returned.
+        """
         return self.getbrokenrules()
 
     def getbrokenrules(self, gb=None):
+        """ Return the collection of brokenrules for each of the entity
+        objects in this collection. If no rules have been broken, then
+        an empty ``brokenrules`` collection will be returned.
+
+        This implementation is used internally. Most users will want to
+        use the ``orm.entities.brokenrules`` property instead.
+        """
         brs = entitiesmod.brokenrules()
 
         # This test corrects a fairly deep issue that has only come up
@@ -2751,12 +2818,35 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         return brs
 
     def _self_onremove(self, src, eargs):
+        """ The event handler called whenever an entity is removed from
+        this collection. When called, the entity object is added to the
+        collection's ``trash``. When save() is called on the collection,
+        the entity objects in the ``trash`` will be DELETEd from the
+        database.
+        """
+
+        # By default, we want to trash (DELETE) records when they are
+        # removed from the collection. In that case ``dotrash`` will be
+        # True. Otherwise, the user probably only wants to remove the
+        # item from the collection without DELETing it.
         if self.orm.dotrash:
             self.orm.trash += eargs.entity
             self.orm.trash.last.orm.ismarkedfordeletion = True
         super()._self_onremove(src, eargs)
                     
     def getindex(self, e):
+        """ Returns the index count of the entity within the collection.
+        If the entity is not in the collection, a ValueError is raised::
+
+                    ix = es.getindex(e)
+                    assert es[ix].id == e.id
+
+        :param: e orm.entity|entity.entity: The entity object to look
+        for. If ``e`` is an orm.entity, its ``id`` property will be
+        compared with other orm.entity id's in this collection. If ``e``
+        is an entity.entity, the logic at entities.entities.getindex is
+        used instead.
+        """
         if isinstance(e, entity):
             for ix, e1 in enumerate(self):
                 if e.id == e1.id: return ix
@@ -2766,6 +2856,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         super().getindex(e)
 
     def __repr__(self):
+        """ Return a tabular representation of the entity objects
+        contained within this entites collection.
+        """
         hdr = '%s object at %s count: %s' 
         hdr %= type(self), hex(id(self)), self.count
 
@@ -2905,7 +2998,7 @@ class entitymeta(type):
                 )
 
         # Make sure the `orm` has a reference to the entities collection
-        # class and that the entities collection class has a refernce to
+        # class and that the entities collection class has a referenc to
         # the orm.
         orm_.entities = body['entities']
         orm_.entities.orm = orm_
@@ -3585,22 +3678,41 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             pass
                     break
 
-                # If self is a subentity (i.e., concert), we will want to set
-                # the superentity's (i.e, presentation) composite map to its
-                # composite class (i.e., artist) value. 
-                selfsuper = self.orm.super
-                attrsuper = self.orm.mappings(attr).value.orm.super
+                # Look within the super's mapping collection for an
+                # entitymapping that matches this composite. This will
+                # recurse to the top of the inheritance tree. For
+                # example, if we assige a rapper to a battle's rapper
+                # composite:
+                #
+                #     btl.rapper = rpr
+                # 
+                # we would like that rpr to be the singer and artist of
+                # the battle's super classes: concert and presentations
+                # respectively:
+                #
+                #    conc = btl.orm.super
+                #    assert conc.singer is rpr
+                #
+                #    pres = btl.orm.super.orm.super
+                #    assert pres.artist is rpr
+                sup = self.orm.super
+                if sup:
+                    for map in sup.orm.mappings.entitymappings:
+                        if map.entity in v.orm.entity.orm.supers:
+                            
+                            # Take some extra precautions with
+                            # proprietor mappings. Propogate a
+                            # proprietor map up the inheritence tree
+                            # only if the attr == 'proprietor'.
+                            # Otherwise, the descision to do so would be
+                            # based on type, which is too risky for the
+                            # proprietor.
+                            if attr != 'proprietor':
+                                if map.isproprietor:
+                                    continue
 
-                if selfsuper and attrsuper:
-                    maps = selfsuper.orm.mappings
-                    attr = maps(attrsuper.__class__.__name__)
-
-                    # NOTE attr could be None for various reasons. It's
-                    # unclear at the moment if this is correct logic. We
-                    # will let experience using the ORM determine if we
-                    # need to revisit this.
-                    if attr:
-                        setattr(selfsuper, attr.name, attrsuper)
+                            setattr(sup, map.name, v)
+                            break
 
     def delete(self):
         """ Delete an entity's record from the database.
@@ -3610,7 +3722,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
             # Cause a DELETE statement to be issued deleting the record
             # by its primary key.
-            ent.delet()
+            ent.delete()
         """
 
         # To delete a record, mark it for deleting. The save() method
@@ -3619,41 +3731,78 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         self.save()
 
     def save(self, *es):
-        """ Commit the entity's values to the database. The entity is
-        saved recursively and atomically.
+        """ Persist the entity to the database as well as all of its
+        constituents (recursive and non-recursive), associations, and
+        composites. All entity objects will be persisted in a single
+        MySQL atomic transaction. The orm.entity and orm.entities
+        objects in the *es tuple will also be persisted in the atomic
+        transaction. ``entity`` objects maintain a persistence state
+        (see orm.persistencestate) which save() uses to determine if a
+        CRUD operation is needed and which CRUD operation will be used.
 
-        :param: *es list: A list of entity objects that should be saved
-        as well:
+        :param: *es tuple(<orm.entity>|<orm.entities>): A tuple of
+        orm.entity and/or orm.entities objects that the users wish to
+        be persisted within the atomic transaction. This is rarely
+        needed but sometimes comes in handy::
             
-            art = artist()
-            pres = presentation()
-            sng = singer()
+            # Create two new users
+            usr = ecommercs.user()
+            usr1 = ecommerce.user()
 
-            # Insert the artist record as wel as the presentation record
-            # and the singer record all in one transaction.
-            art.save(pres, sng)
+            # Save (INSERT) usr along with usr1 in a single atomic
+            # transaction
+            usr.save(usr1)
 
-        Create, update and delete
-        -------------------------
-        Depending on the state of the entity, three database operations
-        may be performed: INSERT, UPDATE or DELETE::
+        Simple entity save
+        ------------------
 
-            # Create a new entity
-            ent = myent()
-            ent.name = 'My Name'.
+            # Create a goods record
+            g = good()
+            assert not g.orm.isnew
 
-            # Saving will INSERT the record into the database
-            ent.save()
+            # Persist (INSERT record)
+            g.save()
+            assert not g.orm.isnew
 
-            # Changing an attributes values will dirty the entity,
-            # therefore an UPDATE will be performed.
-            ent.name = 'My Other Name'
-            ent.save()
+            # Change property
+            assert not g.orm.isdirty
+            g.name = 'new name'
+            assert g.orm.isdirty
 
-            # Marking the entity for deletion will cause the record to
-            # be DELETEd.
-            ent.ismarkedfordeletion = True
-            ent.save()
+            # Persist (UPDATE record)
+            g.save()
+            assert not g.orm.isdirty
+
+            # Delete
+            g.orm.ismarkedfordeletion = True
+            # Persist (DELETE record)
+            g.save()
+
+            # Alternatively, this would work:
+            #     
+            #     g.delete()
+
+        Constituents
+        ------------
+
+            # Add item
+            g.items += product.item()
+
+            # Create (INSERT) a new product.item associated with the
+            # good.
+            g.save()
+
+        Composite
+        ---------
+
+            # Load the product.item from the Constituents section above
+            itm = product.item(g.items.first.id)
+
+            # Change the good (composite) that the itm belongs to
+            itm.good.name = 'a newer name'
+
+            # A save of the item will cause the good to be UPDATEd
+            itm.save()
 
         Recursive
         ---------
@@ -3725,7 +3874,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # (not self.isvalid). If we are simply deleting the entity, the
         # the validation rules don't matter.
         if not self.orm.ismarkedfordeletion and not self.isvalid:
-            raise db.BrokenRulesError("Can't save invalid object", self)
+            raise entitiesmod.BrokenRulesError(
+                "Can't save invalid object", self
+            )
 
         # Determine if we are deleting, creating or updating the entity
         # based on its presistence state. Grab the SQL necessary for
@@ -4480,7 +4631,13 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 # Assign the composite reference to the constituent
                 # collection.
                 #   i.e., art.presentations.artist = art
-                setattr(map.value, self_orm.entity.__name__, self)
+
+                # XXX Ascending the graph here is experimental. It
+                # caused some issues in it_loads_specialized_composite.
+                sup = self_orm.entity
+                while sup:
+                    setattr(map.value, sup.__name__, self)
+                    sup = sup.orm.super
 
                 map.value.onadd.append(self.entities_onadd)
 
@@ -4488,6 +4645,41 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # want to start loading super entities from the database unless
         # we know that the attr is actually in one of them.
         elif not map and attr in self_orm.mappings.supermappings:
+            
+            # First lets check if we are trying to get a composite that
+            # comes from a super. For example, say we are trying to get
+            # the `singer` composite of a battle:
+            #
+            #     btl.singer
+            #
+            # The above would normally go to the btl's super, concert,
+            # and get its composite, singer. However, now that we
+            # specialize composites, the singer we would be getting
+            # would just be the more specialized rapper of the battle::
+            #
+            #     btl.rapper is btl.singer
+            #
+            # In order to not have to load the
+            # `btl.orm.super.orm.concerts`, we can just return the
+            # rapper object by scanning this classes entitymappings and
+            # seeing if the attr is in one of the entitymapping's
+            # entity's base classes.
+            for map1 in self.orm.mappings.entitymappings:
+
+                if map1.isowner or map1.isproprietor:
+                    continue
+
+                sups = [x.__name__ for x in map1.entity.orm.supers]
+                if attr in sups:
+                    return map1.value
+
+            # If we are here, we are going to check the super to see if
+            # it contains a value for attr. The check will automatically
+            # propogate up the entity inheritance tree because the call
+            # to getattr() will cause us to recurse back into this
+            # method for the super, then its super, and so on, as
+            # necessary until we finally find the entity that has the
+            # attribute that we are looking for.
             sup = self_orm.super
             while sup: # :=
                 sup_orm = sup.orm
@@ -4499,9 +4691,93 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                     # Assign the composite reference to the constituent
                     #   i.e., sng.presentations.singer = sng
                     if map_type is entitiesmapping:
+
+                        # Assigne v to es to clarify it is an entities
+                        # collecion.
                         es = v
+
+                        # Iterate over each element in the entities
+                        # collection including the entities entities
+                        # itself:
+                        #
+                        #     for e in [es, es[0], es[1], ...]
+                        #
                         for e in (es,) +  tuple(es):
-                            setattr(e, self_orm_entity__name__, self)
+                            # Set the composite for type(self) on the
+                            # entity object or entities collection to
+                            # self:
+                            #
+                            #     sng.presentations.singer = sng
+                            #     sng.presentations[0].singer = sng
+                            
+                            # XXX I think we can remove this.
+                            '''
+                            setattr(
+                                e, 
+                                self_orm_entity__name__,
+                                self.orm.specialist
+                            )
+                            '''
+
+                            # The getattr() call above will set the
+                            # composite of the entities collection to
+                            # the super:
+                            #
+                            #     sng.presentations.artist = sng.orm.super
+                            #
+                            # However, so the user will get the most
+                            # specialized composite, we replace that
+                            # with self.orm.specialized:
+                            #
+                            #     sng.presentations.artist = sng
+                            #
+                            # And we do it by ascending the inheritance
+                            # tree, this works
+                            #
+                            # 
+                            #     assert rpr.presentations.rapper is rpr
+                            #     assert rpr.presentations.singer is rpr
+                            #     assert rpr.presentations.artist is rpr
+                            sups1 = self_orm.entity.orm.getsupers(
+                                withself=True
+                            )
+
+                            # For each super class starting with self
+                            for sup1 in sups1:
+
+                                # Get name
+                                name = sup1.orm.entity.__name__
+
+                                # Get most specialized version of self
+                                spec = self.orm.specialist
+
+                                # if e is an entity; not an entities
+                                if isinstance(e, entity):
+
+                                    # Ascend inheritence tree
+                                    sup2 = e
+                                    while sup2:
+                                        maps1 = sup2.orm.mappings
+                                        try:
+                                            # Get super's map
+                                            map1 = maps1[name]
+                                        except IndexError:
+                                            # Dosen't exist: add to dict
+                                            # (bypass mapping)
+                                            sup2.__dict__[name] = spec
+                                        else:
+                                            # If exists: add to map
+                                            map1.value = spec
+                                        
+                                        sup2 = sup2.orm._super
+                                elif isinstance(e, entities):
+                                    # TODO We are already doing this in
+                                    # the outer-outer block above.
+                                    setattr(e, name, spec)
+                                else:
+                                    raise TypeError(
+                                        'e must be entity or entities'
+                                    )
 
                     if isinstance(v, associations):
                         v.orm.composite = self
@@ -4644,7 +4920,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # `self` won't have the attribute `sup.__name__` if the
             # constituent class is a superentity.
             #
-            # We should be able to remove this if 1de11dc0 is fixed.
+            # TODO We should be able to remove this if 1de11dc0 is
+            # fixed.
             pass
         else:
             # Append the entity to that entities collection
@@ -7335,9 +7612,10 @@ class orm:
         self.joins                 =  None
         self._abbreviation         =  str()
         self.initing               =  False
+        self._sub                  =  undef
 
         self.recreate = self._recreate
-        
+
     @property
     def issues(self):
         """ Returns a list of possible issue with an entity, such as
@@ -7353,6 +7631,17 @@ class orm:
         the issue in the future for the issue they are currently working
         on.
         """
+        r = list()
+        esup = self.entity.mro()[1]
+        essup = self.entities.mro()[1]
+        if esup.orm.entities is not essup:
+            r.append(
+                f'{self} inherits from a different entity than does '
+                'its entities collection: \n'
+                f'\t{self.entity.__name__}({esup})\n'
+                f'\t{self.entities.__name__}({essup})'
+            )
+
 
         for map in self.mappings:
             if isinstance(map, entitymapping):
@@ -7506,7 +7795,6 @@ class orm:
                 )
         except Exception as ex:
             return 'Exception: %s ' % (str(ex),)
-
 
     @property
     def ismarkedfordeletion(self):
@@ -7864,6 +8152,28 @@ class orm:
         except db.RecordNotFoundError:
             return None
 
+    @property
+    def specialist(self):
+        # TODO:a7f8f87a This is redundant with orm.leaf. I think we
+        # should make the name 'leaf' but use the implementation here.
+        if self.isstatic:
+            # For any given entity, there can be 0 or more specialist
+            # entity class references. If we wanted to get those, we 
+            # should write a ``specialists`` property that returns a
+            # list of those class references.
+            raise ValueError(
+               'specialist cannot be called on a static entity'
+            )
+
+        r = self.instance
+
+        sub = r.orm.sub
+        while sub:
+            r = sub
+            sub = sub.orm.sub
+
+        return r
+            
     @property
     def leaf(self):
         """ Return the lowest subentity in the inheritance tree of the
@@ -8489,7 +8799,7 @@ class orm:
         def exec(cur):
             nonlocal ress
             cur.execute(sql)
-            ress = db.dbresultset(cur)
+            ress = db.resultset(cur)
 
         exec = db.executioner(exec)
 
@@ -8541,7 +8851,7 @@ class orm:
         def exec(cur):
             nonlocal ress
             cur.execute(sql, args)
-            ress = db.dbresultset(cur)
+            ress = db.resultset(cur)
 
         # Create an executioner
         exec = db.executioner(exec)
@@ -8648,7 +8958,7 @@ class orm:
                 cur.execute(sql, args)
 
                 # Assign ress the resultset
-                ress = db.dbresultset(cur)
+                ress = db.resultset(cur)
 
             # Instantiate the executioner
             exec = db.executioner(exec)
@@ -8823,7 +9133,7 @@ class orm:
 
         es = self.instance
 
-        if type(ress) is db.dbresult:
+        if type(ress) is db.result:
             # If we are given one resultset (simple), we are probably
             # loading an a single entity by id, i.e.::
             #
@@ -8831,7 +9141,7 @@ class orm:
             ress = [ress]
             simple = True
             maps = self.mappings
-        elif type(ress) is db.dbresultset:
+        elif type(ress) is db.resultset:
             # Multiple resultsets (`not simple`) imply that we are
             # loading an entities collection, i.e::
             # 
@@ -9568,6 +9878,10 @@ class orm:
 
     @property
     def trash(self):
+        """ Return the trash - an entities collection the same type as
+        self but intended to collect entities, but whose entity objects
+        are destined for DELETion.
+        """
         if not self._trash:
             self._trash = self.entities()
         return self._trash
@@ -9607,12 +9921,16 @@ class orm:
         return props
 
     def issuperentity(self, of):
+        """ Returns True if ``self`` is a super entity of ``of``, False
+        otherwise.
+        """
         return self.entity in of.orm.entity.orm.superentities
 
     @staticmethod
     def issub(obj1,  obj2):
         """ Returns true if obj1 is a subentity of obj2, False
         otherwise.
+
             :param: obj1  An entities class
             :param: obj2  An entities class
         """
@@ -9622,6 +9940,7 @@ class orm:
 
         cls1, cls2 = obj1, obj2
 
+        # TODO s/super/sup/
         super = cls2
 
         while super:
@@ -9632,14 +9951,89 @@ class orm:
         return False
 
     @property
+    def sub(self):
+        """ Returns the subentity of ``self``::
+            
+                # Get a good
+                good = product.good(goodid)
+
+                # Get the superentity: a product instance
+                prod = good.orm.super
+
+                # prod's sub is the good
+                assert prod.orm.sub is good
+
+            In the above example, the call to ``sub`` does not result in
+            a call to the database becase the prior call to ``super``
+            stores a reference to the ``good`` object. However, a
+            database call will be made if necessary::
+
+                # Get a product
+                prod = product.product(prodid)
+
+                # A database call will be made here to get the
+                # subentity. If the product is not a good (perhaps it's
+                # a service), a db.RecordNotFoundError will be raised.
+                good = prod.orm.sub
+        """
+        if self.isstatic:
+            raise ValueError(
+                'Cannot call sub on static entity'
+            )
+
+        if self._sub is undef:
+            for cls in self.subentities:
+                try:
+                    self._sub = cls(self.instance.id)
+                except db.RecordNotFoundError:
+                    continue
+                else:
+                    break
+            else:
+                self._sub = None
+
+        return self._sub
+
+    @sub.setter
+    def sub(self, v):
+        """ Set the subentity. Setting the sub will typically not be
+        done by the ORM user.
+
+        :param: v orm.entity: The orm.entity being assigned as a
+        subentity of self.
+        """
+        self._sub = v
+            
+    @property
+    def supers(self):
+        """ Return a list of superentity class references of self.
+        """
+        if self.isstatic:
+            return [
+                x for x in self.entity.__mro__[1:]
+                if entity in x.__mro__[1:]
+            ]
+        else:
+            # TODO
+            # 1. Create an orm.entities instance for the most general
+            #    type
+            # 2. Add each super starting with self's to the collection
+            # 3. Return the collection
+            raise NotImplementedError(
+                'orm.supers has not yet be implemented when '
+                'orm.isinstance'
+            )
+
+    @property
     def super(self):
-        """ For orms that have no instance, return the super class of
-        `orm.entity`.  If orm.instance is not None, return an instance of that
-        object's super class.  A super class here means the base class of an
-        entity class where the base itself is not `entity`, but rather a
-        subclass of `entity`. So if class A inherits directly from entity, it
-        will have a super of None. However if class B inherits from A. class B
-        will have a super of A."""
+        """ For orm's that have no instance, return the super class of
+        ``orm.entity``.  If orm.instance is not None, return an instance
+        of that object's superentity.  A superentity means the base
+        class of an entity class where the base itself is not
+        ``orm.entity``, but rather a subclass of ``orm.entity``. So if
+        class A inherits directly from ``orm.entity``, it will have a
+        superentity of None. However if class B inherits from A. class B
+        will have a superentity of A."""
         if self._super:
             return self._super
 
@@ -9670,7 +10064,7 @@ class orm:
                     self._super = base()
 
                     # Set the super's id to self's id. Despite the
-                    # fact that self.isnew, its existing is in some
+                    # fact that self.isnew, its existence is in some
                     # cases meaningful and should be preserved.
                     self._super.id = id
                 else:
@@ -9682,6 +10076,10 @@ class orm:
                     if e.id is not undef:
                         self._super = base(e.id)
 
+                # Ensure the super has a reference to the sub
+                # (self.instance).
+                self._super.orm.sub = self.instance
+
                 return self._super
         return None
 
@@ -9691,10 +10089,26 @@ class orm:
 
     @property
     def isstatic(self):
+        """ Returns True if the ``orm`` instance is being called from a
+        class reference, False if the ``orm`` instance is being called
+        from an instance. The antonym of ``isstatic`` is ``isinstance``.
+
+            assert product.good.orm.isstatic
+            assert not product.good().orm.isstatic
+        """
         return self.instance is None
 
     @property
     def isinstance(self):
+        """ Returns True if the ``orm`` instance is being called from a
+        entity instance, False if the ``orm`` instance is being called
+        from a class reference. The antonym of ``isinstance`` is
+        ``isstatic``.
+
+            assert product.good().orm.isinstance
+            assert not product.good.orm.isinstance
+        """
+
         return self.instance is not None
 
     def getsupers(self, withself=False):
@@ -9744,6 +10158,9 @@ class orm:
     # TODO This should probably be renamed to `subs`
     @property
     def subentities(self):
+        """ Returns a collection all the of class reference that inherit
+        from this class.
+        """
         if self._subclasses is None:
             clss = ormclasseswrapper()
             for sub in orm.getsubclasses(of=self.entity):
@@ -9767,8 +10184,12 @@ class orm:
         childern of `artist`. `rappers` comes third because it is a
         direct child of `singers`.
 
-        :param: entity of The entity for which the subclasses will be
-        returned.
+        :param: of type<orm.entity>: The class reference for which the
+        subclasses will be returned.
+
+        :param: recursive bool: If True, descend the inheritence tree in
+        search of subentities. If False, only collect the immediate
+        subentity class references.
         """
         r = []
 
@@ -9784,14 +10205,31 @@ class orm:
 
     @staticmethod
     def getassociations():
+        """ Returns a list of all association classes, i.e., those
+        classes that inherit from ``orm.association``.
+        """
         return orm.getsubclasses(of=association)
 
     @staticmethod
     def getentity(name=None, abbr=None):
+        """ Search for classes that inherit from ``orm.entity`` that
+        match either ``name`` or ``abbr``. Returns the entity class that
+        matches.
+
+        :param: name str: The name of the entity to search for. This
+        corresponds to the class's ``__name__`` attribute.
+
+        :param: abbr str: The abbreviation of the entity to search for.
+        This corresponds to the class's ``orm.abbreviation`` attribute.
+        (See the ``orm.abbreviation`` getter for more).
+        """
+
+        # Cat the entity classes and the association classes into a
+        # collection.
         es = orm.getentitys() + orm.getassociations()
 
         if name:
-            # Lookup entity/association class by abbreviation.
+            # Lookup entity/association class by name.
             if not orm._namedict:
                 for e in es:
                     orm._namedict[e.__name__] = e
@@ -9809,6 +10247,14 @@ class orm:
     # TODO s/getentitys/getentityclasses/
     @staticmethod
     def getentitys(includeassociations=False):
+        """ A static method to collect and return all the classes that
+        inherit directly or indirectly from orm.entity. If
+        includeassociations is True, return the classes that inherit
+        from orm.association as well.
+
+        :param: includeassociations bool: If True, include the classes
+        that inherit from orm.association as well.
+        """
         r = []
         for e in orm.getsubclasses(of=entity):
             if includeassociations:
@@ -9836,7 +10282,10 @@ class orm:
 
     @staticmethod
     def getentities():
-        # NOTE We may want to cache this
+        """ Return all classes that inherit directly or indirectly from
+        ``orm.entities`` as a list. Note that ``orm.associations`` are
+        not included.
+        """
         r = []
         for es in orm.getsubclasses(of=entities):
             if association not in es.mro():
@@ -9846,6 +10295,9 @@ class orm:
 
     @property
     def associations(self):
+        """ Return all association classes for which this entity has
+        attributes.
+        """
         if not self._associations:
             self._associations = ormclasseswrapper()
             for ass in orm.getassociations():
@@ -9898,15 +10350,13 @@ class orm:
                         self._constituents += constituent(e)
         return self._constituents
 
-class saveeventargs(entitiesmod.eventargs):
-    def __init__(self, e):
-        self.entity = e
-
 class associations(entities):
-    """ Holds a collection of :class:`.association` objects. """
+    """ Holds a collection of ``orm.association`` objects. 
+    """
 
     def __init__(self, *args, **kwargs):
-        """ Constructs an association collection. """
+        """ Constructs an association collection.
+        """
         super().__init__(*args, **kwargs)
         self.orm.composite = None
 
@@ -9924,13 +10374,15 @@ class associations(entities):
         self.orm._constituents = dict()
 
     def append(self, obj, uniq=False, r=None):
-        """ Adds a :class:`.association` entity to the collection.
+        """ Adds a ``orm.association`` entity to the collection.
 
-            :param: obj   The association object to append.
-            :param: uniq  If True, only adds the object if it does not
-                          already exist.
-            :param: r     An `entities` collection containing the
-                          objects that were added.
+        :param: obj orm.association: The association object to append.
+
+        :param: uniq bool: If True, only adds the object if it does not
+        already exist.
+
+        :param: r list: An `entities` collection containing the objects
+        that were added.
         """
 
         # If `obj` is an `association`, set it's `composite` to the
@@ -9953,8 +10405,9 @@ class associations(entities):
                 for map in obj.orm.mappings.entitymappings:
                     # TODO We probably should be using the association's
                     # (self) mappings collection to test the composites
-                    # names. The name that matters is on the LHS of the map
-                    # when being defined in the association class.
+                    # names. The name that matters is on the
+                    # left-hand-side of the map when being defined in
+                    # the association class.
                     if self.orm.isreflexive:
                         if map.issubjective:
                             # NOTE self.orm.composite can be None when the
@@ -9964,9 +10417,12 @@ class associations(entities):
                             #
                             # results in an error. The alternative block
                             # avoided this because the following will
-                            # always be False. TODO We need to only run this
-                            # code `if self.orm.composite`
-                            #     self.name == type(None).__name__ 
+                            # always be False. 
+
+                            # TODO We need to only run this code:
+                            #    
+                            #     if self.orm.composite
+                            #         self.name == type(None).__name__ 
                             #
                             # Or we could make the setattr() call accept a
                             # composite of None.
@@ -10004,13 +10460,14 @@ class associations(entities):
 
                 # When a reflexive association has an entitymap other
                 # than `object` (this could be `subject` or some
-                # arbitrary entity map such as `myassociationstype`, an
+                # arbitrary entity map such as `myassociationstype`), an
                 # attempt to get the pseudocollection will result in an
                 # AttributeError below. We want to skip this map
-                # entirely. TODO Note that this raise the
-                # issue of what happens when a non-reflexive association
-                # has an entity map that isn't a part of the
-                # association:
+                # entirely. 
+                
+                # TODO Note that this raise the issue of what happens
+                # when a non-reflexive association has an entity map
+                # that isn't a part of the association:
                 #
                 #    class person_movie(association):
                 #        person = person
@@ -10048,7 +10505,7 @@ class associations(entities):
                         # for situations where the user appends the
                         # wrong type, but we don't want to raise an
                         # error, instead prefering that the error is
-                        # discovered in the broken rules collection. See
+                        # discovered in the brokenrules collection. See
                         # it_doesnt_raise_exception_on_invalid_attr_values
                         # where a `location` object is being appended to
                         # an `artifact`'s pseudocollection.
@@ -10076,7 +10533,7 @@ class associations(entities):
                         # Add map's value to pseudocollection
 
                         # NOTE We may want to override __contains__ such
-                        # that `map.value no in es` does the same thing.
+                        # that `map.value not in es` does the same thing.
                         # Currently, identity comparisons will be done.
                         if map.value.id not in [x.id for x in es]:
                             es += map.value
@@ -10090,7 +10547,7 @@ class associations(entities):
 
     def _self_onremove(self, src, eargs):
         """ This event handler is called when an ``association`` is
-        removed from an ``assoctions`` collection. When this happens, we
+        removed from an ``associations`` collection. When this happens, we
         want to remove the ``association``'s constituent entity (the
         non-composite entity) from its pseudocollection class - but only
         if it hasn't already been marked for deletion
@@ -10128,9 +10585,9 @@ class associations(entities):
                     # class, the class will inevitably trash the removed
                     # entity to mark it for removal from the database.
                     # However, this would mean that removing an
-                    # association from the db would cause the
+                    # association from the DB would cause the
                     # constituents (artifact) object to removed from the
-                    # db (cascading deletes). This is not what we want:
+                    # DB (cascading deletes). This is not what we want:
                     # We should be able to delete as association between
                     # two entity object without deleting the entities
                     # themselves.  pop()ing the entity off the trash
@@ -10156,7 +10613,7 @@ class associations(entities):
             # Add artifact entity to the artist's pseudocollection
             art.artifact += artifact() 
 
-        :param: src entities:    The pseudocollection's entities object.
+        :param: src entities: The pseudocollection's entities object.
 
         :param: eargs eventargs: The event arguments. Its ``entity``
         property is the entity object being added to the
@@ -10199,7 +10656,7 @@ class associations(entities):
                         # NOTE that it will be None in cases when the
                         # association does not have the data to find the
                         # entity (such as a null value for the entity's
-                        # id). In this case, ass.invalid == True so we
+                        # id). In this case, ass.invalid is True so we
                         # continue to the next association.
                         e = getattr(ass, map.name)
 
@@ -10263,14 +10720,15 @@ class associations(entities):
         self.remove(ass)
 
     def __getattr__(self, attr):
-        """
-        Return a composite object or constituent collection
+        """ Return a composite object or constituent collection
         (pseudocollection) requested by the user.
 
         :param: str attr: The name of the attribute to return.
+
         :rtype: orm.entity or orm.entities
+
         :returns: Returns the composite or pseudocollection being
-                  requested for by ``attr``
+        requested for by ``attr``
         """
 
         def raiseAttributeError():
@@ -10333,7 +10791,7 @@ class associations(entities):
 
                 # Iterate down the inheritance tree until we find an
                 # entity/subentity with the name of the attr.
-                # NOTE For most request, the entity (ess[0]) will be
+                # NOTE For most requests, the entity (ess[0]) will be
                 # what we want. Subentities will be needed when we
                 # request a pseudocollection that is a subtype of the
                 # association's objective entity:
@@ -10341,8 +10799,8 @@ class associations(entities):
                 for es in ess:
                     if es.__name__ == attr:
                         # Create a pseudocollection for the associations
-                        # collection object (self). Append it to the self.orm's
-                        # `constituents` collection.
+                        # collection object (self). Append it to the
+                        # self.orm's `constituents` collection.
                         es = es()
                         es.onadd    += self.entities_onadd
                         es.onremove += self.entities_onremove
@@ -10372,8 +10830,6 @@ class associations(entities):
                     # true:
                     #
                     #     assert artist is type(sng.singers.first)
-
-                    #if e.orm.entities.__name__ != attr:
 
                     # TODO This could use a clean up, e.g.,
                     #     if attr in e.orm.subentities:
@@ -10410,7 +10866,44 @@ class associations(entities):
             raiseAttributeError()
     
 class association(entity):
-    pass
+    """ An entity that holds a reference to two other entity objects.
+
+    Association allow for many-to-many relationships between classes of
+    entity objects but also contain data about the association itself.
+
+    For example, in the party.py module, the ``party_address``
+    association connects a ``party`` (e.g., a person, company, etc.)
+    with a postal ``address``.
+
+        class party_address(orm.association):
+            party     =  party
+            address   =  address
+            span      =  datespan
+
+    This makes it possible for a party to have multiple postal address
+    and a postal address to belong to multiple parties.
+
+        par = party()
+        addr1 = address()
+        addr2 = address()
+
+        par.party_addresses += party_address(
+            address = addr1,
+            begin = '2020-02-02',
+            end   = '2021-02-02',
+        )
+
+        par.party_addresses += party_address(
+            address = addr2,
+            begin = '2020-01-02',
+            end   = '2021-01-02',
+        )
+
+    Above, we associate ``par`` with ``addr1`` and ``addr2``, while
+    indicating the datespan that the association was valid.
+    Additionally, we could associate each address with multiple
+    parties.
+    """
 
 class migration:
     def __init__(self, e=None):
@@ -10591,11 +11084,15 @@ class ProprietorError(ValueError):
 
     @property
     def expected(self):
+        """ The proprietor that was expected.
+        """
         if not self._expected:
             return security().proprietor
         return self._expected
 
     def __str__(self):
+        """ A string representation of the exception.
+        """
         expected = self.expected.id.hex if self.expected else None
         return (
             f'The expected proprietor did not match the actual '
@@ -10604,14 +11101,15 @@ class ProprietorError(ValueError):
         )
 
     def __repr__(self):
+        """ A string representation of the exception.
+        """
         return str(self)
 
 class AuthorizationError(PermissionError):
-    """ An exception that indicates the currently that the current
-    user is unable to create, retrieve, update or delete a record in the
-    database.
+    """ An exception that indicates that the current user is unable to
+    create, retrieve, update or delete a record in the database.
 
-    The ORM logic in orm.py will usually through this exception. The
+    The ORM logic in orm.py will usually raise this exception. The
     ORM user indicates authorization problems in the accessibility
     properties by return a ``violations`` collection.
     """
@@ -10661,6 +11159,7 @@ class violations(entitiesmod.entities):
 
         # Get the entity reference and delete it so we can pass it to
         # super().__init__
+        # TODO Use kwargs.pop()
         try:
             e = kwargs['entity']
         except KeyError:
@@ -10680,7 +11179,8 @@ class violations(entitiesmod.entities):
                 vs = violations(entity=self)
                 if hr not in usr.departments:
                     vs += (
-                        'Only user in hr can retrive this entity'
+                        'Only user in the human resources department '
+                        'can retrive this entity'
                     )
                 return vs
 
@@ -10723,8 +11223,3 @@ class violation(entitiesmod.entity):
             return self.violations.entity
 
         return None
-        
-
-        
-
-

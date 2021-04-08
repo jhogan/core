@@ -65,18 +65,22 @@ class dom_file(tester.tester):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        orm.security().override = True
+
+        if self.rebuildtables:
+            orm.orm.recreate(
+                ecommerce.user,  file.files,   file.resources,
+                file.directory,  file.inodes,  pom.site,
+                foonet,          asset.asset
+            )
+
         orm.security().owner = ecommerce.users.root
 
         # Proprietor
         com = party.company(name='Carapacian')
         orm.security().proprietor = com
         com.save()
-
-        # Recreate tables
-        orm.orm.recreate(
-            ecommerce.user,      file.files,   file.resources,
-            file.directory,  file.inodes,  pom.site, foonet, asset.asset
-        )
 
     def it_adds_js_files_to_site(self):
         for e in ('inode', 'resource', 'resource'):
@@ -408,7 +412,9 @@ class dom_file(tester.tester):
 class file_file(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
         orm.security().override = True
+
         # Delete files
         clean()
 
