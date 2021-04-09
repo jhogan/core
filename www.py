@@ -758,7 +758,7 @@ class _request:
         scheme = self.scheme
         servername = self.servername
         if self.port:
-            servername += ':' + self.port
+            servername += ':' + str(self.port)
 
         qs = self.qs
         path = self.path
