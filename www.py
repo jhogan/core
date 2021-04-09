@@ -69,6 +69,7 @@ class application:
     def __call__(self, env, start_response):
         global request, response
         res = _response(self.request)
+        res.headers += 'Content-Type: text/html'
 
         # Set global www.response
         response = res
@@ -1088,6 +1089,11 @@ class _response():
             return self.json[sels]
         elif self.mime == 'text/html':
             return self.html[sels]
+        else:
+            raise ValueError(
+                'Cannot __getitem__ from www.response with mime type '
+                f'of "{self.mime}"'
+            )
 
     @property
     def headers(self):
