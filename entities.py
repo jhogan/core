@@ -405,8 +405,8 @@ class entities:
 
     def __delitem__(self, key):
         # TODO Write test. This will probably work but is only used in
-        # one place at the time of this writting. We should also
-        # test for `key` being a slice.
+        # one place at the time of this writing. We should also test for
+        # `key` being a slice.
         e = self[key]
         self.remove(e)
 
