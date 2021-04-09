@@ -659,7 +659,7 @@ class test_entities(tester):
         nd = ks.second
         ks.remove(nd)
         self.assertCount(3, ks)
-        self.assertFalse(ks.has(nd)) # Ensure second knight is not in ks
+        self.false(nd in ks)
 
         ## Remove by entities collection ##
 
@@ -672,8 +672,8 @@ class test_entities(tester):
 
         # Ensure the first 2 where removed
         self.assertCount(2, ks)
-        self.assertFalse(ks.has(ks1.first))
-        self.assertFalse(ks.has(ks1.second))
+        self.false(ks1.first in ks)
+        self.false(ks1.second in ks)
 
         ## Remove using a callable##
         ks = knights.createthe4()
@@ -685,7 +685,7 @@ class test_entities(tester):
         ks.remove(lambda k: k.name == 'Bedevere')
 
         self.assertCount(3, ks)
-        self.assertFalse(ks.has(k))
+        self.false(k in ks)
 
         ## Remove a duplicate
         ni = knight('knight who says ni')
@@ -702,7 +702,7 @@ class test_entities(tester):
         # logical at the moment.
         ks -= ni
         self.assertCount(3, ks)
-        self.assertFalse(ks.has(ni))
+        self.false(ni in ks)
 
     def it_calls__isub__(self):
         """ entities.__isub__() is essentially a wrapper around
@@ -743,8 +743,8 @@ class test_entities(tester):
 
         # Ensure the first 2 where removed
         self.assertCount(2, ks)
-        self.assertFalse(ks.has(ks1.first))
-        self.assertFalse(ks.has(ks1.second))
+        self.false(ks1.first in ks)
+        self.false(ks1.second in ks)
 
         ## Remove using a callable ##
         ks = knights.createthe4()
@@ -758,7 +758,7 @@ class test_entities(tester):
         ks -= lambda k: k.name == 'Bedevere'
 
         self.assertCount(3, ks)
-        self.assertFalse(ks.has(k))
+        self.false(k in ks)
 
     def it_calls_reversed(self):
         """ The entities.reversed() method allows you to iterate
@@ -842,7 +842,7 @@ class test_entities(tester):
         rst = ks.shift()
 
         self.assertEq(3, ks.count)
-        self.assertFalse(ks.has(rst))
+        self.false(rst in ks)
 
         # Ensure empty collection shift None
         self.assertNone(entities().shift())
@@ -867,7 +867,7 @@ class test_entities(tester):
         last = ks.pop()
 
         self.assertEq(3, ks.count)
-        self.assertFalse(ks.has(last))
+        self.false(last in ks)
 
         # Ensure empty collection pops None
         self.assertNone(entities().pop())
@@ -882,18 +882,6 @@ class test_entities(tester):
 
         self.assertEq(5, ks.count)
         self.assertIs(ni, ks.last)
-
-    def it_calls_has(self):
-        """ The has() method determines if the argument is in the collection
-        using object identity (is) as opposed to object equality (==). """
-
-        ks = knights.createthe4()
-        for k in ks:
-            self.assertTrue(ks.has(k))
-
-        ni = knight('knight who says ni')
-        self.assertFalse(ks.has(ni))
-        self.assertTrue(ks.hasnt(ni))
 
     def it_calls__lshift__(self):
         """ The lshift operator (<<) is a wrapper around unshift. """
@@ -998,7 +986,7 @@ class test_entities(tester):
         self.assertIs(nis.first,   ks.last)
         self.assertIs(nis.first,   ks1.first)
         self.assertEq(entities,    type(ks1))
-        self.assertFalse(ks1.has(nis.second))
+        self.false(nis.second in ks1)
 
         # Test appending an entities collection to an entities collection
         # where both of the entities being appended are not unique.
@@ -1013,8 +1001,8 @@ class test_entities(tester):
         self.assertEq(4,           ks.count)
         self.assertEq(0,           ks1.count)
         self.assertEq(entities,    type(ks1))
-        self.assertFalse(ks1.has(nis.first))
-        self.assertFalse(ks1.has(nis.second))
+        self.false(nis.first in ks1)
+        self.false(nis.second in ks1)
 
         ## Ensure we get a ValueError if we append something that isn't
         ## an entity or entities type
@@ -1223,8 +1211,8 @@ class test_entities(tester):
         self.assertEq(4, ks.count)
         self.assertEq(3, ks1.count)
         self.assertEq(knights, type(ks1))
-        self.assertFalse(ks1.has(rst))
-        self.assertTrue(ks.has(rst))
+        self.false(rst in ks1)
+        self.true(rst in ks)
 
         # Remove an entities collection from ks
 

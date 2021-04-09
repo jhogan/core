@@ -523,13 +523,7 @@ class entities:
         if type(e) in (int, str):
             e = self(e)
 
-        return self.has(e)
-
-    def has(self, e):
         return self.indexes['identity'](e).ispopulated
-
-    def hasnt(self, e):
-        return not self.has(e)
 
     def __lshift__(self, a):
         self.unshift(a)
@@ -548,7 +542,7 @@ class entities:
         elif hasattr(obj, '__iter__'):
             for t in obj:
                 if uniq:
-                    if self.hasnt(t):
+                    if t not in self:
                         self.append(t, r=r)
                 else:
                     self.append(t, r=r)
@@ -558,7 +552,7 @@ class entities:
                 'Unsupported object appended: ' + str(type(obj))
             )
 
-        if uniq and self.has(t):
+        if uniq and t in self:
             return r
 
         r._ls.append(t)
@@ -606,7 +600,7 @@ class entities:
             es = entities([es])
 
         for e in self:
-            if es.hasnt(e):
+            if e not in es:
                 r += e
         return r
 
