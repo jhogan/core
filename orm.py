@@ -5934,7 +5934,7 @@ class entitymapping(mapping):
                         
                         # ... then we can load the entity using the
                         # foreign key's value
-                        self._value = self.entity(map.value)
+                        self._value = self.entity(map.value).orm.leaf
 
         return self._value
 
@@ -8192,7 +8192,7 @@ class orm:
             try:
                 leaf = cls(id)
             except db.RecordNotFoundError:
-                return leaf
+                continue
 
         return leaf
                 
