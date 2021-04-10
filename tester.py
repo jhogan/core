@@ -679,7 +679,10 @@ class tester(entity):
         return dedent(str)[1:-1]
 
     def status(self, st, res):
-        if st != res.status: self._failures += failure()
+        if st != res.status: 
+            msg = f'Actual status: {res.status}'
+            
+            self._failures += failure()
 
     def xhrpost(self, cls, meth, args):
         # TODO When we need this again, move to tester.browser.tab.
