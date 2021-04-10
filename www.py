@@ -1171,16 +1171,14 @@ class controller:
             )
 
 class HttpException(Exception):
-    def __new__(cls, res=None):
-        if res:
-            for sub in cls.__subclasses__():
-                if sub.status == res.status:
-                    cls = super(HttpException, sub).__new__(sub)
-                    return cls
+    @staticmethod
+    def create(res):
+        for sub in cls.__subclasses__():
+            if sub.status == res.status:
+                return cls()
 
-            return InternalServerError(res=res)
-        
-            
+        return InternalServerError(res=res)
+
     @property
     def phrase(self):
         return '%s %s' % (
@@ -1582,7 +1580,7 @@ class browser(entities.entity):
                 res = urllib.request.urlopen(req1, body)
             except Exception as ex:
                 res = _response(req=req, ex=ex)
-                raise HttpError(res=res)
+                raise HttpError.create(res)
             else:
                 # Return a www._response objcet representing the HTTP
                 # response to the HTTP request.
