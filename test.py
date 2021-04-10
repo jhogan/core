@@ -9,6 +9,9 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021                 #
 ########################################################################
 
+"I have not failed. I've just found 10,000 ways that won't work."
+# Thomas A. Edison
+
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
 from auth import jwt
 from config import config
