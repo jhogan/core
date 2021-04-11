@@ -13131,27 +13131,45 @@ class test_orm(tester):
             self.eq((False, False, False), rpr.orm.persistencestate)
 
     def it_fails_to_save_broken_subentity(self):
-        sng = singer()
+        sng = singer.getvalid()
 
-        for prop in 'firstname', 'voice':
-            setattr(sng, prop, 'x' * 256)
+        # Break the firstname. Note thate first name inherits from
+        # artist so doesn't affect sng's validity per se.
+        sng.firstname = 'x' * 256
 
-            self.broken(sng, prop, 'fits')
+        # sng itself will have no broken rules and will be considered
+        # vaild. 
+        self.one(sng.brokenrules)
+        self.true(sng.isvalid)
 
-            try:
-                sng.save()
-            except Exception as ex:
-                self.type(BrokenRulesError, ex)
-            except MySQLdb.OperationalError as ex:
-                # This happened today (Oct 30 2019)
-                #    OperationalError(2006, 'MySQL server has gone away') 
-                # AGAIN Jan 23, 2020
-                # AGAIN Mar 04, 2020
+        # However, sng's super entity, artist, is not valid, so the save
+        # will ultimately fail.
+        try:
+            sng.save()
+        except Exception as ex:
+            self.type(BrokenRulesError, ex)
 
-                print(ex)
-                B()
-            else:
-                self.fail('Exception not thrown')
+            # The BrokenRulesError will report that sng's super (artist)
+            # is broken.
+            self.is_(sng.orm.super, ex.object)
+            with self.brokentest(ex.object.brokenrules) as t:
+                t(sng.orm.super, 'firstname', 'fits')
+
+            # Ensure the sng record was not created due to the rollback
+            # caused by the invalid artist. This logic is definately
+            # tested elsewhere, but it doesn't hurt to retest.
+            self.expect(db.RecordNotFoundError, sng.orm.reloaded)
+                
+        except MySQLdb.OperationalError as ex:
+            # This happened today (Oct 30 2019)
+            #    OperationalError(2006, 'MySQL server has gone away') 
+            # AGAIN Jan 23, 2020
+            # AGAIN Mar 04, 2020
+
+            print(ex)
+            B()
+        else:
+            self.fail('Exception not thrown')
 
     def it_hard_deletes_subentity(self):
         chrons = self.chronicles
