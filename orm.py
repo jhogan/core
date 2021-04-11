@@ -4530,7 +4530,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             usrs = per.users
 
         Associations and pseudocollections are also retrieved through
-        this method:::
+        this method::
             class persons(orm.entities):          pass
             class jobs(orm.entities):             pass
             class job_persons(orm.associations):  pass

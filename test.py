@@ -5457,12 +5457,10 @@ class test_orm(tester):
         iss.comments += comment.getvalid()
         iss.comments.last.author = 'jessehogan0ATgmail.com' # break
 
-        B()
         with self.brokentest(iss.brokenrules) as t:
             t(iss, 'name', 'fits')
             t(iss, 'assignee', 'valid')
             t(iss.comments.last, 'author', 'valid')
-        return
 
         # Fix
         iss.assignee = 'jessehogan0@mail.com'
@@ -5492,18 +5490,19 @@ class test_orm(tester):
 
         # Add a new issue with the same name. Duplicate issue names have
         # been forbidden by an imperitive broken rule at
-        # issues.getbrokenrules
+        # issues.brokenrules
         isss += issue.getvalid()
         isss.last.name = iss.name
 
-        self.one(isss.brokenrules)
-        self.broken(isss, 'name', 'valid')
+        with self.brokentest(isss.brokenrules) as t:
+            t(isss, 'name', 'valid')
 
         # Break some more stuff
         isss.second.assignee = 'jessehogan0ATgmail.com' # break
-        self.two(isss.brokenrules)
-        self.broken(isss, 'name', 'valid')
-        self.broken(isss, 'assignee', 'valid')
+
+        with self.brokentest(isss.brokenrules) as t:
+            t(isss, 'name', 'valid')
+            t(isss.second, 'assignee', 'valid')
 
         isss.first.name = str() # break
         isss.second.name = str() # break
