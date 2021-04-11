@@ -44,6 +44,9 @@ TODOs:
     random order by default. This had previously been the case prior to
     Python 3.6 and we were able to catch certain types of bugs due to
     this.
+
+    TODO Remove all the assert* methods. Replace their invocations with
+    the terser sames, i.e., s/assertEquals/eq/.
 """
 
 class invoketesteventargs(eventargs):
