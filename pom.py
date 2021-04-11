@@ -90,13 +90,13 @@ class site(asset.asset):
         )
 
         # If there are more that one there is a data integrity issue
-        if usrs.hasplurality:
+        if usrs.isplurality:
             raise ValueError('Multiple users found')
 
         # Good; we found one. Let's test the password and return the
         # usr.  Otherwise, we will return raise an exception to signify
         # authentication failed.
-        if usrs.hasone:
+        if usrs.issingular:
             usr = usrs.first
             if usr.ispassword(pwd):
                 return usr

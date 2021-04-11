@@ -79,10 +79,10 @@ class users(orm.entities):
                 f'name = %s and {map.name} is %s', 'root', None
             )
 
-            if usrs.hasplurality:
+            if usrs.isplurality:
                 raise ValueError('Multiple roots found')
 
-            if usrs.hasone:
+            if usrs.issingular:
                 cls._root = usrs.first
             else:
                 cls._root = user(name='root')

@@ -620,12 +620,12 @@ class entities:
         return self.count == 0
 
     @property
-    def hasone(self):
+    def issingular(self):
         # TODO I think this should be renamed to 'issinguar'
         return self.count == 1
 
     @property
-    def hasplurality(self):
+    def isplurality(self):
         # TODO I thikn is should be renamed to 'isplural'
         return self.count > 1
 

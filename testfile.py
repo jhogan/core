@@ -216,7 +216,7 @@ class dom_file(tester.tester):
                         'No avatar image file provided'
                     )
 
-                if not req.files.hasone:
+                if not req.files.issingular:
                     raise BadRequestError(
                         'Multiple avatar images were given'
                     )
