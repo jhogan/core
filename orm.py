@@ -2399,12 +2399,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 # the invocation of the entities's __init__ method.
                 self.orm.collect()
 
-
-        r = object.__getattribute__(self, attr)
-        if attr == 'brokenrules':
-            r += self.pluck('brokenrules')
-
-        return r
+        return object.__getattribute__(self, attr)
 
     def sort(self, key=None, reverse=None):
         """ Sort the entities collection internally by ``key``. If no
