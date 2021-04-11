@@ -515,10 +515,6 @@ class entities:
         es += self
         self.clear()
 
-    # TODO There appears to have been an oversite when implementing
-    # "contains" functionality. `has` and `hasn't` were originally used.
-    # However, both should probably be removed and __contains__ should
-    # take their place.
     def __contains__(self, e):
         if type(e) in (int, str):
             e = self(e)
