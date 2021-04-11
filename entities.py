@@ -405,8 +405,8 @@ class entities:
 
     def __delitem__(self, key):
         # TODO Write test. This will probably work but is only used in
-        # one place at the time of this writting. We should also
-        # test for `key` being a slice.
+        # one place at the time of this writing. We should also test for
+        # `key` being a slice.
         e = self[key]
         self.remove(e)
 
@@ -523,13 +523,7 @@ class entities:
         if type(e) in (int, str):
             e = self(e)
 
-        return self.has(e)
-
-    def has(self, e):
         return self.indexes['identity'](e).ispopulated
-
-    def hasnt(self, e):
-        return not self.has(e)
 
     def __lshift__(self, a):
         self.unshift(a)
@@ -548,7 +542,7 @@ class entities:
         elif hasattr(obj, '__iter__'):
             for t in obj:
                 if uniq:
-                    if self.hasnt(t):
+                    if t not in self:
                         self.append(t, r=r)
                 else:
                     self.append(t, r=r)
@@ -558,7 +552,7 @@ class entities:
                 'Unsupported object appended: ' + str(type(obj))
             )
 
-        if uniq and self.has(t):
+        if uniq and t in self:
             return r
 
         r._ls.append(t)
@@ -606,7 +600,7 @@ class entities:
             es = entities([es])
 
         for e in self:
-            if es.hasnt(e):
+            if e not in es:
                 r += e
         return r
 
