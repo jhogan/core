@@ -2811,8 +2811,14 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         if any(x in gb for x in self):
             return brs
 
-        if 'brokenrules' in type(self).__dict__:
-            brs += self.brokenrules
+        try:
+            prop = type(self).__dict__['brokenrules']
+        except KeyError:
+            # A brokenrules property doesn't exist on self
+            pass
+        else:
+            # A brokenrules property exists on self so call it directly
+            brs += prop.fget(self)
 
         # TODO Replace with any() - see above.
         for e in self:
@@ -4339,6 +4345,16 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         isroot = isinstance(self, user) and self.isroot
 
         gb.append(self)
+
+        try:
+            # Search for brokenrules property on self
+            prop = type(self).__dict__['brokenrules']
+        except KeyError:
+            # A brokenrules property doesn't exist on self
+            pass
+        else:
+            # A brokenrules property exists on self so call it directly
+            brs += prop.fget(self)
             
         for map in self.orm.mappings:
             if type(map) is fieldmapping:
