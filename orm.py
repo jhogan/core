@@ -2342,6 +2342,9 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
         if attr == 'orm':
             return object.__getattribute__(self, attr)
 
+        if attr == 'brokenrules':
+            return entities.getbrokenrules(self)
+
         # Raise exception if we are streaming and one of these nono
         # attributes is called.
         if self.orm.isstreaming:
@@ -4541,18 +4544,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         try:
             if attr == 'brokenrules':
-                brs = entitiesmod.brokenrules()
-                if 'brokenrules' in self.orm.entity.__dict__:
-                    brs += object.__getattribute__(self, attr)
-                    if not isinstance(brs, entitiesmod.brokenrules):
-                        raise TypeError(
-                            "'brokenrules' must return an instance of"
-                            "'entities.brokenrules'"
-                        )
-
-                brs1 = entity.getbrokenrules(self)
-                brs += brs1
-                return brs
+                return entity.getbrokenrules(self)
 
             v = object.__getattribute__(self, attr)
 
