@@ -6,6 +6,29 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021
 
+""" This module contains the ``entities`` class - an important class
+designed to maintain collections of ``entity`` subclass instances
+(``entity`` is also contained in this module). The ``entities`` class
+can be thought of as a smart ``list`` while ``entity`` subclasse
+instances are collected as the elements of that list. Many of the other
+classes in the core framework inherit from ``entities`` and ``entity`` -
+most notebly ``orm.entities`` and ``orm.entity``.
+
+This module also containes the ``brokenrule`` and ``brokenrules``
+classes which provide a way to collect validation errors an ``entity``
+or ``entities`` object may have.
+
+Base classes ``event`` and ``eventargs`` are defined here too which
+allows for the defining, raising and handling of events. Their design
+was inspired my C# delegates and the VB.NET event system.
+
+The ``index`` and ``indexes`` classes create dict() based indexes of
+``entity`` objects within ``entities`` collection for fast object
+lookups by attributes. These indexes are useful for ``entities``
+collections with large numbers of elements.
+
+TODOs:
+"""
 from datetime import datetime
 from random import randint, sample
 import re
