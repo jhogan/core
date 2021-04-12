@@ -964,7 +964,7 @@ class brokenrules(entities):
             o = brokenrule(o)
         super().append(o, r)
 
-    def demand(self, cls, prop, 
+    def demand(self, e, prop, 
                      full=False, 
                      isemail=False, 
                      isdate=False,
@@ -975,24 +975,21 @@ class brokenrules(entities):
                      type=None,
                      instanceof=None):
 
-        # TODO I think ``cls`` is always going to be a referenc to an
-        # entities.entity, so should rename it to ``e``.
-
         # TODO A lot of lines are greater than 72 characters.
 
         # TODO Write unit tests
-        v = getattr(cls, prop)
+        v = getattr(e, prop)
 
         wrongtype = False
         if v is not None:
             if type is not None:
                 if builtins.type(v) is not type:
-                    self += brokenrule(prop + ' is wrong type', prop, 'valid', cls)
+                    self += brokenrule(prop + ' is wrong type', prop, 'valid', e)
                     wrongtype = True
 
             if instanceof is not None :
                 if not isinstance(v, instanceof):
-                    self += brokenrule(prop + ' is wrong type', prop, 'valid', cls)
+                    self += brokenrule(prop + ' is wrong type', prop, 'valid', e)
                     wrongtype = True
 
         if not wrongtype and type in (float, decimal.Decimal):
@@ -1013,16 +1010,16 @@ class brokenrules(entities):
                 msg = 'decimal part is too long'
 
             if msg:
-                self += brokenrule(msg, prop, 'fits', cls)
+                self += brokenrule(msg, prop, 'fits', e)
 
         if full:
             if (builtins.type(v) == str and v.strip() == '') or v is None:
-                self += brokenrule(prop + ' is empty', prop, 'full', cls)
+                self += brokenrule(prop + ' is empty', prop, 'full', e)
 
         if isemail:
             pattern = r'[^@]+@[^@]+\.[^@]+'
             if v == None or not re.match(pattern, v):
-                self += brokenrule(prop + ' is invalid', prop, 'valid', cls)
+                self += brokenrule(prop + ' is invalid', prop, 'valid', e)
 
         if not wrongtype:
             for i, limit in enumerate((max, min)):
@@ -1066,11 +1063,11 @@ class brokenrules(entities):
                                 else:
                                     raise NotImplementedError()
 
-                                self += brokenrule(msg, prop, 'fits', cls)
+                                self += brokenrule(msg, prop, 'fits', e)
 
         if isdate:
             if builtins.type(v) != datetime:
-                self += brokenrule(prop + " isn't a date", prop, 'valid', cls)
+                self += brokenrule(prop + " isn't a date", prop, 'valid', e)
 
     def contains(self, prop=None, type=None):
         for br in self:
