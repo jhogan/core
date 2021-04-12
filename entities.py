@@ -1007,12 +1007,16 @@ class brokenrules(entities):
         if v is not None:
             if type is not None:
                 if builtins.type(v) is not type:
-                    self += brokenrule(prop + ' is wrong type', prop, 'valid', e)
+                    self += brokenrule(
+                        prop + ' is wrong type', prop, 'valid', e
+                    )
                     wrongtype = True
 
             if instanceof is not None :
                 if not isinstance(v, instanceof):
-                    self += brokenrule(prop + ' is wrong type', prop, 'valid', e)
+                    self += brokenrule(
+                        prop + ' is wrong type', prop, 'valid', e
+                    )
                     wrongtype = True
 
         if not wrongtype and type in (float, decimal.Decimal):
@@ -1036,13 +1040,18 @@ class brokenrules(entities):
                 self += brokenrule(msg, prop, 'fits', e)
 
         if full:
-            if (builtins.type(v) == str and v.strip() == '') or v is None:
+            if (
+                (builtins.type(v) == str and v.strip() == '')
+                or v is None
+            ):
                 self += brokenrule(prop + ' is empty', prop, 'full', e)
 
         if isemail:
             pattern = r'[^@]+@[^@]+\.[^@]+'
             if v == None or not re.match(pattern, v):
-                self += brokenrule(prop + ' is invalid', prop, 'valid', e)
+                self += brokenrule(
+                    prop + ' is invalid', prop, 'valid', e
+                )
 
         if not wrongtype:
             for i, limit in enumerate((max, min)):
@@ -1054,34 +1063,42 @@ class brokenrules(entities):
                                 broke = len(v) > limit
                             else:
                                 broke = len(v) < limit
-                        elif builtins.type(v) is int or isinstance(v, datetime):
+                        elif (
+                            builtins.type(v) is int 
+                            or isinstance(v, datetime)
+                        ):
                             if i:
                                 broke = v < limit
                             else:
                                 broke = v > limit
                     except TypeError:
-                        # If len(v) raises a TypeError then v's length can't be
-                        # determined because it is the wrong type (perhaps it's
-                        # an int). Silently ignore.  It is the calling code's
-                        # responsibility to ensure the correct type is passed
-                        # in for the cases where the 'type' argument is False.
+                        # If len(v) raises a TypeError then v's length
+                        # can't be determined because it is the wrong
+                        # type (perhaps it's an int). Silently ignore.
+                        # It is the calling code's responsibility to
+                        # ensure that the correct type is passed in for
+                        # the cases where the 'type' argument is False.
                         pass
                     else:
-                        # property can only break the 'fits' rule if it hasn't
-                        # broken the 'full' rule. E.g., a property can be a
-                        # string of whitespaces which may break the 'full'
-                        # rule. In that case, a broken 'fits' rule would't make
-                        # sense.
+                        # property can only break the 'fits' rule if it
+                        # hasn't broken the 'full' rule. E.g., a
+                        # property can be a string of whitespaces which
+                        # may break the 'full' rule. In that case, a
+                        # broken 'fits' rule would't make sense.
                         if broke:
                             if not self.contains(prop, 'full'):
-                                if builtins.type(v) in (str, bytes, bytearray):
+                                types = (str, bytes, bytearray)
+                                if builtins.type(v) in types:
                                     if i == 0:
                                         msg = prop 
                                         msg += ' is too long'
                                     else:
                                         msg = prop
                                         msg += ' is too short'
-                                elif builtins.type(v) is int or isinstance(v, datetime):
+                                elif (
+                                    builtins.type(v) is int 
+                                    or isinstance(v, datetime)
+                                ):
                                     msg = prop + ' is out of range'
                                 else:
                                     raise NotImplementedError()
