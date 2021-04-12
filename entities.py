@@ -617,12 +617,10 @@ class entities:
 
     @property
     def issingular(self):
-        # TODO I think this should be renamed to 'issinguar'
         return self.count == 1
 
     @property
     def isplurality(self):
-        # TODO I thikn is should be renamed to 'isplural'
         return self.count > 1
 
     @property
@@ -702,11 +700,12 @@ class entities:
     def getindex(self, e):
         """ Return the first index of e in the collection.
 
-        This is similar to list.index except here we use the `is` operator for
-        comparison instead of the `==` operator."""
+        This is similar to list.index except here we use the `is`
+        operator for comparison instead of the `==` operator.
+        """
 
-        # TODO:OPT We may be able to cache this and invalidate the cache using
-        # the standard events
+        # TODO:OPT We may be able to cache this and invalidate the cache
+        # using the standard events
 
         if isinstance(e, entity):
             for ix, e1 in enumerate(self):
@@ -903,16 +902,6 @@ class entity:
                 eargs = entityvaluechangeeventargs(self, prop)
                 self.onbeforevaluechange(self, eargs)
 
-            # TODO If we were able to, I think we should pass cmp into
-            # the call to setattr so __setattr__ would receive it.  In
-            # the orm, when ascending the inheritance tree, we may call
-            # _setvalue multiple times before we get to the destination
-            # entity.  Unless we pass cmp, we may be needlessly loading
-            # objects for comparison. However, we can only pass three
-            # args to the default setattr(), so we need a way to work
-            # around this limition (perhaps pass in a custom `setattr`
-            # function).
-            # XXX
             if setattr is builtins.setattr:
                 try:
                     self.__setattr__(field, new, cmp=cmp)
