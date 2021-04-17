@@ -5249,40 +5249,47 @@ class test_orm(tester):
         self.broken(iss, 'name', 'fits')
         self.false(iss.isvalid)
 
-        ''' Subentity - Ensure that brokenrules aren't inherited'''
+        ''' Subentity - Ensure that brokenrules are inherited'''
         bg = bug.getvalid()
         self.true(bg.isvalid)
 
         # Break imperitive rules from the superentity
         bg.assignee = 'brokenATexample.com'
-        self.zero(bg.brokenrules)
-        self.true(bg.isvalid)
-        self.one(bg.orm.super.brokenrules)
-        self.broken(bg.orm.super, 'assignee', 'valid')
 
+        with self.brokentest(bg) as t:
+            t(bg.orm.super, 'assignee', 'valid')
+            
+        with self.brokentest(bg.orm.super) as t:
+            t(bg.orm.super, 'assignee', 'valid')
+            
         # Break declaritive rule on superentity
         bg.name = str()  # Issue names can't be empty str
-        self.zero(bg.brokenrules)
-        self.true(bg.isvalid)
-        self.two(bg.orm.super.brokenrules)
-        self.broken(bg.orm.super, 'assignee', 'valid')
-        self.broken(bg.orm.super, 'name', 'fits')
+
+        with self.brokentest(bg) as t:
+            t(bg.orm.super, 'name', 'fits')
+            t(bg.orm.super, 'assignee', 'valid')
+
+        with self.brokentest(bg.orm.super) as t:
+            t(bg.orm.super, 'name', 'fits')
+            t(bg.orm.super, 'assignee', 'valid')
 
         # Break declaritive rule on subentity.
         bg.threat = str()  # String can't be empty
 
-        self.one(bg.brokenrules)
-        self.false(bg.isvalid)
-        self.broken(bg, 'threat', 'fits')
+        with self.brokentest(bg) as t:
+            t(bg, 'threat', 'fits')
+            t(bg.orm.super, 'name', 'fits')
+            t(bg.orm.super, 'assignee', 'valid')
 
         # Break imperitive rule on subentity
         bg.points = 4  # Must be Fibonacci
 
-        self.two(bg.brokenrules)
-        self.false(bg.isvalid)
-        self.broken(bg, 'threat', 'fits')
-        self.broken(bg, 'points', 'fits')
-        self.false(bg.isvalid)
+        with self.brokentest(bg) as t:
+            t(bg, 'threat', 'fits')
+            t(bg.orm.super, 'name', 'fits')
+            t(bg.orm.super, 'assignee', 'valid')
+            t(bg, 'points', 'fits')
+        return 
 
         ''' Entities collection '''
 
@@ -13141,7 +13148,7 @@ class test_orm(tester):
         # sng itself will have no broken rules and will be considered
         # vaild. 
         self.one(sng.brokenrules)
-        self.true(sng.isvalid)
+        self.false(sng.isvalid)
 
         # However, sng's super entity, artist, is not valid, so the save
         # will ultimately fail.
@@ -13150,11 +13157,14 @@ class test_orm(tester):
         except Exception as ex:
             self.type(BrokenRulesError, ex)
 
-            # The BrokenRulesError will report that sng's super (artist)
-            # is broken.
-            self.is_(sng.orm.super, ex.object)
+            # The BrokenRulesError will report that sng is broken.
+            self.is_(sng, ex.object)
+
             with self.brokentest(ex.object.brokenrules) as t:
-                t(sng.orm.super, 'firstname', 'fits')
+                # However, the brokenrules collection of ex.object
+                # (which is the sng object) will tell us that
+                # it was sng.orm.artist that actually broken the rule.
+                t(ex.object.orm.super, 'firstname', 'fits')
 
             # Ensure the sng record was not created due to the rollback
             # caused by the invalid artist. This logic is definately
