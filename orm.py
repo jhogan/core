@@ -4462,6 +4462,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 if map.isloaded:
                     brs += map.value.getbrokenrules(gb=gb)
 
+        sup = self.orm._super
+
+        if sup:
+            brs += sup.getbrokenrules(gb)
+
         return brs
 
     def __getattribute__(self, attr):
