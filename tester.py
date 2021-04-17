@@ -9,7 +9,7 @@ from configfile import configfile
 from contextlib import contextmanager
 from contextlib import contextmanager, suppress
 from dbg import B
-from entities import *
+import entities
 from pprint import pprint
 from textwrap import dedent
 from timer import stopwatch
@@ -18,6 +18,7 @@ import argparse
 import dom
 import inspect
 import io
+import builtins
 import json
 import pdb
 import pom
@@ -49,14 +50,14 @@ TODOs:
     the terser sames, i.e., s/assertEquals/eq/.
 """
 
-class invoketesteventargs(eventargs):
+class invoketesteventargs(entities.eventargs):
     def __init__(self, cls, meth):
         self.class_ = cls
         self.method = meth
 
-class testers(entities):
+class testers(entities.entities):
     def __init__(self, initial=None):
-        self.oninvoketest = event()
+        self.oninvoketest = entities.event()
         super().__init__(initial=initial)
         self.breakonexception = False
 
@@ -116,7 +117,7 @@ class testers(entities):
     def __str__(self):
         return self._tostr(str, includeHeader=False)
 
-class tester(entity):
+class tester(entities.entity):
     def __init__(self, testers):
         self._failures = failures()
         self.testers = testers
@@ -642,7 +643,7 @@ class tester(entity):
         class tester:
             def __init__(self, brs):
                 self.brokenrules = brs
-                self.found = brokenrules()
+                self.found = entities.brokenrules()
                 self.tested = list()
                 self.dups = list()
                 self.unfound = list()
@@ -828,7 +829,7 @@ class tester(entity):
             statuscode0 = int(statuscode[:3])
             return httpresponse(statuscode0, statusmessage, resheads, body)
 
-class eventregistrations(entities):
+class eventregistrations(entities.entities):
     def register(self, event, handler):
         er = eventregistration(event, handler)
         er.register()
@@ -839,7 +840,7 @@ class eventregistrations(entities):
             er.unregister()
         self.clear()
 
-class eventregistration(entity):
+class eventregistration(entities.entity):
     def __init__(self, event, handler):
         self.event = event
         self.handler = handler
@@ -851,7 +852,7 @@ class eventregistration(entity):
     def unregister(self):
         self.event -= self.handler
 
-class httpresponse(entity):
+class httpresponse(entities.entity):
     def __init__(self, statuscode, statusmessage, headers, body):
         self.statuscode = statuscode
         self.statusmessage = statusmessage
@@ -860,12 +861,12 @@ class httpresponse(entity):
 
     @property
     def brokenrules(self):
-        brs = brokenrules()
+        brs = entities.brokenrules()
         if self.statuscode < 200 or self.statuscode > 400:
             brs += brokenrule('Status code is not valid: ' + str(self.statuscode))
 
         if self.body['__exception']:
-            brs += brokenrules('Exception was returned');
+            brs += entities.brokenrules('Exception was returned');
 
         return brs
 
@@ -900,10 +901,10 @@ class httpresponse(entity):
         r += pprint.pformat(self.body)
         return r
             
-class failures(entities):
+class failures(entities.entities):
     pass
 
-class failure(entity):
+class failure(entities.entity):
     def __init__(self, cause=None, assert_=None, ent=None, actual=None):
         self._assert = assert_
         self.cause = cause

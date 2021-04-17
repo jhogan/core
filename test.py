@@ -15,6 +15,7 @@ from config import config
 from contextlib import contextmanager, redirect_stdout
 from datetime import timezone, datetime, date
 from entities import BrokenRulesError
+import entities
 from func import enumerate, getattr, B
 from pprint import pprint
 from random import randint, uniform, random
@@ -94,7 +95,7 @@ def la2gr(chars):
             r += ' '
     return r
         
-class knights(entities):
+class knights(entities.entities):
     def __init__(self, initial=None):
         self.indexes += index(name='name', 
                         keyfn=lambda k: k.name, 
@@ -156,7 +157,7 @@ class knight(entity):
 
     @property
     def brokenrules(self):
-        brs = brokenrules()
+        brs = entities.brokenrules()
         if type(self.name) != str:
             brs += brokenrule("Names must be strings")
         return brs
@@ -170,7 +171,7 @@ class knight(entity):
 class sillyknight(knight):
     pass
 
-class philosophers(entities):
+class philosophers(entities.entities):
     pass
 
 class philosopher(entity):
@@ -181,7 +182,7 @@ class performer(entity):
     def __init__(self, name):
         self.name = name
 
-class constants(entities):
+class constants(entities.entities):
     pass
 
 class constant(entity):
@@ -201,25 +202,25 @@ class test_entities(tester):
 
         # Plain ol' instantiate
         try:
-            es = entities()
+            es = entities.entities()
         except:
             self.assertFail('Failed instantiating entities')
 
         # Instantiate with an array of entities
         e1, e2 = entity(), entity()
 
-        es = entities([e1, e2])
+        es = entities.entities([e1, e2])
 
         self.assertIs(e1, es[0])
         self.assertIs(e2, es[1])
 
     def it_is_not_falsy(self):
-        es = entities()
+        es = entities.entities()
         self.assertTruthy(es)
 
     def it_clears(self):
         """ Test to ensure the clear() method removes entities. """
-        es = entities([entity(), entity()])
+        es = entities.entities([entity(), entity()])
         es.clear()
         self.assertTrue(es.isempty)
         
@@ -228,7 +229,7 @@ class test_entities(tester):
         or None if the index is invalid. """
         e1, e2 = entity(), entity()
 
-        es = entities([e1, e2])
+        es = entities.entities([e1, e2])
 
         self.assertIs(e1, es(0))
         self.assertIs(e2, es(1))
@@ -244,7 +245,7 @@ class test_entities(tester):
         """ Ensure the iterator (__iter__()) works. """
         e1, e2 = entity(), entity()
 
-        es = entities([e1, e2])
+        es = entities.entities([e1, e2])
 
         for i, e in enumerate(es):
             if i == 0:
@@ -257,7 +258,7 @@ class test_entities(tester):
     def it_gets_random(self):
         """ Ensure es.getrandom() eventually returns a random entity. """
         e1, e2 = entity(), entity()
-        es = entities([e1, e2])
+        es = entities.entities([e1, e2])
 
         got1 = got2 = False
         for _ in range(100):
@@ -279,7 +280,7 @@ class test_entities(tester):
 
         # Subclass entities to ensure that getrandomized returns a instance of
         # the subclass.
-        class pantheon(entities):
+        class pantheon(entities.entities):
             pass
 
         e1, e2 = entity(), entity()
@@ -797,7 +798,7 @@ class test_entities(tester):
 
         # If the collection is empty, a ubound can't exist so set it should be
         # None.
-        self.assertNone(entities().ubound)
+        self.assertNone(entities.entities().ubound)
 
     def it_calls_insert(self):
         """ Normally we append to the end of collections. The insert() method
@@ -845,7 +846,7 @@ class test_entities(tester):
         self.assertFalse(ks.has(rst))
 
         # Ensure empty collection shift None
-        self.assertNone(entities().shift())
+        self.assertNone(entities.entities().shift())
 
     def it_calls_unshift(self):
         """ Calling unshift() inserts an elment into the collection making it
@@ -870,7 +871,7 @@ class test_entities(tester):
         self.assertFalse(ks.has(last))
 
         # Ensure empty collection pops None
-        self.assertNone(entities().pop())
+        self.assertNone(entities.entities().pop())
 
     def it_calls_push(self):
         """ Calling push() causes the argument to be added to the end of
@@ -921,7 +922,7 @@ class test_entities(tester):
         self.assertEq(1, ks1.count)
         self.assertIs(ks.last, ni)
         self.assertIs(ks1.first, ni)
-        self.assertEq(entities, type(ks1))
+        self.assertEq(entities.entities, type(ks1))
 
         ## Test appending one unique entity with the uniq flag set. We
         ## should get a successful appending like above since the entity
@@ -935,7 +936,7 @@ class test_entities(tester):
         self.assertEq(1, ks1.count)
         self.assertIs(ks.last, ni)
         self.assertIs(ks1.first, ni)
-        self.assertEq(entities, type(ks1))
+        self.assertEq(entities.entities, type(ks1))
 
         ## Test appending one non-unique entity with the uniq flag set. We
         ## should get a successful appending like above since the entity
@@ -946,7 +947,7 @@ class test_entities(tester):
 
         self.assertEq(4, ks.count)
         self.assertTrue(ks1.isempty)
-        self.assertEq(entities, type(ks1))
+        self.assertEq(entities.entities, type(ks1))
 
         ## Test appending an entities collection to an entities collection.
         ks = knights.createthe4()
@@ -962,7 +963,7 @@ class test_entities(tester):
         self.assertIs(nis.second,  ks.last)
         self.assertIs(nis.first,   ks1.first)
         self.assertIs(nis.second,  ks1.second)
-        self.assertEq(entities,    type(ks1))
+        self.assertEq(entities.entities,    type(ks1))
 
         # Test appending an entities collection to an entities collection
         # where one of the entities being appended is not unique, though 
@@ -981,7 +982,7 @@ class test_entities(tester):
         self.assertIs(nis.second,  ks.last)
         self.assertIs(nis.first,   ks1.first)
         self.assertIs(nis.second,  ks1.second)
-        self.assertEq(entities,    type(ks1))
+        self.assertEq(entities.entities,    type(ks1))
 
         # Test appending an entities collection to an entities collection
         # where one of the entities being appended is not unique.
@@ -997,7 +998,7 @@ class test_entities(tester):
         self.assertEq(1,           ks1.count)
         self.assertIs(nis.first,   ks.last)
         self.assertIs(nis.first,   ks1.first)
-        self.assertEq(entities,    type(ks1))
+        self.assertEq(entities.entities,    type(ks1))
         self.assertFalse(ks1.has(nis.second))
 
         # Test appending an entities collection to an entities collection
@@ -1012,7 +1013,7 @@ class test_entities(tester):
 
         self.assertEq(4,           ks.count)
         self.assertEq(0,           ks1.count)
-        self.assertEq(entities,    type(ks1))
+        self.assertEq(entities.entities,    type(ks1))
         self.assertFalse(ks1.has(nis.first))
         self.assertFalse(ks1.has(nis.second))
 
@@ -1545,7 +1546,7 @@ class test_entities(tester):
         self.assertTrue(snare.hasone)
 
         # Append an entities collection to ks
-        ks += entities([the4.second, the4.third])
+        ks += entities.entities([the4.second, the4.third])
         self.assertIs(the4.first, snare.first)
         self.assertIs(the4.second, snare.second)
         self.assertIs(the4.third, snare.third)
@@ -1568,7 +1569,7 @@ class test_entities(tester):
 
         # Appned a collection of duplicate entity again but with the |=
         # operator to ensure they won't be appended
-        ks |= entities([the4.second, the4.third])
+        ks |= entities.entities([the4.second, the4.third])
         self.assertIs(the4.first, snare.first)
         self.assertIs(the4.second, snare.second)
         self.assertIs(the4.third, snare.third)
@@ -1616,7 +1617,7 @@ class test_entities(tester):
         self.assertCount(1, snare)
 
         # Instantiate with collection
-        ks = entities([the4.first, the4.second])
+        ks = entities.entities([the4.first, the4.second])
         # TODO We need to test that instatiating with a list of entities
         # invokes the onadd event. Obviously, we can't subscribe to the
         # event until the object is instantiated. There needs to be a
@@ -1645,7 +1646,7 @@ class test_entities(tester):
         self.assertIs(rst, snare.first)
 
         # Remove two elements as an entities collection
-        ks1 = entities([ks.first, ks.second])
+        ks1 = entities.entities([ks.first, ks.second])
         ks -= ks1
         self.assertCount(3, snare)
         self.assertIs(rst, snare.first)
@@ -2069,7 +2070,7 @@ class test_entity(tester):
 
         ks = ni + ni1
 
-        self.assertEq(entities, type(ks))
+        self.assertEq(entities.entities, type(ks))
         self.assertEq(2, ks.count)
         self.assertIs(ks.first, ni)
         self.assertIs(ks.second, ni1)
@@ -2078,7 +2079,7 @@ class test_entity(tester):
         
         the4 = knights.createthe4()
         ks = ni + the4
-        self.assertEq(entities,   type(ks))
+        self.assertEq(entities.entities,   type(ks))
         self.assertEq(5,          ks.count)
         self.assertIs(ks.first,   ni)
         self.assertIs(ks.second,  the4.first)
@@ -2362,7 +2363,7 @@ class test_table(tester):
         r.newfield(the4.first)
         r.newfield(the4.second)
         
-        tbl.remove(entities(the4.first))
+        tbl.remove(entities.entities(the4.first))
         fs = tbl.where(lambda v: type(v) == knight)
         self.assertEq(1, fs.count)
         self.assertEq(fields, type(fs))
@@ -3165,7 +3166,7 @@ class myreserved(orm.entity):
 class comments(orm.entities):
     @property
     def brokenrules(self):
-        brs = brokenrules()
+        brs = entities.brokenrules()
         bodies = self.pluck('body')
         if len(bodies) != len(set(bodies)):
             brs += brokenrule(
@@ -3185,7 +3186,7 @@ class comment(orm.entity):
 
     @property
     def brokenrules(self):
-        brs = brokenrules()
+        brs = entities.brokenrules()
         if '@' not in self.author:
             brs += brokenrule(
                 'Author email address has no @', 
@@ -3674,7 +3675,7 @@ class rapper(singer):
 class issues(orm.entities):
     @property
     def brokenrules(self):
-        brs = brokenrules()
+        brs = entities.brokenrules()
         names = self.pluck('name')
         dups = set(x for x in names if names.count(x) > 1)
 
@@ -3713,7 +3714,7 @@ class issue(orm.entity):
 
     @property
     def brokenrules(self):
-        brs = brokenrules()
+        brs = entities.brokenrules()
         if '@' not in self.assignee:
             brs += brokenrule(
                 'Assignee email address has no @', 
@@ -3753,7 +3754,7 @@ class bug(issue):
 
     @property
     def brokenrules(self):
-        brs = brokenrules()
+        brs = entities.brokenrules()
         if self.points not in (1, 2, 3, 5, 8, 13):
             brs += brokenrule(
                 'Story points must be a Fibonacci',
