@@ -666,6 +666,16 @@ class tester(entities.entity):
                 else:
                     self.unfound.append(test2str(attr, type, e, msg))
 
+        if isinstance(brs, entities.entity):
+            # If brs is an entity, get itl broken rule
+            brs = brs.brokenrules
+        elif isinstance(brs, entities.brokenrules):
+            # This is what we would expect
+            pass
+        else:
+            raise TypeError(
+                f'Cannot test brokenrules on type {type(brs)}'
+            )
         t = tester(brs)
         yield t
 
