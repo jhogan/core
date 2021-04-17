@@ -18,10 +18,21 @@ import string
 from func import getattr, enumerate
 from dbg import B
 
+# TODO Throughout the code base, we should look for instances of:
+#
+#     if x == None
+#     if x != None
+#     if x == False
+#     if x == True
+# 
+# And replace the (in)equality operator (== and !=) with the identity
+# operator (is and is not).
+
 # TODO Rename entities.py to ent.py
 
 # TODO This seems misplaced. Maybe we should have a module called dec.py
 # for miscellaneous decorators.
+
 class classproperty(property):
     ''' Add this decorator to a method and it becomes a class method
     that can be used like a property.'''
@@ -1111,8 +1122,8 @@ class brokenrule(entity):
         self.property  =  prop
         self.entity    =  e
 
-        if type != None:
-            if type not in ['full', 'valid', 'fits', 'empty', 'unique']:
+        if type is not None:
+            if type not in ('full', 'valid', 'fits', 'empty', 'unique'):
                 raise Exception('Invalid brokenrules type')
         self.type = type
 
