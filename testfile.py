@@ -284,6 +284,11 @@ class dom_file(tester.tester):
                     local = True,
                 )
 
+
+                # TODO The inodes 'cdnjs.cloudflare.com', 'ajax', and
+                # 'libs' are being inserted 3 times each. This is a bug,
+                # but it is also a bug that the validator
+                # (inode.getbrokenrules) isn't detecting this.
                 self.resources.save()
 
                 self.main += dom.h1('Home page')
