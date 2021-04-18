@@ -43,7 +43,8 @@ from dbg import B
 
 class classproperty(property):
     ''' Add this decorator to a method and it becomes a class method
-    that can be used like a property.'''
+    that can be used like a property.
+    '''
 
     def __get__(self, cls, owner):
         # If cls is not None, it will be the instance. If there is an
@@ -55,7 +56,109 @@ class classproperty(property):
         return classmethod(self.fget).__get__(None, obj)()
 
 class entities:
+    """ An abstract class that serves a container for other classes::
+
+        # Create an entities and two entity objects
+        ents = entities()
+        ent = entity()
+        ent1 = entity()
+
+        # Note that the lengthe of ents is currently 0 because we
+        # haven't added anything to it.
+        assert len(ents) == 0   # Noncanonical form
+        assert ents.count == 0  # Canonical form
+
+        # Append ent and ent1
+        ents.append(ent)  # Noncanonical form
+        ents += ent1      # Canonical form
+
+        # Assert that ent and ent1 are the first and second elements
+        # respectively.
+        assert ents[0] is ent       Noncanonical form
+        assert ents[1] is ent1  
+
+        assert ents.first is ent    Canonical form
+        assert ents.second is ent1
+
+        assert len(ents) == 2       Noncanonical form
+        assert ents.count == 2      Canonical form
+
+    As you can see, the ``entities`` instance aboves acts similar to a
+    list(). ``entities`` acts and quacks like a Python list to the
+    extent possible. This allows it to be more flexible. However, as you
+    can see above, the canonical forms are prefered because they are
+    easier to read and type.
+
+    While you could use ``entities`` and ``entity`` directly, they are
+    almost always subclassed. Subclassed ``entities`` are much more
+    powerful than simple arrays because subclasses can encapsulate
+    attribute and behavior logic::
+
+        class files(entities):
+            @property
+            def size(self):
+                return sum(x.size for x in self)
+
+            def delete(self):
+                for f in self:
+                    f.delete()
+
+        class file(entity):
+            def __init__(self, path, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.path = path
+
+            def size(self):
+                return os.path.getsize(self.path)
+
+            def delete(self):
+                os.remove(self.path)
+
+    Above, we have a `files` collection to collect `file` objects.  We
+    can use the files class to calculate the total size of the files and
+    delete them all in one line.
+
+        # Create a files collection and add the herp and derp files
+        fs = files()
+        fs += file('/tmp/herp')
+        fs += file('/tmp/derp')
+
+        # Get the size of the file combined
+        assert fs.size == fs.first.size + fs.second.size
+
+        # Delete both files
+        fs.delete()
+    """
     def __init__(self, initial=None):
+        """ Create an instance of an ``entities`` collection.
+
+        Subclasses of ``entities``, if they override __init__ will want
+        to ensure this method is called::
+
+            class myent(entities):
+                def __init__(self, *args, **kwargs):
+                    
+                    # Do this otherwise the entities class will break
+                    super().__init__(*args, **kwargs)
+                    
+                    # Custome stuff
+                    ...
+
+        :param: initial iterable: An interable, such as a list, tuple,
+        or ``entities`` collection, which will populate the entities
+        class.
+        """
+
+        # TODO We could make _ls lazy-loaded property. This way
+        # subclasses wouldn't break if they don't call super.__init__()
+        #
+        #     @property
+        #     def _ls(self):
+        #         # The naming is a little off here
+        #         if self._private_ls is None:
+        #             self._private_ls = list()
+        #         return self._private_ls
+
         self._ls = list()
 
         # Append initial collection
@@ -63,6 +166,20 @@ class entities:
             self.append(initial)
 
     def __bool__(self):
+        """ Returns True.
+
+        An entities class will always return True. Unlike a list, you
+        should not test if an entities collection has elements by seeing
+        if its truthy. Rather, you should call it `isplurality`
+        property:
+
+            # Dont do this
+            if myents:
+                # We must have elements in myents
+
+            # Rather, do this
+            if myents.isplurality
+        """
         # An entities collection will always pass a truth test
         return True
 
@@ -644,10 +761,12 @@ class entities:
 
     @property
     def isplurality(self):
+        # TODO This should be call isplural
         return self.count > 1
 
     @property
     def ispopulated(self):
+        # TODO This is redundant with isplurality.
         return not self.isempty
 
     def __repr__(self):
