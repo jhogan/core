@@ -668,10 +668,15 @@ class executioner(entity):
                     msg = msg.format(i, errno, conn.isopen)
                     self.log.debug(msg)
 
-                    eargs = operationeventargs(self, 'reconnect', None, None)
+                    eargs = operationeventargs(
+                        self, 'reconnect', None, None, 'before'
+                    )
+
                     self.onbeforereconnect(self, eargs)
 
                     conn.reconnect()
+
+                    eargs.preposition = 'after'
 
                     self.onafterreconnect(self, eargs)
                 else:
