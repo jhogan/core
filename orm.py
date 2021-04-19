@@ -4326,6 +4326,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # Assert that there are now no broken rules
             assert not per.brokenrules.count
             assert per.isvalid
+
+        [TODO Explain parameters]
         """
 
         brs = entitiesmod.brokenrules()
@@ -4341,8 +4343,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         gb.append(self)
 
-        # TODO We should only collect imperative brokenrules if self
-        # directly called .brokenrules.
         try:
             # Search for brokenrules property on self
             prop = type(self).__dict__['brokenrules']

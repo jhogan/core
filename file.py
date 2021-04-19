@@ -59,6 +59,7 @@ from dbg import B
 from func import enumerate, getattr, B
 from entities import classproperty
 import base64
+import entities
 import contextlib
 import db
 import hashlib

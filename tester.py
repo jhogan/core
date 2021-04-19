@@ -30,8 +30,8 @@ import urllib
 import uuid
 import www
 import ecommerce
-
 """ 
+
 This module provides unit testing for the core framework, web pages, and
 any other code in the core repository.
 
