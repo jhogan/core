@@ -3891,10 +3891,23 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         guestbook.append(self)
 
+        # Determine if the entity is valid. Don't ascend (ascend=False)
+        # the inheritence tree to collect broken rules from self's super
+        # entity object because we only care about the validity of self
+        # (not self.orm.super, etc.). If a superentity of self is
+        # invalid, the recursive _save method will eventually try to
+        # save it and fail, causing a rollback. We don't want to
+        # collect brokenrules more than once because the imperitive
+        # brokenrules properties that ORM users write can potentially be
+        # slow (such as when they need to make a database calls).
+        isvalid = self.getbrokenrules(
+            ascend=False, recurse=False
+        ).isempty
+
         # Don't save the entity if it doesn't pass its validation rules
         # (not self.isvalid). If we are simply deleting the entity, the
         # the validation rules don't matter.
-        if not self.orm.ismarkedfordeletion and not self.isvalid:
+        if not self.orm.ismarkedfordeletion and not isvalid:
             raise db.BrokenRulesError("Can't save invalid object", self)
 
         # Determine if we are deleting, creating or updating the entity
@@ -4234,7 +4247,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # parameter.
         return self.getbrokenrules()
 
-    def getbrokenrules(self, gb=None):
+    def getbrokenrules(self, gb=None, ascend=True, recurse=True):
         """ Return the brokenrules collection for this entity.
 
         Though the `brokenrules` property can be called for convenience,
@@ -4406,7 +4419,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         max=type(self).maxdatetime,
                     )
 
-            elif type(map) is entitiesmapping:
+            elif type(map) is entitiesmapping and recurse:
                 # NOTE Currently, map.value will not load the entities
                 # on invocation so we get None for es. This is good
                 # because we don't want to needlessly load an object to
@@ -4424,7 +4437,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         )
                     brs += es.getbrokenrules(gb=gb)
 
-            elif type(map) is entitymapping:
+            elif type(map) is entitymapping and recurse:
                 if map.isloaded:
                     if not isinstance(map.value, map.entity):
                         msg = "'%s' attribute is wrong type: %s"
@@ -4458,14 +4471,15 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                     msg, map.name, 'valid', self
                                 )
 
-            elif type(map) is associationsmapping:
+            elif type(map) is associationsmapping and recurse:
                 if map.isloaded:
                     brs += map.value.getbrokenrules(gb=gb)
 
-        sup = self.orm._super
+        if ascend:
+            sup = self.orm._super
 
-        if sup:
-            brs += sup.getbrokenrules(gb)
+            if sup:
+                brs += sup.getbrokenrules(gb)
 
         return brs
 
