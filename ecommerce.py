@@ -369,8 +369,9 @@ class user(orm.entity):
     def isroot(self):
         return self.name == 'root' and self.site is None
 
-    def getbrokenrules(self, *args, **kwargs):
-        brs = super().getbrokenrules(*args, **kwargs)
+    @property
+    def brokenrules(self):
+        brs = entities.brokenrules()
 
         # Get site foreignkey name
         from pom import site
