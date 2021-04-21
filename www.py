@@ -1171,13 +1171,31 @@ class controller:
             )
 
 class HttpException(Exception):
-    @staticmethod
-    def create(res):
-        for sub in cls.__subclasses__():
-            if sub.status == res.status:
-                return cls()
+    def __init__(self, msg, res=None):
+        super().__init__(msg)
+        self.response = res
 
-        return InternalServerError(res=res)
+    @classmethod
+    def create(cls, msg, res, attop=True):
+        for sub in cls.__subclasses__():
+            ex = sub.create(msg, res, attop=False)
+
+            if ex:
+                return ex
+
+            try:
+                st = sub.status
+            except AttributeError:
+                continue
+            else:
+                if res.status == st:
+                    return sub(msg=msg, res=res)
+
+        # If we are at the top call of this recursive method
+        if attop:
+            return InternalServerError(res=res)
+
+        return None
 
     @property
     def phrase(self):
@@ -1197,13 +1215,11 @@ class HttpException(Exception):
 class HttpError(HttpException):
     def __init__(self, msg=None, flash=None, res=None):
         self.flash = flash
-        self.response = res
         msg0 = self.phrase
         if msg:
             msg0 += ' - ' + msg
 
-        super().__init__(msg0)
-
+        super().__init__(msg=msg0, res=res)
 
 class MultipleChoicesException(HttpException):
     status = 300
@@ -1580,7 +1596,10 @@ class browser(entities.entity):
                 res = urllib.request.urlopen(req1, body)
             except Exception as ex:
                 res = _response(req=req, ex=ex)
-                raise HttpError.create(res)
+                ex1 = HttpError.create(
+                    'Error requesting' , res
+                )
+                raise ex1
             else:
                 # Return a www._response objcet representing the HTTP
                 # response to the HTTP request.
