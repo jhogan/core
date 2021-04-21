@@ -8187,17 +8187,20 @@ class orm:
         returned.
         """
 
-        leaf = self.instance
+        sup = leaf = self.instance
         id = leaf.id
 
-        # Itereate over subentities. `self.subentities` is assumed to
-        # iterate in a way tha yields the top-most subclass first
+        # Iterate over subentities. `self.subentities` is assumed to
+        # iterate in a way that yields the top-most subclass first
         # progressing toward the lowest subclass.
         for cls in self.subentities:
             try:
                 leaf = cls(id)
             except db.RecordNotFoundError:
                 continue
+            else:
+                leaf.orm._super = sup
+                sup = leaf
 
         return leaf
                 

@@ -11908,10 +11908,9 @@ class test_orm(tester):
         # Load by presentation and lazy-load artist to test
         pres1 = presentation(pres.id)
 
-        chrons.clear()
-        self.eq(pres1.artist.id, pres.artist.id)
-        self.one(chrons)
-        self.eq(chrons.where('entity', pres1.artist).first.op,  'retrieve')
+        with self._chrontest(lambda: pres1.artist.id) as t:
+            t.retrieved(pres1.artist)
+            t.retrieved(pres1.artist.orm.super)
 
         sng1 = singer.getvalid()
         pres1.artist = sng1
@@ -12042,7 +12041,9 @@ class test_orm(tester):
 
         with self._chrontest() as t:
             t.run(lambda: pres1.artist)
-            t.retrieved(pres1.artist)
+            t.retrieved(pres1.artist) # rapper
+            t.retrieved(pres1.artist.orm.super) # singer
+            t.retrieved(pres1.artist.orm.super.orm.super) # artist
            
         self.eq(pres1.artist.id, pres.artist.id)
 
@@ -12095,7 +12096,9 @@ class test_orm(tester):
 
             t.retrieved(loc1)
             t.retrieved(pres1)
-            t.retrieved(pres1.artist)
+            t.retrieved(pres1.artist)                      # rapper
+            t.retrieved(pres1.artist.orm.super)            # singer
+            t.retrieved(pres1.artist.orm.super.orm.super)  # artist
 
         self.eq(loc.id, loc1.id)
         self.eq(loc.presentation.id, loc1.presentation.id)
