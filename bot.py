@@ -41,6 +41,7 @@ class sendbot(bot):
                 break
 
     def _dispatch(self, exsimulate=False):
+        log = config().logs.first
         diss = message.dispatches(status='queued')
 
         for dis in diss:
@@ -56,14 +57,21 @@ class sendbot(bot):
                 # NOTE The dispatcher will log the error as a
                 # ``message.status`` in ``dis.statuses``.
 
-                # TODO Log
+                # TODO:4d723428 (fix logging api)
+                log.exception(
+                    f'API Error with dispatch {dis.id} ({ex}) - '
+                    'Continuing...'
+                )
                 continue
 
             # TODO We may want to catch network errors here. For
             # example, if the network is down, we may want to give up
             # for the moment.
             except Exception as ex:
-                # TODO Log
+                log.exception(
+                    f'Error with dispatch {dis.id} ({ex}) - '
+                    'Continuing...'
+                )
                 continue
 
 
