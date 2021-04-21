@@ -2391,6 +2391,11 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             # clause/predicate
             load &= self.orm.joins.ispopulated or bool(self.orm.where)
 
+            # TODO:d6f1df1f Test if attr is a callable attribute. We
+            # don't want to load if we are only accessing the callable.
+            # In addition to being unnecessary, it is confusing for
+            # chronicle tests.
+
             if load:
                 # Load the collection based on the parameters defined by
                 # the invocation of the entities's __init__ method.

@@ -7973,7 +7973,20 @@ class test_orm(tester):
         )
 
         with self._chrontest() as t:
-            t(press1.sort)
+            # TODO:d6f1df1f We would like to pass in 'sort' as a
+            # callable. 
+            #
+            #     t(press1.sort)
+            #
+            # This feels like it should work, but what happens is press1
+            # does get loaded when we try to access the 'sort'
+            # attribute, *then* 'sort method is passed to t(). t() will
+            # call sort() but, since perss1 has already been loaded, it
+            # doesn't see a load, thus it reports that no load is in its
+            # chronicles collection. There is a TODO in orm.py to
+            # correct this. See the UUID. Consequently, we have to use
+            # the lambda keyword:
+            t(lambda: press1.sort)
             t.retrieved(press1)
         
         press.sort()
@@ -11882,12 +11895,10 @@ class test_orm(tester):
         pres.artist = sng
         self.is_(sng, pres.artist)
 
-        chrons.clear()
-        pres.save()
-        self.three(chrons)
-        self.eq(chrons.where('entity',  sng).first.op,            'create')
-        self.eq(chrons.where('entity',  sng.orm.super).first.op,  'create')
-        self.eq(chrons.where('entity',  pres).first.op,           'create')
+        with self._chrontest(pres.save) as t:
+            t.created(sng)
+            t.created(sng.orm.super)
+            t.created(pres)
 
         # Load by artist then lazy-load presentations to test
         art1 = artist(pres.artist.id)

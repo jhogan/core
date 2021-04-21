@@ -14,6 +14,7 @@ import ecommerce
 import message
 import third
 import time
+from config import config
 
 class bots(ecommerce.agents):
     pass

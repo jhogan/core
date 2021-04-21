@@ -105,9 +105,6 @@ class test_message(tester.tester):
             cm = cmm.contactmechanism
             cm1 = cmm1.contactmechanism
 
-            # TODO This won't be necessary once this get's specialized
-            cm1 = party.email(cm1)
-
             self.eq(type.id, type1.id)
             self.eq(type.name, type1.name)
 
@@ -154,9 +151,6 @@ class test_message(tester.tester):
 
                 cm = cmm.contactmechanism
                 cm1 = cmm1.contactmechanism
-
-                # TODO This won't be necessary once this get's specialized
-                cm1 = party.email(cm1)
 
                 self.eq(type.id, type1.id)
                 self.eq(type.name, type1.name)
