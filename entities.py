@@ -184,6 +184,13 @@ class entities:
         return True
 
     def _self_onadd(self, src, eargs):
+        """ An event handler that runs every time an entity is added to
+        the collection.
+
+        Updates the index with the new entity and raises the
+        oncountchange event. Also subscribes the entity being added to
+        the onbeforevaluechange and onaftervaluechange events.
+        """
         for ix in self.indexes:
             ix += eargs.entity
 
@@ -198,6 +205,13 @@ class entities:
         self.oncountchange(self, eventargs())
             
     def _self_onremove(self, src, eargs):
+        """ An event handler that runs every time an entity is removed
+        from the collection.
+
+        Removes the entity from the index and raises the oncountchange
+        event. Also unsubscribes the entity from the onbeforevaluechange
+        and onaftervaluechange events.
+        """
         for ix in self.indexes:
             ix -= eargs.entity
 
@@ -212,8 +226,12 @@ class entities:
         self.oncountchange(self, eventargs())
 
     def _entity_onbeforevaluechange(self, src, eargs):
-        # Invoked before a change is made to a value on one of the collected
-        # entities
+        """ An event handler invoked before a change is made to a value
+        on one of the collected entity objects.  Used to remove the
+        entity from the property-based index (_entity_onaftervaluechange
+        will add the entity to the correct index). Also raises the
+        collection's onbeforevaluechange.
+        """
 
         # Raise an analogous event for the collection itself
         self.onbeforevaluechange(src, eargs)
@@ -222,8 +240,11 @@ class entities:
                 ix.remove(eargs.entity)
 
     def _entity_onaftervaluechange(self, src, eargs):
-        # Invoked after a change is made to a value on one of the collected
-        # entities
+        """ An event handler invoked after a change is made to a value
+        on one of the collected entity objects.  Used to update the
+        index for the property that was changed. Also raises the
+        collection's onaftervaluechange event.
+        """
 
         # Raise an analogous event for the collection itself
         self.onaftervaluechange(src, eargs)
@@ -233,6 +254,8 @@ class entities:
 
     @property
     def onadd(self):
+        """ Returns the onadd event for this collection.
+        """
         if not hasattr(self, '_onadd'):
             self._onadd = event()
             self.onadd += self._self_onadd
@@ -241,10 +264,14 @@ class entities:
 
     @onadd.setter
     def onadd(self, v):
+        """ Sets the onadd event for this collection.
+        """
         self._onadd = v
 
     @property
     def onremove(self):
+        """ Returns the onremove event for this collection.
+        """
         if not hasattr(self, '_onremove'):
             self._onremove = event()
             self.onremove += self._self_onremove
@@ -252,40 +279,57 @@ class entities:
 
     @onremove.setter
     def onremove(self, v):
+        """ Sets the onremove event for this collection.
+        """
         self._onremove = v
 
     @property
     def oncountchange(self):
+        """ Returns the oncountchange event for this collection.
+        """
         if not hasattr(self, '_oncountchange'):
             self._oncountchange = event()
         return self._oncountchange
 
     @oncountchange.setter
     def oncountchange(self, v):
+        """ Sets the oncountchange event for this collection.
+        """
         self._oncountchange = v
 
     @property
     def onbeforevaluechange(self):
+        """ Returns the onbeforevaluechange event for this collection.
+        """
         if not hasattr(self, '_onbeforevaluechange'):
             self._onbeforevaluechange = event()
         return self._onbeforevaluechange
 
     @onbeforevaluechange.setter
     def onbeforevaluechange(self, v):
+        """ Sets the onbeforevaluechange event for this collection.
+        """
         self._onbeforevaluechange = v
 
     @property
     def onaftervaluechange(self):
+        """ Returns the onaftervaluechange event for this collection.
+        """
         if not hasattr(self, '_onaftervaluechange'):
             self._onaftervaluechange = event()
         return self._onaftervaluechange
 
     @onaftervaluechange.setter
     def onaftervaluechange(self, v):
+        """ Sets the onaftervaluechange event for this collection.
+        """
         self._onaftervaluechange = v
 
     @property
     def indexes(self):
+        """ Lazy-loads and returns the collection of indexes objects for
+        this entities collection.
+        """
         if not hasattr(self, '_indexes'):
             self._indexes = indexes(type(self))
 
@@ -296,15 +340,29 @@ class entities:
 
     @indexes.setter
     def indexes(self, v):
-        """ This setter is intended to permit the += operator to be used
+        """ Sets the index collection for this entities collection.
+        
+        This setter is intended to permit the += operator to be used
         to add indexes to the entities.indexes collection. Normally, you
-        wouldn't want to set the indexes collection this way. 
+        wouldn't want to set the indexes collection this way; the
+        corresponding getter creates and returns the indexes collection
+        for this entities collection.
         """
         self._indexes = v
 
     def __call__(self, ix):
-        """ Allow collections to be called providing similar
-        functionality to the way they can be indexed. 
+        """ Provides an indexer using the parentheses operator. Similar
+        to the __getitem__ indexer but returns None if the entity
+        doesn't exist::
+
+            # Create a collection with one entry
+            myents = entities()
+            myent = entity()
+            myents += myent
+
+            # Use parentheses operator as indexer
+            assert myents(0) is myent
+            assert myents(1) is None
         """
         try: 
             return self[ix]
@@ -312,16 +370,35 @@ class entities:
             return None
 
     def __iter__(self):
+        """ Provides a basic iterator for the collection
+
+            # Create a collection with some entries
+            myents = entities()
+            myents += entity()
+            myents += entity()
+
+            # Interate
+            for myent in myents:
+                ...
+        """
         for t in self._ls:
             yield t
 
     def head(self, number=10):
+        """ Returns the first `number` entries from the collection.
+
+        :param: number int: The number of entries to return.
+        """
         if number <= 0:
             return type(self)()
 
         return type(self)(initial=self[:number])
 
     def tail(self, number=10):
+        """ Returns the last `number` entries from the collection.
+
+        :param: number int: The number of entries to return.
+        """
         if number <= 0:
             return type(self)()
             
