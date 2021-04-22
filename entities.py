@@ -351,18 +351,22 @@ class entities:
         self._indexes = v
 
     def __call__(self, ix):
-        """ Provides an indexer using the parentheses operator. Similar
-        to the __getitem__ indexer but returns None if the entity
-        doesn't exist::
+        """ Provides an indexer using the () operator. Similar to the
+        __getitem__ indexer but returns None if the entity doesn't
+        exist::
 
             # Create a collection with one entry
             myents = entities()
             myent = entity()
             myents += myent
 
-            # Use parentheses operator as indexer
+            # Use () operator as indexer
             assert myents(0) is myent
             assert myents(1) is None
+
+        This is a convenient alternative to the square bracket indexer
+        (__getitem__) for cases where it's desirable to work with
+        potential None return values instead of trapping IndexError's.
         """
         try: 
             return self[ix]
