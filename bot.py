@@ -103,4 +103,32 @@ class sendbot(bot):
                 )
                 continue
 
+if __name__ == '__main__':
+    import argparse
+    prs = argparse.ArgumentParser(
+        description="Runs a bot",
+        epilog = (
+            'Bots are typically run in the background, managed by '
+            'systemd for example. Alternatively, a bot can be run in '
+            'the foreground, such as when debugging.'
+        )
+    )
 
+    prs.add_argument(
+        'bot', 
+        help = 'Name of the bot to invoke',
+        choices = [x.__name__ for x in bots.bots]
+    )
+
+    prs.add_argument(
+        'args', 
+        nargs = "*",
+        help = "Arguments to pass to the bot's constructor",
+    )
+
+    args = prs.parse_args()
+
+    for bot in bots.bots:
+        if bot.__name__ == args.bot:
+            bot(*args.args)()
+            break
