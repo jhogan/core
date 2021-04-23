@@ -411,6 +411,77 @@ class entities:
         return type(self)(initial=self[start:cnt])
 
     def pluck(self, *ss):
+        """ Returns a list elements from the collection for the given
+        field names::
+
+            # Create a collection with two entity object where the first
+            # has a `name` of Alice, `age` 30, and the second has a
+            # `name` of Bob, `age` 31.
+            ents = entities()
+            for i, name in enumerate('Alice', 'Bob'):
+                ent = entity()
+                ent.name = name
+                ent.age = i + 30
+                ents += ent
+
+            # Pluck the names
+            assert ents.pluck('name') == ['Alice', 'Bob]
+
+        You can also pass multiple property names. The result will be a
+        nested lists for each of the property names::
+
+            assert ents.pluck('name', 'age') == \
+                [ ['Alice', 30], ['Bob', 31] ]
+
+        You can also use replacement fields to create lists of formatted
+        strings::
+
+            assert ents.pluck('{name}: {age}') == \
+                ['Alice: 30', 'Bob: 31']
+
+        Conversion flags can be used to uppercase, lowercase, title
+        case, capitalize, strip, reverse and truncate the replacement
+        fields::
+
+            assert ents.pluck('{name!u}') == ['ALICE', 'BOB']
+
+        Above, 'u' is used to uppercase the names. Here is a complete
+        list of conversion flags::
+
+            u - UPPER CASE
+            l - lower case
+            c - Capitalize
+            t - Title Case
+            s - strip whitespace
+            r - Reverse string
+
+        A number can be used as a conversion flag to truncate the
+        field::
+
+            assert ents.pluck('{name!2}') == ['AL', 'BO']
+
+        You can also nest field names::
+
+            assert ents.pluck('name.__class__') == [str, str]
+
+        Here, we are just plucking the __class__ property of the str
+        object, which of course is str. You can use as many dots as
+        necessary. This feature becomes more useful in highly nested
+        objects models. Consider an order object that has a customer
+        object as a parent::
+
+            # Demonstrate the name of the customers
+            assert ords.first.customer.name == 'Alice'
+            assert ords.second.customer.name == 'Bob'
+
+            # Pluck
+            assert ords.pluck('customer.name') == ['Alice', 'Bob']
+
+        Here, `ords` is a collection of `order` objects. Each has a
+        customer object associated with it. The customer object has a
+        name - which is what we are after.
+        """
+
         # TODO We may want to return an entities collection here if all
         # the items that were plucked were entities. This is because,
         # currently, since we return a `list`, we can't do chained
@@ -418,7 +489,7 @@ class entities:
         #
         # sng.artist_artists.pluck('object').pluck('orm.super')
         #
-        # However, list()s should continued to be returned if any of the
+        # However, list()s should continue to be returned if any of the
         # elements are not entitiy objects. On the other hand, we could
         # have a `primativeentity` class that can wrap a primative
         # value. This would make it possible to always return an
