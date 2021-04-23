@@ -7986,7 +7986,7 @@ class test_orm(tester):
             # chronicles collection. There is a TODO in orm.py to
             # correct this. See the UUID. Consequently, we have to use
             # the lambda keyword:
-            t(lambda: press1.sort)
+            t(lambda: press1.sort())
             t.retrieved(press1)
         
         press.sort()
