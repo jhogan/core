@@ -78,8 +78,8 @@ class test_sendbot(tester.tester):
 
         msg.save()
 
-        sb = bot.sendbot()
-        sb(iterations=1)
+        sb = bot.sendbot(iterations=1)
+        sb()
 
         dis = dis.orm.reloaded()
 
@@ -105,7 +105,7 @@ class test_sendbot(tester.tester):
         
         msg.save()
 
-        sb(iterations=1, exsimulate=True)
+        sb(exsimulate=True)
 
         dis = dis.orm.reloaded()
         self.none(dis.externalid)

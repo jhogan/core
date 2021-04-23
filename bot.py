@@ -15,11 +15,37 @@ import message
 import third
 import time
 from config import config
+from entities import classproperty
 
 class bots(ecommerce.agents):
-    pass
+
+    @classproperty
+    def bots(cls):
+        """ Return each class that inherits from directly or indirectly
+        from ``bot``.
+        """
+
+        r = list()
+
+        # Iterate over direct sub classes
+        for sub in cls.orm.entity.__subclasses__():
+            r.append(sub)
+
+            # Recurse into indirect subclasses, thus collecting the
+            # whole heirarchy. (Note, at the time of this writing, there
+            # are no indirect subclasses. This is for future-proofing.)
+            r.extend(sub.orm.entities.bots)
+
+        return r
 
 class bot(ecommerce.agent):
+    def __init__(self, iterations=None, *args, **kwargs):
+        self.iterations = iterations
+
+        if iterations is not None:
+            self.iterations = int(iterations)
+        super().__init__(*args, **kwargs)
+
     def __call__(self):
         raise NotImplementedError('Implement in subentity')
 
@@ -27,18 +53,20 @@ class sendbots(bots):
     pass
 
 class sendbot(bot):
-    def __call__(self, iterations=None, exsimulate=False):
+    def __call__(self, exsimulate=False):
+        B()
+        iter = self.iterations
         i = 0
         while True:
             self._dispatch(exsimulate=exsimulate)
             time.sleep(.001)
 
-            if iterations is None:
+            if iter is None:
                 continue
 
             i = i + 1
 
-            if i == iterations:
+            if i == iter:
                 break
 
     def _dispatch(self, exsimulate=False):
