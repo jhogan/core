@@ -398,7 +398,7 @@ class resultset(entitiesmod.entities):
         return self._cur.rowcount
 
     def demandhasone(self):
-        if not self.hasone:
+        if not self.issingular:
             raise RecordNotFoundError('A single record was not found')
         return self.first
 

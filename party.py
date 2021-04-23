@@ -676,7 +676,7 @@ class region(orm.entity):
 
             if not found:
                 regs1 = regions(name=name, type=type)
-                if regs1.hasone:
+                if regs1.issingular:
                     reg = regs1.last
                     if regs:
                         regs += reg

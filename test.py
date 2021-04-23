@@ -9,6 +9,9 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021                 #
 ########################################################################
 
+"I have not failed. I've just found 10,000 ways that won't work."
+# Thomas A. Edison
+
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
 from auth import jwt
 from config import config
@@ -661,7 +664,7 @@ class test_entities(tester):
         nd = ks.second
         ks.remove(nd)
         self.assertCount(3, ks)
-        self.assertFalse(ks.has(nd)) # Ensure second knight is not in ks
+        self.false(nd in ks)
 
         ## Remove by entities collection ##
 
@@ -674,8 +677,8 @@ class test_entities(tester):
 
         # Ensure the first 2 where removed
         self.assertCount(2, ks)
-        self.assertFalse(ks.has(ks1.first))
-        self.assertFalse(ks.has(ks1.second))
+        self.false(ks1.first in ks)
+        self.false(ks1.second in ks)
 
         ## Remove using a callable##
         ks = knights.createthe4()
@@ -687,7 +690,7 @@ class test_entities(tester):
         ks.remove(lambda k: k.name == 'Bedevere')
 
         self.assertCount(3, ks)
-        self.assertFalse(ks.has(k))
+        self.false(k in ks)
 
         ## Remove a duplicate
         ni = knight('knight who says ni')
@@ -704,7 +707,7 @@ class test_entities(tester):
         # logical at the moment.
         ks -= ni
         self.assertCount(3, ks)
-        self.assertFalse(ks.has(ni))
+        self.false(ni in ks)
 
     def it_calls__isub__(self):
         """ entities.__isub__() is essentially a wrapper around
@@ -745,8 +748,8 @@ class test_entities(tester):
 
         # Ensure the first 2 where removed
         self.assertCount(2, ks)
-        self.assertFalse(ks.has(ks1.first))
-        self.assertFalse(ks.has(ks1.second))
+        self.false(ks1.first in ks)
+        self.false(ks1.second in ks)
 
         ## Remove using a callable ##
         ks = knights.createthe4()
@@ -760,7 +763,7 @@ class test_entities(tester):
         ks -= lambda k: k.name == 'Bedevere'
 
         self.assertCount(3, ks)
-        self.assertFalse(ks.has(k))
+        self.false(k in ks)
 
     def it_calls_reversed(self):
         """ The entities.reversed() method allows you to iterate
@@ -844,7 +847,7 @@ class test_entities(tester):
         rst = ks.shift()
 
         self.assertEq(3, ks.count)
-        self.assertFalse(ks.has(rst))
+        self.false(rst in ks)
 
         # Ensure empty collection shift None
         self.assertNone(entities().shift())
@@ -869,7 +872,7 @@ class test_entities(tester):
         last = ks.pop()
 
         self.assertEq(3, ks.count)
-        self.assertFalse(ks.has(last))
+        self.false(last in ks)
 
         # Ensure empty collection pops None
         self.assertNone(entities().pop())
@@ -884,18 +887,6 @@ class test_entities(tester):
 
         self.assertEq(5, ks.count)
         self.assertIs(ni, ks.last)
-
-    def it_calls_has(self):
-        """ The has() method determines if the argument is in the collection
-        using object identity (is) as opposed to object equality (==). """
-
-        ks = knights.createthe4()
-        for k in ks:
-            self.assertTrue(ks.has(k))
-
-        ni = knight('knight who says ni')
-        self.assertFalse(ks.has(ni))
-        self.assertTrue(ks.hasnt(ni))
 
     def it_calls__lshift__(self):
         """ The lshift operator (<<) is a wrapper around unshift. """
@@ -1000,7 +991,7 @@ class test_entities(tester):
         self.assertIs(nis.first,   ks.last)
         self.assertIs(nis.first,   ks1.first)
         self.assertEq(entities,    type(ks1))
-        self.assertFalse(ks1.has(nis.second))
+        self.false(nis.second in ks1)
 
         # Test appending an entities collection to an entities collection
         # where both of the entities being appended are not unique.
@@ -1015,8 +1006,8 @@ class test_entities(tester):
         self.assertEq(4,           ks.count)
         self.assertEq(0,           ks1.count)
         self.assertEq(entities,    type(ks1))
-        self.assertFalse(ks1.has(nis.first))
-        self.assertFalse(ks1.has(nis.second))
+        self.false(nis.first in ks1)
+        self.false(nis.second in ks1)
 
         ## Ensure we get a ValueError if we append something that isn't
         ## an entity or entities type
@@ -1035,7 +1026,7 @@ class test_entities(tester):
         fk = knight('french knight')
         sks += fk
 
-        self.assertTrue(sks.hasone)
+        self.assertTrue(sks.issingular)
         self.assertIs(sks.first, fk)
 
         # Append a collection of knightns
@@ -1076,7 +1067,7 @@ class test_entities(tester):
         # obtain the results
         ks = ni + knight('knight who says ni2')
         res = sks.append(ks, uniq=True)
-        self.assertTrue(res.hasone)
+        self.assertTrue(res.issingular)
         self.assertEq(5, sks.count)
         for i, k in enumerate([fk, bk, fk, ni, ks.second]):
             self.assertIs(sks[i], k)
@@ -1225,8 +1216,8 @@ class test_entities(tester):
         self.assertEq(4, ks.count)
         self.assertEq(3, ks1.count)
         self.assertEq(knights, type(ks1))
-        self.assertFalse(ks1.has(rst))
-        self.assertTrue(ks.has(rst))
+        self.false(rst in ks1)
+        self.true(rst in ks)
 
         # Remove an entities collection from ks
 
@@ -1251,14 +1242,14 @@ class test_entities(tester):
 
     def it_gets_count(self):
         """ The count property is the number of entities in the collection.
-        The __len__, isempty, hasone, and ispopulated methods are based on the
+        The __len__, isempty, issingular, and ispopulated methods are based on the
         count property so they will tested here.  """
         ks = knights.createthe4()
 
         self.assertEq(4, ks.count)
         self.assertEq(4, len(ks))
         self.assertFalse(ks.isempty)
-        self.assertFalse(ks.hasone)
+        self.assertFalse(ks.issingular)
         self.assertTrue(ks.ispopulated)
 
         # Create a collection of one
@@ -1266,7 +1257,7 @@ class test_entities(tester):
         self.assertEq(1, ks.count)
         self.assertEq(1, len(ks))
         self.assertFalse(ks.isempty)
-        self.assertTrue(ks.hasone)
+        self.assertTrue(ks.issingular)
         self.assertTrue(ks.ispopulated)
 
         # Clear the collection so it will have no entities
@@ -1275,7 +1266,7 @@ class test_entities(tester):
         self.assertEq(0, ks.count)
         self.assertEq(0, len(ks))
         self.assertTrue(ks.isempty)
-        self.assertFalse(ks.hasone)
+        self.assertFalse(ks.issingular)
         self.assertFalse(ks.ispopulated)
 
     def it_calls__str__(self):
@@ -1499,7 +1490,7 @@ class test_entities(tester):
         ks.first.name = 123
         self.assertFalse(ks.isvalid)
         self.assertInValid(ks)
-        self.assertTrue(ks.brokenrules.hasone)
+        self.assertTrue(ks.brokenrules.issingular)
         self.assertEq(ks.brokenrules.first.message, 'Names must be strings')
         self.assertEq(str(ks.brokenrules.first), 'Names must be strings')
 
@@ -1509,7 +1500,7 @@ class test_entities(tester):
             k.name = 123
             self.assertFalse(k.isvalid)
             self.assertInValid(k)
-            self.assertTrue(k.brokenrules.hasone)
+            self.assertTrue(k.brokenrules.issingular)
             self.assertEq(k.brokenrules.first.message, 'Names must be strings')
             self.assertEq(str(k.brokenrules.first), 'Names must be strings')
 
@@ -1544,7 +1535,7 @@ class test_entities(tester):
         ks += the4.first
 
         self.assertIs(the4.first, snare.first)
-        self.assertTrue(snare.hasone)
+        self.assertTrue(snare.issingular)
 
         # Append an entities collection to ks
         ks += entities([the4.second, the4.third])
@@ -1583,7 +1574,7 @@ class test_entities(tester):
         # Unshift the first knight into ks
         ks << the4.first
         self.assertIs(the4.first, snare.first)
-        self.assertTrue(snare.hasone)
+        self.assertTrue(snare.issingular)
         self.assertCount(1, snare)
 
         # insert
@@ -1614,7 +1605,7 @@ class test_entities(tester):
         # push
         ks.push(the4.first)
         self.assertIs(the4.first, snare.first)
-        self.assertTrue(snare.hasone)
+        self.assertTrue(snare.issingular)
         self.assertCount(1, snare)
 
         # Instantiate with collection
@@ -1643,7 +1634,7 @@ class test_entities(tester):
         # Remove the first element
         rst = ks.first
         ks -= rst
-        self.assertTrue(snare.hasone)
+        self.assertTrue(snare.issingular)
         self.assertIs(rst, snare.first)
 
         # Remove two elements as an entities collection
@@ -1974,7 +1965,7 @@ class test_entities(tester):
 
         ks = sks.indexes['name']['Lancelot']
 
-        self.assertTrue(ks.hasone)
+        self.assertTrue(ks.issingular)
         self.assertIs(ks.first, sks.first)
         self.assertEq(sillyknights, type(ks))
 
@@ -3895,7 +3886,7 @@ class test_orm(tester):
     
     def _chrons(self, e, op):
         chrons = self.chronicles.where('entity',  e)
-        if not (chrons.hasone and chrons.first.op == op):
+        if not (chrons.issingular and chrons.first.op == op):
             self._failures += failure()
 
     def _chronicler_onadd(self, src, eargs):
@@ -3966,7 +3957,7 @@ class test_orm(tester):
                 self.tested.append(e)
 
                 chron = self.chronicles.where('entity',  e)
-                if chron.hasone and chron.first.op == op:
+                if chron.issingular and chron.first.op == op:
                     self.count += 1
                     return True
                 return False

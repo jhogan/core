@@ -830,7 +830,7 @@ class element(entities.entity):
             els = self['[id="%s"]' % id]
             if els.isempty:
                 raise ValueError("Can't find [id=\"%s\"]" % id) 
-            elif els.hasplurality:
+            elif els.isplurality:
                 raise ValueError(
                     "Multiple elements for [id=\"%s\"]" % id
                 ) 
@@ -1114,7 +1114,7 @@ class element(entities.entity):
         sibs = self.getsiblings(includeself=True)
 
         # If it only has self
-        if sibs.hasone: 
+        if sibs.issingular: 
             return None
 
         ix = sibs.getindex(self) - 1
@@ -5564,11 +5564,11 @@ class selector(entities.entity):
 
         def _match_only_child(self, el):
             sibs = el.getsiblings(includeself=True)
-            return sibs.where(lambda x: type(x) is not text).hasone
+            return sibs.where(lambda x: type(x) is not text).issingular
 
         def _match_only_of_type(self, el):
             sibs = el.getsiblings(includeself=True)
-            return sibs.where(lambda x: type(x) is type(el)).hasone
+            return sibs.where(lambda x: type(x) is type(el)).issingular
 
         def _match_empty(self, el):
 

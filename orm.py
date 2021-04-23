@@ -2264,7 +2264,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             cur = self.orm.stream.cursor
             es = cur.advance(key)
             if isinstance(key, int):
-                if es.hasone:
+                if es.issingular:
                     return es.first
                 raise IndexError('Entities index out of range')
             return es

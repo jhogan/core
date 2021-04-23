@@ -212,7 +212,7 @@ class inode(orm.entity):
 
         nds = inodes(f'name = %s and inodeid {op} %s', name, id)
 
-        if nds.hasone:
+        if nds.issingular:
             nd = nds.first
             return file(nd.id)
 
@@ -242,7 +242,7 @@ class inode(orm.entity):
                     f'name = %s and inodeid {op} %s', name, id
                 )
 
-                if nds.hasone:
+                if nds.issingular:
                     # Downcast the inode to a directory
                     try:
                         dir1 = directory(nds.first.id)
