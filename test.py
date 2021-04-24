@@ -18168,12 +18168,6 @@ class gem_party(tester):
         self.eq(per.id, per1.party_parties.last.subject.id)
         self.eq(com.id, per1.party_parties.last.object.id)
 
-        self.one(per1.parties)
-        self.eq(com.id, per1.parties.first.id)
-
-        self.one(per1.companies)
-        self.eq(com.id, per1.companies.first.id)
-
     def it_places_person_in_a_corporate_hierarchy(self):
         ... # TODO
 
@@ -18196,12 +18190,6 @@ class gem_party(tester):
 
         self.eq(bro.id, bro1.party_parties.last.subject.id)
         self.eq(sis.id, bro1.party_parties.last.object.id)
-
-        self.one(bro1.parties)
-        self.eq(sis.id, bro1.parties.first.id)
-
-        self.one(bro1.persons)
-        self.eq(sis.id, bro1.persons.first.id)
 
     def it_creates_party_type(self):
         typ = party.type()
@@ -20530,7 +20518,6 @@ class gem_product(tester):
         cat1 = product.category(cat.id)
 
         self.two(cat1.category_classifications)
-        self.two(cat1.products)
 
         for ass in ('category_classifications', 'products'):
             ccs = getattr(cat, ass).sorted()

@@ -9,13 +9,15 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021                 #
 ########################################################################
 
+from config import config
+from entities import classproperty
 from func import B
 import ecommerce
 import message
+import os
 import third
 import time
-from config import config
-from entities import classproperty
+import orm
 
 class bots(ecommerce.agents):
 
@@ -39,12 +41,28 @@ class bots(ecommerce.agents):
         return r
 
 class bot(ecommerce.agent):
-    def __init__(self, iterations=None, *args, **kwargs):
-        self.iterations = iterations
-
-        if iterations is not None:
-            self.iterations = int(iterations)
+    def __init__(self, *args, **kwargs):
+        self._iterations = kwargs.pop('iterations', None)
         super().__init__(*args, **kwargs)
+        self.name = type(self).__name__
+
+    def claim(self):
+        bs = bots(pid=os.getpid())
+
+        if bs.isempty:
+            self.save()
+        else:
+            raise UsurpationError(self)
+
+    @orm.attr(int)
+    def pid(self):
+        return os.getpid()
+
+    @property
+    def iterations(self):
+        if self._iterations is not None:
+            self._iterations = int(self._iterations)
+        return self._iterations
 
     def __call__(self):
         raise NotImplementedError('Implement in subentity')
@@ -53,8 +71,11 @@ class sendbots(bots):
     pass
 
 class sendbot(bot):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.claim()
+
     def __call__(self, exsimulate=False):
-        B()
         iter = self.iterations
         i = 0
         while True:
