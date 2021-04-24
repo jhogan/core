@@ -9,7 +9,36 @@
 ########################################################################
 
 """ This module contains all classes related to sending and queueing
-messages such as email, SMS and the like.
+messages such as email, SMS, chat, etc.
+
+The main entity in the class is ``message``. A ``message`` represents
+any type of message such an an email, snail mail, a text message.
+``message`` entities and can be associated with zero or more contact
+mechanisms (``party.contactmechanism``). Usually a ``message`` will be
+associated with a *from* address and at least one *to* address.
+
+A ``message`` can have zero or more ``dispatch`` objects. A ``dispatch``
+object schedules a ``message`` to be sent to an external resource, such
+as a third party email or SMS provider. Multiple ``dispatch`` objects
+can be used to send the same ``message`` to multiple places, such as in
+the case when the collection of destinations contact mechanisms includes
+email addresses and SMS addresses, thus requiring two seperate third
+party provier interactions to deliver the ``message``. Additional
+``dispatch`` objects can be created for hard-bounce situations such as
+when there is an unresloved problem with the first ``dispatch`` thus
+necessitating the creation of an additional ``dispatch`` for the same
+message. A ``message`` may not need a ``dispatch`` entity such as when a
+it is intended for an internal contact mechanism such as for use in an
+internal messaging or chat system.
+
+A ``dispatch`` can have zero or more ``status`` entities. These keep track
+of when the ``dispatch`` enters into different states such as 'queued', 'in
+progress' or 'completed'.
+
+``sendbot`` in the bot.py module will monitor the database for 'queued'
+``dispatches``. It will process the ``dispatch`` by using logic in the
+third.py module ("third" as in third-party) to send the ``message`` to a
+third party provider.
 
 TODOs:
 """
@@ -24,28 +53,78 @@ import builtins
 from uuid import uuid4
 
 class messages(orm.entities):
-    pass
+    """ A collection of ``message`` objects.
+    """
 
 class dispatches(orm.entities):
-    pass
+    """ A collection of ``dispatch`` objects.
+    """
 
 class contactmechanism_messages(orm.associations):
-    pass
+    """ A collection of contact mechanism to message associations.
+    """
 
 class contactmechanism_messagetypes(apriori.types):
-    pass
+    """ A collection of contact-mechanism-to-message types.
+    """
 
 class statuses(orm.entities):
+    """ A collection of ``dispatch`` status entites.
+    """
+
     def __init__(self, *args, **kwargs):
+        """ Creates a statuses collection.
+        """
+
         super().__init__(*args, **kwargs)
         try:
+            # Manages the initing boolean to prevent the collection from
+            # loading automatically.
             self.orm.initing = True
+
+            # Subscribe the self._self_onadd handler to the self.onadd
+            # event so we can capture the ``status`` objects as they are
+            # added to the collection.
             self.onadd += self._self_onadd 
         finally:
             self.orm.initing = False
 
     def _self_onadd(self, src, eargs):
+        """ An event handler to capture ``status`` objects when they are
+        added to the collection.
+
+        This handler updates the dispatch object with the name of the
+        last status object that was added. Storing the name of the
+        last status object in the dispatch entity makes it easy to query
+        the dispatches table for incomplete dispatches. 
+        """
+
+        # TODO:9b4b0ce0 This handler is a hack to work around the fact
+        # that the ORM doesn't yet support correlated subqueries. The
+        # question we want to ask the database when quering for
+        # incomplete dispatches is: select all dispatches that don't
+        # have a status record of complete. We should be able to express
+        # that like this:
+        #
+        #     diss = dispatches("'completed' not in statuses.name'")
+        #
+        # Resulting in a query like this:
+        #
+        #     SELECT *
+        #     FROM dispatches AS dis
+        #     WHERE 'completed' NOT IN (
+        #                          SELECT name
+        #                          FROM statuses AS st
+        #                          WHERE dis.id = st.dispatchid
+        #                      )
+
+        # When loading status objects from the database, this handler
+        # will be called. When loading, we don't want to do anything
+        # here.
         if not self.orm.isloading:
+
+            # Ensure the 'dispatch.status' property always has the name
+            # of the last status entity to be added .
             st = eargs.entity
             st.dispatch.status = st.statustype.name
         
