@@ -37,8 +37,6 @@ class configuration:
                     acct.password = 'my-super-secret-password'
 
                 return accts
-
-
     """
     recaptcha_key = '<RECAPTCHA-KEY>'
     environment = 'development'
@@ -51,14 +49,23 @@ class configuration:
         return self.environment == 'production'
 
     @property
+    def indevelopment(self):
+        return self.environment == 'development'
+
+    @property
     def accounts(self):
         return accounts.accounts(
-            accounts.mysql(
-                username = 'epitest',
-                host     = 'localhost',
-                password = None,
-                database = 'epitest',
-            )
+            initial = [
+                accounts.mysql(
+                    username = 'epitest',
+                    host     = 'localhost',
+                    password = None,
+                    database = 'epitest',
+                ),
+                accounts.postmark(
+                    server = 'carapacian.com',
+                )
+            ]
         )
 
     @property

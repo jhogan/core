@@ -144,7 +144,7 @@ class tester(entity):
 
         class _tab(www.browser._tab):
             def __init__(self, tabs):
-                self.tabs = tabs
+                super().__init__(tabs)
                 self._referer = None
 
             @property
@@ -362,9 +362,6 @@ class tester(entity):
             self.ip = ecommerce.ip(address=ip)
 
             self.useragent = ecommerce.useragent(string=useragent) 
-
-        def tab(self):
-            return self.tabs.tab()
 
     def browser(self, *args, **kwargs):
         return tester._browser(self, *args, **kwargs)
@@ -682,7 +679,10 @@ class tester(entity):
         return dedent(str)[1:-1]
 
     def status(self, st, res):
-        if st != res.status: self._failures += failure()
+        if st != res.status: 
+            msg = f'Actual status: {res.status}'
+            
+            self._failures += failure()
 
     def xhrpost(self, cls, meth, args):
         # TODO When we need this again, move to tester.browser.tab.

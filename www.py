@@ -28,6 +28,7 @@ import textwrap
 import traceback
 import urllib
 import jwt as pyjwt
+import json
 
 # NOTE Use the following diagram as a guide to determine what status
 # code to respond with:
@@ -68,6 +69,7 @@ class application:
     def __call__(self, env, start_response):
         global request, response
         res = _response(self.request)
+        res.headers += 'Content-Type: text/html'
 
         # Set global www.response
         response = res
@@ -176,16 +178,54 @@ class application:
 
 request = None
 class _request:
-    def __init__(self, app):
+    def __init__(self, app=None, url=None):
         self.app           =  app
-        self.app._request  =  self
-        self._payload      =  None
-        self._user         =  None
-        self._files        =  None
-        self._useragent    =  None
-        self._hit          =  None
-        self._ip           =  None
-        self._url          =  None  # The refere
+        if app:
+            self.app._request  =  self
+
+        self._payload    =  None
+        self._user       =  None
+        self._files      =  None
+        self._useragent  =  None
+        self._hit        =  None
+        self._ip         =  None
+        self._referer    =  None  #  The referer
+        self._headers    =  None
+        self._url        =  url
+        self._method     =  None
+        self._useragent  =  None
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        r = textwrap.dedent(f'''
+        Request URL: {self.url}
+        :authority: {self.url}
+        :method: {self.method}
+        :path: {self.url.path}
+        :scheme: {self.url.scheme}
+        ''')
+
+        r = r.rstrip()
+
+        if self.headers.count:
+            r += f'\n{str(self.headers)}'
+
+        ua = self.useragent
+        if ua:
+            r += f'\n{ua}'
+
+        body = self.payload
+        if body:
+            try:
+                body = json.dumps(json.loads(body), indent=2)
+            except:
+                pass
+
+            r += f'\n\n{body}'
+
+        return r
 
     @property
     def headers(self):
@@ -196,14 +236,20 @@ class _request:
         where the keys start with 'http_'.
         """
 
-        hdrs = headers()
-        for k, v in self.environment.items():
-            if not k.lower().startswith('http_'):
-                continue
+        if not self._headers:
+            self._headers = headers()
+            if self.iswsgi:
+                for k, v in self.environment.items():
+                    if not k.lower().startswith('http_'):
+                        continue
 
-            hdrs += header(k[5:], v)
+                    self._headers += header(k[5:], v)
 
-        return hdrs
+        return self._headers
+
+    @headers.setter
+    def headers(self, v):
+        self._headers = v
 
     @property
     def files(self):
@@ -349,8 +395,17 @@ class _request:
         return self.app.environment
 
     @property
+    def iswsgi(self):
+        """ Returns True if the request is for a WSGI app.
+        """
+        return self.app is not None
+
+    @property
     def servername(self):
-        return self.environment['server_name']
+        if self.iswsgi:
+            return self.environment['server_name']
+
+        return urllib.parse.urlparse(self._url).hostname
 
     @property
     def arguments(self):
@@ -358,12 +413,15 @@ class _request:
 
     @property
     def qs(self):
-        qs = self.environment['query_string']
+        if self.iswsgi:
+            qs = self.environment['query_string']
 
-        if not qs:
-            qs = None
+            if not qs:
+                qs = None
 
-        return qs
+            return qs
+
+        return urllib.parse.urlparse(self._url).query
 
     @property
     def site(self):
@@ -528,12 +586,12 @@ class _request:
             # should log the failure to the syslog.
             from config import config
 
-            # TODO Fix the logging interface. We shouldn't have to go
-            # through config to get a logging object. Also, it doesn't
-            # make sense to select the first log from a collection of
-            # logs. The collections of logs are actually configurations
-            # of logging facilities. The first here is for
-            # /var/log/syslog (there aren't any others). This is all
+            # TODO:4d723428 Fix the logging interface. We shouldn't have
+            # to go through config to get a logging object. Also, it
+            # doesn't make sense to select the first log from a
+            # collection of logs. The collections of logs are actually
+            # configurations of logging facilities. The first here is
+            # for /var/log/syslog (there aren't any others). This is all
             # really wierd. We shoud just be able to say something like:
             #
             #     import log from logger
@@ -559,28 +617,43 @@ class _request:
             msg = f'{ex}; ip:{ip}; ua:"{ua}"'
             log.exception(msg)
 
+    # TODO The official word for this data is "message body", so we
+    # should probably rename the property to "body".
     @property
     def payload(self):
+        """ Returns the HTTP message body of the request.
+
+        https://en.wikipedia.org/wiki/HTTP_message_body
+        """
+
         if self._payload is None:
-            sz = self.size
-            inp = self.environment['wsgi.input']
-            if self.mime == 'multipart/form-data':
-                # Normally, the client won't need to get the payload for
-                # multipart data; it will usually just use
-                # `request.files`. Either way, return whan we have. We
-                # probably shouldn't memoize it since it could be
-                # holding a lot of file data.
+            # If the payload hasn't been set, we can get it from the
+            # wsgi environment.
+            if self.iswsgi:
+                sz = self.size
+                inp = self.environment['wsgi.input']
+                if self.mime == 'multipart/form-data':
+                    # Normally, the client won't need to get the payload
+                    # for multipart data; it will usually just use
+                    # `request.files`. Either way, return whan we have.
+                    # We probably shouldn't memoize it since it could be
+                    # holding a lot of file data.
 
-                # TODO We could move this outside the consequence block
-                inp.seek(0)
+                    # TODO We could move this outside the consequence
+                    # block
+                    inp.seek(0)
 
-                return inp.read(sz)
-            else:
-                # TODO What would the mime type (content-type) be here?
-                # (text/html?) Let's turn this else into an elif with
-                # that information.
-                self._payload = inp.read(sz).decode('utf-8')
+                    return inp.read(sz)
+                else:
+                    # TODO What would the mime type (content-type) be
+                    # here?  (text/html?) Let's turn this else into an
+                    # elif with that information.
+                    self._payload = inp.read(sz).decode('utf-8')
         return self._payload
+
+    @payload.setter
+    def payload(self, v):
+        self._payload = v
 
     @property
     def path(self):
@@ -593,14 +666,19 @@ class _request:
             targets the application root and does not have a trailing
             slash.
         """
-        return self.environment['path_info']
+        if self.iswsgi:
+            return self.environment['path_info']
+
 
     @property
     def size(self):
-        try:
-            return int(self.environment.get('content_length', 0))
-        except ValueError:
-            return 0
+        if self.iswsgi:
+            try:
+                return int(self.environment.get('content_length', 0))
+            except ValueError:
+                return 0
+
+        return len(self.payload)
 
     @property
     def class_(self):
@@ -616,7 +694,17 @@ class _request:
 
     @property
     def method(self):
-        return self.environment['request_method'].upper()
+        if self.iswsgi:
+            return self.environment['request_method'].upper()
+        
+        if self._method:
+            return self._method.upper()
+
+        return None
+
+    @method.setter
+    def method(self, v):
+        self._method = v
 
     @property
     def ip(self):
@@ -627,29 +715,36 @@ class _request:
 
     @property
     def referer(self):
-        if not self._url:
+        if not self._referer:
             url = str(self.environment['http_referer'])
-            self._url = ecommerce.url(address=url)
-        return self._url
+            self._referer = ecommerce.url(address=url)
+        return self._referer
 
     @property
     def useragent(self):
         if not self._useragent:
-            ua = str(self.environment['user_agent'])
-            self._useragent = ecommerce.useragent(string=ua)
+            if self.iswsgi:
+                ua = str(self.environment['user_agent'])
+                self._useragent = ecommerce.useragent(string=ua)
         return self._useragent
 
     @property
     def scheme(self):
         """ Return the scheme for the request, e.g., http, https, etc.
         """
-        return self.environment['wsgi.url_scheme'].lower()
+        if self.iswsgi:
+            return self.environment['wsgi.url_scheme'].lower()
+
+        return urllib.parse.urlparse(self._url).scheme
 
     @property
     def port(self):
         """ Return the TCP port for the request, e.g., 80, 8080, 443.
         """
-        return int(self.environment['server_port'])
+        if self.iswsgi:
+            return int(self.environment['server_port'])
+
+        return urllib.parse.urlparse(self._url).port
 
     @property
     def url(self):
@@ -657,9 +752,14 @@ class _request:
             
             https://foo.net:8000/en/my/page
         """
+        if self._url:
+            return self._url
 
         scheme = self.scheme
-        servername = f'{self.servername}:{self.port}'
+        servername = self.servername
+        if self.port:
+            servername += ':' + str(self.port)
+
         qs = self.qs
         path = self.path
 
@@ -857,13 +957,55 @@ class _response():
 		463: ''
     }
 
-    def __init__(self, req):
+    def __init__(self, req, res=None, ex=None):
+        """
+        :param: req www._request: The request object that resulted in
+        this response.
+
+        :param: res urllib.response: The response object from
+        urllib.request.urlopen(). This response object (self) will wrap
+        ``res``, making things more convenient for the user of
+        www._response.
+
+        :param: ex Exception: If the HTTP response is the result of an
+        Exception, ``ex`` can be passed in. If it contains the status
+        code, that status code will be used for the respones's status
+        property.
+        """
         self._payload = None
         self._status = 200
         self._page = None
         self.request = req
         self._headers = headers()
+        self._response = res
 
+        if res:
+            self.status = res.status
+            self.payload = res.read()
+            self.headers = res.headers
+
+        if ex:
+            try:
+                st = ex.status
+            except AttributeError:
+                self.status = 500
+            else:
+                self.status = st
+
+            payload = None
+            try:
+                payload = ex.read()
+            except AttributeError:
+                pass
+            else:
+                self.payload = payload
+
+            try:
+                hdrs = ex.headers
+            except AttributeError:
+                pass
+            else:
+                self.headers = hdrs
     @property
     def status(self):
         return self._status
@@ -880,6 +1022,40 @@ class _response():
             return str(self.status)
 
     @property
+    def contenttype(self):
+        """ The content type of the body.
+        """
+        return self.headers['Content-Type']
+
+    @property
+    def mime(self):
+        """ Returns the **type** and **subtype** portion of the mime.
+        example, if ``self.contenttype`` is:
+                
+            text/html; charset=UTF-8
+
+        only the string 'text/html' will be returned.
+        """
+        ct = self.contenttype
+        if ct:
+            return ct.split(';')[0].lower()
+        return None
+
+    @property
+    def mimetype(self):
+        """ Returns the **type** portion of the mime string. For
+        example, if ``self.mime`` is:
+                
+            image/jpeg
+
+        only the string 'image' will be returned.
+        """
+        mime = self.mime
+        if mime:
+            return mime.split('/')[0]
+        return None
+
+    @property
     def payload(self):
         # These lines are for XHR responses
         # payload = json.dumps(payload)
@@ -890,15 +1066,42 @@ class _response():
     def payload(self, v):
         self._payload = v
 
-    def __getitem__(self, sels):
-        return self.html[sels]
+    @property
+    def json(self):
+        """ If the payload is a JSON string, returns a Python list
+        representing the JSON document. An exception will be raised if
+        the payload cannot be deserialized as a JSON document.
+        """
+        return json.loads(self.payload)
 
     @property
     def html(self):
+        """ Returns a dom.html object representing the HTML in the
+        payload.
+        """
+        # TODO If the payload is not HTML (perhaps it's JSON or the
+        # content-type isn't HTML), we should probably raise a
+        # ValueError.
         return dom.html(self.payload)
+
+    def __getitem__(self, sels):
+        if self.mime == 'application/json':
+            return self.json[sels]
+        elif self.mime == 'text/html':
+            return self.html[sels]
+        else:
+            raise ValueError(
+                'Cannot __getitem__ from www.response with mime type '
+                f'of "{self.mime}"'
+            )
 
     @property
     def headers(self):
+        # If self._headers is not an instance of `headers`, coerse to
+        # the native type.
+        if not isinstance(self._headers, headers):
+            self._headers = headers(self._headers)
+
         clen = len(self.payload) if self.payload else 0
         self._headers['Content-Length'] = clen
         
@@ -925,11 +1128,18 @@ class _response():
         %s
         ''')
 
+        payload = self.payload
+        if pretty:
+            if self.mime == 'application/json':
+                payload = json.dumps(json.loads(payload), indent=4)
+            elif self.mime == 'text/html':
+                payload = dom.html(self.payload).pretty 
+
         return r % (
             self.request.path,
             self.request.method,
             self.message,
-            dom.html(self.payload).pretty if pretty else self.payload,
+            payload,
         )
 
     def __str__(self):
@@ -961,10 +1171,36 @@ class controller:
             )
 
 class HttpException(Exception):
+    def __init__(self, msg, res=None):
+        super().__init__(msg)
+        self.response = res
+
+    @classmethod
+    def create(cls, msg, res, attop=True):
+        for sub in cls.__subclasses__():
+            ex = sub.create(msg, res, attop=False)
+
+            if ex:
+                return ex
+
+            try:
+                st = sub.status
+            except AttributeError:
+                continue
+            else:
+                if res.status == st:
+                    return sub(msg=msg, res=res)
+
+        # If we are at the top call of this recursive method
+        if attop:
+            return InternalServerError(res=res)
+
+        return None
+
     @property
     def phrase(self):
         return '%s %s' % (
-            str(self.status), response.Messages[self.status]
+            str(self.status), _response.Messages[self.status]
         )
 
     @property
@@ -977,13 +1213,13 @@ class HttpException(Exception):
         )
 
 class HttpError(HttpException):
-    def __init__(self, msg=None, flash=None):
+    def __init__(self, msg=None, flash=None, res=None):
         self.flash = flash
         msg0 = self.phrase
         if msg:
             msg0 += ' - ' + msg
 
-        super().__init__(msg0)
+        super().__init__(msg=msg0, res=res)
 
 class MultipleChoicesException(HttpException):
     status = 300
@@ -1269,12 +1505,33 @@ class headers(entities.entities):
                 return hdr.value
         return None
 
+    def append(self, obj, uniq=False, r=None):
+        if isinstance(obj, str):
+            kvp = [x.strip() for x in obj.partition(':') if x != ':']
+            if len(kvp) != 2:
+                raise ValueError(
+                    'Headers must be colon seperate KVPs'
+                )
+            return self.append(header(*kvp))
+
+        super().append(obj=obj, uniq=uniq, r=r)
+
     @property
     def list(self):
         r = list()
         for hdr in self:
             r.append(hdr.tuple)
         return r
+
+    @property
+    def dict(self):
+        r = dict()
+        for hdr in self:
+            r[hdr.name] = hdr.value
+        return r
+
+    def __str__(self):
+        return '\n'.join(str(x) for x in self)
 
 class header(entities.entity):
     def __init__(self, name, v):
@@ -1283,6 +1540,8 @@ class header(entities.entity):
 
     @property
     def name(self):
+        # TODO Why do we need to lower() this. I think we should be
+        # case-preserving here.
         return self._name.lower()
 
     def __str__(self):
@@ -1306,23 +1565,45 @@ class browsers(entities.entities):
 
 class browser(entities.entity):
     class _tabs(entities.entities):
-        pass
+        def tab(self):
+            t = browser._tab(self)
+            self += t
+            return t
 
     class _tab(entities.entity):
-        # TODO These methods will eventually be implemented to perform
-        # actual HTTP requests. At the time of this writting, however,
-        # these will be implemented in the testers.browser subclass
-        def get(self, url):
-            self._request(url)
+        def __init__(self, tabs):
+            self.tabs = tabs
 
-        def post(self, url):
-            self._request(url)
+        def request(self, req):
+            url = req.url
 
-        def head(self, url):
-            self._request(url)
+            body = req.payload
 
-        def _request(self, url):
-            raise NotImplementedError('TODO')
+            if body:
+                body = body.encode('utf-8')
+
+            meth = req.method
+
+            hdrs = req.headers.dict
+
+            req1 = urllib.request.Request(
+                url, body, hdrs, method=meth
+            )
+
+            req1.add_header('Content-Length', req.size)
+
+            try:
+                res = urllib.request.urlopen(req1, body)
+            except Exception as ex:
+                res = _response(req=req, ex=ex)
+                ex1 = HttpError.create(
+                    'Error requesting' , res
+                )
+                raise ex1
+            else:
+                # Return a www._response objcet representing the HTTP
+                # response to the HTTP request.
+                return _response(req=req, res=res)
 
     class _cookies(entities.entities):
         @property
@@ -1352,6 +1633,7 @@ class browser(entities.entity):
             self.same_site = same_site
 
     def __init__(self):
+        self.tabs = browser._tabs(self)
         self.cookies = self._cookies()
         self._useragent = None
 
@@ -1371,5 +1653,9 @@ class browser(entities.entity):
     @useragent.setter
     def useragent(self, v):
         self._useragent = v
+
+    def tab(self):
+        return self.tabs.tab()
+
 
 app = application()

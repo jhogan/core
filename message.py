@@ -20,6 +20,7 @@ import apriori
 import orm
 import party
 import textwrap
+import builtins
 from uuid import uuid4
 
 class messages(orm.entities):
@@ -35,8 +36,19 @@ class contactmechanism_messagetypes(apriori.types):
     pass
 
 class statuses(orm.entities):
-    pass
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        try:
+            self.orm.initing = True
+            self.onadd += self._self_onadd 
+        finally:
+            self.orm.initing = False
 
+    def _self_onadd(self, src, eargs):
+        if not self.orm.isloading:
+            st = eargs.entity
+            st.dispatch.status = st.statustype.name
+        
 class statustypes(apriori.types):
     pass
 
@@ -56,32 +68,47 @@ class message(orm.entity):
         return dis
 
     @property
+    def replyto(self):
+        replytos = self.getcontactmechanisms(
+            type=party.email,
+            name='replyto'
+        )
+        return replytos(0)
+
+    @property
     def from_(self):
         for cmm in self.contactmechanism_messages:
             type = cmm.contactmechanism_messagetype
-            if type.name == 'source':
+            if type.name == 'from':
                 return cmm.contactmechanism
 
+    def getcontactmechanisms(self, type, name):
+        r = type.orm.entities()
+        for cmm in self.contactmechanism_messages:
+            cm = cmm.contactmechanism
+            if builtins.type(cm) is not type:
+                continue
+
+            type1 = cmm.contactmechanism_messagetype
+            if type1.name == name:
+                r += cmm.contactmechanism
+
+        return r
+
+    @property
+    def cc(self):
+        return self._getcms('cc') 
+
+    @property
+    def bcc(self):
+        return self._getcms('bcc') 
+
     @staticmethod
-    def email(from_, to, subject=None, html=None, text=None, postdate=None):
-        if isinstance(from_, str):
-            from_ = party.email(name=from_)
-        elif isinstance(from_, party.email):
-            pass
-        else:
-            raise TypeError('Invalid type for from_')
-
-        if isinstance(to, str):
-            tos = party.emails()
-            for to in to.split(';'):
-                tos += party.email(name=to)
-        elif isinstance(to, party.email):
-            tos = to.orm.collectivize()
-        elif isinstance(to, party.emails):
-            tos = to
-        else:
-            raise TypeError('Invalid type for `to`')
-
+    def email(
+        from_,         to,            cc=None,    bcc=None,
+        replyto=None,  subject=None,  html=None,  text=None,
+        postdate=None
+    ):
         msg = message(
             html      =  html,
             text      =  text,
@@ -89,21 +116,28 @@ class message(orm.entity):
             subject   =  subject,
         )
 
-        src   = contactmechanism_messagetype(name='source')
-        dest  = contactmechanism_messagetype(name='destination')
+        for k in ('from_', 'to', 'cc', 'bcc', 'replyto'):
+            v = locals()[k]
+            if isinstance(v, str):
+                ems = party.emails()
+                for name in v.split(','):
+                    ems += party.email(name=name)
+            elif isinstance(v, party.email):
+                ems = v.orm.collectivize()
+            elif isinstance(v, party.emails):
+                ems = v
+            elif v is None:
+                continue
+            else:
+                raise TypeError(f'Invalid type for {k}')
 
-        cm = contactmechanism_message(
-            contactmechanism              =  from_,
-            contactmechanism_messagetype  =  src,
-        )
+            type = contactmechanism_messagetype(name=k.rstrip('_'))
 
-        msg.contactmechanism_messages += cm
-
-        for to in tos:
-            msg.contactmechanism_messages += contactmechanism_message(
-                contactmechanism              =  to,
-                contactmechanism_messagetype  =  dest,
-            )
+            for em in ems:
+                msg.contactmechanism_messages += contactmechanism_message(
+                    contactmechanism              =  em,
+                    contactmechanism_messagetype  =  type,
+                )
 
         msg.save()
 
@@ -113,17 +147,34 @@ class message(orm.entity):
         boundry = uuid4().hex
 
         tos = party.emails()
+        ccs = party.emails()
+        bccs = party.emails()
         for cmm in self.contactmechanism_messages:
             type = cmm.contactmechanism_messagetype
             cm = cmm.contactmechanism
-            if type.name == 'source':
+            if type.name == 'from':
                 from_ = cm
-            elif type.name == 'destination':
+            elif type.name == 'to':
                 tos += cm
+            elif type.name == 'cc':
+                ccs += cm
+            elif type.name == 'bcc':
+                bccs += cm
 
         hdr = textwrap.dedent(f'''
         From: {from_}
         To: {tos}
+        ''')
+
+        if ccs.count:
+            hdr += f'CC: {ccs}\n'
+
+        if bccs.count:
+            hdr += f'BCC: {bccs}\n'
+
+        hdr = hdr.strip()
+            
+        hdr += textwrap.dedent(f'''
         Subject: {self.subject}
         Date: {self.createdat or ''}
         Content-Type: multipart/alternative
@@ -153,7 +204,6 @@ class message(orm.entity):
             r += f'{html}\n'
 
         return r.strip()
-        B()
 
     def __repr__(self):
         return str(self)
@@ -166,7 +216,17 @@ class contactmechanism_message(orm.association):
     message = message
 
 class dispatch(orm.entity):
+    # The external message id. When a message is dispatched to an
+    # a third party for delivery, the third party may or may not have
+    # its own identifier for the message.
+    externalid = str
     statuses = statuses
+    status = str
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orm.default('externalid', None)
+        self.orm.default('status', 'queued')
 
 class dispatchtype(apriori.type):
     """ Email, sms, etc.
@@ -174,12 +234,29 @@ class dispatchtype(apriori.type):
     dispatches = dispatches
     
 class status(orm.entity):
+    """ A status entry for a dispatch. The description for the status is
+    found in the implicit `status.statustype.name` property.
+    """
+
+    # The datetime the event described by the status entity occured.
     begin = datetime
-    dispatches = dispatches
 
 class statustype(apriori.type):
-    """ Records the type of status. Typical values for the ``name``
-    attribute include: "sending", "sent" and "viewed".
+    """ Records the type of status.
+    
+    Values for the ``name`` attribute:
+        
+        * 'postmarked': The message has been dispatched to a third party
+        provider.
+
+        * 'hard-bounce': The dispatch failed and any attempt to
+        dispatch the message again will fail.
+
+        * 'soft-bounce': The dispatch failed, and another dispatch
+        * entity should be created so the message can be attempted again
+        * at a later date.
+
+        * 'viewed' The user has opened the email.
     """
     # The collection of statuses belonging to this type
     statuses = statuses

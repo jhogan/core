@@ -80,7 +80,11 @@ class citizenships(orm.entities):                            pass
 class contactmechanism_contactmechanisms(orm.associations):  pass
 class contactmechanisms(orm.entities):                       pass
 class phones(contactmechanisms):                             pass
-class emails(contactmechanisms):                             pass
+
+class emails(contactmechanisms):
+    def __str__(self):
+        return ', '.join(str(x) for x in self)
+
 class websites(contactmechanisms):                           pass
 class party_contactmechanisms(orm.associations):             pass
 class purposes(orm.entities):                                pass

@@ -2391,6 +2391,11 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             # clause/predicate
             load &= self.orm.joins.ispopulated or bool(self.orm.where)
 
+            # TODO:d6f1df1f Test if attr is a callable attribute. We
+            # don't want to load if we are only accessing the callable.
+            # In addition to being unnecessary, it is confusing for
+            # chronicle tests.
+
             if load:
                 # Load the collection based on the parameters defined by
                 # the invocation of the entities's __init__ method.
@@ -3884,14 +3889,17 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         if self.orm.ismarkedfordeletion:
             crud = 'delete'
             sql, args = self.orm.mappings.getdelete()
+
         elif self.orm.isnew:
             crud = 'create'
             self.createdat = self.updatedat = primative.datetime.utcnow()
             sql, args = self.orm.mappings.getinsert()
+
         elif self.orm._isdirty:
             self.updatedat = primative.datetime.utcnow()
             crud = 'update'
             sql, args = self.orm.mappings.getupdate()
+
         else:
             crud = None
             sql, args = (None,) * 2
@@ -4957,7 +4965,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         that best represents the object in most situation.
         """
         if hasattr(self, 'name'):
-            return '"%s"' % self.name
+            return '%s' % self.name
             
         return str(self.id)
             
@@ -5934,7 +5942,7 @@ class entitymapping(mapping):
                         
                         # ... then we can load the entity using the
                         # foreign key's value
-                        self._value = self.entity(map.value)
+                        self._value = self.entity(map.value).orm.leaf
 
         return self._value
 
@@ -8177,22 +8185,25 @@ class orm:
     @property
     def leaf(self):
         """ Return the lowest subentity in the inheritance tree of the
-        `orm`'s `instance` property. The database is queried for each
-        subclass, the database is queried. If there are no subclasess,
-        `self.instance` is returned.
+        ``orm``'s ``instance`` property. The database is queried for
+        each subclass. If there are no subclasess, `self.instance` is
+        returned.
         """
 
-        leaf = self.instance
+        sup = leaf = self.instance
         id = leaf.id
 
-        # Itereate over subentities. `self.subentities` is assumed to
-        # iterate in a way tha yields the top-most subclass first
+        # Iterate over subentities. `self.subentities` is assumed to
+        # iterate in a way that yields the top-most subclass first
         # progressing toward the lowest subclass.
         for cls in self.subentities:
             try:
                 leaf = cls(id)
             except db.RecordNotFoundError:
-                return leaf
+                continue
+            else:
+                leaf.orm._super = sup
+                sup = leaf
 
         return leaf
                 
