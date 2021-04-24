@@ -124,6 +124,10 @@ class sendbot(bot):
                 )
                 continue
 
+class UsurpationError(Exception):
+    def __init__(self, bt):
+        self.bot = bt
+
 if __name__ == '__main__':
     import argparse
     prs = argparse.ArgumentParser(
