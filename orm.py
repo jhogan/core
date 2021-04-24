@@ -3889,14 +3889,17 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         if self.orm.ismarkedfordeletion:
             crud = 'delete'
             sql, args = self.orm.mappings.getdelete()
+
         elif self.orm.isnew:
             crud = 'create'
             self.createdat = self.updatedat = primative.datetime.utcnow()
             sql, args = self.orm.mappings.getinsert()
+
         elif self.orm._isdirty:
             self.updatedat = primative.datetime.utcnow()
             crud = 'update'
             sql, args = self.orm.mappings.getupdate()
+
         else:
             crud = None
             sql, args = (None,) * 2
