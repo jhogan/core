@@ -95,6 +95,9 @@ class sendbot(bot):
         diss = message.dispatches(status='queued')
 
         for dis in diss:
+            # TODO:f4a2e3e2 Don't dispatch usless
+            # now >= dis.message.postdate.  Also, dispatcher.dispatch
+            # should raise an exception if this were not the case.
             dispatcher = third.dispatcher.create(dis)
 
             try:

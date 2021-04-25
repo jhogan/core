@@ -129,16 +129,55 @@ class statuses(orm.entities):
             st.dispatch.status = st.statustype.name
         
 class statustypes(apriori.types):
-    pass
+    """ A collection of ``statustype`` objects.
+    """
 
 class dispatchtypes(apriori.types):
-    pass
+    """ A collection of ``dispatchtype`` objects.
+    """
 
 class message(orm.entity):
+    """ Represents a message. ``messages`` can dispatched to email
+    accounts, SMS numbers, text messaging systems, postal addresses,
+    telegraph receivers, etc.
+
+    ``messages`` have a many-to-many relationship with contact
+    mechanisms (see party.contactmechanisms for more about contact
+    mechanisms) via the ``contactmechanism_message`` associaton. This
+    allow a message to be address to multiple recipients where each of
+    the recipients could potentially use different contact mechanisms.
+    For example, a message my be addressed to an email account, an SMS
+    number, and a postal address at the same time (currently, only email
+    is implemented).
+
+    A message can have an HTML representation and a text representation
+    simultaneously. This is useful for multipart emails which need to
+    have both an HTML part, and a text part which text-based email
+    clients can fall back on. 
+
+    A message can have zero or more ``dispatches``. These entities are
+    used to schedule the delivery of the message to external systems
+    such as an SMTP server or third-party RESTful APIs. (``sendbot`` is
+    responsible for processing these messages.) For internal messages,
+    such as a user's personal inbox, a ``dispatch`` wouldn't be
+    necessary.
+    """
+
+    # The HTML representation of the message.
     html = text
+
+    # A text representation of the message
     text = text
+
+    # Indicates that messages should be delivered at a future time
+    # (currently not implemented).
     postdate = datetime
+
+    # The subject line of the message. For emails, this would obviously
+    # be the subject of the email.
     subject = str
+
+    # A collection of dispatch objects.
     dispatches = dispatches
 
     def dispatch(self, *args, **kwargs):
