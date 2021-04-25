@@ -4356,8 +4356,16 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         gb.append(self)
 
+        # Here we are interested in the 'brokenrules' property an ORM
+        # user may have added to their entity class. We want to be sure
+        # to only call the entity on the class associated with
+        # type(self) and avoid calling an inherited super. This prevents
+        # inadvert, multiple calls to the same 'brokenrules' property
+        # which would lead to the collection of duplicate broken rules
+        # and potentially be very taxing, such as when brokenrules
+        # properties involve database or network API calls.
         try:
-            # Search for brokenrules property on self
+            # Search for user-defined brokenrules property on self
             prop = type(self).__dict__['brokenrules']
         except KeyError:
             # A brokenrules property doesn't exist on self
