@@ -80,18 +80,28 @@ class inodes(orm.entities):
         self.onadd += self._self_onadd
 
     def _self_onadd(self, src, eargs):
-        def replace(nds):
-            for nd in nds:
-                if nd is eargs.entity:
-                    continue
+        return
+        B(self.orm.isloading)
 
-                if nd.name == eargs.entity.name:
-                    if nd.inode is eargs.entity.inode:
+        if self.orm.isloading:
+            return
+
+        def replace(nd, ndadd):
+            if nd is not ndadd:
+                if nd.name == ndadd.name:
+                    if nd.inode is ndadd.inode:
                         # TODO Determine how to replace
                         preserve = True
                         if preserve:
-                            B()
-                            nds[i] = eargs.entity
+                            rent = nd.inode
+
+                            if rent:
+                                ...
+                            else:
+                                # nd is at the root
+                                ...
+
+                            nds[i] = ndadd
                         else:
                             inode = eargs.inode
                             if inode:
@@ -99,9 +109,17 @@ class inodes(orm.entities):
                             else:
                                 ...
                         return
-                replace(nd.nds)
 
-        replace(self)
+            if not isinstance(nd, file):
+                for nd1 in nd.inodes:
+                    replace(nd1, ndadd)
+
+            if not isinstance(ndadd, file):
+                for ndadd1 in ndadd.inodes:
+                    replace(nd, ndadd1)
+
+        for nd in self:
+            replace(nd.root, eargs.entity.root)
                     
 
     def __getitem__(self, key):
