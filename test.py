@@ -13158,13 +13158,13 @@ class test_orm(tester):
             self.type(BrokenRulesError, ex)
 
             # The BrokenRulesError will report that sng is broken.
-            self.is_(sng, ex.object)
+            self.is_(sng.orm.super, ex.object)
 
             with self.brokentest(ex.object.brokenrules) as t:
                 # However, the brokenrules collection of ex.object
                 # (which is the sng object) will tell us that
                 # it was sng.orm.artist that actually broken the rule.
-                t(ex.object.orm.super, 'firstname', 'fits')
+                t(ex.object, 'firstname', 'fits')
 
             # Ensure the sng record was not created due to the rollback
             # caused by the invalid artist. This logic is definately
