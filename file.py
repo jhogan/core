@@ -75,6 +75,35 @@ import uuid
 class inodes(orm.entities):
     """ Represents a collection of ``inode`` entities.
     """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.onadd += self._self_onadd
+
+    def _self_onadd(self, src, eargs):
+        def replace(nds):
+            for nd in nds:
+                if nd is eargs.entity:
+                    continue
+
+                if nd.name == eargs.entity.name:
+                    if nd.inode is eargs.entity.inode:
+                        # TODO Determine how to replace
+                        preserve = True
+                        if preserve:
+                            B()
+                            nds[i] = eargs.entity
+                        else:
+                            inode = eargs.inode
+                            if inode:
+                                rent[x] = nd
+                            else:
+                                ...
+                        return
+                replace(nd.nds)
+
+        replace(self)
+                    
+
     def __getitem__(self, key):
         """ Return an inode (file or directory) underneath the directory
         by a ``key`` name, if the argument is a str::
@@ -99,6 +128,8 @@ class inodes(orm.entities):
                             nds = nd.inodes
                 return nd
         return super().__getitem__(key)
+
+
 
 class inode(orm.entity):
     """ The abstract class from which ``file`` and ``directory``
