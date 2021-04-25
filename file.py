@@ -312,8 +312,6 @@ class inode(orm.entity):
         """
         brs = entities.brokenrules()
 
-        print(f'{type(self)} + {self.name}')
-
         id = self.inode.id if self.inode else None
         op = '=' if id else 'is'
         nds = inodes(f'name = %s and inodeid {op} %s', self.name, id)

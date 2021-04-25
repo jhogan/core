@@ -433,8 +433,8 @@ class file_inodes(tester.tester):
         fs = file.files()
         f = file.file(path='/var/log/syslog')
         f1 = file.file(path='/var/log/auth.log')
-        B()
         fs += f
+        B()
         fs += f1
 
         log = f.inode
