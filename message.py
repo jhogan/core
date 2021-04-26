@@ -170,7 +170,7 @@ class message(orm.entity):
     text = text
 
     # Indicates that messages should be delivered at a future time
-    # (currently not implemented).
+    # (currently not implemented). TODO:1fb03626 Implement
     postdate = datetime
 
     # The subject line of the message. For emails, this would obviously
@@ -181,12 +181,20 @@ class message(orm.entity):
     dispatches = dispatches
 
     def dispatch(self, *args, **kwargs):
+        """ Creates a new dispatch entity, appends it to the
+        ``message``'s ``dispatches collection, and returns the dispatch
+        instance..
+        """
         dis = dispatch(*args, **kwargs)
         self.dispatches += dis
         return dis
 
     @property
     def replyto(self):
+        """ Searches the contact mechanisms (party.contactmechanisms)
+        associated with this message for the 'replyto' email and returns
+        it. If one is not found, None is returned.
+        """
         replytos = self.getcontactmechanisms(
             type=party.email,
             name='replyto'
@@ -195,12 +203,28 @@ class message(orm.entity):
 
     @property
     def from_(self):
+        """ Searches the contact mechanisms (party.contactmechanisms)
+        associated with this message for the 'from' contact mechanism
+        and returns it. If one is not found, None is returned.
+        """
         for cmm in self.contactmechanism_messages:
             type = cmm.contactmechanism_messagetype
             if type.name == 'from':
                 return cmm.contactmechanism
 
     def getcontactmechanisms(self, type, name):
+        """ Searches the collection of contact mechanisms
+        (party.contactmechanisms) associated with this message and
+        return the one that matches the ``name`` and is of the type
+        ``type``.
+
+        :param: type type: A subclass of ``party.contactmechanim`` to
+        scan for.
+
+        :param: name str: The name of the contact mechanism as it is
+        associated with the message (e.g., 'replyto', 'from', 'to',
+        'cc', 'bcc', etc.)
+        """
         r = type.orm.entities()
         for cmm in self.contactmechanism_messages:
             cm = cmm.contactmechanism
@@ -227,12 +251,57 @@ class message(orm.entity):
         replyto=None,  subject=None,  html=None,  text=None,
         postdate=None
     ):
+        """ A static method that makes creating an email easy. The
+        method is permissive about the inputs it accepts, for example,
+        the email address parameters, such as ``to``, can be of type
+        party.email, party.email, an email address in string format or a
+        comma-seperated string of emails. Note that currently, the
+        method does not generate a ``dispatch`` object.
+
+        :param: from_ str|party.email|party.emails: The From email
+        address.
+
+        :param: to str|party.email|party.emails: The To email
+        address.
+
+        :param: cc str|party.email|party.emails: The cc email
+        address.
+
+        :param: bcc str|party.email|party.emails: The bcc email
+        address.
+
+        :param: replyto str|party.email|party.emails: The replyto email
+        address.
+
+        :param: subject str: The subject of the email.
+
+        :param: html str: The HTML body.
+
+        :param: text str: The text body (used as a fallback for email
+        clients that can't render HTML
+
+        :param: postdate datetime: The date when the messages should be
+        dispatched (currently not implemented: 1fb03626)
+        """
+
+        # TODO Shouldn't we be creating a dispatch object in this
+        # method. If not, explain why in docstring.
+
+        # Create the message object
         msg = message(
             html      =  html,
             text      =  text,
             postdate  =  postdate,
             subject   =  subject,
         )
+
+        # Create/retrieve the party.email instance for each of the
+        # email addresses passed in and associate the party.emails with
+        # the message through the contactmechanism_message association.
+
+        # TODO We should support any iterable here such as lists and
+        # tuples. dicts could also be supported::
+        #     {'Jesse Hogan': 'jhogan@mail.com'}
 
         for k in ('from_', 'to', 'cc', 'bcc', 'replyto'):
             v = locals()[k]
@@ -249,14 +318,17 @@ class message(orm.entity):
             else:
                 raise TypeError(f'Invalid type for {k}')
 
+            # Associate message with party.contactmechanism. Name the
+            # association ``k``
             type = contactmechanism_messagetype(name=k.rstrip('_'))
-
             for em in ems:
                 msg.contactmechanism_messages += contactmechanism_message(
                     contactmechanism              =  em,
                     contactmechanism_messagetype  =  type,
                 )
 
+        # Save message object to database along with
+        # contactmechanisms and their associations.
         msg.save()
 
         return msg
