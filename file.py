@@ -194,6 +194,7 @@ class inode(orm.entity):
 
         if nds.hasone:
             nd = nds.first
+            # TODO We can just return nd now
             return file(nd.id)
 
         return None
@@ -237,9 +238,9 @@ class inode(orm.entity):
         return dir
 
     def __getitem__(self, key):
-        """ Return an (file or directory) underneath this inode by a
+        """ Return a (file or directory) underneath this inode by a
         ``key`` name, if the argument is a str. If ``key`` is not a str,
-        the default behavior is used.
+        the default behavior for entiteis is used.
         """
 
         # Delegate indexing for a directory to inode's indexer.
@@ -257,7 +258,7 @@ class inode(orm.entity):
 
         Note this property would have been called `directory`. However,
         the ORM wants to use `directory` for something else so we
-        terminology borrowed from os.path.split()
+        borrowed terminology from os.path.split()
         """
         dir = inode.store
 
@@ -418,10 +419,10 @@ class file(inode):
 
         self._body = None
 
-        path = kwargs.pop('path', None)
-
         # If a path was given in the kwargs, we can use it to load
         # or create a path for the file.
+        path = kwargs.pop('path', None)
+
         super().__init__(*args, **kwargs)
 
         if not path:
@@ -466,6 +467,7 @@ class file(inode):
         mime = self.mime
         if mime:
             return mime.split('/')[0]
+
         return None
 
     def _self_onaftersave(self, src, eargs):
