@@ -122,6 +122,7 @@ class sendbot(bot):
 
 if __name__ == '__main__':
     import argparse
+    import inspect
     prs = argparse.ArgumentParser(
         description="Runs a bot",
         epilog = (
@@ -131,21 +132,28 @@ if __name__ == '__main__':
         )
     )
 
-    prs.add_argument(
-        'bot', 
-        help = 'Name of the bot to invoke',
-        choices = [x.__name__ for x in bots.bots]
-    )
+    params = inspect.signature(bot.__init__).parameters
 
-    prs.add_argument(
-        'args', 
-        nargs = "*",
-        help = "Arguments to pass to the bot's constructor",
-    )
+    for param in params:
+        if param in ('self', 'args', 'kwargs'):
+            continue
 
+        param = params[param]
+        prs.add_argument(f'--{param.name}', type=param.annotation)
+
+
+    subprss = prs.add_subparsers(help='subcommand help', dest='bot')
+    subprss.required = True
+
+    for bot in bots.bots:
+        subprss = subprss.add_parser(bot.__name__)
+
+    B()
     args = prs.parse_args()
 
+    '''
     for bot in bots.bots:
         if bot.__name__ == args.bot:
             bot(*args.args)()
             break
+    '''
