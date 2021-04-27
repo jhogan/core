@@ -20,7 +20,6 @@ import time
 import orm
 
 class bots(ecommerce.agents):
-
     @classproperty
     def bots(cls):
         """ Return each class that inherits from directly or indirectly
