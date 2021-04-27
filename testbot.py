@@ -116,15 +116,5 @@ class test_sendbot(tester.tester):
             dis.statuses.first.statustype.name
         )
 
-    def it_cant_usurp(self):
-        
-        sb = bot.sendbot(iterations=1)
-        return
-
-        self.expect(
-            bot.UsurpationError, 
-            lambda: bot.sendbot(iterations=1)
-        )
-
 if __name__ == '__main__':
     tester.cli().run()

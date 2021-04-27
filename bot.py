@@ -46,14 +46,6 @@ class bot(ecommerce.agent):
         super().__init__(*args, **kwargs)
         self.name = type(self).__name__
 
-    def claim(self):
-        bs = bots(pid=os.getpid())
-
-        if bs.isempty:
-            self.save()
-        else:
-            raise UsurpationError(self)
-
     @orm.attr(int)
     def pid(self):
         return os.getpid()
@@ -73,7 +65,6 @@ class sendbots(bots):
 class sendbot(bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.claim()
 
     def __call__(self, exsimulate=False):
         iter = self.iterations
@@ -126,10 +117,6 @@ class sendbot(bot):
                     'Continuing...'
                 )
                 continue
-
-class UsurpationError(Exception):
-    def __init__(self, bt):
-        self.bot = bt
 
 if __name__ == '__main__':
     import argparse
