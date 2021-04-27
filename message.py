@@ -239,10 +239,12 @@ class message(orm.entity):
 
     @property
     def cc(self):
+        # TODO Remove I don't think this is used any more
         return self._getcms('cc') 
 
     @property
     def bcc(self):
+        # TODO Remove I don't think this is used any more
         return self._getcms('bcc') 
 
     @staticmethod
@@ -399,10 +401,29 @@ class message(orm.entity):
         return str(self)
 
 class contactmechanism_messagetype(apriori.type):
+    """ Represents the type of association a ``message`` has with a
+    ``party.contactmechanism``.
+
+    The name property, inherited from apriori.type, can contain values
+    such as 'replyto', 'from', 'to', 'cc', 'bcc', etc..
+    """
+
+    # The collection of contactmechanism_messages associations this type
+    # applies to.
     messages = contactmechanism_messages
 
 class contactmechanism_message(orm.association):
+    """ Associates a ``messages`` with a ``party.contactmechanism``. Via
+    this associations, a message can a contact mechanism as the sender,
+    and multiple contact mechanism (of different types; see
+    contactmechanism_messagetype) as recipients.
+    """
+
+    # The party.contactmechanism. This will typically be a subentity
+    # such as party.email or party.address (postal address).
     contactmechanism = party.contactmechanism
+
+    # The message object associated with the ``contactmechanism``
     message = message
 
 class dispatch(orm.entity):
