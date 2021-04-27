@@ -40,9 +40,12 @@ class bots(ecommerce.agents):
         return r
 
 class bot(ecommerce.agent):
-    def __init__(self, *args, **kwargs):
-        self._iterations = kwargs.pop('iterations', None)
+    def __init__(self, 
+        iterations: int=None, verbosity=0, *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
+        self._iterations = iterations
+        self._verbosity = verbosity
         self.name = type(self).__name__
 
     @orm.attr(int)
