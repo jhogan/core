@@ -427,14 +427,49 @@ class contactmechanism_message(orm.association):
     message = message
 
 class dispatch(orm.entity):
-    # The external message id. When a message is dispatched to an
+    """ An object used to schedule a ``message`` for delivery.
+
+    Each ``message`` has zero or more ``dispatches``. If a ``message``
+    needs to be schedule for delivery to an external system (such as an
+    SMPT server or a third party RESTful API) at least one ``dispatch``
+    entry needs to be added to its ``dispatch`` collection.
+
+    A ``dispatch`` has an implicit attribute called ``dispatchtype``
+    (see the ``dispatchtype`` entity). This entity has a name property
+    which indicates the general type of dispatch required ('email',
+    'SMS', 'postal', etc). For messages that are destined for multiple
+    contact mechanism (email addresses, SMS numbers, etc.), a dispatch
+    should be created for each dispatchtype. If a dispatch fails and
+    needs to be marked as dead for some reason, a dispatch can be
+    cloned, allowing the system to keep trying.
+
+    A dispatch has a collection of ``statuses``. ``status`` objects
+    contain the datetime a ``dispatch`` enters into a new status.
+
+    ``sendbot`` will scan dispatches that are not in a completed state,
+    and will work to deliver the message's contents to the proper
+    external system. ``sendbot`` will use entities in the third.py
+    module to handle the actual interaction with third-party systems.
+    """
+    # The external message id. When a message is dispatched to 
     # a third party for delivery, the third party may or may not have
     # its own identifier for the message.
     externalid = str
+
+    # A collection of status entities which detail when a dispatch
+    # enters into different states
     statuses = statuses
+
+    # A string representation of the last state that the dispatched
+    # entered into. This is here only because it makes it easier for
+    # sendbot to query the dispatches table by status. (Note that this
+    # is a bit of a hack that we are using until correlated subqueries
+    # are supported by the ORM. See 9b4b0ce0.)
     status = str
 
     def __init__(self, *args, **kwargs):
+        """ Instantiate a dispatch object.
+        """
         super().__init__(*args, **kwargs)
         self.orm.default('externalid', None)
         self.orm.default('status', 'queued')
