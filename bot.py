@@ -40,9 +40,22 @@ class bots(ecommerce.agents):
         return r
 
 class bot(ecommerce.agent):
-    def __init__(self, 
-        iterations: int=None, verbosity=0, *args, **kwargs
-    ):
+    def __init__(self, iterations=None, verbosity=0, *args, **kwargs):
+        """
+        An abstract class that represents a bot. 
+        
+        Concrete bots will inherit from this class to implement their
+        specific functions.
+
+        :param: iterations int: The number of iterations to make before
+        exiting. Most bots will be in an infinite loop. However, for
+        debugging purposes, a developer may want to limit the number of
+        iterations to 1.
+
+        :param: verbosity int: The level of status output the bot should
+        generate. Status output will be sent to a log file. It will also be
+        sent to stdout.
+        """
         super().__init__(*args, **kwargs)
         self._iterations = iterations
         self._verbosity = verbosity
@@ -123,6 +136,34 @@ class sendbot(bot):
 if __name__ == '__main__':
     import argparse
     import inspect
+    from io import StringIO
+
+    def get_params(doc):
+        params = list()
+        param = None
+        for ln in StringIO(doc):
+            ln = ln.strip()
+
+            if ln == '':
+                param = None
+
+            if param is not None:
+                param['description'] += ln + ' '
+
+            if ln.startswith(':param:'):
+                param = dict()
+                params.append(param)
+
+                ln = ln.split(':', maxsplit=3)
+                name, type = [x.strip() for x in ln[2].split()]
+                param['name'], param['type'] = name, type
+                param['description'] = ln[3].strip() + ' '
+
+        for param in params:
+            param['description'] = param['description'].strip()
+
+        return params
+
     prs = argparse.ArgumentParser(
         description="Runs a bot",
         epilog = (
@@ -133,22 +174,29 @@ if __name__ == '__main__':
     )
 
     params = inspect.signature(bot.__init__).parameters
+    docparams = get_params(bot.__init__.__doc__)
 
     for param in params:
         if param in ('self', 'args', 'kwargs'):
             continue
 
+        docparam = [x for x in docparams if x['name'] == param][0]
         param = params[param]
-        prs.add_argument(f'--{param.name}', type=param.annotation)
+        help = docparam['description']
+        type = docparam['type']
+        B()
+        B()
+        prs.add_argument(
+            f'--{param.name}', type=int, help=help)
 
 
     subprss = prs.add_subparsers(help='subcommand help', dest='bot')
     subprss.required = True
 
     for bot in bots.bots:
+
         subprss = subprss.add_parser(bot.__name__)
 
-    B()
     args = prs.parse_args()
 
     '''
