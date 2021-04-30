@@ -128,9 +128,11 @@ class sendbot(bot):
     def __call__(self, exsimulate=False):
         iter = self.iterations
         i = 0
+        self.log('dipatching ...', 'debug')
         while True:
+            self.log('.', 'debug', end='')
             self._dispatch(exsimulate=exsimulate)
-            time.sleep(.001)
+            time.sleep(1)
 
             if iter is None:
                 continue
@@ -170,9 +172,9 @@ class sendbot(bot):
             # example, if the network is down, we may want to give up
             # for the moment.
             except Exception as ex:
-                log.exception(
+                self.log(
                     f'Error with dispatch {dis.id} ({ex}) - '
-                    'Continuing...'
+                    'Continuing...', 'exception'
                 )
                 continue
 
