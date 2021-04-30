@@ -46,6 +46,7 @@ class log(entity):
         self.onlog = event()
 
     def _self_onlog(self, src, eargs):
+        # TODO Is this dead code?
         pass
 
     class callbackhandler(Handler):
