@@ -9,7 +9,10 @@
 ########################################################################
 
 """ This module contains all classes related to third party network
-API's.
+API's. Examples of third-party APIs may include SMTP/POP,
+RESTful/GraphQL, SOAP-based web services, etc. These protocols can be
+used for messaging (SMS, email), credit card processing, mapping
+services, and any other services provided by a remote system.
 
 TODOs:
 """
@@ -26,24 +29,38 @@ import primative
 from contextlib import contextmanager
 
 class internetservices(product.services):
-    pass
+    """ A collection of ``internetservice`` entities.
+    """
 
 class apis(internetservices):
-    pass
+    """ A collection of third-party ``api`` services.
+    """
 
 class internetservice(product.service):
-    pass
+    """ A type of service provided through the internet, often for a
+    fee.
+    """
 
 class dispatchers(apis):
-    pass
+    """ A collection of ``dispatcher`` entities.
+    """
 
 class emailers(dispatchers):
-    pass
+    """ A collection of ``emailer`` entities.
+    """
 
 class postmarks(emailers):
-    pass
+    """ A collection of ``postmarks`` entities.
+    """
 
 class api(internetservice):
+    """ An ``api`` is a ``internetservice`` by which the framework can
+    communicate with external systems. An ``api`` has a ``browser``
+    property with which it can communicate with systems over HTTP.
+    Future "devices" may include a ``terminal`` to communicate over
+    telnet/SSH, or a ``socket`` to communicate directly with TCP or UDP
+    ports.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._browser = None

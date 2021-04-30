@@ -475,13 +475,17 @@ class dispatch(orm.entity):
         self.orm.default('status', 'queued')
 
 class dispatchtype(apriori.type):
-    """ Email, sms, etc.
+    """ Each ``dispatch`` is described by one ``dispatchtype`` entity.
+    The ``dispatchtype`` has a ``name`` attribute that describes the
+    general type of dispatch. Common dispatches types include "email",
+    "sms", "postal", etc.
     """
     dispatches = dispatches
     
 class status(orm.entity):
-    """ A status entry for a dispatch. The description for the status is
-    found in the implicit `status.statustype.name` property.
+    """ Each ``dispatch`` has a collection of ``status`` entites. These
+    indicate the time a dispatch enters into a state. Common states are
+    "queued", "in process", "completed", "failed".
     """
 
     # The datetime the event described by the status entity occured.
@@ -499,8 +503,8 @@ class statustype(apriori.type):
         dispatch the message again will fail.
 
         * 'soft-bounce': The dispatch failed, and another dispatch
-        * entity should be created so the message can be attempted again
-        * at a later date.
+        entity should be created so the message can be attempted again
+        at a later date.
 
         * 'viewed' The user has opened the email.
     """
