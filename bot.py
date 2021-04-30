@@ -58,7 +58,7 @@ class bot(ecommerce.agent):
         """
         super().__init__(*args, **kwargs)
         self._iterations = iterations
-        self._verbosity = verbosity
+        self.verbosity = verbosity
         self.name = type(self).__name__
 
     @orm.attr(int)
@@ -134,74 +134,78 @@ class sendbot(bot):
                 continue
 
 if __name__ == '__main__':
-    import argparse
-    import inspect
-    from io import StringIO
+    def main():
+        import argparse
+        import inspect
+        from io import StringIO
 
-    def get_params(doc):
-        params = list()
-        param = None
-        for ln in StringIO(doc):
-            ln = ln.strip()
+        def get_params(doc):
+            params = list()
+            param = None
+            for ln in StringIO(doc):
+                ln = ln.strip()
 
-            if ln == '':
-                param = None
+                if ln == '':
+                    param = None
 
-            if param is not None:
-                param['description'] += ln + ' '
+                if param is not None:
+                    param['description'] += ln + ' '
 
-            if ln.startswith(':param:'):
-                param = dict()
-                params.append(param)
+                if ln.startswith(':param:'):
+                    param = dict()
+                    params.append(param)
 
-                ln = ln.split(':', maxsplit=3)
-                name, type = [x.strip() for x in ln[2].split()]
-                param['name'], param['type'] = name, type
-                param['description'] = ln[3].strip() + ' '
+                    ln = ln.split(':', maxsplit=3)
+                    name, type = [x.strip() for x in ln[2].split()]
+                    param['name'], param['type'] = name, type
+                    param['description'] = ln[3].strip() + ' '
+
+            for param in params:
+                param['description'] = param['description'].strip()
+
+            return params
+
+        prs = argparse.ArgumentParser(
+            description="Runs a bot.",
+            epilog = (
+                'Bots are typically run in the background, managed by '
+                'systemd for example. Alternatively, a bot can be run in '
+                'the foreground, such as when debugging.'
+            )
+        )
+
+        params = inspect.signature(bot.__init__).parameters
+        docparams = get_params(bot.__init__.__doc__)
 
         for param in params:
-            param['description'] = param['description'].strip()
+            if param in ('self', 'args', 'kwargs'):
+                continue
 
-        return params
-
-    prs = argparse.ArgumentParser(
-        description="Runs a bot",
-        epilog = (
-            'Bots are typically run in the background, managed by '
-            'systemd for example. Alternatively, a bot can be run in '
-            'the foreground, such as when debugging.'
-        )
-    )
-
-    params = inspect.signature(bot.__init__).parameters
-    docparams = get_params(bot.__init__.__doc__)
-
-    for param in params:
-        if param in ('self', 'args', 'kwargs'):
-            continue
-
-        docparam = [x for x in docparams if x['name'] == param][0]
-        param = params[param]
-        help = docparam['description']
-        type = docparam['type']
-        B()
-        B()
-        prs.add_argument(
-            f'--{param.name}', type=int, help=help)
+            docparam = [x for x in docparams if x['name'] == param][0]
+            param = params[param]
+            help = docparam['description']
+            type = docparam['type']
+            prs.add_argument(
+                f'--{param.name}', type=int, help=help)
 
 
-    subprss = prs.add_subparsers(help='subcommand help', dest='bot')
-    subprss.required = True
+        subprss = prs.add_subparsers(help='subcommand help', dest='bot')
+        subprss.required = True
 
-    for bot in bots.bots:
+        for b in bots.bots:
+            subprss = subprss.add_parser(b.__name__)
 
-        subprss = subprss.add_parser(bot.__name__)
+        args = prs.parse_args()
 
-    args = prs.parse_args()
+        attrs = [x for x in dir(args) if not x.startswith('_')][1:]
 
-    '''
-    for bot in bots.bots:
-        if bot.__name__ == args.bot:
-            bot(*args.args)()
-            break
-    '''
+        kwargs = dict()
+        for attr in attrs:
+            kwargs[attr] = getattr(args, attr)
+
+
+        for b in bots.bots:
+            if b.__name__ == args.bot:
+                b(**kwargs)()
+                break
+    main()
