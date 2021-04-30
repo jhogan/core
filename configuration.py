@@ -44,6 +44,13 @@ class configuration:
     def __init__(self):
         self._logs = None
 
+    _instance = None
+    @classmethod
+    def getinstance(cls):
+        if not cls._instance:
+            cls._instance = cls()
+        return cls._instance
+
     @property
     def inproduction(self):
         return self.environment == 'production'
