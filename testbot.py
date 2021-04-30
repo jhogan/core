@@ -16,12 +16,35 @@ import message
 import orm
 import ecommerce
 import party
+from config import config
+from contextlib import redirect_stdout, redirect_stderr
 
 class test_bot(tester.tester):
+    def it_logs(self):
+        recs = list()
+        def onlog(src, eargs):
+            recs.append(eargs.record)
+        
+        msgs = ['d', 'i', 'w', 'e', 'c', 'e']
+        levels = [
+            'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL', 'ERROR'
+        ]
 
-    def it_raise_on__call__(self):
-        # TODO
-        ...
+        # Redirect stdout/stderr to /dev/null (so to speak)
+        with redirect_stdout(None), redirect_stderr(None):
+            for v in range(5, -1, -1):
+                recs = list()
+
+                b = bot.bot(iterations=0, verbosity=v) 
+                b.onlog += onlog
+                b.log('d', level='debug')
+                b.log('i') # level default to 'info'
+                b.log('w', level='warning')
+                b.log('e', level='error')
+                b.log('c', level='critical')
+                b.log('e', level='exception')
+                self.eq(msgs[5-v:], [x.message for x in recs])
+                self.eq(levels[5-v:], [x.levelname for x in recs])
 
 class test_sendbot(tester.tester):
     def __init__(self, *args, **kwargs):

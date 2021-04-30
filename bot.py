@@ -60,6 +60,50 @@ class bot(ecommerce.agent):
         self._iterations = iterations
         self.verbosity = verbosity
         self.name = type(self).__name__
+        self._onlog = None
+        self._log = config().logs.first
+        self._log.onlog += self._log_onlog 
+
+    @property
+    def onlog(self):
+        if not self._onlog:
+            self._onlog = entities.event()
+        return self._onlog
+
+    @onlog.setter
+    def onlog(self, v):
+        self._onlog = v
+
+    def _log_onlog(self, src, eargs):
+        self.onlog(src, eargs)
+
+    def log(self, msg, level='info', end='\n'):
+        levels = [
+            'debug',  'info',      'warning',
+            'error',  'critical',  'exception'
+        ]
+
+        if level not in levels:
+            raise ValueError(f'Invalid level: "{level}"')
+
+        levels = levels[5 - self.verbosity:]
+
+        if level not in levels:
+            return
+
+        if level in ('debug', 'info'):
+            stm = sys.stdout
+        else:
+            stm = sys.stderr
+
+        try:
+            stm.write(msg + end)
+        except AttributeError:
+            pass
+        else:
+            stm.flush()
+
+        getattr(self._log, level)(msg)
 
     @orm.attr(int)
     def pid(self):
@@ -97,7 +141,6 @@ class sendbot(bot):
                 break
 
     def _dispatch(self, exsimulate=False):
-        log = config().logs.first
         diss = message.dispatches(status='queued')
 
         for dis in diss:
@@ -117,9 +160,9 @@ class sendbot(bot):
                 # ``message.status`` in ``dis.statuses``.
 
                 # TODO:4d723428 (fix logging api)
-                log.exception(
+                self.log(
                     f'API Error with dispatch {dis.id} ({ex}) - '
-                    'Continuing...'
+                    'Continuing...', 'exception'
                 )
                 continue
 
