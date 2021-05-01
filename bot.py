@@ -125,6 +125,16 @@ class sendbots(bots):
 
 class sendbot(bot):
     def __init__(self, *args, **kwargs):
+        """ ``sendbot`` finds incomplete (queued) ``dispatch`` entities
+        for messsages and sends them to external sytems.
+
+        ``sendbot`` is responsible for ensuring that email, SMS, text
+        messages, and so on leave the core system and are delivered to
+        their intended recipients. ``sendbot`` continually polls the
+        database for new dispatches. However, if the ``interations``
+        argument is given, it will only poll the database for that
+        many ``iterations``.
+        """
         super().__init__(*args, **kwargs)
 
     def __call__(self, exsimulate=False):
@@ -186,9 +196,11 @@ if __name__ == '__main__':
         import inspect
         from io import StringIO
 
-        def get_params(doc):
+        def parse_docstring(doc):
+            r = dict()
             params = list()
             param = None
+            text= str()
             for ln in StringIO(doc):
                 ln = ln.strip()
 
@@ -207,10 +219,21 @@ if __name__ == '__main__':
                     param['name'], param['type'] = name, type
                     param['description'] = ln[3].strip() + ' '
 
+                if not param:
+                    if ln:
+                        if not text:
+                            text = '¶'
+                        text += ' ' + ln
+                    else:
+                        text += ' ¶'  
+
             for param in params:
                 param['description'] = param['description'].strip()
 
-            return params
+            r['text'] = text.rstrip(' ¶')
+            r['params'] = params
+
+            return r
 
         prs = argparse.ArgumentParser(
             description="Runs a bot.",
@@ -222,25 +245,26 @@ if __name__ == '__main__':
         )
 
         params = inspect.signature(bot.__init__).parameters
-        docparams = get_params(bot.__init__.__doc__)
+        doc = parse_docstring(bot.__init__.__doc__)
 
         for param in params:
             if param in ('self', 'args', 'kwargs'):
                 continue
 
-            docparam = [x for x in docparams if x['name'] == param][0]
-            param = params[param]
-            help = docparam['description']
-            type = docparam['type']
+            param = [x for x in doc['params'] if x['name'] == param][0]
+            help = param['description']
+            type = param['type']
             prs.add_argument(
-                f'--{param.name}', type=int, help=help)
+                f'--{param["name"]}', type=int, help=help
+            )
 
 
-        subprss = prs.add_subparsers(help='subcommand help', dest='bot')
+        subprss = prs.add_subparsers(help='[TODO]subcommand help', dest='bot')
         subprss.required = True
 
         for b in bots.bots:
-            subprss = subprss.add_parser(b.__name__)
+            doc = parse_docstring(b.__init__.__doc__)
+            subprss = subprss.add_parser(b.__name__, help=doc['text'])
 
         args = prs.parse_args()
 
