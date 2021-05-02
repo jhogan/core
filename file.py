@@ -168,8 +168,6 @@ class inodes(orm.entities):
                 return nd
         return super().__getitem__(key)
 
-
-
 class inode(orm.entity):
     """ The abstract class from which ``file`` and ``directory``
     inherit. ``inode`` has a ``name`` property used for the file or
