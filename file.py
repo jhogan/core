@@ -6,7 +6,7 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021
 
-""" This module contains class to help deal with files in a web context. 
+""" This module contains class to help deal with files in a web context.
 
 File (and directory) metadata are stored in the database (this is why
 the ``file`` and ``directory`` classes inherit from ``orm.entity``). If
@@ -77,7 +77,6 @@ class cache:
     def __new__(cls):
         if not cls._instance:
             sup = super(cache, cls)
-            B()
             cls._instance = sup.__new__(cls)
             cls._instance._inodes = dict()
 
@@ -835,7 +834,6 @@ class directory(inode):
             etc = directory(path='/etc')
             passwd = etc.file('passwd')
 
-
         Above, we used the name 'passwd' for the file name, but we could
         have specified a whole path::
 
@@ -845,7 +843,6 @@ class directory(inode):
         Now, txt represents the file::
 
             {inode.store}/my/path/to/file.txt
-
         """
         f = file(path=path)
 
