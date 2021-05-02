@@ -1177,6 +1177,14 @@ class file_cache(tester.tester):
         self.is_(f, f1)
         self.isnot(f, f2)
 
+    def it_caches_new_directories_at_root(self):
+        d = file.directory.produce(path='/sys')
+        d1 = file.directory.produce(path='/sys')
+        d2 = file.directory.produce(path='/SYS')
+        self.is_(d, d1)
+        self.isnot(d, d2)
+
+
     def it_raises_on_instatiation(self):
         ...  # TODO
         

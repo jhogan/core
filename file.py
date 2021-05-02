@@ -189,31 +189,49 @@ class inode(orm.entity):
     # inodes recursive (self-referencing).
     inodes = inodes
 
-    @staticmethod
-    def produce(path):
+    @classmethod
+    def produce(cls, path):
         if not path.startswith('/'):
             path = '/' + path
-
+        
         try:
             return cache()[path]
         except KeyError:
             pass
 
-        # TODO Call _getdirectory
-        dir = None
+        # Get head and tail portion of path
+        head, tail = os.path.split(path)
 
-        lstpath = [x for x in os.path.split(path) if x]
+        # Create new directory path
+        heads = [x for x in os.path.split(head) if x]
 
-        # Get leaf portion of path
-        f = lstpath[-1]
+        prev = None
+        for i, dir in enumerate(heads):
+            # Create a string to uniquely identify dir
+            ix = os.path.join(*heads[:i + 1])
+            try:
+                dir = cache()[ix]
+            except KeyError:
+                dir = directory(name=dir)
 
-        #f = self._getfile(
+            if prev:
+                prev += dir
+                B()
+                cache()[ix] = dir
 
-        f = file(name=f)
+            prev = dir
 
-        cache()[path] = f
+        # Create tailing file, directory, resource, etc.
+        tail = cls(name=tail)
 
-        return f
+        # Append tail to previous directory
+        if prev:
+            prev += tail
+
+        # Cache tail
+        cache()[path] = tail
+
+        return tail
 
     @classproperty
     def store(cls):
