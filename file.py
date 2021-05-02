@@ -229,7 +229,8 @@ class inode(orm.entity):
             else:
                 return nd
 
-    def _getfile(self, name, dir=None):
+    @staticmethod
+    def _getfile(name, dir=None):
         """ Load and return a file by name which is under ``dir``.
         """
         id = dir.id if dir else None
