@@ -123,6 +123,42 @@ class tester(entities.entity):
         self.testers = testers
         self.eventregistrations = eventregistrations()
 
+    def createprinciples(self):
+        """ Create the priniple entity objects required for any tests.
+        Intended to be called in a tester's (tester.tester) constructor
+        in order to set up the environment.
+        
+        For the given test, ensure their is a root user in the
+        system. Then create an user who is the default owner
+        (orm.security().owner). The owner will be owned by the root
+        user. Then create a company and make that proprietor the
+        ORM's proprietor (orm.security().propritor).
+        """
+        import orm, party
+        own = ecommerce.user(name='hford')
+        root = ecommerce.users.root
+
+        # Save the owner, the root user will be the owner's owner.
+        with orm.sudo():
+            own.owner = root
+            own.save()
+
+        # Going forward, `own` will be the owner of all future records
+        # created.
+        orm.security().owner = own
+
+        # Create a company to be the propritor.
+        com = party.company(name='Ford Motor Company')
+        com.save()
+
+        # Set the company as the proprietory
+        orm.security().proprietor = com
+
+        # Update the owner (hford) so that the company (Ford Motor
+        # Company) is the proprietor.
+        own.proprietor = com
+        own.save()
+
     @property
     def rebuildtables(self):
         return self.testers.rebuildtables
