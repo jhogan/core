@@ -62,9 +62,15 @@ class api(internetservice):
     ports.
     """
     def __init__(self, *args, **kwargs):
+        """ Initialize the abstract API class.
+        """
         super().__init__(*args, **kwargs)
         self._browser = None
-        self._base = None  # Base URL
+
+        # The base URL for the api service. Any endpoint called by the
+        # API would start with this string. This would be useful for
+        # HTTP based APIs.
+        self._base = None
 
         # If we want our tests to use the actual API instead of a
         # simulated on, we can set _exsimulate to True.
@@ -72,6 +78,9 @@ class api(internetservice):
 
     @property
     def browser(self):
+        """ A browser object used by ``api`` subentities whose API
+        interactions are based on HTTP requests.
+        """
         if not self._browser:
             self._browser = www.browser()
 
@@ -86,8 +95,23 @@ class api(internetservice):
         pass
 
     class Error(Exception):
+        """ An API exception. API exception are usually created and
+        raised by subclasses of ``api`` in the event that there was an
+        exception during the interation with the external host.
+        Therefore, the Error exception has an ``inner`` property which
+        contains a reference to the original exception. However,
+        sometimes the API Error is raised in response to an error
+        message or code successfully returned to the ``api`` subclass.
+        In that case, the ``code`` and ``message`` property are set to
+        the values returned by the server. (Consider a RESTful API
+        returning a JSON object with a ``code`` and ``messsage`` property
+        to indicate an error.)
+        """
         def __init__(self, ex):
+            # The network exception that caused the API Error to be
+            # raised.
             self.inner = ex
+
             self._code = None
             self._message = None
 
@@ -97,12 +121,15 @@ class api(internetservice):
 
         @property
         def reason(self):
+            """ The HTTP reason phrase.
+            """
             return self.inner.reason
 
         @property
         def code(self):
-            # Error code returned by API in response body. Distinct from
-            # the HTTP status code.
+            """ Error code returned by API in response body.  Distinct
+            from the HTTP status code.
+            """
             return self._code
 
         @code.setter
@@ -111,8 +138,9 @@ class api(internetservice):
 
         @property
         def message(self):
-            # Error message returned by API in response body. Distinct from
-            # the HTTP status reason/phrase.
+            """ The error message returned by API in response body.
+            Distinct from the HTTP status reason/phrase.  
+            """
             return self._message
 
         @message.setter
@@ -120,6 +148,8 @@ class api(internetservice):
             self._message = v
 
         def __str__(self):
+            """ A string representation of the API Error.
+            """
             r = str()
 
             if self.code:
