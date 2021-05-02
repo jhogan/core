@@ -1149,5 +1149,38 @@ class file_resource(tester.tester):
         self.expect(None, lambda : get(integrity))
         self.true(os.path.exists(path))
 
+class file_cache(tester.tester):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        orm.security().override = True
+        self.createprinciples()
+
+    def it_caches_new_files_at_root(self):
+        # Simple file at root
+        f = file.file.produce(path='test')
+        f1 = file.file.produce(path='test')
+        f2 = file.file.produce(path='TEST')
+        self.is_(f, f1)
+        self.isnot(f, f2)
+
+        # Nested file at root
+        f = file.file.produce(path='/etc/passwd')
+        f1 = file.file.produce(path='/etc/passwd')
+        f2 = file.file.produce(path='/etc/PASSWD')
+        self.is_(f, f1)
+        self.isnot(f, f2)
+
+        # Deeply nested file at root 
+        f = file.file.produce(path='/var/log/syslog')
+        f1 = file.file.produce(path='/var/log/syslog')
+        f2 = file.file.produce(path='/var/log/auth.log')
+        self.is_(f, f1)
+        self.isnot(f, f2)
+
+    def it_raises_on_instatiation(self):
+        ...  # TODO
+        
+
+
 if __name__ == '__main__':
     tester.cli().run()
