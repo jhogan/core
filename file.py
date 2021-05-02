@@ -72,6 +72,27 @@ import textwrap
 import urllib.request
 import uuid
 
+class cache:
+    _instance = None
+    def __new__(cls):
+        if not cls._instance:
+            sup = super(cache, cls)
+            B()
+            cls._instance = sup.__new__(cls)
+            cls._instance._inodes = dict()
+
+        return cls._instance
+
+    def __getitem__(self, path):
+        return self._inodes[path]
+
+    def __setitem__(self, path, v):
+        self._inodes[path] = v
+
+    def _cache(self, nd, rent):
+        path = rent + nd
+        self._inodes[path] = nd
+
 class inodes(orm.entities):
     """ Represents a collection of ``inode`` entities.
     """
@@ -170,6 +191,32 @@ class inode(orm.entity):
     # The collection of inodes each inode will have. This line makes
     # inodes recursive (self-referencing).
     inodes = inodes
+
+    @staticmethod
+    def produce(path):
+        if not path.startswith('/'):
+            path = '/' + path
+
+        try:
+            return cache()[path]
+        except KeyError:
+            pass
+
+        # TODO Call _getdirectory
+        dir = None
+
+        lstpath = [x for x in os.path.split(path) if x]
+
+        # Get leaf portion of path
+        f = lstpath[-1]
+
+        #f = self._getfile(
+
+        f = file(name=f)
+
+        cache()[path] = f
+
+        return f
 
     @classproperty
     def store(cls):
