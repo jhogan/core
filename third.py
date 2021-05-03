@@ -169,8 +169,22 @@ class api(internetservice):
             return r
 
 class dispatcher(api):
+    """ Subclasses of ``dispatcher`` deal with interactions between
+    external systems that involve the dispatching and monitoring of
+    messages (``message.message``). Message ``dispactcher`` include
+    ``emailer``, and presumably in the future: ``smsdispatcher``, and
+    for postal mail``mailer``.
+    """
     @staticmethod
     def create(dis):
+        """ A static factory method that returns a ``dispatcher``
+        subtype for the given dispatch object (``message.dispatch``).
+
+        :param dis message.dispatch: A dispatch object which may or may
+        not be used in the process of selecting the correct dispatcher.
+        """
+
+        # Get dispatcher type
         type = dis.dispatchtype.name
 
         if type == 'email':
@@ -188,14 +202,23 @@ class dispatcher(api):
             'Must be implemented by a concrete class'
         )
 
-
 class emailer(dispatcher):
+    """ A ``dispatcher`` class intended for the the processing of
+    dispatches (``message.dispatch``) that include email contact
+    mechanisms (``party.email``).
+    """
     @staticmethod
     def create(dis):
+        """ A static factory method used to select a concrete
+        ``dispatcher`` capable of processing the dispatch object
+        ``dis``.
+
+        :param dis message.dispatch: A dispatch object which may or may
+        not be used in the process of selecting the correct dispatcher.
+        """
         # NOTE In the future, we may want to use additional emailers for
         # different reasons, but for now, we can stick with postmark.
         return postmark()
-        
 
 class postmark(emailer):
     """ A transactional and broadcast email provider.
