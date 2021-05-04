@@ -42,6 +42,10 @@ class bots(ecommerce.agents):
         return r
 
 class bot(ecommerce.agent):
+    Levels = [
+        'DEBUG',  'INFO',      'WARNING',
+        'ERROR',  'CRITICAL',  'EXCEPTION'
+    ]
     def __init__(self, iterations=None, verbosity=0, *args, **kwargs):
         """
         An abstract class that represents a bot. 
@@ -56,15 +60,17 @@ class bot(ecommerce.agent):
 
         :param: verbosity int: The level of status output the bot should
         generate. Status output will be sent to a log file. It will also be
-        sent to stdout.
+        sent to stdout. Valid values: 5=debug and up, 4=info and up,
+        3=warning and up, 2=error and up, 1=critical and up, 0=only
+        exceptions. 'debug' and 'info' go to stdout; all other output
+        goes to stderr.
         """
         super().__init__(*args, **kwargs)
+        self._onlog = None
+
         self._iterations = iterations
         self.verbosity = verbosity
         self.name = type(self).__name__
-        self._onlog = None
-        self._log = config().logs.first
-        self._log.onlog += self._log_onlog 
 
     @property
     def onlog(self):
@@ -79,33 +85,38 @@ class bot(ecommerce.agent):
     def _log_onlog(self, src, eargs):
         self.onlog(src, eargs)
 
-    def log(self, msg, level='info', end='\n'):
-        levels = [
-            'debug',  'info',      'warning',
-            'error',  'critical',  'exception'
-        ]
+    @property
+    def level(self):
+        return self.Levels[5 - self.verbosity:][0]
 
-        if level not in levels:
+    @property
+    def levels(self):
+        return self.Levels[5 - self.verbosity:]
+
+    def debug(self, msg, end='\n'):
+        f = inspect.stack()[0].function.upper()
+        self._logger(msg=msg, level=f, end=end)
+
+    def info(self, msg, end='\n'):
+        f = inspect.stack()[0].function.upper()
+        self._logger(msg=msg, level=f, end=end)
+
+    def exception(self, msg, end='\n'):
+        f = inspect.stack()[0].function.upper()
+        self._logger(msg=msg, level=f, end=end)
+
+    def _logger(self, msg, level='info', end='\n'):
+        if level not in self.Levels:
             raise ValueError(f'Invalid level: "{level}"')
 
+        '''
         levels = levels[5 - self.verbosity:]
 
         if level not in levels:
             return
+        '''
 
-        if level in ('debug', 'info'):
-            stm = sys.stdout
-        else:
-            stm = sys.stderr
-
-        try:
-            stm.write(msg + end)
-        except AttributeError:
-            pass
-        else:
-            stm.flush()
-
-        getattr(self._log, level)(msg)
+        getattr(self._log, level.lower())(msg + end)
 
     @orm.attr(int)
     def pid(self):
@@ -124,7 +135,7 @@ class sendbots(bots):
     pass
 
 class sendbot(bot):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, onlog=None, *args, **kwargs):
         """ ``sendbot`` finds incomplete (queued) ``dispatch`` entities
         for messsages and sends them to external sytems.
 
@@ -137,12 +148,27 @@ class sendbot(bot):
         """
         super().__init__(*args, **kwargs)
 
+        self._log = config().logs.first
+        self._log._logger.setLevel(self.level)
+        self._log.onlog += self._log_onlog 
+
+        if onlog:
+            self.onlog += onlog
+
+        self.info(f'{type(self).__name__} is alive')
+        self.info(f'Log levels: {" | ".join(self.levels)}')
+
     def __call__(self, exsimulate=False):
         iter = self.iterations
-        i = 0
-        self.log('dipatching ...', 'debug')
+        i = j = 0
+        self.info('dispatching:')
         while True:
-            self.log('.', 'debug', end='')
+            j = j + 1
+            self.debug('.', end='')
+
+            if j % 80 == 0:
+                self.debug('')
+
             self._dispatch(exsimulate=exsimulate)
             time.sleep(1)
 
@@ -174,9 +200,9 @@ class sendbot(bot):
                 # ``message.status`` in ``dis.statuses``.
 
                 # TODO:4d723428 (fix logging api)
-                self.log(
+                self.exception(
                     f'API Error with dispatch {dis.id} ({ex}) - '
-                    'Continuing...', 'exception'
+                    'Continuing...'
                 )
                 continue
 
@@ -184,9 +210,9 @@ class sendbot(bot):
             # example, if the network is down, we may want to give up
             # for the moment.
             except Exception as ex:
-                self.log(
+                self.exception(
                     f'Error with dispatch {dis.id} ({ex}) - '
-                    'Continuing...', 'exception'
+                    'Continuing...'
                 )
                 continue
 
@@ -274,9 +300,26 @@ if __name__ == '__main__':
         for attr in attrs:
             kwargs[attr] = getattr(args, attr)
 
+        def onlog(src, eargs):
+            rec = eargs.record
+            msg = rec.message
+            lvl = rec.levelname.lower()
+            if lvl in ('debug', 'info'):
+                stm = sys.stdout
+            else:
+                stm = sys.stderr
+
+            try:
+                stm.write(msg)
+            except AttributeError:
+                pass
+            else:
+                stm.flush()
+
 
         for b in bots.bots:
             if b.__name__ == args.bot:
-                b(**kwargs)()
+                b = b(onlog=onlog, **kwargs)
+                b()
                 break
     main()
