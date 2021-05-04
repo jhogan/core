@@ -17,6 +17,7 @@ import entities
 import message
 import orm
 import os
+import inspect
 import sys
 import third
 import time
@@ -247,8 +248,6 @@ if __name__ == '__main__':
 
                 if not param:
                     if ln:
-                        if not text:
-                            text = '¶'
                         text += ' ' + ln
                     else:
                         text += ' ¶'  
@@ -285,7 +284,11 @@ if __name__ == '__main__':
             )
 
 
-        subprss = prs.add_subparsers(help='[TODO]subcommand help', dest='bot')
+        subprss = prs.add_subparsers(
+            help = 'The list of bots from which to select', 
+            dest = 'bot'
+        )
+
         subprss.required = True
 
         for b in bots.bots:
