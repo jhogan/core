@@ -102,9 +102,10 @@ def B(x=True):
     if type(x) is str:
         print(x)
     if x:
-        #Pdb().set_trace(sys._getframe().f_back)
-        from IPython.core.debugger import Tracer;
-        Tracer().debugger.set_trace(sys._getframe().f_back)
+        import pdb
+        pdb.Pdb().set_trace(sys._getframe().f_back)
+        #from IPython.core.debugger import Tracer;
+        #Tracer().debugger.set_trace(sys._getframe().f_back)
 
 def PM(ex):
     import pdb
