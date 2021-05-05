@@ -21,6 +21,12 @@ import inspect
 import sys
 import third
 import time
+import apriori
+
+class addlogeventargs(entities.eventargs):
+    def __init__(self, msg, lvl):
+        self.message = msg
+        self.level = lvl
 
 class bots(ecommerce.agents):
     @classproperty
@@ -44,8 +50,8 @@ class bots(ecommerce.agents):
 
 class bot(ecommerce.agent):
     Levels = [
-        'DEBUG',  'INFO',      'WARNING',
-        'ERROR',  'CRITICAL',  'EXCEPTION'
+        'debug',  'info',      'warning',
+        'error',  'critical',  'exception'
     ]
 
     @orm.attr(apriori.logs)
@@ -83,6 +89,8 @@ class bot(ecommerce.agent):
         """
         super().__init__(*args, **kwargs)
         self._onlog = None
+        if onlog:
+            self.onlog += onlog
 
         self._iterations = iterations
         self.verbosity = verbosity
@@ -98,9 +106,6 @@ class bot(ecommerce.agent):
     def onlog(self, v):
         self._onlog = v
 
-    def _log_onlog(self, src, eargs):
-        self.onlog(src, eargs)
-
     @property
     def level(self):
         return self.Levels[5 - self.verbosity:][0]
@@ -110,29 +115,34 @@ class bot(ecommerce.agent):
         return self.Levels[5 - self.verbosity:]
 
     def debug(self, msg, end='\n'):
-        f = inspect.stack()[0].function.upper()
-        self._logger(msg=msg, level=f, end=end)
+        f = inspect.stack()[0].function
+        self._log(msg=msg, lvl=f, end=end)
 
     def info(self, msg, end='\n'):
-        f = inspect.stack()[0].function.upper()
-        self._logger(msg=msg, level=f, end=end)
+        f = inspect.stack()[0].function
+        self._log(msg=msg, lvl=f, end=end)
 
     def exception(self, msg, end='\n'):
-        f = inspect.stack()[0].function.upper()
-        self._logger(msg=msg, level=f, end=end)
+        f = inspect.stack()[0].function
+        self._log(msg=msg, lvl=f, end=end)
 
-    def _logger(self, msg, level='info', end='\n'):
-        if level not in self.Levels:
-            raise ValueError(f'Invalid level: "{level}"')
+    def _log(self, msg, lvl='info', end='\n'):
+        if lvl not in self.Levels:
+            raise ValueError(f'Invalid level: "{lvl}"')
 
-        '''
-        levels = levels[5 - self.verbosity:]
+        lvls = self.levels
 
-        if level not in levels:
+        if lvl not in lvls:
             return
-        '''
 
-        getattr(self._log, level.lower())(msg + end)
+        self.logs += apriori.log(
+            message = msg
+        )
+
+        self.logs.save()
+
+        eargs = addlogeventargs(msg=msg + end, lvl=lvl)
+        self.onlog(self, eargs)
 
     @orm.attr(int)
     def pid(self):
@@ -151,7 +161,7 @@ class sendbots(bots):
     pass
 
 class sendbot(bot):
-    def __init__(self, onlog=None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         """ ``sendbot`` finds incomplete (queued) ``dispatch`` entities
         for messsages and sends them to external sytems.
 
@@ -163,13 +173,6 @@ class sendbot(bot):
         many ``iterations``.
         """
         super().__init__(*args, **kwargs)
-
-        self._log = config().logs.first
-        self._log._logger.setLevel(self.level)
-        self._log.onlog += self._log_onlog 
-
-        if onlog:
-            self.onlog += onlog
 
         self.info(f'{type(self).__name__} is alive')
         self.info(f'Log levels: {" | ".join(self.levels)}')
@@ -319,9 +322,8 @@ if __name__ == '__main__':
             kwargs[attr] = getattr(args, attr)
 
         def onlog(src, eargs):
-            rec = eargs.record
-            msg = rec.message
-            lvl = rec.levelname.lower()
+            msg = eargs.message
+            lvl = eargs.level
             if lvl in ('debug', 'info'):
                 stm = sys.stdout
             else:
@@ -329,11 +331,8 @@ if __name__ == '__main__':
 
             try:
                 stm.write(msg)
-            except AttributeError:
-                pass
-            else:
+            finally:
                 stm.flush()
-
 
         for b in bots.bots:
             if b.__name__ == args.bot:
