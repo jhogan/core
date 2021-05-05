@@ -87,7 +87,13 @@ class bot(ecommerce.agent):
         exceptions. 'debug' and 'info' go to stdout; all other output
         goes to stderr.
         """
+
+        onlog = kwargs.pop('onlog', None)
+
+        iterations = kwargs.pop('iterations', None)
+        verbosity = kwargs.pop('verbosity', 0)
         super().__init__(*args, **kwargs)
+
         self._onlog = None
         if onlog:
             self.onlog += onlog
