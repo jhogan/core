@@ -47,9 +47,24 @@ class bot(ecommerce.agent):
         'DEBUG',  'INFO',      'WARNING',
         'ERROR',  'CRITICAL',  'EXCEPTION'
     ]
-    def __init__(self, iterations=None, verbosity=0, *args, **kwargs):
-        """
-        An abstract class that represents a bot. 
+
+    @orm.attr(apriori.logs)
+    def logs(self):
+        # HACK:8210b80c
+        map = self.orm.mappings['logs']
+
+        if not hasattr(self, '_logs'):
+            map.value = apriori.logs('botid', self.id)
+
+            # Disallow loading
+            map.value.orm.isloaded = True
+
+            self._logs = map.value
+
+        return self._logs
+
+    def __init__(self, *args, **kwargs):
+        """ An abstract class that represents a bot. 
         
         Concrete bots will inherit from this class to implement their
         specific functions.

@@ -23,7 +23,11 @@ from orm import text, date
 from decimal import Decimal as dec
 from dbg import B
 
-class requirements(orm.entities):         pass
+class requirements(orm.entities):  pass
+class logs(orm.entities):          pass
+class types(orm.entities):         pass
+class logtypes(types):             pass
+
 class requirement(orm.entity):
     """ A ``requirement`` is an organization's need for *anything*.
     """
@@ -65,8 +69,6 @@ class requirement(orm.entity):
     # Explains why there is a need for the requirements
     reason = text
 
-class types(orm.entities):
-    pass
 
 class type(orm.entity):
     """  An abstract entity to describe the type of another class. This
@@ -134,3 +136,9 @@ class type(orm.entity):
     # The name of the type. This is used as a key that the contructor
     # will use when it ensure the record exists.
     name = str
+
+class log(orm.entity):
+    message = text
+
+class logtype(type):
+    logs = logs
