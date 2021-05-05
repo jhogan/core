@@ -171,6 +171,30 @@ TODOs:
         # Configure the getter with a stream.
         for usr in ws.get_users(orm.allstream):
             ...
+
+        # We would also like to be able to get a reference to the
+        # constituents without lazy-laoding (or eager-loading) them.
+        # Consider an entity that has a large number of log
+        # constituents, like a ``bot``.
+
+        b = bot()
+        b.logs += 'Bot started'
+
+        # The above call to logs will by default, load all the bots
+        # logs. We would prefer to do this.
+
+        b = bot(id)
+        b_logs = b.get_logs(load=False)
+        b_logs += 'Bot started'
+
+        # Accessing the prior logs for analysis can be done with by
+        # streaming, as mentioned above:
+
+        b = bot(id)
+        b_logs = b.get_logs(orm.allstream)
+        for log in b_logs:
+            # Stream the logs
+            ...
 """
 
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, TABLE_EXISTS_ERROR
