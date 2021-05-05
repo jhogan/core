@@ -236,13 +236,17 @@ class postmark(emailer):
         import party
         import message
 
+        # Get a new browser tab to make HTTP calls.
         tab = self.browser.tab()
+
         msg = dis.message
 
+        # Get the various contact machanisms the msg was addressed to
         tos = msg.getcontactmechanisms(type=party.email, name='to')
         ccs = msg.getcontactmechanisms(type=party.email, name='cc')
         bccs = msg.getcontactmechanisms(type=party.email, name='bcc')
         
+        # Create a dict to turn into JSON for the api call
         body = {
             'From':      str(msg.from_),
             'To':        str(tos),
@@ -251,6 +255,7 @@ class postmark(emailer):
             'TextBody':  msg.text,
         }
 
+        # Continue building the dict
         if ccs.count:
             body['Cc'] = str(ccs)
 
@@ -260,6 +265,7 @@ class postmark(emailer):
         if msg.replyto:
             body['ReplyTo'] = msg.replyto.name
 
+        # Build the HTTP request object
         req = www._request(url=self.base / 'email')
 
         req.method = 'POST'
@@ -268,11 +274,15 @@ class postmark(emailer):
         
         req.headers += f'X-Postmark-Server-Token: {self.key}'
 
+        # Set the request object's payload to a json represenation of
+        # the body dict. 
         req.payload = json.dumps(body)
 
         try:
+            # Make the HTTP request
             res = tab.request(req)
         except Exception as ex:
+            # Convert Exception to api.Error exception
             ex1 = api.Error(ex)
             payload = json.loads(ex.response.payload)
             ex1.code = payload['ErrorCode']
@@ -289,16 +299,21 @@ class postmark(emailer):
             # the client know about any issue: for example, if the
             # api.Error indicates a network outage, the client can
             # decide to cease dispatching for the moment.
+
+            # Add a status record
             dis.statuses += message.status(
                 begin = primative.datetime.utcnow(),
                 statustype = message.statustype(
                     name = 'hard-bounce'
                 )
             )
+
+            # Save dispatch
             dis.save()
 
             raise ex1
         else:
+            # Successful POST to Postmark
             dis.statuses += message.status(
                 begin = primative.datetime.utcnow(),
                 statustype = message.statustype(
@@ -311,12 +326,32 @@ class postmark(emailer):
 
     @property
     def base(self):
+        """ The base URL for endpoints used by this ``api``class.
+        """
         if not self._base:
             self._base = ecommerce.url(address='https://api.postmarkapp.com')
         return self._base
 
     @property
     def key(self):
+        """ Returns the Postmark Server API Token. This is used for
+        authenticating when making API calls to a Postmark server.
+
+        https://postmarkapp.com/support/article/1008-what-are-the-account-and-server-api-tokens
+
+        For HTTP API authentication, the key is used as the value for
+        the X-Postmark-Server-Token header.
+
+        The real key is found in the unversioned ``config.py`` file. The
+        constant string literal, 'POSTMARK_API_TEST', is returned in
+        development mode. When Postmark receives this literal, it will
+        behave as if POSTs were sucessful, but won't actually send
+        emails to recipient. 
+        
+        The POSTMARK_API_TEST is used when the environment is
+        ``indevelopment``, however, this can be overriden by using the
+        ``exsimulate`` context manager.
+        """
         if config().indevelopment:
             if self._exsimulate:
                 return config().postmark.key
@@ -329,6 +364,19 @@ class postmark(emailer):
 
     @contextmanager
     def exsimulate(self):
+        """ A context manager to break out of the simulation.
+
+        When used, POSTs to Postmark will be unsimulated posts. That
+        is to say: the 'POSTMARK_API_TEST' key won't be used for
+        authentication (see docstring at postmark.key), but rather the
+        real key found in config.py. 
+        
+        This can be useful for unit testing in certain situations. For
+        example, Postmark can be manipulated into returning an
+        non-successful response if the real token is used and a bad From
+        email address is used. This way, unit tests can be written to
+        ensure that errors from Postmark are handled correctly.
+        """
         self._exsimulate = True
         yield
         self._exsimulate = False
