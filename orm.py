@@ -6347,7 +6347,7 @@ class attr:
                 map = entitymapping(self.fget.__name__, self.args[0])
             elif entities in self.args[0].mro():
                 # NOTE Untested
-                map = entitiesmapping(k, v)
+                map = entitiesmapping(self.fget.__name__, self.args[0])
             else:
                 map = fieldmapping(*self.args, **self.kwargs)
 
