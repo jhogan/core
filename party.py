@@ -303,6 +303,25 @@ class company(legalorganization):
     # `divisons`.
     departments = departments
 
+    _carapacian = None
+    @classproperty
+    def carapacian(cls):
+        Id = 'f05eff40-8971-4948-aa42-74b038731333'
+        if not cls._carapacian:
+            id = uuid.UUID(Id)
+
+            with orm.sudo():
+                try:
+                    cls._carapacian = company(id)
+                except db.RecordNotFoundError:
+                    cls._carapacian = company(
+                        id   = id,
+                        name = 'Carapacian, LLC'
+                    )
+                    cls._carapacian.save()
+
+        return cls._carapacian
+
 class marital(orm.entity):
     """ Allowes for the maintenence of changes to a person's marital
     status.
