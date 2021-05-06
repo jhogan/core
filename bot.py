@@ -320,14 +320,9 @@ if __name__ == '__main__':
             )
         )
 
-        params = inspect.signature(bot.__init__).parameters
         doc = parse_docstring(bot.__init__.__doc__)
 
-        for param in params:
-            if param in ('self', 'args', 'kwargs'):
-                continue
-
-            param = [x for x in doc['params'] if x['name'] == param][0]
+        for param in doc['params']:
             help = param['description']
             type = param['type']
             prs.add_argument(
