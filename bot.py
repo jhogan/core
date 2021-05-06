@@ -142,6 +142,18 @@ class bot(ecommerce.agent):
         f = inspect.stack()[0].function
         self._log(msg=msg, lvl=f, end=end)
 
+    def warning(self, msg, end='\n'):
+        f = inspect.stack()[0].function
+        self._log(msg=msg, lvl=f, end=end)
+
+    def error(self, msg, end='\n'):
+        f = inspect.stack()[0].function
+        self._log(msg=msg, lvl=f, end=end)
+
+    def critical(self, msg, end='\n'):
+        f = inspect.stack()[0].function
+        self._log(msg=msg, lvl=f, end=end)
+
     def exception(self, msg, end='\n'):
         f = inspect.stack()[0].function
         self._log(msg=msg, lvl=f, end=end)
@@ -156,7 +168,8 @@ class bot(ecommerce.agent):
             return
 
         self.logs += apriori.log(
-            message = msg
+            message = msg,
+            logtype = apriori.logtype(name=lvl)
         )
 
         self.logs.save()
