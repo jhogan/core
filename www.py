@@ -1176,10 +1176,35 @@ class HttpException(Exception):
         self.response = res
 
     @classmethod
-    def create(cls, msg, res, attop=True):
-        for sub in cls.__subclasses__():
-            ex = sub.create(msg, res, attop=False)
+    def create(cls, msg, res, _attop=True):
+        """ Creates and returns a subclass of ``cls`` that corresponds
+        to thet HTTP ``status`` property in ``res``. 
 
+        It's usually best to call ``create`` off the HttpException
+        class::
+            
+            HttpException.create(msg, res)
+
+        This ensures that all direct and indirect subclasses are tested.
+        However, it is possible to limit the scope to the descendents of
+        a particular subclass::
+
+            HttpError.create(msg, res)
+
+        :param: msg str: The error message for the exception.
+
+        :param: res www.response: The HTTP response object.
+
+        :param: _attop bool: Since ``create`` is a recursive method,
+        ``atop`` is used internally to determine when the method is at
+        the top of the recursion stack.
+        """
+        for sub in cls.__subclasses__():
+            
+            # Recurse
+            ex = sub.create(msg, res, _attop=False)
+
+            # Return if the sub was able to create one
             if ex:
                 return ex
 
@@ -1191,8 +1216,13 @@ class HttpException(Exception):
                 if res.status == st:
                     return sub(msg=msg, res=res)
 
-        # If we are at the top call of this recursive method
-        if attop:
+        # If we are at the top call of this recursive method...
+        if _attop:
+            
+            # If we are here, then recursing through the subclasses did
+            # not result in the discovery of the correct exception
+            # class. Therefore, just fall back on the genereic HTTP 500
+            # InternalServerError.
             return InternalServerError(res=res)
 
         return None
