@@ -57,43 +57,47 @@ class test_bot(tester.tester):
         own.save()
 
     def it_raises_onlog_event(self):
-        recs = list()
         def onlog(src, eargs):
-            recs.append(eargs.record)
+            eargss.append(eargs)
         
-        msgs = ['d', 'i', 'w', 'e', 'c', 'e']
-        levels = [
-            'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL', 'ERROR'
-        ]
-
+        msgs = ['d', 'i', 'w', 'e', 'cr', 'ex']
         # Redirect stdout/stderr to /dev/null (so to speak)
         with redirect_stdout(None), redirect_stderr(None):
             for v in range(5, -1, -1):
-                recs = list()
+                eargss = list()
 
                 b = bot.bot(iterations=0, verbosity=v) 
                 b.onlog += onlog
-                b.log('d', level='debug')
-                b.log('i') # level default to 'info'
-                b.log('w', level='warning')
-                b.log('e', level='error')
-                b.log('c', level='critical')
-                b.log('e', level='exception')
-                self.eq(msgs[5-v:], [x.message for x in recs])
-                self.eq(levels[5-v:], [x.levelname for x in recs])
+                b.debug('d')
+                b.info('i')
+                b.warning('w')
+                b.error('e')
+                b.critical('cr')
+                b.exception('ex')
+
+                msgs1 = [x.message.strip() for x in eargss]
+                lvls = [x.level for x in eargss]
+
+                self.eq(bot.bot.Levels[5-v:], lvls)
+                self.eq(msgs[5-v:], msgs1)
 
     def it_logs_to_database(self):
         # Create an abstract bot
-        b = bot.bot(iterations=0, verbosity=4) 
+        b = bot.bot(iterations=0, verbosity=5) 
 
-        # Log two info's. With verbosity at 4, this should not be
-        # ignored. The calls to .info() will result in immediate saves
-        # of the logs to teh database.
-        b.info('info1')
-        b.info('info2')
+        # Log two info's. The calls to the log methods will result in
+        # immediate saves of the logs to the database.
+        b.debug('d')
+        b.info('i')
+        b.warning('w')
+        b.error('e')
+        b.critical('cr')
+        b.exception('ex')
 
         # Test the logs
-        self.two(b.logs)
+        self.six(b.logs)
+
+        self.eq(bot.bot.Levels, b.logs.pluck('logtype.name'))
 
         # Save the bot. The bot's logs have already been save; this just
         # persists the bot itself
@@ -116,31 +120,32 @@ class test_bot(tester.tester):
 
             # The logs should reference the bot they were logged for
             self.eq(b.id, log1.bot.id)
-        
 
-        # TODO
-        return
         msgs = ['d', 'i', 'w', 'e', 'c', 'e']
-        levels = [
-            'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL', 'ERROR'
-        ]
+        levels = bot.bot.Levels
 
         # Redirect stdout/stderr to /dev/null (so to speak)
         #with redirect_stdout(None), redirect_stderr(None):
         for v in range(5, -1, -1):
             b = bot.bot(iterations=0, verbosity=v) 
             b.debug('d')
-            B()
+            b.info('i')
+            b.warning('w')
+            b.error('e')
+            b.critical('c')
+            b.exception('e')
 
+            b.save()
 
-            continue
-            b.log('i') # level default to 'info'
-            b.log('w', level='warning')
-            b.log('e', level='error')
-            b.log('c', level='critical')
-            b.log('e', level='exception')
-            self.eq(msgs[5-v:], [x.message for x in recs])
-            self.eq(levels[5-v:], [x.levelname for x in recs])
+            self.zero(b.orm.reloaded().logs)
+
+            self.eq(v + 1, b.logs.count)
+
+            msgs1 = b.logs.pluck('message')
+            lvls = b.logs.pluck('logtype.name')
+
+            self.eq(bot.bot.Levels[5-v:], lvls)
+            self.eq(msgs[5-v:], msgs1)
 
 class test_sendbot(tester.tester):
     def __init__(self, *args, **kwargs):
