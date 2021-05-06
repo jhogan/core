@@ -22,6 +22,7 @@ import sys
 import third
 import time
 import apriori
+import party
 
 class addlogeventargs(entities.eventargs):
     def __init__(self, msg, lvl):
@@ -56,8 +57,11 @@ class bot(ecommerce.agent):
 
     @orm.attr(apriori.logs)
     def logs(self):
-        # HACK:8210b80c
-        map = self.orm.mappings['logs']
+        # HACK:8210b80c We want ``bot`` to have a ``logs`` constiuent that
+        # we can add to but we don't want to load every log the bot has
+        # ever recorded. So set .isloaded = True to prevent that. A
+        # better solution to this problem is discussed in a TODO with
+        # the 8210b80c identifier.
 
         if not hasattr(self, '_logs'):
             map.value = apriori.logs('botid', self.id)
