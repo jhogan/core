@@ -64,6 +64,16 @@ class bot(ecommerce.agent):
         # the 8210b80c identifier.
 
         if not hasattr(self, '_logs'):
+            b = self
+            while b:
+                try:
+                    map = b.orm.mappings['logs']
+                except IndexError:
+                    b = b.orm.super
+                    continue
+                else:
+                    break
+
             map.value = apriori.logs('botid', self.id)
 
             # Disallow loading
