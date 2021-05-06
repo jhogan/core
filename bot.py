@@ -362,9 +362,20 @@ if __name__ == '__main__':
             finally:
                 stm.flush()
 
-        for b in bots.bots:
-            if b.__name__ == args.bot:
-                b = b(onlog=onlog, **kwargs)
-                b()
-                break
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # Set ORM's propritor to Carapacian for all ORM database
+        # interactions.
+        orm.security().propritor = party.company.carapacian
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # Run as root for all bot interactions with the ORM and database
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        B()
+        with orm.sudo():
+            for b in bots.bots:
+                if b.__name__ == args.bot:
+                    b = b(onlog=onlog, **kwargs)
+                    b()
+                    break
     main()
