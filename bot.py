@@ -23,6 +23,8 @@ import third
 import time
 import apriori
 import party
+import db
+import uuid
 
 class addlogeventargs(entities.eventargs):
     def __init__(self, msg, lvl):

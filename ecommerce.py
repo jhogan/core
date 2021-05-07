@@ -63,7 +63,6 @@ class contenttypes(apriori.types):                            pass
 class contentroles(orm.entities):                             pass
 class contentstatustypes(apriori.types):                      pass
 class users(orm.entities):
-    
     @classproperty
     def root(cls):
         if not hasattr(cls, '_root') or not cls._root:
@@ -436,7 +435,10 @@ class url(orm.entity):
         super().__init__(*args, **kwargs)
         self.orm.ensure(expects=('address', ), **kwargs)
 
+    # TODO Rename address to name
     address = str
+
+    # TODO Why do urls have users?
     users = users
 
     # The web `hits` where this ``url`` acts as an http_referer

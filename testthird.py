@@ -43,7 +43,7 @@ class test_postmark(tester.tester):
         # created.
         orm.security().owner = own
 
-        # Create a company to be the propritor.
+        # Create a company to be the proprietor.
         com = party.company(name='Ford Motor Company')
         com.save()
 

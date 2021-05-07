@@ -44,7 +44,7 @@ class test_bot(tester.tester):
         # created.
         orm.security().owner = own
 
-        # Create a company to be the propritor.
+        # Create a company to be the proprietor.
         com = party.company(name='Ford Motor Company')
         com.save()
 
@@ -155,8 +155,9 @@ class test_sendbot(tester.tester):
 
         if self.rebuildtables:
             es = orm.orm.getentitys(includeassociations=True)
+            mods = 'bot', 'message', 'party', 'ecommerce'
             for e in es:
-                if e.__module__ in ('bot', 'message'):
+                if e.__module__ in mods:
                     e.orm.recreate()
 
         # Create an owner and get the root user
