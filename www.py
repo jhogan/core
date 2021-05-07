@@ -8,6 +8,10 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021
 ########################################################################
 
+""" This module contains classes module contains the classes that
+abstract the HTTP protocol, as well as WSGI and other web technologies.
+"""
+
 from dbg import B
 from functools import reduce
 from pprint import pprint
@@ -176,9 +180,30 @@ class application:
 
             request = None
 
+# TODO The class name should be `request` and the main instance should
+# be stored in `_reuest` at the class level. A @property called
+# request.main or request.current can store the request object currently
+# being processed.
 request = None
 class _request:
+    """ Represents an HTTP request.
+
+    The class is designed represent any HTTP request. However, there a
+    special consideration made incoming requests in a WSGI context. When
+    incoming HTTP request are made to the website, this class will be
+    used to encapsulate the request - typically in a WSGI context.
+    Alternatively, outgoing reuest, such as those made by the third.py
+    module to third party RESTful APIs, will use this class.
+    """
     def __init__(self, app=None, url=None):
+        """ Construct a request.
+
+        :param: app application: The WSGI application object for this
+        request.
+
+        :param: url ecommerce.url: The URL object containing the URL
+        being accessed.
+        """
         self.app           =  app
         if app:
             self.app._request  =  self
@@ -189,7 +214,7 @@ class _request:
         self._useragent  =  None
         self._hit        =  None
         self._ip         =  None
-        self._referer    =  None  #  The referer
+        self._referer    =  None
         self._headers    =  None
         self._url        =  url
         self._method     =  None
