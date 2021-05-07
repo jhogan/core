@@ -217,8 +217,27 @@ class bot(ecommerce.agent):
             self._iterations = int(self._iterations)
         return self._iterations
 
-    def __call__(self):
-        raise NotImplementedError('Implement in subentity')
+    def __call__(self, exsimulate=False):
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # Set ORM's proprietor to Carapacian for all ORM database
+        # interactions.
+        orm.security().proprietor = party.company.carapacian
+        self.proprietor = party.company.carapacian
+        self.owner = ecommerce.users.root
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # Ensure the bot itself is in the database and that root is the
+        # owner.
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        with orm.sudo():
+            self.save()
+
+        with orm.su(self.user):
+            self.info(f'{type(self).__name__} is alive')
+            self.info(f'Log levels: {" | ".join(self.levels)}')
+
+            return self._call(exsimulate=exsimulate)
 
 class sendbots(bots):
     pass
@@ -238,10 +257,7 @@ class sendbot(bot):
         """
         super().__init__(*args, **kwargs)
 
-        self.info(f'{type(self).__name__} is alive')
-        self.info(f'Log levels: {" | ".join(self.levels)}')
-
-    def __call__(self, exsimulate=False):
+    def _call(self, exsimulate=False):
         iter = self.iterations
         i = j = 0
         self.info('dispatching:')
@@ -393,20 +409,9 @@ if __name__ == '__main__':
             finally:
                 stm.flush()
 
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # Set ORM's propritor to Carapacian for all ORM database
-        # interactions.
-        orm.security().propritor = party.company.carapacian
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # Run as root for all bot interactions with the ORM and database
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        B()
-        with orm.sudo():
-            for b in bots.bots:
-                if b.__name__ == args.bot:
-                    b = b(onlog=onlog, **kwargs)
-                    b()
-                    break
+        for b in bots.bots:
+            if b.__name__ == args.bot:
+                b = b(onlog=onlog, **kwargs)
+                b()
+                break
     main()
