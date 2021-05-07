@@ -117,6 +117,34 @@ class bot(ecommerce.agent):
         self._iterations = iterations
         self.verbosity = verbosity
         self.name = type(self).__name__
+        self._user = None
+
+    @property
+    def user(self):
+        if type(self) is bot:
+            raise NotImplementedError(
+                'user is only available to concrete classes'
+            )
+
+        if not self._user:
+            if not hasattr(self, 'Userid'):
+                raise ValueError('bot must have Userid constant set')
+
+            id = uuid.UUID(self.Userid)
+
+            with orm.sudo():
+                try:
+                    self._user = ecommerce.user(id)
+                except db.RecordNotFoundError:
+                    self._user = ecommerce.user(
+                        id   = id,
+                        name = type(self).__name__,
+                        party  = self,
+                    )
+                    B()
+                    self._user.save()
+
+        return self._user
 
     @property
     def onlog(self):
@@ -196,6 +224,7 @@ class sendbots(bots):
     pass
 
 class sendbot(bot):
+    Userid = 'fdcf21b2-dc0b-40ef-934f-ffbca49c915c'
     def __init__(self, *args, **kwargs):
         """ ``sendbot`` finds incomplete (queued) ``dispatch`` entities
         for messsages and sends them to external sytems.
