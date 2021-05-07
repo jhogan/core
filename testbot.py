@@ -173,9 +173,8 @@ class test_sendbot(tester.tester):
         # created.
         orm.security().owner = own
 
-        # Create a company to be the propritor.
-        com = party.company(name='Ford Motor Company')
-        com.save()
+        # Create a company to be the proprietor.
+        com = party.company.carapacian
 
         # Set the company as the proprietory
         orm.security().proprietor = com
@@ -202,6 +201,9 @@ class test_sendbot(tester.tester):
         )
 
         msg.save()
+
+        orm.security().proprietor = party.company.carapacian
+        orm.security().owner = ecommerce.users.root
 
         sb = bot.sendbot(iterations=1)
         sb()
