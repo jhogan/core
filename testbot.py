@@ -147,6 +147,55 @@ class test_bot(tester.tester):
             self.eq(bot.bot.Levels[5-v:], lvls)
             self.eq(msgs[5-v:], msgs1)
 
+    def it_uses_carapacian_as_proprietor(self):
+        bot.sendbot.orm.truncate()
+        cara = party.company.carapacian
+
+        with orm.sudo():
+            sb = bot.sendbot(iterations=1, verbosity=5)
+        sb()
+
+        self.multiple(sb.logs)
+
+        for log in sb.logs:
+            self.is_(cara, log.proprietor)
+            self.eq(cara.id, log.orm.reloaded().proprietor.id)
+    def it_owns_what_it_creates(self):
+
+        bot.sendbot.orm.truncate()
+
+        with orm.sudo():
+            sb = bot.sendbot(iterations=1, verbosity=5)
+        sb()
+        usr = sb.user
+
+        self.multiple(sb.logs)
+
+        for log in sb.logs:
+            self.is_(usr, log.owner)
+            self.eq(usr.id, log.orm.reloaded().owner.id)
+
+    def it_calls_user(self):
+        bot.sendbot.orm.truncate()
+        ecommerce.users.orm.truncate()
+
+        with orm.sudo():
+            sb = bot.sendbot(iterations=1, verbosity=5)
+        sb()
+
+        usr = sb.user
+        self.is_(sb.user, usr)
+        self.is_(sb, usr.party)
+        self.eq('sendbot', usr.name)
+        self.false(usr.orm.isnew)
+        self.false(usr.orm.isdirty)
+        self.false(usr.orm.ismarkedfordeletion)
+
+        usr1 = usr.orm.reloaded()
+        self.eq(sb.user.id, usr1.id)
+        self.eq(sb.id, usr1.party.id)
+        self.eq('sendbot', usr1.name)
+
 class test_sendbot(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

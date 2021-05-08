@@ -127,10 +127,10 @@ class bot(ecommerce.agent):
             )
 
         if not self._user:
-            if not hasattr(self, 'Userid'):
-                raise ValueError('bot must have Userid constant set')
+            if not hasattr(self, 'Id'):
+                raise ValueError('bot must have Id constant set')
 
-            id = uuid.UUID(self.Userid)
+            id = uuid.UUID(self.Id)
 
             with orm.sudo():
                 try:
@@ -141,7 +141,6 @@ class bot(ecommerce.agent):
                         name = type(self).__name__,
                         party  = self,
                     )
-                    B()
                     self._user.save()
 
         return self._user
@@ -223,7 +222,6 @@ class bot(ecommerce.agent):
         # interactions.
         orm.security().proprietor = party.company.carapacian
         self.proprietor = party.company.carapacian
-        self.owner = ecommerce.users.root
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -243,7 +241,7 @@ class sendbots(bots):
     pass
 
 class sendbot(bot):
-    Userid = 'fdcf21b2-dc0b-40ef-934f-ffbca49c915c'
+    Id = 'fdcf21b2-dc0b-40ef-934f-ffbca49c915c'
     def __init__(self, *args, **kwargs):
         """ ``sendbot`` finds incomplete (queued) ``dispatch`` entities
         for messsages and sends them to external sytems.
