@@ -10,10 +10,12 @@
 ########################################################################
 
 from dbg import B
-import ecommerce, party, product
+import ecommerce
 import orm
-import tester
+import party
 import primative
+import product
+import tester
 
 class test_ecommerce(tester.tester):
     def __init__(self, *args, **kwargs):

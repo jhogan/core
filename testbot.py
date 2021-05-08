@@ -27,8 +27,9 @@ class test_bot(tester.tester):
 
         if self.rebuildtables:
             es = orm.orm.getentitys(includeassociations=True)
+            mods = 'bot', 'message', 'apriori', 'party'
             for e in es:
-                if e.__module__ in ('bot', 'message', 'apriori'):
+                if e.__module__ in mods:
                     e.orm.recreate()
 
         # Create an owner and get the root user

@@ -17702,11 +17702,30 @@ class gem_party(tester):
                 if e.__module__ in ('party', 'apriori'):
                     e.orm.recreate()
 
-        orm.security().owner = ecommerce.users.root
+        # Create an owner and get the root user
+        own = ecommerce.user(name='hford')
+        root = ecommerce.users.root
 
-        com = party.company(name='Carapacian')
+        # Save the owner, the root user will be the owner's owner.
+        with orm.sudo():
+            own.owner = root
+            own.save()
+
+        # Going forward, `own` will be the owner of all future records
+        # created.
+        orm.security().owner = own
+
+        # Create a company to be the proprietor.
+        com = party.company(name='Ford Motor Company')
+        com.save()
+
+        # Set the company as the proprietory
         orm.security().proprietor = com
-        com.save(com)
+
+        # Update the owner (hford) so that the company (Ford Motor
+        # Company) is the proprietor.
+        own.proprietor = com
+        own.save()
 
     @staticmethod
     def getvalid(first=None, last=None):
