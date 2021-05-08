@@ -49,6 +49,21 @@ class application:
 
     @property
     def environment(self):
+        """ The WSGI environ dict.
+
+        This corresponds to the ``environ`` parameter in the classic
+        WSGI method call defined in PEP 333::
+
+            def simple_app(environ, start_response):
+                ...
+
+        For the framework's main implementation of the above method, see
+        the ``__call__`` method.
+
+        For more information about the actual environ dict, see:
+        https://www.python.org/dev/peps/pep-0333/#environ-variables
+        """
+
         return self._env 
 
     @environment.setter
@@ -196,7 +211,7 @@ class _request:
     module to third party RESTful APIs, will use this class.
     """
     def __init__(self, app=None, url=None):
-        """ Construct a request.
+        """ Construct an HTTP request.
 
         :param: app application: The WSGI application object for this
         request.
@@ -221,9 +236,16 @@ class _request:
         self._useragent  =  None
 
     def __repr__(self):
+        """ A string representation of the HTTP request.
+        """
         return str(self)
 
     def __str__(self):
+        """ A string representation of an HTTP request. The string
+        should be reminiscent of the text output for a request in a
+        browser's "developer tools".
+        """
+
         r = textwrap.dedent(f'''
         Request URL: {self.url}
         :authority: {self.url}
@@ -278,13 +300,13 @@ class _request:
 
     @property
     def files(self):
-        """ Return a collection of files that were uploaded in the
+        """ Return a collection of files that were uploaded in the HTTP
         request.
 
         Note that currently, a very rough implementation of a
         multipart/form-data parser is implemented. This is used for
         tests but hasn't been tried with real world POSTs (the kind an
-        actual browser would send). 
+        actual browser would send and a real webserver would receive). 
 
         A future version will parse out the file data that is sent in
         JSON format. This will be the normal way to transfer files to
@@ -367,6 +389,9 @@ class _request:
 
     @property
     def cookies(self):
+        """ Returns a ``cookies`` collection object containing each of
+        the cookies in the HTTP request's 'cookies' header.
+        """
         r = browser._cookies()
         for hdr in self.headers:
             if hdr.name != 'cookie':
@@ -380,9 +405,10 @@ class _request:
 
     @property
     def jwt(self):
-        """ Look in the request's (self's) cookies for a JWT. If found,
-        convert the cookies str value to an auth.jwt objcet and return.
-        If no JWT cookie is found, return None.
+        """ Look in the HTTP request's cookies collection for a JWT
+        cookie.. If found, convert the JWT cookie's str value to an
+        auth.jwt object and return.  If no JWT cookie is found, return
+        None.
         """
         jwt = self.cookies('jwt')
         if jwt:
@@ -390,15 +416,18 @@ class _request:
             jwt = auth.jwt(jwt)
 
         return jwt
+
     @property
     def user(self):
-        """ Return the authenicated user making the request. If there is
-        no authenicate user, return None.
+        """ Returns the authenicated user making the request. If there is
+        no authenicate user, returns None.
         """
 
         if not self._user:
+
             # Get the JWT and convert it to a user 
             jwt = self.jwt
+
             if jwt:
                 if not jwt.isvalid:
                     # If the JWT is bad (can't be decoded), return None.
@@ -417,11 +446,31 @@ class _request:
                 
     @property
     def environment(self):
+        """ The WSGI environ dict.
+
+        This corresponds to the ``environ`` parameter in the classic
+        WSGI method call defined in PEP 333::
+
+            def simple_app(environ, start_response):
+                ...
+
+        For the framework's main implementation of the above method, see
+        ``www.application.__call__``.
+
+
+        For more information about the actual environ dict, see:
+        https://www.python.org/dev/peps/pep-0333/#environ-variables
+        """
         return self.app.environment
 
     @property
     def iswsgi(self):
         """ Returns True if the request is for a WSGI app.
+
+        Typical incoming requests to the framework will be intended for
+        the WSGI interface. However, this is a general purpose HTTP
+        request object, so for other use cases, this method will return
+        False.
         """
         return self.app is not None
 
