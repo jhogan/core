@@ -536,6 +536,9 @@ class tester(entity):
     def zero(self, actual, msg=None):
         if len(actual) != 0: self._failures += failure()
 
+    def multiple(self, actual, msg=None):
+        if len(actual) == 0: self._failures += failure()
+
     def assertOne(self, actual):
         if len(actual) != 1: self._failures += failure()
 
