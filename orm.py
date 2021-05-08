@@ -7367,6 +7367,16 @@ class constituent(ormclasswrapper):
     """
 
 @contextmanager
+def proprietor(propr):
+    sec = security()
+    propr1 = sec.proprietor
+    try:
+        sec.proprietor = propr
+        yield
+    finally:
+        sec.proprietor = propr1
+
+@contextmanager
 def sudo():
     """
     💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
