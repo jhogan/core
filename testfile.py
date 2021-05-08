@@ -1148,6 +1148,9 @@ class file_cache(tester.tester):
         self.is_(f, f1)
         self.isnot(f, f2)
 
+        for nd in (f, f1, f2):
+            self.type(file.file, nd)
+
         # Nested file at root
         f = file.file.produce(path='/etc/passwd')
         f1 = file.file.produce(path='/etc/passwd')
@@ -1155,25 +1158,101 @@ class file_cache(tester.tester):
         self.is_(f, f1)
         self.isnot(f, f2)
 
+        for nd in (f, f1, f2):
+            self.type(file.file, nd)
+            self.type(file.directory, nd.inode)
+
         # Deeply nested file at root 
         f = file.file.produce(path='/var/log/syslog')
         f1 = file.file.produce(path='/var/log/syslog')
         f2 = file.file.produce(path='/var/log/auth.log')
         self.is_(f, f1)
         self.isnot(f, f2)
+        for nd in (f, f1, f2):
+            self.type(file.file, nd)
+            self.type(file.directory, nd.inode)
 
     def it_caches_new_directories_at_root(self):
-        d = file.directory.produce(path='/sys')
-        d1 = file.directory.produce(path='/sys')
-        d2 = file.directory.produce(path='/SYS')
+        ''' Simple directory production at root '''
+        d = file.directory.produce(path='/usr')
+        d1 = file.directory.produce(path='/usr')
+        d2 = file.directory.produce(path='/USR')
         self.is_(d, d1)
         self.isnot(d, d2)
+
+        usr, USR = d, d2
+
+        ''' Nested directory production '''
+        d = file.directory.produce(path='/usr/local')
+        d1 = file.directory.produce(path='/usr/local')
+        d2 = file.directory.produce(path='/USR/local')
+
+        for nd in (d, d1, d2):
+            self.eq('local', nd.name)
+
+            if nd is d2:
+                self.eq('USR', nd.inode.name)
+            else:
+                self.eq('usr', nd.inode.name)
+
+        # Compare directories to each other
+        self.is_(d, d1)
+        self.is_(d.inode, d1.inode)
+        self.isnot(d.inode, d2.inode)
+        self.isnot(d, d2)
+
+        # Compare to the simple directory production above
+        self.is_(usr, d.inode)
+        self.is_(USR, d2.inode)
+
+        local, USR_local = d, d2
+
+        ''' Deeply nested directory production '''
+        d = file.directory.produce(path='/usr/local/bin')
+        d1 = file.directory.produce(path='/usr/local/bin')
+        d2 = file.directory.produce(path='/USR/local/bin')
+
+        for nd in (d, d1, d2):
+            self.eq('bin',    nd.name)
+            self.eq('local',  nd.inode.name)
+
+            if nd is d2:
+                self.eq('USR', nd.inode.inode.name)
+            else:
+                self.eq('usr', nd.inode.inode.name)
+
+        self.is_(d, d1)
+        self.is_(d.inode, d1.inode)
+        self.is_(d.inode.inode, d1.inode.inode)
+
+        self.isnot(d, d2)
+        self.isnot(d.inode, d2.inode)
+        self.isnot(d.inode.inode, d2.inode.inode)
+
+        self.is_(local, d.inode)
+        self.is_(usr, d.inode.inode)
+        self.is_(USR_local, d2.inode)
+        self.is_(USR, d2.inode.inode)
+
+    def it_append_to_cached_directory(self):
+        file.cache().clear()
+        usr = file.directory.produce(path='/usr')
+        local = file.directory.produce(path='local')
+
+        self.eq('/usr', file.cache()[usr])
+        self.eq('local', file.cache()[local])
+
+        usr += local
+
+        self.eq('/usr', file.cache()[usr])
+        self.eq('/usr/local', file.cache()[local])
+
+
+
 
 
     def it_raises_on_instatiation(self):
         ...  # TODO
-        
-
 
 if __name__ == '__main__':
     tester.cli().run()
