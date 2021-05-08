@@ -17724,6 +17724,23 @@ class gem_party(tester):
         per.dun            =  None
         return per
 
+    def it_creates_carapacian(self):
+        party.company.orm.truncate()
+
+        cara = party.company.carapacian
+        self.is_(party.company.carapacian, cara)
+        self.false(cara.orm.isnew)
+        self.false(cara.orm.isdirty)
+        self.false(cara.orm.ismarkedfordeletion)
+
+        party.company._carapacian = None
+        cara1 = party.company.carapacian
+        self.isnot(cara, cara1)
+        self.eq(cara.id, cara1.id)
+        self.false(cara1.orm.isnew)
+        self.false(cara1.orm.isdirty)
+        self.false(cara1.orm.ismarkedfordeletion)
+
     @staticmethod
     def getvalidcompany(**kwargs):
         com = party.company()

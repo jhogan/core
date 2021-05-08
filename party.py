@@ -312,13 +312,15 @@ class company(legalorganization):
 
             with orm.sudo():
                 try:
-                    cls._carapacian = company(id)
+                    with orm.proprietor(cls._carapacian):
+                        cls._carapacian = company(id)
                 except db.RecordNotFoundError:
                     cls._carapacian = company(
                         id   = id,
                         name = 'Carapacian, LLC'
                     )
-                    cls._carapacian.save()
+                    with orm.proprietor(cls._carapacian):
+                        cls._carapacian.save()
 
         return cls._carapacian
 
