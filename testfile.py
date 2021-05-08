@@ -429,21 +429,6 @@ class file_inodes(tester.tester):
         own.proprietor = com
         own.save()
 
-    def it_equalizes_on_append(self):
-        fs = file.files()
-        f = file.file(path='/var/log/syslog')
-        f1 = file.file(path='/var/log/auth.log')
-        fs += f
-        B()
-        fs += f1
-
-        log = f.inode
-        log1 = f1.inode
-
-        self.is_(log, log1)
-
-
-        
 class file_file(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

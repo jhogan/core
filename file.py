@@ -192,8 +192,8 @@ class inode(orm.entity):
 
     The name "inode" was chosen after the Unix-style data structure used
     to describe file system object (files and directories).
-    (``filesystemobjects`, though more descriptive,` was considered too
-    long to make a good class name.)
+    ``filesystemobjects`, though more descriptive, was considered too
+    long to make a good class name.
     """
 
     # The name attribute of the file sytem object
@@ -230,7 +230,6 @@ class inode(orm.entity):
 
             if prev:
                 prev += dir
-                B()
                 cache()[ix] = dir
 
             prev = dir
