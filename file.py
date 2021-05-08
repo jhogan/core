@@ -83,6 +83,17 @@ class cache:
         return cls._instance
 
     def __getitem__(self, path):
+
+        if isinstance(path, inode):
+            nd = path
+            for k, v in self._inodes.items():
+                if v is nd:
+                    return k
+            else:
+                raise KeyError(
+                    f'Could not find key for "{nd!r}"'
+                )
+
         return self._inodes[path]
 
     def __setitem__(self, path, v):
