@@ -103,6 +103,9 @@ class cache:
         path = rent + nd
         self._inodes[path] = nd
 
+    def clear(self):
+        self._inodes.clear()
+
 class inodes(orm.entities):
     """ Represents a collection of ``inode`` entities.
     """
