@@ -205,9 +205,6 @@ class inode(orm.entity):
 
     @classmethod
     def produce(cls, path):
-        if not path.startswith('/'):
-            path = '/' + path
-        
         try:
             return cache()[path]
         except KeyError:
