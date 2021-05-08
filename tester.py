@@ -508,6 +508,13 @@ class tester(entities.entity):
         if type(actual) is not expect: self._failures += failure()
 
     def type(self, expect, actual, msg=None):
+        if not isinstance(expect, type):
+            name = type(expect).__name__
+            raise TypeError(
+                'expect must but be of type `type`; receieved: '
+                f'"{name}"'
+            )
+
         if type(actual) is not expect: self._failures += failure()
 
     def assertEq(self, expect, actual, msg=None):
