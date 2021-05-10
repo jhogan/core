@@ -419,8 +419,8 @@ class _request:
 
     @property
     def user(self):
-        """ Returns the authenicated user making the request. If there is
-        no authenicate user, returns None.
+        """ Returns the authenicated user making the request. If there
+        is no authenicate user, returns None.
         """
 
         if not self._user:
@@ -476,6 +476,11 @@ class _request:
 
     @property
     def servername(self):
+        """ The hostname of the URL.
+
+        When the request is for a WSGI app, the value of the SERVER_NAME
+        environment varible is returned.
+        """
         if self.iswsgi:
             return self.environment['server_name']
 
@@ -483,10 +488,19 @@ class _request:
 
     @property
     def arguments(self):
+        """ Returns the query string paramter as a dict.
+        """
         return dict(urllib.parse.parse_qsl(self.qs))
 
     @property
     def qs(self):
+        """ Returns the query string portion of the URL being requested.
+
+        When the request is for a WSGI app, the value of the
+        QUERY_STRING environment varible is returned.
+
+        If there is no query string, None is returned.
+        """
         if self.iswsgi:
             qs = self.environment['query_string']
 
@@ -499,7 +513,7 @@ class _request:
 
     @property
     def site(self):
-        """ Get the single site for this instance.
+        """ Get the single site (``pom.site``) for this instance.
         """
         try:
             # NOTE 'server_site' is a contrived, non-HTTP environment
@@ -524,8 +538,8 @@ class _request:
 
     @property
     def page(self):
-        """ Return the page that this request is GETting (POSTing to,
-        etc.) 
+        """ Return the page that this request is GETting, POSTing to,
+        etc. 
         """
         ws = self.site
         path = self.path
@@ -536,8 +550,10 @@ class _request:
 
     @property
     def language(self):
-        ''' Return the language code. This is usually the first segment
-        of the URL path. 
+        ''' Return the language code. The default is 'en' for English.
+        
+        When the requet if for a page hosted by the framework, this is
+        usually the first segment of the URL path. 
         '''
 
         try:
@@ -553,6 +569,11 @@ class _request:
         return 'en'
 
     def __call__(self):
+        """ When the request is for a WSGI app, this calls the page
+        being requested, passing in the query string parameters as
+        arguments to the page. When the page is completed processing,
+        the HTML for the page is returned.
+        """
         # TODO If an exception bubbles up here, it should be logged to
         # syslog (I think).
 
@@ -565,8 +586,13 @@ class _request:
             # Invoke the page
            self.page(**self.arguments)
         except HttpError as ex:
+            # If the page raised an HTTPError with a flash message, add
+            # the flash message to the pages HTML.
             if ex.flash:
                 self.page.flash(ex.flash)
+
+                # Set the response statust of the global response
+                # object.
                 response.status = ex.status
             else:
                 raise
@@ -607,7 +633,6 @@ class _request:
     def log(self):
         """ Log the hit.
         """
-
         try: 
             # Get the request's ``hit`` entity
             hit = self.hit
@@ -702,7 +727,7 @@ class _request:
 
         if self._payload is None:
             # If the payload hasn't been set, we can get it from the
-            # wsgi environment.
+            # WSGI environment.
             if self.iswsgi:
                 sz = self.size
                 inp = self.environment['wsgi.input']
