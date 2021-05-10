@@ -1248,10 +1248,6 @@ class file_cache(tester.tester):
         self.eq('/usr', file.cache()[usr])
         self.eq('/usr/local', file.cache()[local])
 
-
-
-
-
     def it_raises_on_instatiation(self):
         ...  # TODO
 
