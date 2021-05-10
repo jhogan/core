@@ -74,16 +74,26 @@ import uuid
 
 class cache:
     _instance = None
+
     def __new__(cls):
         if not cls._instance:
             sup = super(cache, cls)
             cls._instance = sup.__new__(cls)
-            cls._instance._inodes = dict()
+            cls._instance._root = cls._node('/')
+            cls._instance._floats = list()
 
         return cls._instance
 
-    def __getitem__(self, path):
+    @staticmethod
+    def _node(name, nd=None, rent=None):
+        return {
+            'name':      name,
+            'node':      nd,
+            'parent':    rent,
+            'children':  dict(),
+        }
 
+    def __getitem__(self, path):
         if isinstance(path, inode):
             nd = path
             for k, v in self._inodes.items():
@@ -94,10 +104,109 @@ class cache:
                     f'Could not find key for "{nd!r}"'
                 )
 
+
+        try:
+            nd = self._find(path)
+        except cache.PathLookupError:
+            raise KeyError(f'Cannot find node for {path}')
+            
         return self._inodes[path]
 
+    def _find(self, path, nd=None, nds=None):
+        if not nd:
+            nd = self._root
+            attop = True
+            nds = list()
+
+        # TODO Change to self._split
+        names = os.path.split(path)
+
+        if not nd['node']:
+            raise cache.PathLookupError(nds)
+        
+        if names[0] != nd['name']:
+            raise cache.PathLookupError(nds)
+
+        for name in names:
+            for nd1 in nd.children:
+                if nd1.name == name:
+                    nds.append(nd1)
+                    if len(path) == 1:
+                        return nd1
+                    else:
+                        try:
+                            return self.find(names[1:], nd1, nds)
+                        except cache.PathLookupError(nds):
+                            continue
+
+        if attop:
+            return nds
+
+    def _set(self, path, v):
+        names = self._split(path)
+
+        rent = None
+        for i, name in enumerate(names):
+            if i.first:
+                if name == '/':
+                    nd = self._root
+                    if i.last:
+                        raise Exception('TODO this should not happen')
+                    else:
+                        nds = nd['children']
+                        rent = nd
+                        continue
+                else:
+                    # If we are here, we have been given a path that
+                    # doesn't start with a /, meaning that ultimately,
+                    # it has know attachment to the file system at the
+                    # moment. The client will eventually have to resolve
+                    # this.
+                    nd = self._node(name=name, rent=None)
+                    self._floats.append(nd)
+
+                    if i.last:
+                        nd.node = v
+
+                    nds = nd['children']
+                    continue
+
+            try:
+                nd = nds[name]
+            except KeyError:
+                if not i.last:
+                    raise ValueError('There is more path')
+
+                nd = self._node(name=name, rent=rent)
+                nd['node'] = v
+            else:
+                nds = nd['children']
+                continue
+
+            rent = nd
+
+
+
     def __setitem__(self, path, v):
-        self._inodes[path] = v
+        try:
+            nds = self._find(path)
+        except cache.PathLookupError as ex:
+            self._set(path, v=v)
+
+    @staticmethod
+    def _split(path):
+        if path == '/':
+            return ['/']
+
+        names = path.split('/')
+
+        if path.startswith('/'):
+            names[0] = '/'
+
+        return names
+
+
+        
 
     def _cache(self, nd, rent):
         path = rent + nd
@@ -105,6 +214,10 @@ class cache:
 
     def clear(self):
         self._inodes.clear()
+
+    class PathLookupError(LookupError):
+        def __init__(self, nds):
+            self.nodes = nds
 
 class inodes(orm.entities):
     """ Represents a collection of ``inode`` entities.

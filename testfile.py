@@ -1235,7 +1235,8 @@ class file_cache(tester.tester):
         self.is_(USR, d2.inode.inode)
 
     def it_append_to_cached_directory(self):
-        file.cache().clear()
+        # XXX
+        # file.cache().clear()
         usr = file.directory.produce(path='/usr')
         local = file.directory.produce(path='local')
 
