@@ -161,6 +161,9 @@ class bot(ecommerce.agent):
 
     @property
     def levels(self):
+        if self.verbosity is None:
+            return list()
+
         return self.Levels[5 - self.verbosity:]
 
     def debug(self, msg, end='\n'):
@@ -215,6 +218,20 @@ class bot(ecommerce.agent):
         if self._iterations is not None:
             self._iterations = int(self._iterations)
         return self._iterations
+
+    @property
+    def verbosity(self):
+        return self._verbosity
+
+    @verbosity.setter
+    def verbosity(self, v):
+        possible = list(range(7)) + [None]
+        if v not in possible:
+            possible = [str(x) for x in possible]
+            raise InputError(
+                f'Value for verbosity must be {",".join(possible)}'
+            )
+        self._verbosity = v
 
     def __call__(self, exsimulate=False):
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -313,6 +330,9 @@ class sendbot(bot):
                 )
                 continue
 
+class InputError(ValueError):
+    pass
+
 if __name__ == '__main__':
     def main():
         import argparse
@@ -408,7 +428,11 @@ if __name__ == '__main__':
 
         for b in bots.bots:
             if b.__name__ == args.bot:
-                b = b(onlog=onlog, **kwargs)
-                b()
+                try:
+                    b = b(onlog=onlog, **kwargs)
+                    b()
+                except InputError as ex:
+                    prs.print_usage()
+                    print(f'{__file__.strip("./")}: error: {ex}')
                 break
     main()
