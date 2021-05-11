@@ -768,14 +768,20 @@ class _request:
         if self.iswsgi:
             return self.environment['path_info']
 
-
     @property
     def size(self):
+        """ The contents of any Content-Length fields in the HTTP
+        request. If empty, return 0. In non-WSGI requests, returns the
+        length of the payload.
+        """
         if self.iswsgi:
             try:
                 return int(self.environment.get('content_length', 0))
             except ValueError:
                 return 0
+
+        # NOTE This appears to be ambigous. In the WSGI version,
+        # shouldn't we also be returning the size of the payload.
 
         return len(self.payload)
 
@@ -793,6 +799,9 @@ class _request:
 
     @property
     def method(self):
+        """ Returns the HTTP verb, such as GET, POST, PATCH, etc, used
+        in the HTTP request.
+        """
         if self.iswsgi:
             return self.environment['request_method'].upper()
         
@@ -807,6 +816,9 @@ class _request:
 
     @property
     def ip(self):
+        """ Returns an ``ecommerce.ip`` address object corresponding the
+        REMOTE_ADDR WSGI environment variblable.
+        """
         if not self._ip:
             ip = str(self.environment['remote_addr'])
             self._ip = ecommerce.ip(address=ip)
@@ -814,6 +826,9 @@ class _request:
 
     @property
     def referer(self):
+        """ Returns an ``ecommerce.url`` object corresponding to the
+        HTTP_REFERER of the HTTP request.
+        """
         if not self._referer:
             url = str(self.environment['http_referer'])
             self._referer = ecommerce.url(address=url)
@@ -821,6 +836,9 @@ class _request:
 
     @property
     def useragent(self):
+        """ Returns an ``ecommerce.useragent`` object corresponding to
+        the USER_AGENT HTTP environment variable for this HTTP request.
+        """
         if not self._useragent:
             if self.iswsgi:
                 ua = str(self.environment['user_agent'])
@@ -871,18 +889,27 @@ class _request:
 
     @property
     def isget(self):
+        """ Returns True if the request's HTTP method is GET.
+        """
         return self.method == 'GET'
 
     @property
     def ispost(self):
+        """ Returns True if the request's HTTP method is POST.
+        """
         return self.method == 'POST'
 
     @property
     def ishead(self):
+        """ Returns True if the request's HTTP method is HEAD.
+        """
         return self.method == 'HEAD'
 
     @property
     def isxhr(self):
+        """ Returns True if request is intended as an XMLHttpRequest
+        (XHR).
+        """
         return self.content_type == 'application/json'
 
     @property
