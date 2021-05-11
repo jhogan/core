@@ -215,8 +215,6 @@ class bot(ecommerce.agent):
 
     @property
     def iterations(self):
-        if self._iterations is not None:
-            self._iterations = int(self._iterations)
         return self._iterations
 
     @property
