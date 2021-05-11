@@ -57,6 +57,40 @@ class bot(ecommerce.agent):
         'error',  'critical',  'exception'
     ]
 
+    def __init__(self, *args, **kwargs):
+        """ An abstract class that represents a bot. 
+        
+        Concrete bots will inherit from this class to implement their
+        specific functions.
+
+        :param: iterations int: The number of iterations to make before
+        exiting. Most bots will be in an infinite loop. However, for
+        debugging purposes, a developer may want to limit the number of
+        iterations to 1.
+
+        :param: verbosity int: The level of status output the bot should
+        generate. Status output will be sent to a log file. It will also be
+        sent to stdout. Valid values: 5=debug and up, 4=info and up,
+        3=warning and up, 2=error and up, 1=critical and up, 0=only
+        exceptions. 'debug' and 'info' go to stdout; all other output
+        goes to stderr.
+        """
+
+        onlog = kwargs.pop('onlog', None)
+        iterations = kwargs.pop('iterations', None)
+        verbosity = kwargs.pop('verbosity', 0)
+
+        super().__init__(*args, **kwargs)
+
+        self._onlog = None
+        if onlog:
+            self.onlog += onlog
+
+        self._iterations = iterations
+        self.verbosity = verbosity
+        self.name = type(self).__name__
+        self._user = None
+
     @orm.attr(apriori.logs)
     def logs(self):
         # HACK:8210b80c We want ``bot`` to have a ``logs`` constiuent that
@@ -84,40 +118,6 @@ class bot(ecommerce.agent):
             self._logs = map.value
 
         return self._logs
-
-    def __init__(self, *args, **kwargs):
-        """ An abstract class that represents a bot. 
-        
-        Concrete bots will inherit from this class to implement their
-        specific functions.
-
-        :param: iterations int: The number of iterations to make before
-        exiting. Most bots will be in an infinite loop. However, for
-        debugging purposes, a developer may want to limit the number of
-        iterations to 1.
-
-        :param: verbosity int: The level of status output the bot should
-        generate. Status output will be sent to a log file. It will also be
-        sent to stdout. Valid values: 5=debug and up, 4=info and up,
-        3=warning and up, 2=error and up, 1=critical and up, 0=only
-        exceptions. 'debug' and 'info' go to stdout; all other output
-        goes to stderr.
-        """
-
-        onlog = kwargs.pop('onlog', None)
-
-        iterations = kwargs.pop('iterations', None)
-        verbosity = kwargs.pop('verbosity', 0)
-        super().__init__(*args, **kwargs)
-
-        self._onlog = None
-        if onlog:
-            self.onlog += onlog
-
-        self._iterations = iterations
-        self.verbosity = verbosity
-        self.name = type(self).__name__
-        self._user = None
 
     @property
     def user(self):
@@ -373,7 +373,6 @@ if __name__ == '__main__':
             prs.add_argument(
                 f'--{param["name"]}', type=int, help=help
             )
-
 
         subprss = prs.add_subparsers(
             help = 'The list of bots from which to select', 
