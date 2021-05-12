@@ -199,15 +199,19 @@ class bot(ecommerce.agent):
         if lvl not in lvls:
             return
 
-        self.logs += apriori.log(
-            message = msg,
-            logtype = apriori.logtype(name=lvl)
-        )
+        try:
+            self.logs += apriori.log(
+                message = msg,
+                logtype = apriori.logtype(name=lvl)
+            )
 
-        self.logs.save()
-
-        eargs = addlogeventargs(msg=msg + end, lvl=lvl)
-        self.onlog(self, eargs)
+            self.logs.save()
+        finally:
+            # In case there is a database/ORM issue, we can raise
+            # the onlog event which will probably be handle something
+            # that prints to a device like stdout our a file.
+            eargs = addlogeventargs(msg=msg + end, lvl=lvl)
+            self.onlog(self, eargs)
 
     @orm.attr(int)
     def pid(self):
