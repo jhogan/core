@@ -7643,6 +7643,14 @@ class security:
         """
         return self.owner and self.owner.isroot
 
+    def __repr__(self):
+        r = f'{type(self).__name__}(\n'
+        r += f'  owner={self.owner!r}\n'
+        r += f'  user={self.user!r}\n'
+        r += f'  override={self.override}\n'
+        r += ')'
+        return r
+
 
 class orm:
     """ The ORM class.
