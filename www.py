@@ -914,13 +914,22 @@ class _request:
 
     @property
     def content_type(self):
+        """ Return the Content-Type of the request.
+        """
         return self.environment['content_type'].strip()
 
     @property
     def mime(self):
+        """ Return the mime type of the request.
+        """
         return self.content_type.split(';')[0].strip().lower()
 
+    # TODO Rename to '_demand' since this is a private method
     def demand(self):
+        """ Causes an exception to be raised if the request is not
+        complete or is incorrectly constructed.
+        """
+
         if not request.page:
             raise NotFoundError(self.path)
 
@@ -937,7 +946,6 @@ class _request:
                     raise BadRequestError(
                         'No files given in multipart form.'
                     )
-                    
 
             # The remaining demands will be for XHR requests only
             if not self.isxhr:
@@ -1084,8 +1092,9 @@ class _response():
     }
 
     def __init__(self, req, res=None, ex=None):
-        """
-        :param: req www._request: The request object that resulted in
+        """ Create an HTTP response.
+
+        :param: req www._request: The www.request object that resulted in
         this response.
 
         :param: res urllib.response: The response object from
@@ -1095,8 +1104,8 @@ class _response():
 
         :param: ex Exception: If the HTTP response is the result of an
         Exception, ``ex`` can be passed in. If it contains the status
-        code, that status code will be used for the respones's status
-        property.
+        code, that status code will be used for the respones's
+        ``status`` property.
         """
         self._payload = None
         self._status = 200
@@ -1134,6 +1143,8 @@ class _response():
                 self.headers = hdrs
     @property
     def status(self):
+        """ The HTTP status code of the response.
+        """
         return self._status
 
     @status.setter
@@ -1142,6 +1153,10 @@ class _response():
 
     @property
     def message(self):
+        """ Returns a string containing the HTTP status code of the
+        response and the standard message/phrase corresponding to the
+        status code.
+        """
         try:
             return '%i %s' % (self.status, self.Messages[self.status])
         except KeyError:
@@ -1156,7 +1171,7 @@ class _response():
     @property
     def mime(self):
         """ Returns the **type** and **subtype** portion of the mime.
-        example, if ``self.contenttype`` is:
+        For example, if ``self.contenttype`` is:
                 
             text/html; charset=UTF-8
 
@@ -1183,6 +1198,8 @@ class _response():
 
     @property
     def payload(self):
+        """ Returns the body of the response.
+        """
         # These lines are for XHR responses
         # payload = json.dumps(payload)
         # payload = bytes(payload, 'utf-8')
@@ -1211,6 +1228,27 @@ class _response():
         return dom.html(self.payload)
 
     def __getitem__(self, sels):
+        """ Returns the portion of the response body corresponding to
+        the selector (``sels``).
+
+        :param: sels str: If the body contains JSON data, the ``sels``
+        parameter should be a string used to select form the list
+        returned by json.loads. For example, the following are the
+        same::
+            
+            self['MySelector']
+            json.loads(self.payload)['MySelector']
+
+        When the payload contains HTML, the select should be a CSS3
+        selector::
+
+            # Select all <p> tags
+            ps = self['p']
+
+            # Select all <em>'s elements in <span> element with a class
+            # of 'my-class'
+            ems = self['span.my-class em']
+        """
         if self.mime == 'application/json':
             return self.json[sels]
         elif self.mime == 'text/html':
