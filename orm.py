@@ -5960,6 +5960,10 @@ class entitymapping(mapping):
                     # map.
                     if map.isowner != self.isowner:
                         continue
+
+                    # XXX Same with proprietor as with owner above
+                    if map.isproprietor != self.isproprietor:
+                        continue
                     
                     # ... and if we have a foreign key value 
                     if map.value not in (undef, None):
