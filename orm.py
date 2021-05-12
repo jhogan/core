@@ -7559,6 +7559,14 @@ class security:
         """
         return self._owner
 
+    @property
+    def user(self):
+        # TODO This will be the central place to store the logged in
+        # user. This will probably usually be the owner, though there
+        # may be a need to distinguish the ORM's "owner" from the
+        # "logged in user". More thought is need for this.
+        return self._owner
+
     @owner.setter
     def owner(self, v):
         """
