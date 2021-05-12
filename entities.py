@@ -253,6 +253,21 @@ class entities:
                 ix += eargs.entity
 
     @property
+    def onbeforeadd(self):
+        """ Returns the onbeforeadd event for this collection.
+        """
+        if not hasattr(self, '_onbeforeadd'):
+            self._onbeforeadd = event()
+
+        return self._onbeforeadd
+
+    @onbeforeadd.setter
+    def onbeforeadd(self, v):
+        """ Sets the onbeforeadd event for this collection.
+        """
+        self._onadd = v
+
+    @property
     def onadd(self):
         """ Returns the onadd event for this collection.
         """
@@ -843,6 +858,7 @@ class entities:
         if uniq and t in self:
             return r
 
+        self.onbeforeadd(self, entityaddeventargs(t))
         r._ls.append(t)
 
         self._ls.append(t)
