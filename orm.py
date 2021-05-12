@@ -11263,6 +11263,20 @@ class violations(entitiesmod.entities):
         # Do the actual appending
         return super().__iadd__(o)
 
+    _empty = None
+    @classproperty
+    def empty(cls):
+        if cls._empty is None:
+            cls._empty = violations()
+            def onbeforeadd(src, eargs):
+                raise AttributeError('Do not add to violations.empty')
+
+            cls._empty.onbeforeadd += onbeforeadd
+
+        return cls._empty
+
+        
+
 class violation(entitiesmod.entity):
     """ Records an access violation message. Access violations are
     created in an entity's accessibility properties.
