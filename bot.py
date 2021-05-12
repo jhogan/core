@@ -236,12 +236,26 @@ class bot(ecommerce.agent):
         self._verbosity = v
 
     def __call__(self, exsimulate=False):
+        cara = party.company.carapacian
+
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # Set the ORM's owner to the bot's user object. We won't all
+        # future accessibilty to consider the bot's user as the owner,
+        # and all new records, such as log records, to be owned by the
+        # bot's user.
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        orm.security().owner = self.user
+
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # Set ORM's proprietor to Carapacian for all ORM database
         # interactions.
-        orm.security().proprietor = party.company.carapacian
-        self.proprietor = party.company.carapacian
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        orm.security().proprietor = cara
+
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # Set the bot's proprietor to the Carapacian company
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self.proprietor = cara
 
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # Ensure the bot itself is in the database and that root is the
@@ -431,7 +445,8 @@ if __name__ == '__main__':
         for b in bots.bots:
             if b.__name__ == args.bot:
                 try:
-                    b = b(onlog=onlog, **kwargs)
+                    with orm.sudo():
+                        b = b(onlog=onlog, **kwargs)
                     b()
                 except InputError as ex:
                     prs.print_usage()
