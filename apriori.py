@@ -137,8 +137,34 @@ class type(orm.entity):
     # will use when it ensure the record exists.
     name = str
 
+    @property
+    def creatability(self):
+        return orm.violations.empty
+
+    @property
+    def retrievability(self):
+        return orm.violations.empty
+
 class log(orm.entity):
     message = text
 
+    @property
+    def creatability(self):
+        return orm.violations.empty
+
+    @property
+    def retrievability(self):
+        return orm.violations.empty
+
 class logtype(type):
     logs = logs
+
+    @property
+    def creatability(self):
+        return orm.violations.empty
+
+    @property
+    def retrievability(self):
+        return orm.violations.empty
+
+
