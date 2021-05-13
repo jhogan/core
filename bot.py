@@ -115,6 +115,11 @@ class bot(ecommerce.agent):
             # Disallow loading
             map.value.orm.isloaded = True
 
+            def onadd(src, eargs):
+                ...#eargs.entity.bot = self
+
+            map.value.onadd += onadd
+
             self._logs = map.value
 
         return self._logs
@@ -200,10 +205,12 @@ class bot(ecommerce.agent):
             return
 
         try:
-            self.logs += apriori.log(
+            log = apriori.log(
                 message = msg,
                 logtype = apriori.logtype(name=lvl)
             )
+
+            self.logs += log
 
             self.logs.save()
         finally:
