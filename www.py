@@ -1261,6 +1261,9 @@ class _response():
 
     @property
     def headers(self):
+        """ Returns the ``headers`` collection object associated with
+        this HTTP response.
+        """
         # If self._headers is not an instance of `headers`, coerse to
         # the native type.
         if not isinstance(self._headers, headers):
@@ -1284,6 +1287,15 @@ class _response():
         self._headers = v
 
     def __repr__(self, pretty=False):
+        """ Returns a string representation of this HTTP response
+        object.
+
+        :param: pretty bool: If True, prettifies the payload if the
+        payload is JSON or HTML.
+        """
+
+        # TODO Shouldn't ``pretty`` default to True?
+
         r = textwrap.dedent('''
         URL:    %s
         Method: %s
@@ -1307,9 +1319,17 @@ class _response():
         )
 
     def __str__(self):
+        """ Returns a string representation of this HTTP response
+        object.
+        """
         return self.__repr__(pretty=True)
 
 class controller:
+    """ This is an old object that is not currently in use. It my be
+    revived when XHR processing is revisited.
+    """
+
+    # TODO Determine if this is dead code.
     def __init__(self, app):
         self._app = app
 
@@ -1335,6 +1355,16 @@ class controller:
             )
 
 class HttpException(Exception):
+    """ An abstract class for HTTP Exception. 
+    
+    Direct subclasses of ``HttpException`` are those that represent
+    status codes in the 300s.  ``HttpError`` is also a subclass of
+    ``HttpException``. Its subclasses represent status codes in the 400s
+    and 500s. Thus, an ``HttpException`` is not necessarily
+    representative of an error; it represents any *exceptional*
+    response, like a 301 Moved Premanently, 404 Not Found or a 500
+    Internal Server Error.
+    """
     def __init__(self, msg, res=None):
         super().__init__(msg)
         self.response = res
