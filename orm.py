@@ -7599,7 +7599,6 @@ class security:
         r += ')'
         return r
 
-
 class orm:
     """ The ORM class.
 
