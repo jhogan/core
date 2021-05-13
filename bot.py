@@ -277,6 +277,27 @@ class bot(ecommerce.agent):
 
             return self._call(exsimulate=exsimulate)
 
+    @property
+    def updatability(self):
+        vs = orm.violations()
+
+        b = self
+        while b:
+            try:
+                usr = b.user
+            except NotImplementedError:
+                pass
+            else:
+                if usr.id == orm.security().user.id:
+                    break
+
+            b = b.orm.sub
+        else:
+            vs += 'Current user cannot update bot'
+
+        return vs
+        
+
 class sendbots(bots):
     pass
 
