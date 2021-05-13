@@ -470,6 +470,11 @@ if __name__ == '__main__':
             finally:
                 stm.flush()
 
+        # Override just long enough to ensure that, when called, root
+        # will be created if it doesn't already exist.
+        with orm.override():
+            ecommerce.users.root
+
         for b in bots.bots:
             if b.__name__ == args.bot:
                 try:
