@@ -226,14 +226,6 @@ class party(orm.entity):
 
         return ents.first
 
-    @property
-    def retrievability(self):
-        usr = orm.security().user
-        B()
-        if usr.party:
-            return orm.violations.empty
-
-        
 class organization(party):
     """ An abstract class representing a group of people with a common
     purpose. Subtypes may include schools, NGOs, clubs, corporations,
