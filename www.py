@@ -1423,12 +1423,22 @@ class HttpException(Exception):
 
     @property
     def phrase(self):
+        """ Returns a string with the status code and the standard HTTP
+        phrase for the error message, e.g.: '404 Not Found'.
+        """
         return '%s %s' % (
             str(self.status), _response.Messages[self.status]
         )
 
     @property
     def message(self):
+        """ Returns the string given to as the ``msg`` in during
+        instantiation::
+
+            msg = 'Cannot brew'
+            ex = ImATeapotError(msg=msg)
+            assert ex.message == msg
+        """
         return str(self)
 
     def __call__(self, res):
@@ -1437,7 +1447,22 @@ class HttpException(Exception):
         )
 
 class HttpError(HttpException):
+    """ The abstract class for HTTP errors.
+
+    Subclasses of HttpError correspond to client errors (400–499) and
+    server errors (500–599).
+    """
     def __init__(self, msg=None, flash=None, res=None):
+        """ Creates an HttpError instance.
+
+        :param: msg str: The error message.
+
+        :param: flash str: A message intended to be flashed to the user
+        explaining the error.
+
+        :param: res www.response: The ``response`` corresponding to this
+        HttpError.
+        """
         self.flash = flash
         msg0 = self.phrase
         if msg:
