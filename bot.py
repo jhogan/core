@@ -116,7 +116,7 @@ class bot(ecommerce.agent):
             map.value.orm.isloaded = True
 
             def onadd(src, eargs):
-                ...#eargs.entity.bot = self
+                eargs.entity.bot = self
 
             map.value.onadd += onadd
 
@@ -257,7 +257,13 @@ class bot(ecommerce.agent):
         # Set ORM's proprietor to Carapacian for all ORM database
         # interactions.
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        orm.security().proprietor = cara
+        with orm.sudo():
+            # Use sudo because setting the proprietor may require
+            # retriving the current proprietor for comparison. Since the
+            # loggedi in user is the bot, and bots can't retrive
+            # carapacian (at least, not at the moment), we should become
+            # sudo. 
+            orm.security().proprietor = cara
 
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # Set the bot's proprietor to the Carapacian company
@@ -378,12 +384,96 @@ class InputError(ValueError):
     pass
 
 if __name__ == '__main__':
-    def main():
-        import argparse
-        import inspect
-        from io import StringIO
+    import argparse
+    import inspect
+    from io import StringIO
 
-        def parse_docstring(doc):
+    class panel:
+        def __init__(self, args=None):
+            # Command line arguments
+            self._args = args
+
+            # Result of argparse
+            self._cli = None
+
+            # The instatiated bot 
+            self._bot = None
+
+        def __call__(self):
+            # Override just long enough to ensure that, when called, root
+            # will be created if it doesn't already exist.
+            with orm.override():
+                ecommerce.users.root
+
+            B()
+            self.bot()
+        
+        @property
+        def _arguments(self):
+            if not self._cli:
+                doc = self._parse(bot.__init__.__doc__)
+                prs = argparse.ArgumentParser(
+                    description="Runs a bot.",
+                    epilog = (
+                        'Bots are typically run in the background, managed by '
+                        'systemd for example. Alternatively, a bot can be run in '
+                        'the foreground, such as when debugging.'
+                    )
+                )
+
+                for param in doc['params']:
+                    help = param['description']
+                    type = param['type']
+                    prs.add_argument(
+                        f'--{param["name"]}', type=int, help=help
+                    )
+
+                subprss = prs.add_subparsers(
+                    help = 'The list of bots from which to select', 
+                    dest = 'bot'
+                )
+
+                subprss.required = True
+
+                for b in bots.bots:
+                    doc = self._parse(b.__init__.__doc__)
+                    subprss = subprss.add_parser(b.__name__, help=doc['text'])
+
+                self._cli = prs.parse_args(args=self._args)
+
+            return self._cli
+
+        @property
+        def _kwargs(self):
+            args = self._arguments
+
+            attrs = [x for x in dir(args) if not x.startswith('_')][1:]
+
+            kwargs = dict()
+            for attr in attrs:
+                kwargs[attr] = getattr(args, attr)
+
+            return kwargs
+
+        @property
+        def bot(self):
+            if not self._bot:
+                args = self._arguments
+                for b in bots.bots:
+                    if b.__name__ == args.bot:
+                        try:
+                            with orm.sudo():
+                                self._bot = b(
+                                    onlog=self.onlog, **self._kwargs
+                                )
+                        except InputError as ex:
+                            prs.print_usage()
+                            print(f'{__file__.strip("./")}: error: {ex}')
+                        break
+            return self._bot
+
+        @staticmethod
+        def _parse(doc):
             r = dict()
             params = list()
             param = None
@@ -420,44 +510,7 @@ if __name__ == '__main__':
 
             return r
 
-        prs = argparse.ArgumentParser(
-            description="Runs a bot.",
-            epilog = (
-                'Bots are typically run in the background, managed by '
-                'systemd for example. Alternatively, a bot can be run in '
-                'the foreground, such as when debugging.'
-            )
-        )
-
-        doc = parse_docstring(bot.__init__.__doc__)
-
-        for param in doc['params']:
-            help = param['description']
-            type = param['type']
-            prs.add_argument(
-                f'--{param["name"]}', type=int, help=help
-            )
-
-        subprss = prs.add_subparsers(
-            help = 'The list of bots from which to select', 
-            dest = 'bot'
-        )
-
-        subprss.required = True
-
-        for b in bots.bots:
-            doc = parse_docstring(b.__init__.__doc__)
-            subprss = subprss.add_parser(b.__name__, help=doc['text'])
-
-        args = prs.parse_args()
-
-        attrs = [x for x in dir(args) if not x.startswith('_')][1:]
-
-        kwargs = dict()
-        for attr in attrs:
-            kwargs[attr] = getattr(args, attr)
-
-        def onlog(src, eargs):
+        def onlog(self, src, eargs):
             msg = eargs.message
             lvl = eargs.level
             if lvl in ('debug', 'info'):
@@ -470,19 +523,5 @@ if __name__ == '__main__':
             finally:
                 stm.flush()
 
-        # Override just long enough to ensure that, when called, root
-        # will be created if it doesn't already exist.
-        with orm.override():
-            ecommerce.users.root
-
-        for b in bots.bots:
-            if b.__name__ == args.bot:
-                try:
-                    with orm.sudo():
-                        b = b(onlog=onlog, **kwargs)
-                    b()
-                except InputError as ex:
-                    prs.print_usage()
-                    print(f'{__file__.strip("./")}: error: {ex}')
-                break
-    main()
+    pnl = panel()
+    pnl()

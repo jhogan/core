@@ -4067,12 +4067,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                         # for instances where the
                                         # constituent is being moved to
                                         # a different composite.
-
-                                        B()
-                                        oldid = getattr(e, map.name)
-                                        newid = self.id
-                                        if id != newid:
-                                            setattr(e, map.name, newid)
+                                        setattr(e, map.name, self.id)
 
                                         break
 
