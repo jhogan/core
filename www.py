@@ -1728,14 +1728,55 @@ class NetworkReadTimeoutError(HttpError):
     status = 598
 
 class headers(entities.entities):
+    """ A collection of HTTP headers. 
+    
+    Headers are components of HTTP requests and responses messages and,
+    therefore, are constiuents of the ``request`` and ``response``
+    objects (viz. www.request.headers and www.response.headers.).
+
+    """
     def __init__(self, d=None, *args, **kwargs):
+        """ Creates a headers collection.
+
+        :param: d dict: A dict where each key is the header name
+        and the value is the header's value::
+
+            {
+                'Content-Type': 'text/html',
+                'Referer': 'https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol'
+            }
+
+        The dict is used to initialize the collection.
+        """
         super().__init__(*args, **kwargs)
         if d:
             for k, v in d.items():
                 self += header(k, v)
             
     def __setitem__(self, ix, v):
+        """ If ix is a str, allows for indexer notation to set a headers
+        value::
+
+            hdrs = headers()
+            assert hdrs.count == 0
+
+            hdrs['Content-Type'] == 'text/html'
+
+            assert hdrs.count == 1
+
+            assert hdrs['Content-Type'] == 'text/html'
+
+        If ix is not a str, default indexer logic is used::
+
+            assert hdrs[0].name == 'Content-Type'
+            assert hdrs[0].value == 'text/html'
+
+        NOTE The implementation looks a little buggy. See the TODO's if
+        the above explanations is inaccurate.
+        """
         if not isinstance(ix, str):
+            # TODO This can't be write. super().__setitem__ would need a
+            # value (``v``).
             return super().__setitem__(ix)
 
         # TODO Why can't we overwrite prior values. 
@@ -1746,6 +1787,9 @@ class headers(entities.entities):
             self += header(ix, v)
 
     def __getitem__(self, ix):
+        """ Provides indexor logic for the ``headers`` class. See the
+        docstring at __setitem__ for details.
+        """
         if not isinstance(ix, str):
             return super().__getitem__(ix)
 
