@@ -1799,6 +1799,27 @@ class headers(entities.entities):
         return None
 
     def append(self, obj, uniq=False, r=None):
+        """ Allows colon seperate strings to be appended as new
+        ``header`` objects::
+
+            hdrs = headers()
+
+            # Call append() using += operator
+            hdrs += 'Content-Type: text/html'  
+            
+            assert hdrs.first.name == 'Content-Type'
+            assert hdrs.first.value == 'text/html'
+
+        :param: obj str|header: The header to append. The header can be
+        a ``header`` object or a string as described above.
+
+        :param: uniq bool: Only append the header if it is unique.
+
+        :param: r entities.entities: An entities.entities collection
+        contaning was was successfully appended. Note, shouldn't be used
+        by client code; it's existence as a parameter is to handle
+        recursive situations.  See ``entities.entities.append``.
+        """
         if isinstance(obj, str):
             kvp = [x.strip() for x in obj.partition(':') if x != ':']
             if len(kvp) != 2:
@@ -1811,6 +1832,15 @@ class headers(entities.entities):
 
     @property
     def list(self):
+        """ Returns the headers in this collection as a list() object.
+        Each entry in the list is a tuple containing the header's name
+        and value::
+
+            [
+                ('Content-Type', 'text/html'),
+                ('Referer', 'https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol')
+            ]
+        """
         r = list()
         for hdr in self:
             r.append(hdr.tuple)
@@ -1818,12 +1848,25 @@ class headers(entities.entities):
 
     @property
     def dict(self):
+        """ Returns the headers in this collection as a dict() object.
+        Each entry in the dict has for its key the name of the header,
+        and for its value the value of the header::
+
+            {
+                'Content-Type': 'text/html',
+                'Referer': 'https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol'
+            }
+        """
         r = dict()
         for hdr in self:
             r[hdr.name] = hdr.value
         return r
 
     def __str__(self):
+        """ Returns a string representation of the headers::
+
+            "Content-Type: text/html\nReferer: https://en.wikipedia.org"
+        """
         return '\n'.join(str(x) for x in self)
 
 class header(entities.entity):
