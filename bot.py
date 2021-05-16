@@ -230,20 +230,26 @@ class bot(ecommerce.agent):
         if lvl not in lvls:
             return
 
+        msg += end
+
         try:
-            log = apriori.log(
-                message = msg,
-                logtype = apriori.logtype(name=lvl)
-            )
+            # Sometimes, empty debug messages will be used cause a line
+            # feed. No need to log those. Logs with empty message
+            # attributes are invalid anyway.
+            if msg.strip():
+                log = apriori.log(
+                    message = msg,
+                    logtype = apriori.logtype(name=lvl)
+                )
 
-            self.logs += log
+                self.logs += log
 
-            self.logs.save()
+                self.logs.save()
         finally:
             # In case there is a database/ORM issue, we can raise
             # the onlog event which will probably be handle something
             # that prints to a device like stdout our a file.
-            eargs = addlogeventargs(msg=msg + end, lvl=lvl)
+            eargs = addlogeventargs(msg=msg, lvl=lvl)
             self.onlog(self, eargs)
 
     @orm.attr(int)
@@ -426,145 +432,183 @@ class iterationeventargs(entities.eventargs):
 class InputError(ValueError):
     pass
 
-if __name__ == '__main__':
-    import argparse
-    import inspect
-    from io import StringIO
+class panel:
+    def __init__(self, args=None, dodisplay=True):
+        # Command line arguments
+        self._args = args
 
-    class panel:
-        def __init__(self, args=None):
-            # Command line arguments
-            self._args = args
+        # Result of argparse
+        self._cli = None
 
-            # Result of argparse
-            self._cli = None
+        # The instatiated bot 
+        self._bot = None
 
-            # The instatiated bot 
-            self._bot = None
+        if dodisplay:
+            self.display = panel.display(self)
+        else:
+            self.display = None
 
-        def __call__(self):
-            # Override just long enough to ensure that, when called, root
-            # will be created if it doesn't already exist.
-            with orm.override():
-                ecommerce.users.root
+    def print(self, msg, end=None, stm=sys.stdout):
+        if end:
+            msg += end
 
-            B()
-            self.bot()
-        
-        @property
-        def _arguments(self):
-            if not self._cli:
-                doc = self._parse(bot.__init__.__doc__)
-                prs = argparse.ArgumentParser(
-                    description="Runs a bot.",
-                    epilog = (
-                        'Bots are typically run in the background, managed by '
-                        'systemd for example. Alternatively, a bot can be run in '
-                        'the foreground, such as when debugging.'
-                    )
+        if self.display:
+            self.disply.print(msg, stm=stm)
+
+        self.onafterprint(self, panel.printeventargs(msg))
+
+    def __call__(self):
+        # Override just long enough to ensure that, when called,
+        # root will be created if it doesn't already exist.
+        with orm.override():
+            ecommerce.users.root
+
+        self.bot()
+
+    @property
+    def _arguments(self):
+        if not self._cli:
+            doc = self._parse(bot.__init__.__doc__)
+            prs = argparse.ArgumentParser(
+                description="Runs a bot.",
+                epilog = (
+                    'Bots are typically run in the background, managed by '
+                    'systemd for example. Alternatively, a bot can be run in '
+                    'the foreground, such as when debugging.'
+                )
+            )
+
+            for param in doc['params']:
+                help = param['description']
+                type = param['type']
+                prs.add_argument(
+                    f'--{param["name"]}', type=int, help=help
                 )
 
-                for param in doc['params']:
-                    help = param['description']
-                    type = param['type']
-                    prs.add_argument(
-                        f'--{param["name"]}', type=int, help=help
-                    )
+            subprss = prs.add_subparsers(
+                help = 'The list of bots from which to select', 
+                dest = 'bot'
+            )
 
-                subprss = prs.add_subparsers(
-                    help = 'The list of bots from which to select', 
-                    dest = 'bot'
-                )
+            subprss.required = True
 
-                subprss.required = True
+            for b in bots.bots:
+                doc = self._parse(b.__init__.__doc__)
+                subprss = subprss.add_parser(b.__name__, help=doc['text'])
 
-                for b in bots.bots:
-                    doc = self._parse(b.__init__.__doc__)
-                    subprss = subprss.add_parser(b.__name__, help=doc['text'])
-
-                self._cli = prs.parse_args(args=self._args)
-
-            return self._cli
-
-        @property
-        def _kwargs(self):
-            args = self._arguments
-
-            attrs = [x for x in dir(args) if not x.startswith('_')][1:]
-
-            kwargs = dict()
-            for attr in attrs:
-                kwargs[attr] = getattr(args, attr)
-
-            return kwargs
-
-        @property
-        def bot(self):
-            if not self._bot:
-                args = self._arguments
-                for b in bots.bots:
-                    if b.__name__ == args.bot:
-                        try:
-                            with orm.sudo():
-                                self._bot = b(
-                                    onlog=self.onlog, **self._kwargs
-                                )
-                        except InputError as ex:
-                            prs.print_usage()
-                            print(f'{__file__.strip("./")}: error: {ex}')
-                        break
-            return self._bot
-
-        @staticmethod
-        def _parse(doc):
-            r = dict()
-            params = list()
-            param = None
-            text= str()
-            for ln in StringIO(doc):
-                ln = ln.strip()
-
-                if ln == '':
-                    param = None
-
-                if param is not None:
-                    param['description'] += ln + ' '
-
-                if ln.startswith(':param:'):
-                    param = dict()
-                    params.append(param)
-
-                    ln = ln.split(':', maxsplit=3)
-                    name, type = [x.strip() for x in ln[2].split()]
-                    param['name'], param['type'] = name, type
-                    param['description'] = ln[3].strip() + ' '
-
-                if not param:
-                    if ln:
-                        text += ' ' + ln
-                    else:
-                        text += ' ¶'  
-
-            for param in params:
-                param['description'] = param['description'].strip()
-
-            r['text'] = text.rstrip(' ¶')
-            r['params'] = params
-
-            return r
-
-        def onlog(self, src, eargs):
-            msg = eargs.message
-            lvl = eargs.level
-            if lvl in ('debug', 'info'):
-                stm = sys.stdout
+            # prs.parse_args() needs the arguments in a list()
+            if self._args:
+                args = self._args.split()
             else:
-                stm = sys.stderr
+                args = None
 
-            try:
-                stm.write(msg)
-            finally:
-                stm.flush()
+            self._cli = prs.parse_args(args=args)
 
+        return self._cli
+
+    @property
+    def _kwargs(self):
+        args = self._arguments
+
+        attrs = [x for x in dir(args) if not x.startswith('_')][1:]
+
+        kwargs = dict()
+        for attr in attrs:
+            kwargs[attr] = getattr(args, attr)
+
+        return kwargs
+
+    @property
+    def bot(self):
+        if not self._bot:
+            args = self._arguments
+            for b in bots.bots:
+                if b.__name__ == args.bot:
+                    try:
+                        with orm.sudo():
+                            self._bot = b(
+                                onlog=self.onlog, **self._kwargs
+                            )
+                    except InputError as ex:
+                        prs.print_usage()
+                        print(f'{__file__.strip("./")}: error: {ex}')
+                    break
+        return self._bot
+
+    @staticmethod
+    def _parse(doc):
+        r = dict()
+        params = list()
+        param = None
+        text= str()
+        for ln in io.StringIO(doc):
+            ln = ln.strip()
+
+            if ln == '':
+                param = None
+
+            if param is not None:
+                param['description'] += ln + ' '
+
+            if ln.startswith(':param:'):
+                param = dict()
+                params.append(param)
+
+                ln = ln.split(':', maxsplit=3)
+                name, type = [x.strip() for x in ln[2].split()]
+                param['name'], param['type'] = name, type
+                param['description'] = ln[3].strip() + ' '
+
+            if not param:
+                if ln:
+                    text += ' ' + ln
+                else:
+                    text += ' ¶'  
+
+        for param in params:
+            param['description'] = param['description'].strip()
+
+        r['text'] = text.rstrip(' ¶')
+        r['params'] = params
+
+        return r
+
+    @property
+    def onafterprint(self):
+        if not hasattr(self, '_onafterprint'):
+            self._onafterprint = entities.event()
+        return self._onafterprint
+
+    @onafterprint.setter
+    def onafterprint(self, v):
+        self._onafterprint = v
+
+    def onlog(self, src, eargs):
+        msg = eargs.message
+        lvl = eargs.level
+        if lvl in ('debug', 'info'):
+            stm = sys.stdout
+        else:
+            stm = sys.stderr
+
+        self.print(msg, stm=stm)
+
+    class _display:
+        def __init__(self, pnl):
+            self.messages = list()
+            self.panel = pnl
+
+        def print(self, msg, end='\n', stm=sys.stdout):
+            msg += end
+
+            self.messages.append(msg.strip())
+            stm.write(msg)
+            stm.flush()
+
+    class printeventargs(entities.eventargs):
+        def __init__(self, msg):
+            self.message = msg
+
+if __name__ == '__main__':
     pnl = panel()
     pnl()
