@@ -93,6 +93,7 @@ class bot(ecommerce.agent):
         self.verbosity = verbosity
         self.name = type(self).__name__
         self._user = None
+        self.iteration = None
 
     @orm.attr(apriori.logs)
     def logs(self):
@@ -152,6 +153,28 @@ class bot(ecommerce.agent):
                     self._user.save()
 
         return self._user
+
+    @property
+    def onbeforeiteration(self):
+        if not hasattr(self, '_onbeforeiteration'):
+            self._onbeforeiteration = entities.event()
+
+        return self._onbeforeiteration
+
+    @onbeforeiteration.setter
+    def onbeforeiteration(self, v):
+        self._onbeforeiteration = v
+
+    @property
+    def onafteriteration(self):
+        if not hasattr(self, '_onafteriteration'):
+            self._onafteriteration = entities.event()
+
+        return self._onafteriteration
+
+    @onbeforeiteration.setter
+    def onbeforeiteration(self, v):
+        self._onbeforeiteration = v
 
     @property
     def onlog(self):
@@ -284,7 +307,26 @@ class bot(ecommerce.agent):
             self.info(f'{type(self).__name__} is alive')
             self.info(f'Log levels: {" | ".join(self.levels)}')
 
-            return self._call(exsimulate=exsimulate)
+            if self.iterations is None:
+                # Infinite generator
+                iter = itertools.count()
+            else:
+                iter = range(self.iterations)
+
+            for self.iteration in iter:
+                eargs = iterationeventargs(
+                    self.iteration + 1, self.iterations
+                )
+
+                self.onbeforeiteration(self, eargs)
+
+                if eargs.cancel:
+                    break
+
+                try:
+                    self._call(exsimulate=exsimulate)
+                finally:
+                    self.onafteriteration(self, eargs)
 
     @property
     def updatability(self):
@@ -326,26 +368,18 @@ class sendbot(bot):
         super().__init__(*args, **kwargs)
 
     def _call(self, exsimulate=False):
-        iter = self.iterations
-        i = j = 0
-        self.info('dispatching:')
-        while True:
-            j = j + 1
-            self.debug('.', end='')
+        if self.iteration == 0:
+            self.info('dispatching:')
 
-            if j % 80 == 0:
-                self.debug('')
+        if self.iteration % 80 == 0:
+            self.debug('')
 
-            self._dispatch(exsimulate=exsimulate)
+        self.debug('.', end='')
+
+        self._dispatch(exsimulate=exsimulate)
+
+        if self.iteration != self.iterations:
             time.sleep(1)
-
-            if iter is None:
-                continue
-
-            i = i + 1
-
-            if i == iter:
-                break
 
     def _dispatch(self, exsimulate=False):
         diss = message.dispatches(status='queued')
@@ -382,6 +416,12 @@ class sendbot(bot):
                     'Continuing...'
                 )
                 continue
+
+class iterationeventargs(entities.eventargs):
+    def __init__(self, iter, of):
+        self.iteration = iter
+        self.of = of
+        self.cancel = False
 
 class InputError(ValueError):
     pass

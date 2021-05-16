@@ -293,5 +293,39 @@ class test_sendbot(tester.tester):
             dis.statuses.first.statustype.name
         )
 
+    def it_invokes_with_iterations(self):
+        eargss = list()
+        def bot_onbeforeiteration(src, eargs):
+            eargss.append(eargs)
+
+        args = '--verbosity 5 --iterations=2 sendbot'
+        pnl = bot.panel(args=args, dodisplay=False)
+        pnl.bot.onbeforeiteration += bot_onbeforeiteration
+        pnl()
+
+        for i, eargs in enumerate(eargss, 1):
+            self.eq(i, eargs.iteration)
+            self.eq(2, eargs.of)
+            
+
+    def it_invokes_with_no_iterations(self):
+        eargss = list()
+        def bot_onbeforeiteration(src, eargs):
+            if len(eargss) == 5:
+                eargs.cancel = True
+                return
+
+            eargss.append(eargs)
+        args = '--verbosity 5 sendbot'
+        pnl = bot.panel(args=args, dodisplay=False)
+        pnl.bot.onbeforeiteration += bot_onbeforeiteration
+        pnl()
+
+        self.five(eargss)
+        for i, eargs in enumerate(eargss, 1):
+            self.eq(i, eargs.iteration)
+            self.none(eargs.of)
+
+
 if __name__ == '__main__':
     tester.cli().run()
