@@ -12,19 +12,22 @@
 from config import config
 from entities import classproperty
 from func import B
+import io
+import apriori
+import argparse
+import db
 import ecommerce
 import entities
+import inspect
 import message
 import orm
 import os
-import inspect
+import party
 import sys
 import third
 import time
-import apriori
-import party
-import db
 import uuid
+import itertools
 
 class addlogeventargs(entities.eventargs):
     def __init__(self, msg, lvl):
@@ -66,7 +69,7 @@ class bot(ecommerce.agent):
         :param: iterations int: The number of iterations to make before
         exiting. Most bots will be in an infinite loop. However, for
         debugging purposes, a developer may want to limit the number of
-        iterations to 1.
+        iterations to only a few.
 
         :param: verbosity int: The level of status output the bot should
         generate. Status output will be sent to a log file. It will also be
