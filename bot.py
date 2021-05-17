@@ -432,6 +432,28 @@ class iterationeventargs(entities.eventargs):
 class InputError(ValueError):
     pass
 
+class TerminateError(Exception):
+    def __init__(self, st, msg):
+        self.status = st
+        self.message = msg
+
+class argumentparser(argparse.ArgumentParser):
+    def exit(self, *args, **kwargs):
+        if __name__ == '__main__':
+            super().exit(*args, **kwargs)
+        else:
+            st, msg = args
+            raise TerminateError(st=st, msg=msg)
+
+    def error(self, *args, **kwargs):
+        if __name__ == '__main__':
+            super().error(*args, **kwargs)
+        else:
+            message, = args
+            args = {'prog': self.prog, 'message': message}
+            msg = ('%(prog)s: error: %(message)s\n') % args
+            raise self.exit(2, msg)
+
 class panel:
     def __init__(self, args=None, dodisplay=True):
         # Command line arguments
@@ -469,7 +491,7 @@ class panel:
     def _arguments(self):
         if not self._cli:
             doc = self._parse(bot.__init__.__doc__)
-            prs = argparse.ArgumentParser(
+            prs = argumentparser(
                 description="Runs a bot.",
                 epilog = (
                     'Bots are typically run in the background, managed by '
@@ -530,8 +552,9 @@ class panel:
                                 onlog=self.onlog, **self._kwargs
                             )
                     except InputError as ex:
-                        prs.print_usage()
-                        print(f'{__file__.strip("./")}: error: {ex}')
+                        B()
+                        self.print(prs.format_usage())
+                        self.print(f'{__file__.strip("./")}: error: {ex}')
                     break
         return self._bot
 
