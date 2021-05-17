@@ -161,8 +161,8 @@ class test_bot(tester.tester):
         for log in sb.logs:
             self.is_(cara, log.proprietor)
             self.eq(cara.id, log.orm.reloaded().proprietor.id)
-    def it_owns_what_it_creates(self):
 
+    def it_owns_what_it_creates(self):
         bot.sendbot.orm.truncate()
 
         with orm.sudo():
@@ -307,7 +307,6 @@ class test_sendbot(tester.tester):
             self.eq(i, eargs.iteration)
             self.eq(2, eargs.of)
             
-
     def it_invokes_with_no_iterations(self):
         eargss = list()
         def bot_onbeforeiteration(src, eargs):
