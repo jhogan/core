@@ -293,6 +293,45 @@ class test_sendbot(tester.tester):
             dis.statuses.first.statustype.name
         )
 
+        ''' Remove principles first '''
+        ecommerce.users.orm.truncate()
+        bot.sendbot.orm.truncate()
+        bot.bot.orm.truncate()
+        ecommerce.agent.orm.truncate()
+        party.legalorganization.orm.truncate()
+        party.organizations.orm.truncate()
+        party.party.orm.truncate()
+
+        msg = message.message.email(
+            from_    =  'from@example.com',
+            replyto  =  'replyto@example.com',
+            to       =  'jhogan@carapacian.com',
+            subject  =  'Test email',
+            text     =  'Test message',
+            html     =  '<p>Test message</p>',
+        )
+
+        dis = msg.dispatch(
+            dispatchtype = message.dispatchtype(name='email')
+        )
+
+        msg.save()
+
+        sec = orm.security()
+        sec.proprietor = None
+        sec.owner = None
+        sb = bot.sendbot(iterations=1)
+        B()
+        sb()
+
+        cara = ecommerce.company.carapacian
+        self.is_(cara, orm.security().proprietor)
+        self.is_(sb.user, orm.security().owner)
+
+        dis = dis.orm.reloaded()
+        self.eq('postmarked', dis.status)
+        self.one(dis.statuses)
+
     def it_invokes_with_iterations(self):
         eargss = list()
         def bot_onbeforeiteration(src, eargs):
@@ -324,6 +363,19 @@ class test_sendbot(tester.tester):
         for i, eargs in enumerate(eargss, 1):
             self.eq(i, eargs.iteration)
             self.none(eargs.of)
+
+    def it_invokes_with_no_bot_argument(self):
+        args = '--verbosity 5'
+
+        pnl = bot.panel(args=args, dodisplay=False)
+        try:
+            pnl()
+        except bot.TerminateError as ex:
+            self.endswith(
+                ': error: the following arguments are '
+                'required: bot\n', ex.message
+            )
+            self.eq(2, ex.status)
 
 
 if __name__ == '__main__':
