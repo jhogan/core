@@ -621,9 +621,7 @@ class panel:
             self.messages = list()
             self.panel = pnl
 
-        def print(self, msg, end='\n', stm=sys.stdout):
-            msg += end
-
+        def print(self, msg, stm=sys.stdout):
             self.messages.append(msg.strip())
             stm.write(msg)
             stm.flush()
