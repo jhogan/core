@@ -1870,20 +1870,47 @@ class headers(entities.entities):
         return '\n'.join(str(x) for x in self)
 
 class header(entities.entity):
+    """ An object representing a header for HTTP response and
+    request messages.::
+
+        hdr = header(name='content-type', v='text/html')
+
+        assert hdr.name == 'content-type'
+        assert hdr.value == 'text/html'
+    """
     def __init__(self, name, v):
+        """ Constructs an HTTP header.
+
+            hdr = header(name='content-type', v='text/html')
+
+            assert hdr.name == 'content-type'
+            assert hdr.value == 'text/html'
+        """
         self._name = name
         self.value = v
 
     @property
     def name(self):
+        """ The headers name.
+        """
         # TODO Why do we need to lower() this. I think we should be
         # case-preserving here.
         return self._name.lower()
 
     def __str__(self):
+        """ Returns a string representation of the header. This is the
+        standard string representation expected of a header, i.e., the
+        name followed by a colon, then its value, e.g.::
+
+            'content-type: text/html'
+        """
         return '%s: %s' % self.tuple
 
     def __repr__(self):
+        """ A string representation of the object and its values::
+
+            header(content-type: text/html)
+        """
         args = (
             type(self).__name__,
             self.name,
@@ -1894,6 +1921,10 @@ class header(entities.entity):
 
     @property
     def tuple(self):
+        """ A tuple representation of the header:
+
+            ('content-type', 'text/html')
+        """
         return (self.name, self.value)
 
 class browsers(entities.entities):
