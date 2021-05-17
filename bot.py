@@ -466,7 +466,7 @@ class panel:
         self._bot = None
 
         if dodisplay:
-            self.display = panel.display(self)
+            self.display = panel._display(self)
         else:
             self.display = None
 
@@ -475,7 +475,7 @@ class panel:
             msg += end
 
         if self.display:
-            self.disply.print(msg, stm=stm)
+            self.display.print(msg, stm=stm)
 
         self.onafterprint(self, panel.printeventargs(msg))
 
