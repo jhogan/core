@@ -320,12 +320,19 @@ class test_sendbot(tester.tester):
         sec = orm.security()
         sec.proprietor = None
         sec.owner = None
-        sb = bot.sendbot(iterations=1)
-        B()
+        with orm.sudo():
+            sb = bot.sendbot(iterations=1)
         sb()
 
-        cara = ecommerce.company.carapacian
+        par = sb
+        while par:
+            self.is_(ecommerce.users.root, par.owner)
+
+            par = par.orm.super
+
+        cara = party.company.carapacian
         self.is_(cara, orm.security().proprietor)
+
         self.is_(sb.user, orm.security().owner)
 
         dis = dis.orm.reloaded()
