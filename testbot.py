@@ -377,6 +377,12 @@ class test_sendbot(tester.tester):
             )
             self.eq(2, ex.status)
 
+    def it_is_ensurable(self):
+        sb = bot.sendbot(iterations=0)
+        sb1 = bot.sendbot(iterations=1)
+
+        self.eq(sb.id, sb1.id)
+
 
 if __name__ == '__main__':
     tester.cli().run()

@@ -371,7 +371,16 @@ class sendbot(bot):
         argument is given, it will only poll the database for that
         many ``iterations``.
         """
+
         super().__init__(*args, **kwargs)
+        import contextlib
+        with contextlib.suppress(KeyError):
+            del kwargs['iterations']
+            del kwargs['verbosity']
+
+        kwargs['name'] = self.name
+        
+        self.orm.ensure(expects=('name', ), **kwargs)
 
     def _call(self, exsimulate=False):
         if self.iteration == 0:
