@@ -1928,11 +1928,44 @@ class header(entities.entity):
         return (self.name, self.value)
 
 class browsers(entities.entities):
+    """ A collection of ``browser`` objects.
+    """
     pass
 
 class browser(entities.entity):
+    """ Represents a web browser.
+
+    Like graphical browsers, the ``browser`` object maintains a
+    collection of ``_tabs``::
+
+        brw = browser()
+
+        # "open" two tabs
+        t1 = brw.tab()
+        t2 = brw.tab()
+
+    Like tabs in graphical browser, these tabs can make HTTP requests.
+    First we construct the ``request`` object and pass it to the tab's
+    ``request`` method.
+
+        req = www.request(url='https://www.google.com')
+        res = t1.request(req)
+
+    The ``request`` method returns a ``response`` object.
+
+    The ``browser`` itself contains a ``cookies`` collections which,
+    amoung othre things, can cause the ``browser`` to be authenticated
+    to a give web site, by storing a JWT issued by the web site open
+    login.
+    """
     class _tabs(entities.entities):
+        """ Represents a collection of browser tabs.
+        """
+
         def tab(self):
+            """ Create and return a new ``_tab`` object. The tab object
+            is stored in this ``_tabs`` collection.
+            """
             t = browser._tab(self)
             self += t
             return t
@@ -1942,6 +1975,9 @@ class browser(entities.entity):
             self.tabs = tabs
 
         def request(self, req):
+            # TODO ``req`` should be able to be a str containing a url
+            # or an ecommerce.url object for convenient. These would be
+            # converted to ``request`` objects with a ``method`` of GET.
             url = req.url
 
             body = req.payload
