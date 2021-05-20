@@ -130,6 +130,9 @@ class bot(ecommerce.agent):
 
     @property
     def user(self):
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        Id = 'cfd67652-de34-4ffc-99a0-5acd29ff89d4'
+        
         if type(self) is bot:
             raise NotImplementedError(
                 'user is only available to concrete classes'
@@ -139,7 +142,7 @@ class bot(ecommerce.agent):
             if not hasattr(self, 'Id'):
                 raise ValueError('bot must have Id constant set')
 
-            id = uuid.UUID(self.Id)
+            id = uuid.UUID(Id)
 
             with orm.sudo():
                 try:
@@ -360,6 +363,31 @@ class sendbots(bots):
 
 class sendbot(bot):
     Id = 'fdcf21b2-dc0b-40ef-934f-ffbca49c915c'
+
+    _instance = None
+    def __new__(cls, *args, **kwargs):
+
+        try:
+            kwargs['from__new__']
+        except KeyError:
+            if not cls._instance:
+                id = uuid.UUID(cls.Id)
+                try:
+                    kwargs['from__new__'] = None
+                    cls._instance = sendbot(id, **kwargs)
+                except db.RecordNotFoundError:
+                    B()
+                    cls._instance = sendbot(**kwargs)
+                    cls._instance.id = id
+                    cls._instance.name = cls.__name__
+                finally:
+                    del kwargs['from__new__']
+        else:
+            return super(sendbot, cls).__new__(cls)
+
+        return cls._instance
+        
+
     def __init__(self, *args, **kwargs):
         """ ``sendbot`` finds incomplete (queued) ``dispatch`` entities
         for messsages and sends them to external sytems.
@@ -371,16 +399,10 @@ class sendbot(bot):
         argument is given, it will only poll the database for that
         many ``iterations``.
         """
+        # TODO The docstring should be at the class level
+        # TODO Do we need to delet this contructor
 
         super().__init__(*args, **kwargs)
-        import contextlib
-        with contextlib.suppress(KeyError):
-            del kwargs['iterations']
-            del kwargs['verbosity']
-
-        kwargs['name'] = self.name
-        
-        self.orm.ensure(expects=('name', ), **kwargs)
 
     def _call(self, exsimulate=False):
         if self.iteration == 0:
