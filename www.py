@@ -1971,10 +1971,28 @@ class browser(entities.entity):
             return t
 
     class _tab(entities.entity):
+        """ Represents a tab in the browsers.
+
+        ``tab`` object are used to make HTTP requests, using their
+        ``request()`` method.
+        """
         def __init__(self, tabs):
+            """ Create a new tab object.
+
+            :param: tabs _tabs: A reference to the tabs collection that
+            this tab is a part of. This can be used to get back to the
+            browser object itself.
+            """
             self.tabs = tabs
 
         def request(self, req):
+            """ Makes an HTTP request. Returns a www.response object
+            containing data the HTTP server returned.
+
+            :param: req www.request: The request object. This object
+            contains the data, such as the HTTP method, payload (body),
+            and headers used to make the HTTP request.
+            """
             # TODO ``req`` should be able to be a str containing a url
             # or an ecommerce.url object for convenient. These would be
             # converted to ``request`` objects with a ``method`` of GET.
@@ -2009,12 +2027,15 @@ class browser(entities.entity):
                 return _response(req=req, res=res)
 
     class _cookies(entities.entities):
+        """ A class representing a collection of ``cookie`` objects.
+        """
+
         @property
         def header(self):
-            """ A header object with a key of "Cookie" and a value of
-            all the browser's (self) cookies safely encoded.
+            """ Creates and returns header object with a key of "Cookie"
+            and a value of all the browser's (self) cookies safely
+            encoded.
             """
-
             v = str()
             for cookie in self:
                 v += '%s=%s' % (
@@ -2036,6 +2057,10 @@ class browser(entities.entity):
             self.same_site = same_site
 
     def __init__(self):
+        # TODO The _tabs class doesn't have an __init__. I think the
+        # intention of passing self to tabs is so the tabs collection
+        # can have a reference back to the browser, which makes a lot of
+        # sense, but this doesn't seem to be correctly implemented.
         self.tabs = browser._tabs(self)
         self.cookies = self._cookies()
         self._useragent = None
