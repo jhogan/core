@@ -2046,10 +2046,24 @@ class browser(entities.entity):
             return header(name="Cookie", v=v)
 
     class _cookie(entities.entity):
+        """ Represents an HTTP cookie.
+
+        The cookie object can be stored in the ``browser`` object in its
+        ``cookies`` collection.
+        """
         def __init__(self, name, value, domain, 
             path       =  '/',    expires   =  'session',
             http_only  =  False,  same_site =  None,
         ):
+            """ Creates an HTTP cookie.
+
+            :param: path str: Indicates a URL path that must exist in
+            the requested URL in order to send the cookie header.
+
+            :param: expires str: Indicates the date at which a cookie
+            should expire. Permanent cookies are deleted at a date
+            specified by this argument.
+            """
 
             self.name     =  name;     self.value      =  value
             self.domain   =  domain;   self.path       =  path
@@ -2057,6 +2071,8 @@ class browser(entities.entity):
             self.same_site = same_site
 
     def __init__(self):
+        """ Create an instance of a browser.
+        """
         # TODO The _tabs class doesn't have an __init__. I think the
         # intention of passing self to tabs is so the tabs collection
         # can have a reference back to the browser, which makes a lot of
@@ -2067,11 +2083,15 @@ class browser(entities.entity):
 
     @property
     def useragent(self):
+        """ Returns an ecommerce.useragent object representing the
+        useragent this browser is claiming it is.
+        """
         if isinstance(self._useragent, ecommerce.useragent):
             pass
         elif self._useragent is None:
             pass
         else:
+            # Coerse if private member is a str
             self._useragent = ecommerce.useragent(
                 string = self._useragent
             )
@@ -2083,7 +2103,9 @@ class browser(entities.entity):
         self._useragent = v
 
     def tab(self):
+        """ Create a new tab, append it to the ``browse``'s tabs
+        collection, and return the new tab.
+        """
         return self.tabs.tab()
-
 
 app = application()
