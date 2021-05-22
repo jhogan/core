@@ -10233,6 +10233,14 @@ class orm:
             self._subclasses = clss
         return self._subclasses
 
+    def getsubentities(self, accompany=False):
+        r = self.subentities
+
+        if accompany:
+            r += ormclasswrapper(self.entity)
+
+        return r
+
     @staticmethod
     def getsubclasses(of, recursive=True):
         """ Return all subclasses of ``of`` as a list. 
