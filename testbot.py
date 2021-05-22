@@ -209,6 +209,11 @@ class test_sendbot(tester.tester):
             for e in es:
                 if e.__module__ in mods:
                     e.orm.recreate()
+        else:
+            for p in party.party.orm.getsubentities(accompany=True):
+                p.orm.truncate()
+
+            ecommerce.user.orm.truncate()
 
         # Create an owner and get the root user
         own = ecommerce.user(name='hford')
@@ -294,13 +299,10 @@ class test_sendbot(tester.tester):
         )
 
         ''' Remove principles first '''
+        for p in party.party.orm.subentities:
+            p.orm.truncate()
+
         ecommerce.users.orm.truncate()
-        bot.sendbot.orm.truncate()
-        bot.bot.orm.truncate()
-        ecommerce.agent.orm.truncate()
-        party.legalorganization.orm.truncate()
-        party.organizations.orm.truncate()
-        party.party.orm.truncate()
 
         msg = message.message.email(
             from_    =  'from@example.com',
