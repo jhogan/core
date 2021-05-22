@@ -91,7 +91,6 @@ class bot(ecommerce.agent):
 
         self._iterations = iterations
         self.verbosity = verbosity
-        self.name = type(self).__name__
         self._user = None
         self.iteration = None
 
@@ -364,29 +363,23 @@ class sendbots(bots):
 class sendbot(bot):
     Id = 'fdcf21b2-dc0b-40ef-934f-ffbca49c915c'
 
-    _instance = None
     def __new__(cls, *args, **kwargs):
-
         try:
             kwargs['from__new__']
         except KeyError:
-            if not cls._instance:
-                id = uuid.UUID(cls.Id)
-                try:
-                    kwargs['from__new__'] = None
-                    cls._instance = sendbot(id, **kwargs)
-                except db.RecordNotFoundError:
-                    B()
-                    cls._instance = sendbot(**kwargs)
-                    cls._instance.id = id
-                    cls._instance.name = cls.__name__
-                finally:
-                    del kwargs['from__new__']
+            id = uuid.UUID(cls.Id)
+            try:
+                kwargs['from__new__'] = None
+                b = sendbot(id, **kwargs)
+            except db.RecordNotFoundError:
+                b = sendbot(**kwargs)
+                b.id = id
+                b.name = cls.__name__
+                b.save()
         else:
             return super(sendbot, cls).__new__(cls)
 
-        return cls._instance
-        
+        return b
 
     def __init__(self, *args, **kwargs):
         """ ``sendbot`` finds incomplete (queued) ``dispatch`` entities
@@ -402,7 +395,12 @@ class sendbot(bot):
         # TODO The docstring should be at the class level
         # TODO Do we need to delet this contructor
 
-        super().__init__(*args, **kwargs)
+        try:
+            kwargs.pop('from__new__')
+        except KeyError:
+            pass
+        else:
+            super().__init__(*args, **kwargs)
 
     def _call(self, exsimulate=False):
         if self.iteration == 0:

@@ -384,12 +384,43 @@ class test_sendbot(tester.tester):
             )
             self.eq(2, ex.status)
 
-    def it_is_ensurable(self):
-        sb = bot.sendbot(iterations=0)
-        sb1 = bot.sendbot(iterations=1)
+    def it_is_data_singleton(self):
+        """ Ensure each time bot.sendbot is instatiated, the same
+        data from the same row in the database.
+        """
 
+        # Clear the sendbot table and all super tables. The first
+        # instantiation will create the row. The second will retrieve
+        # it.
+        p = bot.sendbot
+        while p:
+            p.orm.truncate()
+            p = p.orm.super
+
+        sb = bot.sendbot(iterations=0, verbosity=2)
+        sb1 = bot.sendbot(iterations=1, verbosity=3)
+
+        # Though the id should be the same, the identity
+        # shouldn't be because we want to be able to have alternate
+        # configurations (``iterations``, ``verbosity``, etc)
         self.eq(sb.id, sb1.id)
+        self.eq(0, sb.iterations)
+        self.eq(1, sb1.iterations)
+        self.eq(2, sb.verbosity)
+        self.eq(3, sb1.verbosity)
 
+        for b in (sb, sb1):
+            self.false(b.orm.isnew)
+            self.false(b.orm.isdirty)
+            self.false(b.orm.ismarkedfordeletion)
+            
+            # The name of the bot, particularly at the ``party.party``
+            # super, was a little problematic. So make sure it gets set
+            # correctly in all supers. The name shouldn't be set in the
+            # contructor.
+            while b:
+                self.eq('sendbot', b.name)
+                b = b.orm.super
 
 if __name__ == '__main__':
     tester.cli().run()
