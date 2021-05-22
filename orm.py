@@ -10223,8 +10223,8 @@ class orm:
     # TODO This should probably be renamed to `subs`
     @property
     def subentities(self):
-        """ Returns a collection all the of class reference that inherit
-        from this class.
+        """ Returns a collection of all the of class reference that
+        inherit from this class.
         """
         if self._subclasses is None:
             clss = ormclasseswrapper()

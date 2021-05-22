@@ -355,7 +355,6 @@ class bot(ecommerce.agent):
             vs += 'Current user cannot update bot'
 
         return vs
-        
 
 class sendbots(bots):
     pass
