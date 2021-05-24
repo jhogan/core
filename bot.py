@@ -143,7 +143,7 @@ class bot(ecommerce.agent):
 
             id = uuid.UUID(Id)
 
-            with orm.sudo():
+            with orm.sudo(), orm.proprietor(party.company.carapacian):
                 try:
                     self._user = ecommerce.user(id)
                 except db.RecordNotFoundError:
