@@ -7593,6 +7593,7 @@ class security:
     def __repr__(self):
         r = f'{type(self).__name__}(\n'
         r += f'  owner={self.owner!r}\n'
+        r += f'  proprietor={self.proprietor!r}\n'
         r += f'  user={self.user!r}\n'
         r += f'  override={self.override}\n'
         r += ')'

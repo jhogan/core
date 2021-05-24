@@ -27,7 +27,7 @@ class test_bot(tester.tester):
 
         if self.rebuildtables:
             es = orm.orm.getentitys(includeassociations=True)
-            mods = 'bot', 'message', 'apriori', 'party'
+            mods = 'bot', 'message', 'apriori', 'party', 'ecommerce',
             for e in es:
                 if e.__module__ in mods:
                     e.orm.recreate()
