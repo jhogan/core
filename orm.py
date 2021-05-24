@@ -7505,6 +7505,10 @@ class security:
         """
         self._proprietor = v
 
+        # XXX Comment
+        if isinstance(v, UUID):
+            return
+
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         # The proprietor of the proprietor must be the proprietor:
         #    
@@ -8903,11 +8907,21 @@ class orm:
         # proprietor's FK column matches the proprietor set at the ORM
         # level. This restricts entity records not associated with
         # security().proprietor from being loaded.
-        if security().proprietor:
+        propr = security().proprietor
+        from party import party
+        if propr:
             for map in self.mappings.foreignkeymappings:
                 if map.fkname == 'proprietor':
                     sql += f' AND {map.name} = _binary %s'
-                    args.append(security().proprietor.id.bytes)
+                    if isinstance(propr, UUID):
+                        bytes = propr.bytes
+                    elif isinstance(propr, party):
+                        bytes = propr.id.bytes
+                    else:
+                        # Shouldn't happen
+                        raise TypeError('Proprietor is incorrect type')
+
+                    args.append(bytes)
                     break
 
         ress = None
