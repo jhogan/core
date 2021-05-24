@@ -72,7 +72,7 @@ class test_bot(tester.tester):
             for v in range(5, -1, -1):
                 eargss = list()
 
-                b = bot.bot(iterations=0, verbosity=v) 
+                b = bot.sendbot(iterations=0, verbosity=v) 
                 b.onlog += onlog
                 b.debug('d')
                 b.info('i')
@@ -89,7 +89,7 @@ class test_bot(tester.tester):
 
     def it_logs_to_database(self):
         # Create an abstract bot
-        b = bot.bot(iterations=0, verbosity=5) 
+        b = bot.sendbot(iterations=0, verbosity=5) 
 
         # Log two info's. The calls to the log methods will result in
         # immediate saves of the logs to the database.
@@ -110,7 +110,7 @@ class test_bot(tester.tester):
         b.save()
 
         # Reload bot
-        b1 = bot.bot(b.id)
+        b1 = bot.sendbot(b.id)
 
         # Ensure it does not lazy load prior logs. This is important
         # because we want to be able to use the ``logs`` property
@@ -133,7 +133,7 @@ class test_bot(tester.tester):
         # Redirect stdout/stderr to /dev/null (so to speak)
         #with redirect_stdout(None), redirect_stderr(None):
         for v in range(5, -1, -1):
-            b = bot.bot(iterations=0, verbosity=v) 
+            b = bot.sendbot(iterations=0, verbosity=v) 
             b.debug('d')
             b.info('i')
             b.warning('w')
