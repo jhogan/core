@@ -367,14 +367,17 @@ class sendbot(bot):
             kwargs['from__new__']
         except KeyError:
             id = uuid.UUID(cls.Id)
-            try:
-                kwargs['from__new__'] = None
-                b = sendbot(id, **kwargs)
-            except db.RecordNotFoundError:
-                b = sendbot(**kwargs)
-                b.id = id
-                b.name = cls.__name__
-                b.save()
+
+            cara = party.company.carapacian
+            with orm.sudo(), orm.proprietor(cara):
+                try:
+                    kwargs['from__new__'] = None
+                    b = sendbot(id, **kwargs)
+                except db.RecordNotFoundError:
+                    b = sendbot(**kwargs)
+                    b.id = id
+                    b.name = cls.__name__
+                    b.save()
         else:
             return super(sendbot, cls).__new__(cls)
 
