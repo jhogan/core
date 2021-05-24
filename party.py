@@ -312,7 +312,7 @@ class company(legalorganization):
 
             with orm.sudo():
                 try:
-                    with orm.proprietor(cls._carapacian):
+                    with orm.proprietor(id):
                         cls._carapacian = company(id)
                 except db.RecordNotFoundError:
                     cls._carapacian = company(
