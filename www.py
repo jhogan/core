@@ -8,8 +8,24 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021
 ########################################################################
 
-""" This module contains classes module contains the classes that
-abstract the HTTP protocol, as well as WSGI and other web technologies.
+""" This module contains classes that abstract the HTTP protocol, as
+well as WSGI and other web technologies.
+
+A major class in this module is the ``browser`` class. This is the
+class to use when we need to make HTTP requests to third party services
+(see third.py). For most cases, ``browser`` should be used as an
+alternative to urllib.request.urlopen() (it currently wraps this call).
+A subclass of ``browser`` in tester.py allows unit tests to be written
+against pom.page object, effectively making it possible and convenient
+to test the web pages exposed by WSGI web application within the
+framework.
+
+The ``request`` and ``response`` objects correspond to HTTP request and
+response messages. They contain ``headers`` collections which collect
+``header`` object that represent HTTP headers. Support for maintaning
+cookies within the ``browser`` is provided by the ``cookie`` object.
+Exception classes corresponding to HTTP status codes 3xx, 4xx and 5xx
+are also provided in this module.
 """
 
 from dbg import B
@@ -2108,4 +2124,13 @@ class browser(entities.entity):
         """
         return self.tabs.tab()
 
+# Start the WSGI application
+
+# TODO This seems really strange that we have this line here. I can't
+# remember what caused me to write this. Perhaps this should be within a
+# 
+#    if __name__ == '__main__'
+#
+# or something. We should reconsider this when revisting the WSGI
+# handling code. At least comment it.
 app = application()
