@@ -96,70 +96,71 @@ class test_bot(tester.tester):
                 self.eq(msgs[5-v:], msgs1)
 
     def it_logs_to_database(self):
-        # Create an abstract bot
-        b = bot.sendbot(iterations=0, verbosity=5) 
+        with orm.proprietor(party.company.carapacian):
+            # Create an abstract bot
+            b = bot.sendbot(iterations=0, verbosity=5) 
 
-        # Log two info's. The calls to the log methods will result in
-        # immediate saves of the logs to the database.
-        b.debug('d')
-        b.info('i')
-        b.warning('w')
-        b.error('e')
-        b.critical('cr')
-        b.exception('ex')
-
-        # Test the logs
-        self.six(b.logs)
-
-        self.eq(bot.bot.Levels, b.logs.pluck('logtype.name'))
-
-        # Save the bot. The bot's logs have already been save; this just
-        # persists the bot itself
-        b.save()
-
-        # Reload bot
-        b1 = bot.sendbot(b.id)
-
-        # Ensure it does not lazy load prior logs. This is important
-        # because we want to be able to use the ``logs`` property
-        # to append new logs to the database, but we don't want the call
-        # to logs to load every log every commited because that would
-        # take to log. (NOTE This is currently accomplished through a
-        # HACK:8210b80c that has a corresponding TODO).
-        self.zero(b1.logs)
-
-        for log in b.logs:
-            # Each of the logs should be in the database
-            log1 = self.expect(None, lambda: apriori.log(log))
-
-            # The logs should reference the bot they were logged for
-            self.eq(b.id, log1.bot.id)
-
-        msgs = ['d', 'i', 'w', 'e', 'c', 'e']
-        levels = bot.bot.Levels
-
-        # Redirect stdout/stderr to /dev/null (so to speak)
-        #with redirect_stdout(None), redirect_stderr(None):
-        for v in range(5, -1, -1):
-            b = bot.sendbot(iterations=0, verbosity=v) 
+            # Log two info's. The calls to the log methods will result in
+            # immediate saves of the logs to the database.
             b.debug('d')
             b.info('i')
             b.warning('w')
             b.error('e')
-            b.critical('c')
-            b.exception('e')
+            b.critical('cr')
+            b.exception('ex')
 
+            # Test the logs
+            self.six(b.logs)
+
+            self.eq(bot.bot.Levels, b.logs.pluck('logtype.name'))
+
+            # Save the bot. The bot's logs have already been save; this just
+            # persists the bot itself
             b.save()
 
-            self.zero(b.orm.reloaded().logs)
+            # Reload bot
+            b1 = bot.sendbot(b.id)
 
-            self.eq(v + 1, b.logs.count)
+            # Ensure it does not lazy load prior logs. This is important
+            # because we want to be able to use the ``logs`` property
+            # to append new logs to the database, but we don't want the call
+            # to logs to load every log every commited because that would
+            # take to log. (NOTE This is currently accomplished through a
+            # HACK:8210b80c that has a corresponding TODO).
+            self.zero(b1.logs)
 
-            msgs1 = b.logs.pluck('message')
-            lvls = b.logs.pluck('logtype.name')
+            for log in b.logs:
+                # Each of the logs should be in the database
+                log1 = self.expect(None, lambda: apriori.log(log))
 
-            self.eq(bot.bot.Levels[5-v:], lvls)
-            self.eq(msgs[5-v:], msgs1)
+                # The logs should reference the bot they were logged for
+                self.eq(b.id, log1.bot.id)
+
+            msgs = ['d', 'i', 'w', 'e', 'c', 'e']
+            levels = bot.bot.Levels
+
+            # Redirect stdout/stderr to /dev/null (so to speak)
+            #with redirect_stdout(None), redirect_stderr(None):
+            for v in range(5, -1, -1):
+                b = bot.sendbot(iterations=0, verbosity=v) 
+                b.debug('d')
+                b.info('i')
+                b.warning('w')
+                b.error('e')
+                b.critical('c')
+                b.exception('e')
+
+                b.save()
+
+                self.zero(b.orm.reloaded().logs)
+
+                self.eq(v + 1, b.logs.count)
+
+                msgs1 = b.logs.pluck('message')
+                lvls = b.logs.pluck('logtype.name')
+
+                self.eq(bot.bot.Levels[5-v:], lvls)
+                self.eq(msgs[5-v:], msgs1)
 
     def it_uses_carapacian_as_proprietor(self):
         self._clear()
