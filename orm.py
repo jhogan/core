@@ -7458,6 +7458,9 @@ class security:
             cls._instance = super(security, cls).__new__(cls)
 
             # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+
+            # XXX:a93f0ee2 We are setting these propreties on the class
+            # and not the instance.
             cls._override    =  False
             cls._owner       =  None
             cls._proprietor  =  None
@@ -7536,6 +7539,8 @@ class security:
         if self._override:
             return True
 
+        # XXX self.owner can be None. If that is the case, None is being
+        # returned here instead of False.
         return self.owner and self.owner.isroot
 
     @override.setter
