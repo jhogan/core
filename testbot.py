@@ -20,6 +20,12 @@ import apriori
 from config import config
 from contextlib import redirect_stdout, redirect_stderr
 
+def clear():
+    for p in party.party.orm.getsubentities(accompany=True):
+        p.orm.truncate()
+
+    party.company._carapacian = None
+
 class test_bot(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -32,8 +38,7 @@ class test_bot(tester.tester):
                 if e.__module__ in mods:
                     e.orm.recreate()
         else:
-            for p in party.party.orm.getsubentities(accompany=True):
-                p.orm.truncate()
+            self._clear()
 
             party.company._carapacian = None
 
@@ -61,6 +66,10 @@ class test_bot(tester.tester):
         # Company) is the proprietor.
         own.proprietor = com
         own.save()
+
+    @staticmethod
+    def _clear():
+        clear()
 
     def it_raises_onlog_event(self):
         def onlog(src, eargs):
@@ -154,7 +163,8 @@ class test_bot(tester.tester):
             self.eq(msgs[5-v:], msgs1)
 
     def it_uses_carapacian_as_proprietor(self):
-        bot.sendbot.orm.truncate()
+        self._clear()
+
         cara = party.company.carapacian
 
         with orm.sudo():
@@ -168,7 +178,7 @@ class test_bot(tester.tester):
             self.eq(cara.id, log.orm.reloaded().proprietor.id)
 
     def it_owns_what_it_creates(self):
-        bot.sendbot.orm.truncate()
+        self._clear()
 
         with orm.sudo():
             sb = bot.sendbot(iterations=1, verbosity=5)
@@ -182,7 +192,7 @@ class test_bot(tester.tester):
             self.eq(usr.id, log.orm.reloaded().owner.id)
 
     def it_calls_user(self):
-        bot.sendbot.orm.truncate()
+        self._clear()
         ecommerce.users.orm.truncate()
 
         with orm.sudo():
@@ -215,11 +225,7 @@ class test_sendbot(tester.tester):
                 if e.__module__ in mods:
                     e.orm.recreate()
         else:
-            for p in party.party.orm.getsubentities(accompany=True):
-                p.orm.truncate()
-
-            party.company._carapacian = None
-
+            self._clear()
             ecommerce.user.orm.truncate()
 
         # Create an owner and get the root user
@@ -245,6 +251,10 @@ class test_sendbot(tester.tester):
         # Company) is the proprietor.
         own.proprietor = com
         own.save()
+
+    @staticmethod
+    def _clear():
+        clear()
 
     def it_calls__call__(self):
         message.dispatches.orm.truncate()
@@ -306,11 +316,8 @@ class test_sendbot(tester.tester):
         )
 
         ''' Remove principles first '''
-        for p in party.party.orm.subentities:
-            p.orm.truncate()
-
+        self._clear()
         ecommerce.users.orm.truncate()
-        party.company._carapacian = None
 
         msg = message.message.email(
             from_    =  'from@example.com',
