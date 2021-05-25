@@ -76,8 +76,7 @@ class test_bot(tester.tester):
             eargss.append(eargs)
         
         msgs = ['d', 'i', 'w', 'e', 'cr', 'ex']
-        # Redirect stdout/stderr to /dev/null (so to speak)
-        with redirect_stdout(None), redirect_stderr(None):
+        with orm.proprietor(party.company.carapacian):
             for v in range(5, -1, -1):
                 eargss = list()
 
