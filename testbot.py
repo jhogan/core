@@ -64,7 +64,9 @@ class test_bot(tester.tester):
         # Update the owner (hford) so that the company (Ford Motor
         # Company) is the proprietor.
         own.proprietor = com
-        own.save()
+
+        with orm.sudo():
+            own.save()
 
     @staticmethod
     def _clear():
