@@ -235,15 +235,14 @@ class party(orm.entity):
 
     @property
     def retrievability(self):
+        # XXX Test
         vs = orm.violations()
         if orm.security().user.proprietor.id != self.id:
-            B()
             vs += (
                 "The party being retrieved must be the current "
                 "user's proprietor"
             )
         return vs
-
 
 class organization(party):
     """ An abstract class representing a group of people with a common

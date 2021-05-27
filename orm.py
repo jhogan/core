@@ -3430,7 +3430,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # accessibility methods is to raise an AuthorizationError.
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         raise AuthorizationError(
-            f'{type} not implemented',
+            f'{type} not implemented for <'
+            f'{builtins.type(self).__module__}.'
+            f'{builtins.type(self).__name__}>',
             crud=type[0], vs=None, e=self
         )
 
@@ -11225,7 +11227,6 @@ class AuthorizationError(PermissionError):
                 'crud argument must be "c", "r", "u" or "d"'
             )
 
-
         self.message     =  msg
         self.crud        =  crud
         self.violations  =  vs if isinstance(vs, violations) else None
@@ -11330,3 +11331,10 @@ class violation(entitiesmod.entity):
             return self.violations.entity
 
         return None
+
+    def __repr__(self):
+        r = type(self).__name__ + '('
+        r += f"'{self.message}'"
+        r += ')'
+        return r
+

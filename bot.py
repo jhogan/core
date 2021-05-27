@@ -588,7 +588,6 @@ class panel:
                                 onlog=self.onlog, **self._kwargs
                             )
                     except InputError as ex:
-                        B()
                         self.print(prs.format_usage())
                         self.print(f'{__file__.strip("./")}: error: {ex}')
                     break
