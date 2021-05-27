@@ -29,7 +29,6 @@ def clear():
 class test_bot(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        orm.security().override = True
 
         if self.rebuildtables:
             es = orm.orm.getentitys(includeassociations=True)
