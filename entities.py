@@ -616,6 +616,9 @@ class entities:
         return self._minmax(min=True, key=key)
 
     def _minmax(self, min, key):
+        """ Consolidates logic used by ``entities.max`` and
+        ``entities.min``.
+        """
         extreme = None
         for e in self:
             if extreme:
@@ -630,6 +633,52 @@ class entities:
         return extreme
 
     def where(self, p1, p2=None):
+        """ Returns an entities collection containing a subset of
+        ``self`` based on the conditions provided by the parameters.
+
+        :param: p1 type|str|callable:
+            if type:
+                If p1 is a ``type``, the subset will only include items
+                from ``self`` that are the exact type:
+
+                # Get all products from ``prods`` where the subtype of
+                # product is a ``service``. This would presumably
+                # exclude all the ``goods``.
+                srvs = prods.where(service)
+
+                # Assert
+                for prod in prods1:
+                    assert type(prod) is service
+
+            if str:
+                If p1 is a str, then it is used in conjunction with p2
+                to select all entity objects that have a given attribute
+                value pairing::
+                    
+                    # Get all products that have a category attribute
+                    # equal to 'Accessories'
+                    prods1 = prods.where('category', 'Accessories')
+
+                    # Assert
+                    for prod in prods1:
+                        assert prod.category == 'Accessories'
+
+            if callable:
+                If p1 is a callable, the callable is used to test each
+                entity for inclusion for the subset::
+
+                    # Create the callable
+                    def f(e):
+                        return e.name.startswith('Hammer')
+
+                    # Pass the callable to ``where``
+                    prods1 = prods.where(f)
+
+                    # Assert that the callable selected only products
+                    # whose name starts with 'Hammer'
+                    for prod in prods1:
+                        assert prod.name.startswith('Hammer')
+        """
         if type(p1) == type:
             cls = self.__class__
             return cls([x for x in self if type(x) == p1])
