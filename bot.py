@@ -102,16 +102,14 @@ class bot(ecommerce.agent):
         # better solution to this problem is discussed in a TODO with
         # the 8210b80c identifier.
 
-        if not hasattr(self, '_logs'):
+        if type(self) is not bot:
             b = self
-            while b:
-                try:
-                    map = b.orm.mappings['logs']
-                except IndexError:
-                    b = b.orm.super
-                    continue
-                else:
-                    break
+            while type(b) is not bot:
+                b = b.orm.super
+            return b.logs
+
+        if not hasattr(self, '_logs'):
+            map = self.orm.mappings['logs']
 
             map.value = apriori.logs('botid', self.id)
 
