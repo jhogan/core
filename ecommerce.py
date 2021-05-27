@@ -86,7 +86,9 @@ class users(orm.entities):
                 cls._root = usrs.first
             else:
                 cls._root = user(name='root')
-                cls._root.save()
+
+                with orm.override():
+                    cls._root.save()
 
         return cls._root
         
