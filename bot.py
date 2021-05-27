@@ -335,8 +335,15 @@ class bot(ecommerce.agent):
                     self.onafteriteration(self, eargs)
 
     @property
-    def updatability(self):
+    def retrievability(self):
         vs = orm.violations()
+        if orm.user.id != self.user.id:
+            vs += 'Bots can only be accessed by their users'
+        return vs
+
+    @property
+    def updatability(self):
+        vs = super().updatability()
 
         b = self
         while b:
