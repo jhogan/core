@@ -237,11 +237,28 @@ class party(orm.entity):
     def retrievability(self):
         # XXX Test
         vs = orm.violations()
+
+        msgs = list()
+
+        from ecommerce import users
+        usrs = users('party__partyid', self.id)
+        id = orm.security().user.id
+        with orm.sudo():
+            for usr in usrs:
+                if usr.id == id:
+                    return vs
+            else:
+                msgs.append('Current user must belong to party')
+
         if orm.security().user.proprietor.id != self.id:
             vs += (
                 "The party being retrieved must be the current "
                 "user's proprietor"
             )
+
+        if vs.isempty:
+            vs += msgs
+
         return vs
 
 class organization(party):
