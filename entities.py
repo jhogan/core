@@ -714,6 +714,42 @@ class entities:
     #
     #     inv.terms.sort('termtype.name')
     def sort(self, key, reverse=False):
+        """ Sort the items of the collection in place.
+
+        Use ``sorted`` if you want a new, sorted collection to be
+        returned while leaving the current collection unsorted.
+
+        :param key str|callable: 
+            if str:
+                If ``key`` is a str, it is assumed that key is the name
+                of an attribute of each of the objects in the collection
+                so the collection will be sorted on that attribute::
+
+                   # Sort the goods collection based on name
+                   goods.sort('name')
+
+                   # Printing the goods' names will be done in
+                   # alphabetical order
+                   for good in goods:
+                       print(good.name)
+
+            if callable:
+                If key specifies a callable, the callable is used to
+                extract a comparison key from each element in
+                collection::
+                    
+                    # Sort goods in a case-insensitive way
+                    goods.sort(lambda x: x.name.casefold())
+
+                    # Printing the goods' names will be done in
+                    # alphabetical order without regard to the name's
+                    # case
+                    for good in goods:
+                        print(good.name)
+
+        :param: reverse bool: If set to True, then the elements are
+        sorted as if each comparison were reversed.
+        """
         if type(key) == str:
             min = entities.mintype()
             def key1(x):
@@ -721,6 +757,11 @@ class entities:
                 # None's don't sort so do this
                 return min if v is None else v
         elif callable(str):
+            # TODO:2fff5b9e This is wrong even though it works. We are
+            # testing if the str bulitin is callable, which it is, so as
+            # long as key is not str, key will be assaigned to key1. The
+            # above should be changed to `elif callable(key)` and their
+            # should be an `else` that raises a TypeError.
             key1 = key
 
         self._ls.sort(key=key1, reverse=reverse)
@@ -733,6 +774,11 @@ class entities:
                 # None's don't sort so do this
                 return min if v is None else v
         elif callable(str):
+            # TODO:2fff5b9e This is wrong even though it works. We are
+            # testing if the str bulitin is callable, which it is, so as
+            # long as key is not str, key will be assaigned to key1. The
+            # above should be changed to `elif callable(key)` and their
+            # should be an `else` that raises a TypeError.
             key1 = key
 
         return type(self)(initial=sorted(self._ls, key=key1, reverse=reverse))
