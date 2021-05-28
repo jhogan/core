@@ -77,7 +77,8 @@ class test_bot(tester.tester):
             eargss.append(eargs)
         
         msgs = ['d', 'i', 'w', 'e', 'cr', 'ex']
-        with orm.proprietor(party.company.carapacian):
+        b = bot.sendbot()
+        with orm.proprietor(party.company.carapacian), orm.su(b.user):
             for v in range(5, -1, -1):
                 eargss = list()
 
