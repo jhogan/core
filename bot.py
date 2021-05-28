@@ -337,7 +337,13 @@ class bot(ecommerce.agent):
     @property
     def retrievability(self):
         vs = orm.violations()
-        if orm.user.id != self.user.id:
+
+        if type(self) is bot:
+            usr = self.orm.leaf.user
+        else:
+            usr = self.user
+
+        if orm.security().user.id != usr.id:
             vs += 'Bots can only be accessed by their users'
         return vs
 
