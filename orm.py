@@ -11293,6 +11293,15 @@ class violations(entitiesmod.entities):
         # Convert str to violaton
         if isinstance(o, str):
             o = violation(o)
+        else:
+            try: 
+                iter(o)
+            except TypeError:
+                pass # Not iterable
+            else:
+                for o in o:
+                    self += o
+                return self
 
         # Keep track of the collection
         o.violations = self
