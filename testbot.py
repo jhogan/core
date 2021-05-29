@@ -98,9 +98,9 @@ class test_bot(tester.tester):
                 self.eq(msgs[5-v:], msgs1)
 
     def it_logs_to_database(self):
-        with orm.proprietor(party.company.carapacian):
+        b = bot.sendbot(iterations=0, verbosity=5) 
+        with orm.proprietor(party.company.carapacian), orm.su(b.user):
             # Create an abstract bot
-            b = bot.sendbot(iterations=0, verbosity=5) 
 
             # Log two info's. The calls to the log methods will result
             # in immediate saves of the logs to the database.
