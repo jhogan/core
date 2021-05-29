@@ -298,9 +298,15 @@ class bot(ecommerce.agent):
             orm.security().proprietor = cara
 
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # Set the bot's proprietor to the Carapacian company
+        # Set the bot's proprietor to the Carapacian company. 
+        #
+        # (Override accessibilty controls because setting proprietor
+        # causes the current proprietor to be loaded, which causes
+        # party.retrievability to be called, which, itself caluse
+        # proprietor to beloaded leading to infinite recursion.)
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        self.proprietor = cara
+        with orm.override():
+            self.proprietor = cara
 
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # Ensure the bot itself is in the database and that root is the
@@ -374,26 +380,34 @@ class sendbots(bots):
 class sendbot(bot):
     Id = 'fdcf21b2-dc0b-40ef-934f-ffbca49c915c'
 
+    _isin__new__ = False
     def __new__(cls, *args, **kwargs):
-        try:
-            kwargs['from__new__']
-        except KeyError:
-            id = uuid.UUID(cls.Id)
-
-            cara = party.company.carapacian
-            with orm.sudo(), orm.proprietor(cara):
-                try:
-                    kwargs['from__new__'] = None
-                    b = sendbot(id, **kwargs)
-                except db.RecordNotFoundError:
-                    b = sendbot(**kwargs)
-                    b.id = id
-                    b.name = cls.__name__
-                    b.save()
-        else:
+        if cls._isin__new__:
             return super(sendbot, cls).__new__(cls)
 
-        return b
+        try:
+            cls._isin__new__ = True
+            try:
+                kwargs['from__new__']
+            except KeyError:
+                id = uuid.UUID(cls.Id)
+
+                cara = party.company.carapacian
+                with orm.proprietor(cara):
+                    try:
+                        kwargs['from__new__'] = None
+                        b = sendbot(id, **kwargs)
+                    except db.RecordNotFoundError:
+                        b = sendbot(**kwargs)
+                        b.id = id
+                        b.name = cls.__name__
+                        b.save()
+            else:
+                return super(sendbot, cls).__new__(cls)
+
+            return b
+        finally:
+            cls._isin__new__ = False
 
     def __init__(self, *args, **kwargs):
         """ ``sendbot`` finds incomplete (queued) ``dispatch`` entities
