@@ -177,7 +177,14 @@ class test_bot(tester.tester):
 
         for log in sb.logs:
             self.is_(cara, log.proprietor)
-            self.eq(cara.id, log.orm.reloaded().proprietor.id)
+            
+            log = log.orm.reloaded()
+
+            # sudo to retrieve proprietor (carapacian)
+            with orm.sudo():
+                propr = log.proprietor
+
+            self.eq(cara.id, propr.id)
 
     def it_owns_what_it_creates(self):
         self._clear()
