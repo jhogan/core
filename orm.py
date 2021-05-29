@@ -4970,6 +4970,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             name = self.name
         except builtins.AttributeError:
             name = ''
+        except Exception as ex:
+            name = f', name=<ERROR {ex}>'
         else:
             if name:
                 name = f", name='{self.name}'"
