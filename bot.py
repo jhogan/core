@@ -96,9 +96,9 @@ class bot(ecommerce.agent):
 
     @orm.attr(apriori.logs)
     def logs(self):
-        # HACK:8210b80c We want ``bot`` to have a ``logs`` constiuent that
-        # we can add to but we don't want to load every log the bot has
-        # ever recorded. So set .isloaded = True to prevent that. A
+        # HACK:8210b80c We want ``bot`` to have a ``logs`` constituent
+        # that we can add to but we don't want to load every log the bot
+        # has ever recorded. So set .isloaded = True to prevent that. A
         # better solution to this problem is discussed in a TODO with
         # the 8210b80c identifier.
 
