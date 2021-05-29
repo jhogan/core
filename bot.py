@@ -345,6 +345,7 @@ class bot(ecommerce.agent):
 
         if orm.security().user.id != usr.id:
             vs += 'Bots can only be accessed by their users'
+
         return vs
 
     @property

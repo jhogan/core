@@ -102,8 +102,8 @@ class test_bot(tester.tester):
             # Create an abstract bot
             b = bot.sendbot(iterations=0, verbosity=5) 
 
-            # Log two info's. The calls to the log methods will result in
-            # immediate saves of the logs to the database.
+            # Log two info's. The calls to the log methods will result
+            # in immediate saves of the logs to the database.
             b.debug('d')
             b.info('i')
             b.warning('w')
@@ -116,19 +116,19 @@ class test_bot(tester.tester):
 
             self.eq(bot.bot.Levels, b.logs.pluck('logtype.name'))
 
-            # Save the bot. The bot's logs have already been save; this just
-            # persists the bot itself
+            # Save the bot. The bot's logs have already been save; this
+            # just persists the bot itself
             b.save()
 
             # Reload bot
             b1 = bot.sendbot(b.id)
 
             # Ensure it does not lazy load prior logs. This is important
-            # because we want to be able to use the ``logs`` property
-            # to append new logs to the database, but we don't want the call
-            # to logs to load every log every commited because that would
-            # take to log. (NOTE This is currently accomplished through a
-            # HACK:8210b80c that has a corresponding TODO).
+            # because we want to be able to use the ``logs`` property to
+            # append new logs to the database, but we don't want the
+            # call to logs to load every log every commited because that
+            # would take to log. (NOTE This is currently accomplished
+            # through a HACK:8210b80c that has a corresponding TODO).
             self.zero(b1.logs)
 
             for log in b.logs:
