@@ -394,6 +394,30 @@ class user(orm.entity):
 
         return brs
 
+    @property
+    def retrievability(self):
+        # XXX Test
+        vs = orm.violations()
+        sec = orm.security()
+        usr = sec.user
+        msgs = list()
+
+        if usr:
+            if usr.id != self.id:
+                msgs.append(
+                    'Current user is not the user being retrieved'
+                )
+        else:
+            msgs.append(
+                'Current user must be authenticated'
+            )
+
+        if vs.isempty:
+            vs += msgs
+
+        return vs
+
+
 class history(orm.entity):
     """ Used to store a history of the logins and passwords.
 
