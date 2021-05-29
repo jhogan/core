@@ -169,8 +169,7 @@ class test_bot(tester.tester):
 
         cara = party.company.carapacian
 
-        with orm.sudo():
-            sb = bot.sendbot(iterations=1, verbosity=5)
+        sb = bot.sendbot(iterations=1, verbosity=5)
         sb()
 
         self.multiple(sb.logs)
@@ -189,8 +188,7 @@ class test_bot(tester.tester):
     def it_owns_what_it_creates(self):
         self._clear()
 
-        with orm.sudo():
-            sb = bot.sendbot(iterations=1, verbosity=5)
+        sb = bot.sendbot(iterations=1, verbosity=5)
         sb()
         usr = sb.user
 
@@ -204,8 +202,7 @@ class test_bot(tester.tester):
         self._clear()
         ecommerce.users.orm.truncate()
 
-        with orm.sudo():
-            sb = bot.sendbot(iterations=1, verbosity=5)
+        sb = bot.sendbot(iterations=1, verbosity=5)
         sb()
 
         usr = sb.user
