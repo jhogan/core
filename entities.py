@@ -767,6 +767,16 @@ class entities:
         self._ls.sort(key=key1, reverse=reverse)
 
     def sorted(self, key, reverse=False):
+        """ Returns a entities collection containing the elements of
+        this collection sorted by the ``key``.
+
+        This method works exactly as ``entities.sort`` does except that,
+        instead of sorting the collection in place, a new, sorted
+        collection is return, and no changes are made to the current
+        collection (``self``).
+
+        See the parameter descriptions at ``entities.sort`` for details.
+        """
         if type(key) == str:
             min = entities.mintype()
             def key1(x):
@@ -784,13 +794,45 @@ class entities:
         return type(self)(initial=sorted(self._ls, key=key1, reverse=reverse))
 
     def enumerate(self):
+        """ Returns an enumeration object similar to the way the PYthon
+        builtin ``enumerate()`` does::
+
+            # Print each entity in es preceded by a zero-based index
+            for i, e in es.enumerate():
+                print(i, e)
+
+        Note that behind this method uses func.enumerate() instead of
+        the builtins.enumerate, so you can use its features::
+
+            for i, e in es.enumerate():
+                if i.first:
+                    print(f'{e} is the first object in the collection')
+                
+                if i.last
+                    print(f'{e} is the last object in the collection')
+        """
         for i, e in enumerate(self):
             yield i, e
 
     def clear(self):
+        """ Remove each element in teh collection.
+
+        Note that this method uses ``entities.remove`` is used which
+        means that the onremove event will be called for each of the
+        elements removed.
+        """
         self.remove(self)
 
     def __delitem__(self, key):
+        """ Remove an element using an indexer::
+
+            # Remove the fourth element from the collection.
+            del es[3]
+
+        Note that this method uses ``entities.remove`` is used which
+        means that the onremove event will be called for the element
+        removed.
+        """
         # TODO Write test. This will probably work but is only used in
         # one place at the time of this writing. We should also test for
         # `key` being a slice.
