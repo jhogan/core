@@ -840,6 +840,72 @@ class entities:
         self.remove(e)
 
     def remove(self, e):
+        """ Remove ``e`` from the collection.
+
+        Typically, ``e`` is simple an entity object presumend to be in
+        the collection. If it is found in the collection, it will be
+        removed, and the onremove event will be raised.
+
+        ``e`` can be other types object objects as well such as
+        ``entities``, ``callables``, ``int``s and ``str``. The behavor
+        for removing these types is detailed in the :param: section
+        below.
+
+        :param: e entity|entities|callable|int|str: The entity or a
+        way of referencing entity objects to be removed.
+            
+            Given:
+                assert isinstance(es, entities)
+
+                assert  es.first.name   =  'berp'
+                assert  es.second.name  =  'derp'
+                assert  es.third.name   =  'gerp'
+                assert  es.fourth.name  =  'herp'
+                assert  es.fifth.name   =  'merp'
+                assert  es.sixth.name   =  'perp'
+
+            if entity:
+                If e is an entity, it will simply be removed, if it
+                exists in the collection, and the onremove event will be
+                raised.
+
+                    # Remove gerp
+                    es.remove(es.third)
+
+            if entities:
+                if e is an entities collection, each entity in e will be
+                removed from the collection. Each removal will result in
+                onremove being raised.
+
+                    # Remove herp and merp
+                    rms = es.where(
+                        lambda x: x.name == 'herp' or x.name == 'merp'
+                    )
+                    es.remove(rms)
+
+            if callable:
+                if e is a callable, e will be pased to self.where. Each
+                entity in the resulting entities collection will remove.
+                
+                    # Remove derp
+                    es.remove(lambda x: x.startswith('d'))
+
+            if int:
+                if e is an int, e will be passed to the indexor. The
+                resulting entity will be removed and onremove will be
+                raised.
+
+                    # Remove perp
+                    es.remove(-1)
+
+            if str
+                if e is a str, it will be pased to sel.getindex and the
+                resulting index will be passed to the indexor to be
+                removed.
+
+                    # Remove berp
+                    es.remove('berp')
+        """
         if isinstance(e, entities):
             rms = e
         elif isinstance(e, entity):
