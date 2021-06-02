@@ -10150,6 +10150,9 @@ class orm:
                     # `self.instance.id` will change to the value of
                     # `self._super.id`.
                     id = self.instance.id
+
+                    # TODO:f40c087d Since we have a setter for super,
+                    # lets use it. It makes debugging easier.
                     self._super = base()
 
                     # Set the super's id to self's id. Despite the
@@ -10163,6 +10166,8 @@ class orm:
                         msg %= str(type(e))
                         raise builtins.AttributeError(msg)
                     if e.id is not undef:
+                        # TODO:f40c087d Since we have a setter for
+                        # super, lets use it. It makes debugging easier.
                         self._super = base(e.id)
 
                 # Ensure the super has a reference to the sub

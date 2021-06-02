@@ -11,7 +11,7 @@
 
 from config import config
 from entities import classproperty
-from func import B
+from func import B, enumerate
 import io
 import apriori
 import argparse
@@ -394,6 +394,7 @@ class sendbot(bot):
 
                 cara = party.company.carapacian
                 with orm.proprietor(cara):
+
                     try:
                         kwargs['from__new__'] = None
                         b = sendbot(id, **kwargs)
