@@ -91,7 +91,6 @@ class bot(ecommerce.agent):
 
         self._iterations = iterations
         self.verbosity = verbosity
-        self._user = None
         self.iteration = None
 
     @orm.attr(apriori.logs)
@@ -125,34 +124,41 @@ class bot(ecommerce.agent):
 
         return self._logs
 
-    @property
-    def user(self):
+    @classproperty
+    def user(cls):
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        Id = 'cfd67652-de34-4ffc-99a0-5acd29ff89d4'
         
-        if type(self) is bot:
+        if isinstance(cls, type):
+            self = None
+        else:
+            self, cls = cls, type(cls)
+
+        if cls is bot:
             raise NotImplementedError(
                 'user is only available to concrete classes'
             )
 
-        if not self._user:
-            if not hasattr(self, 'Id'):
-                raise ValueError('bot must have Id constant set')
+        if not hasattr(cls, '_user'):
+            if not hasattr(cls, 'UserId'):
+                raise ValueError('bot must have UserId constant set')
 
-            id = uuid.UUID(Id)
+            id = uuid.UUID(cls.UserId)
 
             with orm.sudo(), orm.proprietor(party.company.carapacian):
                 try:
-                    self._user = ecommerce.user(id)
+                    cls._user = ecommerce.user(id)
                 except db.RecordNotFoundError:
-                    self._user = ecommerce.user(
+                    if not self:
+                        self = cls()
+
+                    cls._user = ecommerce.user(
                         id   = id,
-                        name = type(self).__name__,
+                        name = cls.__name__,
                         party  = self,
                     )
-                    self._user.save()
+                    cls._user.save()
 
-        return self._user
+        return cls._user
 
     @property
     def onbeforeiteration(self):
@@ -378,7 +384,8 @@ class sendbots(bots):
     pass
 
 class sendbot(bot):
-    Id = 'fdcf21b2-dc0b-40ef-934f-ffbca49c915c'
+    Id      =  'fdcf21b2-dc0b-40ef-934f-ffbca49c915c'
+    UserId  =  'cfd67652-de34-4ffc-99a0-5acd29ff89d4'
 
     _isin__new__ = False
     def __new__(cls, *args, **kwargs):
