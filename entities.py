@@ -1591,6 +1591,9 @@ class index(entity):
     def __len__(self):
         return len(self._ix)
 
+class InProgressError(Exception):
+    pass
+
 def demand(sub, type=None):
     if type is not None:
         if builtins.type(sub) != type:

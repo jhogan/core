@@ -389,8 +389,45 @@ class sendbot(bot):
 
     _isin__new__ = False
     def __new__(cls, *args, **kwargs):
-        if cls._isin__new__:
-            return super(sendbot, cls).__new__(cls)
+        
+        # TODO Much of this logic is to implement a data-singleton
+        # pattern, and will likely be of universal interest. When the
+        # time is right, we can consolidate this logic to make
+        # implementing the data-singleton pattern easy.
+
+        ''' Protect against infinite recursion. '''
+        # First, ensure that this instantiation isn't a result of a
+        # prior instantiation. Without this check, instantiations end up
+        # being infinitly recursive (see orm.leaf).
+
+        # For each frame in the stack
+        for i, fi in enumerate(inspect.stack()):
+            # The first and second frame will be this method, and are
+            # therefore not indicative of a prior instantiation.
+            if i.first or i.second:
+                continue
+
+            # Get the frame object from the FrameInfo object
+            frm = fi.frame
+
+            try:
+                # Dose the frame contain the magic constant __class__
+                cls1 = frm.f_locals['__class__']
+            except KeyError:
+                # If not, continue to the next frame
+                continue
+            else:
+                # We are here because the frame contains the magic
+                # keyword __class__.
+
+                # Is the frame's class the same as this class
+                if cls is cls1:
+                    # Is the frame's function name __new__
+                    if fi.function == '__new__':
+                        raise entities.InProgressError(
+                            'Refusing to instatiate because '
+                            'instantiation is already in progress.'
+                        )
 
         try:
             cls._isin__new__ = True

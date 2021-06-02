@@ -8269,6 +8269,8 @@ class orm:
                 leaf = cls(id)
             except db.RecordNotFoundError:
                 continue
+            except entitiesmod.InProgressError:
+                continue
             else:
                 leaf.orm._super = sup
                 sup = leaf
