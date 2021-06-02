@@ -11277,7 +11277,10 @@ class violations(entitiesmod.entities):
         import ecommerce
         if not isinstance(security().user, ecommerce.user):
             self += 'User must be authenticated'
-            
+
+    def demand_user_is(self, usr):
+        if security().user.id != usr.id:
+            self += f'User must be {usr.name}'
 
     def __iadd__(self, o):
         """ Add `o` to the violations collection. `o` can be a str or a
