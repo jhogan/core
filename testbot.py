@@ -222,8 +222,6 @@ class test_sendbot(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        orm.security().override = True
-
         if self.rebuildtables:
             es = orm.orm.getentitys(includeassociations=True)
             mods = 'bot', 'message', 'party', 'ecommerce'
@@ -256,7 +254,8 @@ class test_sendbot(tester.tester):
         # Update the owner (hford) so that the company (Ford Motor
         # Company) is the proprietor.
         own.proprietor = com
-        own.save()
+        with orm.sudo():
+            own.save()
 
     @staticmethod
     def _clear():
@@ -265,80 +264,78 @@ class test_sendbot(tester.tester):
     def it_calls__call__(self):
         message.dispatches.orm.truncate()
 
-        msg = message.message.email(
-            from_    =  'from@example.com',
-            replyto  =  'replyto@example.com',
-            to       =  'jhogan@carapacian.com',
-            subject  =  'Test email',
-            text     =  'Test message',
-            html     =  '<p>Test message</p>',
-        )
+        b = bot.sendbot(iterations=1)
+        with orm.proprietor(party.company.carapacian), orm.su(b.user):
+            msg = message.message.email(
+                from_    =  'from@example.com',
+                replyto  =  'replyto@example.com',
+                to       =  'jhogan@carapacian.com',
+                subject  =  'Test email',
+                text     =  'Test message',
+                html     =  '<p>Test message</p>',
+            )
 
-        dis = msg.dispatch(
-            dispatchtype = message.dispatchtype(name='email')
-        )
+            dis = msg.dispatch(
+                dispatchtype = message.dispatchtype(name='email')
+            )
 
-        msg.save()
+            msg.save()
 
-        orm.security().proprietor = party.company.carapacian
-        orm.security().owner = ecommerce.users.root
+            b()
 
-        sb = bot.sendbot(iterations=1)
-        sb()
+            dis = dis.orm.reloaded()
 
-        dis = dis.orm.reloaded()
+            self.eq('postmarked', dis.status)
 
-        self.eq('postmarked', dis.status)
+            sts = dis.statuses
 
-        sts = dis.statuses
+            self.one(sts)
+            self.eq('postmarked', sts.last.statustype.name)
 
-        self.one(sts)
-        self.eq('postmarked', sts.last.statustype.name)
+            ''' Send a bad email '''
+            msg = message.message.email(
+                from_    =  'badfrom@carapacian.com',
+                to       =  'test@blackhole.postmarkapp.com',
+                subject  =  'Test email',
+                text     =  'Test message',
+                html     =  '<p>Test message</p>',
+            )
 
-        ''' Send a bad email '''
-        msg = message.message.email(
-            from_    =  'badfrom@carapacian.com',
-            to       =  'test@blackhole.postmarkapp.com',
-            subject  =  'Test email',
-            text     =  'Test message',
-            html     =  '<p>Test message</p>',
-        )
+            dis = msg.dispatch(
+                dispatchtype = message.dispatchtype(name='email')
+            )
+            
+            msg.save()
 
-        dis = msg.dispatch(
-            dispatchtype = message.dispatchtype(name='email')
-        )
-        
-        msg.save()
+            b(exsimulate=True)
 
-        sb(exsimulate=True)
+            dis = dis.orm.reloaded()
+            self.none(dis.externalid)
+            self.one(dis.statuses)
+            self.eq('hard-bounce', dis.status)
+            self.eq(
+                'hard-bounce',
+                dis.statuses.first.statustype.name
+            )
 
-        dis = dis.orm.reloaded()
-        self.none(dis.externalid)
-        self.one(dis.statuses)
-        self.eq('hard-bounce', dis.status)
-        self.eq(
-            'hard-bounce',
-            dis.statuses.first.statustype.name
-        )
+            ''' Remove principles first '''
+            self._clear()
+            ecommerce.users.orm.truncate()
 
-        ''' Remove principles first '''
-        self._clear()
-        ecommerce.users.orm.truncate()
+            msg = message.message.email(
+                from_    =  'from@example.com',
+                replyto  =  'replyto@example.com',
+                to       =  'jhogan@carapacian.com',
+                subject  =  'Test email',
+                text     =  'Test message',
+                html     =  '<p>Test message</p>',
+            )
 
-        msg = message.message.email(
-            from_    =  'from@example.com',
-            replyto  =  'replyto@example.com',
-            to       =  'jhogan@carapacian.com',
-            subject  =  'Test email',
-            text     =  'Test message',
-            html     =  '<p>Test message</p>',
-        )
+            dis = msg.dispatch(
+                dispatchtype = message.dispatchtype(name='email')
+            )
 
-        dis = msg.dispatch(
-            dispatchtype = message.dispatchtype(name='email')
-        )
-
-        msg.save()
+            msg.save()
 
         sec = orm.security()
         sec.proprietor = None
