@@ -914,6 +914,19 @@ class contactmechanism(orm.entity):
     Data Model Resource Book".
     """
 
+    @property
+    def retrievability(self):
+        # XXX Test
+        vs = orm.violations()
+
+        # NOTE At the moment, only sendbot will be able to read contact
+        # mechanisms. This will obviously need to be expanded in the
+        # future.
+        import bot
+        vs.demand_user_is(bot.sendbot.user)
+
+        return vs
+
 class contactmechanism_contactmechanism(orm.association):
     # TODO Write docstring
 

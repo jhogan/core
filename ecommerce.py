@@ -493,6 +493,23 @@ class url(orm.entity):
     def path(self):
         return urllib.parse.urlparse(self.address).path
 
+    @property
+    def creatability(self):
+        # NOTE:7a67115c I suppose anyone should be able to access a URL
+        # in most cases. However, associations between ``urls`` and
+        # other entity objects would work differently. But those
+        # accessibilty restrictions  would be enforced in the
+        # association objects.  For now, permit readability to all
+        # (within the current tenant (orm.proprietor) of course).
+        return orm.violations.empty
+
+    @property
+    def retrievability(self):
+        # XXX Test
+
+        # NOTE:7a67115c
+        return orm.violations.empty
+
 class object(orm.entity):
     """ Stores electronic images, such as ``text`` (i.e. an HTML
     document), ``image`` (graphical electronic represenation),

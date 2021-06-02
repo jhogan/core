@@ -398,12 +398,53 @@ class message(orm.entity):
     def __repr__(self):
         return str(self)
 
+    @property
+    def creatability(self):
+        """ Anyone should be able to create a message.
+        """
+        # XXX Test
+        return orm.violations.empty
+        
+    @property
+    def retrievability(self):
+        # XXX Test
+        vs = orm.violations()
+
+        # NOTE Obviously, the message's sender and recepients should be
+        # able to retrive a their message. However, at the moment we
+        # will focus on allowing sendbot to retrive messages for
+        # dispatching.
+        import bot
+        vs.demand_user_is(bot.sendbot.user)
+
+        return vs
+
 class contactmechanism_messagetype(apriori.type):
     messages = contactmechanism_messages
 
 class contactmechanism_message(orm.association):
     contactmechanism = party.contactmechanism
     message = message
+
+    @property
+    def creatability(self):
+        # XXX Test
+        B()
+        return orm.violations.empty
+
+    @property
+    def retrievability(self):
+        # XXX Test
+        vs = orm.violations()
+
+        # NOTE Obviously, the message's sender and recepients should be
+        # able to retrive a their message. However, at the moment we
+        # will focus on allowing sendbot to retrive messages for
+        # dispatching.
+        import bot
+        vs.demand_user_is(bot.sendbot.user)
+
+        return vs
 
 class dispatch(orm.entity):
     # The external message id. When a message is dispatched to an
@@ -418,6 +459,25 @@ class dispatch(orm.entity):
         self.orm.default('externalid', None)
         self.orm.default('status', 'queued')
 
+    @property
+    def retrievability(self):
+        # XXX Test
+        vs = orm.violations()
+
+        import bot
+        vs.demand_user_is(bot.sendbot.user)
+
+        return vs
+
+    @property
+    def updatability(self):
+        # XXX Test
+        vs = orm.violations()
+
+        import bot
+        vs.demand_user_is(bot.sendbot.user)
+        return vs
+
 class dispatchtype(apriori.type):
     """ Email, sms, etc.
     """
@@ -430,6 +490,15 @@ class status(orm.entity):
 
     # The datetime the event described by the status entity occured.
     begin = datetime
+
+    @property
+    def creatability(self):
+        # XXX Test
+        vs = orm.violations()
+
+        import bot
+        vs.demand_user_is(bot.sendbot.user)
+        return vs
 
 class statustype(apriori.type):
     """ Records the type of status.
