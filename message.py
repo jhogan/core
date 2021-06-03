@@ -428,9 +428,16 @@ class contactmechanism_message(orm.association):
 
     @property
     def creatability(self):
+        """ The user who owns the message may create associations to
+        contact mechanisms (recipients, From: address, ReplyTo:, etc.).
+        """
         # XXX Test
-        B()
-        return orm.violations.empty
+        vs = orm.violations()
+
+        if self.message.owner.id != orm.security().user.id:
+            vs += 'Current user must be the message owner'
+        
+        return vs
 
     @property
     def retrievability(self):
@@ -458,6 +465,18 @@ class dispatch(orm.entity):
         super().__init__(*args, **kwargs)
         self.orm.default('externalid', None)
         self.orm.default('status', 'queued')
+
+    @property
+    def creatability(self):
+        """ The message owner my create a dispatch for the message.
+        """
+        # XXX Test
+        vs = orm.violations()
+
+        if self.message.owner.id != orm.security().user.id:
+            vs += 'Current user must be the message owner'
+        
+        return vs
 
     @property
     def retrievability(self):
@@ -498,6 +517,18 @@ class status(orm.entity):
 
         import bot
         vs.demand_user_is(bot.sendbot.user)
+        return vs
+
+    @property
+    def retrievability(self):
+        """ The owner of the ``dispatch`` may retrieve it's status.
+        """
+        # XXX
+        vs = orm.violations()
+
+        if self.dispatch.owner.id != orm.security().user.id:
+            vs += 'Current user must be the dispatch owner'
+        
         return vs
 
 class statustype(apriori.type):

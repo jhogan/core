@@ -915,6 +915,12 @@ class contactmechanism(orm.entity):
     """
 
     @property
+    def creatability(self):
+        """ Anyone can create a contact mechanism.
+        """
+        return orm.violations.empty
+
+    @property
     def retrievability(self):
         # XXX Test
         vs = orm.violations()
