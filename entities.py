@@ -26,8 +26,6 @@ The ``index`` and ``indexes`` classes create dict() based indexes of
 ``entity`` objects within ``entities`` collection for fast object
 lookups by attributes. These indexes are useful for ``entities``
 collections with large numbers of elements.
-
-TODOs:
 """
 from datetime import datetime
 from random import randint, sample
@@ -933,25 +931,80 @@ class entities:
         return type(self)(rms)
 
     def __isub__(self, e):
+        """ Allows entities to be removed from the collection using the
+        -= operator::
+
+            e = es.last         # Get last entity in collecton
+            es -= e             # Remove it
+            assert e not in es  # assert its no longer there
+
+        :param: e entity|entities|callable|int|str: The entity or a
+        way of referencing entity objects to be removed. For example, a
+        collection of entities can be removed in one line::
+
+            # Get half the entities from es and put them in es1
+            es1 = es.where(lambda x: x.getindex() % 2)
+
+            # Remove those entities en es1 from es
+            es -= es1
+        
+        ``e`` can be a number of different things. Since this method is
+        a thin wrapper around self.remove, see the documentation for the
+        ``e`` parameter in that method's docstring for more options.
+        """
         self.remove(e)
         return self
 
     def shift(self):
+        """ Remove the first element in the collection and return it. If
+        the collection is empty, None will be returned.
+        """
         return self.pop(0)
 
     def pop(self, ix=None):
+        """ Removes an element from the collection and returns it. If no
+        arguments are provided, the last element of the collection is
+        removed and returned. 
+
+        Note that the onremove event will be raised if an element is
+        removed. 
+
+        :param: ix NoneType|int|str: The index or a why of describing
+        what will be remove.
+            
+            if int:
+                The ix is an int, the element is searched for by its
+                index, removed and returned.
+
+            if NoneType:
+                If ix receives no arguments, or the argument is None,
+                the last element of the collection will be removed and
+                returned.
+
+            if str:
+                If ix is a str, self.getindex is used to convert ix into
+                a numeric index value. That values is used to look up
+                the element by index. The element is then removed from
+                the collection and returned.
+        """
+
+        # TODO I think that None should be returned if no element is
+        # found. For example, if ix is an int that doesn't
+        # represent an element in the collection, an IndexError is
+        # currently raised. I think that in that case, None should be
+        # returned and the onremove event should not be raised.
         if self.count == 0:
             return None
 
         if ix == None: 
             e = self.last
-            self._ls.pop()
+            self._ls.pop()      # TODO Why don't we get e from this line
         elif type(ix) is int:
             e = self[ix]
             self._ls.pop(ix)
         elif type(ix) is str:
             ix = self.getindex(ix)
-            e = self[ix]
+            e = self[ix]      
             self._ls.pop(ix)
 
         eargs = entityremoveeventargs(e)
