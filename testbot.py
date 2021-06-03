@@ -337,26 +337,29 @@ class test_sendbot(tester.tester):
 
             msg.save()
 
-        sec = orm.security()
-        sec.proprietor = None
-        sec.owner = None
-        with orm.sudo():
-            sb = bot.sendbot(iterations=1)
-        sb()
+            sec = orm.security()
+            sec.proprietor = None
+            sec.owner = None
+            with orm.sudo():
+                sb = bot.sendbot(iterations=1)
 
             bot.sendbot._user = None
             sb()
 
-            par = par.orm.super
+            par = sb
+            while par:
+                self.is_(ecommerce.users.root, par.owner)
 
-        cara = party.company.carapacian
-        self.is_(cara, orm.security().proprietor)
+                par = par.orm.super
 
-        self.is_(sb.user, orm.security().owner)
+            cara = party.company.carapacian
+            self.is_(cara, orm.security().proprietor)
 
-        dis = dis.orm.reloaded()
-        self.eq('postmarked', dis.status)
-        self.one(dis.statuses)
+            self.is_(sb.user, orm.security().owner)
+
+            dis = dis.orm.reloaded()
+            self.eq('postmarked', dis.status)
+            self.one(dis.statuses)
 
     def it_invokes_with_iterations(self):
         eargss = list()
@@ -365,12 +368,14 @@ class test_sendbot(tester.tester):
 
         args = '--verbosity 5 --iterations=2 sendbot'
         pnl = bot.panel(args=args, dodisplay=False)
-        pnl.bot.onbeforeiteration += bot_onbeforeiteration
-        pnl()
+        usr = pnl.bot.user
+        with orm.proprietor(party.company.carapacian), orm.su(usr):
+            pnl.bot.onbeforeiteration += bot_onbeforeiteration
+            pnl()
 
-        for i, eargs in enumerate(eargss, 1):
-            self.eq(i, eargs.iteration)
-            self.eq(2, eargs.of)
+            for i, eargs in enumerate(eargss, 1):
+                self.eq(i, eargs.iteration)
+                self.eq(2, eargs.of)
             
     def it_invokes_with_no_iterations(self):
         eargss = list()
@@ -380,28 +385,35 @@ class test_sendbot(tester.tester):
                 return
 
             eargss.append(eargs)
+
         args = '--verbosity 5 sendbot'
         pnl = bot.panel(args=args, dodisplay=False)
-        pnl.bot.onbeforeiteration += bot_onbeforeiteration
-        pnl()
+        usr = pnl.bot.user
 
-        self.five(eargss)
-        for i, eargs in enumerate(eargss, 1):
-            self.eq(i, eargs.iteration)
-            self.none(eargs.of)
+        with orm.proprietor(party.company.carapacian), orm.su(usr):
+            pnl.bot.onbeforeiteration += bot_onbeforeiteration
+            pnl()
+
+            self.five(eargss)
+            for i, eargs in enumerate(eargss, 1):
+                self.eq(i, eargs.iteration)
+                self.none(eargs.of)
 
     def it_invokes_with_no_bot_argument(self):
         args = '--verbosity 5'
 
         pnl = bot.panel(args=args, dodisplay=False)
-        try:
-            pnl()
-        except bot.TerminateError as ex:
-            self.endswith(
-                ': error: the following arguments are '
-                'required: bot\n', ex.message
-            )
-            self.eq(2, ex.status)
+        usr = pnl.bot.user
+
+        with orm.proprietor(party.company.carapacian), orm.su(usr):
+            try:
+                pnl()
+            except bot.TerminateError as ex:
+                self.endswith(
+                    ': error: the following arguments are '
+                    'required: bot\n', ex.message
+                )
+                self.eq(2, ex.status)
 
     def it_is_data_singleton(self):
         """ Ensure each time bot.sendbot is instatiated, the same
