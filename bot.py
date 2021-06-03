@@ -138,7 +138,7 @@ class bot(ecommerce.agent):
                 'user is only available to concrete classes'
             )
 
-        if not hasattr(cls, '_user'):
+        if (not hasattr(cls, '_user')) or cls._user is None:
             if not hasattr(cls, 'UserId'):
                 raise ValueError('bot must have UserId constant set')
 

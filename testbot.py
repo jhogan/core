@@ -344,9 +344,8 @@ class test_sendbot(tester.tester):
             sb = bot.sendbot(iterations=1)
         sb()
 
-        par = sb
-        while par:
-            self.is_(ecommerce.users.root, par.owner)
+            bot.sendbot._user = None
+            sb()
 
             par = par.orm.super
 
