@@ -403,16 +403,15 @@ class test_sendbot(tester.tester):
         args = '--verbosity 5'
 
         pnl = bot.panel(args=args, dodisplay=False)
-        usr = pnl.bot.user
-
-        with orm.proprietor(party.company.carapacian), orm.su(usr):
+        with orm.proprietor(party.company.carapacian):
             try:
                 pnl()
             except bot.TerminateError as ex:
                 self.endswith(
                     ': error: the following arguments are '
-                    'required: bot\n', ex.message
+                    'required: bot\n', str(ex)
                 )
+                
                 self.eq(2, ex.status)
 
     def it_is_data_singleton(self):
@@ -428,30 +427,35 @@ class test_sendbot(tester.tester):
             p.orm.truncate()
             p = p.orm.super
 
+        # This instatiation will create the record in the sendbot table.
         sb = bot.sendbot(iterations=0, verbosity=2)
-        sb1 = bot.sendbot(iterations=1, verbosity=3)
 
-        # Though the id should be the same, the identity
-        # shouldn't be because we want to be able to have alternate
-        # configurations (``iterations``, ``verbosity``, etc)
-        self.eq(sb.id, sb1.id)
-        self.eq(0, sb.iterations)
-        self.eq(1, sb1.iterations)
-        self.eq(2, sb.verbosity)
-        self.eq(3, sb1.verbosity)
+        with orm.proprietor(party.company.carapacian), orm.su(sb.user):
+            # This instatiated will retrieve the record from the sendbot
+            # table
+            sb1 = bot.sendbot(iterations=1, verbosity=3)
 
-        for b in (sb, sb1):
-            self.false(b.orm.isnew)
-            self.false(b.orm.isdirty)
-            self.false(b.orm.ismarkedfordeletion)
-            
-            # The name of the bot, particularly at the ``party.party``
-            # super, was a little problematic. So make sure it gets set
-            # correctly in all supers. The name shouldn't be set in the
-            # contructor.
-            while b:
-                self.eq('sendbot', b.name)
-                b = b.orm.super
+            # Though the id should be the same, the identity shouldn't
+            # be because we want to be able to have alternate
+            # configurations (``iterations``, ``verbosity``, etc)
+            self.eq(sb.id, sb1.id)
+            self.eq(0, sb.iterations)
+            self.eq(1, sb1.iterations)
+            self.eq(2, sb.verbosity)
+            self.eq(3, sb1.verbosity)
+
+            for b in (sb, sb1):
+                self.false(b.orm.isnew)
+                self.false(b.orm.isdirty)
+                self.false(b.orm.ismarkedfordeletion)
+                
+                # The name of the bot, particularly at the
+                # ``party.party`` super, was a little problematic. So
+                # make sure it gets set correctly in all supers. The
+                # name shouldn't be set in the contructor.
+                while b:
+                    self.eq('sendbot', b.name)
+                    b = b.orm.super
 
 if __name__ == '__main__':
     tester.cli().run()
