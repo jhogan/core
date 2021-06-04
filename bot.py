@@ -536,8 +536,8 @@ class InputError(ValueError):
 
 class TerminateError(Exception):
     def __init__(self, st, msg):
+        super().__init__(msg)
         self.status = st
-        self.message = msg
 
 class argumentparser(argparse.ArgumentParser):
     def exit(self, *args, **kwargs):
@@ -545,7 +545,7 @@ class argumentparser(argparse.ArgumentParser):
             super().exit(*args, **kwargs)
         else:
             st, msg = args
-            raise TerminateError(st=st, msg=msg)
+            raise TerminateError(msg=msg, st=st)
 
     def error(self, *args, **kwargs):
         if __name__ == '__main__':
