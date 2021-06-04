@@ -1012,14 +1012,61 @@ class entities:
         return e
 
     def reversed(self):
+        """ Return a generator that allows the collection to be
+        iterated over starting from the end to the beginning::
+
+            for e in es.reversed():
+                # The first e to be printed will be the last element in
+                # es, the second will be the penultimate, and so on.
+                print(e)
+
+        To reverse the order of the ordering of the collection in place,
+        see the ``entities.reverse()`` method.
+        """
         for e in reversed(self._ls):
             yield e
 
     def reverse(self):
+        """ Reverses the order of the elements within the collection.
+        Returns nothing::
+
+            # Given a collection of 3
+            assert es.count == 3
+
+            # Get the elements
+            first   =  es.first
+            second  =  es.second
+            third   =  es.third
+
+            # In-place reverse elements
+            es.reverse()
+
+            # es has been reversed
+            assert third   is  es.first
+            assert second  is  es.second
+            assert first   is  es.third
+        """
         self._ls.reverse()
 
     @property
     def ubound(self):
+        """ Return the number of the items in the collection minus 1. If
+        there are no elements, None is returned.
+
+        ``ubound`` is based on the old BASIC function of the same name.
+        For some use cases, its semantics can be of value since, by
+        definition, its value is exactly the largest value that
+        can be given to the indexer without error, i.e., the *upper
+        bound*::
+
+            assert es.ispopulated
+            es[es.ubound]      # Never an IndexError
+            es[es.ubound + 1]  # Always and IndexError
+
+        However, for the overwhelming majority of use cases, this is the
+        wrong property to use and ``entities.count`` should be used
+        instead.
+        """
         if self.isempty: return None
         return self.count - 1
 
@@ -1174,7 +1221,6 @@ class entities:
 
     @property
     def ispopulated(self):
-        # TODO This is redundant with isplurality.
         return not self.isempty
 
     def __repr__(self):
