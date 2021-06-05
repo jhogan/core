@@ -818,6 +818,19 @@ class root(tester.tester):
         self.eq('valid', br.type)
         self.is_(root1, br.entity)
 
+    def it_assigns_root_a_consistent_id(self):
+        Id = uuid.UUID(hex='93a7930b-2ae4-402a-8c77-011f0ffca9ce')
+
+        for _ in range(2):
+            ecommerce.user.orm.truncate()
+            ecommerce.users._root = None
+
+            self.eq(Id, ecommerce.users.root.id)
+
+            ecommerce.user.orm.truncate()
+
+            self.eq(Id, ecommerce.users.root.id)
+
 class proprietor(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

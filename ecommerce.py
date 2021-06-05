@@ -45,6 +45,7 @@ import primative
 import product
 import user_agents
 import urllib.parse
+import uuid
 
 class agents(party.parties):                                  pass
 class webmasters(party.personals):                            pass
@@ -65,6 +66,8 @@ class contentstatustypes(apriori.types):                      pass
 class users(orm.entities):
     @classproperty
     def root(cls):
+        Id = '93a7930b-2ae4-402a-8c77-011f0ffca9ce'
+
         if not hasattr(cls, '_root') or not cls._root:
             from pom import site
             for map in users.orm.mappings.foreignkeymappings:
@@ -85,7 +88,7 @@ class users(orm.entities):
             if usrs.issingular:
                 cls._root = usrs.first
             else:
-                cls._root = user(name='root')
+                cls._root = user(id=uuid.UUID(hex=Id), name='root')
 
                 with orm.override():
                     cls._root.save()
