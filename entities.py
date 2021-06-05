@@ -1071,18 +1071,51 @@ class entities:
         return self.count - 1
 
     def move(self, ix, e):
-        """ Insert `e` *before* the element at position `ix`.
+        """ NOTE Currently not implemented.
+        
+        Remove ``e`` from the collection, causing the onremove event to
+        fire, then insert it before the element at index ``ix`` in the
+        collection.
+
+        :param: ix int: The index the element will be moved before.
+
+        :param: e entity: The entity to move.
         """
         raise NotImplementedError('TODO')
 
     def moveafter(self, ix, e):
+        """ Remove ``e`` from the collection, causing the onremove event to
+        fire, then insert it after the element at index ``ix`` in the
+        collection.
+
+        :param: ix int: The index the element will be moved after.
+
+        :param: e entity: The entity to move.
+        """
         self.remove(e)
         self.insertafter(ix, e)
 
     def insert(self, ix, e):
+        """ Insert the entity ``e`` into the collection before the
+        element at index `ix`. This method is identical to
+        ``entities.insertbefore``.
+
+        :param: ix int: The index of the element that ``e`` will be
+        inserted before.
+
+        :param: e entity: The entity to be inserted.
+        """
         self.insertbefore(ix, e)
 
     def insertbefore(self, ix, e):
+        """ Insert the entity ``e`` into the collection before the
+        element at index `ix`. 
+
+        :param: ix int: The index of the element that ``e`` will be
+        inserted before.
+
+        :param: e entity: The entity to be inserted.
+        """
         # TODO Support inserting collections
         self._ls.insert(ix, e)
         try:
@@ -1093,9 +1126,36 @@ class entities:
             raise AttributeError(msg)
 
     def insertafter(self, ix, e):
+        """ Insert the entity ``e`` into the collection after the
+        element at index `ix`. 
+
+        :param: ix int: The index of the element that ``e`` will be
+        inserted after.
+
+        :param: e entity: The entity to be inserted.
+        """
         self.insertbefore(ix + 1, e)
 
     def unshift(self, e):
+        """ Insert the entity ``e`` at the begining of the collection.
+
+        Note that the name ``unshift`` is barrowed from Perl to imply
+        pushing an element onto the beginning of a stack (i.e., an array
+        or list). This is useful when stack semantics are needed.
+        However, within the Core framework, the << operator should be
+        used::
+
+            # Only when stack sementics are needed.
+            es.unshift(e)
+
+            # Otherwise, use the << operator
+            es << e
+
+            # For ether of the above, the following can be asserted:
+            assert es.first is e
+
+        :param: e entity: The entity to be inserted.
+        """
         # TODO: Return entities object to indicate what was unshifted
         self.insertbefore(0, e)
 
