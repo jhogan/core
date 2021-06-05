@@ -98,7 +98,9 @@ class test_bot(tester.tester):
                 self.eq(msgs[5-v:], msgs1)
 
     def it_logs_to_database(self):
-        b = bot.sendbot(iterations=0, verbosity=5) 
+        with orm.sudo():
+            b = bot.sendbot(iterations=0, verbosity=5) 
+
         with orm.proprietor(party.company.carapacian), orm.su(b.user):
             # Create an abstract bot
 
@@ -201,6 +203,7 @@ class test_bot(tester.tester):
     def it_calls_user(self):
         self._clear()
         ecommerce.users.orm.truncate()
+        bot.sendbot._user = None
 
         sb = bot.sendbot(iterations=1, verbosity=5)
         sb()
@@ -263,6 +266,7 @@ class test_sendbot(tester.tester):
 
     def it_calls__call__(self):
         message.dispatches.orm.truncate()
+        bot.sendbot._user = None
 
         b = bot.sendbot(iterations=1)
         with orm.proprietor(party.company.carapacian), orm.su(b.user):
@@ -321,6 +325,7 @@ class test_sendbot(tester.tester):
             ''' Remove principles first '''
             self._clear()
             ecommerce.users.orm.truncate()
+            bot.sendbot._user = None
 
             msg = message.message.email(
                 from_    =  'from@example.com',
@@ -346,11 +351,6 @@ class test_sendbot(tester.tester):
             bot.sendbot._user = None
             sb()
 
-            par = sb
-            while par:
-                self.is_(ecommerce.users.root, par.owner)
-
-                par = par.orm.super
 
             cara = party.company.carapacian
             self.is_(cara, orm.security().proprietor)
@@ -422,10 +422,7 @@ class test_sendbot(tester.tester):
         # Clear the sendbot table and all super tables. The first
         # instantiation will create the row. The second will retrieve
         # it.
-        p = bot.sendbot
-        while p:
-            p.orm.truncate()
-            p = p.orm.super
+        self._clear()
 
         # This instatiation will create the record in the sendbot table.
         sb = bot.sendbot(iterations=0, verbosity=2)
