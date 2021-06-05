@@ -324,5 +324,59 @@ class test_visit(tester.tester):
 
         self.false(visit.iscurrent)
 
+class test_user(tester.tester):
+    def it_calls_retrievability(self):
+
+        name = uuid.uuid4().hex
+
+        with orm.sudo():
+            usr = ecommerce.user(name=name)
+            usr.save()
+
+            other = ecommerce.user(name='other')
+            other.save()
+
+        # Ensure we are no in security override
+        with orm.override(False):
+            # If no user is logged in, we should get an
+            # AuthorizationError
+            with orm.su(None):
+                self.expect(
+                    orm.AuthorizationError,
+                    usr.orm.reloaded
+                )
+
+            # If another user is trying to read user, we should get an
+            # AuthorizationError (this will probably need to change in
+            # the future; someone from the sysadmin group would need to
+            # read basic user data, for example).
+            with orm.su(other):
+                self.expect(
+                    orm.AuthorizationError,
+                    usr.orm.reloaded
+                )
+
+            # A user should be able to load themselves
+            with orm.su(usr):
+                self.expect(None, usr.orm.reloaded)
+
+            # TODO No one but root should be able to retrieve the user's
+            # encrypted password. At this point, there is no way to restrict
+            # the columns that are retrived; only the rows. Below is a
+            # possible user interface for doing this. This should
+            #
+            #        map = self.orm.mappings['password']
+            #
+            #        # Set to False first in case there is an exception
+            #        that aborts the retrievability code.
+            #        map.retrievability = False  
+            #
+            #        map.retrievability = orm.security.user.isroot:
+            #        
+            #        ... or ...
+            #
+            #        self['password'].retrievability = False
+
+
 if __name__ == '__main__':
     tester.cli().run()
