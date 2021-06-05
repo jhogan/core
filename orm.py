@@ -7433,14 +7433,14 @@ def su(own):
         security().owner = own1
 
 @contextmanager
-def override():
-    """ A contextmanager to ensures that security().override is True.
-    When the context manager exists, orm.override is reset to whatever
-    it was before the contextmanager was entered.
+def override(v=True):
+    """ A contextmanager to change security().override is ``v``.  When
+    the context manager exits, orm.override is reset to whatever it was
+    before the contextmanager was entered.
     """
     override = security().override
     try:
-        security().override = True
+        security().override = v
         yield
     finally:
         security().override = override
