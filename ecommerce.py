@@ -371,6 +371,11 @@ class user(orm.entity):
 
     @property
     def isroot(self):
+        # TODO:887c6605 Change this to:
+        #
+        #    return self.id = '93a7930b-2ae4-402a-8c77-011f0ffca9ce'.
+        #
+        # I think we can get rid of the self.site test.
         return self.name == 'root' and self.site is None
 
     def getbrokenrules(self, *args, **kwargs):

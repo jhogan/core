@@ -807,6 +807,9 @@ class root(tester.tester):
             )
 
     def it_cannot_create_multiple_root_users(self):
+        # TODO:887c6605 Lift restriction on multiple users being named
+        # root. Now that we have root's id hardcoded, we can rely on
+        # that as the identifier of the system's root.
         ecommerce.user.orm.truncate()
         root = ecommerce.user(name='root')
         self.expect(None, root.save)

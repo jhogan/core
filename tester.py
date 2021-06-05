@@ -127,7 +127,6 @@ class tester(entity):
         pass
 
     class _browser(www.browser):
-
         # TODO This appears to be a duplicate and should be removed
         def __init__(self, t, *args, **kwargs):
             self.tester = t
@@ -749,6 +748,7 @@ class tester(entity):
             body = json.loads(body)
             statusmessage = statuscode
             statuscode0 = int(statuscode[:3])
+            # TODO:ed602720
             return httpresponse(statuscode0, statusmessage, resheads, body)
 
 class eventregistrations(entities):
@@ -775,6 +775,8 @@ class eventregistration(entity):
         self.event -= self.handler
 
 class httpresponse(entity):
+    # TODO:ed602720 Is this dead code. Shouldn't we be using
+    # www.response for this.
     def __init__(self, statuscode, statusmessage, headers, body):
         self.statuscode = statuscode
         self.statusmessage = statusmessage
