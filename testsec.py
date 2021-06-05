@@ -176,14 +176,14 @@ class engineer(orm.entity):
 
         if self.name.startswith('Even'):
             if usr.name not in managers[::2]:
-                vs += 'system must be retrived by bgates or snadella'
+                vs += 'system must be retrieved by bgates or snadella'
                 
         elif self.name.startswith('Odd'):
             if usr.name not in managers[1::2]:
-                vs += 'system must be retrived by sballmer'
+                vs += 'system must be retrieved by sballmer'
         else:
             if usr.name not in managers:
-                vs += 'system must be retrived by a manager'
+                vs += 'system must be retrieved by a manager'
 
         return vs
 
@@ -458,8 +458,8 @@ class authorization(tester.tester):
         # Create 4 engineers. Two will have 'Even' in their name and two
         # will have 'Odd' in there name. Due to the contrived
         # authorization rules for `engineer` (engineer.isretrievable)
-        # bgates will be authorized to retrived the 'Even' ones and
-        # sballmer will be able to retrive the 'Odd' ones.
+        # bgates will be authorized to retrieved the 'Even' ones and
+        # sballmer will be able to retrieve the 'Odd' ones.
         with orm.sudo():
             for i, _ in enumerate(range(4)):
                 if i.even:

@@ -298,7 +298,7 @@ class bot(ecommerce.agent):
         with orm.sudo():
             # Use sudo because setting the proprietor may require
             # retriving the current proprietor for comparison. Since the
-            # loggedi in user is the bot, and bots can't retrive
+            # loggedi in user is the bot, and bots can't retrieve
             # carapacian (at least, not at the moment), we should become
             # sudo. 
             orm.security().proprietor = cara

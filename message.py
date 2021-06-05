@@ -411,8 +411,8 @@ class message(orm.entity):
         vs = orm.violations()
 
         # NOTE Obviously, the message's sender and recepients should be
-        # able to retrive a their message. However, at the moment we
-        # will focus on allowing sendbot to retrive messages for
+        # able to retrieve a their message. However, at the moment we
+        # will focus on allowing sendbot to retrieve messages for
         # dispatching.
         import bot
         vs.demand_user_is(bot.sendbot.user)
@@ -445,8 +445,8 @@ class contactmechanism_message(orm.association):
         vs = orm.violations()
 
         # NOTE Obviously, the message's sender and recepients should be
-        # able to retrive a their message. However, at the moment we
-        # will focus on allowing sendbot to retrive messages for
+        # able to retrieve a their message. However, at the moment we
+        # will focus on allowing sendbot to retrieve messages for
         # dispatching.
         import bot
         vs.demand_user_is(bot.sendbot.user)

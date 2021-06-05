@@ -362,7 +362,7 @@ class test_user(tester.tester):
 
             # TODO No one but root should be able to retrieve the user's
             # encrypted password. At this point, there is no way to restrict
-            # the columns that are retrived; only the rows. Below is a
+            # the columns that are retrieved; only the rows. Below is a
             # possible user interface for doing this. This should
             #
             #        map = self.orm.mappings['password']

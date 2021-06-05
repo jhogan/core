@@ -11247,7 +11247,7 @@ class violations(entitiesmod.entities):
     """ A collection of accessibility violations. Returned by the
     accessibility properties of orm.entity to indicate that the there
     are zero or more problems with the user attempting to persist or
-    retrive an entity and what those problems are.
+    retrieve an entity and what those problems are.
     """
     def __init__(self, *args, **kwargs):
         """ Initialize the violations object.
@@ -11292,7 +11292,7 @@ class violations(entitiesmod.entities):
                 if hr not in usr.departments:
                     vs += (
                         'Only user in the human resources department '
-                        'can retrive this entity'
+                        'can retrieve this entity'
                     )
                 return vs
 
