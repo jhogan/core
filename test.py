@@ -17726,6 +17726,39 @@ class gem_party(tester):
         # Company) is the proprietor.
         own.proprietor = com
         own.save()
+    
+    def it_calls_creatability(self):
+        with orm.override(False):
+            with orm.sudo():
+                usr = ecommerce.user(name='creator')
+                usr.save()
+
+            with orm.su(usr):
+                par = party.party(name='derp')
+                self.expect(None, par.save)
+
+
+            # TODO:a22826fe At this point it is unclear how
+            # unauthenicated/anonymous users should be handled.
+            return 
+            with orm.su(None):
+                par = party.party(name='derp')
+                self.expect(orm.AuthorizationError, par.save)
+
+    def it_calls_retrievability(self):
+        with orm.override(False):
+            with orm.sudo():
+                par = party.party(name='derp')
+                usr = ecommerce.user(name='creator')
+                usr.party = par
+                usr1 = ecommerce.user(name='other')
+                usr.save(usr1)
+
+            with orm.su(usr):
+                self.expect(None, par.orm.reloaded)
+
+            with orm.su(usr1):
+                self.expect(orm.AuthorizationError, par.orm.reloaded)
 
     @staticmethod
     def getvalid(first=None, last=None):

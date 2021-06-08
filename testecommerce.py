@@ -377,6 +377,42 @@ class test_user(tester.tester):
             #
             #        self['password'].retrievability = False
 
+class test_url(tester.tester):
+    def it_calls_creatability(self):
+        """ Any user can create (produce) a url. Notably, it's the
+        associations between the URL entity and other entity objects
+        that would have access restrictions. See NOTE:7a67115c
+        """
+        with orm.override():
+            name = uuid.uuid4().hex
+            with orm.sudo():
+                usr = ecommerce.user(name=name)
+                usr.save()
+
+        # Any user can create any url
+        with orm.override(False):
+            with orm.su(usr):
+                url = ecommerce.url(address='www.slashdot.com')
+                self.expect(None, url.save)
+
+    def it_calls_retrievability(self):
+        """ Any user can retrieve a url. Notably, it's the
+        associations between the URL entity and other entity objects
+        that would have access restrictions. See NOTE:7a67115c
+        """
+        with orm.override():
+            name = uuid.uuid4().hex
+            with orm.sudo():
+                usr = ecommerce.user(name=name)
+                usr.save()
+
+                url = ecommerce.url(address='www.slashdot.com')
+                url.save()
+
+        # Any user can retrieve any url
+        with orm.override(False):
+            with orm.su(usr):
+                self.expect(None, url.orm.reloaded)
 
 if __name__ == '__main__':
     tester.cli().run()

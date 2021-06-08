@@ -407,11 +407,21 @@ class message(orm.entity):
         
     @property
     def retrievability(self):
-        # XXX Test
-        vs = orm.violations()
+        # NOTE Obviously, the message's recepients should be able to
+        # retrieve their message. However, at the moment we will focus
+        # on allowing owner of the message to retrieve messages. We will
+        # also allow sendbot accesses to the messages for dispatching.
+        usr = orm.security().user
+
+        if usr.id == self.owner.id:
+            return orm.violations.empty
 
         import bot
-        vs.demand_user_is(bot.sendbot.user)
+        if usr.id == bot.sendbot.user.id:
+            return orm.violations.empty
+
+        vs = orm.violations()
+        vs += 'User must own the message or be sendbot'
 
         return vs
 
@@ -436,15 +446,27 @@ class contactmechanism_message(orm.association):
 
     @property
     def retrievability(self):
-        # XXX Test
-        vs = orm.violations()
-
         # NOTE Obviously, the message's sender and recepients should be
         # able to retrieve a their message. However, at the moment we
         # will focus on allowing sendbot to retrieve messages for
-        # dispatching.
+        # dispatching and allow the message owner (which would usually
+        # be the sender) the ability to retrieve.
+
+        with orm.sudo():
+            msg = self.message
+            own = msg.owner
+
+        usr = orm.security().user
+
+        if own.id == usr.id:
+            return orm.violations.empty
+
         import bot
-        vs.demand_user_is(bot.sendbot.user)
+        if usr.id == uuid.UUID(hex=bot.sendbot.UserId):
+            return orm.violations.empty
+
+        vs = orm.violations()
+        vs += 'User must own the message or be sendbot'
 
         return vs
 
