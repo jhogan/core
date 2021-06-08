@@ -19,6 +19,9 @@
 mapping.
 
 TODOs:
+    TODO: No accessibility should be permitted when security().user is
+    None.
+
     FIXME:6028ce62 Allow entitymappings to be set to None (see 6028ce62
     for more.)
 
@@ -3936,8 +3939,11 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # modify another's records.
         #💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
 
-        # TODO:ee897843 Don't allow a proprietor to create a record
+        # XXX:ee897843 Don't allow a proprietor to create a record
         # belonging to a different proprietor.
+
+        # XXX Raise ProprietorError `if not security().proprietor`. I'm
+        # unclear why this isn't currently being done.
         if crud in ('update', 'delete'):
             if self.proprietor__partyid != security().proprietor.id:
                 raise ProprietorError(self.proprietor)
@@ -10352,9 +10358,7 @@ class orm:
     @staticmethod
     def getentitys(includeassociations=False):
         """ A static method to collect and return all the classes that
-        inherit directly or indirectly from orm.entity. If
-        includeassociations is True, return the classes that inherit
-        from orm.association as well.
+        inherit directly or indirectly from orm.entity.
 
         :param: includeassociations bool: If True, include the classes
         that inherit from orm.association as well.
@@ -11274,6 +11278,10 @@ class violations(entitiesmod.entities):
         self.entity = e
 
     def demand_user_is_authenticated(self):
+        # NOTE:a22826fe At this point, it is not clear how anonymous or
+        # unauthenicated users will work.  We have an anonymous person
+        # (party.party.anonymous). It should have an associated user
+        # record. This could be represent any unauthenicated user.
         import ecommerce
         if not isinstance(security().user, ecommerce.user):
             self += 'User must be authenticated'

@@ -639,7 +639,7 @@ class tester(entity):
 
             # Invoke the calable. If we expect no exception (expect is
             # None), return the value.
-            ret = fn()
+            r = fn()
 
         except Exception as ex:
             if type(ex) is not expect:
@@ -648,7 +648,7 @@ class tester(entity):
             if expect is not None:
                 self._failures += failure(actual=None)
 
-            return ret
+            return r
 
     def repr(self, expect, actual, msg=None):
         if repr(actual) != expect:

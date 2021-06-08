@@ -214,10 +214,18 @@ class party(orm.entity):
 
     @classproperty
     def anonymous(cls):
-        # TODO Ensure that only one party record can have a name of None 
+        # TODO Ensure that only one party record can have a name of
+        # None.  UPDATE Actually A better way to identify the anonymous
+        # user would actually be to just use a hard coded UUID.
 
         # TODO Write test to ensure this returns the same party each
         # time.
+
+        # TODO We should probably memoize this
+
+        # TODO We should probbaly ensure that root is the owner here,
+        # i.e., `with orm.sudo(): ent = cls(id=myuuid); ent.save()`
+
         ents = cls.orm.entities('name is %s', (None,))
         if ents.isempty:
             ent = cls(name=None)

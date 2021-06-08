@@ -51,6 +51,7 @@ import party
 import textwrap
 import builtins
 from uuid import uuid4
+import uuid
 
 class messages(orm.entities):
     """ A collection of ``message`` objects.
@@ -402,7 +403,6 @@ class message(orm.entity):
     def creatability(self):
         """ Anyone should be able to create a message.
         """
-        # XXX Test
         return orm.violations.empty
         
     @property
@@ -410,10 +410,6 @@ class message(orm.entity):
         # XXX Test
         vs = orm.violations()
 
-        # NOTE Obviously, the message's sender and recepients should be
-        # able to retrieve a their message. However, at the moment we
-        # will focus on allowing sendbot to retrieve messages for
-        # dispatching.
         import bot
         vs.demand_user_is(bot.sendbot.user)
 
@@ -431,7 +427,6 @@ class contactmechanism_message(orm.association):
         """ The user who owns the message may create associations to
         contact mechanisms (recipients, From: address, ReplyTo:, etc.).
         """
-        # XXX Test
         vs = orm.violations()
 
         if self.message.owner.id != orm.security().user.id:
@@ -470,7 +465,10 @@ class dispatch(orm.entity):
     def creatability(self):
         """ The message owner my create a dispatch for the message.
         """
-        # XXX Test
+        # XXX Actually, maybe only root should be able to create
+        # dispatches for messages. A user could create multiple
+        # dispatches of the same message and may be able to create
+        # some havoc.
         vs = orm.violations()
 
         if self.message.owner.id != orm.security().user.id:
@@ -480,7 +478,6 @@ class dispatch(orm.entity):
 
     @property
     def retrievability(self):
-        # XXX Test
         vs = orm.violations()
 
         import bot

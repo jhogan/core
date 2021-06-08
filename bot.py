@@ -312,7 +312,27 @@ class bot(ecommerce.agent):
         # proprietor to beloaded leading to infinite recursion.)
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         with orm.override():
-            self.proprietor = cara
+            try:
+                self.proprietor = cara
+            except db.RecordNotFoundError as ex:
+                # NOTE:d8938682 that in test environments, this error is
+                # often caused by the the bot's record in the bots.bots
+                # subtable not having corresponding records in the
+                # supertables - usually party.parties. 
+                # This is due to the fact that tests sometimes delete
+                # table data, but end up leaving the database in an
+                # inconsistent state.  You may want to delete all bots
+                # record and all corresponding records up the
+                # inheritance tree to correct this. Tables to consider:
+                #
+                #   bot_sendbots <the subtable>
+                #   bot_bots
+                #   ecommerce_agents
+                #   party_parties
+                # )
+                raise db.RecordNotFoundError(
+                    'See NOTE:d8938682' # See comment above
+                ) from ex
 
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # Ensure the bot itself is in the database and that root is the

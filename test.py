@@ -3119,7 +3119,7 @@ class test_datetime(tester):
 
         # FIXME
         # If datetime.astimezone is given an invalid argument for the timezone
-        # (i.e., dt.astimezone('XXX')), it will give the following warning but
+        # (i.e., dt.astimezone('xxx')), it will give the following warning but
         # will not throw an exception. This needs to be investigated and
         # probably remedied.
         #

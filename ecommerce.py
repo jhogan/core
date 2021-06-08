@@ -404,7 +404,6 @@ class user(orm.entity):
 
     @property
     def retrievability(self):
-        # XXX Test
         vs = orm.violations()
         sec = orm.security()
         usr = sec.user
@@ -513,8 +512,6 @@ class url(orm.entity):
 
     @property
     def retrievability(self):
-        # XXX Test
-
         # NOTE:7a67115c
         return orm.violations.empty
 

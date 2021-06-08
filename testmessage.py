@@ -21,6 +21,7 @@ import orm
 import ecommerce
 import uuid
 import primative
+import bot
 
 class test_message(tester.tester):
     def __init__(self, *args, **kwargs):
@@ -77,8 +78,7 @@ class test_message(tester.tester):
                 contactmechanism_messagetype = type,
             )
 
-            msg.contactmechanism_messages += cm
-
+            msg.contactmechanism_messages += cm 
         msg.save()
 
         msg1 = msg.orm.reloaded()

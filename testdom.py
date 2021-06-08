@@ -4826,6 +4826,8 @@ class test_selectors(tester.tester):
                 self.true('dialog' in el.classes)
             self.count(51, els, 'sel: ' + sel)
 
+        # TODO Replace instances of XXX with something else. We want to
+        # be able to grep XXX and only see XXX comments.
         ''' Non-existing chained classes selectors '''
         sels = [
             '*.dialog.sceneXXX',
