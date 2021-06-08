@@ -9,19 +9,59 @@
 """ This module contains ``orm.entity`` objects which caused referential
 issue in their natural homes. 
 
-For example, the the ``requirement`` class should be in the order.py.
+For example, the ``requirement`` class should be in the order.py.
 However, product.py wants a ``requirment`` class that subclasses
 ``order.requirement``; and this cannot be, because product.py can't
 ``import`` order.py because it would create a circular reference
 (order.py ``import``s product.py). The ``apriori.py`` module imports no
 GEM class and can therefore house classes that any and all GEM classes
 may depend on.
-
 """
+
 import orm
 from orm import text, date
 from decimal import Decimal as dec
 from dbg import B
+
+def model():
+    """ Import all the entity module.
+
+    Invoking this function is a requirement for any excecutable, such as
+    test.py, bot.py, testmessage.py, or any process that relies on the
+    general entity model (GEM). All GEM modules need to be loaded ab
+    initio so introspection can be used to reflect on their data
+    definitions (i.e., orm.entity.__subclasses__() needs to be able to
+    return every GEM entity class). If modules are left out, the full
+    entity model cannot be constructed since there will be missing
+    parts. Issues may show up in unexpected places, such as foreign keys
+    missing in CREATE TABLE statements.
+
+    Any module that contains orm.entity classes, and that form the
+    General Entity Model, should be imported here. Since entity modules
+    are rarely added, this function will rarely be modified. However,
+    whenever one is, be sure to import here. 
+
+    Note that to use the module in an executable, you will still need to
+    import it there in order to get it in the executable's namespace.
+    """
+    # XXX The need for this came as a surprise, so until this approach
+    # has been tested more, I will call this experimental.
+    import account
+    import apriori
+    import asset
+    import bot
+    import budget
+    import ecommerce
+    import effort
+    import file
+    import hr
+    import invoice
+    import message
+    import order
+    import party
+    import product
+    import shipment
+    import third
 
 class requirements(orm.entities):  pass
 class logs(orm.entities):          pass

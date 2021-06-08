@@ -10,7 +10,10 @@
 ########################################################################
 
 from func import enumerate, B
+
 import apriori
+apriori.model()
+
 import message
 import party
 import tester
