@@ -1160,6 +1160,25 @@ class entities:
         self.insertbefore(0, e)
 
     def push(self, e):
+        """ Append ``e`` to the end of the collection.
+
+        Note that the name ``push`` is barrowed from Perl to imply
+        pushing an element onto the beginning of a stack (i.e., an array
+        or list). This is useful when stack semantics are needed.
+        However, within the Core framework, the += operator should be
+        used::
+
+            # Only when stack sementics are needed.
+            es.push(e)
+
+            # Otherwise, use the += operator
+            es += e
+
+            # For ether of the above, the following can be asserted:
+            assert es.last is e
+
+        :param e entity: The entity being pushed.
+        """
         self += e
 
     def give(self, es):
@@ -1171,16 +1190,58 @@ class entities:
         self.clear()
 
     def __contains__(self, e):
+        """ Returns True if ``e`` is in ``es``::
+
+            assert e not in es
+
+            es += e
+
+            assert e in es
+
+        :param e entity: The entity being sought.
+        """
         if type(e) in (int, str):
             e = self(e)
 
         return self.indexes['identity'](e).ispopulated
 
-    def __lshift__(self, a):
-        self.unshift(a)
+    def __lshift__(self, e):
+        """ Implements the << operator. See the docstring at
+        ``entities.unshift`` for details.
+
+        :param e entity: The entity being unshifted.
+        """
+        self.unshift(e)
     
     def append(self, obj, uniq=False, r=None):
+        """ Appends ``obj`` to the end of the collection.
+
+        The name append is based of Python's list's ``append`` method.
+        It is useful when you want an entities collection to behave like
+        a list. However, the canonical way to append to a collection is
+        to use the += operator::
+            
+            # Behave like a list
+            es.append(e)
+
+            # Canonical 
+            es += e
+
+            # Either of the above lines will allow the following to be
+            # asserted
+
+            assert es.last is e
+
+        :param: obj entity: The entity being asserted.
+
+        :param: uniq bool: If True, an append will only happen if the
+        entity is not already in the collection.
+
+        :param: r entities: For internal use only.
+        """
+
         # Create the return object if it hasn't been passed in
+        # TODO s/==/is/
         if r == None:
             # We use a generic entities class here because to use the subclass
             # (type(self)()) would cause errors in subclasses that demanded
@@ -1228,11 +1289,30 @@ class entities:
         return r
 
     def __iadd__(self, t):
+        """ Implement the += operator. See the docstring at
+        ``entities.append`` for details.
+        """
         self.append(t)
         return self
 
-    def __ior__(self, t):
-        self.append(t, uniq=True)
+    def __ior__(self, e):
+        """ Implements the |= operator on collections. ``e`` will be
+        appended to the collection unless it already exists in the
+        collection. This is the canonical way to do unique appends
+
+            assert e not in es
+
+            # Noncanonical
+            es.append(e, uniq=True)
+
+            # Canonical 
+            es |= e
+
+            # Either of the above lines will allow the following to be
+            # asserted
+            assert es.last is e
+        """
+        self.append(e, uniq=True)
         return self
 
     def __add__(self, es):
