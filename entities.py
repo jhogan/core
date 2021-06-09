@@ -1316,12 +1316,52 @@ class entities:
         return self
 
     def __add__(self, es):
+        """ Implements the + operator. This operator combines two
+        colections together and returns a new collection with the
+        elements from the first two::
+
+            # e is in es; e1 is in es1
+            assert e in es
+            assert e1 in es1
+
+            # Add them together to get es2
+            es2 = es + es1
+
+            # es2 now contains e and e1
+            assert e in es2
+            assert e1 in es2
+
+        :param: es entity|entities: The entity object or the entities
+        collection used to concatentate with self.
+        """
         r = type(self)()
         r += self
         r += es
         return r
 
     def __sub__(self, es):
+        """ Implement the - operator. The - operator removes an entity
+        object, or a collection of entity objects, from the existing
+        entities collection producing a new entities collection of the
+        same type. 
+
+            # e1 is in es and es1
+            assert e in es
+            assert e1 in es
+            assert e1 in es1
+
+            # Subtract the elements from es that are in es1 (e1)
+            es2 = es - es1
+
+            # Alternatively, we could have done: es2 = es - e1
+
+            # es2 will contain e but not e1
+            assert e in es2
+            assert e1 not in es2
+
+        :param: es entity|entities: The entity object or the entities
+        collection used to subtract from self.
+        """
         r = type(self)()
 
         # If es is not an iterable, such as an entitities collection,
@@ -1337,13 +1377,48 @@ class entities:
 
     @property
     def count(self):
+        """ Returns the number of elements in the collection.
+
+        Note: if list semantics are needed, the builtin len() function
+        can be used instead::
+            
+            assert len(es) == es.count
+
+        However, the ``count`` property is the prefered way to get the
+        collection's count within the framework.
+        """
         return len(self._ls)
 
     def getcount(self, qry):
+        """ The the count of elements after filtering with a where
+        predicate. The following can always be asserted::
+
+            # Given p is a where predicate
+            assert es.count(p) == es.where(p).count
+
+        See the ``where`` method for details on the where predicate.
+        """
         # TODO Test
         return self.where(qry).count
 
     def __len__(self):
+        """ Returns the number of elements in the collection. This is a
+        Python magic function that allows getting the collection's count
+        with the builtin len() function.
+
+            es = entities()
+            assert len(es) == 0
+
+            es += e
+
+            assert len(es) == 1
+
+        Note: if list semantics are needed, the builtin len() function
+        can be should be used.  However, the ``count`` property is the
+        prefered way to get the collection's count within the framework.
+            
+            assert len(es) == es.count
+        """
         return self.count
 
     @property
