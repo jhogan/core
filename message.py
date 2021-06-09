@@ -530,10 +530,8 @@ class status(orm.entity):
 
     @property
     def creatability(self):
-        # XXX Test
-        vs = orm.violations()
-
         import bot
+        vs = orm.violations()
         vs.demand_user_is(bot.sendbot.user)
         return vs
 
@@ -541,12 +539,9 @@ class status(orm.entity):
     def retrievability(self):
         """ sendbot may retrieve a dispatch's status.
         """
-        # XXX
+        import bot
         vs = orm.violations()
-
-        if self.dispatch.owner.id != orm.security().user.id:
-            vs += 'Current user must be the dispatch owner'
-        
+        vs.demand_user_is(bot.sendbot.user)
         return vs
 
 class statustype(apriori.type):

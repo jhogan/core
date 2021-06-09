@@ -530,5 +530,110 @@ class test_dispatch(tester.tester):
                 with orm.su(sb):
                     self.expect(None, save)
 
+class test_status(tester.tester):
+    def it_calls_creatability(self):
+        with orm.sudo():
+            with orm.proprietor(party.company.carapacian):
+                pass
+
+        with orm.proprietor(party.company.carapacian):
+            with orm.override():
+                with orm.sudo():
+                    usr = ecommerce.user(name='creator')
+                    usr.save()
+
+            with orm.override(False):
+                with orm.su(usr):
+                    msg = message.message.email(
+                        from_    =  'from@example.com',
+                        replyto  =  'replyto@example.com',
+                        to       =  'jhogan@carapacian.com',
+                        subject  =  'Test email',
+                        text     =  'Test message',
+                        html     =  '<p>Test message</p>',
+                    )
+                    msg.save()
+
+                with orm.sudo():
+                    dis = msg.dispatch(
+                        dispatchtype = message.dispatchtype(name='email')
+                    )
+                    dis.save()
+
+                sts = dis.statuses
+                self.zero(sts)
+                dispatcher = third.dispatcher.create(dis)
+
+                with orm.su(bot.sendbot.user):
+                    # Create status objects in dis.status
+                    dispatcher.dispatch(dis)
+                    self.multiple(sts)
+
+                with orm.su(usr):
+                    msg = message.message.email(
+                        from_    =  'from@example.com',
+                        replyto  =  'replyto@example.com',
+                        to       =  'jhogan@carapacian.com',
+                        subject  =  'Test email',
+                        text     =  'Test message',
+                        html     =  '<p>Test message</p>',
+                    )
+                    msg.save()
+
+                with orm.sudo():
+                    dis = msg.dispatch(
+                        dispatchtype = message.dispatchtype(name='email')
+                    )
+                    dis.save()
+
+                dispatcher = third.dispatcher.create(dis)
+                with orm.su(usr):
+                    self.expect(
+                        orm.AuthorizationError,
+                        lambda: dispatcher.dispatch(dis)
+                    )
+
+    def it_calls_retrievability(self):
+        with orm.sudo():
+            with orm.proprietor(party.company.carapacian):
+                pass
+
+        with orm.proprietor(party.company.carapacian):
+            with orm.override():
+                with orm.sudo():
+                    usr = ecommerce.user(name='creator')
+                    usr.save()
+
+            with orm.override(False):
+                with orm.su(usr):
+                    msg = message.message.email(
+                        from_    =  'from@example.com',
+                        replyto  =  'replyto@example.com',
+                        to       =  'jhogan@carapacian.com',
+                        subject  =  'Test email',
+                        text     =  'Test message',
+                        html     =  '<p>Test message</p>',
+                    )
+                    msg.save()
+
+                with orm.sudo():
+                    dis = msg.dispatch(
+                        dispatchtype = message.dispatchtype(name='email')
+                    )
+                    dis.save()
+
+                    dispatcher = third.dispatcher.create(dis)
+
+                with orm.su(bot.sendbot.user):
+                    # Create status objects in dis.status
+                    dispatcher.dispatch(dis)
+
+                reloaded = dis.statuses.first.orm.reloaded
+                with orm.su(usr):
+                    self.expect(orm.AuthorizationError, reloaded)
+
+                with orm.su(bot.sendbot.user):
+                    self.expect(None, reloaded)
+
 if __name__ == '__main__':
     tester.cli().run()
