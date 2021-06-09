@@ -509,7 +509,6 @@ class dispatch(orm.entity):
 
     @property
     def updatability(self):
-        # XXX Test
         vs = orm.violations()
 
         import bot
@@ -540,7 +539,7 @@ class status(orm.entity):
 
     @property
     def retrievability(self):
-        """ The owner of the ``dispatch`` may retrieve it's status.
+        """ sendbot may retrieve a dispatch's status.
         """
         # XXX
         vs = orm.violations()

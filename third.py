@@ -10,20 +10,18 @@
 
 """ This module contains all classes related to third party network
 API's.
-
-TODOs:
 """
 
 from config import config
+from contextlib import contextmanager
 from func import enumerate, B
 import ecommerce
 import json
 import pom
+import primative
 import product
 import urllib
 import www
-import primative
-from contextlib import contextmanager
 
 class internetservices(product.services):
     pass
@@ -159,8 +157,12 @@ class postmark(emailer):
         """ Send an email via Postmark Email Service
         (https://postmarkapp.com/).
 
-        :param: dis message.delevery: The message delevery entity to
-        send. Note that the delivery object will have the actual message
+        The dispatch (``dis``) object`s ``statuses`` collection will
+        receive an new entry to indicate how the interation with
+        Postmark's service went.
+
+        :param: dis message.dispatch: The messages' dispatch entity to
+        send. Note that the dispach object will have the actual message
         entity that we are sending.
         """
         import party

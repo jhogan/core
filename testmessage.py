@@ -10,18 +10,18 @@
 ########################################################################
 
 from func import enumerate, B
+import bot
+import ecommerce
+import message
+import orm
+import party
+import primative
+import tester
+import third
+import uuid
 
 import apriori
 apriori.model()
-
-import message
-import party
-import tester
-import orm
-import ecommerce
-import uuid
-import primative
-import bot
 
 class test_message(tester.tester):
     def __init__(self, *args, **kwargs):
