@@ -1423,28 +1423,87 @@ class entities:
 
     @property
     def isempty(self):
+        """ Returns True if there are no elements in the collection.
+
+        Both statements are equivalent, but the later is prefered
+
+            if es.count == 0:
+                ...
+
+            if es.isempty:
+                ...
+        """
         return self.count == 0
 
     @property
     def issingular(self):
+        """ Returns True if there is exactly one element in the
+        collection.
+
+        Both statements are equivalent, but the later is prefered
+
+            if es.count == 1:
+                ...
+
+            if es.issingular:
+                ...
+        """
         return self.count == 1
 
     @property
     def isplurality(self):
+        """ Returns True if there is 2 or more elements in the
+        collection.
+
+        Both statements are equivalent, but the later is prefered
+
+            if es.count > 1
+                ...
+
+            if es.isplurality::
+                ...
+        """
         # TODO This should be call isplural
         return self.count > 1
 
     @property
     def ispopulated(self):
+        """ Returns True if there is 1 or more elements in the
+        collection.
+
+        Both statements are equivalent, but the later is prefered
+
+            if es.count >= 1
+                ...
+
+            if es.ispopulated::
+                ...
+        """
         return not self.isempty
 
     def __repr__(self):
+        """ Returns a string representation of the collection and each
+        of the elements in it.
+        """
         return self._tostr(repr)
 
     def __str__(self):
+        """ Returns a string representation of the collection and each
+        of the elements in it.
+        """
         return self._tostr(str)
 
     def _tostr(self, fn=str, includeHeader=True):
+        """ Returns a string representation of the collection and each
+        of the elements in it.
+
+        :param: fn: callable: Each element is passed to this function to
+        get its string representation. By default, the function is the
+        builtin str() function.
+
+        :param: includeHeader bool: Include a header in the string
+        representation. 
+        """
         if includeHeader:
             r = '%s object at %s' % (type(self), hex(id(self)))
 
@@ -1470,6 +1529,25 @@ class entities:
         return r
 
     def __setitem__(self, key, item):
+        """ Implements an indexer that can be assigned an element.
+
+            es[0] = e
+            assert es.first is e
+
+        The ``key`` can be a slice and the ``item`` can be an iterable::
+
+            # Create a collection and add a couple of elements to it
+            es = entities()
+            es += element()
+            es += element()
+
+            # Assign the first two elements of es to the first two
+            # positions of es1.
+            es1[:1] = es
+
+            assert es1.first is es.first
+            assert es1.second is es.second
+        """
         e = self[key]
         self._ls[key]=item
 
@@ -1489,7 +1567,6 @@ class entities:
         # onremove logic below.
         for item in items:
             self.onadd(self, entityaddeventargs(item))
-
 
     def __getitem__(self, key):
         if isinstance(key, int):
