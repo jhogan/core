@@ -696,6 +696,32 @@ class authorization(tester.tester):
             self.expect(None, pr.save)
             pr1 = self.expect(None, pr.orm.reloaded)
 
+    def it_retrieves_constituents_with_override(self):
+        orm.security.owner = self.bgates
+
+        with orm.su(self.bgates):
+            eng = engineer(name='Even')
+            eng.systems += system(name='Even')
+            eng.save()
+
+        with orm.su(self.sballmer):
+            eng.systems += system(name='Even')
+            eng.save()
+
+        with orm.su(self.bgates):
+            eng = eng.orm.reloaded()
+
+        with orm.override():
+            with orm.su(self.sballmer):
+                self.two(eng.systems)
+
+        with orm.su(self.bgates):
+            eng = eng.orm.reloaded()
+
+        with orm.override(False):
+            with orm.su(self.sballmer):
+                self.zero(eng.systems)
+
     def it_updates_with_override(self):
         with orm.sudo():
             pr = problem()
