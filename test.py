@@ -18084,27 +18084,27 @@ class gem_product(tester):
         )
 
         # Create companies
-        abc = gem_party.getvalidcompany(
+        abc = testparty.gem_party.getvalidcompany(
             name = 'ABC Corporation'
         )
 
-        joes = gem_party.getvalidcompany(
+        joes = testparty.gem_party.getvalidcompany(
             name = "Joe's Stationary"
         )
 
-        mikes = gem_party.getvalidcompany(
+        mikes = testparty.gem_party.getvalidcompany(
             name = "Mike's Office Supply"
         )
 
-        greggs = gem_party.getvalidcompany(
+        greggs = testparty.gem_party.getvalidcompany(
             name = "Gregg's Pallet Shop"
         )
 
-        palletinc = gem_party.getvalidcompany(
+        palletinc = testparty.gem_party.getvalidcompany(
             name = 'Pallets Incorporated'
         )
 
-        warehousecomp = gem_party.getvalidcompany(
+        warehousecomp = testparty.gem_party.getvalidcompany(
             name = 'The Warehouse Company'
         )
 
@@ -18192,10 +18192,10 @@ class gem_product(tester):
         self.false(hasattr(serv, 'guidelines'))
 
         good = gem_product.getvalid(product.good, comment=1)
-        reg = gem_party.getvalidregion()
+        reg = testparty.gem_party.getvalidregion()
         fac = party.facility(name='Area 51', footage=100000)
         fac.save()
-        org = gem_party.getvalidcompany()
+        org = testparty.gem_party.getvalidcompany()
 
         cnt = 2
         for i in range(cnt):
@@ -18996,11 +18996,11 @@ class gem_product(tester):
 
     def it_creates_prices(self):
         # Create organizations
-        abc = gem_party.getvalidcompany(
+        abc = testparty.gem_party.getvalidcompany(
             name = 'ABC Corporation'
         )
 
-        joes = gem_party.getvalidcompany(
+        joes = testparty.gem_party.getvalidcompany(
             name = "Joe's Stationary"
         )
 
@@ -19841,7 +19841,7 @@ class gem_order(tester):
         authorizer   =  order.order_partytype(name='Authorizer')
 
         # Create parties
-        person = gem_party.getvalid
+        person = testparty.gem_party.getvalid
         johnjones  =  person(first='John',   last='Jones')
         nancy      =  person(first='Nancy',  last='Barker')
         frank      =  person(first='Frank',  last='Parks')
@@ -22629,7 +22629,7 @@ class gem_hr(tester):
         # TODO We should be able to create a position in any
         # party.legalorganization such as a non-profit.
         postyp = self.getvalidpositiontype()
-        com = gem_party.getvalidcompany()
+        com = testparty.gem_party.getvalidcompany()
 
         # Create positions based on the job
         poss = hr.positions()
@@ -22675,7 +22675,7 @@ class gem_hr(tester):
         self.two(com1.departments.first.divisions.first.positions)
 
     def it_fulfills_postition(self):
-        per = gem_party.getvalid(first='Mike', last='Johnson')
+        per = testparty.gem_party.getvalid(first='Mike', last='Johnson')
 
         postype = hr.positiontype(name='Mail Clerk', description=None)
         clerk = hr.position()
