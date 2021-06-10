@@ -684,7 +684,7 @@ class authorization(tester.tester):
                 self.fail('No exception')
 
         with orm.sudo():
-            self.expect(db.RecordNotFoundError, sys.orm.reloaded)
+            self.expect(None, sys.orm.reloaded)
 
     ''' orm.override '''
     def it_creates_and_retrieves_with_override(self):
