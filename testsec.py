@@ -235,7 +235,6 @@ class authorization(tester.tester):
     """ Tests the accessibility properties of entities (creatability,
     retrievability, updatability and deletability).
     """ 
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

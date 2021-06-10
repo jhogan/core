@@ -16,6 +16,7 @@ import primative
 import tester
 import ecommerce
 import uuid
+import bot
 from uuid import uuid4, UUID
 
 import apriori
