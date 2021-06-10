@@ -1902,15 +1902,33 @@ class gem_party(tester.tester):
 
 class test_contactmechanism(tester.tester):
     def it_calls_creatability(self):
-        with orm.override():
+        with orm.override(False):
             with orm.sudo():
                 usr = ecommerce.user(name='anyone')
                 usr.save()
 
-        with orm.su(usr):
-            name = f'{uuid4().hex}@carapacian.com'
-            em = party.email(name=name)
-            self.expect(None, em.save)
+            with orm.su(usr):
+                name = f'{uuid4().hex}@carapacian.com'
+                em = party.email(name=name)
+                self.expect(None, em.save)
+
+    def it_calls_retrievability(self):
+        with orm.override(False):
+            with orm.sudo():
+                usr = ecommerce.user(name='someone')
+                usr1 = ecommerce.user(name='someone else')
+                usr.save(usr1)
+
+            with orm.su(usr):
+                name = f'{uuid4().hex}@carapacian.com'
+                em = party.email(name=name)
+                em.save()
+
+            with orm.su(bot.sendbot.user):
+                self.expect(None, em.orm.reloaded)
+
+            with orm.su(usr):
+                self.expect(orm.AuthorizationError, em.orm.reloaded)
 
 if __name__ == '__main__':
     tester.cli().run()
