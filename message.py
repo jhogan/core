@@ -487,20 +487,14 @@ class dispatch(orm.entity):
     def creatability(self):
         """ The message owner my create a dispatch for the message.
         """
-        # XXX Actually, maybe only root should be able to create
-        # dispatches for messages. A user could create multiple
-        # dispatches of the same message and may be able to create
-        # some havoc.
-        vs = orm.violations()
+        vs = orm.violations(entity=self)
+        vs.demand_root()
 
-        if self.message.owner.id != orm.security().user.id:
-            vs += 'Current user must be the message owner'
-        
         return vs
 
     @property
     def retrievability(self):
-        vs = orm.violations()
+        vs = orm.violations(entity=self)
 
         import bot
         vs.demand_user_is(bot.sendbot.user)
@@ -509,7 +503,7 @@ class dispatch(orm.entity):
 
     @property
     def updatability(self):
-        vs = orm.violations()
+        vs = orm.violations(entity=self)
 
         import bot
         vs.demand_user_is(bot.sendbot.user)
