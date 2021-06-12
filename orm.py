@@ -7473,11 +7473,9 @@ class security:
 
             # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
 
-            # XXX:a93f0ee2 We are setting these propreties on the class
-            # and not the instance.
-            cls._override    =  False
-            cls._owner       =  None
-            cls._proprietor  =  None
+            cls._instance._override    =  False
+            cls._instance._owner       =  None
+            cls._instance._proprietor  =  None
 
         return cls._instance
 
