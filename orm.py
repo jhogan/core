@@ -11316,6 +11316,10 @@ class violations(entitiesmod.entities):
         if security().user.id != usr.id:
             self += f'User must be {usr.name}'
 
+    def demand_root(self):
+        if not security().isroot:
+            self += f'User must be root'
+
     def __iadd__(self, o):
         """ Add `o` to the violations collection. `o` can be a str or a
         violation instance::
