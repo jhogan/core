@@ -9,6 +9,8 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021                 #
 ########################################################################
 
+import apriori; apriori.model()
+
 from func import enumerate, B
 import bot
 import ecommerce
@@ -19,9 +21,6 @@ import primative
 import tester
 import third
 import uuid
-
-import apriori
-apriori.model()
 
 class test_message(tester.tester):
     def __init__(self, *args, **kwargs):

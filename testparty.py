@@ -9,6 +9,8 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021                 #
 ########################################################################
 
+import apriori; apriori.model()
+
 from func import enumerate, B
 import orm
 import party
@@ -18,10 +20,9 @@ import ecommerce
 import uuid
 import bot
 from uuid import uuid4, UUID
+from random import randint
 
-import apriori
-apriori.model()
-
+# TODO Rename this to test_party or maybe just party
 class gem_party(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

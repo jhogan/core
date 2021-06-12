@@ -9,6 +9,8 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021                 #
 ########################################################################
 
+import apriori; apriori.model()
+
 from func import B, enumerate, PM
 import db
 import ecommerce

@@ -12,6 +12,8 @@
 "I have not failed. I've just found 10,000 ways that won't work."
 # Thomas A. Edison
 
+import apriori; apriori.model()
+
 from MySQLdb.constants.ER import BAD_TABLE_ERROR, DUP_ENTRY
 from auth import jwt
 from config import config
@@ -27,7 +29,6 @@ from uuid import uuid4
 import MySQLdb
 import _mysql_exceptions
 import account
-import apriori
 import asset
 import auth
 import base64

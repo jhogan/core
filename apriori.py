@@ -44,8 +44,6 @@ def model():
     Note that to use the module in an executable, you will still need to
     import it there in order to get it in the executable's namespace.
     """
-    # XXX The need for this came as a surprise, so until this approach
-    # has been tested more, I will call this experimental.
     import account
     import apriori
     import asset
