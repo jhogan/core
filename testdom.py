@@ -4612,7 +4612,7 @@ class test_selectors(tester.tester):
             '#adjacency-anchor + div',
             'div#adjacency-anchor + p.id-dont-exist',
             '#adjacency-anchor + '
-                'p#XXXimmediatly-after-the-adjacency-anchor',
+                'p#ZZZimmediatly-after-the-adjacency-anchor',
         ]
         for sel in sels:
             els = html[sel]
@@ -4826,13 +4826,11 @@ class test_selectors(tester.tester):
                 self.true('dialog' in el.classes)
             self.count(51, els, 'sel: ' + sel)
 
-        # TODO Replace instances of XXX with something else. We want to
-        # be able to grep XXX and only see XXX comments.
         ''' Non-existing chained classes selectors '''
         sels = [
-            '*.dialog.sceneXXX',
-            '.dialogXXX.scene',
-            'divXXX.dialog.scene',
+            '*.dialog.sceneZZZ',
+            '.dialogZZZ.scene',
+            'divZZZ.dialog.scene',
         ]
 
         for sel in sels:

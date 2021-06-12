@@ -28,7 +28,7 @@ def model():
 
     Invoking this function is a requirement for any excecutable, such as
     test.py, bot.py, testmessage.py, or any process that relies on the
-    general entity model (GEM). All GEM modules need to be loaded ab
+    General Entity Model (GEM). All GEM modules need to be loaded ab
     initio so introspection can be used to reflect on their data
     definitions (i.e., orm.entity.__subclasses__() needs to be able to
     return every GEM entity class). If modules are left out, the full

@@ -961,7 +961,7 @@ class entities:
         try:
             for i, t in enumerate(self):
                 r += indent + fn(t) + '\n'
-        except:
+        except Exception as ex:
             # If we aren't able to enumerate (perhaps the self._ls hasn't been
             # set), just ignore.
             pass
@@ -1262,7 +1262,7 @@ class BrokenRulesError(Exception):
         obj = self.object
         r = self.message + ' '
         r += '%s at %s' % (type(obj), hex(id(obj))) + '\n'
-        for br in self.object.brokenrules:
+        for br in obj.brokenrules:
             r += '\t* ' + str(br) + '\n'
         return r
 

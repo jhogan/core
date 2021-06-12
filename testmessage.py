@@ -268,6 +268,7 @@ class test_message(tester.tester):
                 statustype = message.statustype(
                     name = name
                 )
+
             )
             dis.save()
 

@@ -828,7 +828,7 @@ class gem_party(tester.tester):
         pp = party.party_party()
         pp.object = per
         pp.role = 'employ'
-        pp.begin = date.today()
+        pp.begin = primative.date.today()
 
         com.party_parties += pp
 

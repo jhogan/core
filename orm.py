@@ -4673,8 +4673,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 # collection.
                 #   i.e., art.presentations.artist = art
 
-                # XXX Ascending the graph here is experimental. It
-                # caused some issues in it_loads_specialized_composite.
                 sup = self_orm.entity
                 while sup:
                     setattr(map.value, sup.__name__, self)
@@ -4751,15 +4749,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             #     sng.presentations.singer = sng
                             #     sng.presentations[0].singer = sng
                             
-                            # XXX I think we can remove this.
-                            '''
-                            setattr(
-                                e, 
-                                self_orm_entity__name__,
-                                self.orm.specialist
-                            )
-                            '''
-
                             # The getattr() call above will set the
                             # composite of the entities collection to
                             # the super:
@@ -7492,15 +7481,19 @@ class security:
 
         Proprietors
         ***********
-
-        The logic in the ORM's database interface will use the
-        security().proprietor to provide multitenancy support.
+        
+        A proprietor is a legal entity, typically a ``party.company``,
+        that owns the records being created.  The logic in the ORM's
+        database interface will use the security().proprietor to provide
+        multitenancy support by ensuring queries and mutations to the
+        database are built in such a way that they isolate one
+        proprietor's records from another.
 
         When a proprietor is set, the ORM will ensure that all records
         written to the database have their proprietor FK set to
         security().proprietor.id, meaning that the records will be the
         *property* of the security().proprietor. Only records owned by
-        the security().proprietor will be read by orm query operations
+        the security().proprietor will be read by ORM query operations
         i.e.:
 
             ent = entity(id)  # SELECT
@@ -7513,12 +7506,18 @@ class security:
         by the security().proprietor or else a ProprietorError will be
         raised.
 
-        :param: party.party v: The proprietor entity.
+        :param: party.party v|UUID: The proprietor entity or its a
+        proprietor's UUID. Normally we will get a full-bodied proprietor
+        object (a party.party, typically a party.company or some other
+        subtype thereof). However, sometimes it more conventient to give
+        a UUID.  See ``party.company.carapacian`` for an example of
+        using UUID instead of a party.party object.
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
         self._proprietor = v
 
-        # XXX Comment
+        # If we are given only the proprietor's UUID, there is no need
+        # to ascend the inheritance tree below. 
         if isinstance(v, UUID):
             return
 
