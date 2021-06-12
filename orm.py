@@ -4463,8 +4463,23 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         # that of the security singleton.
                         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                         if self.orm.isnew:
-                            if security().owner.id != map.value:
-                                msg = 'Owner id does not match orm id'
+                            own = security().owner
+                            msg = None
+
+                            if own:
+                                if own.id != map.value:
+                                    msg = (
+                                        'Owner id does not match orm id'
+                                    )
+                            else:
+                                # NOTE this could be the result of a
+                                # context manager exiting and setting
+                                # the owner to None
+                                msg = (
+                                    'Owner is None'
+                                )
+
+                            if msg:
                                 brs += entitiesmod.brokenrule(
                                     msg, map.name, 'valid', self
                                 )
