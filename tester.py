@@ -642,7 +642,7 @@ class tester(entity):
             r = fn()
 
         except Exception as ex:
-            if type(ex) is not expect:
+            if expect is None or type(ex) is not expect:
                 self._failures += failure(actual=ex)
         else:
             if expect is not None:
