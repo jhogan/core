@@ -7561,9 +7561,10 @@ class security:
         if self._override:
             return True
 
-        # XXX self.owner can be None. If that is the case, None is being
-        # returned here instead of False.
-        return self.owner and self.owner.isroot
+        if self.owner:
+            return self.owner.isroot
+
+        return False
 
     @override.setter
     def override(self, v):
@@ -7610,12 +7611,19 @@ class security:
 
     @property
     def issudo(self):
+        return self.isroot
+
+    @property
+    def isroot(self):
         """
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         Returns True if the current owner is root.
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
-        return self.owner and self.owner.isroot
+        if self.owner:
+            return self.owner.isroot
+
+        return False
 
     def __repr__(self):
         r = f'{type(self).__name__}(\n'
