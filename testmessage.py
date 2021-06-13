@@ -527,7 +527,6 @@ class test_dispatch(tester.tester):
                 )
                 dis.save()
 
-
             dis.status += '-addendum'
 
             with orm.su(usr):

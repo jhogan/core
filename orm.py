@@ -4473,8 +4473,13 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                     )
                             else:
                                 # NOTE this could be the result of a
-                                # context manager exiting and setting
-                                # the owner to None
+                                # context manager, such as orm.su() or
+                                # orm.sudo() exiting and setting the
+                                # owner to None. This can happen
+                                # when the results of a test are being
+                                # reported on, causing the person
+                                # running the test to become confused as
+                                # to the actual cause of the problem.
                                 msg = (
                                     'Owner is None'
                                 )
