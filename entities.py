@@ -1569,6 +1569,55 @@ class entities:
             self.onadd(self, entityaddeventargs(item))
 
     def __getitem__(self, key):
+        """ Implements an indexer for the collection::
+
+            # Create a collection and add an entity to it
+            es = entities()
+            e = entity()
+            es =+ e
+
+            # Use the indexer to access the first element and assert it
+            # is e.
+            assert e is es[0]
+
+        If an element can't be found, an IndexError is raised.
+
+        Above, ``key`` is an int. However, key can also be a slice or a
+        str. See below for details.
+
+        :param: key int|slice|str: The index value.
+            if int:
+                The value is used as a zero-based index, and gets an
+                element from the collection the same way as indexing a
+                Python list does.
+
+            if slice:
+                Works the same as passing a slice to a Python list::
+
+                    # Get the first two elements from the
+                    # collection.
+                    es1 = es[0:2]
+
+                    # A new collection is created and returned.
+                    assert type(es1) is type(es)
+
+            if str:
+                Assumes each element has an ``id`` property. The index
+                value will be tested against the value of this property
+                and the first one found will be used::
+
+                    es = entities()
+                    for s in ('herp', 'derp'):
+                        es += entity()
+                        es.last.id = s
+
+                    assert es['herp'] is es.first
+                    assert es['derp'] is es.second
+
+                If the elements do not have an id property, their
+                ``name`` property will be used. If they have neither,
+                an IndexError will be raise.
+        """
         if isinstance(key, int):
             return self._ls[key]
 
