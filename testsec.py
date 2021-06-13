@@ -359,6 +359,18 @@ class authorization(tester.tester):
                 e1 = e.orm.reloaded()
                 self.eq(e.id, e1.id)
 
+    def it_disallows_proprietor_creating_other_proprietors_record(self):
+        assert orm.security().proprietor.name == 'Microsoft'
+
+        with orm.su(self.bgates):
+            eng = engineer()
+
+            assert eng.proprietor.name == 'Microsoft'
+
+            with orm.proprietor(party.company.carapacian):
+                self.expect(orm.ProprietorError, eng.save)
+        
+
     ''' RETRIEVABILITY '''
     def it_cant_retrieve_entity(self):
         with orm.su(self.bgates):
