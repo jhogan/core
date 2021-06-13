@@ -280,11 +280,14 @@ class test_sendbot(tester.tester):
                 html     =  '<p>Test message</p>',
             )
 
-            dis = msg.dispatch(
-                dispatchtype = message.dispatchtype(name='email')
-            )
-
             msg.save()
+
+            with orm.sudo():
+                dis = msg.dispatch(
+                    dispatchtype = message.dispatchtype(name='email')
+                )
+
+                dis.save()
 
             b()
 
@@ -306,11 +309,15 @@ class test_sendbot(tester.tester):
                 html     =  '<p>Test message</p>',
             )
 
-            dis = msg.dispatch(
-                dispatchtype = message.dispatchtype(name='email')
-            )
-            
             msg.save()
+
+            with orm.sudo():
+                dis = msg.dispatch(
+                    dispatchtype = message.dispatchtype(name='email')
+                )
+
+                dis.save()
+            
 
             b(exsimulate=True)
 
@@ -337,11 +344,15 @@ class test_sendbot(tester.tester):
                 html     =  '<p>Test message</p>',
             )
 
-            dis = msg.dispatch(
-                dispatchtype = message.dispatchtype(name='email')
-            )
-
             msg.save()
+
+            with orm.sudo():
+                dis = msg.dispatch(
+                    dispatchtype = message.dispatchtype(name='email')
+                )
+
+                dis.save()
+
 
             sec = orm.security()
             sec.proprietor = None
