@@ -7605,6 +7605,10 @@ class security:
         # "logged in user". More thought is need for this.
         return self._owner
 
+    @user.setter
+    def user(self, v):
+        self._owner = v
+
     @owner.setter
     def owner(self, v):
         """
