@@ -19,7 +19,7 @@ These entity objects are based on the "E-Commerce Models" chapter of "The
 Data Model Resource Book Volume 2".
 
 Examples:
-    See test-ecommerce.py for examples. 
+    See testecommerce.py for examples. 
 
 TODO:
     
