@@ -1632,6 +1632,15 @@ class entities:
         return self[ix]
 
     def getprevious(self, e):
+        """ Get the element that comes before ``e``.
+
+            # Assuming es is a collection that has two or more elements
+            assert es.getprevious(es.second) is es.first
+            assert es.getprevious(es.last) is es.penultimate
+
+        :param: e entity: The entity immediatly after which the return
+        value will exist in the collection.
+        """
         ix = self.getindex(e)
         return self(ix - 1)
 
@@ -1639,12 +1648,28 @@ class entities:
         """ Return the first index of e in the collection.
 
         This is similar to list.index except here we use the `is`
-        operator for comparison instead of the `==` operator.
+        operator for comparison instead of the `==` operator when ``e``
+        is an instance of ``entity``. See below for details on the way
+        getindex(e) works when ``e`` is a str.
+
+        If entity cannot be found in the collection, a ValueError will
+        be raised.
+
+        :param: e entity|str:
+            if entity:
+                Returns the index number of ``e`` in the collection.
+
+            if str:
+                Searches the collection for an element where the id
+                attribute equals ``e``. If found, returns the index
+                number for that entity. If the element does not have an
+                ``id`` attribute, its ``name`` attribute is used
+                instead. If elements have neither, a ValueError will be
+                raised.
         """
 
         # TODO:OPT We may be able to cache this and invalidate the cache
         # using the standard events
-
         if isinstance(e, entity):
             for ix, e1 in enumerate(self):
                 if e is e1: return ix
@@ -1661,59 +1686,94 @@ class entities:
 
     @property
     def first(self): 
+        """ Returns the first element in the collection. If the
+        collection is empty, None is returned.
+        """
         return self(0)
 
     @first.setter
     def first(self, v): 
+        """ Sets the first element of the collection.
+        """
         self[0] = v
 
     @property
     def second(self): 
+        """ Returns the second element in the collection. If has fewer
+        than 2 elements, None is returned.
+        """
         return self(1)
 
     @second.setter
     def second(self, v): 
+        """ Sets the second element of the collection.
+        """
         self[1] = v
 
     @property
     def third(self): 
+        """ Returns the second element in the collection. If has fewer
+        than 3 elements, None is returned.
+        """
         return self(2)
 
     @third.setter
     def third(self, v): 
+        """ Sets the third element of the collection.
+        """
         self[2] = v
+
     @property
     def fourth(self): 
+        """ Returns the second element in the collection. If has fewer
+        than 4 elements, None is returned.
+        """
         return self(3)
 
     @fourth.setter
     def fourth(self, v): 
+        """ Sets the fourth element of the collection.
+        """
         self[3] = v
 
     @property
     def fifth(self): 
+        """ Returns the second element in the collection. If has fewer
+        than 5 elements, None is returned.
+        """
         return self(4)
 
     @fifth.setter
     def fifth(self, v): 
+        """ Sets the fifth element of the collection.
+        """
         self[4] = v
 
     @property
     def sixth(self): 
+        """ Returns the second element in the collection. If has fewer
+        than 6 elements, None is returned.
+        """
         return self(5)
 
     @sixth.setter
     def sixth(self, v): 
+        """ Sets the sixth element of the collection.
+        """
         self[5] = v
 
     @property
     def seventh(self): 
+        """ Returns the second element in the collection. If has fewer
+        than 7 elements, None is returned.
+        """
         return self(6)
 
     @seventh.setter
     def seventh(self, v): 
+        """ Sets the seventh element of the collection.
+        """
         self[6] = v
-
 
     @property
     def last(self): 
