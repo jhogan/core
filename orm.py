@@ -3944,15 +3944,20 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         # XXX Raise ProprietorError `if not security().proprietor`. I'm
         # unclear why this isn't currently being done.
-        if crud in ('create', 'update', 'delete'):
 
-            import ecommerce
-            if (
-                self.id == ecommerce.users.RootUserId and
-                crud == 'create' and
-                type(self) is ecommerce.user):
+        # Is ``self`` the root user
+        import ecommerce
+        isroot = (
+            self.id == ecommerce.users.RootUserId and
+            type(self) is ecommerce.user
+        )
+
+
+        #if not isroot or not security().user.isroot:
+
+        if security().user and not security().user.isroot:
+            if (isroot and crud in ('create', None)):
                 # Allow root to be created without needing a proprietor
-                B()
                 pass
             else:
                 if self.proprietor__partyid != security().proprietor.id:

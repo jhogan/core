@@ -888,6 +888,10 @@ class proprietor(tester.tester):
 
         orm.security().owner = ecommerce.users.root
 
+        with orm.sudo():
+            self.bgates = ecommerce.user(name='bgates')
+            self.bgates.save()
+
     def it_creates_associations(self):
         # Create some proprietors
         tsla = party.company(name='Tesla')
@@ -918,8 +922,10 @@ class proprietor(tester.tester):
         self.expect(db.RecordNotFoundError, e_p.orm.reloaded)
 
         e_p.name = 'x'
-        self.expect(orm.ProprietorError, e_p.save)
-        self.expect(orm.ProprietorError, e_p.delete)
+
+        with orm.su(self.bgates):
+            self.expect(orm.ProprietorError, e_p.save)
+            self.expect(orm.ProprietorError, e_p.delete)
 
     def it_cant_load_composite(self):
         engineers.orm.truncate()
@@ -1062,7 +1068,8 @@ class proprietor(tester.tester):
 
         self.none(eng.proprietor)
 
-        proprietor = party.person(name='Malcolm McLaren')
+        with orm.sudo():
+            proprietor = party.person(name='Malcolm McLaren')
 
         eng.proprietor = proprietor
 
