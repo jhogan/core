@@ -402,6 +402,9 @@ class user(orm.entity):
 
         return brs
 
+    def su(self):
+        return orm.su(self)
+        
     @property
     def retrievability(self):
         vs = orm.violations()
