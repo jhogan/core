@@ -11255,10 +11255,19 @@ class ProprietorError(ValueError):
     def __str__(self):
         """ A string representation of the exception.
         """
+        import party
+
         expected = self.expected.id.hex if self.expected else None
+
+        actual = self.actual
+        if isinstance(actual, UUID):
+            actual = actual.hex
+        elif isinstance(actual, party.party):
+            actual = actual.id.hex
+
         return (
             f'The expected proprietor did not match the actual '
-            f'proprietor; actual {self.actual.id.hex}, expected: '
+            f'proprietor; actual {actual!r}, expected: '
             f'{expected}'
         )
 
