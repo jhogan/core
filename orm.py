@@ -3952,16 +3952,20 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             type(self) is ecommerce.user
         )
 
-
-        #if not isroot or not security().user.isroot:
-
         if security().user and not security().user.isroot:
             if (isroot and crud in ('create', None)):
                 # Allow root to be created without needing a proprietor
                 pass
             else:
                 if self.proprietor__partyid != security().proprietor.id:
-                    raise ProprietorError(self.proprietor)
+                    try:
+                        propr = self.proprietor
+                    except db.RecordNotFoundError:
+                        # We won't always be able to load the
+                        # proprietor, so just offer the id as as str
+                        # instead.
+                        propr = self.proprietor__partyid
+                    raise ProprietorError(propr)
 
         try:
             # Take snapshot of before state

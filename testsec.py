@@ -702,7 +702,7 @@ class authorization(tester.tester):
 
     ''' orm.override '''
     def it_creates_and_retrieves_with_override(self):
-        orm.security.owner = self.bgates
+        orm.security().owner = self.bgates
 
         with orm.override():
             pr = problem()
@@ -710,7 +710,7 @@ class authorization(tester.tester):
             pr1 = self.expect(None, pr.orm.reloaded)
 
     def it_retrieves_constituents_with_override(self):
-        orm.security.owner = self.bgates
+        orm.security().owner = self.bgates
 
         with orm.su(self.bgates):
             eng = engineer(name='Even')
@@ -890,7 +890,8 @@ class proprietor(tester.tester):
 
         with orm.sudo():
             self.bgates = ecommerce.user(name='bgates')
-            self.bgates.save()
+            self.emusk = ecommerce.user(name='emusk')
+            self.bgates.save(self.emusk)
 
     def it_creates_associations(self):
         # Create some proprietors
@@ -979,7 +980,8 @@ class proprietor(tester.tester):
 
         # Delete it. Microsoft shouldn't be able to delete Tesla's
         # records so we should get errors.
-        self.expect(orm.ProprietorError, eng.delete)
+        with self.bgates.su():
+            self.expect(orm.ProprietorError, eng.delete)
 
         # Switch proprietor back to Telsa
         orm.security().proprietor = tsla
@@ -1023,7 +1025,9 @@ class proprietor(tester.tester):
         # mistake if a web developer were to do this, but just in case,
         # make sure that Tesla can't delete a Microsoft system.
         orm.security().proprietor = tsla
-        self.expect(orm.ProprietorError, eng.save)
+
+        with self.emusk.su():
+            self.expect(orm.ProprietorError, eng.save)
 
         # Set the proprietor back to Microsoft, reload and ensure the
         # system wasn't deleted.
@@ -1324,7 +1328,8 @@ class proprietor(tester.tester):
             eng.skills = 'VB.NET'
             # We would expect Microsoft to get an error if they changed
             # Tesla's engineer records.
-            self.expect(orm.ProprietorError, eng.save)
+            with self.emusk.su():
+                self.expect(orm.ProprietorError, eng.save)
 
             # Reload the engineer to make sure it wasn't saved despite
             # the exception.
@@ -1357,7 +1362,8 @@ class proprietor(tester.tester):
         orm.security().proprietor = tsla
 
         # This time, save the collection
-        self.expect(orm.ProprietorError, engs.save)
+        with self.bgates.su():
+            self.expect(orm.ProprietorError, engs.save)
 
         # Correct proprietor
         orm.security().proprietor = ms
@@ -1483,6 +1489,7 @@ class proprietor(tester.tester):
         # Create some proprietors
         tsla = party.company(name='Tesla')
         ms = party.company(name='Microsoft')
+        ms.save()
 
         # Create Tesla engineer and the `systems` s/he administors
         orm.security().proprietor = tsla
@@ -1533,7 +1540,9 @@ class proprietor(tester.tester):
         eng1.systems.first.name = 'Tesla system'
 
         orm.security().proprietor = tsla
-        self.expect(orm.ProprietorError, eng1.save)
+
+        with self.bgates.su():
+            self.expect(orm.ProprietorError, eng1.save)
 
     def it_eager_loads_constituents(self):
         engineers.orm.truncate()
