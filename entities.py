@@ -1777,47 +1777,71 @@ class entities:
 
     @property
     def last(self): 
+        """ Return the last element in the collection. If the collection
+        has zero elements, None will be returned.
+        """
         return self(-1)
 
     # TODO Add tests
     @last.setter
     def last(self, v): 
+        """ Set the last element in the collection.
+        """
         self[-1] = v
 
     @property
     def ultimate(self): 
+        """ A synonym of entities.last. 
+        """
         return self.last
 
     @ultimate.setter
     def ultimate(self, v): 
+        """ A synonym of entities.last. 
+        """
         self.last = v
 
     @property
     def penultimate(self): 
+        """ Returns the second-to-the-last element of the collection.
+        """
         return self(-2)
 
     @penultimate.setter
     def penultimate(self, v): 
+        """ Sets the second last element in the collection.
+        """
         self[-2] = v
 
     @property
     def antepenultimate(self): 
+        """ Returns the third last element in the collection.
+        """
         return self(-3)
 
     @antepenultimate.setter
     def antepenultimate(self, v): 
+        """ Sets the third last element in the collection.
+        """
         self[-3] = v
 
     @property
     def preantepenultimate(self): 
+        """ Returns the fourth last element in the collection.
+        """
         return self(-4)
 
     @preantepenultimate.setter
     def preantepenultimate(self, v): 
+        """ Sets the fourth last element in the collection.
+        """
         self[-4] = v
 
     @property
     def brokenrules(self):
+        """ Collates the broken rules for each of the elements in the
+        collection and returns them as a new ``brokenrules`` collection.
+        """
         r = brokenrules()
         for e in self:
             brs = e.brokenrules
@@ -1832,6 +1856,9 @@ class entities:
 
     @property
     def isvalid(self):
+        """ Returns True if there are no broken rules in the collection;
+        False otherwise.
+        """
         return self.brokenrules.isempty
 
 class entity:
