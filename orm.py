@@ -7612,6 +7612,15 @@ class security:
         """
         return self._owner
 
+    @owner.setter
+    def owner(self, v):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        The setter for security.owner.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+        self._owner = v
+
     @property
     def user(self):
         # TODO This will be the central place to store the logged in
@@ -7622,15 +7631,6 @@ class security:
 
     @user.setter
     def user(self, v):
-        self._owner = v
-
-    @owner.setter
-    def owner(self, v):
-        """
-        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        The setter for security.owner.
-        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        """
         self._owner = v
 
     @property

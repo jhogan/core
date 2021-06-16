@@ -427,7 +427,6 @@ class user(orm.entity):
 
         return vs
 
-
 class history(orm.entity):
     """ Used to store a history of the logins and passwords.
 

@@ -1484,7 +1484,7 @@ class proprietor(tester.tester):
         tsla = party.company(name='Tesla')
         ms = party.company(name='Microsoft')
 
-        # Create a Tesla engineers and the `system` s/he administors
+        # Create Tesla engineer and the `systems` s/he administors
         orm.security().proprietor = tsla
         eng = engineer()
         for i in range(3):
@@ -1494,7 +1494,7 @@ class proprietor(tester.tester):
 
         eng.save()
 
-        # Create some Microsoft engineers
+        # Create Microsoft engineer
         orm.security().proprietor = ms
         eng = engineer()
         for i in range(3):
@@ -1520,10 +1520,9 @@ class proprietor(tester.tester):
         orm.security().proprietor = tsla
 
         # Even though we have Microsoft's engineer (this situation
-        # should never happen unles there was a mistake by a web
+        # should never happen unless there was a mistake by a web
         # developer), we can't load its systems because the proprietor
-        # was set to
-        # Tesla.
+        # was set to Tesla.
         self.zero(eng1.systems)
 
         # Load engineer as Microsoft, change the name of a system and
