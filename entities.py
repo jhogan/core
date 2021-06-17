@@ -1862,6 +1862,79 @@ class entities:
         return self.brokenrules.isempty
 
 class entity:
+    """ The base class for all entity objects.
+
+    It's recommend that only derivations of ``entity`` be used in
+    ``entities`` collection::
+
+        # Create a products entities collection class
+        class products(entities):
+            pass
+
+        # Create a product entity class
+        class product(entity):
+            pass
+
+        # Instantiate the products collection
+        ps = products()
+
+        # Now we can add product entity objects to it
+        ps += product()
+        ps += product()
+
+    Perhaps the most noteable feature of the ``entity`` class is its
+    ability to define broken rules. Let's recreate the ``product`` class
+    from above so it has a brokenrules collection::
+
+        class product(entity):
+            def __init__(self):
+                self.price = float()
+                self.name = str()
+
+            @property
+            def brokenrules(self):
+                brs = brokenrules()
+
+                if not isinstance(self.name, str):
+                    brs += "'name' must be a str"
+
+                if not isinstance(self.price, float):
+                    brs += "'price' must be a float"
+
+                return brs
+
+    Now the entity can report on its own validity. This features is
+    called entity-centric validation::
+        
+        # Product will be valid on instantiation
+        prod = product()
+        assert prod.isvalid
+        assert prod.brokenrules.isempty
+
+        # Lets assign the wrong types to name and price
+        prod.name = int()
+        prod.price = str()
+        assert not prod.isvalid  # invalid
+        assert prod.brokenrules.count == 2  # Two broken rules
+    
+    According to the ``brokenrules`` property defined in the ``product`
+    class above, we shouldn't be able to a a name attribute that is not
+    a str, or a price attribute that is not a float. Consequently,
+    assigning an int to ``name`` and a str to ``price`` causes two
+    broken rules to be reported. Note that Broken rules are by no means
+    limited to type checking; any logic that can be used to ensure an
+    object is valid can and should go in the brokenrules property.
+    The meaning of validity is arbitrary. It can mean that the object is
+    prepared to enter a different system, such a a third-party API. In
+    practices, validity typically means the object is ready to be saved
+    to the database.
+
+    Derived entity/entities pairings are useful for many things, but
+    their most frequent use is probably the ORM classes ``orm.entities``
+    and ``orm.entity``. From these classes, all the General Entity Model
+    (GEM) classes derive, basically making up the entire entity and data
+    models for the framework.
+    """
     def __init__(self):
         self._onaftervaluechange = None
         self._onbeforevaluechange = None
