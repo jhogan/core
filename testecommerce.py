@@ -380,6 +380,27 @@ class test_user(tester.tester):
             #        self['password'].retrievability = False
 
 class test_url(tester.tester):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if self.rebuildtables:
+            es = orm.orm.getentitys(includeassociations=True)
+            mods = 'ecommerce',
+            for e in es:
+                if e.__module__ in mods:
+                    e.orm.recreate()
+
+        with orm.sudo():
+            com = party.company(name='Ford Motor Company')
+
+            with orm.proprietor(com):
+                com.save()
+                own = ecommerce.user(name='hford')
+                own.save()
+
+        orm.security().proprietor = com
+        orm.security().owner = own
+
     def it_calls_creatability(self):
         """ Any user can create (produce) a url. Notably, it's the
         associations between the URL entity and other entity objects

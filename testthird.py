@@ -32,30 +32,16 @@ class test_postmark(tester.tester):
                 if e.__module__ in ('third', 'message'):
                     e.orm.recreate()
 
-        # Create an owner and get the root user
-        own = ecommerce.user(name='hford')
-        root = ecommerce.users.root
-
-        # Save the owner, the root user will be the owner's owner.
         with orm.sudo():
-            own.owner = root
-            own.save()
+            com = party.company(name='Ford Motor Company')
 
-        # Going forward, `own` will be the owner of all future records
-        # created.
-        orm.security().owner = own
+            with orm.proprietor(com):
+                com.save()
+                own = ecommerce.user(name='hford')
+                own.save()
 
-        # Create a company to be the proprietor.
-        com = party.company(name='Ford Motor Company')
-        com.save()
-
-        # Set the company as the proprietory
         orm.security().proprietor = com
-
-        # Update the owner (hford) so that the company (Ford Motor
-        # Company) is the proprietor.
-        own.proprietor = com
-        own.save()
+        orm.security().owner = own
 
     def it_sends_sucessfully(self):
         msg = message.message.email(
