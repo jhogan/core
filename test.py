@@ -16310,7 +16310,7 @@ class test_orm(tester):
         # However, we would expect the newly added singer and painter to
         # be in the `artists` collection as well. Some work needs to be
         # done to ensure that entity objects in these collections are
-        # downcasted/upcasted correctely and propogated to the correct
+        # downcasted/upcasted correctely and propagated to the correct
         # entities collection object on load and on append.
         # DEAD pseudocollection atrophy
         #self.three(sng1.artists)

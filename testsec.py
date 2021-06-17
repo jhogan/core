@@ -1219,7 +1219,7 @@ class proprietor(tester.tester):
         eng = eng.orm.reloaded()
         self.eq(malcolm.id, eng.proprietor.id)
 
-    def it_propogates_proprietor_to_supers(self):
+    def it_propagates_proprietor_to_supers(self):
         """ When an subentity is newly created, it's supers should have
         the same proprietor.
         """
