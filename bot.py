@@ -457,7 +457,7 @@ class sendbot(bot):
                 id = uuid.UUID(cls.Id)
 
                 cara = party.company.carapacian
-                with orm.proprietor(cara):
+                with orm.proprietor(cara), orm.sudo():
 
                     try:
                         kwargs['from__new__'] = None
