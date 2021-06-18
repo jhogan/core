@@ -415,6 +415,20 @@ class sendbot(bot):
         # time is right, we can consolidate this logic to make
         # implementing the data-singleton pattern easy.
 
+        # Make sure that if something tries to instantiate sendbot with
+        # a uuid that is not sendbot's uuid, then a RecordNotFoundError
+        # is thrown.
+        try:
+            id = args[0]
+        except IndexError:
+            pass
+        else:
+            if isinstance(id, uuid.UUID):
+                if id != uuid.UUID(cls.Id):
+                    raise db.RecordNotFoundError(
+                        'Record not found for sendbot'
+                    )
+
         ''' Protect against infinite recursion. '''
         # First, ensure that this instantiation isn't a result of a
         # prior instantiation. Without this check, instantiations end up
