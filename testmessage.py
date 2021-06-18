@@ -319,6 +319,31 @@ class test_message(tester.tester):
                 self.expect(orm.AuthorizationError, msg.orm.reloaded)
 
 class test_contactmechanism_message(tester.tester):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if self.rebuildtables:
+            es = orm.orm.getentitys(includeassociations=True)
+            mods = 'message', 'apriori', 'party', 'ecommerce',
+            for e in es:
+                if e.__module__ in mods:
+                    e.orm.recreate()
+        else:
+            self._clear()
+
+            party.company._carapacian = None
+
+        with orm.sudo():
+            com = party.company(name='Ford Motor Company')
+
+            with orm.proprietor(com):
+                com.save()
+                own = ecommerce.user(name='hford')
+                own.save()
+
+        orm.security().proprietor = com
+        orm.security().owner = own
+
     def it_calls_creatability(self):
         with orm.override():
             with orm.sudo():
