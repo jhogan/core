@@ -3939,12 +3939,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # modify another's records.
         #💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
 
-        # XXX:ee897843 Don't allow a proprietor to create a record
-        # belonging to a different proprietor.
-
-        # XXX Raise ProprietorError `if not security().proprietor`. I'm
-        # unclear why this isn't currently being done.
-
         # Is ``self`` the root user
         import ecommerce
         isroot = (
@@ -3965,6 +3959,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         # proprietor, so just offer the id as as str
                         # instead.
                         propr = self.proprietor__partyid
+
                     raise ProprietorError(propr)
 
         try:
@@ -6000,7 +5995,6 @@ class entitymapping(mapping):
                     if map.isowner != self.isowner:
                         continue
 
-                    # XXX Same with proprietor as with owner above
                     if map.isproprietor != self.isproprietor:
                         continue
                     

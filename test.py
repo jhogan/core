@@ -17508,7 +17508,8 @@ class test_orm(tester):
 
 class orm_migration(tester):
     def it_calls_table(self):
-        class cats(orm.entities): pass
+        class cats(orm.entities):
+            pass
 
         class cat(orm.entity):
             dob      =  date

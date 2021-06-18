@@ -404,12 +404,12 @@ class sendbots(bots):
     pass
 
 class sendbot(bot):
+    # TODO Use UUID classes here instead of strings
     Id      =  'fdcf21b2-dc0b-40ef-934f-ffbca49c915c'
     UserId  =  'cfd67652-de34-4ffc-99a0-5acd29ff89d4'
 
     _isin__new__ = False
     def __new__(cls, *args, **kwargs):
-        
         # TODO Much of this logic is to implement a data-singleton
         # pattern, and will likely be of universal interest. When the
         # time is right, we can consolidate this logic to make
