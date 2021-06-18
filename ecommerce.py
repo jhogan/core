@@ -483,8 +483,17 @@ class url(orm.entity):
         return self.address
 
     def __truediv__(self, other):
+        """ Overrides the / operator to allow for path joining
+
+            wiki = url(name='https://www.wikipedia.org/') 
+            py = wiki / 'wiki/Python'
+
+            assert py.name == 'https://www.wikipedia.org/wiki/Python'
+        """
         addr = self.address
         addr = os.path.join(addr, other)
+
+        # TODO Why is ecommerce being imported here? Can we remove it.
         import ecommerce
         return ecommerce.url(address=addr)
 

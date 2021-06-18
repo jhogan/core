@@ -240,10 +240,12 @@ class message(orm.entity):
 
     @property
     def cc(self):
+        # TODO Remove I don't think this is used any more
         return self._getcms('cc') 
 
     @property
     def bcc(self):
+        # TODO Remove I don't think this is used any more
         return self._getcms('bcc') 
 
     @staticmethod
@@ -426,10 +428,29 @@ class message(orm.entity):
         return vs
 
 class contactmechanism_messagetype(apriori.type):
+    """ Represents the type of association a ``message`` has with a
+    ``party.contactmechanism``.
+
+    The name property, inherited from apriori.type, can contain values
+    such as 'replyto', 'from', 'to', 'cc', 'bcc', etc..
+    """
+
+    # The collection of contactmechanism_messages associations this type
+    # applies to.
     messages = contactmechanism_messages
 
 class contactmechanism_message(orm.association):
+    """ Associates a ``messages`` with a ``party.contactmechanism``. Via
+    this associations, a message can a contact mechanism as the sender,
+    and multiple contact mechanism (of different types; see
+    contactmechanism_messagetype) as recipients.
+    """
+
+    # The party.contactmechanism. This will typically be a subentity
+    # such as party.email or party.address (postal address).
     contactmechanism = party.contactmechanism
+
+    # The message object associated with the ``contactmechanism``
     message = message
 
     @property
@@ -471,14 +492,49 @@ class contactmechanism_message(orm.association):
         return vs
 
 class dispatch(orm.entity):
-    # The external message id. When a message is dispatched to an
+    """ An object used to schedule a ``message`` for delivery.
+
+    Each ``message`` has zero or more ``dispatches``. If a ``message``
+    needs to be schedule for delivery to an external system (such as an
+    SMPT server or a third party RESTful API) at least one ``dispatch``
+    entry needs to be added to its ``dispatch`` collection.
+
+    A ``dispatch`` has an implicit attribute called ``dispatchtype``
+    (see the ``dispatchtype`` entity). This entity has a name property
+    which indicates the general type of dispatch required ('email',
+    'SMS', 'postal', etc). For messages that are destined for multiple
+    contact mechanism (email addresses, SMS numbers, etc.), a dispatch
+    should be created for each dispatchtype. If a dispatch fails and
+    needs to be marked as dead for some reason, a dispatch can be
+    cloned, allowing the system to keep trying.
+
+    A dispatch has a collection of ``statuses``. ``status`` objects
+    contain the datetime a ``dispatch`` enters into a new status.
+
+    ``sendbot`` will scan dispatches that are not in a completed state,
+    and will work to deliver the message's contents to the proper
+    external system. ``sendbot`` will use entities in the third.py
+    module to handle the actual interaction with third-party systems.
+    """
+    # The external message id. When a message is dispatched to 
     # a third party for delivery, the third party may or may not have
     # its own identifier for the message.
     externalid = str
+
+    # A collection of status entities which detail when a dispatch
+    # enters into different states
     statuses = statuses
+
+    # A string representation of the last state that the dispatched
+    # entered into. This is here only because it makes it easier for
+    # sendbot to query the dispatches table by status. (Note that this
+    # is a bit of a hack that we are using until correlated subqueries
+    # are supported by the ORM. See 9b4b0ce0.)
     status = str
 
     def __init__(self, *args, **kwargs):
+        """ Instantiate a dispatch object.
+        """
         super().__init__(*args, **kwargs)
         self.orm.default('externalid', None)
         self.orm.default('status', 'queued')
@@ -510,13 +566,17 @@ class dispatch(orm.entity):
         return vs
 
 class dispatchtype(apriori.type):
-    """ Email, sms, etc.
+    """ Each ``dispatch`` is described by one ``dispatchtype`` entity.
+    The ``dispatchtype`` has a ``name`` attribute that describes the
+    general type of dispatch. Common dispatches types include "email",
+    "sms", "postal", etc.
     """
     dispatches = dispatches
     
 class status(orm.entity):
-    """ A status entry for a dispatch. The description for the status is
-    found in the implicit `status.statustype.name` property.
+    """ Each ``dispatch`` has a collection of ``status`` entites. These
+    indicate the time a dispatch enters into a state. Common states are
+    "queued", "in process", "completed", "failed".
     """
 
     # The datetime the event described by the status entity occured.
@@ -550,8 +610,8 @@ class statustype(apriori.type):
         dispatch the message again will fail.
 
         * 'soft-bounce': The dispatch failed, and another dispatch
-        * entity should be created so the message can be attempted again
-        * at a later date.
+        entity should be created so the message can be attempted again
+        at a later date.
 
         * 'viewed' The user has opened the email.
     """

@@ -26,8 +26,6 @@ The ``index`` and ``indexes`` classes create dict() based indexes of
 ``entity`` objects within ``entities`` collection for fast object
 lookups by attributes. These indexes are useful for ``entities``
 collections with large numbers of elements.
-
-TODOs:
 """
 from datetime import datetime
 from random import randint, sample
@@ -631,6 +629,9 @@ class entities:
         return self._minmax(min=True, key=key)
 
     def _minmax(self, min, key):
+        """ Consolidates logic used by ``entities.max`` and
+        ``entities.min``.
+        """
         extreme = None
         for e in self:
             if extreme:
@@ -645,6 +646,52 @@ class entities:
         return extreme
 
     def where(self, p1, p2=None):
+        """ Returns an entities collection containing a subset of
+        ``self`` based on the conditions provided by the parameters.
+
+        :param: p1 type|str|callable:
+            if type:
+                If p1 is a ``type``, the subset will only include items
+                from ``self`` that are the exact type:
+
+                # Get all products from ``prods`` where the subtype of
+                # product is a ``service``. This would presumably
+                # exclude all the ``goods``.
+                srvs = prods.where(service)
+
+                # Assert
+                for prod in prods1:
+                    assert type(prod) is service
+
+            if str:
+                If p1 is a str, then it is used in conjunction with p2
+                to select all entity objects that have a given attribute
+                value pairing::
+                    
+                    # Get all products that have a category attribute
+                    # equal to 'Accessories'
+                    prods1 = prods.where('category', 'Accessories')
+
+                    # Assert
+                    for prod in prods1:
+                        assert prod.category == 'Accessories'
+
+            if callable:
+                If p1 is a callable, the callable is used to test each
+                entity for inclusion for the subset::
+
+                    # Create the callable
+                    def f(e):
+                        return e.name.startswith('Hammer')
+
+                    # Pass the callable to ``where``
+                    prods1 = prods.where(f)
+
+                    # Assert that the callable selected only products
+                    # whose name starts with 'Hammer'
+                    for prod in prods1:
+                        assert prod.name.startswith('Hammer')
+        """
         if type(p1) == type:
             cls = self.__class__
             return cls([x for x in self if type(x) == p1])
@@ -680,6 +727,42 @@ class entities:
     #
     #     inv.terms.sort('termtype.name')
     def sort(self, key, reverse=False):
+        """ Sort the items of the collection in place.
+
+        Use ``sorted`` if you want a new, sorted collection to be
+        returned while leaving the current collection unsorted.
+
+        :param key str|callable: 
+            if str:
+                If ``key`` is a str, it is assumed that key is the name
+                of an attribute of each of the objects in the collection
+                so the collection will be sorted on that attribute::
+
+                   # Sort the goods collection based on name
+                   goods.sort('name')
+
+                   # Printing the goods' names will be done in
+                   # alphabetical order
+                   for good in goods:
+                       print(good.name)
+
+            if callable:
+                If key specifies a callable, the callable is used to
+                extract a comparison key from each element in
+                collection::
+                    
+                    # Sort goods in a case-insensitive way
+                    goods.sort(lambda x: x.name.casefold())
+
+                    # Printing the goods' names will be done in
+                    # alphabetical order without regard to the name's
+                    # case
+                    for good in goods:
+                        print(good.name)
+
+        :param: reverse bool: If set to True, then the elements are
+        sorted as if each comparison were reversed.
+        """
         if type(key) == str:
             min = entities.mintype()
             def key1(x):
@@ -687,11 +770,26 @@ class entities:
                 # None's don't sort so do this
                 return min if v is None else v
         elif callable(str):
+            # TODO:2fff5b9e This is wrong even though it works. We are
+            # testing if the str bulitin is callable, which it is, so as
+            # long as key is not str, key will be assaigned to key1. The
+            # above should be changed to `elif callable(key)` and their
+            # should be an `else` that raises a TypeError.
             key1 = key
 
         self._ls.sort(key=key1, reverse=reverse)
 
     def sorted(self, key, reverse=False):
+        """ Returns a entities collection containing the elements of
+        this collection sorted by the ``key``.
+
+        This method works exactly as ``entities.sort`` does except that,
+        instead of sorting the collection in place, a new, sorted
+        collection is return, and no changes are made to the current
+        collection (``self``).
+
+        See the parameter descriptions at ``entities.sort`` for details.
+        """
         if type(key) == str:
             min = entities.mintype()
             def key1(x):
@@ -699,18 +797,55 @@ class entities:
                 # None's don't sort so do this
                 return min if v is None else v
         elif callable(str):
+            # TODO:2fff5b9e This is wrong even though it works. We are
+            # testing if the str bulitin is callable, which it is, so as
+            # long as key is not str, key will be assaigned to key1. The
+            # above should be changed to `elif callable(key)` and their
+            # should be an `else` that raises a TypeError.
             key1 = key
 
         return type(self)(initial=sorted(self._ls, key=key1, reverse=reverse))
 
     def enumerate(self):
+        """ Returns an enumeration object similar to the way the PYthon
+        builtin ``enumerate()`` does::
+
+            # Print each entity in es preceded by a zero-based index
+            for i, e in es.enumerate():
+                print(i, e)
+
+        Note that behind this method uses func.enumerate() instead of
+        the builtins.enumerate, so you can use its features::
+
+            for i, e in es.enumerate():
+                if i.first:
+                    print(f'{e} is the first object in the collection')
+                
+                if i.last
+                    print(f'{e} is the last object in the collection')
+        """
         for i, e in enumerate(self):
             yield i, e
 
     def clear(self):
+        """ Remove each element in teh collection.
+
+        Note that this method uses ``entities.remove`` is used which
+        means that the onremove event will be called for each of the
+        elements removed.
+        """
         self.remove(self)
 
     def __delitem__(self, key):
+        """ Remove an element using an indexer::
+
+            # Remove the fourth element from the collection.
+            del es[3]
+
+        Note that this method uses ``entities.remove`` is used which
+        means that the onremove event will be called for the element
+        removed.
+        """
         # TODO Write test. This will probably work but is only used in
         # one place at the time of this writing. We should also test for
         # `key` being a slice.
@@ -718,6 +853,72 @@ class entities:
         self.remove(e)
 
     def remove(self, e):
+        """ Remove ``e`` from the collection.
+
+        Typically, ``e`` is simple an entity object presumend to be in
+        the collection. If it is found in the collection, it will be
+        removed, and the onremove event will be raised.
+
+        ``e`` can be other types object objects as well such as
+        ``entities``, ``callables``, ``int``s and ``str``. The behavor
+        for removing these types is detailed in the :param: section
+        below.
+
+        :param: e entity|entities|callable|int|str: The entity or a
+        way of referencing entity objects to be removed.
+            
+            Given:
+                assert isinstance(es, entities)
+
+                assert  es.first.name   =  'berp'
+                assert  es.second.name  =  'derp'
+                assert  es.third.name   =  'gerp'
+                assert  es.fourth.name  =  'herp'
+                assert  es.fifth.name   =  'merp'
+                assert  es.sixth.name   =  'perp'
+
+            if entity:
+                If e is an entity, it will simply be removed, if it
+                exists in the collection, and the onremove event will be
+                raised.
+
+                    # Remove gerp
+                    es.remove(es.third)
+
+            if entities:
+                if e is an entities collection, each entity in e will be
+                removed from the collection. Each removal will result in
+                onremove being raised.
+
+                    # Remove herp and merp
+                    rms = es.where(
+                        lambda x: x.name == 'herp' or x.name == 'merp'
+                    )
+                    es.remove(rms)
+
+            if callable:
+                if e is a callable, e will be pased to self.where. Each
+                entity in the resulting entities collection will remove.
+                
+                    # Remove derp
+                    es.remove(lambda x: x.startswith('d'))
+
+            if int:
+                if e is an int, e will be passed to the indexor. The
+                resulting entity will be removed and onremove will be
+                raised.
+
+                    # Remove perp
+                    es.remove(-1)
+
+            if str
+                if e is a str, it will be pased to sel.getindex and the
+                resulting index will be passed to the indexor to be
+                removed.
+
+                    # Remove berp
+                    es.remove('berp')
+        """
         if isinstance(e, entities):
             rms = e
         elif isinstance(e, entity):
@@ -745,25 +946,80 @@ class entities:
         return type(self)(rms)
 
     def __isub__(self, e):
+        """ Allows entities to be removed from the collection using the
+        -= operator::
+
+            e = es.last         # Get last entity in collecton
+            es -= e             # Remove it
+            assert e not in es  # assert its no longer there
+
+        :param: e entity|entities|callable|int|str: The entity or a
+        way of referencing entity objects to be removed. For example, a
+        collection of entities can be removed in one line::
+
+            # Get half the entities from es and put them in es1
+            es1 = es.where(lambda x: x.getindex() % 2)
+
+            # Remove those entities en es1 from es
+            es -= es1
+        
+        ``e`` can be a number of different things. Since this method is
+        a thin wrapper around self.remove, see the documentation for the
+        ``e`` parameter in that method's docstring for more options.
+        """
         self.remove(e)
         return self
 
     def shift(self):
+        """ Remove the first element in the collection and return it. If
+        the collection is empty, None will be returned.
+        """
         return self.pop(0)
 
     def pop(self, ix=None):
+        """ Removes an element from the collection and returns it. If no
+        arguments are provided, the last element of the collection is
+        removed and returned. 
+
+        Note that the onremove event will be raised if an element is
+        removed. 
+
+        :param: ix NoneType|int|str: The index or a why of describing
+        what will be remove.
+            
+            if int:
+                The ix is an int, the element is searched for by its
+                index, removed and returned.
+
+            if NoneType:
+                If ix receives no arguments, or the argument is None,
+                the last element of the collection will be removed and
+                returned.
+
+            if str:
+                If ix is a str, self.getindex is used to convert ix into
+                a numeric index value. That values is used to look up
+                the element by index. The element is then removed from
+                the collection and returned.
+        """
+
+        # TODO I think that None should be returned if no element is
+        # found. For example, if ix is an int that doesn't
+        # represent an element in the collection, an IndexError is
+        # currently raised. I think that in that case, None should be
+        # returned and the onremove event should not be raised.
         if self.count == 0:
             return None
 
         if ix == None: 
             e = self.last
-            self._ls.pop()
+            self._ls.pop()      # TODO Why don't we get e from this line
         elif type(ix) is int:
             e = self[ix]
             self._ls.pop(ix)
         elif type(ix) is str:
             ix = self.getindex(ix)
-            e = self[ix]
+            e = self[ix]      
             self._ls.pop(ix)
 
         eargs = entityremoveeventargs(e)
@@ -771,30 +1027,110 @@ class entities:
         return e
 
     def reversed(self):
+        """ Return a generator that allows the collection to be
+        iterated over starting from the end to the beginning::
+
+            for e in es.reversed():
+                # The first e to be printed will be the last element in
+                # es, the second will be the penultimate, and so on.
+                print(e)
+
+        To reverse the order of the ordering of the collection in place,
+        see the ``entities.reverse()`` method.
+        """
         for e in reversed(self._ls):
             yield e
 
     def reverse(self):
+        """ Reverses the order of the elements within the collection.
+        Returns nothing::
+
+            # Given a collection of 3
+            assert es.count == 3
+
+            # Get the elements
+            first   =  es.first
+            second  =  es.second
+            third   =  es.third
+
+            # In-place reverse elements
+            es.reverse()
+
+            # es has been reversed
+            assert third   is  es.first
+            assert second  is  es.second
+            assert first   is  es.third
+        """
         self._ls.reverse()
 
     @property
     def ubound(self):
+        """ Return the number of the items in the collection minus 1. If
+        there are no elements, None is returned.
+
+        ``ubound`` is based on the old BASIC function of the same name.
+        For some use cases, its semantics can be of value since, by
+        definition, its value is exactly the largest value that
+        can be given to the indexer without error, i.e., the *upper
+        bound*::
+
+            assert es.ispopulated
+            es[es.ubound]      # Never an IndexError
+            es[es.ubound + 1]  # Always and IndexError
+
+        However, for the overwhelming majority of use cases, this is the
+        wrong property to use and ``entities.count`` should be used
+        instead.
+        """
         if self.isempty: return None
         return self.count - 1
 
     def move(self, ix, e):
-        """ Insert `e` *before* the element at position `ix`.
+        """ NOTE Currently not implemented.
+        
+        Remove ``e`` from the collection, causing the onremove event to
+        fire, then insert it before the element at index ``ix`` in the
+        collection.
+
+        :param: ix int: The index the element will be moved before.
+
+        :param: e entity: The entity to move.
         """
         raise NotImplementedError('TODO')
 
     def moveafter(self, ix, e):
+        """ Remove ``e`` from the collection, causing the onremove event to
+        fire, then insert it after the element at index ``ix`` in the
+        collection.
+
+        :param: ix int: The index the element will be moved after.
+
+        :param: e entity: The entity to move.
+        """
         self.remove(e)
         self.insertafter(ix, e)
 
     def insert(self, ix, e):
+        """ Insert the entity ``e`` into the collection before the
+        element at index `ix`. This method is identical to
+        ``entities.insertbefore``.
+
+        :param: ix int: The index of the element that ``e`` will be
+        inserted before.
+
+        :param: e entity: The entity to be inserted.
+        """
         self.insertbefore(ix, e)
 
     def insertbefore(self, ix, e):
+        """ Insert the entity ``e`` into the collection before the
+        element at index `ix`. 
+
+        :param: ix int: The index of the element that ``e`` will be
+        inserted before.
+
+        :param: e entity: The entity to be inserted.
+        """
         # TODO Support inserting collections
         self._ls.insert(ix, e)
         try:
@@ -805,13 +1141,59 @@ class entities:
             raise AttributeError(msg)
 
     def insertafter(self, ix, e):
+        """ Insert the entity ``e`` into the collection after the
+        element at index `ix`. 
+
+        :param: ix int: The index of the element that ``e`` will be
+        inserted after.
+
+        :param: e entity: The entity to be inserted.
+        """
         self.insertbefore(ix + 1, e)
 
     def unshift(self, e):
+        """ Insert the entity ``e`` at the begining of the collection.
+
+        Note that the name ``unshift`` is barrowed from Perl to imply
+        pushing an element onto the beginning of a stack (i.e., an array
+        or list). This is useful when stack semantics are needed.
+        However, within the Core framework, the << operator should be
+        used::
+
+            # Only when stack sementics are needed.
+            es.unshift(e)
+
+            # Otherwise, use the << operator
+            es << e
+
+            # For ether of the above, the following can be asserted:
+            assert es.first is e
+
+        :param: e entity: The entity to be inserted.
+        """
         # TODO: Return entities object to indicate what was unshifted
         self.insertbefore(0, e)
 
     def push(self, e):
+        """ Append ``e`` to the end of the collection.
+
+        Note that the name ``push`` is barrowed from Perl to imply
+        pushing an element onto the beginning of a stack (i.e., an array
+        or list). This is useful when stack semantics are needed.
+        However, within the Core framework, the += operator should be
+        used::
+
+            # Only when stack sementics are needed.
+            es.push(e)
+
+            # Otherwise, use the += operator
+            es += e
+
+            # For ether of the above, the following can be asserted:
+            assert es.last is e
+
+        :param e entity: The entity being pushed.
+        """
         self += e
 
     def give(self, es):
@@ -823,16 +1205,58 @@ class entities:
         self.clear()
 
     def __contains__(self, e):
+        """ Returns True if ``e`` is in ``es``::
+
+            assert e not in es
+
+            es += e
+
+            assert e in es
+
+        :param e entity: The entity being sought.
+        """
         if type(e) in (int, str):
             e = self(e)
 
         return self.indexes['identity'](e).ispopulated
 
-    def __lshift__(self, a):
-        self.unshift(a)
+    def __lshift__(self, e):
+        """ Implements the << operator. See the docstring at
+        ``entities.unshift`` for details.
+
+        :param e entity: The entity being unshifted.
+        """
+        self.unshift(e)
     
     def append(self, obj, uniq=False, r=None):
+        """ Appends ``obj`` to the end of the collection.
+
+        The name append is based of Python's list's ``append`` method.
+        It is useful when you want an entities collection to behave like
+        a list. However, the canonical way to append to a collection is
+        to use the += operator::
+            
+            # Behave like a list
+            es.append(e)
+
+            # Canonical 
+            es += e
+
+            # Either of the above lines will allow the following to be
+            # asserted
+
+            assert es.last is e
+
+        :param: obj entity: The entity being asserted.
+
+        :param: uniq bool: If True, an append will only happen if the
+        entity is not already in the collection.
+
+        :param: r entities: For internal use only.
+        """
+
         # Create the return object if it hasn't been passed in
+        # TODO s/==/is/
         if r == None:
             # We use a generic entities class here because to use the subclass
             # (type(self)()) would cause errors in subclasses that demanded
@@ -881,20 +1305,79 @@ class entities:
         return r
 
     def __iadd__(self, t):
+        """ Implement the += operator. See the docstring at
+        ``entities.append`` for details.
+        """
         self.append(t)
         return self
 
-    def __ior__(self, t):
-        self.append(t, uniq=True)
+    def __ior__(self, e):
+        """ Implements the |= operator on collections. ``e`` will be
+        appended to the collection unless it already exists in the
+        collection. This is the canonical way to do unique appends
+
+            assert e not in es
+
+            # Noncanonical
+            es.append(e, uniq=True)
+
+            # Canonical 
+            es |= e
+
+            # Either of the above lines will allow the following to be
+            # asserted
+            assert es.last is e
+        """
+        self.append(e, uniq=True)
         return self
 
     def __add__(self, es):
+        """ Implements the + operator. This operator combines two
+        colections together and returns a new collection with the
+        elements from the first two::
+
+            # e is in es; e1 is in es1
+            assert e in es
+            assert e1 in es1
+
+            # Add them together to get es2
+            es2 = es + es1
+
+            # es2 now contains e and e1
+            assert e in es2
+            assert e1 in es2
+
+        :param: es entity|entities: The entity object or the entities
+        collection used to concatentate with self.
+        """
         r = type(self)()
         r += self
         r += es
         return r
 
     def __sub__(self, es):
+        """ Implement the - operator. The - operator removes an entity
+        object, or a collection of entity objects, from the existing
+        entities collection producing a new entities collection of the
+        same type. 
+
+            # e1 is in es and es1
+            assert e in es
+            assert e1 in es
+            assert e1 in es1
+
+            # Subtract the elements from es that are in es1 (e1)
+            es2 = es - es1
+
+            # Alternatively, we could have done: es2 = es - e1
+
+            # es2 will contain e but not e1
+            assert e in es2
+            assert e1 not in es2
+
+        :param: es entity|entities: The entity object or the entities
+        collection used to subtract from self.
+        """
         r = type(self)()
 
         # If es is not an iterable, such as an entitities collection,
@@ -910,40 +1393,133 @@ class entities:
 
     @property
     def count(self):
+        """ Returns the number of elements in the collection.
+
+        Note: if list semantics are needed, the builtin len() function
+        can be used instead::
+            
+            assert len(es) == es.count
+
+        However, the ``count`` property is the prefered way to get the
+        collection's count within the framework.
+        """
         return len(self._ls)
 
     def getcount(self, qry):
+        """ The the count of elements after filtering with a where
+        predicate. The following can always be asserted::
+
+            # Given p is a where predicate
+            assert es.count(p) == es.where(p).count
+
+        See the ``where`` method for details on the where predicate.
+        """
         # TODO Test
         return self.where(qry).count
 
     def __len__(self):
+        """ Returns the number of elements in the collection. This is a
+        Python magic function that allows getting the collection's count
+        with the builtin len() function.
+
+            es = entities()
+            assert len(es) == 0
+
+            es += e
+
+            assert len(es) == 1
+
+        Note: if list semantics are needed, the builtin len() function
+        can be should be used.  However, the ``count`` property is the
+        prefered way to get the collection's count within the framework.
+            
+            assert len(es) == es.count
+        """
         return self.count
 
     @property
     def isempty(self):
+        """ Returns True if there are no elements in the collection.
+
+        Both statements are equivalent, but the later is prefered
+
+            if es.count == 0:
+                ...
+
+            if es.isempty:
+                ...
+        """
         return self.count == 0
 
     @property
     def issingular(self):
+        """ Returns True if there is exactly one element in the
+        collection.
+
+        Both statements are equivalent, but the later is prefered
+
+            if es.count == 1:
+                ...
+
+            if es.issingular:
+                ...
+        """
         return self.count == 1
 
     @property
     def isplurality(self):
+        """ Returns True if there is 2 or more elements in the
+        collection.
+
+        Both statements are equivalent, but the later is prefered
+
+            if es.count > 1
+                ...
+
+            if es.isplurality::
+                ...
+        """
         # TODO This should be call isplural
         return self.count > 1
 
     @property
     def ispopulated(self):
-        # TODO This is redundant with isplurality.
+        """ Returns True if there is 1 or more elements in the
+        collection.
+
+        Both statements are equivalent, but the later is prefered
+
+            if es.count >= 1
+                ...
+
+            if es.ispopulated::
+                ...
+        """
         return not self.isempty
 
     def __repr__(self):
+        """ Returns a string representation of the collection and each
+        of the elements in it.
+        """
         return self._tostr(repr)
 
     def __str__(self):
+        """ Returns a string representation of the collection and each
+        of the elements in it.
+        """
         return self._tostr(str)
 
     def _tostr(self, fn=str, includeHeader=True):
+        """ Returns a string representation of the collection and each
+        of the elements in it.
+
+        :param: fn: callable: Each element is passed to this function to
+        get its string representation. By default, the function is the
+        builtin str() function.
+
+        :param: includeHeader bool: Include a header in the string
+        representation. 
+        """
         if includeHeader:
             r = '%s object at %s' % (type(self), hex(id(self)))
 
@@ -969,6 +1545,25 @@ class entities:
         return r
 
     def __setitem__(self, key, item):
+        """ Implements an indexer that can be assigned an element.
+
+            es[0] = e
+            assert es.first is e
+
+        The ``key`` can be a slice and the ``item`` can be an iterable::
+
+            # Create a collection and add a couple of elements to it
+            es = entities()
+            es += element()
+            es += element()
+
+            # Assign the first two elements of es to the first two
+            # positions of es1.
+            es1[:1] = es
+
+            assert es1.first is es.first
+            assert es1.second is es.second
+        """
         e = self[key]
         self._ls[key]=item
 
@@ -989,8 +1584,56 @@ class entities:
         for item in items:
             self.onadd(self, entityaddeventargs(item))
 
-
     def __getitem__(self, key):
+        """ Implements an indexer for the collection::
+
+            # Create a collection and add an entity to it
+            es = entities()
+            e = entity()
+            es =+ e
+
+            # Use the indexer to access the first element and assert it
+            # is e.
+            assert e is es[0]
+
+        If an element can't be found, an IndexError is raised.
+
+        Above, ``key`` is an int. However, key can also be a slice or a
+        str. See below for details.
+
+        :param: key int|slice|str: The index value.
+            if int:
+                The value is used as a zero-based index, and gets an
+                element from the collection the same way as indexing a
+                Python list does.
+
+            if slice:
+                Works the same as passing a slice to a Python list::
+
+                    # Get the first two elements from the
+                    # collection.
+                    es1 = es[0:2]
+
+                    # A new collection is created and returned.
+                    assert type(es1) is type(es)
+
+            if str:
+                Assumes each element has an ``id`` property. The index
+                value will be tested against the value of this property
+                and the first one found will be used::
+
+                    es = entities()
+                    for s in ('herp', 'derp'):
+                        es += entity()
+                        es.last.id = s
+
+                    assert es['herp'] is es.first
+                    assert es['derp'] is es.second
+
+                If the elements do not have an id property, their
+                ``name`` property will be used. If they have neither,
+                an IndexError will be raise.
+        """
         if isinstance(key, int):
             return self._ls[key]
 
@@ -1005,6 +1648,15 @@ class entities:
         return self[ix]
 
     def getprevious(self, e):
+        """ Get the element that comes before ``e``.
+
+            # Assuming es is a collection that has two or more elements
+            assert es.getprevious(es.second) is es.first
+            assert es.getprevious(es.last) is es.penultimate
+
+        :param: e entity: The entity immediatly after which the return
+        value will exist in the collection.
+        """
         ix = self.getindex(e)
         return self(ix - 1)
 
@@ -1012,12 +1664,28 @@ class entities:
         """ Return the first index of e in the collection.
 
         This is similar to list.index except here we use the `is`
-        operator for comparison instead of the `==` operator.
+        operator for comparison instead of the `==` operator when ``e``
+        is an instance of ``entity``. See below for details on the way
+        getindex(e) works when ``e`` is a str.
+
+        If entity cannot be found in the collection, a ValueError will
+        be raised.
+
+        :param: e entity|str:
+            if entity:
+                Returns the index number of ``e`` in the collection.
+
+            if str:
+                Searches the collection for an element where the id
+                attribute equals ``e``. If found, returns the index
+                number for that entity. If the element does not have an
+                ``id`` attribute, its ``name`` attribute is used
+                instead. If elements have neither, a ValueError will be
+                raised.
         """
 
         # TODO:OPT We may be able to cache this and invalidate the cache
         # using the standard events
-
         if isinstance(e, entity):
             for ix, e1 in enumerate(self):
                 if e is e1: return ix
@@ -1034,103 +1702,162 @@ class entities:
 
     @property
     def first(self): 
+        """ Returns the first element in the collection. If the
+        collection is empty, None is returned.
+        """
         return self(0)
 
     @first.setter
     def first(self, v): 
+        """ Sets the first element of the collection.
+        """
         self[0] = v
 
     @property
     def second(self): 
+        """ Returns the second element in the collection. If has fewer
+        than 2 elements, None is returned.
+        """
         return self(1)
 
     @second.setter
     def second(self, v): 
+        """ Sets the second element of the collection.
+        """
         self[1] = v
 
     @property
     def third(self): 
+        """ Returns the second element in the collection. If has fewer
+        than 3 elements, None is returned.
+        """
         return self(2)
 
     @third.setter
     def third(self, v): 
+        """ Sets the third element of the collection.
+        """
         self[2] = v
+
     @property
     def fourth(self): 
+        """ Returns the second element in the collection. If has fewer
+        than 4 elements, None is returned.
+        """
         return self(3)
 
     @fourth.setter
     def fourth(self, v): 
+        """ Sets the fourth element of the collection.
+        """
         self[3] = v
 
     @property
     def fifth(self): 
+        """ Returns the second element in the collection. If has fewer
+        than 5 elements, None is returned.
+        """
         return self(4)
 
     @fifth.setter
     def fifth(self, v): 
+        """ Sets the fifth element of the collection.
+        """
         self[4] = v
 
     @property
     def sixth(self): 
+        """ Returns the second element in the collection. If has fewer
+        than 6 elements, None is returned.
+        """
         return self(5)
 
     @sixth.setter
     def sixth(self, v): 
+        """ Sets the sixth element of the collection.
+        """
         self[5] = v
 
     @property
     def seventh(self): 
+        """ Returns the second element in the collection. If has fewer
+        than 7 elements, None is returned.
+        """
         return self(6)
 
     @seventh.setter
     def seventh(self, v): 
+        """ Sets the seventh element of the collection.
+        """
         self[6] = v
-
 
     @property
     def last(self): 
+        """ Return the last element in the collection. If the collection
+        has zero elements, None will be returned.
+        """
         return self(-1)
 
     # TODO Add tests
     @last.setter
     def last(self, v): 
+        """ Set the last element in the collection.
+        """
         self[-1] = v
 
     @property
     def ultimate(self): 
+        """ A synonym of entities.last. 
+        """
         return self.last
 
     @ultimate.setter
     def ultimate(self, v): 
+        """ A synonym of entities.last. 
+        """
         self.last = v
 
     @property
     def penultimate(self): 
+        """ Returns the second-to-the-last element of the collection.
+        """
         return self(-2)
 
     @penultimate.setter
     def penultimate(self, v): 
+        """ Sets the second last element in the collection.
+        """
         self[-2] = v
 
     @property
     def antepenultimate(self): 
+        """ Returns the third last element in the collection.
+        """
         return self(-3)
 
     @antepenultimate.setter
     def antepenultimate(self, v): 
+        """ Sets the third last element in the collection.
+        """
         self[-3] = v
 
     @property
     def preantepenultimate(self): 
+        """ Returns the fourth last element in the collection.
+        """
         return self(-4)
 
     @preantepenultimate.setter
     def preantepenultimate(self, v): 
+        """ Sets the fourth last element in the collection.
+        """
         self[-4] = v
 
     @property
     def brokenrules(self):
+        """ Collates the broken rules for each of the elements in the
+        collection and returns them as a new ``brokenrules`` collection.
+        """
         r = brokenrules()
         for e in self:
             brs = e.brokenrules
@@ -1145,9 +1872,85 @@ class entities:
 
     @property
     def isvalid(self):
+        """ Returns True if there are no broken rules in the collection;
+        False otherwise.
+        """
         return self.brokenrules.isempty
 
 class entity:
+    """ The base class for all entity objects.
+
+    It's recommend that only derivations of ``entity`` be used in
+    ``entities`` collection::
+
+        # Create a products entities collection class
+        class products(entities):
+            pass
+
+        # Create a product entity class
+        class product(entity):
+            pass
+
+        # Instantiate the products collection
+        ps = products()
+
+        # Now we can add product entity objects to it
+        ps += product()
+        ps += product()
+
+    Perhaps the most noteable feature of the ``entity`` class is its
+    ability to define broken rules. Let's recreate the ``product`` class
+    from above so it has a brokenrules collection::
+
+        class product(entity):
+            def __init__(self):
+                self.price = float()
+                self.name = str()
+
+            @property
+            def brokenrules(self):
+                brs = brokenrules()
+
+                if not isinstance(self.name, str):
+                    brs += "'name' must be a str"
+
+                if not isinstance(self.price, float):
+                    brs += "'price' must be a float"
+
+                return brs
+
+    Now the entity can report on its own validity. This features is
+    called entity-centric validation::
+        
+        # Product will be valid on instantiation
+        prod = product()
+        assert prod.isvalid
+        assert prod.brokenrules.isempty
+
+        # Lets assign the wrong types to name and price
+        prod.name = int()
+        prod.price = str()
+        assert not prod.isvalid  # invalid
+        assert prod.brokenrules.count == 2  # Two broken rules
+    
+    According to the ``brokenrules`` property defined in the ``product`
+    class above, we shouldn't be able to a a name attribute that is not
+    a str, or a price attribute that is not a float. Consequently,
+    assigning an int to ``name`` and a str to ``price`` causes two
+    broken rules to be reported. Note that Broken rules are by no means
+    limited to type checking; any logic that can be used to ensure an
+    object is valid can and should go in the brokenrules property.
+    The meaning of validity is arbitrary. It can mean that the object is
+    prepared to enter a different system, such a a third-party API. In
+    practices, validity typically means the object is ready to be saved
+    to the database.
+
+    Derived entity/entities pairings are useful for many things, but
+    their most frequent use is probably the ORM classes ``orm.entities``
+    and ``orm.entity``. From these classes, all the General Entity Model
+    (GEM) classes derive, basically making up the entire entity and data
+    models for the framework.
+    """
     def __init__(self):
         self._onaftervaluechange = None
         self._onbeforevaluechange = None
