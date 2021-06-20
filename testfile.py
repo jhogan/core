@@ -1150,6 +1150,7 @@ class file_cache(tester.tester):
 
         for nd in (f, f1, f2):
             self.type(file.file, nd)
+        return
 
         # Nested file at root
         f = file.file.produce(path='/etc/passwd')

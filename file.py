@@ -80,6 +80,9 @@ class cache:
             sup = super(cache, cls)
             cls._instance = sup.__new__(cls)
             cls._instance._root = cls._node('/')
+
+            # A list of inodes that have no attachement to the root of
+            # the file systems.
             cls._instance._floats = list()
 
         return cls._instance
@@ -104,7 +107,6 @@ class cache:
                     f'Could not find key for "{nd!r}"'
                 )
 
-
         try:
             nd = self._find(path)
         except cache.PathLookupError:
@@ -115,7 +117,7 @@ class cache:
     def _find(self, path, nd=None, nds=None):
         if not nd:
             nd = self._root
-            attop = True
+            atop = True
             nds = list()
 
         # TODO Change to self._split
@@ -139,7 +141,7 @@ class cache:
                         except cache.PathLookupError(nds):
                             continue
 
-        if attop:
+        if atop:
             return nds
 
     def _set(self, path, v):
@@ -163,6 +165,8 @@ class cache:
                     # moment. The client will eventually have to resolve
                     # this.
                     nd = self._node(name=name, rent=None)
+
+                    # Append nd dict to the _floats collection
                     self._floats.append(nd)
 
                     if i.last:
@@ -185,8 +189,6 @@ class cache:
 
             rent = nd
 
-
-
     def __setitem__(self, path, v):
         try:
             nds = self._find(path)
@@ -204,9 +206,6 @@ class cache:
             names[0] = '/'
 
         return names
-
-
-        
 
     def _cache(self, nd, rent):
         path = rent + nd
@@ -227,6 +226,7 @@ class inodes(orm.entities):
         self.onadd += self._self_onadd
 
     def _self_onadd(self, src, eargs):
+        #XXX
         return
         B(self.orm.isloading)
 
@@ -267,7 +267,6 @@ class inodes(orm.entities):
 
         for nd in self:
             replace(nd.root, eargs.entity.root)
-                    
 
     def __getitem__(self, key):
         """ Return an inode (file or directory) underneath the directory
