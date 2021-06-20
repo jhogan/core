@@ -9,6 +9,44 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021                 #
 ########################################################################
 
+""" The bot.py module encapsulates the logic for all bot activity. 
+
+Bots are autonomous programs typically run as background process.
+
+All bots inherit from the ``bot`` class. Currently, one class called
+``sendbot`` has been implemented. It is intended to run as a background
+process which monitors the message dispatch queue. When a dispatch is
+placed in the queue, sendbot picks it up and sends it to the
+``dispatcher`` effectively sending the message out to the recipients.
+
+At the moment, other bots are planned, such as a sysadmin bot which
+will monitor production and development environments, and a
+configuration manager bot which will automate the task of setting up
+environments and deploying code to production.
+
+A ``bot`` is an ``ecommerce.agents`` and therefore ultimately derives
+from ``party.party``. Bots have their own user account (bot.user) under
+which most of their activities are run.
+
+Bots log their activity to the database via the apriori.log entity. The
+``verbosity`` argument controls how much is logged.
+
+Bots are intended to be run as their own process, typically through
+systemd, so they are invoked like any other program, e.g., 
+
+    ./bot.py --iterations 1 --verbosity 5 sendbot
+
+Here, the bot.py binary is being run. At the end, we can see that
+'sendbot' is being run. The global argument --iteration is set to 1,
+meaning the sendbot will check and process the dispatch queue 1 time and
+then exit. This is typical for debugging purposes; in production we
+would not set iterations in order that sendobt iterates continuously.
+The verbosity is set to 5 because we want to see all the output. In
+production, that much logging may be unnecessary. Note that when
+logging, the bot will print log messages to the screen and record them
+to the database at the same time.
+"""
+
 from config import config
 from entities import classproperty
 from func import B, enumerate
@@ -30,6 +68,9 @@ import uuid
 import itertools
 
 class addlogeventargs(entities.eventargs):
+    """ An eventargs subclass to capture a message and log level of a
+    log event.
+    """
     def __init__(self, msg, lvl):
         self.message = msg
         self.level = lvl
