@@ -108,20 +108,22 @@ class cache:
                 )
 
         try:
-            nd = self._find(path)
-        except cache.PathLookupError:
-            raise KeyError(f'Cannot find node for {path}')
+            return self._find(path)
+        except cache.PathLookupError as ex:
+            raise KeyError(f'Cannot find node for {path}') from ex
             
-        return self._inodes[path]
-
     def _find(self, path, nd=None, nds=None):
         if not nd:
             nd = self._root
             atop = True
             nds = list()
 
-        # TODO Change to self._split
-        names = os.path.split(path)
+        names = self._split(path)
+
+        if names[0] != '/':
+            for flt in self._floats:
+                if flt['name'] == names[0]:
+                    return flt['node']
 
         if not nd['node']:
             raise cache.PathLookupError(nds)
@@ -170,7 +172,7 @@ class cache:
                     self._floats.append(nd)
 
                     if i.last:
-                        nd.node = v
+                        nd['node'] = v
 
                     nds = nd['children']
                     continue
@@ -283,14 +285,15 @@ class inodes(orm.entities):
                 for name in key.split('/'):
                     try:
                         nd = nds[name]
-                    except IndexError:
+                    except IndexError as ex:
                         raise IndexError(
                             f"Can't find node: {name}"
-                        )
+                        ) from ex
                     else:
                         if isinstance(nd, directory):
                             nds = nd.inodes
                 return nd
+
         return super().__getitem__(key)
 
 class inode(orm.entity):
