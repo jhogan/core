@@ -96,6 +96,23 @@ class bots(ecommerce.agents):
         return r
 
 class bot(ecommerce.agent):
+    """ Bots are autonomous programs typically run as background
+    process. All bots inherit from the ``bot`` class. 
+
+    A ``bot`` is an ``ecommerce.agents`` and therefore ultimately derives
+    from ``party.party``. Bots have their own user account (bot.user) under
+    which most of their activities are run.
+
+    Bots log their activity to the database via the apriori.log entity. The
+    ``verbosity`` argument controls how much is logged.
+
+    Bots are intended to be run as their own process, typically through
+    systemd, so they are invoked like any other program, e.g., 
+
+        ./bot.py --iterations 1 --verbosity 5 sendbot
+    """
+
+    # Log levels
     Levels = [
         'debug',  'info',      'warning',
         'error',  'critical',  'exception'
@@ -120,8 +137,13 @@ class bot(ecommerce.agent):
         goes to stderr.
         """
 
+        # The event handler for the onlog event
         onlog = kwargs.pop('onlog', None)
+
+        # The number of iterations.
         iterations = kwargs.pop('iterations', None)
+
+        # The logging verbosity
         verbosity = kwargs.pop('verbosity', 0)
 
         super().__init__(*args, **kwargs)
@@ -136,6 +158,13 @@ class bot(ecommerce.agent):
 
     @orm.attr(apriori.logs)
     def logs(self):
+        """ The collection of logs for this bot. 
+        
+        Note that, when called, the logs collection will not contain
+        prior logs, but will be ready for additional logs to be
+        appended. This is intended to prevent a huge but unnecessary
+        load of logs from the database.
+        """
         # HACK:8210b80c We want ``bot`` to have a ``logs`` constituent
         # that we can add to but we don't want to load every log the bot
         # has ever recorded. So set .isloaded = True to prevent that. A
@@ -167,13 +196,26 @@ class bot(ecommerce.agent):
 
     @classproperty
     def user(cls):
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        """ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        The user object that the bot will run under. This user will
+        typically have a hardcoded id.
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        """
         
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # Treat cls as an instance of bot so ``user`` can be used as
+        # both a @classproperty and a "@staticproperty" at the same
+        # time.
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if isinstance(cls, type):
             self = None
         else:
             self, cls = cls, type(cls)
 
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # Bot is abstract. Make sure we are only calling user if we are
+        # a concrete class.
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if cls is bot:
             raise NotImplementedError(
                 'user is only available to concrete classes'
@@ -185,18 +227,36 @@ class bot(ecommerce.agent):
 
             id = uuid.UUID(cls.UserId)
 
+            # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            # Create in (or retrieve from) the database as root and as
+            # the Carapacian proprietor.
+            # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             with orm.sudo(), orm.proprietor(party.company.carapacian):
                 try:
+                    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    # Retrieve
+                    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                     cls._user = ecommerce.user(id)
+
                 except db.RecordNotFoundError:
+                    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    # Ensure self is an instance of cls
+                    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                     if not self:
                         self = cls()
 
+                    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    # Create
+                    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                     cls._user = ecommerce.user(
                         id   = id,
                         name = cls.__name__,
                         party  = self,
                     )
+
+                    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    # Save
+                    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                     cls._user.save()
 
         return cls._user
