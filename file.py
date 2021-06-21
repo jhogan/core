@@ -79,7 +79,7 @@ class cache:
         if not cls._instance:
             sup = super(cache, cls)
             cls._instance = sup.__new__(cls)
-            cls._instance._root = cls._node('/')
+            cls._instance._root = cls._node('/', directory(name='/'))
 
             # A list of inodes that have no attachement to the root of
             # the file systems.
@@ -107,44 +107,46 @@ class cache:
                     f'Could not find key for "{nd!r}"'
                 )
 
-        try:
-            return self._find(path)
-        except cache.PathLookupError as ex:
-            raise KeyError(f'Cannot find node for {path}') from ex
+        return self._find(path)
             
-    def _find(self, path, nd=None, nds=None):
-        if not nd:
-            nd = self._root
+    class net:
+        def __init__(self):
+            self.head = None
+            self.tail = None
+            self.iscomplete = False
+            self.isfound = False
+
+    def _find(self, path, nd=None, net=None):
+        if not net:
+            net = cache.net()
             atop = True
-            nds = list()
 
-        names = self._split(path)
+        if isinstance(path, list):
+            pass
+        elif isinstance(path, str):
+            path = self._split(path)
+        else:
+            raise TypeError('Invalid path type')
 
-        if names[0] != '/':
+        if atop and path[0] != '/':
             for flt in self._floats:
-                if flt['name'] == names[0]:
-                    return flt['node']
+                if flt['name'] == path[0]:
+                    net.tail = flt['node']
+                    net.iscomplete = False
+                    net.isfound = True
+                    return net
+            else:
+                return net
 
-        if not nd['node']:
-            raise cache.PathLookupError(nds)
-        
-        if names[0] != nd['name']:
-            raise cache.PathLookupError(nds)
-
-        for name in names:
-            for nd1 in nd.children:
-                if nd1.name == name:
-                    nds.append(nd1)
-                    if len(path) == 1:
-                        return nd1
-                    else:
-                        try:
-                            return self.find(names[1:], nd1, nds)
-                        except cache.PathLookupError(nds):
-                            continue
-
-        if atop:
-            return nds
+        if path[0] == nd.name:
+            net += nd
+            tail = net.tail
+            for child in nd['children']:
+                self._find(path[1:], child, net)
+                if tail is not net.tail:
+                    break
+                    
+        return net
 
     def _set(self, path, v):
         names = self._split(path)
@@ -192,9 +194,11 @@ class cache:
             rent = nd
 
     def __setitem__(self, path, v):
-        try:
-            nds = self._find(path)
-        except cache.PathLookupError as ex:
+        net = self._find(path)
+
+        # XXX We can pass the net object to _set to eliminate redundant
+        # work.
+        if not net.isfound:
             self._set(path, v=v)
 
     @staticmethod
@@ -320,10 +324,10 @@ class inode(orm.entity):
 
     @classmethod
     def produce(cls, path):
-        try:
-            return cache()[path]
-        except KeyError:
-            pass
+        B()
+        net = cache()[path]
+        if net.isfound:
+            return net.tail
 
         # Get head and tail portion of path
         head, tail = os.path.split(path)

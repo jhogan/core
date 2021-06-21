@@ -1145,15 +1145,16 @@ class file_cache(tester.tester):
         f = file.file.produce(path='test')
         f1 = file.file.produce(path='test')
         f2 = file.file.produce(path='TEST')
+        B()
         self.is_(f, f1)
         self.isnot(f, f2)
 
         for nd in (f, f1, f2):
             self.type(file.file, nd)
-        return
 
-        # Nested file at root
+        B()
         f = file.file.produce(path='/etc/passwd')
+        # Nested file at root
         f1 = file.file.produce(path='/etc/passwd')
         f2 = file.file.produce(path='/etc/PASSWD')
         self.is_(f, f1)
