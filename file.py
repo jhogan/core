@@ -873,6 +873,27 @@ class directory(inode):
 
         return f
 
+    @classproperty
+    def root(cls):
+        if not hasattr(cls, '_root'):
+            Id = uuid.UUID(hex='2007d124039f4cefac2cbdf1c8d1001b')
+            
+            cls._root = cls(id=id, name='/')
+            cls._root.save()
+        return cls._root
+
+    def _find(self, path):
+        if isinstance(path, list):
+            pass
+        elif isinstance(path, str):
+            path = self._split(path)
+        else:
+            raise TypeError('Path is wrong type')
+
+
+
+        
+
     def __iter__(self):
         """ Allows us it iterate over the ``directory`` object instead
         of its ``inodes`` collection::
