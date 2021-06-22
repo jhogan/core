@@ -263,6 +263,8 @@ class bot(ecommerce.agent):
 
     @property
     def onbeforeiteration(self):
+        """ The event that is raised before a bot iterates.
+        """
         if not hasattr(self, '_onbeforeiteration'):
             self._onbeforeiteration = entities.event()
 
@@ -274,6 +276,8 @@ class bot(ecommerce.agent):
 
     @property
     def onafteriteration(self):
+        """ The event that is raised after a bot iterates.
+        """
         if not hasattr(self, '_onafteriteration'):
             self._onafteriteration = entities.event()
 
@@ -285,6 +289,8 @@ class bot(ecommerce.agent):
 
     @property
     def onlog(self):
+        """ The event that is raised when a bot records a log message.
+        """
         if not self._onlog:
             self._onlog = entities.event()
         return self._onlog
@@ -295,45 +301,67 @@ class bot(ecommerce.agent):
 
     @property
     def level(self):
+        """ The level of logging verbosity the bot as been set to.
+        """
         return self.Levels[5 - self.verbosity:][0]
 
     @property
     def levels(self):
+        """ Returns a list of logging levels that the bot has been
+        set to given its ``verbosity`` property.
+        """
         if self.verbosity is None:
             return list()
 
         return self.Levels[5 - self.verbosity:]
 
     def debug(self, msg, end='\n'):
+        """ Log a debug-level message.
+        """
         f = inspect.stack()[0].function
         self._log(msg=msg, lvl=f, end=end)
 
     def info(self, msg, end='\n'):
+        """ Log a info-level message.
+        """
         f = inspect.stack()[0].function
         self._log(msg=msg, lvl=f, end=end)
 
     def warning(self, msg, end='\n'):
+        """ Log a warning-level message.
+        """
         f = inspect.stack()[0].function
         self._log(msg=msg, lvl=f, end=end)
 
     def error(self, msg, end='\n'):
+        """ Log a error-level message.
+        """
         f = inspect.stack()[0].function
         self._log(msg=msg, lvl=f, end=end)
 
     def critical(self, msg, end='\n'):
+        """ Log a critical-level message.
+        """
         f = inspect.stack()[0].function
         self._log(msg=msg, lvl=f, end=end)
 
     def exception(self, msg, end='\n'):
+        """ Log a except-level message.
+        """
         f = inspect.stack()[0].function
         self._log(msg=msg, lvl=f, end=end)
 
     def _log(self, msg, lvl='info', end='\n'):
+        """ Records a log entry to apriori.log.
+        """
+
         if lvl not in self.Levels:
             raise ValueError(f'Invalid level: "{lvl}"')
 
+        # Get the list of levels that the bot should log for
         lvls = self.levels
 
+        # Abort if the log level should be ignored (see bot.verbosity)
         if lvl not in lvls:
             return
 
@@ -353,39 +381,64 @@ class bot(ecommerce.agent):
 
                 self.logs.save()
         finally:
-            # In case there is a database/ORM issue, we can raise
-            # the onlog event which will probably be handle something
-            # that prints to a device like stdout our a file.
+            # Raise the onlog event. This is typically handled by
+            # something that will print the message to a screen.
             eargs = addlogeventargs(msg=msg, lvl=lvl)
             self.onlog(self, eargs)
 
+    # TODO Remove: Dead code
     @orm.attr(int)
     def pid(self):
         return os.getpid()
 
     @property
     def iterations(self):
+        """ The number of iterations a bot should do before completion.
+        In productions, bots may iterate indefinately. In testing, only
+        a single iteration may be required.
+        """
         return self._iterations
 
     @property
     def verbosity(self):
+        """ The verbosity for logging.
+        """
         return self._verbosity
 
     @verbosity.setter
     def verbosity(self, v):
         possible = list(range(7)) + [None]
+
         if v not in possible:
             possible = [str(x) for x in possible]
             raise InputError(
                 f'Value for verbosity must be {",".join(possible)}'
             )
+
         self._verbosity = v
 
     def __call__(self, exsimulate=False):
+        """ Implement __call__ to allow bots to be started::
+
+            # Instatiate sendbot
+            b = sendbot()
+            
+            # Start iterating sendbot
+            b()  # Same as b.__call__
+
+        Principles, such as the bot's user accounts, a proprietor and
+        the bot itself are created in the database here if they have not
+        already been. The concrete bot's _call method will be called
+        iteratively to invoke its functionality.
+
+        :param: exsimulate bool: A flag that can be set to True in
+        certain tests to indicate a desire to break out of a simulated
+        test environment, such as one provided by a third party API.
+        """
         cara = party.company.carapacian
 
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # Set the ORM's owner to the bot's user object. We won't all
+        # Set the ORM's owner to the bot's user object. We want all
         # future accessibilty to consider the bot's user as the owner,
         # and all new records, such as log records, to be owned by the
         # bot's user.
@@ -397,20 +450,20 @@ class bot(ecommerce.agent):
         # interactions.
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         with orm.sudo():
+            # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             # Use sudo because setting the proprietor may require
-            # retriving the current proprietor for comparison. Since the
-            # loggedi in user is the bot, and bots can't retrieve
+            # retrieving the current proprietor for comparison. Since
+            # the logged-in user is the bot, and bots can't retrieve
             # carapacian (at least, not at the moment), we should become
             # sudo. 
+            # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             orm.security().proprietor = cara
 
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # Set the bot's proprietor to the Carapacian company. 
-        #
-        # (Override accessibilty controls because setting proprietor
+        # Override accessibilty controls because setting proprietor
         # causes the current proprietor to be loaded, which causes
-        # party.retrievability to be called, which, itself caluse
-        # proprietor to beloaded leading to infinite recursion.)
+        # party.retrievability to be called, which, itself causes
+        # proprietor to be loaded leading to infinite recursion.
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         with orm.override():
             try:
@@ -442,7 +495,11 @@ class bot(ecommerce.agent):
         with orm.sudo():
             self.save()
 
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # Set the user to the bot's user
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         with orm.su(self.user):
+            # Log some initial messages
             self.info(f'{type(self).__name__} is alive')
             self.info(f'Log levels: {" | ".join(self.levels)}')
 
@@ -452,19 +509,29 @@ class bot(ecommerce.agent):
             else:
                 iter = range(self.iterations)
 
+            # Iterate for as many times as defined by iter (see above).
+            # self.iteration is a property that can be used by the
+            # subclass to see how many iterations have been done so far.
             for self.iteration in iter:
+
+                # Raise the onbeforeiteration event
                 eargs = iterationeventargs(
                     self.iteration + 1, self.iterations
                 )
 
                 self.onbeforeiteration(self, eargs)
 
+                # Break if an event handler for onbeforeiteration wants
+                # the bot to stop
                 if eargs.cancel:
                     break
 
                 try:
+                    # Call the subclass's (the concrete bot's) _call
+                    # method to begin iteration.
                     self._call(exsimulate=exsimulate)
                 finally:
+                    # Raise the onafteriteration event
                     self.onafteriteration(self, eargs)
 
     @property
