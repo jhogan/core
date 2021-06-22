@@ -72,134 +72,19 @@ import textwrap
 import urllib.request
 import uuid
 
-class cache:
-    _instance = None
+class net:                                                                                                                                                                                                                                                                                                              
+    def __init__(self):
+        self.head=None
+        self.tail=None
+        self.iscomplete=False
+        self.isfound=False
 
-    def __new__(cls):
-        if not cls._instance:
-            sup = super(cache, cls)
-            cls._instance = sup.__new__(cls)
-            cls._instance._root = cls._node('/', directory(name='/'))
-
-            # A list of inodes that have no attachement to the root of
-            # the file systems.
-            cls._instance._floats = list()
-
-        return cls._instance
-
-    @staticmethod
-    def _node(name, nd=None, rent=None):
-        return {
-            'name':      name,
-            'node':      nd,
-            'parent':    rent,
-            'children':  dict(),
-        }
-
-    def __getitem__(self, path):
-        if isinstance(path, inode):
-            nd = path
-            for k, v in self._inodes.items():
-                if v is nd:
-                    return k
-            else:
-                raise KeyError(
-                    f'Could not find key for "{nd!r}"'
-                )
-
-        return self._find(path)
-            
-    class net:
-        def __init__(self):
-            self.head = None
-            self.tail = None
-            self.iscomplete = False
-            self.isfound = False
-
-    def _find(self, path, nd=None, net=None):
-        if not net:
-            net = cache.net()
-            atop = True
-
-        if isinstance(path, list):
-            pass
-        elif isinstance(path, str):
-            path = self._split(path)
-        else:
-            raise TypeError('Invalid path type')
-
-        if atop and path[0] != '/':
-            for flt in self._floats:
-                if flt['name'] == path[0]:
-                    net.tail = flt['node']
-                    net.iscomplete = False
-                    net.isfound = True
-                    return net
-            else:
-                return net
-
-        if path[0] == nd.name:
-            net += nd
-            tail = net.tail
-            for child in nd['children']:
-                self._find(path[1:], child, net)
-                if tail is not net.tail:
-                    break
-                    
-        return net
-
-    def _set(self, path, v):
-        names = self._split(path)
-
-        rent = None
-        for i, name in enumerate(names):
-            if i.first:
-                if name == '/':
-                    nd = self._root
-                    if i.last:
-                        raise Exception('TODO this should not happen')
-                    else:
-                        nds = nd['children']
-                        rent = nd
-                        continue
-                else:
-                    # If we are here, we have been given a path that
-                    # doesn't start with a /, meaning that ultimately,
-                    # it has know attachment to the file system at the
-                    # moment. The client will eventually have to resolve
-                    # this.
-                    nd = self._node(name=name, rent=None)
-
-                    # Append nd dict to the _floats collection
-                    self._floats.append(nd)
-
-                    if i.last:
-                        nd['node'] = v
-
-                    nds = nd['children']
-                    continue
-
-            try:
-                nd = nds[name]
-            except KeyError:
-                if not i.last:
-                    raise ValueError('There is more path')
-
-                nd = self._node(name=name, rent=rent)
-                nd['node'] = v
-            else:
-                nds = nd['children']
-                continue
-
-            rent = nd
-
-    def __setitem__(self, path, v):
-        net = self._find(path)
-
-        # XXX We can pass the net object to _set to eliminate redundant
-        # work.
-        if not net.isfound:
-            self._set(path, v=v)
+class inodes(orm.entities):
+    """ Represents a collection of ``inode`` entities.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.onadd += self._self_onadd
 
     @staticmethod
     def _split(path):
@@ -212,24 +97,6 @@ class cache:
             names[0] = '/'
 
         return names
-
-    def _cache(self, nd, rent):
-        path = rent + nd
-        self._inodes[path] = nd
-
-    def clear(self):
-        self._inodes.clear()
-
-    class PathLookupError(LookupError):
-        def __init__(self, nds):
-            self.nodes = nds
-
-class inodes(orm.entities):
-    """ Represents a collection of ``inode`` entities.
-    """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.onadd += self._self_onadd
 
     def _self_onadd(self, src, eargs):
         #XXX
@@ -324,8 +191,10 @@ class inode(orm.entity):
 
     @classmethod
     def produce(cls, path):
-        B()
-        net = cache()[path]
+        root = directory.root
+
+        net = root._find(path)
+
         if net.isfound:
             return net.tail
 
