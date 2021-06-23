@@ -536,6 +536,9 @@ class bot(ecommerce.agent):
 
     @property
     def retrievability(self):
+        """ Return violations collection to indicate whether the bot is
+        retrievable given the current security context.
+        """
         vs = orm.violations()
 
         if type(self) is bot:
@@ -550,6 +553,9 @@ class bot(ecommerce.agent):
 
     @property
     def updatability(self):
+        """ Return violations collection to indicate whether the bot is
+        updatable given the current security context.
+        """
         vs = super().updatability()
 
         b = self
@@ -569,23 +575,56 @@ class bot(ecommerce.agent):
         return vs
 
 class sendbots(bots):
-    pass
+    """ A collection of sendbot objects.
+
+    This is necessary but unlikely to be used since sendbot is a
+    data-singleton.
+    """
 
 class sendbot(bot):
+    """ When called, sendbot keeps an eye on the message dispatch queue
+    and ensures that messages are delivered to third party API's. For
+    example, if there is a dispatch for an email, sendbot will take the
+    message and ensure that it gets to an SMTP server. (Note that sendbot
+    uses classes in the third.py module for actual API interaction.)
+    """
     # TODO Use UUID classes here instead of strings
-    Id      =  'fdcf21b2-dc0b-40ef-934f-ffbca49c915c'
-    UserId  =  'cfd67652-de34-4ffc-99a0-5acd29ff89d4'
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # The id of the sendbot.
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Id = 'fdcf21b2-dc0b-40ef-934f-ffbca49c915c'
 
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # The id of sendbot's user.
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    UserId = 'cfd67652-de34-4ffc-99a0-5acd29ff89d4'
+
+    # Keep track of whether or not we are in the new method. Need to
+    # prevent infinite recursion.
     _isin__new__ = False
     def __new__(cls, *args, **kwargs):
+        """ Override __new__ to ensure that, when instatiating
+        ``sendbot``, we receive the exact same object each time (i.e.,
+        sendbot is a singleton).
+
+            assert sendbot() is sendbot()
+
+        Additionally, the record in the database for sendbot will be
+        created if it doesn't already exist, and only one record will
+        ever exist for sendbot, making it a data-singleton.
+
+            assert sendbot().id == sendbot().id
+        """
         # TODO Much of this logic is to implement a data-singleton
         # pattern, and will likely be of universal interest. When the
         # time is right, we can consolidate this logic to make
         # implementing the data-singleton pattern easy.
 
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # Make sure that if something tries to instantiate sendbot with
-        # a uuid that is not sendbot's uuid, then a RecordNotFoundError
-        # is thrown.
+        # a UUID that is not sendbot's UUID, a RecordNotFoundError is
+        # raised.
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         try:
             id = args[0]
         except IndexError:
@@ -605,7 +644,7 @@ class sendbot(bot):
         # For each frame in the stack
         for i, fi in enumerate(inspect.stack()):
             # The first and second frame will be this method, and are
-            # therefore not indicative of a prior instantiation.
+            # therefore not indicative of a recursive instantiation.
             if i.first or i.second:
                 continue
 
@@ -636,15 +675,26 @@ class sendbot(bot):
             try:
                 kwargs['from__new__']
             except KeyError:
+                # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                # Use the hardcoded ID
+                # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 id = uuid.UUID(cls.Id)
 
+                # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                # Create or retrieve as carapacian and as the root user
+                # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 cara = party.company.carapacian
                 with orm.proprietor(cara), orm.sudo():
-
                     try:
                         kwargs['from__new__'] = None
+                        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                        # Try to instatiate
+                        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                         b = sendbot(id, **kwargs)
                     except db.RecordNotFoundError:
+                        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                        # Doesn't exist in db so create
+                        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                         b = sendbot(**kwargs)
                         b.id = id
                         b.name = cls.__name__
