@@ -72,31 +72,12 @@ import textwrap
 import urllib.request
 import uuid
 
-class net:                                                                                                                                                                                                                                                                                                              
-    def __init__(self):
-        self.head=None
-        self.tail=None
-        self.iscomplete=False
-        self.isfound=False
-
 class inodes(orm.entities):
     """ Represents a collection of ``inode`` entities.
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.onadd += self._self_onadd
-
-    @staticmethod
-    def _split(path):
-        if path == '/':
-            return ['/']
-
-        names = path.split('/')
-
-        if path.startswith('/'):
-            names[0] = '/'
-
-        return names
 
     def _self_onadd(self, src, eargs):
         #XXX
@@ -189,15 +170,49 @@ class inode(orm.entity):
     # inodes recursive (self-referencing).
     inodes = inodes
 
+    @staticmethod
+    def _split(path):
+        if path == '/':
+            return ['/']
+
+        names = path.split('/')
+
+        if path.startswith('/'):
+            names[0] = '/'
+
+        return names
+
     @classmethod
     def produce(cls, path):
         root = directory.root
 
-        net = root._find(path)
+        if path[0] == '/':
+            path = path.lstrip('/')
+        else:
+            # floater
+            raise NotImplementedError('XXX')
+
+        net = directory.net()
+        root.find(path, net)
 
         if net.isfound:
             return net.tail
 
+        nd = net.tail
+
+        for i, name in enumerate(net.wanting):
+            if i.last:
+                nd += cls(name=name)
+            else:
+                nd += directory(name=name)
+
+            B()
+            nd = nd.inodes.last
+
+        return nd
+
+
+        # XXX ------------------------------
         # Get head and tail portion of path
         head, tail = os.path.split(path)
 
@@ -802,6 +817,9 @@ class directories(inodes):
     """
 
 class directory(inode):
+    RootId = uuid.UUID(hex='2007d124039f4cefac2cbdf1c8d1001b')
+    _floats = list()
+
     def __init__(self, *args, **kwargs):
         """ Init the ``directory``. If a ``path`` argument is given in
         ``kwargs``, we can use the path to create or load files and
@@ -843,6 +861,49 @@ class directory(inode):
             e.orm.persistencestate = root.orm.persistencestate
             e = e.orm._super
 
+    class net:                                                                                                                                                                                                                                                                                                              
+        def __init__(self):
+            self.found = list()
+            self.wanting = list()
+
+        @property
+        def isfound(self):
+            return bool(self.found) and not self.wanting
+
+        @property
+        def tail(self):
+            try:
+                return self.found[-1]
+            except IndexError:
+                return None
+
+    # XXX We may be able to rename this __getitem__
+    def find(self, key, net=None, recursing=False):
+        if isinstance(key, list):
+            pass
+        elif isinstance(key, str):
+            key = self._split(key)
+        else:
+            raise TypeError('Path is wrong type')
+
+        if not recursing:
+            if not net:
+                net = self.net()
+            if not net.found:
+                net.found.append(directory.root)
+
+        for i, name in enumerate(key):
+            try:
+                nd = self.inodes[name]
+            except IndexError as ex:
+                net.wanting.extend(key)
+                return None
+            else:
+                net.found.append(nd)
+                self.find(key[i + 1:], net, recursing=True)
+
+        return net.tail
+
     def file(self, path):
         """ Create a new file underneath `self` in the hierarchy and
         return the file:
@@ -876,23 +937,9 @@ class directory(inode):
     @classproperty
     def root(cls):
         if not hasattr(cls, '_root'):
-            Id = uuid.UUID(hex='2007d124039f4cefac2cbdf1c8d1001b')
-            
-            cls._root = cls(id=id, name='/')
+            cls._root = cls(id=cls.RootId, name='/')
             cls._root.save()
         return cls._root
-
-    def _find(self, path):
-        if isinstance(path, list):
-            pass
-        elif isinstance(path, str):
-            path = self._split(path)
-        else:
-            raise TypeError('Path is wrong type')
-
-
-
-        
 
     def __iter__(self):
         """ Allows us it iterate over the ``directory`` object instead
