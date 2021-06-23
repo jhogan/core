@@ -1138,6 +1138,14 @@ class file_cache(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         orm.security().override = True
+
+        if self.rebuildtables:
+            orm.orm.recreate(
+                ecommerce.user,  ecommerce.urls,  file.files,
+                file.resources,  file.directory,  file.inodes,
+                pom.site,        foonet,          asset.asset
+            )
+
         self.createprinciples()
 
     def it_caches_new_files_at_root(self):
