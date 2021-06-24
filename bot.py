@@ -417,6 +417,19 @@ class bot(ecommerce.agent):
 
         self._verbosity = v
 
+    def _call(self, exsimulate=False):
+        """ The main method of a concrete bot. Every concrete bot must
+        implement _call(self, exsimulate). _call is called by
+        bot.__call__.
+
+        :param: exsimulate bool: A flag that can be set to True in
+        certain tests to indicate a desire to break out of a simulated
+        test environment, such as one provided by a third party API.
+        """
+        raise NotImplementedError(
+            '_call must be implemented by a concrete robot.
+        )
+
     def __call__(self, exsimulate=False):
         """ Implement __call__ to allow bots to be started::
 
@@ -728,6 +741,15 @@ class sendbot(bot):
             super().__init__(*args, **kwargs)
 
     def _call(self, exsimulate=False):
+        """ Read the dispatch queue and ensure that messages are
+        dispatched to third party systems.
+
+        :param: exsimulate bool: A flag that can be set to True in
+        certain tests to indicate a desire to break out of a simulated
+        test environment, such as one provided by a third party API.
+        """
+
+        # Log some debug stuff
         if self.iteration == 0:
             self.info('dispatching:')
 
@@ -736,12 +758,15 @@ class sendbot(bot):
 
         self.debug('.', end='')
 
+        # Dispatch
         self._dispatch(exsimulate=exsimulate)
 
+        # Sleep
         if self.iteration != self.iterations:
             time.sleep(1)
 
     def _dispatch(self, exsimulate=False):
+        # Get queued dispatches
         diss = message.dispatches(status='queued')
 
         for dis in diss:
@@ -752,15 +777,20 @@ class sendbot(bot):
 
             try:
                 if exsimulate:
+                    # Break out of dispatcher's simulation if we are in
+                    # testing environment.
                     with dispatcher.exsimulate():
                         dispatcher.dispatch(dis)
                 else:
                     dispatcher.dispatch(dis)
             except third.api.Error as ex:
+                # Log exception. Continue to the next dispatch. There is
+                # no reason to stop dispatching because this error may
+                # only happen on some of the dispatches in diss.
+
                 # NOTE The dispatcher will log the error as a
                 # ``message.status`` in ``dis.statuses``.
 
-                # TODO:4d723428 (fix logging api)
                 self.exception(
                     f'API Error with dispatch {dis.id} ({ex}) - '
                     'Continuing...'
@@ -771,6 +801,9 @@ class sendbot(bot):
             # example, if the network is down, we may want to give up
             # for the moment.
             except Exception as ex:
+                # Log exception. Continue to the next dispatch. There is
+                # no reason to stop dispatching because this error may
+                # only happen on some of the dispatches in diss.
                 self.exception(
                     f'Error with dispatch {dis.id} ({ex}) - '
                     'Continuing...'
