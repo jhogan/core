@@ -47,16 +47,19 @@ logging, the bot will print log messages to the screen and record them
 to the database at the same time.
 """
 
+import apriori; apriori.model()
+
 from config import config
 from entities import classproperty
 from func import B, enumerate
-import io
 import apriori
 import argparse
 import db
 import ecommerce
 import entities
 import inspect
+import io
+import itertools
 import message
 import orm
 import os
@@ -65,7 +68,6 @@ import sys
 import third
 import time
 import uuid
-import itertools
 
 class addlogeventargs(entities.eventargs):
     """ An eventargs subclass to capture a message and log level of a
