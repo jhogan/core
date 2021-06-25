@@ -285,6 +285,7 @@ class bot(ecommerce.agent):
 
         return self._onafteriteration
 
+    # TODO This should be the onafteriteration setter
     @onbeforeiteration.setter
     def onbeforeiteration(self, v):
         self._onbeforeiteration = v
@@ -429,7 +430,7 @@ class bot(ecommerce.agent):
         test environment, such as one provided by a third party API.
         """
         raise NotImplementedError(
-            '_call must be implemented by a concrete robot.
+            '_call must be implemented by a concrete robot.'
         )
 
     def __call__(self, exsimulate=False):
@@ -813,21 +814,31 @@ class sendbot(bot):
                 continue
 
 class iterationeventargs(entities.eventargs):
+    """ Arguments for the onbeforeiteration and onafteriteration event.
+    """
     def __init__(self, iter, of):
         self.iteration = iter
         self.of = of
         self.cancel = False
 
 class InputError(ValueError):
-    pass
+    """ Raised when there is an issue with the user's input to the CLI.
+    """
 
 class TerminateError(Exception):
+    """ Raised when there is an issue with the user's input to the CLI
+    and the program needs to be aborted.
+    """
     def __init__(self, st, msg):
         super().__init__(msg)
         self.status = st
 
 class argumentparser(argparse.ArgumentParser):
+    """ A subclassed ArgumentParser used to cause the program to exit on
+    bad input.
+    """
     def exit(self, *args, **kwargs):
+        # TODO Comment
         if __name__ == '__main__':
             super().exit(*args, **kwargs)
         else:
@@ -835,6 +846,7 @@ class argumentparser(argparse.ArgumentParser):
             raise TerminateError(msg=msg, st=st)
 
     def error(self, *args, **kwargs):
+        # TODO Comment
         if __name__ == '__main__':
             super().error(*args, **kwargs)
         else:
@@ -844,6 +856,11 @@ class argumentparser(argparse.ArgumentParser):
             raise self.exit(2, msg)
 
 class panel:
+    """ A bot's control panel.
+
+    This class provides a object-oriented interface between the CLI and
+    the bot itself.
+    """
     def __init__(self, args=None, dodisplay=True):
         # Command line arguments
         self._args = args
@@ -851,7 +868,7 @@ class panel:
         # Result of argparse
         self._cli = None
 
-        # The instatiated bot 
+        # The bot object
         self._bot = None
 
         if dodisplay:
