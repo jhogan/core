@@ -206,7 +206,6 @@ class inode(orm.entity):
             else:
                 nd += directory(name=name)
 
-            B()
             nd = nd.inodes.last
 
         return nd

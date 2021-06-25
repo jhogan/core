@@ -1178,6 +1178,7 @@ class file_cache(tester.tester):
         f = file.file.produce(path='/var/log/syslog')
         f1 = file.file.produce(path='/var/log/syslog')
         f2 = file.file.produce(path='/var/log/auth.log')
+        B()
         self.is_(f, f1)
         self.isnot(f, f2)
         for nd in (f, f1, f2):
