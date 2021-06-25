@@ -891,15 +891,17 @@ class directory(inode):
             if not net.found:
                 net.found.append(directory.root)
 
-        for i, name in enumerate(key):
-            try:
-                nd = self.inodes[name]
-            except IndexError as ex:
-                net.wanting.extend(key)
-                return None
-            else:
-                net.found.append(nd)
-                self.find(key[i + 1:], net, recursing=True)
+        name = key[0]
+
+        try:
+            nd = self.inodes[name]
+        except IndexError as ex:
+            net.wanting.extend(key)
+            return None
+        else:
+            net.found.append(nd)
+            if len(key) > 1:
+                nd.find(key[1:], net, recursing=True)
 
         return net.tail
 
