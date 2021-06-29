@@ -323,6 +323,7 @@ class inode(orm.entity):
     def __iadd__(self, e):
         """ Overload +=.
         """
+
         self.inodes.append(e)
         return self
 
@@ -934,6 +935,7 @@ class directory(inode):
 
         return f
 
+    # XXX This conflicts with inode.root
     @classproperty
     def root(cls):
         if not hasattr(cls, '_root'):
