@@ -860,6 +860,18 @@ class directory(inode):
             e.orm.persistencestate = root.orm.persistencestate
             e = e.orm._super
 
+    def __contains__(self, nd):
+        # XXX Write tests
+        for nd1 in self:
+            if nd is nd1 or nd.id == nd1.id:
+                return True
+
+            if isinstance(nd1, directory):
+                if nd in nd1:
+                    return True
+
+        return False
+
     class net:                                                                                                                                                                                                                                                                                                              
         def __init__(self):
             self.found = list()
