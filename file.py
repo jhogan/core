@@ -184,13 +184,12 @@ class inode(orm.entity):
 
     @classmethod
     def produce(cls, path):
-        root = directory.root
 
         if path[0] == '/':
             path = path.lstrip('/')
+            root = directory.root
         else:
-            # floater
-            raise NotImplementedError('XXX')
+            root = directory.floaters
 
         net = directory.net()
         root.find(path, net)
@@ -817,7 +816,7 @@ class directories(inodes):
 
 class directory(inode):
     RootId = uuid.UUID(hex='2007d124039f4cefac2cbdf1c8d1001b')
-    _floats = list()
+    FloatersId = uuid.UUID(hex='f1047325d07c467f9abef26bbd9ffd27')
 
     def __init__(self, *args, **kwargs):
         """ Init the ``directory``. If a ``path`` argument is given in
@@ -889,7 +888,7 @@ class directory(inode):
             if not net:
                 net = self.net()
             if not net.found:
-                net.found.append(directory.root)
+                net.found.append(self)
 
         name = key[0]
 
@@ -941,6 +940,14 @@ class directory(inode):
             cls._root = cls(id=cls.RootId, name='/')
             cls._root.save()
         return cls._root
+
+    # XXX This should be private (_floaters)
+    @classproperty
+    def floaters(cls):
+        if not hasattr(cls, '_floaters'):
+            cls._floaters = cls(id=cls.FloatersId, name='.floaters')
+            cls._floaters.save()
+        return cls._floaters
 
     def __iter__(self):
         """ Allows us it iterate over the ``directory`` object instead
