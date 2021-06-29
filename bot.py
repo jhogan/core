@@ -877,6 +877,15 @@ class panel:
             self.display = None
 
     def print(self, msg, end=None, stm=sys.stdout):
+        """ Print to the ``panel``'s display.
+
+        :param: msg str: The text to print to the display.
+
+        :param: end str: The text to print at the end of the message.
+
+        :param: end TextIOBase: The device to print to. By default, this
+        is sys.stdout.
+        """
         if end:
             msg += end
 
@@ -886,6 +895,8 @@ class panel:
         self.onafterprint(self, panel.printeventargs(msg))
 
     def __call__(self):
+        """ Invoke the ``bot`` object associated with the panel.
+        """
         # Override just long enough to ensure that, when called,
         # root will be created if it doesn't already exist.
         with orm.override():
@@ -895,8 +906,16 @@ class panel:
 
     @property
     def _arguments(self):
+        """ Parse the command line arguments.
+        """
+
         if not self._cli:
+            # Parse the bot object's init's docstring. Here is how we
+            # can get information about the arguments for __init__. We
+            # use this to configure the ArgumentParser.
             doc = self._parse(bot.__init__.__doc__)
+
+            # Create an argumentparser (a subclass of ArgumentParser).
             prs = argumentparser(
                 description="Runs a bot.",
                 epilog = (
@@ -906,20 +925,28 @@ class panel:
                 )
             )
 
+            # For each of the :param: entries in the docstring of bot
+            # __init__, add an argument to the ArgumentParser.
             for param in doc['params']:
                 help = param['description']
                 type = param['type']
+
+                # TODO s/type=int/type=type
                 prs.add_argument(
                     f'--{param["name"]}', type=int, help=help
                 )
 
+            # Create a subparser to get the actual concrete bot (the
+            # subclass of ``bot``).
             subprss = prs.add_subparsers(
                 help = 'The list of bots from which to select', 
                 dest = 'bot'
             )
 
+            # Got to have a bot
             subprss.required = True
 
+            # Iterate over each of bot's subclasses and add a subparser
             for b in bots.bots:
                 doc = self._parse(b.__init__.__doc__)
                 subprss = subprss.add_parser(b.__name__, help=doc['text'])
@@ -930,12 +957,18 @@ class panel:
             else:
                 args = None
 
+            # Memoize
             self._cli = prs.parse_args(args=args)
 
         return self._cli
 
     @property
     def _kwargs(self):
+        """ Return a dict based on the options passed into the command
+        line. The dict can be used as an argument to the bot's
+        constructor.
+        """
+        # Get the parsed command line options
         args = self._arguments
 
         attrs = [x for x in dir(args) if not x.startswith('_')][1:]
@@ -948,11 +981,27 @@ class panel:
 
     @property
     def bot(self):
+        """ Return the concrete instance of the bot that the ``panel``
+        is associated with.
+        """
         if not self._bot:
+            
+            # Get command line arguments
             args = self._arguments
+
+            # For each of the ``bot`` subclasses.
             for b in bots.bots:
+                
+                # If the name matches
                 if b.__name__ == args.bot:
                     try:
+                        # Instantiate the bot as root. Pass in
+                        # self.onlog so that when the bot logs from the
+                        # constructor, the onlog event can be handled by
+                        # self.onlog. Pass self._kwargs to the
+                        # constructor. self._kwargs is a dict derived
+                        # from the arguments passed in to the command
+                        # line.
                         with orm.sudo():
                             self._bot = b(
                                 onlog=self.onlog, **self._kwargs
