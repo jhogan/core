@@ -1181,22 +1181,89 @@ class file_cache(tester.tester):
 
         for nd in (f, f1, f2):
             self.type(file.file, nd)
+            self.true(nd in file.directory.floaters)
+
+        ''' Nested '''
+        f = file.file.produce(path='berp/derp/flerp/herp/gerp/slerp')
+
+        flts = file.directory.floaters
+
+        self.is_(f, flts['berp/derp/flerp/herp/gerp/slerp'])
+
+        f = f.inode
+        self.is_(f, flts['berp/derp/flerp/herp/gerp'])
+
+        f = f.inode
+        self.is_(f, flts['berp/derp/flerp/herp'])
+
+        f = f.inode
+        self.is_(f, flts['berp/derp/flerp'])
+
+        f = f.inode
+        self.is_(f, flts['berp/derp'])
+
+        f = f.inode
+        self.is_(f, flts['berp'])
+
+        self.is_(flts, f.inode)
+
+    def it_appends_floaters(self):
+        ''' Shallow '''
+        flts = file.directory.floaters
+
+        f = file.file.produce(path='test')
 
         log = file.directory.produce(path='/var/log')
 
-        f1id = id(f1)
-        self.true(f1 in file.directory.floaters)
+        # Verify f is in floaters
+        self.true(f in flts)
 
-        B()
-        log += f1
+        # Add to /var/log
+        log += f
 
-        self.eq(id(log.inodes.last), f1id)
+        # Make sure the floater was added to /var/log
+        self.is_(log.inodes.last, f)
 
-        self.false(f1 in file.directory.floaters)
+        # Make sure the floater is removed from the floaters cache
+        self.false(f in flts)
 
+        ''' Nested '''
+        f = file.file.produce(path='20000/leagues/under/the/herp/derp')
 
+        flts['20000/leagues/under/the/herp/derp']
 
+        derp = f
+        herp = f.inode
+        the = f.inode.inode
 
+        for nd in (derp, herp, the):
+            self.true(nd in flts)
+
+        # Verify we have the right directory
+        self.eq('the', the.name)
+
+        share = file.directory.produce(path='/usr/share')
+
+        share += the
+
+        # Make 'the/herp/derp' was moved under share
+        self.is_(share['the'], the)
+        self.is_(share['the/herp'], herp)
+        self.is_(share['the/herp/derp'], derp)
+
+        # Make sure the/herp/derp is gone from the floaters cache
+        self.expect(
+            IndexError, 
+            lambda: flts['20000/leagues/under/the/herp/derp']
+        )
+
+        self.expect(
+            IndexError, 
+            lambda: flts['20000/leagues/under/the/herp']
+        )
+
+        self.expect(IndexError, lambda: flts['20000/leagues/under/the'])
+        self.expect(None, lambda: flts['20000/leagues/under'])
 
     def it_caches_new_directories_at_root(self):
         ''' Simple directory production at root '''
