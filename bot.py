@@ -856,13 +856,41 @@ class argumentparser(argparse.ArgumentParser):
             raise self.exit(2, msg)
 
 class panel:
-    """ A bot's control panel.
+    """ A bot's control panel. Used to configure a bots behaviour and
+    monitor the bot's status.
 
     This class provides a object-oriented interface between the CLI and
     the bot itself.
+
+    The ``panel`` parses arguments from the command line and uses them
+    to invoke a particular bot (a concrete subclass of ``bot``). The
+    arguments specify which bot to invoke and what arguments the bot
+    shoud be passed.
+
+    The panel captures log messages from the bot and prints them on its
+    ``display`` object, which is itself an abstraction for the screen
+    (stdout) or some other device.
     """
     def __init__(self, args=None, dodisplay=True):
-        # Command line arguments
+        """ Instantiates a panel.
+
+        :param: args list: The command line arguments as a list. This is
+        the data parsed by ArgumentParser. Under normal circumstances,
+        this will be None, because ArgumentParser finds the arguments
+        from the command line itself. However, this parameter can be
+        used for testing when a unit test needs to simulate arguments
+        passed in. It could be used by any code that wants to invoke an
+        bot as an object (instead of a seperate process).
+
+        :param: dodisplay bool: If True, the panel's display will be
+        instantiated, and output will be written to the display's device
+        (usually the screen). Other code that wants to invoke the panel
+        as a library, such as a unit test, will likely want to set
+        dodisplay to False so data doesn't get written to the screen.
+        Code that invokes the panel this way can subscribe to the
+        panel.onafterprint event to receive log messages that would
+        otherwise be printed to the screen.
+        """
         self._args = args
 
         # Result of argparse
@@ -1014,20 +1042,31 @@ class panel:
 
     @staticmethod
     def _parse(doc):
+        """ Takes a docstring, parses out the main text and the :param:
+        lines, and returns a dict which contains the result of the
+        parsing.
+
+        :param: doc str: The docstring to parse.
+        """
+        
         r = dict()
         params = list()
         param = None
         text= str()
+
+        # Iterate over each line of the docstring
         for ln in io.StringIO(doc):
             ln = ln.strip()
 
             if ln == '':
                 param = None
 
-            if param is not None:
+            if param is not None
+                # Append the description part of the :param: line
                 param['description'] += ln + ' '
 
             if ln.startswith(':param:'):
+                # Start a new :param: entry
                 param = dict()
                 params.append(param)
 
@@ -1037,14 +1076,18 @@ class panel:
                 param['description'] = ln[3].strip() + ' '
 
             if not param:
+                # We must be in the main text of the docstring so append
+                # to `text`.
                 if ln:
                     text += ' ' + ln
                 else:
                     text += ' ¶'  
 
+        # Strip each param's description
         for param in params:
             param['description'] = param['description'].strip()
 
+        # Set the return dict elements
         r['text'] = text.rstrip(' ¶')
         r['params'] = params
 
@@ -1052,6 +1095,8 @@ class panel:
 
     @property
     def onafterprint(self):
+        """ The event to raise after the panel prints to its display.
+        """
         if not hasattr(self, '_onafterprint'):
             self._onafterprint = entities.event()
         return self._onafterprint
@@ -1060,7 +1105,11 @@ class panel:
     def onafterprint(self, v):
         self._onafterprint = v
 
+    # TODO This should be called _bot_onlog
     def onlog(self, src, eargs):
+        """ The event handler that captures a bot generated log
+        message. Prints the log message to the panel's display.
+        """
         msg = eargs.message
         lvl = eargs.level
         if lvl in ('debug', 'info'):
@@ -1071,19 +1120,37 @@ class panel:
         self.print(msg, stm=stm)
 
     class _display:
+        """ Represents the panel's display. Prints messages from the bot
+        to a device, usually the screen.
+        """
         def __init__(self, pnl):
+            """ Create the display.
+
+            :param: pnl panel: The display's panel.
+            """
             self.messages = list()
             self.panel = pnl
 
         def print(self, msg, stm=sys.stdout):
+            """ Prints a message to the display.
+
+            :param: msg str: The message to display.
+
+            :param: stm stream: The stream on which the message is
+            written.
+            """
             self.messages.append(msg.strip())
             stm.write(msg)
             stm.flush()
 
     class printeventargs(entities.eventargs):
+        """ An eventargs for bot's onafterprint event.
+        """
         def __init__(self, msg):
             self.message = msg
 
 if __name__ == '__main__':
+    # If bot.py is being executed, instantite and call a panel to read
+    # the command line arguments and invoke the appropriate bot.
     pnl = panel()
     pnl()
