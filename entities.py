@@ -108,6 +108,19 @@ class entities(object):
                 ix += eargs.entity
 
     @property
+    def onbeforeadd(self):
+        if not hasattr(self, '_onbeforeadd'):
+            self._onbeforeadd = event()
+            self.onbeforeadd += self._self_onadd
+
+        return self._onbeforeadd
+
+    @onbeforeadd.setter
+    def onbeforeadd(self, v):
+        self._onbeforeadd = v
+
+    # TODO onadd should be renamed to onafteradd
+    @property
     def onadd(self):
         if not hasattr(self, '_onadd'):
             self._onadd = event()
@@ -579,12 +592,31 @@ class entities(object):
 
         r._ls.append(t)
 
+        # XXX Comment and test
+        isa = isinstance
+        raise_  = not isa(self, event) and not isa(self, indexes)
+
+        try:
+            if raise_:
+                self.onbeforeadd(self, entityaddeventargs(t))
+        except AttributeError as ex:
+            # XXX Consolidate. Also, this catch seems unnessary since
+            # the events are no longer instatiated in __init__. We shoud
+            # try removing these try-except blocks.
+
+            # NOTE You can use the below line to get pdb.py to the place
+            # the original exception was raised:
+            #
+            # import pdb
+            # pdb.post_mortem(ex.__traceback__)
+            msg = str(ex)
+            msg += '\n' + 'Ensure the superclass\'s __init__ is called.'
+            raise AttributeError(msg)
+
         self._ls.append(t)
 
         try:
-            if      not isinstance(self, event) \
-                and not isinstance(self, indexes):
-
+            if raise_:
                 self.onadd(self, entityaddeventargs(t))
         except AttributeError as ex:
             # NOTE You can use the below line to get pdb.py to the place

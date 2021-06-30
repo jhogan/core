@@ -77,9 +77,18 @@ class inodes(orm.entities):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.onadd += self._self_onadd
+        self.onbeforeadd += self._self_onbeforeadd
 
-    def _self_onadd(self, src, eargs):
+    def _self_onbeforeadd(self, src, eargs):
+        flts = directory.floaters
+        nd = eargs.entity
+
+        # If the node being added is within the floaters directory
+        if nd in flts:
+            # Remove it from the floaters directory
+            nds = nd.inode.inodes
+            nds.remove(nd, trash=False)
+
         #XXX
         return
         B(self.orm.isloading)
