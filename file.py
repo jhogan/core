@@ -872,7 +872,7 @@ class directory(inode):
     def __contains__(self, nd):
         # XXX Write tests
         for nd1 in self:
-            if nd is nd1 or nd.id == nd1.id:
+            if nd.id == nd1.id:
                 return True
 
             if isinstance(nd1, directory):
