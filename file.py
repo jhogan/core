@@ -302,6 +302,10 @@ class inode(orm.entity):
         return config().store
 
     @property
+    def isfloater(self):
+        return self in directory.floaters
+
+    @property
     def root(self):
         nd = self
         while True:
