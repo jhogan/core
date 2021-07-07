@@ -1097,7 +1097,6 @@ class file_resource(tester.tester):
         )
         self.eq(url, str(resx.url))
 
-
     def it_fails_integrity_check(self):
         tegridy = hashlib.sha512()
         tegridy.update(
@@ -1123,7 +1122,7 @@ class file_resource(tester.tester):
         # `get()` with `tegridy`. We should get an IntegrityError
         # because `tegridy` is the wrong digest.
 
-        # TODO The below code was working fine until I started reworking
+        # XXX The below code was working fine until I started reworking
         # file.resources.
         return
         res = self.expect(file.IntegrityError, lambda : get(tegridy))
@@ -1139,6 +1138,9 @@ class file_cache(tester.tester):
         super().__init__(*args, **kwargs)
         orm.security().override = True
 
+        # Delete files
+        clean()
+
         if self.rebuildtables:
             orm.orm.recreate(
                 ecommerce.user,  ecommerce.urls,  file.files,
@@ -1147,30 +1149,6 @@ class file_cache(tester.tester):
             )
 
         self.createprinciples()
-
-    def it_caches_new_files_at_root(self):
-        # Simple file at root
-
-        f = file.file.produce(path='/etc/passwd')
-        # Nested file at root
-        f1 = file.file.produce(path='/etc/passwd')
-        f2 = file.file.produce(path='/etc/PASSWD')
-        self.is_(f, f1)
-        self.isnot(f, f2)
-
-        for nd in (f, f1, f2):
-            self.type(file.file, nd)
-            self.type(file.directory, nd.inode)
-
-        # Deeply nested file at root 
-        f = file.file.produce(path='/var/log/syslog')
-        f1 = file.file.produce(path='/var/log/syslog')
-        f2 = file.file.produce(path='/var/log/auth.log')
-        self.is_(f, f1)
-        self.isnot(f, f2)
-        for nd in (f, f1, f2):
-            self.type(file.file, nd)
-            self.type(file.directory, nd.inode)
 
     def it_caches_floaters(self):
         f = file.file('test')
@@ -1357,20 +1335,6 @@ class file_cache(tester.tester):
         self.is_(usr, d.inode.inode)
         self.is_(USR_local, d2.inode)
         self.is_(USR, d2.inode.inode)
-
-    def it_append_to_cached_directory(self):
-        # XXX
-        # file.cache().clear()
-        usr = file.directory.produce(path='/usr')
-        local = file.directory.produce(path='local')
-
-        self.eq('/usr', file.cache()[usr])
-        self.eq('local', file.cache()[local])
-
-        usr += local
-
-        self.eq('/usr', file.cache()[usr])
-        self.eq('/usr/local', file.cache()[local])
 
     def it_raises_on_instatiation(self):
         ...  # TODO

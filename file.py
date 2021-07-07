@@ -286,8 +286,7 @@ class inode(orm.entity):
         else:
             raise TypeError(f'Unsupported type {type(id)}')
 
-        # Cache tail
-        cache()[path] = tail
+        return None
 
         return tail
 
@@ -532,23 +531,12 @@ class file(inode):
         )
 
     def __init__(self, *args, **kwargs):
-        """ Init the ``inode``. If a ``path`` argument is given in
-        ``kwargs``, we can use the path to create or load files and
-        directories::
-
-            f = file(path='/path/to/my/file')
-        """
-
         self._body = None
-
-        # If a path was given in the kwargs, we can use it to load
-        # or create a path for the file.
-        path = kwargs.pop('path', None)
 
         super().__init__(*args, **kwargs)
 
-        if not path:
-            return
+        return
+        # XXX
 
         dir = self._getdirectory(path=path)
 
@@ -865,47 +853,6 @@ class directories(inodes):
 class directory(inode):
     RootId = uuid.UUID(hex='2007d124039f4cefac2cbdf1c8d1001b')
     FloatersId = uuid.UUID(hex='f1047325d07c467f9abef26bbd9ffd27')
-
-    def __init__(self, *args, **kwargs):
-        """ Init the ``directory``. If a ``path`` argument is given in
-        ``kwargs``, we can use the path to create or load files and
-        directories::
-
-            f = file(path='/path/to/my/file')
-        """
-        # If a path was given in the kwargs, we can use it to load
-        # or create a the directory.
-        path = kwargs.pop('path', None)
-        super().__init__(*args, **kwargs)
-        if not path:
-            return
-
-        dir = self._getdirectory(path=path)
-        root = dir.root
-
-        # Set self's attribute to those of the root directory
-        for attr in ('id', 'name'):
-            setattr(self, attr, getattr(root, attr))
-
-        # Move the inode object from the root directories'
-        # inodes collection into that of self's
-        for nd in root.inodes:
-            st = nd.orm.persistencestate
-            self.inodes += nd
-            e = nd
-
-            # Adjust the persistencestate so self is that of
-            # what was loaded or created
-            while e:
-                e.orm.persistencestate = st
-                e = e.orm._super
-
-        # Adjust the persistencestate so self is that of
-        # what was loaded or created.
-        e = self
-        while e:
-            e.orm.persistencestate = root.orm.persistencestate
-            e = e.orm._super
 
     def __contains__(self, nd):
         # XXX Write tests
