@@ -132,6 +132,12 @@ class inodes(orm.entities):
         for nd in self:
             replace(nd.root, eargs.entity.root)
 
+    def __call__(self, key):
+        try:
+            return self[key]
+        except IndexError:
+            return None
+
     def __getitem__(self, key):
         """ Return an inode (file or directory) underneath the directory
         by a ``key`` name, if the argument is a str::
