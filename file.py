@@ -198,62 +198,93 @@ class inode(orm.entity):
 
         return names
 
-    @classmethod
-    def produce(cls, path):
-
-        if path[0] == '/':
-            path = path.lstrip('/')
-            root = directory.root
+    def __new__(cls, *args, **kwargs):
+        try:
+            kwargs['from__new__']
+        except KeyError:
+            kwargs['from__new__'] = None
         else:
-            root = directory.floaters
+            return super(inode, cls).__new__(cls)
 
-        net = directory.net()
-        root.find(path, net)
-
-        if net.isfound:
-            return net.tail
-
-        nd = net.tail
-
-        for i, name in enumerate(net.wanting):
-            if i.last:
-                nd += cls(name=name)
-            else:
-                nd += directory(name=name)
-
-            nd = nd.inodes.last
-
-        return nd
-
-
-        # XXX ------------------------------
-        # Get head and tail portion of path
-        head, tail = os.path.split(path)
-
-        # Create new directory path
-        heads = [x for x in os.path.split(head) if x]
-
-        prev = None
-        for i, dir in enumerate(heads):
-            # Create a string to uniquely identify dir
-            ix = os.path.join(*heads[:i + 1])
+        try:
+            id = args[0]
+        except IndexError:
             try:
-                dir = cache()[ix]
+                id = kwargs['id']
             except KeyError:
-                dir = directory(name=dir)
+                id = None
 
-            if prev:
-                prev += dir
-                cache()[ix] = dir
+        if isinstance(id, str):
+            try:
+                # See if we were given a uuid as a str
+                id = uuid.UUID(hex=id)
+            except ValueError:
+                # The str id wil be considered a path
+                pass
 
-            prev = dir
+        if isinstance(id, str):
+            # If id is still a str it must be a file path so call it
+            # what it is, search the cache. Return if its there,
+            # otherwise, instantiate.
+            path = id
 
-        # Create tailing file, directory, resource, etc.
-        tail = cls(name=tail)
+            # If path starts at root, search the root cache, otherwise,
+            # search the floaters cache (floaters are cached inodes that
+            # aren't anchored to the root yet, though presumably will be).
+            if path[0] == '/':
+                path = path.lstrip('/')
+                
+                dir = directory.root
+            else:
+                dir = directory.floaters
 
-        # Append tail to previous directory
-        if prev:
-            prev += tail
+            # Create a net object to capture the details of the find
+            # operation.
+            net = directory.net()
+            dir.find(path, net)
+
+            # If we found the path, return the tail, i.e., the last
+            # element of the path: /not-tail/also-not-tail/the-tail
+            if net.isfound:
+                return net.tail
+
+            # We didn't find the path in the cache but likely found a
+            # portion of it, we can used the `wanting` property of `net`
+            # to instantiate everything that wasn't found.
+
+            # Start with tail. If  nothing was found, tail would be the
+            # root directory which always exists. Root here means the
+            # top of the framework's file heirarchy, not the actual file
+            # system's root.  See (directory.root).
+            nd = net.tail
+
+            # Iterate over the wanting inodes' names
+            for i, name in enumerate(net.wanting):
+                if i.last:
+                    # If we are at the last wanting inode name, cls may
+                    # be a file or a directory, so use it to
+                    # instantiate, consider: /dir/dir/file-or-dir
+                    nd += cls(name=name, kwargs={'from__new__': None})
+                else:
+                    # If we are not ate the last one, the wanting inode
+                    # will be a directory (they last one may or may not
+                    # be a file inode name). Add to heirarchy.
+                    nd += directory(
+                        name=name, kwargs={'from__new__': None}
+                    )
+
+                # nd becomes the last inode append above
+                nd = nd.inodes.last
+
+            # Return the last inode appended above
+            return nd
+        elif isinstance(id, uuid.UUID):
+            return cls(*args, **kwargs)
+        elif isinstance(id, type(None)):
+            return cls(*args, **kwargs)
+            
+        else:
+            raise TypeError(f'Unsupported type {type(id)}')
 
         # Cache tail
         cache()[path] = tail

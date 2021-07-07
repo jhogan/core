@@ -1173,9 +1173,9 @@ class file_cache(tester.tester):
             self.type(file.directory, nd.inode)
 
     def it_caches_floaters(self):
-        f = file.file.produce(path='test')
-        f1 = file.file.produce(path='test')
-        f2 = file.file.produce(path='TEST')
+        f = file.file('test')
+        f1 = file.file('test')
+        f2 = file.file('TEST')
         self.is_(f, f1)
         self.isnot(f, f2)
 
@@ -1184,7 +1184,7 @@ class file_cache(tester.tester):
             self.true(nd in file.directory.floaters)
 
         ''' Nested '''
-        f = file.file.produce(path='berp/derp/flerp/herp/gerp/slerp')
+        f = file.file('berp/derp/flerp/herp/gerp/slerp')
 
         flts = file.directory.floaters
 
@@ -1211,9 +1211,9 @@ class file_cache(tester.tester):
         ''' Shallow '''
         flts = file.directory.floaters
 
-        f = file.file.produce(path='test')
+        f = file.file('test')
 
-        log = file.directory.produce(path='/var/log')
+        log = file.directory('/var/log')
 
         # Verify f is in floaters
         self.true(f in flts)
@@ -1228,7 +1228,7 @@ class file_cache(tester.tester):
         self.false(f in flts)
 
         ''' Nested '''
-        f = file.file.produce(path='20000/leagues/under/the/herp/derp')
+        f = file.file('20000/leagues/under/the/herp/derp')
 
         flts['20000/leagues/under/the/herp/derp']
 
@@ -1242,7 +1242,7 @@ class file_cache(tester.tester):
         # Verify we have the right directory
         self.eq('the', the.name)
 
-        share = file.directory.produce(path='/usr/share')
+        share = file.directory('/usr/share')
 
         share += the
 
@@ -1262,23 +1262,54 @@ class file_cache(tester.tester):
             lambda: flts['20000/leagues/under/the/herp']
         )
 
-        self.expect(IndexError, lambda: flts['20000/leagues/under/the'])
-        self.expect(None, lambda: flts['20000/leagues/under'])
+    def it_moves_cached_files(self):
+        vim = file.file('/usr/bin/vim')
+        bin = file.directory('/usr/local/bin')
+
+        bin += vim
+
+        root = file.directory.root
+        self.none(root('usr/bin/vim'))
+        self.is_(vim, root('usr/local/bin/vim'))
+
+    def it_caches_new_files_at_root(self):
+        # Simple file at root
+
+        f = file.file('/etc/passwd')
+        # Nested file at root
+        f1 = file.file('/etc/passwd')
+        f2 = file.file('/etc/PASSWD')
+        self.is_(f, f1)
+        self.isnot(f, f2)
+        for nd in (f, f1, f2):
+            self.type(file.file, nd)
+            self.type(file.directory, nd.inode)
+
+
+        # Deeply nested.produce file at root 
+        f = file.file('/var/log/syslog')
+        f1 = file.file('/var/log/syslog')
+        f2 = file.file('/var/log/auth.log')
+        self.is_(f, f1)
+        self.isnot(f, f2)
+        for nd in (f, f1, f2):
+            self.type(file.file, nd)
+            self.type(file.directory, nd.inode)
 
     def it_caches_new_directories_at_root(self):
         ''' Simple directory production at root '''
-        d = file.directory.produce(path='/usr')
-        d1 = file.directory.produce(path='/usr')
-        d2 = file.directory.produce(path='/USR')
+        d = file.directory('/usr')
+        d1 = file.directory('/usr')
+        d2 = file.directory('/USR')
         self.is_(d, d1)
         self.isnot(d, d2)
 
         usr, USR = d, d2
 
         ''' Nested directory production '''
-        d = file.directory.produce(path='/usr/local')
-        d1 = file.directory.produce(path='/usr/local')
-        d2 = file.directory.produce(path='/USR/local')
+        d = file.directory('/usr/local')
+        d1 = file.directory('/usr/local')
+        d2 = file.directory('/USR/local')
 
         for nd in (d, d1, d2):
             self.eq('local', nd.name)
@@ -1301,9 +1332,9 @@ class file_cache(tester.tester):
         local, USR_local = d, d2
 
         ''' Deeply nested directory production '''
-        d = file.directory.produce(path='/usr/local/bin')
-        d1 = file.directory.produce(path='/usr/local/bin')
-        d2 = file.directory.produce(path='/USR/local/bin')
+        d = file.directory('/usr/local/bin')
+        d1 = file.directory('/usr/local/bin')
+        d2 = file.directory('/USR/local/bin')
 
         for nd in (d, d1, d2):
             self.eq('bin',    nd.name)
