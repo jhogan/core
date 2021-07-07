@@ -1213,6 +1213,7 @@ class file_cache(tester.tester):
         derp = f
         herp = f.inode
         the = f.inode.inode
+        under = f.inode.inode.inode
 
         for nd in (derp, herp, the):
             self.true(nd in flts)
@@ -1287,8 +1288,10 @@ class file_cache(tester.tester):
         d2 = file.directory('/USR')
         self.is_(d, d1)
         self.isnot(d, d2)
-
         usr, USR = d, d2
+
+        for dir in (d, d1, d2):
+            self.type(file.directory, dir)
 
         ''' Nested directory production '''
         d = file.directory('/usr/local')
