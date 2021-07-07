@@ -81,10 +81,11 @@ class inodes(orm.entities):
 
     def _self_onbeforeadd(self, src, eargs):
         flts = directory.floaters
+        root = directory.root
         nd = eargs.entity
 
         # If the node being added is within the floaters directory
-        if nd in flts:
+        if nd in flts or nd in root:
             # Remove it from the floaters directory
             nds = nd.inode.inodes
             nds.remove(nd, trash=False)
