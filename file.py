@@ -896,6 +896,16 @@ class directory(inode):
             except IndexError:
                 return None
 
+        def __repr__(self):
+            r = type(self).__name__
+            r += '('
+            r += f'isfound={self.isfound}, '
+            r += f'found={self.found}, '
+            r += f'wanting={self.wanting}, '
+            r += f'tail={self.tail!r}'
+            r += ')'
+            return r
+
     # XXX We may be able to rename this __getitem__
     def find(self, key, net=None, recursing=False):
         if isinstance(key, list):
