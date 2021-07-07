@@ -288,7 +288,14 @@ class inode(orm.entity):
 
         return None
 
-        return tail
+    def __init__(self, *args, **kwargs):
+        # Don't call super's init if it has already been called.
+        if not self.orm.isinstance:
+            # In __new__, we instantiate the inode. However, when the
+            # instantiated inode returns from __new__, it is passed to
+            # __init__. We don't want to call orm.entity.__init__ a
+            # second time on the object if that is the case.
+            super().__init__(*args, **kwargs)
 
     @classproperty
     def store(cls):
