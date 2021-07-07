@@ -1230,15 +1230,21 @@ class file_cache(tester.tester):
         self.is_(share['the/herp/derp'], derp)
 
         # Make sure the/herp/derp is gone from the floaters cache
-        self.expect(
-            IndexError, 
-            lambda: flts['20000/leagues/under/the/herp/derp']
-        )
+        self.none(flts('20000/leagues/under/the/herp/derp'))
+        self.none(flts('20000/leagues/under/the/herp'))
 
-        self.expect(
-            IndexError, 
-            lambda: flts['20000/leagues/under/the/herp']
-        )
+        self.none(flts('20000/leagues/under/the'))
+        self.is_(under, flts['20000/leagues/under'])
+
+    def it_wont_save_floaters(self):
+        flt = file.file('we/are/all/floaters')
+
+        self.four(flt.brokenrules)
+        self.four(flt.inode.brokenrules)
+        self.four(flt.inode.inode.brokenrules)
+        self.four(flt.inode.inode.inode.brokenrules)
+
+        self.ge(file.directory.floaters.brokenrules.count, 4)
 
     def it_moves_cached_files(self):
         vim = file.file('/usr/bin/vim')

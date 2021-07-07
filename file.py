@@ -458,6 +458,9 @@ class inode(orm.entity):
             if msg not in brs.pluck('message'):
                 brs += msg
 
+        if self.isfloater:
+            brs += f'"{self.name}" is a floater'
+
         return brs
 
 class files(inodes):
