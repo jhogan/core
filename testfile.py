@@ -432,29 +432,36 @@ class file_file(tester.tester):
 
     def it_creates_empty_file(self):
         ''' Instatiate file '''
-        f = file.file(name='myfile')
-        self.eq(f.store, f.head)
-        self.eq(f.path, os.path.join(f.store, 'myfile'))
+
+        name = uuid4().hex
+        path = f'/tmp/{name}'
+        root = file.directory.root.name
+        head = os.path.join(file.inode.store, root, 'tmp')
+
+        f = file.file(path)
+        self.eq(head, f.head)
+        self.eq(f.path, os.path.join(head, name))
         self.false(f.exists)
         self.false(os.path.exists(f.path))
-        self.eq('myfile', f.name)
-        self.none(f.inode)
+        self.eq(name, f.name)
+        self.is_(file.directory.root, f.inode.inode)
+        self.none(f.inode.inode.inode)
         self.expect(AttributeError, lambda: f.inodes)
         self.none(f.body)
         self.none(f.mime)
 
         ''' Saving the file with no body set '''
         f.save()
-        self.eq(f.store, f.head)
-        self.eq(f.path, os.path.join(f.store, 'myfile'))
+        self.eq(head, f.head)
+        self.eq(f.path, os.path.join(head, name))
 
         # Since there is no body, there will be no corresponding file
         # saved
         self.false(f.exists)
         self.false(os.path.exists(f.path))
 
-        self.eq('myfile', f.name)
-        self.none(f.inode)
+        self.eq(name, f.name)
+        self.none(f.inode.inode.inode)
         self.expect(AttributeError, lambda: f.inodes)
         self.none(f.body)
         self.none(f.mime)
@@ -469,19 +476,19 @@ class file_file(tester.tester):
         self.false(f1.exists)
         self.false(os.path.exists(f1.path))
 
-        self.eq('myfile', f1.name)
-        self.none(f1.inode)
+        self.eq(name, f1.name)
+        self.none(f1.inode.inode.inode)
         self.expect(AttributeError, lambda: f.inodes)
         self.none(f1.body)
         self.none(f.mime)
 
     def it_creates_text_file(self):
         ''' Instatiate file '''
-        f = file.file(name='myfile.txt')
+        f = file.file('/etc/modules')
 
         body = self.dedent('''
-        Line 1
-        Line 2
+        # This file contains the names of kernel modules that should be loaded
+        # at boot time, one per line. Lines beginning with "#" are ignored.
         ''')
 
         f.body = body
@@ -491,14 +498,17 @@ class file_file(tester.tester):
 
         ''' Saving the file with '''
         f.save()
-        self.eq(f.path, os.path.join(f.store, 'myfile.txt'))
+        path = os.path.join(
+            f.store, file.directory.root.name, 'etc/modules'
+        )
+        self.eq(f.path, path)
         self.true(f.exists)
         self.true(os.path.exists(f.path))
         self.true(isinstance(f.body, str))
         self.eq('text/plain', f.mime)
 
-        self.eq('myfile.txt', f.name)
-        self.none(f.inode)
+        self.eq('modules', f.name)
+        self.none(f.inode.inode.inode)
         self.expect(AttributeError, lambda: f.inodes)
         self.eq(body, f.body)
 
@@ -511,7 +521,7 @@ class file_file(tester.tester):
 
     def it_creates_binary_file(self):
         ''' Instatiate file '''
-        f = file.file(name='myfile.bin')
+        f = file.file('/var/lib/mlocate/mlocate.db')
 
         body = base64.b64decode(
             'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
@@ -524,14 +534,18 @@ class file_file(tester.tester):
 
         ''' Saving the file '''
         f.save()
-        self.eq(f.path, os.path.join(f.store, 'myfile.bin'))
+        path = os.path.join(
+            file.inode.store, 
+            f.relative.lstrip('/')
+        )
+        self.eq(f.path, path)
         self.true(f.exists)
         self.true(os.path.exists(f.path))
         self.eq('application/octet-stream', f.mime)
         self.true(isinstance(f.body, bytes))
 
-        self.eq('myfile.bin', f.name)
-        self.none(f.inode)
+        self.eq('mlocate.db', f.name)
+        self.none(f.inode.inode.inode.inode.inode)
         self.expect(AttributeError, lambda: f.inodes)
         self.eq(body, f.body)
 
@@ -1106,6 +1120,14 @@ class file_cache(tester.tester):
             )
 
         self.createprinciples()
+
+    def it_creates_with_name_kwarg(self):
+        f = file.file(name='test')
+        f1 = file.file(name='test')
+        self.isnot(f, f1)
+
+        # XXX Complete. See it_creates_empty_file
+
 
     def it_caches_floaters(self):
         f = file.file('test')
