@@ -458,6 +458,8 @@ class inode(orm.entity):
             if msg not in brs.pluck('message'):
                 brs += msg
 
+        # XXX Create brokenrules object via instatiation so we know
+        # which inode has the brokenrule. Also update tests for these.
         if self.isfloater:
             brs += f'"{self.name}" is a floater'
 

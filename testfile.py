@@ -11,6 +11,7 @@
 ########################################################################
 
 from func import enumerate, getattr, B
+from uuid import uuid4
 import asset
 import base64
 import dom
@@ -384,50 +385,6 @@ class dom_file(tester.tester):
         self.none(rcs.first.integrity)
         self.eq('use-credentials', rcs.first.crossorigin)
         self.false(rcs.first.exists)
-
-class file_inodes(tester.tester):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        orm.security().override = True
-
-        # Delete files
-        clean()
-
-        if self.rebuildtables:
-            # Recreate tables
-            orm.orm.recreate(
-                ecommerce.user,
-                file.files,
-                file.resources,
-                file.directory,
-                file.inodes,
-            )
-
-        # Create an owner and get the root user
-        own = ecommerce.user(name='hford')
-        root = ecommerce.users.root
-
-        # Save the owner, the root user will be the owner's owner.
-        orm.security().owner = root
-        own.owner = root
-        own.save()
-
-        # Going forward, `own` will be the owner of all future records
-        # created.
-        orm.security().owner = own
-
-        # Create a company to be the propritor.
-        com = party.company(name='Ford Motor Company')
-        com.save()
-
-        # Set the company as the proprietory
-        orm.security().proprietor = com
-
-        # Update the owner (hford) so that the company (Ford Motor
-        # Company) is the proprietor.
-        own.proprietor = com
-        own.save()
 
 class file_file(tester.tester):
     def __init__(self, *args, **kwargs):
