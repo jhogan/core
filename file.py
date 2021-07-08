@@ -971,7 +971,7 @@ class directory(inode):
     @classproperty
     def root(cls):
         if not hasattr(cls, '_root'):
-            cls._root = cls(id=cls.RootId, name='/')
+            cls._root = cls(id=cls.RootId, name='root')
             cls._root.save()
         return cls._root
 
