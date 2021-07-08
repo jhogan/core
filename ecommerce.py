@@ -403,6 +403,16 @@ class user(orm.entity):
         return brs
 
     def su(self):
+        """ A context manager to switch current user to self.
+
+            The following do the same::
+
+                with orm.su(luser):
+                    ...
+
+                with luser.su():
+                    ...
+        """
         return orm.su(self)
         
     @property

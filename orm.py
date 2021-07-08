@@ -7600,7 +7600,7 @@ class security:
         Returns the current owner. The owner is a ``party.user``. When
         an entity is created, the entity's ``owner`` attribute will be
         set to the orm's owner. This attribute will be saved along with
-        the entity so it wil always be known who the entity's owner is.
+        the entity so it will always be known who the entity's owner is.
 
         The owner is important for the accessibility methods because it
         helps the entity's determine who should be able to do what with
@@ -7621,10 +7621,20 @@ class security:
 
     @property
     def user(self):
+        """ 
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Returns the current user. 
+
+        This is synonymous with security.owner. See the docstring there
+        for more information.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         # TODO This will be the central place to store the logged in
         # user. This will probably usually be the owner, though there
         # may be a need to distinguish the ORM's "owner" from the
         # "logged in user". More thought is need for this.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         return self._owner
 
     @user.setter
@@ -7633,13 +7643,20 @@ class security:
 
     @property
     def issudo(self):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Returns True if the current owner is root. Synonymous with
+        ``security.isroot``.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
         return self.isroot
 
     @property
     def isroot(self):
         """
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        Returns True if the current owner is root.
+        Returns True if the current owner is root. Synonymous with
+        ``security.issudo``
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
         if self.owner:
@@ -11335,6 +11352,9 @@ class violations(entitiesmod.entities):
         self.entity = e
 
     def demand_user_is_authenticated(self):
+        """ If the user is not authenticated, add a new violation
+        indicating as much.
+        """
         # NOTE:a22826fe At this point, it is not clear how anonymous or
         # unauthenicated users will work.  We have an anonymous person
         # (party.party.anonymous). It should have an associated user
@@ -11348,6 +11368,9 @@ class violations(entitiesmod.entities):
             self += f'User must be {usr.name}'
 
     def demand_root(self):
+        """ If the user is not root, add a new violation indicating as
+        much.
+        """
         if not security().isroot:
             self += f'User must be root'
 
@@ -11391,6 +11414,10 @@ class violations(entitiesmod.entities):
     _empty = None
     @classproperty
     def empty(cls):
+        """ Returns the empty ``violations`` object. This is slighly
+        faster than instantiating a new ``violations`` object and
+        returning it because we memoize it here.
+        """
         if cls._empty is None:
             cls._empty = violations()
             def onbeforeadd(src, eargs):
@@ -11399,8 +11426,6 @@ class violations(entitiesmod.entities):
             cls._empty.onbeforeadd += onbeforeadd
 
         return cls._empty
-
-        
 
 class violation(entitiesmod.entity):
     """ Records an access violation message. Access violations are
