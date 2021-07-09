@@ -559,10 +559,7 @@ class file_file(tester.tester):
     def it_creates_within_a_directory(self):
         ''' Instatiate file with `path` off root '''
 
-        path = 'myotherfile'
-
-        # This will create the file off the root
-        f = file.file(path=path)
+        f = file.file('/swapfile')
 
         body = self.dedent('''
         Line 1
@@ -573,43 +570,58 @@ class file_file(tester.tester):
         self.eq(body, f.body)
 
         f.save()
-        self.eq(f.path, os.path.join(f.store, path))
+
+        path = os.path.join(
+            file.inode.store, 
+            f.relative.lstrip('/')
+        )
+        self.eq(f.path, path)
         self.true(f.exists)
         self.true(os.path.exists(f.path))
 
-        self.eq(path, f.name)
-        self.none(f.inode)
+        self.eq('swapfile', f.name)
+        self.none(f.inode.inode)
         self.eq(body, f.body)
 
         f1 = f.orm.reloaded()
         self.eq(f.body, f1.body)
         self.true(f1.exists)
         self.true(os.path.exists(f1.path))
+        with open(f.path, 'r') as f1:
+            self.eq(f1.read(), f.body)
 
         ''' Instatiate file with `path` off within a new directory '''
-        path = '/usr/share/file'
+        path = '/usr/share/perl5/URI.pm'
 
         # This will create the file off the root
-        f = file.file(path=path)
+        f = file.file(path)
 
         body = self.dedent('''
-        Line 1
-        Line 2
+        package URI;
+
+        use strict;
+        use warnings;
         ''')
 
         f.body = body
         self.eq(body, f.body)
 
         f.save()
-        path = path.lstrip('/')
-        self.eq(f.path, os.path.join(f.store, path))
+        path = os.path.join(
+            file.inode.store, 
+            f.relative.lstrip('/')
+        )
+        self.eq(f.path, path)
         self.true(f.exists)
         self.true(os.path.exists(f.path))
 
-        self.eq(os.path.split(path)[1], f.name)
-        self.eq('share', f.inode.name)
-        self.eq('usr', f.inode.inode.name)
-        self.eq(body, f.body)
+        self.eq('URI.pm', f.name)
+        self.eq('perl5', f.inode.name)
+        self.eq('share', f.inode.inode.name)
+        self.eq('usr', f.inode.inode.inode.name)
+        self.true(f.inode.inode.inode.inode.isroot)
+        with open(f.path, 'r') as f1:
+            self.eq(f1.read(), f.body)
 
         f1 = f.orm.reloaded()
         self.eq(f.body, f1.body)
@@ -617,87 +629,76 @@ class file_file(tester.tester):
         self.true(os.path.exists(f1.path))
 
     def it_loads_within_a_directory(self):
-        ''' Create file in root '''
-
-        path = 't.txt'
-
-        # This will create the file off the root
-        f = file.file(path=path)
-
-        body = self.dedent('''
-        Line 1
-        Line 2
-        ''')
-
-        f.body = body
-        f.save()
-
-        # Reload using `path`
-        f1 = file.file(path=path)
-        self.eq(body, f1.body)
-
         ''' Create file within new directory '''
-        path = '/var/db/my.db'
-        f = file.file(path=path)
+        path = '/var/backups/alternatives.tar.0'
+        f = file.file(path)
+        body = base64.b64decode(
+            'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+        )
         f.body = body
-        self.eq('my.db', f.name)
-        self.eq(os.path.join(f.store, 'var/db/my.db'), f.path)
+        self.eq('alternatives.tar.0', f.name)
+
+        path = os.path.join(
+            file.inode.store, 
+            f.relative.lstrip('/')
+        )
+        self.eq(path, f.path)
         self.false(f.exists)
         self.eq((True, False, False), f.orm.persistencestate)
 
-        dir = f.inode
-        self.eq('db', dir.name)
-        self.eq(os.path.join(dir.store, 'var/db'), dir.path)
-        self.false(dir.exists)
-        self.eq((True, False, False), dir.orm.persistencestate)
+        backups = f.inode
+        self.eq('backups', backups.name)
+        path = os.path.join(
+            backups.inode.store, 
+            backups.relative.lstrip('/')
+        )
+        self.eq(path, backups.path)
+        self.false(backups.exists)
+        self.eq((True, False, False), backups.orm.persistencestate)
 
-        dir = dir.inode
-        self.eq('var', dir.name)
-        self.eq(os.path.join(dir.store, 'var'), dir.path)
-        self.false(dir.exists)
-        self.eq((True, False, False), dir.orm.persistencestate)
-        self.none(dir.inode)
+        var = backups.inode
+        self.eq('var', var.name)
+        path = os.path.join(
+            var.inode.store, 
+            var.relative.lstrip('/')
+        )
+        self.eq(path, var.path)
+        self.false(var.exists)
+        self.eq((True, False, False), var.orm.persistencestate)
+        self.true(var.inode.isroot)
 
         f.save()
 
-        self.eq('my.db', f.name)
-        self.eq(os.path.join(f.store, 'var/db/my.db'), f.path)
-        self.true(f.exists)
+        self.eq('alternatives.tar.0', f.name)
+        path = os.path.join(
+            file.inode.store, 
+            f.relative.lstrip('/')
+        )
+        self.eq(path, f.path)
         self.eq((False, False, False), f.orm.persistencestate)
-
-        dir = f.inode
-        self.eq('db', dir.name)
-        self.eq(os.path.join(dir.store, 'var/db'), dir.path)
-        self.true(dir.exists)
-        self.eq((False, False, False), dir.orm.persistencestate)
-
-        dir = dir.inode
-        self.eq('var', dir.name)
-        self.eq(os.path.join(dir.store, 'var'), dir.path)
-        self.true(dir.exists)
-        self.eq((False, False, False), dir.orm.persistencestate)
-        self.none(dir.inode)
-
-        ''' Reload using `path` '''
-        f = file.file(path=path)
-        self.eq(body, f.body)
-        self.eq('my.db', f.name)
-        self.eq(os.path.join(f.store, 'var/db/my.db'), f.path)
         self.true(f.exists)
-        self.eq((False, False, False), f.orm.persistencestate)
 
-        dir = f.inode
-        self.eq('db', dir.name)
-        self.eq(os.path.join(dir.store, 'var/db'), dir.path)
-        self.true(dir.exists)
-        self.eq((False, False, False), dir.orm.persistencestate)
+        backups = f.inode
+        self.eq('backups', backups.name)
+        path = os.path.join(
+            file.inode.store, 
+            backups.relative.lstrip('/')
+        )
+        self.eq(path, backups.path)
+        self.eq((False, False, False), backups.orm.persistencestate)
+        self.true(backups.exists)
 
-        dir = dir.inode
-        self.eq('var', dir.name)
-        self.eq(os.path.join(dir.store, 'var'), dir.path)
-        self.true(dir.exists)
-        self.eq((False, False, False), dir.orm.persistencestate)
-        self.none(dir.inode)
+        var = backups.inode
+        self.eq('var', var.name)
+        path = os.path.join(
+            var.inode.store, 
+            var.relative.lstrip('/')
+        )
+        self.eq(path, var.path)
+        self.true(var.exists)
+        self.eq((False, False, False), var.orm.persistencestate)
+        self.true(var.inode.isroot)
+        self.true(var.exists)
 
     def it_sets_mime(self):
         ''' Text file '''
