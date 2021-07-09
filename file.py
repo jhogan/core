@@ -974,6 +974,10 @@ class directory(inode):
             cls._root = cls(id=cls.RootId, name='root')
             cls._root.save()
         return cls._root
+    
+    @property
+    def isroot(self):
+        return self.id == self.RootId and self.inode is None
 
     # XXX This should be private (_floaters)
     @classproperty
