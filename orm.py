@@ -7465,6 +7465,9 @@ def override(v=True):
     """ A contextmanager to change security().override is ``v``.  When
     the context manager exits, orm.override is reset to whatever it was
     before the contextmanager was entered.
+
+    :param: v bool: The boolean to what override should be set to while
+    in context.
     """
     override = security().override
     try:
@@ -7665,6 +7668,8 @@ class security:
         return False
 
     def __repr__(self):
+        """ Return a string represenation of the security object.
+        """
         r = f'{type(self).__name__}(\n'
         r += f'  owner={self.owner!r}\n'
         r += f'  proprietor={self.proprietor!r}\n'
@@ -10336,6 +10341,12 @@ class orm:
         return self._subclasses
 
     def getsubentities(self, accompany=False):
+        """ Returns a collection of all the of class reference that
+        inherit from this class.
+
+        :param: accompany bool: If True, add self (as an
+        ormclasswrapper) to the collection being returned.
+        """
         r = self.subentities
 
         if accompany:
