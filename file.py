@@ -451,6 +451,7 @@ class inode(orm.entity):
         if nds.ispopulated and self.id != nds.first.id:
             msg = f'Cannot create "{self.name}": inode exist'
 
+            # XXX Didn't we fix this? Shouldn't this comment be removed.
             # FIXME:acad30cc Because of the way brokenrules
             # currently works, this method ends up getting called
             # multiple times.  Until this is fixed, we have to make

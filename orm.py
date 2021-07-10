@@ -2760,8 +2760,8 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             self.orm.isremoving = False
 
             # After we are done, ensure that dotrash is returned to True
-            # incase it was falsified above. This ensures that by
-            # default, we marke the entity for deletion when we remove()
+            # in case it was falsified above. This ensures that by
+            # default, we mark the entity for deletion when we remove()
             # it.
             self.orm.dotrash = True
 

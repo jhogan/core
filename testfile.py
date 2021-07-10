@@ -715,6 +715,7 @@ class file_file(tester.tester):
             </body>
         </html>
         ''')
+
         f.mime = 'text/html'
         self.eq('text/html', f.mime)
         self.eq('text', f.mimetype)
