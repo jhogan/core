@@ -7405,12 +7405,36 @@ class constituent(ormclasswrapper):
 
 @contextmanager
 def proprietor(propr):
+    """
+    💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    A context manager to temporarily change the proprietor of the
+    security object::
+
+        with orm.proprietor(ibm):
+            # Only records that belong to IBM will be made available to
+            # the code within this context.
+            ...
+
+    💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    """
+
+    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    # Store the current proprietor in propr1
+    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
     sec = security()
     propr1 = sec.proprietor
     try:
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # Set the proprietor to `propr` and yield immediatly
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         sec.proprietor = propr
         yield
     finally:
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # Regardless of whether there was an exception, ensure the
+        # current proprietor gets reset to what it was before we entered
+        # this context.
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         sec.proprietor = propr1
 
 @contextmanager
