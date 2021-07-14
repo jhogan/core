@@ -857,36 +857,49 @@ class file_directory(tester.tester):
         orm.security.owner = ecommerce.users.root
 
     def it_creates_off_root(self):
-        dir = file.directory(name='mydir')
-        self.eq('mydir', dir.name)
-        self.none(dir.inode)
+        dir = file.directory('/mnt')
+        self.eq('mnt', dir.name)
+        self.is_(file.directory.root, dir.inode)
+        self.none(dir.inode.inode)
         self.zero(dir.inodes)
         self.eq((True, False, False), dir.orm.persistencestate)
 
         dir.save()
-        self.eq('mydir', dir.name)
-        self.none(dir.inode)
+        self.eq('mnt', dir.name)
+        self.is_(file.directory.root, dir.inode)
+        self.none(dir.inode.inode)
         self.zero(dir.inodes)
         self.eq((False, False, False), dir.orm.persistencestate)
 
         dir = dir.orm.reloaded()
-        self.eq('mydir', dir.name)
-        self.none(dir.inode)
+        self.eq('mnt', dir.name)
+        self.eq(file.directory.root.id, dir.inode.id)
+        self.none(dir.inode.inode)
         self.zero(dir.inodes)
         self.eq((False, False, False), dir.orm.persistencestate)
 
     def it_creates_nested_directories(self):
-        dir0 = file.directory(name='abc')
-        dir1 = file.directory(name='def')
-        dir2 = file.directory(name='ghi')
+        dir0 = file.directory('/abc')
+        B()
+        dir1 = file.directory('def')
+
+
+
+        dir2 = file.directory('ghi')
 
         dir0 += dir1
         dir1 += dir2
 
+
+
+
+
+
         join = os.path.join
-        self.eq(dir0.path, join(dir0.store, 'abc'))
-        self.eq(dir1.path, join(dir0.store, 'abc/def'))
-        self.eq(dir2.path, join(dir0.store, 'abc/def/ghi'))
+        self.eq(dir0.path, join(dir0.store, 'root/abc'))
+        self.eq(dir1.path, join(dir0.store, 'root/abc/def'))
+        self.eq(dir2.path, join(dir0.store, 'root/abc/def/ghi'))
+        return
 
         self.eq(dir0.name, dir1.inode.name)
         self.eq(dir1.name, dir2.inode.name)
