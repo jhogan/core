@@ -184,6 +184,15 @@ class type(orm.entity):
         return orm.violations.empty
 
 class log(orm.entity):
+    """ The entity for log messages.
+    """
+    
+    # TODO Surprisingly, the datetime field for this was left out. It
+    # should probably be called `created`. We shouldn't rely on the
+    # built in `createdat` or `updateat` fields, since those have
+    # slightly different implications.
+
+    # The log message itself
     message = text
 
     @property

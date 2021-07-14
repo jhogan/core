@@ -6383,7 +6383,10 @@ class attr:
             if entity in self.args[0].mro():
                 map = entitymapping(self.fget.__name__, self.args[0])
             elif entities in self.args[0].mro():
-                # NOTE Untested
+                # Make entitiesmapping work with orm.attr decorator
+                # This was to get bot.logs, a getter for
+                # apriori.logs, working. It still may need some more
+                # testing. NOTE Untested
                 map = entitiesmapping(self.fget.__name__, self.args[0])
             else:
                 map = fieldmapping(*self.args, **self.kwargs)
