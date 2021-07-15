@@ -1957,6 +1957,10 @@ class entity:
 
     @property
     def onbeforevaluechange(self):
+        """ Returns the entity's ``event`` object that should be fired
+        before the value of one of the entity's attributes changes. See
+        entity._setvalue().
+        """
         if self._onbeforevaluechange is None:
             self._onbeforevaluechange = event()
 
@@ -1968,6 +1972,10 @@ class entity:
 
     @property
     def onaftervaluechange(self):
+        """ Returns the entity's ``event`` object that should be fired
+        after the value of one of the entity's attributes changes. See
+        entity._setvalue().
+        """
         if self._onaftervaluechange is None:
             self._onaftervaluechange = event()
 
@@ -1986,15 +1994,49 @@ class entity:
     def _setvalue(
         self, field, new, prop, setattr=setattr, cmp=True, strip=True
     ):
-        # TODO: It's nice to strip any string because that's vitually
-        # always the desired behaviour.  However, at some point, we will
-        # want to preserve the whitespace on either side.  Therefore, we
-        # should add a parameter (or something) to make it possible to
-        # persiste an unstripped string.
+        """ A private method that is called to change the value of one
+        of the entity's attributes.
+
+        :param: field str: The name of the attribute to change.
+
+        :param: new object: The new value that the attribute should be
+        changed to.
+
+        :param: prop str: The name of attribute being changed. Note that
+        ``field`` is the actual attribute being change, while ``prop``
+        can be more descriptive. For example::
+
+            self._setvalue('_iss', v, 'iss')
+
+        Above, '_iss' is the private attribute to be assigned ``new``,
+        while 'iss' is just the public name. 
+
+        :param: setattr callable: The function to use for the call to
+        ``setattr``. By default, it is the ``builtins.setattr``
+        function, but a user may wish to supply a custom setter
+        function.
+
+        :param: cmp bool: Indicates whether ``new`` should be compared
+        to the current value. We may not want to compare because getting
+        the current value may cause an unnecessary lazy-load of the
+        attribute.
+
+        :param: strip bool: If ``new`` is a str, the value will be
+        striped by default. This is just a nice feature since most user
+        input assumes that trailing whitespace will removed. Setting
+        ``strip`` to False will preserve the trailing whitespace.
+        """
+
+        # TODO The parameters for this method use non-canonical names.
+        # We should: s/new/v and s/field/attr
+
+        # Strip
         if type(new) == str and strip:
             new = new.strip()
 
+        # If we should compare
         if cmp:
+            # Get the current value of the attribute
             old = getattr(self, field)
 
             # old and new are not equal if they are of different type -
@@ -2011,7 +2053,11 @@ class entity:
             else:
                 ne = old != new or type(old) is not type(new)
 
+        # If we didn't compare, or we did compare and found that the
+        # current value did not equal (ne) the new value.
         if not cmp or ne:
+            
+            # Raise the onbeforevaluechange event
             if hasattr(self, 'onbeforevaluechange'):
                 eargs = entityvaluechangeeventargs(self, prop)
                 self.onbeforevaluechange(self, eargs)
@@ -2030,6 +2076,7 @@ class entity:
                     else:
                         raise
             else:
+                # Use custom setattr
                 setattr(self, field, new)
 
             if hasattr(self, 'onaftervaluechange'):
