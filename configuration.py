@@ -47,6 +47,11 @@ class configuration:
     _instance = None
     @classmethod
     def getinstance(cls):
+        """ Get the singleton instance of the configuration.
+
+        :param: cls type: The ``configuration`` class or a subtype
+        thereof.
+        """
         if not cls._instance:
             cls._instance = cls()
         return cls._instance
