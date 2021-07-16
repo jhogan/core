@@ -58,6 +58,7 @@ from datetime import datetime, date
 from dbg import B
 from func import enumerate, getattr, B
 from entities import classproperty
+from contextlib import suppress
 import base64
 import entities
 import contextlib
@@ -87,8 +88,17 @@ class inodes(orm.entities):
         # If the node being added is within the floaters directory
         if nd in flts or nd in root:
             # Remove it from the floaters directory
-            nds = nd.inode.inodes
-            nds.remove(nd, trash=False)
+            flts.inodes.remove(nd, trash=False)
+            while nd:
+                with suppress(KeyError):
+                    nd.__dict__['inode'] = None
+
+                if type(nd) is inode:
+                    nd.orm.mappings['inode'].value = None
+                    nd.orm.mappings['inodeid'].value = None
+
+                nd = nd.orm.super
+
 
         #XXX
         return
