@@ -2087,12 +2087,34 @@ class entity:
             return new
 
     def add(self, e):
+        """ Return a new collection with self and e contained in it.
+
+            e = entity()
+            e1 = entity()
+            es = e.add(e1)
+
+            assert es.first is e
+            assert es.second is e1
+
+            The canonical way to do this, however, would be to use the +
+            operator. See the docstring at __add__ for that notation.
+        """
         es = entities()
         es += self
         es += e
         return es
 
     def __add__(self, t):
+        """ Implement the + operator to Return a new collection with
+        self and e contained in it.
+
+            e = entity()
+            e1 = entity()
+            es = e + e1
+
+            assert es.first is e
+            assert es.second is e1
+        """
         return self.add(t)
 
     @property
