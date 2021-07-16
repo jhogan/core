@@ -880,13 +880,13 @@ class file_directory(tester.tester):
 
     def it_creates_nested_directories(self):
         dir0 = file.directory('/abc')
-        B()
         dir1 = file.directory('def')
 
 
 
         dir2 = file.directory('ghi')
 
+        B()
         dir0 += dir1
         dir1 += dir2
 

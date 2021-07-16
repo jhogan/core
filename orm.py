@@ -19,6 +19,31 @@
 mapping.
 
 TODOs:
+    TODO:604a3422 When a constituent is deleted, its composite reference
+    is not remove:
+        
+        # Create an artist with a presenation.
+        art = artist()
+        art.presentations += presentation()
+        art.save()
+        
+        # Delete
+        pres = art.presentations.pop()
+        art.save()
+
+        # We can't reload because it's been deleted
+        try:
+            pres.orm.reloaded()
+        except: db.RecordNotFoundError:
+            assert True
+        else:
+            assert False
+
+        # However, pres still belongs to art as far as the object is
+        # concerned. All off pres's composites should be None at this
+        # point.
+        assert pres.artist is art
+
     FIXME:6028ce62 Allow entitymappings to be set to None (see 6028ce62
     for more.)
 
