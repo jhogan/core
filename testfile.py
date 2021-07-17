@@ -881,19 +881,10 @@ class file_directory(tester.tester):
     def it_creates_nested_directories(self):
         dir0 = file.directory('/abc')
         dir1 = file.directory('def')
-
-
-
         dir2 = file.directory('ghi')
 
-        B()
         dir0 += dir1
         dir1 += dir2
-
-
-
-
-
 
         join = os.path.join
         self.eq(dir0.path, join(dir0.store, 'root/abc'))
@@ -1179,7 +1170,6 @@ class file_cache(tester.tester):
 
         # XXX Complete. See it_creates_empty_file
 
-
     def it_caches_floaters(self):
         f = file.file('test')
         f1 = file.file('test')
@@ -1253,6 +1243,7 @@ class file_cache(tester.tester):
 
         share = file.directory('/usr/share')
 
+        B()
         share += the
 
         # Make 'the/herp/derp' was moved under share
