@@ -2119,10 +2119,23 @@ class entity:
 
     @property
     def brokenrules(self):
+        """ Return an empty brokenrules collection indicating there are
+        no validation errors. Classes that inherit from ``entity`` are
+        expected to override this property to return any of their broken
+        rules.
+        """
         return brokenrules()
 
     @property
     def isvalid(self):
+        """ Indicates the entity is valid.
+
+        Validity usually, and by default, means that there are no broken
+        rules. It's up to the class that inherits from ``entity`` to
+        define what validity is. orm.entity objects, for example,
+        defines validity as the state it is in when all its attributes
+        are valid and the object can be safely saved to the database.
+        """
         return self.brokenrules.isempty
 
 class BrokenRulesError(Exception):
