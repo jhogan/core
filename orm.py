@@ -2664,6 +2664,13 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 # ensure the obj being appended will get this reference.
                 continue
             else:
+                # Sometimes, a reference to the composite will be set on
+                # the object itself instead of its mapping collection.
+                # del that so we use the reference set below by
+                # setattr(). XXX This is experimental.
+                with suppress(KeyError):
+                    del obj.__dict__[clscomp.__name__]
+
                 # Assign the composite reference of this collection to
                 # the obj being appended, i.e.:
                 #    obj.composite = self.composite

@@ -899,10 +899,10 @@ class file_directory(tester.tester):
         self.eq(dir0.path, join(dir0.store, 'root/abc'))
         self.eq(dir1.path, join(dir0.store, 'root/abc/def'))
         self.eq(dir2.path, join(dir0.store, 'root/abc/def/ghi'))
-        return
 
         self.eq(dir0.name, dir1.inode.name)
         self.eq(dir1.name, dir2.inode.name)
+        return
 
         for dir in (dir0, dir1, dir2):
             self.eq((True, False, False), dir.orm.persistencestate)

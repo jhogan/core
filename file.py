@@ -85,18 +85,27 @@ class inodes(orm.entities):
         root = directory.root
         nd = eargs.entity
 
+        # The search through the floaters directory (`nd in flts`) cause
+        # a load of the directory structure and sets the composite of nd
+        # back to flts. Capture the composite here and reassign later.
+        comp = nd.inode
+
         # If the node being added is within the floaters directory
         if nd in flts or nd in root:
             # Remove it from the floaters directory
             flts.inodes.remove(nd, trash=False)
+
+            # Reset nd's comp
             while nd:
                 with suppress(KeyError):
-                    nd.__dict__['inode'] = None
+                    # Just delete the monkey match reference
+                    del nd.__dict__['inode']
 
                 if type(nd) is inode:
-                    nd.orm.mappings['inode'].value = None
-                    nd.orm.mappings['inodeid'].value = None
+                    nd.orm.mappings['inode'].value = comp
+                    nd.orm.mappings['inodeid'].value = comp.id
 
+                # Repeat with al supers
                 nd = nd.orm.super
 
 
