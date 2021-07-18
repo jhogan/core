@@ -2139,11 +2139,27 @@ class entity:
         return self.brokenrules.isempty
 
 class BrokenRulesError(Exception):
+    """ An exception that is raised when an attempt to use an invalid
+    object is made at the wrong time. A typical example is trying to
+    save an invalid orm.entity (entity.isvalid == False) to the database
+    when it is reporting broken rules from its ``brokenrules`` property.
+    """
     def __init__(self, msg, obj):
+        """ Create the exception.
+
+        :param: msg str: A brief error message.
+
+        :param: msg str: The invalid object. The invalid object's
+        ``brokenrules`` collection will be the place to look for the
+        actual broken rules.
+        """
         self.message = msg
         self.object = obj
 
     def __str__(self):
+        """ A string representation of the exception along with the
+        broken rules.
+        """
         obj = self.object
         r = self.message + ' '
         r += '%s at %s' % (type(obj), hex(id(obj))) + '\n'
@@ -2152,10 +2168,26 @@ class BrokenRulesError(Exception):
         return r
 
     def __repr__(self):
+        """ A string representation of the exception along with the
+        broken rules.
+        """
         return str(self)
 
 class brokenrules(entities):
+    """ A collection of broken rules objects.
+    """
+
     def append(self, o, r=None):
+        """ Append a broken rule to the collection.
+
+        Rather than using the append method, use the += operator::
+
+            brs.append('Non-Canonically appended')
+            brs += 'Canonically appended'
+
+        :param: o str|brokenrule: The broken rules to append. If o is a
+        str, it is converted to a ``brokenrule``.
+        """
         if isinstance(o, str):
             o = brokenrule(o)
         super().append(o, r)
