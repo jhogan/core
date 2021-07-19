@@ -2203,13 +2203,76 @@ class brokenrules(entities):
                      type=None,
                      instanceof=None):
 
+        """ Adds a ``brokenrules`` object to ``self`` if the parameters
+        indicate that the value of ``prop`` is invalid::
+
+            # Create a brokenrules collection
+            brs = brokenrules()
+
+            # Create an entity. Assign a str to the phonenumber
+            # attribute. Later we will demand that the phonenumber
+            # should have been an int.
+            e = entity()
+            e.phonenumber = '234-5678'
+
+            # Demand that the phonenumber attribute is an int.
+            brs.demand(e, 'phonenumber', type=int)
+
+            # Since its not, a broken rule will have been added
+            assert brs.count == 1
+
+        :param: e object: The entity that has the attribute being
+        tested.
+
+        :param: prop str: The attribute being tested.
+
+        :param: full bool: Demand that the value is a non-empty str
+
+        :param: isemail bool: Demand that the value looks like an email
+        address.
+
+        :param: isdate bool: Demand that the value of the attr is a
+        datetime.
+
+        :param: min int: Demand that the value is greater than min. If
+        value is a str, bytes, bytearray, the length must be greater
+        than min. If value is int or datetime, the value must be
+        greater than min.
+
+        :param: max int: Demand that the value is less than max. If
+        value is a str, bytes, bytearray, the length must be less
+        than max. If value is int or datetime, the value must be
+        less than max.
+
+        :param: precision int: Demand that the length of the precision
+        of the attribute's value is greater ``precision``. ``type`` must
+        be float or decimal.Decimal.
+
+        :param: scale int: Demand that the length of the scale
+        of the attribute's value is greater ``scale``. ``type`` must
+        be float or decimal.Decimal.
+
+        :param: type type: Demand that the value of the attr is the type
+        ``type``. Compare to the ``isinstance`` parameter.
+
+        :param: isinstance type: Demand that the value of the attr is an
+        instance of ``instanceof``. Compare to the ``type`` parameter.
+        """
+
         # TODO A lot of lines are greater than 72 characters.
 
         # TODO Write unit tests
+
+        # TODO Rename prop to attr to be consistent with the frameworks
+        # naming convention
+
+        # Get the value of the attribute
         v = getattr(e, prop)
 
         wrongtype = False
         if v is not None:
+            
+            # Test the type argument
             if type is not None:
                 if builtins.type(v) is not type:
                     self += brokenrule(
@@ -2217,13 +2280,16 @@ class brokenrules(entities):
                     )
                     wrongtype = True
 
-            if instanceof is not None :
+            # Test the instance of argument
+            if instanceof is not None:
                 if not isinstance(v, instanceof):
                     self += brokenrule(
                         prop + ' is wrong type', prop, 'valid', e
                     )
                     wrongtype = True
 
+        # If ``type`` is a float or decimal, test the ``precision`` and
+        # ``scale`` parameter.
         if not wrongtype and type in (float, decimal.Decimal):
             strv = str(v).lstrip('-')
             parts = strv.split('.')
@@ -2244,6 +2310,7 @@ class brokenrules(entities):
             if msg:
                 self += brokenrule(msg, prop, 'fits', e)
 
+        # Test that the value is a non-empty str
         if full:
             if (
                 (builtins.type(v) == str and v.strip() == '')
