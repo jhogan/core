@@ -93,7 +93,7 @@ class inodes(orm.entities):
         # If the node being added is within the floaters directory
         if nd in flts or nd in root:
             # Remove it from the floaters directory
-            flts.inodes.remove(nd, trash=False)
+            nd.inode.inodes.remove(nd, trash=False)
 
             # Reset nd's comp
             while nd:
