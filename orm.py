@@ -4372,7 +4372,23 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             assert not per.brokenrules.count
             assert per.isvalid
 
-        [TODO Explain parameters]
+        :param: gb list: (Internal use only) The guestbook. Whenever
+        this method is called, self gets added to the guestbook. If self
+        is already in the guestbook, we return immediately. This is to
+        prevent infinite recursion.
+
+        :param: ascend bool: If True, self's `orm.brokenrules` will be
+        added to the collection of brokenrules. This will recurse until
+        we reach the orm.entity. Usually, we want an object to report
+        all of its broken rules, including its supers'. But when saving,
+        we want to evaluate only the entity's broken rules for
+        performance reasons. See orm.entity._save.
+
+        :param: recurse bool: Indicates we want to recurse into the
+        object's graph to collect their brokenrules. These would include
+        the object's constituent collections and composite entity
+        objects.
+
         """
 
         brs = entitiesmod.brokenrules()

@@ -91,6 +91,8 @@ class inodes(orm.entities):
         comp = nd.inode
 
         # If the node being added is within the floaters directory
+        # XXX Why are we testing if nd is in root? Add comment
+        # explaining.
         if nd in flts or nd in root:
             # Remove it from the floaters directory
             nd.inode.inodes.remove(nd, trash=False)
