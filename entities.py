@@ -2389,7 +2389,61 @@ class brokenrules(entities):
         return False
 
 class brokenrule(entity):
+    """ Represents a broken rule.
+
+    A broken rule is an instance of a business rule that has been violated
+    within an entity objects. Usually, this is a validation rule. 
+    
+    For example, lets say we have a ``customer`` object that has an
+    email address property::
+
+        cust = customer()
+        cust.email = 'jhogan'
+
+    The above email address doesn't look correct. Where is the @ sign
+    and the TLD? We wouldn't want this customer to be saved to the
+    database as it stand now::
+
+        assert cust.brokenrules.ispopulated
+
+        try:
+            cust.save()
+        except db.BrokenRulesError:
+            assert True
+        else:
+            assert False
+
+    Looks like the customer object has detected the broken rule. Lets
+    look at the first broken rule in the collection::
+
+        assert cust.brokenrules.first.message == 'email is invalid'
+
+    The author of the customer class has ensured that badly formatted
+    email addresses are detected. We can use the brokenrules collection
+    here to report to the user the problem. Perhaps they are adding a
+    new customer to the database using a form. In this case, the UI
+    developer can tell them which form field is having the problem.
+
+    Note that you will usually see broken rules handled in an a more
+    standardized way by classes that inherit from orm.entity. However,
+    there still is the option of creating classes that inherit directly
+    from entities.entities, and those classes can generate brokenrules
+    however they like.
+    """
     def __init__(self, msg, prop=None, type=None, e=None):
+        """ Creates a new broken rule.
+
+        :param: msg str: The human readable message explaining the
+        validation error.
+
+        :param: prop str: The name of the attribute that is invalid.
+
+        :param: type str: The type of broken rule ('full', 'valid',
+        'fits', 'empty', 'unique')
+
+        :param: e entities.enitites: The entity that this broken rule
+        applies to.
+        """
         self.message   =  msg
         self.property  =  prop
         self.entity    =  e
@@ -2397,9 +2451,12 @@ class brokenrule(entity):
         if type != None:
             if type not in ['full', 'valid', 'fits', 'empty', 'unique']:
                 raise Exception('Invalid brokenrules type')
+
         self.type = type
 
     def __str__(self):
+        """ A string representation of the broken rule.
+        """
         return self.message
     
 class event(entities):
