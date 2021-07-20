@@ -766,14 +766,24 @@ class file_file(tester.tester):
         # there to be no problem clobbering it.
         root = file.directory.root
         nd = root.orm.super
-        nd.orm.mappings['inodes']._value = file.inodes()
 
-        f = file.file('/home/eboetie/dup.txt')
-        
-        
-        self.one(f.brokenrules)
-        self.expect(entities.BrokenRulesError, lambda: f.save())
-        return
+        # Save a reference to roots existing inodes collection so we can
+        # restore it later. Future tests will depend on the inodes in
+        # the cache making sense with what's in the database.
+        nds = nd.orm.mappings['inodes']._value
+        try:
+            nd.orm.mappings['inodes']._value = file.inodes()
+
+            f = file.file('/home/eboetie/dup.txt')
+            
+            
+            self.one(f.brokenrules)
+            self.expect(entities.BrokenRulesError, lambda: f.save())
+        finally:
+            # Restore olf inodes collection to root
+            nd.orm.mappings['inodes']._value = nds
+
+        return # XXX
 
         ''' Try to create duplicate by path '''
         f = file.file(path='/my/dir/dup.txt')
@@ -927,110 +937,6 @@ class file_directory(tester.tester):
         self.eq(dir.path, join(dir.store, 'abc/def/ghi'))
         self.zero(dir.inodes)
 
-    def it_creates_using_path(self):
-        join = os.path.join
-
-        ''' Test using one directory off the root '''
-        dir = file.directory(path='/etc')
-
-        self.eq('etc', dir.name)
-        self.type(file.directory, dir)
-        self.false(dir.exists)
-        self.none(dir.inode)
-        self.eq(dir.path, join(dir.store, 'etc'))
-        self.zero(dir.inodes)
-        self.eq((True, False, False), dir.orm.persistencestate)
-
-        dir.save()
-
-        self.eq('etc', dir.name)
-        self.false(dir.exists)
-        self.none(dir.inode)
-        self.eq(dir.path, join(dir.store, 'etc'))
-        self.zero(dir.inodes)
-        self.eq((False, False, False), dir.orm.persistencestate)
-
-        ''' Testing using two directories '''
-        dir = file.directory(path='/tmp/test')
-
-        tmp = dir
-
-        self.eq('tmp', dir.name)
-        self.type(file.directory, dir)
-        self.false(dir.exists)
-        self.none(dir.inode)
-        self.eq(dir.path, join(dir.store, 'tmp'))
-        self.one(dir.inodes)
-        self.eq((True, False, False), dir.orm.persistencestate)
-
-        dir = dir.inodes.first
-        self.type(file.directory, dir)
-        self.false(dir.exists)
-        self.eq('tmp', dir.inode.name)
-        self.eq(dir.path, join(dir.store, 'tmp/test'))
-        self.zero(dir.inodes)
-        self.eq((True, False, False), dir.orm.persistencestate)
-
-        dir = tmp
-
-        dir.save()
-
-        self.eq('tmp', dir.name)
-        self.false(dir.exists)
-        self.none(dir.inode)
-        self.eq(dir.path, join(dir.store, 'tmp'))
-        self.one(dir.inodes)
-        self.eq((False, False, False), dir.orm.persistencestate)
-
-        dir = dir.inodes.first
-        self.false(dir.exists)
-        self.eq('tmp', dir.inode.name)
-        self.eq(dir.path, join(dir.store, 'tmp/test'))
-        self.zero(dir.inodes)
-        self.eq((False, False, False), dir.orm.persistencestate)
-
-        ''' Load existing directory '''
-        dir = file.directory(path='/tmp/test')
-
-        self.eq('tmp', dir.name)
-        self.type(file.directory, dir)
-        self.false(dir.exists)
-        self.none(dir.inode)
-        self.eq(dir.path, join(dir.store, 'tmp'))
-        self.one(dir.inodes)
-        self.eq((False, False, False), dir.orm.persistencestate)
-
-        dir = dir.inodes.first
-        self.false(dir.exists)
-        self.eq('tmp', dir.inode.name)
-        self.eq(dir.path, join(dir.store, 'tmp/test'))
-        self.zero(dir.inodes)
-        self.eq((False, False, False), dir.orm.persistencestate)
-
-        ''' Create new directory under existing directory '''
-        dir = file.directory(path='/tmp/test1')
-
-        self.eq('tmp', dir.name)
-        self.type(file.directory, dir)
-        self.false(dir.exists)
-        self.none(dir.inode)
-        self.eq(dir.path, join(dir.store, 'tmp'))
-        self.two(dir.inodes)
-        self.eq((False, False, False), dir.orm.persistencestate)
-
-        for dir in dir.inodes:
-            self.false(dir.exists)
-            self.eq('tmp', dir.inode.name)
-            self.zero(dir.inodes)
-            if dir.name == 'test':
-                self.eq(dir.path, join(dir.store, 'tmp/test'))
-                self.eq((False, False, False), dir.orm.persistencestate)
-            elif dir.name == 'test1':
-                self.eq(dir.path, join(dir.store, 'tmp/test1'))
-                self.eq((True, False, False), dir.orm.persistencestate)
-            else:
-                assert False
-
     def it_updates_with_file(self):
         """ TODO Test creating a directory then later adding multiple files
         to it.
@@ -1038,25 +944,34 @@ class file_directory(tester.tester):
 
     def it_cant_save_duplicate_directory_name(self):
         ''' Try to create duplicate by name '''
-        dir = file.directory(name='dup')
+        dir = file.directory('/var/snowflake')
         self.expect(None, dir.save)
 
-        dir = file.directory(name='dup')
-        self.one(dir.brokenrules)
-        self.expect(entities.BrokenRulesError, lambda: dir.save())
+        var = dir.inode
+        nds = var.orm.super.orm.mappings['inodes'].value
 
-        ''' Try to create duplicate by path '''
-        dir = file.directory(path='/herp/derp')
-        self.expect(None, dir.save)
+        try:
+            var.orm.super.orm.mappings['inodes'].value = file.inodes()
+            dir = file.directory('/var/snowflake')
+            self.one(dir.brokenrules)
+            self.one(dir.orm.super.brokenrules)
+            self.expect(entities.BrokenRulesError, lambda: dir.save())
+        finally:
+            var.orm.super.orm.mappings['inodes'].value = nds
 
-        dir = file.directory(path='/herp')
-        dir += file.directory(name='derp')
+    def it_fails_to_append_a_duplicate(self):
+        # XXX
+        return
+        apple = file.file('apple')
+        tree = file.directory('/var/tree')
 
-        # Two 'derp' directories will now be in dir.inodes. The second
-        # one is the duplicate because it has the same name and inodeid
-        # as the first and isn't already in the database.
-        self.one(dir.inodes.second.brokenrules)
-        self.expect(entities.BrokenRulesError, lambda: dir.save())
+        tree += apple
+
+        apple = file.file('apple')
+        
+        # We shouldn't be able to add a float with the same name
+        # twice.
+        self.expect(ValueError, lambda: tree += apple)
 
     def it_calls__iter__(self):
         dir = file.directory(path='/lib/dir100')
@@ -1248,10 +1163,9 @@ class file_cache(tester.tester):
 
         share = file.directory('/usr/share')
 
-        B()
         share += the
 
-        # Make 'the/herp/derp' was moved under share
+        # Make sure 'the/herp/derp' was moved under share
         self.is_(share['the'], the)
         self.is_(share['the/herp'], herp)
         self.is_(share['the/herp/derp'], derp)
