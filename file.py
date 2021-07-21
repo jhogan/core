@@ -714,6 +714,50 @@ class resource(file):
     hard drive.
     """
 
+    def __new__(cls, *args, **kwargs):
+        try:
+            kwargs['from__new__']
+        except KeyError:
+            pass
+        else:
+            B()
+            return super(inode, cls).__new__(cls)
+
+        try:
+           B()
+           url = kwargs['url']
+        except KeyError:
+            pass
+        else:
+            if isinstance(url, str):
+                import ecommerce
+                kwargs['url'] = ecommerce.url(address=url)
+
+        # The following code depends on a url being present
+        try:
+            url = kwargs['url']
+        except KeyError:
+            pass
+        else:
+            # The below comments will assume a url of:
+            # https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js
+            # Create list with hostname and all paths, e.g., 
+            #
+            #     [
+            #         'cdnjs.cloudflare.com', 'ajax', 'libs', 
+            #         'shell.js', '1.0.5', 'js', 'shell.min.js'
+            #    ]
+            dirs = [url.host, *url.paths]
+
+            # Create a path with the remaining elements then create a
+            # `directory`, e.g., 
+            #
+            #     'cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js'
+            args = list(args)
+            args.insert(0, os.sep.join(dirs))
+            
+        super().__new__(cls, *args, **kwargs)
+
     def __init__(self, *args, **kwargs):
         """ Initialize a resource.
 
@@ -731,14 +775,6 @@ class resource(file):
         CSS library - causing the user's browser to download the
         resource from the CDN rather than the webserver.
         """
-        try:
-           url = kwargs['url']
-        except KeyError:
-            pass
-        else:
-            if isinstance(url, str):
-                import ecommerce
-                kwargs['url'] = ecommerce.url(address=url)
             
         super().__init__(*args, **kwargs)
         self.orm.default('crossorigin', 'anonymous')
@@ -746,42 +782,6 @@ class resource(file):
         self.onbeforesave += self._entity_onbeforesave
 
         self.local = kwargs.get('local', False)
-
-        # The following code depends on a url being present
-        if not self.url:
-            return
-
-        # The below comments will assume a url of:
-        # https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js
-
-        # Create list with hostname and all paths, e.g., 
-        #
-        #     [
-        #         'cdnjs.cloudflare.com', 'ajax', 'libs', 
-        #         'shell.js', '1.0.5', 'js', 'shell.min.js'
-        #    ]
-        dirs = [self.url.host, *self.url.paths]
-
-        # The last in the list ('shell.min.js') will be the name of the
-        # resource file (shell.min.js)
-        self.name = dirs.pop()
-
-        # Create a path with the remaining elements then create a
-        # `directory` e.g., 
-        #
-        #     'cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js'
-        path = os.sep.join(dirs)
-        dir = directory(path=path)
-
-        # Get the last directory in the path
-        # (ajax/libs/shell.js/1.0.5/js) and assign it to dir
-        path = os.sep.join(dirs[1:])
-        if path:
-            dir = dir.inodes[path]
-
-        # Add the new `resource` underneath the directory, e.g., add the
-        # shell.min.js resource under the js directory.
-        dir += self
 
     def _entity_onbeforesave(self, src, eargs):
         # Cancel saving resource to database if local is False. See the

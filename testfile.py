@@ -85,10 +85,12 @@ class dom_file(tester.tester):
 
     def it_adds_js_files_to_site(self):
         for e in ('inode', 'resource', 'resource'):
-            getattr(file, e, 'orm.truncate')()
+            cls = getattr(file, e)
+            cls.orm.truncate()
 
         ws = foonet()
 
+        B()
         ws.resources += file.resource(
             url = 'https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/xterm.min.js',
             integrity = 'sha512-2PRgAav8Os8vLcOAh1gSaDoNLe1fAyq8/G3QSdyjFFD+OqNjLeHE/8q4+S4MEZgPsuo+itHopj+hJvqS8XUQ8A==',
