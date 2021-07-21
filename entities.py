@@ -2382,6 +2382,18 @@ class brokenrules(entities):
                 self += brokenrule(prop + " isn't a date", prop, 'valid', e)
 
     def contains(self, prop=None, type=None):
+        """ Test if this collection contains a broken rule with an
+        attribute caled ``prop`` and/or a broken rule with a type of
+        ``type``::
+            if brs.contains('email', 'full'):
+                ...
+
+        :param: prop str: The broken rule's attribute.
+
+        :param: type str: The type of broken rule ('full', 'valid',
+        'fits', 'empty', 'unique').
+
+        """
         for br in self:
             if (prop == None or br.property == prop) and \
                (type == None or br.type     == type):
