@@ -3923,25 +3923,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         guestbook.append(self)
 
-        # Determine if the entity is valid. Don't ascend (ascend=False)
-        # the inheritence tree to collect broken rules from self's super
-        # entity object because we only care about the validity of self
-        # (not self.orm.super, etc.). If a superentity of self is
-        # invalid, the recursive _save method will eventually try to
-        # save it and fail, causing a rollback. We don't want to
-        # collect brokenrules more than once because the imperitive
-        # brokenrules properties that ORM users write can potentially be
-        # slow (such as when they need to make a database calls).
-        isvalid = self.getbrokenrules(
-            ascend=False, recurse=False
-        ).isempty
-
-        # Don't save the entity if it doesn't pass its validation rules
-        # (not self.isvalid). If we are simply deleting the entity, the
-        # the validation rules don't matter.
-        if not self.orm.ismarkedfordeletion and not isvalid:
-            raise db.BrokenRulesError("Can't save invalid object", self)
-
         # Determine if we are deleting, creating or updating the entity
         # based on its presistence state. Grab the SQL necessary for
         # the chosen operation.
@@ -3959,6 +3940,31 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         else:
             crud = None
             sql, args = (None,) * 2
+
+        # XXX I added this conditonal here in 'cache-inodes'. I'm
+        # surprised I needed to make this change because this is such
+        # old code. Either way, it's a little experimental.
+        # Evaluate broken rules only if we are performing a mutation
+        if crud:
+            # Determine if the entity is valid. Don't ascend
+            # (ascend=False) the inheritence tree to collect broken
+            # rules from self's super entity object because we only care
+            # about the validity of self (not self.orm.super, etc.). If
+            # a superentity of self is invalid, the recursive _save
+            # method will eventually try to save it and fail, causing a
+            # rollback. We don't want to collect brokenrules more than
+            # once because the imperitive brokenrules properties that
+            # ORM users write can potentially be slow (such as when they
+            # need to make a database calls).
+            isvalid = self.getbrokenrules(
+                ascend=False, recurse=False
+            ).isempty
+
+            # Don't save the entity if it doesn't pass its validation
+            # rules (not self.isvalid). If we are simply deleting the
+            # entity, the the validation rules don't matter.
+            if not self.orm.ismarkedfordeletion and not isvalid:
+                raise db.BrokenRulesError("Can't save invalid object", self)
 
         #💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         # If we are modifying the record, the security().proprietor must
