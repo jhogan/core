@@ -432,6 +432,143 @@ class file_file(tester.tester):
         own.proprietor = com
         own.save()
 
+    def it_creates_with_name_kwarg(self):
+        f = file.file(name='test')
+        f1 = file.file(name='test')
+        self.isnot(f, f1)
+
+        # XXX Complete. See it_creates_empty_file
+
+    def it_caches_floaters(self):
+        f = file.file('test')
+        f1 = file.file('test')
+        f2 = file.file('TEST')
+        self.is_(f, f1)
+        self.isnot(f, f2)
+
+        for nd in (f, f1, f2):
+            self.type(file.file, nd)
+            self.true(nd in file.directory.floaters)
+
+        ''' Nested '''
+        f = file.file('berp/derp/flerp/herp/gerp/slerp')
+
+        flts = file.directory.floaters
+
+        self.is_(f, flts['berp/derp/flerp/herp/gerp/slerp'])
+
+        f = f.inode
+        self.is_(f, flts['berp/derp/flerp/herp/gerp'])
+
+        f = f.inode
+        self.is_(f, flts['berp/derp/flerp/herp'])
+
+        f = f.inode
+        self.is_(f, flts['berp/derp/flerp'])
+
+        f = f.inode
+        self.is_(f, flts['berp/derp'])
+
+        f = f.inode
+        self.is_(f, flts['berp'])
+
+        self.is_(flts, f.inode)
+
+    def it_appends_floaters(self):
+        ''' Shallow '''
+        flts = file.directory.floaters
+
+        f = file.file('test')
+
+        log = file.directory('/var/log')
+
+        # Verify f is in floaters
+        self.true(f in flts)
+
+        # Add to /var/log
+        log += f
+
+        # Make sure the floater was added to /var/log
+        self.is_(log.inodes.last, f)
+
+        # Make sure the floater is removed from the floaters cache
+        self.false(f in flts)
+
+        ''' Nested '''
+        f = file.file('20000/leagues/under/the/herp/derp')
+
+        flts['20000/leagues/under/the/herp/derp']
+
+        derp = f
+        herp = f.inode
+        the = f.inode.inode
+        under = f.inode.inode.inode
+
+        for nd in (derp, herp, the):
+            self.true(nd in flts)
+
+        # Verify we have the right directory
+        self.eq('the', the.name)
+
+        share = file.directory('/usr/share')
+
+        share += the
+
+        # Make sure 'the/herp/derp' was moved under share
+        self.is_(share['the'], the)
+        self.is_(share['the/herp'], herp)
+        self.is_(share['the/herp/derp'], derp)
+
+        # Make sure the/herp/derp is gone from the floaters cache
+        self.none(flts('20000/leagues/under/the/herp/derp'))
+        self.none(flts('20000/leagues/under/the/herp'))
+
+        self.none(flts('20000/leagues/under/the'))
+        self.is_(under, flts['20000/leagues/under'])
+
+    def it_wont_save_floaters(self):
+        flt = file.file('we/are/all/floaters')
+
+        self.four(flt.brokenrules)
+        self.four(flt.inode.brokenrules)
+        self.four(flt.inode.inode.brokenrules)
+        self.four(flt.inode.inode.inode.brokenrules)
+
+        self.ge(file.directory.floaters.brokenrules.count, 4)
+
+    def it_moves_cached_files(self):
+        vim = file.file('/usr/bin/vim')
+        bin = file.directory('/usr/local/bin')
+
+        bin += vim
+
+        root = file.directory.root
+        self.none(root('usr/bin/vim'))
+        self.is_(vim, root('usr/local/bin/vim'))
+
+    def it_caches_new_files_at_root(self):
+        # Simple file at root
+
+        f = file.file('/etc/hosts')
+        # Nested file at root
+        f1 = file.file('/etc/hosts')
+        f2 = file.file('/etc/HOSTS')
+        self.is_(f, f1)
+        self.isnot(f, f2)
+        for nd in (f, f1, f2):
+            self.type(file.file, nd)
+            self.type(file.directory, nd.inode)
+
+        # Deeply nested.produce file at root 
+        f = file.file('/var/log/syslog')
+        f1 = file.file('/var/log/syslog')
+        f2 = file.file('/var/log/auth.log')
+        self.is_(f, f1)
+        self.isnot(f, f2)
+        for nd in (f, f1, f2):
+            self.type(file.file, nd)
+            self.type(file.directory, nd.inode)
+
     def it_creates_empty_file(self):
         ''' Instatiate file '''
 
@@ -873,6 +1010,70 @@ class file_directory(tester.tester):
 
         orm.security.owner = ecommerce.users.root
 
+    def it_caches_new_directories_at_root(self):
+        ''' Simple directory production at root '''
+        d = file.directory('/usr')
+        d1 = file.directory('/usr')
+        d2 = file.directory('/USR')
+        self.is_(d, d1)
+        self.isnot(d, d2)
+        usr, USR = d, d2
+
+        for dir in (d, d1, d2):
+            self.type(file.directory, dir)
+
+        ''' Nested directory production '''
+        d = file.directory('/usr/local')
+        d1 = file.directory('/usr/local')
+        d2 = file.directory('/USR/local')
+
+        for nd in (d, d1, d2):
+            self.eq('local', nd.name)
+
+            if nd is d2:
+                self.eq('USR', nd.inode.name)
+            else:
+                self.eq('usr', nd.inode.name)
+
+        # Compare directories to each other
+        self.is_(d, d1)
+        self.is_(d.inode, d1.inode)
+        self.isnot(d.inode, d2.inode)
+        self.isnot(d, d2)
+
+        # Compare to the simple directory production above
+        self.is_(usr, d.inode)
+        self.is_(USR, d2.inode)
+
+        local, USR_local = d, d2
+
+        ''' Deeply nested directory production '''
+        d = file.directory('/usr/local/bin')
+        d1 = file.directory('/usr/local/bin')
+        d2 = file.directory('/USR/local/bin')
+
+        for nd in (d, d1, d2):
+            self.eq('bin',    nd.name)
+            self.eq('local',  nd.inode.name)
+
+            if nd is d2:
+                self.eq('USR', nd.inode.inode.name)
+            else:
+                self.eq('usr', nd.inode.inode.name)
+
+        self.is_(d, d1)
+        self.is_(d.inode, d1.inode)
+        self.is_(d.inode.inode, d1.inode.inode)
+
+        self.isnot(d, d2)
+        self.isnot(d.inode, d2.inode)
+        self.isnot(d.inode.inode, d2.inode.inode)
+
+        self.is_(local, d.inode)
+        self.is_(usr, d.inode.inode)
+        self.is_(USR_local, d2.inode)
+        self.is_(USR, d2.inode.inode)
+
     def it_creates_off_root(self):
         dir = file.directory('/mnt')
         self.eq('mnt', dir.name)
@@ -1085,210 +1286,6 @@ class file_cache(tester.tester):
 
         self.createprinciples()
 
-    def it_creates_with_name_kwarg(self):
-        f = file.file(name='test')
-        f1 = file.file(name='test')
-        self.isnot(f, f1)
-
-        # XXX Complete. See it_creates_empty_file
-
-    def it_caches_floaters(self):
-        f = file.file('test')
-        f1 = file.file('test')
-        f2 = file.file('TEST')
-        self.is_(f, f1)
-        self.isnot(f, f2)
-
-        for nd in (f, f1, f2):
-            self.type(file.file, nd)
-            self.true(nd in file.directory.floaters)
-
-        ''' Nested '''
-        f = file.file('berp/derp/flerp/herp/gerp/slerp')
-
-        flts = file.directory.floaters
-
-        self.is_(f, flts['berp/derp/flerp/herp/gerp/slerp'])
-
-        f = f.inode
-        self.is_(f, flts['berp/derp/flerp/herp/gerp'])
-
-        f = f.inode
-        self.is_(f, flts['berp/derp/flerp/herp'])
-
-        f = f.inode
-        self.is_(f, flts['berp/derp/flerp'])
-
-        f = f.inode
-        self.is_(f, flts['berp/derp'])
-
-        f = f.inode
-        self.is_(f, flts['berp'])
-
-        self.is_(flts, f.inode)
-
-    def it_appends_floaters(self):
-        ''' Shallow '''
-        flts = file.directory.floaters
-
-        f = file.file('test')
-
-        log = file.directory('/var/log')
-
-        # Verify f is in floaters
-        self.true(f in flts)
-
-        # Add to /var/log
-        log += f
-
-        # Make sure the floater was added to /var/log
-        self.is_(log.inodes.last, f)
-
-        # Make sure the floater is removed from the floaters cache
-        self.false(f in flts)
-
-        ''' Nested '''
-        f = file.file('20000/leagues/under/the/herp/derp')
-
-        flts['20000/leagues/under/the/herp/derp']
-
-        derp = f
-        herp = f.inode
-        the = f.inode.inode
-        under = f.inode.inode.inode
-
-        for nd in (derp, herp, the):
-            self.true(nd in flts)
-
-        # Verify we have the right directory
-        self.eq('the', the.name)
-
-        share = file.directory('/usr/share')
-
-        share += the
-
-        # Make sure 'the/herp/derp' was moved under share
-        self.is_(share['the'], the)
-        self.is_(share['the/herp'], herp)
-        self.is_(share['the/herp/derp'], derp)
-
-        # Make sure the/herp/derp is gone from the floaters cache
-        self.none(flts('20000/leagues/under/the/herp/derp'))
-        self.none(flts('20000/leagues/under/the/herp'))
-
-        self.none(flts('20000/leagues/under/the'))
-        self.is_(under, flts['20000/leagues/under'])
-
-    def it_wont_save_floaters(self):
-        flt = file.file('we/are/all/floaters')
-
-        self.four(flt.brokenrules)
-        self.four(flt.inode.brokenrules)
-        self.four(flt.inode.inode.brokenrules)
-        self.four(flt.inode.inode.inode.brokenrules)
-
-        self.ge(file.directory.floaters.brokenrules.count, 4)
-
-    def it_moves_cached_files(self):
-        vim = file.file('/usr/bin/vim')
-        bin = file.directory('/usr/local/bin')
-
-        bin += vim
-
-        root = file.directory.root
-        self.none(root('usr/bin/vim'))
-        self.is_(vim, root('usr/local/bin/vim'))
-
-    def it_caches_new_files_at_root(self):
-        # Simple file at root
-
-        f = file.file('/etc/passwd')
-        # Nested file at root
-        f1 = file.file('/etc/passwd')
-        f2 = file.file('/etc/PASSWD')
-        self.is_(f, f1)
-        self.isnot(f, f2)
-        for nd in (f, f1, f2):
-            self.type(file.file, nd)
-            self.type(file.directory, nd.inode)
-
-
-        # Deeply nested.produce file at root 
-        f = file.file('/var/log/syslog')
-        f1 = file.file('/var/log/syslog')
-        f2 = file.file('/var/log/auth.log')
-        self.is_(f, f1)
-        self.isnot(f, f2)
-        for nd in (f, f1, f2):
-            self.type(file.file, nd)
-            self.type(file.directory, nd.inode)
-
-    def it_caches_new_directories_at_root(self):
-        ''' Simple directory production at root '''
-        d = file.directory('/usr')
-        d1 = file.directory('/usr')
-        d2 = file.directory('/USR')
-        self.is_(d, d1)
-        self.isnot(d, d2)
-        usr, USR = d, d2
-
-        for dir in (d, d1, d2):
-            self.type(file.directory, dir)
-
-        ''' Nested directory production '''
-        d = file.directory('/usr/local')
-        d1 = file.directory('/usr/local')
-        d2 = file.directory('/USR/local')
-
-        for nd in (d, d1, d2):
-            self.eq('local', nd.name)
-
-            if nd is d2:
-                self.eq('USR', nd.inode.name)
-            else:
-                self.eq('usr', nd.inode.name)
-
-        # Compare directories to each other
-        self.is_(d, d1)
-        self.is_(d.inode, d1.inode)
-        self.isnot(d.inode, d2.inode)
-        self.isnot(d, d2)
-
-        # Compare to the simple directory production above
-        self.is_(usr, d.inode)
-        self.is_(USR, d2.inode)
-
-        local, USR_local = d, d2
-
-        ''' Deeply nested directory production '''
-        d = file.directory('/usr/local/bin')
-        d1 = file.directory('/usr/local/bin')
-        d2 = file.directory('/USR/local/bin')
-
-        for nd in (d, d1, d2):
-            self.eq('bin',    nd.name)
-            self.eq('local',  nd.inode.name)
-
-            if nd is d2:
-                self.eq('USR', nd.inode.inode.name)
-            else:
-                self.eq('usr', nd.inode.inode.name)
-
-        self.is_(d, d1)
-        self.is_(d.inode, d1.inode)
-        self.is_(d.inode.inode, d1.inode.inode)
-
-        self.isnot(d, d2)
-        self.isnot(d.inode, d2.inode)
-        self.isnot(d.inode.inode, d2.inode.inode)
-
-        self.is_(local, d.inode)
-        self.is_(usr, d.inode.inode)
-        self.is_(USR_local, d2.inode)
-        self.is_(USR, d2.inode.inode)
-
-    def it_raises_on_instatiation(self):
-        ...  # TODO
 
 if __name__ == '__main__':
     tester.cli().run()

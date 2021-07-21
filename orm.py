@@ -4154,7 +4154,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         es.orm.trash.clear()
                             
                 if type(map) is associationsmapping:
-
                     if map.isloaded:
                         # For each association then each trashed
                         # association
