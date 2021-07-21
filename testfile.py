@@ -1174,24 +1174,24 @@ class file_directory(tester.tester):
         
         # We shouldn't be able to add a float with the same name
         # twice.
-        self.expect(ValueError, lambda: tree += apple)
+        def f():
+            tree += apple
+        self.expect(ValueError, f)
 
     def it_calls__iter__(self):
-        dir = file.directory(path='/lib/dir100')
+        dir = file.directory('/lib/dir100')
         dir += file.directory(name='dir200')
         dir += file.file(name='f100')
         dir += file.file(name='f200')
 
         for i, nd in enumerate(dir):
             if i == 0:
-                self.eq('dir100', nd.name)
-            elif i == 1:
                 self.eq('dir200', nd.name)
-            elif i == 2:
+            elif i == 1:
                 self.eq('f100', nd.name)
-            elif i == 3:
+            elif i == 2:
                 self.eq('f200', nd.name)
-            else:
+            elif i == 3:
                 assert False
 
 class file_resource(tester.tester):
