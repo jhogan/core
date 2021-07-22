@@ -82,7 +82,7 @@ class inodes(orm.entities):
 
     def _self_onbeforeadd(self, src, eargs):
         flts = directory.floaters
-        root = directory.root
+        radix = directory.radix
         nd = eargs.entity
 
         # The search through the floaters directory (`nd in flts`) cause
@@ -91,9 +91,9 @@ class inodes(orm.entities):
         comp = nd.inode
 
         # If the node being added is within the floaters directory
-        # XXX Why are we testing if nd is in root? Add comment
+        # XXX Why are we testing if nd is in radix? Add comment
         # explaining.
-        if nd in flts or nd in root:
+        if nd in flts or nd in radix:
             # Remove it from the floaters directory
             nd.inode.inodes.remove(nd, trash=False)
 
@@ -130,7 +130,7 @@ class inodes(orm.entities):
                             if rent:
                                 ...
                             else:
-                                # nd is at the root
+                                # nd is at the radix
                                 ...
 
                             nds[i] = ndadd
@@ -249,13 +249,14 @@ class inode(orm.entity):
             # otherwise, instantiate.
             path = id
 
-            # If path starts at root, search the root cache, otherwise,
-            # search the floaters cache (floaters are cached inodes that
-            # aren't anchored to the root yet, though presumably will be).
+            # If path starts at radix, search the radix cache,
+            # otherwise, search the floaters cache (floaters are cached
+            # inodes that aren't anchored to the radix yet, though
+            # presumably will be).
             if path[0] == '/':
                 path = path.lstrip('/')
                 
-                dir = directory.root
+                dir = directory.radix
             else:
                 dir = directory.floaters
 
@@ -273,10 +274,8 @@ class inode(orm.entity):
             # portion of it, we can used the `wanting` property of `net`
             # to instantiate everything that wasn't found.
 
-            # Start with tail. If  nothing was found, tail would be the
-            # root directory which always exists. Root here means the
-            # top of the framework's file heirarchy, not the actual file
-            # system's root.  See (directory.root).
+            # Start with tail. If nothing was found, tail would be the
+            # radix directory which always exists
             nd = net.tail
 
             # Iterate over the wanting inodes' names
@@ -889,7 +888,7 @@ class directories(inodes):
     """
 
 class directory(inode):
-    RootId = uuid.UUID(hex='2007d124039f4cefac2cbdf1c8d1001b')
+    RadixId = uuid.UUID(hex='2007d124039f4cefac2cbdf1c8d1001b')
     FloatersId = uuid.UUID(hex='f1047325d07c467f9abef26bbd9ffd27')
 
     def __contains__(self, nd):
@@ -989,17 +988,16 @@ class directory(inode):
 
         return f
 
-    # XXX This conflicts with inode.root
     @classproperty
-    def root(cls):
-        if not hasattr(cls, '_root'):
-            cls._root = cls(id=cls.RootId, name='root')
-            cls._root.save()
-        return cls._root
+    def radix(cls):
+        if not hasattr(cls, '_radix'):
+            cls._radix = cls(id=cls.RadixId, name='radix')
+            cls._radix.save()
+        return cls._radix
     
     @property
-    def isroot(self):
-        return self.id == self.RootId and self.inode is None
+    def isradix(self):
+        return self.id == self.RadixId and self.inode is None
 
     # XXX This should be private (_floaters)
     @classproperty

@@ -542,15 +542,15 @@ class file_file(tester.tester):
 
         bin += vim
 
-        root = file.directory.root
-        self.none(root('usr/bin/vim'))
-        self.is_(vim, root('usr/local/bin/vim'))
+        radix = file.directory.radix
+        self.none(radix('usr/bin/vim'))
+        self.is_(vim, radix('usr/local/bin/vim'))
 
-    def it_caches_new_files_at_root(self):
-        # Simple file at root
+    def it_caches_new_files_at_radix(self):
+        # Simple file at radix
 
         f = file.file('/etc/hosts')
-        # Nested file at root
+        # Nested file at radix
         f1 = file.file('/etc/hosts')
         f2 = file.file('/etc/HOSTS')
         self.is_(f, f1)
@@ -559,7 +559,7 @@ class file_file(tester.tester):
             self.type(file.file, nd)
             self.type(file.directory, nd.inode)
 
-        # Deeply nested.produce file at root 
+        # Deeply nested.produce file at radix 
         f = file.file('/var/log/syslog')
         f1 = file.file('/var/log/syslog')
         f2 = file.file('/var/log/auth.log')
@@ -574,8 +574,8 @@ class file_file(tester.tester):
 
         name = uuid4().hex
         path = f'/tmp/{name}'
-        root = file.directory.root.name
-        head = os.path.join(file.inode.store, root, 'tmp')
+        radix = file.directory.radix.name
+        head = os.path.join(file.inode.store, radix, 'tmp')
 
         f = file.file(path)
         self.eq(head, f.head)
@@ -583,7 +583,7 @@ class file_file(tester.tester):
         self.false(f.exists)
         self.false(os.path.exists(f.path))
         self.eq(name, f.name)
-        self.is_(file.directory.root, f.inode.inode)
+        self.is_(file.directory.radix, f.inode.inode)
         self.none(f.inode.inode.inode)
         self.expect(AttributeError, lambda: f.inodes)
         self.none(f.body)
@@ -638,7 +638,7 @@ class file_file(tester.tester):
         ''' Saving the file with '''
         f.save()
         path = os.path.join(
-            f.store, file.directory.root.name, 'etc/modules'
+            f.store, file.directory.radix.name, 'etc/modules'
         )
         self.eq(f.path, path)
         self.true(f.exists)
@@ -696,7 +696,7 @@ class file_file(tester.tester):
         self.true(os.path.exists(f1.path))
 
     def it_creates_within_a_directory(self):
-        ''' Instatiate file with `path` off root '''
+        ''' Instatiate file with `path` off radix '''
 
         f = file.file('/swapfile')
 
@@ -732,7 +732,7 @@ class file_file(tester.tester):
         ''' Instatiate file with `path` off within a new directory '''
         path = '/usr/share/perl5/URI.pm'
 
-        # This will create the file off the root
+        # This will create the file off the radix
         f = file.file(path)
 
         body = self.dedent('''
@@ -758,7 +758,7 @@ class file_file(tester.tester):
         self.eq('perl5', f.inode.name)
         self.eq('share', f.inode.inode.name)
         self.eq('usr', f.inode.inode.inode.name)
-        self.true(f.inode.inode.inode.inode.isroot)
+        self.true(f.inode.inode.inode.inode.isradix)
         with open(f.path, 'r') as f1:
             self.eq(f1.read(), f.body)
 
@@ -808,7 +808,7 @@ class file_file(tester.tester):
         # by another test by the time we get here.
         # self.false(var.exists)
         # self.eq((True, False, False), var.orm.persistencestate)
-        self.true(var.inode.isroot)
+        self.true(var.inode.isradix)
 
         f.save()
 
@@ -840,7 +840,7 @@ class file_file(tester.tester):
         self.eq(path, var.path)
         self.true(var.exists)
         self.eq((False, False, False), var.orm.persistencestate)
-        self.true(var.inode.isroot)
+        self.true(var.inode.isradix)
         self.true(var.exists)
 
     def it_sets_mime(self):
@@ -898,15 +898,15 @@ class file_file(tester.tester):
         f = file.file('/home/eboetie/dup.txt')
         self.expect(None, f.save)
 
-        # These lines dereference the root directory's inodes
+        # These lines dereference the radix directory's inodes
         # collection. We are tying to create the condition where the
         # above line created a file (along with the path) but it isn't
         # currently cached by the current process. In this case, we want
         # there to be no problem clobbering it.
-        root = file.directory.root
-        nd = root.orm.super
+        radix = file.directory.radix
+        nd = radix.orm.super
 
-        # Save a reference to roots existing inodes collection so we can
+        # Save a reference to radix's existing inodes collection so we can
         # restore it later. Future tests will depend on the inodes in
         # the cache making sense with what's in the database.
         nds = nd.orm.mappings['inodes']._value
@@ -919,7 +919,7 @@ class file_file(tester.tester):
             self.one(f.brokenrules)
             self.expect(entities.BrokenRulesError, lambda: f.save())
         finally:
-            # Restore olf inodes collection to root
+            # Restore old inodes collection to radix
             nd.orm.mappings['inodes']._value = nds
 
         return # XXX
@@ -947,7 +947,7 @@ class file_file(tester.tester):
         # slashes should't be allowed. What's really bad though is this
         # is actually causing the real /var/log/kern.log to be open.
         # It's not being opened and clobber only because we are running
-        # the tests as root. This is bad.
+        # the tests as radix. This is bad.
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         f = file.file(name='/var/log/kern.log')
         f.body = '1 2 3'
@@ -1074,24 +1074,24 @@ class file_directory(tester.tester):
         self.is_(USR_local, d2.inode)
         self.is_(USR, d2.inode.inode)
 
-    def it_creates_off_root(self):
+    def it_creates_off_radix(self):
         dir = file.directory('/mnt')
         self.eq('mnt', dir.name)
-        self.is_(file.directory.root, dir.inode)
+        self.is_(file.directory.radix, dir.inode)
         self.none(dir.inode.inode)
         self.zero(dir.inodes)
         self.eq((True, False, False), dir.orm.persistencestate)
 
         dir.save()
         self.eq('mnt', dir.name)
-        self.is_(file.directory.root, dir.inode)
+        self.is_(file.directory.radix, dir.inode)
         self.none(dir.inode.inode)
         self.zero(dir.inodes)
         self.eq((False, False, False), dir.orm.persistencestate)
 
         dir = dir.orm.reloaded()
         self.eq('mnt', dir.name)
-        self.eq(file.directory.root.id, dir.inode.id)
+        self.eq(file.directory.radix.id, dir.inode.id)
         self.none(dir.inode.inode)
         self.zero(dir.inodes)
         self.eq((False, False, False), dir.orm.persistencestate)
@@ -1105,9 +1105,9 @@ class file_directory(tester.tester):
         dir1 += dir2
 
         join = os.path.join
-        self.eq(dir0.path, join(dir0.store, 'root/abc'))
-        self.eq(dir1.path, join(dir0.store, 'root/abc/def'))
-        self.eq(dir2.path, join(dir0.store, 'root/abc/def/ghi'))
+        self.eq(dir0.path, join(dir0.store, 'radix/abc'))
+        self.eq(dir1.path, join(dir0.store, 'radix/abc/def'))
+        self.eq(dir2.path, join(dir0.store, 'radix/abc/def/ghi'))
 
         self.eq(dir0.name, dir1.inode.name)
         self.eq(dir1.name, dir2.inode.name)
