@@ -494,6 +494,12 @@ class files(inodes):
 
         # Get the composite (website) of the files collection if there
         # is one.
+        
+        # XXX I'm not sure why I hard-coded site here. Why don't we use
+        # self.orm.composite, or have ``site`` subscribe to the onadd
+        # event. Try to explain with a TODO, if not correct it all
+        # together.
+        B()
         try:
             ws = self.site
         except AttributeError:
@@ -723,7 +729,6 @@ class resource(file):
             return super(inode, cls).__new__(cls)
 
         try:
-           B()
            url = kwargs['url']
         except KeyError:
             pass
