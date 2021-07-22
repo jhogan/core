@@ -527,7 +527,7 @@ class files(inodes):
                     path = None
 
         if path:
-            dir = directory(path=path)
+            dir = directory(path)
             dir += e.root
 
         super().append(obj=e, *args, **kwargs)
