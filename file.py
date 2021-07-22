@@ -284,7 +284,7 @@ class inode(orm.entity):
                     # If we are at the last wanting inode name, cls may
                     # be a file or a directory, so use it to
                     # instantiate, consider: /dir/dir/file-or-dir
-                    nd += cls(name=name, kwargs={'from__new__': None})
+                    nd += cls(name=name, **kwargs)
                 else:
                     # If we are not ate the last one, the wanting inode
                     # will be a directory (they last one may or may not
