@@ -760,7 +760,7 @@ class resource(file):
             args = list(args)
             args.insert(0, os.sep.join(dirs))
             
-        super().__new__(cls, *args, **kwargs)
+        return super().__new__(cls, *args, **kwargs)
 
     def __init__(self, *args, **kwargs):
         """ Initialize a resource.
