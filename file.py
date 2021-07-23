@@ -169,20 +169,19 @@ class inodes(orm.entities):
         If ``key`` is not a str, the default behavior is used.
         """
         if isinstance(key, str):
-            if '/' in key:
-                nds = self
-                for name in key.split('/'):
-                    try:
-                        nd = nds[name]
-                    except IndexError as ex:
-                        raise IndexError(
-                            f"Can't find node: {name}"
-                        ) from ex
-                    else:
-                        if isinstance(nd, directory):
-                            nds = nd.inodes
-                return nd
+            nds = self
+            names = key.split('/')
+            if len(names) == 1:
+                return super().__getitem__(names[0])
+            else:
+                nd = nds[names[0]]
+                if isinstance(nd, directory):
+                    nds = nd.inodes
+                    return nds['/'.join(names[1:])]
+                elif isinstance(nd, file):
+                    return nd
 
+        B()
         return super().__getitem__(key)
 
 class inode(orm.entity):
