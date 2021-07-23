@@ -28,7 +28,8 @@ import www
 # WAI-ARIA Authoring Practices 1.1
 # https://www.w3.org/TR/wai-aria-practices/
 
-class sites(asset.assets): pass
+class sites(asset.assets): 
+    pass
 
 class site(asset.asset):
     def __init__(self, *args, **kwargs):
