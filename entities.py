@@ -18,7 +18,7 @@ This module also containes the ``brokenrule`` and ``brokenrules``
 classes which provide a way to collect validation errors an ``entity``
 or ``entities`` object may have.
 
-Base classes ``event`` and ``eventargs`` are defined here too which
+Base classes ``event`` and ``eventargs`` are defined here, too, which
 allows for the defining, raising and handling of events. Their design
 was inspired my C# delegates and the VB.NET event system.
 
@@ -2472,6 +2472,58 @@ class brokenrule(entity):
         return self.message
     
 class event(entities):
+    """ Represents an event.
+
+    Events are fired by objects to inform interested code of an event
+    that happend to the object. 
+    
+    For example, the ``entities`` collection has an event called
+    ``onadd``. Whenever an item is added to a collection, the event is
+    fired. 
+
+        # Create event handler
+        def main_onadd(src, eargs):
+            print(f'A {type(eargs.entity)} was appended')
+
+        # Create an entities instance
+        es = entities()
+
+        # Subscribe to the onadd event
+        es.onadd += main_onadd
+
+        # Append a new entity. This will cause the main_onadd function
+        # above to be invoked
+        es += entity()
+
+    Notably, multiple event handlers can subscribe to an event. In the
+    above code could we could have had multiple event handler invoked
+    simply by adding more subscriptions::
+
+        def main_onadd1(self, src, eargs):
+            print(f'Hello')
+
+        # Subscribe main_onadd1 to es.onadd. 
+        es.onadd += main_onadd
+
+        # Append a new entity. Now, main_onadd and main_onadd1 will be
+        # called in that order.
+        es += entity()
+
+    Event handlers must conform to the signature discribed above::
+
+        # For function or static methods
+        def handler(src, eargs):
+
+        # For instance methods
+        def handler(self, src, eargs):
+
+    The src parameter is a reference to the object that fired the event.
+    The eargs parameter is an instance of a subclass of ``eventargs``.
+    ``eventarg`` subclasses contain the information needed by a specify
+    event. For example, the eventargs that onadd uses is called
+    ``appendeventargs``. This object contains the ``entity`` attribute
+    used above in the handler.
+    """
     def __call__(self, src, e):
         for callable in self:
             callable(src, e)
