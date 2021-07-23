@@ -57,10 +57,30 @@ class site(asset.asset):
         self.stylesheets = list()
         self._header = None
 
+        radix = file.directory.radix
+
+        path = 'resources/' + self.id.hex
+        try:
+            radix[path]
+        except IndexError:
+            radix += file.directory(path).inode
+
+        radix[path]
+
     host = str
-    resources = file.resources
     hits = ecommerce.hits
     users = ecommerce.users
+    directory = file.directory
+
+    @property
+    def resources(self):
+        B()
+        return file.directory['resources']
+
+    @resources.setter
+    def resources(self, v):
+        B()
+        file.directory['resources'] = v
 
     class AuthenticationError(ValueError):
         pass
