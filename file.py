@@ -168,6 +168,9 @@ class inodes(orm.entities):
 
         If ``key`` is not a str, the default behavior is used.
         """
+
+        # XXX:bda97447 If we can't find an inode memoized, I think we
+        # should go ahead and search the database here.
         if isinstance(key, str):
             nds = self
             names = key.split('/')
@@ -181,7 +184,6 @@ class inodes(orm.entities):
                 elif isinstance(nd, file):
                     return nd
 
-        B()
         return super().__getitem__(key)
 
 class inode(orm.entity):
@@ -498,7 +500,6 @@ class files(inodes):
         # self.orm.composite, or have ``site`` subscribe to the onadd
         # event. Try to explain with a TODO, if not correct it all
         # together.
-        B()
         try:
             ws = self.site
         except AttributeError:
