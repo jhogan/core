@@ -2525,12 +2525,37 @@ class event(entities):
     used above in the handler.
     """
     def __call__(self, src, e):
+        """ Fires the event. Any subscribers (event handlers) to this
+        event will be invoked.
+
+        :param: src object: The source of the event. This is usually a
+        reference to the object that fired the event.
+
+        :param: e eventarg: An instance of a subtype of eventargs. This
+        contains the specific arguments needed to be passed to the event
+        handlers for any given event.
+        """
+
+        # TODO Rename e to eargs here to be consistent with convention.
+
+        # The ``event`` itself is a collection of callables. Simply
+        # interate over self and call each event handler one at a time.
         for callable in self:
             callable(src, e)
 
     def append(self, fn):
+        """ Subscribe an event handler to the event. The event handler
+        will be appended to the event object's internal collection of
+        subscribers which will be invoked when the event is fired.
+
+        :param: fn callable: The event handler being subscribed to the
+        event. This can be any callable with the signature::
+
+            def fn(src: object, eargs: eventargs)
+        """
         if not callable(fn):
             raise ValueError('Event must be callable')
+
         if isinstance(fn, event):
             raise ValueError('Attempted to append event to event collection.')
             
