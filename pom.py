@@ -58,15 +58,17 @@ class site(asset.asset):
         self.stylesheets = list()
         self._header = None
 
+        # Set up the orm attribute `self.directory`
         radix = file.directory.radix
-
-        path = 'resources/' + self.id.hex
+        path = f'pom:site:{self.id.hex}'
+        # We may not need the try:except logic here if we decide to
+        # implement the suggestion at XXX:bda97447 
         try:
-            radix[path]
+            self.directory = radix[path]
         except IndexError:
-            radix += file.directory(path).inode
-
-        radix[path]
+            dir = file.directory(path)
+            radix += dir
+            self.directory = dir
 
     host = str
     hits = ecommerce.hits
@@ -75,13 +77,23 @@ class site(asset.asset):
 
     @property
     def resources(self):
-        B()
-        return file.directory['resources']
+        # We may not need the try:except logic here if we decide to
+        # implement the suggestion at XXX:bda97447 
+        try:
+            self.directory['resources']
+        except IndexError:
+            resx = file.directory('resources')
+            self.directory += resx
+        finally:
+            return self.directory['resources'].inodes
 
     @resources.setter
     def resources(self, v):
+        if v is self.resources:
+            return
         B()
-        file.directory['resources'] = v
+
+        self.resources.inodes = v
 
     class AuthenticationError(ValueError):
         pass
