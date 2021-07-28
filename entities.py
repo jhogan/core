@@ -2553,6 +2553,7 @@ class event(entities):
 
             def fn(src: object, eargs: eventargs)
         """
+        # TODO Rename fn to f to conform to conventions
         if not callable(fn):
             raise ValueError('Event must be callable')
 
@@ -2562,25 +2563,41 @@ class event(entities):
         self._ls.append(fn)
 
     def remove(self, fn):
-        # This is experimental as of 20180506. Previously, events were removed
-        # by the base method entities.remove(). But it was noticed that the
-        # identity test wasn't matching the bound method being removed:
-        #
-        #    if rm is self[i]:
-        #
-        # Bound method id's (id(obj.method)) seem to change over time. 
-        # However, an equality test does match bound method which is why
-        # the code below reads:
-        #
-        #    if fn == self[i]
-        #
-        # This may also explain why it has been noticed that there have
-        # been a build up of events in event collections which it would
-        # seem shouldn't be there.
+        """ Unsubscribe an event handler from this event. Once the
+        handler is unsubscribed, it will no longer be invoked when the
+        event is fired.
+
+        Note that as with subscribing, the -= operator is used to
+        unsubscribe from an event.
+
+            # Create a handler
+            def myhandler(src, eargs):
+                ...
+
+            # Create an entities collection
+            es = entities()
+
+            # Subscribe the handler to the onadd event
+            es.onadd += myhandler
+
+            # Unsubscribe the handler from the onadd event
+            es.onadd -= myhandler
+
+        :param: fn callable: The event handler that needs to be
+        unsubscribed.
+        """
+        # TODO Rename fn to f to conform to conventions
         if not callable(fn):
+            # TODO Change to TypeError
             raise ValueError('Event must be callable')
 
-        for i in range(self.count - 1, -1, -1):
+        for i in range(self.count - 1
+            # NOTE It was noticed that an identity test (i.e, test that
+            # use the is operator) wouldn't match the bound method being
+            # removed.  Bound method id's (id(obj.method)) seem to
+            # change over time.  However, an equality test does match
+            # bound method which is why we use the equality operator
+            # below.
             if fn == self[i]:
                 del self._ls[i]
                 break
