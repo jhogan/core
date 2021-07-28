@@ -500,6 +500,10 @@ class files(inodes):
         # self.orm.composite, or have ``site`` subscribe to the onadd
         # event. Try to explain with a TODO, if not correct it all
         # together.
+        # 
+        # UPDATE: I think this has been corrected by the addition of
+        # pom.site.directory and pom.site.resouces. We can probably
+        # remove all this.
         try:
             ws = self.site
         except AttributeError:
@@ -725,7 +729,6 @@ class resource(file):
         except KeyError:
             pass
         else:
-            B()
             return super(inode, cls).__new__(cls)
 
         try:

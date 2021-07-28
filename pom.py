@@ -91,7 +91,6 @@ class site(asset.asset):
     def resources(self, v):
         if v is self.resources:
             return
-        B()
 
         self.resources.inodes = v
 
