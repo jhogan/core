@@ -84,7 +84,7 @@ class dom_file(tester.tester):
         com.save()
 
     def it_adds_js_files_to_site(self):
-        for e in ('inode', 'resource', 'resource'):
+        for e in ('inode', 'file', 'resource'):
             cls = getattr(file, e)
             cls.orm.truncate()
 
@@ -135,13 +135,14 @@ class dom_file(tester.tester):
             self.eq(res.integrity, res1.integrity)
 
     def it_adds_js_files_to_page(self):
-        for e in ('inode', 'resource', 'resource'):
-            getattr(file, e, 'orm.truncate')()
+        for e in ('inode', 'file', 'resource'):
+            cls = getattr(file, e)
+            cls.orm.truncate()
 
         class index(pom.page):
             def main(self):
                 # Add page-level resources
-                self.resources += file.resource(
+                resx = file.resource(
                     url='https://code.jquery.com/jquery-3.5.1.js',
                 )
 

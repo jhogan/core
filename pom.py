@@ -644,15 +644,34 @@ class page(dom.html):
         self._header       =  None
         self._sidebars     =  None
         self._args         =  dict()
-        self.resources     =  file.resources()
-        self.resources.page = self
-
+        self._resources    =  None
+        
         try:
             self._mainfunc = self.main
         except AttributeError:
             pass
 
         self.clear()
+
+    @property
+    def resources(self):
+        if self._resources is None:
+            self._resources = file.resources()
+
+            self.resources.onadd += self._resources_onadd
+
+        return self._resources
+
+    @resources.setter
+    def resources(self, v):
+        self._resources = v
+
+    def _resources_onadd(self, scr, eargs):
+        if eargs.entity.local:
+            raise ValueError(
+                'Page-level resources cannot be saved. Use a '
+                'site-level resource instead'
+            )
 
     def flash(self, msg):
         if isinstance(msg, str):
