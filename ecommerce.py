@@ -307,7 +307,14 @@ class user(orm.entity):
     def directory(self):
         dir = attr()
         if dir is None:
-            dir = file.directory(name=self.id.hex)
+            radix = file.directory.radix
+            path = f'ecommerce/user/{self.id.hex}'
+            try:
+                dir = radix[path]
+            except IndexError:
+                dir = file.directory(path)
+                ecommerce = dir.inode.inode
+                radix += ecommerce
             attr(dir)
         return dir
     

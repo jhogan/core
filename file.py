@@ -970,7 +970,7 @@ class directory(inode):
         """ Create a new file underneath `self` in the hierarchy and
         return the file:
             
-            etc = directory(path='/etc')
+            etc = directory('/etc')
             passwd = etc.file('passwd')
 
         Above, we used the name 'passwd' for the file name, but we could
@@ -979,20 +979,24 @@ class directory(inode):
             my = directory(path='/my')
             txt = my.file('path/to/file.txt')
 
-        Now, txt represents the file::
+        Now, txt represents the physical file::
 
             {inode.store}/my/path/to/file.txt
         """
-        f = file(path=path)
+        path = path.lstrip('/')
+        f = file(path)
 
-        dir = f.inode
-        while dir.inode:
-            dir = dir.inode
+        # Append the inode right beneath the file's floaters to self,
+        # this might be the file itself.
+        nd = f
+        while nd:
+            if nd.inode is directory._floaters:
+                self += nd
+                break
 
-        if dir:
-            self += dir
+            nd = nd.inode
         else:
-            self += f
+            raise ValueError('Radix not found')
 
         return f
 

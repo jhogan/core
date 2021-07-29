@@ -66,6 +66,7 @@ class dom_file(tester.tester):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        clean()
 
         orm.security().override = True
 
@@ -142,7 +143,7 @@ class dom_file(tester.tester):
         class index(pom.page):
             def main(self):
                 # Add page-level resources
-                resx = file.resource(
+                self.resources += file.resource(
                     url='https://code.jquery.com/jquery-3.5.1.js',
                 )
 
