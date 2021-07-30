@@ -25,7 +25,7 @@ import party
 import pom
 import tester
 import uuid
-
+import pom
 # TODO Ensure that integrity can be None
 
 def clean():
@@ -85,26 +85,17 @@ class dom_file(tester.tester):
         com.save()
 
     def it_adds_js_files_to_site(self):
-        for e in ('inode', 'file', 'resource'):
+        for e in ('inode', 'file', 'directory', 'resource'):
             cls = getattr(file, e)
             cls.orm.truncate()
 
         ws = foonet()
 
-        ''''
-        XXX
-        # I think, instead of a resources property for a site, we should
-        # have a directory attribute. The directory would be named
-        # the sites id. We should be abe to add resource files like I
-        # have belowe. Actually, ws.resources could be a property that
-        # just makes this easier (although, that might be a little
-        # confusing).
-        ws.directory['resources'] += file.resource(
+        ws.resources += file.resource(
             url = 'https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/xterm.min.js',
             integrity = 'sha512-2PRgAav8Os8vLcOAh1gSaDoNLe1fAyq8/G3QSdyjFFD+OqNjLeHE/8q4+S4MEZgPsuo+itHopj+hJvqS8XUQ8A==',
             local = True,
         )
-        '''
 
         ws.resources += file.resource(
             url = 'https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/xterm.min.js',
@@ -136,7 +127,7 @@ class dom_file(tester.tester):
             self.eq(res.integrity, res1.integrity)
 
     def it_adds_js_files_to_page(self):
-        for e in ('inode', 'file', 'resource'):
+        for e in ('inode', 'file', 'directory', 'resource'):
             cls = getattr(file, e)
             cls.orm.truncate()
 
@@ -222,13 +213,13 @@ class dom_file(tester.tester):
             self.zero(url.resources)
 
     def it_posts_file_in_a_users_file_system(self):
+        B()
         class avatar(pom.page):
             def main(self, uid: uuid.UUID):
                 if req.isget:
                     return
 
                 # Populate the form with data from the request's payload
-
                 if req.files.isempty:
                     raise BadRequestError(
                         'No avatar image file provided'
