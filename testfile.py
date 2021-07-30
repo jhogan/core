@@ -118,8 +118,8 @@ class dom_file(tester.tester):
         ress = ws.resources.sorted()
         ress1 = ws1.resources.sorted()
 
-        self.two(ress)
-        self.two(ress1)
+        self.three(ress)
+        self.three(ress1)
 
         for res, res1 in zip(ress, ress1):
             self.eq(res.id, res1.id)
@@ -268,38 +268,11 @@ class dom_file(tester.tester):
         self.eq(f.body, f1.body)
 
     def it_caches_js_files(self):
-        file.resource.orm.truncate()
+        for e in ('inode', 'file', 'directory', 'resource'):
+            cls = getattr(file, e)
+            cls.orm.truncate()
         class index(pom.page):
             def main(self):
-                self.resources += file.resource(
-                    url = 'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js',
-                    integrity = 'sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw==',
-                    local = True
-                )
-
-                self.resources += file.resource(
-                    url = 'https://cdnjs.cloudflare.com/ajax/libs/vega/5.14.0/vega.min.js',
-                    crossorigin = 'use-credentials',
-                    local = True,
-                )
-
-                # This url will 404 so it can't be saved locally.
-                # dom.script will nevertheless use the external url for
-                # the `src` attribute instead of the local url. This
-                # should happen any time there is an issue downloading
-                # an external resource.
-                self.resources += file.resource(
-                    url = 'https://cdnjs.cloudflare.com/ajax/libs/55439c02/1.1/idontexit.min.js',
-                    crossorigin = 'use-credentials',
-                    local = True,
-                )
-
-                # TODO The inodes 'cdnjs.cloudflare.com', 'ajax', and
-                # 'libs' are being inserted 3 times each. This is a bug,
-                # but it is also a bug that the validator
-                # (inode.getbrokenrules) isn't detecting this.
-                self.resources.save()
-
                 self.main += dom.h1('Home page')
 
         # Set up site
@@ -311,6 +284,21 @@ class dom_file(tester.tester):
             local = True
         )
 
+        def f():
+            ws.pages.last.resources += file.resource(
+                url        =  'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js',
+                integrity  =  'sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw==',
+                local      =  True
+            )
+
+        # We shoud be forbidden from setting local=True when creating
+        # file.resources and appending them to pages. A pages does not
+        # need a seperate directory that its own JS, CSS, etc files.
+        # That would lead to clutter and duplication. If a page needs
+        # its own resources that are unique from other pages, we can add
+        # a non-local resource.
+        self.expect(ValueError, f)
+
         ws.save()
 
         # GET the /en/files page
@@ -320,40 +308,19 @@ class dom_file(tester.tester):
         self.status(200, res)
 
         scripts = res['html head script']
-        self.four(scripts)
+        self.one(scripts)
 
         self.eq(
-            f'/{ws.id.hex}/code.jquery.com/jquery-3.5.1.js',
+            (
+                f'/{file.directory.radix.name}'
+                f'/pom/site/{ws.id.hex}/resources/jquery-3.5.1.js'
+            ),
             scripts.first.src
         )
         self.eq(None, scripts.first.integrity)
         self.eq('anonymous', scripts.first.crossorigin)
 
-        self.eq(
-            f'/{ws.id.hex}/cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js',
-            scripts.second.src
-        )
-        self.eq(
-            'sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw==',
-            scripts.second.integrity
-        )
-        self.eq('anonymous', scripts.second.crossorigin)
-
-        self.eq(
-            f'/{ws.id.hex}/cdnjs.cloudflare.com/ajax/libs/vega/5.14.0/vega.min.js',
-            scripts.third.src
-        )
-        self.eq(None, scripts.third.integrity)
-        self.eq('use-credentials', scripts.third.crossorigin)
-
-        self.eq(
-            f'/{ws.id.hex}/cdnjs.cloudflare.com/ajax/libs/55439c02/1.1/idontexit.min.js',
-            scripts.fourth.src
-        )
-        self.none(scripts.fourth.integrity)
-        self.eq('use-credentials', scripts.fourth.crossorigin)
-
-        self.four(file.resources.orm.all)
+        self.one(file.resources.orm.all)
 
         # Load and test first: jquery
         rcs = ecommerce.urls(
@@ -363,37 +330,6 @@ class dom_file(tester.tester):
         self.one(rcs)
         self.none(rcs.first.integrity)
         self.eq('anonymous', rcs.first.crossorigin)
-
-        # Load and test second: shell.min.js
-        rcs = ecommerce.urls(
-            'address', 'https://cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js/shell.min.js'
-        ).first.resources
-
-        self.one(rcs)
-        self.eq(
-            'sha512-8eOGNKVqI8Bg/SSXAQ/HvctEwRB45OQWwgHCNT5oJCDlSpKrT06LW/uZHOQYghR8CHU/KtNFcC8mRkWRugLQuw==', 
-            rcs.first.integrity
-        )
-        self.eq('anonymous', rcs.first.crossorigin)
-
-        # Load and test second: vega.min.js
-        rcs = ecommerce.urls(
-            'address', 'https://cdnjs.cloudflare.com/ajax/libs/vega/5.14.0/vega.min.js'
-        ).first.resources
-
-        self.one(rcs)
-        self.none(rcs.first.integrity)
-        self.eq('use-credentials', rcs.first.crossorigin)
-
-        # Load and test second: idontexist.min.js
-        rcs = ecommerce.urls(
-            'address', 'https://cdnjs.cloudflare.com/ajax/libs/55439c02/1.1/idontexit.min.js'
-        ).first.resources
-
-        self.one(rcs)
-        self.none(rcs.first.integrity)
-        self.eq('use-credentials', rcs.first.crossorigin)
-        self.false(rcs.first.exists)
 
 class file_file(tester.tester):
     def __init__(self, *args, **kwargs):
