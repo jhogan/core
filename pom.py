@@ -1007,7 +1007,10 @@ class page(dom.html):
         return '/' + r
 
     def __repr__(self):
-        return self.path
+        r = f'{type(self).__name__}('
+        r += f'id={self.id} path={self.path}'
+        r += ')'
+        return r
 
 class header(dom.header):
     # TODO Need to add an h2 and subheading parameter to constructor.
