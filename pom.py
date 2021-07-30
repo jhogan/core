@@ -668,7 +668,7 @@ class page(dom.html):
         if self._resources is None:
             self._resources = file.resources()
 
-            self.resources.onadd += self._resources_onadd
+            self.resources.onbeforeadd += self._resources_onbeforeadd
 
         return self._resources
 
@@ -676,7 +676,7 @@ class page(dom.html):
     def resources(self, v):
         self._resources = v
 
-    def _resources_onadd(self, scr, eargs):
+    def _resources_onbeforeadd(self, scr, eargs):
         if eargs.entity.local:
             raise ValueError(
                 'Page-level resources cannot be saved. Use a '
