@@ -58,23 +58,33 @@ class site(asset.asset):
         self.stylesheets = list()
         self._header = None
 
-        # Set up the orm attribute `self.directory`
-        radix = file.directory.radix
-        path = f'pom:site:{self.id.hex}'
-        # We may not need the try:except logic here if we decide to
-        # implement the suggestion at XXX:bda97447 
-        try:
-            self.directory = radix[path]
-        except IndexError:
-            dir = file.directory(path)
-            radix += dir
-            self.directory = dir
-
     host = str
     hits = ecommerce.hits
     users = ecommerce.users
     directory = file.directory
 
+    @orm.attr(file.directory)
+    def directory(self):
+        dir = attr()
+        if dir is None:
+            radix = file.directory.radix
+            path = f'pom/site/{self.id.hex}'
+            try:
+                dir = radix[path]
+            except IndexError:
+                dir = file.directory(path)
+                pom = dir.inode.inode
+
+                if pom.inode is not file.directory._floaters:
+                    # This should never happen, but just to be on the
+                    # safe side.
+                    raise ValueError(
+                       "The pom directory's inode is not _floaters"
+                    )
+
+                radix += pom
+            attr(dir)
+        return dir
     @property
     def resources(self):
         # We may not need the try:except logic here if we decide to
