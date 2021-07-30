@@ -2603,9 +2603,44 @@ class event(entities):
                 break
 
 class eventargs(entity):
-    pass
+    """ The base class for all event argument classes. 
+
+    An event argument class encapsulates the data passed to event
+    handlers by the code that fires the event. For example, an
+    ``entityaddeventargs`` object is passed to any event handler that
+    subscribes to the entities.onadd event whenever an entity is
+    appended. See the docstring at entityaddeventargs for code that
+    details the way eventargs work.
+    """
 
 class entityaddeventargs(eventargs):
+    """ The eventargs class called after an entity is succesfully
+    appended to an entities collection::
+
+        # Create the event handler. `eargs` will be a reference to the
+        # entityaddeventargs object created by the ``entities`` class.
+        def i_handle_the_on_add_event(src, eargs):
+            
+            # Assert eargs type
+            assert type(eargs) is entityaddeventargs
+
+            # Notice that eargs's `entity` attribute is a reference to
+            # the entity that is added.
+            assert eargs.entity.name == 'The added one'
+
+        # Create an entity and call in "The added one"
+        e = entity()
+        e.name = 'The added one'
+
+        # Create entities collection
+        es = entities()
+
+        # Append the entity to es. This will end up invoking
+        # i_handle_the_on_add_event. It's eargs argument will have an
+        # attribute called `entity` which is a reference `e`. That's how
+        # it will know what was appended.
+        es += e
+    """
     def __init__(self, e):
         self.entity = e
 
