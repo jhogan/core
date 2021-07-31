@@ -8333,14 +8333,21 @@ class orm:
         """ Returns a string representation of the ``orm`` object
         including its corresponding instance or entity class.
         """
-        r = 'orm(type=<%s>, %s=True)'
+        r = 'orm(type=<%s>, %s=True'
 
         if self.isinstance:
-            args = [type(self.instance).__name__]
+            args = [
+                type(self.instance).__name__, 
+                'instance',
+                self.persistencestate ,
+            ]
+            r += ', state=%s)'
         else:
-            args = [self.entity.__name__]
-
-        args += ['instance' if self.isinstance else 'static']
+            args = [
+                self.entity.__name__, 
+                'static',
+            ]
+            r += ')'
 
         return r % tuple(args)
 
