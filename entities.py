@@ -2642,14 +2642,38 @@ class entityaddeventargs(eventargs):
         es += e
     """
     def __init__(self, e):
+        """ Create the eventarg.
+
+        :param: e entity: The entity being appended.
+        """
         self.entity = e
 
 class entityremoveeventargs(eventargs):
+    """ The eventargs class called after an entity is succesfully
+    removed from an entities collection::
+    """
     def __init__(self, e):
+        """ Create the eventarg.
+
+        :param: e entity: The entity being removed.
+        """
         self.entity = e
 
 class entityvaluechangeeventargs(eventargs):
+    """ The eventargs class called when the value of an attribute in an
+    ``entity`` is changed. Used by both the onbeforevaluechange and
+    onaftervaluechange.
+    """
     def __init__(self, e, prop):
+        """ Create the eventarg.
+
+        :param: e entity: The entity whose attribute is being assigned a
+        new value.
+
+        :param: prop str: The name of the attribute that is being
+        changed.
+        """
+        # TODO Change prop to attr to conform to convention
         self.property = prop
         self.entity = e
 
