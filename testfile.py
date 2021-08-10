@@ -127,6 +127,12 @@ class dom_file(tester.tester):
             self.eq(res.integrity, res1.integrity)
 
     def it_adds_js_files_to_page(self):
+        radix = file.directory.radix
+        B()
+        radix.delete()
+
+
+
         for e in ('inode', 'file', 'directory', 'resource'):
             cls = getattr(file, e)
             cls.orm.truncate()
@@ -291,9 +297,9 @@ class dom_file(tester.tester):
                 local      =  True
             )
 
-        # We shoud be forbidden from setting local=True when creating
-        # file.resources and appending them to pages. A pages does not
-        # need a seperate directory that its own JS, CSS, etc files.
+        # We should be forbidden from setting local=True when creating
+        # file.resources and appending them to pages. A page does not
+        # need a seperate directory for its own JS, CSS, etc files.
         # That would lead to clutter and duplication. If a page needs
         # its own resources that are unique from other pages, we can add
         # a non-local resource.
@@ -381,6 +387,13 @@ class file_file(tester.tester):
         self.isnot(f, f1)
 
         # XXX Complete. See it_creates_empty_file
+
+    def it_deletes(self)
+        # XXX 
+        # Ensure we:
+        #     Delete from HDD
+        #     Delete from DB
+        #     Remove from radix cache
 
     def it_caches_floaters(self):
         f = file.file('test')
@@ -952,6 +965,14 @@ class file_directory(tester.tester):
             )
 
         orm.security.owner = ecommerce.users.root
+
+    def it_deletes(self)
+        # XXX
+        # Ensure we:
+        #     Delete from HDD
+        #     Delete from DB
+        #     Remove from radix cache
+        #     Deletes recursively
 
     def it_caches_new_directories_at_root(self):
         ''' Simple directory production at root '''
