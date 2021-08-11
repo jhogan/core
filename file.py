@@ -323,6 +323,41 @@ class inode(orm.entity):
         return config().store
 
     @property
+    def inradix(self):
+        # TODO This is dead and untested but may be useful
+        nd = self
+        radix = directory.radix
+
+        while nd:
+            if nd is radix:
+                return True
+            nd = nd.orm.inode
+        else:
+            return False
+
+    def delete(self):
+        # Remove from radix cache
+        rent = self.inode
+        nds = rent.inodes
+        nds.remove(self, trash=False)
+
+        try:
+            # Don't care if it dosn't exist
+            with suppress(FileNotFoundError):
+                os.unlink(self.path)
+        except Exception:
+            # Add back to cache if we can't unlink
+            nds += self
+        else:
+            try:
+                # Delete from db
+                super().delete()
+            except Exception as ex:
+                # Add back to cache if we delete
+                nds += self
+
+
+    @property
     def isfloater(self):
         return self in directory.floaters
 
@@ -636,7 +671,11 @@ class file(inode):
         a binary file (mode='wb').
         """
 
-        if self._body:
+        # If there is a body to the file we want to save it. Otherwise
+        # there is no point. If eargs.op == 'delete', that means the
+        # save was actually a delete. In that case, we don't want to
+        # save the file to the HDD.
+        if self._body and eargs.op != 'delete':
             # First ensure the directory exists
             try:
                 pathlib.Path(self.head).mkdir(

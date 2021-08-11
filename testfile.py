@@ -389,12 +389,82 @@ class file_file(tester.tester):
 
         # XXX Complete. See it_creates_empty_file
 
-    def it_deletes(self)
-        # XXX 
-        # Ensure we:
-        #     Delete from HDD
-        #     Delete from DB
-        #     Remove from radix cache
+    def it_deletes(self):
+        ''' Delete a cached-only file '''
+        # Create non-persisted, though cached, file
+        f = file.file('/tmp/rm-me')
+
+        # It will obviously be in the radix cached
+        self.true(f in file.directory.radix)
+
+        # Deleting here only means: remove from radix cache
+        f.delete()
+
+        # Ensure the delete file is removed from the radix cache
+        self.false(f in file.directory.radix)
+
+        ''' Delete a cached and saved file that has no body'''
+        # Recreate and save
+        f = file.file('/tmp/rm-me')
+
+        # Don't add a body. This test is for files that don't get stored
+        # to the HDD, and without a body, there is no need to store the
+        # file to the HDD.
+        ## f.body = 'hot'
+
+        # Persist file
+        f.save()
+
+        # It will be back in the radix cached
+        self.true(f in file.directory.radix)
+
+        # It will be in the database
+        self.expect(None, f.orm.reloaded)
+
+        # It won't exist in the HDD because the body is empty
+        self.false(f.exists)
+
+        # Now delete it
+        f.delete()
+
+        # It will be removed from the cache
+        self.false(f in file.directory.radix)
+
+        # It will no longer be in the database
+        self.expect(db.RecordNotFoundError, f.orm.reloaded)
+
+        # It will continue to not exist on the HDD.
+        self.false(f.exists)
+
+        ''' Delete a cached and saved file that has a body'''
+        # Recreate and save
+        f = file.file('/tmp/rm-me')
+
+        # Add that body
+        f.body = 'hot'
+
+        f.save()
+
+        # It will be back in the radix cached
+        self.true(f in file.directory.radix)
+
+        # It will be in the database
+        self.expect(None, f.orm.reloaded)
+
+        # It will exist in the HDD
+        self.true(f.exists)
+
+        # Now delete it
+        f.delete()
+
+        # It will be removed from the cache
+        self.false(f in file.directory.radix)
+
+        # It will no longer be in the database
+        self.expect(db.RecordNotFoundError, f.orm.reloaded)
+
+        # It will not exist on the HDD.
+        self.false(f.exists)
 
     def it_caches_floaters(self):
         f = file.file('test')
@@ -965,15 +1035,58 @@ class file_directory(tester.tester):
                 file.directory, file.inodes,
             )
 
-        orm.security.owner = ecommerce.users.root
+        # Create an owner and get the root user
+        own = ecommerce.user(name='hford')
+        root = ecommerce.users.root
 
-    def it_deletes(self)
+        # Save the owner, the root user will be the owner's owner.
+        orm.security().owner = root
+        own.owner = root
+        own.save()
+
+        # Going forward, `own` will be the owner of all future records
+        # created.
+        orm.security().owner = own
+
+        # Create a company to be the propritor.
+        com = party.company(name='Ford Motor Company')
+        com.save()
+
+        # Set the company as the proprietory
+        orm.security().proprietor = com
+
+        # Update the owner (hford) so that the company (Ford Motor
+        # Company) is the proprietor.
+        own.proprietor = com
+        own.save()
+
+    def it_deletes(self):
+        # XXX Test when deleting a floater
+
+        ''' Delete a cached-only directory '''
+        # Create non-persisted, though cached, directory
+        d = file.directory('/tmp/rm-me')
+
+        # It will obviously be in the radix cached
+        self.true(d in file.directory.radix)
+
+        # Deleting here only means: remove from radix cache
+        d.delete()
+
+        # Ensure the delete file is removed from the radix cache
+        self.false(d in file.directory.radix)
+        return
+
+        ''' Delete a cached and saved file that has no body'''
+        # Recreate and save
+        f = file.directory('/tmp/rm-me')
         # XXX
         # Ensure we:
         #     Delete from HDD
         #     Delete from DB
         #     Remove from radix cache
         #     Deletes recursively
+        ...
 
     def it_caches_new_directories_at_root(self):
         ''' Simple directory production at root '''
@@ -1178,6 +1291,15 @@ class file_resource(tester.tester):
         com = party.company(name='Carapacian')
         orm.security().proprietor = com
         com.save()
+
+    def it_deletes(self):
+        # XXX
+        # Ensure we:
+        #     Delete from HDD. Note that resources don't always have
+        #     files stored on HDD.
+        #     Delete from DB
+        #     Remove from radix cache
+        ...
 
     def it_passes_integrity_check(self):
         def get():
