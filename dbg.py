@@ -18,3 +18,7 @@ def B(x=True):
         return
         from IPython.core.debugger import Tracer; 
         Tracer().debugger.set_trace(sys._getframe().f_back)
+
+def PM(ex):
+    import pdb
+    pdb.post_mortem(ex.__traceback__)
