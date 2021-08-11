@@ -780,7 +780,7 @@ class tester(entities.entity):
 
             # Invoke the callable. If we expect no exception (i.e.,
             # expect is None), return the value.
-            return fn()
+            v = fn()
 
         except Exception as ex:
             if type(ex) is not expect:
@@ -788,6 +788,8 @@ class tester(entities.entity):
         else:
             if expect is not None:
                 self._failures += failure(actual=None)
+
+            return v
 
     def repr(self, expect, actual, msg=None):
         if repr(actual) != expect:
