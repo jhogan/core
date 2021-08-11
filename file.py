@@ -55,7 +55,7 @@ See testfile.py for more examples.
 
 from config import config
 from datetime import datetime, date
-from dbg import B
+from dbg import B, PM
 from func import enumerate, getattr, B
 from entities import classproperty
 from contextlib import suppress

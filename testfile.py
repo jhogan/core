@@ -26,6 +26,7 @@ import pom
 import tester
 import uuid
 import pom
+import db
 # TODO Ensure that integrity can be None
 
 def clean():
