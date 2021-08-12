@@ -344,10 +344,17 @@ class inode(orm.entity):
         try:
             # Don't care if it dosn't exist
             with suppress(FileNotFoundError):
-                os.unlink(self.path)
-        except Exception:
+                # Delete inode from HDD
+                if isinstance(self, directory):
+                    shutil.rmtree(self.path)
+                elif isinstance(self, file):
+                    os.unlink(self.path)
+                else:
+                    raise TypeError('Incorrect inode type')
+        except Exception as ex:
             # Add back to cache if we can't unlink
             nds += self
+            raise
         else:
             try:
                 # Delete from db
@@ -355,7 +362,7 @@ class inode(orm.entity):
             except Exception as ex:
                 # Add back to cache if we delete
                 nds += self
-
+                raise
 
     @property
     def isfloater(self):

@@ -1065,28 +1065,150 @@ class file_directory(tester.tester):
 
         ''' Delete a cached-only directory '''
         # Create non-persisted, though cached, directory
-        d = file.directory('/tmp/rm-me')
+        rm_me = file.directory('/tmp/rm-me')
 
         # It will obviously be in the radix cached
-        self.true(d in file.directory.radix)
+        self.true(rm_me in file.directory.radix)
 
         # Deleting here only means: remove from radix cache
-        d.delete()
+        rm_me.delete()
 
-        # Ensure the delete file is removed from the radix cache
-        self.false(d in file.directory.radix)
-        return
+        # Ensure the delete directory is removed from the radix cache
+        self.false(rm_me in file.directory.radix)
 
-        ''' Delete a cached and saved file that has no body'''
-        # Recreate and save
-        f = file.directory('/tmp/rm-me')
-        # XXX
-        # Ensure we:
-        #     Delete from HDD
-        #     Delete from DB
-        #     Remove from radix cache
-        #     Deletes recursively
-        ...
+        ''' Delete a cached-only directory with an empty file '''
+        # Recreate non-persisted, though cached, directory
+        file_dat = file.file('/tmp/rm-me/file.dat')
+
+        rm_me = file_dat.inode
+
+        # rm_me and file_dat wil obvisoly be in the cache
+        self.true(file_dat in file.directory.radix)
+        self.true(rm_me in file.directory.radix)
+
+        # Deleting here only means: remove from radix cache
+        rm_me.delete()
+
+        # Ensure the delete directory and file are removed from the
+        # radix cache
+        self.false(file_dat in file.directory.radix)
+        self.false(rm_me in file.directory.radix)
+
+        ''' Remove directory with a file '''
+        # Recreate non-persisted, though cached, directory
+        file_dat = file.file('/tmp/rm-me/file.dat')
+
+        rm_me = file_dat.inode
+
+        file_dat.save()
+
+        # Inodes will obviously be in database
+        self.expect(None, file_dat.orm.reloaded)
+        self.expect(None, rm_me.orm.reloaded)
+
+        # Inodes will are not expected to exist on HDD because file_dat
+        # has no body.
+        self.false(file_dat.exists)
+        self.false(rm_me.exists)
+
+        # Delete. We will expect to see the files removed from the cache
+        # and the database
+        rm_me.delete()
+
+        # Ensure the delete directory and file are removed from the
+        # radix cache
+        self.false(file_dat in file.directory.radix)
+        self.false(rm_me in file.directory.radix)
+
+        # Inodes will be removed from database
+        self.expect(db.RecordNotFoundError, file_dat.orm.reloaded)
+        self.expect(db.RecordNotFoundError, rm_me.orm.reloaded)
+
+        # Inodes will are not expected to exist on HDD because file_dat
+        # has no body.
+        self.false(file_dat.exists)
+        self.false(rm_me.exists)
+
+        ''' Remove directory with a file '''
+        # Recreate non-persisted, though cached, directory
+        file_dat = file.file('/tmp/rm-me/file.dat')
+        file_dat.body = 'derp'
+
+        rm_me = file_dat.inode
+
+        file_dat.save()
+
+        # Inodes will obviously be in database
+        self.expect(None, file_dat.orm.reloaded)
+        self.expect(None, rm_me.orm.reloaded)
+
+        # Inodes expected to exist on HDD
+        self.true(file_dat.exists)
+        self.true(rm_me.exists)
+
+        # Delete. We will expect to see the files removed from the cache
+        # and the database
+        rm_me.delete()
+
+        for nd in (file_dat, rm_me):
+            name = nd.name
+
+            # Ensure the delete directory and file are removed from the
+            # radix cache
+            self.false(nd in file.directory.radix, name)
+
+            # Inodes will be removed from database
+            self.expect(db.RecordNotFoundError, nd.orm.reloaded, name)
+
+            # Inodes should be removed from HDD
+            self.false(nd.exists, nd.path)
+
+        ''' Remove directory n-level deep '''
+        # Recreate non-persisted, though cached, directory
+        file_dat = file.file('/tmp/rm-me/file.dat')
+        file_dat.body = 'derp'
+
+        rm_me = file_dat.inode
+
+        file1_dat = file.file('file2.dat')
+        file1_dat.body = 'herp'
+
+        rm_me += file1_dat
+
+        tmp = rm_me.inode
+
+        file2_dat = file.file('file2.dat')
+        file2_dat.body = 'gerp'
+
+        tmp += file2_dat
+
+        tmp.save()
+
+        nds = tmp, rm_me, file_dat, file1_dat, file2_dat
+
+        # Inodes will obviously be in database
+        for nd in nds:
+            self.expect(None, nd.orm.reloaded)
+
+        # Inodes expected to exist on HDD
+        for nd in nds:
+            self.true(nd.exists, nd.name)
+
+        # Delete. We will expect to see the files removed from the cache
+        # and the database
+        tmp.delete()
+
+        for nd in nds:
+            name = nd.name
+
+            # Ensure the delete inodes are removed from the radix cache
+            self.false(nd in file.directory.radix, name)
+
+            # Inodes will be removed from database
+            self.expect(db.RecordNotFoundError, nd.orm.reloaded, name)
+
+            # Inodes should be removed from HDD
+            self.false(nd.exists, nd.path)
 
     def it_caches_new_directories_at_root(self):
         ''' Simple directory production at root '''
@@ -1293,6 +1415,89 @@ class file_resource(tester.tester):
         com.save()
 
     def it_deletes(self):
+        ''' Delete a cached-only file '''
+        # Create non-persisted, though cached, file
+        resx = file.resource(
+            url = 'https://cdnjs.cloudflare.com/ajax/libs/data-layer-helper/0.1.0/data-layer-helper.min.js',
+            integrity = 'sha512-X6gG74CAp34IpZcOyb1DR6leynod2ELiXbCtfkkPVfvxsFWVPqVa+BdiJd2doL7zEAKp5PtUE9YHBq0fc3b3yQ==',
+            local = True,
+        )
+
+        # It will obviously be in the radix cached
+
+        # XXX:84e4d5e4 Resources don't get cached. They are stored as
+        # floaters.  This doesn't make scense for local's; they should
+        # be treated like normal files and be cached in radix.
+        # self.true(resx in file.directory.radix)
+
+        # Deleting here only means: remove from radix cache
+        f.delete()
+
+        # Ensure the delete file is removed from the radix cache
+        # self.false(f in file.directory.radix)  # XXX:84e4d5e4
+
+        ''' Delete a cached and saved file that has no body'''
+        # Recreate and save
+        f = file.resources('/tmp/rm-me')
+
+        # Don't add a body. This test is for files that don't get stored
+        # to the HDD, and without a body, there is no need to store the
+        # file to the HDD.
+        ## f.body = 'hot'
+
+        # Persist file
+        f.save()
+
+        # It will be back in the radix cached
+        self.true(f in file.directory.radix)
+
+        # It will be in the database
+        self.expect(None, f.orm.reloaded)
+
+        # It won't exist in the HDD because the body is empty
+        self.false(f.exists)
+
+        # Now delete it
+        f.delete()
+
+        # It will be removed from the cache
+        self.false(f in file.directory.radix)
+
+        # It will no longer be in the database
+        self.expect(db.RecordNotFoundError, f.orm.reloaded)
+
+        # It will continue to not exist on the HDD.
+        self.false(f.exists)
+
+        ''' Delete a cached and saved file that has a body'''
+        # Recreate and save
+        f = file.file('/tmp/rm-me')
+
+        # Add that body
+        f.body = 'hot'
+
+        f.save()
+
+        # It will be back in the radix cached
+        self.true(f in file.directory.radix)
+
+        # It will be in the database
+        self.expect(None, f.orm.reloaded)
+
+        # It will exist in the HDD
+        self.true(f.exists)
+
+        # Now delete it
+        f.delete()
+
+        # It will be removed from the cache
+        self.false(f in file.directory.radix)
+
+        # It will no longer be in the database
+        self.expect(db.RecordNotFoundError, f.orm.reloaded)
+
+        # It will not exist on the HDD.
+        self.false(f.exists)
         # XXX
         # Ensure we:
         #     Delete from HDD. Note that resources don't always have
