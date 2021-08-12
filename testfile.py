@@ -1561,23 +1561,5 @@ class file_resource(tester.tester):
         self.expect(None, lambda : get(integrity))
         self.true(os.path.exists(path))
 
-class file_cache(tester.tester):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        orm.security().override = True
-
-        # Delete files
-        clean()
-
-        if self.rebuildtables:
-            orm.orm.recreate(
-                ecommerce.user,  ecommerce.urls,  file.files,
-                file.resources,  file.directory,  file.inodes,
-                pom.site,        foonet,          asset.asset
-            )
-
-        self.createprinciples()
-
-
 if __name__ == '__main__':
     tester.cli().run()
