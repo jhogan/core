@@ -2519,9 +2519,9 @@ class event(entities):
 
     The src parameter is a reference to the object that fired the event.
     The eargs parameter is an instance of a subclass of ``eventargs``.
-    ``eventarg`` subclasses contain the information needed by a specify
+    ``eventarg`` subclasses contain the information needed by a specific
     event. For example, the eventargs that onadd uses is called
-    ``appendeventargs``. This object contains the ``entity`` attribute
+    ``entityaddeventargs``. This object contains the ``entity`` attribute
     used above in the handler.
     """
     def __call__(self, src, e):
@@ -2677,11 +2677,14 @@ class entityvaluechangeeventargs(eventargs):
         self.property = prop
         self.entity = e
 
+# TODO Remove this eventargs. This appears to be dead code.
 class appendeventargs(eventargs):
     def __init__(self, e):
         self.entity = e
 
 class indexes(entities):
+    """ A collection of index objects.
+    """
     def __init__(self, cls):
         super().__init__()
         self.class_ = cls
@@ -2700,6 +2703,24 @@ class indexes(entities):
         return super().append(ix, uniq, r)
         
 class index(entity):
+    """ Represents an index.
+
+    ``entities`` collection use indexes to speed search operations on
+    themselves. Indexes on collections work similarly to the way
+    database indexes work on tables; they can dramatically speed up the
+    process of searching for a subset of the collection that matches
+    certain attributes. The speed result is ultimately achieved by
+    searching the keys of a dict instead of iterating over each item in
+    the collection and comparing its attributes to a certain value.
+
+    Indexes are useful when working with very large collections.
+    Collection tend not to be very useful for everyday business/database
+    applications. They were originally designed to optimize algorithms
+    that processed collections with thousands of elmentents in them.
+
+    See ``entities.indexes`` for the default collection of indexes that
+    entities use. 
+    """
     def __init__(self, name=None, keyfn=None, prop=None):
         self._ix = {}
         self.name = name
