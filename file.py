@@ -250,37 +250,58 @@ class inode(orm.entity):
             # otherwise, instantiate.
             path = id
 
-            # If path starts at radix, search the radix cache,
-            # otherwise, search the floaters cache (floaters are cached
-            # inodes that aren't anchored to the radix yet, though
-            # presumably will be).
-            if path[0] == '/':
-                path = path.lstrip('/')
-                
-                dir = directory.radix
+            local = kwargs.get('local', False)
+
+            # If resource where local is False, don't cache, i.e., don't
+            # anchor to radix or floaters.
+            if resource in cls.mro() and not local:
+                nds = [x for x in path.split('/') if x]
+
+                if len(nds) > 1:
+                    # Create the top-most directory. We will append the
+                    # other inodes later.
+                    nd = directory(
+                        name=nds.pop(0), kwargs={'from__new__': None}
+                    )
+                elif len(nds) == 1:
+                    # Just return the resource instance
+                    return cls(*args, **kwargs)
+                else:
+                    raise ValueError('Invalid resource path')
             else:
-                dir = directory.floaters
+                # If path starts at radix, search the radix cache,
+                # otherwise, search the floaters cache (floaters are
+                # cached inodes that aren't anchored to the radix yet,
+                # though presumably will be).
+                if path[0] == '/':
+                    path = path.lstrip('/')
+                    
+                    dir = directory.radix
+                else:
+                    dir = directory.floaters
 
-            # Create a net object to capture the details of the find
-            # operation.
-            net = directory.net()
-            dir.find(path, net)
+                # Create a net object to capture the details of the find
+                # operation.
+                net = directory.net()
+                dir.find(path, net)
 
-            # If we found the path, return the tail, i.e., the last
-            # element of the path: /not-tail/also-not-tail/the-tail
-            if net.isfound:
-                return net.tail
+                # If we found the path, return the tail, i.e., the last
+                # element of the path: /not-tail/also-not-tail/the-tail
+                if net.isfound:
+                    return net.tail
 
-            # We didn't find the path in the cache but likely found a
-            # portion of it, we can used the `wanting` property of `net`
-            # to instantiate everything that wasn't found.
+                # We didn't find the path in the cache but likely found
+                # a portion of it, we can used the `wanting` property of
+                # `net` to instantiate everything that wasn't found.
 
-            # Start with tail. If nothing was found, tail would be the
-            # radix directory which always exists
-            nd = net.tail
+                # Start with tail. If nothing was found, tail would be
+                # the radix directory which always exists
+                nd = net.tail
+
+                nds = net.wanting
 
             # Iterate over the wanting inodes' names
-            for i, name in enumerate(net.wanting):
+            for i, name in enumerate(nds):
                 if i.last:
                     # If we are at the last wanting inode name, cls may
                     # be a file or a directory, so use it to
@@ -303,7 +324,6 @@ class inode(orm.entity):
             return cls(*args, **kwargs)
         elif isinstance(id, type(None)):
             return cls(*args, **kwargs)
-            
         else:
             raise TypeError(f'Unsupported type {type(id)}')
 
@@ -806,8 +826,8 @@ class resource(file):
             # `directory`, e.g., 
             #
             #     'cdnjs.cloudflare.com/ajax/libs/shell.js/1.0.5/js'
-            args = list(args)
-            args.insert(0, os.sep.join(dirs))
+            args = ['/' + os.sep.join(dirs), *args]
+
             
         return super().__new__(cls, *args, **kwargs)
 
@@ -865,17 +885,18 @@ class resource(file):
     crossorigin  =  str
 
     def __str__(self):
-        return self.url
+        return str(self.url)
 
-    def _self_onaftersave(self, *args, **kwargs):
+    def _self_onaftersave(self, src, eargs):
         """ After the ``resource`` has been saved to the database, write
         the resource file to the file system. If there is an Exception
         caused during the file system interaction, the Exception will be
         allowed to bubble up - causing the the database transaction to
         be rolled back.
         """
-        self._write()
-        super()._self_onaftersave(*args, **kwargs)
+        if eargs.op != 'delete':
+            self._write()
+        super()._self_onaftersave(src, eargs)
 
     def _write(self):
         # Get the file

@@ -1561,5 +1561,56 @@ class file_resource(tester.tester):
         self.expect(None, lambda : get(integrity))
         self.true(os.path.exists(path))
 
+    def it_doesnt_caches_non_local(self):
+        f = file.resource(
+            url="https://cdnjs.cloudflare.com/ajax/libs/geocomplete/1.7.0/jquery.geocomplete.min.js",
+            integrity="sha512-4bp4fE4hv0i/1jLM7d+gXDaCAhnXXfGBKdHrBcpGBgnz7OlFMjUgVH4kwB85YdumZrZyryaTLnqGKlbmBatCpQ==",
+            local = False
+        )
+
+        f1 = file.resource(
+            url="https://cdnjs.cloudflare.com/ajax/libs/geocomplete/1.7.0/jquery.geocomplete.min.js",
+            integrity="sha512-4bp4fE4hv0i/1jLM7d+gXDaCAhnXXfGBKdHrBcpGBgnz7OlFMjUgVH4kwB85YdumZrZyryaTLnqGKlbmBatCpQ==",
+            local = False
+        )
+
+        f2 = file.resource(
+            url="https://cdnjs.cloudflare.com/ajax/libs/geocomplete/1.7.0/jquery.geocomplete.min.js",
+            integrity="sha512-4bp4fE4hv0i/1jLM7d+gXDaCAhnXXfGBKdHrBcpGBgnz7OlFMjUgVH4kwB85YdumZrZyryaTLnqGKlbmBatCpQ==",
+            local = False
+        )
+
+        self.isnot(f, f1)
+        self.isnot(f, f2)
+        for nd in (f, f1, f2):
+            self.true(nd not in file.directory.radix)
+            self.true(nd not in file.directory._floaters)
+
+    def it_caches_new_at_radix(self):
+        f = file.resource(
+            url="https://cdnjs.cloudflare.com/ajax/libs/gentelella/1.4.0/s/custom.min.js",
+            integrity="sha512-ewZCd7YtttrXYKwKg3O0/ryrmq6lAQtLknQUdJpQO6FewqxRnTR4CV+e/XKfehvJIUvBwMuKJaoWd2owapsYYA==",
+            local = True
+        )
+
+        f1 = file.resource(
+            url="https://cdnjs.cloudflare.com/ajax/libs/gentelella/1.4.0/s/custom.min.js",
+            integrity="sha512-ewZCd7YtttrXYKwKg3O0/ryrmq6lAQtLknQUdJpQO6FewqxRnTR4CV+e/XKfehvJIUvBwMuKJaoWd2owapsYYA==",
+            local = True
+        )
+
+        f2 = file.resource(
+            url="https://cdnjs.cloudflare.com/ajax/libs/gentelella/1.4.0/s/CUSTOM.MIN.JS",
+            integrity="sha512-ewZCd7YtttrXYKwKg3O0/ryrmq6lAQtLknQUdJpQO6FewqxRnTR4CV+e/XKfehvJIUvBwMuKJaoWd2owapsYYA==",
+            local = True
+        )
+
+        self.is_(f, f1)
+        self.isnot(f, f2)
+        for nd in (f, f1, f2):
+            self.type(file.resource, nd)
+            self.type(file.directory, nd.inode)
+            self.true(nd in file.directory.radix)
+
 if __name__ == '__main__':
     tester.cli().run()
