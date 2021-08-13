@@ -8154,11 +8154,15 @@ class orm:
             assert st is not st1
         """
 
+        # XXX Document issensitive as a :param:
+        issensitive = kwargs.pop('issensitive', False)
+
         # Query using the **kwargs, e.g., {'name': 'active'}
         rs = self.entities(**kwargs)
 
         # Get a unique set from the `expects` tuple passed in
         expects = set(expects)
+
 
         # Get a unique set of kwargs keys
         keys = set(kwargs.keys())
@@ -8168,8 +8172,22 @@ class orm:
             # properties won't be passed in. Just return.
             return
 
+        if issensitive:
+            for r in rs:
+                for expect in expects:
+                    if kwargs[expect] == getattr(r, expect):
+                        break
+                else:
+                    continue
+
+                break
+            else:
+                r = None
+        else:
+            r = None
+
         # If a record was found
-        if rs.count:
+        if r:
             
             # Use the first record to populate this instance.
             self.instance.id = rs.first.id
