@@ -442,7 +442,9 @@ class url(orm.entity):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.orm.ensure(expects=('address', ), **kwargs)
+        self.orm.ensure(
+            expects=('address', ), issensitive=True, **kwargs
+        )
 
     # TODO Change address to name.
     address = str
