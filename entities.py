@@ -2819,8 +2819,11 @@ class index(entity):
         return len(self._ix)
 
 class InProgressError(Exception):
-    pass
+    """ Raised when an operation is already in progress and should
+    therefore not be attempted at the moment.
+    """
 
+# TODO This appears to be dead code. Please remove.
 def demand(sub, type=None):
     if type is not None:
         if builtins.type(sub) != type:
