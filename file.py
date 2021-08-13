@@ -564,7 +564,7 @@ class files(inodes):
         # together.
         # 
         # UPDATE: I think this has been corrected by the addition of
-        # pom.site.directory and pom.site.resouces. We can probably
+        # pom.site.directory and pom.site.resource. We can probably
         # remove all this.
         try:
             ws = self.site

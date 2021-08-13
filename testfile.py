@@ -129,10 +129,7 @@ class dom_file(tester.tester):
 
     def it_adds_js_files_to_page(self):
         radix = file.directory.radix
-        B()
         radix.delete()
-
-
 
         for e in ('inode', 'file', 'directory', 'resource'):
             cls = getattr(file, e)
@@ -278,6 +275,7 @@ class dom_file(tester.tester):
         for e in ('inode', 'file', 'directory', 'resource'):
             cls = getattr(file, e)
             cls.orm.truncate()
+
         class index(pom.page):
             def main(self):
                 self.main += dom.h1('Home page')
