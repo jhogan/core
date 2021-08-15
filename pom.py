@@ -67,24 +67,10 @@ class site(asset.asset):
     def directory(self):
         dir = attr()
         if dir is None:
-            radix = file.directory.radix
-            path = f'pom/site/{self.id.hex}'
-            try:
-                dir = radix[path]
-            except IndexError:
-                dir = file.directory(path)
-                pom = dir.inode.inode
-
-                if pom.inode is not file.directory._floaters:
-                    # This should never happen, but just to be on the
-                    # safe side.
-                    raise ValueError(
-                       "The pom directory's inode is not _floaters"
-                    )
-
-                radix += pom
+            dir = file.directory(f'/pom/site/{self.id.hex}')
             attr(dir)
         return dir
+
     @property
     def resources(self):
         # We may not need the try:except logic here if we decide to
