@@ -27,7 +27,13 @@ import tester
 import uuid
 import pom
 import db
-# TODO Ensure that integrity can be None
+
+_ford = None
+def ford():
+    global _ford
+    if not _ford:
+        _ford = party.company(name='Ford Motor Company')
+    return _ford
 
 def clean():
     store = file.inode.store
@@ -81,15 +87,11 @@ class dom_file(tester.tester):
         orm.security().owner = ecommerce.users.root
 
         # Proprietor
-        com = party.company(name='Carapacian')
+        com = ford()
         orm.security().proprietor = com
         com.save()
 
     def it_adds_js_files_to_site(self):
-        for e in ('inode', 'file', 'directory', 'resource'):
-            cls = getattr(file, e)
-            cls.orm.truncate()
-
         ws = foonet()
 
         ws.resources += file.resource(
@@ -128,13 +130,6 @@ class dom_file(tester.tester):
             self.eq(res.integrity, res1.integrity)
 
     def it_adds_js_files_to_page(self):
-        radix = file.directory.radix
-        radix.delete()
-
-        for e in ('inode', 'file', 'directory', 'resource'):
-            cls = getattr(file, e)
-            cls.orm.truncate()
-
         class index(pom.page):
             def main(self):
                 # Add page-level resources
@@ -217,7 +212,6 @@ class dom_file(tester.tester):
             self.zero(url.resources)
 
     def it_posts_file_in_a_users_file_system(self):
-        B()
         class avatar(pom.page):
             def main(self, uid: uuid.UUID):
                 if req.isget:
@@ -246,6 +240,7 @@ class dom_file(tester.tester):
         ws = foonet()
         ws.pages += avatar()
         ws.save()
+        
 
         # Get a browser tab
         tab = self.browser().tab()
@@ -272,10 +267,6 @@ class dom_file(tester.tester):
         self.eq(f.body, f1.body)
 
     def it_caches_js_files(self):
-        for e in ('inode', 'file', 'directory', 'resource'):
-            cls = getattr(file, e)
-            cls.orm.truncate()
-
         class index(pom.page):
             def main(self):
                 self.main += dom.h1('Home page')
@@ -288,7 +279,6 @@ class dom_file(tester.tester):
             url = 'https://code.jquery.com/jquery-3.5.1.js',
             local = True
         )
-        B()
 
         ws.resources += resx
 
@@ -372,7 +362,7 @@ class file_file(tester.tester):
         orm.security().owner = own
 
         # Create a company to be the propritor.
-        com = party.company(name='Ford Motor Company')
+        com = ford()
         com.save()
 
         # Set the company as the proprietory
@@ -382,6 +372,8 @@ class file_file(tester.tester):
         # Company) is the proprietor.
         own.proprietor = com
         own.save()
+
+        orm.security().owner = ecommerce.users.root
 
     def it_creates_with_name_kwarg(self):
         f = file.file(name='test')
@@ -1036,6 +1028,9 @@ class file_directory(tester.tester):
                 file.directory, file.inodes,
             )
 
+        file.directory.radix.delete()
+
+
         # Create an owner and get the root user
         own = ecommerce.user(name='hford')
         root = ecommerce.users.root
@@ -1050,7 +1045,7 @@ class file_directory(tester.tester):
         orm.security().owner = own
 
         # Create a company to be the propritor.
-        com = party.company(name='Ford Motor Company')
+        com = ford()
         com.save()
 
         # Set the company as the proprietory
@@ -1060,6 +1055,8 @@ class file_directory(tester.tester):
         # Company) is the proprietor.
         own.proprietor = com
         own.save()
+
+        orm.security().owner = ecommerce.users.root
 
     def it_deletes(self):
         # XXX Test when deleting a floater

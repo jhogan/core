@@ -51,6 +51,14 @@ Examples:
     assert os.path.exists(f.path)
 
 See testfile.py for more examples.
+
+TODOs:
+    TOOD Implement and test the deletion of inodes collection, e.g.,:
+
+        inodes.delete()
+        directories.delete()
+        files.delete()
+    
 """
 
 from config import config
