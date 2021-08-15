@@ -366,8 +366,11 @@ class inode(orm.entity):
     def delete(self):
         # Remove from radix cache
         rent = self.inode
-        nds = rent.inodes
-        nds.remove(self, trash=False)
+        if rent:
+            nds = rent.inodes
+            nds.remove(self, trash=False)
+        else:
+            nds = None
 
         try:
             # Don't care if it dosn't exist
@@ -381,7 +384,8 @@ class inode(orm.entity):
                     raise TypeError('Incorrect inode type')
         except Exception as ex:
             # Add back to cache if we can't unlink
-            nds += self
+            if nds:
+                nds += self
             raise
         else:
             try:
@@ -389,7 +393,8 @@ class inode(orm.entity):
                 super().delete()
             except Exception as ex:
                 # Add back to cache if we delete
-                nds += self
+                if nds:
+                    nds += self
                 raise
 
     @property

@@ -348,6 +348,8 @@ class file_file(tester.tester):
                 file.inodes,
             )
 
+        file.directory.radix.delete()
+
         # Create an owner and get the root user
         own = ecommerce.user(name='hford')
         root = ecommerce.users.root
