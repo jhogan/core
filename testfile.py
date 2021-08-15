@@ -318,16 +318,19 @@ class dom_file(tester.tester):
         self.eq(None, scripts.first.integrity)
         self.eq('anonymous', scripts.first.crossorigin)
 
-        self.one(file.resources.orm.all)
+        resxs = file.resources('name', resx.name)
+        self.one(resxs)
 
         # Load and test first: jquery
-        rcs = ecommerce.urls(
+        resx1s = ecommerce.urls(
             'address', 'https://code.jquery.com/jquery-3.5.1.js'
         ).first.resources
 
-        self.one(rcs)
-        self.none(rcs.first.integrity)
-        self.eq('anonymous', rcs.first.crossorigin)
+        for resx2s in (resxs, resx1s):
+            self.one(resx2s)
+            self.none(resx2s.first.integrity)
+            self.eq(resxs.first.id, resx2s.first.id)
+            self.eq('anonymous', resx2s.first.crossorigin)
 
 class file_file(tester.tester):
     def __init__(self, *args, **kwargs):
