@@ -8184,13 +8184,15 @@ class orm:
             else:
                 r = None
         else:
-            r = None
+            if rs.count:
+                r = rs.first
+            else:
+                r = None
 
         # If a record was found
         if r:
-            
             # Use the first record to populate this instance.
-            self.instance.id = rs.first.id
+            self.instance.id = r.id
             for k, v in kwargs.items():
                 setattr(self.instance, k, getattr(rs.first, k))
 

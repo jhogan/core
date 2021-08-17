@@ -111,7 +111,9 @@ class entities(object):
     def onbeforeadd(self):
         if not hasattr(self, '_onbeforeadd'):
             self._onbeforeadd = event()
-            self.onbeforeadd += self._self_onadd
+            # There is no implementation of self._self_onbeforeadd, but
+            # we can uncomment the below line when there is.
+            #self.onbeforeadd += self._self_onbeforeadd
 
         return self._onbeforeadd
 

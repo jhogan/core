@@ -544,16 +544,11 @@ class inode(orm.entity):
         id = self.inode.id if self.inode else None
         op = '=' if id else 'is'
         nds = inodes(f'name = %s and inodeid {op} %s', self.name, id)
-        if nds.ispopulated and self.id != nds.first.id:
-            msg = f'Cannot create "{self.name}": inode exist'
 
-            # XXX Didn't we fix this? Shouldn't this comment be removed.
-            # FIXME:acad30cc Because of the way brokenrules
-            # currently works, this method ends up getting called
-            # multiple times.  Until this is fixed, we have to make
-            # sure the rule has not already been added.
-            if msg not in brs.pluck('message'):
-                brs += msg
+        for nd in nds:
+            if self.id != nd.id and nd.name == self.name:
+                brs += f'Cannot create "{self.name}": inode exist'
+                break
 
         # XXX Create brokenrules object via instatiation so we know
         # which inode has the brokenrule. Also update tests for these.

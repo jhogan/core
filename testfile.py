@@ -351,7 +351,8 @@ class file_file(tester.tester):
                 file.inodes,
             )
 
-        file.directory.radix.delete()
+        if hasattr(file.directory, '_radix'):
+            file.directory.radix.delete()
 
         # Create an owner and get the root user
         own = ecommerce.user(name='hford')
@@ -1033,7 +1034,8 @@ class file_directory(tester.tester):
                 file.directory, file.inodes,
             )
 
-        file.directory.radix.delete()
+        if hasattr(file.directory, '_radix'):
+            file.directory.radix.delete()
 
 
         # Create an owner and get the root user
@@ -1413,9 +1415,7 @@ class file_resource(tester.tester):
         orm.security().owner = ecommerce.users.root
 
         # Proprietor
-        com = party.company(name='Carapacian')
-        orm.security().proprietor = com
-        com.save()
+        orm.security().proprietor = ford()
 
     def it_deletes(self):
         ''' Delete a cached-only resource '''

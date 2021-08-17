@@ -9,7 +9,8 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021                 #
 ########################################################################
 
-from func import B, enumerate, PM
+from func import B, enumerate
+from dbg import PM
 import db
 import ecommerce
 import entities
