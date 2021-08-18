@@ -3826,11 +3826,11 @@ class script(element):
         self.attributes['language'].value = v
 
     @property
-    def async(self):
+    def async_(self):
         return self.attributes['async'].value
 
-    @async.setter
-    def async(self, v):
+    @async_.setter
+    def async_(self, v):
         self.attributes['async'].value = v
 
 class videos(elements):
