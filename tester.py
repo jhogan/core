@@ -8,7 +8,7 @@ from config import config
 from configfile import configfile
 from contextlib import contextmanager
 from contextlib import contextmanager, suppress
-from dbg import B
+from dbg import B, PM
 import entities
 from pprint import pprint
 from textwrap import dedent

@@ -78,11 +78,13 @@ class dom_file(tester.tester):
         orm.security().override = True
 
         if self.rebuildtables:
-            orm.orm.recreate(
-                ecommerce.user,  ecommerce.urls,  file.files,
-                file.resources,  file.directory,  file.inodes,
-                pom.site,        foonet,          asset.asset
-            )
+            es = orm.orm.getentitys(includeassociations=True)
+            mods = ('file', 'ecommerce', 'pom', 'asset', 'party')
+            for e in es:
+                if e.__module__ in mods:
+                    e.orm.recreate()
+
+            orm.orm.recreate(foonet)
 
         orm.security().owner = ecommerce.users.root
 
