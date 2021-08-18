@@ -50,7 +50,6 @@ class log(entity):
             hnd = log.callbackhandler(self.callback)
             self._logger.addHandler(hnd)
 
-
     def _self_onlog(self, src, eargs):
         # TODO Is this dead code?
         pass

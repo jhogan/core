@@ -12,7 +12,7 @@ from logs import *
 
 class configuration:
     """ This is the base configuration class. It contains configuration
-    datt that can and should be stored in version-control system.
+    date that can and should be stored in version-control system.
     However, it is never instantiated directly by application code. A
     subclass of ``configuration``, which is conventionally called
     ``config``, subclasses ``configuration`` to provide sensitive
@@ -37,6 +37,11 @@ class configuration:
                     acct.password = 'my-super-secret-password'
 
                 return accts
+
+    You will want to make sure you have an unversioned file in your
+    source code directory called config.py that has the ``config``
+    class. This will contain the sensitive configuration data. If you
+    don't have it, ask a team member.
     """
     recaptcha_key = '<RECAPTCHA-KEY>'
     environment = 'development'
@@ -58,14 +63,23 @@ class configuration:
 
     @property
     def inproduction(self):
+        """ Returns True if the current environment is considered a
+        production system per the configuration.
+        """
         return self.environment == 'production'
 
     @property
     def indevelopment(self):
+        """ Returns True if the current environment is considered a
+        development system per the configuration.
+        """
         return self.environment == 'development'
 
     @property
     def accounts(self):
+        """ A collection of credentials used by the system. Passwords
+        will be supplied by the ``config`` subclass.
+        """
         return accounts.accounts(
             initial = [
                 accounts.mysql(
@@ -82,6 +96,8 @@ class configuration:
 
     @property
     def logs(self):
+        """ A collection of syslog loggers.
+        """
         if not self._logs:
             self._logs = logs()
             self._logs += log(
@@ -96,5 +112,7 @@ class configuration:
 
     @property
     def jwtsecret(self):
+        """ The secret code to sign JWTs for the system.
+        """
         raise NotImplementedError('Must override')
 
