@@ -213,7 +213,6 @@ from table import table
 from types import ModuleType
 from uuid import uuid4, UUID
 import MySQLdb
-import _mysql_exceptions
 import builtins
 import dateutil
 import db
@@ -8642,7 +8641,7 @@ class orm:
                 pool = db.pool.getdefault()
                 with pool.take() as conn:
                     conn.query(sql)
-        except _mysql_exceptions.OperationalError as ex:
+        except MySQLdb._exceptions.OperationalError as ex:
             if ex.args[0] == BAD_TABLE_ERROR:
                 if not ignore:
                     raise
@@ -8682,7 +8681,7 @@ class orm:
                 pool = db.pool.getdefault()
                 with pool.take() as conn:
                     conn.query(sql)
-        except _mysql_exceptions.OperationalError as ex:
+        except MySQLdb._exceptions.OperationalError as ex:
             # TODO There should be an alternative block here that calls
             # `raise`
             if ex.args[0] == TABLE_EXISTS_ERROR:
@@ -8957,7 +8956,7 @@ class orm:
         """
         try:
             return db.table(self.table)
-        except _mysql_exceptions.OperationalError as ex:
+        except MySQLdb._exceptions.OperationalError as ex:
             if ex.args[0] == BAD_TABLE_ERROR:
                 return None
             raise

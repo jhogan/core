@@ -9,7 +9,6 @@
 # TODO Add Tests
 from entities import *
 from MySQLdb.constants.ER import BAD_TABLE_ERROR
-import _mysql_exceptions
 import table as tblmod
 import MySQLdb
 import warnings
@@ -790,7 +789,7 @@ class columns(entities):
                 # If no columns were returned then tbl.name doesn't
                 # exist in the database, so throw the kind of
                 # exception MySQLdb would.
-                raise _mysql_exceptions.OperationalError(
+                raise MySQLdb._exceptions.OperationalError(
                     BAD_TABLE_ERROR, 'Table not found'
                 )
 
