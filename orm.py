@@ -1035,8 +1035,6 @@ class predicate(entitiesmod.entity):
             for pred in self.junction:
                 yield pred
 
-        raise StopIteration
-
     @property
     def junction(self):
         return self._junction
