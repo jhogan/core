@@ -978,8 +978,8 @@ class entity():
                     self.__setattr__(field, new, cmp=cmp)
                 except TypeError as ex:
                     msg = (
-                        "wrapper __setattr__ doesn't take "
-                        "keyword arguments"
+                        'wrapper __setattr__() takes no '
+                        'keyword arguments'
                     )
 
                     if ex.args[0] == msg:
