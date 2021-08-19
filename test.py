@@ -23,7 +23,6 @@ from table import *
 from tester import *
 from uuid import uuid4
 import MySQLdb
-import _mysql_exceptions
 import account
 import apriori
 import asset
@@ -10854,7 +10853,7 @@ class test_orm(tester):
 
         exec = db.executioner(warn)
 
-        self.expect(_mysql_exceptions.Warning, lambda: exec.execute())
+        self.expect(MySQLdb.Warning, lambda: exec.execute())
 
     def it_saves_multiple_graphs(self):
         art1 = artist.getvalid()

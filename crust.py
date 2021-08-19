@@ -15,7 +15,6 @@ from func import enumerate
 import db
 import effort
 import entities
-import _mysql_exceptions
 import order
 import orm
 import os
@@ -30,6 +29,7 @@ import shipment
 import tempfile
 import textwrap
 import account
+import MySQLdb
 
 # TODO Rename crust.py to crust. This would better meet the expectation
 # of a shell user who simply wants to run a program.
@@ -331,7 +331,7 @@ class migration(command):
                 ddl = ddl or e.ddl
                 orm.orm.exec(ddl)
             except Exception as ex:
-                if type(ex) is _mysql_exceptions.ProgrammingError:
+                if type(ex) is MySQLdb.ProgrammingError:
                     if ex.args[0] == COMMANDS_OUT_OF_SYNC:
                         # This exception happens when the `commit`
                         # method is called afte we send multiple DDL
@@ -641,7 +641,7 @@ class migration(command):
                     self.exec(ddl=ddl)
                 except self.Abort:
                     raise
-                except _mysql_exceptions.MySQLError as ex:
+                except MySQLdb.MySQLError as ex:
                     self.skipped += e
                 except Exception as ex:
                     self.print(f'\nException: {ex}')
