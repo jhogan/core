@@ -53,7 +53,8 @@ def clean():
     ret = os.system('rm -rf ' + os.path.join(store, '*'))
 
     # Make sure `rm` was successful
-    assert ret == 0
+    if ret != 0:
+        raise PermissionError(f'Cannot delete {store}. Check access.')
 
 class foonets(pom.sites): pass
 class foonet(pom.site):
