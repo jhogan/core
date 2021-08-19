@@ -724,7 +724,7 @@ class stream(entitiesmod.entity):
                 slc = slice(slc.start + size, slc.stop + size)
 
                 if slc.start >= self.entities.count:
-                    raise StopIteration()
+                    return
 
                 gc.collect()
                 yield self.advance(slc)
