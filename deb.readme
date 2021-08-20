@@ -1,0 +1,10 @@
+The deb file is a simple whitespace (newline) delimited list of
+Debian/Ubuntu packages needed for core to run. To install all the
+packages at once, simple run a command like this:
+
+    sudo apt install `cat deb`
+
+Related files:
+
+    pip
+    pip.readme
