@@ -53,12 +53,14 @@ Examples:
 See testfile.py for more examples.
 
 TODOs:
-    TOOD Implement and test the deletion of inodes collection, e.g.,:
-
+    TODO Implement and test the deletion of inodes collection, e.g.,:
         inodes.delete()
         directories.delete()
         files.delete()
-    
+
+    XXX Ensure that radix and _floaters are always have carapacian as
+    their proprietors. This should be implemented after 'main' is merged
+    in to this branch since it contains party.carapacian.
 """
 
 from config import config
