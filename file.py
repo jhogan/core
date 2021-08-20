@@ -1080,8 +1080,15 @@ class directory(inode):
     @classproperty
     def radix(cls):
         if not hasattr(cls, '_radix'):
-            cls._radix = cls(id=cls.RadixId, name='radix')
-            cls._radix.save()
+            # TODO:3d0fe827 Shouldn't we be instantiating a
+            # ``directory`` here, instead of cls. cls will almost always
+            # be ``directoy`` but there is no reason it should be
+            # varient.
+
+            # TODO Write test to ensure radix is always owned by root.
+            with orm.sudo():
+                cls._radix = cls(id=cls.RadixId, name='radix')
+                cls._radix.save()
         return cls._radix
     
     @property
@@ -1092,8 +1099,16 @@ class directory(inode):
     @classproperty
     def floaters(cls):
         if not hasattr(cls, '_floaters'):
-            cls._floaters = cls(id=cls.FloatersId, name='.floaters')
-            cls._floaters.save()
+            # TODO:3d0fe827 Shouldn't we be instantiating a
+            # ``directory`` here, instead of cls. cls will almost always
+            # be ``directoy`` but there is no reason it should be
+            # varient.
+
+            # TODO Write test to ensure floaters is always owned by
+            # root.
+            with orm.sudo():
+                cls._floaters = cls(id=cls.FloatersId, name='.floaters')
+                cls._floaters.save()
         return cls._floaters
 
     def __iter__(self):
