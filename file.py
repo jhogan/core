@@ -53,12 +53,14 @@ Examples:
 See testfile.py for more examples.
 
 TODOs:
-    TOOD Implement and test the deletion of inodes collection, e.g.,:
-
+    TODO Implement and test the deletion of inodes collection, e.g.,:
         inodes.delete()
         directories.delete()
         files.delete()
-    
+
+    XXX Ensure that radix and _floaters are always have carapacian as
+    their proprietors. This should be implemented after 'main' is merged
+    in to this branch since it contains party.carapacian.
 """
 
 from config import config
@@ -1078,8 +1080,15 @@ class directory(inode):
     @classproperty
     def radix(cls):
         if not hasattr(cls, '_radix'):
-            cls._radix = cls(id=cls.RadixId, name='radix')
-            cls._radix.save()
+            # TODO:3d0fe827 Shouldn't we be instantiating a
+            # ``directory`` here, instead of cls. cls will almost always
+            # be ``directoy`` but there is no reason it should be
+            # varient.
+
+            # TODO Write test to ensure radix is always owned by root.
+            with orm.sudo():
+                cls._radix = cls(id=cls.RadixId, name='radix')
+                cls._radix.save()
         return cls._radix
     
     @property
@@ -1090,8 +1099,16 @@ class directory(inode):
     @classproperty
     def floaters(cls):
         if not hasattr(cls, '_floaters'):
-            cls._floaters = cls(id=cls.FloatersId, name='.floaters')
-            cls._floaters.save()
+            # TODO:3d0fe827 Shouldn't we be instantiating a
+            # ``directory`` here, instead of cls. cls will almost always
+            # be ``directoy`` but there is no reason it should be
+            # varient.
+
+            # TODO Write test to ensure floaters is always owned by
+            # root.
+            with orm.sudo():
+                cls._floaters = cls(id=cls.FloatersId, name='.floaters')
+                cls._floaters.save()
         return cls._floaters
 
     def __iter__(self):
