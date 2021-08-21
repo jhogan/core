@@ -53,14 +53,47 @@ An implementation of the HTML5 DOM.
 #     https://www.digitalocean.com/community/tutorials/how-to-mirror-local-and-remote-directories-on-a-vps-with-lsyncd
 
 class attributes(entities.entities):
+    """ Represents a collection of attributes for HTML5 elements.
+    """
     def __init__(self, el=None, *arg, **kwargs):
+        """ Create an attributes collection.
+
+        :param: el element: The HTML5 DOM element to associate the
+        collection with.
+        """
         super().__init__(*arg, **kwargs)
         self.element = el
         
-    """ Represents a collection of attributes for HTML5 elements.
-    """
     def __iadd__(self, *o):
-        """ Append an attribute to the collection via the += operator.
+        """ Append an attribute to the collection via the += operator::
+
+            # Create an element
+            p = paragraph()
+
+            # Append an attribute using +=
+            p.attributes += attribute('id', 'my-id-value')
+
+        :param: *o object(s): The *o parameters allows for a number of
+        different ways to append attributes. The above example could
+        have been written as::
+            # tuple
+            p.attributes += id', 'my-id-value'
+
+            # list
+            p.attributes += [id', 'my-id-value']
+
+            # With dict's we can add multiple attrs in one line
+            p.attributes += {
+                'id':    'my-id-value',
+                'title': 'my-title-value',
+            }
+
+            # With attributes collections we can also add multiple attrs
+            # in one line
+            attrs = dom.attributes()
+            attrs += 'id', 'my-id-value'
+            attrs += 'title', 'my-title-value'
+            p.attributes += attrs
         """
         for o in o:
             if type(o) in (tuple, list):
