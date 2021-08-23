@@ -74,26 +74,8 @@ class attributes(entities.entities):
             p.attributes += attribute('id', 'my-id-value')
 
         :param: *o object(s): The *o parameters allows for a number of
-        different ways to append attributes. The above example could
-        have been written as::
-            # tuple
-            p.attributes += id', 'my-id-value'
-
-            # list
-            p.attributes += [id', 'my-id-value']
-
-            # With dict's we can add multiple attrs in one line
-            p.attributes += {
-                'id':    'my-id-value',
-                'title': 'my-title-value',
-            }
-
-            # With attributes collections we can also add multiple attrs
-            # in one line
-            attrs = dom.attributes()
-            attrs += 'id', 'my-id-value'
-            attrs += 'title', 'my-title-value'
-            p.attributes += attrs
+        different ways to append attributes. See the docstring at
+        attributes.append for more ways to append. 
         """
         for o in o:
             if type(o) in (tuple, list):
@@ -102,7 +84,7 @@ class attributes(entities.entities):
         return self
 
     def clone(self):
-        """ Return a cloned version of the attributes collection.
+        """ Returns a cloned version of the attributes collection.
         """
         attrs = type(self)(self.element)
         for attr in self:
@@ -111,6 +93,60 @@ class attributes(entities.entities):
             
     def append(self, o, v=None, uniq=False, r=None):
         """ Append an attribute to the collection. 
+
+        :param: o object: The attribute being appended. o can be a
+        number of types:
+
+            attribute
+            ---------
+            The most obvious way to append an attribute to a collection
+            is to simple append an attribute objects:
+
+                # Create a <p>
+                p = dom.paragraph()
+
+                # Create an attribute object: id="my-id-value"
+                attr = dom.attribute('id', 'my-id-value')
+
+                # Append the object such that <p> becomes 
+                # <p id="my-id-value"></p>
+                p.attributes += attr
+
+            tuple
+            -----
+            The above could have been append as a tuple instead::
+
+                p.attributes += id', 'my-id-value'
+
+            list
+            ----
+            List work similarly::
+
+                p.attributes += [id', 'my-id-value']
+
+            dict
+            ----
+            With dict's we can add multiple attrs in one line::
+
+                p.attributes += {
+                    'id':    'my-id-value',
+                    'title': 'my-title-value',
+                }
+
+            attributes collections
+            ----------------------
+            With attributes collections we can also add multiple attrs
+            in one line::
+
+                attrs = dom.attributes()
+                attrs += 'id', 'my-id-value'
+                attrs += 'title', 'my-title-value'
+                p.attributes += attrs
+                
+        :param: uniq bool: If True, an append will only happen if the
+        attribute is not already in the collection.
+
+        :param: r entities: For internal use only.
         """
 
         # TODO Some elements like <meta>, <br/>, etc., should not be
@@ -139,30 +175,32 @@ class attributes(entities.entities):
     def __getitem__(self, key):
         """ Returns an `attribute` object based on the given `key`.
 
-        If the `key` is an `int`, return the attribute based on its
-        position in the collection. (Note that in these examples,
-        `attrs` represents an attribute's collection)::
+        :param: key int|slice|str: The index value used to find the
+        item
+            If the `key` is an `int`, return the attribute based on its
+            position in the collection. (Note that in these examples,
+            `attrs` represents an attribute's collection)::
 
-            assert attrs[0] is attrs.first
+                assert attrs[0] is attrs.first
 
-        If the `key` is a slice, return a slice of the attributes::
+            If the `key` is a slice, return a slice of the attributes::
 
-            assert attrs[0:2] == (attrs.first, attrs.second)
+                assert attrs[0:2] == (attrs.first, attrs.second)
 
-        If the `key` is a str, return the attribute object by name::
-            
-            attr = attribute(name='checked', value=True)
-            attrs += attr
+            If the `key` is a str, return the attribute object by name::
+                
+                attr = attribute(name='checked', value=True)
+                attrs += attr
 
-            attr is attrs['checked']
+                attr is attrs['checked']
 
-        Note that __getitem__ can also be used to set create new
-        attributes::
-            
-            attr = attrs['newattr']
-            attr.value = 'newvalue'
+            Note that __getitem__ can also be used to set create new
+            attributes::
+                
+                attr = attrs['newattr']
+                attr.value = 'newvalue'
 
-            assert 'newvalue' == attrs['newattr']
+                assert 'newvalue' == attrs['newattr']
         """
 
         if isinstance(key, int):
@@ -203,6 +241,8 @@ class attributes(entities.entities):
         """ Sets an `attribute` object based on the given `key`::
 
             attrs['checked'] = True
+
+        :param: key int|str: 
         """
 
         if not isinstance(key, str):

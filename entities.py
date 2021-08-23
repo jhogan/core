@@ -1247,7 +1247,7 @@ class entities:
 
             assert es.last is e
 
-        :param: obj entity: The entity being asserted.
+        :param: obj entity: The entity being appended.
 
         :param: uniq bool: If True, an append will only happen if the
         entity is not already in the collection.
