@@ -243,6 +243,17 @@ class attributes(entities.entities):
             attrs['checked'] = True
 
         :param: key int|str: 
+            if int:
+                key is used like a normal list indexer:
+                    
+                    # Assign `attr` to first element of attrs
+                    attrs[0] = attr
+
+            if str:
+                key is assumed to be the name of an attribute:
+                
+                # <p id="my-id-value">
+                p.attributes['id'] = 'my-id-value'
         """
 
         if not isinstance(key, str):
@@ -272,6 +283,10 @@ class attributes(entities.entities):
     def reversed(self):
         """ Returns a generator of (defined) attributes
         in reversed order. (See `attribute.isdef`)
+
+            # Print attributes in reverse order
+            for attr in p.attributes.reversed():
+                print(attr)
         """
         for e in reversed(self._defined):
             yield e
