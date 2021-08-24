@@ -20728,7 +20728,7 @@ class gem_product(tester):
         one category as primary. 
         """
 
-        ''' Test category_classifications.getbrokenrules '''
+        ''' Test category_classifications.brokenrules '''
         cat = product.category()
         cat.name = uuid4().hex
 
@@ -20736,7 +20736,6 @@ class gem_product(tester):
         cc = product.category_classification()
         cc.product = prod
         cc.begin = primative.datetime.utcnow(days=-50)
-        cc.product = prod
         cc.isprimary = True # Ensure isprimary is True
         cat.category_classifications += cc
 
@@ -20752,12 +20751,11 @@ class gem_product(tester):
         cc.product = prod
         cc.begin = primative.datetime.utcnow(days=-25)
         cc.comment = uuid4().hex * 1000
-        cc.product = prod
         self.true(cat.isvalid)
         cc.isprimary = True  # Ensure isprimary is True
         cat.category_classifications += cc
 
-        self.one(cat.brokenrules);
+        self.two(cat.brokenrules);
         self.broken(cat, 'isprimary', 'valid')
 
         self.expect(BrokenRulesError, lambda: cat.save())

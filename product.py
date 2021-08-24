@@ -20,8 +20,9 @@ import asset
 class products(orm.entities): pass
 
 class category_classifications(orm.associations):
-    def getbrokenrules(self, *args, **kwargs):
-        brs = super().getbrokenrules(*args, **kwargs)
+    @property
+    def brokenrules(self):
+        brs = entities.brokenrules()
 
         # Ensure that no product can be put two different categories
         # with a primary flag.
@@ -40,6 +41,7 @@ class category_classifications(orm.associations):
                                 ),
                                 'isprimary',
                                 'valid',
+                                self,
                             )
                             break
                         else:
@@ -432,7 +434,7 @@ class category_classification(orm.association):
 
     @property
     def brokenrules(self):
-        brs = super().brokenrules
+        brs = entities.brokenrules()
 
         if self.isprimary:
             pid = self.product.id
@@ -442,15 +444,17 @@ class category_classification(orm.association):
             )
 
             if cc.ispopulated:
-                brs += entities.brokenrule(
-                    'The product "%s" is alredy set to primary in '
-                    'category "%s" in the database.' % (
-                                            self.product.name,
-                                            self.category.name
-                                        ),
-                        'isprimary',
-                        'valid'
-                    )
+                if self.id not in cc.pluck('id'):
+                    brs += entities.brokenrule(
+                        'The product "%s" is alredy set to primary in '
+                        'category "%s" in the database.' % (
+                                                self.product.name,
+                                                self.category.name
+                                            ),
+                            'isprimary',
+                            'valid',
+                            self
+                        )
         return brs
 
 class good(product):
