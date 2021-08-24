@@ -345,7 +345,7 @@ class product(orm.entity):
         )
 
 class category(orm.entity):
-    """ A recursive entity to categories products.
+    """ A recursive entity to categorize products.
 
     Note that this entity was originally called PRODUCT CATEGORY in "The
     Data Model Resource Book".
