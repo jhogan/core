@@ -317,6 +317,8 @@ class connection(entity):
         return self._conn                
 
     def kill(self):
+        """ Kill the connection.
+        """
         try:
             _conn = self._connection
             id = _conn.thread_id()
@@ -708,6 +710,8 @@ class catelog(entity):
         return tables()
 
 class tables(entities):
+    """ Represents a collection of database tables.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         with pool.getdefault().take() as conn:
@@ -765,8 +769,26 @@ class table(entity):
         exec(f'DROP TABLE `{self.name}`')
 
 class columns(entities):
+    """ Represents a collection of database table columns.
+    """
     def __init__(self, 
             tbl=None, ress=None, load=False, *args, **kwargs):
+        """ Initialize a collection of table columns given the table
+        tbl. The database is queried for column names and types (using
+        information_schema.columns). That data is used to populate the
+        ``columns`` collecton.
+
+        :param: tbl: table: A reference to a table object.
+
+        :param: ress: db.resultsets: If provided, this resultsets
+        collection will be used to populate the collection. Otherwise,
+        information_schema.columns is queried to obtain this data
+        (assuming load is True).
+
+        :param: load: table: Indicates that information_schema.columns
+        should be queried to populate the collection. Sometimes, we may
+        just want an empty columns collection.
+        """
 
         super().__init__(*args, **kwargs)
         self.table = tbl
