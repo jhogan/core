@@ -795,6 +795,7 @@ class columns(entities):
                 from information_schema.columns
                 where table_schema = %s
                     and table_name = %s
+                order by ordinal_position;
                 '''
                 ress = conn.query(
                     sql, (conn.account.database, tbl.name)
