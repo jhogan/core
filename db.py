@@ -320,10 +320,25 @@ class connection(entity):
             _conn = self._connection
             id = _conn.thread_id()
             _conn.kill(id)
+        except MySQLdb._exceptions.OperationalError as ex:
+            # If exception isn't 1317, 'Query execution was interrupted'),
+            # re-raise
+            if ex.args[0] not in (1317, 2006, 2013):
+                print(ex)
+                raise
+
         except MySQLdb.OperationalError as ex:
+            # XXX Can we remove this block in 3.8. It seems like the
+            # above except block is the way to go here.
+            B()
             # If exception isn't 1317, 'Query execution was interrupted'),
             # re-raise
             if ex.args[0] not in (1317, 2006):
+                raise
+
+        except MySQLdb._exceptions.InterfaceError as ex:
+            # https://stackoverflow.com/questions/6650940/interfaceerror-0/27962750
+            if ex.args[0] != 0:
                 raise
 
     def close(self):
