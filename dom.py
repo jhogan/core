@@ -294,7 +294,7 @@ class attributes(entities.entities):
     @property
     def _defined(self):
         ''' Return a list of attributes that have values. (See
-        `attribute.isdef`)
+        `attribute.isdef` for more information)
         '''
         return [x for x in self._ls if x.isdef]
 
