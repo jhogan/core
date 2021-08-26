@@ -324,7 +324,6 @@ class connection(entity):
             # If exception isn't 1317, 'Query execution was interrupted'),
             # re-raise
             if ex.args[0] not in (1317, 2006, 2013):
-                print(ex)
                 raise
 
         except MySQLdb.OperationalError as ex:
@@ -337,6 +336,15 @@ class connection(entity):
                 raise
 
         except MySQLdb._exceptions.InterfaceError as ex:
+            # After moving to MySQL 8, when tests in test.py wanted to
+            # kill the connection (obviously, something that would
+            # probably not come up often in a normal production
+            # environment), the MySQLdb driver would throw an
+            # InterfaceError. Other times it would throw an
+            # OperationalError with an error code of 2013. At this
+            # point, its difficult to understand what its reasonings
+            # are.
+
             # https://stackoverflow.com/questions/6650940/interfaceerror-0/27962750
             if ex.args[0] != 0:
                 raise
