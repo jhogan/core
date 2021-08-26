@@ -664,6 +664,30 @@ class executioner(entity):
                     self._execute(cur, es)
                 else:
                     self._execute(cur)
+
+                # HACK:8247b91d MySQLdb (aka mysqlclient) removed their
+                # "warning checks". 
+                #
+                #     https://github.com/PyMySQL/mysqlclient/pull/296
+                #
+                # We were converting warnings (see the call in db.py to
+                # `warings.filterwarnings`) to proper exceptions in
+                # order to to catch problematic SQL. The code below
+                # restores what was being done in MySQLdb. See:
+                #
+                #     https://github.com/PyMySQL/mysqlclient/commit/8a46faf58071cb6eba801edd76f1bb670af1a41d
+                #
+                # NOTE that it's good we have an executioner/executor
+                # class to centralize this, but there are severa other
+                # areas in the code base that call MySQLdb.cursor.execute
+                # that won't benefit from this hack at the moment. We
+                # should work in the direction of getting all calls to
+                # MySQL to go through this class.
+                if w := conn._conn.show_warnings():
+                    from warnings import warn
+                    x = MySQLdb.Warning(str(w))
+                    warn(x)
+
             except MySQLdb.OperationalError as ex:
                 # Reconnect if the connection object has timed out and no
                 # longer holds a connection to the database.
