@@ -1107,8 +1107,11 @@ class directory(inode):
             # TODO Write test to ensure floaters is always owned by
             # root.
             with orm.sudo():
-                cls._floaters = cls(id=cls.FloatersId, name='.floaters')
-                cls._floaters.save()
+                try:
+                    cls._floaters = cls(cls.FloatersId)
+                except db.RecordNotFoundError:
+                    cls._floaters = cls(id=cls.FloatersId, name='.floaters')
+                    cls._floaters.save()
         return cls._floaters
 
     def __iter__(self):

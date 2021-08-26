@@ -320,6 +320,10 @@ class pom_menu_items(tester.tester):
         self.eq(expect % ids, itms.html)
 
 class pom_site(tester.tester):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        orm.security().override = True
+    
     def it_calls__init__(self):
         ws = foonet()
         self.six(ws.pages)
