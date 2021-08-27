@@ -21404,15 +21404,12 @@ class gem_case(tester):
         super().__init__(*args, **kwargs)
 
         orm.security().override = True
+        es = orm.orm.getentitys(includeassociations=True)
+
         if self.rebuildtables:
-            orm.orm.recreate(
-                party.communications,
-                party.parties,
-                party.case_party,
-                party.caseroletype,
-                party.casestatuses,
-                party.statuses,
-            )
+            for e in es:
+                if e.__module__ in ('party', 'apriori'):
+                    e.orm.recreate()
 
         orm.security().owner = ecommerce.users.root
 

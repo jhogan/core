@@ -9272,8 +9272,8 @@ class orm:
         return r
                         
     def populate(self, ress):
-        """ Given a resultsets collection (from a SELECT statement with
-        the specific table and field alias notation), populate the
+        """ Given a ``resultsets`` collection (from a SELECT statement
+        with the specific table and field alias notation), populate the
         `entities` object.
 
         This method first collects all the data from the resultset and
