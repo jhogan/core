@@ -340,20 +340,18 @@ class attribute(entities.entity):
         <element name="value">
 
     Boolean attributes can have a value of None to indicate they are
-    present. For example, the following represents the subsequent HTML::
+    present in the HTML but have to value assigned to them. For example,
+    the following creates an ``input`` element that would be render as
+    follows in HTML: <input type="checkbox" checked>
 
         inp = dom.input()
         inp.attributes['type'] = checkbox
         inp.attributes['checked'] = None
-        
-        ---
-
-        <input type="checkbox" checked>
-
     """
 
     class undef:
-        """ Used to indicate that an attribute has not been defined.
+        """ A class used to indicate that an attribute has not been
+        defined.
         """
         pass
 
@@ -439,14 +437,14 @@ class attribute(entities.entity):
 
     @property
     def isdef(self):
-        """ Determines whther an attribute is defined. An undefined
-        attribute can be created by the indexing the `attributes`
-        collection without setting a the `value`::
+        """ Returns True if an attribute is defined, False otherwise. An
+        undefined attribute can be created by indexing the `attributes`
+        collection without setting a `value`::
 
             id = attrs['id']
 
         Here, the `attrs` now has an attribute called 'id' that has no
-        value. Since it has no value, it presense within `attrs` is
+        value. Since it has no value, its presense within `attrs` is
         concealed from the user:
 
             assert attrs.count == 0
@@ -459,15 +457,15 @@ class attribute(entities.entity):
             assert attrs.count == 1
 
         The `isdef` property is used by the logic that conceals the
-        undefined attributes from the use.
+        undefined attributes from the user.
         """
         return self._value is not attribute.undef
 
     @staticmethod
     def create(name, v=undef):
-        """ A staticmethod to creates a attribute or cssclass given a
-        name and an optional value. Unline `attribute`'s constructor, a
-        cssclass will be returned if name = 'class'.
+        """ A staticmethod to create an ``attribute`` or ``cssclass``
+        given a name and an optional value. Unlike `attribute`'s
+        constructor, a cssclass will be returned if name == 'class'.
         """
         if name == 'class':
             return cssclass(v)
@@ -475,11 +473,16 @@ class attribute(entities.entity):
         return attribute(name, v)
 
     def __repr__(self):
+        """ Returns a str (non-HTML) representation of the attribute.
+        """
         r = "%s(name='%s', value='%s')"
         r %= type(self).__name__, self.name, self.value
         return r
 
     def __str__(self):
+        """ Returns a str (non-HTML) representation of the attribute
+        ('attr="value"').
+        """
         r = '%s="%s"'
         r %= self.name, self.value
         return r
@@ -511,19 +514,28 @@ class cssclass(attribute):
             self += v
 
     def __contains__(self, e):
+        """ Returns True if e is the collection of classes.
+        """
         return e in self._classes
 
     def __len__(self):
+        """ Returns the number of classes.
+        """
         return len(self._classes)
     
     @property
     def count(self):
+        """ Returns the number of classes.
+        """
         return len(self)
 
     def __bool__(self):
-        # By default, if __len__ returns 0, the object is falsey. If the
-        # object exists (as a nonNone property, for example), it should
-        # be True. So it should always be truthy.
+        """ Returns True.
+
+        By default, if __len__ returns 0, the object is falsey. If the
+        object exists (as a non-None property, for example), it should be
+        True. So it should always be truthy.
+        """
         return True
 
     def __getitem__(self, ix):
