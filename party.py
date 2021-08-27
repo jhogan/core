@@ -902,27 +902,6 @@ class email(contactmechanism):
     """
     name = str
 
-# TODO DON'T use this `communication`. There is a duplicate beneath it.
-# Merge its comments in with that one and remove this one.
-class communication(orm.entity):
-    """ An object to record any type of contact between parties within a
-    relationship (see `role_role`). For example, phone calls, meetings,
-    emails, and so on.
-
-    Note that this is modeled after the COMMUNICATION EVENT entity in
-    "The Data Model Resource Book".
-    """
-
-    # NOTE Unlike most begin/end pairs, these should actually be
-    # datetime; not date types since we are tracking the exact time of
-    # day a communication should happen.
-
-    # The timespan that the communication event took place
-    span = timespan
-
-    # Notes about the communication event
-    note  = text
-
 class party_contactmechanism(orm.association):
     """ This class associates a party with a contact mechanism. It shows
     which contact mechanisms are related to which parties.
