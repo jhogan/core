@@ -11,7 +11,8 @@
 
 import apriori; apriori.model()
 
-from func import enumerate, B
+from func import enumerate
+from dbg import B
 import third
 import message
 import tester

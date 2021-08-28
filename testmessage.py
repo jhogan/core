@@ -11,7 +11,7 @@
 
 import apriori; apriori.model()
 
-from func import enumerate, B
+from func import enumerate
 import bot
 import ecommerce
 import message

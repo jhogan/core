@@ -21,7 +21,8 @@ from contextlib import contextmanager, redirect_stdout
 from datetime import timezone, datetime, date
 from entities import BrokenRulesError
 import entities
-from func import enumerate, getattr, B
+from func import enumerate, getattr
+from dbg import B
 from pprint import pprint
 from random import randint, uniform, random
 from table import *

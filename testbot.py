@@ -11,15 +11,16 @@
 
 import apriori; apriori.model()
 
-from func import enumerate, B
-import tester
-import bot
-import message
-import orm
-import ecommerce
-import party
 from config import config
 from contextlib import redirect_stdout, redirect_stderr
+from dbg import B
+from func import enumerate
+import bot
+import ecommerce
+import message
+import orm
+import party
+import tester
 
 def clear():
     for p in party.party.orm.getsubentities(accompany=True):

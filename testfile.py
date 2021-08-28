@@ -12,7 +12,8 @@
 
 import apriori; apriori.model()
 
-from func import enumerate, getattr, B
+from dbg import B
+from func import enumerate, getattr
 from uuid import uuid4
 import asset
 import base64

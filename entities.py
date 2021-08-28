@@ -2638,7 +2638,7 @@ class event(entities):
             # TODO Change to TypeError
             raise ValueError('Event must be callable')
 
-        for i in range(self.count - 1
+        for i in range(self.count - 1):
             # NOTE It was noticed that an identity test (i.e, test that
             # use the is operator) wouldn't match the bound method being
             # removed.  Bound method id's (id(obj.method)) seem to

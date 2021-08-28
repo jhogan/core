@@ -66,7 +66,7 @@ TODOs:
 from config import config
 from datetime import datetime, date
 from dbg import B, PM
-from func import enumerate, getattr, B
+from func import enumerate, getattr
 from entities import classproperty
 from contextlib import suppress
 import base64
@@ -123,7 +123,6 @@ class inodes(orm.entities):
 
         #XXX
         return
-        B(self.orm.isloading)
 
         if self.orm.isloading:
             return

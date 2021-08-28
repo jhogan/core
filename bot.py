@@ -51,7 +51,8 @@ import apriori; apriori.model()
 
 from config import config
 from entities import classproperty
-from func import B, enumerate
+from func import enumerate
+from dbg import B
 import apriori
 import argparse
 import db
@@ -1061,7 +1062,7 @@ class panel:
             if ln == '':
                 param = None
 
-            if param is not None
+            if param is not None:
                 # Append the description part of the :param: line
                 param['description'] += ln + ' '
 
