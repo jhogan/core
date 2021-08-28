@@ -539,13 +539,46 @@ class cssclass(attribute):
         return True
 
     def __getitem__(self, ix):
+        """ Returns the CSS class given an index number.
+        """
         return self._classes[ix]
 
     def __iadd__(self, o):
+        """ Allows the appending of a CSS class using the += operator.
+        See cssclass.append for more.
+
+        :param: o as str|cssclass: The name of a CSS class or a cssclass
+        object.
+
+        """
         self.append(o)
         return self
 
     def append(self, *clss):
+        """ Append one or more CSS classes.
+
+            div = dom.div()
+
+            # All of the following do the same. Each would be render in
+            # HTML as <div class="col-xs-4" />
+            div.classes.append('col-xs-4')
+            div.classes.append(dom.cssclass('col-xs-4'))
+            div.attributes['class'].append(dom.cssclass('col-xs-4'))
+
+        You can also append multiple at the same time::
+
+            # All the following do the same. Each would be render in
+            # HTML as: <div class="my-class-1 my-class-a" />
+            div.classes.append('my-class-1 my-class-a')
+            div.classes.append('my-class-1', 'my-class-a')
+            div.classes += dom.cssclass('my-class-1 my-class-a')
+            div.classes += 'my-class-1', 'my-class-a'
+            div.classes += 'my-class-1 my-class-a'
+
+        :param *clss list<str|cssclass|iterable>: A list of str,
+        cssclass, or iterables that can be considered resolvable to CSS
+        classes.
+        """
         for cls in clss:
             if isinstance(cls, str):
                 for cls in cls.split():
