@@ -93,3 +93,32 @@ class mysql(account):
 
         args = self.username, self.host, self.port, self.database
         return 'mysql://%s@%s:%s/%s' % args
+
+class api(account):
+    def __init__(self, host, port=443, *args, **kwargs):
+        super().__init__(host=host, port=port, *args, **kwargs)
+
+        # Optional API key
+        self.key = kwargs.pop('key', None)
+
+class postmark(api):
+    def __init__(self, server):
+        self._server = server
+
+    @property
+    def server(self):
+        """ In Postmark, servers are a way to organize the emails that
+        you are sending or parsing. Each server has a unique inbound
+        address and API token. Message activity and statistics are
+        aggregated per server as well. You can use this to differentiate
+        between different environments (production/staging), different
+        clients, or different applications. You can use the /servers API
+        to manage the servers in your account.
+
+        https://postmarkapp.com/developer/user-guide/managing-your-account/managing-servers#:~:text=In%20Postmark%2C%20servers%20are%20a,aggregated%20per%20server%20as%20well.
+        """
+        return self._server
+
+    @server.setter
+    def server(self, v):
+        self._server = v

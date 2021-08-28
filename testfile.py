@@ -10,6 +10,8 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021                 #
 ########################################################################
 
+import apriori; apriori.model()
+
 from func import enumerate, getattr, B
 from uuid import uuid4
 import asset
@@ -226,7 +228,7 @@ class dom_file(tester.tester):
                         'No avatar image file provided'
                     )
 
-                if not req.files.hasone:
+                if not req.files.issingular:
                     raise BadRequestError(
                         'Multiple avatar images were given'
                     )

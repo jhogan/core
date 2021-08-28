@@ -421,13 +421,14 @@ class inode(orm.entity):
 
         nds = inodes(f'name = %s and inodeid {op} %s', name, id)
 
-        if nds.hasone:
+        if nds.issingular:
             nd = nds.first
             # TODO We can just return nd now
             return file(nd.id)
 
         return None
 
+    # TODO Remove; I believe this is dead code
     def _getdirectory(self, path):
         """ Load or create a file given a ``path``.
         """

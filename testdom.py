@@ -1,4 +1,6 @@
 #!/usr/bin/python3
+import apriori; apriori.model()
+
 from datetime import timezone, datetime, date
 from dbg import B
 from func import enumerate, getattr
@@ -576,7 +578,7 @@ class pom_page(tester.tester):
         # created.
         orm.security().owner = own
 
-        # Create a company to be the propritor.
+        # Create a company to be the proprietor.
         com = party.company(name='Ford Motor Company')
         com.save()
 
@@ -4616,7 +4618,7 @@ class test_selectors(tester.tester):
             '#adjacency-anchor + div',
             'div#adjacency-anchor + p.id-dont-exist',
             '#adjacency-anchor + '
-                'p#XXXimmediatly-after-the-adjacency-anchor',
+                'p#ZZZimmediatly-after-the-adjacency-anchor',
         ]
         for sel in sels:
             els = html[sel]
@@ -4832,9 +4834,9 @@ class test_selectors(tester.tester):
 
         ''' Non-existing chained classes selectors '''
         sels = [
-            '*.dialog.sceneXXX',
-            '.dialogXXX.scene',
-            'divXXX.dialog.scene',
+            '*.dialog.sceneZZZ',
+            '.dialogZZZ.scene',
+            'divZZZ.dialog.scene',
         ]
 
         for sel in sels:

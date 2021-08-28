@@ -167,7 +167,6 @@ class tester(entities.entity):
         pass
 
     class _browser(www.browser):
-
         # TODO This appears to be a duplicate and should be removed
         def __init__(self, t, *args, **kwargs):
             self.tester = t
@@ -184,7 +183,7 @@ class tester(entities.entity):
 
         class _tab(www.browser._tab):
             def __init__(self, tabs):
-                self.tabs = tabs
+                super().__init__(tabs)
                 self._referer = None
 
             @property
@@ -403,9 +402,6 @@ class tester(entities.entity):
 
             self.useragent = ecommerce.useragent(string=useragent) 
 
-        def tab(self):
-            return self.tabs.tab()
-
     def browser(self, *args, **kwargs):
         return tester._browser(self, *args, **kwargs)
 
@@ -527,7 +523,7 @@ class tester(entities.entity):
         if not actual.startswith(expect): self._failures += failure()
 
     def endswith(self, expect, actual, msg=None):
-        raise NotImplementedError()
+        if not actual.endswith(expect): self._failures += failure()
 
     def assertNe(self, expect, actual, msg=None):
         if expect == actual: self._failures += failure()
@@ -591,6 +587,9 @@ class tester(entities.entity):
 
     def zero(self, actual, msg=None):
         if len(actual) != 0: self._failures += failure()
+
+    def multiple(self, actual, msg=None):
+        if len(actual) == 0: self._failures += failure()
 
     def assertOne(self, actual):
         if len(actual) != 1: self._failures += failure()
@@ -778,18 +777,18 @@ class tester(entities.entity):
                     'a: ' + type(fn).__name__
                 ))
 
-            # Invoke the callable. If we expect no exception (i.e.,
-            # expect is None), return the value.
-            v = fn()
+            # Invoke the calable. If we expect no exception (expect is
+            # None), return the value.
+            r = fn()
 
         except Exception as ex:
-            if type(ex) is not expect:
+            if expect is None or type(ex) is not expect:
                 self._failures += failure(actual=ex)
         else:
             if expect is not None:
                 self._failures += failure(actual=None)
 
-            return v
+            return r
 
     def repr(self, expect, actual, msg=None):
         if repr(actual) != expect:
@@ -824,7 +823,10 @@ class tester(entities.entity):
         return dedent(str)[1:-1]
 
     def status(self, st, res):
-        if st != res.status: self._failures += failure()
+        if st != res.status: 
+            msg = f'Actual status: {res.status}'
+            
+            self._failures += failure()
 
     def xhrpost(self, cls, meth, args):
         # TODO When we need this again, move to tester.browser.tab.
@@ -888,6 +890,7 @@ class tester(entities.entity):
             body = json.loads(body)
             statusmessage = statuscode
             statuscode0 = int(statuscode[:3])
+            # TODO:ed602720
             return httpresponse(statuscode0, statusmessage, resheads, body)
 
 class eventregistrations(entities.entities):
@@ -914,6 +917,8 @@ class eventregistration(entities.entity):
         self.event -= self.handler
 
 class httpresponse(entities.entity):
+    # TODO:ed602720 Is this dead code. Shouldn't we be using
+    # www.response for this.
     def __init__(self, statuscode, statusmessage, headers, body):
         self.statuscode = statuscode
         self.statusmessage = statusmessage

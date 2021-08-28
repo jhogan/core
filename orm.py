@@ -44,6 +44,9 @@ TODOs:
         # point.
         assert pres.artist is art
 
+    TODO: No accessibility should be permitted when security().user is
+    None.
+
     FIXME:6028ce62 Allow entitymappings to be set to None (see 6028ce62
     for more.)
 
@@ -72,8 +75,8 @@ TODOs:
     instead get an AttributeError.
     
     This may or may not be important. So far, the need to access
-    superentities attributes has not come up. However, if the need arises,
-    we will want to correct this.
+    superentities attributes has not come up. However, if the need
+    arises, we will want to correct this.
     
     TODO I think text attributes should be None by default and this
     should not be a validation error. We can create a
@@ -195,6 +198,30 @@ TODOs:
 
         # Configure the getter with a stream.
         for usr in ws.get_users(orm.allstream):
+            ...
+
+        # We would also like to be able to get a reference to the
+        # constituents without lazy-laoding (or eager-loading) them.
+        # Consider an entity that has a large number of log
+        # constituents, like a ``bot``.
+
+        b = bot()
+        b.logs += 'Bot started'
+
+        # The above call to logs will by default, load all the bots
+        # logs. We would prefer to do this.
+
+        b = bot(id)
+        b_logs = b.get_logs(load=False)
+        b_logs += 'Bot started'
+
+        # Accessing the prior logs for analysis can be done with by
+        # streaming, as mentioned above:
+
+        b = bot(id)
+        b_logs = b.get_logs(orm.allstream)
+        for log in b_logs:
+            # Stream the logs
             ...
 """
 
@@ -2262,7 +2289,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                     args = self.orm.where.args if self.orm.where else ()
                         
                     cur.execute(sql, args)
-                    ress = db.dbresultset(cur)
+                    ress = db.resultset(cur)
 
                 db.executioner(exec).execute()
 
@@ -2286,7 +2313,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             cur = self.orm.stream.cursor
             es = cur.advance(key)
             if isinstance(key, int):
-                if es.hasone:
+                if es.issingular:
                     return es.first
                 raise IndexError('Entities index out of range')
             return es
@@ -2415,6 +2442,11 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
             # Don't load unless self has joins or self has a where
             # clause/predicate
             load &= self.orm.joins.ispopulated or bool(self.orm.where)
+
+            # TODO:d6f1df1f Test if attr is a callable attribute. We
+            # don't want to load if we are only accessing the callable.
+            # In addition to being unnecessary, it is confusing for
+            # chronicle tests.
 
             if load:
                 # Load the collection based on the parameters defined by
@@ -3451,7 +3483,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # accessibility methods is to raise an AuthorizationError.
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         raise AuthorizationError(
-            f'{type} not implemented',
+            f'{type} not implemented for <'
+            f'{builtins.type(self).__module__}.'
+            f'{builtins.type(self).__name__}>',
             crud=type[0], vs=None, e=self
         )
 
@@ -3920,20 +3954,31 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         guestbook.append(self)
 
+        # Don't save the entity if it doesn't pass its validation rules
+        # (not self.isvalid). If we are simply deleting the entity, the
+        # the validation rules don't matter.
+        if not self.orm.ismarkedfordeletion and not self.isvalid:
+            raise entitiesmod.BrokenRulesError(
+                "Can't save invalid object", self
+            )
+
         # Determine if we are deleting, creating or updating the entity
         # based on its presistence state. Grab the SQL necessary for
         # the chosen operation.
         if self.orm.ismarkedfordeletion:
             crud = 'delete'
             sql, args = self.orm.mappings.getdelete()
+
         elif self.orm.isnew:
             crud = 'create'
             self.createdat = self.updatedat = primative.datetime.utcnow()
             sql, args = self.orm.mappings.getinsert()
+
         elif self.orm._isdirty:
             self.updatedat = primative.datetime.utcnow()
             crud = 'update'
             sql, args = self.orm.mappings.getupdate()
+
         else:
             crud = None
             sql, args = (None,) * 2
@@ -3969,11 +4014,28 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         # modify another's records.
         #💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
 
-        # TODO:ee897843 Don't allow a proprietor to create a record
-        # belonging to a different proprietor.
-        if crud in ('update', 'delete'):
-            if self.proprietor__partyid != security().proprietor.id:
-                raise ProprietorError(self.proprietor)
+        # Is ``self`` the root user
+        import ecommerce
+        isroot = (
+            self.id == ecommerce.users.RootUserId and
+            type(self) is ecommerce.user
+        )
+
+        if security().user and not security().user.isroot:
+            if (isroot and crud in ('create', None)):
+                # Allow root to be created without needing a proprietor
+                pass
+            else:
+                if self.proprietor__partyid != security().proprietor.id:
+                    try:
+                        propr = self.proprietor
+                    except db.RecordNotFoundError:
+                        # We won't always be able to load the
+                        # proprietor, so just offer the id as as str
+                        # instead.
+                        propr = self.proprietor__partyid
+
+                    raise ProprietorError(propr)
 
         try:
             # Take snapshot of before state
@@ -4108,6 +4170,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                         # constituent is being moved to
                                         # a different composite.
                                         setattr(e, map.name, self.id)
+
                                         break
 
                             # Call save(). If there is an Exception,
@@ -4523,8 +4586,28 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                         # that of the security singleton.
                         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
                         if self.orm.isnew:
-                            if security().owner.id != map.value:
-                                msg = 'Owner id does not match orm id'
+                            own = security().owner
+                            msg = None
+
+                            if own:
+                                if own.id != map.value:
+                                    msg = (
+                                        'Owner id does not match orm id'
+                                    )
+                            else:
+                                # NOTE this could be the result of a
+                                # context manager, such as orm.su() or
+                                # orm.sudo() exiting and setting the
+                                # owner to None. This can happen
+                                # when the results of a test are being
+                                # reported on, causing the person
+                                # running the test to become confused as
+                                # to the actual cause of the problem.
+                                msg = (
+                                    'Owner is None'
+                                )
+
+                            if msg:
                                 brs += entitiesmod.brokenrule(
                                     msg, map.name, 'valid', self
                                 )
@@ -4744,8 +4827,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                 # collection.
                 #   i.e., art.presentations.artist = art
 
-                # XXX Ascending the graph here is experimental. It
-                # caused some issues in it_loads_specialized_composite.
                 sup = self_orm.entity
                 while sup:
                     setattr(map.value, sup.__name__, self)
@@ -4787,7 +4868,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
             # If we are here, we are going to check the super to see if
             # it contains a value for attr. The check will automatically
-            # propogate up the entity inheritance tree because the call
+            # propagate up the entity inheritance tree because the call
             # to getattr() will cause us to recurse back into this
             # method for the super, then its super, and so on, as
             # necessary until we finally find the entity that has the
@@ -4822,15 +4903,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                             #     sng.presentations.singer = sng
                             #     sng.presentations[0].singer = sng
                             
-                            # XXX I think we can remove this.
-                            '''
-                            setattr(
-                                e, 
-                                self_orm_entity__name__,
-                                self.orm.specialist
-                            )
-                            '''
-
                             # The getattr() call above will set the
                             # composite of the entities collection to
                             # the super:
@@ -5047,6 +5119,8 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             name = self.name
         except builtins.AttributeError:
             name = ''
+        except Exception as ex:
+            name = f', name=<ERROR {ex}>'
         else:
             if name:
                 name = f", name='{self.name}'"
@@ -5069,7 +5143,7 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
         that best represents the object in most situation.
         """
         if hasattr(self, 'name'):
-            return '"%s"' % self.name
+            return '%s' % self.name
             
         return str(self.id)
             
@@ -6040,13 +6114,16 @@ class entitymapping(mapping):
                     # map.
                     if map.isowner != self.isowner:
                         continue
+
+                    if map.isproprietor != self.isproprietor:
+                        continue
                     
                     # ... and if we have a foreign key value 
                     if map.value not in (undef, None):
                         
                         # ... then we can load the entity using the
                         # foreign key's value
-                        self._value = self.entity(map.value)
+                        self._value = self.entity(map.value).orm.leaf
 
         return self._value
 
@@ -6426,8 +6503,11 @@ class attr:
             if entity in self.args[0].mro():
                 map = entitymapping(self.fget.__name__, self.args[0])
             elif entities in self.args[0].mro():
-                # NOTE Untested
-                map = entitiesmapping(k, v)
+                # Make entitiesmapping work with orm.attr decorator
+                # This was to get bot.logs, a getter for
+                # apriori.logs, working. It still may need some more
+                # testing. NOTE Untested
+                map = entitiesmapping(self.fget.__name__, self.args[0])
             else:
                 map = fieldmapping(*self.args, **self.kwargs)
 
@@ -7447,6 +7527,40 @@ class constituent(ormclasswrapper):
     """
 
 @contextmanager
+def proprietor(propr):
+    """
+    💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    A context manager to temporarily change the proprietor of the
+    security object::
+
+        with orm.proprietor(ibm):
+            # Only records that belong to IBM will be made available to
+            # the code within this context.
+            ...
+
+    💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    """
+
+    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    # Store the current proprietor in propr1
+    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    sec = security()
+    propr1 = sec.proprietor
+    try:
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # Set the proprietor to `propr` and yield immediatly
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        sec.proprietor = propr
+        yield
+    finally:
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # Regardless of whether there was an exception, ensure the
+        # current proprietor gets reset to what it was before we entered
+        # this context.
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        sec.proprietor = propr1
+
+@contextmanager
 def sudo():
     """
     💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
@@ -7494,14 +7608,17 @@ def su(own):
         security().owner = own1
 
 @contextmanager
-def override():
-    """ A contextmanager to ensures that security().override is True.
-    When the context manager exists, orm.override is reset to whatever
-    it was before the contextmanager was entered.
+def override(v=True):
+    """ A contextmanager to change security().override is ``v``.  When
+    the context manager exits, orm.override is reset to whatever it was
+    before the contextmanager was entered.
+
+    :param: v bool: The boolean to what override should be set to while
+    in context.
     """
     override = security().override
     try:
-        security().override = True
+        security().override = v
         yield
     finally:
         security().override = override
@@ -7523,9 +7640,10 @@ class security:
             cls._instance = super(security, cls).__new__(cls)
 
             # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-            cls._override    =  False
-            cls._owner       =  None
-            cls._proprietor  =  None
+
+            cls._instance._override    =  False
+            cls._instance._owner       =  None
+            cls._instance._proprietor  =  None
 
         return cls._instance
 
@@ -7544,15 +7662,19 @@ class security:
 
         Proprietors
         ***********
-
-        The logic in the ORM's database interface will use the
-        security().proprietor to provide multitenancy support.
+        
+        A proprietor is a legal entity, typically a ``party.company``,
+        that owns the records being created.  The logic in the ORM's
+        database interface will use the security().proprietor to provide
+        multitenancy support by ensuring queries and mutations to the
+        database are built in such a way that they isolate one
+        proprietor's records from another.
 
         When a proprietor is set, the ORM will ensure that all records
         written to the database have their proprietor FK set to
         security().proprietor.id, meaning that the records will be the
         *property* of the security().proprietor. Only records owned by
-        the security().proprietor will be read by orm query operations
+        the security().proprietor will be read by ORM query operations
         i.e.:
 
             ent = entity(id)  # SELECT
@@ -7565,10 +7687,20 @@ class security:
         by the security().proprietor or else a ProprietorError will be
         raised.
 
-        :param: party.party v: The proprietor entity.
+        :param: party.party v|UUID: The proprietor entity or its a
+        proprietor's UUID. Normally we will get a full-bodied proprietor
+        object (a party.party, typically a party.company or some other
+        subtype thereof). However, sometimes it more conventient to give
+        a UUID.  See ``party.company.carapacian`` for an example of
+        using UUID instead of a party.party object.
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
         self._proprietor = v
+
+        # If we are given only the proprietor's UUID, there is no need
+        # to ascend the inheritance tree below. 
+        if isinstance(v, UUID):
+            return
 
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         # The proprietor of the proprietor must be the proprietor:
@@ -7597,7 +7729,10 @@ class security:
         if self._override:
             return True
 
-        return self.owner and self.owner.isroot
+        if self.owner:
+            return self.owner.isroot
+
+        return False
 
     @override.setter
     def override(self, v):
@@ -7615,7 +7750,7 @@ class security:
         Returns the current owner. The owner is a ``party.user``. When
         an entity is created, the entity's ``owner`` attribute will be
         set to the orm's owner. This attribute will be saved along with
-        the entity so it wil always be known who the entity's owner is.
+        the entity so it will always be known who the entity's owner is.
 
         The owner is important for the accessibility methods because it
         helps the entity's determine who should be able to do what with
@@ -7643,22 +7778,60 @@ class security:
         self._owner = v
 
     @property
+    def user(self):
+        """ 
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Returns the current user. 
+
+        This is synonymous with security.owner. See the docstring there
+        for more information.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # TODO This will be the central place to store the logged in
+        # user. This will probably usually be the owner, though there
+        # may be a need to distinguish the ORM's "owner" from the
+        # "logged in user". More thought is need for this.
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        return self._owner
+
+    @user.setter
+    def user(self, v):
+        self._owner = v
+
+    @property
     def issudo(self):
         """
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
-        Returns True if the current owner is root.
+        Returns True if the current owner is root. Synonymous with
+        ``security.isroot``.
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
-        return self.owner and self.owner.isroot
+        return self.isroot
+
+    @property
+    def isroot(self):
+        """
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Returns True if the current owner is root. Synonymous with
+        ``security.issudo``
+        💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        """
+        if self.owner:
+            return self.owner.isroot
+
+        return False
 
     def __repr__(self):
+        """ Return a string represenation of the security object.
+        """
         r = f'{type(self).__name__}(\n'
         r += f'  owner={self.owner!r}\n'
+        r += f'  proprietor={self.proprietor!r}\n'
         r += f'  user={self.user!r}\n'
         r += f'  override={self.override}\n'
         r += ')'
         return r
-
 
 class orm:
     """ The ORM class.
@@ -7796,6 +7969,12 @@ class orm:
         they are sent to the user.
         💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         """
+
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # If security is being overriden, then we can abort redaction.
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        if security().override:
+            return 
 
         # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         # If there is no owner, then we don't care.
@@ -8325,22 +8504,27 @@ class orm:
     @property
     def leaf(self):
         """ Return the lowest subentity in the inheritance tree of the
-        `orm`'s `instance` property. The database is queried for each
-        subclass, the database is queried. If there are no subclasess,
-        `self.instance` is returned.
+        ``orm``'s ``instance`` property. The database is queried for
+        each subclass. If there are no subclasess, `self.instance` is
+        returned.
         """
 
-        leaf = self.instance
+        sup = leaf = self.instance
         id = leaf.id
 
-        # Itereate over subentities. `self.subentities` is assumed to
-        # iterate in a way tha yields the top-most subclass first
+        # Iterate over subentities. `self.subentities` is assumed to
+        # iterate in a way that yields the top-most subclass first
         # progressing toward the lowest subclass.
         for cls in self.subentities:
             try:
                 leaf = cls(id)
             except db.RecordNotFoundError:
-                return leaf
+                continue
+            except entitiesmod.InProgressError:
+                continue
+            else:
+                leaf.orm._super = sup
+                sup = leaf
 
         return leaf
                 
@@ -8954,7 +9138,7 @@ class orm:
         def exec(cur):
             nonlocal ress
             cur.execute(sql)
-            ress = db.dbresultset(cur)
+            ress = db.resultset(cur)
 
         exec = db.executioner(exec)
 
@@ -8993,11 +9177,21 @@ class orm:
         # proprietor's FK column matches the proprietor set at the ORM
         # level. This restricts entity records not associated with
         # security().proprietor from being loaded.
-        if security().proprietor:
+        propr = security().proprietor
+        from party import party
+        if propr:
             for map in self.mappings.foreignkeymappings:
                 if map.fkname == 'proprietor':
                     sql += f' AND {map.name} = _binary %s'
-                    args.append(security().proprietor.id.bytes)
+                    if isinstance(propr, UUID):
+                        bytes = propr.bytes
+                    elif isinstance(propr, party):
+                        bytes = propr.id.bytes
+                    else:
+                        # Shouldn't happen
+                        raise TypeError('Proprietor is incorrect type')
+
+                    args.append(bytes)
                     break
 
         ress = None
@@ -9006,7 +9200,7 @@ class orm:
         def exec(cur):
             nonlocal ress
             cur.execute(sql, args)
-            ress = db.dbresultset(cur)
+            ress = db.resultset(cur)
 
         # Create an executioner
         exec = db.executioner(exec)
@@ -9115,7 +9309,7 @@ class orm:
                 cur.execute(sql, args)
 
                 # Assign ress the resultset
-                ress = db.dbresultset(cur)
+                ress = db.resultset(cur)
 
             # Instantiate the executioner
             exec = db.executioner(exec)
@@ -9290,7 +9484,7 @@ class orm:
 
         es = self.instance
 
-        if type(ress) is db.dbresult:
+        if type(ress) is db.result:
             # If we are given one resultset (simple), we are probably
             # loading an a single entity by id, i.e.::
             #
@@ -9298,7 +9492,7 @@ class orm:
             ress = [ress]
             simple = True
             maps = self.mappings
-        elif type(ress) is db.dbresultset:
+        elif type(ress) is db.resultset:
             # Multiple resultsets (`not simple`) imply that we are
             # loading an entities collection, i.e::
             # 
@@ -10218,6 +10412,9 @@ class orm:
                     # `self.instance.id` will change to the value of
                     # `self._super.id`.
                     id = self.instance.id
+
+                    # TODO:f40c087d Since we have a setter for super,
+                    # lets use it. It makes debugging easier.
                     self._super = base()
 
                     # Set the super's id to self's id. Despite the
@@ -10231,6 +10428,8 @@ class orm:
                         msg %= str(type(e))
                         raise builtins.AttributeError(msg)
                     if e.id is not undef:
+                        # TODO:f40c087d Since we have a setter for
+                        # super, lets use it. It makes debugging easier.
                         self._super = base(e.id)
 
                 # Ensure the super has a reference to the sub
@@ -10315,8 +10514,8 @@ class orm:
     # TODO This should probably be renamed to `subs`
     @property
     def subentities(self):
-        """ Returns a collection all the of class reference that inherit
-        from this class.
+        """ Returns a collection of all the of class reference that
+        inherit from this class.
         """
         if self._subclasses is None:
             clss = ormclasseswrapper()
@@ -10324,6 +10523,20 @@ class orm:
                 clss += sub
             self._subclasses = clss
         return self._subclasses
+
+    def getsubentities(self, accompany=False):
+        """ Returns a collection of all the of class reference that
+        inherit from this class.
+
+        :param: accompany bool: If True, add self (as an
+        ormclasswrapper) to the collection being returned.
+        """
+        r = self.subentities
+
+        if accompany:
+            r += ormclasswrapper(self.entity)
+
+        return r
 
     @staticmethod
     def getsubclasses(of, recursive=True):
@@ -10405,9 +10618,7 @@ class orm:
     @staticmethod
     def getentitys(includeassociations=False):
         """ A static method to collect and return all the classes that
-        inherit directly or indirectly from orm.entity. If
-        includeassociations is True, return the classes that inherit
-        from orm.association as well.
+        inherit directly or indirectly from orm.entity.
 
         :param: includeassociations bool: If True, include the classes
         that inherit from orm.association as well.
@@ -10877,14 +11088,15 @@ class associations(entities):
         self.remove(ass)
 
     def __getattr__(self, attr):
-        """
-        Return a composite object or constituent collection
+        """ Return a composite object or constituent collection
         (pseudocollection) requested by the user.
 
         :param: str attr: The name of the attribute to return.
+
         :rtype: orm.entity or orm.entities
+
         :returns: Returns the composite or pseudocollection being
-                  requested for by ``attr``
+        requested for by ``attr``
         """
 
         def raiseAttributeError():
@@ -10947,7 +11159,7 @@ class associations(entities):
 
                 # Iterate down the inheritance tree until we find an
                 # entity/subentity with the name of the attr.
-                # NOTE For most request, the entity (ess[0]) will be
+                # NOTE For most requests, the entity (ess[0]) will be
                 # what we want. Subentities will be needed when we
                 # request a pseudocollection that is a subtype of the
                 # association's objective entity:
@@ -10955,8 +11167,8 @@ class associations(entities):
                 for es in ess:
                     if es.__name__ == attr:
                         # Create a pseudocollection for the associations
-                        # collection object (self). Append it to the self.orm's
-                        # `constituents` collection.
+                        # collection object (self). Append it to the
+                        # self.orm's `constituents` collection.
                         es = es()
                         es.onadd    += self.entities_onadd
                         es.onremove += self.entities_onremove
@@ -10986,8 +11198,6 @@ class associations(entities):
                     # true:
                     #
                     #     assert artist is type(sng.singers.first)
-
-                    #if e.orm.entities.__name__ != attr:
 
                     # TODO This could use a clean up, e.g.,
                     #     if attr in e.orm.subentities:
@@ -11024,7 +11234,44 @@ class associations(entities):
             raiseAttributeError()
     
 class association(entity):
-    pass
+    """ An entity that holds a reference to two other entity objects.
+
+    Association allow for many-to-many relationships between classes of
+    entity objects but also contain data about the association itself.
+
+    For example, in the party.py module, the ``party_address``
+    association connects a ``party`` (e.g., a person, company, etc.)
+    with a postal ``address``.
+
+        class party_address(orm.association):
+            party     =  party
+            address   =  address
+            span      =  datespan
+
+    This makes it possible for a party to have multiple postal address
+    and a postal address to belong to multiple parties.
+
+        par = party()
+        addr1 = address()
+        addr2 = address()
+
+        par.party_addresses += party_address(
+            address = addr1,
+            begin = '2020-02-02',
+            end   = '2021-02-02',
+        )
+
+        par.party_addresses += party_address(
+            address = addr2,
+            begin = '2020-01-02',
+            end   = '2021-01-02',
+        )
+
+    Above, we associate ``par`` with ``addr1`` and ``addr2``, while
+    indicating the datespan that the association was valid.
+    Additionally, we could associate each address with multiple
+    parties.
+    """
 
 class migration:
     def __init__(self, e=None):
@@ -11205,27 +11452,41 @@ class ProprietorError(ValueError):
 
     @property
     def expected(self):
+        """ The proprietor that was expected.
+        """
         if not self._expected:
             return security().proprietor
         return self._expected
 
     def __str__(self):
+        """ A string representation of the exception.
+        """
+        import party
+
         expected = self.expected.id.hex if self.expected else None
+
+        actual = self.actual
+        if isinstance(actual, UUID):
+            actual = actual.hex
+        elif isinstance(actual, party.party):
+            actual = actual.id.hex
+
         return (
             f'The expected proprietor did not match the actual '
-            f'proprietor; actual {self.actual.id.hex}, expected: '
+            f'proprietor; actual {actual!r}, expected: '
             f'{expected}'
         )
 
     def __repr__(self):
+        """ A string representation of the exception.
+        """
         return str(self)
 
 class AuthorizationError(PermissionError):
-    """ An exception that indicates the currently that the current
-    user is unable to create, retrieve, update or delete a record in the
-    database.
+    """ An exception that indicates that the current user is unable to
+    create, retrieve, update or delete a record in the database.
 
-    The ORM logic in orm.py will usually through this exception. The
+    The ORM logic in orm.py will usually raise this exception. The
     ORM user indicates authorization problems in the accessibility
     properties by return a ``violations`` collection.
     """
@@ -11248,7 +11509,6 @@ class AuthorizationError(PermissionError):
                 'crud argument must be "c", "r", "u" or "d"'
             )
 
-
         self.message     =  msg
         self.crud        =  crud
         self.violations  =  vs if isinstance(vs, violations) else None
@@ -11260,7 +11520,7 @@ class violations(entitiesmod.entities):
     """ A collection of accessibility violations. Returned by the
     accessibility properties of orm.entity to indicate that the there
     are zero or more problems with the user attempting to persist or
-    retrive an entity and what those problems are.
+    retrieve an entity and what those problems are.
     """
     def __init__(self, *args, **kwargs):
         """ Initialize the violations object.
@@ -11275,6 +11535,7 @@ class violations(entitiesmod.entities):
 
         # Get the entity reference and delete it so we can pass it to
         # super().__init__
+        # TODO Use kwargs.pop()
         try:
             e = kwargs['entity']
         except KeyError:
@@ -11285,6 +11546,29 @@ class violations(entitiesmod.entities):
         super().__init__(*args, **kwargs)
         self.entity = e
 
+    def demand_user_is_authenticated(self):
+        """ If the user is not authenticated, add a new violation
+        indicating as much.
+        """
+        # NOTE:a22826fe At this point, it is not clear how anonymous or
+        # unauthenicated users will work.  We have an anonymous person
+        # (party.party.anonymous). It should have an associated user
+        # record. This could be represent any unauthenicated user.
+        import ecommerce
+        if not isinstance(security().user, ecommerce.user):
+            self += 'User must be authenticated'
+
+    def demand_user_is(self, usr):
+        if security().user.id != usr.id:
+            self += f'User must be {usr.name}'
+
+    def demand_root(self):
+        """ If the user is not root, add a new violation indicating as
+        much.
+        """
+        if not security().isroot:
+            self += f'User must be root'
+
     def __iadd__(self, o):
         """ Add `o` to the violations collection. `o` can be a str or a
         violation instance::
@@ -11294,7 +11578,8 @@ class violations(entitiesmod.entities):
                 vs = violations(entity=self)
                 if hr not in usr.departments:
                     vs += (
-                        'Only user in hr can retrive this entity'
+                        'Only user in the human resources department '
+                        'can retrieve this entity'
                     )
                 return vs
 
@@ -11305,12 +11590,37 @@ class violations(entitiesmod.entities):
         # Convert str to violaton
         if isinstance(o, str):
             o = violation(o)
+        else:
+            try: 
+                iter(o)
+            except TypeError:
+                pass # Not iterable
+            else:
+                for o in o:
+                    self += o
+                return self
 
         # Keep track of the collection
         o.violations = self
 
         # Do the actual appending
         return super().__iadd__(o)
+
+    _empty = None
+    @classproperty
+    def empty(cls):
+        """ Returns the empty ``violations`` object. This is slighly
+        faster than instantiating a new ``violations`` object and
+        returning it because we memoize it here.
+        """
+        if cls._empty is None:
+            cls._empty = violations()
+            def onbeforeadd(src, eargs):
+                raise AttributeError('Do not add to violations.empty')
+
+            cls._empty.onbeforeadd += onbeforeadd
+
+        return cls._empty
 
 class violation(entitiesmod.entity):
     """ Records an access violation message. Access violations are
@@ -11337,8 +11647,10 @@ class violation(entitiesmod.entity):
             return self.violations.entity
 
         return None
-        
 
-        
-
+    def __repr__(self):
+        r = type(self).__name__ + '('
+        r += f"'{self.message}'"
+        r += ')'
+        return r
 

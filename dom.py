@@ -53,14 +53,29 @@ An implementation of the HTML5 DOM.
 #     https://www.digitalocean.com/community/tutorials/how-to-mirror-local-and-remote-directories-on-a-vps-with-lsyncd
 
 class attributes(entities.entities):
+    """ Represents a collection of attributes for HTML5 elements.
+    """
     def __init__(self, el=None, *arg, **kwargs):
+        """ Create an attributes collection.
+
+        :param: el element: The HTML5 DOM element to associate the
+        collection with.
+        """
         super().__init__(*arg, **kwargs)
         self.element = el
         
-    """ Represents a collection of attributes for HTML5 elements.
-    """
     def __iadd__(self, *o):
-        """ Append an attribute to the collection via the += operator.
+        """ Append an attribute to the collection via the += operator::
+
+            # Create an element
+            p = paragraph()
+
+            # Append an attribute using +=
+            p.attributes += attribute('id', 'my-id-value')
+
+        :param: *o object(s): The *o parameters allows for a number of
+        different ways to append attributes. See the docstring at
+        attributes.append for more ways to append. 
         """
         for o in o:
             if type(o) in (tuple, list):
@@ -69,7 +84,7 @@ class attributes(entities.entities):
         return self
 
     def clone(self):
-        """ Return a cloned version of the attributes collection.
+        """ Returns a cloned version of the attributes collection.
         """
         attrs = type(self)(self.element)
         for attr in self:
@@ -78,6 +93,60 @@ class attributes(entities.entities):
             
     def append(self, o, v=None, uniq=False, r=None):
         """ Append an attribute to the collection. 
+
+        :param: o object: The attribute being appended. o can be a
+        number of types:
+
+            attribute
+            ---------
+            The most obvious way to append an attribute to a collection
+            is to simple append an attribute objects:
+
+                # Create a <p>
+                p = dom.paragraph()
+
+                # Create an attribute object: id="my-id-value"
+                attr = dom.attribute('id', 'my-id-value')
+
+                # Append the object such that <p> becomes 
+                # <p id="my-id-value"></p>
+                p.attributes += attr
+
+            tuple
+            -----
+            The above could have been append as a tuple instead::
+
+                p.attributes += id', 'my-id-value'
+
+            list
+            ----
+            List work similarly::
+
+                p.attributes += [id', 'my-id-value']
+
+            dict
+            ----
+            With dict's we can add multiple attrs in one line::
+
+                p.attributes += {
+                    'id':    'my-id-value',
+                    'title': 'my-title-value',
+                }
+
+            attributes collections
+            ----------------------
+            With attributes collections we can also add multiple attrs
+            in one line::
+
+                attrs = dom.attributes()
+                attrs += 'id', 'my-id-value'
+                attrs += 'title', 'my-title-value'
+                p.attributes += attrs
+                
+        :param: uniq bool: If True, an append will only happen if the
+        attribute is not already in the collection.
+
+        :param: r entities: For internal use only.
         """
 
         # TODO Some elements like <meta>, <br/>, etc., should not be
@@ -106,30 +175,32 @@ class attributes(entities.entities):
     def __getitem__(self, key):
         """ Returns an `attribute` object based on the given `key`.
 
-        If the `key` is an `int`, return the attribute based on its
-        position in the collection. (Note that in these examples,
-        `attrs` represents an attribute's collection)::
+        :param: key int|slice|str: The index value used to find the
+        item
+            If the `key` is an `int`, return the attribute based on its
+            position in the collection. (Note that in these examples,
+            `attrs` represents an attribute's collection)::
 
-            assert attrs[0] is attrs.first
+                assert attrs[0] is attrs.first
 
-        If the `key` is a slice, return a slice of the attributes::
+            If the `key` is a slice, return a slice of the attributes::
 
-            assert attrs[0:2] == (attrs.first, attrs.second)
+                assert attrs[0:2] == (attrs.first, attrs.second)
 
-        If the `key` is a str, return the attribute object by name::
-            
-            attr = attribute(name='checked', value=True)
-            attrs += attr
+            If the `key` is a str, return the attribute object by name::
+                
+                attr = attribute(name='checked', value=True)
+                attrs += attr
 
-            attr is attrs['checked']
+                attr is attrs['checked']
 
-        Note that __getitem__ can also be used to set create new
-        attributes::
-            
-            attr = attrs['newattr']
-            attr.value = 'newvalue'
+            Note that __getitem__ can also be used to set create new
+            attributes::
+                
+                attr = attrs['newattr']
+                attr.value = 'newvalue'
 
-            assert 'newvalue' == attrs['newattr']
+                assert 'newvalue' == attrs['newattr']
         """
 
         if isinstance(key, int):
@@ -170,6 +241,19 @@ class attributes(entities.entities):
         """ Sets an `attribute` object based on the given `key`::
 
             attrs['checked'] = True
+
+        :param: key int|str: 
+            if int:
+                key is used like a normal list indexer:
+                    
+                    # Assign `attr` to first element of attrs
+                    attrs[0] = attr
+
+            if str:
+                key is assumed to be the name of an attribute:
+                
+                # <p id="my-id-value">
+                p.attributes['id'] = 'my-id-value'
         """
 
         if not isinstance(key, str):
@@ -199,6 +283,10 @@ class attributes(entities.entities):
     def reversed(self):
         """ Returns a generator of (defined) attributes
         in reversed order. (See `attribute.isdef`)
+
+            # Print attributes in reverse order
+            for attr in p.attributes.reversed():
+                print(attr)
         """
         for e in reversed(self._defined):
             yield e
@@ -206,7 +294,7 @@ class attributes(entities.entities):
     @property
     def _defined(self):
         ''' Return a list of attributes that have values. (See
-        `attribute.isdef`)
+        `attribute.isdef` for more information)
         '''
         return [x for x in self._ls if x.isdef]
 
@@ -252,20 +340,18 @@ class attribute(entities.entity):
         <element name="value">
 
     Boolean attributes can have a value of None to indicate they are
-    present. For example, the following represents the subsequent HTML::
+    present in the HTML but have to value assigned to them. For example,
+    the following creates an ``input`` element that would be render as
+    follows in HTML: <input type="checkbox" checked>
 
         inp = dom.input()
         inp.attributes['type'] = checkbox
         inp.attributes['checked'] = None
-        
-        ---
-
-        <input type="checkbox" checked>
-
     """
 
     class undef:
-        """ Used to indicate that an attribute has not been defined.
+        """ A class used to indicate that an attribute has not been
+        defined.
         """
         pass
 
@@ -351,14 +437,14 @@ class attribute(entities.entity):
 
     @property
     def isdef(self):
-        """ Determines whther an attribute is defined. An undefined
-        attribute can be created by the indexing the `attributes`
-        collection without setting a the `value`::
+        """ Returns True if an attribute is defined, False otherwise. An
+        undefined attribute can be created by indexing the `attributes`
+        collection without setting a `value`::
 
             id = attrs['id']
 
         Here, the `attrs` now has an attribute called 'id' that has no
-        value. Since it has no value, it presense within `attrs` is
+        value. Since it has no value, its presense within `attrs` is
         concealed from the user:
 
             assert attrs.count == 0
@@ -371,15 +457,15 @@ class attribute(entities.entity):
             assert attrs.count == 1
 
         The `isdef` property is used by the logic that conceals the
-        undefined attributes from the use.
+        undefined attributes from the user.
         """
         return self._value is not attribute.undef
 
     @staticmethod
     def create(name, v=undef):
-        """ A staticmethod to creates a attribute or cssclass given a
-        name and an optional value. Unline `attribute`'s constructor, a
-        cssclass will be returned if name = 'class'.
+        """ A staticmethod to create an ``attribute`` or ``cssclass``
+        given a name and an optional value. Unlike `attribute`'s
+        constructor, a cssclass will be returned if name == 'class'.
         """
         if name == 'class':
             return cssclass(v)
@@ -387,11 +473,16 @@ class attribute(entities.entity):
         return attribute(name, v)
 
     def __repr__(self):
+        """ Returns a str (non-HTML) representation of the attribute.
+        """
         r = "%s(name='%s', value='%s')"
         r %= type(self).__name__, self.name, self.value
         return r
 
     def __str__(self):
+        """ Returns a str (non-HTML) representation of the attribute
+        ('attr="value"').
+        """
         r = '%s="%s"'
         r %= self.name, self.value
         return r
@@ -423,19 +514,28 @@ class cssclass(attribute):
             self += v
 
     def __contains__(self, e):
+        """ Returns True if e is the collection of classes.
+        """
         return e in self._classes
 
     def __len__(self):
+        """ Returns the number of classes.
+        """
         return len(self._classes)
     
     @property
     def count(self):
+        """ Returns the number of classes.
+        """
         return len(self)
 
     def __bool__(self):
-        # By default, if __len__ returns 0, the object is falsey. If the
-        # object exists (as a nonNone property, for example), it should
-        # be True. So it should always be truthy.
+        """ Returns True.
+
+        By default, if __len__ returns 0, the object is falsey. If the
+        object exists (as a non-None property, for example), it should be
+        True. So it should always be truthy.
+        """
         return True
 
     def __getitem__(self, ix):
@@ -830,7 +930,7 @@ class element(entities.entity):
             els = self['[id="%s"]' % id]
             if els.isempty:
                 raise ValueError("Can't find [id=\"%s\"]" % id) 
-            elif els.hasplurality:
+            elif els.isplurality:
                 raise ValueError(
                     "Multiple elements for [id=\"%s\"]" % id
                 ) 
@@ -1114,7 +1214,7 @@ class element(entities.entity):
         sibs = self.getsiblings(includeself=True)
 
         # If it only has self
-        if sibs.hasone: 
+        if sibs.issingular: 
             return None
 
         ix = sibs.getindex(self) - 1
@@ -5564,11 +5664,11 @@ class selector(entities.entity):
 
         def _match_only_child(self, el):
             sibs = el.getsiblings(includeself=True)
-            return sibs.where(lambda x: type(x) is not text).hasone
+            return sibs.where(lambda x: type(x) is not text).issingular
 
         def _match_only_of_type(self, el):
             sibs = el.getsiblings(includeself=True)
-            return sibs.where(lambda x: type(x) is type(el)).hasone
+            return sibs.where(lambda x: type(x) is type(el)).issingular
 
         def _match_empty(self, el):
 

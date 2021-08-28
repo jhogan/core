@@ -96,16 +96,3 @@ def getattr(obj, attr, *args):
             return builtins.getattr(obj, attr, *args)
         return None
     return reduce(rgetattr, [obj] + attr.split('.'))
-
-# Set conditional break points
-# TODO This method is already in dbg.py
-def B(x=True):
-    if type(x) is str:
-        print(x)
-
-    if x:
-        pdb.Pdb().set_trace(inspect.currentframe().f_back)
-        #from IPython.core.debugger import Tracer;
-        #Tracer().debugger.set_trace(sys._getframe().f_back)
-
-

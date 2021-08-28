@@ -80,7 +80,11 @@ class citizenships(orm.entities):                            pass
 class contactmechanism_contactmechanisms(orm.associations):  pass
 class contactmechanisms(orm.entities):                       pass
 class phones(contactmechanisms):                             pass
-class emails(contactmechanisms):                             pass
+
+class emails(contactmechanisms):
+    def __str__(self):
+        return ', '.join(str(x) for x in self)
+
 class websites(contactmechanisms):                           pass
 class party_contactmechanisms(orm.associations):             pass
 class purposes(orm.entities):                                pass
@@ -210,10 +214,18 @@ class party(orm.entity):
 
     @classproperty
     def anonymous(cls):
-        # TODO Ensure that only one party record can have a name of None 
+        # TODO Ensure that only one party record can have a name of
+        # None.  UPDATE Actually A better way to identify the anonymous
+        # user would actually be to just use a hard coded UUID.
 
         # TODO Write test to ensure this returns the same party each
         # time.
+
+        # TODO We should probably memoize this
+
+        # TODO We should probbaly ensure that root is the owner here,
+        # i.e., `with orm.sudo(): ent = cls(id=myuuid); ent.save()`
+
         ents = cls.orm.entities('name is %s', (None,))
         if ents.isempty:
             ent = cls(name=None)
@@ -221,7 +233,36 @@ class party(orm.entity):
             return ent
 
         return ents.first
+
+    @property
+    def creatability(self):
+        vs = orm.violations()
         
+        # See:a22826fe
+        vs.demand_user_is_authenticated()
+        return vs
+
+    @property
+    def retrievability(self):
+        from ecommerce import users
+
+        # Get all users that belong to this party. (Noramally this would
+        # be written `usrs = self.users` but that can't be done at the
+        # moment.)
+        usrs = users('party__partyid', self.id)
+
+        # If the current user is one of the party's (self's) user
+        id = orm.security().user.id
+        with orm.sudo():
+            for usr in usrs:
+                if usr.id == id:
+                    # A user can retrieve it's party record
+                    return orm.violations.empty
+
+        vs = orm.violations()
+        vs += 'Current user must belong to party'
+        return vs
+
 class organization(party):
     """ An abstract class representing a group of people with a common
     purpose. Subtypes may include schools, NGOs, clubs, corporations,
@@ -298,6 +339,56 @@ class company(legalorganization):
     # will have an `employee` relationships with `departments` and
     # `divisons`.
     departments = departments
+
+    _carapacian = None
+    @classproperty
+    def carapacian(cls):
+    """
+    💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    Returns the official Carapacian company entity. If the entity does
+    not exist in the database, it will be created. The id for the entity
+    is hardcoded and should never be changed.
+    💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+    """
+        
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # The ID for the entity. This should never be changed.
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        Id = 'f05eff40-8971-4948-aa42-74b038731333'
+        if not cls._carapacian:
+            id = uuid.UUID(Id)
+
+            # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            # We will need to be root to pull the record from the DB
+            # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+            with orm.sudo():
+                try:
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # Use Carapacian's UUID as the proprietor
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    with orm.proprietor(id):
+                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                        # Load and memoize
+                        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                        cls._carapacian = company(id)
+                except db.RecordNotFoundError:
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # If the record didn't exist, create it.
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    cls._carapacian = company(
+                        id   = id,
+                        name = 'Carapacian, LLC'
+                    )
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    # Make Carapacian the proprietor then save to DB
+                    # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+                    with orm.proprietor(cls._carapacian):
+                        cls._carapacian.save()
+
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        # Return memoized reference
+        # 💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
+        return cls._carapacian
 
 class marital(orm.entity):
     """ Allowes for the maintenence of changes to a person's marital
@@ -672,7 +763,7 @@ class region(orm.entity):
 
             if not found:
                 regs1 = regions(name=name, type=type)
-                if regs1.hasone:
+                if regs1.issingular:
                     reg = regs1.last
                     if regs:
                         regs += reg
@@ -853,6 +944,24 @@ class contactmechanism(orm.entity):
     Note that this is modeled after the CONTACT MECHANISM entity in "The
     Data Model Resource Book".
     """
+
+    @property
+    def creatability(self):
+        """ Anyone can create a contact mechanism.
+        """
+        return orm.violations.empty
+
+    @property
+    def retrievability(self):
+        import bot
+        vs = orm.violations()
+
+        # NOTE At the moment, only sendbot will be able to read contact
+        # mechanisms. This will obviously need to be expanded in the
+        # future.
+        vs.demand_user_is(bot.sendbot.user)
+
+        return vs
 
 class contactmechanism_contactmechanism(orm.association):
     # TODO Write docstring

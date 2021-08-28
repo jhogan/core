@@ -9,11 +9,16 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021                 #
 ########################################################################
 
+import apriori; apriori.model()
+
 from dbg import B
-import ecommerce, party, product
+import ecommerce
 import orm
-import tester
+import party
 import primative
+import product
+import tester
+import uuid
 
 class test_ecommerce(tester.tester):
     def __init__(self, *args, **kwargs):
@@ -320,6 +325,117 @@ class test_visit(tester.tester):
         )
 
         self.false(visit.iscurrent)
+
+class test_user(tester.tester):
+    def it_calls_retrievability(self):
+
+        name = uuid.uuid4().hex
+
+        with orm.sudo():
+            usr = ecommerce.user(name=name)
+            usr.save()
+
+            other = ecommerce.user(name='other')
+            other.save()
+
+        # Ensure we are no in security override
+        with orm.override(False):
+            # If no user is logged in, we should get an
+            # AuthorizationError
+            with orm.su(None):
+                self.expect(
+                    orm.AuthorizationError,
+                    usr.orm.reloaded
+                )
+
+            # If another user is trying to read user, we should get an
+            # AuthorizationError (this will probably need to change in
+            # the future; someone from the sysadmin group would need to
+            # read basic user data, for example).
+            with orm.su(other):
+                self.expect(
+                    orm.AuthorizationError,
+                    usr.orm.reloaded
+                )
+
+            # A user should be able to load themselves
+            with orm.su(usr):
+                self.expect(None, usr.orm.reloaded)
+
+            # TODO No one but root should be able to retrieve the user's
+            # encrypted password. At this point, there is no way to restrict
+            # the columns that are retrieved; only the rows. Below is a
+            # possible user interface for doing this. This should
+            #
+            #        map = self.orm.mappings['password']
+            #
+            #        # Set to False first in case there is an exception
+            #        that aborts the retrievability code.
+            #        map.retrievability = False  
+            #
+            #        map.retrievability = orm.security.user.isroot:
+            #        
+            #        ... or ...
+            #
+            #        self['password'].retrievability = False
+
+class test_url(tester.tester):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if self.rebuildtables:
+            es = orm.orm.getentitys(includeassociations=True)
+            mods = 'ecommerce',
+            for e in es:
+                if e.__module__ in mods:
+                    e.orm.recreate()
+
+        with orm.sudo():
+            com = party.company(name='Ford Motor Company')
+
+            with orm.proprietor(com):
+                com.save()
+                own = ecommerce.user(name='hford')
+                own.save()
+
+        orm.security().proprietor = com
+        orm.security().owner = own
+
+    def it_calls_creatability(self):
+        """ Any user can create (produce) a url. Notably, it's the
+        associations between the URL entity and other entity objects
+        that would have access restrictions. See NOTE:7a67115c
+        """
+        with orm.override():
+            name = uuid.uuid4().hex
+            with orm.sudo():
+                usr = ecommerce.user(name=name)
+                usr.save()
+
+        # Any user can create any url
+        with orm.override(False):
+            with orm.su(usr):
+                url = ecommerce.url(address='www.slashdot.com')
+                self.expect(None, url.save)
+
+    def it_calls_retrievability(self):
+        """ Any user can retrieve a url. Notably, it's the
+        associations between the URL entity and other entity objects
+        that would have access restrictions. See NOTE:7a67115c
+        """
+        with orm.override():
+            name = uuid.uuid4().hex
+            with orm.sudo():
+                usr = ecommerce.user(name=name)
+                usr.save()
+
+                url = ecommerce.url(address='www.slashdot.com')
+                url.save()
+
+        # Any user can retrieve any url
+        with orm.override(False):
+            with orm.su(usr):
+                self.expect(None, url.orm.reloaded)
 
 if __name__ == '__main__':
     tester.cli().run()

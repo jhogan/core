@@ -8,6 +8,26 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021
 ########################################################################
 
+""" This module contains classes that abstract the HTTP protocol, as
+well as WSGI and other web technologies.
+
+A major class in this module is the ``browser`` class. This is the
+class to use when we need to make HTTP requests to third party services
+(see third.py). For most cases, ``browser`` should be used as an
+alternative to urllib.request.urlopen() (it currently wraps this call).
+A subclass of ``browser`` in tester.py allows unit tests to be written
+against pom.page object, effectively making it possible and convenient
+to test the web pages exposed by WSGI web application within the
+framework.
+
+The ``request`` and ``response`` objects correspond to HTTP request and
+response messages. They contain ``headers`` collections which collect
+``header`` object that represent HTTP headers. Support for maintaning
+cookies within the ``browser`` is provided by the ``cookie`` object.
+Exception classes corresponding to HTTP status codes 3xx, 4xx and 5xx
+are also provided in this module.
+"""
+
 from dbg import B
 from functools import reduce
 from pprint import pprint
@@ -28,6 +48,7 @@ import textwrap
 import traceback
 import urllib
 import jwt as pyjwt
+import json
 
 # NOTE Use the following diagram as a guide to determine what status
 # code to respond with:
@@ -44,6 +65,21 @@ class application:
 
     @property
     def environment(self):
+        """ The WSGI environ dict.
+
+        This corresponds to the ``environ`` parameter in the classic
+        WSGI method call defined in PEP 333::
+
+            def simple_app(environ, start_response):
+                ...
+
+        For the framework's main implementation of the above method, see
+        the ``__call__`` method.
+
+        For more information about the actual environ dict, see:
+        https://www.python.org/dev/peps/pep-0333/#environ-variables
+        """
+
         return self._env 
 
     @environment.setter
@@ -68,6 +104,7 @@ class application:
     def __call__(self, env, start_response):
         global request, response
         res = _response(self.request)
+        res.headers += 'Content-Type: text/html'
 
         # Set global www.response
         response = res
@@ -174,18 +211,84 @@ class application:
 
             request = None
 
+# TODO The class name should be `request` and the main instance should
+# be stored in `_reuest` at the class level. A @property called
+# request.main or request.current can store the request object currently
+# being processed.
 request = None
 class _request:
-    def __init__(self, app):
+    """ Represents an HTTP request.
+
+    The class is designed represent any HTTP request. However, there a
+    special consideration made incoming requests in a WSGI context. When
+    incoming HTTP request are made to the website, this class will be
+    used to encapsulate the request - typically in a WSGI context.
+    Alternatively, outgoing reuest, such as those made by the third.py
+    module to third party RESTful APIs, will use this class.
+    """
+    def __init__(self, app=None, url=None):
+        """ Construct an HTTP request.
+
+        :param: app application: The WSGI application object for this
+        request.
+
+        :param: url ecommerce.url: The URL object containing the URL
+        being accessed.
+        """
         self.app           =  app
-        self.app._request  =  self
-        self._payload      =  None
-        self._user         =  None
-        self._files        =  None
-        self._useragent    =  None
-        self._hit          =  None
-        self._ip           =  None
-        self._url          =  None  # The refere
+        if app:
+            self.app._request  =  self
+
+        self._payload    =  None
+        self._user       =  None
+        self._files      =  None
+        self._useragent  =  None
+        self._hit        =  None
+        self._ip         =  None
+        self._referer    =  None
+        self._headers    =  None
+        self._url        =  url
+        self._method     =  None
+        self._useragent  =  None
+
+    def __repr__(self):
+        """ A string representation of the HTTP request.
+        """
+        return str(self)
+
+    def __str__(self):
+        """ A string representation of an HTTP request. The string
+        should be reminiscent of the text output for a request in a
+        browser's "developer tools".
+        """
+
+        r = textwrap.dedent(f'''
+        Request URL: {self.url}
+        :authority: {self.url}
+        :method: {self.method}
+        :path: {self.url.path}
+        :scheme: {self.url.scheme}
+        ''')
+
+        r = r.rstrip()
+
+        if self.headers.count:
+            r += f'\n{str(self.headers)}'
+
+        ua = self.useragent
+        if ua:
+            r += f'\n{ua}'
+
+        body = self.payload
+        if body:
+            try:
+                body = json.dumps(json.loads(body), indent=2)
+            except:
+                pass
+
+            r += f'\n\n{body}'
+
+        return r
 
     @property
     def headers(self):
@@ -196,24 +299,30 @@ class _request:
         where the keys start with 'http_'.
         """
 
-        hdrs = headers()
-        for k, v in self.environment.items():
-            if not k.lower().startswith('http_'):
-                continue
+        if not self._headers:
+            self._headers = headers()
+            if self.iswsgi:
+                for k, v in self.environment.items():
+                    if not k.lower().startswith('http_'):
+                        continue
 
-            hdrs += header(k[5:], v)
+                    self._headers += header(k[5:], v)
 
-        return hdrs
+        return self._headers
+
+    @headers.setter
+    def headers(self, v):
+        self._headers = v
 
     @property
     def files(self):
-        """ Return a collection of files that were uploaded in the
+        """ Return a collection of files that were uploaded in the HTTP
         request.
 
         Note that currently, a very rough implementation of a
         multipart/form-data parser is implemented. This is used for
         tests but hasn't been tried with real world POSTs (the kind an
-        actual browser would send). 
+        actual browser would send and a real webserver would receive). 
 
         A future version will parse out the file data that is sent in
         JSON format. This will be the normal way to transfer files to
@@ -296,6 +405,9 @@ class _request:
 
     @property
     def cookies(self):
+        """ Returns a ``cookies`` collection object containing each of
+        the cookies in the HTTP request's 'cookies' header.
+        """
         r = browser._cookies()
         for hdr in self.headers:
             if hdr.name != 'cookie':
@@ -309,9 +421,10 @@ class _request:
 
     @property
     def jwt(self):
-        """ Look in the request's (self's) cookies for a JWT. If found,
-        convert the cookies str value to an auth.jwt objcet and return.
-        If no JWT cookie is found, return None.
+        """ Look in the HTTP request's cookies collection for a JWT
+        cookie.. If found, convert the JWT cookie's str value to an
+        auth.jwt object and return.  If no JWT cookie is found, return
+        None.
         """
         jwt = self.cookies('jwt')
         if jwt:
@@ -319,15 +432,18 @@ class _request:
             jwt = auth.jwt(jwt)
 
         return jwt
+
     @property
     def user(self):
-        """ Return the authenicated user making the request. If there is
-        no authenicate user, return None.
+        """ Returns the authenicated user making the request. If there
+        is no authenicate user, returns None.
         """
 
         if not self._user:
+
             # Get the JWT and convert it to a user 
             jwt = self.jwt
+
             if jwt:
                 if not jwt.isvalid:
                     # If the JWT is bad (can't be decoded), return None.
@@ -346,28 +462,74 @@ class _request:
                 
     @property
     def environment(self):
+        """ The WSGI environ dict.
+
+        This corresponds to the ``environ`` parameter in the classic
+        WSGI method call defined in PEP 333::
+
+            def simple_app(environ, start_response):
+                ...
+
+        For the framework's main implementation of the above method, see
+        ``www.application.__call__``.
+
+
+        For more information about the actual environ dict, see:
+        https://www.python.org/dev/peps/pep-0333/#environ-variables
+        """
         return self.app.environment
 
     @property
+    def iswsgi(self):
+        """ Returns True if the request is for a WSGI app.
+
+        Typical incoming requests to the framework will be intended for
+        the WSGI interface. However, this is a general purpose HTTP
+        request object, so for other use cases, this method will return
+        False.
+        """
+        return self.app is not None
+
+    @property
     def servername(self):
-        return self.environment['server_name']
+        """ The hostname of the URL.
+
+        When the request is for a WSGI app, the value of the SERVER_NAME
+        environment varible is returned.
+        """
+        if self.iswsgi:
+            return self.environment['server_name']
+
+        return urllib.parse.urlparse(self._url).hostname
 
     @property
     def arguments(self):
+        """ Returns the query string paramter as a dict.
+        """
         return dict(urllib.parse.parse_qsl(self.qs))
 
     @property
     def qs(self):
-        qs = self.environment['query_string']
+        """ Returns the query string portion of the URL being requested.
 
-        if not qs:
-            qs = None
+        When the request is for a WSGI app, the value of the
+        QUERY_STRING environment varible is returned.
 
-        return qs
+        If there is no query string, None is returned.
+        """
+        if self.iswsgi:
+            qs = self.environment['query_string']
+
+            if not qs:
+                qs = None
+
+            return qs
+
+        return urllib.parse.urlparse(self._url).query
 
     @property
     def site(self):
-        """ Get the single site for this instance.
+        """ Get the single site (``pom.site``) for this instance.
         """
         try:
             # NOTE 'server_site' is a contrived, non-HTTP environment
@@ -392,8 +554,8 @@ class _request:
 
     @property
     def page(self):
-        """ Return the page that this request is GETting (POSTing to,
-        etc.) 
+        """ Return the page that this request is GETting, POSTing to,
+        etc. 
         """
         ws = self.site
         path = self.path
@@ -404,8 +566,10 @@ class _request:
 
     @property
     def language(self):
-        ''' Return the language code. This is usually the first segment
-        of the URL path. 
+        ''' Return the language code. The default is 'en' for English.
+        
+        When the requet if for a page hosted by the framework, this is
+        usually the first segment of the URL path. 
         '''
 
         try:
@@ -421,6 +585,11 @@ class _request:
         return 'en'
 
     def __call__(self):
+        """ When the request is for a WSGI app, this calls the page
+        being requested, passing in the query string parameters as
+        arguments to the page. When the page is completed processing,
+        the HTML for the page is returned.
+        """
         # TODO If an exception bubbles up here, it should be logged to
         # syslog (I think).
 
@@ -433,8 +602,13 @@ class _request:
             # Invoke the page
            self.page(**self.arguments)
         except HttpError as ex:
+            # If the page raised an HTTPError with a flash message, add
+            # the flash message to the pages HTML.
             if ex.flash:
                 self.page.flash(ex.flash)
+
+                # Set the response statust of the global response
+                # object.
                 response.status = ex.status
             else:
                 raise
@@ -475,7 +649,6 @@ class _request:
     def log(self):
         """ Log the hit.
         """
-
         try: 
             # Get the request's ``hit`` entity
             hit = self.hit
@@ -528,12 +701,12 @@ class _request:
             # should log the failure to the syslog.
             from config import config
 
-            # TODO Fix the logging interface. We shouldn't have to go
-            # through config to get a logging object. Also, it doesn't
-            # make sense to select the first log from a collection of
-            # logs. The collections of logs are actually configurations
-            # of logging facilities. The first here is for
-            # /var/log/syslog (there aren't any others). This is all
+            # TODO:4d723428 Fix the logging interface. We shouldn't have
+            # to go through config to get a logging object. Also, it
+            # doesn't make sense to select the first log from a
+            # collection of logs. The collections of logs are actually
+            # configurations of logging facilities. The first here is
+            # for /var/log/syslog (there aren't any others). This is all
             # really wierd. We shoud just be able to say something like:
             #
             #     import log from logger
@@ -559,28 +732,43 @@ class _request:
             msg = f'{ex}; ip:{ip}; ua:"{ua}"'
             log.exception(msg)
 
+    # TODO The official word for this data is "message body", so we
+    # should probably rename the property to "body".
     @property
     def payload(self):
+        """ Returns the HTTP message body of the request.
+
+        https://en.wikipedia.org/wiki/HTTP_message_body
+        """
+
         if self._payload is None:
-            sz = self.size
-            inp = self.environment['wsgi.input']
-            if self.mime == 'multipart/form-data':
-                # Normally, the client won't need to get the payload for
-                # multipart data; it will usually just use
-                # `request.files`. Either way, return whan we have. We
-                # probably shouldn't memoize it since it could be
-                # holding a lot of file data.
+            # If the payload hasn't been set, we can get it from the
+            # WSGI environment.
+            if self.iswsgi:
+                sz = self.size
+                inp = self.environment['wsgi.input']
+                if self.mime == 'multipart/form-data':
+                    # Normally, the client won't need to get the payload
+                    # for multipart data; it will usually just use
+                    # `request.files`. Either way, return whan we have.
+                    # We probably shouldn't memoize it since it could be
+                    # holding a lot of file data.
 
-                # TODO We could move this outside the consequence block
-                inp.seek(0)
+                    # TODO We could move this outside the consequence
+                    # block
+                    inp.seek(0)
 
-                return inp.read(sz)
-            else:
-                # TODO What would the mime type (content-type) be here?
-                # (text/html?) Let's turn this else into an elif with
-                # that information.
-                self._payload = inp.read(sz).decode('utf-8')
+                    return inp.read(sz)
+                else:
+                    # TODO What would the mime type (content-type) be
+                    # here?  (text/html?) Let's turn this else into an
+                    # elif with that information.
+                    self._payload = inp.read(sz).decode('utf-8')
         return self._payload
+
+    @payload.setter
+    def payload(self, v):
+        self._payload = v
 
     @property
     def path(self):
@@ -593,14 +781,25 @@ class _request:
             targets the application root and does not have a trailing
             slash.
         """
-        return self.environment['path_info']
+        if self.iswsgi:
+            return self.environment['path_info']
 
     @property
     def size(self):
-        try:
-            return int(self.environment.get('content_length', 0))
-        except ValueError:
-            return 0
+        """ The contents of any Content-Length fields in the HTTP
+        request. If empty, return 0. In non-WSGI requests, returns the
+        length of the payload.
+        """
+        if self.iswsgi:
+            try:
+                return int(self.environment.get('content_length', 0))
+            except ValueError:
+                return 0
+
+        # NOTE This appears to be ambigous. In the WSGI version,
+        # shouldn't we also be returning the size of the payload.
+
+        return len(self.payload)
 
     @property
     def class_(self):
@@ -616,10 +815,26 @@ class _request:
 
     @property
     def method(self):
-        return self.environment['request_method'].upper()
+        """ Returns the HTTP verb, such as GET, POST, PATCH, etc, used
+        in the HTTP request.
+        """
+        if self.iswsgi:
+            return self.environment['request_method'].upper()
+        
+        if self._method:
+            return self._method.upper()
+
+        return None
+
+    @method.setter
+    def method(self, v):
+        self._method = v
 
     @property
     def ip(self):
+        """ Returns an ``ecommerce.ip`` address object corresponding the
+        REMOTE_ADDR WSGI environment variblable.
+        """
         if not self._ip:
             ip = str(self.environment['remote_addr'])
             self._ip = ecommerce.ip(address=ip)
@@ -627,29 +842,42 @@ class _request:
 
     @property
     def referer(self):
-        if not self._url:
+        """ Returns an ``ecommerce.url`` object corresponding to the
+        HTTP_REFERER of the HTTP request.
+        """
+        if not self._referer:
             url = str(self.environment['http_referer'])
-            self._url = ecommerce.url(address=url)
-        return self._url
+            self._referer = ecommerce.url(address=url)
+        return self._referer
 
     @property
     def useragent(self):
+        """ Returns an ``ecommerce.useragent`` object corresponding to
+        the USER_AGENT HTTP environment variable for this HTTP request.
+        """
         if not self._useragent:
-            ua = str(self.environment['user_agent'])
-            self._useragent = ecommerce.useragent(string=ua)
+            if self.iswsgi:
+                ua = str(self.environment['user_agent'])
+                self._useragent = ecommerce.useragent(string=ua)
         return self._useragent
 
     @property
     def scheme(self):
         """ Return the scheme for the request, e.g., http, https, etc.
         """
-        return self.environment['wsgi.url_scheme'].lower()
+        if self.iswsgi:
+            return self.environment['wsgi.url_scheme'].lower()
+
+        return urllib.parse.urlparse(self._url).scheme
 
     @property
     def port(self):
         """ Return the TCP port for the request, e.g., 80, 8080, 443.
         """
-        return int(self.environment['server_port'])
+        if self.iswsgi:
+            return int(self.environment['server_port'])
+
+        return urllib.parse.urlparse(self._url).port
 
     @property
     def url(self):
@@ -657,9 +885,14 @@ class _request:
             
             https://foo.net:8000/en/my/page
         """
+        if self._url:
+            return self._url
 
         scheme = self.scheme
-        servername = f'{self.servername}:{self.port}'
+        servername = self.servername
+        if self.port:
+            servername += ':' + str(self.port)
+
         qs = self.qs
         path = self.path
 
@@ -672,29 +905,47 @@ class _request:
 
     @property
     def isget(self):
+        """ Returns True if the request's HTTP method is GET.
+        """
         return self.method == 'GET'
 
     @property
     def ispost(self):
+        """ Returns True if the request's HTTP method is POST.
+        """
         return self.method == 'POST'
 
     @property
     def ishead(self):
+        """ Returns True if the request's HTTP method is HEAD.
+        """
         return self.method == 'HEAD'
 
     @property
     def isxhr(self):
+        """ Returns True if request is intended as an XMLHttpRequest
+        (XHR).
+        """
         return self.content_type == 'application/json'
 
     @property
     def content_type(self):
+        """ Return the Content-Type of the request.
+        """
         return self.environment['content_type'].strip()
 
     @property
     def mime(self):
+        """ Return the mime type of the request.
+        """
         return self.content_type.split(';')[0].strip().lower()
 
+    # TODO Rename to '_demand' since this is a private method
     def demand(self):
+        """ Causes an exception to be raised if the request is not
+        complete or is incorrectly constructed.
+        """
+
         if not request.page:
             raise NotFoundError(self.path)
 
@@ -711,7 +962,6 @@ class _request:
                     raise BadRequestError(
                         'No files given in multipart form.'
                     )
-                    
 
             # The remaining demands will be for XHR requests only
             if not self.isxhr:
@@ -857,15 +1107,60 @@ class _response():
 		463: ''
     }
 
-    def __init__(self, req):
+    def __init__(self, req, res=None, ex=None):
+        """ Create an HTTP response.
+
+        :param: req www._request: The www.request object that resulted in
+        this response.
+
+        :param: res urllib.response: The response object from
+        urllib.request.urlopen(). This response object (self) will wrap
+        ``res``, making things more convenient for the user of
+        www._response.
+
+        :param: ex Exception: If the HTTP response is the result of an
+        Exception, ``ex`` can be passed in. If it contains the status
+        code, that status code will be used for the respones's
+        ``status`` property.
+        """
         self._payload = None
         self._status = 200
         self._page = None
         self.request = req
         self._headers = headers()
+        self._response = res
 
+        if res:
+            self.status = res.status
+            self.payload = res.read()
+            self.headers = res.headers
+
+        if ex:
+            try:
+                st = ex.status
+            except AttributeError:
+                self.status = 500
+            else:
+                self.status = st
+
+            payload = None
+            try:
+                payload = ex.read()
+            except AttributeError:
+                pass
+            else:
+                self.payload = payload
+
+            try:
+                hdrs = ex.headers
+            except AttributeError:
+                pass
+            else:
+                self.headers = hdrs
     @property
     def status(self):
+        """ The HTTP status code of the response.
+        """
         return self._status
 
     @status.setter
@@ -874,13 +1169,53 @@ class _response():
 
     @property
     def message(self):
+        """ Returns a string containing the HTTP status code of the
+        response and the standard message/phrase corresponding to the
+        status code.
+        """
         try:
             return '%i %s' % (self.status, self.Messages[self.status])
         except KeyError:
             return str(self.status)
 
     @property
+    def contenttype(self):
+        """ The content type of the body.
+        """
+        return self.headers['Content-Type']
+
+    @property
+    def mime(self):
+        """ Returns the **type** and **subtype** portion of the mime.
+        For example, if ``self.contenttype`` is:
+                
+            text/html; charset=UTF-8
+
+        only the string 'text/html' will be returned.
+        """
+        ct = self.contenttype
+        if ct:
+            return ct.split(';')[0].lower()
+        return None
+
+    @property
+    def mimetype(self):
+        """ Returns the **type** portion of the mime string. For
+        example, if ``self.mime`` is:
+                
+            image/jpeg
+
+        only the string 'image' will be returned.
+        """
+        mime = self.mime
+        if mime:
+            return mime.split('/')[0]
+        return None
+
+    @property
     def payload(self):
+        """ Returns the body of the response.
+        """
         # These lines are for XHR responses
         # payload = json.dumps(payload)
         # payload = bytes(payload, 'utf-8')
@@ -890,15 +1225,66 @@ class _response():
     def payload(self, v):
         self._payload = v
 
-    def __getitem__(self, sels):
-        return self.html[sels]
+    @property
+    def json(self):
+        """ If the payload is a JSON string, returns a Python list
+        representing the JSON document. An exception will be raised if
+        the payload cannot be deserialized as a JSON document.
+        """
+        return json.loads(self.payload)
 
     @property
     def html(self):
+        """ Returns a dom.html object representing the HTML in the
+        payload.
+        """
+        # TODO If the payload is not HTML (perhaps it's JSON or the
+        # content-type isn't HTML), we should probably raise a
+        # ValueError.
         return dom.html(self.payload)
+
+    def __getitem__(self, sels):
+        """ Returns the portion of the response body corresponding to
+        the selector (``sels``).
+
+        :param: sels str: If the body contains JSON data, the ``sels``
+        parameter should be a string used to select form the list
+        returned by json.loads. For example, the following are the
+        same::
+            
+            self['MySelector']
+            json.loads(self.payload)['MySelector']
+
+        When the payload contains HTML, the select should be a CSS3
+        selector::
+
+            # Select all <p> tags
+            ps = self['p']
+
+            # Select all <em>'s elements in <span> element with a class
+            # of 'my-class'
+            ems = self['span.my-class em']
+        """
+        if self.mime == 'application/json':
+            return self.json[sels]
+        elif self.mime == 'text/html':
+            return self.html[sels]
+        else:
+            raise ValueError(
+                'Cannot __getitem__ from www.response with mime type '
+                f'of "{self.mime}"'
+            )
 
     @property
     def headers(self):
+        """ Returns the ``headers`` collection object associated with
+        this HTTP response.
+        """
+        # If self._headers is not an instance of `headers`, coerse to
+        # the native type.
+        if not isinstance(self._headers, headers):
+            self._headers = headers(self._headers)
+
         clen = len(self.payload) if self.payload else 0
         self._headers['Content-Length'] = clen
         
@@ -917,6 +1303,15 @@ class _response():
         self._headers = v
 
     def __repr__(self, pretty=False):
+        """ Returns a string representation of this HTTP response
+        object.
+
+        :param: pretty bool: If True, prettifies the payload if the
+        payload is JSON or HTML.
+        """
+
+        # TODO Shouldn't ``pretty`` default to True?
+
         r = textwrap.dedent('''
         URL:    %s
         Method: %s
@@ -925,17 +1320,32 @@ class _response():
         %s
         ''')
 
+        payload = self.payload
+        if pretty:
+            if self.mime == 'application/json':
+                payload = json.dumps(json.loads(payload), indent=4)
+            elif self.mime == 'text/html':
+                payload = dom.html(self.payload).pretty 
+
         return r % (
             self.request.path,
             self.request.method,
             self.message,
-            dom.html(self.payload).pretty if pretty else self.payload,
+            payload,
         )
 
     def __str__(self):
+        """ Returns a string representation of this HTTP response
+        object.
+        """
         return self.__repr__(pretty=True)
 
 class controller:
+    """ This is an old object that is not currently in use. It my be
+    revived when XHR processing is revisited.
+    """
+
+    # TODO Determine if this is dead code.
     def __init__(self, app):
         self._app = app
 
@@ -961,14 +1371,90 @@ class controller:
             )
 
 class HttpException(Exception):
+    """ An abstract class for HTTP Exception. 
+    
+    Direct subclasses of ``HttpException`` are those that represent
+    status codes in the 300s.  ``HttpError`` is also a subclass of
+    ``HttpException``. Its subclasses represent status codes in the 400s
+    and 500s. Thus, an ``HttpException`` is not necessarily
+    representative of an error; it represents any *exceptional*
+    response, like a 301 Moved Premanently, 404 Not Found or a 500
+    Internal Server Error.
+    """
+    def __init__(self, msg, res=None):
+        super().__init__(msg)
+        self.response = res
+
+    @classmethod
+    def create(cls, msg, res, _attop=True):
+        """ Creates and returns a subclass of ``cls`` that corresponds
+        to thet HTTP ``status`` property in ``res``. 
+
+        It's usually best to call ``create`` off the HttpException
+        class::
+            
+            HttpException.create(msg, res)
+
+        This ensures that all direct and indirect subclasses are tested.
+        However, it is possible to limit the scope to the descendents of
+        a particular subclass::
+
+            HttpError.create(msg, res)
+
+        :param: msg str: The error message for the exception.
+
+        :param: res www.response: The HTTP response object.
+
+        :param: _attop bool: Since ``create`` is a recursive method,
+        ``atop`` is used internally to determine when the method is at
+        the top of the recursion stack.
+        """
+        for sub in cls.__subclasses__():
+            
+            # Recurse
+            ex = sub.create(msg, res, _attop=False)
+
+            # Return if the sub was able to create one
+            if ex:
+                return ex
+
+            try:
+                st = sub.status
+            except AttributeError:
+                continue
+            else:
+                if res.status == st:
+                    return sub(msg=msg, res=res)
+
+        # If we are at the top call of this recursive method...
+        if _attop:
+            
+            # If we are here, then recursing through the subclasses did
+            # not result in the discovery of the correct exception
+            # class. Therefore, just fall back on the genereic HTTP 500
+            # InternalServerError.
+            return InternalServerError(res=res)
+
+        return None
+
     @property
     def phrase(self):
+        """ Returns a string with the status code and the standard HTTP
+        phrase for the error message, e.g.: '404 Not Found'.
+        """
         return '%s %s' % (
-            str(self.status), response.Messages[self.status]
+            str(self.status), _response.Messages[self.status]
         )
 
     @property
     def message(self):
+        """ Returns the string given to as the ``msg`` in during
+        instantiation::
+
+            msg = 'Cannot brew'
+            ex = ImATeapotError(msg=msg)
+            assert ex.message == msg
+        """
         return str(self)
 
     def __call__(self, res):
@@ -977,13 +1463,28 @@ class HttpException(Exception):
         )
 
 class HttpError(HttpException):
-    def __init__(self, msg=None, flash=None):
+    """ The abstract class for HTTP errors.
+
+    Subclasses of HttpError correspond to client errors (400–499) and
+    server errors (500–599).
+    """
+    def __init__(self, msg=None, flash=None, res=None):
+        """ Creates an HttpError instance.
+
+        :param: msg str: The error message.
+
+        :param: flash str: A message intended to be flashed to the user
+        explaining the error.
+
+        :param: res www.response: The ``response`` corresponding to this
+        HttpError.
+        """
         self.flash = flash
         msg0 = self.phrase
         if msg:
             msg0 += ' - ' + msg
 
-        super().__init__(msg0)
+        super().__init__(msg=msg0, res=res)
 
 class MultipleChoicesException(HttpException):
     status = 300
@@ -1243,14 +1744,55 @@ class NetworkReadTimeoutError(HttpError):
     status = 598
 
 class headers(entities.entities):
+    """ A collection of HTTP headers. 
+    
+    Headers are components of HTTP requests and responses messages and,
+    therefore, are constiuents of the ``request`` and ``response``
+    objects (viz. www.request.headers and www.response.headers.).
+
+    """
     def __init__(self, d=None, *args, **kwargs):
+        """ Creates a headers collection.
+
+        :param: d dict: A dict where each key is the header name
+        and the value is the header's value::
+
+            {
+                'Content-Type': 'text/html',
+                'Referer': 'https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol'
+            }
+
+        The dict is used to initialize the collection.
+        """
         super().__init__(*args, **kwargs)
         if d:
             for k, v in d.items():
                 self += header(k, v)
             
     def __setitem__(self, ix, v):
+        """ If ix is a str, allows for indexer notation to set a headers
+        value::
+
+            hdrs = headers()
+            assert hdrs.count == 0
+
+            hdrs['Content-Type'] == 'text/html'
+
+            assert hdrs.count == 1
+
+            assert hdrs['Content-Type'] == 'text/html'
+
+        If ix is not a str, default indexer logic is used::
+
+            assert hdrs[0].name == 'Content-Type'
+            assert hdrs[0].value == 'text/html'
+
+        NOTE The implementation looks a little buggy. See the TODO's if
+        the above explanations is inaccurate.
+        """
         if not isinstance(ix, str):
+            # TODO This can't be write. super().__setitem__ would need a
+            # value (``v``).
             return super().__setitem__(ix)
 
         # TODO Why can't we overwrite prior values. 
@@ -1261,6 +1803,9 @@ class headers(entities.entities):
             self += header(ix, v)
 
     def __getitem__(self, ix):
+        """ Provides indexor logic for the ``headers`` class. See the
+        docstring at __setitem__ for details.
+        """
         if not isinstance(ix, str):
             return super().__getitem__(ix)
 
@@ -1269,26 +1814,119 @@ class headers(entities.entities):
                 return hdr.value
         return None
 
+    def append(self, obj, uniq=False, r=None):
+        """ Allows colon seperate strings to be appended as new
+        ``header`` objects::
+
+            hdrs = headers()
+
+            # Call append() using += operator
+            hdrs += 'Content-Type: text/html'  
+            
+            assert hdrs.first.name == 'Content-Type'
+            assert hdrs.first.value == 'text/html'
+
+        :param: obj str|header: The header to append. The header can be
+        a ``header`` object or a string as described above.
+
+        :param: uniq bool: Only append the header if it is unique.
+
+        :param: r entities.entities: An entities.entities collection
+        contaning was was successfully appended. Note, shouldn't be used
+        by client code; it's existence as a parameter is to handle
+        recursive situations.  See ``entities.entities.append``.
+        """
+        if isinstance(obj, str):
+            kvp = [x.strip() for x in obj.partition(':') if x != ':']
+            if len(kvp) != 2:
+                raise ValueError(
+                    'Headers must be colon seperate KVPs'
+                )
+            return self.append(header(*kvp))
+
+        super().append(obj=obj, uniq=uniq, r=r)
+
     @property
     def list(self):
+        """ Returns the headers in this collection as a list() object.
+        Each entry in the list is a tuple containing the header's name
+        and value::
+
+            [
+                ('Content-Type', 'text/html'),
+                ('Referer', 'https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol')
+            ]
+        """
         r = list()
         for hdr in self:
             r.append(hdr.tuple)
         return r
 
+    @property
+    def dict(self):
+        """ Returns the headers in this collection as a dict() object.
+        Each entry in the dict has for its key the name of the header,
+        and for its value the value of the header::
+
+            {
+                'Content-Type': 'text/html',
+                'Referer': 'https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol'
+            }
+        """
+        r = dict()
+        for hdr in self:
+            r[hdr.name] = hdr.value
+        return r
+
+    def __str__(self):
+        """ Returns a string representation of the headers::
+
+            "Content-Type: text/html\nReferer: https://en.wikipedia.org"
+        """
+        return '\n'.join(str(x) for x in self)
+
 class header(entities.entity):
+    """ An object representing a header for HTTP response and
+    request messages.::
+
+        hdr = header(name='content-type', v='text/html')
+
+        assert hdr.name == 'content-type'
+        assert hdr.value == 'text/html'
+    """
     def __init__(self, name, v):
+        """ Constructs an HTTP header.
+
+            hdr = header(name='content-type', v='text/html')
+
+            assert hdr.name == 'content-type'
+            assert hdr.value == 'text/html'
+        """
         self._name = name
         self.value = v
 
     @property
     def name(self):
+        """ The headers name.
+        """
+        # TODO Why do we need to lower() this. I think we should be
+        # case-preserving here.
         return self._name.lower()
 
     def __str__(self):
+        """ Returns a string representation of the header. This is the
+        standard string representation expected of a header, i.e., the
+        name followed by a colon, then its value, e.g.::
+
+            'content-type: text/html'
+        """
         return '%s: %s' % self.tuple
 
     def __repr__(self):
+        """ A string representation of the object and its values::
+
+            header(content-type: text/html)
+        """
         args = (
             type(self).__name__,
             self.name,
@@ -1299,38 +1937,121 @@ class header(entities.entity):
 
     @property
     def tuple(self):
+        """ A tuple representation of the header:
+
+            ('content-type', 'text/html')
+        """
         return (self.name, self.value)
 
 class browsers(entities.entities):
+    """ A collection of ``browser`` objects.
+    """
     pass
 
 class browser(entities.entity):
+    """ Represents a web browser.
+
+    Like graphical browsers, the ``browser`` object maintains a
+    collection of ``_tabs``::
+
+        brw = browser()
+
+        # "open" two tabs
+        t1 = brw.tab()
+        t2 = brw.tab()
+
+    Like tabs in graphical browser, these tabs can make HTTP requests.
+    First we construct the ``request`` object and pass it to the tab's
+    ``request`` method.
+
+        req = www.request(url='https://www.google.com')
+        res = t1.request(req)
+
+    The ``request`` method returns a ``response`` object.
+
+    The ``browser`` itself contains a ``cookies`` collections which,
+    amoung othre things, can cause the ``browser`` to be authenticated
+    to a give web site, by storing a JWT issued by the web site open
+    login.
+    """
     class _tabs(entities.entities):
-        pass
+        """ Represents a collection of browser tabs.
+        """
+
+        def tab(self):
+            """ Create and return a new ``_tab`` object. The tab object
+            is stored in this ``_tabs`` collection.
+            """
+            t = browser._tab(self)
+            self += t
+            return t
 
     class _tab(entities.entity):
-        # TODO These methods will eventually be implemented to perform
-        # actual HTTP requests. At the time of this writting, however,
-        # these will be implemented in the testers.browser subclass
-        def get(self, url):
-            self._request(url)
+        """ Represents a tab in the browsers.
 
-        def post(self, url):
-            self._request(url)
+        ``tab`` object are used to make HTTP requests, using their
+        ``request()`` method.
+        """
+        def __init__(self, tabs):
+            """ Create a new tab object.
 
-        def head(self, url):
-            self._request(url)
+            :param: tabs _tabs: A reference to the tabs collection that
+            this tab is a part of. This can be used to get back to the
+            browser object itself.
+            """
+            self.tabs = tabs
 
-        def _request(self, url):
-            raise NotImplementedError('TODO')
+        def request(self, req):
+            """ Makes an HTTP request. Returns a www.response object
+            containing data the HTTP server returned.
+
+            :param: req www.request: The request object. This object
+            contains the data, such as the HTTP method, payload (body),
+            and headers used to make the HTTP request.
+            """
+            # TODO ``req`` should be able to be a str containing a url
+            # or an ecommerce.url object for convenient. These would be
+            # converted to ``request`` objects with a ``method`` of GET.
+            url = req.url
+
+            body = req.payload
+
+            if body:
+                body = body.encode('utf-8')
+
+            meth = req.method
+
+            hdrs = req.headers.dict
+
+            req1 = urllib.request.Request(
+                url, body, hdrs, method=meth
+            )
+
+            req1.add_header('Content-Length', req.size)
+
+            try:
+                res = urllib.request.urlopen(req1, body)
+            except Exception as ex:
+                res = _response(req=req, ex=ex)
+                ex1 = HttpError.create(
+                    'Error requesting' , res
+                )
+                raise ex1
+            else:
+                # Return a www._response objcet representing the HTTP
+                # response to the HTTP request.
+                return _response(req=req, res=res)
 
     class _cookies(entities.entities):
+        """ A class representing a collection of ``cookie`` objects.
+        """
+
         @property
         def header(self):
-            """ A header object with a key of "Cookie" and a value of
-            all the browser's (self) cookies safely encoded.
+            """ Creates and returns header object with a key of "Cookie"
+            and a value of all the browser's (self) cookies safely
+            encoded.
             """
-
             v = str()
             for cookie in self:
                 v += '%s=%s' % (
@@ -1341,10 +2062,24 @@ class browser(entities.entity):
             return header(name="Cookie", v=v)
 
     class _cookie(entities.entity):
+        """ Represents an HTTP cookie.
+
+        The cookie object can be stored in the ``browser`` object in its
+        ``cookies`` collection.
+        """
         def __init__(self, name, value, domain, 
             path       =  '/',    expires   =  'session',
             http_only  =  False,  same_site =  None,
         ):
+            """ Creates an HTTP cookie.
+
+            :param: path str: Indicates a URL path that must exist in
+            the requested URL in order to send the cookie header.
+
+            :param: expires str: Indicates the date at which a cookie
+            should expire. Permanent cookies are deleted at a date
+            specified by this argument.
+            """
 
             self.name     =  name;     self.value      =  value
             self.domain   =  domain;   self.path       =  path
@@ -1352,16 +2087,27 @@ class browser(entities.entity):
             self.same_site = same_site
 
     def __init__(self):
+        """ Create an instance of a browser.
+        """
+        # TODO The _tabs class doesn't have an __init__. I think the
+        # intention of passing self to tabs is so the tabs collection
+        # can have a reference back to the browser, which makes a lot of
+        # sense, but this doesn't seem to be correctly implemented.
+        self.tabs = browser._tabs(self)
         self.cookies = self._cookies()
         self._useragent = None
 
     @property
     def useragent(self):
+        """ Returns an ecommerce.useragent object representing the
+        useragent this browser is claiming it is.
+        """
         if isinstance(self._useragent, ecommerce.useragent):
             pass
         elif self._useragent is None:
             pass
         else:
+            # Coerse if private member is a str
             self._useragent = ecommerce.useragent(
                 string = self._useragent
             )
@@ -1372,4 +2118,19 @@ class browser(entities.entity):
     def useragent(self, v):
         self._useragent = v
 
+    def tab(self):
+        """ Create a new tab, append it to the ``browse``'s tabs
+        collection, and return the new tab.
+        """
+        return self.tabs.tab()
+
+# Start the WSGI application
+
+# TODO This seems really strange that we have this line here. I can't
+# remember what caused me to write this. Perhaps this should be within a
+# 
+#    if __name__ == '__main__'
+#
+# or something. We should reconsider this when revisting the WSGI
+# handling code. At least comment it.
 app = application()

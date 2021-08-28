@@ -31,21 +31,27 @@ class logs(entities):
 class log(entity):
     def __init__(self, addr, fac, tag, fmt, lvl):
         super().__init__()
+
+        # NOTE .getLogger() always returns the same 'logger'
         self._logger = logging.getLogger()
-        fmt = tag + fmt
-        fmt = logging.Formatter(fmt)
-        self._logger.setLevel(getattr(logging, lvl))
-
-        hnd = logging.handlers.SysLogHandler(addr, fac)
-        hnd.setFormatter(fmt)
-        self._logger.addHandler(hnd)
-
-        hnd = log.callbackhandler(self.callback)
-        self._logger.addHandler(hnd)
 
         self.onlog = event()
 
+        # No handlers means we haven't set the logger up
+        if not len(self._logger.handlers):
+            fmt = tag + fmt
+            fmt = logging.Formatter(fmt)
+            self._logger.setLevel(getattr(logging, lvl))
+
+            hnd = logging.handlers.SysLogHandler(addr, fac)
+            hnd.setFormatter(fmt)
+            self._logger.addHandler(hnd)
+
+            hnd = log.callbackhandler(self.callback)
+            self._logger.addHandler(hnd)
+
     def _self_onlog(self, src, eargs):
+        # TODO Is this dead code?
         pass
 
     class callbackhandler(Handler):

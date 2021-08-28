@@ -31,9 +31,6 @@ import textwrap
 import account
 import MySQLdb
 
-# TODO Rename crust.py to crust. This would better meet the expectation
-# of a shell user who simply wants to run a program.
-
 def dbg(code):
     try:
         exec(code)

@@ -19,7 +19,7 @@ These entity objects are based on the "E-Commerce Models" chapter of "The
 Data Model Resource Book Volume 2".
 
 Examples:
-    See test-ecommerce.py for examples. 
+    See testecommerce.py for examples. 
 
 TODO:
     
@@ -45,6 +45,8 @@ import primative
 import product
 import urllib
 import user_agents
+import urllib.parse
+import uuid
 
 class agents(party.parties):                                  pass
 class webmasters(party.personals):                            pass
@@ -63,7 +65,8 @@ class contenttypes(apriori.types):                            pass
 class contentroles(orm.entities):                             pass
 class contentstatustypes(apriori.types):                      pass
 class users(orm.entities):
-    
+    RootUserId = uuid.UUID('93a7930b-2ae4-402a-8c77-011f0ffca9ce')
+
     @classproperty
     def root(cls):
         if not hasattr(cls, '_root') or not cls._root:
@@ -80,14 +83,16 @@ class users(orm.entities):
                 f'name = %s and {map.name} is %s', 'root', None
             )
 
-            if usrs.hasplurality:
+            if usrs.isplurality:
                 raise ValueError('Multiple roots found')
 
-            if usrs.hasone:
+            if usrs.issingular:
                 cls._root = usrs.first
             else:
-                cls._root = user(name='root')
-                cls._root.save()
+                cls._root = user(id=cls.RootUserId, name='root')
+
+                with orm.override():
+                    cls._root.save()
 
         return cls._root
         
@@ -367,6 +372,11 @@ class user(orm.entity):
 
     @property
     def isroot(self):
+        # TODO:887c6605 Change this to:
+        #
+        #    return self.id = '93a7930b-2ae4-402a-8c77-011f0ffca9ce'.
+        #
+        # I think we can get rid of the self.site test.
         return self.name == 'root' and self.site is None
 
     @property
@@ -393,6 +403,41 @@ class user(orm.entity):
                 )
 
         return brs
+
+    def su(self):
+        """ A context manager to switch current user to self.
+
+            The following do the same::
+
+                with orm.su(luser):
+                    ...
+
+                with luser.su():
+                    ...
+        """
+        return orm.su(self)
+        
+    @property
+    def retrievability(self):
+        vs = orm.violations()
+        sec = orm.security()
+        usr = sec.user
+        msgs = list()
+
+        if usr:
+            if usr.id != self.id:
+                msgs.append(
+                    'Current user is not the user being retrieved'
+                )
+        else:
+            msgs.append(
+                'Current user must be authenticated'
+            )
+
+        if vs.isempty:
+            vs += msgs
+
+        return vs
 
 class history(orm.entity):
     """ Used to store a history of the logins and passwords.
@@ -441,6 +486,8 @@ class url(orm.entity):
 
     # TODO Change address to name.
     address = str
+
+    # TODO Why do urls have users?
     users = users
 
     # The web `hits` where this ``url`` acts as an http_referer
@@ -451,21 +498,57 @@ class url(orm.entity):
     def __str__(self):
         return self.address
 
+    def __truediv__(self, other):
+        """ Overrides the / operator to allow for path joining
+
+            wiki = url(name='https://www.wikipedia.org/') 
+            py = wiki / 'wiki/Python'
+
+            assert py.name == 'https://www.wikipedia.org/wiki/Python'
+        """
+        addr = self.address
+        addr = os.path.join(addr, other)
+
+        # TODO Why is ecommerce being imported here? Can we remove it.
+        import ecommerce
+        return ecommerce.url(address=addr)
+
     @property
     def scheme(self):
-        return urllib.parse.urlsplit(self.address).scheme
+        return urllib.parse.urlparse(self.address).scheme
 
     @property
     def host(self):
         return urllib.parse.urlsplit(self.address).hostname
 
     @property
-    def path(self):
-        return urllib.parse.urlsplit(self.address).path
+    def port(self):
+        """ Return the TCP port for the request, e.g., 80, 8080, 443.
+        """
+        return urllib.parse.urlparse(self.address).port
 
     @property
     def paths(self):
         return [x for x in self.path.split(os.sep) if x]
+
+    @property
+    def path(self):
+        return urllib.parse.urlparse(self.address).path
+
+    @property
+    def creatability(self):
+        # NOTE:7a67115c I suppose anyone should be able to access a URL
+        # in most cases. However, associations between ``urls`` and
+        # other entity objects would work differently. But those
+        # accessibilty restrictions  would be enforced in the
+        # association objects.  For now, permit readability to all
+        # (within the current tenant (orm.proprietor) of course).
+        return orm.violations.empty
+
+    @property
+    def retrievability(self):
+        # NOTE:7a67115c
+        return orm.violations.empty
 
 class object(orm.entity):
     """ Stores electronic images, such as ``text`` (i.e. an HTML

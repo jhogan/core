@@ -9,8 +9,8 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021                 #
 ########################################################################
 
-from func import B, enumerate
 from dbg import PM
+from func import B, enumerate, PM
 import db
 import ecommerce
 import entities
@@ -18,6 +18,8 @@ import orm
 import party
 import tester
 import uuid
+
+import apriori; apriori.model()
 
 class problems(orm.entities):
     pass
@@ -177,14 +179,14 @@ class engineer(orm.entity):
 
         if self.name.startswith('Even'):
             if usr.name not in managers[::2]:
-                vs += 'system must be retrived by bgates or snadella'
+                vs += 'system must be retrieved by bgates or snadella'
                 
         elif self.name.startswith('Odd'):
             if usr.name not in managers[1::2]:
-                vs += 'system must be retrived by sballmer'
+                vs += 'system must be retrieved by sballmer'
         else:
             if usr.name not in managers:
-                vs += 'system must be retrived by a manager'
+                vs += 'system must be retrieved by a manager'
 
         return vs
 
@@ -236,7 +238,6 @@ class authorization(tester.tester):
     """ Tests the accessibility properties of entities (creatability,
     retrievability, updatability and deletability).
     """ 
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -359,6 +360,18 @@ class authorization(tester.tester):
                 e1 = e.orm.reloaded()
                 self.eq(e.id, e1.id)
 
+    def it_disallows_proprietor_creating_other_proprietors_record(self):
+        assert orm.security().proprietor.name == 'Microsoft'
+
+        with orm.su(self.bgates):
+            eng = engineer()
+
+            assert eng.proprietor.name == 'Microsoft'
+
+            with orm.proprietor(party.company.carapacian):
+                self.expect(orm.ProprietorError, eng.save)
+        
+
     ''' RETRIEVABILITY '''
     def it_cant_retrieve_entity(self):
         with orm.su(self.bgates):
@@ -459,8 +472,8 @@ class authorization(tester.tester):
         # Create 4 engineers. Two will have 'Even' in their name and two
         # will have 'Odd' in there name. Due to the contrived
         # authorization rules for `engineer` (engineer.isretrievable)
-        # bgates will be authorized to retrived the 'Even' ones and
-        # sballmer will be able to retrive the 'Odd' ones.
+        # bgates will be authorized to retrieved the 'Even' ones and
+        # sballmer will be able to retrieve the 'Odd' ones.
         with orm.sudo():
             for i, _ in enumerate(range(4)):
                 if i.even:
@@ -686,16 +699,42 @@ class authorization(tester.tester):
                 self.fail('No exception')
 
         with orm.sudo():
-            self.expect(db.RecordNotFoundError, sys.orm.reloaded)
+            self.expect(None, sys.orm.reloaded)
 
     ''' orm.override '''
     def it_creates_and_retrieves_with_override(self):
-        orm.security.owner = self.bgates
+        orm.security().owner = self.bgates
 
         with orm.override():
             pr = problem()
             self.expect(None, pr.save)
             pr1 = self.expect(None, pr.orm.reloaded)
+
+    def it_retrieves_constituents_with_override(self):
+        orm.security().owner = self.bgates
+
+        with orm.su(self.bgates):
+            eng = engineer(name='Even')
+            eng.systems += system(name='Even')
+            eng.save()
+
+        with orm.su(self.sballmer):
+            eng.systems += system(name='Even')
+            eng.save()
+
+        with orm.su(self.bgates):
+            eng = eng.orm.reloaded()
+
+        with orm.override():
+            with orm.su(self.sballmer):
+                self.two(eng.systems)
+
+        with orm.su(self.bgates):
+            eng = eng.orm.reloaded()
+
+        with orm.override(False):
+            with orm.su(self.sballmer):
+                self.zero(eng.systems)
 
     def it_updates_with_override(self):
         with orm.sudo():
@@ -734,18 +773,17 @@ class owner(tester.tester):
             if e.__module__ in ('party', 'apriori', 'ecommerce'):
                 e.orm.recreate()
 
-        own = ecommerce.user(name='hford')
-        root = ecommerce.users.root
-        orm.security().owner = root
-        own.owner = root
-        own.save()
+        with orm.sudo():
+            com = party.company(name='Ford Motor Company')
 
-        orm.security().owner = own
-        com = party.company(name='Ford Motor Company')
-        com.owner = own
-        com.save()
+            with orm.proprietor(com):
+                com.save()
+                own = ecommerce.user(name='hford')
+                own.save()
+
 
         orm.security().proprietor = com
+        orm.security().owner = own
 
     def it_calls_owner(self):
         def create_owner(name):
@@ -808,6 +846,9 @@ class root(tester.tester):
             )
 
     def it_cannot_create_multiple_root_users(self):
+        # TODO:887c6605 Lift restriction on multiple users being named
+        # root. Now that we have root's id hardcoded, we can rely on
+        # that as the identifier of the system's root.
         ecommerce.user.orm.truncate()
         root = ecommerce.user(name='root')
         self.expect(None, root.save)
@@ -818,6 +859,19 @@ class root(tester.tester):
         br = root1.brokenrules.first
         self.eq('valid', br.type)
         self.is_(root1, br.entity)
+
+    def it_assigns_root_a_consistent_id(self):
+        Id = uuid.UUID(hex='93a7930b-2ae4-402a-8c77-011f0ffca9ce')
+
+        for _ in range(2):
+            ecommerce.user.orm.truncate()
+            ecommerce.users._root = None
+
+            self.eq(Id, ecommerce.users.root.id)
+
+            ecommerce.user.orm.truncate()
+
+            self.eq(Id, ecommerce.users.root.id)
 
 class proprietor(tester.tester):
     def __init__(self, *args, **kwargs):
@@ -833,6 +887,11 @@ class proprietor(tester.tester):
                 e.orm.recreate()
 
         orm.security().owner = ecommerce.users.root
+
+        with orm.sudo():
+            self.bgates = ecommerce.user(name='bgates')
+            self.emusk = ecommerce.user(name='emusk')
+            self.bgates.save(self.emusk)
 
     def it_creates_associations(self):
         # Create some proprietors
@@ -864,8 +923,10 @@ class proprietor(tester.tester):
         self.expect(db.RecordNotFoundError, e_p.orm.reloaded)
 
         e_p.name = 'x'
-        self.expect(orm.ProprietorError, e_p.save)
-        self.expect(orm.ProprietorError, e_p.delete)
+
+        with orm.su(self.bgates):
+            self.expect(orm.ProprietorError, e_p.save)
+            self.expect(orm.ProprietorError, e_p.delete)
 
     def it_cant_load_composite(self):
         engineers.orm.truncate()
@@ -919,7 +980,8 @@ class proprietor(tester.tester):
 
         # Delete it. Microsoft shouldn't be able to delete Tesla's
         # records so we should get errors.
-        self.expect(orm.ProprietorError, eng.delete)
+        with self.bgates.su():
+            self.expect(orm.ProprietorError, eng.delete)
 
         # Switch proprietor back to Telsa
         orm.security().proprietor = tsla
@@ -963,7 +1025,9 @@ class proprietor(tester.tester):
         # mistake if a web developer were to do this, but just in case,
         # make sure that Tesla can't delete a Microsoft system.
         orm.security().proprietor = tsla
-        self.expect(orm.ProprietorError, eng.save)
+
+        with self.emusk.su():
+            self.expect(orm.ProprietorError, eng.save)
 
         # Set the proprietor back to Microsoft, reload and ensure the
         # system wasn't deleted.
@@ -1008,7 +1072,8 @@ class proprietor(tester.tester):
 
         self.none(eng.proprietor)
 
-        proprietor = party.person(name='Malcolm McLaren')
+        with orm.sudo():
+            proprietor = party.person(name='Malcolm McLaren')
 
         eng.proprietor = proprietor
 
@@ -1154,7 +1219,7 @@ class proprietor(tester.tester):
         eng = eng.orm.reloaded()
         self.eq(malcolm.id, eng.proprietor.id)
 
-    def it_propogates_proprietor_to_supers(self):
+    def it_propagates_proprietor_to_supers(self):
         """ When an subentity is newly created, it's supers should have
         the same proprietor.
         """
@@ -1263,7 +1328,8 @@ class proprietor(tester.tester):
             eng.skills = 'VB.NET'
             # We would expect Microsoft to get an error if they changed
             # Tesla's engineer records.
-            self.expect(orm.ProprietorError, eng.save)
+            with self.emusk.su():
+                self.expect(orm.ProprietorError, eng.save)
 
             # Reload the engineer to make sure it wasn't saved despite
             # the exception.
@@ -1296,7 +1362,8 @@ class proprietor(tester.tester):
         orm.security().proprietor = tsla
 
         # This time, save the collection
-        self.expect(orm.ProprietorError, engs.save)
+        with self.bgates.su():
+            self.expect(orm.ProprietorError, engs.save)
 
         # Correct proprietor
         orm.security().proprietor = ms
@@ -1422,8 +1489,9 @@ class proprietor(tester.tester):
         # Create some proprietors
         tsla = party.company(name='Tesla')
         ms = party.company(name='Microsoft')
+        ms.save()
 
-        # Create a Tesla engineers and the `system` s/he administors
+        # Create Tesla engineer and the `systems` s/he administors
         orm.security().proprietor = tsla
         eng = engineer()
         for i in range(3):
@@ -1433,7 +1501,7 @@ class proprietor(tester.tester):
 
         eng.save()
 
-        # Create some Microsoft engineers
+        # Create Microsoft engineer
         orm.security().proprietor = ms
         eng = engineer()
         for i in range(3):
@@ -1459,10 +1527,9 @@ class proprietor(tester.tester):
         orm.security().proprietor = tsla
 
         # Even though we have Microsoft's engineer (this situation
-        # should never happen unles there was a mistake by a web
+        # should never happen unless there was a mistake by a web
         # developer), we can't load its systems because the proprietor
-        # was set to
-        # Tesla.
+        # was set to Tesla.
         self.zero(eng1.systems)
 
         # Load engineer as Microsoft, change the name of a system and
@@ -1473,7 +1540,9 @@ class proprietor(tester.tester):
         eng1.systems.first.name = 'Tesla system'
 
         orm.security().proprietor = tsla
-        self.expect(orm.ProprietorError, eng1.save)
+
+        with self.bgates.su():
+            self.expect(orm.ProprietorError, eng1.save)
 
     def it_eager_loads_constituents(self):
         engineers.orm.truncate()
