@@ -595,10 +595,41 @@ class cssclass(attribute):
                 raise ValueError('Invalid type: ' + type(clss).__name__)
 
     def __delitem__(self, *clss):
+        """ Allows the del operator to be used to delete a CSS class from
+        the collection. Assuming `p` has a CSS class called
+        'my-class', you can delete it with the following code::
+
+            # Before: <p class="my-class my-other-class">
+            del p.classes['my-class']
+
+            # After: <p class="my-other-class">
+
+        The *clss indexer can be anything passed to cssclass.remove. See
+        its document string for a full list of argument tyes that can be
+        used to delete CSS classes this way.
+
+        :param: *clss TODO: Add comments from cssclass.remove
+        """
         self.remove(*clss)
 
     def __isub__(self, o):
-        self.remove(o)
+        """ Allows the -= operator to be used to delete a CSS class from
+        the collection. 
+
+        Assuming `p` has a CSS class called 'my-class', you can delete
+        it with the following code::
+
+            # Before: <p class="my-class my-other-class">
+            del p.classes -= 'my-class'
+
+            # After: <p class="my-other-class">
+
+        The o argument can be anything passed to cssclass.remove. See
+        its document string for a full list of argument tyes that can be
+        used to delete CSS classes this way.
+
+        :param: o TODO: Add comments from cssclass.remove
+        """
         return self
 
     def remove(self, *clss):
