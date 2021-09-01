@@ -9037,10 +9037,14 @@ class test_orm(tester):
         art = artist.getvalid()
         facts = art.artifacts 
         loc = location.getvalid()
+        B()
+        # DEAD pseudocollections atrophy
+        '''
         facts += loc
 
         self.three(art.brokenrules)
         self.broken(art, 'artifact', 'valid')
+        '''
         
     def it_calls_imperitive_attr_on_subentity(self):
         # Test inherited attr (phone)
