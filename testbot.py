@@ -278,7 +278,7 @@ class test_sendbot(tester.tester):
 
             dis = dis.orm.reloaded()
 
-            self.eq('postmarked', dis.status)
+            self.eq('queued', dis.status)
 
             sts = dis.statuses
 
