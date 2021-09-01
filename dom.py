@@ -625,14 +625,51 @@ class cssclass(attribute):
             # After: <p class="my-other-class">
 
         The o argument can be anything passed to cssclass.remove. See
-        its document string for a full list of argument tyes that can be
-        used to delete CSS classes this way.
+        its docstring for a full list of argument types that can be used
+        to delete CSS classes this way.
 
         :param: o TODO: Add comments from cssclass.remove
         """
         return self
 
     def remove(self, *clss):
+        """ Removes a CSS class from the collection::
+
+            # Given:
+            assert p.html == '<p class="c1 c2 c3 c4 c5 c6 c7 c8"></p>'
+            # The following three lines would do the same thing: remove
+            # the 'c5' CSS class from p
+            p.classes.remove('c5')
+            p.classes -= 'c5'
+            del p.classes['c5']
+            assert p.html == '<p class="c1 c2 c3 c4 c6 c7 c8"></p>'
+
+            # You can also remove multiple classes in one line using
+            # space seperated classes
+            p.classes.remove('c1 c8')
+            self.eq('class="c2 c3 c4 c6 c7"', p.classes.html)
+
+            p.classes -= 'c2', 'c7'
+            self.eq('class="c3 c4 c5 c6"', p.classes.html)
+
+        :param: *clss str| list<str|iterables>: The CSS class to remove.
+            if str:
+                The str is interpreted as one or more CSS classes, e.g.,
+                "my-class" or "my-class my-other-cass"
+
+            if list:
+                Each element in the list will be interpeted as a
+                string. You could do something like the following::
+                    tag.classes.remove('my-class', 'my-other-class')
+
+                    # or
+
+                    tag.classes.remove(*['my-class', 'my-other-class'])
+
+                    # or
+
+                    tag.classes.remove(['my-class', 'my-other-class'])
+        """
         for cls in clss:
             if isinstance(cls, str):
                 for cls in cls.split():
