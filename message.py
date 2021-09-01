@@ -528,8 +528,8 @@ class dispatch(orm.entity):
     # A string representation of the last state that the dispatched
     # entered into. This is here only because it makes it easier for
     # sendbot to query the dispatches table by status. (Note that this
-    # is a bit of a hack that we are using until correlated subqueries
-    # are supported by the ORM. See 9b4b0ce0.)
+    # is a bit of a HACK:9b4b0ce0 that we are using until correlated
+    # subqueries are supported by the ORM)
     status = str
 
     def __init__(self, *args, **kwargs):

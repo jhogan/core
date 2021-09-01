@@ -10742,7 +10742,7 @@ class associations(entities):
         self.orm._constituents = dict()
 
     def append(self, obj, uniq=False, r=None):
-        """ Adds a ``orm.association`` entity to the collection.
+        """ Adds an ``orm.association`` entity to the collection.
 
         :param: obj orm.association: The association object to append.
 
@@ -10778,8 +10778,8 @@ class associations(entities):
                     # the association class.
                     if self.orm.isreflexive:
                         if map.issubjective:
-                            # NOTE self.orm.composite can be None when the
-                            # association is new. Calling 
+                            # NOTE self.orm.composite can be None when
+                            # the association is new. Calling 
                             #
                             #     settattr(obj, map.name, None)
                             #
@@ -10792,14 +10792,15 @@ class associations(entities):
                             #     if self.orm.composite
                             #         self.name == type(None).__name__ 
                             #
-                            # Or we could make the setattr() call accept a
-                            # composite of None.
+                            # Or we could make the setattr() call accept
+                            # a
+                       
                             if comp is not None:
                                 
                                 # TODO map.name will always be 'subject'
                                 # here. Don't we want it to be
                                 #
-                                #     `self.orm.composite.__class__.__name__` 
+                                #     self.orm.composite.__class__.__name__
                                 #
                                 # Unfortately, when this is corrected,
                                 # several issues result when running the
