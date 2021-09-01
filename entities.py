@@ -1299,7 +1299,6 @@ class entities:
         if uniq and t in self:
             return r
 
-        self.onbeforeadd(self, entityaddeventargs(t))
         r._ls.append(t)
 
         # XXX Comment and test
