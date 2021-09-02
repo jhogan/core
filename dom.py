@@ -686,16 +686,28 @@ class cssclass(attribute):
 
     @property
     def isdef(self):
+        """ Returns True if the 'class' attribute is defined, False
+        otherwise. (See the docstring at attribute.isdef for more).
+        """
         return bool(self._classes)
 
     @property
     def value(self):
+        """ Returns a space seperated list of the CSS classes collected
+        in this attribute.
+
+        If the attribute (self) is not defined, the attribute.undef
+        class is returned to indicate that the value is undefined. See
+        cssclass.isdef.
+        """
         if not self.isdef:
             return attribute.undef
         return ' '.join(self._classes)
 
     @value.setter
     def value(self, v):
+        """ Set's the value of the class attribute.
+        """
         if v is None:
             self._classes = list()
         elif v is not attribute.undef:
@@ -703,9 +715,17 @@ class cssclass(attribute):
 
     @property
     def html(self):
+        """ Returns the HTML representation of the CSS class:
+
+            class="my-class my-other-class"
+        """
         return 'class="%s"' % self.value
 
     def __repr__(self):
+        """ Returns a representation of this object::
+
+            cssclass(value='my-class my-other-class')
+        """
         return '%s(value=%s)' % (type(self).__name__, self._classes)
 
 class elements(entities.entities):
