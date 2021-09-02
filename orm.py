@@ -100,14 +100,6 @@ TODOs:
         for ts in party(id).timesheets:
             ...
     
-    TODO:abf324b4 Do we really need pseudocollections? In the ~200 classes
-    so far in the GEM, none have really needed or would seem to benefit
-    from pseudocollections. Let's reflect on how valuable they are going
-    forward. If after the code has been in production serving web pages
-    for some while, and pseudocollections have not proven themselves to be
-    worthy, I think we should rip out the pseudocollection logic. This
-    logic is tedious to maintain and may be slowing down execution time.
-    
     TODO In the GEM, change all date and datetime attributes to past
     tense, e.g., s/acquiredat/acquired/
     
@@ -4231,66 +4223,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
                                             guestbook=guestbook
                                         )
 
-                                # The below code handles certain
-                                # subentity-superassociation-subentity
-                                # saves. E.g., if we have singers in the
-                                # `sng.singers` pseudocollection, and
-                                # the association between `sng` and
-                                # `singers` is via the superassociation
-                                # `artist_artist` then changes made to
-                                # `singers` won't be presisted unless we
-                                # descend down the inheritance tree from
-                                # `artist` to `singer`. See 3cb2a6b5.
-
-                                # Is the association reflexive and has
-                                # an object.
-                                if asses.orm.isreflexive and ass.object:
-                                    # Get the object's class and
-                                    # subentities.
-
-                                    clss = [ass.object.orm.entities]
-                                    subs = ass.object.orm.subentities
-                                    clss += [
-                                        x.orm.entities
-                                        for x in subs
-                                    ]
-
-                                    # Descend the inheritance tree
-                                    for cls in clss:
-                                        name = cls.__name__
-
-                                        # Get the association's
-                                        # constituents here so we can
-                                        # handle the KeyError exception.
-                                        # If we get the pseudocollection
-                                        # the normal way, 
-                                        #
-                                        #   getattr(ass, name)
-                                        #
-                                        # the KeyError would result in
-                                        # the creation of some
-                                        # non-existing subentities.
-                                        const = asses.orm.constituents
-                                        
-                                        try:
-                                            # Get pseudocollection
-                                            es = const[name]
-                                        except (KeyError, IndexError):
-                                            # Subentity doesn't exist
-
-                                            # NOTE:ce6ea883 Except both
-                                            # KeyError and IndexError
-                                            # because `const` can be a
-                                            # dict or an entities
-                                            # collection
-                                            pass
-                                        else:
-                                            # Save each entity found in
-                                            # the pseudocollection
-                                            for e in es:
-                                                e._save(cur,
-                                                    guestbook=guestbook)
-
                         asses.orm.trash.clear()
 
                 if type(map) is foreignkeyfieldmapping:
@@ -4691,28 +4623,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # Access the ``users`` collection via __getattribute__.
             usrs = per.users
 
-        Associations and pseudocollections are also retrieved through
-        this method::
-            class persons(orm.entities):          pass
-            class jobs(orm.entities):             pass
-            class job_persons(orm.associations):  pass
-
-            class person(orm.entity): pass
-            class job(orm.entity): pass
-
-            # A person can have multiple jobs and a job can be done by
-            # multiple persons
-            class job_person(orm.association):
-                person = person
-                job = job
-
-            # Get the association through __getattribute__
-            per = person()
-            jps = per.job_persons
-
-            # Alternatively, get the jobs collection through
-            # __getattribute__
-            jbs = per.jobs
         """
 
         try:
@@ -4747,6 +4657,12 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             raise ValueError(msg)
 
         map = self_orm.mappings(attr)
+
+        if map is None:
+            raise AttributeError(
+                f"'{self.__class__.__name__}' object has no attribute "
+                f"'{attr}'"
+            )
 
         map_type = type(map)
 
@@ -4980,57 +4896,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         elif map_type is associationsmapping:
             map.composite = self
-
-        elif map is None:
-            # For each of self's association mappings, look for the
-            # one that has entity mapping that matches `attr`. If
-            # found, get the association's collection object from the
-            # association mapping.  Then return that collection's
-            # `attr` property.
-            #
-            # For example, if `self` is an `artist`, and  `attr` is
-            # 'artifacts', return the association collection
-            # `artifacts` collection, i.e., ::
-            #
-            #     art.artist_arifacts.artifacts
-            #
-            # This gets you the pseudocollection of the
-            # artist_artifacts associations collection.
-
-            orm = self_orm
-            while orm:
-                for map in orm.mappings.associationsmappings:
-                    maps = map.associations.orm.mappings.entitymappings
-                    for map1 in maps:
-                        if map1.isproprietor:
-                            continue
-
-                        es = [map1.entity]
-                        es.extend([
-                            x.entity 
-                            for x in map1.entity.orm.subentities
-                        ])
-                        for e in es:
-                            if e.orm.entities.__name__ == attr:
-                                # Skip if association (map) is
-                                # non-reflexive and with is e is
-                                # collinear with self.
-                                if (
-                                    self.orm.iscollinear(with_=e)
-                                    and not map.entities.orm.isreflexive
-                                ):
-                                    continue
-
-                                asses = getattr(self, map.name)
-                                return getattr(asses, attr)
-
-                sup = orm.super
-                if not sup:
-                    break
-
-                orm = sup.orm
-
-            return object.__getattribute__(self, attr)
 
         return map.value
 
@@ -10250,19 +10115,6 @@ class orm:
         # Get list of propreties for this class
         props = [x.name for x in self.mappings]
 
-        # Look at all the associations that this entity is envolved in
-        # and add the name of the associated entity to `props`. These
-        # names would be for pseudocollection access (i.e.,
-        # art.artifacts).
-        for map in self.mappings.associationsmappings:
-            for map1 in map.associations.orm.mappings.entitymappings:
-
-                if map1.isproprietor:
-                    continue
-
-                if self.entity is not map1.entity:
-                    props.append(map1.entity.orm.entities.__name__)
-
         # Look for properties in the super. Not that this will ascend
         # the inheritance hierarchy until we reach the root entity.
         sup = self.super
@@ -10818,261 +10670,8 @@ class associations(entities):
             # Restore `obj` to its original reference
             obj = obj1
 
-            for map in obj.orm.mappings.entitymappings:
-                if not map.isloaded:
-                    continue
-
-                # self.orm.composite will not exist when loading the
-                # association.
-                if not comp:
-                    continue
-
-                # When a reflexive association has an entitymap other
-                # than `object` (this could be `subject` or some
-                # arbitrary entity map such as `myassociationstype`), an
-                # attempt to get the pseudocollection will result in an
-                # AttributeError below. We want to skip this map
-                # entirely. 
-                
-                # TODO Note that this raise the issue of what happens
-                # when a non-reflexive association has an entity map
-                # that isn't a part of the association:
-                #
-                #    class person_movie(association):
-                #        person = person
-                #        movie  = movie
-                #        genre  = genre 
-                # 
-                # At the moment, it's not clear how `genre` would not
-                # get included in this loop. We would expect an
-                # AttributeError if we did this:
-                #
-                #     pms += person_movie(
-                #         person=per, movie=mov, genre=gen
-                #     )
-
-                if self.orm.isreflexive and not map.isobjective:
-                    continue
-
-                compsups = [comp.orm.entity] \
-                           + comp.orm.entity.orm.superentities
-
-                if (
-                    self.orm.isreflexive and map.isobjective
-                    or (map.entity not in compsups)
-                ):
-                    try:
-                        # Get pseudocollections
-                        es = getattr(
-                            self, 
-                            map.value.orm.entities.__name__
-                        )
-
-                    except builtins.AttributeError:
-                        # If the object stored in map.value is the wrong
-                        # type, use the map.entity reference. This is
-                        # for situations where the user appends the
-                        # wrong type, but we don't want to raise an
-                        # error, instead prefering that the error is
-                        # discovered in the brokenrules collection. See
-                        # it_doesnt_raise_exception_on_invalid_attr_values
-                        # where a `location` object is being appended to
-                        # an `artifact`'s pseudocollection.
-                        es = getattr(
-                            self, 
-                            map.entity.orm.entities.__name__
-                        )
-
-                    # Remove the 'entities_onadd' event handlers when
-                    # adding to the pseudocollections so they don't
-                    # recursively call back into this method to add
-                    # association objects. The event handlers are
-                    # restored in the `finally` block.
-
-                    # TODO Tighten up code
-                    meths = [
-                        x for x in es.onadd 
-                        if x.__name__ == 'entities_onadd'
-                    ]
-
-                    try:
-                        for meth in meths:
-                            es.onadd -= meth
-
-                        # Add map's value to pseudocollection
-
-                        # NOTE We may want to override __contains__ such
-                        # that `map.value not in es` does the same thing.
-                        # Currently, identity comparisons will be done.
-                        if map.value.id not in [x.id for x in es]:
-                            es += map.value
-                    finally:
-                        # Restore entities_onadd handlers
-                        for meth in meths:
-                            es.onadd += meth
-
         super().append(obj, uniq, r)
         return r
-
-    def _self_onremove(self, src, eargs):
-        """ This event handler is called when an ``association`` is
-        removed from an ``associations`` collection. When this happens, we
-        want to remove the ``association``'s constituent entity (the
-        non-composite entity) from its pseudocollection class - but only
-        if it hasn't already been marked for deletion
-        (ismarkedfordeletion). If it has been marked for deletion, that
-        means the pseudocollection class is invoking this handler - so
-        removing the constituent would result in infinite recursion.  
-        """
-
-        # NOTE We seemed to be cascading deletes of association entity
-        # classes. I don't see why that is a good idea.
-        ass = eargs.entity
-
-        isreflexive = ass.orm.isreflexive
-
-        for i, map in enumerate(ass.orm.mappings.entitymappings):
-
-            # We wouldn't want to delete a proprietor or owner just
-            # because we are deleting one of its association objects.
-            if map.isproprietor or map.isowner:
-                continue
-
-            if isreflexive:
-                cond = map.isobjective
-            else:
-                cond = map.entity is not type(self.orm.composite)
-
-            if cond:
-                e = map.value
-                if e and not e.orm.ismarkedfordeletion:
-                    # Get the pseudocollection
-                    es = getattr(self, e.orm.entities.__name__)
-                    es.remove(e)
-
-                    # When removing an entity from a pseudocollection
-                    # class, the class will inevitably trash the removed
-                    # entity to mark it for removal from the database.
-                    # However, this would mean that removing an
-                    # association from the DB would cause the
-                    # constituents (artifact) object to removed from the
-                    # DB (cascading deletes). This is not what we want:
-                    # We should be able to delete as association between
-                    # two entity object without deleting the entities
-                    # themselves.  pop()ing the entity off the trash
-                    # collection will prevent the constituents from
-                    # being deleted.
-
-                    # Commenting out until it_removes_*_associations is
-                    # fixed
-                    #es.orm.trash.pop()
-
-                    break
-            
-        super()._self_onremove(src, eargs)
-
-    def entities_onadd(self, src, eargs):
-        """ An event handler invoked when an entity is added to the
-        association (``self``) through the association's
-        pseudocollection, e.g.::
-
-            # Create artist entity
-            art = artist()            
-
-            # Add artifact entity to the artist's pseudocollection
-            art.artifact += artifact() 
-
-        :param: src entities: The pseudocollection's entities object.
-
-        :param: eargs eventargs: The event arguments. Its ``entity``
-        property is the entity object being added to the
-        pseudocollection.
-
-        """
-        ass = None
-
-        # Create a list of the type of eargs.entity as well as its
-        # superentities
-        sups = eargs.entity.orm.entity.orm.superentities
-        sups.append(type(eargs.entity))
-
-        # Look through the association collection's (self's) entity
-        # mappings for one that matches eargs.entity. That
-        # entity mapping will refer to the association's reference to
-        # the entity being added.
-        for map in self.orm.mappings.entitymappings:
-
-            # Test map.entity against sups. When a non-subentity is
-            # added to the pseudocollection, we would only need to test
-            # against `type(eargs.entity)`. However, when subentity
-            # objects (singer) are added to super-associations
-            # (artist_artists), we will need to check the superentities.
-            if map.entity in sups:
-
-                # If we are adding entity object's to reflexive
-                # association collection, we add them as the 'object' of
-                # the association.
-                if not (self.orm.isreflexive and not map.isobjective):
-                    for ass in self:
-                        # For non-subentity objects, we could just do an
-                        # identity comparison. However, if a subentity
-                        # was added to the pseudocollection, we can and
-                        # must compare the id's since the subentity's id
-                        # will match its superentity's id.
-
-                        # Get the entity object of the association. 
-                        #
-                        # NOTE that it will be None in cases when the
-                        # association does not have the data to find the
-                        # entity (such as a null value for the entity's
-                        # id). In this case, ass.invalid is True so we
-                        # continue to the next association.
-                        e = getattr(ass, map.name)
-
-                        if e and e.id == eargs.entity.id:
-                            # eargs.entity already exists as a
-                            # constituents entity in this collection of
-                            # associations. There is no need to add it
-                            # again.
-                            return
-
-                    # eargs.entity is not a constituent entity in this
-                    # collection of associations yet so create a new
-                    # association and assign eargs.entity to it.
-                    ass = self.orm.entity()
-                    setattr(ass, map.name, eargs.entity)
-
-            if self.orm.isreflexive:
-                if map.issubjective:
-                    compmap = map
-            elif map.entity is type(self.orm.composite):
-                compmap = map
-        
-        if ass is None:
-            # If ass is None, there was an issue. Likely the user
-            # attempted to assign the wrong type of object to a
-            # pseudocollection (e.g., art.artifacts = locations()).
-            # Since we don't want to raise exceptions in cases like
-            # these (preferring to allow the brokenrules property to
-            # flag them as invalid), we will go ahead and create a new
-            # association referencing the invalid composite
-            # (eargs.entity) instead.
-            ass = self.orm.entity()
-            for map1 in ass.orm.mappings.entitymappings:
-
-                # Ignore if it's the `ass`'s proprietor's or owner's
-                # entitymapping
-                if map1.isproprietor or map1.isowner:
-                    continue
-
-                if map1.name != compmap.name:
-                    setattr(ass, map1.name, eargs.entity)
-
-        # Assign the association collections's `composite` property to
-        # the new association object's composite field; completing the
-        # association
-        setattr(ass, compmap.name, self.orm.composite)
-        self += ass
 
     def entities_onremove(self, src, eargs):
         for map in self.orm.mappings.entitymappings:
@@ -11089,23 +10688,14 @@ class associations(entities):
         self.remove(ass)
 
     def __getattr__(self, attr):
-        """ Return a composite object or constituent collection
-        (pseudocollection) requested by the user.
+        """ Return a composite object requested by the user.
 
         :param: str attr: The name of the attribute to return.
 
         :rtype: orm.entity or orm.entities
 
-        :returns: Returns the composite or pseudocollection being
-        requested for by ``attr``
+        :returns: Returns the composite being requested for by ``attr``
         """
-
-        def raiseAttributeError():
-            """ Raise a generic AttributeError.
-            """
-            msg = "'%s' object has no attribute '%s'"
-            msg %= self.__class__.__name__, attr
-            raise builtins.AttributeError(msg)
 
         # TODO Use the mappings collection to get __name__'s value.
 
@@ -11139,101 +10729,12 @@ class associations(entities):
 
             comp = comp.orm.super
 
-        try:
-            # Return a memoized constituent. These are created in the
-            # `except KeyError` block.
-            return self.orm.constituents[attr]
-        except KeyError:
-            for map in self.orm.mappings.entitymappings:
-                # TODO Remove paranthesis
-                if (self.orm.isreflexive and not map.isobjective):
-                    continue
+        msg = "'%s' object has no attribute '%s'"
+        msg %= self.__class__.__name__, attr
+        raise builtins.AttributeError(msg)
+            
 
-                # Get the entity for the entity map then concatenate
-                # it with its subentities.
-                # TODO Clean this up a little
-                ess = [map.entity.orm.entities]
-                ess.extend(
-                    x.entity.orm.entities 
-                    for x in map.entity.orm.subentities
-                )
 
-                # Iterate down the inheritance tree until we find an
-                # entity/subentity with the name of the attr.
-                # NOTE For most requests, the entity (ess[0]) will be
-                # what we want. Subentities will be needed when we
-                # request a pseudocollection that is a subtype of the
-                # association's objective entity:
-                #    sng.<artist_artist>.singers
-                for es in ess:
-                    if es.__name__ == attr:
-                        # Create a pseudocollection for the associations
-                        # collection object (self). Append it to the
-                        # self.orm's `constituents` collection.
-                        es = es()
-                        es.onadd    += self.entities_onadd
-                        es.onremove += self.entities_onremove
-                        self.orm.constituents[attr] = es
-                        break
-                else:
-                    continue
-                break
-            else:
-                raiseAttributeError()
-
-            # Get all the entity objects stored in `self` then add them
-            # in to the pseudocollection (es).
-            for ass in self:
-                e = getattr(ass, map.name) # :=
-                if e:
-                    # If the type of `e` does not match the `attr` str,
-                    # but `attr` is a subentity of e, a
-                    # subentity that matches the collection type of `es`
-                    # is needed. This is required for reflexive subentity
-                    # associations, e.g., consider lazy-loading the
-                    # singers pseudocollection from a singer object.
-                    #
-                    #     assert singer is type(sng.singers.first)
-                    #
-                    # Without this downcasting, the following would be
-                    # true:
-                    #
-                    #     assert artist is type(sng.singers.first)
-
-                    # TODO This could use a clean up, e.g.,
-                    #     if attr in e.orm.subentities:
-                    
-                    subs = [
-                        x.orm.entities.__name__ 
-                        for x in e.orm.subentities
-                    ]
-
-                    if attr in subs:
-                        try:
-                            e = es.orm.entity(e.id)
-                        except db.RecordNotFoundError:
-                            continue
-                    elif attr != e.orm.entities.__name__:
-                        # In the line above: 
-                        #
-                        #     e = getattr(ass, map.name) # :=
-                        #
-                        # `e` will already be a subentity so the
-                        # conditional `if attr in subs` will be false.
-                        # However, it could be the wrong subentity
-                        # bucause `attr` dosen`t match `e`.  This block
-                        # prevents `e` from being appended to `es`
-                        # because, if we are here, `getattr(ass,
-
-                        # map.name)` is the wrong subtenity.
-                        continue
-                    es += e
-
-            # Return pseudocollection.
-            return es
-        except Exception:
-            raiseAttributeError()
-    
 class association(entity):
     """ An entity that holds a reference to two other entity objects.
 
