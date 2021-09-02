@@ -6429,87 +6429,75 @@ class test_orm(tester):
         #
         # Note that the it_removes_reflexive_associations test will also
         # need to be updated when this bug has been corrected.
+        #
+        # UPDATE:32d39bee When removing the pseudocollection orm code,
+        # the deletes started to correctly not cascade. The test now
+        # only seems to remove the association object and not the
+        # constituent (artifact) or its constituents (compontents). I'm
+        # not really sure why it started to work, so some more
+        # investigation may be necessary. I updated the tests to reflect
+        # the correct behaviour.
 
         chrons = self.chronicles
 
-        for removeby in 'pseudo-collection', 'association':
-            art = artist.getvalid()
+        art = artist.getvalid()
 
-            for i in range(2):
-                aa = artist_artifact.getvalid()
-                aa.artifact = artifact.getvalid()
-                aa.artifact.components += component.getvalid()
-                art.artist_artifacts += aa
-                art.artist_artifacts.last.artifact.components += component.getvalid()
+        for i in range(2):
+            aa = artist_artifact.getvalid()
+            aa.artifact = artifact.getvalid()
+            aa.artifact.components += component.getvalid()
+            art.artist_artifacts += aa
+            art.artist_artifacts.last.artifact.components += component.getvalid()
 
-            art.save()
+        art.save()
 
-            art = artist(art.id)
+        art = artist(art.id)
+        
+        self.two(art.artist_artifacts)
+        self.zero(art.artist_artifacts.orm.trash)
+
+        rmaa = art.artist_artifacts.shift()
+
+        rmaa = art.artist_artifacts.orm.trash.first
+
+        self.one(art.artist_artifacts)
+        self.one(art.artist_artifacts.orm.trash)
+
+        with self._chrontest() as t:
+            t(art.save)
+            t.deleted(rmaa)
+
+        art1 = artist(art.id)
+
+        self.one(art1.artist_artifacts)
+        self.zero(art1.artist_artifacts.orm.trash)
             
-            self.two(art.artist_artifacts)
-            self.zero(art.artist_artifacts.orm.trash)
-            self.two(art.artifacts)
-            self.zero(art.artifacts.orm.trash)
+        aas = art.artist_artifacts.sorted('role')
+        aas1 = art1.artist_artifacts.sorted('role')
 
-            if removeby == 'pseudo-collection':
-                rmfact = art.artifacts.shift()
-            elif removeby == 'association':
-                rmfact = art.artist_artifacts.shift().artifact
+        for aa, aa1 in zip(aas, aas1):
+            self.eq(aa.id,           aa1.id)
+            self.eq(aa.role,         aa1.role)
 
-            rmcomps = rmfact.components
+            self.eq(aa.artist.id,    aa1.artist.id)
+            self.eq(
+                aa.artist__artistid,
+                aa1.artist__artistid
+            )
 
-            rmaa = art.artist_artifacts.orm.trash.first
+            self.eq(aa.artifact.id,  aa1.artifact.id)
+            self.eq(
+                aa.artifact__artifactid,
+                aa1.artifact__artifactid
+            )
 
-            self.one(art.artist_artifacts)
-            self.one(art.artist_artifacts.orm.trash)
-            self.one(art.artifacts)
-            self.one(art.artifacts.orm.trash)
+        fact = rmaa.artifact
 
-            for f1, f2 in zip(art.artifacts, art.artist_artifacts.artifacts):
-                self.isnot(f1, rmfact)
-                self.isnot(f2, rmfact)
+        self.expect(db.RecordNotFoundError, lambda: artist_artifact(rmaa.id))
+        self.expect(None, fact.orm.reloaded)
 
-            with self._chrontest() as t:
-                t(art.save)
-                t.deleted(rmcomps.first)
-                t.deleted(rmcomps.second)
-                t.deleted(rmfact)
-                t.deleted(art.artist_artifacts.orm.trash.first)
-
-            art1 = artist(art.id)
-
-            self.one(art1.artist_artifacts)
-            self.zero(art1.artist_artifacts.orm.trash)
-            self.one(art1.artifacts)
-            self.zero(art1.artifacts.orm.trash)
-                
-            aas = art.artist_artifacts.sorted('role')
-            aas1 = art1.artist_artifacts.sorted('role')
-
-            for aa, aa1 in zip(aas, aas1):
-                self.eq(aa.id,           aa1.id)
-                self.eq(aa.role,         aa1.role)
-
-                self.eq(aa.artist.id,    aa1.artist.id)
-                self.eq(
-                    aa.artist__artistid,
-                    aa1.artist__artistid
-                )
-
-                self.eq(aa.artifact.id,  aa1.artifact.id)
-                self.eq(
-                    aa.artifact__artifactid,
-                    aa1.artifact__artifactid
-                )
-
-            for fact in art1.artifacts:
-                self.ne(rmfact.id, fact.id)
-
-            self.expect(db.RecordNotFoundError, lambda: artist_artifact(rmaa.id))
-            self.expect(db.RecordNotFoundError, lambda: artifact(rmfact.id))
-
-            for comp in rmcomps:
-                self.expect(db.RecordNotFoundError, lambda: component(comp.id))
+        for comp in fact.components:
+            self.expect(None, comp.orm.reloaded)
 
         # TODO Test deeply nested associations
 
@@ -9037,7 +9025,6 @@ class test_orm(tester):
         art = artist.getvalid()
         facts = art.artifacts 
         loc = location.getvalid()
-        B()
         # DEAD pseudocollections atrophy
         '''
         facts += loc
@@ -16134,99 +16121,80 @@ class test_orm(tester):
         self.zero(self.chronicles)
 
     def it_removes_reflexive_associations(self):
-        for removeby in 'pseudo-collection', 'association':
-            art = artist.getvalid()
+        art = artist.getvalid()
+        for _ in range(2):
+            art.presentations += presentation.getvalid()
+
+        for i in range(2):
+            aa = artist_artist.getvalid()
+            aa.object = artist.getvalid()
             for _ in range(2):
-                art.presentations += presentation.getvalid()
-
-            for i in range(2):
-                aa = artist_artist.getvalid()
-                aa.object = artist.getvalid()
-                for _ in range(2):
-                    aa.object.presentations += presentation.getvalid()
-                art.artist_artists += aa
-                
-            art.save()
-
-            art = artist(art.id)
+                aa.object.presentations += presentation.getvalid()
+            art.artist_artists += aa
             
-            self.two(art.artist_artists)
-            self.zero(art.artist_artists.orm.trash)
-            self.two(art.artists)
-            self.zero(art.artists.orm.trash)
+        art.save()
 
-            if removeby == 'pseudo-collection':
-                rmart = art.artists.shift()
-            elif removeby == 'association':
-                rmart = art.artist_artists.shift().object
+        art = artist(art.id)
+        
+        self.two(art.artist_artists)
+        self.zero(art.artist_artists.orm.trash)
 
-            rmpress = rmart.presentations
+        rmaa = art.artist_artists.shift()
 
-            rmaa = art.artist_artists.orm.trash.first
+        self.is_(rmaa, art.artist_artists.orm.trash.first)
 
-            self.one(art.artist_artists)
-            self.one(art.artist_artists.orm.trash)
-            self.one(art.artists)
-            self.one(art.artists.orm.trash)
+        self.one(art.artist_artists)
+        self.one(art.artist_artists.orm.trash)
 
-            for a1, a2 in zip(art.artists, art.artist_artists.artists):
-                self.isnot(a1, rmart)
-                self.isnot(a2, rmart)
+        for aa in art.artist_artists:
+            self.isnot(aa, rmaa.object)
 
-            with self._chrontest() as t:
-                t.run(art.save)
-                t.deleted(rmpress.first)
-                t.deleted(rmpress.second)
-                t.deleted(rmart)
-                t.deleted(art.artist_artists.orm.trash.first)
+        with self._chrontest() as t:
+            t.run(art.save)
+            t.deleted(rmaa)
 
-            art1 = artist(art.id)
+        art1 = artist(art.id)
 
-            self.one(art1.artist_artists)
-            self.zero(art1.artist_artists.orm.trash)
-            self.one(art1.artists)
-            self.zero(art1.artists.orm.trash)
-                
-            aas = art.artist_artists.sorted('role')
-            aas1 = art1.artist_artists.sorted('role')
+        self.one(art1.artist_artists)
+        self.zero(art1.artist_artists.orm.trash)
+            
+        aas = art.artist_artists.sorted('role')
+        aas1 = art1.artist_artists.sorted('role')
 
-            for aa, aa1 in zip(aas, aas1):
-                self.eq(aa.id,           aa1.id)
-                self.eq(aa.role,         aa1.role)
+        for aa, aa1 in zip(aas, aas1):
+            self.eq(aa.id,           aa1.id)
+            self.eq(aa.role,         aa1.role)
 
-                self.eq(
-                    aa.subject__artistid,
-                    aa1.subject__artistid
-                )
-
-                self.eq(
-                    aa.object__artistid,
-                    aa1.object__artistid
-                )
-
-                self.eq(aa.subject.id,  aa1.subject.id)
-                self.eq(aa.object.id,   aa1.object.id)
-
-            for art in art1.artists:
-                self.ne(rmart.id, art.id)
-
-            self.expect(
-                db.RecordNotFoundError, 
-                lambda: artist_artist(rmaa.id)
+            self.eq(
+                aa.subject__artistid,
+                aa1.subject__artistid
             )
 
-            self.expect(
-                db.RecordNotFoundError,
-                lambda: artist(rmart.id)
+            self.eq(
+                aa.object__artistid,
+                aa1.object__artistid
             )
 
-            for pres in rmpress:
-                self.expect(
-                    db.RecordNotFoundError, 
-                    lambda: presentation(pres.id)
-                )
+            self.eq(aa.subject.id,  aa1.subject.id)
+            self.eq(aa.object.id,   aa1.object.id)
 
-        # TODO Test deeply nested associations
+        self.expect(
+            db.RecordNotFoundError, 
+            rmaa.orm.reloaded
+        )
+
+        self.expect(
+            None,
+            aa.object.orm.reloaded,
+        )
+
+        for pres in aa.object.presentations:
+            self.expect(
+                None,
+                pres.orm.reloaded,
+            )
+
+    # TODO Test deeply nested associations
 
     def it_loads_and_saves_subentity_reflexive_associations(self):
         sng = singer.getvalid()
