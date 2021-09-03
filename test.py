@@ -6082,8 +6082,8 @@ class test_orm(tester):
         self.is_(aa, art.artist_artifacts)
 
         # Test loading associated collection
-        facts = art.artifacts
-        self.zero(facts)
+        aa = art.artist_artifacts
+        self.zero(aa)
 
         self.is_(art, art.artist_artifacts.artist)
 
@@ -6099,7 +6099,6 @@ class test_orm(tester):
         self.is_(art,      art.artist_artifacts.first.artist)
         self.eq(aa .role,  art.artist_artifacts.first.role)
         self.one(art.artist_artifacts)
-        self.one(art.artifacts)
 
         # Add a second association and test
         fact2                  =   artifact.getvalid()
@@ -6112,7 +6111,6 @@ class test_orm(tester):
         self.is_(art,      art.artist_artifacts.last.artist)
         self.eq(aa1.role,  art.artist_artifacts.last.role)
         self.two(art.artist_artifacts)
-        self.two(art.artifacts)
 
         with self._chrontest() as t:
             t.run(art.save)
@@ -6132,7 +6130,6 @@ class test_orm(tester):
             t.retrieved(art1)
 
         self.two(art1.artist_artifacts)
-        self.two(art1.artifacts)
 
         aa1 = art1.artist_artifacts[aa.id]
 
@@ -6148,14 +6145,13 @@ class test_orm(tester):
             aa1.artifact__artifactid
         )
 
-        # Add as second artist_artifact, save, reload and test
+        ''' Add as second artist_artifact, save, reload and test '''
         aa2 = artist_artifact.getvalid()
         aa2.artifact = artifact.getvalid()
 
         art1.artist_artifacts += aa2
 
         self.three(art1.artist_artifacts)
-        self.three(art1.artifacts)
 
         with self._chrontest() as t:
             t.run(art1.save)
@@ -6187,12 +6183,13 @@ class test_orm(tester):
 
         # Add a third artifact to artist's pseudo-collection.
         # Save, reload and test.
-        art2.artifacts += artifact.getvalid()
+        aa3 = artist_artifact.getvalid()
+        aa3.artifact = artifact.getvalid()
+        art2.artist_artifacts += aa3
         art2.artist_artifacts.last.role = uuid4().hex
         art2.artist_artifacts.last.planet = uuid4().hex
         art2.artist_artifacts.last.timespan = uuid4().hex
         
-        self.four(art2.artifacts)
         self.four(art2.artist_artifacts)
 
         with self._chrontest() as t:
@@ -6202,7 +6199,6 @@ class test_orm(tester):
 
         art3 = artist(art2.id)
 
-        self.four(art3.artifacts)
         self.four(art3.artist_artifacts)
 
         aas2 = art2.artist_artifacts.sorted('role')
@@ -6223,10 +6219,9 @@ class test_orm(tester):
 
         comps3.sort()
         art3.artist_artifacts.first.artifact.components += comps3.first
-        art3.artifacts.first.components += comps3.second
+        art3.artist_artifacts.first.artifact.components += comps3.second
 
         self.two(art3.artist_artifacts.first.artifact.components)
-        self.two(art3.artifacts.first.components)
 
         self.is_(
             comps3[0], 
@@ -6235,14 +6230,6 @@ class test_orm(tester):
         self.is_(
             comps3[1], 
             art3.artist_artifacts[0].artifact.components[1]
-        )
-        self.is_(
-            comps3[0], 
-            art3.artifacts[0].components[0]
-        )
-        self.is_(
-            comps3[1], 
-            art3.artifacts[0].components[1]
         )
 
         with self._chrontest() as t:
@@ -6257,25 +6244,6 @@ class test_orm(tester):
         self.eq(comps4.first.id, comps3.first.id)
         self.eq(comps4.second.id, comps3.second.id)
 
-        # This fixes an issue that came up in development: When you add
-        # valid aa to art, then add a fact to art (thus adding an
-        # invalid aa to art), strange things were happening with the
-        # brokenrules. 
-        art = artist.getvalid()
-        art.artist_artifacts += artist_artifact.getvalid()
-        art.artifacts += artifact.getvalid()
-
-        self.zero(art.artist_artifacts.first.brokenrules)
-        self.two(art.artist_artifacts.second.brokenrules)
-        self.two(art.brokenrules)
-
-        # Fix broken aa
-        art.artist_artifacts.second.role = uuid4().hex
-        art.artist_artifacts.second.timespan = uuid4().hex
-
-        self.zero(art.artist_artifacts.second.brokenrules)
-        self.zero(art.brokenrules)
-
     def it_updates_associations_constituent_entity(self):
         art = artist.getvalid()
         chrons = self.chronicles
@@ -6289,79 +6257,74 @@ class test_orm(tester):
 
         art1 = artist(art.id)
 
-        for fact in art1.artifacts:
-            fact.title = uuid4().hex
+        for aa in art1.artist_artifacts:
+            aa.artifact.title = uuid4().hex
 
-        # Save and reload
-        self.chronicles.clear()
-        art1.save()
+        # Save and reload; ensure the artifacts are being updated
+        with self._chrontest(art1.save) as t:
+            t.updated(art1.artist_artifacts.first.artifact)
+            t.updated(art1.artist_artifacts.second.artifact)
 
-        # Ensure the four entities where updated
-        self.two(chrons)
-        self.two(chrons.where('update'))
-        self.one(chrons.where('entity', art1.artifacts.first))
-        self.one(chrons.where('entity', art1.artifacts.second))
-        
         art2 = artist(art1.id)
 
-        self.two(art1.artifacts)
-        self.two(art2.artifacts)
+        self.two(art1.artist_artifacts)
+        self.two(art2.artist_artifacts)
 
-        facts  = art. artifacts.sorted('title')
-        facts1 = art1.artifacts.sorted('title')
-        facts2 = art2.artifacts.sorted('title')
+        aas  = art.artist_artifacts.sorted()
+        aas1  = art1.artist_artifacts.sorted()
+        aas2  = art2.artist_artifacts.sorted()
 
-        for f, f2 in zip(facts, facts2):
-            self.ne(f.title, f2.title)
+        for aa, aa2 in zip(aas, aas2):
+            self.ne(aa.artifact.title, aa2.artifact.title)
 
-        for f1, f2 in zip(facts1, facts2):
-            self.eq(f1.title, f2.title)
+        for aa1, aa2 in zip(aas1, aas2):
+            self.eq(aa1.artifact.title, aa2.artifact.title)
 
+        # XXX Remove
         attrs = 'artifacts.first.components', \
                'artist_artifacts.first.artifact.components'
 
-        for attr in attrs:
-            comps = getattr(art2, attr)
-            comps += component.getvalid()
+        comps = art2.artist_artifacts.first.artifact.components
+        comps += component.getvalid()
+        comps += component.getvalid()
 
         art2.save()
 
-        art3 = artist(art2.id)
+        art3 = art2.orm.reloaded()
 
-        for attr in attrs:
-            comps = getattr(art3, attr)
-            for comp in comps:
-                comp.name = uuid4().hex
+        comps = art3.artist_artifacts.first.artifact.components
+        for comp in comps:
+            comp.name = uuid4().hex
 
-        chrons.clear()
-        art3.save()
 
-        self.two(chrons)
-        self.two(chrons.where('update'))
-        self.one(chrons.where('entity', art3.artifacts.first.components.first))
-        self.one(chrons.where('entity', art3.artifacts.first.components.second))
+        with self._chrontest(art3.save) as t:
+            t.updated(
+                art3.artist_artifacts.first.artifact.components.first
+            )
+            t.updated(
+                art3.artist_artifacts.first.artifact.components.second
+            )
 
-        art4 = artist(art3.id)
+        art4 = art3.orm.reloaded()
 
-        for attr in attrs:
-            comps2 = getattr(art2, attr)
-            comps3 = getattr(art3, attr)
-            comps4 = getattr(art4, attr)
+        comps2 = art2.artist_artifacts.first.artifact.components
+        comps3 = art3.artist_artifacts.first.artifact.components
+        comps4 = art4.artist_artifacts.first.artifact.components
 
-            self.two(comps2)
-            self.two(comps3)
-            self.two(comps4)
+        self.two(comps2)
+        self.two(comps3)
+        self.two(comps4)
 
-            for comp4 in comps4:
-                for comp2 in comps2:
-                    self.ne(comp2.name, comp4.name)
+        for comp4 in comps4:
+            for comp2 in comps2:
+                self.ne(comp2.name, comp4.name)
 
-            for comp4 in comps4:
-                for comp3 in comps3:
-                    if comp4.name == comp3.name:
-                        break
-                else:
-                    self.fail('No match within comps4 and comps3')
+        for comp4 in comps4:
+            for comp3 in comps3:
+                if comp4.name == comp3.name:
+                    break
+            else:
+                self.fail('No match within comps4 and comps3')
 
         # TODO Test deeply nested associations
 
@@ -6522,7 +6485,10 @@ class test_orm(tester):
         self.expect(ZeroDivisionError, lambda: art.save())
 
         self.eq(artst,     art.orm.persistencestate)
-        self.eq(presssts,  art.presentations.orm.trash.orm.persistencestates)
+        self.eq(
+            presssts,  
+            art.presentations.orm.trash.orm.persistencestates
+        )
 
         # Restore unbroken save method
         pres._save = save
@@ -6532,31 +6498,32 @@ class test_orm(tester):
 
         self.zero(artist(art.id).presentations)
 
-        self.expect(db.RecordNotFoundError, lambda: presentation(trashid))
+        self.expect(
+            db.RecordNotFoundError, 
+            lambda: presentation(trashid)
+        )
 
         # Test associations
         art = artist.getvalid()
-        art.artifacts += artifact.getvalid()
-        factid = art.artifacts.first.id
+        art.artist_artifacts += artist_artifact.getvalid()
         aa = art.artist_artifacts.first
+        aa.artifact = artifact.getvalid()
+        factid = art.artist_artifacts.first.artifact.id
         aaid = aa.id
         aa.role = uuid4().hex
         aa.timespan = uuid4().hex
 
         art.save()
 
-        art = artist(art.id)
-        art.artifacts.pop()
+        art = art.orm.reloaded()
+        art.artist_artifacts.pop()
 
         aatrash = art.artist_artifacts.orm.trash
         artst    =  art.orm.persistencestate
         aasts    =  aatrash.orm.persistencestates
         aassts   =  aatrash.first.orm.trash.orm.persistencestates
-        factssts =  art.artifacts.orm.trash.orm.persistencestates
 
-        self.zero(art.artifacts)
         self.one(art.artist_artifacts.orm.trash)
-        self.one(art.artifacts.orm.trash)
 
         # Break save method
         fn = lambda cur, guestbook: 0/0
@@ -6570,23 +6537,18 @@ class test_orm(tester):
         self.eq(artst,     art.orm.persistencestate)
         self.eq(aasts,     aatrash.orm.persistencestates)
         self.eq(aassts,    aatrash.first.orm.trash.orm.persistencestates)
-        self.eq(factssts,  art.artifacts.orm.trash.orm.persistencestates)
 
-        self.zero(art.artifacts)
         self.one(art.artist_artifacts.orm.trash)
-        self.one(art.artifacts.orm.trash)
-        self.one(artist(art.id).artifacts)
         self.one(artist(art.id).artist_artifacts)
 
         # Restore unbroken save method
         art.artist_artifacts.orm.trash.first._save = save
 
         art.save()
-        self.zero(artist(art.id).artifacts)
         self.zero(artist(art.id).artist_artifacts)
 
         self.expect(db.RecordNotFoundError, lambda: artist_artifact(aa.id))
-        self.expect(db.RecordNotFoundError, lambda: artifact(factid))
+        self.expect(None, lambda: artifact(factid))
 
     def it_raises_error_on_invalid_attributes_of_associations(self):
         art = artist()
@@ -6609,7 +6571,10 @@ class test_orm(tester):
         # Break deeply (>2) nested constituent
         # Break the max-size rule on location.description
 
-        loc.description = 'x' * (location.orm.mappings['description'].max + 1)
+        loc.description = 'x' * (
+            location.orm.mappings['description'].max + 1
+        )
+
         self.two(art.brokenrules)
         self.broken(art, 'description', 'fits')
 
@@ -6618,21 +6583,11 @@ class test_orm(tester):
         pres.name =       'x' * presentation.orm.mappings['name'].min
         self.zero(art.brokenrules)
 
-        # The artist_artifact created when assigning a valid artifact will
-        # itself have two broken rules by default. Make sure they bubble up to
-        # art.
-        art.artifacts += artifact.getvalid()
-        self.two(art.brokenrules)
-        self.broken(art, 'timespan', 'fits')
-        self.broken(art, 'role',     'fits')
-
-        # Fix the artist_artifact
-        art.artist_artifacts.first.role     = uuid4().hex
-        art.artist_artifacts.first.timespan = uuid4().hex
-        self.true(art.isvalid) # Ensure fixed
+        art.artist_artifacts += artist_artifact.getvalid()
+        art.artist_artifacts.last.artifact = artifact.getvalid()
 
         # Break an artifact and ensure the brokenrule bubbles up to art
-        art.artifacts.first.weight = uuid4().hex # break
+        art.artist_artifacts.last.artifact.weight = uuid4().hex # break
         self.one(art.brokenrules)
         self.broken(art, 'weight', 'valid')
 
@@ -9021,18 +8976,6 @@ class test_orm(tester):
         self.three(art.brokenrules)
         self.broken(art, 'artist_artifacts', 'valid')
 
-        # Add wrong type to the pseudo-collection
-        art = artist.getvalid()
-        facts = art.artifacts 
-        loc = location.getvalid()
-        # DEAD pseudocollections atrophy
-        '''
-        facts += loc
-
-        self.three(art.brokenrules)
-        self.broken(art, 'artifact', 'valid')
-        '''
-        
     def it_calls_imperitive_attr_on_subentity(self):
         # Test inherited attr (phone)
         sng = singer()
@@ -10714,42 +10657,23 @@ class test_orm(tester):
 
     def it_calls_dir_on_association(self):
         art = artist()
-        art.artifacts += artifact()
+        art.artist_artifacts += artist_artifact.getvalid()
         aa = art.artist_artifacts.first
 
         d = dir(aa)
 
         for prop in aa.orm.properties:
+            print(prop)
             self.eq(1, d.count(prop))
 
         # Reflexive
-        art.artists += artist.getvalid()
+        art.artist_artists += artist_artist.getvalid()
         aa = art.artist_artists.first
 
         d = dir(aa)
 
         for prop in aa.orm.properties:
             self.eq(1, d.count(prop))
-
-    def it_calls_dir_on_entity_pseudocollection(self):
-        # TODO Pseudocollection on reflexive association don't currently
-        # work. See commented-out assertions.
-        art = artist.getvalid()
-        d = dir(art)
-        self.true('artifacts' in d)
-        #self.true('artists' in d)
-
-        sng = singer.getvalid()
-        d = dir(sng)
-        self.true('artifacts' in d)
-        #self.true('singers' in d)
-        #self.true('artists' in d)
-        
-        rpr = rapper.getvalid()
-        d = dir(rpr)
-        self.true('artifacts' in d)
-        #self.true('singers' in d)
-        #self.true('artists' in d)
         
     def it_reconnects_closed_database_connections(self):
         def art_onafterreconnect(src, eargs):
@@ -13640,9 +13564,9 @@ class test_orm(tester):
                 else:
                     self.le(art1.weight, 1)
 
-                self.one(art1.artifacts)
-
-                fact1 = art1.artifacts.first
+                self.one(art1.artist_artifacts)
+                fact1 = art1.artist_artifacts.first.artifact
+                self.notnone(fact1)
                 
                 if op == 'NOT':
                     self.gt(fact1.weight, 11)
@@ -13660,10 +13584,12 @@ class test_orm(tester):
         for art1 in arts1:
             self.true(art1.weight in (0, 1, 3, 4))
 
-            self.one(art1.artifacts)
 
-            fact1 = art1.artifacts.first
-            
+            self.one(art1.artist_artifacts)
+
+            fact1 = art1.artist_artifacts.first.artifact
+
+            self.notnone(fact1)
             self.true(fact1.weight in (10, 11, 13, 14))
 
     def it_calls_innerjoin_on_entities_with_IN_clauses(self):
