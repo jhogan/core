@@ -4658,12 +4658,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         map = self_orm.mappings(attr)
 
-        if map is None:
-            raise AttributeError(
-                f"'{self.__class__.__name__}' object has no attribute "
-                f"'{attr}'"
-            )
-
         map_type = type(map)
 
         # Lazy-load constituent entities map
@@ -4896,6 +4890,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         elif map_type is associationsmapping:
             map.composite = self
+
+        elif map is None:
+            return object.__getattribute__(self, attr)
 
         return map.value
 
