@@ -729,6 +729,8 @@ class cssclass(attribute):
         return '%s(value=%s)' % (type(self).__name__, self._classes)
 
 class elements(entities.entities):
+    """ Represents a collection of HTML5 ``element`` objects.
+    """
     # TODO:12c29ef9 Write and test mass attribute assignment logic:
     #
     #     chks.checked = True  # Check all checked attributes
@@ -741,12 +743,18 @@ class elements(entities.entities):
     # https://validator.w3.org/#validate_by_input
 
     def _self_onadd(self, src, eargs):
+        """ Overrides entities._self_onadd event handler. 
+
+        This override manages revisions to the ``elements`` collection.
+        
+        NOTE that this functionality is currently under development.
+        """
         super()._self_onadd(src, eargs)
 
         # If `self` has no root then `self` is likely being used to
         # collect elements for non-tree purposes such as collecting the
         # ancestors of an element or the matches of a CSS selector
-        # selection.. In this case, there is no need to note the
+        # selection. In this case, there is no need to note the
         # revision.
         if not self.root:
             return 
@@ -799,6 +807,14 @@ class elements(entities.entities):
         self.root._revisions += revs
 
     def _self_onremove(self, src, eargs):
+        """ Overrides the _self_onremove event handler in ``entities``
+
+        This override manages revisions to the ``elements`` collection.
+        
+        NOTE that this functionality is currently under development.
+        """
+        # FIXME This can't be right. We should be calling
+        # super()._self_onremove
         super()._self_onadd(src, eargs)
 
         # This code is also in _self_add. See the comment there for why
@@ -811,12 +827,30 @@ class elements(entities.entities):
 
     @property
     def root(self):
+        """ Returns the root ``element`` that this collection is under.
+        In typical HTML documents, this would be the ``element``
+        corresponding to the <html> tag at the root. This isn't
+        necessarly always the case, though,  since we could be using a
+        fragment of an HTML document, or a non-standard HTML document
+        that doesn't have <html> as its root.
+        """
         if self.parent:
             return self.parent.root
         return None
 
     @classmethod
     def getby(cls, tag):
+        """ Given the str ``tag``, search through all the ``element``
+        subclasses and return the first one that matches the tag name.
+
+            header = dom.elements.getby('header')
+            assert header is dom.header
+
+        This is useful for when you don't know what element you want so
+        you need to use a str variable to make it dynamic.
+        """
+        # TODO This method should be in ``element`` not ``elements``
+        # since it returns an element.
         for el in element.__subclasses__():
             if el.tag == tag:
                 return el
