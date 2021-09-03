@@ -4,32 +4,31 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021
 
-from config import config
 from configfile import configfile
+from config import config
 from contextlib import contextmanager
 from contextlib import contextmanager, suppress
 from dbg import B, PM
-import entities
 from pprint import pprint
 from textwrap import dedent
 from timer import stopwatch
 from types import FunctionType
 import argparse
+import builtins
 import dom
+import ecommerce
+import entities
 import inspect
 import io
-import builtins
 import json
 import pdb
 import pom
-import pprint
 import primative
 import sys
 import textwrap
 import urllib
 import uuid
 import www
-import ecommerce
 """ 
 
 This module provides unit testing for the core framework, web pages, and
