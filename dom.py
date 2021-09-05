@@ -857,6 +857,9 @@ class elements(entities.entities):
         return None
 
     def clone(self):
+        """ Create a new instance of this ``elements`` collection, clone
+        each of self's elements into the new collection, and return it.
+        """
         els = type(self)()
         for e in self:
             els += e.clone()
