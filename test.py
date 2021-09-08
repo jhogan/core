@@ -13524,6 +13524,9 @@ class test_orm(tester):
         return sngs
 
     def it_calls_innerjoin_on_entities_with_BETWEEN_clauses(self):
+        for e in artists, artifacts:
+            e.orm.truncate()
+
         arts = artists()
         for i in range(8):
             art = artist.getvalid()
@@ -13624,7 +13627,12 @@ class test_orm(tester):
             firstnames = ['\'%s\'' % x for x in arts.pluck('firstname')]
             artwhere = 'firstname %s IN (%s)' % (op, ', '.join(firstnames[:4]))
 
-            titles = ['\'%s\'' % x.first.title for x in arts.pluck('artifacts')]
+            titles = list()
+            for art in arts:
+                for aa in art.artist_artifacts:
+                    titles.append(f"'{aa.artifact.title}'")
+               
+
             factwhere = 'title %s IN (%s)' % (op, ', '.join(titles[:4]))
 
             arts1 = artists(artwhere, ()) & artifacts(factwhere, ())
@@ -13638,9 +13646,9 @@ class test_orm(tester):
                 else:
                     self.true(art1.firstname in arts.pluck('firstname')[:4])
 
-                self.one(art1.artifacts)
+                self.one(art1.artist_artifacts)
 
-                fact1 = art1.artifacts.first
+                fact1 = art1.artist_artifacts.first.artifact
                 
                 if op == 'NOT':
                     self.true(fact1.title not in titles[:4])
@@ -13655,7 +13663,10 @@ class test_orm(tester):
         artwhere = '%s OR %s' % (artwhere1, artwhere2)
 
         # factwhere
-        titles = ['\'%s\'' % x.first.title for x in arts.pluck('artifacts')]
+        titles = list()
+        for art in arts:
+            for aa in art.artist_artifacts:
+                titles.append(f"'{aa.artifact.title}'")
         factwhere1 = 'title IN (%s)' % (', '.join(titles[:2]))
         factwhere2 = 'title IN (%s)' % (', '.join(titles[2:4]))
 
@@ -13671,9 +13682,9 @@ class test_orm(tester):
 
         for art1 in arts1:
             self.true(art1.firstname in arts.pluck('firstname')[:4])
-            self.one(art1.artifacts)
-            fact1 = art1.artifacts.first
-            self.true(fact1.title in titles[:4])
+            self.one(art1.artist_artifacts)
+            for aa in art1.artist_artifacts:
+                self.true(aa.artifact.title in titles[:4])
 
     def it_calls_innerjoin_on_entities_with_MATCH_clauses(self):
         artkeywords, factkeywords = [], []
