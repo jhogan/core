@@ -22,7 +22,7 @@ from datetime import timezone, datetime, date
 from entities import BrokenRulesError
 import entities
 from func import enumerate, getattr
-from dbg import B
+from dbg import B, PM
 from pprint import pprint
 from random import randint, uniform, random
 from table import *
@@ -13059,7 +13059,7 @@ class test_orm(tester):
         sng.firstname = 'x' * 256
 
         # sng itself will have no broken rules and will be considered
-        # vaild. 
+        # valid. 
         self.one(sng.brokenrules)
         self.false(sng.isvalid)
 
@@ -13539,7 +13539,7 @@ class test_orm(tester):
         arts.save()
 
         for op in '', 'NOT':
-            # Load an innerjoin where both tables have [NOT] IN where clause
+            # Load an INNER JOIN where both tables have [NOT] IN WHERE clause
             # 	SELECT *
             # 	FROM artists
             # 	INNER JOIN artist_artifacts AS `artists.artist_artifacts`
@@ -13595,6 +13595,7 @@ class test_orm(tester):
     def it_calls_innerjoin_on_entities_with_IN_clauses(self):
         for e in artists, artifacts:
             e.orm.truncate()
+
         arts = artists()
         for i in range(8):
             art = artist.getvalid()
