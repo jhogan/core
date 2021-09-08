@@ -868,7 +868,8 @@ class elements(entities.entities):
 
     @property
     def text(self):
-        """ Get the combined text contents of each element.
+        """ Get the combined text contents of each element in the
+        collection.
         """
         # NOTE This should match the functionality of jQuery's `.text()`
         # as closely as possible - except for the `.text(function)`
@@ -882,6 +883,12 @@ class elements(entities.entities):
             x.text = v
 
     def remove(self, e=None):
+        """ Removes ``e`` from the given collection. If is is not
+        provided, removes each of the elements in this collection from
+        their parent.
+
+        :param: e element: The element to remove.
+        """
         if e is not None:
             return super().remove(e)
 
@@ -894,9 +901,8 @@ class elements(entities.entities):
         return rms
 
     def __getitem__(self, sel):
-        ''' Get elements by an ordinal index or a CSS3 selector.
-
-        Examples::
+        ''' Get elements by an ordinal index or by a CSS3 selector.
+        Given `els` is an ``elements`` collection::
             
             # Get the first element of the collection of elememnts
             el = els[0]
@@ -904,8 +910,8 @@ class elements(entities.entities):
             # Get the first 2 elements from the collection of elememnts
             els = els[0:2]
 
-            # Get all <span> elements that are immediate children of <p>
-            # where the <p> is a child or grandchild of a <div> with a
+            # Get all <span> elements that are immediate children of
+            # <p>, where <p> is a child or grandchild of a <div> with a
             # class of of 'my-class'.
             els = els['div.my-class p > span']
 
@@ -913,6 +919,8 @@ class elements(entities.entities):
             # selector string.
             sels = selectors('div.my-class p > span')
             els = els[sels]
+
+        :param: sel int|slice|str|selectors: The indexer value.
         '''
 
         if isinstance(sel, int) or isinstance(sel, slice):
@@ -930,12 +938,19 @@ class elements(entities.entities):
 
     @property
     def children(self):
+        """ Returns a new ``elements`` collection containing all
+        immediate children in this collection. Not that ``comment`` and
+        ``text`` nodes are excluded.
+        """
         initial = (
             x for x in self if type(x) not in (comment, text)
         )
         return elements(initial=initial)
 
     def getchildren(self):
+        """ Return a new ``elements`` collection containing all elements
+        underneath this elements collection.
+        """
         els = elements()
         for el in self.children:
             els += el
