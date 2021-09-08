@@ -3990,7 +3990,9 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             # rules (not self.isvalid). If we are simply deleting the
             # entity, the the validation rules don't matter.
             if not self.orm.ismarkedfordeletion and not isvalid:
-                raise db.BrokenRulesError("Can't save invalid object", self)
+                raise entitiesmod.BrokenRulesError(
+                    "Can't save invalid object", self
+                )
 
         #💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣
         # If we are modifying the record, the security().proprietor must
