@@ -3946,14 +3946,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
 
         guestbook.append(self)
 
-        # Don't save the entity if it doesn't pass its validation rules
-        # (not self.isvalid). If we are simply deleting the entity, the
-        # the validation rules don't matter.
-        if not self.orm.ismarkedfordeletion and not self.isvalid:
-            raise entitiesmod.BrokenRulesError(
-                "Can't save invalid object", self
-            )
-
         # Determine if we are deleting, creating or updating the entity
         # based on its presistence state. Grab the SQL necessary for
         # the chosen operation.
