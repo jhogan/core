@@ -939,7 +939,7 @@ class elements(entities.entities):
     @property
     def children(self):
         """ Returns a new ``elements`` collection containing all
-        immediate children in this collection. Not that ``comment`` and
+        immediate children in this collection. Note that ``comment`` and
         ``text`` nodes are excluded.
         """
         initial = (
@@ -949,7 +949,8 @@ class elements(entities.entities):
 
     def getchildren(self):
         """ Return a new ``elements`` collection containing all elements
-        underneath this elements collection.
+        underneath this ``elements`` collection. Note that ``comment``
+        and ``text`` nodes are excluded.
         """
         els = elements()
         for el in self.children:
@@ -959,6 +960,10 @@ class elements(entities.entities):
 
     @property
     def all(self):
+        """ Return a new ``elements`` collection containing all elements
+        underneath this ``elements`` including ``comment`` and ``text``
+        nodes.
+        """
         els = elements()
         for el in self:
             els += el
@@ -967,6 +972,9 @@ class elements(entities.entities):
 
     @property
     def pretty(self):
+        """ Return a str containing a user-friendly, HTML rendering of
+        the elements using indenting and linefeeds for readability.
+        """
         return '\n'.join(x.pretty for x in self)
 
     @property
@@ -1511,30 +1519,47 @@ class element(entities.entity):
 
     @property
     def pretty(self):
+        """ Return a str containing a user-friendly representation of
+        the element. If the element is a text node, only the text will
+        be returned. For all other element types, the return string will
+        be an HTML representation of the element with its child elements
+        nested, using indenting and linefeeds for readability.
+        """
         body = str()
         if isinstance(self, text):
             body = self.html
 
+        # Iterate through all the child elements
+        # TODO Remove enumerate; i is not being used.
         for i, el in enumerate(self.elements):
             if body: body += '\n'
             body += el.pretty
 
+        # If this element is a text node, just return the body we've
+        # built
         if isinstance(self, text):
             return body
 
+        # Use textwrapper.indent on the body
         body = indent(body, '  ')
 
+        # Build the start tag
         r = '<%s'
         args = [self.tag]
 
+        # Append outer tags attributes
         if self.attributes.count:
             r += ' %s'
             args.append(self.attributes.html)
 
+        # Close first tag
         r += '>'
+
+        # If not void, line feed
         if not self.isvoid:
             r += '\n'
 
+        # If there is a body, add it to return
         if body:
             r += '%s\n'
             args += [body]
@@ -1543,6 +1568,7 @@ class element(entities.entity):
             pass
             #r += '>'
         else:
+            # If not void, add closing tag
             r += '</%s>'
             args += [self.tag]
 
