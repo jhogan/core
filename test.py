@@ -13740,7 +13740,10 @@ class test_orm(tester):
 
         for art, art1 in zip(arts, arts1):
             self.eq(art.id, art1.id)
-            self.eq(art.artifacts.first.id, art1.artifacts.first.id)
+            self.eq(
+                art.artist_artifacts.first.artifact.id, 
+                art1.artist_artifacts.first.artifact.id, 
+            )
 
     def it_calls_innerjoin_on_associations(self):
         arts = self._create_join_test_data()
@@ -14131,18 +14134,22 @@ class test_orm(tester):
         self.eq(art1.id, art2.id)
 
         aas2 = art2.artist_artifacts
-        facts2 = art2.artifacts
         self.one(aas2)
-        self.one(facts2)
+        self.one(art2.artist_artifacts)
 
         self.eq(art1.artist_artifacts.last.id, aas2.last.id)
-        self.eq(art1.artifacts.last.id, facts2.last.id)
+        self.eq(
+            art1.artist_artifacts.last.artifact.id,
+            art2.artist_artifacts.last.artifact.id
+        )
 
-        comps2 = facts2.first.components
+        comps2 = art2.artist_artifacts.last.artifact.components
         self.one(comps2)
         
-        self.eq(art1.artifacts.last.components.last.id,
-                comps2.last.id)
+        self.eq(
+            art1.artist_artifacts.last.artifact.components.last.id,
+            comps2.last.id
+        )
 
         # Reload using the explicit loading, join method and update the record
         # added above. Ensure that the new data presists.
@@ -14153,17 +14160,20 @@ class test_orm(tester):
 
         art3.firstname = newval
         art3.artist_artifacts.first.role = newval
-        art3.artifacts.first.title = newval
-        art3.artifacts.first.components.first.name = newval
+
+        fact3 = art3.artist_artifacts.first.artifact
+        fact3.title = newval
+        fact3.components.first.name = newval
 
         arts3.save()
 
         art4 = artist(art3.id)
+        fact4 = art3.artist_artifacts.first.artifact
 
         self.eq(newval, art4.firstname)
         self.eq(newval, art4.artist_artifacts.first.role)
-        self.eq(newval, art4.artifacts.first.title)
-        self.eq(newval, art4.artifacts.first.components.first.name)
+        self.eq(newval, fact4.title)
+        self.eq(newval, fact4.components.first.name)
 
     def it_calls_innerjoin_on_entities(self):
         fff = False, False, False
@@ -15429,16 +15439,10 @@ class test_orm(tester):
         self.is_(aa, art.artist_artists)
 
         # Test loading associated collection
-        artsb = art.artists
-        self.zero(artsb)
-
-        # Ensure property caches
-        self.is_(artsb, art.artists)
+        self.zero(art.artist_artists)
 
         # Ensure the association's associated collections is the same as
         # the associated collection of the entity.
-
-        self.is_(art.artists, art.artist_artists.artists)
         self.is_(art, art.artist_artists.artist)
 
         # Save and load an association
@@ -15454,7 +15458,6 @@ class test_orm(tester):
         self.eq(aa.role,  art.artist_artists.first.role)
 
         self.one(art.artist_artists)
-        self.one(art.artists)
 
         with self._chrontest() as t:
             t.run(art.save)
@@ -15469,7 +15472,6 @@ class test_orm(tester):
             t.retrieved(art1)
         
         self.one(art1.artist_artists)
-        self.one(art1.artists)
 
         aa1 = art1.artist_artists.first
 
@@ -15512,17 +15514,17 @@ class test_orm(tester):
 
         # Add a third artist to artist's pseudo-collection.
         # Save, reload and test.
-        objart = artist.getvalid()
-        art2.artists += objart
+        aa2                  =   artist_artist.getvalid()
+        aa2.object           =   artist.getvalid()
+        art2.artist_artists  +=  aa2
 
-        self.is_(art2,            art2.artist_artists.last.subject)
-        self.is_(objart,          art2.artist_artists.last.object)
+        self.is_(art2,        art2.artist_artists.last.subject)
+        self.is_(aa2.object,  art2.artist_artists.last.object)
+
         art2.artist_artists.last.role = uuid4().hex
         art2.artist_artists.last.slug = uuid4().hex
         art2.artist_artists.last.timespan = uuid4().hex
-        aa2 = art2.artist_artists.last
 
-        self.three(art2.artists)
         self.three(art2.artist_artists)
         self.isnot(aa2.subject,  aa2.object)
 
@@ -15533,7 +15535,6 @@ class test_orm(tester):
 
         art3 = artist(art2.id)
 
-        self.three(art3.artists)
         self.three(art3.artist_artists)
 
         aas2 = art2.artist_artists.sorted('role')
@@ -15554,20 +15555,18 @@ class test_orm(tester):
 
         press3.sort()
         art3.artist_artists.first.object.presentations += press3.first
-        art3.artists.first.presentations += press3.second
+        art3.artist_artists.first.object.presentations += press3.second
 
         self.two(art3.artist_artists.first.object.presentations)
-        self.two(art3.artists.first.presentations)
 
         self.is_(press3[0], art3.artist_artists[0].object.presentations[0])
         self.is_(press3[1], art3.artist_artists[0].object.presentations[1])
-        self.is_(press3[0], art3.artists[0].presentations[0])
-        self.is_(press3[1], art3.artists[0].presentations[1])
 
         with self._chrontest() as t:
             t.run(art3.save)
             t.created(press3.first)
             t.created(press3.second)
+
 
         art4 = artist(art3.id)
         press4 = art4.artist_artists.first.object.presentations.sorted()
@@ -15583,7 +15582,8 @@ class test_orm(tester):
         # strange things were happening with the brokenrules. 
         art = artist.getvalid()
         art.artist_artists += artist_artist.getvalid()
-        art.artists += artist.getvalid()
+        art.artist_artists += artist_artist.getvalid()
+        art.artist_artists.last += artist.getvalid()
 
         self.zero(art.artist_artists.first.brokenrules)
         self.zero(art.artist_artists.first.brokenrules)
@@ -15651,27 +15651,30 @@ class test_orm(tester):
             art.artist_artists += aa
 
         self.two(art.artist_artists)
-        self.two(art.artists)
 
         art.save()
 
         art1 = artist(art.id)
 
-        for art2 in art1.artists:
-            art2.firstname = uuid4().hex
+        for aa in art1.artist_artists:
+            aa.object.firstname = uuid4().hex
 
         with self._chrontest() as t:
             t.run(art1.save)
-            t.updated(*art1.artists)
+            t.updated(art1.artist_artists.first.object)
+            t.updated(art1.artist_artists.second.object)
 
         art2 = artist(art1.id)
 
-        self.two(art1.artists)
-        self.two(art2.artists)
+        self.two(art1.artist_artists)
+        self.two(art2.artist_artists)
 
-        artobjs  = art. artists.sorted('firstname')
-        artobjs1 = art1.artists.sorted('firstname')
-        artobjs2 = art2.artists.sorted('firstname')
+        artobjs = artists(art.artist_artists.pluck('object'))
+        artobjs1 = artists(art1.artist_artists.pluck('object'))
+        artobjs2 = artists(art2.artist_artists.pluck('object'))
+
+        for art in (artobjs, artobjs1, artobjs2):
+            art.sort('firstname')
 
         for artb, artb2 in zip(artobjs, artobjs2):
             self.ne(artb.firstname, artb2.firstname)
@@ -15679,14 +15682,9 @@ class test_orm(tester):
         for artb1, artb2 in zip(artobjs1, artobjs2):
             self.eq(artb1.firstname, artb2.firstname)
 
-        attrs = (
-            'artists.first.presentations',
-            'artist_artists.first.object.presentations'
-        )
-
-        for attr in attrs:
-            press = getattr(art2, attr)
-            press += presentation.getvalid()
+        press = art2.artist_artists.first.object.presentations
+        press += presentation.getvalid()
+        press += presentation.getvalid()
 
         self.two(press)
 
@@ -15694,37 +15692,36 @@ class test_orm(tester):
 
         art3 = artist(art2.id)
 
-        for attr in attrs:
-            press = getattr(art3, attr)
-            for pres in press:
-                pres.name = uuid4().hex
+        press = art3.artist_artists.first.object.presentations
+        for pres in press:
+            pres.name = uuid4().hex
 
         with self._chrontest() as t:
             t.run(art3.save)
-            t.updated(art3.artists.first.presentations.first)
-            t.updated(art3.artists.first.presentations.second)
+            art = art3.artist_artists.first.object
+            t.updated(art.presentations.first)
+            t.updated(art.presentations.second)
 
         art4 = artist(art3.id)
 
-        for attr in attrs:
-            press2 = getattr(art2, attr)
-            press3 = getattr(art3, attr)
-            press4= getattr(art4, attr)
+        press2 = art2.artist_artists.first.object.presentations
+        press3 = art3.artist_artists.first.object.presentations
+        press4 = art4.artist_artists.first.object.presentations
 
-            self.two(press2)
-            self.two(press3)
-            self.two(press4)
+        self.two(press2)
+        self.two(press3)
+        self.two(press4)
 
-            for pres4 in press4:
-                for pres2 in press2:
-                    self.ne(pres2.name, pres4.name)
+        for pres4 in press4:
+            for pres2 in press2:
+                self.ne(pres2.name, pres4.name)
 
-            for pres4 in press4:
-                for pres3 in press3:
-                    if pres4.name == pres3.name:
-                        break
-                else:
-                    self.fail('No match within press4 and press3')
+        for pres4 in press4:
+            for pres3 in press3:
+                if pres4.name == pres3.name:
+                    break
+            else:
+                self.fail('No match within press4 and press3')
 
         # TODO Test deeply nested associations
 
@@ -16147,48 +16144,10 @@ class test_orm(tester):
         # Ensure property memoizes
         self.is_(aa, sng.artist_artists)
 
-        # Test loading associated collection
-        with ct() as t:
-            artsb = t.run(lambda: sng.artists)
-
-        self.zero(artsb)
-        self.type(artists, artsb)
-
-        # Test loading associated subentity collection
-        with ct() as t:
-            sngsb = t(lambda: sng.singers)
-            pntsb = t(lambda: sng.painters)
-            mursb = t(lambda: sng.muralists)
-
-        self.type(singers, sngsb)
-        self.type(painters, pntsb)
-        self.type(muralists, mursb)
-        self.zero(sngsb)
-        self.zero(pntsb)
-        self.zero(mursb)
-
-        # Ensure association is same after accessing `singers`
-        # pseudocollection.
-        self.is_(aa, sng.artist_artists)
-
-        # Ensure property memoizes
-        self.is_(artsb, sng.artists)
-        self.is_(sngsb, sng.singers)
-        self.is_(pntsb, sng.painters)
-        self.is_(mursb, sng.muralists)
-
-        # Ensure the association's associated collections is the same as
-        # the associated collection of the entity.
-        self.is_(sng.artists,    sng.artist_artists.artists)
-        self.is_(sng.singers,    sng.artist_artists.singers)
-        self.is_(sng.painters,   sng.artist_artists.painters)
-        self.is_(sng.muralists,  sng.artist_artists.muralists)
-
         self.is_(sng,            sng.artist_artists.singer)
         self.is_(sng.orm.super,  sng.artist_artists.artist)
 
         ''' Save and load an association '''
-
         # Singer
         aa                    =   artist_artist.getvalid()
         aa.role               =   uuid4().hex
@@ -16218,19 +16177,6 @@ class test_orm(tester):
 
 
         self.three(sng.artist_artists)
-
-        # TODO Should adding singer to sng.artist_artists result in an
-        # addition to sng.artists
-        # self.one(sng.artists)
-        self.zero(sng.artists)
-
-        self.one(sng.painters)
-        self.one(sng.singers)
-        self.one(sng.muralists)
-
-        self.is_(objsng, sng.singers.first)
-        self.is_(objpnt, sng.painters.first)
-        self.is_(objmur, sng.muralists.first)
 
         with ct() as t:
             t.run(sng.save)
@@ -16264,60 +16210,6 @@ class test_orm(tester):
 
         self.is_(sng1.orm.super, sng1.artist_artists.artist)
         self.is_(sng1, sng1.artist_artists.singer)
-
-        with ct() as t:
-            t(lambda: sng1.painters)
-            for aa in sng1.artist_artists:
-                # The associations.__getattr__ method will load each of
-                # the thre `artist` entities from the association
-                # individually.
-                obj = aa.object
-                while obj:
-                    t.retrieved(obj)
-                    obj = obj.orm._super
-
-
-            # The `associations.__getattr__` method will then load the
-            # `painter` entity. Since the `muralist` entity is a type of
-            # `painter` entity, it will be loaded in the `painters`
-            # pseudocollection as wel.
-
-            # Commenting out because the test fail and pseudocollections
-            # are atrophying
-            # t.retrieved(sng1.painters.first)
-            # t.retrieved(sng1.painters.second)
-
-        # DEAD pseudocollections atrophy
-        '''
-        with ct() as t:
-            t(lambda: sng1.singers)
-            t.retrieved(sng1.singers.first)
-            t.retrieved(sng1.singers.first.orm.super)
-
-        with ct() as t:
-            t(lambda: sng1.muralists)
-            t.retrieved(sng1.muralists.first)
-        '''
-
-
-        # Ensure pseudocollections are being memoized and have the
-        # right count
-        # DEAD pseudocollections atrophy
-        '''
-        with ct() as t:
-            self.three(t(lambda: sng1.artists))
-            self.two(t(lambda: sng1.painters))
-            self.one(t(lambda: sng1.singers))
-
-        self.type(singer,    sng1)
-        self.type(singer,    sng1.singers.first)
-        self.type(muralist,  sng1.muralists.first)
-        self.type(painter,   sng1.painters.first)
-        self.type(painter,   sng1.painters.second)
-        self.type(artist,    sng1.artists.first)
-        self.type(artist,    sng1.artists.second)
-        self.type(artist,    sng1.artists.third)
-        '''
 
         self.eq(sng.id,         sng1.id)
 
@@ -16354,27 +16246,6 @@ class test_orm(tester):
         self.type(muralist,            aa.object)
         self.type(muralist,              aa1.object)
 
-
-        # NOTE
-        # Q Should aa1.subject be artist or downcasted to singer?  
-        # A No, since aa1 is an artist_artist type, it's `subject`
-        # attribute must reflect that. If we wanted `subject` to be of
-        # type `singer`, we should subclass artist_artist to create a
-        # new association called `singer_singer`. However, we may want
-        # to have an automatic downcasting property call
-        # `as_<subentity>` that will return and downcasted version of
-        # `subject` and that the graph will understand so it can be used
-        # for persistence, e.g., 
-        #
-        #   aa1.subject.as_singer.register = 'laryngealization'
-        #   aa1.save()
-        #
-        # UPDATE After thinking about this more, I don't see an issue
-        # with artist_artist.subject and artist_artist.object
-        # downcasting themselves to their most specialized types. This
-        # would require additional, and prehaps needless database hits,
-        # however, the convenience may be worth it.
-
         ''' Add three more (singer, painter and muralist) to
         artist_artist, save, reload and test '''
 
@@ -16387,7 +16258,6 @@ class test_orm(tester):
         self.is_(sng1,    aa2.subject)
         self.is_(objsng,  aa2.object)
         self.four(sng1.artist_artists)
-        self.two(sng1.singers)
 
         # Add painter
         aa2           =  artist_artist.getvalid()
@@ -16398,10 +16268,6 @@ class test_orm(tester):
         self.is_(sng1,    aa2.subject)
         self.is_(objpnt,  aa2.object)
         self.five(sng1.artist_artists)
-        self.two(sng1.singers)
-
-        # DEAD pseudocollection atrophy
-        #self.three(sng1.painters)
 
         # Add muralist
         aa2           =  artist_artist.getvalid()
@@ -16412,30 +16278,8 @@ class test_orm(tester):
         self.is_(sng1,    aa2.subject)
         self.is_(objmur,  aa2.object)
         self.six(sng1.artist_artists)
-        self.two(sng1.singers)
 
-        # DEAD pseudocollection atrophy
-        #self.three(sng1.painters)
-        self.two(sng1.muralists)
-
-        # TODO The artists collection will still have three `artist`s
-        # entity objects. They are equal but not identical to the 
-        # singer, muralist and painter that were loaded:
-        # 
-        #    assert sng1.singers.first.id == sng1.artists.first.id
-        #    assert sng1.painters.first.id == sng1.artists.second.id
-        #    assert sng1.muralists.first.id == sng1.artists.third.id
-        #
-        # However, we would expect the newly added singer and painter to
-        # be in the `artists` collection as well. Some work needs to be
-        # done to ensure that entity objects in these collections are
-        # downcasted/upcasted correctely and propagated to the correct
-        # entities collection object on load and on append.
-        # DEAD pseudocollection atrophy
-        #self.three(sng1.artists)
-
-        with ct() as t:
-            t(sng1.save)
+        with ct(sng1.save) as t:
             t.created(objsng,  objsng.orm.super)
             t.created(objpnt,  objpnt.orm.super)
             t.created(
@@ -16461,28 +16305,6 @@ class test_orm(tester):
             self.eq(aa1.object.id,          aa2.object.id)
             self.eq(aa1.object__artistid,   aa2.object__artistid)
 
-        # Add a third singer and painter to their pseudo-collections.
-        # Save, reload and test.
-        objsng = singer.getvalid()
-        sng2.singers += objsng
-
-        objpnt = painter.getvalid()
-        sng2.painters += objpnt
-
-        objmur = muralist.getvalid()
-        sng2.muralists += objmur
-
-
-        self.is_(sng2,    sng2.artist_artists.antepenultimate.subject)
-        self.is_(objsng,  sng2.artist_artists.antepenultimate.object)
-
-        self.is_(sng2,    sng2.artist_artists.penultimate.subject)
-        self.is_(objpnt,  sng2.artist_artists.penultimate.object)
-
-        self.is_(sng2,    sng2.artist_artists.ultimate.subject)
-        self.is_(objmur,  sng2.artist_artists.ultimate.object)
-
-
         for aa2 in sng2.artist_artists.tail(3):
             aa2.role      =  uuid4().hex
             aa2.slug      =  uuid4().hex
@@ -16490,36 +16312,23 @@ class test_orm(tester):
             self.isnot(aa2.subject,  aa2.object)
 
 
-        self.three(sng2.singers)
-        # DEAD pseudocollection atrophy
-        #self.five(sng2.painters)
-        self.three(sng2.muralists)
-        self.nine(sng2.artist_artists)
+        self.six(sng2.artist_artists)
 
-        with ct() as t:
-            t(sng2.save)
-            t.created(
+        with ct(sng2.save) as t:
+            t.updated(
                 *sng2.artist_artists.tail(3),
-                *sng2.artist_artists.tail(3).pluck('object'),
-                sng2.artist_artists.antepenultimate.object.orm.super,
-                sng2.artist_artists.penultimate.object.orm.super,
-                sng2.artist_artists.last.object.orm.super,
-                sng2.artist_artists.last.object.orm.super.orm.super
             )
 
         sng3 = singer(sng2.id)
 
-        self.three(sng3.singers)
-        # DEAD pseudocollection atrophy
-        #self.six(sng3.painters)
-        self.three(sng3.muralists)
-        self.nine(sng3.artist_artists)
-
+        self.six(sng3.artist_artists)
 
         aas2 = sng2.artist_artists.sorted('role')
         aas3 = sng3.artist_artists.sorted('role')
 
-        self.nine(aas2); self.nine(aas3)
+        self.six(aas2); 
+        self.six(aas3)
+
         for aa2, aa3 in zip(aas2, aas3):
             self.eq(aa2.id,                 aa3.id)
             self.eq(aa2.role,               aa3.role)
@@ -16528,90 +16337,6 @@ class test_orm(tester):
             self.eq(aa2.subject__artistid,  aa3.subject__artistid)
             self.eq(aa2.object__artistid,   aa3.object__artistid)
 
-        # Add two presentations to the singers's, muralist's and
-        # painter's presentations collection
-        press3 = presentations()
-        for _ in range(3):
-            press3 += presentation.getvalid()
-
-        press3.sort()
-        sng3.singers.first.presentations    +=  press3.first
-
-        # Make sure the first painter is a painter and not a muralist
-        self.type(painter, sng3.painters.first)
-
-        for pnt3 in sng3.painters:
-            try:
-                muralist(pnt3.id)
-            except db.RecordNotFoundError:
-                pnt3.presentations   +=  press3.second
-                break
-        else:
-            self.fail("Couldn't find painter type")
-
-
-        sng3.muralists.first.presentations  +=  press3.third
-
-        # Remove for the moment because we don't know if
-        # sng3.artist_artists.first is a painter or a singer
-        # sng3.artist_artists.first.object.presentations \
-        #     += press3.third
-
-        # NOTE (3cb2a6b5) In the non-subentity version of this test
-        # (it_loads_and_saves_reflexive_associations), the following is
-        # True:
-        # 
-        #     art3.artist_artists.first.object is art3.artists
-        #
-        # However, that can't be the case here because
-        #
-        #     type(sng3.artist_artists.first.object) is artist
-        #
-        # That means that the above appends go to two different
-        # presentations collections. The commented out assertions below
-        # would fail but are left here to illustrates the consequences of
-        # this issue.
-
-        #self.one(sng3.artist_artists.first.object.presentations)
-
-        self.one(sng3.singers.first.presentations)
-        self.one(pnt3.presentations)
-        self.one(sng3.muralists.first.presentations)
-
-        aas3 = sng3.artist_artists
-        self.is_(
-            press3.first, 
-            sng3.singers.first.presentations.first
-        )
-
-        self.is_(
-            press3.second, 
-            pnt3.presentations.first
-        )
-
-        self.is_(
-            press3.third, 
-            sng3.muralists.first.presentations.first
-        )
-
-        with ct() as t:
-            t(sng3.save)
-            t.created(*press3)
-
-        sng4 = singer(sng3.id)
-
-        press4 = sng4.singers[sng3.singers.first.id].presentations
-        self.eq(
-            sng3.singers.first.presentations.sorted().pluck('id'),
-            press4.sorted().pluck('id')
-        )
-
-        press4 = sng4.painters[pnt3.id].presentations
-        self.eq(
-            pnt3.presentations.sorted().pluck('id'),
-            press4.sorted().pluck('id')
-        )
-
         # NOTE The below comment and tests were carried over from
         # it_loads_and_saves_associations:
         # This fixes an issue that came up in development: When you add valid
@@ -16619,9 +16344,15 @@ class test_orm(tester):
         # strange things were happening with the brokenrules. 
         sng = singer.getvalid()
         sng.artist_artists += artist_artist.getvalid()
-        sng.singers += singer.getvalid()
-        sng.painters += painter.getvalid()
-        sng.muralists += muralist.getvalid()
+
+        sng.artist_artists += artist_artist()
+        sng.artist_artists.last.object = singer.getvalid()
+
+        sng.artist_artists += artist_artist()
+        sng.artist_artists.last.object = painter.getvalid()
+
+        sng.artist_artists += artist_artist()
+        sng.artist_artists.last.object = muralist.getvalid()
 
         self.zero(sng.artist_artists.first.brokenrules)
         self.three(sng.artist_artists.second.brokenrules)
