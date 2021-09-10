@@ -10663,7 +10663,6 @@ class test_orm(tester):
         d = dir(aa)
 
         for prop in aa.orm.properties:
-            print(prop)
             self.eq(1, d.count(prop))
 
         # Reflexive
