@@ -16375,15 +16375,6 @@ class test_orm(tester):
         self.zero(sng.brokenrules)
 
     def it_updates_subentity_reflexive_associations_constituent_entity(self):
-        # NOTE Some of the count tests (self.two()) may be incorrect.
-        # Since pseudocollections seem to be falling out of favor, they
-        # were changed just so the the overall unit test would complete
-        # without complaint. Some test code was also commented out (like
-        # the isnot() tests and a few others) for the same reason. The
-        # expectation at this point is that pseudocollection logic will
-        # eventually be removed from the framework, along with anything
-        # that tests them, so this is sort of the first step to removing
-        # the code, i.e., atrophy.
         sng = singer.getvalid()
 
         for i in range(6):
@@ -16397,60 +16388,83 @@ class test_orm(tester):
             sng.artist_artists += aa
 
         self.six(sng.artist_artists)
-        self.two(sng.singers)
-        self.two(sng.painters)
-        self.two(sng.muralists)
-        self.zero(sng.artists)
 
         sng.save()
 
         sng1 = singer(sng.id)
 
         # Update properties of singer, painter and muralists
-        for sng2 in sng1.singers:
-            sng2.register = uuid4().hex
+        sngs = singers()
+        pnts = painters()
+        murs = muralists()
 
-        for pnt2 in sng1.painters:
-            pnt2.style = uuid4().hex
+        for aa in sng1.artist_artists:
+            obj = aa.object
+            if type(obj) is singer:
+                obj.register = uuid4().hex
+                sngs += obj
 
-        for mur2 in sng1.muralists:
-            mur2.street = True
+            elif type(obj) is painter:
+                obj.style = uuid4().hex
+                pnts += obj
 
-        with ct() as t:
-            t.run(sng1.save)
-            t.updated(*sng1.singers)
-            t.updated(*sng1.painters)
-            t.updated(*sng1.muralists)
+            elif type(obj) is muralist:
+                obj.street = True
+                murs += obj
+
+        with ct(sng1.save) as t:
+            t.updated(*sngs)
+            t.updated(*pnts)
+            t.updated(*murs)
 
         # Update properties of super (artist)
-        for sng2 in sng1.singers:
-            sng2.firstname = uuid4().hex
+        for objsng in sngs:
+            objsng.firstname = uuid4().hex
 
-        for pnt2 in sng1.painters:
-            pnt2.lastname = uuid4().hex
+        for objpnt in pnts:
+            objpnt.lastname = uuid4().hex
 
-        for mur2 in sng1.muralists:
-            mur2.lastname = uuid4().hex # artist.lastname
-            mur2.style    = uuid4().hex # painter.style
+        for objmur in murs:
+            objmur.lastname = uuid4().hex # artist.lastname
+            objmur.style    = uuid4().hex # painter.style
 
-        with ct() as t:
-            t.run(sng1.save)
-            t.updated(*sng1.singers.pluck('orm.super'))
-            t.updated(*sng1.painters.pluck('orm.super'))
-            t.updated(*sng1.muralists.pluck('orm.super'))
-            t.updated(*sng1.muralists.pluck('orm.super.orm.super'))
+        with ct(sng1.save) as t:
+            t.updated(*sngs.pluck('orm.super'))
+            t.updated(*pnts.pluck('orm.super'))
+            t.updated(*murs.pluck('orm.super'))
+            t.updated(*murs.pluck('orm.super.orm.super'))
 
         sng2 = singer(sng1.id)
 
-        self.two(sng2.singers)
-        self.two(sng2.painters)
-        self.two(sng2.muralists)
-        self.zero(sng2.artists)
+        objs = sng2.artist_artists.pluck('object')
+        objsngs = [x for x in objs if type(x) is singer]
+        objpnts = [x for x in objs if type(x) is painter]
+        objmurs = [x for x in objs if type(x) is muralist]
+        objarts = [x for x in objs if type(x) is artist]
+
+        self.two(sngs)
+        self.two(pnts)
+        self.two(murs)
+        self.zero(objarts)
 
         ''' Test that singer entitiy objects were updateded '''
-        sngobjs  = sng. singers.sorted()
-        sngobjs1 = sng1.singers.sorted()
-        sngobjs2 = sng2.singers.sorted()
+        sngobjs = singers([
+            x for x in sng.artist_artists.pluck('object')
+            if isinstance(x, singer)
+        ]).sorted()
+
+        sngobjs1 = singers([
+            x for x in sng1.artist_artists.pluck('object')
+            if isinstance(x, singer)
+        ]).sorted()
+
+        sngobjs2 = singers([
+            x for x in sng2.artist_artists.pluck('object')
+            if isinstance(x, singer)
+        ]).sorted()
+
+        for objs in (sngobjs, sngobjs1, sngobjs2):
+            self.two(objs)
 
         for sngb, sngb2 in zip(sngobjs, sngobjs2):
             self.ne(sngb.firstname, sngb2.firstname)
@@ -16464,9 +16478,23 @@ class test_orm(tester):
         def wh(mur):
             return not muralist.orm.exists(mur.id)
 
-        pntobjs  = sng. painters.where(wh).sorted()
-        pntobjs1 = sng1.painters.where(wh).sorted()
-        pntobjs2 = sng2.painters.where(wh).sorted()
+        pntobjs = painters([
+            x for x in sng.artist_artists.pluck('object')
+            if isinstance(x, painter)
+        ]).where(wh).sorted()
+
+        pntobjs1 = painters([
+            x for x in sng1.artist_artists.pluck('object')
+            if isinstance(x, painter)
+        ]).where(wh).sorted()
+
+        pntobjs2 = painters([
+            x for x in sng2.artist_artists.pluck('object')
+            if isinstance(x, painter)
+        ]).where(wh).sorted()
+
+        for objs in (pntobjs, pntobjs1, pntobjs2):
+            self.two(objs)
 
         for pntb, pntb2 in zip(pntobjs, pntobjs2):
             self.ne(pntb.lastname, pntb2.lastname)
@@ -16477,9 +16505,23 @@ class test_orm(tester):
             self.eq(pntb1.style, pntb2.style)
 
         ''' Test that muralist entitiy objects were updated '''
-        murobjs  = sng. muralists.sorted()
-        murobjs1 = sng1.muralists.sorted()
-        murobjs2 = sng2.muralists.sorted()
+        murobjs = muralists([
+            x for x in sng.artist_artists.pluck('object')
+            if isinstance(x, muralist)
+        ]).sorted()
+
+        murobjs1 = muralists([
+            x for x in sng1.artist_artists.pluck('object')
+            if isinstance(x, muralist)
+        ]).sorted()
+
+        murobjs2 = muralists([
+            x for x in sng2.artist_artists.pluck('object')
+            if isinstance(x, muralist)
+        ]).sorted()
+
+        for objs in (murobjs, murobjs1, murobjs2):
+            self.two(objs)
 
         for murb, murb2 in zip(murobjs, murobjs2):
             self.ne(murb.lastname,   murb2.lastname)
@@ -16492,53 +16534,26 @@ class test_orm(tester):
             self.eq(murb1.street,    murb2.street)
 
         ''' Add presentation to singer objects '''
-        sng2.singers.first.presentations += presentation.getvalid()
-        self.one(sng2.singers.first.presentations)
+        sngobjs2.first.presentations += presentation.getvalid()
+        self.one(sngobjs2.first.presentations)
 
-        # Get the `artist_artist` object for `sng2.singers.first` 
+        # Get the `artist_artist` object for `sngobjs2.first` 
         aa1 = [ 
             x 
             for x in sng2.artist_artists
-            if x.object.id == sng2.singers.first.id
+            if x.object.id == sngobjs2.first.id
         ][0]
 
         aa1.object.presentations += presentation.getvalid()
-        self.two(sng2.singers.first.presentations)
+        self.two(sngobjs2.first.presentations)
         self.two(aa1.object.presentations)
 
-        # NOTE (3cb2a6b5) In the non-subentity version of this test
-        # (it_loads_and_saves_reflexive_associations), the following
-        # is True:
-        #
-        #   sng2.singers.first.presentations is \
-        #   sng2.artist_artists.first.object.presentations
-
-        # However, that can't be the case here because
-        #
-        #     type(sng2.artist_artists.first.object) is artist
-        #
-        # That means that the above appends go to two different
-        # presentations collections. 
-
-        '''
-        self.isnot(
-            sng2.singers.first.presentations,
-            aa1.object.presentations
-        )
-
-        self.isnot(
-            sng2.singers.first.presentations.first,
-            aa1.object.presentations.first
-        )
-        '''
-
         ''' Add presentation to painter object '''
-        for objpnt2 in sng2.painters:
+        for objpnt2 in pntobjs2:
             if not muralist.orm.exists(objpnt2.id):
                 break
         else:
             raise TypeError("Can't find a non-muralist painter")
-
 
         objpnt2.presentations += presentation.getvalid()
         self.one(objpnt2.presentations)
@@ -16554,25 +16569,12 @@ class test_orm(tester):
         self.two(objpnt2.presentations)
         self.two(aa2.object.presentations)
 
-        '''
-        self.isnot(
-            objpnt2.presentations,
-            aa2.object.presentations
-        )
-
-        self.isnot(
-            objpnt2.presentations.first,
-            aa2.object.presentations.first
-        )
-        '''
-
-        self.two(sng2.singers.first.presentations)
         self.two(aa1.object.presentations)
         self.two(objpnt2.presentations)
         self.two(aa2.object.presentations)
 
         ''' Add presentation to muralist object '''
-        objmur2 = sng2.muralists.first
+        objmur2 = murobjs2.first
 
         objmur2.presentations += presentation.getvalid()
         self.one(objmur2.presentations)
@@ -16588,47 +16590,35 @@ class test_orm(tester):
         self.two(objmur2.presentations)
         self.two(aa3.object.presentations)
 
-        '''
-        self.isnot(
-            objmur2.presentations,
-            aa3.object.presentations
-        )
-
-        self.isnot(
-            objmur2.presentations.first,
-            aa3.object.presentations.first
-        )
-        '''
-
-        self.two(sng2.singers.first.presentations)
+        self.two(sngobjs2.first.presentations)
         self.two(aa1.object.presentations)
         self.two(objpnt2.presentations)
         self.two(objmur2.presentations)
         self.two(aa3.object.presentations)
 
-        '''
-        with ct() as t:
-            t(sng2.save)
+        with ct(sng2.save) as t:
             t.created(
-                sng2.singers.first.presentations.first,
-                aa1.object.presentations.first,
-                objpnt2.presentations.first,
-                aa2.object.presentations.first,
-                objmur2.presentations.first,
-                aa3.object.presentations.first,
+                *sngobjs2.first.presentations,
+                *objpnt2.presentations,
+                *objmur2.presentations,
             )
-        '''
-        sng2.save()
 
         sng3 = singer(sng2.id)
 
-        sng3obj = sng3.singers[sng2.singers.first.id]
+        objs = sng3.artist_artists.pluck('object')
+        sngobjs3 = singers([x for x in objs if isinstance(x, singer)])
+        pntobjs3 = painters([x for x in objs if isinstance(x, painter)])
+        murobjs3 = muralists([
+            x for x in objs if isinstance(x, muralist)
+        ])
+
+        sng3obj = sngobjs3[sngobjs2.first.id]
         sng3obj.presentations.first.name = uuid4().hex
 
-        pnt3obj = sng3.painters[objpnt2.id]
+        pnt3obj = pntobjs3[objpnt2.id]
         pnt3obj.presentations.first.name = uuid4().hex
 
-        mur3obj = sng3.muralists[objmur2.id]
+        mur3obj = murobjs3[objmur2.id]
         mur3obj.presentations.first.name = uuid4().hex
 
         with self._chrontest() as t:
@@ -16641,28 +16631,33 @@ class test_orm(tester):
 
         sng4 = singer(sng3.id)
 
+        objs = sng4.artist_artists.pluck('object')
+        sngobjs = singers([x for x in objs if isinstance(x, singer)])
+        pntobjs = painters([x for x in objs if isinstance(x, painter)])
+        murobjs = muralists([
+            x for x in objs if isinstance(x, muralist)
+        ])
+
         sngid = sng3obj.id
         presid =sng3obj.presentations.first.id
         self.eq(
             sng3obj.presentations.first.name,
-            sng4.singers[sngid].presentations[presid].name
+            sngobjs[sngid].presentations[presid].name
         )
 
         pntid = pnt3obj.id
         presid =pnt3obj.presentations.first.id
         self.eq(
             pnt3obj.presentations.first.name,
-            sng4.painters[pntid].presentations[presid].name
+            pntobjs[pntid].presentations[presid].name
         )
 
         murid = mur3obj.id
         presid = mur3obj.presentations.first.id
-        '''
         self.eq(
             mur3obj.presentations.first.name,
-            sng4.painters[murid].presentations[presid].name
+            murobjs[murid].presentations[presid].name
         )
-        '''
 
         # TODO Test deeply nested associations
 
