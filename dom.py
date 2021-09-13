@@ -979,6 +979,14 @@ class elements(entities.entities):
 
     @property
     def html(self):
+        """ Returns the HTML representation of the ``elements`` and
+        their children.
+
+        Note that there won't be any linefeeds or indentation to make
+        the HTML human-friendly. The HTML is intended for a browser or
+        some other parser. For a human-friendly version, use the
+        ``elements.pretty`` property.
+        """
         return ''.join(x.html for x in self)
 
     @property
@@ -1576,6 +1584,14 @@ class element(entities.entity):
 
     @property
     def html(self):
+        """ Returns the HTML representation of the element and its
+        children.
+
+        Note that there won't be any linefeeds or indentation to make
+        the HTML human-friendly. The HTML is intended for a browser or
+        for some other parser. For a human-friendly version, use the
+        ``element.pretty`` property.
+        """
         body = str()
 
         if isinstance(self, text):
@@ -1768,6 +1784,11 @@ class text(element):
 
     @property
     def html(self):
+        """ Returns the HTML representation of the text node.
+
+        For effeciency, needless whitespace will be removed.
+        """
+
         return dedent(self._html).strip('\n')
 
     @html.setter
@@ -1818,6 +1839,8 @@ class comment(element):
 
     @property
     def html(self):
+        """ Returns an HTML representation of the comment.
+        """
         return '<!--%s-->' % self._text
 
     @property
