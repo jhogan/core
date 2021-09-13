@@ -762,8 +762,8 @@ class elements(entities.entities):
         # If the element being appended has a parent, then we don't want
         # to create a revision entry for it. If this is the case, the
         # element is being collected for non-tree purposes, such as when
-        # when an `element.elements` method creates a collection of
-        # elements to return to its caller
+        # an `element.elements` method creates a collection of elements
+        # to return to its caller
         if not eargs.entity.isroot:
             return
 
@@ -991,6 +991,8 @@ class elements(entities.entities):
 
     @property
     def parent(self):
+        """ Returns the parent element of this collection of elements.
+        """
         if not hasattr(self, '_parent'):
             self._parent = None
         return self._parent
@@ -1001,6 +1003,8 @@ class elements(entities.entities):
         self._parent = v
 
     def append(self, *args, **kwargs):
+        """ Appends an element to this collection.
+        """
         if isinstance(self.parent, text):
             raise NotImplementedError(
                 "Can't append to a text node"
