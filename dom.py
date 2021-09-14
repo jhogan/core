@@ -730,6 +730,21 @@ class cssclass(attribute):
 
 class elements(entities.entities):
     """ Represents a collection of HTML5 ``element`` objects.
+
+    This class can be used to store any collection of elements. However,
+    for each HTML5 element, there is a collection class that inherits 
+    from ``elements`` which are more approprite for storing collection
+    that only contain that element::
+
+        # Create a paragraphs collection
+        ps = paragraphs()
+
+        # Assert that ``paragraphs`` inherits form ``elements``
+        assert isinstance(ps, elements)
+
+        # Add paragraph object (<p>) to the paragraphs collection
+        ps += paragraph()
+        ps += paragraph()
     """
     # TODO:12c29ef9 Write and test mass attribute assignment logic:
     #
@@ -1012,6 +1027,13 @@ class elements(entities.entities):
         super().append(*args, **kwargs)
         
 class element(entities.entity):
+    """ An abstract class from which all HTML5 elements inherit.
+
+        # Create a paragraph (<p>) class 
+        p = paragraph()
+        # Assert that ``paragraph`` inherits form ``element``
+        assert isinstance(ps, element)
+    """
     # There must be a closing tag on elements by default. In cases,
     # such as the `base` element, there should not be a closing tag so
     # `isvoid` is set to True
