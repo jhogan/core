@@ -1034,25 +1034,16 @@ class element(entities.entity):
         # Assert that ``paragraph`` inherits form ``element``
         assert isinstance(ps, element)
     """
-    # There must be a closing tag on elements by default. In cases,
-    # such as the `base` element, there should not be a closing tag so
-    # `isvoid` is set to True
-
-    # "A void element is an element whose content model never allows it
+    # A void element is an element whose content model never allows it
     # to have contents under any circumstances. Void elements can have
-    # attributes. [...]
+    # attributes.
+    #
     # The following is a complete list of the void elements in HTML:
-    #     area, base, br, col, command, embed, hr, img, input, keygen,
-    #     link, meta, param, source, track, wbr [...]
-    # Optionally, a "/" character, which may be present only if the
-    # element is a void element. [...]
-    # Void elements only have a start tag; end tags must not be
-    # specified for void elements. [...]
-    # A non-void element must have an end tag, unless the subsection for
-    # that element in the HTML elements section of this reference
-    # indicates that its end tag can be omitted."
-    # The above is from:
-    #   https://www.w3.org/TR/2011/WD-html-markup-20110405/syntax.html
+    #    area, base, br, col, command, embed, hr, img, input, keygen,
+    #    link, meta, param, source, track, wbr
+    #
+    # See https://www.w3.org/TR/2011/WD-html-markup-20110113/syntax.html
+    # for more about void elements.
     isvoid = False
 
     # TODO Prevent adding nonstandard elements to a given element. For
@@ -1072,6 +1063,40 @@ class element(entities.entity):
         )
 
     def __init__(self, body=None, *args, **kwargs):
+        """ Create an HTML5 DOM element.
+
+        :param: str|element|elements: The body of the element. If str,
+        the body is added as a text node. If ``element`` or ``elements`,
+        those elements are added as the body.
+
+        :param: id bool:object (optional): 
+            If the 'id' is bool:
+                if True, a random id will be assigned to the id
+                attribute of the element.
+
+                If False, 
+                    Don't assign a random id. 
+
+                If the id is neither
+                    bool True or False, but still exists, we will allow
+                    it to be treated just like any other attribute
+                    being assigned in the constructor:
+            
+                el = element(id=123, class="order-data")
+                assert el.id == 123
+
+        :param: kwargs KVP: Zero or more arbitrary arguments can be
+        assigned via the constructor::
+
+            el = element(id=123, foo='bar', herp='derp')
+            assert el.id == 123
+            assert el.foo == 'bar'
+            assert el.herp == 'derp'
+
+        Note that ideally, these will be standard HTML5 attributes, but
+        that is not required.
+
+        """
         # TODO If self.isvoid, the `body` parameter would be
         # meaningless. In this case, if body is not None, we should
         # throw a TypeError.
@@ -1083,16 +1108,6 @@ class element(entities.entity):
             # comment), should probably shouldn't be assigning an id.
             self.id = primative.uuid().base64
         else:
-            # If the 'id' from kwargs is a boolean True, we are
-            # saying "assign a random id". If it is a boolean False, we
-            # are saying "don't assign a random id". If the id is
-            # neither boolean True or False, but still exists, we will
-            # allow it to be treatd it just like any other attribute
-            # being assigned in the constructor:
-            #
-            #   el = element(id=123, class="order-data")
-            #   assert el.id == 123
-
             if id is True:
                 self.id = primative.uuid().base64
                 del kwargs['id']
