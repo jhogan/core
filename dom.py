@@ -1033,6 +1033,32 @@ class element(entities.entity):
         p = paragraph()
         # Assert that ``paragraph`` inherits form ``element``
         assert isinstance(ps, element)
+
+    Attributes
+    ----------
+    Though the HTML attributes of an element can be accessed by the
+    element's ``attributes`` collection, standard HTML5 attributes will
+    be (or should be) defined as @property's on the element::
+
+        td = tabledata()
+
+        # Standard, non-depricated attributes work like this
+        td.colspan = 1
+        assert td.colspan == 1
+
+        # Non-standard or depricated attributes won't work as
+        # @property's.
+        try:
+            td.abbr = 'tla'
+        except AttributeError:
+            assert True
+        else:
+            assert False
+
+        # However, if you really want to use a non-standard or
+        # depricated attribute, you can use the attributes collection::
+        tr.attributes['attr'] = 'tla'
+        assert tr.attributes['abbr'] == 'tla'
     """
     # A void element is an element whose content model never allows it
     # to have contents under any circumstances. Void elements can have
@@ -1052,6 +1078,9 @@ class element(entities.entity):
 
     @staticmethod
     def _getblocklevelelements():
+        """ Returns a tuple of block-level, HTML5 ``element`` classes
+        e.g.: (address, article, aside, ...).
+        """
         return (
             address,   article,     aside,   blockquote,  dd,
             details,   dialog,      div,     dl,          dt,
@@ -1144,9 +1173,16 @@ class element(entities.entity):
         self.attributes += kwargs
 
     def remove(self, el):
+        """ Removes ``el`` from this ``element``'s child elements.
+
+        :param: el element: The element that we want to remove.
+        """
         return self.elements.remove(el)
 
     def reidentify(self):
+        """ Assigns new, random values (UUIDs) to the id attribute of
+        this HTML5 elements and all of its descendants.
+        """
         self.id = primative.uuid().base64
 
         for el in self.all:
@@ -1190,18 +1226,30 @@ class element(entities.entity):
 
     @property
     def isblocklevel(self):
+        """ Returns True if this element is a block-level element; False
+        otherwise.
+        """
         return type(self) in self._getblocklevelelements()
 
     def clone(self):
+        """ Returns a new instance of this element with cloned child
+        elements and cloned attributes.
+        """
         el = type(self)()
         el += self.elements.clone()
         el.attributes = self.attributes.clone()
         return el
 
     def clear(self):
+        """ Removes all child elements from this element effectively
+        emptying the element's body.
+        """
         self.elements.clear()
 
     def _elements_onadd(self, src, eargs):
+        """ When an element is appended to self, this event handler will
+        ensure that self is the parent of the element.
+        """
         el = eargs.entity
         el._setparent(self)
 
