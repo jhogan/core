@@ -1314,7 +1314,7 @@ class element(entities.entity):
 
     @property
     def id(self):
-        """ Defines a unique identifier (ID) which must be unique in the
+        """ Defines a unique identifier which must be unique to the
         whole document. Its purpose is to identify the element when
         linking (using a fragment identifier), scripting, or styling
         (with CSS). [_moz_global_attributes]
@@ -1327,8 +1327,9 @@ class element(entities.entity):
 
     @property
     def dir(self):
-        """ The dir global attribute is an enumerated attribute that
-        indicates the directionality of the element's text.
+        """ Returns the value of the the dir global attribute. dir is an
+        enumerated attribute that indicates the directionality of the
+        element's text.
 
         It can have the following values:
 
@@ -1370,8 +1371,9 @@ class element(entities.entity):
 
     @property
     def title(self):
-        """ The title global attribute contains text representing
-        advisory information related to the element it belongs to.
+        """ Returns the value of the title global attribute. title
+        contains text representing advisory information related to the
+        element it belongs to.
         """
         return self.attributes['title'].value
 
@@ -1399,6 +1401,13 @@ class element(entities.entity):
 
     @property
     def root(self):
+        """ Returns the root element of the document.
+
+        A search is performed starting at this element's parent,
+        ascending the DOM until an element with no parent is found. That
+        element is the root element and it will be returned. If self has
+        no parent, it will be considered the root and will be returned.
+        """
         ans = self.ancestors
         if ans.count:
             return ans.last
@@ -1407,6 +1416,8 @@ class element(entities.entity):
     
     @property
     def isroot(self):
+        """ Returns True if self is the root element; False otherwise.
+        """
         return self is self.root
 
     @property
@@ -1426,23 +1437,70 @@ class element(entities.entity):
 
     @property
     def parent(self):
+        """ The parent element of this element.
+
+        When an element is append to another element, the first element
+        is considered the second element's parent::
+
+            p = dom.paragraph('I am the parent')
+            span = dom.span('I am the child')
+
+            p += span
+
+            span.parent is p
+        """
         if not hasattr(self, '_parent'):
             self._parent = None
         return self._parent
 
     @property
     def grandparent(self):
+        """ The parent of the parent. If no grandparent element exist,
+        None will be returned.
+        """
         return self.getparent(1)
 
     @property
     def greatgrandparent(self):
+        """ The parent of the parent of the parent. If no
+        great-grandparent element exist, None will be returned.
+        """
         return self.getparent(2)
 
     @property
     def ancestors(self):
+        """ Returns an ``elements`` collection with the element's
+        lineage. See the docstring at getancestors() for more.
+        """
         return self.getancestors()
 
     def getancestors(self, includeself=False):
+        """ Returns an ``elements`` collection with the element's
+        lineage. For example, if the DOM is structured like this::
+
+            <html>
+                <head>
+                    <title>
+                        I'm the title
+                    </title>
+                </head>
+            </html>
+
+        The ``elements``` collection returned for the <title> would be
+        <head> then title::
+
+            title.getancestors().first is head
+            title.getancestors().second is html
+        
+        If includeself is True, the first element is self::
+
+            title.getancestors().second is title
+            title.getancestors().second is head
+            title.getancestors().third is html
+
+        :param: includeself bool: If True, the first element returned is
+        self.
+        """
         els = elements()
 
         if includeself:
