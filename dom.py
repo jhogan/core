@@ -1515,6 +1515,19 @@ class element(entities.entity):
         return els
 
     def getparent(self, num=0):
+        """ Returns the the parent element of the object. If num is 0,
+        the immediate parent is returned, if 1 the grandparent, and so
+        on. 
+
+        Consider using propreties like ``parent`` and ``grandparent``
+        to get the parent element that you want. This method is useful
+        when you don't know ahead of time how far up the the tree you
+        need to go.
+
+        :param: num int: The number of parents to skip to get to the
+        desired parent: if num==0: return immediate parent, if num==1:
+        return grandparent, and so on.
+        """
         rent = self.parent
 
         for _ in range(num):
@@ -1531,6 +1544,12 @@ class element(entities.entity):
         self._parent = v
 
     def getsiblings(self, includeself=False):
+        """ Returns an ``elements`` collection containing all the sibling
+        of this element.
+
+        :param: includeself bool: If True, this element will be the
+        first entry in the collection returned.
+        """
         els = elements()
         rent = self.parent
 
