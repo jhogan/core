@@ -409,8 +409,11 @@ class category(orm.entity):
         return cats
 
 class category_classification(orm.association):
-    """ An association linking a product witha a category.
+    """ An association linking a product with a category.
     """
+
+    # TODO I think this should be renamed to category_product. Also, the
+    # docstring needs to be completed.
 
     product  = product
     category = category
