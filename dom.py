@@ -1802,29 +1802,57 @@ class element(entities.entity):
         return r
 
 class headers(elements):
-    pass
+    """ A class used to contain a collection of ``header`` elements.
+    """
 
 class header(element):
-    pass
+    """ The <header> HTML element represents introductory content,
+    typically a group of introductory or navigational aids. It may
+    contain some heading elements but also a logo, a search form, an
+    author name, and other elements.
+    """
 
 class titles(elements):
-    pass
+    """ A class used to contain a collection of ``title`` elements.
+    """
 
 class title(element):
-    pass
+    """ The <title> HTML element defines the document's title that is
+    shown in a browser's title bar or a page's tab. It only contains
+    text; tags within the element are ignored.  
+    """
 
 class smalls(elements):
-    pass
+    """ A class used to contain a collection of ``small`` elements.
+    """
 
 class small(element):
-    pass
+    """ The <small> HTML element represents side-comments and small
+    print, like copyright and legal text, independent of its styled
+    presentation. By default, it renders text within it one font-size
+    smaller, such as from small to x-small.
+    """
 
 class ps(elements):
-    pass
+    """ A class used to contain a collection of ``p`` elements.
+    """
 
 class p(element):
-    pass
+    """ The <p> HTML element represents a paragraph. Paragraphs are
+    usually represented in visual media as blocks of text separated from
+    adjacent blocks by blank lines and/or first-line indentation, but
+    HTML paragraphs can be any structural grouping of related content,
+    such as images or form fields.
+    """
 
+# TODO Remove this line. Since we will likely ``import dom`` instead of
+# `from dom import p`, we don't need to create a user-friendly alias for
+# p. Instantiating like this should work fine::
+#
+#    ### from dom import p, a, div
+#    import dom
+#    p = dom.p('This is a paragraph')
+#    p1 = dom.p('This is another paragraph')
 paragraph = p
 
 class addresses(elements):
