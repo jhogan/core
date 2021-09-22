@@ -140,8 +140,8 @@ class prices(orm.entities):
                     'for price "%s": %s' % (pr.id, type(pr).__name__)
                 )
 
-            for cat in self.product.categories:
-                if pr.category in cat:
+            for cc in self.product.category_classifications:
+                if pr.category in cc.category:
                     prs += pr
 
             if pr.organization.id != org.id:

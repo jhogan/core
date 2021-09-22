@@ -15574,29 +15574,6 @@ class test_orm(tester):
         self.eq(press4.first.id, press3.first.id)
         self.eq(press4.second.id, press3.second.id)
 
-        # NOTE The below comment and tests were carried over from
-        # it_loads_and_saves_associations:
-        # This fixes an issue that came up in development: When you add valid
-        # aa to art, then add a fact to art (thus adding an invalid aa to art),
-        # strange things were happening with the brokenrules. 
-        art = artist.getvalid()
-        art.artist_artists += artist_artist.getvalid()
-        art.artist_artists += artist_artist.getvalid()
-        art.artist_artists.last += artist.getvalid()
-
-        self.zero(art.artist_artists.first.brokenrules)
-        self.zero(art.artist_artists.first.brokenrules)
-        self.three(art.artist_artists.second.brokenrules)
-        self.three(art.brokenrules)
-
-        # Fix broken aa
-        art.artist_artists.second.role = uuid4().hex
-        art.artist_artists.second.slug = uuid4().hex
-        art.artist_artists.second.timespan = uuid4().hex
-
-        self.zero(art.artist_artists.second.brokenrules)
-        self.zero(art.brokenrules)
-
     def it_updates_reflexive_association(self):
         # TODO We should test updateing aa.subject and aa.object
         art = artist.getvalid()
@@ -18555,21 +18532,20 @@ class gem_product(tester):
 
         self.two(cat1.category_classifications)
 
-        for ass in ('category_classifications', 'products'):
-            ccs = getattr(cat, ass).sorted()
-            ccs1 = getattr(cat1, ass).sorted()
-            
-            ccs = cat.category_classifications.sorted()
-            ccs1 = cat1.category_classifications.sorted()
+        ccs = cat.category_classifications.sorted()
+        ccs1 = cat1.category_classifications.sorted()
+        
+        ccs = cat.category_classifications.sorted()
+        ccs1 = cat1.category_classifications.sorted()
 
-            self.eq(ccs.first.begin, ccs1.first.begin)
-            self.eq(ccs.second.begin, ccs1.second.begin)
+        self.eq(ccs.first.begin, ccs1.first.begin)
+        self.eq(ccs.second.begin, ccs1.second.begin)
 
-            self.eq(ccs.first.product.name, ccs1.first.product.name)
-            self.eq(ccs.second.product.name, ccs1.second.product.name)
+        self.eq(ccs.first.product.name, ccs1.first.product.name)
+        self.eq(ccs.second.product.name, ccs1.second.product.name)
 
-            self.eq(ccs.first.category.name, ccs1.first.category.name)
-            self.eq(ccs.second.category.name, ccs1.second.category.name)
+        self.eq(ccs.first.category.name, ccs1.first.category.name)
+        self.eq(ccs.second.category.name, ccs1.second.category.name)
 
     def it_breaks_with_two_primary_associations(self):
         """ Test to ensure that `category_classification.brokenrules`
@@ -18644,7 +18620,6 @@ class gem_product(tester):
         sm1 = party.type(sm.id)
 
         self.two(sm1.category_types)
-        self.two(sm1.categories)
 
         sm.category_types.sort()
         sm1.category_types.sort()
@@ -18811,15 +18786,17 @@ class gem_product(tester):
             factor  = dec(2.54)
         )
 
-        paper.features += dim_width
+        paper.product_features += product.product_feature(
+           feature = dim_width
+        )
 
         # Save everything associated with the paper product. The
         # save doesn't discover the measure_measure association, so
         # throw that in as well so it gets saved.
         paper.save(mm)
 
-        self.one(paper.features)
-        dim_width = paper.features.first
+        self.one(paper.product_features)
+        dim_width = paper.product_features.first.feature
 
         # The paper's dimension(feature) knows it is measured in inches
         # via its unit of measure (`measure`) property
