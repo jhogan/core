@@ -1939,36 +1939,11 @@ class footers(elements):
     """
 
 class footer(element):
-    # Reference:
-    # https://www.orbitmedia.com/blog/website-footer-design-best-practices/
-    def __init__(self):
-        self.copyright = copyright()
-    
-    def sitemap(self):
-        # Derived or overridden
-        pass
-
-    def privacypolicy(self):
-        raise NotImplementedError('Author must override') 
-
-    def termsofuse(self):
-        raise NotImplementedError('Author must override') 
-
-    def contact(self):
-        # Derived or overridden
-        pass
-
-    def address(self):
-        # Derived or overridden
-        pass
-
-    def phonenumbers(self):
-        # Derived or overridden
-        pass
-
-    def socialmedia(self):
-        # Derived or overridden
-        pass
+    """ The <footer> HTML element represents a footer for its nearest
+    sectioning content or sectioning root element. A <footer> typically
+    contains information about the author of the section, copyright data
+    or links to related documents.
+    """
 
 class text(element):
     def __init__(self, v, esc=True, *args, **kwargs):
