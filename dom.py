@@ -1856,43 +1856,64 @@ class p(element):
 paragraph = p
 
 class addresses(elements):
-    pass
+    """ A class used to contain a collection of ``address`` elements.
+    """
 
 class address(element):
-    pass
+    """The <address> HTML element indicates that the enclosed HTML
+    provides contact information for a person or people, or for an
+    organization.
+    """
 
 class asides(elements):
-    pass
+    """ A class used to contain a collection of ``aside`` elements.
+    """
 
 class aside(element):
-    pass
+    """ The <aside> HTML element represents a portion of a document
+    whose content is only indirectly related to the document's main
+    content. Asides are frequently presented as sidebars or call-out
+    boxes.
+    """
 
 class dialogs(elements):
-    pass
+    """ A class used to contain a collection of ``dialog`` elements.
+    """
 
 class dialog(element):
-    pass
+    """ The <dialog> HTML element represents a dialog box or other
+    interactive component, such as a dismissible alert, inspector, or
+    subwindow.
+
+    Note that this element isn't supported by Firefox or Safari.
+    """
+    # TODO The tabindex attribute must not be used on the <dialog>
+    # element. See
+    # https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog
 
 class figcaptions(elements):
-    pass
+    """ A class used to contain a collection of ``figcaption`` elements.
+    """
 
 class figcaption(element):
-    pass
+    """ The <figcaption> HTML element represents a caption or legend
+    describing the rest of the contents of its parent <figure> element.
+    """
 
 class figures(elements):
-    pass
+    """ A class used to contain a collection of ``figure`` elements.
+    """
 
 class figure(element):
-    pass
-
-class hgroups(elements):
-    pass
-
-class hgroup(element):
-    pass
+    """ The <figure> HTML element represents self-contained content,
+    potentially with an optional caption, which is specified using the
+    <figcaption> element. The figure, its caption, and its contents are
+    referenced as a single unit.
+    """
 
 class articles(elements):
-    pass
+    """ A class used to contain a collection of ``article`` elements.
+    """
 
 class article(element):
     """ The HTML <article> element represents a self-contained
@@ -1900,26 +1921,22 @@ class article(element):
     intended to be independently distributable or reusable (e.g., in
     syndication). Examples include: a forum post, a magazine or
     newspaper article, or a blog entry.  
-    
-    https://developer.mozilla.org/en-US/docs/Web/HTML/Element/article
     """
-    pass
 
 class sections(elements):
-    pass
+    """ A class used to contain a collection of ``section`` elements.
+    """
 
 class section(element):
     """ The HTML <section> element represents a standalone section —
     which doesn't have a more specific semantic element to represent it
     — contained within an HTML document. Typically, but not always,
     sections have a heading.
-    
-    https://developer.mozilla.org/en-US/docs/Web/HTML/Element/section
     """
-    pass
 
 class footers(elements):
-    pass
+    """ A class used to contain a collection of ``footer`` elements.
+    """
 
 class footer(element):
     # Reference:
