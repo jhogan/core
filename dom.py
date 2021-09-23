@@ -539,13 +539,46 @@ class cssclass(attribute):
         return True
 
     def __getitem__(self, ix):
+        """ Returns the CSS class given an index number.
+        """
         return self._classes[ix]
 
     def __iadd__(self, o):
+        """ Allows the appending of a CSS class using the += operator.
+        See cssclass.append for more.
+
+        :param: o as str|cssclass: The name of a CSS class or a cssclass
+        object.
+
+        """
         self.append(o)
         return self
 
     def append(self, *clss):
+        """ Append one or more CSS classes.
+
+            div = dom.div()
+
+            # All of the following do the same. Each would be render in
+            # HTML as <div class="col-xs-4" />
+            div.classes.append('col-xs-4')
+            div.classes.append(dom.cssclass('col-xs-4'))
+            div.attributes['class'].append(dom.cssclass('col-xs-4'))
+
+        You can also append multiple at the same time::
+
+            # All the following do the same. Each would be render in
+            # HTML as: <div class="my-class-1 my-class-a" />
+            div.classes.append('my-class-1 my-class-a')
+            div.classes.append('my-class-1', 'my-class-a')
+            div.classes += dom.cssclass('my-class-1 my-class-a')
+            div.classes += 'my-class-1', 'my-class-a'
+            div.classes += 'my-class-1 my-class-a'
+
+        :param *clss list<str|cssclass|iterable>: A list of str,
+        cssclass, or iterables that can be considered resolvable to CSS
+        classes.
+        """
         for cls in clss:
             if isinstance(cls, str):
                 for cls in cls.split():
@@ -562,13 +595,81 @@ class cssclass(attribute):
                 raise ValueError('Invalid type: ' + type(clss).__name__)
 
     def __delitem__(self, *clss):
+        """ Allows the del operator to be used to delete a CSS class from
+        the collection. Assuming `p` has a CSS class called
+        'my-class', you can delete it with the following code::
+
+            # Before: <p class="my-class my-other-class">
+            del p.classes['my-class']
+
+            # After: <p class="my-other-class">
+
+        The *clss indexer can be anything passed to cssclass.remove. See
+        its document string for a full list of argument tyes that can be
+        used to delete CSS classes this way.
+
+        :param: *clss TODO: Add comments from cssclass.remove
+        """
         self.remove(*clss)
 
     def __isub__(self, o):
-        self.remove(o)
+        """ Allows the -= operator to be used to delete a CSS class from
+        the collection. 
+
+        Assuming `p` has a CSS class called 'my-class', you can delete
+        it with the following code::
+
+            # Before: <p class="my-class my-other-class">
+            del p.classes -= 'my-class'
+
+            # After: <p class="my-other-class">
+
+        The o argument can be anything passed to cssclass.remove. See
+        its docstring for a full list of argument types that can be used
+        to delete CSS classes this way.
+
+        :param: o TODO: Add comments from cssclass.remove
+        """
         return self
 
     def remove(self, *clss):
+        """ Removes a CSS class from the collection::
+
+            # Given:
+            assert p.html == '<p class="c1 c2 c3 c4 c5 c6 c7 c8"></p>'
+            # The following three lines would do the same thing: remove
+            # the 'c5' CSS class from p
+            p.classes.remove('c5')
+            p.classes -= 'c5'
+            del p.classes['c5']
+            assert p.html == '<p class="c1 c2 c3 c4 c6 c7 c8"></p>'
+
+            # You can also remove multiple classes in one line using
+            # space seperated classes
+            p.classes.remove('c1 c8')
+            self.eq('class="c2 c3 c4 c6 c7"', p.classes.html)
+
+            p.classes -= 'c2', 'c7'
+            self.eq('class="c3 c4 c5 c6"', p.classes.html)
+
+        :param: *clss str| list<str|iterables>: The CSS class to remove.
+            if str:
+                The str is interpreted as one or more CSS classes, e.g.,
+                "my-class" or "my-class my-other-cass"
+
+            if list:
+                Each element in the list will be interpeted as a
+                string. You could do something like the following::
+                    tag.classes.remove('my-class', 'my-other-class')
+
+                    # or
+
+                    tag.classes.remove(*['my-class', 'my-other-class'])
+
+                    # or
+
+                    tag.classes.remove(['my-class', 'my-other-class'])
+        """
         for cls in clss:
             if isinstance(cls, str):
                 for cls in cls.split():
@@ -585,16 +686,28 @@ class cssclass(attribute):
 
     @property
     def isdef(self):
+        """ Returns True if the 'class' attribute is defined, False
+        otherwise. (See the docstring at attribute.isdef for more).
+        """
         return bool(self._classes)
 
     @property
     def value(self):
+        """ Returns a space seperated list of the CSS classes collected
+        in this attribute.
+
+        If the attribute (self) is not defined, the attribute.undef
+        class is returned to indicate that the value is undefined. See
+        cssclass.isdef.
+        """
         if not self.isdef:
             return attribute.undef
         return ' '.join(self._classes)
 
     @value.setter
     def value(self, v):
+        """ Set's the value of the class attribute.
+        """
         if v is None:
             self._classes = list()
         elif v is not attribute.undef:
@@ -602,12 +715,37 @@ class cssclass(attribute):
 
     @property
     def html(self):
+        """ Returns the HTML representation of the CSS class:
+
+            class="my-class my-other-class"
+        """
         return 'class="%s"' % self.value
 
     def __repr__(self):
+        """ Returns a representation of this object::
+
+            cssclass(value='my-class my-other-class')
+        """
         return '%s(value=%s)' % (type(self).__name__, self._classes)
 
 class elements(entities.entities):
+    """ Represents a collection of HTML5 ``element`` objects.
+
+    This class can be used to store any collection of elements. However,
+    for each HTML5 element, there is a collection class that inherits 
+    from ``elements`` which are more approprite for storing collection
+    that only contain that element::
+
+        # Create a paragraphs collection
+        ps = paragraphs()
+
+        # Assert that ``paragraphs`` inherits form ``elements``
+        assert isinstance(ps, elements)
+
+        # Add paragraph object (<p>) to the paragraphs collection
+        ps += paragraph()
+        ps += paragraph()
+    """
     # TODO:12c29ef9 Write and test mass attribute assignment logic:
     #
     #     chks.checked = True  # Check all checked attributes
@@ -620,12 +758,18 @@ class elements(entities.entities):
     # https://validator.w3.org/#validate_by_input
 
     def _self_onadd(self, src, eargs):
+        """ Overrides entities._self_onadd event handler. 
+
+        This override manages revisions to the ``elements`` collection.
+        
+        NOTE that this functionality is currently under development.
+        """
         super()._self_onadd(src, eargs)
 
         # If `self` has no root then `self` is likely being used to
         # collect elements for non-tree purposes such as collecting the
         # ancestors of an element or the matches of a CSS selector
-        # selection.. In this case, there is no need to note the
+        # selection. In this case, there is no need to note the
         # revision.
         if not self.root:
             return 
@@ -633,8 +777,8 @@ class elements(entities.entities):
         # If the element being appended has a parent, then we don't want
         # to create a revision entry for it. If this is the case, the
         # element is being collected for non-tree purposes, such as when
-        # when an `element.elements` method creates a collection of
-        # elements to return to its caller
+        # an `element.elements` method creates a collection of elements
+        # to return to its caller
         if not eargs.entity.isroot:
             return
 
@@ -678,6 +822,14 @@ class elements(entities.entities):
         self.root._revisions += revs
 
     def _self_onremove(self, src, eargs):
+        """ Overrides the _self_onremove event handler in ``entities``
+
+        This override manages revisions to the ``elements`` collection.
+        
+        NOTE that this functionality is currently under development.
+        """
+        # FIXME This can't be right. We should be calling
+        # super()._self_onremove
         super()._self_onadd(src, eargs)
 
         # This code is also in _self_add. See the comment there for why
@@ -690,18 +842,39 @@ class elements(entities.entities):
 
     @property
     def root(self):
+        """ Returns the root ``element`` that this collection is under.
+        In typical HTML documents, this would be the ``element``
+        corresponding to the <html> tag at the root. This isn't
+        necessarly always the case, though,  since we could be using a
+        fragment of an HTML document, or a non-standard HTML document
+        that doesn't have <html> as its root.
+        """
         if self.parent:
             return self.parent.root
         return None
 
     @classmethod
     def getby(cls, tag):
+        """ Given the str ``tag``, search through all the ``element``
+        subclasses and return the first one that matches the tag name.
+
+            header = dom.elements.getby('header')
+            assert header is dom.header
+
+        This is useful for when you don't know what element you want so
+        you need to use a str variable to make it dynamic.
+        """
+        # TODO This method should be in ``element`` not ``elements``
+        # since it returns an element.
         for el in element.__subclasses__():
             if el.tag == tag:
                 return el
         return None
 
     def clone(self):
+        """ Create a new instance of this ``elements`` collection, clone
+        each of self's elements into the new collection, and return it.
+        """
         els = type(self)()
         for e in self:
             els += e.clone()
@@ -710,7 +883,8 @@ class elements(entities.entities):
 
     @property
     def text(self):
-        """ Get the combined text contents of each element.
+        """ Get the combined text contents of each element in the
+        collection.
         """
         # NOTE This should match the functionality of jQuery's `.text()`
         # as closely as possible - except for the `.text(function)`
@@ -724,6 +898,12 @@ class elements(entities.entities):
             x.text = v
 
     def remove(self, e=None):
+        """ Removes ``e`` from the given collection. If is is not
+        provided, removes each of the elements in this collection from
+        their parent.
+
+        :param: e element: The element to remove.
+        """
         if e is not None:
             return super().remove(e)
 
@@ -736,9 +916,8 @@ class elements(entities.entities):
         return rms
 
     def __getitem__(self, sel):
-        ''' Get elements by an ordinal index or a CSS3 selector.
-
-        Examples::
+        ''' Get elements by an ordinal index or by a CSS3 selector.
+        Given `els` is an ``elements`` collection::
             
             # Get the first element of the collection of elememnts
             el = els[0]
@@ -746,8 +925,8 @@ class elements(entities.entities):
             # Get the first 2 elements from the collection of elememnts
             els = els[0:2]
 
-            # Get all <span> elements that are immediate children of <p>
-            # where the <p> is a child or grandchild of a <div> with a
+            # Get all <span> elements that are immediate children of
+            # <p>, where <p> is a child or grandchild of a <div> with a
             # class of of 'my-class'.
             els = els['div.my-class p > span']
 
@@ -755,6 +934,8 @@ class elements(entities.entities):
             # selector string.
             sels = selectors('div.my-class p > span')
             els = els[sels]
+
+        :param: sel int|slice|str|selectors: The indexer value.
         '''
 
         if isinstance(sel, int) or isinstance(sel, slice):
@@ -772,12 +953,20 @@ class elements(entities.entities):
 
     @property
     def children(self):
+        """ Returns a new ``elements`` collection containing all
+        immediate children in this collection. Note that ``comment`` and
+        ``text`` nodes are excluded.
+        """
         initial = (
             x for x in self if type(x) not in (comment, text)
         )
         return elements(initial=initial)
 
     def getchildren(self):
+        """ Return a new ``elements`` collection containing all elements
+        underneath this ``elements`` collection. Note that ``comment``
+        and ``text`` nodes are excluded.
+        """
         els = elements()
         for el in self.children:
             els += el
@@ -786,6 +975,10 @@ class elements(entities.entities):
 
     @property
     def all(self):
+        """ Return a new ``elements`` collection containing all elements
+        underneath this ``elements`` including ``comment`` and ``text``
+        nodes.
+        """
         els = elements()
         for el in self:
             els += el
@@ -794,14 +987,27 @@ class elements(entities.entities):
 
     @property
     def pretty(self):
+        """ Return a str containing a user-friendly, HTML rendering of
+        the elements using indenting and linefeeds for readability.
+        """
         return '\n'.join(x.pretty for x in self)
 
     @property
     def html(self):
+        """ Returns the HTML representation of the ``elements`` and
+        their children.
+
+        Note that there won't be any linefeeds or indentation to make
+        the HTML human-friendly. The HTML is intended for a browser or
+        some other parser. For a human-friendly version, use the
+        ``elements.pretty`` property.
+        """
         return ''.join(x.html for x in self)
 
     @property
     def parent(self):
+        """ Returns the parent element of this collection of elements.
+        """
         if not hasattr(self, '_parent'):
             self._parent = None
         return self._parent
@@ -812,6 +1018,8 @@ class elements(entities.entities):
         self._parent = v
 
     def append(self, *args, **kwargs):
+        """ Appends an element to this collection.
+        """
         if isinstance(self.parent, text):
             raise NotImplementedError(
                 "Can't append to a text node"
@@ -819,25 +1027,49 @@ class elements(entities.entities):
         super().append(*args, **kwargs)
         
 class element(entities.entity):
-    # There must be a closing tag on elements by default. In cases,
-    # such as the `base` element, there should not be a closing tag so
-    # `isvoid` is set to True
+    """ An abstract class from which all HTML5 elements inherit.
 
-    # "A void element is an element whose content model never allows it
+        # Create a paragraph (<p>) class 
+        p = paragraph()
+        # Assert that ``paragraph`` inherits form ``element``
+        assert isinstance(ps, element)
+
+    Attributes
+    ----------
+    Though the HTML attributes of an element can be accessed by the
+    element's ``attributes`` collection, standard HTML5 attributes will
+    be (or should be) defined as @property's on the element::
+
+        td = tabledata()
+
+        # Standard, non-depricated attributes work like this
+        td.colspan = 1
+        assert td.colspan == 1
+
+        # Non-standard or depricated attributes won't work as
+        # @property's.
+        try:
+            td.abbr = 'tla'
+        except AttributeError:
+            assert True
+        else:
+            assert False
+
+        # However, if you really want to use a non-standard or
+        # depricated attribute, you can use the attributes collection::
+        tr.attributes['attr'] = 'tla'
+        assert tr.attributes['abbr'] == 'tla'
+    """
+    # A void element is an element whose content model never allows it
     # to have contents under any circumstances. Void elements can have
-    # attributes. [...]
+    # attributes.
+    #
     # The following is a complete list of the void elements in HTML:
-    #     area, base, br, col, command, embed, hr, img, input, keygen,
-    #     link, meta, param, source, track, wbr [...]
-    # Optionally, a "/" character, which may be present only if the
-    # element is a void element. [...]
-    # Void elements only have a start tag; end tags must not be
-    # specified for void elements. [...]
-    # A non-void element must have an end tag, unless the subsection for
-    # that element in the HTML elements section of this reference
-    # indicates that its end tag can be omitted."
-    # The above is from:
-    #   https://www.w3.org/TR/2011/WD-html-markup-20110405/syntax.html
+    #    area, base, br, col, command, embed, hr, img, input, keygen,
+    #    link, meta, param, source, track, wbr
+    #
+    # See https://www.w3.org/TR/2011/WD-html-markup-20110113/syntax.html
+    # for more about void elements.
     isvoid = False
 
     # TODO Prevent adding nonstandard elements to a given element. For
@@ -846,6 +1078,9 @@ class element(entities.entity):
 
     @staticmethod
     def _getblocklevelelements():
+        """ Returns a tuple of block-level, HTML5 ``element`` classes
+        e.g.: (address, article, aside, ...).
+        """
         return (
             address,   article,     aside,   blockquote,  dd,
             details,   dialog,      div,     dl,          dt,
@@ -857,6 +1092,40 @@ class element(entities.entity):
         )
 
     def __init__(self, body=None, *args, **kwargs):
+        """ Create an HTML5 DOM element.
+
+        :param: str|element|elements: The body of the element. If str,
+        the body is added as a text node. If ``element`` or ``elements`,
+        those elements are added as the body.
+
+        :param: id bool:object (optional): 
+            If the 'id' is bool:
+                if True, a random id will be assigned to the id
+                attribute of the element.
+
+                If False, 
+                    Don't assign a random id. 
+
+                If the id is neither
+                    bool True or False, but still exists, we will allow
+                    it to be treated just like any other attribute
+                    being assigned in the constructor:
+            
+                el = element(id=123, class="order-data")
+                assert el.id == 123
+
+        :param: kwargs KVP: Zero or more arbitrary arguments can be
+        assigned via the constructor::
+
+            el = element(id=123, foo='bar', herp='derp')
+            assert el.id == 123
+            assert el.foo == 'bar'
+            assert el.herp == 'derp'
+
+        Note that ideally, these will be standard HTML5 attributes, but
+        that is not required.
+
+        """
         # TODO If self.isvoid, the `body` parameter would be
         # meaningless. In this case, if body is not None, we should
         # throw a TypeError.
@@ -868,16 +1137,6 @@ class element(entities.entity):
             # comment), should probably shouldn't be assigning an id.
             self.id = primative.uuid().base64
         else:
-            # If the 'id' from kwargs is a boolean True, we are
-            # saying "assign a random id". If it is a boolean False, we
-            # are saying "don't assign a random id". If the id is
-            # neither boolean True or False, but still exists, we will
-            # allow it to be treatd it just like any other attribute
-            # being assigned in the constructor:
-            #
-            #   el = element(id=123, class="order-data")
-            #   assert el.id == 123
-
             if id is True:
                 self.id = primative.uuid().base64
                 del kwargs['id']
@@ -914,9 +1173,16 @@ class element(entities.entity):
         self.attributes += kwargs
 
     def remove(self, el):
+        """ Removes ``el`` from this ``element``'s child elements.
+
+        :param: el element: The element that we want to remove.
+        """
         return self.elements.remove(el)
 
     def reidentify(self):
+        """ Assigns new, random values (UUIDs) to the id attribute of
+        this HTML5 elements and all of its descendants.
+        """
         self.id = primative.uuid().base64
 
         for el in self.all:
@@ -960,18 +1226,30 @@ class element(entities.entity):
 
     @property
     def isblocklevel(self):
+        """ Returns True if this element is a block-level element; False
+        otherwise.
+        """
         return type(self) in self._getblocklevelelements()
 
     def clone(self):
+        """ Returns a new instance of this element with cloned child
+        elements and cloned attributes.
+        """
         el = type(self)()
         el += self.elements.clone()
         el.attributes = self.attributes.clone()
         return el
 
     def clear(self):
+        """ Removes all child elements from this element effectively
+        emptying the element's body.
+        """
         self.elements.clear()
 
     def _elements_onadd(self, src, eargs):
+        """ When an element is appended to self, this event handler will
+        ensure that self is the parent of the element.
+        """
         el = eargs.entity
         el._setparent(self)
 
@@ -1036,7 +1314,7 @@ class element(entities.entity):
 
     @property
     def id(self):
-        """ Defines a unique identifier (ID) which must be unique in the
+        """ Defines a unique identifier which must be unique to the
         whole document. Its purpose is to identify the element when
         linking (using a fragment identifier), scripting, or styling
         (with CSS). [_moz_global_attributes]
@@ -1049,8 +1327,9 @@ class element(entities.entity):
 
     @property
     def dir(self):
-        """ The dir global attribute is an enumerated attribute that
-        indicates the directionality of the element's text.
+        """ Returns the value of the the dir global attribute. dir is an
+        enumerated attribute that indicates the directionality of the
+        element's text.
 
         It can have the following values:
 
@@ -1092,8 +1371,9 @@ class element(entities.entity):
 
     @property
     def title(self):
-        """ The title global attribute contains text representing
-        advisory information related to the element it belongs to.
+        """ Returns the value of the title global attribute. title
+        contains text representing advisory information related to the
+        element it belongs to.
         """
         return self.attributes['title'].value
 
@@ -1121,6 +1401,13 @@ class element(entities.entity):
 
     @property
     def root(self):
+        """ Returns the root element of the document.
+
+        A search is performed starting at this element's parent,
+        ascending the DOM until an element with no parent is found. That
+        element is the root element and it will be returned. If self has
+        no parent, it will be considered the root and will be returned.
+        """
         ans = self.ancestors
         if ans.count:
             return ans.last
@@ -1129,6 +1416,8 @@ class element(entities.entity):
     
     @property
     def isroot(self):
+        """ Returns True if self is the root element; False otherwise.
+        """
         return self is self.root
 
     @property
@@ -1148,23 +1437,70 @@ class element(entities.entity):
 
     @property
     def parent(self):
+        """ The parent element of this element.
+
+        When an element is append to another element, the first element
+        is considered the second element's parent::
+
+            p = dom.paragraph('I am the parent')
+            span = dom.span('I am the child')
+
+            p += span
+
+            span.parent is p
+        """
         if not hasattr(self, '_parent'):
             self._parent = None
         return self._parent
 
     @property
     def grandparent(self):
+        """ The parent of the parent. If no grandparent element exist,
+        None will be returned.
+        """
         return self.getparent(1)
 
     @property
     def greatgrandparent(self):
+        """ The parent of the parent of the parent. If no
+        great-grandparent element exist, None will be returned.
+        """
         return self.getparent(2)
 
     @property
     def ancestors(self):
+        """ Returns an ``elements`` collection with the element's
+        lineage. See the docstring at getancestors() for more.
+        """
         return self.getancestors()
 
     def getancestors(self, includeself=False):
+        """ Returns an ``elements`` collection with the element's
+        lineage. For example, if the DOM is structured like this::
+
+            <html>
+                <head>
+                    <title>
+                        I'm the title
+                    </title>
+                </head>
+            </html>
+
+        The ``elements``` collection returned for the <title> would be
+        <head> then title::
+
+            title.getancestors().first is head
+            title.getancestors().second is html
+        
+        If includeself is True, the first element is self::
+
+            title.getancestors().second is title
+            title.getancestors().second is head
+            title.getancestors().third is html
+
+        :param: includeself bool: If True, the first element returned is
+        self.
+        """
         els = elements()
 
         if includeself:
@@ -1179,6 +1515,19 @@ class element(entities.entity):
         return els
 
     def getparent(self, num=0):
+        """ Returns the the parent element of the object. If num is 0,
+        the immediate parent is returned, if 1 the grandparent, and so
+        on. 
+
+        Consider using propreties like ``parent`` and ``grandparent``
+        to get the parent element that you want. This method is useful
+        when you don't know ahead of time how far up the the tree you
+        need to go.
+
+        :param: num int: The number of parents to skip to get to the
+        desired parent: if num==0: return immediate parent, if num==1:
+        return grandparent, and so on.
+        """
         rent = self.parent
 
         for _ in range(num):
@@ -1195,6 +1544,12 @@ class element(entities.entity):
         self._parent = v
 
     def getsiblings(self, includeself=False):
+        """ Returns an ``elements`` collection containing all the sibling
+        of this element.
+
+        :param: includeself bool: If True, this element will be the
+        first entry in the collection returned.
+        """
         els = elements()
         rent = self.parent
 
@@ -1338,30 +1693,47 @@ class element(entities.entity):
 
     @property
     def pretty(self):
+        """ Return a str containing a user-friendly representation of
+        the element. If the element is a text node, only the text will
+        be returned. For all other element types, the return string will
+        be an HTML representation of the element with its child elements
+        nested, using indenting and linefeeds for readability.
+        """
         body = str()
         if isinstance(self, text):
             body = self.html
 
+        # Iterate through all the child elements
+        # TODO Remove enumerate; i is not being used.
         for i, el in enumerate(self.elements):
             if body: body += '\n'
             body += el.pretty
 
+        # If this element is a text node, just return the body we've
+        # built
         if isinstance(self, text):
             return body
 
+        # Use textwrapper.indent on the body
         body = indent(body, '  ')
 
+        # Build the start tag
         r = '<%s'
         args = [self.tag]
 
+        # Append outer tags attributes
         if self.attributes.count:
             r += ' %s'
             args.append(self.attributes.html)
 
+        # Close first tag
         r += '>'
+
+        # If not void, line feed
         if not self.isvoid:
             r += '\n'
 
+        # If there is a body, add it to return
         if body:
             r += '%s\n'
             args += [body]
@@ -1370,6 +1742,7 @@ class element(entities.entity):
             pass
             #r += '>'
         else:
+            # If not void, add closing tag
             r += '</%s>'
             args += [self.tag]
 
@@ -1377,6 +1750,14 @@ class element(entities.entity):
 
     @property
     def html(self):
+        """ Returns the HTML representation of the element and its
+        children.
+
+        Note that there won't be any linefeeds or indentation to make
+        the HTML human-friendly. The HTML is intended for a browser or
+        for some other parser. For a human-friendly version, use the
+        ``element.pretty`` property.
+        """
         body = str()
 
         if isinstance(self, text):
@@ -1421,29 +1802,57 @@ class element(entities.entity):
         return r
 
 class headers(elements):
-    pass
+    """ A class used to contain a collection of ``header`` elements.
+    """
 
 class header(element):
-    pass
+    """ The <header> HTML element represents introductory content,
+    typically a group of introductory or navigational aids. It may
+    contain some heading elements but also a logo, a search form, an
+    author name, and other elements.
+    """
 
 class titles(elements):
-    pass
+    """ A class used to contain a collection of ``title`` elements.
+    """
 
 class title(element):
-    pass
+    """ The <title> HTML element defines the document's title that is
+    shown in a browser's title bar or a page's tab. It only contains
+    text; tags within the element are ignored.  
+    """
 
 class smalls(elements):
-    pass
+    """ A class used to contain a collection of ``small`` elements.
+    """
 
 class small(element):
-    pass
+    """ The <small> HTML element represents side-comments and small
+    print, like copyright and legal text, independent of its styled
+    presentation. By default, it renders text within it one font-size
+    smaller, such as from small to x-small.
+    """
 
 class ps(elements):
-    pass
+    """ A class used to contain a collection of ``p`` elements.
+    """
 
 class p(element):
-    pass
+    """ The <p> HTML element represents a paragraph. Paragraphs are
+    usually represented in visual media as blocks of text separated from
+    adjacent blocks by blank lines and/or first-line indentation, but
+    HTML paragraphs can be any structural grouping of related content,
+    such as images or form fields.
+    """
 
+# TODO Remove this line. Since we will likely ``import dom`` instead of
+# `from dom import p`, we don't need to create a user-friendly alias for
+# p. Instantiating like this should work fine::
+#
+#    ### from dom import p, a, div
+#    import dom
+#    p = dom.p('This is a paragraph')
+#    p1 = dom.p('This is another paragraph')
 paragraph = p
 
 class addresses(elements):
@@ -1569,6 +1978,11 @@ class text(element):
 
     @property
     def html(self):
+        """ Returns the HTML representation of the text node.
+
+        For effeciency, needless whitespace will be removed.
+        """
+
         return dedent(self._html).strip('\n')
 
     @html.setter
@@ -1619,6 +2033,8 @@ class comment(element):
 
     @property
     def html(self):
+        """ Returns an HTML representation of the comment.
+        """
         return '<!--%s-->' % self._text
 
     @property
