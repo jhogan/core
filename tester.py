@@ -116,23 +116,89 @@ class testers(entities.entities):
     def __str__(self):
         return self._tostr(str, includeHeader=False)
 
+class principle(entities.entity):
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        # Singleton stuff
+        if not cls._instance:
+            cls._instance = super(principle, cls).__new__(
+                cls, *args, **kwargs
+            )
+
+        return cls._instance
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._user = None
+        self._company = None
+
+        usr = self.user
+        com = self.company
+
+        import orm
+
+        with orm.sudo():
+            with orm.proprietor(com):
+                com.save()
+                usr.save()
+
+        B()
+
+        # Update the user so that the company is the proprietor.
+        usr.proprietor = com
+        usr.save()
+
+        # Set the usr as the orm's user
+        orm.security().user = usr
+
+
+        # Set the company as the proprietory
+        orm.security().proprietor = com
+
+    @property
+    def user(self):
+        Id = uuid.UUID(hex='574d42d0-9937-4fa7-a008-b885a9a77a9a')
+        if not self._user:
+            import orm, db
+            with orm.sudo():
+                try:
+                    self._user = ecommerce.user(Id)
+                except db.RecordNotFoundError:
+                    self._user = ecommerce.user(id=Id, name='stduser0')
+
+        return self._user
+
+    @property
+    def company(self):
+        Id = uuid.UUID(hex='574d42d0-625e-4b2b-a79e-28d981616545')
+        if not self._company:
+            import party, orm, db
+
+            with orm.sudo():
+                try:
+                    self._company = party.company(Id)
+                except db.RecordNotFoundError:
+                    self._company = party.company(
+                        id=Id, name='Standard Company 0'
+                    )
+
+
+        return self._company
+
 class tester(entities.entity):
     def __init__(self, testers):
         self._failures = failures()
         self.testers = testers
         self.eventregistrations = eventregistrations()
 
-    def createprinciples(self):
-        """ Create the priniple entity objects required for any tests.
-        Intended to be called in a tester's (tester.tester) constructor
-        in order to set up the environment.
-        
-        For the given test, ensure their is a root user in the
-        system. Then create an user who is the default owner
-        (orm.security().owner). The owner will be owned by the root
-        user. Then create a company and make that proprietor the
-        ORM's proprietor (orm.security().propritor).
-        """
+        import orm
+        orm.security().owner = self.user
+        orm.security().proprietor = self.company
+
+        return 
+        # XXX
+
         import orm, party
         own = ecommerce.user(name='hford')
         root = ecommerce.users.root
@@ -157,6 +223,17 @@ class tester(entities.entity):
         # Company) is the proprietor.
         own.proprietor = com
         own.save()
+
+        # Standardize
+        orm.security().owner = self.user
+
+    @property
+    def user(self):
+        return principle().user
+
+    @property
+    def company(self):
+        return principle().company
 
     @property
     def rebuildtables(self):
