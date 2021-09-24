@@ -204,8 +204,20 @@ class inode(orm.entity):
     ``directories`` also contain an ``inode`` attribute which refers to
     their parent ``directory``.
 
-    The name "inode" was chosen after the Unix-style data structure used
-    to describe file system object (files and directories).
+    inodes act as data singletons. This is to say that, when
+    instantiated by path, the inode will be created, cached and
+    returned. Additional call with the same path will result in the same
+    inode being returned::
+
+        assert directory('/etc') is directory('/etc')
+        assert file('/etc/password') is file('/etc/password')
+
+    See the overload of __new__ for details.
+
+    Etymology
+    ---------
+    This entity was named after the Unix-style data structure used to
+    describe file system object (files and directories).
     ``filesystemobjects`, though more descriptive, was considered too
     long to make a good class name.
     """
@@ -219,6 +231,10 @@ class inode(orm.entity):
 
     @staticmethod
     def _split(path):
+        """ A private static method that takes a path a splits it over
+        the '/' character. Deals with leading '/' more predictably than
+        Python's builtin path splitting algorithms.
+        """
         if path == '/':
             return ['/']
 
