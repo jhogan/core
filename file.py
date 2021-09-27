@@ -246,13 +246,29 @@ class inode(orm.entity):
         return names
 
     def __new__(cls, *args, **kwargs):
+        """ Ensure that when instantiating, we return the cached version
+        of an inode object if one exists. If one doesn't exist, create,
+        cache and return::
+
+            assert directory('/etc') is directory('/etc')
+            assert file('/etc/password') is file('/etc/password')
+        """
+
+        # from__new__ is a flag that, if set (to None), we arrived here
+        # from a __new__ method.
         try:
+            # Is the flag set
             kwargs['from__new__']
         except KeyError:
+            # Set the flog
             kwargs['from__new__'] = None
         else:
+            # If from__new__, instantiate and return
             return super(inode, cls).__new__(cls)
 
+        # Get the inodes ID. This could be a str containing the path
+        # ('/etc/passwd') or the UUID for the inode's primary key in the
+        # database.
         try:
             id = args[0]
         except IndexError:
@@ -261,24 +277,25 @@ class inode(orm.entity):
             except KeyError:
                 id = None
 
+        # If id is a str...
         if isinstance(id, str):
             try:
-                # See if we were given a uuid as a str
+                # See if str is a UUID, i.e., the inode's primary key
                 id = uuid.UUID(hex=id)
             except ValueError:
                 # The str id wil be considered a path
                 pass
 
         if isinstance(id, str):
-            # If id is still a str it must be a file path so call it
-            # what it is, search the cache. Return if its there,
-            # otherwise, instantiate.
+            # If id is still a str, it must be a file path so call it
+            # what it is: `path`; and search the cache. Return if its in
+            # the cache; otherwise, instantiate.
             path = id
 
             local = kwargs.get('local', False)
 
-            # If resource where local is False, don't cache, i.e., don't
-            # anchor to radix or floaters.
+            # If resource and `local` is False, don't cache, i.e.,
+            # don't anchor to radix or floaters (see resource.local).
             if resource in cls.mro() and not local:
                 nds = [x for x in path.split('/') if x]
 
@@ -308,6 +325,8 @@ class inode(orm.entity):
                 # Create a net object to capture the details of the find
                 # operation.
                 net = directory.net()
+
+                # Search cache
                 dir.find(path, net)
 
                 # If we found the path, return the tail, i.e., the last
@@ -333,25 +352,29 @@ class inode(orm.entity):
                     # instantiate, consider: /dir/dir/file-or-dir
                     nd += cls(name=name, **kwargs)
                 else:
-                    # If we are not ate the last one, the wanting inode
-                    # will be a directory (they last one may or may not
+                    # If we are not at the last one, the wanting inode
+                    # will be a directory (the last one may or may not
                     # be a file inode name). Add to heirarchy.
                     nd += directory(
                         name=name, kwargs={'from__new__': None}
                     )
 
-                # nd becomes the last inode append above
+                # nd becomes the last inode appended above
                 nd = nd.inodes.last
 
             # Return the last inode appended above
             return nd
         elif isinstance(id, uuid.UUID):
+            # Perform a database lookup using the primary key
             return cls(*args, **kwargs)
+
         elif isinstance(id, type(None)):
+            # Create new inode
             return cls(*args, **kwargs)
         else:
             raise TypeError(f'Unsupported type {type(id)}')
 
+        # TODO Could we ever get here? We should probably remove.
         return None
 
     def __init__(self, *args, **kwargs):
