@@ -1086,9 +1086,9 @@ class element(entities.entity):
             details,   dialog,      div,     dl,          dt,
             fieldset,  figcaption,  figure,  footer,      form,
             h1,        h2,          h3,      h4,          h5,
-            h6,        header,      hgroup,  hr,          li,
-            main,      nav,         ol,      p,           pre,
-            sections,  table,       ul,
+            h6,        header,      hr,      li,          main,
+            nav,       ol,          p,       pre,         sections,
+            table,     ul,
         )
 
     def __init__(self, body=None, *args, **kwargs):
