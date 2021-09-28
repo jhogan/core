@@ -6,6 +6,8 @@
 # Proprietary and confidential
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2019
 
+# TODO Add a `store` property. This is already being implemented in
+# config.py. See file.inode.store.
 import accounts
 from dbg import B
 from logs import *
@@ -115,4 +117,5 @@ class configuration:
         """ The secret code to sign JWTs for the system.
         """
         raise NotImplementedError('Must override')
+
 

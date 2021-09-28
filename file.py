@@ -388,10 +388,22 @@ class inode(orm.entity):
 
     @classproperty
     def store(cls):
+        """ Returns a physical file system path as a string containing
+        the root directory where all files should be stored, e.g.,
+
+             '/var/www/core/development'
+
+        The environment determines the path. Above, the path is clearly
+        for a development environment. config.py contains the actual
+        path that will be returned.
+        """
         return config().store
 
     @property
     def inradix(self):
+        """ Returns True if this inode is currently in the radix cache.
+        """
+
         # TODO This is dead and untested but may be useful
         nd = self
         radix = directory.radix
@@ -404,6 +416,9 @@ class inode(orm.entity):
             return False
 
     def delete(self):
+        """ Removes the inode from the HDD, database and the radix
+        cache. 
+        """
         # Remove from radix cache
         rent = self.inode
         if rent:
@@ -439,10 +454,14 @@ class inode(orm.entity):
 
     @property
     def isfloater(self):
+        """ Returns True if the inode is in the floater cache.
+        """
         return self in directory.floaters
 
     @property
     def root(self):
+        """ Return the root inode.
+        """
         nd = self
         while True:
             if nd.inode:
@@ -454,6 +473,7 @@ class inode(orm.entity):
     def _getfile(name, dir=None):
         """ Load and return a file by name which is under ``dir``.
         """
+        # XXX This appears to be dead code
         id = dir.id if dir else None
         op = '=' if id else 'is'
 
@@ -470,6 +490,7 @@ class inode(orm.entity):
     def _getdirectory(self, path):
         """ Load or create a file given a ``path``.
         """
+        # XXX This appears to be dead code
         if isinstance(self, file):
             head, tail = os.path.split(path)
         else:
@@ -508,14 +529,14 @@ class inode(orm.entity):
     def __getitem__(self, key):
         """ Return a (file or directory) underneath this inode by a
         ``key`` name, if the argument is a str. If ``key`` is not a str,
-        the default behavior for entiteis is used.
+        the default behavior for entities is used.
         """
 
         # Delegate indexing for a directory to inode's indexer.
         return self.inodes[key]
 
     def __iadd__(self, e):
-        """ Overload +=.
+        """ Overload +=
         """
 
         self.inodes.append(e)
