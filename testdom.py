@@ -565,31 +565,6 @@ class pom_page(tester.tester):
                     e.orm.recreate()
 
         orm.security().override = True
-        # Create an owner and get the root user
-        own = ecommerce.user(name='hford')
-        root = ecommerce.users.root
-
-        # Save the owner, the root user will be the owner's owner.
-        orm.security().owner = root
-        own.owner = root
-        own.save()
-
-        # Going forward, `own` will be the owner of all future records
-        # created.
-        orm.security().owner = own
-
-        # Create a company to be the proprietor.
-        com = party.company(name='Ford Motor Company')
-        com.save()
-
-        # Set the company as the proprietory
-        orm.security().proprietor = com
-
-        # Update the owner (hford) so that the company (Ford Motor
-        # Company) is the proprietor.
-        own.proprietor = com
-        own.save()
-
         foonet.orm.recreate()
 
     def it_calls__init__(self):

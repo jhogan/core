@@ -32,8 +32,6 @@ class test_ecommerce(tester.tester):
                 if e.__module__ in mods:
                     e.orm.recreate()
 
-        orm.security().owner = ecommerce.users.root
-
     def it_connects_users_to_urls(self):
         usr = ecommerce.user(name='jsmith')
         usr.party = party.person(name='John Smith')
@@ -268,9 +266,6 @@ class test_visits(tester.tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        orm.security().override = True
-        orm.orm.owner = ecommerce.users.root
-
     def it_calls_current(self):
         per = party.person(name='Henry Ford')
 
@@ -389,17 +384,6 @@ class test_url(tester.tester):
             for e in es:
                 if e.__module__ in mods:
                     e.orm.recreate()
-
-        with orm.sudo():
-            com = party.company(name='Ford Motor Company')
-
-            with orm.proprietor(com):
-                com.save()
-                own = ecommerce.user(name='hford')
-                own.save()
-
-        orm.security().proprietor = com
-        orm.security().owner = own
 
     def it_calls_creatability(self):
         """ Any user can create (produce) a url. Notably, it's the

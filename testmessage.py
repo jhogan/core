@@ -34,12 +34,6 @@ class test_message(tester.tester):
                 if e.__module__ in ('message', 'apriori', 'party'):
                     e.orm.recreate()
 
-        orm.security().owner = ecommerce.users.root
-
-        com = party.company(name='Carapacian')
-        orm.security().proprietor = com
-        com.save(com)
-
     def it_creates(self):
         msg = message.message(
             subject = 'Hello!!!',
@@ -332,17 +326,6 @@ class test_contactmechanism_message(tester.tester):
             self._clear()
 
             party.company._carapacian = None
-
-        with orm.sudo():
-            com = party.company(name='Ford Motor Company')
-
-            with orm.proprietor(com):
-                com.save()
-                own = ecommerce.user(name='hford')
-                own.save()
-
-        orm.security().proprietor = com
-        orm.security().owner = own
 
     def it_calls_creatability(self):
         with orm.override():

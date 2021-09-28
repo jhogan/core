@@ -36,17 +36,6 @@ class gem_party(tester.tester):
                 if e.__module__ in ('party', 'apriori'):
                     e.orm.recreate()
 
-        with orm.sudo():
-            com = party.company(name='Ford Motor Company')
-
-            with orm.proprietor(com):
-                com.save()
-                own = ecommerce.user(name='hford')
-                own.save()
-
-        orm.security().proprietor = com
-        orm.security().owner = own
-    
     def it_calls_creatability(self):
         with orm.override(False):
             with orm.sudo():
@@ -1899,17 +1888,6 @@ class test_contactmechanism(tester.tester):
             for e in es:
                 if e.__module__ in mods:
                     e.orm.recreate()
-
-        with orm.sudo():
-            com = party.company(name='Ford Motor Company')
-
-            with orm.proprietor(com):
-                com.save()
-                own = ecommerce.user(name='hford')
-                own.save()
-
-        orm.security().proprietor = com
-        orm.security().owner = own
 
     def it_calls_creatability(self):
         with orm.override(False):
