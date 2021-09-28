@@ -129,37 +129,32 @@ class principle(entities.entity):
         return cls._instance
 
     def __init__(self, *args, **kwargs):
+        # Since we are a singleton, we only want to run __init__ once,
+        # so return if the isinitialized attribute is set.
+        if hasattr(self, 'isinitialized'):
+            return
+        
         super().__init__(*args, **kwargs)
-        self._user = None
-        self._company = None
 
         usr = self.user
         com = self.company
+
 
         import orm
 
         with orm.sudo():
             with orm.proprietor(com):
                 com.save()
+                usr.proprietor = com
                 usr.save()
 
-        B()
+        self.isinitialized = True
 
-        # Update the user so that the company is the proprietor.
-        usr.proprietor = com
-        usr.save()
-
-        # Set the usr as the orm's user
-        orm.security().user = usr
-
-
-        # Set the company as the proprietory
-        orm.security().proprietor = com
 
     @property
     def user(self):
         Id = uuid.UUID(hex='574d42d0-9937-4fa7-a008-b885a9a77a9a')
-        if not self._user:
+        if not hasattr(self, '_user'):
             import orm, db
             with orm.sudo():
                 try:
@@ -172,7 +167,7 @@ class principle(entities.entity):
     @property
     def company(self):
         Id = uuid.UUID(hex='574d42d0-625e-4b2b-a79e-28d981616545')
-        if not self._company:
+        if not hasattr(self, '_company'):
             import party, orm, db
 
             with orm.sudo():
