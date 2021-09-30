@@ -33,17 +33,6 @@ class test_postmark(tester.tester):
                 if e.__module__ in ('third', 'message'):
                     e.orm.recreate()
 
-        with orm.sudo():
-            com = party.company(name='Ford Motor Company')
-
-            with orm.proprietor(com):
-                com.save()
-                own = ecommerce.user(name='hford')
-                own.save()
-
-        orm.security().proprietor = com
-        orm.security().owner = own
-
     def it_sends_sucessfully(self):
         msg = message.message.email(
             from_    =  'from@example.com',

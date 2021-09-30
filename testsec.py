@@ -773,18 +773,6 @@ class owner(tester.tester):
             if e.__module__ in ('party', 'apriori', 'ecommerce'):
                 e.orm.recreate()
 
-        with orm.sudo():
-            com = party.company(name='Ford Motor Company')
-
-            with orm.proprietor(com):
-                com.save()
-                own = ecommerce.user(name='hford')
-                own.save()
-
-
-        orm.security().proprietor = com
-        orm.security().owner = own
-
     def it_calls_owner(self):
         def create_owner(name):
             with orm.sudo():

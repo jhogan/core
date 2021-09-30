@@ -1889,6 +1889,8 @@ class test_contactmechanism(tester.tester):
                 if e.__module__ in mods:
                     e.orm.recreate()
 
+        self.recreateprinciples()
+
     def it_calls_creatability(self):
         with orm.override(False):
             with orm.sudo():

@@ -31,13 +31,6 @@ import uuid
 import pom
 import db
 
-_ford = None
-def ford():
-    global _ford
-    if not _ford:
-        _ford = party.company(name='Ford Motor Company')
-    return _ford
-
 def clean():
     store = file.inode.store
 
@@ -89,13 +82,6 @@ class dom_file(tester.tester):
                     e.orm.recreate()
 
             orm.orm.recreate(foonet)
-
-        orm.security().owner = ecommerce.users.root
-
-        # Proprietor
-        com = ford()
-        orm.security().proprietor = com
-        com.save()
 
     def it_adds_js_files_to_site(self):
         ws = foonet()
@@ -359,33 +345,6 @@ class file_file(tester.tester):
 
         if hasattr(file.directory, '_radix'):
             file.directory.radix.delete()
-
-        # Create an owner and get the root user
-        own = ecommerce.user(name='hford')
-        root = ecommerce.users.root
-
-        # Save the owner, the root user will be the owner's owner.
-        orm.security().owner = root
-        own.owner = root
-        own.save()
-
-        # Going forward, `own` will be the owner of all future records
-        # created.
-        orm.security().owner = own
-
-        # Create a company to be the propritor.
-        com = ford()
-        com.save()
-
-        # Set the company as the proprietory
-        orm.security().proprietor = com
-
-        # Update the owner (hford) so that the company (Ford Motor
-        # Company) is the proprietor.
-        own.proprietor = com
-        own.save()
-
-        orm.security().owner = ecommerce.users.root
 
     def it_creates_with_name_kwarg(self):
         f = file.file(name='test')
@@ -1043,34 +1002,6 @@ class file_directory(tester.tester):
         if hasattr(file.directory, '_radix'):
             file.directory.radix.delete()
 
-
-        # Create an owner and get the root user
-        own = ecommerce.user(name='hford')
-        root = ecommerce.users.root
-
-        # Save the owner, the root user will be the owner's owner.
-        orm.security().owner = root
-        own.owner = root
-        own.save()
-
-        # Going forward, `own` will be the owner of all future records
-        # created.
-        orm.security().owner = own
-
-        # Create a company to be the propritor.
-        com = ford()
-        com.save()
-
-        # Set the company as the proprietory
-        orm.security().proprietor = com
-
-        # Update the owner (hford) so that the company (Ford Motor
-        # Company) is the proprietor.
-        own.proprietor = com
-        own.save()
-
-        orm.security().owner = ecommerce.users.root
-
     def it_deletes(self):
         # XXX Test when deleting a floater
 
@@ -1417,11 +1348,6 @@ class file_resource(tester.tester):
                 ecommerce.user,  ecommerce.url,   file.files,
                 file.resources,  file.directory,  file.inodes,
             )
-
-        orm.security().owner = ecommerce.users.root
-
-        # Proprietor
-        orm.security().proprietor = ford()
 
     def it_deletes(self):
         ''' Delete a cached-only resource '''
