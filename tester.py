@@ -136,20 +136,39 @@ class principle(entities.entity):
         
         super().__init__(*args, **kwargs)
 
+        self.create()
+
+        self.isinitialized = True
+
+    def create(self, recreate=False):
+        iscreated = hasattr(self, 'iscreated')
+
+        if hasattr(self, 'isinitialized'):
+            if recreate and iscreated:
+                del self._user
+                del self._company
+
         usr = self.user
         com = self.company
 
-
         import orm
-
         with orm.sudo():
             with orm.proprietor(com):
                 com.save()
                 usr.proprietor = com
                 usr.save()
 
-        self.isinitialized = True
+        if recreate:
+            import party
 
+            # Carapacian will recreate itself when called as long as its
+            # private field is None
+            party.company._carapacian = None
+
+        self.iscreated = True
+
+    def recreate(self):
+        self.create(recreate=True)
 
     @property
     def user(self):
@@ -221,6 +240,9 @@ class tester(entities.entity):
 
         # Standardize
         orm.security().owner = self.user
+
+    def recreateprinciples(self):
+        principle().recreate()
 
     @property
     def user(self):
