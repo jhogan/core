@@ -570,8 +570,8 @@ class inode(orm.entity):
 
     @property
     def path(self):
-        """ Return the path of the file as located within the HDD's
-        filesystem.
+        """ Return the path of the file (as str) as located within the
+        HDD's filesystem.
         """
         return os.path.join(self.head, self.name)
 
@@ -674,8 +674,8 @@ class file(inode):
 
     @orm.attr(str)
     def mime(self):
-        """ The mime type of the file, e.g., text/plain. The mimetype
-        attribute can be set by the user. If it is not set, the
+        """ The mime type of the file (as str), e.g., 'text/plain'. The
+        mimetype attribute can be set by the user. If it is not set, the
         accessor will try to guess what it should be given the ``body``
         attribute and the ``file.name``.
         """
@@ -693,15 +693,17 @@ class file(inode):
 
     @property
     def inodes(self):
-        """ Raise an AttributeError because a file would obviously never
+        """ The super()'s implemention is to return the child inodes
+        under this inode. However, since this is a file, we want to
+        raise an AttributeError because a file would obviously never
         have files or directories underneath it. 
         
         Note we are using the `orm` modules version of AttributeError
         because there are issues raising builtins.AttributeError from
-        ORM attributes (see orm.py for more). Also note that the calling
-        code will receive a regular builtins.AttributeError and not an
-        orm.AttributeError so the client code doesn't have to deal with
-        this awkwardness.
+        ORM attributes (see orm.py for more). Also, note that the
+        calling code will receive a regular builtins.AttributeError and
+        not an orm.AttributeError so the client code doesn't have to
+        deal with this awkwardness.
         """
         # TODO We need to find a better way to do this. The user should
         # not have to use a specialized AttributeError.
@@ -710,6 +712,11 @@ class file(inode):
         )
 
     def __init__(self, *args, **kwargs):
+        """ Initializes a file object.
+
+        Note that all inodes are cached based on their path. Read the
+        docstring at inode.__new__ for details.
+        """
         self._body = None
 
         super().__init__(*args, **kwargs)
