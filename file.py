@@ -988,6 +988,12 @@ class directory(inode):
 
         return False
 
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+
+        if self.isradix:
+            del directory._radix
+
     class net:                                                                                                                                                                                                                                                                                                              
         def __init__(self):
             self.found = list()
