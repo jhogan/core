@@ -205,6 +205,7 @@ class test_sendbot(tester.tester):
             for e in es:
                 if e.__module__ in mods:
                     e.orm.recreate()
+            self.recreateprinciples()
         else:
             self._clear()
             ecommerce.user.orm.truncate()
