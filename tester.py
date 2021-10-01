@@ -202,44 +202,13 @@ class principle(entities.entity):
 
 class tester(entities.entity):
     def __init__(self, testers):
+        import orm
         self._failures = failures()
         self.testers = testers
         self.eventregistrations = eventregistrations()
 
-        import orm
         orm.security().owner = self.user
         orm.security().proprietor = self.company
-
-        return 
-        # XXX
-
-        import orm, party
-        own = ecommerce.user(name='hford')
-        root = ecommerce.users.root
-
-        # Save the owner, the root user will be the owner's owner.
-        with orm.sudo():
-            own.owner = root
-            own.save()
-
-        # Going forward, `own` will be the owner of all future records
-        # created.
-        orm.security().owner = own
-
-        # Create a company to be the propritor.
-        com = party.company(name='Ford Motor Company')
-        com.save()
-
-        # Set the company as the proprietory
-        orm.security().proprietor = com
-
-        # Update the owner (hford) so that the company (Ford Motor
-        # Company) is the proprietor.
-        own.proprietor = com
-        own.save()
-
-        # Standardize
-        orm.security().owner = self.user
 
     def recreateprinciples(self):
         principle().recreate()

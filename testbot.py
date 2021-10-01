@@ -42,17 +42,6 @@ class test_bot(tester.tester):
             self._clear()
             party.company._carapacian = None
 
-        with orm.sudo():
-            com = party.company(name='Ford Motor Company')
-
-            with orm.proprietor(com):
-                com.save()
-                own = ecommerce.user(name='hford')
-                own.save()
-
-        orm.security().proprietor = com
-        orm.security().owner = own
-
     @staticmethod
     def _clear():
         clear()
@@ -219,31 +208,6 @@ class test_sendbot(tester.tester):
         else:
             self._clear()
             ecommerce.user.orm.truncate()
-
-        # Create an owner and get the root user
-        own = ecommerce.user(name='hford')
-        root = ecommerce.users.root
-
-        # Save the owner, the root user will be the owner's owner.
-        with orm.sudo():
-            own.owner = root
-            own.save()
-
-        # Going forward, `own` will be the owner of all future records
-        # created.
-        orm.security().owner = own
-
-        # Create a company to be the proprietor.
-        com = party.company.carapacian
-
-        # Set the company as the proprietory
-        orm.security().proprietor = com
-
-        # Update the owner (hford) so that the company (Ford Motor
-        # Company) is the proprietor.
-        own.proprietor = com
-        with orm.sudo():
-            own.save()
 
     @staticmethod
     def _clear():

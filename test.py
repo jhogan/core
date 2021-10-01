@@ -3899,17 +3899,7 @@ class test_orm(tester):
             )
             artist.orm.recreate(recursive=True)
             comment.orm.recreate()
-
-        with orm.sudo():
-            com = party.company(name='Ford Motor Company')
-
-            with orm.proprietor(com):
-                com.save()
-                own = ecommerce.user(name='hford')
-                own.save()
-
-        orm.security().proprietor = com
-        orm.security().owner = own
+            self.recreateprinciples()
 
         # Inject a reference to the self._chrontest context manager into
         # each test method as 'ct'. This will make testing chronicles
