@@ -775,7 +775,7 @@ class file(inode):
         a binary file (mode='wb').
         """
 
-        # If there is a body to the file we want to save it. Otherwise
+        # If there is a body to the file, we want to save it. Otherwise
         # there is no point. If eargs.op == 'delete', that means the
         # save was actually a delete. In that case, we don't want to
         # save the file to the HDD.
@@ -813,7 +813,7 @@ class file(inode):
 
     @property
     def body(self):
-        """ Returns the contens of the file. 
+        """ Returns the contents of the file. 
         
         The property will read the contents into a private varable if
         they have not already been memoized. Subsequent calls to body
@@ -852,16 +852,15 @@ class file(inode):
 class resources(files):
     """ Represents a collection of ``resource`` entities.
     """
-    pass
 
 class resource(file):
-    """ Represent a resource. A ``resource`` is a type of file routinely
+    """ Represents a resource. A ``resource`` is a type of file routinely
     used by websites to act as third-party resources such a JavaScript
     libraries, CSS files and fonts.
 
     Resources are special files in that they can be defined as
     originating from an external source such as a CDN. This class can be
-    configured to pull from the CDN and stored locally, eliminating the
+    configured to pull from the CDN and store locally, eliminating the
     need for a developer to manually manage the resource file on the
     hard drive.
     """
@@ -976,6 +975,13 @@ class resource(file):
         super()._self_onaftersave(src, eargs)
 
     def _write(self):
+        """ Download the resource file from the CDN (or whatever) and
+        save to local hard drive.
+
+        Basically we download the URL at self.url to self.path.
+        If self.integrity was set, it is used to validate the file. If
+        the integrity check fails, an IntegrityError is raised.
+        """
         # Get the file
         path = self.path
 
@@ -987,7 +993,6 @@ class resource(file):
                 # Create a request that has a spoofed user-agent. Some
                 # CDN's will return a 403 Forbidden if they think Python
                 # is making the request.
-
 
                 # TODO When www.request and www.browser become mature,
                 # let's use that to download files.
