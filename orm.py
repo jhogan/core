@@ -10948,6 +10948,13 @@ class ProprietorError(ValueError):
         """ The proprietor that was expected.
         """
         if not self._expected:
+            # FIXME If self._expected is not given in the constructor,
+            # and we try to determine what expected was at the time of
+            # construction (such as after all tests have run), expected
+            # will be evaluated at that time. However, this is
+            # incorrect. We should record what the expected proprietor
+            # was at the time of construction instead of lazy-loading
+            # (or lazy-capturing) it like we are here.
             return security().proprietor
         return self._expected
 

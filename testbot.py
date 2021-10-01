@@ -40,7 +40,6 @@ class test_bot(tester.tester):
                     e.orm.recreate()
         else:
             self._clear()
-
             party.company._carapacian = None
 
         with orm.sudo():
