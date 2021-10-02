@@ -83,6 +83,8 @@ class dom_file(tester.tester):
 
             orm.orm.recreate(foonet)
 
+        self.recreateprinciples()
+
     def it_adds_js_files_to_site(self):
         ws = foonet()
 
