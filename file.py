@@ -1045,10 +1045,27 @@ class directories(inodes):
     """
 
 class directory(inode):
+    """ Represents a directory in a file system.
+    """
+
+    # The primary key for the radix directory
     RadixId = uuid.UUID(hex='2007d124039f4cefac2cbdf1c8d1001b')
+
+    # The primary key for the floaters directory
     FloatersId = uuid.UUID(hex='f1047325d07c467f9abef26bbd9ffd27')
 
     def __contains__(self, nd):
+        """ Overides the `in` operator to recursively search the file
+        system, starting at self, for a directory with the same primary
+        key::
+
+            usr = directory('/usr')
+            bin = directory('/usr/bin')
+            ls = file('/usr/bin/ls')
+
+            assert ls in usr
+            assert bin in usr
+        """
         # XXX Write tests
         for nd1 in self:
             if nd.id == nd1.id:
@@ -1060,23 +1077,37 @@ class directory(inode):
 
         return False
 
-    class net:                                                                                                                                                                                                                                                                                                              
+    class net:
+        """ An inner class used as an argument to directory.find to
+        indicate search results. The ``found`` property indicates which
+        part of the path was found and the ``wanting`` property
+        indicates which part of the path is wanting.
+        """
         def __init__(self):
+            """ Create the found and wanting lists.
+            """
             self.found = list()
             self.wanting = list()
 
         @property
         def isfound(self):
+            """ Indicates that the complete path was found; no portion
+            of the path was found wanting.
+            """
             return bool(self.found) and not self.wanting
 
         @property
         def tail(self):
+            """ The last found inode.
+            """
             try:
                 return self.found[-1]
             except IndexError:
                 return None
 
         def __repr__(self):
+            """ A string representation of the search results.
+            """
             r = type(self).__name__
             r += '('
             r += f'isfound={self.isfound}, '
