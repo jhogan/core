@@ -817,7 +817,7 @@ class file(inode):
         
         The property will read the contents into a private varable if
         they have not already been memoized. Subsequent calls to body
-        wll return the contents of the private variable.
+        will return the contents of the private variable.
         """
         path = self.path
         if self._body is None and os.path.isfile(path):
@@ -837,7 +837,7 @@ class file(inode):
             # Set the body attribute
             f.body = 'My Body'
 
-            # A call to save() write the metadata to the database first
+            # A call to save() writes the metadata to the database first
             # then write the ``body`` to the file (stored at f.path).
             f.save()
 
@@ -913,7 +913,7 @@ class resource(file):
         :param: url str|ecommerce.url: The URL of the external resource.
 
         :param: local bool: If True, persist the resource's metadata in
-        the database duing a `resource.save()` call and cache the file
+        the database during a `resource.save()` call and cache the file
         data to the local hard drive located under the `inode.store`
         directory. 
         
@@ -933,6 +933,9 @@ class resource(file):
         self.local = kwargs.get('local', False)
 
     def _entity_onbeforesave(self, src, eargs):
+        """ This event handler is called before the resource is saved to
+        the database.
+        """
         # Cancel saving resource to database if local is False. See the
         # comments for the ``local`` paramenter in the docstring for
         # resource.__init__.
@@ -961,21 +964,26 @@ class resource(file):
     crossorigin  =  str
 
     def __str__(self):
+        """ Returns the URL of the resource as a string.
+        """
         return str(self.url)
 
     def _self_onaftersave(self, src, eargs):
-        """ After the ``resource`` has been saved to the database, write
-        the resource file to the file system. If there is an Exception
-        caused during the file system interaction, the Exception will be
-        allowed to bubble up - causing the the database transaction to
-        be rolled back.
+        """ The event handler called after the resource has been saved
+        to the database.
+
+        After the ``resource`` has been saved to the database, the
+        resource file is written to the file system. If there is an
+        Exception caused during the file system interaction, the
+        Exception will be allowed to bubble up - causing the the
+        database transaction to be rolled back.
         """
         if eargs.op != 'delete':
             self._write()
         super()._self_onaftersave(src, eargs)
 
     def _write(self):
-        """ Download the resource file from the CDN (or whatever) and
+        """ Downloads the resource file from the CDN (or whatever) and
         save to local hard drive.
 
         Basically we download the URL at self.url to self.path.
@@ -1119,31 +1127,56 @@ class directory(inode):
 
     # XXX We may be able to rename this __getitem__
     def find(self, key, net=None, recursing=False):
+        """ XXX
+        """
         if isinstance(key, list):
+            # Key must be the path structured as a list, which is what
+            # we want.
             pass
         elif isinstance(key, str):
+            # Assume key is a path ('/etc/passwd') and split it to make
+            # key a list.
             key = self._split(key)
         else:
             raise TypeError('Path is wrong type')
 
+        # `recursing` will be True if are entering find() for the first
+        # time.
         if not recursing:
+            # Create a net object if we don't have one to store results
+            # of search
             if not net:
                 net = self.net()
+
+            # If nothing has been found in the search, we can at least
+            # say that self has been found.
             if not net.found:
                 net.found.append(self)
 
+        # Get the name of the inode to search for
         name = key[0]
 
+        # Search for path
         try:
+            # Search for name in immediate children
             nd = self.inodes[name]
         except IndexError as ex:
+            # Couldn't find the inode in immediate children so add the
+            # remaining inode names to `wanting` to record the part of
+            # the path we were not able to find. Return None because
+            # that concludes our search.
             net.wanting.extend(key)
             return None
         else:
+            # The inode was found so append to the net's found.
+            # Contining searching for the rest of the path by recursing
+            # into the found inode.
             net.found.append(nd)
             if len(key) > 1:
                 nd.find(key[1:], net, recursing=True)
 
+        # If we are here, we found the entire path. Return the tail
+        # (i.e., the last element in a path).
         return net.tail
 
     def file(self, path):
