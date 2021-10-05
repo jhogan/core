@@ -630,6 +630,7 @@ class cssclass(attribute):
 
         :param: o TODO: Add comments from cssclass.remove
         """
+        self.remove(o)
         return self
 
     def remove(self, *clss):
