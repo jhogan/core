@@ -1127,7 +1127,37 @@ class directory(inode):
 
     # XXX We may be able to rename this __getitem__
     def find(self, key, net=None, recursing=False):
-        """ XXX
+        """ Recursively search for a path starting at self.
+
+            # Create a net object to capture results
+            net = self.net()
+
+            # Get a directory to search in
+            usr = directory('/usr')
+
+            # Use find to search within usr
+            usr.find('bin/ls'), net)
+
+            # Check `net` for results
+
+            # Looks like `ls` is in /usr/bin
+            assert net.isfound 
+            assert net.found[0] == 'ls'
+            assert net.wanting = []
+            assert net.tail.name == 'ls'
+
+            # Search again for a file that dosen't exist
+            net = self.net()
+            usr.find('bin/init'), net)
+
+            # Hmm, `/usr/bin/init` was not found
+            assert not net.isfound
+
+            # `bin` was found, though
+            assert net.found[0].name == 'bin'
+
+            # But `init` was not found. Must be in /usr/sbin
+            assert net.wanting[0].name == 'init'
         """
         if isinstance(key, list):
             # Key must be the path structured as a list, which is what
