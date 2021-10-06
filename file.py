@@ -1245,6 +1245,21 @@ class directory(inode):
 
     @classproperty
     def radix(cls):
+        """ Returns the radix directory.
+
+        The radix directory is the root directory of all inodes that are
+        properly stored in the syste (as opposed to floaters). radix is
+        memoized here because, through it, we keep the entire file
+        system tree in memory.
+
+        If the radix directory does not exist in the database, it is
+        created in the database and in the file system.
+
+        Etymology
+        ---------
+        radix is just another word for root. Since inode is a recursive
+        entity, 'root' is already taken as a @property name. 
+        """
         if not hasattr(cls, '_radix'):
             # TODO:3d0fe827 Shouldn't we be instantiating a
             # ``directory`` here, instead of cls. cls will almost always
@@ -1255,6 +1270,7 @@ class directory(inode):
             with orm.sudo():
                 cls._radix = cls(id=cls.RadixId, name='radix')
                 cls._radix.save()
+
         return cls._radix
     
     @property
