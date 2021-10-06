@@ -62,6 +62,7 @@ import testdom
 import testecommerce
 import testparty
 import testfile
+import testlogs
 import testmessage
 import testsec
 import textwrap
@@ -2981,47 +2982,6 @@ class test_index(tester):
         # Now, 3 trait types will be NoneTypes and 1 will be a str ('bravery')
         self.assertEq(3, ix(type(None)).count)
         self.assertEq(1, ix(str).count)
-
-class test_logs(tester):
-    
-    def it_writes_to_log(self):
-        # Since this goes to syslogd, a user will need to verify that
-        # these messages were successfully logged.
-        logs = []
-        def onlog(src, eargs):
-            logs.append(eargs.record.message)
-
-        cfg = config()
-
-        l = cfg.logs.default
-        l.onlog += onlog
-
-        l.debug('xdebug');
-        self.assertTrue('xdebug' in logs)
-        self.assertCount(1, logs)
-
-        l.info('xinfo');
-        self.assertTrue('xinfo' in logs)
-        self.assertCount(2, logs)
-
-        l.warning('xwarning');
-        self.assertTrue('xwarning' in logs)
-        self.assertCount(3, logs)
-
-        l.error('xerror');
-        self.assertTrue('xerror' in logs)
-        self.assertCount(4, logs)
-
-        l.critical('xcritical');
-        self.assertCount(5, logs)
-
-        self.assertTrue('xcritical' in logs)
-        try:
-            raise Exception('derp')
-        except:
-            l.exception('xexception')
-            self.assertTrue('xexception' in logs)
-            self.assertCount(6, logs)
 
 class test_jwt(tester):
     def __init__(self, *args, **kwargs):

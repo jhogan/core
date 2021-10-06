@@ -8,7 +8,6 @@
 
 import accounts
 from dbg import B
-from logs import *
 
 class configuration:
     """ This is the base configuration class. It contains configuration
@@ -45,9 +44,6 @@ class configuration:
     """
     recaptcha_key = '<RECAPTCHA-KEY>'
     environment = 'development'
-
-    def __init__(self):
-        self._logs = None
 
     _instance = None
     @classmethod
@@ -95,20 +91,17 @@ class configuration:
         )
 
     @property
-    def logs(self):
-        """ A collection of syslog loggers.
+    def log(self):
+        """ The configuration writting to syslogd.
         """
-        if not self._logs:
-            self._logs = logs()
-            self._logs += log(
-                addr = '/dev/log', 
-                fac = 'user',
-                tag = 'CORETEST', 
-                fmt = '[%(process)d]: %(levelname)s '
-                      '%(message)s (%(pathname)s:%(lineno)d) ',
-                lvl = 'NOTSET',
-            )
-        return self._logs
+        return {
+            'addr': '/dev/log', 
+            'fac': 'user',
+            'tag': 'CORETEST', 
+            'fmt': '[%(process)d]: %(levelname)s '
+                  '%(message)s (%(pathname)s:%(lineno)d) ',
+            'lvl': 'NOTSET',
+        }
 
     @property
     def jwtsecret(self):
