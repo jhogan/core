@@ -44,11 +44,6 @@ class log(entities.entity):
         hnd = log.callbackhandler(self.callback)
         self._logger.addHandler(hnd)
 
-    def _self_onlog(self, src, eargs):
-        B()
-        # TODO Is this dead code?
-        pass
-
     # TODO These should probably be prefixed by a _ to indicate they are
     # private.
     class callbackhandler(Handler):
@@ -89,15 +84,6 @@ class log(entities.entity):
     @property
     def exception(self):
         return self._logger.exception
-
-    @staticmethod
-    def create(d):
-        addr = d['address']
-        fac = getattr(logging.handlers.SysLogHandler, d['facility'])
-        tag = d['tag']
-        fmt = d['format']
-        lvl = d['level']
-        return log(addr, fac, tag, fmt, lvl)
 
 class addlogeventargs(entities.eventargs):
     def __init__(self, rec):
