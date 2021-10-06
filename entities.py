@@ -1996,12 +1996,6 @@ class entity:
     def onaftervaluechange(self, v):
         self._onaftervaluechange = v
 
-    @property
-    def log(self):
-        # Defer import to avoid circular dependency
-        from config import config
-        return config().logs.default
-
     def _setvalue(
         self, field, new, prop, setattr=setattr, cmp=True, strip=True
     ):
