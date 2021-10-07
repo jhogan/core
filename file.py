@@ -1282,11 +1282,46 @@ class directory(inode):
     
     @property
     def isradix(self):
+        """ Returns True if this directory is the radix directory; False
+        otherwise.
+        """
         return self.id == self.RadixId and self.inode is None
 
     # XXX This should be private (_floaters)
     @classproperty
     def floaters(cls):
+        """ Returns a directory to store inodes under until they are
+        ready to be attached to the the radix cache. 
+
+        Consider the following file::
+            
+            f = file('myfile')
+
+        Since it wasn't created off the root (it doesn't start with a
+        /), it isn't attached to the radix. It just floats in the
+        floaters cache. 
+
+            assert f in directory.floaters
+            assert f not in directory.radix
+
+        This is fine, but to get the file properly in the
+        file system, we need to attach it to the radix/root.
+
+            d = directory('/mydirectory')
+            d += f
+
+        /mydirectory, since it was started with a /, is in the
+        radix cache. Attaching f to mydirectory will ensure the myfile
+        is put under mydirectory and thus a part of the radix cache. It
+        will also be removed from the floaters cache.
+
+            assert f not in directory.floaters
+            assert f in directory.radix
+
+        Now we can save f:
+
+            f.save()
+        """
         if not hasattr(cls, '_floaters'):
             # TODO:3d0fe827 Shouldn't we be instantiating a
             # ``directory`` here, instead of cls. cls will almost always
