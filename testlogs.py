@@ -77,4 +77,5 @@ class test_logs(tester.tester):
         logs.error('fERROR')
         logs.critical('fCRITICAL')
 
-tester.cli().run()
+if __name__ == '__main__':
+    tester.cli().run()
