@@ -7,17 +7,18 @@
 # Written by Jesse Hogan <jessehogan0@gmail.com>, 2021
 
 # TODO Add Tests
-import entities as entitiesmod
-from MySQLdb.constants.ER import BAD_TABLE_ERROR
-import table as tblmod
-import MySQLdb
-import warnings
-import uuid
-import func
+from config import config
 from contextlib import contextmanager
 from dbg import B
-from config import config
+from MySQLdb.constants.ER import BAD_TABLE_ERROR
 import accounts
+import entities as entitiesmod
+import func
+import logs
+import MySQLdb
+import table as tblmod
+import uuid
+import warnings
 
 # Some errors in MySQL are classified as "warnings" (such as 'SELECT
 # 0/0').  This means that no exception is raised; just an error message
@@ -400,7 +401,7 @@ class connection(entitiesmod.entity):
                     msg = 'Reconnect[{0}]: errno: {1}; isopen: {2}'
                     msg = msg.format(_, errno, isopen)
 
-                    self.log.debug('Reconnect ' + str(_))
+                    logs.debug('Reconnect ' + str(_))
                     self.reconnect()
                 else:
                     raise
@@ -713,7 +714,7 @@ class executioner(entitiesmod.entity):
                 if errno in (2006, 2013) or not conn.isopen:
                     msg = 'Reconnect[{0}]: errno: {1}; isopen: {2}'
                     msg = msg.format(i, errno, conn.isopen)
-                    self.log.debug(msg)
+                    logs.debug(msg)
 
                     eargs = operationeventargs(
                         self, 'reconnect', None, None, 'before'
