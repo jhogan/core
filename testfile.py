@@ -83,6 +83,9 @@ class dom_file(tester.tester):
 
             orm.orm.recreate(foonet)
 
+        if hasattr(file.directory, '_radix'):
+            file.directory.radix.delete()
+
         self.recreateprinciples()
 
     def it_adds_js_files_to_site(self):
