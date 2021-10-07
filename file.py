@@ -204,8 +204,20 @@ class inode(orm.entity):
     ``directories`` also contain an ``inode`` attribute which refers to
     their parent ``directory``.
 
-    The name "inode" was chosen after the Unix-style data structure used
-    to describe file system object (files and directories).
+    inodes act as data singletons. This is to say that, when
+    instantiated by path, the inode will be created, cached and
+    returned. Additional call with the same path will result in the same
+    inode being returned::
+
+        assert directory('/etc') is directory('/etc')
+        assert file('/etc/password') is file('/etc/password')
+
+    See the overload of __new__ for details.
+
+    Etymology
+    ---------
+    This entity was named after the Unix-style data structure used to
+    describe file system object (files and directories).
     ``filesystemobjects`, though more descriptive, was considered too
     long to make a good class name.
     """
@@ -219,6 +231,10 @@ class inode(orm.entity):
 
     @staticmethod
     def _split(path):
+        """ A private static method that takes a path a splits it over
+        the '/' character. Deals with leading '/' more predictably than
+        Python's builtin path splitting algorithms.
+        """
         if path == '/':
             return ['/']
 
@@ -230,13 +246,29 @@ class inode(orm.entity):
         return names
 
     def __new__(cls, *args, **kwargs):
+        """ Ensure that when instantiating, we return the cached version
+        of an inode object if one exists. If one doesn't exist, create,
+        cache and return::
+
+            assert directory('/etc') is directory('/etc')
+            assert file('/etc/password') is file('/etc/password')
+        """
+
+        # from__new__ is a flag that, if set (to None), we arrived here
+        # from a __new__ method.
         try:
+            # Is the flag set
             kwargs['from__new__']
         except KeyError:
+            # Set the flog
             kwargs['from__new__'] = None
         else:
+            # If from__new__, instantiate and return
             return super(inode, cls).__new__(cls)
 
+        # Get the inodes ID. This could be a str containing the path
+        # ('/etc/passwd') or the UUID for the inode's primary key in the
+        # database.
         try:
             id = args[0]
         except IndexError:
@@ -245,24 +277,25 @@ class inode(orm.entity):
             except KeyError:
                 id = None
 
+        # If id is a str...
         if isinstance(id, str):
             try:
-                # See if we were given a uuid as a str
+                # See if str is a UUID, i.e., the inode's primary key
                 id = uuid.UUID(hex=id)
             except ValueError:
                 # The str id wil be considered a path
                 pass
 
         if isinstance(id, str):
-            # If id is still a str it must be a file path so call it
-            # what it is, search the cache. Return if its there,
-            # otherwise, instantiate.
+            # If id is still a str, it must be a file path so call it
+            # what it is: `path`; and search the cache. Return if its in
+            # the cache; otherwise, instantiate.
             path = id
 
             local = kwargs.get('local', False)
 
-            # If resource where local is False, don't cache, i.e., don't
-            # anchor to radix or floaters.
+            # If resource and `local` is False, don't cache, i.e.,
+            # don't anchor to radix or floaters (see resource.local).
             if resource in cls.mro() and not local:
                 nds = [x for x in path.split('/') if x]
 
@@ -292,6 +325,8 @@ class inode(orm.entity):
                 # Create a net object to capture the details of the find
                 # operation.
                 net = directory.net()
+
+                # Search cache
                 dir.find(path, net)
 
                 # If we found the path, return the tail, i.e., the last
@@ -317,25 +352,29 @@ class inode(orm.entity):
                     # instantiate, consider: /dir/dir/file-or-dir
                     nd += cls(name=name, **kwargs)
                 else:
-                    # If we are not ate the last one, the wanting inode
-                    # will be a directory (they last one may or may not
+                    # If we are not at the last one, the wanting inode
+                    # will be a directory (the last one may or may not
                     # be a file inode name). Add to heirarchy.
                     nd += directory(
                         name=name, kwargs={'from__new__': None}
                     )
 
-                # nd becomes the last inode append above
+                # nd becomes the last inode appended above
                 nd = nd.inodes.last
 
             # Return the last inode appended above
             return nd
         elif isinstance(id, uuid.UUID):
+            # Perform a database lookup using the primary key
             return cls(*args, **kwargs)
+
         elif isinstance(id, type(None)):
+            # Create new inode
             return cls(*args, **kwargs)
         else:
             raise TypeError(f'Unsupported type {type(id)}')
 
+        # TODO Could we ever get here? We should probably remove.
         return None
 
     def __init__(self, *args, **kwargs):
@@ -349,10 +388,22 @@ class inode(orm.entity):
 
     @classproperty
     def store(cls):
+        """ Returns a physical file system path as a string containing
+        the root directory where all files should be stored, e.g.,
+
+             '/var/www/core/development'
+
+        The environment determines the path. Above, the path is clearly
+        for a development environment. config.py contains the actual
+        path that will be returned.
+        """
         return config().store
 
     @property
     def inradix(self):
+        """ Returns True if this inode is currently in the radix cache.
+        """
+
         # TODO This is dead and untested but may be useful
         nd = self
         radix = directory.radix
@@ -365,6 +416,9 @@ class inode(orm.entity):
             return False
 
     def delete(self):
+        """ Removes the inode from the HDD, database and the radix
+        cache. 
+        """
         # Remove from radix cache
         rent = self.inode
         if rent:
@@ -400,10 +454,14 @@ class inode(orm.entity):
 
     @property
     def isfloater(self):
+        """ Returns True if the inode is in the floater cache.
+        """
         return self in directory.floaters
 
     @property
     def root(self):
+        """ Return the root inode.
+        """
         nd = self
         while True:
             if nd.inode:
@@ -415,6 +473,7 @@ class inode(orm.entity):
     def _getfile(name, dir=None):
         """ Load and return a file by name which is under ``dir``.
         """
+        # XXX This appears to be dead code
         id = dir.id if dir else None
         op = '=' if id else 'is'
 
@@ -431,6 +490,7 @@ class inode(orm.entity):
     def _getdirectory(self, path):
         """ Load or create a file given a ``path``.
         """
+        # XXX This appears to be dead code
         if isinstance(self, file):
             head, tail = os.path.split(path)
         else:
@@ -469,14 +529,14 @@ class inode(orm.entity):
     def __getitem__(self, key):
         """ Return a (file or directory) underneath this inode by a
         ``key`` name, if the argument is a str. If ``key`` is not a str,
-        the default behavior for entiteis is used.
+        the default behavior for entities is used.
         """
 
         # Delegate indexing for a directory to inode's indexer.
         return self.inodes[key]
 
     def __iadd__(self, e):
-        """ Overload +=.
+        """ Overload +=
         """
 
         self.inodes.append(e)
@@ -510,8 +570,8 @@ class inode(orm.entity):
 
     @property
     def path(self):
-        """ Return the path of the file as located within the HDD's
-        filesystem.
+        """ Return the path of the file (as str) as located within the
+        HDD's filesystem.
         """
         return os.path.join(self.head, self.name)
 
@@ -614,8 +674,8 @@ class file(inode):
 
     @orm.attr(str)
     def mime(self):
-        """ The mime type of the file, e.g., text/plain. The mimetype
-        attribute can be set by the user. If it is not set, the
+        """ The mime type of the file (as str), e.g., 'text/plain'. The
+        mimetype attribute can be set by the user. If it is not set, the
         accessor will try to guess what it should be given the ``body``
         attribute and the ``file.name``.
         """
@@ -633,15 +693,17 @@ class file(inode):
 
     @property
     def inodes(self):
-        """ Raise an AttributeError because a file would obviously never
+        """ The super()'s implemention is to return the child inodes
+        under this inode. However, since this is a file, we want to
+        raise an AttributeError because a file would obviously never
         have files or directories underneath it. 
         
         Note we are using the `orm` modules version of AttributeError
         because there are issues raising builtins.AttributeError from
-        ORM attributes (see orm.py for more). Also note that the calling
-        code will receive a regular builtins.AttributeError and not an
-        orm.AttributeError so the client code doesn't have to deal with
-        this awkwardness.
+        ORM attributes (see orm.py for more). Also, note that the
+        calling code will receive a regular builtins.AttributeError and
+        not an orm.AttributeError so the client code doesn't have to
+        deal with this awkwardness.
         """
         # TODO We need to find a better way to do this. The user should
         # not have to use a specialized AttributeError.
@@ -650,6 +712,11 @@ class file(inode):
         )
 
     def __init__(self, *args, **kwargs):
+        """ Initializes a file object.
+
+        Note that all inodes are cached based on their path. Read the
+        docstring at inode.__new__ for details.
+        """
         self._body = None
 
         super().__init__(*args, **kwargs)
@@ -708,7 +775,7 @@ class file(inode):
         a binary file (mode='wb').
         """
 
-        # If there is a body to the file we want to save it. Otherwise
+        # If there is a body to the file, we want to save it. Otherwise
         # there is no point. If eargs.op == 'delete', that means the
         # save was actually a delete. In that case, we don't want to
         # save the file to the HDD.
@@ -746,11 +813,11 @@ class file(inode):
 
     @property
     def body(self):
-        """ Returns the contens of the file. 
+        """ Returns the contents of the file. 
         
         The property will read the contents into a private varable if
         they have not already been memoized. Subsequent calls to body
-        wll return the contents of the private variable.
+        will return the contents of the private variable.
         """
         path = self.path
         if self._body is None and os.path.isfile(path):
@@ -770,7 +837,7 @@ class file(inode):
             # Set the body attribute
             f.body = 'My Body'
 
-            # A call to save() write the metadata to the database first
+            # A call to save() writes the metadata to the database first
             # then write the ``body`` to the file (stored at f.path).
             f.save()
 
@@ -785,16 +852,15 @@ class file(inode):
 class resources(files):
     """ Represents a collection of ``resource`` entities.
     """
-    pass
 
 class resource(file):
-    """ Represent a resource. A ``resource`` is a type of file routinely
+    """ Represents a resource. A ``resource`` is a type of file routinely
     used by websites to act as third-party resources such a JavaScript
     libraries, CSS files and fonts.
 
     Resources are special files in that they can be defined as
     originating from an external source such as a CDN. This class can be
-    configured to pull from the CDN and stored locally, eliminating the
+    configured to pull from the CDN and store locally, eliminating the
     need for a developer to manually manage the resource file on the
     hard drive.
     """
@@ -847,7 +913,7 @@ class resource(file):
         :param: url str|ecommerce.url: The URL of the external resource.
 
         :param: local bool: If True, persist the resource's metadata in
-        the database duing a `resource.save()` call and cache the file
+        the database during a `resource.save()` call and cache the file
         data to the local hard drive located under the `inode.store`
         directory. 
         
@@ -867,6 +933,9 @@ class resource(file):
         self.local = kwargs.get('local', False)
 
     def _entity_onbeforesave(self, src, eargs):
+        """ This event handler is called before the resource is saved to
+        the database.
+        """
         # Cancel saving resource to database if local is False. See the
         # comments for the ``local`` paramenter in the docstring for
         # resource.__init__.
@@ -895,20 +964,32 @@ class resource(file):
     crossorigin  =  str
 
     def __str__(self):
+        """ Returns the URL of the resource as a string.
+        """
         return str(self.url)
 
     def _self_onaftersave(self, src, eargs):
-        """ After the ``resource`` has been saved to the database, write
-        the resource file to the file system. If there is an Exception
-        caused during the file system interaction, the Exception will be
-        allowed to bubble up - causing the the database transaction to
-        be rolled back.
+        """ The event handler called after the resource has been saved
+        to the database.
+
+        After the ``resource`` has been saved to the database, the
+        resource file is written to the file system. If there is an
+        Exception caused during the file system interaction, the
+        Exception will be allowed to bubble up - causing the the
+        database transaction to be rolled back.
         """
         if eargs.op != 'delete':
             self._write()
         super()._self_onaftersave(src, eargs)
 
     def _write(self):
+        """ Downloads the resource file from the CDN (or whatever) and
+        save to local hard drive.
+
+        Basically we download the URL at self.url to self.path.
+        If self.integrity was set, it is used to validate the file. If
+        the integrity check fails, an IntegrityError is raised.
+        """
         # Get the file
         path = self.path
 
@@ -920,7 +1001,6 @@ class resource(file):
                 # Create a request that has a spoofed user-agent. Some
                 # CDN's will return a 403 Forbidden if they think Python
                 # is making the request.
-
 
                 # TODO When www.request and www.browser become mature,
                 # let's use that to download files.
@@ -973,10 +1053,27 @@ class directories(inodes):
     """
 
 class directory(inode):
+    """ Represents a directory in a file system.
+    """
+
+    # The primary key for the radix directory
     RadixId = uuid.UUID(hex='2007d124039f4cefac2cbdf1c8d1001b')
+
+    # The primary key for the floaters directory
     FloatersId = uuid.UUID(hex='f1047325d07c467f9abef26bbd9ffd27')
 
     def __contains__(self, nd):
+        """ Overides the `in` operator to recursively search the file
+        system, starting at self, for a directory with the same primary
+        key::
+
+            usr = directory('/usr')
+            bin = directory('/usr/bin')
+            ls = file('/usr/bin/ls')
+
+            assert ls in usr
+            assert bin in usr
+        """
         # XXX Write tests
         for nd1 in self:
             if nd.id == nd1.id:
@@ -994,23 +1091,38 @@ class directory(inode):
         if self.isradix:
             del directory._radix
 
-    class net:                                                                                                                                                                                                                                                                                                              
+    class net:
+        """ An inner class used as an argument to directory.find to
+        indicate search results. The ``found`` property indicates which
+        part of the path was found and the ``wanting`` property
+        indicates which part of the path is wanting.
+        """
+
         def __init__(self):
+            """ Create the found and wanting lists.
+            """
             self.found = list()
             self.wanting = list()
 
         @property
         def isfound(self):
+            """ Indicates that the complete path was found; no portion
+            of the path was found wanting.
+            """
             return bool(self.found) and not self.wanting
 
         @property
         def tail(self):
+            """ The last found inode.
+            """
             try:
                 return self.found[-1]
             except IndexError:
                 return None
 
         def __repr__(self):
+            """ A string representation of the search results.
+            """
             r = type(self).__name__
             r += '('
             r += f'isfound={self.isfound}, '
@@ -1022,31 +1134,86 @@ class directory(inode):
 
     # XXX We may be able to rename this __getitem__
     def find(self, key, net=None, recursing=False):
+        """ Recursively search for a path starting at self.
+
+            # Create a net object to capture results
+            net = self.net()
+
+            # Get a directory to search in
+            usr = directory('/usr')
+
+            # Use find to search within usr
+            usr.find('bin/ls'), net)
+
+            # Check `net` for results
+
+            # Looks like `ls` is in /usr/bin
+            assert net.isfound 
+            assert net.found[0] == 'ls'
+            assert net.wanting = []
+            assert net.tail.name == 'ls'
+
+            # Search again for a file that dosen't exist
+            net = self.net()
+            usr.find('bin/init'), net)
+
+            # Hmm, `/usr/bin/init` was not found
+            assert not net.isfound
+
+            # `bin` was found, though
+            assert net.found[0].name == 'bin'
+
+            # But `init` was not found. Must be in /usr/sbin
+            assert net.wanting[0].name == 'init'
+        """
         if isinstance(key, list):
+            # Key must be the path structured as a list, which is what
+            # we want.
             pass
         elif isinstance(key, str):
+            # Assume key is a path ('/etc/passwd') and split it to make
+            # key a list.
             key = self._split(key)
         else:
             raise TypeError('Path is wrong type')
 
+        # `recursing` will be True if are entering find() for the first
+        # time.
         if not recursing:
+            # Create a net object if we don't have one to store results
+            # of search
             if not net:
                 net = self.net()
+
+            # If nothing has been found in the search, we can at least
+            # say that self has been found.
             if not net.found:
                 net.found.append(self)
 
+        # Get the name of the inode to search for
         name = key[0]
 
+        # Search for path
         try:
+            # Search for name in immediate children
             nd = self.inodes[name]
         except IndexError as ex:
+            # Couldn't find the inode in immediate children so add the
+            # remaining inode names to `wanting` to record the part of
+            # the path we were not able to find. Return None because
+            # that concludes our search.
             net.wanting.extend(key)
             return None
         else:
+            # The inode was found so append to the net's found.
+            # Contining searching for the rest of the path by recursing
+            # into the found inode.
             net.found.append(nd)
             if len(key) > 1:
                 nd.find(key[1:], net, recursing=True)
 
+        # If we are here, we found the entire path. Return the tail
+        # (i.e., the last element in a path).
         return net.tail
 
     def file(self, path):
@@ -1085,6 +1252,21 @@ class directory(inode):
 
     @classproperty
     def radix(cls):
+        """ Returns the radix directory.
+
+        The radix directory is the root directory of all inodes that are
+        properly stored in the syste (as opposed to floaters). radix is
+        memoized here because, through it, we keep the entire file
+        system tree in memory.
+
+        If the radix directory does not exist in the database, it is
+        created in the database and in the file system.
+
+        Etymology
+        ---------
+        radix is just another word for root. Since inode is a recursive
+        entity, 'root' is already taken as a @property name. 
+        """
         if not hasattr(cls, '_radix'):
             # TODO:3d0fe827 Shouldn't we be instantiating a
             # ``directory`` here, instead of cls. cls will almost always
@@ -1095,6 +1277,7 @@ class directory(inode):
             with orm.sudo():
                 cls._radix = cls(id=cls.RadixId, name='radix')
                 cls._radix.save()
+
         return cls._radix
     
     @property
