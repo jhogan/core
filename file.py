@@ -1353,6 +1353,6 @@ class directory(inode):
 
 class IntegrityError(ValueError):
     """ An exception that indicates there was an error comparing the
-    digest stored in the database with the digest computer from a file's
+    digest stored in the database with the digest computed from a file's
     contents (``file.body``). 
     """
