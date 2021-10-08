@@ -237,12 +237,31 @@ class inode(orm.entity):
 
         # If id is a str...
         if isinstance(id, str):
+            if kwargs.get('name', None):
+                raise ValueError(
+                    'Cannot use path/key and name '
+                    'parameter with name argument'
+                )
+
             try:
                 # See if str is a UUID, i.e., the inode's primary key
                 id = uuid.UUID(hex=id)
             except ValueError:
                 # The str id wil be considered a path
                 pass
+
+        if name := kwargs.pop('name', None):
+            if '/' in name:
+                raise ValueError(
+                    "name mustn't have a '/'. "
+                    'If you want to specify a path, pass it in as '
+                    'the first parameter without naming the argument.'
+                )
+
+
+            if not id:
+                id = name
+
 
         if isinstance(id, str):
             # If id is still a str, it must be a file path so call it
