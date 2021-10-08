@@ -8196,9 +8196,15 @@ class orm:
 
             # Different object of course:
             assert st is not st1
+
+        :param: issensitive bool: If True, the attributes in `expect`
+        will be tested for case sensitivity. For most cases, such as
+        ensure a status type by name, we don't really care about case.
+        In rarer circumstances, such as ensuring a case sensitive URL
+        (see ecommerce.url), we want to ensure the match is
+        case-sensitive.
         """
 
-        # XXX Document issensitive as a :param:
         issensitive = kwargs.pop('issensitive', False)
 
         # Query using the **kwargs, e.g., {'name': 'active'}
@@ -8206,7 +8212,6 @@ class orm:
 
         # Get a unique set from the `expects` tuple passed in
         expects = set(expects)
-
 
         # Get a unique set of kwargs keys
         keys = set(kwargs.keys())
@@ -8216,16 +8221,21 @@ class orm:
             # properties won't be passed in. Just return.
             return
 
+        # Filter by case-sensitivity. At the moment, we can't use the
+        # ORM to send a WHERE clause to the database to do this for us,
+        # so we must do it after the query has been executed.
         if issensitive:
             for r in rs:
                 for expect in expects:
                     if kwargs[expect] == getattr(r, expect):
+                        # A case-sensitive match was made
                         break
                 else:
                     continue
 
                 break
             else:
+                # No case-sensitive match was made
                 r = None
         else:
             if rs.count:

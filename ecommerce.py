@@ -480,6 +480,9 @@ class url(orm.entity):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # Ensure address exists in database. URL paths are
+        # case-sensitive, so set issensitive to True.
         self.orm.ensure(
             expects=('address', ), issensitive=True, **kwargs
         )
