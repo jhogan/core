@@ -143,6 +143,10 @@ class principle(entities.entity):
     def create(self, recreate=False):
         iscreated = hasattr(self, 'iscreated')
 
+        # Make sure the needed table exist
+        import ecommerce
+        ecommerce.user.orm.create(ignore=True)
+
         if hasattr(self, 'isinitialized'):
             if recreate and iscreated:
                 del self._user

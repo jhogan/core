@@ -326,16 +326,8 @@ class connection(entitiesmod.entity):
         except MySQLdb._exceptions.OperationalError as ex:
             # If exception isn't 1317, 'Query execution was interrupted'),
             # re-raise
+            # TODO Use imported constants
             if ex.args[0] not in (1317, 2006, 2013):
-                raise
-
-        except MySQLdb.OperationalError as ex:
-            # XXX Can we remove this block in 3.8. It seems like the
-            # above except block is the way to go here.
-            B()
-            # If exception isn't 1317, 'Query execution was interrupted'),
-            # re-raise
-            if ex.args[0] not in (1317, 2006):
                 raise
 
         except MySQLdb._exceptions.InterfaceError as ex:

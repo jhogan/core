@@ -6230,10 +6230,6 @@ class test_orm(tester):
         for aa1, aa2 in zip(aas1, aas2):
             self.eq(aa1.artifact.title, aa2.artifact.title)
 
-        # XXX Remove
-        attrs = 'artifacts.first.components', \
-               'artist_artifacts.first.artifact.components'
-
         comps = art2.artist_artifacts.first.artifact.components
         comps += component.getvalid()
         comps += component.getvalid()

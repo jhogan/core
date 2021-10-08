@@ -60,7 +60,7 @@ TODOs:
 
     XXX Ensure that radix and _floaters are always have carapacian as
     their proprietors. This should be implemented after 'main' is merged
-    in to this branch since it contains party.carapacian.
+    into this branch since it contains party.carapacian.
 """
 
 from config import config
@@ -119,48 +119,6 @@ class inodes(orm.entities):
 
                 # Repeat with al supers
                 nd = nd.orm.super
-
-
-        #XXX
-        return
-
-        if self.orm.isloading:
-            return
-
-        def replace(nd, ndadd):
-            if nd is not ndadd:
-                if nd.name == ndadd.name:
-                    if nd.inode is ndadd.inode:
-                        # TODO Determine how to replace
-                        preserve = True
-                        if preserve:
-                            rent = nd.inode
-
-                            if rent:
-                                ...
-                            else:
-                                # nd is at the radix
-                                ...
-
-                            nds[i] = ndadd
-                        else:
-                            inode = eargs.inode
-                            if inode:
-                                rent[x] = nd
-                            else:
-                                ...
-                        return
-
-            if not isinstance(nd, file):
-                for nd1 in nd.inodes:
-                    replace(nd1, ndadd)
-
-            if not isinstance(ndadd, file):
-                for ndadd1 in ndadd.inodes:
-                    replace(nd, ndadd1)
-
-        for nd in self:
-            replace(nd.root, eargs.entity.root)
 
     def __call__(self, key):
         try:
@@ -469,63 +427,6 @@ class inode(orm.entity):
             else:
                 return nd
 
-    @staticmethod
-    def _getfile(name, dir=None):
-        """ Load and return a file by name which is under ``dir``.
-        """
-        # XXX This appears to be dead code
-        id = dir.id if dir else None
-        op = '=' if id else 'is'
-
-        nds = inodes(f'name = %s and inodeid {op} %s', name, id)
-
-        if nds.issingular:
-            nd = nds.first
-            # TODO We can just return nd now
-            return file(nd.id)
-
-        return None
-
-    # TODO Remove; I believe this is dead code
-    def _getdirectory(self, path):
-        """ Load or create a file given a ``path``.
-        """
-        # XXX This appears to be dead code
-        if isinstance(self, file):
-            head, tail = os.path.split(path)
-        else:
-            head, tail = path, None
-
-        dir = None
-        if head:
-            # Create directory
-           
-            names = [x for x in head.split('/') if x]
-
-            name = names.pop(0)
-
-            nds = inodes(
-                f'name = %s and inodeid is %s', name, None
-            )
-
-            if nds.hasone:
-                dir = nds.first
-            elif nds.isempty:
-                dir = directory(name=name)
-
-            for name in names:
-                if dir.orm.isnew:
-                    dir += directory(name=name)
-                    dir = dir.inodes.last
-                else:
-                    try:
-                        dir = dir.inodes[name]
-                    except IndexError:
-                        dir += directory(name=name)
-                        dir = dir.inodes.last
-
-        return dir
-
     def __getitem__(self, key):
         """ Return a (file or directory) underneath this inode by a
         ``key`` name, if the argument is a str. If ``key`` is not a str,
@@ -720,36 +621,6 @@ class file(inode):
         self._body = None
 
         super().__init__(*args, **kwargs)
-
-        return
-        # XXX
-
-        dir = self._getdirectory(path=path)
-
-        # Load/create the file
-        _, name = os.path.split(path)
-        f = self._getfile(name=name, dir=dir)
-        if f:
-            # Set attributes of the file to those of self
-            for attr in ('id', 'name', 'mime'):
-                setattr(self, attr, getattr(f, attr))
-
-            # The record isn't new or dirty so set all peristance state
-            # variables to false.
-            st = f.orm.persistencestate
-        else:
-            st = self.orm.persistencestate
-            self.name = name
-
-        # If dir was loaded/created above, put self underneath
-        if dir:
-            dir += self
-
-        # Adjust persistencestate
-        e = self
-        while e:
-            e.orm.persistencestate = st
-            e = e.orm._super
 
     @property
     def mimetype(self):

@@ -2688,7 +2688,7 @@ class entities(entitiesmod.entities, metaclass=entitiesmeta):
                 # Sometimes, a reference to the composite will be set on
                 # the object itself instead of its mapping collection.
                 # del that so we use the reference set below by
-                # setattr(). XXX This is experimental.
+                # setattr().
                 with suppress(KeyError):
                     del obj.__dict__[clscomp.__name__]
 
@@ -3967,10 +3967,6 @@ class entity(entitiesmod.entity, metaclass=entitymeta):
             crud = None
             sql, args = (None,) * 2
 
-        # XXX I added this conditonal here in 'cache-inodes'. I'm
-        # surprised I needed to make this change because this is such
-        # old code. Either way, it's a little experimental.
-        # Evaluate broken rules only if we are performing a mutation
         if crud:
             # Determine if the entity is valid. Don't ascend
             # (ascend=False) the inheritence tree to collect broken
@@ -8724,6 +8720,12 @@ class orm:
 
     def create(self, cur=None, ignore=False):
         """ Create a table in the database corresponding to the entity.
+
+        :param: cur: The MySQLdb cursor to use for the database.
+
+        :param: ignore bool: If True, create the table but don't raise an
+        exception if the table already exists. If False (default), raise
+        an exception.
         """
         # TODO Use executioner
         sql = self.createtable
