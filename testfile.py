@@ -352,12 +352,59 @@ class file_file(tester.tester):
             file.directory.radix.delete()
 
     def it_creates_with_name_kwargs(self):
-        f = file.file(name='test')
-        return
-        f1 = file.file(name='test')
+        name = uuid.uuid4().hex
+        f = file.file(name=name)
+        f1 = file.file(name=name)
         self.isnot(f, f1)
 
-        # XXX Complete. See it_creates_empty_file
+        radix = file.directory.radix
+        floaters = file.directory.floaters
+        self.false(f in floaters)
+        self.false(f in radix)
+
+        head = os.path.join(file.inode.store)
+
+        self.eq(head, f.head)
+        self.eq(f.path, os.path.join(head, name))
+        self.false(f.exists)
+        self.false(os.path.exists(f.path))
+        self.eq(name, f.name)
+        self.none(f.inode)
+        self.expect(AttributeError, lambda: f.inodes)
+        self.none(f.body)
+        self.none(f.mime)
+
+        ''' Saving the file with no body set '''
+        f.save()
+        self.eq(head, f.head)
+        self.eq(f.path, os.path.join(head, name))
+
+        # Since there is no body, there will be no corresponding file
+        # saved
+        self.false(f.exists)
+        self.false(os.path.exists(f.path))
+
+        self.eq(name, f.name)
+        self.none(f.inode)
+        self.expect(AttributeError, lambda: f.inodes)
+        self.none(f.body)
+        self.none(f.mime)
+
+        f1 = f.orm.reloaded()
+        self.eq(f.store, f1.store)
+        self.eq(f.head, f1.head)
+        self.eq(f.path, f1.path)
+
+        # Since there is no body, there will be no corresponding file
+        # saved
+        self.false(f1.exists)
+        self.false(os.path.exists(f1.path))
+
+        self.eq(name, f1.name)
+        self.none(f1.inode)
+        self.expect(AttributeError, lambda: f1.inodes)
+        self.none(f1.body)
+        self.none(f1.mime)
 
     def it_deletes(self):
         ''' Delete a cached-only file '''
